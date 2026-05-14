@@ -6,4 +6,35 @@ spring:
     virtual:
       enabled: true
 
+  datasource:
+    url: jdbc:postgresql://${DB_URL}/${DB_NAME}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+springdoc:
+  swagger-ui:
+    path: /api-doc.html
+    enabled: true
+  api-docs:
+    path: /v3/api-spec
   
+
+jwt:
+  access-secret: ${JWT_ACCESS_SECRET}
+  refresh-secret: ${JWT_REFRESH_SECRET}
+  access-expiration-ms: 1800000
+  refresh-expiration-ms: 604800000
+
+logging:
+  level:
+    org:
+      springframework:
+        security: DEBUG

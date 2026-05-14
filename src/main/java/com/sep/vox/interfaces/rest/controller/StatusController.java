@@ -10,9 +10,8 @@ import com.sep.vox.interfaces.rest.dto.response.RestApiResponse;
 @RestController
 @RequestMapping("/api")
 public class StatusController {
-    
 
-    @GetMapping("/v1/ping")
+    @GetMapping("/v1/status")
     public ResponseEntity<RestApiResponse<Object>> ping() {
         var response = RestApiResponse.success("Máy chủ đang hoạt động");
         return ResponseEntity.ok(response);

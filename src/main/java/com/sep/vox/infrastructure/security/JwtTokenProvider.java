@@ -14,7 +14,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import com.sep.vox.application.port.output.AuthTokenPort;
-import com.sep.vox.infrastructure.exception.InfrastructureException;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -25,63 +24,36 @@ import io.jsonwebtoken.security.Keys;
 @Component
 public class JwtTokenProvider implements AuthTokenPort {
 
-    @Value("${jwt.access-secret}")
-    private String accessSecret;
+    @Value("${jwt.secret}")
+    private String secret;
 
-    @Value("${jwt.refresh-secret}")
-    private String refreshSecret;
+    @Value("${jwt.expiration-ms}")
+    private long expirationMs;
 
-    @Value("${jwt.access-expiration-ms}")
-    private long accessExpirationMs;
-
-    @Value("${jwt.refresh-expiration-ms}")
-    private long refreshExpirationMs;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JwtTokenProvider.class);
 
-    private static final String ACCESS_TYPE = "ACCESS";
-    private static final String REFRESH_TYPE = "REFRESH";
-
     @Override
-    public String generateJwtToken(String userId, String email, List<String> roles, String type) {
-        switch (type) {
-            case ACCESS_TYPE:
-                return generateAccessToken(userId, email, roles);
-            case REFRESH_TYPE:
-                return generateRefreshToken(userId, email);
-            default:
-                LOGGER.error("Invalid JWT Token type: {} at generateJwtToken", type);
-                throw new InfrastructureException("Loại JWT Token không hợp lệ");
-        }
+    public String generateJwtToken(String userId, List<String> roles) {
+        var claims = new HashMap<String, Object>();
+        claims.put("userId", userId);
+        claims.put("roles", roles);
+        return createToken(userId, claims, expirationMs, secret);
     }
 
     @Override
-    public String getEmailFromToken(String token, String type) {
-        var claims = getClaimsFromToken(token, type);
+    public String getEmailFromToken(String token) {
+        var claims = getClaimsFromToken(token);
         return claims.get("email", String.class);
     }
 
     @Override
-    public UUID getUserIdFromToken(String token, String type) {
-       var claims = getClaimsFromToken(token, type);
+    public UUID getUserIdFromToken(String token) {
+       var claims = getClaimsFromToken(token);
        var userIdStr = claims.get("userId", String.class);
        return UUID.fromString(userIdStr);
     }
 
-    private String generateAccessToken(String userId, String email, List<String> roles) {
-        var claims = new HashMap<String, Object>();
-        claims.put("userId", userId);
-        claims.put("email", email);
-        claims.put("roles", roles);
-        return createToken(userId, claims, accessExpirationMs, accessSecret);
-    }
-
-    private String generateRefreshToken(String userId, String email) {
-        var claims = new HashMap<String, Object>();
-        claims.put("userId", userId);
-        claims.put("email", email);
-        return createToken(userId, claims, refreshExpirationMs, refreshSecret);
-    }
 
     private String createToken(String userId, Map<String, Object> claims, long expirationMs, String keyBytes) {
         var now = new Date();
@@ -104,20 +76,8 @@ public class JwtTokenProvider implements AuthTokenPort {
         return Keys.hmacShaKeyFor(keyBytes.getBytes());
     }
 
-
-    private Claims getClaimsFromToken(String token, String type) {
-        SecretKey secretKey;
-        switch (type) {
-            case ACCESS_TYPE:
-                secretKey = getSecretKey(accessSecret);
-                break;
-            case REFRESH_TYPE:
-                secretKey = getSecretKey(refreshSecret);
-                break;
-            default:
-                LOGGER.error("Invalid JWT Token type: {} at getClaimsFromToken", type);
-                throw new InfrastructureException("Loại JWT Token không hợp lệ");
-        }
+    private Claims getClaimsFromToken(String token) {
+        var secretKey = getSecretKey(secret);
         try {
             return Jwts.parser()
                 .verifyWith(secretKey)

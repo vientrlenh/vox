@@ -41,7 +41,7 @@ public class LoginUseCase implements IUseCase<LoginCommand, LoginResponse> {
             .stream()
             .map(ur -> ur.roleCode())
             .toList();
-        var accessToken = authTokenPort.generateJwtToken(user.getId().toString(), user.getEmail().value(), userRoles, "ACCESS");
+        var accessToken = authTokenPort.generateJwtToken(user.getId().toString(), userRoles);
         return LoginResponseMapper.toResponse(accessToken);
     }
     

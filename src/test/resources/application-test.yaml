@@ -8,5 +8,4 @@ spring:
             hibernate:
                 format-sql: true
 jwt:
-    access-secret: test-access-secret-oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
-    refresh-secret: test-refresh-secret
+    secret: test-access-secret-oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo

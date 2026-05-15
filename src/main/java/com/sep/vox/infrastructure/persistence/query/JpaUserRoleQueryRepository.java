@@ -22,16 +22,16 @@ public class JpaUserRoleQueryRepository implements UserRoleQueryRepository {
         return em.createQuery("""
             SELECT new com.sep.vox.application.query.dto.UserRoleInfo(
                 ur.id,
-                ur.user_id,
-                ur.role_id,
-                ur.created_at,
+                ur.userId,
+                ur.roleId,
+                ur.createdAt,
                 r.code,
                 r.name
             )
             FROM UserRoleJpaEntity ur 
             JOIN RoleJpaEntity r 
-                ON ur.role_id = r.id
-            WHERE ur.user_id = :userId
+                ON ur.roleId = r.id
+            WHERE ur.userId = :userId
         """, UserRoleInfo.class)
         .setParameter("userId", userId)
         .getResultStream()

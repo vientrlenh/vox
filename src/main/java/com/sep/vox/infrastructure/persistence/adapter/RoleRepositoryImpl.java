@@ -2,13 +2,16 @@ package com.sep.vox.infrastructure.persistence.adapter;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
+
+import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.role.Role;
 import com.sep.vox.domain.repository.RoleRepository;
-import com.sep.vox.domain.valueobject.id.RoleId;
 import com.sep.vox.infrastructure.persistence.mapper.RoleMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataRoleRepository;
 
+@Repository
 public class RoleRepositoryImpl implements RoleRepository {
 
     private final SpringDataRoleRepository springDataRoleRepository;
@@ -24,8 +27,8 @@ public class RoleRepositoryImpl implements RoleRepository {
     }
 
     @Override
-    public Optional<Role> findById(RoleId id) {
-        return springDataRoleRepository.findById(id.value())
+    public Optional<Role> findById(UUID id) {
+        return springDataRoleRepository.findById(id)
             .map(RoleMapper::toDomain);
     }
 
@@ -35,6 +38,13 @@ public class RoleRepositoryImpl implements RoleRepository {
             .stream()
             .map(RoleMapper::toDomain)
             .toList();
+    }
+
+    @Override
+    public Role save(Role role) {
+        var entity = RoleMapper.toJpa(role);
+        var saved = springDataRoleRepository.save(entity);
+        return RoleMapper.toDomain(saved);
     }
     
 }

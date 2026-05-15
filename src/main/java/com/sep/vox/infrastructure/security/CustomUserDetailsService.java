@@ -33,7 +33,7 @@ public class CustomUserDetailsService implements UserDetailsService {
             user = userRepository.findByPhone(login)
                 .orElseThrow(() -> new UsernameNotFoundException("Thông tin đăng nhập sai"));
         } 
-        var userRoleWithInfo = userRoleQueryRepository.findByUserIdWithRoleInfo(user.getId().value());
+        var userRoleWithInfo = userRoleQueryRepository.findByUserIdWithRoleInfo(user.getId());
         var roles = userRoleWithInfo.stream().map(role -> role.roleCode()).toList();
         return CustomUserDetails.createFromUser(user, roles);
     }

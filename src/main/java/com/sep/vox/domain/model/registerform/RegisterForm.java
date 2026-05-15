@@ -1,12 +1,11 @@
 package com.sep.vox.domain.model.registerform;
 
 import java.time.OffsetDateTime;
+import java.util.UUID;
 
-import com.sep.vox.domain.valueobject.id.RegisterFormId;
-import com.sep.vox.domain.valueobject.id.UserId;
 
 public class RegisterForm {
-    private RegisterFormId id;
+    private UUID id;
     private String representativeFullName;
     private String identityNumber;
     private String contactPhone;
@@ -20,10 +19,10 @@ public class RegisterForm {
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
     private OffsetDateTime approvedAt;
-    private UserId approvedBy;
+    private UUID approvedBy;
 
     // Getter and setter
-    public RegisterFormId getId() {
+    public UUID getId() {
         return id;
     }
 
@@ -35,7 +34,7 @@ public class RegisterForm {
         this.contractDurationMonth = contractDurationMonth;
     }
 
-    public void setId(RegisterFormId id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 
@@ -135,11 +134,11 @@ public class RegisterForm {
         this.approvedAt = approvedAt;
     }
 
-    public UserId getApprovedBy() {
+    public UUID getApprovedBy() {
         return approvedBy;
     }
 
-    public void setApprovedBy(UserId approvedBy) {
+    public void setApprovedBy(UUID approvedBy) {
         this.approvedBy = approvedBy;
     }
 

@@ -1,25 +1,24 @@
 package com.sep.vox.domain.model.role;
 
 import java.time.OffsetDateTime;
+import java.util.UUID;
 
-import com.sep.vox.domain.valueobject.id.RoleId;
-import com.sep.vox.domain.valueobject.id.UserId;
 
 public class Role {
-    private RoleId id;
+    private UUID id;
     private String code;
     private String name;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
-    private UserId createdBy;
-    private UserId updatedBy;
+    private UUID createdBy;
+    private UUID updatedBy;
 
 
     public Role() {
     }
 
-    public Role(RoleId id, String code, String name, OffsetDateTime createdAt, OffsetDateTime updatedAt,
-            UserId createdBy, UserId updatedBy) {
+    public Role(UUID id, String code, String name, OffsetDateTime createdAt, OffsetDateTime updatedAt,
+            UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.code = code;
         this.name = name;
@@ -29,11 +28,20 @@ public class Role {
         this.updatedBy = updatedBy;
     }
 
+    public Role(String code, String name, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+        this.code = code;
+        this.name = name;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+        this.createdBy = createdBy;
+        this.updatedBy = updatedBy;
+    }
+
     // Getter and setter
-    public RoleId getId() {
+    public UUID getId() {
         return id;
     }
-    public void setId(RoleId id) {
+    public void setId(UUID id) {
         this.id = id;
     }
     public String getCode() {
@@ -60,16 +68,16 @@ public class Role {
     public void setUpdatedAt(OffsetDateTime updatedAt) {
         this.updatedAt = updatedAt;
     }
-    public UserId getCreatedBy() {
+    public UUID getCreatedBy() {
         return createdBy;
     }
-    public void setCreatedBy(UserId createdBy) {
+    public void setCreatedBy(UUID createdBy) {
         this.createdBy = createdBy;
     }
-    public UserId getUpdatedBy() {
+    public UUID getUpdatedBy() {
         return updatedBy;
     }
-    public void setUpdatedBy(UserId updatedBy) {
+    public void setUpdatedBy(UUID updatedBy) {
         this.updatedBy = updatedBy;
     }
 

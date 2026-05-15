@@ -1,4 +1,4 @@
-package com.sep.vox.domain.valueobject.business;
+package com.sep.vox.domain.valueobject;
 
 public record Email(String value) {
     

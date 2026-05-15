@@ -1,11 +1,12 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
 import java.util.Optional;
+import java.util.UUID;
+
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.repository.UserRepository;
-import com.sep.vox.domain.valueobject.id.UserId;
 import com.sep.vox.infrastructure.persistence.mapper.UserMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataUserRepository;
 
@@ -20,8 +21,8 @@ public class UserRepositoryImpl implements UserRepository {
 
 
     @Override
-    public Optional<User> findById(UserId id) {
-        return springDataUserRepository.findById(id.value())
+    public Optional<User> findById(UUID id) {
+        return springDataUserRepository.findById(id)
             .map(UserMapper::toDomain);
     }
 

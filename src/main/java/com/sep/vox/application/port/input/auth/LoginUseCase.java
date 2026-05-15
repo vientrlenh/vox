@@ -37,11 +37,11 @@ public class LoginUseCase implements IUseCase<LoginCommand, LoginResponse> {
         var email = authenticationManagerPort.setAuthenticationAndGetUserEmail(input.login(), input.password());
         var user = userRepository.findByEmail(email)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
-        var userRoles = userRoleQueryRepository.findByUserIdWithRoleInfo(user.getId().value())
+        var userRoles = userRoleQueryRepository.findByUserIdWithRoleInfo(user.getId())
             .stream()
             .map(ur -> ur.roleCode())
             .toList();
-        var accessToken = authTokenPort.generateJwtToken(user.getId().value().toString(), user.getEmail().value(), userRoles, "ACCESS");
+        var accessToken = authTokenPort.generateJwtToken(user.getId().toString(), user.getEmail().value(), userRoles, "ACCESS");
         return LoginResponseMapper.toResponse(accessToken);
     }
     

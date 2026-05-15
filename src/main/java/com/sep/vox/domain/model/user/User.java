@@ -2,13 +2,13 @@ package com.sep.vox.domain.model.user;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.UUID;
 
-import com.sep.vox.domain.valueobject.business.Email;
-import com.sep.vox.domain.valueobject.business.Phone;
-import com.sep.vox.domain.valueobject.id.UserId;
+import com.sep.vox.domain.valueobject.Email;
+import com.sep.vox.domain.valueobject.Phone;
 
 public class User {
-    private UserId id;
+    private UUID id;
     private Email email;
     private String passwordHash;
     private Phone phone;
@@ -19,15 +19,32 @@ public class User {
     private UserStatus status;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
-    private UserId createdBy;
-    private UserId updatedBy;
+    private UUID createdBy;
+    private UUID updatedBy;
 
     public User() {}
 
-    public User(UserId id, Email email, String passwordHash, Phone phone,
+    public User(UUID id, Email email, String passwordHash, Phone phone,
             String fullName, Gender gender, LocalDate dateOfBirth, String address, UserStatus status,
-            OffsetDateTime createdAt, OffsetDateTime updatedAt, UserId createdBy, UserId updatedBy) {
+            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
+        this.email = email;
+        this.passwordHash = passwordHash;
+        this.phone = phone;
+        this.fullName = fullName;
+        this.gender = gender;
+        this.dateOfBirth = dateOfBirth;
+        this.address = address;
+        this.status = status;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+        this.createdBy = createdBy;
+        this.updatedBy = updatedBy;
+    }
+
+    public User(Email email, String passwordHash, Phone phone,
+            String fullName, Gender gender, LocalDate dateOfBirth, String address, UserStatus status,
+            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.email = email;
         this.passwordHash = passwordHash;
         this.phone = phone;
@@ -44,27 +61,27 @@ public class User {
 
 
     // Getter and setter
-    public UserId getCreatedBy() {
+    public UUID getCreatedBy() {
         return createdBy;
     }
 
-    public void setCreatedBy(UserId createdBy) {
+    public void setCreatedBy(UUID createdBy) {
         this.createdBy = createdBy;
     }
 
-    public UserId getUpdatedBy() {
+    public UUID getUpdatedBy() {
         return updatedBy;
     }
 
-    public void setUpdatedBy(UserId updatedBy) {
+    public void setUpdatedBy(UUID updatedBy) {
         this.updatedBy = updatedBy;
     }
 
-    public UserId getId() {
+    public UUID getId() {
         return id;
     }
 
-    public void setId(UserId id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 

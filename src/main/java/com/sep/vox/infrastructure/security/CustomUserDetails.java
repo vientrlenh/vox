@@ -2,7 +2,6 @@ package com.sep.vox.infrastructure.security;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.jspecify.annotations.Nullable;
@@ -17,7 +16,7 @@ import lombok.Builder;
 
 @Builder
 public class CustomUserDetails implements UserDetails {
-    private UUID userId;
+    private String email;
     private String password;
     private UserStatus status;
     private Collection<? extends GrantedAuthority> authorities;
@@ -30,7 +29,7 @@ public class CustomUserDetails implements UserDetails {
             .collect(Collectors.toList());
         
         return CustomUserDetails.builder()
-            .userId(user.getId().value())
+            .email(user.getEmail().value())
             .password(user.getPasswordHash())
             .status(user.getStatus())
             .authorities(authorities)
@@ -47,7 +46,7 @@ public class CustomUserDetails implements UserDetails {
     }
     @Override
     public String getUsername() {
-        return userId.toString();
+        return email;
     }
 
     @Override

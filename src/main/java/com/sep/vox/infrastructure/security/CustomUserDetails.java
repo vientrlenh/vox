@@ -1,8 +1,9 @@
 package com.sep.vox.infrastructure.security;
 
 import java.util.Collection;
-import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.GrantedAuthority;
@@ -23,8 +24,10 @@ public class CustomUserDetails implements UserDetails {
 
     private static final String AUTHORITY_ROLE_PREFIX = "ROLE_";
 
-    public static CustomUserDetails createFromUser(User user) {
-        var authorities = Collections.singleton(new SimpleGrantedAuthority(AUTHORITY_ROLE_PREFIX + user.getRoleId().toString()));
+    public static CustomUserDetails createFromUser(User user, List<String> roleCodes) {
+        var authorities = roleCodes.stream()
+            .map(role -> new SimpleGrantedAuthority(AUTHORITY_ROLE_PREFIX + roleCodes))
+            .collect(Collectors.toList());
         
         return CustomUserDetails.builder()
             .userId(user.getId().value())

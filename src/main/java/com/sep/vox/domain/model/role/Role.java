@@ -14,6 +14,21 @@ public class Role {
     private UserId createdBy;
     private UserId updatedBy;
 
+
+    public Role() {
+    }
+
+    public Role(RoleId id, String code, String name, OffsetDateTime createdAt, OffsetDateTime updatedAt,
+            UserId createdBy, UserId updatedBy) {
+        this.id = id;
+        this.code = code;
+        this.name = name;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+        this.createdBy = createdBy;
+        this.updatedBy = updatedBy;
+    }
+
     // Getter and setter
     public RoleId getId() {
         return id;

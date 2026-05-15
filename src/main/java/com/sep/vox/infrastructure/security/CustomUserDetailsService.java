@@ -1,12 +1,13 @@
 package com.sep.vox.infrastructure.security;
 
-import java.util.UUID;
 
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.repository.UserRepository;
 
@@ -14,29 +15,27 @@ import com.sep.vox.domain.repository.UserRepository;
 public class CustomUserDetailsService implements UserDetailsService {
 
     private final UserRepository userRepository;
+    private final UserRoleQueryRepository userRoleQueryRepository;
 
-    public CustomUserDetailsService(UserRepository userRepository) {
+    public CustomUserDetailsService(UserRepository userRepository, UserRoleQueryRepository userRoleQueryRepository) {
         this.userRepository = userRepository;
+        this.userRoleQueryRepository = userRoleQueryRepository;
     }
 
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+    @Transactional(readOnly = true)
+    public UserDetails loadUserByUsername(String login) throws UsernameNotFoundException {
         User user;
-        if (username.contains("@")) {
-            user = userRepository.findByEmail(username)
-                .orElseThrow(() -> new UsernameNotFoundException("Thông tin đăng nhập sai"));
-        } else if (username.matches("^\\d+$")) {
-            user = userRepository.findByPhone(username)
-                .orElseThrow(() -> new UsernameNotFoundException("Thông tin đăng nhập sai"));
-        } else if (username.contains("-")) {
-            var userId = UUID.fromString(username);
-            user = userRepository.findById(userId)
+        if (login.contains("@")) {
+            user = userRepository.findByEmail(login)
                 .orElseThrow(() -> new UsernameNotFoundException("Thông tin đăng nhập sai"));
         } else {
-            user = userRepository.findByUsername(username)
+            user = userRepository.findByPhone(login)
                 .orElseThrow(() -> new UsernameNotFoundException("Thông tin đăng nhập sai"));
-        }
-        return CustomUserDetails.createFromUser(user);
+        } 
+        var userRoleWithInfo = userRoleQueryRepository.findByUserIdWithRoleInfo(user.getId().value());
+        var roles = userRoleWithInfo.stream().map(role -> role.roleCode()).toList();
+        return CustomUserDetails.createFromUser(user, roles);
     }
     
 }

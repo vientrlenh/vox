@@ -5,15 +5,12 @@ import java.time.OffsetDateTime;
 
 import com.sep.vox.domain.valueobject.business.Email;
 import com.sep.vox.domain.valueobject.business.Phone;
-import com.sep.vox.domain.valueobject.id.RoleId;
 import com.sep.vox.domain.valueobject.id.UserId;
 
 public class User {
     private UserId id;
-    private String username;
     private Email email;
     private String passwordHash;
-    private RoleId roleId;
     private Phone phone;
     private String fullName;
     private Gender gender;
@@ -27,14 +24,12 @@ public class User {
 
     public User() {}
 
-    public User(UserId id, String username, Email email, String passwordHash, RoleId roleId, Phone phone,
+    public User(UserId id, Email email, String passwordHash, Phone phone,
             String fullName, Gender gender, LocalDate dateOfBirth, String address, UserStatus status,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UserId createdBy, UserId updatedBy) {
         this.id = id;
-        this.username = username;
         this.email = email;
         this.passwordHash = passwordHash;
-        this.roleId = roleId;
         this.phone = phone;
         this.fullName = fullName;
         this.gender = gender;
@@ -71,14 +66,6 @@ public class User {
 
     public void setId(UserId id) {
         this.id = id;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
     }
 
     public Email getEmail() {
@@ -158,14 +145,6 @@ public class User {
 
     public void setStatus(UserStatus status) {
         this.status = status;
-    }
-
-    public RoleId getRoleId() {
-        return roleId;
-    }
-
-    public void setRoleId(RoleId roleId) {
-        this.roleId = roleId;
     }
     
 }

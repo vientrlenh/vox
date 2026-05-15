@@ -11,10 +11,14 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "users")
+@Table(name = "users", indexes = {
+    @Index(columnList = "email", name = "idx_user_email", unique = true),
+    @Index(columnList = "phone", name = "idx_user_phone", unique = true)
+})
 public class UserJpaEntity {
     
     @Id
@@ -26,17 +30,11 @@ public class UserJpaEntity {
         columnDefinition = "UUID DEFAULT uuidv7()")
     private UUID id;
 
-    @Column(name = "username", length = 255)
-    private String username;
-
-    @Column(name = "email", length = 255)
+    @Column(name = "email", length = 255, nullable = false)
     private String email;
 
     @Column(name = "password_hash", length = 255, nullable = false)
     private String passwordHash;
-
-    @Column(name = "role_id", nullable = false)
-    private UUID roleId;
 
     @Column(name = "phone", length = 20)
     private String phone;
@@ -72,14 +70,12 @@ public class UserJpaEntity {
 
     protected UserJpaEntity() {}
 
-    public UserJpaEntity(UUID id, String username, String email, String passwordHash, UUID roleId, String phone,
+    public UserJpaEntity(UUID id, String email, String passwordHash, String phone,
             String fullName, String gender, LocalDate dateOfBirth, String address, String status,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
-        this.username = username;
         this.email = email;
         this.passwordHash = passwordHash;
-        this.roleId = roleId;
         this.phone = phone;
         this.fullName = fullName;
         this.gender = gender;
@@ -102,14 +98,6 @@ public class UserJpaEntity {
         this.id = id;
     }
 
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
     public String getEmail() {
         return email;
     }
@@ -124,14 +112,6 @@ public class UserJpaEntity {
 
     public void setPasswordHash(String passwordHash) {
         this.passwordHash = passwordHash;
-    }
-
-    public UUID getRoleId() {
-        return roleId;
-    }
-
-    public void setRoleId(UUID roleId) {
-        this.roleId = roleId;
     }
 
     public String getPhone() {

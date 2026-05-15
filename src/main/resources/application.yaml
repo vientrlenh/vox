@@ -38,3 +38,7 @@ logging:
     org:
       springframework:
         security: DEBUG
+
+server:
+  port: 8080
+  shutdown: graceful

@@ -2,6 +2,7 @@ package com.sep.vox.infrastructure.security;
 
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -42,10 +43,10 @@ public class JwtTokenProvider implements AuthTokenPort {
     private static final String REFRESH_TYPE = "REFRESH";
 
     @Override
-    public String generateJwtToken(String userId, String email, String role, String type) {
+    public String generateJwtToken(String userId, String email, List<String> roles, String type) {
         switch (type) {
             case ACCESS_TYPE:
-                return generateAccessToken(userId, email, role);
+                return generateAccessToken(userId, email, roles);
             case REFRESH_TYPE:
                 return generateRefreshToken(userId, email);
             default:
@@ -67,11 +68,11 @@ public class JwtTokenProvider implements AuthTokenPort {
        return UUID.fromString(userIdStr);
     }
 
-    private String generateAccessToken(String userId, String email, String role) {
+    private String generateAccessToken(String userId, String email, List<String> roles) {
         var claims = new HashMap<String, Object>();
         claims.put("userId", userId);
         claims.put("email", email);
-        claims.put("role", role);
+        claims.put("roles", roles);
         return createToken(userId, claims, accessExpirationMs, accessSecret);
     }
 

@@ -6,6 +6,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -25,6 +27,9 @@ public class GlobalExceptionHandler {
     private static final String ILLEGAL_ARGUMENT_ERROR = "ILLEGAL_ARGUMENT";
     private static final String VALIDATION_ERROR = "BAD_REQUEST";
     private static final String INTERNAL_ERROR = "INTERNAL_SERVER_ERROR";
+
+    private static final String AUTHENTICATION_ERROR = "BAD_CREDENTIALS";
+    private static final String AUTHORIZATION_ERROR = "ACCESS_DENIED";
 
     @ExceptionHandler(DuplicatedException.class)
     public ResponseEntity<ErrorResponse> handleDuplicate(DuplicatedException e) {
@@ -63,5 +68,19 @@ public class GlobalExceptionHandler {
         LOGGER.error("An unexpected error occurred: {}", e.getMessage());
         var error = new ErrorResponse(INTERNAL_ERROR, "Có lỗi xảy ra");
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+    }
+
+    // Spring security exceptions
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ErrorResponse> handleAuthentication(AuthenticationException e) {
+        var error = new ErrorResponse(AUTHENTICATION_ERROR, "Sai thông tin đăng nhập");
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException e) {
+        var error = new ErrorResponse(AUTHORIZATION_ERROR, "Quyền truy cập không hợp lệ");
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
     }
 }

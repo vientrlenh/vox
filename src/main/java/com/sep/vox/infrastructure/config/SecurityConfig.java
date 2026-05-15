@@ -45,7 +45,8 @@ public class SecurityConfig {
         "/swagger-ui/**",
         "/v3/api-spec/**",
         "/error",
-        "/api/v1/status"
+        "/api/v1/status",
+        "/api/v1/auth/**"
     };
 
     private static final List<String> CORS_ALLOWED_PATTERNS = List.of();

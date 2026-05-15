@@ -5,7 +5,7 @@ on:
     branches: [default]
 
 jobs:
-  check-no-merge-from-main:
+  check-no-merge-from-default:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

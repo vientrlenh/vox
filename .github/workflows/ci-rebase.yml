@@ -1,0 +1,44 @@
+name: No merge from default
+
+on:
+  pull_request:
+    branches: [default]
+
+jobs:
+  check-no-merge-from-main:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect actual merges from default
+        run: |
+          git fetch origin default
+
+          MAIN_SHA=$(git rev-parse origin/default)
+
+          # Find all merge commits in this branch that aren't in default
+          # Then check if any of them have origin/default as an ancestor parent
+          BAD_MERGES=""
+
+          for COMMIT in $(git log origin/default..HEAD --merges --pretty=format:"%H"); do
+            # A merge commit has 2+ parents. Get the second parent.
+            SECOND_PARENT=$(git rev-parse "$COMMIT^2" 2>/dev/null)
+
+            # Check if the second parent is an ancestor of origin/default
+            # (meaning default was merged INTO this branch)
+            if git merge-base --is-ancestor "$SECOND_PARENT" "$MAIN_SHA" 2>/dev/null; then
+              BAD_MERGES="$BAD_MERGES\n$(git log -1 --oneline $COMMIT)"
+            fi
+          done
+
+          if [ -n "$BAD_MERGES" ]; then
+            echo "❌ Found commits where default was merged into this branch:"
+            echo -e "$BAD_MERGES"
+            echo ""
+            echo "Please rebase instead: git rebase origin/default"
+            exit 1
+          else
+            echo "✅ No merges from default detected"
+          fi

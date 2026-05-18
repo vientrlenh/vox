@@ -10,16 +10,81 @@ public class RegisterForm {
     private String identityNumber;
     private String contactPhone;
     private String contactEmail;
+    private String schoolDomain;
     private String schoolName;
     private String schoolAddress;
     private String taxCode;
     private String position;
     private int contractDurationMonth;
+    private int studentCount;
     private RegisterFormStatus status;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
     private OffsetDateTime approvedAt;
     private UUID approvedBy;
+
+    public RegisterForm() {}
+
+    public RegisterForm(UUID id, String representativeFullName, String identityNumber, String contactPhone,
+            String contactEmail, String schoolDomain, String schoolName, String schoolAddress, String taxCode,
+            String position, int contractDurationMonth, int studentCount, RegisterFormStatus status,
+            OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime approvedAt, UUID approvedBy) {
+        this.id = id;
+        this.representativeFullName = representativeFullName;
+        this.identityNumber = identityNumber;
+        this.contactPhone = contactPhone;
+        this.contactEmail = contactEmail;
+        this.schoolDomain = schoolDomain;
+        this.schoolName = schoolName;
+        this.schoolAddress = schoolAddress;
+        this.taxCode = taxCode;
+        this.position = position;
+        this.contractDurationMonth = contractDurationMonth;
+        this.studentCount = studentCount;
+        this.status = status;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+        this.approvedAt = approvedAt;
+        this.approvedBy = approvedBy;
+    }
+
+    public RegisterForm(String representativeFullName, String identityNumber, String contactPhone, String contactEmail,
+            String schoolDomain, String schoolName, String schoolAddress, String taxCode, String position,
+            int contractDurationMonth, int studentCount, RegisterFormStatus status, OffsetDateTime createdAt,
+            OffsetDateTime updatedAt, OffsetDateTime approvedAt, UUID approvedBy) {
+        this.representativeFullName = representativeFullName;
+        this.identityNumber = identityNumber;
+        this.contactPhone = contactPhone;
+        this.contactEmail = contactEmail;
+        this.schoolDomain = schoolDomain;
+        this.schoolName = schoolName;
+        this.schoolAddress = schoolAddress;
+        this.taxCode = taxCode;
+        this.position = position;
+        this.contractDurationMonth = contractDurationMonth;
+        this.studentCount = studentCount;
+        this.status = status;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+        this.approvedAt = approvedAt;
+        this.approvedBy = approvedBy;
+    }
+
+    public String getSchoolDomain() {
+        return schoolDomain;
+    }
+
+    public void setSchoolDomain(String schoolDomain) {
+        this.schoolDomain = schoolDomain;
+    }
+
+    public int getStudentCount() {
+        return studentCount;
+    }
+
+    public void setStudentCount(int studentCount) {
+        this.studentCount = studentCount;
+    }
 
     // Getter and setter
     public UUID getId() {

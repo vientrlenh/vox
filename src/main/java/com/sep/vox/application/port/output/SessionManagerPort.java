@@ -4,5 +4,5 @@ import java.util.UUID;
 
 public interface SessionManagerPort {
     String setSessionAndGetRefreshTokenWhenLogin(UUID userId);
-    boolean compareMatchesToken(String raw, UUID requestedUserId);
+    String setSessionAndGetRefreshTokenWhenRefresh(UUID userId, String token);
 }

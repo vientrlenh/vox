@@ -8,4 +8,5 @@ import com.sep.vox.domain.model.session.Session;
 public interface SessionRepository {
     Session save(Session session);
     Optional<Session> findByUserIdAndRefreshTokenHash(UUID userId, String refreshTokenHash);
+    Optional<Session> findById(UUID id);
 }

@@ -9,6 +9,7 @@ import com.sep.vox.application.mapper.LoginResponseMapper;
 import com.sep.vox.application.port.input.IUseCase;
 import com.sep.vox.application.port.output.AuthTokenPort;
 import com.sep.vox.application.port.output.AuthenticationManagerPort;
+import com.sep.vox.application.port.output.SessionManagerPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.LoginResponse;
 import com.sep.vox.domain.repository.UserRepository;
@@ -20,15 +21,18 @@ public class LoginUseCase implements IUseCase<LoginCommand, LoginResponse> {
     private final UserRepository userRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final AuthTokenPort authTokenPort;
+    private final SessionManagerPort sessionManagerPort;
 
     public LoginUseCase(AuthenticationManagerPort authenticationManagerPort, 
                         UserRepository userRepository, 
                         UserRoleQueryRepository userRoleQueryRepository,
-                        AuthTokenPort authTokenPort) {
+                        AuthTokenPort authTokenPort, 
+                        SessionManagerPort sessionManagerPort) {
         this.authenticationManagerPort = authenticationManagerPort;
         this.userRepository = userRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
         this.authTokenPort = authTokenPort;
+        this.sessionManagerPort = sessionManagerPort;
     }
 
     @Override
@@ -42,7 +46,8 @@ public class LoginUseCase implements IUseCase<LoginCommand, LoginResponse> {
             .map(ur -> ur.roleCode())
             .toList();
         var accessToken = authTokenPort.generateJwtToken(user.getId().toString(), userRoles);
-        return LoginResponseMapper.toResponse(accessToken);
+        var refreshToken = sessionManagerPort.setSessionAndGetRefreshTokenWhenLogin(user.getId());
+        return LoginResponseMapper.toResponse(accessToken, refreshToken);
     }
     
 }

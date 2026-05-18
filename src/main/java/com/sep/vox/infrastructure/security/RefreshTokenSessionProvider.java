@@ -8,11 +8,16 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
 import com.sep.vox.application.port.output.SessionManagerPort;
 import com.sep.vox.domain.model.session.Session;
 import com.sep.vox.domain.repository.SessionRepository;
 import com.sep.vox.infrastructure.exception.InfrastructureException;
 
+@Component
 public class RefreshTokenSessionProvider implements SessionManagerPort {
 
     private final SessionRepository sessionRepository;
@@ -27,6 +32,7 @@ public class RefreshTokenSessionProvider implements SessionManagerPort {
     private static final String HASH_METHOD = "SHA-512";
     private static final int DAY_TILL_EXPIRE = 3;
     
+    private static final Logger LOGGER = LoggerFactory.getLogger(RefreshTokenSessionProvider.class);
 
     @Override
     public String setSessionAndGetRefreshTokenWhenLogin(UUID userId) {
@@ -48,13 +54,36 @@ public class RefreshTokenSessionProvider implements SessionManagerPort {
     }
 
     @Override
-    public boolean compareMatchesToken(String raw, UUID requestedUserId) {
-        var hashedFromRaw = hashAndGetRefreshToken(raw);
-        var actualHashed = sessionRepository.findByUserIdAndRefreshTokenHash(requestedUserId, hashedFromRaw)
+    public String setSessionAndGetRefreshTokenWhenRefresh(UUID userId, String token) {
+        var hashedFromRaw = hashAndGetRefreshToken(token);
+        var activeSession = sessionRepository.findByUserIdAndRefreshTokenHash(userId, hashedFromRaw)
             .orElse(null);
-        if (actualHashed == null || !hashedFromRaw.equals(actualHashed.getRefreshTokenHash())) 
-            return false;
-        return true;
+        var matches = compareMatchesToken(hashedFromRaw, activeSession);
+        if (!matches) {
+            LOGGER.info("Requested refresh token does not match: {}, token value: {}", userId, token);
+            return null;
+        }
+        var now = OffsetDateTime.now();
+        if (activeSession.getExpiredAt().isBefore(now) || activeSession.getRevokedAt() != null) {
+            LOGGER.info("Requested refresh token has been expired or revoked: {}", token);
+            return null;
+        }
+        var newToken = getRefreshToken();
+        var newHashedToken = hashAndGetRefreshToken(newToken);
+        var expiredAt = now.plusDays(DAY_TILL_EXPIRE);
+        var newSession = new Session(
+            userId, 
+            newHashedToken, 
+            now, 
+            expiredAt, 
+            null, 
+            activeSession.getId()
+        );
+        
+        activeSession.setRevokedAt(now);
+        sessionRepository.save(newSession);
+        sessionRepository.save(activeSession);
+        return newToken;
     }
 
     private String hashAndGetRefreshToken(String token) {
@@ -82,6 +111,10 @@ public class RefreshTokenSessionProvider implements SessionManagerPort {
             .collect(Collectors.joining());
     }
 
-
+    private boolean compareMatchesToken(String hashedFromRaw, Session session) {
+        if (session == null || !hashedFromRaw.equals(session.getRefreshTokenHash())) 
+            return false;
+        return true;
+    }
     
 }

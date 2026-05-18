@@ -28,8 +28,14 @@ public class SessionRepositoryImpl implements SessionRepository {
 
     @Override
     public Optional<Session> findByUserIdAndRefreshTokenHash(UUID userId, String refreshTokenHash) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'findByUserIdAndRefreshTokenHash'");
+        return springDataSessionRepository.findByUserIdAndRefreshTokenHash(userId, refreshTokenHash)
+            .map(SessionMapper::toDomain);
+    }
+
+    @Override
+    public Optional<Session> findById(UUID id) {
+        return springDataSessionRepository.findById(id)
+            .map(SessionMapper::toDomain);
     }
     
 }

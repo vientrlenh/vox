@@ -88,6 +88,8 @@ public class LoginUseCaseTests {
             "123456"));
         
         assertThat(result).isNotNull();
+        assertThat(result.accessToken()).isNotNull();
+        assertThat(result.refreshToken()).isNotNull();
     }
 
     @Test

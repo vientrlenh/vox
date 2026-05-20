@@ -6,7 +6,7 @@ import java.util.UUID;
 
 public class RegisterForm {
     private UUID id;
-    private String representativeFullName;
+    private String contactFullName;
     private String identityNumber;
     private String contactPhone;
     private String contactEmail;
@@ -15,22 +15,21 @@ public class RegisterForm {
     private String schoolAddress;
     private String taxCode;
     private String position;
-    private int contractDurationMonth;
     private int studentCount;
+    private String reason;
     private RegisterFormStatus status;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
-    private OffsetDateTime approvedAt;
-    private UUID approvedBy;
+    private UUID updatedBy;
 
     public RegisterForm() {}
 
-    public RegisterForm(UUID id, String representativeFullName, String identityNumber, String contactPhone,
+    public RegisterForm(UUID id, String contactFullName, String identityNumber, String contactPhone,
             String contactEmail, String schoolDomain, String schoolName, String schoolAddress, String taxCode,
-            String position, int contractDurationMonth, int studentCount, RegisterFormStatus status,
-            OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime approvedAt, UUID approvedBy) {
+            String position, int studentCount, String reason, RegisterFormStatus status, OffsetDateTime createdAt,
+            OffsetDateTime updatedAt, UUID updatedBy) {
         this.id = id;
-        this.representativeFullName = representativeFullName;
+        this.contactFullName = contactFullName;
         this.identityNumber = identityNumber;
         this.contactPhone = contactPhone;
         this.contactEmail = contactEmail;
@@ -39,20 +38,21 @@ public class RegisterForm {
         this.schoolAddress = schoolAddress;
         this.taxCode = taxCode;
         this.position = position;
-        this.contractDurationMonth = contractDurationMonth;
         this.studentCount = studentCount;
+        this.reason = reason;
         this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
-        this.approvedAt = approvedAt;
-        this.approvedBy = approvedBy;
+        this.updatedBy = updatedBy;
     }
 
-    public RegisterForm(String representativeFullName, String identityNumber, String contactPhone, String contactEmail,
+    
+
+    public RegisterForm(String contactFullName, String identityNumber, String contactPhone, String contactEmail,
             String schoolDomain, String schoolName, String schoolAddress, String taxCode, String position,
-            int contractDurationMonth, int studentCount, RegisterFormStatus status, OffsetDateTime createdAt,
-            OffsetDateTime updatedAt, OffsetDateTime approvedAt, UUID approvedBy) {
-        this.representativeFullName = representativeFullName;
+            int studentCount, String reason, RegisterFormStatus status, OffsetDateTime createdAt,
+            OffsetDateTime updatedAt, UUID updatedBy) {
+        this.contactFullName = contactFullName;
         this.identityNumber = identityNumber;
         this.contactPhone = contactPhone;
         this.contactEmail = contactEmail;
@@ -61,13 +61,12 @@ public class RegisterForm {
         this.schoolAddress = schoolAddress;
         this.taxCode = taxCode;
         this.position = position;
-        this.contractDurationMonth = contractDurationMonth;
         this.studentCount = studentCount;
+        this.reason = reason;
         this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
-        this.approvedAt = approvedAt;
-        this.approvedBy = approvedBy;
+        this.updatedBy = updatedBy;
     }
 
     public String getSchoolDomain() {
@@ -91,24 +90,16 @@ public class RegisterForm {
         return id;
     }
 
-    public int getContractDurationMonth() {
-        return contractDurationMonth;
-    }
-
-    public void setContractDurationMonth(int contractDurationMonth) {
-        this.contractDurationMonth = contractDurationMonth;
-    }
-
     public void setId(UUID id) {
         this.id = id;
     }
 
-    public String getRepresentativeFullName() {
-        return representativeFullName;
+    public String getContactFullName() {
+        return contactFullName;
     }
 
-    public void setRepresentativeFullName(String representativeFullName) {
-        this.representativeFullName = representativeFullName;
+    public void setContactFullName(String contactFullName) {
+        this.contactFullName = contactFullName;
     }
 
     public String getIdentityNumber() {
@@ -191,21 +182,23 @@ public class RegisterForm {
         this.contactEmail = contactEmail;
     }
 
-    public OffsetDateTime getApprovedAt() {
-        return approvedAt;
+    public String getReason() {
+        return reason;
     }
 
-    public void setApprovedAt(OffsetDateTime approvedAt) {
-        this.approvedAt = approvedAt;
+    public void setReason(String reason) {
+        this.reason = reason;
     }
 
-    public UUID getApprovedBy() {
-        return approvedBy;
+    public UUID getUpdatedBy() {
+        return updatedBy;
     }
 
-    public void setApprovedBy(UUID approvedBy) {
-        this.approvedBy = approvedBy;
+    public void setUpdatedBy(UUID updatedBy) {
+        this.updatedBy = updatedBy;
     }
+
+
 
     
 }

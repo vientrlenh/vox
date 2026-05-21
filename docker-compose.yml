@@ -1,0 +1,70 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: vox-app:latest
+    container_name: vox-app
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      rabbitmq:
+        condition: service_started
+    ports:
+      - '${APP_PORT}:8080'
+    networks:
+      - vox-network
+
+  postgres:
+    image: postgres:18-alpine
+    container_name: vox-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    ports:
+      - '${POSTGRES_PORT}:5432'
+    networks:
+      - vox-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: vox-redis
+    restart: unless-stopped
+    ports:
+      - '${REDIS_PORT}:6379'
+    networks:
+      - vox-network
+
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: vox-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${SPRING_RABBITMQ_USERNAME}
+      RABBITMQ_DEFAULT_PASS: ${SPRING_RABBITMQ_PASSWORD}
+    ports:
+      - '${RABBITMQ_PORT}:5672'
+      - '${RABBITMQ_MANAGEMENT_PORT}:15672'
+    networks:
+      - vox-network
+
+networks:
+  vox-network:
+    driver: bridge
+
+volumes:
+  postgres-data:

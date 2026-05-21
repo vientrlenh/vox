@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.rest.controller;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -7,11 +8,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.sep.vox.application.port.input.auth.LoginUseCase;
+import com.sep.vox.application.port.input.auth.RegisterUseCase;
 import com.sep.vox.application.response.LoginResponse;
+import com.sep.vox.application.response.RegisterResponse;
 import com.sep.vox.interfaces.rest.dto.request.LoginRequest;
+import com.sep.vox.interfaces.rest.dto.request.RegisterRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 import com.sep.vox.interfaces.rest.mapper.LoginCommandMapper;
-
+import com.sep.vox.interfaces.rest.mapper.RegisterCommandMapper;
 
 import jakarta.validation.Valid;
 
@@ -22,9 +26,11 @@ import jakarta.validation.Valid;
 public class AuthController {
     
     private final LoginUseCase loginUseCase;
+    private final RegisterUseCase registerUseCase;
 
-    public AuthController(LoginUseCase loginUseCase) {
+    public AuthController(LoginUseCase loginUseCase, RegisterUseCase registerUseCase) {
         this.loginUseCase = loginUseCase;
+        this.registerUseCase = registerUseCase;
     }
 
     @PostMapping("/v1/auth/login")
@@ -33,5 +39,14 @@ public class AuthController {
         var data = loginUseCase.execute(command);
         var response = new ApiResponse<>("Đăng nhập thành công", data);
         return ResponseEntity.ok(response);
+    }
+
+
+    @PostMapping("/v1/auth/register")
+    public ResponseEntity<ApiResponse<RegisterResponse>> register(@Valid @RequestBody RegisterRequest request) {
+        var command = RegisterCommandMapper.fromRequest(request);
+        var data = registerUseCase.execute(command);
+        var response = new ApiResponse<>("Đơn đăng ký đã được gửi thành công", data);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }

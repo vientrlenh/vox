@@ -4,9 +4,6 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -55,11 +52,9 @@ public class UserJpaEntity {
     private String status;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    @CreationTimestamp
     private OffsetDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    @UpdateTimestamp
     private OffsetDateTime updatedAt;
 
     @Column(name = "created_by")

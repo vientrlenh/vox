@@ -13,7 +13,7 @@ public class RegisterForm {
     private String schoolDomain;
     private String schoolName;
     private String schoolAddress;
-    private String taxCode;
+    private String postalCode;
     private String position;
     private int studentCount;
     private String reason;
@@ -25,7 +25,7 @@ public class RegisterForm {
     public RegisterForm() {}
 
     public RegisterForm(UUID id, String contactFullName, String identityNumber, String contactPhone,
-            String contactEmail, String schoolDomain, String schoolName, String schoolAddress, String taxCode,
+            String contactEmail, String schoolDomain, String schoolName, String schoolAddress, String postalCode,
             String position, int studentCount, String reason, RegisterFormStatus status, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID updatedBy) {
         this.id = id;
@@ -36,7 +36,7 @@ public class RegisterForm {
         this.schoolDomain = schoolDomain;
         this.schoolName = schoolName;
         this.schoolAddress = schoolAddress;
-        this.taxCode = taxCode;
+        this.postalCode = postalCode;
         this.position = position;
         this.studentCount = studentCount;
         this.reason = reason;
@@ -49,7 +49,7 @@ public class RegisterForm {
     
 
     public RegisterForm(String contactFullName, String identityNumber, String contactPhone, String contactEmail,
-            String schoolDomain, String schoolName, String schoolAddress, String taxCode, String position,
+            String schoolDomain, String schoolName, String schoolAddress, String postalCode, String position,
             int studentCount, String reason, RegisterFormStatus status, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID updatedBy) {
         this.contactFullName = contactFullName;
@@ -59,7 +59,7 @@ public class RegisterForm {
         this.schoolDomain = schoolDomain;
         this.schoolName = schoolName;
         this.schoolAddress = schoolAddress;
-        this.taxCode = taxCode;
+        this.postalCode = postalCode;
         this.position = position;
         this.studentCount = studentCount;
         this.reason = reason;
@@ -126,12 +126,12 @@ public class RegisterForm {
         this.schoolAddress = schoolAddress;
     }
 
-    public String getTaxCode() {
-        return taxCode;
+    public String getPostalCode() {
+        return postalCode;
     }
 
-    public void setTaxCode(String taxCode) {
-        this.taxCode = taxCode;
+    public void setPostalCode(String taxCode) {
+        this.postalCode = taxCode;
     }
 
     public String getPosition() {

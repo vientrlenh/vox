@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.auth;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
 import org.springframework.stereotype.Service;
@@ -25,12 +26,20 @@ public class RegisterUseCase implements IUseCase<RegisterCommand, RegisterRespon
     @Override
     @Transactional
     public RegisterResponse execute(RegisterCommand input) {
+        final var ageThresHold = 18;
+        var today = LocalDate.now().getYear();
+        var ageFromDateOfBirth = today - input.dateOfBirth().getYear();
+        if (ageFromDateOfBirth < ageThresHold) {
+            throw new IllegalArgumentException("Bạn chưa đủ tuổi để thực hiện việc đăng ký vào hệ thống");
+        }
         var now = OffsetDateTime.now();
         var newRegisterForm = new RegisterForm(
             input.contactFullName(), 
             input.identityNumber(), 
             input.contactPhone(), 
-            input.contactEmail(), 
+            input.contactEmail(),
+            input.dateOfBirth(),
+            input.contactAddress(), 
             input.schoolDomain(), 
             input.schoolName(), 
             input.schoolAddress(), 

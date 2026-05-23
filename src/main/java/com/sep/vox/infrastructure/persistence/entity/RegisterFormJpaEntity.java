@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -12,9 +13,9 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "register_forms", indexes = {
-    @Index(columnList = "identity_number", name = "idx_register_identity"),
-    @Index(columnList = "contact_phone", name = "idx_register_phone"),
-    @Index(columnList = "contact_email", name = "idx_register_email")
+        @Index(columnList = "identity_number", name = "idx_register_identity"),
+        @Index(columnList = "contact_phone", name = "idx_register_phone"),
+        @Index(columnList = "contact_email", name = "idx_register_email")
 })
 public class RegisterFormJpaEntity {
     @Id
@@ -33,6 +34,12 @@ public class RegisterFormJpaEntity {
 
     @Column(name = "contact_email", nullable = false, updatable = false, length = 255)
     private String contactEmail;
+
+    @Column(name = "date_of_birth", nullable = false, updatable = false)
+    private LocalDate dateOfBirth;
+
+    @Column(name = "contact_address", nullable = false, updatable = false, length = 512)
+    private String contactAddress;
 
     @Column(name = "school_domain", nullable = false, updatable = false, length = 100)
     private String schoolDomain;
@@ -67,10 +74,12 @@ public class RegisterFormJpaEntity {
     @Column(name = "updated_by")
     private UUID updatedBy;
 
-    protected RegisterFormJpaEntity() {}
+    protected RegisterFormJpaEntity() {
+    }
 
     public RegisterFormJpaEntity(UUID id, String contactFullName, String identityNumber, String contactPhone,
-            String contactEmail, String schoolDomain, String schoolName, String schoolAddress, String postalCode, String position,
+            String contactEmail, LocalDate dateOfBirth, String contactAddress, String schoolDomain, String schoolName, String schoolAddress,
+            String postalCode, String position,
             int studentCount, String reason, String status, OffsetDateTime createdAt, OffsetDateTime updatedAt,
             UUID updatedBy) {
         this.id = id;
@@ -78,6 +87,8 @@ public class RegisterFormJpaEntity {
         this.identityNumber = identityNumber;
         this.contactPhone = contactPhone;
         this.contactEmail = contactEmail;
+        this.dateOfBirth = dateOfBirth;
+        this.contactAddress = contactAddress;
         this.schoolDomain = schoolDomain;
         this.schoolAddress = schoolAddress;
         this.schoolName = schoolName;
@@ -92,13 +103,16 @@ public class RegisterFormJpaEntity {
     }
 
     public RegisterFormJpaEntity(String contactFullName, String identityNumber, String contactPhone,
-            String contactEmail, String schoolDomain, String schoolName, String schoolAddress, String postalCode, String position,
+            String contactEmail, LocalDate dateOfBirth, String contactAddress, String schoolDomain, String schoolName, String schoolAddress,
+            String postalCode, String position,
             int studentCount, String reason, String status, OffsetDateTime createdAt, OffsetDateTime updatedAt,
             UUID updatedBy) {
         this.contactFullName = contactFullName;
         this.identityNumber = identityNumber;
         this.contactPhone = contactPhone;
         this.contactEmail = contactEmail;
+        this.dateOfBirth = dateOfBirth;
+        this.contactAddress = contactAddress;
         this.schoolDomain = schoolDomain;
         this.schoolName = schoolName;
         this.schoolAddress = schoolAddress;
@@ -240,6 +254,21 @@ public class RegisterFormJpaEntity {
         this.schoolName = schoolName;
     }
 
-    
+    public String getContactAddress() {
+        return contactAddress;
+    }
 
+    public void setContactAddress(String contactAddress) {
+        this.contactAddress = contactAddress;
+    }
+
+    public LocalDate getDateOfBirth() {
+        return dateOfBirth;
+    }
+
+    public void setDateOfBirth(LocalDate dateOfBirth) {
+        this.dateOfBirth = dateOfBirth;
+    }
+
+    
 }

@@ -1,8 +1,8 @@
 package com.sep.vox.domain.model.registerform;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.UUID;
-
 
 public class RegisterForm {
     private UUID id;
@@ -10,6 +10,8 @@ public class RegisterForm {
     private String identityNumber;
     private String contactPhone;
     private String contactEmail;
+    private LocalDate dateOfBirth;
+    private String contactAddress;
     private String schoolDomain;
     private String schoolName;
     private String schoolAddress;
@@ -22,10 +24,12 @@ public class RegisterForm {
     private OffsetDateTime updatedAt;
     private UUID updatedBy;
 
-    public RegisterForm() {}
+    public RegisterForm() {
+    }
 
     public RegisterForm(UUID id, String contactFullName, String identityNumber, String contactPhone,
-            String contactEmail, String schoolDomain, String schoolName, String schoolAddress, String postalCode,
+            String contactEmail, LocalDate dateOfBirth, String contactAddress, String schoolDomain, String schoolName,
+            String schoolAddress, String postalCode,
             String position, int studentCount, String reason, RegisterFormStatus status, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID updatedBy) {
         this.id = id;
@@ -33,6 +37,8 @@ public class RegisterForm {
         this.identityNumber = identityNumber;
         this.contactPhone = contactPhone;
         this.contactEmail = contactEmail;
+        this.dateOfBirth = dateOfBirth;
+        this.contactAddress = contactAddress;
         this.schoolDomain = schoolDomain;
         this.schoolName = schoolName;
         this.schoolAddress = schoolAddress;
@@ -46,9 +52,8 @@ public class RegisterForm {
         this.updatedBy = updatedBy;
     }
 
-    
-
-    public RegisterForm(String contactFullName, String identityNumber, String contactPhone, String contactEmail,
+    public RegisterForm(String contactFullName, String identityNumber, String contactPhone, String contactEmail, LocalDate dateOfBirth,
+            String contactAddress,
             String schoolDomain, String schoolName, String schoolAddress, String postalCode, String position,
             int studentCount, String reason, RegisterFormStatus status, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID updatedBy) {
@@ -56,6 +61,8 @@ public class RegisterForm {
         this.identityNumber = identityNumber;
         this.contactPhone = contactPhone;
         this.contactEmail = contactEmail;
+        this.dateOfBirth = dateOfBirth;
+        this.contactAddress = contactAddress;
         this.schoolDomain = schoolDomain;
         this.schoolName = schoolName;
         this.schoolAddress = schoolAddress;
@@ -85,7 +92,6 @@ public class RegisterForm {
         this.studentCount = studentCount;
     }
 
-    // Getter and setter
     public UUID getId() {
         return id;
     }
@@ -161,7 +167,7 @@ public class RegisterForm {
     public OffsetDateTime getUpdatedAt() {
         return updatedAt;
     }
-    
+
     public void setUpdatedAt(OffsetDateTime updatedAt) {
         this.updatedAt = updatedAt;
     }
@@ -198,7 +204,20 @@ public class RegisterForm {
         this.updatedBy = updatedBy;
     }
 
+    public String getContactAddress() {
+        return contactAddress;
+    }
 
+    public void setContactAddress(String contactAddress) {
+        this.contactAddress = contactAddress;
+    }
 
-    
+    public LocalDate getDateOfBirth() {
+        return dateOfBirth;
+    }
+
+    public void setDateOfBirth(LocalDate dateOfBirth) {
+        this.dateOfBirth = dateOfBirth;
+    }
+
 }

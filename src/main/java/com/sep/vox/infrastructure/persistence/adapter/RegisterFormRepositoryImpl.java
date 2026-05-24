@@ -7,6 +7,8 @@ import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.registerform.RegisterForm;
 import com.sep.vox.domain.repository.RegisterFormRepository;
+import com.sep.vox.domain.util.PageRequest;
+import com.sep.vox.domain.util.PageResult;
 import com.sep.vox.infrastructure.persistence.mapper.RegisterFormMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataRegisterFormRepository;
 
@@ -30,6 +32,21 @@ public class RegisterFormRepositoryImpl implements RegisterFormRepository {
     public Optional<RegisterForm> findById(UUID id) {
         return springDataRegisterFormRepository.findById(id)
             .map(RegisterFormMapper::toDomain);
+    }
+
+    @Override
+    public PageResult<RegisterForm> findAll(PageRequest pageRequest) {
+        var pageable = org.springframework.data.domain.PageRequest.of(pageRequest.page(), pageRequest.size());
+        var page = springDataRegisterFormRepository.findAll(pageable);
+        return new PageResult<>(
+            page.getContent().stream()
+                .map(RegisterFormMapper::toDomain)
+                .toList(),
+            page.getNumber(),
+            page.getSize(),
+            page.getTotalElements(),
+            page.getTotalPages()
+        );
     }
     
 }

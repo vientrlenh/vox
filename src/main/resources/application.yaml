@@ -5,6 +5,9 @@ spring:
   threads:
     virtual:
       enabled: true
+  graphql:
+    graphiql:
+      enabled: true
       
   mail:
     host: smtp.gmail.com

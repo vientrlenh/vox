@@ -1,0 +1,30 @@
+type RegisterForm {
+    id: ID
+    contactFullName: String
+    identityNumber: String
+    contactPhone: String
+    contactEmail: String
+    dateOfBirth: String
+    contactAddress: String
+    schoolDomain: String
+    schoolName: String
+    schoolAddress: String
+    postalCode: String
+    position: String
+    studentCount: Int
+    reason: String
+    status: String
+}
+
+type RegisterFormPage {
+    content: [RegisterForm!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+type Query {
+    registerForms(page: Int = 0, size: Int = 20): RegisterFormPage!
+    registerForm(id: ID!): RegisterForm
+}

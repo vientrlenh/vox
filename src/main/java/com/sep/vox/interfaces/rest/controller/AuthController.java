@@ -7,10 +7,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.sep.vox.application.port.input.auth.LoginUseCase;
-import com.sep.vox.application.port.input.auth.RegisterUseCase;
-import com.sep.vox.application.response.LoginResponse;
-import com.sep.vox.application.response.RegisterResponse;
+import com.sep.vox.application.port.input.usecase.auth.LoginUseCase;
+import com.sep.vox.application.port.input.usecase.auth.RegisterUseCase;
+import com.sep.vox.application.response.auth.LoginResponse;
+import com.sep.vox.application.response.auth.RegisterResponse;
 import com.sep.vox.interfaces.rest.dto.request.LoginRequest;
 import com.sep.vox.interfaces.rest.dto.request.RegisterRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;

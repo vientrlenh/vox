@@ -46,7 +46,9 @@ public class SecurityConfig {
         "/v3/api-spec/**",
         "/error",
         "/api/v1/status",
-        "/api/v1/auth/**"
+        "/api/v1/auth/**",
+        "/graphql",
+        "/graphiql/**"
     };
 
     private static final List<String> CORS_ALLOWED_PATTERNS = List.of();

@@ -1,4 +1,4 @@
-package com.sep.vox.application.port.input.usecase.schooladmin;
+package com.sep.vox.application.port.input.usecase.systemadmin;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

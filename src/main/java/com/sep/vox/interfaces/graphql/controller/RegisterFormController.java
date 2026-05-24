@@ -6,7 +6,7 @@ import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.stereotype.Controller;
 
 import com.sep.vox.application.port.input.query.ViewRegisterFormsQuery;
-import com.sep.vox.application.port.input.usecase.schooladmin.ViewRegisterFormsUseCase;
+import com.sep.vox.application.port.input.usecase.systemadmin.ViewRegisterFormsUseCase;
 import com.sep.vox.domain.dto.registerform.RegisterFormDto;
 import com.sep.vox.domain.util.PageResult;
 

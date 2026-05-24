@@ -3,7 +3,7 @@ package com.sep.vox.infrastructure.persistence.mapper;
 import com.sep.vox.domain.model.userrole.UserRole;
 import com.sep.vox.infrastructure.persistence.entity.UserRoleJpaEntity;
 
-public class UserRoleMapper {
+public final class UserRoleMapper {
     
     public static UserRole toDomain(UserRoleJpaEntity jpa) {
         return new UserRole(

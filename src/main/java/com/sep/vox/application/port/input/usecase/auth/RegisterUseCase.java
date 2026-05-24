@@ -9,14 +9,20 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.port.input.command.RegisterCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.response.auth.RegisterResponse;
 import com.sep.vox.domain.model.registerform.RegisterForm;
 import com.sep.vox.domain.model.registerform.RegisterFormStatus;
 import com.sep.vox.domain.repository.RegisterFormRepository;
+import com.sep.vox.domain.valueobject.Email;
+import com.sep.vox.domain.valueobject.FullName;
+import com.sep.vox.domain.valueobject.IdentityNumber;
+import com.sep.vox.domain.valueobject.Phone;
+import com.sep.vox.domain.valueobject.PostalCode;
+import com.sep.vox.domain.valueobject.SchoolDomain;
+import com.sep.vox.domain.valueobject.StudentCount;
 
 
 @Service
-public class RegisterUseCase implements IUseCase<RegisterCommand, RegisterResponse> {
+public class RegisterUseCase implements IUseCase<RegisterCommand, Void> {
 
     private final RegisterFormRepository registerFormRepository;
 
@@ -26,7 +32,7 @@ public class RegisterUseCase implements IUseCase<RegisterCommand, RegisterRespon
 
     @Override
     @Transactional
-    public RegisterResponse execute(RegisterCommand input) {
+    public Void execute(RegisterCommand input) {
         var command = normalize(input);
 
         final var ageThresHold = 18;
@@ -37,18 +43,18 @@ public class RegisterUseCase implements IUseCase<RegisterCommand, RegisterRespon
         }
         var now = OffsetDateTime.now();
         var newRegisterForm = new RegisterForm(
-            command.contactFullName(), 
-            command.identityNumber(), 
-            command.contactPhone(), 
-            command.contactEmail(),
+            new FullName(command.contactFullName()), 
+            new IdentityNumber(command.identityNumber()), 
+            new Phone(command.contactPhone()), 
+            new Email(command.contactEmail()),
             command.dateOfBirth(),
             command.contactAddress(), 
-            command.schoolDomain(), 
+            new SchoolDomain(command.schoolDomain()), 
             command.schoolName(), 
             command.schoolAddress(), 
-            command.postalCode(), 
+            new PostalCode(command.postalCode()), 
             command.position(), 
-            command.studentCount(), 
+            new StudentCount(command.studentCount()), 
             null, 
             RegisterFormStatus.PENDING, 
             now, 

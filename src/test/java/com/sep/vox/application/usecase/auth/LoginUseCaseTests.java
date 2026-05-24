@@ -30,6 +30,7 @@ import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.valueobject.Email;
+import com.sep.vox.domain.valueobject.FullName;
 import com.sep.vox.domain.valueobject.Phone;
 
 public class LoginUseCaseTests {
@@ -132,13 +133,14 @@ public class LoginUseCaseTests {
             new Email("test@example.com"),
             "password-hash",
             new Phone("0987654321"),
-            "Test User",
+            new FullName("Test User"),
             null,
             LocalDate.of(2000, 1, 1),
             "Ho Chi Minh City",
             UserStatus.ACTIVE,
             OffsetDateTime.now(),
             OffsetDateTime.now(),
+            null,
             null,
             null
         );

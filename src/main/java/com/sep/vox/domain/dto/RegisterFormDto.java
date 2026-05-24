@@ -1,4 +1,4 @@
-package com.sep.vox.domain.dto.registerform;
+package com.sep.vox.domain.dto;
 
 import java.time.LocalDate;
 import java.util.UUID;

@@ -2,27 +2,34 @@ package com.sep.vox.domain.mapper;
 
 import java.util.List;
 
-import com.sep.vox.domain.dto.registerform.RegisterFormDto;
+import com.sep.vox.domain.dto.RegisterFormDto;
 import com.sep.vox.domain.model.registerform.RegisterForm;
 import com.sep.vox.domain.util.PageResult;
+import com.sep.vox.domain.valueobject.Email;
+import com.sep.vox.domain.valueobject.FullName;
+import com.sep.vox.domain.valueobject.IdentityNumber;
+import com.sep.vox.domain.valueobject.Phone;
+import com.sep.vox.domain.valueobject.PostalCode;
+import com.sep.vox.domain.valueobject.SchoolDomain;
+import com.sep.vox.domain.valueobject.StudentCount;
 
 public class RegisterFormDtoMapper {
     
     public static RegisterFormDto toRegisterFormDto(RegisterForm registerForm) {
         return new RegisterFormDto(
             registerForm.getId(), 
-            registerForm.getContactFullName(), 
-            registerForm.getIdentityNumber(), 
-            registerForm.getContactPhone(), 
-            registerForm.getContactEmail(), 
+            valueOf(registerForm.getContactFullName()), 
+            valueOf(registerForm.getIdentityNumber()), 
+            valueOf(registerForm.getContactPhone()), 
+            valueOf(registerForm.getContactEmail()), 
             registerForm.getDateOfBirth(), 
             registerForm.getContactAddress(), 
-            registerForm.getSchoolDomain(), 
+            valueOf(registerForm.getSchoolDomain()), 
             registerForm.getSchoolName(), 
             registerForm.getSchoolAddress(), 
-            registerForm.getPostalCode(), 
+            valueOf(registerForm.getPostalCode()), 
             registerForm.getPosition(), 
-            registerForm.getStudentCount(), 
+            valueOf(registerForm.getStudentCount()), 
             registerForm.getReason(), 
             registerForm.getStatus().name()
         );
@@ -42,5 +49,33 @@ public class RegisterFormDtoMapper {
             registerFormPage.totalElements(),
             registerFormPage.totalPages()
         );
+    }
+
+    private static String valueOf(FullName fullName) {
+        return fullName == null ? null : fullName.value();
+    }
+
+    private static String valueOf(IdentityNumber identityNumber) {
+        return identityNumber == null ? null : identityNumber.value();
+    }
+
+    private static String valueOf(Phone phone) {
+        return phone == null ? null : phone.value();
+    }
+
+    private static String valueOf(Email email) {
+        return email == null ? null : email.value();
+    }
+
+    private static String valueOf(SchoolDomain schoolDomain) {
+        return schoolDomain == null ? null : schoolDomain.value();
+    }
+
+    private static String valueOf(PostalCode postalCode) {
+        return postalCode == null ? null : postalCode.value();
+    }
+
+    private static int valueOf(StudentCount studentCount) {
+        return studentCount == null ? 0 : studentCount.value();
     }
 }

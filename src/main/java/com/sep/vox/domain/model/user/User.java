@@ -5,6 +5,7 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import com.sep.vox.domain.valueobject.Email;
+import com.sep.vox.domain.valueobject.FullName;
 import com.sep.vox.domain.valueobject.Phone;
 
 public class User {
@@ -12,7 +13,7 @@ public class User {
     private Email email;
     private String passwordHash;
     private Phone phone;
-    private String fullName;
+    private FullName fullName;
     private Gender gender;
     private LocalDate dateOfBirth;
     private String address;
@@ -21,12 +22,13 @@ public class User {
     private OffsetDateTime updatedAt;
     private UUID createdBy;
     private UUID updatedBy;
+    private UUID schoolId;
 
     public User() {}
 
     public User(UUID id, Email email, String passwordHash, Phone phone,
-            String fullName, Gender gender, LocalDate dateOfBirth, String address, UserStatus status,
-            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            FullName fullName, Gender gender, LocalDate dateOfBirth, String address, UserStatus status,
+            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy, UUID schoolId) {
         this.id = id;
         this.email = email;
         this.passwordHash = passwordHash;
@@ -40,11 +42,12 @@ public class User {
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
         this.updatedBy = updatedBy;
+        this.schoolId = schoolId;
     }
 
     public User(Email email, String passwordHash, Phone phone,
-            String fullName, Gender gender, LocalDate dateOfBirth, String address, UserStatus status,
-            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            FullName fullName, Gender gender, LocalDate dateOfBirth, String address, UserStatus status,
+            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy, UUID schoolId) {
         this.email = email;
         this.passwordHash = passwordHash;
         this.phone = phone;
@@ -57,10 +60,10 @@ public class User {
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
         this.updatedBy = updatedBy;
+        this.schoolId = schoolId;
     }
 
 
-    // Getter and setter
     public UUID getCreatedBy() {
         return createdBy;
     }
@@ -108,11 +111,11 @@ public class User {
         this.phone = phone;
     }
 
-    public String getFullName() {
+    public FullName getFullName() {
         return fullName;
     }
 
-    public void setFullName(String fullName) {
+    public void setFullName(FullName fullName) {
         this.fullName = fullName;
     }
 
@@ -163,5 +166,15 @@ public class User {
     public void setStatus(UserStatus status) {
         this.status = status;
     }
+
+    public UUID getSchoolId() {
+        return schoolId;
+    }
+
+    public void setSchoolId(UUID schoolId) {
+        this.schoolId = schoolId;
+    }
+
+    
     
 }

@@ -3,7 +3,7 @@ package com.sep.vox.infrastructure.persistence.mapper;
 import com.sep.vox.domain.model.session.Session;
 import com.sep.vox.infrastructure.persistence.entity.SessionJpaEntity;
 
-public class SessionMapper {
+public final class SessionMapper {
     
     public static Session toDomain(SessionJpaEntity jpa) {
         return new Session(

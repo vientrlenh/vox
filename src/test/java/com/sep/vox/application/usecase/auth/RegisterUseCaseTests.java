@@ -44,18 +44,18 @@ public class RegisterUseCaseTests {
 
         var savedForm = captor.getValue();
         assertThat(response).isNull();
-        assertThat(savedForm.getContactFullName()).isEqualTo("Nguyen Van A");
-        assertThat(savedForm.getIdentityNumber()).isEqualTo("123456789");
-        assertThat(savedForm.getContactPhone()).isEqualTo("0987654321");
-        assertThat(savedForm.getContactEmail()).isEqualTo("admin@example.com");
+        assertThat(savedForm.getContactFullName().value()).isEqualTo("Nguyen Van A");
+        assertThat(savedForm.getIdentityNumber().value()).isEqualTo("123456789");
+        assertThat(savedForm.getContactPhone().value()).isEqualTo("0987654321");
+        assertThat(savedForm.getContactEmail().value()).isEqualTo("admin@example.com");
         assertThat(savedForm.getDateOfBirth()).isEqualTo(command.dateOfBirth());
         assertThat(savedForm.getContactAddress()).isEqualTo("123 Street");
-        assertThat(savedForm.getSchoolDomain()).isEqualTo("school.edu.vn");
+        assertThat(savedForm.getSchoolDomain().value()).isEqualTo("school.edu.vn");
         assertThat(savedForm.getSchoolName()).isEqualTo("School Name");
         assertThat(savedForm.getSchoolAddress()).isEqualTo("456 School Street");
-        assertThat(savedForm.getPostalCode()).isEqualTo("700000");
+        assertThat(savedForm.getPostalCode().value()).isEqualTo("700000");
         assertThat(savedForm.getPosition()).isEqualTo("Principal");
-        assertThat(savedForm.getStudentCount()).isEqualTo(500);
+        assertThat(savedForm.getStudentCount().value()).isEqualTo(500);
         assertThat(savedForm.getReason()).isNull();
         assertThat(savedForm.getStatus()).isEqualTo(RegisterFormStatus.PENDING);
         assertThat(savedForm.getCreatedAt()).isNotNull();

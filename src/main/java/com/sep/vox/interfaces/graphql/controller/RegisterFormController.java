@@ -7,7 +7,7 @@ import org.springframework.stereotype.Controller;
 
 import com.sep.vox.application.port.input.query.ViewRegisterFormsQuery;
 import com.sep.vox.application.port.input.usecase.systemadmin.ViewRegisterFormsUseCase;
-import com.sep.vox.domain.dto.registerform.RegisterFormDto;
+import com.sep.vox.domain.dto.RegisterFormDto;
 import com.sep.vox.domain.util.PageResult;
 
 @Controller

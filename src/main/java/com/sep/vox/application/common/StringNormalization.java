@@ -48,4 +48,11 @@ public final class StringNormalization {
         text = Normalizer.normalize(text, Normalizer.Form.NFD);
         return text.replaceAll("\\p{M}", "");
     }
+
+    public static String normalizeSchoolCode(String input) {
+        if (input == null) {
+            return null;
+        }
+        return input.strip().toUpperCase(Locale.ROOT);
+    }
 }

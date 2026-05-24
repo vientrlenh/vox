@@ -4,7 +4,7 @@ import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.input.command.RegisterCommand;
 import com.sep.vox.interfaces.rest.dto.request.RegisterRequest;
 
-public class RegisterCommandMapper {
+public final class RegisterCommandMapper {
     
     public static RegisterCommand fromRequest(RegisterRequest request) {
         var dateOfBirth = DateMapper.toLocalDate(request.dateOfBirth().strip());

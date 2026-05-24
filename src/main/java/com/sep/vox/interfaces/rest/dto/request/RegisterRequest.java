@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -21,6 +22,7 @@ public record RegisterRequest(
 
     @NotBlank(message = "Email liên hệ không được để trống")
     @Size(max = 255, message = "Email liên hệ không được vượt quá 255 ký tự")
+    @Email(message = "Email không hợp lệ")
     String contactEmail,
 
     @NotBlank(message = "Ngày sinh không được để trống")

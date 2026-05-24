@@ -13,7 +13,6 @@ import com.sep.vox.application.port.input.command.RegisterCommand;
 import com.sep.vox.application.port.input.usecase.auth.LoginUseCase;
 import com.sep.vox.application.port.input.usecase.auth.RegisterUseCase;
 import com.sep.vox.application.response.auth.LoginResponse;
-import com.sep.vox.application.response.auth.RegisterResponse;
 import com.sep.vox.interfaces.rest.dto.request.LoginRequest;
 import com.sep.vox.interfaces.rest.dto.request.RegisterRequest;
 
@@ -57,9 +56,8 @@ public class AuthControllerTests {
             "Principal",
             500
         );
-        var registerResponse = new RegisterResponse();
 
-        when(registerUseCase.execute(new RegisterCommand(
+        var expectedCommand = new RegisterCommand(
             request.contactFullName(),
             request.identityNumber(),
             request.contactPhone(),
@@ -72,12 +70,13 @@ public class AuthControllerTests {
             request.postalCode(),
             request.position(),
             request.studentCount()
-        ))).thenReturn(registerResponse);
+        );
 
         var response = controller.register(request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().data()).isEqualTo(registerResponse);
+        assertThat(response.getBody().data()).isNull();
+        verify(registerUseCase).execute(expectedCommand);
     }
 }

@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.sep.vox.application.port.input.usecase.auth.LoginUseCase;
 import com.sep.vox.application.port.input.usecase.auth.RegisterUseCase;
 import com.sep.vox.application.response.auth.LoginResponse;
-import com.sep.vox.application.response.auth.RegisterResponse;
 import com.sep.vox.interfaces.rest.dto.request.LoginRequest;
 import com.sep.vox.interfaces.rest.dto.request.RegisterRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
@@ -37,16 +36,16 @@ public class AuthController {
     public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {
         var command = LoginCommandMapper.fromRequest(request);
         var data = loginUseCase.execute(command);
-        var response = new ApiResponse<>("Đăng nhập thành công", data);
+        var response = ApiResponse.success("Đăng nhập thành công", data);
         return ResponseEntity.ok(response);
     }
 
 
     @PostMapping("/v1/auth/register")
-    public ResponseEntity<ApiResponse<RegisterResponse>> register(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<ApiResponse<Object>> register(@Valid @RequestBody RegisterRequest request) {
         var command = RegisterCommandMapper.fromRequest(request);
-        var data = registerUseCase.execute(command);
-        var response = new ApiResponse<>("Đơn đăng ký đã được gửi thành công", data);
+        registerUseCase.execute(command);
+        var response = ApiResponse.success("Đơn đăng ký đã được gửi thành công");
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }

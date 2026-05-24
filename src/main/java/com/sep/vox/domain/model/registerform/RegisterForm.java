@@ -4,20 +4,28 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
+import com.sep.vox.domain.valueobject.Email;
+import com.sep.vox.domain.valueobject.FullName;
+import com.sep.vox.domain.valueobject.IdentityNumber;
+import com.sep.vox.domain.valueobject.Phone;
+import com.sep.vox.domain.valueobject.PostalCode;
+import com.sep.vox.domain.valueobject.SchoolDomain;
+import com.sep.vox.domain.valueobject.StudentCount;
+
 public class RegisterForm {
     private UUID id;
-    private String contactFullName;
-    private String identityNumber;
-    private String contactPhone;
-    private String contactEmail;
+    private FullName contactFullName;
+    private IdentityNumber identityNumber;
+    private Phone contactPhone;
+    private Email contactEmail;
     private LocalDate dateOfBirth;
     private String contactAddress;
-    private String schoolDomain;
+    private SchoolDomain schoolDomain;
     private String schoolName;
     private String schoolAddress;
-    private String postalCode;
+    private PostalCode postalCode;
     private String position;
-    private int studentCount;
+    private StudentCount studentCount;
     private String reason;
     private RegisterFormStatus status;
     private OffsetDateTime createdAt;
@@ -27,10 +35,10 @@ public class RegisterForm {
     public RegisterForm() {
     }
 
-    public RegisterForm(UUID id, String contactFullName, String identityNumber, String contactPhone,
-            String contactEmail, LocalDate dateOfBirth, String contactAddress, String schoolDomain, String schoolName,
-            String schoolAddress, String postalCode,
-            String position, int studentCount, String reason, RegisterFormStatus status, OffsetDateTime createdAt,
+    public RegisterForm(UUID id, FullName contactFullName, IdentityNumber identityNumber, Phone contactPhone,
+            Email contactEmail, LocalDate dateOfBirth, String contactAddress, SchoolDomain schoolDomain, String schoolName,
+            String schoolAddress, PostalCode postalCode,
+            String position, StudentCount studentCount, String reason, RegisterFormStatus status, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID updatedBy) {
         this.id = id;
         this.contactFullName = contactFullName;
@@ -52,10 +60,10 @@ public class RegisterForm {
         this.updatedBy = updatedBy;
     }
 
-    public RegisterForm(String contactFullName, String identityNumber, String contactPhone, String contactEmail, LocalDate dateOfBirth,
+    public RegisterForm(FullName contactFullName, IdentityNumber identityNumber, Phone contactPhone, Email contactEmail, LocalDate dateOfBirth,
             String contactAddress,
-            String schoolDomain, String schoolName, String schoolAddress, String postalCode, String position,
-            int studentCount, String reason, RegisterFormStatus status, OffsetDateTime createdAt,
+            SchoolDomain schoolDomain, String schoolName, String schoolAddress, PostalCode postalCode, String position,
+            StudentCount studentCount, String reason, RegisterFormStatus status, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID updatedBy) {
         this.contactFullName = contactFullName;
         this.identityNumber = identityNumber;
@@ -76,19 +84,19 @@ public class RegisterForm {
         this.updatedBy = updatedBy;
     }
 
-    public String getSchoolDomain() {
+    public SchoolDomain getSchoolDomain() {
         return schoolDomain;
     }
 
-    public void setSchoolDomain(String schoolDomain) {
+    public void setSchoolDomain(SchoolDomain schoolDomain) {
         this.schoolDomain = schoolDomain;
     }
 
-    public int getStudentCount() {
+    public StudentCount getStudentCount() {
         return studentCount;
     }
 
-    public void setStudentCount(int studentCount) {
+    public void setStudentCount(StudentCount studentCount) {
         this.studentCount = studentCount;
     }
 
@@ -100,19 +108,19 @@ public class RegisterForm {
         this.id = id;
     }
 
-    public String getContactFullName() {
+    public FullName getContactFullName() {
         return contactFullName;
     }
 
-    public void setContactFullName(String contactFullName) {
+    public void setContactFullName(FullName contactFullName) {
         this.contactFullName = contactFullName;
     }
 
-    public String getIdentityNumber() {
+    public IdentityNumber getIdentityNumber() {
         return identityNumber;
     }
 
-    public void setIdentityNumber(String identityNumber) {
+    public void setIdentityNumber(IdentityNumber identityNumber) {
         this.identityNumber = identityNumber;
     }
 
@@ -132,12 +140,12 @@ public class RegisterForm {
         this.schoolAddress = schoolAddress;
     }
 
-    public String getPostalCode() {
+    public PostalCode getPostalCode() {
         return postalCode;
     }
 
-    public void setPostalCode(String taxCode) {
-        this.postalCode = taxCode;
+    public void setPostalCode(PostalCode postalCode) {
+        this.postalCode = postalCode;
     }
 
     public String getPosition() {
@@ -172,19 +180,19 @@ public class RegisterForm {
         this.updatedAt = updatedAt;
     }
 
-    public String getContactPhone() {
+    public Phone getContactPhone() {
         return contactPhone;
     }
 
-    public void setContactPhone(String contactPhone) {
+    public void setContactPhone(Phone contactPhone) {
         this.contactPhone = contactPhone;
     }
 
-    public String getContactEmail() {
+    public Email getContactEmail() {
         return contactEmail;
     }
 
-    public void setContactEmail(String contactEmail) {
+    public void setContactEmail(Email contactEmail) {
         this.contactEmail = contactEmail;
     }
 

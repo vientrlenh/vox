@@ -3,10 +3,12 @@ package com.sep.vox.domain.model.role;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
+import com.sep.vox.domain.valueobject.RoleCode;
+
 
 public class Role {
     private UUID id;
-    private String code;
+    private RoleCode code;
     private String name;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
@@ -17,7 +19,7 @@ public class Role {
     public Role() {
     }
 
-    public Role(UUID id, String code, String name, OffsetDateTime createdAt, OffsetDateTime updatedAt,
+    public Role(UUID id, RoleCode code, String name, OffsetDateTime createdAt, OffsetDateTime updatedAt,
             UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.code = code;
@@ -28,7 +30,7 @@ public class Role {
         this.updatedBy = updatedBy;
     }
 
-    public Role(String code, String name, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+    public Role(RoleCode code, String name, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.code = code;
         this.name = name;
         this.createdAt = createdAt;
@@ -44,10 +46,10 @@ public class Role {
     public void setId(UUID id) {
         this.id = id;
     }
-    public String getCode() {
+    public RoleCode getCode() {
         return code;
     }
-    public void setCode(String code) {
+    public void setCode(RoleCode code) {
         this.code = code;
     }
     public String getName() {

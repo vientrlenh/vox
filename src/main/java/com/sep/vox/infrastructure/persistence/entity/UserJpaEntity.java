@@ -14,7 +14,8 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "users", indexes = {
     @Index(columnList = "email", name = "idx_user_email", unique = true),
-    @Index(columnList = "phone", name = "idx_user_phone", unique = true)
+    @Index(columnList = "phone", name = "idx_user_phone", unique = true),
+    @Index(columnList = "school_id", name = "idx_user_school")
 })
 public class UserJpaEntity {
     
@@ -63,11 +64,14 @@ public class UserJpaEntity {
     @Column(name = "updated_by")
     private UUID updatedBy;
 
+    @Column(name = "school_id")
+    private UUID schoolId;
+
     protected UserJpaEntity() {}
 
     public UserJpaEntity(UUID id, String email, String passwordHash, String phone,
             String fullName, String gender, LocalDate dateOfBirth, String address, String status,
-            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy, UUID schoolId) {
         this.id = id;
         this.email = email;
         this.passwordHash = passwordHash;
@@ -81,9 +85,10 @@ public class UserJpaEntity {
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
         this.updatedBy = updatedBy;
+        this.schoolId = schoolId;
     }
 
-
+    
 
     public UUID getId() {
         return id;
@@ -187,6 +192,14 @@ public class UserJpaEntity {
 
     public void setUpdatedBy(UUID updatedBy) {
         this.updatedBy = updatedBy;
+    }
+
+    public UUID getSchoolId() {
+        return schoolId;
+    }
+
+    public void setSchoolId(UUID schoolId) {
+        this.schoolId = schoolId;
     }
     
     

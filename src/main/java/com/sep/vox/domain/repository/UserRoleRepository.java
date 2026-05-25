@@ -9,4 +9,5 @@ public interface UserRoleRepository {
     List<UserRole> findByRoleId(UUID id);
     List<UserRole> findByUserId(UUID id);
     UserRole save(UserRole userRole);
+    boolean existsByRoleId(UUID roleId);
 }

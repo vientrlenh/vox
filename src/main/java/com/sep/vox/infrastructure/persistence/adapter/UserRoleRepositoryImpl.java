@@ -41,5 +41,10 @@ public class UserRoleRepositoryImpl implements UserRoleRepository {
         var saved = springDataUserRoleRepository.save(entity);
         return UserRoleMapper.toDomain(saved);
     }
+
+    @Override
+    public boolean existsByRoleId(UUID roleId) {
+        return springDataUserRoleRepository.existsByRoleId(roleId);
+    }
     
 }

@@ -69,6 +69,10 @@ public class SystemAdminUserInitializer implements ApplicationRunner {
             LOGGER.info("System admin role is not in database. Skip initialize system admin user");
             return;
         }
+        if (userRoleRepository.existsByRoleId(systemAdminRole.getId())) {
+            LOGGER.info("System admin user is already in database. Skip initialize admin user");
+            return;
+        }
         var systemAdminUser = systemAdminUser();
         var savedUser = userRepository.save(systemAdminUser);
 

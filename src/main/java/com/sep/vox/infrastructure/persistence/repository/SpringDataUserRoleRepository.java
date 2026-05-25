@@ -10,4 +10,5 @@ import com.sep.vox.infrastructure.persistence.entity.UserRoleJpaEntity;
 public interface SpringDataUserRoleRepository extends JpaRepository<UserRoleJpaEntity, Long> {
     List<UserRoleJpaEntity> findByUserId(UUID userId);
     List<UserRoleJpaEntity> findByRoleId(UUID roleId);
+    boolean existsByRoleId(UUID roleId);
 }

@@ -11,4 +11,5 @@ public interface RoleRepository {
     Optional<Role> findById(UUID id);
     List<Role> findByName(String name);
     Role save(Role role);
+    long count();
 }

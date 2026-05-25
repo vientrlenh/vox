@@ -46,5 +46,10 @@ public class RoleRepositoryImpl implements RoleRepository {
         var saved = springDataRoleRepository.save(entity);
         return RoleMapper.toDomain(saved);
     }
+
+    @Override
+    public long count() {
+        return springDataRoleRepository.count();
+    }
     
 }

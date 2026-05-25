@@ -55,3 +55,11 @@ logging:
 server:
   port: 8080
   shutdown: graceful
+
+system-admin:
+  email: ${SYS_ADMIN_EMAIL}
+  password: ${SYS_ADMIN_PASSWORD}
+  phone: ${SYS_ADMIN_PHONE}
+  fullName: ${SYS_ADMIN_FULLNAME}
+  dateOfBirth: ${SYS_ADMIN_DATE_OF_BIRTH}
+  address: ${SYS_ADMIN_ADDRESS}

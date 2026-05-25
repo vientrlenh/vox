@@ -5,10 +5,10 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
+import com.sep.vox.domain.common.PageRequest;
+import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.repository.SchoolRepository;
-import com.sep.vox.domain.util.PageRequest;
-import com.sep.vox.domain.util.PageResult;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolRepository;
 
@@ -59,6 +59,11 @@ public class SchoolRepositoryImpl implements SchoolRepository {
         var entity = SchoolMapper.toJpa(school);
         var saved = springDataSchoolRepository.save(entity);
         return SchoolMapper.toDomain(saved);
+    }
+
+    @Override
+    public boolean existsById(UUID id) {
+        return springDataSchoolRepository.existsById(id);
     }
     
 }

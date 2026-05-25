@@ -1,4 +1,4 @@
-package com.sep.vox.domain.util;
+package com.sep.vox.domain.common;
 
 public record PageRequest(
     int page,

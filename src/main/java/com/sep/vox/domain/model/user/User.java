@@ -1,9 +1,9 @@
 package com.sep.vox.domain.model.user;
 
-import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
+import com.sep.vox.domain.valueobject.DateOfBirth;
 import com.sep.vox.domain.valueobject.Email;
 import com.sep.vox.domain.valueobject.FullName;
 import com.sep.vox.domain.valueobject.Phone;
@@ -15,7 +15,7 @@ public class User {
     private Phone phone;
     private FullName fullName;
     private Gender gender;
-    private LocalDate dateOfBirth;
+    private DateOfBirth dateOfBirth;
     private String address;
     private UserStatus status;
     private OffsetDateTime createdAt;
@@ -27,7 +27,7 @@ public class User {
     public User() {}
 
     public User(UUID id, Email email, String passwordHash, Phone phone,
-            FullName fullName, Gender gender, LocalDate dateOfBirth, String address, UserStatus status,
+            FullName fullName, Gender gender, DateOfBirth dateOfBirth, String address, UserStatus status,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy, UUID schoolId) {
         this.id = id;
         this.email = email;
@@ -46,7 +46,7 @@ public class User {
     }
 
     public User(Email email, String passwordHash, Phone phone,
-            FullName fullName, Gender gender, LocalDate dateOfBirth, String address, UserStatus status,
+            FullName fullName, Gender gender, DateOfBirth dateOfBirth, String address, UserStatus status,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy, UUID schoolId) {
         this.email = email;
         this.passwordHash = passwordHash;
@@ -127,11 +127,11 @@ public class User {
         this.gender = gender;
     }
 
-    public LocalDate getDateOfBirth() {
+    public DateOfBirth getDateOfBirth() {
         return dateOfBirth;
     }
 
-    public void setDateOfBirth(LocalDate dateOfBirth) {
+    public void setDateOfBirth(DateOfBirth dateOfBirth) {
         this.dateOfBirth = dateOfBirth;
     }
 

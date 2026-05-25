@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.auth;
 
-import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
 import org.springframework.stereotype.Service;
@@ -12,6 +11,7 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.model.registerform.RegisterForm;
 import com.sep.vox.domain.model.registerform.RegisterFormStatus;
 import com.sep.vox.domain.repository.RegisterFormRepository;
+import com.sep.vox.domain.valueobject.DateOfBirth;
 import com.sep.vox.domain.valueobject.Email;
 import com.sep.vox.domain.valueobject.FullName;
 import com.sep.vox.domain.valueobject.IdentityNumber;
@@ -35,19 +35,13 @@ public class RegisterUseCase implements IUseCase<RegisterCommand, Void> {
     public Void execute(RegisterCommand input) {
         var command = normalize(input);
 
-        final var ageThresHold = 18;
-        var today = LocalDate.now().getYear();
-        var ageFromDateOfBirth = today - input.dateOfBirth().getYear();
-        if (ageFromDateOfBirth < ageThresHold) {
-            throw new IllegalArgumentException("Bạn chưa đủ tuổi để thực hiện việc đăng ký vào hệ thống");
-        }
         var now = OffsetDateTime.now();
         var newRegisterForm = new RegisterForm(
             new FullName(command.contactFullName()), 
             new IdentityNumber(command.identityNumber()), 
             new Phone(command.contactPhone()), 
             new Email(command.contactEmail()),
-            command.dateOfBirth(),
+            new DateOfBirth(command.dateOfBirth()),
             command.contactAddress(), 
             new SchoolDomain(command.schoolDomain()), 
             command.schoolName(), 

@@ -2,9 +2,9 @@ package com.sep.vox.domain.mapper;
 
 import java.util.List;
 
+import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolDto;
 import com.sep.vox.domain.model.school.School;
-import com.sep.vox.domain.util.PageResult;
 import com.sep.vox.domain.valueobject.Email;
 import com.sep.vox.domain.valueobject.Phone;
 import com.sep.vox.domain.valueobject.SchoolCode;

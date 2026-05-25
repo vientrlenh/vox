@@ -16,6 +16,7 @@ import com.sep.vox.config.TestContainerConfig;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.UserRepository;
+import com.sep.vox.domain.valueobject.DateOfBirth;
 import com.sep.vox.domain.valueobject.Email;
 import com.sep.vox.domain.valueobject.FullName;
 import com.sep.vox.domain.valueobject.Phone;
@@ -43,7 +44,7 @@ public class UserRepositoryTests {
             new Phone("0987654321"),
             new FullName("Test User"),
             null,
-            LocalDate.of(2000, 1, 1),
+            new DateOfBirth(LocalDate.of(2000, 1, 1)),
             "Ho Chi Minh City",
             UserStatus.ACTIVE,
             OffsetDateTime.now(),

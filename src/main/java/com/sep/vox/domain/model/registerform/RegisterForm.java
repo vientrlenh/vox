@@ -1,9 +1,9 @@
 package com.sep.vox.domain.model.registerform;
 
-import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
+import com.sep.vox.domain.valueobject.DateOfBirth;
 import com.sep.vox.domain.valueobject.Email;
 import com.sep.vox.domain.valueobject.FullName;
 import com.sep.vox.domain.valueobject.IdentityNumber;
@@ -18,7 +18,7 @@ public class RegisterForm {
     private IdentityNumber identityNumber;
     private Phone contactPhone;
     private Email contactEmail;
-    private LocalDate dateOfBirth;
+    private DateOfBirth dateOfBirth;
     private String contactAddress;
     private SchoolDomain schoolDomain;
     private String schoolName;
@@ -36,7 +36,7 @@ public class RegisterForm {
     }
 
     public RegisterForm(UUID id, FullName contactFullName, IdentityNumber identityNumber, Phone contactPhone,
-            Email contactEmail, LocalDate dateOfBirth, String contactAddress, SchoolDomain schoolDomain, String schoolName,
+            Email contactEmail, DateOfBirth dateOfBirth, String contactAddress, SchoolDomain schoolDomain, String schoolName,
             String schoolAddress, PostalCode postalCode,
             String position, StudentCount studentCount, String reason, RegisterFormStatus status, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID updatedBy) {
@@ -60,7 +60,7 @@ public class RegisterForm {
         this.updatedBy = updatedBy;
     }
 
-    public RegisterForm(FullName contactFullName, IdentityNumber identityNumber, Phone contactPhone, Email contactEmail, LocalDate dateOfBirth,
+    public RegisterForm(FullName contactFullName, IdentityNumber identityNumber, Phone contactPhone, Email contactEmail, DateOfBirth dateOfBirth,
             String contactAddress,
             SchoolDomain schoolDomain, String schoolName, String schoolAddress, PostalCode postalCode, String position,
             StudentCount studentCount, String reason, RegisterFormStatus status, OffsetDateTime createdAt,
@@ -220,11 +220,11 @@ public class RegisterForm {
         this.contactAddress = contactAddress;
     }
 
-    public LocalDate getDateOfBirth() {
+    public DateOfBirth getDateOfBirth() {
         return dateOfBirth;
     }
 
-    public void setDateOfBirth(LocalDate dateOfBirth) {
+    public void setDateOfBirth(DateOfBirth dateOfBirth) {
         this.dateOfBirth = dateOfBirth;
     }
 

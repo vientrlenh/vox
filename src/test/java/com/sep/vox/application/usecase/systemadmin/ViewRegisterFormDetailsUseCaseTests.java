@@ -20,6 +20,7 @@ import com.sep.vox.application.port.input.usecase.systemadmin.ViewRegisterFormDe
 import com.sep.vox.domain.model.registerform.RegisterForm;
 import com.sep.vox.domain.model.registerform.RegisterFormStatus;
 import com.sep.vox.domain.repository.RegisterFormRepository;
+import com.sep.vox.domain.valueobject.DateOfBirth;
 import com.sep.vox.domain.valueobject.Email;
 import com.sep.vox.domain.valueobject.FullName;
 import com.sep.vox.domain.valueobject.IdentityNumber;
@@ -86,7 +87,7 @@ public class ViewRegisterFormDetailsUseCaseTests {
             new IdentityNumber("123456789"),
             new Phone("0987654321"),
             new Email("admin@example.com"),
-            LocalDate.of(2000, 5, 24),
+            new DateOfBirth(LocalDate.of(2000, 5, 24)),
             "123 Street",
             new SchoolDomain("school.edu.vn"),
             "School Name",

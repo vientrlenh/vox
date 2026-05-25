@@ -1,10 +1,12 @@
 package com.sep.vox.domain.mapper;
 
+import java.time.LocalDate;
 import java.util.List;
 
+import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.RegisterFormDto;
 import com.sep.vox.domain.model.registerform.RegisterForm;
-import com.sep.vox.domain.util.PageResult;
+import com.sep.vox.domain.valueobject.DateOfBirth;
 import com.sep.vox.domain.valueobject.Email;
 import com.sep.vox.domain.valueobject.FullName;
 import com.sep.vox.domain.valueobject.IdentityNumber;
@@ -22,7 +24,7 @@ public class RegisterFormDtoMapper {
             valueOf(registerForm.getIdentityNumber()), 
             valueOf(registerForm.getContactPhone()), 
             valueOf(registerForm.getContactEmail()), 
-            registerForm.getDateOfBirth(), 
+            valueOf(registerForm.getDateOfBirth()), 
             registerForm.getContactAddress(), 
             valueOf(registerForm.getSchoolDomain()), 
             registerForm.getSchoolName(), 
@@ -77,5 +79,9 @@ public class RegisterFormDtoMapper {
 
     private static int valueOf(StudentCount studentCount) {
         return studentCount == null ? 0 : studentCount.value();
+    }
+
+    private static LocalDate valueOf(DateOfBirth dateOfBirth) {
+        return dateOfBirth == null ? null : dateOfBirth.value();
     }
 }

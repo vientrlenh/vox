@@ -1,8 +1,11 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
+import java.time.LocalDate;
+
 import com.sep.vox.domain.model.user.Gender;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
+import com.sep.vox.domain.valueobject.DateOfBirth;
 import com.sep.vox.domain.valueobject.Email;
 import com.sep.vox.domain.valueobject.FullName;
 import com.sep.vox.domain.valueobject.Phone;
@@ -17,8 +20,8 @@ public final class UserMapper {
             jpa.getPasswordHash(),
             new Phone(jpa.getPhone()),
             new FullName(jpa.getFullName()),
-            jpa.getGender() != null ? Gender.valueOf(jpa.getGender()) : null,
-            jpa.getDateOfBirth(),
+            gender(jpa.getGender()),
+            new DateOfBirth(jpa.getDateOfBirth()),
             jpa.getAddress(),
             UserStatus.valueOf(jpa.getStatus()),
             jpa.getCreatedAt(),
@@ -36,8 +39,8 @@ public final class UserMapper {
             user.getPasswordHash(),  
             valueOf(user.getPhone()), 
             valueOf(user.getFullName()), 
-            user.getGender() != null ? user.getGender().name() : null, 
-            user.getDateOfBirth(), 
+            genderValue(user.getGender()), 
+            valueOf(user.getDateOfBirth()), 
             user.getAddress(), 
             user.getStatus().name(), 
             user.getCreatedAt(), 
@@ -58,5 +61,17 @@ public final class UserMapper {
 
     private static String valueOf(FullName fullName) {
         return fullName == null ? null : fullName.value();
+    }
+
+    private static LocalDate valueOf(DateOfBirth dateOfBirth) {
+        return dateOfBirth == null ? null : dateOfBirth.value();
+    }
+
+    private static String genderValue(Gender gender) {
+        return gender == null ? null : gender.name();
+    }
+
+    private static Gender gender(String genderValue) {
+        return genderValue == null ? null : Gender.valueOf(genderValue);
     }
 }

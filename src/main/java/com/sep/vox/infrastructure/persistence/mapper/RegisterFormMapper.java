@@ -1,7 +1,10 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
+import java.time.LocalDate;
+
 import com.sep.vox.domain.model.registerform.RegisterForm;
 import com.sep.vox.domain.model.registerform.RegisterFormStatus;
+import com.sep.vox.domain.valueobject.DateOfBirth;
 import com.sep.vox.domain.valueobject.Email;
 import com.sep.vox.domain.valueobject.FullName;
 import com.sep.vox.domain.valueobject.IdentityNumber;
@@ -20,7 +23,7 @@ public final class RegisterFormMapper {
             new IdentityNumber(jpa.getIdentityNumber()), 
             new Phone(jpa.getContactPhone()), 
             new Email(jpa.getContactEmail()), 
-            jpa.getDateOfBirth(),
+            new DateOfBirth(jpa.getDateOfBirth()),
             jpa.getContactAddress(),
             new SchoolDomain(jpa.getSchoolDomain()),
             jpa.getSchoolName(), 
@@ -43,7 +46,7 @@ public final class RegisterFormMapper {
             valueOf(registerForm.getIdentityNumber()), 
             valueOf(registerForm.getContactPhone()), 
             valueOf(registerForm.getContactEmail()), 
-            registerForm.getDateOfBirth(),
+            valueOf(registerForm.getDateOfBirth()),
             registerForm.getContactAddress(),
             valueOf(registerForm.getSchoolDomain()), 
             registerForm.getSchoolName(), 
@@ -85,5 +88,9 @@ public final class RegisterFormMapper {
 
     private static int valueOf(StudentCount studentCount) {
         return studentCount == null ? 0 : studentCount.value();
+    }
+
+    private static LocalDate valueOf(DateOfBirth dateOfBirth) {
+        return dateOfBirth == null ? null : dateOfBirth.value();
     }
 }

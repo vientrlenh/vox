@@ -7,5 +7,17 @@ spring:
         properties:
             hibernate:
                 format-sql: true
+
+    mail:
+        username: test@example.com
+        password: test-password
 jwt:
     secret: test-access-secret-oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
+
+system-admin:
+  email: sysadmin@example.com
+  password: TestPassword123!
+  phone: 0987654321
+  fullName: System Admin
+  dateOfBirth: 1990-01-01
+  address: Test Address

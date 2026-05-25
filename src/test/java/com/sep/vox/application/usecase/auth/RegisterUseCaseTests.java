@@ -48,7 +48,7 @@ public class RegisterUseCaseTests {
         assertThat(savedForm.getIdentityNumber().value()).isEqualTo("123456789");
         assertThat(savedForm.getContactPhone().value()).isEqualTo("0987654321");
         assertThat(savedForm.getContactEmail().value()).isEqualTo("admin@example.com");
-        assertThat(savedForm.getDateOfBirth()).isEqualTo(command.dateOfBirth());
+        assertThat(savedForm.getDateOfBirth().value()).isEqualTo(command.dateOfBirth());
         assertThat(savedForm.getContactAddress()).isEqualTo("123 Street");
         assertThat(savedForm.getSchoolDomain().value()).isEqualTo("school.edu.vn");
         assertThat(savedForm.getSchoolName()).isEqualTo("School Name");

@@ -26,6 +26,7 @@ public class GlobalExceptionHandler {
     private static final String DUPLICATED_ERROR = "DUPLICATED";
     private static final String NOT_FOUND_ERROR = "NOT_FOUND";
     private static final String ILLEGAL_ARGUMENT_ERROR = "ILLEGAL_ARGUMENT";
+    private static final String INVALID_STATE_ERROR = "INVALID_STATE";
     private static final String VALIDATION_ERROR = "BAD_REQUEST";
     private static final String INTERNAL_ERROR = "INTERNAL_SERVER_ERROR";
 
@@ -49,6 +50,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException e) {
         var error = new ErrorResponse(ILLEGAL_ARGUMENT_ERROR, e.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalState(IllegalStateException e) {
+        var error = new ErrorResponse(INVALID_STATE_ERROR, e.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 

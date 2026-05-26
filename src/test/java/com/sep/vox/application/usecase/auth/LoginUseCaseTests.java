@@ -86,7 +86,7 @@ public class LoginUseCaseTests {
             .thenReturn(Optional.of(user));
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId))
             .thenReturn(roles);
-        when(authTokenPort.generateJwtToken(userId.toString(), List.of("SCHOOL_ADMIN")))
+        when(authTokenPort.generateJwtToken(userId.toString(), user.getEmail().value(), List.of("SCHOOL_ADMIN")))
             .thenReturn("access-token");
         when(sessionManagerPort.generateToken())
             .thenReturn(new GeneratedSessionToken("refresh-token", "hashed-refresh-token"));
@@ -100,7 +100,7 @@ public class LoginUseCaseTests {
         verify(authenticationManagerPort).setAuthenticationAndGetUserEmail("test@example.com", "123456");
         verify(userRepository).findByEmail("test@example.com");
         verify(userRoleQueryRepository).findByUserIdWithRoleInfo(userId);
-        verify(authTokenPort).generateJwtToken(userId.toString(), List.of("SCHOOL_ADMIN"));
+        verify(authTokenPort).generateJwtToken(userId.toString(), user.getEmail().value(), List.of("SCHOOL_ADMIN"));
         verify(sessionManagerPort).generateToken();
         verify(sessionRepository).save(any(Session.class));
     }

@@ -1,18 +1,45 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
+import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.sep.vox.infrastructure.persistence.entity.RegisterFormJpaEntity;
 
 import jakarta.persistence.LockModeType;
 
 public interface SpringDataRegisterFormRepository extends JpaRepository<RegisterFormJpaEntity, UUID> {
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT r FROM RegisterFormJpaEntity r WHERE r.id = :id")
-    Optional<RegisterFormJpaEntity> findByIdForUpdate(UUID id);
+    Optional<RegisterFormJpaEntity> findByIdForUpdate(@Param("id") UUID id);
+
+    @Modifying
+    @Query("""
+        UPDATE RegisterFormJpaEntity r 
+        SET r.status = 'APPROVED', 
+            r.updatedAt = :now, 
+            r.updatedBy = :updatedBy 
+        WHERE r.id = :id 
+        AND r.status = 'PENDING'
+            """)
+    int updateApprovedRegisterForm(@Param("id") UUID id, @Param("updatedBy") UUID updatedBy, @Param("now") OffsetDateTime now);
+
+    @Modifying
+    @Query("""
+        UPDATE RegisterFormJpaEntity r 
+        SET r.updatedAt = :now, 
+            r.status = 'REJECTED',
+            r.reason = :reason,  
+            r.updatedBy = :updatedBy 
+        WHERE r.id = :id 
+        AND r.status = 'PENDING'
+    """)
+    int updateRejectedRegisterForm(@Param("id") UUID id, @Param("updatedBy") UUID updatedBy, @Param("reason") String reason, @Param("now") OffsetDateTime now);
 }

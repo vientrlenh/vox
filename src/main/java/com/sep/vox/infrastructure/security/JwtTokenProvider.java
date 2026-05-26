@@ -34,9 +34,10 @@ public class JwtTokenProvider implements AuthTokenPort {
     private static final Logger LOGGER = LoggerFactory.getLogger(JwtTokenProvider.class);
 
     @Override
-    public String generateJwtToken(String userId, List<String> roles) {
+    public String generateJwtToken(String userId, String email, List<String> roles) {
         var claims = new HashMap<String, Object>();
         claims.put("userId", userId);
+        claims.put("email", email);
         claims.put("roles", roles);
         return createToken(userId, claims, expirationMs, secret);
     }

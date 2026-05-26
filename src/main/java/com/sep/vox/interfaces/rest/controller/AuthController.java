@@ -10,14 +10,15 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.sep.vox.application.port.input.usecase.auth.LoginUseCase;
 import com.sep.vox.application.port.input.usecase.auth.RegisterUseCase;
-
+import com.sep.vox.application.port.input.usecase.auth.SetUpPasswordUseCase;
 import com.sep.vox.application.response.input.auth.LoginResponse;
 import com.sep.vox.interfaces.rest.dto.request.LoginRequest;
 import com.sep.vox.interfaces.rest.dto.request.RegisterRequest;
+import com.sep.vox.interfaces.rest.dto.request.SetUpPasswordRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 import com.sep.vox.interfaces.rest.mapper.LoginCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.RegisterCommandMapper;
-
+import com.sep.vox.interfaces.rest.mapper.SetUpPasswordCommandMapper;
 
 import jakarta.validation.Valid;
 
@@ -29,10 +30,12 @@ public class AuthController {
     
     private final LoginUseCase loginUseCase;
     private final RegisterUseCase registerUseCase;
+    private final SetUpPasswordUseCase setUpPasswordUseCase;
 
-    public AuthController(LoginUseCase loginUseCase, RegisterUseCase registerUseCase) {
+    public AuthController(LoginUseCase loginUseCase, RegisterUseCase registerUseCase, SetUpPasswordUseCase setUpPasswordUseCase) {
         this.loginUseCase = loginUseCase;
         this.registerUseCase = registerUseCase;
+        this.setUpPasswordUseCase = setUpPasswordUseCase;
     }
 
     @PostMapping("/login")
@@ -53,5 +56,11 @@ public class AuthController {
     }
 
 
-
+    @PostMapping("/setup-password")
+    public ResponseEntity<ApiResponse<Object>> setUpPassword(@Valid @RequestBody SetUpPasswordRequest request) {
+        var command = SetUpPasswordCommandMapper.fromRequest(request);
+        setUpPasswordUseCase.execute(command);
+        var response = ApiResponse.success("Mật khẩu đã được thiết lập thành công");
+        return ResponseEntity.ok(response);
+    }
 }

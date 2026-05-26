@@ -2,6 +2,7 @@ package com.sep.vox.interfaces.graphql.exception;
 
 import org.springframework.graphql.execution.DataFetcherExceptionResolverAdapter;
 import org.springframework.graphql.execution.ErrorType;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Component;
 
 import com.sep.vox.application.exception.DuplicatedException;
@@ -40,6 +41,24 @@ public class GlobalExceptionResolver extends DataFetcherExceptionResolverAdapter
                 .path(env.getExecutionStepInfo().getPath())
                 .location(env.getField().getSourceLocation())
                 .build();
+        }
+
+        if (ex instanceof IllegalStateException) {
+            return GraphQLError.newError()
+                .errorType(ErrorType.BAD_REQUEST)
+                .message(ex.getMessage())
+                .path(env.getExecutionStepInfo().getPath())
+                .location(env.getField().getSourceLocation())
+                .build();
+        }
+
+        if (ex instanceof AccessDeniedException) {
+            return GraphQLError.newError()
+                    .errorType(ErrorType.FORBIDDEN)
+                    .message(ex.getMessage())
+                    .path(env.getExecutionStepInfo().getPath())
+                    .location(env.getField().getSourceLocation())
+                    .build();
         }
 
         return GraphQLError.newError()

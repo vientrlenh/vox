@@ -1,6 +1,7 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -37,7 +38,8 @@ public record ApproveRegisterFormRequest(
 
     @NotNull(message = "Số lượng học sinh của trường không được để trống")
     @Min(value = 1, message = "Số lượng học sinh không được dưới 1")
-    int studentCount,
+    @Max(value = Integer.MAX_VALUE, message = "Số học sinh không được vượt quá " + Integer.MAX_VALUE)
+    Integer studentCount,
 
     @NotBlank(message = "Tên liên hệ đầy đủ không được để trống")
     @Size(max = 255, message = "Tên liên hệ đầy đủ không được để trống")

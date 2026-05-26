@@ -1,5 +1,6 @@
 package com.sep.vox.domain.repository;
 
+import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -12,4 +13,6 @@ public interface RegisterFormRepository {
     Optional<RegisterForm> findById(UUID id);
     PageResult<RegisterForm> findAll(PageRequest pageRequest);
     Optional<RegisterForm> findByIdForUpdate(UUID id);
+    int updateApprovedRegisterForm(UUID id, UUID updatedBy, OffsetDateTime now);
+    int updateRejectedRegisterForm(UUID id, UUID updatedBy, String reason, OffsetDateTime now);
 }

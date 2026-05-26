@@ -15,7 +15,6 @@ import com.sep.vox.application.port.output.EventPublisherPort;
 import com.sep.vox.application.port.output.PasswordSetUpTokenPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.passwordsetuptoken.PasswordSetUpToken;
-import com.sep.vox.domain.model.registerform.RegisterForm;
 import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.userrole.UserRole;
@@ -66,17 +65,20 @@ public class ApproveRegisterFormUseCase implements IUseCase<ApproveRegisterFormC
     @Transactional
     public Void execute(ApproveRegisterFormCommand input) {
         var command = normalize(input);
+        var now = OffsetDateTime.now();
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+
         var schoolAdminRole = roleRepository.findByCode("SCHOOL_ADMIN")
             .orElseThrow(() -> new NotFoundException("Không tìm thấy vai trò quản trị nhà trường"));
         
-        var registerForm = registerFormRepository.findByIdForUpdate(command.registerFormId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn đăng ký"));
-        updateApprovedRegisterForm(registerForm, currentUserId);
+        var updatedRows = registerFormRepository.updateApprovedRegisterForm(command.registerFormId(), currentUserId, now);
+        if (updatedRows == 0) {
+            throw new IllegalStateException("Đơn đăng ký không ở trạng thái chờ hoặc không tồn tại");
+        }
 
 
-        var savedSchool = saveSchool(command, currentUserId);
-        var savedSchoolAdmin = saveSchoolAdmin(command, currentUserId, savedSchool.getId());
+        var savedSchool = saveSchool(command, currentUserId, now);
+        var savedSchoolAdmin = saveSchoolAdmin(command, currentUserId, savedSchool.getId(), now);
         saveSchoolAdminUserRole(savedSchoolAdmin.getId(), schoolAdminRole.getId());
 
         var passwordToken = passwordSetUpTokenPort.generateToken();
@@ -111,12 +113,7 @@ public class ApproveRegisterFormUseCase implements IUseCase<ApproveRegisterFormC
         );
     }
 
-    private void updateApprovedRegisterForm(RegisterForm registerForm, UUID updatedUserId) {
-        registerForm.approve(updatedUserId);
-        registerFormRepository.save(registerForm);
-    }
-
-    private School saveSchool(ApproveRegisterFormCommand command, UUID createdUserId) {
+    private School saveSchool(ApproveRegisterFormCommand command, UUID createdUserId, OffsetDateTime now) {
         var school = School.create(
             command.schoolCode(), 
             command.schoolName(), 
@@ -126,12 +123,13 @@ public class ApproveRegisterFormUseCase implements IUseCase<ApproveRegisterFormC
             command.schoolDomain(), 
             command.schoolAddress(), 
             command.studentCount(), 
-            createdUserId
+            createdUserId,
+            now
         );
         return schoolRepository.save(school);
     }
 
-    private User saveSchoolAdmin(ApproveRegisterFormCommand command, UUID createdUserId, UUID schoolId) {
+    private User saveSchoolAdmin(ApproveRegisterFormCommand command, UUID createdUserId, UUID schoolId, OffsetDateTime now) {
         var schoolAdmin = User.createSchoolAdmin(
             command.contactEmail(), 
             PASSWORD_NOT_SET, 
@@ -140,7 +138,8 @@ public class ApproveRegisterFormUseCase implements IUseCase<ApproveRegisterFormC
             command.dateOfBirth(), 
             command.contactAddress(), 
             createdUserId, 
-            schoolId
+            schoolId, 
+            now
         );
         return userRepository.save(schoolAdmin);
     }

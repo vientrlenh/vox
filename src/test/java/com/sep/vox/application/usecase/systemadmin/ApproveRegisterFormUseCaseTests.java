@@ -3,6 +3,7 @@ package com.sep.vox.application.usecase.systemadmin;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -27,8 +28,6 @@ import com.sep.vox.application.port.output.PasswordSetUpTokenPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.output.GeneratedPasswordSetUpToken;
 import com.sep.vox.domain.model.passwordsetuptoken.PasswordSetUpToken;
-import com.sep.vox.domain.model.registerform.RegisterForm;
-import com.sep.vox.domain.model.registerform.RegisterFormStatus;
 import com.sep.vox.domain.model.role.Role;
 import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.model.user.User;
@@ -39,15 +38,7 @@ import com.sep.vox.domain.repository.RoleRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.repository.UserRoleRepository;
-import com.sep.vox.domain.valueobject.DateOfBirth;
-import com.sep.vox.domain.valueobject.Email;
-import com.sep.vox.domain.valueobject.FullName;
-import com.sep.vox.domain.valueobject.IdentityNumber;
-import com.sep.vox.domain.valueobject.Phone;
-import com.sep.vox.domain.valueobject.PostalCode;
 import com.sep.vox.domain.valueobject.RoleCode;
-import com.sep.vox.domain.valueobject.SchoolDomain;
-import com.sep.vox.domain.valueobject.StudentCount;
 
 public class ApproveRegisterFormUseCaseTests {
 
@@ -96,13 +87,12 @@ public class ApproveRegisterFormUseCaseTests {
         var roleId = UUID.randomUUID();
         var command = validCommand(registerFormId);
         var role = role(roleId, currentUserId);
-        var registerForm = pendingRegisterForm(registerFormId);
         var token = new GeneratedPasswordSetUpToken("raw-token", "hashed-token");
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(roleRepository.findByCode("SCHOOL_ADMIN")).thenReturn(Optional.of(role));
-        when(registerFormRepository.findByIdForUpdate(registerFormId)).thenReturn(Optional.of(registerForm));
-        when(registerFormRepository.save(any(RegisterForm.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(registerFormRepository.updateApprovedRegisterForm(eq(registerFormId), eq(currentUserId), any(OffsetDateTime.class)))
+            .thenReturn(1);
         when(schoolRepository.save(any(School.class))).thenAnswer(invocation -> {
             var school = invocation.getArgument(0, School.class);
             school.setId(schoolId);
@@ -121,11 +111,13 @@ public class ApproveRegisterFormUseCaseTests {
 
         assertThat(response).isNull();
 
-        var registerFormCaptor = ArgumentCaptor.forClass(RegisterForm.class);
-        verify(registerFormRepository).save(registerFormCaptor.capture());
-        assertThat(registerFormCaptor.getValue().getStatus()).isEqualTo(RegisterFormStatus.APPROVED);
-        assertThat(registerFormCaptor.getValue().getUpdatedBy()).isEqualTo(currentUserId);
-        assertThat(registerFormCaptor.getValue().getUpdatedAt()).isNotNull();
+        var updatedAtCaptor = ArgumentCaptor.forClass(OffsetDateTime.class);
+        verify(registerFormRepository).updateApprovedRegisterForm(
+            eq(registerFormId),
+            eq(currentUserId),
+            updatedAtCaptor.capture()
+        );
+        assertThat(updatedAtCaptor.getValue()).isNotNull();
 
         var schoolCaptor = ArgumentCaptor.forClass(School.class);
         verify(schoolRepository).save(schoolCaptor.capture());
@@ -190,13 +182,17 @@ public class ApproveRegisterFormUseCaseTests {
         assertThrows(NotFoundException.class, () -> approveRegisterFormUseCase.execute(command));
 
         verify(roleRepository).findByCode("SCHOOL_ADMIN");
-        verify(registerFormRepository, never()).findByIdForUpdate(any(UUID.class));
+        verify(registerFormRepository, never()).updateApprovedRegisterForm(
+            any(UUID.class),
+            any(UUID.class),
+            any(OffsetDateTime.class)
+        );
         verifyNoInteractions(schoolRepository, userRepository, userRoleRepository, passwordSetUpTokenPort,
             passwordSetUpTokenRepository, eventPublisherPort);
     }
 
     @Test
-    void approve_register_form_should_throw_when_register_form_is_not_found() {
+    void approve_register_form_should_throw_when_register_form_is_not_pending_or_not_found() {
         var currentUserId = UUID.randomUUID();
         var registerFormId = UUID.randomUUID();
         var command = validCommand(registerFormId);
@@ -204,12 +200,16 @@ public class ApproveRegisterFormUseCaseTests {
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(roleRepository.findByCode("SCHOOL_ADMIN")).thenReturn(Optional.of(role));
-        when(registerFormRepository.findByIdForUpdate(registerFormId)).thenReturn(Optional.empty());
+        when(registerFormRepository.updateApprovedRegisterForm(eq(registerFormId), eq(currentUserId), any(OffsetDateTime.class)))
+            .thenReturn(0);
 
-        assertThrows(NotFoundException.class, () -> approveRegisterFormUseCase.execute(command));
+        assertThrows(IllegalStateException.class, () -> approveRegisterFormUseCase.execute(command));
 
-        verify(registerFormRepository).findByIdForUpdate(registerFormId);
-        verify(registerFormRepository, never()).save(any(RegisterForm.class));
+        verify(registerFormRepository).updateApprovedRegisterForm(
+            eq(registerFormId),
+            eq(currentUserId),
+            any(OffsetDateTime.class)
+        );
         verifyNoInteractions(schoolRepository, userRepository, userRoleRepository, passwordSetUpTokenPort,
             passwordSetUpTokenRepository, eventPublisherPort);
     }
@@ -241,30 +241,6 @@ public class ApproveRegisterFormUseCaseTests {
             now,
             currentUserId,
             currentUserId
-        );
-    }
-
-    private RegisterForm pendingRegisterForm(UUID id) {
-        var now = OffsetDateTime.now();
-        return new RegisterForm(
-            id,
-            new FullName("Nguyen Van A"),
-            new IdentityNumber("123456789"),
-            new Phone("0987654321"),
-            new Email("admin@vox.edu.vn"),
-            new DateOfBirth(LocalDate.of(2000, 5, 24)),
-            "123 Contact Street",
-            new SchoolDomain("vox.edu.vn"),
-            "Vox School",
-            "456 School Street",
-            new PostalCode("700000"),
-            "Principal",
-            new StudentCount(500),
-            null,
-            RegisterFormStatus.PENDING,
-            now,
-            now,
-            null
         );
     }
 }

@@ -27,7 +27,7 @@ public class CustomUserDetails implements UserDetails {
 
     public static CustomUserDetails createFromUser(User user, List<String> roleCodes) {
         var authorities = roleCodes.stream()
-            .map(role -> new SimpleGrantedAuthority(AUTHORITY_ROLE_PREFIX + roleCodes))
+            .map(role -> new SimpleGrantedAuthority(AUTHORITY_ROLE_PREFIX + role))
             .collect(Collectors.toList());
         
         return CustomUserDetails.builder()

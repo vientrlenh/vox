@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.systemadmin;
 
+import java.time.OffsetDateTime;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,14 +31,22 @@ public class RejectRegisterFormUseCase implements IUseCase<RejectRegisterFormCom
     @Transactional
     public Void execute(RejectRegisterFormCommand input) {
         var command = normalize(input);
-        var registerForm = registerFormRepository.findByIdForUpdate(command.registerFormId()).orElseThrow(() -> new NotFoundException("Không tìm thấy đơn đăng ký"));
+        var now = OffsetDateTime.now();
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        registerForm.reject(currentUserId, command.reason());
-        registerFormRepository.save(registerForm);
+
+        var registerForm = registerFormRepository.findById(command.registerFormId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn đăng ký"));
+
+        var updatedRows = registerFormRepository.updateRejectedRegisterForm(command.registerFormId(), currentUserId, command.reason(), now);
+        if (updatedRows == 0) {
+            throw new IllegalStateException("Đơn đăng ký không ở trạng thái chờ hoặc không tồn tại");
+        }
+
         eventPublisherPort.publish(new RegisterFormRejectedEvent(
             registerForm.getContactEmail().value(),
             command.reason()
         ));
+        
         return null;
     }
     

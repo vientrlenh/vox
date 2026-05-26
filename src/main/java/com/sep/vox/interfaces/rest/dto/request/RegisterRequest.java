@@ -55,7 +55,7 @@ public record RegisterRequest(
     @NotNull(message = "Số học sinh không được để trống")
     @Min(value = 1, message = "Số học sinh không được nhỏ hơn 1")   
     @Max(value = Integer.MAX_VALUE, message = "Số học sinh không được vượt quá " + Integer.MAX_VALUE)
-    int studentCount
+    Integer studentCount
 ) {
     
 }

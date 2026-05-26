@@ -176,9 +176,14 @@ public class User {
         this.schoolId = schoolId;
     }
 
+    public void updatePasswordAndActivate(String passwordHash, OffsetDateTime now) {
+        this.passwordHash = passwordHash;
+        this.status = UserStatus.ACTIVE;
+        this.updatedAt = now;
+    }
+
     
-    public static User createSchoolAdmin(String email, String password, String phone, String fullName, LocalDate dateOfBirth, String address, UUID createdUserId, UUID schoolId) {
-        var now = OffsetDateTime.now();
+    public static User createSchoolAdmin(String email, String password, String phone, String fullName, LocalDate dateOfBirth, String address, UUID createdUserId, UUID schoolId, OffsetDateTime now) {
         return new User(
             new Email(email), 
             password, 
@@ -195,4 +200,5 @@ public class User {
             schoolId
         );
     }
+
 }

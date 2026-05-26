@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -36,7 +37,8 @@ public class RegisterFormRepositoryImpl implements RegisterFormRepository {
 
     @Override
     public PageResult<RegisterForm> findAll(PageRequest pageRequest) {
-        var pageable = org.springframework.data.domain.PageRequest.of(pageRequest.page(), pageRequest.size());
+        var actualPage = pageRequest.page() - 1;
+        var pageable = org.springframework.data.domain.PageRequest.of(actualPage, pageRequest.size());
         var page = springDataRegisterFormRepository.findAll(pageable);
         return new PageResult<>(
             page.getContent().stream()
@@ -53,6 +55,16 @@ public class RegisterFormRepositoryImpl implements RegisterFormRepository {
     public Optional<RegisterForm> findByIdForUpdate(UUID id) {
         return springDataRegisterFormRepository.findByIdForUpdate(id)
             .map(RegisterFormMapper::toDomain);
+    }
+
+    @Override
+    public int updateApprovedRegisterForm(UUID id, UUID updatedBy, OffsetDateTime now) {
+        return springDataRegisterFormRepository.updateApprovedRegisterForm(id, updatedBy, now);
+    }
+
+    @Override
+    public int updateRejectedRegisterForm(UUID id, UUID updatedBy, String reason, OffsetDateTime now) {
+        return springDataRegisterFormRepository.updateRejectedRegisterForm(id, updatedBy, reason, now);
     }
     
 }

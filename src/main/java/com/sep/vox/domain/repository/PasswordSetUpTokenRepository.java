@@ -1,5 +1,6 @@
 package com.sep.vox.domain.repository;
 
+import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -9,4 +10,5 @@ public interface PasswordSetUpTokenRepository {
     Optional<PasswordSetUpToken> findById(UUID id);
     Optional<PasswordSetUpToken> findByUserIdAndTokenHash(UUID userId, String tokenHash);
     PasswordSetUpToken save(PasswordSetUpToken passwordSetUpToken);
+    int updateUsedToken(UUID userId, String tokenHash, OffsetDateTime now);
 }

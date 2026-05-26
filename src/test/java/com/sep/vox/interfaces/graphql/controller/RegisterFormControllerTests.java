@@ -42,16 +42,16 @@ public class RegisterFormControllerTests {
             null,
             "PENDING"
         );
-        var page = new PageResult<>(List.of(form), 0, 20, 1, 1);
+        var page = new PageResult<>(List.of(form), 1, 20, 1, 1);
 
-        when(registerFormsUseCase.execute(new ViewRegisterFormsQuery(0, 20))).thenReturn(page);
+        when(registerFormsUseCase.execute(new ViewRegisterFormsQuery(1, 20))).thenReturn(page);
 
-        var result = controller.registerForms(0, 20);
+        var result = controller.registerForms(1, 20);
 
         assertThat(result).isEqualTo(page);
         assertThat(result.content()).containsExactly(form);
         assertThat(result.totalElements()).isEqualTo(1);
-        verify(registerFormsUseCase).execute(new ViewRegisterFormsQuery(0, 20));
+        verify(registerFormsUseCase).execute(new ViewRegisterFormsQuery(1, 20));
     }
 
     @Test

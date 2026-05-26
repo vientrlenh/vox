@@ -101,7 +101,7 @@ public class ApproveRegisterFormUseCaseTests {
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(roleRepository.findByCode("SCHOOL_ADMIN")).thenReturn(Optional.of(role));
-        when(registerFormRepository.findById(registerFormId)).thenReturn(Optional.of(registerForm));
+        when(registerFormRepository.findByIdForUpdate(registerFormId)).thenReturn(Optional.of(registerForm));
         when(registerFormRepository.save(any(RegisterForm.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(schoolRepository.save(any(School.class))).thenAnswer(invocation -> {
             var school = invocation.getArgument(0, School.class);
@@ -190,7 +190,7 @@ public class ApproveRegisterFormUseCaseTests {
         assertThrows(NotFoundException.class, () -> approveRegisterFormUseCase.execute(command));
 
         verify(roleRepository).findByCode("SCHOOL_ADMIN");
-        verify(registerFormRepository, never()).findById(any(UUID.class));
+        verify(registerFormRepository, never()).findByIdForUpdate(any(UUID.class));
         verifyNoInteractions(schoolRepository, userRepository, userRoleRepository, passwordSetUpTokenPort,
             passwordSetUpTokenRepository, eventPublisherPort);
     }
@@ -204,11 +204,11 @@ public class ApproveRegisterFormUseCaseTests {
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(roleRepository.findByCode("SCHOOL_ADMIN")).thenReturn(Optional.of(role));
-        when(registerFormRepository.findById(registerFormId)).thenReturn(Optional.empty());
+        when(registerFormRepository.findByIdForUpdate(registerFormId)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> approveRegisterFormUseCase.execute(command));
 
-        verify(registerFormRepository).findById(registerFormId);
+        verify(registerFormRepository).findByIdForUpdate(registerFormId);
         verify(registerFormRepository, never()).save(any(RegisterForm.class));
         verifyNoInteractions(schoolRepository, userRepository, userRoleRepository, passwordSetUpTokenPort,
             passwordSetUpTokenRepository, eventPublisherPort);

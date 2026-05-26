@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.systemadmin;
 
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
@@ -11,6 +12,7 @@ import com.sep.vox.application.port.output.EventPublisherPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.repository.RegisterFormRepository;
 
+@Service
 public class RejectRegisterFormUseCase implements IUseCase<RejectRegisterFormCommand, Void>{
 
     private final RegisterFormRepository registerFormRepository;

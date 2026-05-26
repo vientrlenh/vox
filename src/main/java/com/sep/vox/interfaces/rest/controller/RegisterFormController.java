@@ -10,9 +10,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.sep.vox.application.port.input.usecase.systemadmin.ApproveRegisterFormUseCase;
+import com.sep.vox.application.port.input.usecase.systemadmin.RejectRegisterFormUseCase;
 import com.sep.vox.interfaces.rest.dto.request.ApproveRegisterFormRequest;
+import com.sep.vox.interfaces.rest.dto.request.RejectRegisterFormRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 import com.sep.vox.interfaces.rest.mapper.ApproveRegisterFormCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.RejectRegisterFormCommandMapper;
 
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import jakarta.validation.Valid;
@@ -22,9 +25,11 @@ import jakarta.validation.Valid;
 public class RegisterFormController {
 
     private final ApproveRegisterFormUseCase approveRegisterFormUseCase;
+    private final RejectRegisterFormUseCase rejectRegisterFormUseCase;
 
-    public RegisterFormController(ApproveRegisterFormUseCase approveRegisterFormUseCase) {
+    public RegisterFormController(ApproveRegisterFormUseCase approveRegisterFormUseCase, RejectRegisterFormUseCase rejectRegisterFormUseCase) {
         this.approveRegisterFormUseCase = approveRegisterFormUseCase;
+        this.rejectRegisterFormUseCase = rejectRegisterFormUseCase;
     }
     
     @PostMapping("/{id}/approve")
@@ -33,6 +38,16 @@ public class RegisterFormController {
         var command = ApproveRegisterFormCommandMapper.fromRequest(id, request);
         approveRegisterFormUseCase.execute(command);
         var response = ApiResponse.success("Đơn đăng ký đã được phê duyệt");
+        return ResponseEntity.ok(response);
+    }
+
+
+    @PostMapping("/{id}/reject")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public ResponseEntity<ApiResponse<Object>> reject(@PathVariable UUID id, @Valid @RequestBody RejectRegisterFormRequest request) {
+        var command = RejectRegisterFormCommandMapper.fromRequest(id, request);
+        rejectRegisterFormUseCase.execute(command);
+        var response = ApiResponse.success("Đơn đăng ký đã từ chối thành công");
         return ResponseEntity.ok(response);
     }
 }

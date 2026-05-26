@@ -12,8 +12,7 @@ import com.sep.vox.application.port.input.command.LoginCommand;
 import com.sep.vox.application.port.input.command.RegisterCommand;
 import com.sep.vox.application.port.input.usecase.auth.LoginUseCase;
 import com.sep.vox.application.port.input.usecase.auth.RegisterUseCase;
-import com.sep.vox.application.port.input.usecase.systemadmin.RegisterSchoolAdminUseCase;
-import com.sep.vox.application.response.auth.LoginResponse;
+import com.sep.vox.application.response.input.auth.LoginResponse;
 import com.sep.vox.interfaces.rest.dto.request.LoginRequest;
 import com.sep.vox.interfaces.rest.dto.request.RegisterRequest;
 
@@ -23,8 +22,7 @@ public class AuthControllerTests {
     void login_should_return_ok_response() {
         var loginUseCase = mock(LoginUseCase.class);
         var registerUseCase = mock(RegisterUseCase.class);
-        var registerSchoolAdminUseCase = mock(RegisterSchoolAdminUseCase.class);
-        var controller = new AuthController(loginUseCase, registerUseCase, registerSchoolAdminUseCase);
+        var controller = new AuthController(loginUseCase, registerUseCase);
         var request = new LoginRequest("admin@example.com", "password");
         var loginResponse = new LoginResponse("access-token", "refresh-token");
 
@@ -43,8 +41,7 @@ public class AuthControllerTests {
     void register_should_return_created_response() {
         var loginUseCase = mock(LoginUseCase.class);
         var registerUseCase = mock(RegisterUseCase.class);
-        var registerSchoolAdminUseCase = mock(RegisterSchoolAdminUseCase.class);
-        var controller = new AuthController(loginUseCase, registerUseCase, registerSchoolAdminUseCase);
+        var controller = new AuthController(loginUseCase, registerUseCase);
         var request = new RegisterRequest(
             "Nguyen Van A",
             "123456789",

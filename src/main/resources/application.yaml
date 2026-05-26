@@ -56,6 +56,10 @@ server:
   port: 8080
   shutdown: graceful
 
+app:
+  frontend:
+    password-setup-url: ${PASSWORD_SETUP_URL}
+
 system-admin:
   email: ${SYS_ADMIN_EMAIL}
   password: ${SYS_ADMIN_PASSWORD}

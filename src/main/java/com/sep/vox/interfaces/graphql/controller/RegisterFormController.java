@@ -14,7 +14,7 @@ import com.sep.vox.application.port.input.usecase.systemadmin.ViewRegisterFormsU
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.RegisterFormDto;
 
-@Controller
+@Controller("graphqlRegisterFormController")
 public class RegisterFormController {
 
     private final ViewRegisterFormsUseCase viewRegisterFormsUseCase;
@@ -32,7 +32,7 @@ public class RegisterFormController {
     }
 
     @QueryMapping(name = "registerForm")
-    public RegisterFormDto registerForm(@Argument UUID id) {
+    public RegisterFormDto registerForm(@Argument(name = "id") UUID id) {
         var query = new ViewRegisterFormDetailsQuery(id);
         return viewRegisterFormDetailsUseCase.execute(query);
     }

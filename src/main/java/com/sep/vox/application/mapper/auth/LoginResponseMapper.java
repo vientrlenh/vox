@@ -1,6 +1,6 @@
 package com.sep.vox.application.mapper.auth;
 
-import com.sep.vox.application.response.auth.LoginResponse;
+import com.sep.vox.application.response.input.auth.LoginResponse;
 
 public class LoginResponseMapper {
     

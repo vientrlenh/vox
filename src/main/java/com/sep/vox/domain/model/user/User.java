@@ -1,5 +1,6 @@
 package com.sep.vox.domain.model.user;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -176,5 +177,22 @@ public class User {
     }
 
     
-    
+    public static User createSchoolAdmin(String email, String password, String phone, String fullName, LocalDate dateOfBirth, String address, UUID createdUserId, UUID schoolId) {
+        var now = OffsetDateTime.now();
+        return new User(
+            new Email(email), 
+            password, 
+            new Phone(phone), 
+            new FullName(fullName), 
+            null, 
+            new DateOfBirth(dateOfBirth), 
+            address, 
+            UserStatus.INACTIVE, 
+            now, 
+            now, 
+            createdUserId, 
+            createdUserId, 
+            schoolId
+        );
+    }
 }

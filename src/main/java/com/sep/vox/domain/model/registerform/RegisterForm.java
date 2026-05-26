@@ -228,4 +228,23 @@ public class RegisterForm {
         this.dateOfBirth = dateOfBirth;
     }
 
+    public void approve(UUID updatedBy) {
+        if (status != RegisterFormStatus.PENDING) {
+            throw new IllegalArgumentException("Đơn đăng ký đang không trạng thái chờ, không thể phê duyệt");
+        }
+        this.status = RegisterFormStatus.APPROVED;
+        this.updatedBy = updatedBy;
+        this.updatedAt = OffsetDateTime.now();
+    }
+
+    public void reject(UUID updatedBy, String reason) {
+        if (status != RegisterFormStatus.PENDING) {
+            throw new IllegalArgumentException("Đơn đăng ký đang không trong trạng thái chờ, không thể từ chối");
+        }
+        this.status = RegisterFormStatus.REJECTED;
+        this.reason = reason;
+        this.updatedBy = updatedBy;
+        this.updatedAt = OffsetDateTime.now();
+    }
+
 }

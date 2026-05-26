@@ -3,6 +3,7 @@ package com.sep.vox.application.usecase.auth;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -26,8 +27,11 @@ import com.sep.vox.application.port.output.AuthenticationManagerPort;
 import com.sep.vox.application.port.output.SessionManagerPort;
 import com.sep.vox.application.query.dto.UserRoleInfo;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.application.response.output.GeneratedSessionToken;
+import com.sep.vox.domain.model.session.Session;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
+import com.sep.vox.domain.repository.SessionRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.valueobject.DateOfBirth;
 import com.sep.vox.domain.valueobject.Email;
@@ -41,6 +45,7 @@ public class LoginUseCaseTests {
     private UserRoleQueryRepository userRoleQueryRepository;
     private AuthTokenPort authTokenPort;
     private SessionManagerPort sessionManagerPort;
+    private SessionRepository sessionRepository;
     private LoginUseCase loginUseCase;
 
     @BeforeEach
@@ -50,12 +55,14 @@ public class LoginUseCaseTests {
         userRoleQueryRepository = mock(UserRoleQueryRepository.class);
         authTokenPort = mock(AuthTokenPort.class);
         sessionManagerPort = mock(SessionManagerPort.class);
+        sessionRepository = mock(SessionRepository.class);
         loginUseCase = new LoginUseCase(
             authenticationManagerPort,
             userRepository,
             userRoleQueryRepository,
             authTokenPort,
-            sessionManagerPort
+            sessionManagerPort, 
+            sessionRepository
         );
     }
 
@@ -81,8 +88,8 @@ public class LoginUseCaseTests {
             .thenReturn(roles);
         when(authTokenPort.generateJwtToken(userId.toString(), List.of("SCHOOL_ADMIN")))
             .thenReturn("access-token");
-        when(sessionManagerPort.setSessionAndGetRefreshTokenWhenLogin(userId))
-            .thenReturn("refresh-token");
+        when(sessionManagerPort.generateToken())
+            .thenReturn(new GeneratedSessionToken("refresh-token", "hashed-refresh-token"));
 
         var result = loginUseCase.execute(new LoginCommand("test@example.com", "123456"));
         
@@ -94,7 +101,8 @@ public class LoginUseCaseTests {
         verify(userRepository).findByEmail("test@example.com");
         verify(userRoleQueryRepository).findByUserIdWithRoleInfo(userId);
         verify(authTokenPort).generateJwtToken(userId.toString(), List.of("SCHOOL_ADMIN"));
-        verify(sessionManagerPort).setSessionAndGetRefreshTokenWhenLogin(userId);
+        verify(sessionManagerPort).generateToken();
+        verify(sessionRepository).save(any(Session.class));
     }
 
     @Test
@@ -108,7 +116,7 @@ public class LoginUseCaseTests {
         );
 
         verify(authenticationManagerPort).setAuthenticationAndGetUserEmail("test@example.com", "wrong-password");
-        verifyNoInteractions(userRepository, userRoleQueryRepository, authTokenPort, sessionManagerPort);
+        verifyNoInteractions(userRepository, userRoleQueryRepository, authTokenPort, sessionManagerPort, sessionRepository);
     }
 
     @Test
@@ -125,7 +133,7 @@ public class LoginUseCaseTests {
         
         verify(authenticationManagerPort).setAuthenticationAndGetUserEmail("missing@example.com", "123456");
         verify(userRepository).findByEmail("missing@example.com");
-        verifyNoInteractions(userRoleQueryRepository, authTokenPort, sessionManagerPort);
+        verifyNoInteractions(userRoleQueryRepository, authTokenPort, sessionManagerPort, sessionRepository);
     }
 
     private User activeUser(UUID userId) {

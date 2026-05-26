@@ -1,8 +1,8 @@
 package com.sep.vox.application.port.output;
 
-import java.util.UUID;
+
+import com.sep.vox.application.response.output.GeneratedSessionToken;
 
 public interface SessionManagerPort {
-    String setSessionAndGetRefreshTokenWhenLogin(UUID userId);
-    String setSessionAndGetRefreshTokenWhenRefresh(UUID userId, String token);
+    GeneratedSessionToken generateToken();
 }

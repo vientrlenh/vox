@@ -1,4 +1,4 @@
-package com.sep.vox.application.response.auth;
+package com.sep.vox.application.response.input.auth;
 
 public record LoginResponse(
     String accessToken,

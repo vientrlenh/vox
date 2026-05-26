@@ -4,6 +4,8 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 public class PasswordSetUpToken {
+    private static final int DAYS_UNTIL_EXPIRED = 2;
+
     private UUID id;
     private UUID userId;
     private String tokenHash;
@@ -78,5 +80,14 @@ public class PasswordSetUpToken {
         this.createdAt = createdAt;
     }
 
-    
+    public static PasswordSetUpToken create(UUID userId, String tokenHash) {
+        var now = OffsetDateTime.now();
+        return new PasswordSetUpToken(
+            userId, 
+            tokenHash, 
+            now, 
+            now.plusDays(DAYS_UNTIL_EXPIRED), 
+            null
+        );
+    }
 }

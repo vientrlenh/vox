@@ -174,6 +174,24 @@ public class School {
         this.domain = domain;
     }
 
-    
+    public static School create(String code, String name, String description, String contactPhone, String contactEmail, String domain, String address, int studentCount, UUID createdUserId) {
+        var now = OffsetDateTime.now();
+        return new School(
+            new SchoolCode(code), 
+            name, 
+            description, 
+            new Phone(contactPhone), 
+            new Email(contactEmail), 
+            new SchoolDomain(domain), 
+            address, 
+            new StudentCount(studentCount), 
+            true, 
+            now, 
+            now, 
+            createdUserId, 
+            createdUserId
+        );
+
+    }
     
 }

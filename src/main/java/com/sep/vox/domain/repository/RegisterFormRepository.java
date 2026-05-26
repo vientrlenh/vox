@@ -11,4 +11,5 @@ public interface RegisterFormRepository {
     RegisterForm save(RegisterForm rf);
     Optional<RegisterForm> findById(UUID id);
     PageResult<RegisterForm> findAll(PageRequest pageRequest);
+    Optional<RegisterForm> findByIdForUpdate(UUID id);
 }

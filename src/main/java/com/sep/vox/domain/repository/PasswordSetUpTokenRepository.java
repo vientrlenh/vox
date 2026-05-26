@@ -8,4 +8,5 @@ import com.sep.vox.domain.model.passwordsetuptoken.PasswordSetUpToken;
 public interface PasswordSetUpTokenRepository {
     Optional<PasswordSetUpToken> findById(UUID id);
     Optional<PasswordSetUpToken> findByUserIdAndTokenHash(UUID userId, String tokenHash);
+    PasswordSetUpToken save(PasswordSetUpToken passwordSetUpToken);
 }

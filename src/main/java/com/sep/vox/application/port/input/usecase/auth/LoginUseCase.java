@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.auth;
 
+import java.time.OffsetDateTime;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,7 +13,9 @@ import com.sep.vox.application.port.output.AuthTokenPort;
 import com.sep.vox.application.port.output.AuthenticationManagerPort;
 import com.sep.vox.application.port.output.SessionManagerPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
-import com.sep.vox.application.response.auth.LoginResponse;
+import com.sep.vox.application.response.input.auth.LoginResponse;
+import com.sep.vox.domain.model.session.Session;
+import com.sep.vox.domain.repository.SessionRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
@@ -22,18 +26,23 @@ public class LoginUseCase implements IUseCase<LoginCommand, LoginResponse> {
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final AuthTokenPort authTokenPort;
     private final SessionManagerPort sessionManagerPort;
+    private final SessionRepository sessionRepository;
 
     public LoginUseCase(AuthenticationManagerPort authenticationManagerPort, 
                         UserRepository userRepository, 
                         UserRoleQueryRepository userRoleQueryRepository,
                         AuthTokenPort authTokenPort, 
-                        SessionManagerPort sessionManagerPort) {
+                        SessionManagerPort sessionManagerPort, 
+                        SessionRepository sessionRepository) {
         this.authenticationManagerPort = authenticationManagerPort;
         this.userRepository = userRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
         this.authTokenPort = authTokenPort;
         this.sessionManagerPort = sessionManagerPort;
+        this.sessionRepository = sessionRepository;
     }
+
+    private static final int REFRESH_TOKEN_DAY_TILL_EXPIRES = 3;
 
     @Override
     @Transactional
@@ -46,8 +55,18 @@ public class LoginUseCase implements IUseCase<LoginCommand, LoginResponse> {
             .map(ur -> ur.roleCode())
             .toList();
         var accessToken = authTokenPort.generateJwtToken(user.getId().toString(), userRoles);
-        var refreshToken = sessionManagerPort.setSessionAndGetRefreshTokenWhenLogin(user.getId());
-        return LoginResponseMapper.toResponse(accessToken, refreshToken);
+        var sessionToken = sessionManagerPort.generateToken();
+        var now = OffsetDateTime.now();
+        var session = new Session(
+            user.getId(), 
+            sessionToken.hashedToken(), 
+            now, 
+            now.plusDays(REFRESH_TOKEN_DAY_TILL_EXPIRES), 
+            null, 
+            null
+        );
+        sessionRepository.save(session);
+        return LoginResponseMapper.toResponse(accessToken, sessionToken.rawToken());
     }
     
 }

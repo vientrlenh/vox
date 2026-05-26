@@ -21,3 +21,7 @@ system-admin:
   fullName: System Admin
   dateOfBirth: 1990-01-01
   address: Test Address
+
+app:
+  frontend:
+    password-setup-url: http:://localhost:5173/test-password-setup-url

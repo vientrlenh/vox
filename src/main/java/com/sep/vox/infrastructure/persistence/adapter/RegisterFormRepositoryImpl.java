@@ -48,5 +48,11 @@ public class RegisterFormRepositoryImpl implements RegisterFormRepository {
             page.getTotalPages()
         );
     }
+
+    @Override
+    public Optional<RegisterForm> findByIdForUpdate(UUID id) {
+        return springDataRegisterFormRepository.findByIdForUpdate(id)
+            .map(RegisterFormMapper::toDomain);
+    }
     
 }

@@ -40,6 +40,7 @@ public class RoleInitializer implements ApplicationRunner {
         roleRepository.save(teacherRole());
         roleRepository.save(schoolAdminRole());
         roleRepository.save(systemAdminRole());
+        LOGGER.info("Roles initialized successfully");
     }
 
     private Role studentRole() {

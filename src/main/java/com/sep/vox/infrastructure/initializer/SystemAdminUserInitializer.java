@@ -83,6 +83,7 @@ public class SystemAdminUserInitializer implements ApplicationRunner {
             OffsetDateTime.now()
         );
         userRoleRepository.save(userRole);
+        LOGGER.info("System admin initialized successfully");
     }
 
     private User systemAdminUser() {

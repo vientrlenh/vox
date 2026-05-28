@@ -66,7 +66,7 @@ public class LoginUseCase implements IUseCase<LoginCommand, LoginResponse> {
             null
         );
         sessionRepository.save(session);
-        return LoginResponseMapper.toResponse(accessToken, sessionToken.rawToken());
+        return LoginResponseMapper.toResponse(accessToken, sessionToken.rawToken(), userRoles);
     }
     
 }

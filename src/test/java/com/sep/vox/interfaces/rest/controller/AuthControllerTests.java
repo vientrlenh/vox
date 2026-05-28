@@ -5,6 +5,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 
@@ -26,7 +28,8 @@ public class AuthControllerTests {
         var setUpPasswordUseCase = mock(SetUpPasswordUseCase.class);
         var controller = new AuthController(loginUseCase, registerUseCase, setUpPasswordUseCase);
         var request = new LoginRequest("admin@example.com", "password");
-        var loginResponse = new LoginResponse("access-token", "refresh-token");
+        var roles = List.of("");
+        var loginResponse = new LoginResponse("access-token", "refresh-token", roles);
 
         when(loginUseCase.execute(new LoginCommand(request.login(), request.password())))
             .thenReturn(loginResponse);

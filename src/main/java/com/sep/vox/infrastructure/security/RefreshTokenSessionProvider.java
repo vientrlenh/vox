@@ -15,7 +15,7 @@ public class RefreshTokenSessionProvider implements SessionManagerPort {
         this.secureTokenProvider = secureTokenprovider;
     }
 
-    private static final int TOKEN_LENGTH = 20;
+    private static final int TOKEN_LENGTH = 32;
     
     @Override
     public GeneratedSessionToken generateToken() {

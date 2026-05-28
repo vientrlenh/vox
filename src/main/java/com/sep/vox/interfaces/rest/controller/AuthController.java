@@ -19,7 +19,9 @@ import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 import com.sep.vox.interfaces.rest.mapper.LoginCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.RegisterCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.SetUpPasswordCommandMapper;
+import com.sep.vox.interfaces.shared.IpAddressReceiver;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 
@@ -39,8 +41,11 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {
-        var command = LoginCommandMapper.fromRequest(request);
+    public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request, HttpServletRequest servletRequest) {
+        var ipAddress = IpAddressReceiver.getClientIp(servletRequest);
+        var userAgent = servletRequest.getHeader("User-Agent");
+
+        var command = LoginCommandMapper.fromRequest(request, ipAddress, userAgent);
         var data = loginUseCase.execute(command);
         var response = ApiResponse.success("Đăng nhập thành công", data);
         return ResponseEntity.ok(response);

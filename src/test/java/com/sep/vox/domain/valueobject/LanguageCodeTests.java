@@ -14,8 +14,25 @@ public class LanguageCodeTests {
     }
 
     @Test
+    void should_accept_null_language_code() {
+        var code = new LanguageCode(null);
+
+        assertThat(code.value()).isNull();
+    }
+
+    @Test
     void should_reject_a_lower_character() {
         assertThrows(IllegalArgumentException.class, () -> new LanguageCode("eNG")) ;
 
+    }
+
+    @Test
+    void should_reject_language_code_with_digits() {
+        assertThrows(IllegalArgumentException.class, () -> new LanguageCode("EN1"));
+    }
+
+    @Test
+    void should_reject_language_code_with_separator() {
+        assertThrows(IllegalArgumentException.class, () -> new LanguageCode("EN-US"));
     }
 }

@@ -11,6 +11,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
+import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 
 @Entity
@@ -20,7 +21,12 @@ import jakarta.persistence.Table;
 public class UserRoleJpaEntity {
     
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    @SequenceGenerator(
+        name = "user_role_seq_gen",
+        sequenceName = "user_role_seq",
+        allocationSize = 50
+    )
     private long id;
 
     @Column(name = "user_id", nullable = false)

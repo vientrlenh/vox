@@ -3,9 +3,11 @@ package com.sep.vox.infrastructure.persistence.entity;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
+import org.hibernate.annotations.Generated;
+import org.hibernate.generator.EventType;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
@@ -13,11 +15,12 @@ import jakarta.persistence.Table;
 @Table(name = "sessions")
 public class SessionJpaEntity {
     @Id
-    @GeneratedValue
+    @Generated(event = EventType.INSERT)
     @Column(
         name = "id", 
         updatable = false,
         nullable = false,
+        insertable = false,
         columnDefinition = "UUID default uuidv7()"
     )
     private UUID id;

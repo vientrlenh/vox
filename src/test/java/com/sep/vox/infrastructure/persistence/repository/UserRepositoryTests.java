@@ -34,32 +34,67 @@ public class UserRepositoryTests {
     @Autowired
     private UserRepository userRepository;
 
+    @Test
+    void whenSave_thenReturnsPersistedUser() {
+        var user = newUser("save-user@example.com", "0987654321");
+
+        var saved = userRepository.save(user);
+
+        assertThat(saved.getId()).isNotNull();
+        assertThat(saved.getEmail().value()).isEqualTo("save-user@example.com");
+        assertThat(saved.getPhone().value()).isEqualTo("0987654321");
+        assertThat(saved.getStatus()).isEqualTo(UserStatus.ACTIVE);
+    }
+
+    @Test
+    void whenFindById_thenReturnsUser() {
+        var saved = userRepository.save(newUser("find-id@example.com", "0987654322"));
+
+        var found = userRepository.findById(saved.getId());
+
+        assertThat(found).isPresent();
+        assertThat(found.get().getId()).isEqualTo(saved.getId());
+        assertThat(found.get().getEmail().value()).isEqualTo("find-id@example.com");
+    }
 
     @Test
     void whenFindByEmail_thenReturnsUser() {
-        
-        var user = new User(
-            new Email("test@example.com"),
-            "password-hash",
-            new Phone("0987654321"),
-            new FullName("Test User"),
-            null,
-            new DateOfBirth(LocalDate.of(2000, 1, 1)),
-            "Ho Chi Minh City",
-            UserStatus.ACTIVE,
-            OffsetDateTime.now(),
-            OffsetDateTime.now(),
-            null,
-            null,
-            null
-        );
-
-        userRepository.save(user);
+        userRepository.save(newUser("test@example.com", "0987654323"));
 
         var found = userRepository.findByEmail("test@example.com");
 
         assertThat(found).isPresent();
         assertThat(found.get().getEmail().value()).isEqualTo("test@example.com");
-        assertThat(found.get().getPhone().value()).isEqualTo("0987654321");
+        assertThat(found.get().getPhone().value()).isEqualTo("0987654323");
+    }
+
+    @Test
+    void whenFindByPhone_thenReturnsUser() {
+        userRepository.save(newUser("find-phone@example.com", "0987654324"));
+
+        var found = userRepository.findByPhone("0987654324");
+
+        assertThat(found).isPresent();
+        assertThat(found.get().getEmail().value()).isEqualTo("find-phone@example.com");
+        assertThat(found.get().getPhone().value()).isEqualTo("0987654324");
+    }
+
+    private static User newUser(String email, String phone) {
+        var now = OffsetDateTime.now();
+        return new User(
+            new Email(email),
+            "password-hash",
+            new Phone(phone),
+            new FullName("Test User"),
+            null,
+            new DateOfBirth(LocalDate.of(2000, 1, 1)),
+            "Ho Chi Minh City",
+            UserStatus.ACTIVE,
+            now,
+            now,
+            null,
+            null,
+            null
+        );
     }
 }

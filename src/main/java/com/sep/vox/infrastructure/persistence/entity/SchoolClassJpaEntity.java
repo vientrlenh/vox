@@ -37,6 +37,9 @@ public class SchoolClassJpaEntity {
     @Column(name = "name", nullable = false, length = 255)
     private String name;
 
+    @Column(name = "description", length = 2048)
+    private String description;
+
     @Column(name = "level_id", nullable = false)
     private UUID levelId;
 
@@ -63,7 +66,7 @@ public class SchoolClassJpaEntity {
 
     protected SchoolClassJpaEntity() {}
 
-    public SchoolClassJpaEntity(UUID id, UUID schoolId, UUID languageId, String code, String name, UUID levelId,
+    public SchoolClassJpaEntity(UUID id, UUID schoolId, UUID languageId, String code, String name, String description, UUID levelId,
             LocalDate startDate, LocalDate endDate, boolean isActive, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
@@ -71,6 +74,7 @@ public class SchoolClassJpaEntity {
         this.languageId = languageId;
         this.code = code;
         this.name = name;
+        this.description = description;
         this.levelId = levelId;
         this.startDate = startDate;
         this.endDate = endDate;
@@ -81,13 +85,14 @@ public class SchoolClassJpaEntity {
         this.updatedBy = updatedBy;
     }
 
-    public SchoolClassJpaEntity(UUID schoolId, UUID languageId, String code, String name, UUID levelId,
+    public SchoolClassJpaEntity(UUID schoolId, UUID languageId, String code, String name, String description, UUID levelId,
             LocalDate startDate, LocalDate endDate, boolean isActive, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.schoolId = schoolId;
         this.languageId = languageId;
         this.code = code;
         this.name = name;
+        this.description = description;
         this.levelId = levelId;
         this.startDate = startDate;
         this.endDate = endDate;
@@ -201,4 +206,14 @@ public class SchoolClassJpaEntity {
     public void setUpdatedBy(UUID updatedBy) {
         this.updatedBy = updatedBy;
     }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    
 }

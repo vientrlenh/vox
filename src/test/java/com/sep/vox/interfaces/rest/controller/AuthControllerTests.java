@@ -137,7 +137,7 @@ public class AuthControllerTests {
         var controller = new AuthController(loginUseCase, registerUseCase, setUpPasswordUseCase, refreshUseCase, sendResetPasswordOtpUseCase, resetPasswordUseCase);
         var request = new RefreshRequest("old-refresh-token", "device-1");
         var expectedCommand = new RefreshCommand(request.token(), request.deviceId());
-        var refreshResponse = new RefreshResponse("new-refresh-token");
+        var refreshResponse = new RefreshResponse("access-token", "new-refresh-token");
 
         when(refreshUseCase.execute(expectedCommand))
             .thenReturn(refreshResponse);

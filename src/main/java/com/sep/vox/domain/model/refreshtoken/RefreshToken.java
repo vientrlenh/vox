@@ -103,4 +103,12 @@ public class RefreshToken {
             null
         );
     }
+
+    public boolean isUsed() {
+        return this.usedAt != null;
+    }
+
+    public boolean isExpired(OffsetDateTime now) {
+        return this.expiredAt.isBefore(now);
+    }
 }

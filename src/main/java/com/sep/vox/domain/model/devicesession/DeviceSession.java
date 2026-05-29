@@ -115,4 +115,11 @@ public class DeviceSession {
         );
     }
     
+    public boolean isRevoked() {
+        return this.revokedAt != null;
+    }
+
+    public boolean isDeviceIdMismatches(String deviceId) {
+        return !this.deviceId.equals(deviceId);
+    }
 }

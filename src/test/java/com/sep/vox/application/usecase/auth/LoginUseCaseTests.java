@@ -25,7 +25,7 @@ import com.sep.vox.application.port.input.command.LoginCommand;
 import com.sep.vox.application.port.input.usecase.auth.LoginUseCase;
 import com.sep.vox.application.port.output.AuthTokenPort;
 import com.sep.vox.application.port.output.AuthenticationManagerPort;
-import com.sep.vox.application.port.output.SessionManagerPort;
+import com.sep.vox.application.port.output.SessionTokenManagerPort;
 import com.sep.vox.application.query.dto.UserRoleInfo;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.output.GeneratedSessionToken;
@@ -48,7 +48,7 @@ public class LoginUseCaseTests {
     private UserRepository userRepository;
     private UserRoleQueryRepository userRoleQueryRepository;
     private AuthTokenPort authTokenPort;
-    private SessionManagerPort sessionManagerPort;
+    private SessionTokenManagerPort sessionTokenManagerPort;
     private DeviceSessionRepository deviceSessionRepository;
     private RefreshTokenRepository refreshTokenRepository;
     private LoginUseCase loginUseCase;
@@ -59,7 +59,7 @@ public class LoginUseCaseTests {
         userRepository = mock(UserRepository.class);
         userRoleQueryRepository = mock(UserRoleQueryRepository.class);
         authTokenPort = mock(AuthTokenPort.class);
-        sessionManagerPort = mock(SessionManagerPort.class);
+        sessionTokenManagerPort = mock(SessionTokenManagerPort.class);
         deviceSessionRepository = mock(DeviceSessionRepository.class);
         refreshTokenRepository = mock(RefreshTokenRepository.class);
         loginUseCase = new LoginUseCase(
@@ -67,7 +67,7 @@ public class LoginUseCaseTests {
             userRepository,
             userRoleQueryRepository,
             authTokenPort,
-            sessionManagerPort, 
+            sessionTokenManagerPort, 
             deviceSessionRepository,
             refreshTokenRepository
         );
@@ -106,7 +106,7 @@ public class LoginUseCaseTests {
             .thenReturn(roles);
         when(authTokenPort.generateJwtToken(userId.toString(), user.getEmail().value(), List.of("SCHOOL_ADMIN")))
             .thenReturn("access-token");
-        when(sessionManagerPort.generateToken())
+        when(sessionTokenManagerPort.generateToken())
             .thenReturn(new GeneratedSessionToken("refresh-token", "hashed-refresh-token"));
         when(deviceSessionRepository.save(any(DeviceSession.class)))
             .thenReturn(deviceSession);
@@ -121,7 +121,7 @@ public class LoginUseCaseTests {
         verify(userRepository).findById(userId);
         verify(userRoleQueryRepository).findByUserIdWithRoleInfo(userId);
         verify(authTokenPort).generateJwtToken(userId.toString(), user.getEmail().value(), List.of("SCHOOL_ADMIN"));
-        verify(sessionManagerPort).generateToken();
+        verify(sessionTokenManagerPort).generateToken();
         verify(deviceSessionRepository).save(any(DeviceSession.class));
         verify(refreshTokenRepository).save(any(RefreshToken.class));
     }
@@ -141,7 +141,7 @@ public class LoginUseCaseTests {
             userRepository,
             userRoleQueryRepository,
             authTokenPort,
-            sessionManagerPort,
+            sessionTokenManagerPort,
             deviceSessionRepository,
             refreshTokenRepository
         );
@@ -165,7 +165,7 @@ public class LoginUseCaseTests {
         verifyNoInteractions(
             userRoleQueryRepository,
             authTokenPort,
-            sessionManagerPort,
+            sessionTokenManagerPort,
             deviceSessionRepository,
             refreshTokenRepository
         );

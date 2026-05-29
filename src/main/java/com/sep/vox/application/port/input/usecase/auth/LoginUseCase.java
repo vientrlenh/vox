@@ -16,7 +16,7 @@ import com.sep.vox.application.port.input.command.LoginCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.AuthTokenPort;
 import com.sep.vox.application.port.output.AuthenticationManagerPort;
-import com.sep.vox.application.port.output.SessionManagerPort;
+import com.sep.vox.application.port.output.SessionTokenManagerPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.input.auth.LoginResponse;
 import com.sep.vox.application.response.output.GeneratedSessionToken;
@@ -34,7 +34,7 @@ public class LoginUseCase implements IUseCase<LoginCommand, LoginResponse> {
     private final UserRepository userRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final AuthTokenPort authTokenPort;
-    private final SessionManagerPort sessionManagerPort;
+    private final SessionTokenManagerPort sessionTokenManagerPort;
     private final DeviceSessionRepository deviceSessionRepository;
     private final RefreshTokenRepository refreshTokenRepository;
 
@@ -42,14 +42,14 @@ public class LoginUseCase implements IUseCase<LoginCommand, LoginResponse> {
                         UserRepository userRepository, 
                         UserRoleQueryRepository userRoleQueryRepository,
                         AuthTokenPort authTokenPort, 
-                        SessionManagerPort sessionManagerPort, 
+                        SessionTokenManagerPort sessionTokenManagerPort, 
                         DeviceSessionRepository deviceSessionRepository, 
                         RefreshTokenRepository refreshTokenRepository) {
         this.authenticationManagerPort = authenticationManagerPort;
         this.userRepository = userRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
         this.authTokenPort = authTokenPort;
-        this.sessionManagerPort = sessionManagerPort;
+        this.sessionTokenManagerPort = sessionTokenManagerPort;
         this.deviceSessionRepository = deviceSessionRepository;
         this.refreshTokenRepository = refreshTokenRepository;
     }
@@ -68,7 +68,7 @@ public class LoginUseCase implements IUseCase<LoginCommand, LoginResponse> {
         
         var deviceSession = createDeviceSession(userId, command);
         var accessToken = authTokenPort.generateJwtToken(user.getId().toString(), user.getEmail().value(), userRoles);
-        var sessionToken = sessionManagerPort.generateToken();
+        var sessionToken = sessionTokenManagerPort.generateToken();
         createRefreshToken(deviceSession, sessionToken, now);
 
         return LoginResponseMapper.toResponse(accessToken, sessionToken.rawToken(), userRoles);

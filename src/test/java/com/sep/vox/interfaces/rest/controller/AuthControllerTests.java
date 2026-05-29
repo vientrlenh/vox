@@ -12,13 +12,17 @@ import org.springframework.http.HttpStatus;
 
 import com.sep.vox.application.port.input.command.ClientDeviceCommand;
 import com.sep.vox.application.port.input.command.LoginCommand;
+import com.sep.vox.application.port.input.command.RefreshCommand;
 import com.sep.vox.application.port.input.command.RegisterCommand;
 import com.sep.vox.application.port.input.usecase.auth.LoginUseCase;
+import com.sep.vox.application.port.input.usecase.auth.RefreshUseCase;
 import com.sep.vox.application.port.input.usecase.auth.RegisterUseCase;
 import com.sep.vox.application.port.input.usecase.auth.SetUpPasswordUseCase;
 import com.sep.vox.application.response.input.auth.LoginResponse;
+import com.sep.vox.application.response.input.auth.RefreshResponse;
 import com.sep.vox.interfaces.rest.dto.request.ClientDeviceRequest;
 import com.sep.vox.interfaces.rest.dto.request.LoginRequest;
+import com.sep.vox.interfaces.rest.dto.request.RefreshRequest;
 import com.sep.vox.interfaces.rest.dto.request.RegisterRequest;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -31,7 +35,8 @@ public class AuthControllerTests {
         var registerUseCase = mock(RegisterUseCase.class);
         var setUpPasswordUseCase = mock(SetUpPasswordUseCase.class);
         var servletRequest = mock(HttpServletRequest.class);
-        var controller = new AuthController(loginUseCase, registerUseCase, setUpPasswordUseCase);
+        var refreshUseCase = mock(RefreshUseCase.class);
+        var controller = new AuthController(loginUseCase, registerUseCase, setUpPasswordUseCase, refreshUseCase);
         var request = new LoginRequest(
             "admin@example.com",
             "password",
@@ -71,7 +76,8 @@ public class AuthControllerTests {
         var loginUseCase = mock(LoginUseCase.class);
         var registerUseCase = mock(RegisterUseCase.class);
         var setUpPasswordUseCase = mock(SetUpPasswordUseCase.class);
-        var controller = new AuthController(loginUseCase, registerUseCase, setUpPasswordUseCase);
+        var refreshUseCase = mock(RefreshUseCase.class);
+        var controller = new AuthController(loginUseCase, registerUseCase, setUpPasswordUseCase, refreshUseCase);
         var request = new RegisterRequest(
             "Nguyen Van A",
             "123456789",
@@ -108,5 +114,27 @@ public class AuthControllerTests {
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().data()).isNull();
         verify(registerUseCase).execute(expectedCommand);
+    }
+
+    @Test
+    void refresh_should_return_ok_response() {
+        var loginUseCase = mock(LoginUseCase.class);
+        var registerUseCase = mock(RegisterUseCase.class);
+        var setUpPasswordUseCase = mock(SetUpPasswordUseCase.class);
+        var refreshUseCase = mock(RefreshUseCase.class);
+        var controller = new AuthController(loginUseCase, registerUseCase, setUpPasswordUseCase, refreshUseCase);
+        var request = new RefreshRequest("old-refresh-token", "device-1");
+        var expectedCommand = new RefreshCommand(request.token(), request.deviceId());
+        var refreshResponse = new RefreshResponse("new-refresh-token");
+
+        when(refreshUseCase.execute(expectedCommand))
+            .thenReturn(refreshResponse);
+
+        var response = controller.refresh(request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().data()).isEqualTo(refreshResponse);
+        verify(refreshUseCase).execute(expectedCommand);
     }
 }

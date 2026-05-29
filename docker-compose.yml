@@ -25,9 +25,9 @@ services:
     container_name: vox-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${DB_NAME}
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: Vox
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 12345
     volumes:
       - postgres-data:/var/lib/postgresql
     ports:

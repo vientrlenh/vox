@@ -19,6 +19,7 @@ import com.sep.vox.application.port.input.usecase.auth.SendResetPasswordOtpUseCa
 import com.sep.vox.application.port.output.CacheManagerPort;
 import com.sep.vox.application.port.output.EventPublisherPort;
 import com.sep.vox.application.port.output.OneTimePasswordPort;
+import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.UserRepository;
 
 public class SendResetPasswordOtpUseCaseTests {
@@ -49,14 +50,14 @@ public class SendResetPasswordOtpUseCaseTests {
         var normalizedEmail = "admin@example.com";
         var expectedKey = CacheKey.RESET_PASSWORD_PREFIX + CacheKey.OTP_PREFIX + normalizedEmail;
 
-        when(userRepository.existsByEmail(normalizedEmail)).thenReturn(true);
+        when(userRepository.existsByEmailAndStatus(normalizedEmail, UserStatus.ACTIVE)).thenReturn(true);
         when(oneTimePasswordPort.generate(7)).thenReturn("1234567");
         when(oneTimePasswordPort.hash("1234567")).thenReturn("hashed-otp");
 
         var result = sendResetPasswordOtpUseCase.execute(command);
 
         assertThat(result).isNull();
-        verify(userRepository).existsByEmail(normalizedEmail);
+        verify(userRepository).existsByEmailAndStatus(normalizedEmail, UserStatus.ACTIVE);
         verify(oneTimePasswordPort).generate(7);
         verify(oneTimePasswordPort).hash("1234567");
         verify(cacheManagerPort).save(expectedKey, "hashed-otp", Duration.ofMinutes(5));
@@ -67,12 +68,12 @@ public class SendResetPasswordOtpUseCaseTests {
     void send_reset_password_otp_should_return_success_without_generating_otp_when_email_does_not_exist() {
         var command = new SendResetPasswordOtpCommand("missing@example.com");
 
-        when(userRepository.existsByEmail("missing@example.com")).thenReturn(false);
+        when(userRepository.existsByEmailAndStatus("missing@example.com", UserStatus.ACTIVE)).thenReturn(false);
 
         var result = sendResetPasswordOtpUseCase.execute(command);
 
         assertThat(result).isNull();
-        verify(userRepository).existsByEmail("missing@example.com");
+        verify(userRepository).existsByEmailAndStatus("missing@example.com", UserStatus.ACTIVE);
         verifyNoInteractions(oneTimePasswordPort, cacheManagerPort, eventPublisherPort);
     }
 
@@ -80,11 +81,11 @@ public class SendResetPasswordOtpUseCaseTests {
     void send_reset_password_otp_should_not_store_or_publish_when_email_does_not_exist_after_normalization() {
         var command = new SendResetPasswordOtpCommand(" Missing@Example.COM ");
 
-        when(userRepository.existsByEmail("missing@example.com")).thenReturn(false);
+        when(userRepository.existsByEmailAndStatus("missing@example.com", UserStatus.ACTIVE)).thenReturn(false);
 
         sendResetPasswordOtpUseCase.execute(command);
 
-        verify(userRepository).existsByEmail("missing@example.com");
+        verify(userRepository).existsByEmailAndStatus("missing@example.com", UserStatus.ACTIVE);
         verify(oneTimePasswordPort, never()).generate(7);
         verifyNoInteractions(cacheManagerPort, eventPublisherPort);
     }

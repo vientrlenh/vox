@@ -2,7 +2,7 @@ package com.sep.vox.interfaces.rest.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.sep.vox.application.port.input.usecase.auth.LoginUseCase;
 import com.sep.vox.application.port.input.usecase.auth.RefreshUseCase;
 import com.sep.vox.application.port.input.usecase.auth.RegisterUseCase;
+import com.sep.vox.application.port.input.usecase.auth.ResetPasswordUseCase;
 import com.sep.vox.application.port.input.usecase.auth.SendResetPasswordOtpUseCase;
 import com.sep.vox.application.port.input.usecase.auth.SetUpPasswordUseCase;
 import com.sep.vox.application.response.input.auth.LoginResponse;
@@ -18,12 +19,14 @@ import com.sep.vox.application.response.input.auth.RefreshResponse;
 import com.sep.vox.interfaces.rest.dto.request.LoginRequest;
 import com.sep.vox.interfaces.rest.dto.request.RefreshRequest;
 import com.sep.vox.interfaces.rest.dto.request.RegisterRequest;
+import com.sep.vox.interfaces.rest.dto.request.ResetPasswordRequest;
 import com.sep.vox.interfaces.rest.dto.request.SendResetPasswordOtpRequest;
 import com.sep.vox.interfaces.rest.dto.request.SetUpPasswordRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 import com.sep.vox.interfaces.rest.mapper.LoginCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.RefreshCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.RegisterCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.ResetPasswordCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.SendResetPasswordOtpCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.SetUpPasswordCommandMapper;
 import com.sep.vox.interfaces.shared.IpAddressReceiver;
@@ -42,13 +45,15 @@ public class AuthController {
     private final SetUpPasswordUseCase setUpPasswordUseCase;
     private final RefreshUseCase refreshUseCase;
     private final SendResetPasswordOtpUseCase sendResetPasswordOtpUseCase;
+    private final ResetPasswordUseCase resetPasswordUseCase;
 
-    public AuthController(LoginUseCase loginUseCase, RegisterUseCase registerUseCase, SetUpPasswordUseCase setUpPasswordUseCase, RefreshUseCase refreshUseCase, SendResetPasswordOtpUseCase sendResetPasswordOtpUseCase) {
+    public AuthController(LoginUseCase loginUseCase, RegisterUseCase registerUseCase, SetUpPasswordUseCase setUpPasswordUseCase, RefreshUseCase refreshUseCase, SendResetPasswordOtpUseCase sendResetPasswordOtpUseCase, ResetPasswordUseCase resetPasswordUseCase) {
         this.loginUseCase = loginUseCase;
         this.registerUseCase = registerUseCase;
         this.setUpPasswordUseCase = setUpPasswordUseCase;
         this.refreshUseCase = refreshUseCase;
         this.sendResetPasswordOtpUseCase = sendResetPasswordOtpUseCase;
+        this.resetPasswordUseCase = resetPasswordUseCase;
     }
 
     @PostMapping("/login")
@@ -94,6 +99,14 @@ public class AuthController {
         var command = SendResetPasswordOtpCommandMapper.fromRequest(request);
         sendResetPasswordOtpUseCase.execute(command);
         var response = ApiResponse.success("Mã OTP đặt lại mật khẩu đã được gửi");
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/reset-password")
+    public ResponseEntity<ApiResponse<Object>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        var command = ResetPasswordCommandMapper.fromRequest(request);
+        resetPasswordUseCase.execute(command);
+        var response = ApiResponse.success("Mật khẩu đã thay đổi thành công");
         return ResponseEntity.ok(response);
     }
 }

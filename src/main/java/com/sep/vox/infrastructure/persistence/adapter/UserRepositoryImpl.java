@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.user.User;
+import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.infrastructure.persistence.mapper.UserMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataUserRepository;
@@ -49,6 +50,18 @@ public class UserRepositoryImpl implements UserRepository {
     @Override
     public boolean existsByEmail(String email) {
         return springDataUserRepository.existsByEmail(email);
+    }
+
+
+    @Override
+    public int changeUserPassword(String email, String passwordHash) {
+        return springDataUserRepository.changeUserPassword(email, passwordHash);
+    }
+
+
+    @Override
+    public boolean existsByEmailAndStatus(String email, UserStatus status) {
+        return springDataUserRepository.existsByEmailAndStatus(email, status.name());
     }
     
 }

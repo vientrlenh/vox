@@ -12,6 +12,7 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.CacheManagerPort;
 import com.sep.vox.application.port.output.EventPublisherPort;
 import com.sep.vox.application.port.output.OneTimePasswordPort;
+import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
@@ -39,14 +40,14 @@ public class SendResetPasswordOtpUseCase implements IUseCase<SendResetPasswordOt
     public Void execute(SendResetPasswordOtpCommand input) {
         var command = normalize(input);
 
-        if (!userRepository.existsByEmail(command.email())) {
+        if (!userRepository.existsByEmailAndStatus(command.email(), UserStatus.ACTIVE)) {
             return null;
         }
 
         var otp = oneTimePasswordPort.generate(OTP_SIZE);
         var otpHash = oneTimePasswordPort.hash(otp);
 
-        var key = CacheKey.RESET_PASSWORD_PREFIX + CacheKey.OTP_PREFIX + command.email();
+        var key = resetPasswordKey(command);
         cacheManagerPort.save(key, otpHash, TTL);
         eventPublisherPort.publish(new SendResetPasswordOtpEvent(command.email(), otp));
         return null;
@@ -56,5 +57,9 @@ public class SendResetPasswordOtpUseCase implements IUseCase<SendResetPasswordOt
         return new SendResetPasswordOtpCommand(
             StringNormalization.normalizeEmail(input.email())
         );
+    }
+
+    private String resetPasswordKey(SendResetPasswordOtpCommand command) {
+        return CacheKey.RESET_PASSWORD_PREFIX + CacheKey.OTP_PREFIX + command.email();
     }
 }

@@ -1,6 +1,7 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
@@ -20,16 +21,16 @@ public class UserRoleRepositoryImpl implements UserRoleRepository {
     }
 
     @Override
-    public List<UserRole> findByRoleId(UUID id) {
-        return springDataUserRoleRepository.findByRoleId(id)
+    public List<UserRole> findByRoleId(UUID roleId) {
+        return springDataUserRoleRepository.findByRoleId(roleId)
             .stream()
             .map(UserRoleMapper::toDomain)
             .toList();
     }
 
     @Override
-    public List<UserRole> findByUserId(UUID id) {
-        return springDataUserRoleRepository.findByUserId(id)
+    public List<UserRole> findByUserId(UUID userId) {
+        return springDataUserRoleRepository.findByUserId(userId)
             .stream()
             .map(UserRoleMapper::toDomain)
             .toList();
@@ -45,6 +46,12 @@ public class UserRoleRepositoryImpl implements UserRoleRepository {
     @Override
     public boolean existsByRoleId(UUID roleId) {
         return springDataUserRoleRepository.existsByRoleId(roleId);
+    }
+
+    @Override
+    public Optional<UserRole> findByUserIdAndRoleId(UUID userId, UUID roleId) {
+        return springDataUserRoleRepository.findByUserIdAndRoleId(userId, roleId)
+            .map(UserRoleMapper::toDomain);
     }
     
 }

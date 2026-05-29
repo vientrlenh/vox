@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 
 import graphql.GraphQLError;
 import graphql.schema.DataFetchingEnvironment;
@@ -46,6 +47,15 @@ public class GlobalExceptionResolver extends DataFetcherExceptionResolverAdapter
         if (ex instanceof IllegalStateException) {
             return GraphQLError.newError()
                 .errorType(ErrorType.BAD_REQUEST)
+                .message(ex.getMessage())
+                .path(env.getExecutionStepInfo().getPath())
+                .location(env.getField().getSourceLocation())
+                .build();
+        }
+
+        if (ex instanceof UnauthorizedException) {
+            return GraphQLError.newError()
+                .errorType(ErrorType.UNAUTHORIZED)
                 .message(ex.getMessage())
                 .path(env.getExecutionStepInfo().getPath())
                 .location(env.getField().getSourceLocation())

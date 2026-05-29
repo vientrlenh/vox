@@ -12,6 +12,7 @@ public class SchoolClass {
     private UUID languageId;
     private ClassCode code;
     private String name;
+    private String description;
     private UUID levelId;
     private LocalDate startDate;
     private LocalDate endDate;
@@ -23,7 +24,7 @@ public class SchoolClass {
 
     public SchoolClass() {}
 
-    public SchoolClass(UUID id, UUID schoolId, UUID languageId, ClassCode code, String name, UUID levelId,
+    public SchoolClass(UUID id, UUID schoolId, UUID languageId, ClassCode code, String name, String description, UUID levelId,
             LocalDate startDate, LocalDate endDate, boolean isActive, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
@@ -31,6 +32,7 @@ public class SchoolClass {
         this.languageId = languageId;
         this.code = code;
         this.name = name;
+        this.description = description;
         this.levelId = levelId;
         this.startDate = startDate;
         this.endDate = endDate;
@@ -41,13 +43,14 @@ public class SchoolClass {
         this.updatedBy = updatedBy;
     }
 
-    public SchoolClass(UUID schoolId, UUID languageId, ClassCode code, String name, UUID levelId, LocalDate startDate,
+    public SchoolClass(UUID schoolId, UUID languageId, ClassCode code, String name, String description, UUID levelId, LocalDate startDate,
             LocalDate endDate, boolean isActive, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy,
             UUID updatedBy) {
         this.schoolId = schoolId;
         this.languageId = languageId;
         this.code = code;
         this.name = name;
+        this.description = description;
         this.levelId = levelId;
         this.startDate = startDate;
         this.endDate = endDate;
@@ -160,6 +163,14 @@ public class SchoolClass {
 
     public void setUpdatedBy(UUID updatedBy) {
         this.updatedBy = updatedBy;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     

@@ -1,8 +1,8 @@
 package com.sep.vox.application.port.output;
 
-
-import com.sep.vox.application.response.output.GeneratedSessionToken;
+import java.time.OffsetDateTime;
+import java.util.UUID;
 
 public interface SessionManagerPort {
-    GeneratedSessionToken generateToken();
+    void revoke(UUID sessionId, OffsetDateTime now);
 }

@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.interfaces.rest.dto.response.ErrorResponse;
 import com.sep.vox.interfaces.rest.dto.response.ValidationErrorResponse;
 
@@ -28,6 +29,7 @@ public class GlobalExceptionHandler {
     private static final String ILLEGAL_ARGUMENT_ERROR = "ILLEGAL_ARGUMENT";
     private static final String INVALID_STATE_ERROR = "INVALID_STATE";
     private static final String VALIDATION_ERROR = "BAD_REQUEST";
+    private static final String UNAUTHORIZED_ERROR = "UNAUTHORIZED";
     private static final String INTERNAL_ERROR = "INTERNAL_SERVER_ERROR";
 
     private static final String AUTHENTICATION_ERROR = "BAD_CREDENTIALS";
@@ -57,6 +59,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleIllegalState(IllegalStateException e) {
         var error = new ErrorResponse(INVALID_STATE_ERROR, e.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<ErrorResponse> handleUnauthorized(UnauthorizedException e) {
+        var error = new ErrorResponse(UNAUTHORIZED_ERROR, e.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
     }
 
 

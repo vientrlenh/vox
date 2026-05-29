@@ -11,17 +11,20 @@ import org.springframework.web.bind.annotation.RestController;
 import com.sep.vox.application.port.input.usecase.auth.LoginUseCase;
 import com.sep.vox.application.port.input.usecase.auth.RefreshUseCase;
 import com.sep.vox.application.port.input.usecase.auth.RegisterUseCase;
+import com.sep.vox.application.port.input.usecase.auth.SendResetPasswordOtpUseCase;
 import com.sep.vox.application.port.input.usecase.auth.SetUpPasswordUseCase;
 import com.sep.vox.application.response.input.auth.LoginResponse;
 import com.sep.vox.application.response.input.auth.RefreshResponse;
 import com.sep.vox.interfaces.rest.dto.request.LoginRequest;
 import com.sep.vox.interfaces.rest.dto.request.RefreshRequest;
 import com.sep.vox.interfaces.rest.dto.request.RegisterRequest;
+import com.sep.vox.interfaces.rest.dto.request.SendResetPasswordOtpRequest;
 import com.sep.vox.interfaces.rest.dto.request.SetUpPasswordRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 import com.sep.vox.interfaces.rest.mapper.LoginCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.RefreshCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.RegisterCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.SendResetPasswordOtpCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.SetUpPasswordCommandMapper;
 import com.sep.vox.interfaces.shared.IpAddressReceiver;
 
@@ -38,12 +41,14 @@ public class AuthController {
     private final RegisterUseCase registerUseCase;
     private final SetUpPasswordUseCase setUpPasswordUseCase;
     private final RefreshUseCase refreshUseCase;
+    private final SendResetPasswordOtpUseCase sendResetPasswordOtpUseCase;
 
-    public AuthController(LoginUseCase loginUseCase, RegisterUseCase registerUseCase, SetUpPasswordUseCase setUpPasswordUseCase, RefreshUseCase refreshUseCase) {
+    public AuthController(LoginUseCase loginUseCase, RegisterUseCase registerUseCase, SetUpPasswordUseCase setUpPasswordUseCase, RefreshUseCase refreshUseCase, SendResetPasswordOtpUseCase sendResetPasswordOtpUseCase) {
         this.loginUseCase = loginUseCase;
         this.registerUseCase = registerUseCase;
         this.setUpPasswordUseCase = setUpPasswordUseCase;
         this.refreshUseCase = refreshUseCase;
+        this.sendResetPasswordOtpUseCase = sendResetPasswordOtpUseCase;
     }
 
     @PostMapping("/login")
@@ -80,6 +85,15 @@ public class AuthController {
         var command = RefreshCommandMapper.fromRequest(request);
         var data = refreshUseCase.execute(command);
         var response = ApiResponse.success("Yêu cầu thành công", data);
+        return ResponseEntity.ok(response);
+    }
+
+
+    @PostMapping("/reset-password-otp")
+    public ResponseEntity<ApiResponse<Object>> sendResetPasswordOtp(@Valid @RequestBody SendResetPasswordOtpRequest request) {
+        var command = SendResetPasswordOtpCommandMapper.fromRequest(request);
+        sendResetPasswordOtpUseCase.execute(command);
+        var response = ApiResponse.success("Mã OTP đặt lại mật khẩu đã được gửi");
         return ResponseEntity.ok(response);
     }
 }

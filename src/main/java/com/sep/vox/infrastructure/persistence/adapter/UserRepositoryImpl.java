@@ -44,5 +44,11 @@ public class UserRepositoryImpl implements UserRepository {
         var saved = springDataUserRepository.save(entity);
         return UserMapper.toDomain(saved);
     }
+
+
+    @Override
+    public boolean existsByEmail(String email) {
+        return springDataUserRepository.existsByEmail(email);
+    }
     
 }

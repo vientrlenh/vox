@@ -16,6 +16,8 @@ public class SmtpEmailTemplateRenderService implements MailTemplatePort {
         "templates/email/register-form-approved-password-setup.html";
     private static final String REGISTER_FORM_REJECTED_TEMPLATE =
         "templates/email/register-form-rejected.html";
+    private static final String RESET_PASSWORD_OTP_TEMPLATE =
+        "templates/email/reset-password-otp.html";
 
     @Override
     public String renderPasswordSetUpEmail(String schoolAdminName, String schoolName, String passwordSetupUrl,
@@ -31,6 +33,13 @@ public class SmtpEmailTemplateRenderService implements MailTemplatePort {
     public String renderRejectRegisterFormEmail(String reason) {
         return loadTemplate(REGISTER_FORM_REJECTED_TEMPLATE)
             .replace("{{reason}}", escapeHtml(reason));
+    }
+
+    @Override
+    public String renderResetPasswordOtpEmail(String otp, String expiresIn) {
+        return loadTemplate(RESET_PASSWORD_OTP_TEMPLATE)
+            .replace("{{otp}}", escapeHtml(otp))
+            .replace("{{expiresIn}}", escapeHtml(expiresIn));
     }
 
     private String loadTemplate(String path) {

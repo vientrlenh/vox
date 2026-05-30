@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -47,6 +46,9 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/api/v1/schools")
 public class SchoolUserController {
+
+    private static final long MAX_UPLOAD_SIZE_BYTES = 5 * 1024 * 1024;
+    private static final java.util.Set<String> ALLOWED_EXTENSIONS = java.util.Set.of("csv", "xlsx", "json");
 
     private final CreateSchoolUserUseCase createSchoolUserUseCase;
     private final ViewSchoolUserUseCase viewSchoolUserUseCase;
@@ -117,6 +119,7 @@ public class SchoolUserController {
             @PathVariable UUID schoolId,
             @Parameter(description = "File import (CSV/XLSX/JSON)", content = @Content(mediaType = MediaType.APPLICATION_OCTET_STREAM_VALUE, schema = @Schema(type = "string", format = "binary")))
             @RequestPart("file") MultipartFile file) {
+        validateUploadFile(file);
         var command = UploadSchoolUserImportFileCommandMapper.fromRequest(schoolId, file);
         var data = uploadSchoolUserImportFileUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Upload file import thành công", data));
@@ -130,5 +133,22 @@ public class SchoolUserController {
         var command = SchoolUserImportCommandMapper.fromRequest(schoolId, request);
         var data = importSchoolUsersUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Import người dùng thành công", data));
+    }
+
+    private void validateUploadFile(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("File không hợp lệ");
+        }
+        if (file.getSize() > MAX_UPLOAD_SIZE_BYTES) {
+            throw new IllegalArgumentException("File vượt quá kích thước cho phép");
+        }
+        var fileName = file.getOriginalFilename();
+        if (fileName == null || !fileName.contains(".")) {
+            throw new IllegalArgumentException("Định dạng file không hợp lệ");
+        }
+        var extension = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
+        if (!ALLOWED_EXTENSIONS.contains(extension)) {
+            throw new IllegalArgumentException("Định dạng file không được hỗ trợ");
+        }
     }
 }

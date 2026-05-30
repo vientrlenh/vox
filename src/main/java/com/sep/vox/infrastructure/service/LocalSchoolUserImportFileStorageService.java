@@ -8,6 +8,7 @@ import java.time.OffsetDateTime;
 import java.util.Properties;
 import java.util.UUID;
 
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.common.importer.ImportFileFormat;
@@ -22,6 +23,7 @@ public class LocalSchoolUserImportFileStorageService implements SchoolUserImport
 
     private static final String META_SUFFIX = ".properties";
     private static final String FILE_PREFIX = "vox-import-";
+    private static final long FILE_TTL_HOURS = 1L;
     private static final String EXPIRES_AT_KEY = "expiresAt";
     private static final String ORIGINAL_NAME_KEY = "originalFileName";
     private static final String FORMAT_KEY = "format";
@@ -42,7 +44,7 @@ public class LocalSchoolUserImportFileStorageService implements SchoolUserImport
     public StoredImportFile save(ImportFileData fileData) {
         var format = ImportFileFormat.fromFileName(fileData.originalFileName());
         var fileId = UUID.randomUUID().toString();
-        var expiresAt = OffsetDateTime.now().plusHours(6);
+        var expiresAt = OffsetDateTime.now().plusHours(FILE_TTL_HOURS);
         var filePath = baseDir.resolve(FILE_PREFIX + fileId + "." + format.name().toLowerCase());
         var metaPath = baseDir.resolve(FILE_PREFIX + fileId + META_SUFFIX);
 
@@ -102,6 +104,36 @@ public class LocalSchoolUserImportFileStorageService implements SchoolUserImport
             Files.deleteIfExists(metaPath);
         } catch (IOException e) {
             throw new IllegalStateException("Không thể xóa file import", e);
+        }
+    }
+
+    @Scheduled(cron = "0 0 2 * * *")
+    public void cleanupExpiredFiles() {
+        try (var stream = Files.list(baseDir)) {
+            var now = OffsetDateTime.now();
+            stream.filter(path -> path.getFileName().toString().startsWith(FILE_PREFIX) && path.getFileName().toString().endsWith(META_SUFFIX))
+                .forEach(path -> cleanupMeta(path, now));
+        } catch (IOException e) {
+            throw new IllegalStateException("Không thể dọn dẹp file", e);
+        }
+    }
+
+    private void cleanupMeta(Path metaPath, OffsetDateTime now) {
+        var fileName = metaPath.getFileName().toString();
+        var fileId = fileName.substring(FILE_PREFIX.length(), fileName.length() - META_SUFFIX.length());
+        try (var input = Files.newInputStream(metaPath)) {
+            var props = new Properties();
+            props.load(input);
+            var expiresAt = OffsetDateTime.parse(props.getProperty(EXPIRES_AT_KEY));
+            if (expiresAt.isAfter(now)) {
+                return;
+            }
+            var format = props.getProperty(FORMAT_KEY);
+            var filePath = baseDir.resolve(FILE_PREFIX + fileId + "." + format.toLowerCase());
+            Files.deleteIfExists(filePath);
+            Files.deleteIfExists(metaPath);
+        } catch (Exception e) {
+            throw new IllegalStateException("Không thể dọn dẹp file", e);
         }
     }
 }

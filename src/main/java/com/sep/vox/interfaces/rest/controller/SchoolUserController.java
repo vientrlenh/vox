@@ -3,6 +3,7 @@ package com.sep.vox.interfaces.rest.controller;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -12,9 +13,14 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import com.sep.vox.application.port.input.usecase.schooluser.ChangeSchoolUserRoleUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.CreateSchoolUserUseCase;
@@ -105,11 +111,12 @@ public class SchoolUserController {
         return ResponseEntity.ok(ApiResponse.success("Cập nhật vai trò người dùng thành công"));
     }
 
-    @PostMapping("/{schoolId}/users/import/upload")
+    @PostMapping(value = "/{schoolId}/users/import/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<SchoolUserImportUploadResponse>> uploadImportFile(
             @PathVariable UUID schoolId,
-            @RequestParam("file") MultipartFile file) {
+            @Parameter(description = "File import (CSV/XLSX/JSON)", content = @Content(mediaType = MediaType.APPLICATION_OCTET_STREAM_VALUE, schema = @Schema(type = "string", format = "binary")))
+            @RequestPart("file") MultipartFile file) {
         var command = UploadSchoolUserImportFileCommandMapper.fromRequest(schoolId, file);
         var data = uploadSchoolUserImportFileUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Upload file import thành công", data));

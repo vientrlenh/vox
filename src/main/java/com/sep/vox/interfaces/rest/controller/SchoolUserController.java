@@ -10,20 +10,29 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.sep.vox.application.port.input.usecase.schooluser.ChangeSchoolUserRoleUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.CreateSchoolUserUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.DeleteSchoolUserUseCase;
+import com.sep.vox.application.port.input.usecase.schooluser.ImportSchoolUsersUseCase;
+import com.sep.vox.application.port.input.usecase.schooluser.UploadSchoolUserImportFileUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUserUseCase;
+import com.sep.vox.application.response.input.schooluser.SchoolUserImportResponse;
+import com.sep.vox.application.response.input.schooluser.SchoolUserImportUploadResponse;
 import com.sep.vox.application.response.input.schooluser.SchoolUserResponse;
 import com.sep.vox.interfaces.rest.dto.request.ChangeSchoolUserRoleRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolUserRequest;
+import com.sep.vox.interfaces.rest.dto.request.SchoolUserImportRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 import com.sep.vox.interfaces.rest.mapper.ChangeSchoolUserRoleCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateSchoolUserCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.SchoolUserImportCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.UploadSchoolUserImportFileCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.ViewSchoolUserCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.DeleteSchoolUserCommandMapper;
 
@@ -37,16 +46,22 @@ public class SchoolUserController {
     private final ViewSchoolUserUseCase viewSchoolUserUseCase;
     private final DeleteSchoolUserUseCase deleteSchoolUserUseCase;
     private final ChangeSchoolUserRoleUseCase changeSchoolUserRoleUseCase;
+    private final UploadSchoolUserImportFileUseCase uploadSchoolUserImportFileUseCase;
+    private final ImportSchoolUsersUseCase importSchoolUsersUseCase;
 
     public SchoolUserController(
             CreateSchoolUserUseCase createSchoolUserUseCase,
             ViewSchoolUserUseCase viewSchoolUserUseCase,
             DeleteSchoolUserUseCase deleteSchoolUserUseCase,
-            ChangeSchoolUserRoleUseCase changeSchoolUserRoleUseCase) {
+            ChangeSchoolUserRoleUseCase changeSchoolUserRoleUseCase,
+            UploadSchoolUserImportFileUseCase uploadSchoolUserImportFileUseCase,
+            ImportSchoolUsersUseCase importSchoolUsersUseCase) {
         this.createSchoolUserUseCase = createSchoolUserUseCase;
         this.viewSchoolUserUseCase = viewSchoolUserUseCase;
         this.deleteSchoolUserUseCase = deleteSchoolUserUseCase;
         this.changeSchoolUserRoleUseCase = changeSchoolUserRoleUseCase;
+        this.uploadSchoolUserImportFileUseCase = uploadSchoolUserImportFileUseCase;
+        this.importSchoolUsersUseCase = importSchoolUsersUseCase;
     }
 
     @PostMapping("/{schoolId}/users")
@@ -88,5 +103,25 @@ public class SchoolUserController {
         var command = ChangeSchoolUserRoleCommandMapper.fromRequest(schoolId, userId, request);
         changeSchoolUserRoleUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Cập nhật vai trò người dùng thành công"));
+    }
+
+    @PostMapping("/{schoolId}/users/import/upload")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public ResponseEntity<ApiResponse<SchoolUserImportUploadResponse>> uploadImportFile(
+            @PathVariable UUID schoolId,
+            @RequestParam("file") MultipartFile file) {
+        var command = UploadSchoolUserImportFileCommandMapper.fromRequest(schoolId, file);
+        var data = uploadSchoolUserImportFileUseCase.execute(command);
+        return ResponseEntity.ok(ApiResponse.success("Upload file import thành công", data));
+    }
+
+    @PostMapping("/{schoolId}/users/import")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public ResponseEntity<ApiResponse<SchoolUserImportResponse>> importUsers(
+            @PathVariable UUID schoolId,
+            @Valid @RequestBody SchoolUserImportRequest request) {
+        var command = SchoolUserImportCommandMapper.fromRequest(schoolId, request);
+        var data = importSchoolUsersUseCase.execute(command);
+        return ResponseEntity.ok(ApiResponse.success("Import người dùng thành công", data));
     }
 }

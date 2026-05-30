@@ -185,20 +185,54 @@ public class User {
     
     public static User createSchoolAdmin(String email, String password, String phone, String fullName, LocalDate dateOfBirth, String address, UUID createdUserId, UUID schoolId, OffsetDateTime now) {
         return new User(
-            new Email(email), 
-            password, 
-            new Phone(phone), 
-            new FullName(fullName), 
-            null, 
-            new DateOfBirth(dateOfBirth), 
-            address, 
-            UserStatus.INACTIVE, 
-            now, 
-            now, 
-            createdUserId, 
-            createdUserId, 
+            new Email(email),
+            password,
+            new Phone(phone),
+            new FullName(fullName),
+            null,
+            new DateOfBirth(dateOfBirth),
+            address,
+            UserStatus.INACTIVE,
+            now,
+            now,
+            createdUserId,
+            createdUserId,
             schoolId
         );
+    }
+
+    public static User createStudent(String email, String phone, String fullName, LocalDate dateOfBirth, String address, UUID createdBy, UUID schoolId, OffsetDateTime now) {
+        return createSchoolUser(email, phone, fullName, dateOfBirth, address, createdBy, schoolId, now);
+    }
+
+    public static User createTeacher(String email, String phone, String fullName, LocalDate dateOfBirth, String address, UUID createdBy, UUID schoolId, OffsetDateTime now) {
+        return createSchoolUser(email, phone, fullName, dateOfBirth, address, createdBy, schoolId, now);
+    }
+
+    private static final String PASSWORD_NOT_SET = "__PASSWORD_NOT_SET__";
+
+    private static User createSchoolUser(String email, String phone, String fullName, LocalDate dateOfBirth, String address, UUID createdBy, UUID schoolId, OffsetDateTime now) {
+        return new User(
+            new Email(email),
+            PASSWORD_NOT_SET,
+            new Phone(phone),
+            new FullName(fullName),
+            null,
+            new DateOfBirth(dateOfBirth),
+            address,
+            UserStatus.INACTIVE,
+            now,
+            now,
+            createdBy,
+            createdBy,
+            schoolId
+        );
+    }
+
+    public void softDelete(UUID updatedBy, OffsetDateTime now) {
+        this.status = UserStatus.DISABLED;
+        this.updatedBy = updatedBy;
+        this.updatedAt = now;
     }
 
 }

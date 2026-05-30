@@ -87,7 +87,7 @@ public class ImportSchoolUsersUseCase implements IUseCase<ImportSchoolUsersComma
             try (var inputStream = resource.inputStream()) {
                 rows = parser.parse(inputStream);
             } catch (Exception e) {
-            throw new IllegalArgumentException("Không thể đọc dữ liệu import", e);
+                throw new IllegalArgumentException("Không thể đọc dữ liệu", e);
             }
 
         var errors = new ArrayList<SchoolUserImportError>();

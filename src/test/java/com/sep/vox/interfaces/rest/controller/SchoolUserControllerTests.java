@@ -16,14 +16,26 @@ import org.springframework.http.HttpStatus;
 import com.sep.vox.application.port.input.command.ChangeSchoolUserRoleCommand;
 import com.sep.vox.application.port.input.command.CreateSchoolUserCommand;
 import com.sep.vox.application.port.input.command.DeleteSchoolUserCommand;
+import com.sep.vox.application.port.input.command.ImportSchoolUsersCommand;
 import com.sep.vox.application.port.input.command.ViewSchoolUserCommand;
 import com.sep.vox.application.port.input.usecase.schooluser.ChangeSchoolUserRoleUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.CreateSchoolUserUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.DeleteSchoolUserUseCase;
+import com.sep.vox.application.port.input.usecase.schooluser.ImportSchoolUsersUseCase;
+import com.sep.vox.application.port.input.usecase.schooluser.UploadSchoolUserImportFileUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUserUseCase;
+import com.sep.vox.application.response.input.schooluser.SchoolUserImportResponse;
+import com.sep.vox.application.response.input.schooluser.SchoolUserImportUploadResponse;
 import com.sep.vox.application.response.input.schooluser.SchoolUserResponse;
 import com.sep.vox.interfaces.rest.dto.request.ChangeSchoolUserRoleRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolUserRequest;
+import com.sep.vox.interfaces.rest.dto.request.ImportFieldMappingRequest;
+import com.sep.vox.interfaces.rest.dto.request.SchoolUserImportRequest;
+import com.sep.vox.interfaces.rest.mapper.SchoolUserImportCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.UploadSchoolUserImportFileCommandMapper;
+
+import org.mockito.ArgumentCaptor;
+import org.springframework.mock.web.MockMultipartFile;
 
 public class SchoolUserControllerTests {
 
@@ -31,6 +43,8 @@ public class SchoolUserControllerTests {
     private ViewSchoolUserUseCase viewSchoolUserUseCase;
     private DeleteSchoolUserUseCase deleteSchoolUserUseCase;
     private ChangeSchoolUserRoleUseCase changeSchoolUserRoleUseCase;
+    private UploadSchoolUserImportFileUseCase uploadSchoolUserImportFileUseCase;
+    private ImportSchoolUsersUseCase importSchoolUsersUseCase;
     private SchoolUserController controller;
 
     private final UUID schoolId = UUID.randomUUID();
@@ -42,9 +56,12 @@ public class SchoolUserControllerTests {
         viewSchoolUserUseCase = mock(ViewSchoolUserUseCase.class);
         deleteSchoolUserUseCase = mock(DeleteSchoolUserUseCase.class);
         changeSchoolUserRoleUseCase = mock(ChangeSchoolUserRoleUseCase.class);
+        uploadSchoolUserImportFileUseCase = mock(UploadSchoolUserImportFileUseCase.class);
+        importSchoolUsersUseCase = mock(ImportSchoolUsersUseCase.class);
         controller = new SchoolUserController(
             createSchoolUserUseCase, viewSchoolUserUseCase,
-            deleteSchoolUserUseCase, changeSchoolUserRoleUseCase
+            deleteSchoolUserUseCase, changeSchoolUserRoleUseCase,
+            uploadSchoolUserImportFileUseCase, importSchoolUsersUseCase
         );
     }
 
@@ -100,6 +117,63 @@ public class SchoolUserControllerTests {
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().message()).isEqualTo("Cập nhật vai trò người dùng thành công");
         verify(changeSchoolUserRoleUseCase).execute(new ChangeSchoolUserRoleCommand(schoolId, userId, "TEACHER"));
+    }
+
+    @Test
+    void upload_import_file_should_return_ok() {
+        var file = new MockMultipartFile("file", "students.csv", "text/csv", "email".getBytes());
+        var uploadResponse = new SchoolUserImportUploadResponse(
+            "file-1",
+            "students.csv",
+            "CSV",
+            5,
+            OffsetDateTime.now()
+        );
+        when(uploadSchoolUserImportFileUseCase.execute(any())).thenReturn(uploadResponse);
+
+        var response = controller.uploadImportFile(schoolId, file);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().data()).isEqualTo(uploadResponse);
+
+        var captor = ArgumentCaptor.forClass(com.sep.vox.application.port.input.command.UploadSchoolUserImportFileCommand.class);
+        verify(uploadSchoolUserImportFileUseCase).execute(captor.capture());
+        assertThat(captor.getValue()).isEqualTo(UploadSchoolUserImportFileCommandMapper.fromRequest(schoolId, file));
+    }
+
+    @Test
+    void import_users_should_return_ok() {
+        var request = new SchoolUserImportRequest(
+            "file-1",
+            false,
+            "STUDENT",
+            java.util.Map.of(
+                "email", new ImportFieldMappingRequest("Email", null, null, null),
+                "phone", new ImportFieldMappingRequest("Phone", null, null, null),
+                "fullName", new ImportFieldMappingRequest("Full Name", null, null, null),
+                "dateOfBirth", new ImportFieldMappingRequest("DOB", null, null, null)
+            )
+        );
+        var expectedResponse = new SchoolUserImportResponse(
+            "file-1",
+            false,
+            1,
+            1,
+            1,
+            0,
+            0,
+            java.util.List.of(),
+            java.util.List.of(userId)
+        );
+        when(importSchoolUsersUseCase.execute(any(ImportSchoolUsersCommand.class))).thenReturn(expectedResponse);
+
+        var response = controller.importUsers(schoolId, request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().data()).isEqualTo(expectedResponse);
+        verify(importSchoolUsersUseCase).execute(SchoolUserImportCommandMapper.fromRequest(schoolId, request));
     }
 
     private SchoolUserResponse schoolUserResponse(UUID id, String roleCode, String studentId) {

@@ -6,7 +6,6 @@ import java.util.UUID;
 import org.hibernate.annotations.Generated;
 import org.hibernate.generator.EventType;
 
-import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -14,34 +13,30 @@ import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "language_levels", indexes = {
-    @Index(columnList = "school_id, language_id, name", name = "idx_level_school_name"),
-    @Index(columnList = "school_id, language_id, rank", name = "idx_level_school_language_rank"),
-    @Index(columnList = "school_id, language_id, code", name = "idx_level_school_language_code", unique = true)
+@Table(name = "level_frameworks", indexes = {
+    @Index(columnList = "code", name = "idx_level_frameworks_code", unique = true)
 })
-public class LanguageLevelJpaEntity {
+public class LevelFrameworkJpaEntity {
+    
     @Id
     @Generated(event = EventType.INSERT)
-    @Column(name = "id", nullable = false, updatable = false, insertable = false, columnDefinition = "UUID DEFAULT uuidv7()")
+    @Column(
+        name = "id", 
+        nullable = false, 
+        updatable = false, 
+        insertable = false, 
+        columnDefinition = "UUID DEFAULT uuidv7()"
+    )
     private UUID id;
 
-    @Column(name = "school_id")
-    private UUID schoolId;
-
-    @Column(name = "language_id", nullable = false)
-    private UUID languageId;
-
-    @Column(name = "code", nullable = false, length = 50)
+    @Column(name = "code", nullable = false, length = 50, updatable = false)
     private String code;
 
-    @Column(name = "name", nullable = false, length = 100)
+    @Column(name = "name", nullable = false, length = 255)
     private String name;
 
-    @Column(name = "rank", nullable = false, check = @CheckConstraint(
-        name = "ck_levels_rank_positive",
-        constraint = "rank > 0"
-    ))
-    private int rank;
+    @Column(name = "description", length = 2048)
+    private String description;
 
     @Column(name = "is_active", nullable = false)
     private boolean isActive;
@@ -58,16 +53,14 @@ public class LanguageLevelJpaEntity {
     @Column(name = "updated_by")
     private UUID updatedBy;
 
-    protected LanguageLevelJpaEntity() {}
+    protected LevelFrameworkJpaEntity() {}
 
-    public LanguageLevelJpaEntity(UUID id, UUID schoolId, UUID languageId, String code, String name, int rank,
-            boolean isActive, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+    public LevelFrameworkJpaEntity(UUID id, String code, String name, String description, boolean isActive,
+            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
-        this.schoolId = schoolId;
-        this.languageId = languageId;
         this.code = code;
         this.name = name;
-        this.rank = rank;
+        this.description = description;
         this.isActive = isActive;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -75,13 +68,11 @@ public class LanguageLevelJpaEntity {
         this.updatedBy = updatedBy;
     }
 
-    public LanguageLevelJpaEntity(UUID schoolId, UUID languageId, String code, String name, int rank,
-            boolean isActive, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
-        this.schoolId = schoolId;
-        this.languageId = languageId;
+    public LevelFrameworkJpaEntity(String code, String name, String description, boolean isActive,
+            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.code = code;
         this.name = name;
-        this.rank = rank;
+        this.description = description;
         this.isActive = isActive;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -95,22 +86,6 @@ public class LanguageLevelJpaEntity {
 
     public void setId(UUID id) {
         this.id = id;
-    }
-
-    public UUID getSchoolId() {
-        return schoolId;
-    }
-
-    public void setSchoolId(UUID schoolId) {
-        this.schoolId = schoolId;
-    }
-
-    public UUID getLanguageId() {
-        return languageId;
-    }
-
-    public void setLanguageId(UUID languageId) {
-        this.languageId = languageId;
     }
 
     public String getCode() {
@@ -129,12 +104,12 @@ public class LanguageLevelJpaEntity {
         this.name = name;
     }
 
-    public int getRank() {
-        return rank;
+    public String getDescription() {
+        return description;
     }
 
-    public void setRank(int rank) {
-        this.rank = rank;
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public boolean isActive() {
@@ -176,4 +151,8 @@ public class LanguageLevelJpaEntity {
     public void setUpdatedBy(UUID updatedBy) {
         this.updatedBy = updatedBy;
     }
+
+
+
+    
 }

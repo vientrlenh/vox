@@ -54,7 +54,7 @@ public class SchoolJpaEntity {
     private String address;
 
     @Column(name = "student_count", nullable = false, check = @CheckConstraint(
-        name = "ck_schools_student_count_positive", 
+        name = "chk_student_count_positive", 
         constraint = "student_count > 0"
     ))
     private int studentCount;

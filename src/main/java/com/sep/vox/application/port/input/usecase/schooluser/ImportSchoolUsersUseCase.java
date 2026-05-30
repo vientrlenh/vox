@@ -79,15 +79,16 @@ public class ImportSchoolUsersUseCase implements IUseCase<ImportSchoolUsersComma
         }
 
         var resource = fileStoragePort.load(input.fileId());
-        var format = ImportFileFormat.valueOf(resource.format());
-        var parser = ImportParserFactory.forFormat(format);
+        try {
+            var format = ImportFileFormat.valueOf(resource.format());
+            var parser = ImportParserFactory.forFormat(format);
 
-        List<ImportRow> rows;
-        try (var inputStream = resource.inputStream()) {
-            rows = parser.parse(inputStream);
-        } catch (Exception e) {
+            List<ImportRow> rows;
+            try (var inputStream = resource.inputStream()) {
+                rows = parser.parse(inputStream);
+            } catch (Exception e) {
             throw new IllegalArgumentException("Không thể đọc dữ liệu import", e);
-        }
+            }
 
         var errors = new ArrayList<SchoolUserImportError>();
         var createdUserIds = new ArrayList<UUID>();
@@ -221,17 +222,20 @@ public class ImportSchoolUsersUseCase implements IUseCase<ImportSchoolUsersComma
         var processedRows = totalRows;
         var skippedCount = totalRows - createdCount - failedCount;
 
-        return new SchoolUserImportResponse(
-            input.fileId(),
-            input.dryRun(),
-            totalRows,
-            processedRows,
-            createdCount,
-            failedCount,
-            skippedCount,
-            errors,
-            createdUserIds
-        );
+            return new SchoolUserImportResponse(
+                input.fileId(),
+                input.dryRun(),
+                totalRows,
+                processedRows,
+                createdCount,
+                failedCount,
+                skippedCount,
+                errors,
+                createdUserIds
+            );
+        } finally {
+            fileStoragePort.delete(input.fileId());
+        }
     }
 
     private static SchoolUserImportError error(int rowNumber, String field, String code, String message, String rawValue) {

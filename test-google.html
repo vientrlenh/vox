@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Lấy Google Token</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body style="padding: 50px; font-family: Arial;">
+<h2>Đăng nhập Google để lấy ID Token</h2>
+
+<div id="g_id_onload"
+     data-client_id=901111377831-ujbbndil5c23ru63m85nfj9k98rfk0ua.apps.googleusercontent.com
+     data-callback="handleCredentialResponse">
+</div>
+<div class="g_id_signin" data-type="standard"></div>
+
+<h3 style="margin-top: 30px;">ID Token của bạn (Copy chuỗi này):</h3>
+<textarea id="token-display" rows="12" style="width: 100%;" placeholder="Token sẽ hiện ở đây..."></textarea>
+
+<script>
+    function handleCredentialResponse(response) {
+        console.log("Thành công! Lấy được Token.");
+        document.getElementById('token-display').value = response.credential;
+    }
+</script>
+</body>
+</html>

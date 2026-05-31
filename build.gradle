@@ -44,6 +44,9 @@ dependencies {
 	testCompileOnly 'org.projectlombok:lombok'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	testAnnotationProcessor 'org.projectlombok:lombok'
+// Google API Client for verifying idToken
+	implementation 'com.google.api-client:google-api-client:2.4.1'
+	implementation 'com.google.api-client:google-api-client-gson:2.4.1'
 }
 
 tasks.named('test') {

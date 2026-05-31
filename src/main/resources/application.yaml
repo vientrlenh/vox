@@ -10,7 +10,6 @@ spring:
       enabled: true
 
 
-
   data:
     redis:
       host: ${REDIS_HOST:localhost}
@@ -68,6 +67,8 @@ server:
 app:
   frontend:
     password-setup-url: http://localhost:5173
+  google:
+    client-id: "901111377831-ujbbndil5c23ru63m85nfj9k98rfk0ua.apps.googleusercontent.com"
 
 system-admin:
   email: admin@gmail.com
@@ -76,3 +77,4 @@ system-admin:
   fullName: System Admin
   dateOfBirth: 1990-01-01
   address: HCM
+

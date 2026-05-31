@@ -1,5 +1,11 @@
 package com.sep.vox.interfaces.rest.controller;
 
+import com.sep.vox.application.port.input.command.LoginGoogleCommand;
+import com.sep.vox.application.port.input.usecase.auth.*;
+import com.sep.vox.interfaces.rest.dto.request.*;
+import com.sep.vox.interfaces.rest.mapper.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -8,27 +14,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.sep.vox.application.port.input.usecase.auth.LoginUseCase;
-import com.sep.vox.application.port.input.usecase.auth.RefreshUseCase;
-import com.sep.vox.application.port.input.usecase.auth.RegisterUseCase;
-import com.sep.vox.application.port.input.usecase.auth.ResetPasswordUseCase;
-import com.sep.vox.application.port.input.usecase.auth.SendResetPasswordOtpUseCase;
-import com.sep.vox.application.port.input.usecase.auth.SetUpPasswordUseCase;
 import com.sep.vox.application.response.input.auth.LoginResponse;
 import com.sep.vox.application.response.input.auth.RefreshResponse;
-import com.sep.vox.interfaces.rest.dto.request.LoginRequest;
-import com.sep.vox.interfaces.rest.dto.request.RefreshRequest;
-import com.sep.vox.interfaces.rest.dto.request.RegisterRequest;
-import com.sep.vox.interfaces.rest.dto.request.ResetPasswordRequest;
-import com.sep.vox.interfaces.rest.dto.request.SendResetPasswordOtpRequest;
-import com.sep.vox.interfaces.rest.dto.request.SetUpPasswordRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
-import com.sep.vox.interfaces.rest.mapper.LoginCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.RefreshCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.RegisterCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.ResetPasswordCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.SendResetPasswordOtpCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.SetUpPasswordCommandMapper;
 import com.sep.vox.interfaces.shared.IpAddressReceiver;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -46,14 +34,16 @@ public class AuthController {
     private final RefreshUseCase refreshUseCase;
     private final SendResetPasswordOtpUseCase sendResetPasswordOtpUseCase;
     private final ResetPasswordUseCase resetPasswordUseCase;
+    private final LoginGoogleUseCase loginGoogleUseCase;
 
-    public AuthController(LoginUseCase loginUseCase, RegisterUseCase registerUseCase, SetUpPasswordUseCase setUpPasswordUseCase, RefreshUseCase refreshUseCase, SendResetPasswordOtpUseCase sendResetPasswordOtpUseCase, ResetPasswordUseCase resetPasswordUseCase) {
+    public AuthController(LoginUseCase loginUseCase, RegisterUseCase registerUseCase, SetUpPasswordUseCase setUpPasswordUseCase, RefreshUseCase refreshUseCase, SendResetPasswordOtpUseCase sendResetPasswordOtpUseCase, ResetPasswordUseCase resetPasswordUseCase, LoginGoogleUseCase loginGoogleUseCase) {
         this.loginUseCase = loginUseCase;
         this.registerUseCase = registerUseCase;
         this.setUpPasswordUseCase = setUpPasswordUseCase;
         this.refreshUseCase = refreshUseCase;
         this.sendResetPasswordOtpUseCase = sendResetPasswordOtpUseCase;
         this.resetPasswordUseCase = resetPasswordUseCase;
+        this.loginGoogleUseCase = loginGoogleUseCase;
     }
 
     @PostMapping("/login")
@@ -108,5 +98,30 @@ public class AuthController {
         resetPasswordUseCase.execute(command);
         var response = ApiResponse.success("Mật khẩu đã thay đổi thành công");
         return ResponseEntity.ok(response);
+    }
+
+
+    // ====LOGIN Google==============
+    @Operation(
+            summary = "Đăng nhập bằng Google",
+            description = "Xác thực idToken từ Google và cấp Access Token & Session Token cho hệ thống VOX"
+    )
+    @PostMapping("/google")
+    public ResponseEntity<ApiResponse<LoginResponse>> loginWithGoogle(
+            @Valid @RequestBody LoginGoogleRequest request,
+            HttpServletRequest httpRequest) {
+
+        // 1. Trích xuất thông tin mạng
+        String ipAddress = IpAddressReceiver.getClientIp(httpRequest);
+        String userAgent = httpRequest.getHeader(org.springframework.http.HttpHeaders.USER_AGENT);
+
+        // 2. Đóng gói Command thông qua Mapper (Controller giờ rất gọn gàng)
+        var command = LoginGoogleCommandMapper.fromRequest(request, ipAddress, userAgent);
+
+        // 3. Thực thi Use Case
+        LoginResponse response = loginGoogleUseCase.execute(command);
+
+        // 4. Trả về Response
+        return ResponseEntity.ok(ApiResponse.success(String.valueOf(response)));
     }
 }

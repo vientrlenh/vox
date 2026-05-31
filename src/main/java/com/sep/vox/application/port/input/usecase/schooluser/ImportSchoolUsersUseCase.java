@@ -90,137 +90,131 @@ public class ImportSchoolUsersUseCase implements IUseCase<ImportSchoolUsersComma
                 throw new IllegalArgumentException("Không thể đọc dữ liệu", e);
             }
 
-        var errors = new ArrayList<SchoolUserImportError>();
-        var createdUserIds = new ArrayList<UUID>();
-        var seenEmails = new HashSet<String>();
-        var seenPhones = new HashSet<String>();
+            var errors = new ArrayList<SchoolUserImportError>();
+            var createdUserIds = new ArrayList<UUID>();
+            var seenEmails = new HashSet<String>();
+            var seenPhones = new HashSet<String>();
 
-        int failedCount = 0;
-        int createdCount = 0;
+            int failedCount = 0;
+            int createdCount = 0;
 
-        var mapping = input.mapping() != null ? input.mapping() : Map.<String, ImportFieldMapping>of();
+            var mapping = input.mapping() != null ? input.mapping() : Map.<String, ImportFieldMapping>of();
 
-        for (var row : rows) {
-            var rowErrors = new ArrayList<SchoolUserImportError>();
+            for (var row : rows) {
+                var rowErrors = new ArrayList<SchoolUserImportError>();
 
-            var emailRaw = resolveField(row, format, mapping.get("email"));
-            var phoneRaw = resolveField(row, format, mapping.get("phone"));
-            var fullNameRaw = resolveField(row, format, mapping.get("fullName"));
-            var dobRaw = resolveField(row, format, mapping.get("dateOfBirth"));
-            var roleRaw = resolveField(row, format, mapping.get("roleCode"));
-            var addressRaw = resolveField(row, format, mapping.get("address"));
-            var studentIdRaw = resolveField(row, format, mapping.get("studentId"));
+                var emailRaw = resolveField(row, format, mapping.get("email"));
+                var phoneRaw = resolveField(row, format, mapping.get("phone"));
+                var fullNameRaw = resolveField(row, format, mapping.get("fullName"));
+                var dobRaw = resolveField(row, format, mapping.get("dateOfBirth"));
+                var roleRaw = resolveField(row, format, mapping.get("roleCode"));
+                var addressRaw = resolveField(row, format, mapping.get("address"));
+                var studentIdRaw = resolveField(row, format, mapping.get("studentId"));
 
-            if (isBlank(emailRaw)) {
-                rowErrors.add(error(row.rowNumber(), "email", "REQUIRED", "Email không được để trống", emailRaw));
-            }
-            if (isBlank(phoneRaw)) {
-                rowErrors.add(error(row.rowNumber(), "phone", "REQUIRED", "Số điện thoại không được để trống", phoneRaw));
-            }
-            if (isBlank(fullNameRaw)) {
-                rowErrors.add(error(row.rowNumber(), "fullName", "REQUIRED", "Họ và tên không được để trống", fullNameRaw));
-            }
-            if (isBlank(dobRaw)) {
-                rowErrors.add(error(row.rowNumber(), "dateOfBirth", "REQUIRED", "Ngày sinh không được để trống", dobRaw));
-            }
-
-            var defaultRole = input.defaultRole() != null ? input.defaultRole().trim() : null;
-            var roleCode = roleRaw != null ? roleRaw.trim() : null;
-            if (isBlank(roleCode)) {
-                roleCode = defaultRole;
-            }
-            if (isBlank(roleCode)) {
-                rowErrors.add(error(row.rowNumber(), "roleCode", "REQUIRED", "Vai trò không được để trống", roleRaw));
-            }
-
-            if (!rowErrors.isEmpty()) {
-                errors.addAll(rowErrors);
-                failedCount++;
-                continue;
-            }
-
-            if (roleCode == null) {
-                errors.add(error(row.rowNumber(), "roleCode", "REQUIRED", "Vai trò không được để trống", roleRaw));
-                failedCount++;
-                continue;
-            }
-
-            var email = StringNormalization.normalizeEmail(emailRaw);
-            var phone = StringNormalization.normalizePhone(phoneRaw);
-            var fullName = StringNormalization.trimAndCollapseSpaces(fullNameRaw);
-            var address = addressRaw != null ? StringNormalization.trimAndCollapseSpaces(addressRaw) : null;
-            var studentId = studentIdRaw != null ? studentIdRaw.trim() : null;
-            var resolvedRoleCode = roleCode.trim().toUpperCase(Locale.ROOT);
-
-            var dateOfBirth = parseDateOfBirth(dobRaw, mapping.get("dateOfBirth"));
-            if (dateOfBirth == null) {
-                errors.add(error(row.rowNumber(), "dateOfBirth", "INVALID_FORMAT", "Định dạng ngày không hợp lệ", dobRaw));
-                failedCount++;
-                continue;
-            }
-
-            if (!ALLOWED_ROLE_CODES.contains(resolvedRoleCode)) {
-                errors.add(error(row.rowNumber(), "roleCode", "INVALID_VALUE", "Vai trò không hợp lệ", resolvedRoleCode));
-                failedCount++;
-                continue;
-            }
-
-            if (!seenEmails.add(email)) {
-                errors.add(error(row.rowNumber(), "email", "DUPLICATE", "Email bị trùng trong file", emailRaw));
-                failedCount++;
-                continue;
-            }
-            if (!seenPhones.add(phone)) {
-                errors.add(error(row.rowNumber(), "phone", "DUPLICATE", "Số điện thoại bị trùng trong file", phoneRaw));
-                failedCount++;
-                continue;
-            }
-
-            if (userRepository.findByEmail(email).isPresent()) {
-                errors.add(error(row.rowNumber(), "email", "DUPLICATE", "Email đã tồn tại", emailRaw));
-                failedCount++;
-                continue;
-            }
-            if (userRepository.findByPhone(phone).isPresent()) {
-                errors.add(error(row.rowNumber(), "phone", "DUPLICATE", "Số điện thoại đã tồn tại", phoneRaw));
-                failedCount++;
-                continue;
-            }
-
-            var role = roleRepository.findByCode(resolvedRoleCode).orElse(null);
-            if (role == null) {
-                errors.add(error(row.rowNumber(), "roleCode", "NOT_FOUND", "Không tìm thấy vai trò", resolvedRoleCode));
-                failedCount++;
-                continue;
-            }
-
-            if (input.dryRun()) {
-                continue;
-            }
-
-            var createdId = transactionTemplate.execute(status -> {
-                var now = OffsetDateTime.now();
-                User user = resolvedRoleCode.equals("STUDENT")
-                    ? User.createStudent(email, phone, fullName, dateOfBirth, address, callerId, input.schoolId(), now)
-                    : User.createTeacher(email, phone, fullName, dateOfBirth, address, callerId, input.schoolId(), now);
-
-                var savedUser = userRepository.save(user);
-                userRoleRepository.save(new UserRole(savedUser.getId(), role.getId(), now));
-                if ("STUDENT".equals(resolvedRoleCode) && studentId != null) {
-                    schoolUserRepository.save(SchoolUser.create(savedUser.getId(), input.schoolId(), studentId, callerId, now));
+                if (isBlank(emailRaw)) {
+                    rowErrors.add(error(row.rowNumber(), "email", "REQUIRED", "Email không được để trống", emailRaw));
                 }
-                return savedUser.getId();
-            });
+                if (isBlank(phoneRaw)) {
+                    rowErrors.add(error(row.rowNumber(), "phone", "REQUIRED", "Số điện thoại không được để trống", phoneRaw));
+                }
+                if (isBlank(fullNameRaw)) {
+                    rowErrors.add(error(row.rowNumber(), "fullName", "REQUIRED", "Họ và tên không được để trống", fullNameRaw));
+                }
+                if (isBlank(dobRaw)) {
+                    rowErrors.add(error(row.rowNumber(), "dateOfBirth", "REQUIRED", "Ngày sinh không được để trống", dobRaw));
+                }
 
-            if (createdId != null) {
-                createdUserIds.add(createdId);
-                createdCount++;
+                var defaultRole = input.defaultRole() != null ? input.defaultRole().trim() : null;
+                var roleCode = roleRaw != null ? roleRaw.trim() : null;
+                if (isBlank(roleCode)) {
+                    roleCode = defaultRole;
+                }
+                if (isBlank(roleCode)) {
+                    rowErrors.add(error(row.rowNumber(), "roleCode", "REQUIRED", "Vai trò không được để trống", roleRaw));
+                }
+
+                if (!rowErrors.isEmpty()) {
+                    errors.addAll(rowErrors);
+                    failedCount++;
+                    continue;
+                }
+
+                var email = StringNormalization.normalizeEmail(emailRaw);
+                var phone = StringNormalization.normalizePhone(phoneRaw);
+                var fullName = StringNormalization.trimAndCollapseSpaces(fullNameRaw);
+                var address = addressRaw != null ? StringNormalization.trimAndCollapseSpaces(addressRaw) : null;
+                var studentId = studentIdRaw != null ? studentIdRaw.trim() : null;
+                var resolvedRoleCode = roleCode != null ? roleCode.trim().toUpperCase(Locale.ROOT) : "";
+
+                var dateOfBirth = parseDateOfBirth(dobRaw, mapping.get("dateOfBirth"));
+                if (dateOfBirth == null) {
+                    errors.add(error(row.rowNumber(), "dateOfBirth", "INVALID_FORMAT", "Định dạng ngày không hợp lệ", dobRaw));
+                    failedCount++;
+                    continue;
+                }
+
+                if (!ALLOWED_ROLE_CODES.contains(resolvedRoleCode)) {
+                    errors.add(error(row.rowNumber(), "roleCode", "INVALID_VALUE", "Vai trò không hợp lệ", resolvedRoleCode));
+                    failedCount++;
+                    continue;
+                }
+
+                if (!seenEmails.add(email)) {
+                    errors.add(error(row.rowNumber(), "email", "DUPLICATE", "Email bị trùng trong file", emailRaw));
+                    failedCount++;
+                    continue;
+                }
+                if (!seenPhones.add(phone)) {
+                    errors.add(error(row.rowNumber(), "phone", "DUPLICATE", "Số điện thoại bị trùng trong file", phoneRaw));
+                    failedCount++;
+                    continue;
+                }
+
+                if (userRepository.findByEmail(email).isPresent()) {
+                    errors.add(error(row.rowNumber(), "email", "DUPLICATE", "Email đã tồn tại", emailRaw));
+                    failedCount++;
+                    continue;
+                }
+                if (userRepository.findByPhone(phone).isPresent()) {
+                    errors.add(error(row.rowNumber(), "phone", "DUPLICATE", "Số điện thoại đã tồn tại", phoneRaw));
+                    failedCount++;
+                    continue;
+                }
+
+                var role = roleRepository.findByCode(resolvedRoleCode).orElse(null);
+                if (role == null) {
+                    errors.add(error(row.rowNumber(), "roleCode", "NOT_FOUND", "Không tìm thấy vai trò", resolvedRoleCode));
+                    failedCount++;
+                    continue;
+                }
+
+                if (input.dryRun()) {
+                    continue;
+                }
+
+                var createdId = transactionTemplate.execute(status -> {
+                    var now = OffsetDateTime.now();
+                    User user = resolvedRoleCode.equals("STUDENT")
+                        ? User.createStudent(email, phone, fullName, dateOfBirth, address, callerId, input.schoolId(), now)
+                        : User.createTeacher(email, phone, fullName, dateOfBirth, address, callerId, input.schoolId(), now);
+
+                    var savedUser = userRepository.save(user);
+                    userRoleRepository.save(new UserRole(savedUser.getId(), role.getId(), now));
+                    if ("STUDENT".equals(resolvedRoleCode) && studentId != null) {
+                        schoolUserRepository.save(SchoolUser.create(savedUser.getId(), input.schoolId(), studentId, callerId, now));
+                    }
+                    return savedUser.getId();
+                });
+
+                if (createdId != null) {
+                    createdUserIds.add(createdId);
+                    createdCount++;
+                }
             }
-        }
 
-        var totalRows = rows.size();
-        var processedRows = totalRows;
-        var skippedCount = totalRows - createdCount - failedCount;
+            var totalRows = rows.size();
+            var processedRows = totalRows;
+            var skippedCount = totalRows - createdCount - failedCount;
 
             return new SchoolUserImportResponse(
                 input.fileId(),
@@ -234,7 +228,11 @@ public class ImportSchoolUsersUseCase implements IUseCase<ImportSchoolUsersComma
                 createdUserIds
             );
         } finally {
-            fileStoragePort.delete(input.fileId());
+            try {
+                fileStoragePort.delete(input.fileId());
+            } catch (Exception ignored) {
+                // the scheduled job should've handle this, i think
+            }
         }
     }
 

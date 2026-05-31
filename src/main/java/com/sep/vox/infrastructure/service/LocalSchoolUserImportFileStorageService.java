@@ -102,8 +102,8 @@ public class LocalSchoolUserImportFileStorageService implements SchoolUserImport
             var filePath = baseDir.resolve(FILE_PREFIX + fileId + "." + format.toLowerCase());
             Files.deleteIfExists(filePath);
             Files.deleteIfExists(metaPath);
-        } catch (IOException e) {
-            throw new IllegalStateException("Không thể xóa file import", e);
+        } catch (IOException ignored) {
+            // the scheduled job should've handle this, i think
         }
     }
 

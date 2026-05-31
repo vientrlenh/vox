@@ -43,7 +43,7 @@ public class UploadSchoolUserImportFileUseCase implements IUseCase<UploadSchoolU
             input.originalFileName(),
             input.contentType(),
             input.content()
-        ));
+        ), caller.getSchoolId(), callerId);
 
         return new SchoolUserImportUploadResponse(
             stored.fileId(),

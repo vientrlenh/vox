@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.common.importer.ImportFileFormat;
 import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.output.ImportFileData;
 import com.sep.vox.application.port.output.ImportFileResource;
 import com.sep.vox.application.port.output.SchoolUserImportFileStoragePort;
@@ -28,6 +29,8 @@ public class LocalSchoolUserImportFileStorageService implements SchoolUserImport
     private static final String ORIGINAL_NAME_KEY = "originalFileName";
     private static final String FORMAT_KEY = "format";
     private static final String SIZE_KEY = "sizeBytes";
+    private static final String SCHOOL_ID_KEY = "schoolId";
+    private static final String CREATED_BY_KEY = "createdBy";
 
     private final Path baseDir;
 
@@ -41,7 +44,7 @@ public class LocalSchoolUserImportFileStorageService implements SchoolUserImport
     }
 
     @Override
-    public StoredImportFile save(ImportFileData fileData) {
+    public StoredImportFile save(ImportFileData fileData, UUID schoolId, UUID createdBy) {
         var format = ImportFileFormat.fromFileName(fileData.originalFileName());
         var fileId = UUID.randomUUID().toString();
         var expiresAt = OffsetDateTime.now().plusHours(FILE_TTL_HOURS);
@@ -55,6 +58,8 @@ public class LocalSchoolUserImportFileStorageService implements SchoolUserImport
             props.setProperty(FORMAT_KEY, format.name());
             props.setProperty(SIZE_KEY, String.valueOf(fileData.content().length));
             props.setProperty(EXPIRES_AT_KEY, expiresAt.toString());
+            props.setProperty(SCHOOL_ID_KEY, schoolId.toString());
+            props.setProperty(CREATED_BY_KEY, createdBy.toString());
             try (var out = Files.newOutputStream(metaPath)) {
                 props.store(out, "vox import file metadata");
             }
@@ -66,7 +71,7 @@ public class LocalSchoolUserImportFileStorageService implements SchoolUserImport
     }
 
     @Override
-    public ImportFileResource load(String fileId) {
+    public ImportFileResource load(String fileId, UUID schoolId, UUID createdBy) {
         var metaPath = baseDir.resolve(FILE_PREFIX + fileId + META_SUFFIX);
         if (!Files.exists(metaPath)) {
             throw new NotFoundException("Không tìm thấy file import");
@@ -78,6 +83,12 @@ public class LocalSchoolUserImportFileStorageService implements SchoolUserImport
             var originalName = props.getProperty(ORIGINAL_NAME_KEY);
             var sizeBytes = Long.parseLong(props.getProperty(SIZE_KEY, "0"));
             var expiresAt = OffsetDateTime.parse(props.getProperty(EXPIRES_AT_KEY));
+            var ownerSchoolId = readUuidProperty(props, SCHOOL_ID_KEY);
+            var ownerCreatedBy = readUuidProperty(props, CREATED_BY_KEY);
+
+            if (!ownerSchoolId.equals(schoolId) || !ownerCreatedBy.equals(createdBy)) {
+                throw new UnauthorizedException("Không có quyền truy cập file import này");
+            }
 
             var filePath = baseDir.resolve(FILE_PREFIX + fileId + "." + format.toLowerCase());
             InputStream fileStream = Files.newInputStream(filePath);
@@ -88,7 +99,7 @@ public class LocalSchoolUserImportFileStorageService implements SchoolUserImport
     }
 
     @Override
-    public void delete(String fileId) {
+    public void delete(String fileId, UUID schoolId, UUID createdBy) {
         var metaPath = baseDir.resolve(FILE_PREFIX + fileId + META_SUFFIX);
         try {
             if (!Files.exists(metaPath)) {
@@ -99,6 +110,11 @@ public class LocalSchoolUserImportFileStorageService implements SchoolUserImport
                 props.load(input);
             }
             var format = props.getProperty(FORMAT_KEY);
+            var ownerSchoolId = readUuidProperty(props, SCHOOL_ID_KEY);
+            var ownerCreatedBy = readUuidProperty(props, CREATED_BY_KEY);
+            if (!ownerSchoolId.equals(schoolId) || !ownerCreatedBy.equals(createdBy)) {
+                throw new UnauthorizedException("Không có quyền xoá file import này");
+            }
             var filePath = baseDir.resolve(FILE_PREFIX + fileId + "." + format.toLowerCase());
             Files.deleteIfExists(filePath);
             Files.deleteIfExists(metaPath);
@@ -135,5 +151,13 @@ public class LocalSchoolUserImportFileStorageService implements SchoolUserImport
         } catch (Exception e) {
             throw new IllegalStateException("Không thể dọn dẹp file", e);
         }
+    }
+
+    private static UUID readUuidProperty(Properties props, String key) {
+        var value = props.getProperty(key);
+        if (value == null || value.isBlank()) {
+            throw new IllegalStateException("Thiếu thông tin sở hữu file import");
+        }
+        return UUID.fromString(value);
     }
 }

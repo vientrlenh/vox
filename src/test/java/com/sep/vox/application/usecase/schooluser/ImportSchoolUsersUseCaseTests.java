@@ -24,6 +24,7 @@ import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.SimpleTransactionStatus;
 
 import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.common.importer.ImportParserFactory;
 import com.sep.vox.application.port.input.command.ImportFieldMapping;
 import com.sep.vox.application.port.input.command.ImportSchoolUsersCommand;
@@ -102,7 +103,7 @@ public class ImportSchoolUsersUseCaseTests {
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
         when(userRepository.findById(callerId)).thenReturn(Optional.of(callerUser(callerId, schoolId)));
-        when(fileStoragePort.load("file-1")).thenReturn(resource("CSV", csv));
+        when(fileStoragePort.load("file-1", schoolId, callerId)).thenReturn(resource("CSV", csv));
 
         var result = importSchoolUsersUseCase.execute(command);
 
@@ -132,7 +133,7 @@ public class ImportSchoolUsersUseCaseTests {
         var role = role("STUDENT");
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
         when(userRepository.findById(callerId)).thenReturn(Optional.of(callerUser(callerId, schoolId)));
-        when(fileStoragePort.load("file-1")).thenReturn(resource("CSV", csv));
+        when(fileStoragePort.load("file-1", schoolId, callerId)).thenReturn(resource("CSV", csv));
         when(roleRepository.findByCode("STUDENT")).thenReturn(Optional.of(role));
         when(userRepository.findByEmail("student@school.edu.vn")).thenReturn(Optional.empty());
         when(userRepository.findByPhone("0987654321")).thenReturn(Optional.empty());
@@ -160,7 +161,7 @@ public class ImportSchoolUsersUseCaseTests {
         when(userRepository.findById(callerId)).thenReturn(Optional.of(callerUser(callerId, UUID.randomUUID())));
 
         assertThrows(IllegalArgumentException.class, () -> importSchoolUsersUseCase.execute(command));
-        verify(fileStoragePort, never()).load(any(String.class));
+        verify(fileStoragePort, never()).load(any(String.class), any(UUID.class), any(UUID.class));
     }
 
     @Test
@@ -171,7 +172,19 @@ public class ImportSchoolUsersUseCaseTests {
         when(userRepository.findById(callerId)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> importSchoolUsersUseCase.execute(command));
-        verify(fileStoragePort, never()).load(any(String.class));
+        verify(fileStoragePort, never()).load(any(String.class), any(UUID.class), any(UUID.class));
+    }
+
+    @Test
+    void import_should_throw_when_file_belongs_to_different_uploader() {
+        var command = new ImportSchoolUsersCommand(schoolId, "file-1", true, "STUDENT", Map.of());
+
+        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
+        when(userRepository.findById(callerId)).thenReturn(Optional.of(callerUser(callerId, schoolId)));
+        when(fileStoragePort.load("file-1", schoolId, callerId)).thenThrow(new UnauthorizedException("Không có quyền truy cập file import này"));
+
+        assertThrows(UnauthorizedException.class, () -> importSchoolUsersUseCase.execute(command));
+        verify(fileStoragePort, never()).delete(any(String.class), any(UUID.class), any(UUID.class));
     }
 
     private ImportFileResource resource(String format, String content) {

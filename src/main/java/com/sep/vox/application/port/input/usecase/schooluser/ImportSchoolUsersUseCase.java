@@ -81,7 +81,7 @@ public class ImportSchoolUsersUseCase implements IUseCase<ImportSchoolUsersComma
             throw new IllegalArgumentException("Không có quyền thực hiện thao tác này");
         }
 
-        var resource = fileStoragePort.load(input.fileId());
+        var resource = fileStoragePort.load(input.fileId(), input.schoolId(), callerId);
         try {
             var format = ImportFileFormat.valueOf(resource.format());
             var parser = importParserFactory.forFormat(format);
@@ -232,7 +232,7 @@ public class ImportSchoolUsersUseCase implements IUseCase<ImportSchoolUsersComma
             );
         } finally {
             try {
-                fileStoragePort.delete(input.fileId());
+                fileStoragePort.delete(input.fileId(), input.schoolId(), callerId);
             } catch (Exception ignored) {
                 // the scheduled job should've handle this, i think
             }

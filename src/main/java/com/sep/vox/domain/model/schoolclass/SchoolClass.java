@@ -13,7 +13,7 @@ public class SchoolClass {
     private ClassCode code;
     private String name;
     private String description;
-    private UUID levelId;
+    private UUID targetSchoolLevelVersionId;
     private LocalDate startDate;
     private LocalDate endDate;
     private boolean isActive;
@@ -24,7 +24,7 @@ public class SchoolClass {
 
     public SchoolClass() {}
 
-    public SchoolClass(UUID id, UUID schoolId, UUID languageId, ClassCode code, String name, String description, UUID levelId,
+    public SchoolClass(UUID id, UUID schoolId, UUID languageId, ClassCode code, String name, String description, UUID targetSchoolLevelVersionId,
             LocalDate startDate, LocalDate endDate, boolean isActive, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
@@ -33,7 +33,7 @@ public class SchoolClass {
         this.code = code;
         this.name = name;
         this.description = description;
-        this.levelId = levelId;
+        this.targetSchoolLevelVersionId = targetSchoolLevelVersionId;
         this.startDate = startDate;
         this.endDate = endDate;
         this.isActive = isActive;
@@ -43,7 +43,7 @@ public class SchoolClass {
         this.updatedBy = updatedBy;
     }
 
-    public SchoolClass(UUID schoolId, UUID languageId, ClassCode code, String name, String description, UUID levelId, LocalDate startDate,
+    public SchoolClass(UUID schoolId, UUID languageId, ClassCode code, String name, String description, UUID targetSchoolLevelVersionId, LocalDate startDate,
             LocalDate endDate, boolean isActive, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy,
             UUID updatedBy) {
         this.schoolId = schoolId;
@@ -51,7 +51,7 @@ public class SchoolClass {
         this.code = code;
         this.name = name;
         this.description = description;
-        this.levelId = levelId;
+        this.targetSchoolLevelVersionId = targetSchoolLevelVersionId;
         this.startDate = startDate;
         this.endDate = endDate;
         this.isActive = isActive;
@@ -101,12 +101,12 @@ public class SchoolClass {
         this.name = name;
     }
 
-    public UUID getLevelId() {
-        return levelId;
+    public UUID getTargetSchoolLevelVersionId() {
+        return targetSchoolLevelVersionId;
     }
 
-    public void setLevelId(UUID levelId) {
-        this.levelId = levelId;
+    public void setTargetSchoolLevelVersionId(UUID targetSchoolLevelVersionId) {
+        this.targetSchoolLevelVersionId = targetSchoolLevelVersionId;
     }
 
     public LocalDate getStartDate() {

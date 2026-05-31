@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
+import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.mapper.schooluser.SchoolUserResponseMapper;
 import com.sep.vox.application.port.input.command.CreateSchoolUserCommand;
@@ -68,6 +69,13 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
         }
         var role = roleRepository.findByCode(command.roleCode())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy vai trò: " + command.roleCode()));
+
+        if (userRepository.findByEmail(command.email()).isPresent()) {
+            throw new DuplicatedException("Email đã tồn tại");
+        }
+        if (userRepository.findByPhone(command.phone()).isPresent()) {
+            throw new DuplicatedException("Số điện thoại đã tồn tại");
+        }
 
         User user = command.roleCode().equals("STUDENT")
             ? User.createStudent(command.email(), command.phone(), command.fullName(), command.dateOfBirth(), command.address(), callerId, command.schoolId(), now)

@@ -1,4 +1,4 @@
-package com.sep.vox.application.common.importer;
+package com.sep.vox.infrastructure.importer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

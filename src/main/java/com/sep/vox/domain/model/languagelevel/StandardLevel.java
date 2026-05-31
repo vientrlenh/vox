@@ -3,47 +3,40 @@ package com.sep.vox.domain.model.languagelevel;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-import com.sep.vox.domain.valueobject.LanguageRank;
 import com.sep.vox.domain.valueobject.LevelCode;
 
-public class LanguageLevel {
+public class StandardLevel {
     private UUID id;
-    private UUID schoolId;
     private UUID languageId;
+    private UUID frameworkId;
     private LevelCode code;
-    private String name;
-    private LanguageRank rank;
-    private boolean isActive;
+    private UUID currentVersionId;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
     private UUID createdBy;
     private UUID updatedBy;
 
-    public LanguageLevel() {}
+    public StandardLevel() {}
 
-    public LanguageLevel(UUID id, UUID schoolId, UUID languageId, LevelCode code, String name, LanguageRank rank,
-            boolean isActive, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+    public StandardLevel(UUID id, UUID languageId, UUID frameworkId, LevelCode code, UUID currentVersionId,
+            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
-        this.schoolId = schoolId;
         this.languageId = languageId;
+        this.frameworkId = frameworkId;
         this.code = code;
-        this.name = name;
-        this.rank = rank;
-        this.isActive = isActive;
+        this.currentVersionId = currentVersionId;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
         this.updatedBy = updatedBy;
     }
 
-    public LanguageLevel(UUID schoolId, UUID languageId, LevelCode code, String name, LanguageRank rank,
-            boolean isActive, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
-        this.schoolId = schoolId;
+    public StandardLevel(UUID languageId, UUID frameworkId, LevelCode code, UUID currentVersionId,
+            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.languageId = languageId;
+        this.frameworkId = frameworkId;
         this.code = code;
-        this.name = name;
-        this.rank = rank;
-        this.isActive = isActive;
+        this.currentVersionId = currentVersionId;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
@@ -58,20 +51,20 @@ public class LanguageLevel {
         this.id = id;
     }
 
-    public UUID getSchoolId() {
-        return schoolId;
-    }
-
-    public void setSchoolId(UUID schoolId) {
-        this.schoolId = schoolId;
-    }
-
     public UUID getLanguageId() {
         return languageId;
     }
 
     public void setLanguageId(UUID languageId) {
         this.languageId = languageId;
+    }
+
+    public UUID getFrameworkId() {
+        return frameworkId;
+    }
+
+    public void setFrameworkId(UUID frameworkId) {
+        this.frameworkId = frameworkId;
     }
 
     public LevelCode getCode() {
@@ -82,28 +75,12 @@ public class LanguageLevel {
         this.code = code;
     }
 
-    public String getName() {
-        return name;
+    public UUID getCurrentVersionId() {
+        return currentVersionId;
     }
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public LanguageRank getRank() {
-        return rank;
-    }
-
-    public void setRank(LanguageRank rank) {
-        this.rank = rank;
-    }
-
-    public boolean isActive() {
-        return isActive;
-    }
-
-    public void setActive(boolean isActive) {
-        this.isActive = isActive;
+    public void setCurrentVersionId(UUID currentVersionId) {
+        this.currentVersionId = currentVersionId;
     }
 
     public OffsetDateTime getCreatedAt() {
@@ -138,5 +115,7 @@ public class LanguageLevel {
         this.updatedBy = updatedBy;
     }
 
+    
+    
     
 }

@@ -24,6 +24,7 @@ import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.SimpleTransactionStatus;
 
 import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.common.importer.ImportParserFactory;
 import com.sep.vox.application.port.input.command.ImportFieldMapping;
 import com.sep.vox.application.port.input.command.ImportSchoolUsersCommand;
 import com.sep.vox.application.port.input.usecase.schooluser.ImportSchoolUsersUseCase;
@@ -53,6 +54,7 @@ public class ImportSchoolUsersUseCaseTests {
     private UserRoleRepository userRoleRepository;
     private SchoolUserRepository schoolUserRepository;
     private SchoolUserImportFileStoragePort fileStoragePort;
+    private ImportParserFactory importParserFactory;
     private ImportSchoolUsersUseCase importSchoolUsersUseCase;
 
     private final UUID schoolId = UUID.randomUUID();
@@ -66,6 +68,10 @@ public class ImportSchoolUsersUseCaseTests {
         userRoleRepository = mock(UserRoleRepository.class);
         schoolUserRepository = mock(SchoolUserRepository.class);
         fileStoragePort = mock(SchoolUserImportFileStoragePort.class);
+        importParserFactory = mock(com.sep.vox.application.common.importer.ImportParserFactory.class);
+        when(importParserFactory.forFormat(com.sep.vox.application.common.importer.ImportFileFormat.CSV))
+            .thenReturn(new com.sep.vox.infrastructure.importer.CsvImportParser());
+
         importSchoolUsersUseCase = new ImportSchoolUsersUseCase(
             userContextPort,
             userRepository,
@@ -73,7 +79,8 @@ public class ImportSchoolUsersUseCaseTests {
             userRoleRepository,
             schoolUserRepository,
             fileStoragePort,
-            new NoopTransactionManager()
+            new NoopTransactionManager(),
+            importParserFactory
         );
     }
 

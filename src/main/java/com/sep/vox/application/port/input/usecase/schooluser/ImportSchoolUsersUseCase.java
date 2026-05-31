@@ -50,6 +50,7 @@ public class ImportSchoolUsersUseCase implements IUseCase<ImportSchoolUsersComma
     private final SchoolUserRepository schoolUserRepository;
     private final SchoolUserImportFileStoragePort fileStoragePort;
     private final TransactionTemplate transactionTemplate;
+    private final ImportParserFactory importParserFactory;
 
     public ImportSchoolUsersUseCase(
             UserContextPort userContextPort,
@@ -58,13 +59,15 @@ public class ImportSchoolUsersUseCase implements IUseCase<ImportSchoolUsersComma
             UserRoleRepository userRoleRepository,
             SchoolUserRepository schoolUserRepository,
             SchoolUserImportFileStoragePort fileStoragePort,
-            PlatformTransactionManager transactionManager) {
+            PlatformTransactionManager transactionManager,
+            ImportParserFactory importParserFactory) {
         this.userContextPort = userContextPort;
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.userRoleRepository = userRoleRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.fileStoragePort = fileStoragePort;
+        this.importParserFactory = importParserFactory;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
         this.transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
@@ -81,7 +84,7 @@ public class ImportSchoolUsersUseCase implements IUseCase<ImportSchoolUsersComma
         var resource = fileStoragePort.load(input.fileId());
         try {
             var format = ImportFileFormat.valueOf(resource.format());
-            var parser = ImportParserFactory.forFormat(format);
+            var parser = importParserFactory.forFormat(format);
 
             List<ImportRow> rows;
             try (var inputStream = resource.inputStream()) {

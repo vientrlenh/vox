@@ -17,7 +17,7 @@ import jakarta.persistence.Table;
 @Table(name = "school_classes", indexes = {
     @Index(columnList = "school_id, code", name = "idx_school_class_code", unique = true),
     @Index(columnList = "school_id, name", name = "idx_school_class_name"),
-    @Index(columnList = "school_id, language_id, level_id", name = "idx_school_class_language_level")
+    @Index(columnList = "school_id, language_id, target_school_level_version_id", name = "idx_school_class_language_level")
 })
 public class SchoolClassJpaEntity {
     @Id
@@ -40,8 +40,8 @@ public class SchoolClassJpaEntity {
     @Column(name = "description", length = 2048)
     private String description;
 
-    @Column(name = "level_id", nullable = false)
-    private UUID levelId;
+    @Column(name = "target_school_level_version_id", nullable = false)
+    private UUID targetSchoolLevelVersionId;
 
     @Column(name = "start_date", nullable = false)
     private LocalDate startDate;
@@ -66,7 +66,7 @@ public class SchoolClassJpaEntity {
 
     protected SchoolClassJpaEntity() {}
 
-    public SchoolClassJpaEntity(UUID id, UUID schoolId, UUID languageId, String code, String name, String description, UUID levelId,
+    public SchoolClassJpaEntity(UUID id, UUID schoolId, UUID languageId, String code, String name, String description, UUID targetSchoolLevelVersionId,
             LocalDate startDate, LocalDate endDate, boolean isActive, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
@@ -75,7 +75,7 @@ public class SchoolClassJpaEntity {
         this.code = code;
         this.name = name;
         this.description = description;
-        this.levelId = levelId;
+        this.targetSchoolLevelVersionId = targetSchoolLevelVersionId;
         this.startDate = startDate;
         this.endDate = endDate;
         this.isActive = isActive;
@@ -85,7 +85,7 @@ public class SchoolClassJpaEntity {
         this.updatedBy = updatedBy;
     }
 
-    public SchoolClassJpaEntity(UUID schoolId, UUID languageId, String code, String name, String description, UUID levelId,
+    public SchoolClassJpaEntity(UUID schoolId, UUID languageId, String code, String name, String description, UUID targetSchoolLevelVersionId,
             LocalDate startDate, LocalDate endDate, boolean isActive, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.schoolId = schoolId;
@@ -93,7 +93,7 @@ public class SchoolClassJpaEntity {
         this.code = code;
         this.name = name;
         this.description = description;
-        this.levelId = levelId;
+        this.targetSchoolLevelVersionId = targetSchoolLevelVersionId;
         this.startDate = startDate;
         this.endDate = endDate;
         this.isActive = isActive;
@@ -143,12 +143,12 @@ public class SchoolClassJpaEntity {
         this.name = name;
     }
 
-    public UUID getLevelId() {
-        return levelId;
+    public UUID getTargetSchoolLevelVersionId() {
+        return targetSchoolLevelVersionId;
     }
 
-    public void setLevelId(UUID levelId) {
-        this.levelId = levelId;
+    public void setTargetSchoolLevelVersionId(UUID targetSchoolLevelVersionId) {
+        this.targetSchoolLevelVersionId = targetSchoolLevelVersionId;
     }
 
     public LocalDate getStartDate() {

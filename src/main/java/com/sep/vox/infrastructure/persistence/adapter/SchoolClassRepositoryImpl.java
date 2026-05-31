@@ -48,8 +48,8 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
     }
 
     @Override
-    public List<SchoolClass> findBySchoolIdAndLanguageIdAndLevelId(UUID schoolId, UUID languageId, UUID levelId) {
-        return springDataSchoolClassRepository.findBySchoolIdAndLanguageIdAndLevelId(schoolId, languageId, levelId)
+    public List<SchoolClass> findBySchoolIdAndLanguageIdAndTargetSchoolLevelVersionId(UUID schoolId, UUID languageId, UUID levelId) {
+        return springDataSchoolClassRepository.findBySchoolIdAndLanguageIdAndTargetSchoolLevelVersionId(schoolId, languageId, levelId)
             .stream()
             .map(SchoolClassMapper::toDomain)
             .toList();

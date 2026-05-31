@@ -1,0 +1,20 @@
+package com.sep.vox.domain.model.scoringrule;
+
+public enum ScoringRuleActionType {
+    CAP_FINAL_SCORE,
+    CAP_CRITERION_SCORE,
+    ADD_FINAL_SCORE_DELTA,
+    ADD_CRITERION_SCORE_DELTA,
+
+    CAP_STANDARD_LEVEL,
+    SET_STANDARD_LEVEL, 
+
+    REQUIRE_HUMAN_REVIEW,
+    MARK_RESPONSE_INVALID,
+    REQUIRE_RETAKE,
+
+    ADD_FEEDBACK_TAG,
+    ADD_REVIEW_REASON, 
+    
+    STOP_PROCESSING
+}

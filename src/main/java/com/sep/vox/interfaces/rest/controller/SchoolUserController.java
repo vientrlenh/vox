@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -25,8 +26,10 @@ import com.sep.vox.application.port.input.usecase.schooluser.ChangeSchoolUserRol
 import com.sep.vox.application.port.input.usecase.schooluser.CreateSchoolUserUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.DeleteSchoolUserUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.ImportSchoolUsersUseCase;
+import com.sep.vox.application.port.input.usecase.schooluser.ListSchoolUsersUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.UploadSchoolUserImportFileUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUserUseCase;
+import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.application.response.input.schooluser.SchoolUserImportResponse;
 import com.sep.vox.application.response.input.schooluser.SchoolUserImportUploadResponse;
 import com.sep.vox.application.response.input.schooluser.SchoolUserResponse;
@@ -36,6 +39,7 @@ import com.sep.vox.interfaces.rest.dto.request.SchoolUserImportRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 import com.sep.vox.interfaces.rest.mapper.ChangeSchoolUserRoleCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateSchoolUserCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.ListSchoolUsersCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.SchoolUserImportCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.UploadSchoolUserImportFileCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.ViewSchoolUserCommandMapper;
@@ -47,11 +51,11 @@ import jakarta.validation.Valid;
 @RequestMapping("/api/v1/schools")
 public class SchoolUserController {
 
-    private static final long MAX_UPLOAD_SIZE_BYTES = 5 * 1024 * 1024;
     private static final java.util.Set<String> ALLOWED_EXTENSIONS = java.util.Set.of("csv", "xlsx", "json");
 
     private final CreateSchoolUserUseCase createSchoolUserUseCase;
     private final ViewSchoolUserUseCase viewSchoolUserUseCase;
+    private final ListSchoolUsersUseCase listSchoolUsersUseCase;
     private final DeleteSchoolUserUseCase deleteSchoolUserUseCase;
     private final ChangeSchoolUserRoleUseCase changeSchoolUserRoleUseCase;
     private final UploadSchoolUserImportFileUseCase uploadSchoolUserImportFileUseCase;
@@ -60,12 +64,14 @@ public class SchoolUserController {
     public SchoolUserController(
             CreateSchoolUserUseCase createSchoolUserUseCase,
             ViewSchoolUserUseCase viewSchoolUserUseCase,
+            ListSchoolUsersUseCase listSchoolUsersUseCase,
             DeleteSchoolUserUseCase deleteSchoolUserUseCase,
             ChangeSchoolUserRoleUseCase changeSchoolUserRoleUseCase,
             UploadSchoolUserImportFileUseCase uploadSchoolUserImportFileUseCase,
             ImportSchoolUsersUseCase importSchoolUsersUseCase) {
         this.createSchoolUserUseCase = createSchoolUserUseCase;
         this.viewSchoolUserUseCase = viewSchoolUserUseCase;
+        this.listSchoolUsersUseCase = listSchoolUsersUseCase;
         this.deleteSchoolUserUseCase = deleteSchoolUserUseCase;
         this.changeSchoolUserRoleUseCase = changeSchoolUserRoleUseCase;
         this.uploadSchoolUserImportFileUseCase = uploadSchoolUserImportFileUseCase;
@@ -80,6 +86,20 @@ public class SchoolUserController {
         var command = CreateSchoolUserCommandMapper.fromRequest(schoolId, request);
         var data = createSchoolUserUseCase.execute(command);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Tạo người dùng thành công", data));
+    }
+
+    @GetMapping("/{schoolId}/users")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public ResponseEntity<ApiResponse<PageResult<SchoolUserResponse>>> listUsers(
+            @PathVariable UUID schoolId,
+            @RequestParam int page,
+            @RequestParam int size) {
+        if (page <= 0 || size <= 0) {
+            throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
+        }
+        var command = ListSchoolUsersCommandMapper.fromRequest(schoolId, page, size);
+        var data = listSchoolUsersUseCase.execute(command);
+        return ResponseEntity.ok(ApiResponse.success("Lấy danh sách người dùng thành công", data));
     }
 
     @GetMapping("/{schoolId}/users/{userId}")
@@ -138,9 +158,6 @@ public class SchoolUserController {
     private void validateUploadFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("File không hợp lệ");
-        }
-        if (file.getSize() > MAX_UPLOAD_SIZE_BYTES) {
-            throw new IllegalArgumentException("File vượt quá kích thước cho phép");
         }
         var fileName = file.getOriginalFilename();
         if (fileName == null || !fileName.contains(".")) {

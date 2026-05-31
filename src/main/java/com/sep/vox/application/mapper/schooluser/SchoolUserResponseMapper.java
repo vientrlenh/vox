@@ -1,5 +1,6 @@
 package com.sep.vox.application.mapper.schooluser;
 
+import com.sep.vox.application.query.dto.SchoolUserInfo;
 import com.sep.vox.application.response.input.schooluser.SchoolUserResponse;
 import com.sep.vox.domain.model.schooluser.SchoolUser;
 import com.sep.vox.domain.model.user.User;
@@ -17,6 +18,20 @@ public class SchoolUserResponseMapper {
             user.getSchoolId(),
             schoolUser != null ? schoolUser.getStudentId() : null,
             user.getCreatedAt()
+        );
+    }
+
+    public static SchoolUserResponse toResponse(SchoolUserInfo info) {
+        return new SchoolUserResponse(
+            info.id(),
+            info.email(),
+            info.phone(),
+            info.fullName(),
+            info.roleCode(),
+            info.status(),
+            info.schoolId(),
+            info.studentId(),
+            info.createdAt()
         );
     }
 }

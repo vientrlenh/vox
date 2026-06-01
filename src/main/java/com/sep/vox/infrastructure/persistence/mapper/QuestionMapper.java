@@ -1,7 +1,6 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.question.Question;
-import com.sep.vox.domain.valueobject.DifficultyLevel;
 import com.sep.vox.domain.valueobject.QuestionType;
 import com.sep.vox.infrastructure.persistence.entity.QuestionJpaEntity;
 
@@ -13,7 +12,7 @@ public final class QuestionMapper {
             jpa.getTopicId(),
             jpa.getQuestionText(),
             jpa.getAudioUrl(),
-            new DifficultyLevel(jpa.getDifficultyLevel()),
+            jpa.getStandardLevelId(),
             new QuestionType(jpa.getQuestionType()),
             jpa.getDurationSeconds(),
             jpa.isActive(),
@@ -27,7 +26,7 @@ public final class QuestionMapper {
             domain.getTopicId(),
             domain.getQuestionText(),
             domain.getAudioUrl(),
-            domain.getDifficultyLevel().value(),
+            domain.getStandardLevelId(),
             domain.getQuestionType().value(),
             domain.getDurationSeconds(),
             domain.isActive(),

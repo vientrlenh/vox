@@ -44,13 +44,13 @@ public class QuestionRepositoryImpl implements QuestionRepository {
 
     @Override
     public PageResult<Question> findByTopicId(UUID topicId, PageRequest pageRequest) {
-        var pageable = org.springframework.data.domain.PageRequest.of(pageRequest.page(), pageRequest.size());
+        var pageable = org.springframework.data.domain.PageRequest.of(pageRequest.page() - 1, pageRequest.size());
         var page = springDataQuestionRepository.findByTopicId(topicId, pageable);
         return new PageResult<>(
             page.getContent().stream()
                 .map(QuestionMapper::toDomain)
                 .toList(),
-            page.getNumber(),
+            page.getNumber() + 1,
             page.getSize(),
             page.getTotalElements(),
             page.getTotalPages()
@@ -59,13 +59,13 @@ public class QuestionRepositoryImpl implements QuestionRepository {
 
     @Override
     public PageResult<Question> findAll(PageRequest pageRequest) {
-        var pageable = org.springframework.data.domain.PageRequest.of(pageRequest.page(), pageRequest.size());
+        var pageable = org.springframework.data.domain.PageRequest.of(pageRequest.page() - 1, pageRequest.size());
         var page = springDataQuestionRepository.findAll(pageable);
         return new PageResult<>(
             page.getContent().stream()
                 .map(QuestionMapper::toDomain)
                 .toList(),
-            page.getNumber(),
+            page.getNumber() + 1,
             page.getSize(),
             page.getTotalElements(),
             page.getTotalPages()

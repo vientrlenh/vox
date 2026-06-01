@@ -41,13 +41,13 @@ public class SchoolRepositoryImpl implements SchoolRepository {
 
     @Override
     public PageResult<School> findAll(PageRequest pageRequest) {
-        var pageable = org.springframework.data.domain.PageRequest.of(pageRequest.page(), pageRequest.size());
+        var pageable = org.springframework.data.domain.PageRequest.of(pageRequest.page() - 1, pageRequest.size());
         var page = springDataSchoolRepository.findAll(pageable);
         return new PageResult<>(
             page.getContent().stream()
                 .map(SchoolMapper::toDomain)
                 .toList(),
-            page.getNumber(),
+            page.getNumber() + 1,
             page.getSize(),
             page.getTotalElements(),
             page.getTotalPages()

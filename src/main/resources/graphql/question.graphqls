@@ -6,15 +6,6 @@ enum QuestionType {
     DESCRIPTION
 }
 
-enum DifficultyLevel {
-    A1
-    A2
-    B1
-    B2
-    C1
-    C2
-}
-
 type QuestionBank {
     id: ID!
     bankName: String!
@@ -55,7 +46,10 @@ type Question {
     topicId: ID!
     questionText: String!
     audioUrl: String
-    difficultyLevel: DifficultyLevel!
+    standardLevelId: ID!
+    standardLevelCode: String
+    frameworkCode: String
+    frameworkName: String
     questionType: QuestionType!
     durationSeconds: Int!
     isActive: Boolean!

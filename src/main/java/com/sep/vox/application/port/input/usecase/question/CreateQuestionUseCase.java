@@ -12,9 +12,10 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.QuestionDto;
 import com.sep.vox.domain.mapper.QuestionDtoMapper;
 import com.sep.vox.domain.model.question.Question;
+import com.sep.vox.domain.repository.LevelFrameworkRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.QuestionTopicRepository;
-import com.sep.vox.domain.valueobject.DifficultyLevel;
+import com.sep.vox.domain.repository.StandardLevelRepository;
 import com.sep.vox.domain.valueobject.QuestionType;
 
 @Service
@@ -22,10 +23,15 @@ public class CreateQuestionUseCase implements IUseCase<CreateQuestionCommand, Qu
 
     private final QuestionRepository questionRepository;
     private final QuestionTopicRepository questionTopicRepository;
+    private final StandardLevelRepository standardLevelRepository;
+    private final LevelFrameworkRepository levelFrameworkRepository;
 
-    public CreateQuestionUseCase(QuestionRepository questionRepository, QuestionTopicRepository questionTopicRepository) {
+    public CreateQuestionUseCase(QuestionRepository questionRepository, QuestionTopicRepository questionTopicRepository,
+            StandardLevelRepository standardLevelRepository, LevelFrameworkRepository levelFrameworkRepository) {
         this.questionRepository = questionRepository;
         this.questionTopicRepository = questionTopicRepository;
+        this.standardLevelRepository = standardLevelRepository;
+        this.levelFrameworkRepository = levelFrameworkRepository;
     }
 
     @Override
@@ -41,7 +47,7 @@ public class CreateQuestionUseCase implements IUseCase<CreateQuestionCommand, Qu
             command.topicId(),
             command.questionText(),
             command.audioUrl(),
-            new DifficultyLevel(command.difficultyLevel()),
+            command.standardLevelId(),
             new QuestionType(command.questionType()),
             command.durationSeconds(),
             true,
@@ -49,7 +55,14 @@ public class CreateQuestionUseCase implements IUseCase<CreateQuestionCommand, Qu
         );
 
         var saved = questionRepository.save(question);
-        return QuestionDtoMapper.toDto(saved);
+        var standardLevel = standardLevelRepository.findById(saved.getStandardLevelId()).orElse(null);
+        var slCode = standardLevel != null ? standardLevel.getCode().value() : null;
+        var framework = standardLevel != null
+            ? levelFrameworkRepository.findById(standardLevel.getFrameworkId()).orElse(null)
+            : null;
+        var fwCode = framework != null ? framework.getCode().value() : null;
+        var fwName = framework != null ? framework.getName() : null;
+        return QuestionDtoMapper.toDto(saved, slCode, fwCode, fwName);
     }
 
     private CreateQuestionCommand normalize(CreateQuestionCommand input) {
@@ -57,7 +70,7 @@ public class CreateQuestionUseCase implements IUseCase<CreateQuestionCommand, Qu
             input.topicId(),
             StringNormalization.trimAndCollapseSpaces(input.questionText()),
             input.audioUrl(),
-            StringNormalization.trimAndCollapseSpaces(input.difficultyLevel()),
+            input.standardLevelId(),
             StringNormalization.trimAndCollapseSpaces(input.questionType()),
             input.durationSeconds()
         );

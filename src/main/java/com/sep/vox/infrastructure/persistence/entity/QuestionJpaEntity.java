@@ -16,7 +16,7 @@ import jakarta.persistence.Table;
 @Table(name = "questions", indexes = {
     @Index(columnList = "topic_id", name = "idx_question_topic"),
     @Index(columnList = "question_type", name = "idx_question_type"),
-    @Index(columnList = "difficulty_level", name = "idx_question_difficulty")
+    @Index(columnList = "standard_level_id", name = "idx_question_standard_level")
 })
 public class QuestionJpaEntity {
 
@@ -34,8 +34,8 @@ public class QuestionJpaEntity {
     @Column(name = "audio_url", length = 512)
     private String audioUrl;
 
-    @Column(name = "difficulty_level", nullable = false, length = 20)
-    private String difficultyLevel;
+    @Column(name = "standard_level_id", nullable = false)
+    private UUID standardLevelId;
 
     @Column(name = "question_type", nullable = false, length = 50)
     private String questionType;
@@ -52,13 +52,13 @@ public class QuestionJpaEntity {
     protected QuestionJpaEntity() {}
 
     public QuestionJpaEntity(UUID id, UUID topicId, String questionText, String audioUrl,
-            String difficultyLevel, String questionType, int durationSeconds, boolean isActive,
+            UUID standardLevelId, String questionType, int durationSeconds, boolean isActive,
             OffsetDateTime createdAt) {
         this.id = id;
         this.topicId = topicId;
         this.questionText = questionText;
         this.audioUrl = audioUrl;
-        this.difficultyLevel = difficultyLevel;
+        this.standardLevelId = standardLevelId;
         this.questionType = questionType;
         this.durationSeconds = durationSeconds;
         this.isActive = isActive;
@@ -66,12 +66,12 @@ public class QuestionJpaEntity {
     }
 
     public QuestionJpaEntity(UUID topicId, String questionText, String audioUrl,
-            String difficultyLevel, String questionType, int durationSeconds, boolean isActive,
+            UUID standardLevelId, String questionType, int durationSeconds, boolean isActive,
             OffsetDateTime createdAt) {
         this.topicId = topicId;
         this.questionText = questionText;
         this.audioUrl = audioUrl;
-        this.difficultyLevel = difficultyLevel;
+        this.standardLevelId = standardLevelId;
         this.questionType = questionType;
         this.durationSeconds = durationSeconds;
         this.isActive = isActive;
@@ -110,12 +110,12 @@ public class QuestionJpaEntity {
         this.audioUrl = audioUrl;
     }
 
-    public String getDifficultyLevel() {
-        return difficultyLevel;
+    public UUID getStandardLevelId() {
+        return standardLevelId;
     }
 
-    public void setDifficultyLevel(String difficultyLevel) {
-        this.difficultyLevel = difficultyLevel;
+    public void setStandardLevelId(UUID standardLevelId) {
+        this.standardLevelId = standardLevelId;
     }
 
     public String getQuestionType() {

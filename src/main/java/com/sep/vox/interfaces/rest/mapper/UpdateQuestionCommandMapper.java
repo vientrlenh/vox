@@ -13,7 +13,7 @@ public final class UpdateQuestionCommandMapper {
             request.topicId(),
             request.questionText(),
             request.audioUrl(),
-            request.difficultyLevel(),
+            request.standardLevelId(),
             request.questionType(),
             request.durationSeconds(),
             request.isActive()

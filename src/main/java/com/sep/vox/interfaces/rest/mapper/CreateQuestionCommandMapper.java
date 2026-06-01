@@ -10,7 +10,7 @@ public final class CreateQuestionCommandMapper {
             request.topicId(),
             request.questionText(),
             request.audioUrl(),
-            request.difficultyLevel(),
+            request.standardLevelId(),
             request.questionType(),
             request.durationSeconds()
         );

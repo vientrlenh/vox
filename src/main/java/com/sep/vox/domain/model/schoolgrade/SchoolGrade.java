@@ -1,84 +1,50 @@
-package com.sep.vox.infrastructure.persistence.entity;
+package com.sep.vox.domain.model.schoolgrade;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-import org.hibernate.annotations.Generated;
-import org.hibernate.generator.EventType;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Index;
-import jakarta.persistence.Table;
-
-@Entity
-@Table(name = "school_rooms", indexes = {
-    @Index(columnList = "school_id, code", name = "school_rooms_school_code", unique = true)
-})
-public class SchoolRoomJpaEntity {
-  
-    @Id
-    @Generated(event = EventType.INSERT)
-    @Column(
-        name = "id", 
-        nullable = false, 
-        updatable = false, 
-        insertable = false, 
-        columnDefinition = "UUID DEFAULT uuidv7()"
-    )
+public class SchoolGrade {
     private UUID id;
-    
-    @Column(name = "school_id", nullable = false, updatable = false)
     private UUID schoolId;
-    
-    @Column(name = "code", nullable = false, updatable = false, length = 50)
     private String code;
-
-    @Column(name = "name", nullable = false, length = 255)
     private String name;
-
-    @Column(name = "description", length = 2048)
     private String description;
-
-    @Column(name = "is_active", nullable = false)
-    private boolean isActive;
-
-    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDate startDate;
+    private LocalDate endDate;
+    private SchoolGradeStatus status;
     private OffsetDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
-
-    @Column(name = "created_by", updatable = false)
     private UUID createdBy;
-
-    @Column(name = "updated_by")
     private UUID updatedBy;
 
-    protected SchoolRoomJpaEntity() {}
+    public SchoolGrade() {}
 
-    public SchoolRoomJpaEntity(UUID id, UUID schoolId, String code, String name, String description, boolean isActive,
+    public SchoolGrade(UUID id, UUID schoolId, String code, String name, String description, LocalDate startDate, LocalDate endDate, SchoolGradeStatus status,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.schoolId = schoolId;
         this.code = code;
         this.name = name;
         this.description = description;
-        this.isActive = isActive;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
         this.updatedBy = updatedBy;
     }
 
-    public SchoolRoomJpaEntity(UUID schoolId, String code, String name, String description, boolean isActive,
-            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+    public SchoolGrade(UUID schoolId, String code, String name, String description, LocalDate startDate, LocalDate endDate, SchoolGradeStatus status, OffsetDateTime createdAt,
+            OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.schoolId = schoolId;
         this.code = code;
         this.name = name;
         this.description = description;
-        this.isActive = isActive;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
@@ -91,14 +57,6 @@ public class SchoolRoomJpaEntity {
 
     public void setId(UUID id) {
         this.id = id;
-    }
-
-    public UUID getSchoolId() {
-        return schoolId;
-    }
-
-    public void setSchoolId(UUID schoolId) {
-        this.schoolId = schoolId;
     }
 
     public String getCode() {
@@ -125,12 +83,12 @@ public class SchoolRoomJpaEntity {
         this.description = description;
     }
 
-    public boolean isActive() {
-        return isActive;
+    public SchoolGradeStatus getStatus() {
+        return status;
     }
 
-    public void setActive(boolean isActive) {
-        this.isActive = isActive;
+    public void setStatus(SchoolGradeStatus status) {
+        this.status = status;
     }
 
     public OffsetDateTime getCreatedAt() {
@@ -163,6 +121,30 @@ public class SchoolRoomJpaEntity {
 
     public void setUpdatedBy(UUID updatedBy) {
         this.updatedBy = updatedBy;
+    }
+
+    public UUID getSchoolId() {
+        return schoolId;
+    }
+
+    public void setSchoolId(UUID schoolId) {
+        this.schoolId = schoolId;
+    }
+
+    public LocalDate getStartDate() {
+        return startDate;
+    }
+
+    public void setStartDate(LocalDate startDate) {
+        this.startDate = startDate;
+    }
+
+    public LocalDate getEndDate() {
+        return endDate;
+    }
+
+    public void setEndDate(LocalDate endDate) {
+        this.endDate = endDate;
     }
 
     

@@ -1,11 +1,13 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
 import org.hibernate.generator.EventType;
 
+import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -13,11 +15,15 @@ import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "school_rooms", indexes = {
-    @Index(columnList = "school_id, code", name = "school_rooms_school_code", unique = true)
+@Table(name = "school_grades", indexes = {
+    @Index(columnList = "school_id, code", name = "idx_school_grades_school_code", unique = true)
+}, check = {
+    @CheckConstraint(
+        name = "chk_school_grades_start_end_date_valid", 
+        constraint = "start_date < end_date"
+    )
 })
-public class SchoolRoomJpaEntity {
-  
+public class SchoolGradeJpaEntity {
     @Id
     @Generated(event = EventType.INSERT)
     @Column(
@@ -28,12 +34,12 @@ public class SchoolRoomJpaEntity {
         columnDefinition = "UUID DEFAULT uuidv7()"
     )
     private UUID id;
-    
+
     @Column(name = "school_id", nullable = false, updatable = false)
     private UUID schoolId;
     
-    @Column(name = "code", nullable = false, updatable = false, length = 50)
-    private String code;
+    @Column(name = "code", nullable = false, updatable = false, length = 100)
+    private String code; 
 
     @Column(name = "name", nullable = false, length = 255)
     private String name;
@@ -41,8 +47,19 @@ public class SchoolRoomJpaEntity {
     @Column(name = "description", length = 2048)
     private String description;
 
-    @Column(name = "is_active", nullable = false)
-    private boolean isActive;
+    @Column(name = "start_date", nullable = false)
+    private LocalDate startDate;
+
+    @Column(name = "end_date", nullable = false)
+    private LocalDate endDate;
+
+    @Column(name = "status", nullable = false, length = 20, check = {
+        @CheckConstraint(
+            name = "chk_status_valid", 
+            constraint = "status IN ('INACTIVE', 'ACTIVE', 'ARCHIVED')"
+        )
+    })
+    private String status;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
@@ -56,29 +73,35 @@ public class SchoolRoomJpaEntity {
     @Column(name = "updated_by")
     private UUID updatedBy;
 
-    protected SchoolRoomJpaEntity() {}
+    protected SchoolGradeJpaEntity() {}
 
-    public SchoolRoomJpaEntity(UUID id, UUID schoolId, String code, String name, String description, boolean isActive,
-            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+    public SchoolGradeJpaEntity(UUID id, UUID schoolId, String code, String name, String description,
+            LocalDate startDate, LocalDate endDate, String status, OffsetDateTime createdAt, OffsetDateTime updatedAt,
+            UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.schoolId = schoolId;
         this.code = code;
         this.name = name;
         this.description = description;
-        this.isActive = isActive;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
         this.updatedBy = updatedBy;
     }
 
-    public SchoolRoomJpaEntity(UUID schoolId, String code, String name, String description, boolean isActive,
-            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+    public SchoolGradeJpaEntity(UUID schoolId, String code, String name, String description, LocalDate startDate,
+            LocalDate endDate, String status, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy,
+            UUID updatedBy) {
         this.schoolId = schoolId;
         this.code = code;
         this.name = name;
         this.description = description;
-        this.isActive = isActive;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
@@ -125,12 +148,28 @@ public class SchoolRoomJpaEntity {
         this.description = description;
     }
 
-    public boolean isActive() {
-        return isActive;
+    public LocalDate getStartDate() {
+        return startDate;
     }
 
-    public void setActive(boolean isActive) {
-        this.isActive = isActive;
+    public void setStartDate(LocalDate startDate) {
+        this.startDate = startDate;
+    }
+
+    public LocalDate getEndDate() {
+        return endDate;
+    }
+
+    public void setEndDate(LocalDate endDate) {
+        this.endDate = endDate;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 
     public OffsetDateTime getCreatedAt() {

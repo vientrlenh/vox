@@ -1,6 +1,5 @@
 package com.sep.vox.domain.model.schoolclass;
 
-import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -10,13 +9,12 @@ public class SchoolClass {
     private UUID id;
     private UUID schoolId;
     private UUID languageId;
+    private UUID schoolGradeId;
     private ClassCode code;
     private String name;
     private String description;
     private UUID targetSchoolLevelVersionId;
-    private LocalDate startDate;
-    private LocalDate endDate;
-    private boolean isActive;
+    private SchoolClassStatus status;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
     private UUID createdBy;
@@ -24,37 +22,33 @@ public class SchoolClass {
 
     public SchoolClass() {}
 
-    public SchoolClass(UUID id, UUID schoolId, UUID languageId, ClassCode code, String name, String description, UUID targetSchoolLevelVersionId,
-            LocalDate startDate, LocalDate endDate, boolean isActive, OffsetDateTime createdAt,
+    public SchoolClass(UUID id, UUID schoolId, UUID languageId, UUID schoolGradeId, ClassCode code, String name, String description, UUID targetSchoolLevelVersionId, SchoolClassStatus status, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.schoolId = schoolId;
         this.languageId = languageId;
+        this.schoolGradeId = schoolGradeId;
         this.code = code;
         this.name = name;
         this.description = description;
         this.targetSchoolLevelVersionId = targetSchoolLevelVersionId;
-        this.startDate = startDate;
-        this.endDate = endDate;
-        this.isActive = isActive;
+        this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
         this.updatedBy = updatedBy;
     }
 
-    public SchoolClass(UUID schoolId, UUID languageId, ClassCode code, String name, String description, UUID targetSchoolLevelVersionId, LocalDate startDate,
-            LocalDate endDate, boolean isActive, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy,
+    public SchoolClass(UUID schoolId, UUID languageId, UUID schoolGradeId, ClassCode code, String name, String description, UUID targetSchoolLevelVersionId, SchoolClassStatus status, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy,
             UUID updatedBy) {
         this.schoolId = schoolId;
         this.languageId = languageId;
+        this.schoolGradeId = schoolGradeId;
         this.code = code;
         this.name = name;
         this.description = description;
         this.targetSchoolLevelVersionId = targetSchoolLevelVersionId;
-        this.startDate = startDate;
-        this.endDate = endDate;
-        this.isActive = isActive;
+        this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
@@ -109,30 +103,6 @@ public class SchoolClass {
         this.targetSchoolLevelVersionId = targetSchoolLevelVersionId;
     }
 
-    public LocalDate getStartDate() {
-        return startDate;
-    }
-
-    public void setStartDate(LocalDate startDate) {
-        this.startDate = startDate;
-    }
-
-    public LocalDate getEndDate() {
-        return endDate;
-    }
-
-    public void setEndDate(LocalDate endDate) {
-        this.endDate = endDate;
-    }
-
-    public boolean isActive() {
-        return isActive;
-    }
-
-    public void setActive(boolean isActive) {
-        this.isActive = isActive;
-    }
-
     public OffsetDateTime getCreatedAt() {
         return createdAt;
     }
@@ -171,6 +141,22 @@ public class SchoolClass {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public UUID getSchoolGradeId() {
+        return schoolGradeId;
+    }
+
+    public void setSchoolGradeId(UUID schoolGradeId) {
+        this.schoolGradeId = schoolGradeId;
+    }
+
+    public SchoolClassStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(SchoolClassStatus status) {
+        this.status = status;
     }
 
     

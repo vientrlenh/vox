@@ -3,6 +3,7 @@ package com.sep.vox.infrastructure.persistence.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -78,6 +79,22 @@ class SchoolClassRepositoryTests {
         assertThat(found).isPresent();
         assertThat(found.get().getSchoolId()).isEqualTo(schoolId);
         assertThat(found.get().getName()).isEqualTo("English 10C");
+    }
+
+    @Test
+    void whenFindBySchoolIdAndCodeIn_thenReturnsMatchingSchoolClasses() {
+        var schoolId = UUID.randomUUID();
+        schoolClassRepository.save(newSchoolClass(schoolId, UUID.randomUUID(), UUID.randomUUID(), "ENG_10_D", "English 10D", UUID.randomUUID()));
+        schoolClassRepository.save(newSchoolClass(schoolId, UUID.randomUUID(), UUID.randomUUID(), "ENG_10_E", "English 10E", UUID.randomUUID()));
+        schoolClassRepository.save(newSchoolClass(schoolId, UUID.randomUUID(), UUID.randomUUID(), "ENG_10_F", "English 10F", UUID.randomUUID()));
+        schoolClassRepository.save(newSchoolClass(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "ENG_10_D", "Other School", UUID.randomUUID()));
+
+        var found = schoolClassRepository.findBySchoolIdAndCodeIn(schoolId, List.of("ENG_10_D", "ENG_10_E"));
+
+        assertThat(found).hasSize(2);
+        assertThat(found)
+            .extracting(schoolClass -> schoolClass.getCode().value())
+            .containsExactlyInAnyOrder("ENG_10_D", "ENG_10_E");
     }
 
     @Test

@@ -7,5 +7,6 @@ import com.sep.vox.domain.model.languagelevel.SchoolLevel;
 
 public interface SchoolLevelRepository {
     Optional<SchoolLevel> findById(UUID id);
+    Optional<SchoolLevel> findBySchoolIdAndLanguageIdAndCode(UUID schoolId, UUID languageId, String code);
     SchoolLevel save(SchoolLevel schoolLevel);
 }

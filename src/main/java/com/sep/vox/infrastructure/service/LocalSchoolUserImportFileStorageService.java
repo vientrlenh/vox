@@ -90,6 +90,11 @@ public class LocalSchoolUserImportFileStorageService implements SchoolUserImport
                 throw new UnauthorizedException("Không có quyền truy cập file import này");
             }
 
+            if (!expiresAt.isAfter(OffsetDateTime.now())) {
+                cleanupExpiredFile(fileId, format, metaPath);
+                throw new NotFoundException("File import đã hết hạn");
+            }
+
             var filePath = baseDir.resolve(FILE_PREFIX + fileId + "." + format.toLowerCase());
             InputStream fileStream = Files.newInputStream(filePath);
             return new ImportFileResource(fileId, originalName, format, sizeBytes, expiresAt, fileStream);
@@ -149,6 +154,16 @@ public class LocalSchoolUserImportFileStorageService implements SchoolUserImport
             Files.deleteIfExists(filePath);
             Files.deleteIfExists(metaPath);
         } catch (Exception e) {
+            throw new IllegalStateException("Không thể dọn dẹp file", e);
+        }
+    }
+
+    private void cleanupExpiredFile(String fileId, String format, Path metaPath) {
+        try {
+            var filePath = baseDir.resolve(FILE_PREFIX + fileId + "." + format.toLowerCase());
+            Files.deleteIfExists(filePath);
+            Files.deleteIfExists(metaPath);
+        } catch (IOException e) {
             throw new IllegalStateException("Không thể dọn dẹp file", e);
         }
     }

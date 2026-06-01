@@ -7,13 +7,22 @@ import java.util.UUID;
 import org.hibernate.annotations.Generated;
 import org.hibernate.generator.EventType;
 
+import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "rubric_result_bands")
+@Table(name = "rubric_result_bands", indexes = {
+    @Index(columnList = "rubric_version_id, code", name = "idx_rubric_result_bands_version_id_code", unique = true)
+}, check = {
+    @CheckConstraint(
+        name = "chk_rubric_result_bands_score_min_max_valid", 
+        constraint = "score_min <= score_max"
+    )
+})
 public class RubricResultBandJpaEntity {
     @Id
     @Generated(event = EventType.INSERT)
@@ -44,7 +53,12 @@ public class RubricResultBandJpaEntity {
     @Column(name = "score_max", nullable = false, precision = 6, scale = 2, updatable = false)
     private BigDecimal scoreMax;
 
-    @Column(name = "result_order", nullable = false)
+    @Column(name = "result_order", nullable = false, check = {
+        @CheckConstraint(
+            name = "chk_order_valid", 
+            constraint = "result_order > 0"
+        )
+    })
     private int order;
 
     @Column(name = "is_passing", updatable = false)

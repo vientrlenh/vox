@@ -8,6 +8,7 @@ import com.sep.vox.application.response.SchoolRoomResponse.SchoolRoomResponse;
 import com.sep.vox.domain.common.PageResult;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 
 import java.util.UUID;
@@ -23,9 +24,8 @@ public class SchoolRoomGraphQlController {
         this.getSchoolRoomsUseCase = getSchoolRoomsUseCase;
     }
 
-    // 1. SỬA CHỖ NÀY: Xóa (name = "RoomById")
-    // Tự động map với query "getSchoolRoomById" trong schema vì tên hàm trùng nhau
     @QueryMapping
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public SchoolRoomResponse getSchoolRoomById(@Argument UUID id) {
         var query = new GetSchoolRoomByIdQuery(id);
         return getSchoolRoomByIdUseCase.execute(query);
@@ -33,7 +33,7 @@ public class SchoolRoomGraphQlController {
 
     // Tự động map với query "getSchoolRooms" trong schema
     @QueryMapping
-//  @PreAuthorize("hasRole('SYSTEM_ADMIN')") // Mở lại khi bạn truyền được JWT Token vào GraphiQL nhé
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<SchoolRoomResponse> getSchoolRooms(
             @Argument Integer page,
             @Argument Integer size) {

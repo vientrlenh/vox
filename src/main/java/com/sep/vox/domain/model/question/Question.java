@@ -3,7 +3,6 @@ package com.sep.vox.domain.model.question;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-import com.sep.vox.domain.valueobject.DifficultyLevel;
 import com.sep.vox.domain.valueobject.QuestionType;
 
 public class Question {
@@ -11,7 +10,7 @@ public class Question {
     private UUID topicId;
     private String questionText;
     private String audioUrl;
-    private DifficultyLevel difficultyLevel;
+    private UUID standardLevelId;
     private QuestionType questionType;
     private int durationSeconds;
     private boolean isActive;
@@ -19,25 +18,25 @@ public class Question {
 
     public Question() {}
 
-    public Question(UUID id, UUID topicId, String questionText, String audioUrl, DifficultyLevel difficultyLevel,
+    public Question(UUID id, UUID topicId, String questionText, String audioUrl, UUID standardLevelId,
             QuestionType questionType, int durationSeconds, boolean isActive, OffsetDateTime createdAt) {
         this.id = id;
         this.topicId = topicId;
         this.questionText = questionText;
         this.audioUrl = audioUrl;
-        this.difficultyLevel = difficultyLevel;
+        this.standardLevelId = standardLevelId;
         this.questionType = questionType;
         this.durationSeconds = durationSeconds;
         this.isActive = isActive;
         this.createdAt = createdAt;
     }
 
-    public Question(UUID topicId, String questionText, String audioUrl, DifficultyLevel difficultyLevel,
+    public Question(UUID topicId, String questionText, String audioUrl, UUID standardLevelId,
             QuestionType questionType, int durationSeconds, boolean isActive, OffsetDateTime createdAt) {
         this.topicId = topicId;
         this.questionText = questionText;
         this.audioUrl = audioUrl;
-        this.difficultyLevel = difficultyLevel;
+        this.standardLevelId = standardLevelId;
         this.questionType = questionType;
         this.durationSeconds = durationSeconds;
         this.isActive = isActive;
@@ -76,12 +75,12 @@ public class Question {
         this.audioUrl = audioUrl;
     }
 
-    public DifficultyLevel getDifficultyLevel() {
-        return difficultyLevel;
+    public UUID getStandardLevelId() {
+        return standardLevelId;
     }
 
-    public void setDifficultyLevel(DifficultyLevel difficultyLevel) {
-        this.difficultyLevel = difficultyLevel;
+    public void setStandardLevelId(UUID standardLevelId) {
+        this.standardLevelId = standardLevelId;
     }
 
     public QuestionType getQuestionType() {

@@ -6,6 +6,7 @@ import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.graphql.data.method.annotation.SchemaMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
+
 import org.springframework.stereotype.Controller;
 
 import com.sep.vox.application.port.input.query.ViewQuestionBankDetailsQuery;
@@ -35,7 +36,7 @@ public class QuestionTopicController {
     }
 
     @QueryMapping(name = "questionTopics")
-    @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
+    // @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
     public PageResult<QuestionTopicDto> questionTopics(
             @Argument(name = "bankId") UUID bankId,
             @Argument(name = "page") int page,
@@ -48,7 +49,7 @@ public class QuestionTopicController {
     }
 
     @QueryMapping(name = "questionTopic")
-    @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
+    // @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
     public QuestionTopicDto questionTopic(@Argument(name = "id") UUID id) {
         var query = new ViewQuestionTopicDetailsQuery(id);
         return viewQuestionTopicDetailsUseCase.execute(query);

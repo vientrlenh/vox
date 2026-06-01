@@ -17,8 +17,8 @@ public record CreateQuestionRequest(
     @Size(max = 512, message = "URL audio không được vượt quá 512 ký tự")
     String audioUrl,
 
-    @NotBlank(message = "Mức độ khó không được để trống")
-    String difficultyLevel,
+    @NotNull(message = "ID cấp độ chuẩn không được để trống")
+    UUID standardLevelId,
 
     @NotBlank(message = "Loại câu hỏi không được để trống")
     String questionType,

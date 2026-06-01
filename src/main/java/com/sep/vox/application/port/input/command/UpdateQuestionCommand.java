@@ -7,7 +7,7 @@ public record UpdateQuestionCommand(
     UUID topicId,
     String questionText,
     String audioUrl,
-    String difficultyLevel,
+    UUID standardLevelId,
     String questionType,
     int durationSeconds,
     boolean isActive

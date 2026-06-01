@@ -5,6 +5,7 @@ import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -38,7 +39,7 @@ public class QuestionController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
+    // @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<QuestionDto>> create(@Valid @RequestBody CreateQuestionRequest request) {
         var command = CreateQuestionCommandMapper.fromRequest(request);
         var data = createQuestionUseCase.execute(command);
@@ -47,7 +48,7 @@ public class QuestionController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
+    // @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<QuestionDto>> update(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateQuestionRequest request) {

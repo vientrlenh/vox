@@ -1,5 +1,7 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -24,6 +26,16 @@ public class StandardLevelRepositoryImpl implements StandardLevelRepository {
     public Optional<StandardLevel> findById(UUID id) {
         return springDataStandardLevelRepository.findById(id)
             .map(StandardLevelMapper::toDomain);
+    }
+
+    @Override
+    public List<StandardLevel> findAllByIds(Collection<UUID> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        return springDataStandardLevelRepository.findAllById(ids).stream()
+            .map(StandardLevelMapper::toDomain)
+            .toList();
     }
 
     @Override

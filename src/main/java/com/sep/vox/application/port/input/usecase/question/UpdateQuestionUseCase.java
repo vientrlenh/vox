@@ -9,9 +9,10 @@ import com.sep.vox.application.port.input.command.UpdateQuestionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.QuestionDto;
 import com.sep.vox.domain.mapper.QuestionDtoMapper;
+import com.sep.vox.domain.repository.LevelFrameworkRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.QuestionTopicRepository;
-import com.sep.vox.domain.valueobject.DifficultyLevel;
+import com.sep.vox.domain.repository.StandardLevelRepository;
 import com.sep.vox.domain.valueobject.QuestionType;
 
 @Service
@@ -19,10 +20,15 @@ public class UpdateQuestionUseCase implements IUseCase<UpdateQuestionCommand, Qu
 
     private final QuestionRepository questionRepository;
     private final QuestionTopicRepository questionTopicRepository;
+    private final StandardLevelRepository standardLevelRepository;
+    private final LevelFrameworkRepository levelFrameworkRepository;
 
-    public UpdateQuestionUseCase(QuestionRepository questionRepository, QuestionTopicRepository questionTopicRepository) {
+    public UpdateQuestionUseCase(QuestionRepository questionRepository, QuestionTopicRepository questionTopicRepository,
+            StandardLevelRepository standardLevelRepository, LevelFrameworkRepository levelFrameworkRepository) {
         this.questionRepository = questionRepository;
         this.questionTopicRepository = questionTopicRepository;
+        this.standardLevelRepository = standardLevelRepository;
+        this.levelFrameworkRepository = levelFrameworkRepository;
     }
 
     @Override
@@ -40,13 +46,20 @@ public class UpdateQuestionUseCase implements IUseCase<UpdateQuestionCommand, Qu
         question.setTopicId(command.topicId());
         question.setQuestionText(command.questionText());
         question.setAudioUrl(command.audioUrl());
-        question.setDifficultyLevel(new DifficultyLevel(command.difficultyLevel()));
+        question.setStandardLevelId(command.standardLevelId());
         question.setQuestionType(new QuestionType(command.questionType()));
         question.setDurationSeconds(command.durationSeconds());
         question.setActive(command.isActive());
 
         var saved = questionRepository.save(question);
-        return QuestionDtoMapper.toDto(saved);
+        var standardLevel = standardLevelRepository.findById(saved.getStandardLevelId()).orElse(null);
+        var slCode = standardLevel != null ? standardLevel.getCode().value() : null;
+        var framework = standardLevel != null
+            ? levelFrameworkRepository.findById(standardLevel.getFrameworkId()).orElse(null)
+            : null;
+        var fwCode = framework != null ? framework.getCode().value() : null;
+        var fwName = framework != null ? framework.getName() : null;
+        return QuestionDtoMapper.toDto(saved, slCode, fwCode, fwName);
     }
 
     private UpdateQuestionCommand normalize(UpdateQuestionCommand input) {
@@ -55,7 +68,7 @@ public class UpdateQuestionUseCase implements IUseCase<UpdateQuestionCommand, Qu
             input.topicId(),
             StringNormalization.trimAndCollapseSpaces(input.questionText()),
             input.audioUrl(),
-            StringNormalization.trimAndCollapseSpaces(input.difficultyLevel()),
+            input.standardLevelId(),
             StringNormalization.trimAndCollapseSpaces(input.questionType()),
             input.durationSeconds(),
             input.isActive()

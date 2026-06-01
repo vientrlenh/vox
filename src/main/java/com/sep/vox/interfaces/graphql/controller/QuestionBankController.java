@@ -5,6 +5,7 @@ import java.util.UUID;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
+
 import org.springframework.stereotype.Controller;
 
 import com.sep.vox.application.port.input.query.ViewQuestionBankDetailsQuery;
@@ -28,7 +29,7 @@ public class QuestionBankController {
     }
 
     @QueryMapping(name = "questionBanks")
-    @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
+    // @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
     public PageResult<QuestionBankDto> questionBanks(@Argument(name = "page") int page, @Argument(name = "size") int size) {
         if (page <= 0 || size <= 0) {
             throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
@@ -38,7 +39,7 @@ public class QuestionBankController {
     }
 
     @QueryMapping(name = "questionBank")
-    @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
+    // @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
     public QuestionBankDto questionBank(@Argument(name = "id") UUID id) {
         var query = new ViewQuestionBankDetailsQuery(id);
         return viewQuestionBankDetailsUseCase.execute(query);

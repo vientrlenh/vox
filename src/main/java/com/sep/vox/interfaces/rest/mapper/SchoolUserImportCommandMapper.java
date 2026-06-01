@@ -37,6 +37,7 @@ public final class SchoolUserImportCommandMapper {
             result.put(entry.getKey(), new ImportFieldMapping(
                 value.column(),
                 value.index(),
+                value.aliases(),
                 value.path(),
                 value.dateFormat()
             ));

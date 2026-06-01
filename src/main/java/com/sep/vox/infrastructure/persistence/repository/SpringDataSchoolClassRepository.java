@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -10,6 +11,7 @@ import com.sep.vox.infrastructure.persistence.entity.SchoolClassJpaEntity;
 
 public interface SpringDataSchoolClassRepository extends JpaRepository<SchoolClassJpaEntity, UUID>{
     Optional<SchoolClassJpaEntity> findBySchoolIdAndCode(UUID schoolId, String code);
+    List<SchoolClassJpaEntity> findBySchoolIdAndCodeIn(UUID schoolId, Collection<String> codes);
     List<SchoolClassJpaEntity> findBySchoolIdAndName(UUID schoolId, String name);
     List<SchoolClassJpaEntity> findBySchoolIdAndLanguageIdAndTargetSchoolLevelVersionId(UUID schoolId, UUID languageId, UUID levelVersionId);
 }

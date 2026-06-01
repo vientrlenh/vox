@@ -9,11 +9,11 @@ import com.sep.vox.domain.repository.SchoolRoomRepository;
 import org.springframework.stereotype.Service;
 
 @Service
-public class GetSchoolRoomByIdUseCase implements IUseCase<GetSchoolRoomByIdQuery, SchoolRoomResponse> {
+public class ViewSchoolRoomDetailsUseCase implements IUseCase<GetSchoolRoomByIdQuery, SchoolRoomResponse> {
 
     private final SchoolRoomRepository schoolRoomRepository;
 
-    public GetSchoolRoomByIdUseCase(SchoolRoomRepository schoolRoomRepository) {
+    public ViewSchoolRoomDetailsUseCase(SchoolRoomRepository schoolRoomRepository) {
         this.schoolRoomRepository = schoolRoomRepository;
     }
 

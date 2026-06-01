@@ -12,11 +12,11 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-public class GetSchoolRoomsUseCase implements IUseCase<GetSchoolRoomsQuery, PageResult<SchoolRoomResponse>> {
+public class ViewSchoolRoomsUseCase implements IUseCase<GetSchoolRoomsQuery, PageResult<SchoolRoomResponse>> {
 
     private final SchoolRoomRepository schoolRoomRepository;
 
-    public GetSchoolRoomsUseCase(SchoolRoomRepository schoolRoomRepository) {
+    public ViewSchoolRoomsUseCase(SchoolRoomRepository schoolRoomRepository) {
         this.schoolRoomRepository = schoolRoomRepository;
     }
 

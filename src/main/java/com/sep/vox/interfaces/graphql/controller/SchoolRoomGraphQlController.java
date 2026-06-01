@@ -2,8 +2,8 @@ package com.sep.vox.interfaces.graphql.controller;
 
 import com.sep.vox.application.port.input.query.GetSchoolRoomByIdQuery;
 import com.sep.vox.application.port.input.query.GetSchoolRoomsQuery;
-import com.sep.vox.application.port.input.usecase.schoolroom.GetSchoolRoomByIdUseCase;
-import com.sep.vox.application.port.input.usecase.schoolroom.GetSchoolRoomsUseCase;
+import com.sep.vox.application.port.input.usecase.schoolroom.ViewSchoolRoomDetailsUseCase;
+import com.sep.vox.application.port.input.usecase.schoolroom.ViewSchoolRoomsUseCase;
 import com.sep.vox.application.response.SchoolRoomResponse.SchoolRoomResponse;
 import com.sep.vox.domain.common.PageResult;
 import org.springframework.graphql.data.method.annotation.Argument;
@@ -16,19 +16,19 @@ import java.util.UUID;
 @Controller("graphqlSchoolRoom")
 public class SchoolRoomGraphQlController {
 
-    private final GetSchoolRoomByIdUseCase getSchoolRoomByIdUseCase;
-    private final GetSchoolRoomsUseCase getSchoolRoomsUseCase;
+    private final ViewSchoolRoomDetailsUseCase viewSchoolRoomDetailsUseCase;
+    private final ViewSchoolRoomsUseCase viewSchoolRoomsUseCase;
 
-    public SchoolRoomGraphQlController(GetSchoolRoomByIdUseCase getSchoolRoomByIdUseCase, GetSchoolRoomsUseCase getSchoolRoomsUseCase) {
-        this.getSchoolRoomByIdUseCase = getSchoolRoomByIdUseCase;
-        this.getSchoolRoomsUseCase = getSchoolRoomsUseCase;
+    public SchoolRoomGraphQlController(ViewSchoolRoomDetailsUseCase viewSchoolRoomDetailsUseCase, ViewSchoolRoomsUseCase viewSchoolRoomsUseCase) {
+        this.viewSchoolRoomDetailsUseCase = viewSchoolRoomDetailsUseCase;
+        this.viewSchoolRoomsUseCase = viewSchoolRoomsUseCase;
     }
 
     @QueryMapping
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public SchoolRoomResponse getSchoolRoomById(@Argument UUID id) {
         var query = new GetSchoolRoomByIdQuery(id);
-        return getSchoolRoomByIdUseCase.execute(query);
+        return viewSchoolRoomDetailsUseCase.execute(query);
     }
 
     // Tự động map với query "getSchoolRooms" trong schema
@@ -43,6 +43,6 @@ public class SchoolRoomGraphQlController {
 
         var query = new GetSchoolRoomsQuery(validPage, validSize);
 
-        return getSchoolRoomsUseCase.execute(query);
+        return viewSchoolRoomsUseCase.execute(query);
     }
 }

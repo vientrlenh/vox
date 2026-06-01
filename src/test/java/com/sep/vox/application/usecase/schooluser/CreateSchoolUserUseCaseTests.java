@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.CreateSchoolUserCommand;
 import com.sep.vox.application.port.input.usecase.schooluser.CreateSchoolUserUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -194,6 +195,21 @@ public class CreateSchoolUserUseCaseTests {
     }
 
     @Test
+    void create_should_throw_when_caller_is_inactive() {
+        var caller = callerUser(callerId, schoolId, UserStatus.INACTIVE);
+        var command = new CreateSchoolUserCommand(
+            schoolId, "student@school.edu.vn", "0987654321",
+            "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT", null
+        );
+
+        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
+        when(userRepository.findById(callerId)).thenReturn(Optional.of(caller));
+
+        assertThrows(UnauthorizedException.class, () -> createSchoolUserUseCase.execute(command));
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
     void create_should_throw_when_email_already_exists() {
         var caller = callerUser(callerId, schoolId);
         var studentRole = role("STUDENT");
@@ -231,11 +247,15 @@ public class CreateSchoolUserUseCaseTests {
     }
 
     private User callerUser(UUID id, UUID userSchoolId) {
+        return callerUser(id, userSchoolId, UserStatus.ACTIVE);
+    }
+
+    private User callerUser(UUID id, UUID userSchoolId, UserStatus status) {
         var now = OffsetDateTime.now();
         return new User(id, new Email("admin@school.edu.vn"), "hash",
             new Phone("0900000000"), new FullName("Admin User"), null,
             new DateOfBirth(LocalDate.of(1980, 1, 1)), "Admin Street",
-            UserStatus.ACTIVE, now, now, id, id, userSchoolId);
+            status, now, now, id, id, userSchoolId);
     }
 
     private User savedUser(UUID userSchoolId) {

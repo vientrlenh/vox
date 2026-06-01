@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.ViewSchoolUserCommand;
 import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUserUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -131,12 +132,30 @@ public class ViewSchoolUserUseCaseTests {
         assertThrows(NotFoundException.class, () -> viewSchoolUserUseCase.execute(command));
     }
 
+    @Test
+    void view_should_throw_when_target_user_is_inactive() {
+        var targetId = UUID.randomUUID();
+        var caller = user(callerId, schoolId);
+        var target = user(targetId, schoolId, UserStatus.INACTIVE);
+        var command = new ViewSchoolUserCommand(schoolId, targetId);
+
+        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
+        when(userRepository.findById(callerId)).thenReturn(Optional.of(caller));
+        when(userRepository.findById(targetId)).thenReturn(Optional.of(target));
+
+        assertThrows(UnauthorizedException.class, () -> viewSchoolUserUseCase.execute(command));
+    }
+
     private User user(UUID id, UUID userSchoolId) {
+        return user(id, userSchoolId, UserStatus.ACTIVE);
+        }
+
+        private User user(UUID id, UUID userSchoolId, UserStatus status) {
         var now = OffsetDateTime.now();
         return new User(id, new Email("user@school.edu.vn"), "hash",
             new Phone("0987654321"), new FullName("Nguyen Van A"), null,
             new DateOfBirth(LocalDate.of(2000, 1, 1)), "123 Street",
-            UserStatus.ACTIVE, now, now, id, id, userSchoolId);
+            status, now, now, id, id, userSchoolId);
     }
 
     private UserRoleInfo roleInfo(String code) {

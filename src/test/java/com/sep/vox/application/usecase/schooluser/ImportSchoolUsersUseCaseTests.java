@@ -176,6 +176,17 @@ public class ImportSchoolUsersUseCaseTests {
     }
 
     @Test
+    void import_should_throw_when_caller_is_inactive() {
+        var command = new ImportSchoolUsersCommand(schoolId, "file-1", true, "STUDENT", Map.of());
+
+        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
+        when(userRepository.findById(callerId)).thenReturn(Optional.of(callerUser(callerId, schoolId, UserStatus.INACTIVE)));
+
+        assertThrows(UnauthorizedException.class, () -> importSchoolUsersUseCase.execute(command));
+        verify(fileStoragePort, never()).load(any(String.class), any(UUID.class), any(UUID.class));
+    }
+
+    @Test
     void import_should_throw_when_file_belongs_to_different_uploader() {
         var command = new ImportSchoolUsersCommand(schoolId, "file-1", true, "STUDENT", Map.of());
 
@@ -199,11 +210,15 @@ public class ImportSchoolUsersUseCaseTests {
     }
 
     private User callerUser(UUID id, UUID userSchoolId) {
+        return callerUser(id, userSchoolId, UserStatus.ACTIVE);
+    }
+
+    private User callerUser(UUID id, UUID userSchoolId, UserStatus status) {
         var now = OffsetDateTime.now();
         return new User(id, new Email("admin@school.edu.vn"), "hash",
             new Phone("0900000000"), new FullName("Admin User"), null,
             new DateOfBirth(LocalDate.of(1980, 1, 1)), "Admin Street",
-            UserStatus.ACTIVE, now, now, id, id, userSchoolId);
+            status, now, now, id, id, userSchoolId);
     }
 
     private Role role(String code) {

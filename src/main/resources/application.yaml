@@ -29,9 +29,9 @@ spring:
             enable: true
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/Vox
-    username: postgres
-    password: 12345
+    url: jdbc:postgresql://${DB_URL}/${DB_NAME}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
 
   jpa:
     properties:
@@ -50,7 +50,7 @@ springdoc:
 
 
 jwt:
-  secret: 4N58loQuChNICqBmohzJfLdz1j4qHiWdw2KqmWMYEBi
+  secret: ${JWT_SECRET}
   expiration-ms: 1800000
 
 logging:
@@ -66,15 +66,12 @@ server:
 
 app:
   frontend:
-    password-setup-url: http://localhost:5173
-  google:
-    client-id: "901111377831-ujbbndil5c23ru63m85nfj9k98rfk0ua.apps.googleusercontent.com"
+    password-setup-url: ${PASSWORD_SETUP_URL}
 
 system-admin:
-  email: admin@gmail.com
-  password: admin12345
-  phone: 0356680950
-  fullName: System Admin
-  dateOfBirth: 1990-01-01
-  address: HCM
-
+  email: ${SYS_ADMIN_EMAIL}
+  password: ${SYS_ADMIN_PASSWORD}
+  phone: ${SYS_ADMIN_PHONE}
+  fullName: ${SYS_ADMIN_FULLNAME}
+  dateOfBirth: ${SYS_ADMIN_DATE_OF_BIRTH}
+  address: ${SYS_ADMIN_ADDRESS}

@@ -19,7 +19,7 @@ public class GoogleAuthAdapter implements GoogleAuthPort {
     private final GoogleIdTokenVerifier verifier;
 
     // Đặt @Value đúng vị trí và đúng ngoặc tròn
-    public GoogleAuthAdapter(@Value("${app.google.client-id}") String clientId) {
+    public GoogleAuthAdapter(@Value("${GOOGLE_CLIENT_ID}") String clientId) {
         // Khởi tạo trình xác minh Token, chỉ chấp nhận token sinh ra bởi Client ID của dự án VOX
         this.verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), GsonFactory.getDefaultInstance())
                 .setAudience(Collections.singletonList(clientId))

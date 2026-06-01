@@ -13,7 +13,7 @@ import org.springframework.stereotype.Controller;
 
 import java.util.UUID;
 
-@Controller
+@Controller("graphqlSchoolRoom")
 public class SchoolRoomGraphQlController {
 
     private final GetSchoolRoomByIdUseCase getSchoolRoomByIdUseCase;

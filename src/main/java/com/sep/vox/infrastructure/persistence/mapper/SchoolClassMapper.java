@@ -11,8 +11,8 @@ public final class SchoolClassMapper {
         return new SchoolClass(
             jpa.getId(),
             jpa.getSchoolId(),
-            jpa.getSchoolGradeId(),
             jpa.getLanguageId(),
+            jpa.getSchoolGradeId(),
             new ClassCode(jpa.getCode()),
             jpa.getName(),
             jpa.getDescription(),

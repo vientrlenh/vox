@@ -9,6 +9,9 @@ import java.util.UUID;
 public class RubricVersion {
     private UUID id;
     private UUID rubricId;
+    private String code;
+    private String name;
+    private String description;
     private int version;
     private RubricStatus status;
     private OffsetDateTime effectiveFrom;
@@ -26,12 +29,15 @@ public class RubricVersion {
     }
 
 
-    public RubricVersion(UUID id, UUID rubricId, int version, RubricStatus status, OffsetDateTime effectiveFrom,
+    public RubricVersion(UUID id, UUID rubricId, String code, String name, String description, int version, RubricStatus status, OffsetDateTime effectiveFrom,
             OffsetDateTime effectiveTo, BigDecimal scoringScaleMin, BigDecimal scoringScaleMax,
             RubricTotalScoreMethod totalScoreMethod, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy,
             UUID updatedBy) {
         this.id = id;
         this.rubricId = rubricId;
+        this.code = code;
+        this.name = name;
+        this.description = description;
         this.version = version;
         this.status = status;
         this.effectiveFrom = effectiveFrom;
@@ -46,11 +52,14 @@ public class RubricVersion {
     }
 
 
-    public RubricVersion(UUID rubricId, int version, RubricStatus status, OffsetDateTime effectiveFrom,
+    public RubricVersion(UUID rubricId, String code, String name, String description, int version, RubricStatus status, OffsetDateTime effectiveFrom,
             OffsetDateTime effectiveTo, BigDecimal scoringScaleMin, BigDecimal scoringScaleMax,
             RubricTotalScoreMethod totalScoreMethod, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy,
             UUID updatedBy) {
         this.rubricId = rubricId;
+        this.code = code;
+        this.name = name;
+        this.description = description;
         this.version = version;
         this.status = status;
         this.effectiveFrom = effectiveFrom;
@@ -192,6 +201,36 @@ public class RubricVersion {
 
     public void setUpdatedBy(UUID updatedBy) {
         this.updatedBy = updatedBy;
+    }
+
+
+    public String getCode() {
+        return code;
+    }
+
+
+    public void setCode(String code) {
+        this.code = code;
+    }
+
+
+    public String getName() {
+        return name;
+    }
+
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+
+    public String getDescription() {
+        return description;
+    }
+
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     

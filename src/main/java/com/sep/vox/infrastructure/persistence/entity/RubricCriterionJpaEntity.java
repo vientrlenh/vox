@@ -28,7 +28,7 @@ public class RubricCriterionJpaEntity {
     @Column(name = "rubric_version_id", nullable = false, updatable = false)
     private UUID rubricVersionId;
 
-    @Column(name = "code", nullable = false, updatable = false, length = 50)
+    @Column(name = "code", nullable = false, length = 50)
     private String code;
 
     @Column(name = "name", nullable = false, length = 255)

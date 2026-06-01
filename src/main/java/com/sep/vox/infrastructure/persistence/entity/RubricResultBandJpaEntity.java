@@ -38,19 +38,19 @@ public class RubricResultBandJpaEntity {
     @Column(name = "rubric_version_id", nullable = false, updatable = false)
     private UUID rubricVersionId;
 
-    @Column(name = "code", nullable = false, updatable = false)
+    @Column(name = "code", nullable = false)
     private String code;
 
-    @Column(name = "name", nullable = false, length = 255)
+    @Column(name = "name", nullable = false)
     private String name;
 
     @Column(name = "description", length = 2048)
     private String description;
 
-    @Column(name = "score_min", nullable = false, precision = 6, scale = 2, updatable = false)
+    @Column(name = "score_min", nullable = false, precision = 6, scale = 2)
     private BigDecimal scoreMin;
 
-    @Column(name = "score_max", nullable = false, precision = 6, scale = 2, updatable = false)
+    @Column(name = "score_max", nullable = false, precision = 6, scale = 2)
     private BigDecimal scoreMax;
 
     @Column(name = "result_order", nullable = false, check = {
@@ -61,7 +61,7 @@ public class RubricResultBandJpaEntity {
     })
     private int order;
 
-    @Column(name = "is_passing", updatable = false)
+    @Column(name = "is_passing")
     private Boolean isPassing;
 
     @Column(name = "standard_level_version_id")

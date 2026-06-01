@@ -6,44 +6,33 @@ import java.util.UUID;
 import org.hibernate.annotations.Generated;
 import org.hibernate.generator.EventType;
 
-import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 
-
 @Entity
-@Table(name = "assessment_policies", indexes = {
-    @Index(columnList = "owner_type, school_id, rubric_version_id, version", name = "idx_assessment_policies_owner_rubric_version", unique = true)
-})
-public class AssessmentPolicyJpaEntity {
-
+@Table(name = "rubric_applicabilities")
+public class RubricApplicabilityJpaEntity {
     @Id
     @Generated(event = EventType.INSERT)
-    @Column(name = "id", nullable = false, updatable = false, insertable = false, columnDefinition = "UUID DEFAULT uuidv7()")
+    @Column(
+        name = "id", 
+        nullable = false, 
+        updatable = false, 
+        insertable = false, 
+        columnDefinition = "UUID DEFAULT uuidv7()"
+    )
     private UUID id;
-
-    @Column(name = "owner_type", nullable = false, length = 20)
-    private String ownerType;
-
-    @Column(name = "school_id")
-    private UUID schoolId;
 
     @Column(name = "rubric_version_id", nullable = false, updatable = false)
     private UUID rubricVersionId;
 
-    @Column(name = "version", nullable = false)
-    private int version;
+    @Column(name = "school_class_id")
+    private UUID schoolClassId;
 
-    @Column(name = "status", nullable = false, length = 20, check = {
-        @CheckConstraint(
-            name = "chk_status_valid", 
-            constraint = "status IN ('DRAFT', 'PUBLISHED', 'ARCHIVED')"
-        )
-    })
-    private String status;
+    @Column(name = "school_grade_id")
+    private UUID schoolGradeId;
 
     @Column(name = "effective_from", nullable = false)
     private OffsetDateTime effectiveFrom;
@@ -63,17 +52,15 @@ public class AssessmentPolicyJpaEntity {
     @Column(name = "updated_by")
     private UUID updatedBy;
 
-    protected AssessmentPolicyJpaEntity() {}
+    protected RubricApplicabilityJpaEntity() {}
 
-    public AssessmentPolicyJpaEntity(UUID id, String ownerType, UUID schoolId, UUID rubricVersionId, int version,
-            String status, OffsetDateTime effectiveFrom, OffsetDateTime effectiveTo, OffsetDateTime createdAt,
+    public RubricApplicabilityJpaEntity(UUID id, UUID rubricVersionId, UUID schoolClassId, UUID schoolGradeId,
+            OffsetDateTime effectiveFrom, OffsetDateTime effectiveTo, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
-        this.ownerType = ownerType;
-        this.schoolId = schoolId;
         this.rubricVersionId = rubricVersionId;
-        this.version = version;
-        this.status = status;
+        this.schoolClassId = schoolClassId;
+        this.schoolGradeId = schoolGradeId;
         this.effectiveFrom = effectiveFrom;
         this.effectiveTo = effectiveTo;
         this.createdAt = createdAt;
@@ -82,14 +69,12 @@ public class AssessmentPolicyJpaEntity {
         this.updatedBy = updatedBy;
     }
 
-    public AssessmentPolicyJpaEntity(String ownerType, UUID schoolId, UUID rubricVersionId, int version, String status,
+    public RubricApplicabilityJpaEntity(UUID rubricVersionId, UUID schoolClassId, UUID schoolGradeId,
             OffsetDateTime effectiveFrom, OffsetDateTime effectiveTo, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
-        this.ownerType = ownerType;
-        this.schoolId = schoolId;
         this.rubricVersionId = rubricVersionId;
-        this.version = version;
-        this.status = status;
+        this.schoolClassId = schoolClassId;
+        this.schoolGradeId = schoolGradeId;
         this.effectiveFrom = effectiveFrom;
         this.effectiveTo = effectiveTo;
         this.createdAt = createdAt;
@@ -106,22 +91,6 @@ public class AssessmentPolicyJpaEntity {
         this.id = id;
     }
 
-    public String getOwnerType() {
-        return ownerType;
-    }
-
-    public void setOwnerType(String ownerType) {
-        this.ownerType = ownerType;
-    }
-
-    public UUID getSchoolId() {
-        return schoolId;
-    }
-
-    public void setSchoolId(UUID schoolId) {
-        this.schoolId = schoolId;
-    }
-
     public UUID getRubricVersionId() {
         return rubricVersionId;
     }
@@ -130,20 +99,20 @@ public class AssessmentPolicyJpaEntity {
         this.rubricVersionId = rubricVersionId;
     }
 
-    public int getVersion() {
-        return version;
+    public UUID getSchoolClassId() {
+        return schoolClassId;
     }
 
-    public void setVersion(int version) {
-        this.version = version;
+    public void setSchoolClassId(UUID schoolClassId) {
+        this.schoolClassId = schoolClassId;
     }
 
-    public String getStatus() {
-        return status;
+    public UUID getSchoolGradeId() {
+        return schoolGradeId;
     }
 
-    public void setStatus(String status) {
-        this.status = status;
+    public void setSchoolGradeId(UUID schoolGradeId) {
+        this.schoolGradeId = schoolGradeId;
     }
 
     public OffsetDateTime getEffectiveFrom() {

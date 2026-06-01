@@ -17,7 +17,7 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "rubric_versions", indexes = {
-    @Index(columnList = "rubric_id, version", name = "idx_rubric_versions_rubric_version", unique = true)
+    @Index(columnList = "rubric_id, code", name = "idx_rubric_versions_rubric_id_code")
 })
 public class RubricVersionJpaEntity {
 
@@ -29,7 +29,16 @@ public class RubricVersionJpaEntity {
     @Column(name = "rubric_id", nullable = false, updatable = false)
     private UUID rubricId;
 
-    @Column(name = "version", nullable = false, updatable = false)
+    @Column(name = "code", nullable = false, length = 100)
+    private String code;
+
+    @Column(name = "name", nullable = false, length = 255)
+    private String name;
+
+    @Column(name = "description", length = 2048)
+    private String description;
+
+    @Column(name = "version", nullable = false)
     private int version;
 
     @Column(name = "status", nullable = false, length = 20, check = {
@@ -40,7 +49,7 @@ public class RubricVersionJpaEntity {
     })
     private String status;
 
-    @Column(name = "effective_from", nullable = false, updatable = false)
+    @Column(name = "effective_from", nullable = false)
     private OffsetDateTime effectiveFrom;
 
     @Column(name = "effective_to")
@@ -69,11 +78,14 @@ public class RubricVersionJpaEntity {
 
     protected RubricVersionJpaEntity() {}
 
-    public RubricVersionJpaEntity(UUID id, UUID rubricId, int version, String status, OffsetDateTime effectiveFrom,
+    public RubricVersionJpaEntity(UUID id, UUID rubricId, String code, String name, String description, int version, String status, OffsetDateTime effectiveFrom,
             OffsetDateTime effectiveTo, BigDecimal scoringScaleMin, BigDecimal scoringScaleMax, String totalScoreMethod,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.rubricId = rubricId;
+        this.code = code;
+        this.name = name;
+        this.description = description;
         this.version = version;
         this.status = status;
         this.effectiveFrom = effectiveFrom;
@@ -87,10 +99,13 @@ public class RubricVersionJpaEntity {
         this.updatedBy = updatedBy;
     }
 
-    public RubricVersionJpaEntity(UUID rubricId, int version, String status, OffsetDateTime effectiveFrom,
+    public RubricVersionJpaEntity(UUID rubricId, String code, String name, String description, int version, String status, OffsetDateTime effectiveFrom,
             OffsetDateTime effectiveTo, BigDecimal scoringScaleMin, BigDecimal scoringScaleMax, String totalScoreMethod,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.rubricId = rubricId;
+        this.code = code;
+        this.name = name;
+        this.description = description;
         this.version = version;
         this.status = status;
         this.effectiveFrom = effectiveFrom;
@@ -206,6 +221,30 @@ public class RubricVersionJpaEntity {
 
     public void setUpdatedBy(UUID updatedBy) {
         this.updatedBy = updatedBy;
+    }
+
+    public String getCode() {
+        return code;
+    }
+
+    public void setCode(String code) {
+        this.code = code;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     

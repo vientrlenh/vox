@@ -24,7 +24,7 @@ public class RubricJpaEntity {
     @Column(name = "id", nullable = false, updatable = false, insertable = false, columnDefinition = "UUID DEFAULT uuidv7()")
     private UUID id;
 
-    @Column(name = "code", nullable = false, updatable = false, length = 50)
+    @Column(name = "code", nullable = false, length = 50)
     private String code;
 
     @Column(name = "name", nullable = false, length = 255)
@@ -36,7 +36,7 @@ public class RubricJpaEntity {
     @Column(name = "language_id", nullable = false, updatable = false)
     private UUID languageId;
 
-    @Column(name = "framework_id", nullable = false, updatable = false)
+    @Column(name = "framework_id", nullable = false)
     private UUID frameworkId;
 
     @Column(name = "owner_type", nullable = false, length = 20)

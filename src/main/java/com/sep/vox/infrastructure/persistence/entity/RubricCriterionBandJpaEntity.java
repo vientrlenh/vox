@@ -29,7 +29,7 @@ public class RubricCriterionBandJpaEntity {
     @Column(name = "criterion_id", nullable = false, updatable = false)
     private UUID criterionId;
 
-    @Column(name = "code", nullable = false, updatable = false, length = 50)
+    @Column(name = "code", nullable = false, length = 50)
     private String code;
 
     @Column(name = "score_min", nullable = false, precision = 6, scale = 2)

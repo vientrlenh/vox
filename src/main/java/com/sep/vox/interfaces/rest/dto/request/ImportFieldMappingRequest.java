@@ -1,5 +1,7 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
+import java.util.List;
+
 import jakarta.validation.constraints.Size;
 
 public record ImportFieldMappingRequest(
@@ -7,6 +9,9 @@ public record ImportFieldMappingRequest(
     String column,
 
     Integer index,
+
+    @Size(max = 50, message = "Danh sách tên thay thế không được vượt quá 50 phần tử")
+    List<@Size(max = 255, message = "Tên cột thay thế không được vượt quá 255 ký tự") String> aliases,
 
     @Size(max = 255, message = "Path không được vượt quá 255 ký tự")
     String path,

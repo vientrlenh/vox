@@ -6,6 +6,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -107,13 +108,13 @@ public class ImportSchoolUsersUseCase implements IUseCase<ImportSchoolUsersComma
             for (var row : rows) {
                 var rowErrors = new ArrayList<SchoolUserImportError>();
 
-                var emailRaw = resolveField(row, format, mapping.get("email"));
-                var phoneRaw = resolveField(row, format, mapping.get("phone"));
-                var fullNameRaw = resolveField(row, format, mapping.get("fullName"));
-                var dobRaw = resolveField(row, format, mapping.get("dateOfBirth"));
-                var roleRaw = resolveField(row, format, mapping.get("roleCode"));
-                var addressRaw = resolveField(row, format, mapping.get("address"));
-                var studentIdRaw = resolveField(row, format, mapping.get("studentId"));
+                var emailRaw = resolveField(row, format, mapping.get("email"), "email");
+                var phoneRaw = resolveField(row, format, mapping.get("phone"), "phone");
+                var fullNameRaw = resolveField(row, format, mapping.get("fullName"), "fullName");
+                var dobRaw = resolveField(row, format, mapping.get("dateOfBirth"), "dateOfBirth");
+                var roleRaw = resolveField(row, format, mapping.get("roleCode"), "roleCode");
+                var addressRaw = resolveField(row, format, mapping.get("address"), "address");
+                var studentIdRaw = resolveField(row, format, mapping.get("studentId"), "studentId");
 
                 if (isBlank(emailRaw)) {
                     rowErrors.add(error(row.rowNumber(), "email", "REQUIRED", "Email không được để trống", emailRaw));
@@ -248,28 +249,26 @@ public class ImportSchoolUsersUseCase implements IUseCase<ImportSchoolUsersComma
         return value == null || value.isBlank();
     }
 
-    private static String resolveField(ImportRow row, ImportFileFormat format, ImportFieldMapping mapping) {
+    private static String resolveField(ImportRow row, ImportFileFormat format, ImportFieldMapping mapping, String semanticName) {
         if (mapping == null) {
-            return null;
+            // allow auto-detection via built-in candidates
         }
         if (format == ImportFileFormat.JSON) {
-            if (mapping.path() != null && row.jsonValues() != null) {
+            if (mapping != null && mapping.path() != null && row.jsonValues() != null) {
                 var resolved = JsonPathResolver.resolve(row.jsonValues(), mapping.path());
                 return resolved != null ? resolved.toString() : null;
             }
-            if (mapping.column() != null && row.jsonValues() != null) {
-                var resolved = row.jsonValues().get(mapping.column());
-                return resolved != null ? resolved.toString() : null;
+            var resolved = resolveByCandidates(row.jsonValues(), mapping, semanticName);
+            if (resolved != null) {
+                return resolved;
             }
             return null;
         }
-        if (mapping.column() != null && row.columns() != null) {
-            var value = findColumnValue(row.columns(), mapping.column());
-            if (value != null) {
-                return value;
-            }
+        var resolved = resolveByCandidates(row.columns(), mapping, semanticName);
+        if (resolved != null) {
+            return resolved;
         }
-        if (mapping.index() != null && row.values() != null) {
+        if (mapping != null && mapping.index() != null && row.values() != null) {
             int index = mapping.index();
             if (index >= 0 && index < row.values().size()) {
                 return row.values().get(index);
@@ -278,22 +277,70 @@ public class ImportSchoolUsersUseCase implements IUseCase<ImportSchoolUsersComma
         return null;
     }
 
-    private static String findColumnValue(Map<String, String> columns, String columnName) {
-        if (columns == null || columnName == null) {
+    private static String resolveByCandidates(Map<String, ?> values, ImportFieldMapping mapping, String semanticName) {
+        if (values == null) {
             return null;
         }
-        var direct = columns.get(columnName);
-        if (direct != null) {
-            return direct;
+        for (var candidate : candidateNames(mapping, semanticName)) {
+            var direct = values.get(candidate);
+            if (direct != null) {
+                return direct.toString();
+            }
         }
-        var normalized = columnName.trim().toLowerCase(Locale.ROOT);
-        for (var entry : columns.entrySet()) {
+        for (var entry : values.entrySet()) {
             var key = entry.getKey();
-            if (key != null && key.trim().toLowerCase(Locale.ROOT).equals(normalized)) {
-                return entry.getValue();
+            var normalizedKey = normalizeHeader(key != null ? key.toString() : null);
+            if (normalizedKey == null) {
+                continue;
+            }
+            for (var candidate : candidateNames(mapping, semanticName)) {
+                if (normalizedKey.equals(normalizeHeader(candidate))) {
+                    var value = entry.getValue();
+                    return value != null ? value.toString() : null;
+                }
             }
         }
         return null;
+    }
+
+    private static List<String> candidateNames(ImportFieldMapping mapping, String semanticName) {
+        var candidates = new LinkedHashSet<String>();
+        if (mapping != null) {
+            if (mapping.column() != null && !mapping.column().isBlank()) {
+                candidates.add(mapping.column());
+            }
+            if (mapping.aliases() != null) {
+                for (var alias : mapping.aliases()) {
+                    if (alias != null && !alias.isBlank()) {
+                        candidates.add(alias);
+                    }
+                }
+            }
+        }
+        // built-in defaults when mapping does not provide explicit names
+        if (candidates.isEmpty()) {
+            switch (semanticName) {
+                case "email" -> candidates.addAll(List.of("Email", "E-mail", "E mail", "email", "Địa chỉ mail", "Địa chỉ email"));
+                case "phone" -> candidates.addAll(List.of("Phone", "Phone Number", "Số điện thoại", "Điện thoại", "sđt", "Số điện thoại liên lạc"));
+                case "fullName" -> candidates.addAll(List.of("Full Name", "Họ và tên", "Tên", "Name", "fullName", "Họ tên"));
+                case "dateOfBirth" -> candidates.addAll(List.of("DOB", "Date of Birth", "Ngày sinh", "Birth Date", "dateOfBirth"));
+                case "roleCode" -> candidates.addAll(List.of("Role", "Vai trò", "role", "Chức vụ"));
+                case "address" -> candidates.addAll(List.of("Address", "Địa chỉ", "address", "Nơi ở", "Nơi ở hiện tại", "Địa chỉ liên lạc"));
+                case "studentId" -> candidates.addAll(List.of("Student ID", "Mã học sinh", "studentId", "mã HS"));
+                default -> {
+                    // fallback generic names
+                    candidates.add(semanticName);
+                }
+            }
+        }
+        return List.copyOf(candidates);
+    }
+
+    private static String normalizeHeader(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return StringNormalization.normalizeSearchText(value).toLowerCase(Locale.ROOT);
     }
 
     private static LocalDate parseDateOfBirth(String rawValue, ImportFieldMapping mapping) {

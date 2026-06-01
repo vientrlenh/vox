@@ -37,6 +37,7 @@ public class SchoolRoom {
         this.code = code;
         this.name = name;
         this.description = description;
+        this.isActive = isActive;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;

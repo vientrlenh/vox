@@ -7,7 +7,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.OffsetDateTime;
-import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -18,19 +17,14 @@ import com.sep.vox.application.port.input.command.ChangeSchoolUserRoleCommand;
 import com.sep.vox.application.port.input.command.CreateSchoolUserCommand;
 import com.sep.vox.application.port.input.command.DeleteSchoolUserCommand;
 import com.sep.vox.application.port.input.command.ImportSchoolUsersCommand;
-import com.sep.vox.application.port.input.command.ListSchoolUsersCommand;
-import com.sep.vox.application.port.input.command.ViewSchoolUserCommand;
 import com.sep.vox.application.port.input.usecase.schooluser.ChangeSchoolUserRoleUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.CreateSchoolUserUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.DeleteSchoolUserUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.ImportSchoolUsersUseCase;
-import com.sep.vox.application.port.input.usecase.schooluser.ListSchoolUsersUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.UploadSchoolUserImportFileUseCase;
-import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUserUseCase;
 import com.sep.vox.application.response.input.schooluser.SchoolUserImportResponse;
 import com.sep.vox.application.response.input.schooluser.SchoolUserImportUploadResponse;
 import com.sep.vox.application.response.input.schooluser.SchoolUserResponse;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.interfaces.rest.dto.request.ChangeSchoolUserRoleRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolUserRequest;
 import com.sep.vox.interfaces.rest.dto.request.ImportFieldMappingRequest;
@@ -44,8 +38,6 @@ import org.springframework.mock.web.MockMultipartFile;
 public class SchoolUserControllerTests {
 
     private CreateSchoolUserUseCase createSchoolUserUseCase;
-    private ViewSchoolUserUseCase viewSchoolUserUseCase;
-    private ListSchoolUsersUseCase listSchoolUsersUseCase;
     private DeleteSchoolUserUseCase deleteSchoolUserUseCase;
     private ChangeSchoolUserRoleUseCase changeSchoolUserRoleUseCase;
     private UploadSchoolUserImportFileUseCase uploadSchoolUserImportFileUseCase;
@@ -58,15 +50,12 @@ public class SchoolUserControllerTests {
     @BeforeEach
     void setUp() {
         createSchoolUserUseCase = mock(CreateSchoolUserUseCase.class);
-        viewSchoolUserUseCase = mock(ViewSchoolUserUseCase.class);
-        listSchoolUsersUseCase = mock(ListSchoolUsersUseCase.class);
         deleteSchoolUserUseCase = mock(DeleteSchoolUserUseCase.class);
         changeSchoolUserRoleUseCase = mock(ChangeSchoolUserRoleUseCase.class);
         uploadSchoolUserImportFileUseCase = mock(UploadSchoolUserImportFileUseCase.class);
         importSchoolUsersUseCase = mock(ImportSchoolUsersUseCase.class);
         controller = new SchoolUserController(
-            createSchoolUserUseCase, viewSchoolUserUseCase,
-            listSchoolUsersUseCase,
+            createSchoolUserUseCase,
             deleteSchoolUserUseCase, changeSchoolUserRoleUseCase,
             uploadSchoolUserImportFileUseCase, importSchoolUsersUseCase
         );
@@ -88,35 +77,6 @@ public class SchoolUserControllerTests {
         assertThat(response.getBody().message()).isEqualTo("Tạo người dùng thành công");
         assertThat(response.getBody().data()).isEqualTo(expectedResponse);
         verify(createSchoolUserUseCase).execute(any(CreateSchoolUserCommand.class));
-    }
-
-    @Test
-    void get_user_should_return_ok_with_response() {
-        var expectedResponse = schoolUserResponse(userId, "TEACHER", null);
-        when(viewSchoolUserUseCase.execute(any(ViewSchoolUserCommand.class))).thenReturn(expectedResponse);
-
-        var response = controller.getUser(schoolId, userId);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().message()).isEqualTo("Lấy thông tin người dùng thành công");
-        assertThat(response.getBody().data()).isEqualTo(expectedResponse);
-        verify(viewSchoolUserUseCase).execute(new ViewSchoolUserCommand(schoolId, userId));
-    }
-
-    @Test
-    void list_users_should_return_ok_with_page() {
-        var expectedResponse = schoolUserResponse(userId, "STUDENT", "STU-001");
-        var expectedPage = new PageResult<>(List.of(expectedResponse), 0, 20, 1, 1);
-        when(listSchoolUsersUseCase.execute(any(ListSchoolUsersCommand.class))).thenReturn(expectedPage);
-
-        var response = controller.listUsers(schoolId, 1, 20);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().message()).isEqualTo("Lấy danh sách người dùng thành công");
-        assertThat(response.getBody().data()).isEqualTo(expectedPage);
-        verify(listSchoolUsersUseCase).execute(new ListSchoolUsersCommand(schoolId, 1, 20));
     }
 
     @Test

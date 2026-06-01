@@ -16,6 +16,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.ListSchoolUsersCommand;
 import com.sep.vox.application.port.input.usecase.schooluser.ListSchoolUsersUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -109,11 +110,29 @@ public class ListSchoolUsersUseCaseTests {
         verifyNoInteractions(schoolUserQueryRepository);
     }
 
+    @Test
+    void list_should_throw_when_caller_is_inactive() {
+        var caller = callerUser(callerId, schoolId, UserStatus.INACTIVE);
+        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
+        when(userRepository.findById(callerId)).thenReturn(Optional.of(caller));
+
+        assertThrows(
+            UnauthorizedException.class,
+            () -> listSchoolUsersUseCase.execute(new ListSchoolUsersCommand(schoolId, 1, 20))
+        );
+
+        verifyNoInteractions(schoolUserQueryRepository);
+    }
+
     private User callerUser(UUID id, UUID userSchoolId) {
+        return callerUser(id, userSchoolId, UserStatus.ACTIVE);
+    }
+
+    private User callerUser(UUID id, UUID userSchoolId, UserStatus status) {
         var now = OffsetDateTime.now();
         return new User(id, new Email("admin@school.edu.vn"), "hash",
             new Phone("0900000000"), new FullName("Admin User"), null,
             new DateOfBirth(LocalDate.of(1980, 1, 1)), "Admin Street",
-            UserStatus.ACTIVE, now, now, id, id, userSchoolId);
+            status, now, now, id, id, userSchoolId);
     }
 }

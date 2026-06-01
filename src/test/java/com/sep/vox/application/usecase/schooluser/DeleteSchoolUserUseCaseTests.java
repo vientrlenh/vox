@@ -18,6 +18,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.DeleteSchoolUserCommand;
 import com.sep.vox.application.port.input.usecase.schooluser.DeleteSchoolUserUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -101,6 +102,21 @@ public class DeleteSchoolUserUseCaseTests {
         when(userRepository.findById(targetId)).thenReturn(Optional.of(target));
 
         assertThrows(NotFoundException.class, () -> deleteSchoolUserUseCase.execute(command));
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void delete_should_throw_when_target_user_is_inactive() {
+        var targetId = UUID.randomUUID();
+        var caller = user(callerId, schoolId, UserStatus.ACTIVE);
+        var target = user(targetId, schoolId, UserStatus.INACTIVE);
+        var command = new DeleteSchoolUserCommand(schoolId, targetId);
+
+        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
+        when(userRepository.findById(callerId)).thenReturn(Optional.of(caller));
+        when(userRepository.findById(targetId)).thenReturn(Optional.of(target));
+
+        assertThrows(UnauthorizedException.class, () -> deleteSchoolUserUseCase.execute(command));
         verify(userRepository, never()).save(any(User.class));
     }
 

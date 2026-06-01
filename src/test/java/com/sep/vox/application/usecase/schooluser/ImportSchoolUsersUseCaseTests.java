@@ -94,10 +94,10 @@ public class ImportSchoolUsersUseCaseTests {
             true,
             "STUDENT",
             Map.of(
-                "email", new ImportFieldMapping("Email", null, null, null),
-                "phone", new ImportFieldMapping("Phone", null, null, null),
-                "fullName", new ImportFieldMapping("Full Name", null, null, null),
-                "dateOfBirth", new ImportFieldMapping("DOB", null, null, null)
+                "email", new ImportFieldMapping("Email", null, java.util.List.of("E-mail"), null, null),
+                "phone", new ImportFieldMapping("Phone", null, java.util.List.of("Số điện thoại"), null, null),
+                "fullName", new ImportFieldMapping("Full Name", null, java.util.List.of("Họ và tên", "Tên"), null, null),
+                "dateOfBirth", new ImportFieldMapping("DOB", null, java.util.List.of("Ngày sinh"), null, null)
             )
         );
 
@@ -121,12 +121,12 @@ public class ImportSchoolUsersUseCaseTests {
             false,
             null,
             Map.of(
-                "email", new ImportFieldMapping("Email", null, null, null),
-                "phone", new ImportFieldMapping("Phone", null, null, null),
-                "fullName", new ImportFieldMapping("Full Name", null, null, null),
-                "dateOfBirth", new ImportFieldMapping("DOB", null, null, null),
-                "roleCode", new ImportFieldMapping("Role", null, null, null),
-                "studentId", new ImportFieldMapping("Student ID", null, null, null)
+                "email", new ImportFieldMapping("Email", null, java.util.List.of("E-mail"), null, null),
+                "phone", new ImportFieldMapping("Phone", null, java.util.List.of("Số điện thoại"), null, null),
+                "fullName", new ImportFieldMapping("Full Name", null, java.util.List.of("Họ và tên", "Tên"), null, null),
+                "dateOfBirth", new ImportFieldMapping("DOB", null, java.util.List.of("Ngày sinh"), null, null),
+                "roleCode", new ImportFieldMapping("Role", null, java.util.List.of("Vai trò"), null, null),
+                "studentId", new ImportFieldMapping("Student ID", null, java.util.List.of("Mã học sinh"), null, null)
             )
         );
 
@@ -151,6 +151,38 @@ public class ImportSchoolUsersUseCaseTests {
         verify(userRepository).save(any(User.class));
         verify(userRoleRepository).save(any(UserRole.class));
         verify(schoolUserRepository).save(any(SchoolUser.class));
+    }
+
+    @Test
+    void import_should_match_alias_headers_when_column_names_differ() {
+        var csv = "Họ và tên,Số điện thoại,Email,Ngày sinh,Role\nNguyen Van A,0987654321,student@school.edu.vn,2005-01-15,STUDENT\n";
+        var command = new ImportSchoolUsersCommand(
+            schoolId,
+            "file-1",
+            true,
+            null,
+            Map.of(
+                "email", new ImportFieldMapping("Email", null, java.util.List.of("Email liên hệ"), null, null),
+                "phone", new ImportFieldMapping("Phone", null, java.util.List.of("Số điện thoại"), null, null),
+                "fullName", new ImportFieldMapping("Full Name", null, java.util.List.of("Họ và tên", "Tên"), null, null),
+                "dateOfBirth", new ImportFieldMapping("DOB", null, java.util.List.of("Ngày sinh"), null, null),
+                "roleCode", new ImportFieldMapping("Role", null, java.util.List.of("Vai trò"), null, null)
+            )
+        );
+
+        var role = role("STUDENT");
+        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
+        when(userRepository.findById(callerId)).thenReturn(Optional.of(callerUser(callerId, schoolId)));
+        when(fileStoragePort.load("file-1", schoolId, callerId)).thenReturn(resource("CSV", csv));
+        when(roleRepository.findByCode("STUDENT")).thenReturn(Optional.of(role));
+        when(userRepository.findByEmail("student@school.edu.vn")).thenReturn(Optional.empty());
+        when(userRepository.findByPhone("0987654321")).thenReturn(Optional.empty());
+
+        var result = importSchoolUsersUseCase.execute(command);
+
+        assertThat(result.failedCount()).isZero();
+        assertThat(result.createdCount()).isEqualTo(0);
+        assertThat(result.totalRows()).isEqualTo(1);
     }
 
     @Test

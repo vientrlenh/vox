@@ -131,10 +131,10 @@ public class SchoolUserControllerTests {
             false,
             "STUDENT",
             java.util.Map.of(
-                "email", new ImportFieldMappingRequest("Email", null, null, null),
-                "phone", new ImportFieldMappingRequest("Phone", null, null, null),
-                "fullName", new ImportFieldMappingRequest("Full Name", null, null, null),
-                "dateOfBirth", new ImportFieldMappingRequest("DOB", null, null, null)
+                "email", new ImportFieldMappingRequest("Email", null, java.util.List.of("E-mail"), null, null),
+                "phone", new ImportFieldMappingRequest("Phone", null, java.util.List.of("Số điện thoại"), null, null),
+                "fullName", new ImportFieldMappingRequest("Full Name", null, java.util.List.of("Họ và tên", "Tên"), null, null),
+                "dateOfBirth", new ImportFieldMappingRequest("DOB", null, java.util.List.of("Ngày sinh"), null, null)
             )
         );
         var expectedResponse = new SchoolUserImportResponse(

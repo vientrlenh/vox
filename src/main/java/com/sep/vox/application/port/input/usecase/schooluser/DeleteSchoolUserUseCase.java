@@ -30,12 +30,14 @@ public class DeleteSchoolUserUseCase implements IUseCase<DeleteSchoolUserCommand
 
         var caller = userRepository.findById(callerId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
+        SchoolUserStatusValidator.requireActive(caller);
         if (!input.schoolId().equals(caller.getSchoolId())) {
             throw new IllegalArgumentException("Không có quyền thực hiện thao tác này");
         }
 
         var targetUser = userRepository.findById(input.userId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
+        SchoolUserStatusValidator.requireActive(targetUser);
         if (!input.schoolId().equals(targetUser.getSchoolId())) {
             throw new NotFoundException("Không tìm thấy người dùng");
         }

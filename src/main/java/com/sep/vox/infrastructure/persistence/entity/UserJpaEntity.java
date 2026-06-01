@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.hibernate.annotations.Generated;
 import org.hibernate.generator.EventType;
 
+import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -52,7 +53,12 @@ public class UserJpaEntity {
     @Column(name = "address", length = 255)
     private String address;
 
-    @Column(name = "status", nullable = false, length = 20)
+    @Column(name = "status", nullable = false, length = 20, check = {
+        @CheckConstraint(
+            name = "chk_status_valid", 
+            constraint = "status IN ('ACTIVE', 'INACTIVE', 'LOCKED', 'DISABLED')"
+        )
+    })
     private String status;
 
     @Column(name = "created_at", nullable = false, updatable = false)

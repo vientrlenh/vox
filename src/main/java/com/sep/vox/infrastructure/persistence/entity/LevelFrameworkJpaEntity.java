@@ -6,7 +6,6 @@ import java.util.UUID;
 import org.hibernate.annotations.Generated;
 import org.hibernate.generator.EventType;
 
-import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -14,50 +13,30 @@ import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "schools", indexes = {
-    @Index(columnList = "code", name = "idx_school_code", unique = true),
-    @Index(columnList = "name", name = "idx_school_name"),
-    @Index(columnList = "domain", name = "idx_school_domain", unique = true)
+@Table(name = "level_frameworks", indexes = {
+    @Index(columnList = "code", name = "idx_level_frameworks_code", unique = true)
 })
-public class SchoolJpaEntity {
+public class LevelFrameworkJpaEntity {
     
     @Id
     @Generated(event = EventType.INSERT)
     @Column(
         name = "id", 
-        nullable = false,
-        updatable = false,
-        insertable = false,
+        nullable = false, 
+        updatable = false, 
+        insertable = false, 
         columnDefinition = "UUID DEFAULT uuidv7()"
     )
     private UUID id;
 
-    @Column(name = "code", length = 100, nullable = false)
+    @Column(name = "code", nullable = false, length = 50, updatable = false)
     private String code;
 
-    @Column(name = "name", length = 255, nullable = false)
+    @Column(name = "name", nullable = false, length = 255)
     private String name;
 
     @Column(name = "description", length = 2048)
     private String description;
-
-    @Column(name = "contact_phone", length = 20, nullable = false)
-    private String contactPhone;
-
-    @Column(name = "contact_email", length = 255, nullable = false)
-    private String contactEmail;
-
-    @Column(name = "domain", length = 100, nullable = false)
-    private String domain;
-
-    @Column(name = "address", length = 512, nullable = false)
-    private String address;
-
-    @Column(name = "student_count", nullable = false, check = @CheckConstraint(
-        name = "chk_student_count_positive", 
-        constraint = "student_count > 0"
-    ))
-    private int studentCount;
 
     @Column(name = "is_active", nullable = false)
     private boolean isActive;
@@ -68,26 +47,20 @@ public class SchoolJpaEntity {
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
 
-    @Column(name = "created_by", nullable = false, updatable = false)
+    @Column(name = "created_by", updatable = false)
     private UUID createdBy;
 
-    @Column(name = "updated_by", nullable = false)
+    @Column(name = "updated_by")
     private UUID updatedBy;
 
-    protected SchoolJpaEntity() { }
+    protected LevelFrameworkJpaEntity() {}
 
-    public SchoolJpaEntity(UUID id, String code, String name, String description, String contactPhone,
-            String contactEmail, String domain, String address, int studentCount, boolean isActive,
+    public LevelFrameworkJpaEntity(UUID id, String code, String name, String description, boolean isActive,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.code = code;
         this.name = name;
         this.description = description;
-        this.contactPhone = contactPhone;
-        this.contactEmail = contactEmail;
-        this.domain = domain;
-        this.address = address;
-        this.studentCount = studentCount;
         this.isActive = isActive;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -95,17 +68,11 @@ public class SchoolJpaEntity {
         this.updatedBy = updatedBy;
     }
 
-    public SchoolJpaEntity(String code, String name, String description, String contactPhone, String contactEmail,
-            String domain, String address, int studentCount, boolean isActive, OffsetDateTime createdAt,
-            OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+    public LevelFrameworkJpaEntity(String code, String name, String description, boolean isActive,
+            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.code = code;
         this.name = name;
         this.description = description;
-        this.contactPhone = contactPhone;
-        this.contactEmail = contactEmail;
-        this.domain = domain;
-        this.address = address;
-        this.studentCount = studentCount;
         this.isActive = isActive;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -143,46 +110,6 @@ public class SchoolJpaEntity {
 
     public void setDescription(String description) {
         this.description = description;
-    }
-
-    public String getContactPhone() {
-        return contactPhone;
-    }
-
-    public void setContactPhone(String contactPhone) {
-        this.contactPhone = contactPhone;
-    }
-
-    public String getContactEmail() {
-        return contactEmail;
-    }
-
-    public void setContactEmail(String contactEmail) {
-        this.contactEmail = contactEmail;
-    }
-
-    public String getDomain() {
-        return domain;
-    }
-
-    public void setDomain(String domain) {
-        this.domain = domain;
-    }
-
-    public String getAddress() {
-        return address;
-    }
-
-    public void setAddress(String address) {
-        this.address = address;
-    }
-
-    public int getStudentCount() {
-        return studentCount;
-    }
-
-    public void setStudentCount(int studentCount) {
-        this.studentCount = studentCount;
     }
 
     public boolean isActive() {
@@ -224,6 +151,8 @@ public class SchoolJpaEntity {
     public void setUpdatedBy(UUID updatedBy) {
         this.updatedBy = updatedBy;
     }
+
+
 
     
 }

@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.hibernate.annotations.Generated;
 import org.hibernate.generator.EventType;
 
+import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -31,7 +32,12 @@ public class RubricVersionJpaEntity {
     @Column(name = "version", nullable = false, updatable = false)
     private int version;
 
-    @Column(name = "status", nullable = false, length = 20)
+    @Column(name = "status", nullable = false, length = 20, check = {
+        @CheckConstraint(
+            name = "chk_status_valid", 
+            constraint = "status IN ('DRAFT', 'PUBLISHED', 'ARCHIVED')"
+        )
+    })
     private String status;
 
     @Column(name = "effective_from", nullable = false, updatable = false)

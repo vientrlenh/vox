@@ -1,0 +1,78 @@
+enum QuestionType {
+    READ_ALOUD
+    SHORT_ANSWER
+    LONG_ANSWER
+    OPINION
+    DESCRIPTION
+}
+
+type QuestionBank {
+    id: ID!
+    bankName: String!
+    description: String
+    isActive: Boolean!
+    createdAt: String!
+    updatedAt: String!
+    createdBy: ID
+    updatedBy: ID
+}
+
+type QuestionBankPage {
+    content: [QuestionBank!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+type QuestionTopic {
+    id: ID!
+    bankId: ID!
+    topicName: String!
+    description: String
+    bank: QuestionBank
+}
+
+type QuestionTopicPage {
+    content: [QuestionTopic!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+type Question {
+    id: ID!
+    topicId: ID!
+    questionText: String!
+    audioUrl: String
+    standardLevelId: ID!
+    standardLevelCode: String
+    frameworkCode: String
+    frameworkName: String
+    questionType: QuestionType!
+    durationSeconds: Int!
+    isActive: Boolean!
+    createdAt: String!
+    topic: QuestionTopic
+}
+
+type QuestionPage {
+    content: [Question!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+extend type Query {
+    questionBanks(page: Int = 0, size: Int = 20): QuestionBankPage!
+    questionBank(id: ID!): QuestionBank
+
+    questionTopics(bankId: ID!, page: Int = 0, size: Int = 20): QuestionTopicPage!
+    questionTopic(id: ID!): QuestionTopic
+
+    questions(page: Int = 0, size: Int = 20): QuestionPage!
+    questionsByTopic(topicId: ID!, page: Int = 0, size: Int = 20): QuestionPage!
+    question(id: ID!): Question
+}

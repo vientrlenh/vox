@@ -32,6 +32,7 @@ public class UploadSchoolUserImportFileUseCase implements IUseCase<UploadSchoolU
         var callerId = userContextPort.getCurrentAuthenticatedUserId();
         var caller = userRepository.findById(callerId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
+        SchoolUserStatusValidator.requireActive(caller);
         if (!input.schoolId().equals(caller.getSchoolId())) {
             throw new IllegalArgumentException("Không có quyền thực hiện thao tác này");
         }

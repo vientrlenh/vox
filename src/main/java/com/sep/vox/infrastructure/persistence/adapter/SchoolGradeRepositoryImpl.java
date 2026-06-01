@@ -1,0 +1,35 @@
+package com.sep.vox.infrastructure.persistence.adapter;
+
+import java.util.Optional;
+import java.util.UUID;
+
+import org.springframework.stereotype.Repository;
+
+import com.sep.vox.domain.model.schoolgrade.SchoolGrade;
+import com.sep.vox.domain.repository.SchoolGradeRepository;
+import com.sep.vox.infrastructure.persistence.mapper.SchoolGradeMapper;
+import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolGradeRepository;
+
+@Repository
+public class SchoolGradeRepositoryImpl implements SchoolGradeRepository {
+
+    private final SpringDataSchoolGradeRepository springDataSchoolGradeRepository;
+
+    public SchoolGradeRepositoryImpl(SpringDataSchoolGradeRepository springDataSchoolGradeRepository) {
+        this.springDataSchoolGradeRepository = springDataSchoolGradeRepository;
+    }
+
+    @Override
+    public Optional<SchoolGrade> findById(UUID id) {
+        return springDataSchoolGradeRepository.findById(id)
+            .map(SchoolGradeMapper::toDomain);
+    }
+
+    @Override
+    public SchoolGrade save(SchoolGrade grade) {
+        var entity = SchoolGradeMapper.toJpa(grade);
+        var saved = springDataSchoolGradeRepository.save(entity);
+        return SchoolGradeMapper.toDomain(saved);
+    }
+    
+}

@@ -1,6 +1,7 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.schoolclass.SchoolClass;
+import com.sep.vox.domain.model.schoolclass.SchoolClassStatus;
 import com.sep.vox.domain.valueobject.ClassCode;
 import com.sep.vox.infrastructure.persistence.entity.SchoolClassJpaEntity;
 
@@ -10,14 +11,13 @@ public final class SchoolClassMapper {
         return new SchoolClass(
             jpa.getId(),
             jpa.getSchoolId(),
+            jpa.getSchoolGradeId(),
             jpa.getLanguageId(),
             new ClassCode(jpa.getCode()),
             jpa.getName(),
             jpa.getDescription(),
             jpa.getTargetSchoolLevelVersionId(),
-            jpa.getStartDate(),
-            jpa.getEndDate(),
-            jpa.isActive(),
+            statusFromString(jpa.getStatus()),
             jpa.getCreatedAt(),
             jpa.getUpdatedAt(),
             jpa.getCreatedBy(),
@@ -30,13 +30,12 @@ public final class SchoolClassMapper {
             schoolClass.getId(),
             schoolClass.getSchoolId(),
             schoolClass.getLanguageId(),
+            schoolClass.getSchoolGradeId(),
             valueOf(schoolClass.getCode()),
             schoolClass.getName(),
             schoolClass.getDescription(),
             schoolClass.getTargetSchoolLevelVersionId(),
-            schoolClass.getStartDate(),
-            schoolClass.getEndDate(),
-            schoolClass.isActive(),
+            valueOf(schoolClass.getStatus()),
             schoolClass.getCreatedAt(),
             schoolClass.getUpdatedAt(),
             schoolClass.getCreatedBy(),
@@ -46,5 +45,13 @@ public final class SchoolClassMapper {
 
     private static String valueOf(ClassCode code) {
         return code == null ? null : code.value();
+    }
+
+    private static String valueOf(SchoolClassStatus status) {
+        return status == null ? null : status.name();
+    }
+
+    private static SchoolClassStatus statusFromString(String status) {
+        return status == null ? null : SchoolClassStatus.valueOf(status);
     }
 }

@@ -34,7 +34,7 @@ public class AssessmentPolicyJpaEntity {
     @Column(name = "rubric_version_id", nullable = false, updatable = false)
     private UUID rubricVersionId;
 
-    @Column(name = "version", nullable = false, updatable = false)
+    @Column(name = "version", nullable = false)
     private int version;
 
     @Column(name = "status", nullable = false, length = 20, check = {
@@ -45,7 +45,7 @@ public class AssessmentPolicyJpaEntity {
     })
     private String status;
 
-    @Column(name = "effective_from", nullable = false, updatable = false)
+    @Column(name = "effective_from", nullable = false)
     private OffsetDateTime effectiveFrom;
 
     @Column(name = "effective_to")

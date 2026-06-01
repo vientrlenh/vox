@@ -1,5 +1,7 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -24,5 +26,15 @@ public class LevelFrameworkRepositoryImpl implements LevelFrameworkRepository {
         return springDataLevelFrameworkRepository.findById(id)
             .map(LevelFrameworkMapper::toDomain);
     }
-    
+
+    @Override
+    public List<LevelFramework> findAllByIds(Collection<UUID> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        return springDataLevelFrameworkRepository.findAllById(ids).stream()
+            .map(LevelFrameworkMapper::toDomain)
+            .toList();
+    }
+
 }

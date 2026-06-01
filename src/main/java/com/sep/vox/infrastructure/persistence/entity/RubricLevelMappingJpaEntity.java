@@ -28,7 +28,7 @@ public class RubricLevelMappingJpaEntity {
     @Column(name = "rubric_version_id", nullable = false, updatable = false)
     private UUID rubricVersionId;
 
-    @Column(name = "standard_level_version_id", nullable = false, updatable = false)
+    @Column(name = "standard_level_version_id", nullable = false)
     private UUID standardLevelVersionId;
 
     @Column(name = "score_min", nullable = false, precision = 6, scale = 2)

@@ -84,10 +84,10 @@ class SchoolRepositoryTests {
         schoolRepository.save(newSchool("VOX_PG_2", "Vox Page 2", "vox-pg-2.edu.vn", "school-pg2@example.com", "0987654306"));
         schoolRepository.save(newSchool("VOX_PG_3", "Vox Page 3", "vox-pg-3.edu.vn", "school-pg3@example.com", "0987654307"));
 
-        var found = schoolRepository.findAll(new PageRequest(0, 2));
+        var found = schoolRepository.findAll(new PageRequest(1, 2));
 
         assertThat(found.content()).hasSize(2);
-        assertThat(found.page()).isZero();
+        assertThat(found.page()).isEqualTo(1);
         assertThat(found.size()).isEqualTo(2);
         assertThat(found.totalElements()).isGreaterThanOrEqualTo(3);
         assertThat(found.totalPages()).isGreaterThanOrEqualTo(2);

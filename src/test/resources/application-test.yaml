@@ -24,4 +24,4 @@ system-admin:
 
 app:
   frontend:
-    password-setup-url: http:://localhost:5173/test-password-setup-url
+    password-setup-url: http://localhost:5173/test-password-setup-url

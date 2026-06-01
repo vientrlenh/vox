@@ -13,6 +13,9 @@ public final class RubricVersionMapper {
         return new RubricVersion(
             jpa.getId(),
             jpa.getRubricId(),
+            jpa.getCode(), 
+            jpa.getName(), 
+            jpa.getDescription(), 
             jpa.getVersion(),
             fromStatus(jpa.getStatus()),
             jpa.getEffectiveFrom(),
@@ -31,6 +34,9 @@ public final class RubricVersionMapper {
         return new RubricVersionJpaEntity(
             version.getId(),
             version.getRubricId(),
+            version.getCode(),
+            version.getName(), 
+            version.getDescription(),
             version.getVersion(),
             valueOf(version.getStatus()),
             version.getEffectiveFrom(),

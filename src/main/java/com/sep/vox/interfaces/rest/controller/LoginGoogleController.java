@@ -48,6 +48,6 @@ public class LoginGoogleController {
         LoginResponse response = loginGoogleUseCase.execute(command);
 
         // 4. Trả về Response
-        return ResponseEntity.ok(ApiResponse.success(String.valueOf(response)));
+        return ResponseEntity.ok(ApiResponse.success("Đăng nhập Google thành công", response));
     }
 }

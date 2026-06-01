@@ -55,4 +55,11 @@ public final class StringNormalization {
         }
         return input.strip().toUpperCase(Locale.ROOT);
     }
+
+    public static String normalizeClassCode(String input) {
+        if (input == null) {
+            return null;
+        }
+        return input.strip().toUpperCase(Locale.ROOT);
+    }
 }

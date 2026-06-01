@@ -16,11 +16,11 @@ public class CsvImportParser implements ImportFileParser {
     @Override
     public List<ImportRow> parse(InputStream inputStream) {
         try (var reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8)) {
-            var format = CSVFormat.DEFAULT.builder()
+            var format = CSVFormat.Builder.create(CSVFormat.DEFAULT)
                 .setHeader()
                 .setSkipHeaderRecord(true)
                 .setIgnoreEmptyLines(true)
-                .build();
+                .get();
             var parser = format.parse(reader);
             List<ImportRow> rows = new ArrayList<>();
             for (var record : parser) {

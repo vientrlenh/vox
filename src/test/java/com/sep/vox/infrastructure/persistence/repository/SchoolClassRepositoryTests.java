@@ -14,6 +14,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
 import com.sep.vox.config.TestContainerConfig;
+import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.model.schoolclass.SchoolClass;
 import com.sep.vox.domain.model.schoolclass.SchoolClassStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
@@ -95,6 +96,26 @@ class SchoolClassRepositoryTests {
         assertThat(found)
             .extracting(schoolClass -> schoolClass.getCode().value())
             .containsExactlyInAnyOrder("ENG_10_D", "ENG_10_E");
+    }
+
+    @Test
+    void whenFindBySchoolId_thenReturnsPagedClassesOnlyInSchool() {
+        var schoolId = UUID.randomUUID();
+        schoolClassRepository.save(newSchoolClass(schoolId, UUID.randomUUID(), UUID.randomUUID(), "ENG_10_G", "English 10G", UUID.randomUUID()));
+        schoolClassRepository.save(newSchoolClass(schoolId, UUID.randomUUID(), UUID.randomUUID(), "ENG_10_H", "English 10H", UUID.randomUUID()));
+        schoolClassRepository.save(newSchoolClass(schoolId, UUID.randomUUID(), UUID.randomUUID(), "ENG_10_I", "English 10I", UUID.randomUUID()));
+        schoolClassRepository.save(newSchoolClass(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "ENG_10_J", "Other School", UUID.randomUUID()));
+
+        var page = schoolClassRepository.findBySchoolId(schoolId, new PageRequest(1, 2));
+
+        assertThat(page.content()).hasSize(2);
+        assertThat(page.page()).isEqualTo(1);
+        assertThat(page.size()).isEqualTo(2);
+        assertThat(page.totalElements()).isEqualTo(3);
+        assertThat(page.totalPages()).isEqualTo(2);
+        assertThat(page.content())
+            .extracting(SchoolClass::getSchoolId)
+            .containsOnly(schoolId);
     }
 
     @Test

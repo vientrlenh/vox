@@ -1,7 +1,9 @@
 package com.sep.vox.domain.mapper;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 
+import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.model.schoolclass.SchoolClass;
 import com.sep.vox.domain.model.schoolclass.SchoolClassStatus;
@@ -24,6 +26,22 @@ public final class SchoolClassDtoMapper {
             valueOf(schoolClass.getUpdatedAt()),
             schoolClass.getCreatedBy(),
             schoolClass.getUpdatedBy()
+        );
+    }
+
+    public static List<SchoolClassDto> toDtoList(List<SchoolClass> list) {
+        return list.stream()
+            .map(SchoolClassDtoMapper::toDto)
+            .toList();
+    }
+
+    public static PageResult<SchoolClassDto> toDtoPage(PageResult<SchoolClass> page) {
+        return new PageResult<>(
+            toDtoList(page.content()),
+            page.page(),
+            page.size(),
+            page.totalElements(),
+            page.totalPages()
         );
     }
 

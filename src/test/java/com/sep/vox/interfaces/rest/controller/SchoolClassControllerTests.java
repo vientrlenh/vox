@@ -15,11 +15,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockMultipartFile;
 
 import com.sep.vox.application.port.input.command.CreateSchoolClassCommand;
+import com.sep.vox.application.port.input.command.DeleteSchoolClassCommand;
 import com.sep.vox.application.port.input.command.ImportSchoolClassesCommand;
 import com.sep.vox.application.port.input.command.UpdateSchoolClassCommand;
 import com.sep.vox.application.port.input.usecase.schooladmin.CreateSchoolClassUseCase;
+import com.sep.vox.application.port.input.usecase.schooladmin.DeleteSchoolClassUseCase;
 import com.sep.vox.application.port.input.usecase.schooladmin.ImportSchoolClassesUseCase;
 import com.sep.vox.application.port.input.usecase.schooladmin.UpdateSchoolClassUseCase;
+import com.sep.vox.domain.dto.SchoolClassDeleteResultDto;
 import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.dto.SchoolClassImportResultDto;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolClassRequest;
@@ -32,10 +35,12 @@ public class SchoolClassControllerTests {
         var createSchoolClassUseCase = mock(CreateSchoolClassUseCase.class);
         var importSchoolClassesUseCase = mock(ImportSchoolClassesUseCase.class);
         var updateSchoolClassUseCase = mock(UpdateSchoolClassUseCase.class);
+        var deleteSchoolClassUseCase = mock(DeleteSchoolClassUseCase.class);
         var controller = new SchoolClassController(
             createSchoolClassUseCase,
             importSchoolClassesUseCase,
-            updateSchoolClassUseCase
+            updateSchoolClassUseCase,
+            deleteSchoolClassUseCase
         );
         var languageId = UUID.randomUUID();
         var schoolGradeId = UUID.randomUUID();
@@ -85,10 +90,12 @@ public class SchoolClassControllerTests {
         var createSchoolClassUseCase = mock(CreateSchoolClassUseCase.class);
         var importSchoolClassesUseCase = mock(ImportSchoolClassesUseCase.class);
         var updateSchoolClassUseCase = mock(UpdateSchoolClassUseCase.class);
+        var deleteSchoolClassUseCase = mock(DeleteSchoolClassUseCase.class);
         var controller = new SchoolClassController(
             createSchoolClassUseCase,
             importSchoolClassesUseCase,
-            updateSchoolClassUseCase
+            updateSchoolClassUseCase,
+            deleteSchoolClassUseCase
         );
         var file = new MockMultipartFile(
             "file",
@@ -116,10 +123,12 @@ public class SchoolClassControllerTests {
         var createSchoolClassUseCase = mock(CreateSchoolClassUseCase.class);
         var importSchoolClassesUseCase = mock(ImportSchoolClassesUseCase.class);
         var updateSchoolClassUseCase = mock(UpdateSchoolClassUseCase.class);
+        var deleteSchoolClassUseCase = mock(DeleteSchoolClassUseCase.class);
         var controller = new SchoolClassController(
             createSchoolClassUseCase,
             importSchoolClassesUseCase,
-            updateSchoolClassUseCase
+            updateSchoolClassUseCase,
+            deleteSchoolClassUseCase
         );
         var id = UUID.randomUUID();
         var schoolId = UUID.randomUUID();
@@ -159,6 +168,32 @@ public class SchoolClassControllerTests {
         assertThat(response.getBody().message()).isEqualTo("Cập nhật lớp học thành công");
         assertThat(response.getBody().data()).isEqualTo(dto);
         verify(updateSchoolClassUseCase).execute(expectedCommand);
+    }
+
+    @Test
+    void delete_should_return_ok_response() {
+        var createSchoolClassUseCase = mock(CreateSchoolClassUseCase.class);
+        var importSchoolClassesUseCase = mock(ImportSchoolClassesUseCase.class);
+        var updateSchoolClassUseCase = mock(UpdateSchoolClassUseCase.class);
+        var deleteSchoolClassUseCase = mock(DeleteSchoolClassUseCase.class);
+        var controller = new SchoolClassController(
+            createSchoolClassUseCase,
+            importSchoolClassesUseCase,
+            updateSchoolClassUseCase,
+            deleteSchoolClassUseCase
+        );
+        var id = UUID.randomUUID();
+        var expectedCommand = new DeleteSchoolClassCommand(id);
+        var result = new SchoolClassDeleteResultDto(id, "HARD", null, null);
+        when(deleteSchoolClassUseCase.execute(expectedCommand)).thenReturn(result);
+
+        var response = controller.delete(id);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().message()).isEqualTo("Xóa lớp học thành công");
+        assertThat(response.getBody().data()).isEqualTo(result);
+        verify(deleteSchoolClassUseCase).execute(expectedCommand);
     }
 
     private static SchoolClassDto dto(UUID id, UUID schoolId, UUID languageId, UUID schoolGradeId, String code,

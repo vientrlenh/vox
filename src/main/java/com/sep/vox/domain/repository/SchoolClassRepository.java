@@ -17,4 +17,5 @@ public interface SchoolClassRepository {
     List<SchoolClass> findBySchoolIdAndName(UUID schoolId, String name);
     List<SchoolClass> findBySchoolIdAndLanguageIdAndTargetSchoolLevelVersionId(UUID schoolId, UUID languageId, UUID levelId);
     SchoolClass save(SchoolClass schoolClass);
+    void deleteById(UUID id);
 }

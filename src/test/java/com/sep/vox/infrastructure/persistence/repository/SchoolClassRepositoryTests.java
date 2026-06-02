@@ -156,6 +156,22 @@ class SchoolClassRepositoryTests {
             .containsExactlyInAnyOrder("ENG_12_A", "ENG_12_B");
     }
 
+    @Test
+    void whenDeleteById_thenRemovesSchoolClass() {
+        var saved = schoolClassRepository.save(newSchoolClass(
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            "ENG_12_E",
+            "English 12E",
+            UUID.randomUUID()
+        ));
+
+        schoolClassRepository.deleteById(saved.getId());
+
+        assertThat(schoolClassRepository.findById(saved.getId())).isEmpty();
+    }
+
     private static SchoolClass newSchoolClass(UUID schoolId, UUID languageId, UUID schoolGradeId, String code,
             String name, UUID targetSchoolLevelVersionId) {
         var now = OffsetDateTime.now();

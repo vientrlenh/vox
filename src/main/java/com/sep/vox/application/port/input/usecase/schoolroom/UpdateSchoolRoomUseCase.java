@@ -48,7 +48,7 @@ public class UpdateSchoolRoomUseCase implements IUseCase<UpdateSchoolRoomCommand
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
 
-        room.setSchoolId(command.schoolId());
+//        room.setSchoolId(command.schoolId());
         room.setCode(command.code());
         room.setName(command.name());
         room.setDescription(command.description());

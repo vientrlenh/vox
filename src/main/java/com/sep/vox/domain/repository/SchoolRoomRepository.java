@@ -11,4 +11,6 @@ public interface SchoolRoomRepository {
     Optional<SchoolRoom> findById(UUID id);
     SchoolRoom save(SchoolRoom room);
     boolean existsBySchoolIdAndCode(UUID schoolId, String code);
+
+    PageResult<SchoolRoom> findBySchoolId(UUID schoolId, int page, int size);
 }

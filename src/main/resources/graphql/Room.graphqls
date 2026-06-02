@@ -9,6 +9,15 @@ type SchoolRoomResponse {
 
 
 
+type SchoolRoomPageResult {
+    content: [SchoolRoomResponse]
+    page: Int
+    size: Int
+    totalElements: Int
+    totalPages: Int
+}
+
 extend type Query {
     SchoolRoom(id: ID!): SchoolRoomResponse
+    SchoolRooms(schoolId: ID!, page: Int, size: Int): SchoolRoomPageResult
 }

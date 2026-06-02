@@ -53,4 +53,6 @@ public class SchoolRoomController {
         var result = updateSchoolRoomUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Cập nhật phòng học thành công", result));
     }
+
+
 }

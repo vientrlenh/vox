@@ -7,6 +7,8 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
+import com.sep.vox.domain.common.PageRequest;
+import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.schoolclass.SchoolClass;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolClassMapper;
@@ -25,6 +27,21 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
     public Optional<SchoolClass> findById(UUID id) {
         return springDataSchoolClassRepository.findById(id)
             .map(SchoolClassMapper::toDomain);
+    }
+
+    @Override
+    public PageResult<SchoolClass> findBySchoolId(UUID schoolId, PageRequest pageRequest) {
+        var pageable = org.springframework.data.domain.PageRequest.of(pageRequest.page() - 1, pageRequest.size());
+        var page = springDataSchoolClassRepository.findBySchoolId(schoolId, pageable);
+        return new PageResult<>(
+            page.getContent().stream()
+                .map(SchoolClassMapper::toDomain)
+                .toList(),
+            page.getNumber() + 1,
+            page.getSize(),
+            page.getTotalElements(),
+            page.getTotalPages()
+        );
     }
 
     @Override

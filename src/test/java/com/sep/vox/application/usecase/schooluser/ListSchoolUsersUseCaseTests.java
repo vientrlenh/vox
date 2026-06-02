@@ -132,7 +132,7 @@ public class ListSchoolUsersUseCaseTests {
         var now = OffsetDateTime.now();
         return new User(id, new Email("admin@school.edu.vn"), "hash",
             new Phone("0900000000"), new FullName("Admin User"), null,
-            new DateOfBirth(LocalDate.of(1980, 1, 1)), "Admin Street",
+            new DateOfBirth(LocalDate.of(1980, 1, 1)), "Admin Street", null,
             status, now, now, id, id, userSchoolId);
     }
 }

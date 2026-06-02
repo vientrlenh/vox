@@ -79,8 +79,8 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
         }
 
         User user = command.roleCode().equals("STUDENT")
-            ? User.createStudent(command.email(), command.phone(), command.fullName(), command.dateOfBirth(), command.address(), callerId, command.schoolId(), now)
-            : User.createTeacher(command.email(), command.phone(), command.fullName(), command.dateOfBirth(), command.address(), callerId, command.schoolId(), now);
+            ? User.createStudent(command.email(), command.phone(), command.fullName(), command.dateOfBirth(), command.address(), null, callerId, command.schoolId(), now)
+            : User.createTeacher(command.email(), command.phone(), command.fullName(), command.dateOfBirth(), command.address(), null, callerId, command.schoolId(), now);
 
         var savedUser = userRepository.save(user);
 

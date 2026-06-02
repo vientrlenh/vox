@@ -254,7 +254,7 @@ public class CreateSchoolUserUseCaseTests {
         var now = OffsetDateTime.now();
         return new User(id, new Email("admin@school.edu.vn"), "hash",
             new Phone("0900000000"), new FullName("Admin User"), null,
-            new DateOfBirth(LocalDate.of(1980, 1, 1)), "Admin Street",
+            new DateOfBirth(LocalDate.of(1980, 1, 1)), "Admin Street", null,
             status, now, now, id, id, userSchoolId);
     }
 
@@ -263,7 +263,7 @@ public class CreateSchoolUserUseCaseTests {
         var id = UUID.randomUUID();
         return new User(id, new Email("student@school.edu.vn"), "__PASSWORD_NOT_SET__",
             new Phone("0987654321"), new FullName("Nguyen Van A"), null,
-            new DateOfBirth(LocalDate.of(2005, 1, 15)), "123 Street",
+            new DateOfBirth(LocalDate.of(2005, 1, 15)), "123 Street", null,
             UserStatus.INACTIVE, now, now, callerId, callerId, userSchoolId);
     }
 

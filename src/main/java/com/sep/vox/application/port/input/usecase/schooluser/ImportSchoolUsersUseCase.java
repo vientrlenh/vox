@@ -200,8 +200,8 @@ public class ImportSchoolUsersUseCase implements IUseCase<ImportSchoolUsersComma
                 var createdId = transactionTemplate.execute(status -> {
                     var now = OffsetDateTime.now();
                     User user = resolvedRoleCode.equals("STUDENT")
-                        ? User.createStudent(email, phone, fullName, dateOfBirth, address, callerId, input.schoolId(), now)
-                        : User.createTeacher(email, phone, fullName, dateOfBirth, address, callerId, input.schoolId(), now);
+                        ? User.createStudent(email, phone, fullName, dateOfBirth, address, null, callerId, input.schoolId(), now)
+                        : User.createTeacher(email, phone, fullName, dateOfBirth, address, null, callerId, input.schoolId(), now);
 
                     var savedUser = userRepository.save(user);
                     userRoleRepository.save(new UserRole(savedUser.getId(), role.getId(), now));

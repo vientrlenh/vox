@@ -124,7 +124,7 @@ public class DeleteSchoolUserUseCaseTests {
         var now = OffsetDateTime.now();
         return new User(id, new Email("user@school.edu.vn"), "hash",
             new Phone("0987654321"), new FullName("Nguyen Van A"), null,
-            new DateOfBirth(LocalDate.of(2000, 1, 1)), "123 Street",
+            new DateOfBirth(LocalDate.of(2000, 1, 1)), "123 Street", null,
             status, now, now, id, id, userSchoolId);
     }
 }

@@ -1,4 +1,4 @@
-package com.sep.vox.application.usecase.schooladmin;
+package com.sep.vox.application.usecase.schoolclass;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
 import com.sep.vox.application.exception.ImportValidationException;
 import com.sep.vox.application.port.input.command.ImportSchoolClassRowCommand;
 import com.sep.vox.application.port.input.command.ImportSchoolClassesCommand;
-import com.sep.vox.application.port.input.usecase.schooladmin.ImportSchoolClassesUseCase;
+import com.sep.vox.application.port.input.usecase.schoolclass.ImportSchoolClassesUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.languagelevel.LevelStatus;
 import com.sep.vox.domain.model.languagelevel.SchoolLevel;

@@ -1,4 +1,4 @@
-package com.sep.vox.application.port.input.usecase.schooladmin;
+package com.sep.vox.application.port.input.usecase.schoolclass;
 
 import java.time.OffsetDateTime;
 import java.util.Objects;
@@ -8,94 +8,87 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.port.input.command.CreateSchoolClassCommand;
+import com.sep.vox.application.port.input.command.UpdateSchoolClassCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.mapper.SchoolClassDtoMapper;
 import com.sep.vox.domain.model.languagelevel.LevelStatus;
-import com.sep.vox.domain.model.schoolclass.SchoolClass;
-import com.sep.vox.domain.model.schoolgrade.SchoolGradeStatus;
+import com.sep.vox.domain.model.schoolclass.SchoolClassStatus;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.repository.SchoolClassRepository;
-import com.sep.vox.domain.repository.SchoolGradeRepository;
 import com.sep.vox.domain.repository.SchoolLevelRepository;
 import com.sep.vox.domain.repository.SchoolLevelVersionRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
-import com.sep.vox.domain.repository.SupportedLanguageRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
-public class CreateSchoolClassUseCase implements IUseCase<CreateSchoolClassCommand, SchoolClassDto> {
+public class UpdateSchoolClassUseCase implements IUseCase<UpdateSchoolClassCommand, SchoolClassDto> {
 
     private final SchoolClassRepository schoolClassRepository;
     private final SchoolRepository schoolRepository;
     private final UserRepository userRepository;
-    private final SupportedLanguageRepository supportedLanguageRepository;
-    private final SchoolGradeRepository schoolGradeRepository;
-    private final SchoolLevelVersionRepository schoolLevelVersionRepository;
     private final SchoolLevelRepository schoolLevelRepository;
+    private final SchoolLevelVersionRepository schoolLevelVersionRepository;
     private final UserContextPort userContextPort;
 
-    public CreateSchoolClassUseCase(
+    public UpdateSchoolClassUseCase(
             SchoolClassRepository schoolClassRepository,
             SchoolRepository schoolRepository,
             UserRepository userRepository,
-            SupportedLanguageRepository supportedLanguageRepository,
-            SchoolGradeRepository schoolGradeRepository,
-            SchoolLevelVersionRepository schoolLevelVersionRepository,
             SchoolLevelRepository schoolLevelRepository,
+            SchoolLevelVersionRepository schoolLevelVersionRepository,
             UserContextPort userContextPort) {
         this.schoolClassRepository = schoolClassRepository;
         this.schoolRepository = schoolRepository;
         this.userRepository = userRepository;
-        this.supportedLanguageRepository = supportedLanguageRepository;
-        this.schoolGradeRepository = schoolGradeRepository;
-        this.schoolLevelVersionRepository = schoolLevelVersionRepository;
         this.schoolLevelRepository = schoolLevelRepository;
+        this.schoolLevelVersionRepository = schoolLevelVersionRepository;
         this.userContextPort = userContextPort;
     }
 
     @Override
     @Transactional
-    public SchoolClassDto execute(CreateSchoolClassCommand input) {
+    public SchoolClassDto execute(UpdateSchoolClassCommand input) {
         var command = normalize(input);
         var now = OffsetDateTime.now();
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         var currentUser = findCurrentUser(currentUserId);
         var schoolId = getSchoolId(currentUser);
-
         validateSchool(schoolId);
-        validateLanguage(command.languageId());
-        validateSchoolGrade(command.schoolGradeId(), schoolId);
-        validateTargetSchoolLevelVersion(command.targetSchoolLevelVersionId(), schoolId, command.languageId());
-        validateClassCodeIsUnique(schoolId, command.code());
 
-        var schoolClass = SchoolClass.create(
-            schoolId,
-            command.languageId(),
-            command.schoolGradeId(),
-            command.code(),
-            command.name(),
-            command.description(),
+        var schoolClass = schoolClassRepository.findById(command.id())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy lớp học"));
+        if (!Objects.equals(schoolClass.getSchoolId(), schoolId)) {
+            throw new NotFoundException("Không tìm thấy lớp học");
+        }
+
+        var status = parseStatus(command.status());
+        validateTargetSchoolLevelVersion(
             command.targetSchoolLevelVersionId(),
-            currentUserId,
-            now
+            schoolId,
+            schoolClass.getLanguageId()
         );
+
+        schoolClass.setName(command.name());
+        schoolClass.setDescription(command.description());
+        schoolClass.setTargetSchoolLevelVersionId(command.targetSchoolLevelVersionId());
+        schoolClass.setStatus(status);
+        schoolClass.setUpdatedAt(now);
+        schoolClass.setUpdatedBy(currentUserId);
+
         var saved = schoolClassRepository.save(schoolClass);
         return SchoolClassDtoMapper.toDto(saved);
     }
 
-    private CreateSchoolClassCommand normalize(CreateSchoolClassCommand input) {
-        return new CreateSchoolClassCommand(
-            input.languageId(),
-            input.schoolGradeId(),
-            StringNormalization.normalizeClassCode(input.code()),
+    private UpdateSchoolClassCommand normalize(UpdateSchoolClassCommand input) {
+        return new UpdateSchoolClassCommand(
+            input.id(),
             StringNormalization.trimAndCollapseSpaces(input.name()),
             StringNormalization.trimAndCollapseSpaces(input.description()),
-            input.targetSchoolLevelVersionId()
+            input.targetSchoolLevelVersionId(),
+            StringNormalization.trimAndCollapseSpaces(input.status())
         );
     }
 
@@ -120,22 +113,11 @@ public class CreateSchoolClassUseCase implements IUseCase<CreateSchoolClassComma
         }
     }
 
-    private void validateLanguage(UUID languageId) {
-        var language = supportedLanguageRepository.findById(languageId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy ngôn ngữ"));
-        if (!language.isActive()) {
-            throw new IllegalStateException("Ngôn ngữ không hoạt động");
-        }
-    }
-
-    private void validateSchoolGrade(UUID schoolGradeId, UUID schoolId) {
-        var grade = schoolGradeRepository.findById(schoolGradeId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy khối học"));
-        if (!Objects.equals(grade.getSchoolId(), schoolId)) {
-            throw new IllegalArgumentException("Khối học không thuộc trường hiện tại");
-        }
-        if (grade.getStatus() != SchoolGradeStatus.ACTIVE) {
-            throw new IllegalStateException("Khối học không hoạt động");
+    private SchoolClassStatus parseStatus(String status) {
+        try {
+            return SchoolClassStatus.valueOf(status);
+        } catch (IllegalArgumentException | NullPointerException e) {
+            throw new IllegalArgumentException("Trạng thái lớp học không hợp lệ");
         }
     }
 
@@ -152,13 +134,7 @@ public class CreateSchoolClassUseCase implements IUseCase<CreateSchoolClassComma
             throw new IllegalArgumentException("Cấp độ mục tiêu không thuộc trường hiện tại");
         }
         if (!Objects.equals(schoolLevel.getLanguageId(), languageId)) {
-            throw new IllegalArgumentException("Cấp độ mục tiêu không thuộc ngôn ngữ đã chọn");
-        }
-    }
-
-    private void validateClassCodeIsUnique(UUID schoolId, String code) {
-        if (schoolClassRepository.findBySchoolIdAndCode(schoolId, code).isPresent()) {
-            throw new DuplicatedException("Mã lớp học đã tồn tại trong trường");
+            throw new IllegalArgumentException("Cấp độ mục tiêu không thuộc ngôn ngữ của lớp học");
         }
     }
 }

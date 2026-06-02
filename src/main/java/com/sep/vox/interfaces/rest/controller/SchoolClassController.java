@@ -17,10 +17,10 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.sep.vox.application.port.input.command.DeleteSchoolClassCommand;
-import com.sep.vox.application.port.input.usecase.schooladmin.CreateSchoolClassUseCase;
-import com.sep.vox.application.port.input.usecase.schooladmin.DeleteSchoolClassUseCase;
-import com.sep.vox.application.port.input.usecase.schooladmin.ImportSchoolClassesUseCase;
-import com.sep.vox.application.port.input.usecase.schooladmin.UpdateSchoolClassUseCase;
+import com.sep.vox.application.port.input.usecase.schoolclass.CreateSchoolClassUseCase;
+import com.sep.vox.application.port.input.usecase.schoolclass.DeleteSchoolClassUseCase;
+import com.sep.vox.application.port.input.usecase.schoolclass.ImportSchoolClassesUseCase;
+import com.sep.vox.application.port.input.usecase.schoolclass.UpdateSchoolClassUseCase;
 import com.sep.vox.domain.dto.SchoolClassDeleteResultDto;
 import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.dto.SchoolClassImportResultDto;
@@ -86,7 +86,7 @@ public class SchoolClassController {
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<SchoolClassDeleteResultDto>> delete(@PathVariable UUID id) {
         var data = deleteSchoolClassUseCase.execute(new DeleteSchoolClassCommand(id));
-        var response = ApiResponse.success("X\u00f3a l\u1edbp h\u1ecdc th\u00e0nh c\u00f4ng", data);
+        var response = ApiResponse.success("Xóa lớp học thành công", data);
         return ResponseEntity.ok(response);
     }
 }

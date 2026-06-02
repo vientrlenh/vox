@@ -1,4 +1,4 @@
-package com.sep.vox.application.usecase.schooladmin;
+package com.sep.vox.application.usecase.schoolclass;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -18,7 +18,7 @@ import org.mockito.ArgumentCaptor;
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreateSchoolClassCommand;
-import com.sep.vox.application.port.input.usecase.schooladmin.CreateSchoolClassUseCase;
+import com.sep.vox.application.port.input.usecase.schoolclass.CreateSchoolClassUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.languagelevel.LevelStatus;
 import com.sep.vox.domain.model.languagelevel.SchoolLevel;

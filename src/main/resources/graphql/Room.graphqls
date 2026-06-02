@@ -1,0 +1,14 @@
+type SchoolRoomResponse {
+    id: ID
+    schoolId: ID
+    code: String
+    name: String
+    description: String
+    isActive: Boolean
+}
+
+
+
+extend type Query {
+    SchoolRoom(id: ID!): SchoolRoomResponse
+}

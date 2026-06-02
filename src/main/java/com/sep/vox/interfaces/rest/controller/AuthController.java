@@ -1,7 +1,20 @@
 package com.sep.vox.interfaces.rest.controller;
 
-import com.sep.vox.application.port.input.usecase.auth.*;
-import com.sep.vox.interfaces.rest.dto.request.*;
+
+import com.sep.vox.application.port.input.usecase.auth.LoginUseCase;
+import com.sep.vox.application.port.input.usecase.auth.RefreshUseCase;
+import com.sep.vox.application.port.input.usecase.auth.RegisterUseCase;
+import com.sep.vox.application.port.input.usecase.auth.SetUpPasswordUseCase;
+import com.sep.vox.application.port.input.usecase.auth.SendResetPasswordOtpUseCase;
+import com.sep.vox.application.port.input.usecase.auth.ResetPasswordUseCase;
+
+import com.sep.vox.interfaces.rest.dto.request.LoginRequest;
+import com.sep.vox.interfaces.rest.dto.request.RegisterRequest;
+import com.sep.vox.interfaces.rest.dto.request.SetUpPasswordRequest;
+import com.sep.vox.interfaces.rest.dto.request.RefreshRequest;
+import com.sep.vox.interfaces.rest.dto.request.SendResetPasswordOtpRequest;
+import com.sep.vox.interfaces.rest.dto.request.ResetPasswordRequest;
+
 import com.sep.vox.interfaces.rest.mapper.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

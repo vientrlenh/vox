@@ -137,6 +137,7 @@ public class ApproveRegisterFormUseCase implements IUseCase<ApproveRegisterFormC
             command.contactFullName(), 
             command.dateOfBirth(), 
             command.contactAddress(), 
+            null,
             createdUserId, 
             schoolId, 
             now

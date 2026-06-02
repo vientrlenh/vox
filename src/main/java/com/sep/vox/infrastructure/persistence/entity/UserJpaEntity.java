@@ -53,6 +53,9 @@ public class UserJpaEntity {
     @Column(name = "address", length = 255)
     private String address;
 
+    @Column(name = "avatar_url", length = 4096)
+    private String avatarUrl;
+
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
             name = "chk_status_valid", 
@@ -79,7 +82,7 @@ public class UserJpaEntity {
     protected UserJpaEntity() {}
 
     public UserJpaEntity(UUID id, String email, String passwordHash, String phone,
-            String fullName, String gender, LocalDate dateOfBirth, String address, String status,
+            String fullName, String gender, LocalDate dateOfBirth, String address, String avatarUrl, String status,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy, UUID schoolId) {
         this.id = id;
         this.email = email;
@@ -89,6 +92,7 @@ public class UserJpaEntity {
         this.gender = gender;
         this.dateOfBirth = dateOfBirth;
         this.address = address;
+        this.avatarUrl = avatarUrl;
         this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -209,6 +213,14 @@ public class UserJpaEntity {
 
     public void setSchoolId(UUID schoolId) {
         this.schoolId = schoolId;
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
     }
     
     

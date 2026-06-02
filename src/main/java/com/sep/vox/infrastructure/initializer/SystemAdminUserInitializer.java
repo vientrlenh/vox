@@ -96,6 +96,7 @@ public class SystemAdminUserInitializer implements ApplicationRunner {
             Gender.MALE,
             new DateOfBirth(DateMapper.toLocalDate(dateOfBirth)),
             address,
+            null,
             UserStatus.ACTIVE,
             now,
             now,

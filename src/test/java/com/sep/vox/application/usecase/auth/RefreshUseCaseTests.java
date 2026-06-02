@@ -282,6 +282,7 @@ class RefreshUseCaseTests {
             null,
             new DateOfBirth(LocalDate.of(2000, 1, 1)),
             "Ho Chi Minh City",
+            null,
             UserStatus.ACTIVE,
             OffsetDateTime.now(),
             OffsetDateTime.now(),

@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.question;
 
-import java.util.Map;
-import java.util.UUID;
+
+import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -48,12 +48,12 @@ public class ViewQuestionsByTopicUseCase implements IUseCase<ViewQuestionsByTopi
         return QuestionDtoMapper.toDtoPage(result, standardLevelCodeMap, standardLevelToFrameworkMap, frameworkMap);
     }
 
-    private java.util.List<StandardLevel> fetchStandardLevels(java.util.List<Question> questions) {
+    private List<StandardLevel> fetchStandardLevels(List<Question> questions) {
         var ids = questions.stream().map(Question::getStandardLevelId).distinct().toList();
         return standardLevelRepository.findAllByIds(ids);
     }
 
-    private java.util.List<LevelFramework> fetchFrameworks(java.util.List<StandardLevel> standardLevels) {
+    private List<LevelFramework> fetchFrameworks(List<StandardLevel> standardLevels) {
         var frameworkIds = standardLevels.stream().map(StandardLevel::getFrameworkId).distinct().toList();
         return levelFrameworkRepository.findAllByIds(frameworkIds);
     }

@@ -15,7 +15,14 @@ import com.sep.vox.interfaces.rest.dto.request.RefreshRequest;
 import com.sep.vox.interfaces.rest.dto.request.SendResetPasswordOtpRequest;
 import com.sep.vox.interfaces.rest.dto.request.ResetPasswordRequest;
 
-import com.sep.vox.interfaces.rest.mapper.*;
+//import com.sep.vox.interfaces.rest.mapper.*;
+import com.sep.vox.interfaces.rest.mapper.LoginCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.RegisterCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.SetUpPasswordCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.RefreshCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.SendResetPasswordOtpCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.ResetPasswordCommandMapper;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PatchMapping;

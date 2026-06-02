@@ -113,7 +113,8 @@ class ImportSchoolClassesUseCaseTests {
             ))
         ));
 
-        assertThat(exception.getErrors()).anyMatch(error -> error.rowNumber() == 3 && error.field().equals("code"));
+        assertSingleError(exception, 3, "code", "Trường bắt buộc không được để trống");
+        verify(schoolClassRepository, never()).findBySchoolIdAndCodeIn(any(), any());
         verify(schoolClassRepository, never()).save(any(SchoolClass.class));
     }
 
@@ -134,6 +135,24 @@ class ImportSchoolClassesUseCaseTests {
     }
 
     @Test
+    void import_should_stop_at_first_structural_error_before_duplicate_validation() {
+        var ids = TestIds.create();
+        mockValidDependencies(ids);
+
+        var exception = assertThrows(ImportValidationException.class, () -> importSchoolClassesUseCase.execute(
+            new ImportSchoolClassesCommand(List.of(
+                row(2, "", "G10", "A1", "1", "ENG_10_A", "Missing language", null),
+                row(3, "ENG", "G10", "A1", "1", "ENG_10_A", "Duplicate code", null)
+            ))
+        ));
+
+        assertSingleError(exception, 2, "languageCode", "Trường bắt buộc không được để trống");
+        verify(schoolClassRepository, never()).findBySchoolIdAndCodeIn(any(), any());
+        verify(supportedLanguageRepository, never()).findByCode(any());
+        verify(schoolClassRepository, never()).save(any(SchoolClass.class));
+    }
+
+    @Test
     void import_should_reject_duplicate_code_in_file() {
         var ids = TestIds.create();
         mockValidDependencies(ids);
@@ -145,7 +164,9 @@ class ImportSchoolClassesUseCaseTests {
             ))
         ));
 
-        assertThat(exception.getErrors()).anyMatch(error -> error.rowNumber() == 3 && error.field().equals("code"));
+        assertSingleError(exception, 3, "code", "Mã lớp học bị trùng với dòng 2");
+        verify(schoolClassRepository, never()).findBySchoolIdAndCodeIn(any(), any());
+        verify(supportedLanguageRepository, never()).findByCode(any());
         verify(schoolClassRepository, never()).save(any(SchoolClass.class));
     }
 
@@ -154,13 +175,17 @@ class ImportSchoolClassesUseCaseTests {
         var ids = TestIds.create();
         mockValidDependencies(ids);
         when(schoolClassRepository.findBySchoolIdAndCodeIn(any(), any()))
-            .thenReturn(List.of(existingClass("ENG_10_A")));
+            .thenReturn(List.of(existingClass("ENG_10_A"), existingClass("ENG_10_B")));
 
         var exception = assertThrows(ImportValidationException.class, () -> importSchoolClassesUseCase.execute(
-            new ImportSchoolClassesCommand(List.of(row(2, "ENG", "G10", "A1", "1", "ENG_10_A", "English 10A", null)))
+            new ImportSchoolClassesCommand(List.of(
+                row(2, "ENG", "G10", "A1", "1", "ENG_10_A", "English 10A", null),
+                row(3, "ENG", "G10", "A1", "1", "ENG_10_B", "English 10B", null)
+            ))
         ));
 
-        assertThat(exception.getErrors()).anyMatch(error -> error.rowNumber() == 2 && error.field().equals("code"));
+        assertSingleError(exception, 2, "code", "Mã lớp học đã tồn tại trong trường");
+        verify(supportedLanguageRepository, never()).findByCode(any());
         verify(schoolClassRepository, never()).save(any(SchoolClass.class));
     }
 
@@ -173,15 +198,20 @@ class ImportSchoolClassesUseCaseTests {
         var missing = assertThrows(ImportValidationException.class, () -> importSchoolClassesUseCase.execute(
             new ImportSchoolClassesCommand(List.of(row(2, "ENG", "G10", "A1", "1", "ENG_10_A", "English 10A", null)))
         ));
-        assertThat(missing.getErrors()).anyMatch(error -> error.field().equals("languageCode"));
+        assertSingleError(missing, 2, "languageCode", "Không tìm thấy ngôn ngữ");
 
         mockValidDependencies(ids);
         when(supportedLanguageRepository.findByCode("ENG")).thenReturn(Optional.of(language(ids.languageId(), false)));
 
         var inactive = assertThrows(ImportValidationException.class, () -> importSchoolClassesUseCase.execute(
-            new ImportSchoolClassesCommand(List.of(row(2, "ENG", "G10", "A1", "1", "ENG_10_A", "English 10A", null)))
+            new ImportSchoolClassesCommand(List.of(
+                row(2, "ENG", "G10", "A1", "1", "ENG_10_A", "English 10A", null),
+                row(3, "FRA", "G10", "A1", "1", "FRA_10_A", "French 10A", null)
+            ))
         ));
-        assertThat(inactive.getErrors()).anyMatch(error -> error.field().equals("languageCode"));
+        assertSingleError(inactive, 2, "languageCode", "Ngôn ngữ không hoạt động");
+        verify(supportedLanguageRepository, never()).findByCode("FRA");
+        verify(schoolGradeRepository, never()).findBySchoolIdAndCode(any(), any());
         verify(schoolClassRepository, never()).save(any(SchoolClass.class));
     }
 
@@ -194,7 +224,7 @@ class ImportSchoolClassesUseCaseTests {
         var missing = assertThrows(ImportValidationException.class, () -> importSchoolClassesUseCase.execute(
             new ImportSchoolClassesCommand(List.of(row(2, "ENG", "G10", "A1", "1", "ENG_10_A", "English 10A", null)))
         ));
-        assertThat(missing.getErrors()).anyMatch(error -> error.field().equals("schoolGradeCode"));
+        assertSingleError(missing, 2, "schoolGradeCode", "Không tìm thấy khối học trong trường hiện tại");
 
         mockValidDependencies(ids);
         when(schoolGradeRepository.findBySchoolIdAndCode(ids.schoolId(), "G10"))
@@ -203,7 +233,8 @@ class ImportSchoolClassesUseCaseTests {
         var inactive = assertThrows(ImportValidationException.class, () -> importSchoolClassesUseCase.execute(
             new ImportSchoolClassesCommand(List.of(row(2, "ENG", "G10", "A1", "1", "ENG_10_A", "English 10A", null)))
         ));
-        assertThat(inactive.getErrors()).anyMatch(error -> error.field().equals("schoolGradeCode"));
+        assertSingleError(inactive, 2, "schoolGradeCode", "Khối học không hoạt động");
+        verify(schoolLevelRepository, never()).findBySchoolIdAndLanguageIdAndCode(any(), any(), any());
         verify(schoolClassRepository, never()).save(any(SchoolClass.class));
     }
 
@@ -217,7 +248,7 @@ class ImportSchoolClassesUseCaseTests {
         var missingLevel = assertThrows(ImportValidationException.class, () -> importSchoolClassesUseCase.execute(
             new ImportSchoolClassesCommand(List.of(row(2, "ENG", "G10", "A1", "1", "ENG_10_A", "English 10A", null)))
         ));
-        assertThat(missingLevel.getErrors()).anyMatch(error -> error.field().equals("targetSchoolLevelCode"));
+        assertSingleError(missingLevel, 2, "targetSchoolLevelCode", "Không tìm thấy cấp độ mục tiêu theo ngôn ngữ đã chọn");
 
         mockValidDependencies(ids);
         when(schoolLevelVersionRepository.findBySchoolLevelIdAndVersion(ids.levelId(), 1))
@@ -226,7 +257,7 @@ class ImportSchoolClassesUseCaseTests {
         var draftVersion = assertThrows(ImportValidationException.class, () -> importSchoolClassesUseCase.execute(
             new ImportSchoolClassesCommand(List.of(row(2, "ENG", "G10", "A1", "1", "ENG_10_A", "English 10A", null)))
         ));
-        assertThat(draftVersion.getErrors()).anyMatch(error -> error.field().equals("targetSchoolLevelVersion"));
+        assertSingleError(draftVersion, 2, "targetSchoolLevelVersion", "Phiên bản cấp độ mục tiêu chưa được công bố");
         verify(schoolClassRepository, never()).save(any(SchoolClass.class));
     }
 
@@ -312,6 +343,15 @@ class ImportSchoolClassesUseCaseTests {
         var schoolClass = new SchoolClass();
         schoolClass.setCode(new ClassCode(code));
         return schoolClass;
+    }
+
+    private static void assertSingleError(ImportValidationException exception, int rowNumber, String field,
+            String message) {
+        assertThat(exception.getErrors()).hasSize(1);
+        var error = exception.getErrors().getFirst();
+        assertThat(error.rowNumber()).isEqualTo(rowNumber);
+        assertThat(error.field()).isEqualTo(field);
+        assertThat(error.message()).isEqualTo(message);
     }
 
     private record TestIds(

@@ -78,27 +78,19 @@ public class ImportSchoolClassesUseCase implements IUseCase<ImportSchoolClassesC
         validateSchool(schoolId);
 
         if (rows.isEmpty()) {
-            throw new ImportValidationException(List.of(new ImportRowErrorDto(0, "file", "File import không có dữ liệu")));
+            throwImportError(0, "file", "File import không có dữ liệu");
         }
 
-        var errors = new ArrayList<ImportRowErrorDto>();
         var normalizedRows = rows.stream()
             .map(this::normalize)
             .toList();
-        validateRequiredAndLength(normalizedRows, errors);
-        validateDuplicateCodesInFile(normalizedRows, errors);
-        validateDuplicateCodesInDatabase(schoolId, normalizedRows, errors);
+        validateRequiredAndLengthOrThrow(normalizedRows);
+        validateDuplicateCodesInFileOrThrow(normalizedRows);
+        validateDuplicateCodesInDatabaseOrThrow(schoolId, normalizedRows);
 
         var candidates = new ArrayList<CreateCandidate>();
         for (var row : normalizedRows) {
-            var candidate = resolveCandidate(row, schoolId, currentUserId, errors);
-            if (candidate != null) {
-                candidates.add(candidate);
-            }
-        }
-
-        if (!errors.isEmpty()) {
-            throw new ImportValidationException(errors);
+            candidates.add(resolveCandidateOrThrow(row, schoolId, currentUserId));
         }
 
         var createdClasses = new ArrayList<SchoolClassDto>();
@@ -123,21 +115,21 @@ public class ImportSchoolClassesUseCase implements IUseCase<ImportSchoolClassesC
         );
     }
 
-    private void validateRequiredAndLength(List<NormalizedRow> rows, List<ImportRowErrorDto> errors) {
+    private void validateRequiredAndLengthOrThrow(List<NormalizedRow> rows) {
         for (var row : rows) {
-            require(row, row.languageCode(), "languageCode", errors);
-            require(row, row.schoolGradeCode(), "schoolGradeCode", errors);
-            require(row, row.targetSchoolLevelCode(), "targetSchoolLevelCode", errors);
-            require(row, row.targetSchoolLevelVersion(), "targetSchoolLevelVersion", errors);
-            require(row, row.code(), "code", errors);
-            require(row, row.name(), "name", errors);
-            maxLength(row, row.code(), "code", CODE_MAX_LENGTH, errors);
-            maxLength(row, row.name(), "name", NAME_MAX_LENGTH, errors);
-            maxLength(row, row.description(), "description", DESCRIPTION_MAX_LENGTH, errors);
+            requireOrThrow(row, row.languageCode(), "languageCode");
+            requireOrThrow(row, row.schoolGradeCode(), "schoolGradeCode");
+            requireOrThrow(row, row.targetSchoolLevelCode(), "targetSchoolLevelCode");
+            requireOrThrow(row, row.targetSchoolLevelVersion(), "targetSchoolLevelVersion");
+            requireOrThrow(row, row.code(), "code");
+            requireOrThrow(row, row.name(), "name");
+            maxLengthOrThrow(row, row.code(), "code", CODE_MAX_LENGTH);
+            maxLengthOrThrow(row, row.name(), "name", NAME_MAX_LENGTH);
+            maxLengthOrThrow(row, row.description(), "description", DESCRIPTION_MAX_LENGTH);
         }
     }
 
-    private void validateDuplicateCodesInFile(List<NormalizedRow> rows, List<ImportRowErrorDto> errors) {
+    private void validateDuplicateCodesInFileOrThrow(List<NormalizedRow> rows) {
         var firstRowByCode = new HashMap<String, Integer>();
         for (var row : rows) {
             if (isBlank(row.code())) {
@@ -145,12 +137,12 @@ public class ImportSchoolClassesUseCase implements IUseCase<ImportSchoolClassesC
             }
             var firstRow = firstRowByCode.putIfAbsent(row.code(), row.rowNumber());
             if (firstRow != null) {
-                errors.add(new ImportRowErrorDto(row.rowNumber(), "code", "Mã lớp học bị trùng với dòng " + firstRow));
+                throwImportError(row.rowNumber(), "code", "Mã lớp học bị trùng với dòng " + firstRow);
             }
         }
     }
 
-    private void validateDuplicateCodesInDatabase(UUID schoolId, List<NormalizedRow> rows, List<ImportRowErrorDto> errors) {
+    private void validateDuplicateCodesInDatabaseOrThrow(UUID schoolId, List<NormalizedRow> rows) {
         var codes = rows.stream()
             .map(NormalizedRow::code)
             .filter(code -> !isBlank(code))
@@ -164,33 +156,26 @@ public class ImportSchoolClassesUseCase implements IUseCase<ImportSchoolClassesC
             .collect(java.util.stream.Collectors.toSet());
         for (var row : rows) {
             if (existingCodes.contains(row.code())) {
-                errors.add(new ImportRowErrorDto(row.rowNumber(), "code", "Mã lớp học đã tồn tại trong trường"));
+                throwImportError(row.rowNumber(), "code", "Mã lớp học đã tồn tại trong trường");
             }
         }
     }
 
-    private CreateCandidate resolveCandidate(NormalizedRow row, UUID schoolId, UUID currentUserId,
-            List<ImportRowErrorDto> errors) {
-        if (hasStructuralError(row)) {
-            return null;
-        }
-
+    private CreateCandidate resolveCandidateOrThrow(NormalizedRow row, UUID schoolId, UUID currentUserId) {
         var language = supportedLanguageRepository.findByCode(row.languageCode());
         if (language.isEmpty()) {
-            errors.add(new ImportRowErrorDto(row.rowNumber(), "languageCode", "Không tìm thấy ngôn ngữ"));
-            return null;
+            throwImportError(row.rowNumber(), "languageCode", "Không tìm thấy ngôn ngữ");
         }
         if (!language.get().isActive()) {
-            errors.add(new ImportRowErrorDto(row.rowNumber(), "languageCode", "Ngôn ngữ không hoạt động"));
+            throwImportError(row.rowNumber(), "languageCode", "Ngôn ngữ không hoạt động");
         }
 
         var grade = schoolGradeRepository.findBySchoolIdAndCode(schoolId, row.schoolGradeCode());
         if (grade.isEmpty()) {
-            errors.add(new ImportRowErrorDto(row.rowNumber(), "schoolGradeCode", "Không tìm thấy khối học trong trường hiện tại"));
-            return null;
+            throwImportError(row.rowNumber(), "schoolGradeCode", "Không tìm thấy khối học trong trường hiện tại");
         }
         if (grade.get().getStatus() != SchoolGradeStatus.ACTIVE) {
-            errors.add(new ImportRowErrorDto(row.rowNumber(), "schoolGradeCode", "Khối học không hoạt động"));
+            throwImportError(row.rowNumber(), "schoolGradeCode", "Khối học không hoạt động");
         }
 
         var level = schoolLevelRepository.findBySchoolIdAndLanguageIdAndCode(
@@ -199,26 +184,17 @@ public class ImportSchoolClassesUseCase implements IUseCase<ImportSchoolClassesC
             row.targetSchoolLevelCode()
         );
         if (level.isEmpty()) {
-            errors.add(new ImportRowErrorDto(row.rowNumber(), "targetSchoolLevelCode", "Không tìm thấy cấp độ mục tiêu theo ngôn ngữ đã chọn"));
-            return null;
+            throwImportError(row.rowNumber(), "targetSchoolLevelCode", "Không tìm thấy cấp độ mục tiêu theo ngôn ngữ đã chọn");
         }
 
-        var version = parseVersion(row, errors);
-        if (version == null) {
-            return null;
-        }
+        var version = parseVersionOrThrow(row);
 
         var levelVersion = schoolLevelVersionRepository.findBySchoolLevelIdAndVersion(level.get().getId(), version);
         if (levelVersion.isEmpty()) {
-            errors.add(new ImportRowErrorDto(row.rowNumber(), "targetSchoolLevelVersion", "Không tìm thấy phiên bản cấp độ mục tiêu"));
-            return null;
+            throwImportError(row.rowNumber(), "targetSchoolLevelVersion", "Không tìm thấy phiên bản cấp độ mục tiêu");
         }
         if (levelVersion.get().getStatus() != LevelStatus.PUBLISHED) {
-            errors.add(new ImportRowErrorDto(row.rowNumber(), "targetSchoolLevelVersion", "Phiên bản cấp độ mục tiêu chưa được công bố"));
-        }
-
-        if (hasRowError(row.rowNumber(), errors)) {
-            return null;
+            throwImportError(row.rowNumber(), "targetSchoolLevelVersion", "Phiên bản cấp độ mục tiêu chưa được công bố");
         }
 
         var now = OffsetDateTime.now();
@@ -236,17 +212,16 @@ public class ImportSchoolClassesUseCase implements IUseCase<ImportSchoolClassesC
         return new CreateCandidate(schoolClass);
     }
 
-    private Integer parseVersion(NormalizedRow row, List<ImportRowErrorDto> errors) {
+    private int parseVersionOrThrow(NormalizedRow row) {
         try {
             var version = Integer.parseInt(row.targetSchoolLevelVersion());
             if (version <= 0) {
-                errors.add(new ImportRowErrorDto(row.rowNumber(), "targetSchoolLevelVersion", "Phiên bản cấp độ mục tiêu phải lớn hơn 0"));
-                return null;
+                throwImportError(row.rowNumber(), "targetSchoolLevelVersion", "Phiên bản cấp độ mục tiêu phải lớn hơn 0");
             }
             return version;
         } catch (NumberFormatException e) {
-            errors.add(new ImportRowErrorDto(row.rowNumber(), "targetSchoolLevelVersion", "Phiên bản cấp độ mục tiêu phải là số nguyên"));
-            return null;
+            throwImportError(row.rowNumber(), "targetSchoolLevelVersion", "Phiên bản cấp độ mục tiêu phải là số nguyên");
+            return 0;
         }
     }
 
@@ -279,33 +254,20 @@ public class ImportSchoolClassesUseCase implements IUseCase<ImportSchoolClassesC
         }
     }
 
-    private static void require(NormalizedRow row, String value, String field, List<ImportRowErrorDto> errors) {
+    private static void requireOrThrow(NormalizedRow row, String value, String field) {
         if (isBlank(value)) {
-            errors.add(new ImportRowErrorDto(row.rowNumber(), field, "Trường bắt buộc không được để trống"));
+            throwImportError(row.rowNumber(), field, "Trường bắt buộc không được để trống");
         }
     }
 
-    private static void maxLength(NormalizedRow row, String value, String field, int maxLength,
-            List<ImportRowErrorDto> errors) {
+    private static void maxLengthOrThrow(NormalizedRow row, String value, String field, int maxLength) {
         if (value != null && value.length() > maxLength) {
-            errors.add(new ImportRowErrorDto(row.rowNumber(), field, "Độ dài không được vượt quá " + maxLength + " ký tự"));
+            throwImportError(row.rowNumber(), field, "Độ dài không được vượt quá " + maxLength + " ký tự");
         }
     }
 
-    private static boolean hasStructuralError(NormalizedRow row) {
-        return isBlank(row.languageCode())
-            || isBlank(row.schoolGradeCode())
-            || isBlank(row.targetSchoolLevelCode())
-            || isBlank(row.targetSchoolLevelVersion())
-            || isBlank(row.code())
-            || isBlank(row.name())
-            || row.code().length() > CODE_MAX_LENGTH
-            || row.name().length() > NAME_MAX_LENGTH
-            || (row.description() != null && row.description().length() > DESCRIPTION_MAX_LENGTH);
-    }
-
-    private static boolean hasRowError(int rowNumber, List<ImportRowErrorDto> errors) {
-        return errors.stream().anyMatch(error -> error.rowNumber() == rowNumber);
+    private static void throwImportError(int rowNumber, String field, String message) {
+        throw new ImportValidationException(List.of(new ImportRowErrorDto(rowNumber, field, message)));
     }
 
     private static String normalizeCode(String input) {

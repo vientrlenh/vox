@@ -3,7 +3,7 @@ package com.sep.vox.application.port.input.command;
 import java.util.List;
 import java.util.UUID;
 
-public record CreateQuestionBankQuestionCommand(
+public record CreateSystemQuestionBankQuestionCommand(
     UUID questionTopicId,
     String code,
     String instructionText, 
@@ -11,7 +11,6 @@ public record CreateQuestionBankQuestionCommand(
     String promptText, 
     String preparationText,
     UUID standardLevelVersionId,
-    UUID schoolLevelVersionId,
     String expectedContent,
     String keyPoints, 
     String acceptableResponses, 
@@ -22,7 +21,6 @@ public record CreateQuestionBankQuestionCommand(
     int preparationTimeSeconds,
     int minResponseSeconds, 
     int maxResponseSeconds,
-    String status,
     List<CreateQuestionAssetCommand> assets
 ) {
 }

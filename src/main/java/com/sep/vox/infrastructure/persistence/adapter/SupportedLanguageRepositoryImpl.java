@@ -42,5 +42,15 @@ public class SupportedLanguageRepositoryImpl implements SupportedLanguageReposit
     public long count() {
         return springDataSupportedLanguageRepository.count();
     }
+
+    @Override
+    public boolean existsById(UUID id) {
+        return springDataSupportedLanguageRepository.existsById(id);
+    }
+
+    @Override
+    public boolean existsByIdAndIsActive(UUID id, boolean isActive) {
+        return springDataSupportedLanguageRepository.existsByIdAndIsActive(id, isActive);
+    }
     
 }

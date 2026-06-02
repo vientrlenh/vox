@@ -16,4 +16,5 @@ public interface UserRepository {
     boolean existsByEmail(String email);
     boolean existsByEmailAndStatus(String email, UserStatus status);
     int changeUserPassword(String email, String passwordHash);
+    boolean existsByIdAndStatus(UUID id, UserStatus status);
 }

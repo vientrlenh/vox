@@ -6,9 +6,11 @@ import java.util.UUID;
 public class QuestionBank {
     private UUID id;
     private UUID languageId; 
+    private UUID schoolId;
     private String code;
     private String name;
     private String description;
+    private QuestionBankOwnerType ownerType;
     private QuestionBankStatus status;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
@@ -17,13 +19,15 @@ public class QuestionBank {
 
     public QuestionBank() {}
 
-    public QuestionBank(UUID id, UUID languageId, String code, String name, String description, QuestionBankStatus status,
+    public QuestionBank(UUID id, UUID languageId, UUID schoolId, String code, String name, String description, QuestionBankOwnerType ownerType, QuestionBankStatus status,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.languageId = languageId;
+        this.schoolId = schoolId;
         this.code = code;
         this.name = name;
         this.description = description;
+        this.ownerType = ownerType;
         this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -31,12 +35,15 @@ public class QuestionBank {
         this.updatedBy = updatedBy;
     }
 
-    public QuestionBank(UUID languageId, String code, String name, String description, QuestionBankStatus status,
+    public QuestionBank(UUID languageId, UUID schoolId, String code, String name, String description, 
+            QuestionBankOwnerType ownerType, QuestionBankStatus status, 
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.languageId = languageId;
+        this.schoolId = schoolId;
         this.code = code;
         this.name = name;
         this.description = description;
+        this.ownerType = ownerType;
         this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -125,5 +132,36 @@ public class QuestionBank {
         this.status = status;
     }
 
-    
+    public UUID getSchoolId() {
+        return schoolId;
+    }
+
+    public void setSchoolId(UUID schoolId) {
+        this.schoolId = schoolId;
+    }
+
+    public QuestionBankOwnerType getOwnerType() {
+        return ownerType;
+    }
+
+    public void setOwnerType(QuestionBankOwnerType ownerType) {
+        this.ownerType = ownerType;
+    }
+
+    public static QuestionBank create(UUID languageId, UUID schoolId, String code, String name, String description, QuestionBankOwnerType ownerType, 
+    OffsetDateTime now, UUID createdBy) {
+        return new QuestionBank(
+            languageId, 
+            schoolId, 
+            code, 
+            name, 
+            description, 
+            ownerType, 
+            QuestionBankStatus.DRAFT, 
+            now, 
+            now, 
+            createdBy, 
+            createdBy
+        );
+    }
 }

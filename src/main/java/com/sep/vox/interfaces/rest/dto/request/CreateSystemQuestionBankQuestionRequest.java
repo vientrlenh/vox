@@ -11,7 +11,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
-public record CreateQuestionRequest(
+public record CreateSystemQuestionBankQuestionRequest(
     @NotNull(message = "ID chủ đề không được để trống")
     UUID questionTopicId,
 
@@ -28,9 +28,8 @@ public record CreateQuestionRequest(
 
     String preparationText,
 
+    @NotNull(message = "ID của phiên bản cấp độ tiêu chuẩn không được để trống")
     UUID standardLevelVersionId,
-
-    UUID schoolLevelVersionId,
 
     String expectedContent,
 
@@ -63,21 +62,9 @@ public record CreateQuestionRequest(
     @Min(value = 0, message = "Thoi gian tra loi toi da phai lon hon hoac bang 0")
     Integer maxResponseSeconds,
 
-    @NotBlank(message = "Trạng thái câu hỏi không được để trống")
-    @Pattern(
-        regexp = "DRAFT|REVIEWING|PUBLISHED|ARCHIVED",
-        message = "Trạng thái câu hỏi không hợp lệ"
-    )
-    String status,
-
     @Valid
     List<CreateQuestionAssetRequest> assets
 ) {
-
-    @AssertTrue(message = "Chỉ được chọn 1 trong 2 cấp độ: standardLevelVersionId hoặc schoolLevelVersionId")
-    public boolean isLevelVersionSelectionValid() {
-        return (standardLevelVersionId == null) != (schoolLevelVersionId == null);
-    }
 
     @AssertTrue(message = "Thời gian trả lời tối thiểu không được lớn hơn thời gian trả lời tối đa")
     public boolean isResponseDurationRangeValid() {

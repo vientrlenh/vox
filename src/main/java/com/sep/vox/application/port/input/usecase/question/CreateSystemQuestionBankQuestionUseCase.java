@@ -12,8 +12,9 @@ import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
+import com.sep.vox.application.mapper.questionbank.CreateQuestionResponseMapper;
 import com.sep.vox.application.port.input.command.CreateQuestionAssetCommand;
-import com.sep.vox.application.port.input.command.CreateQuestionBankQuestionCommand;
+import com.sep.vox.application.port.input.command.CreateSystemQuestionBankQuestionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.question.CreateQuestionResponse;
@@ -22,7 +23,6 @@ import com.sep.vox.domain.model.question.QuestionAsset;
 import com.sep.vox.domain.model.question.QuestionAssetType;
 import com.sep.vox.domain.model.question.QuestionEvaluationGuide;
 import com.sep.vox.domain.model.question.QuestionScope;
-import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.model.question.QuestionTopic;
 import com.sep.vox.domain.model.question.QuestionType;
 import com.sep.vox.domain.model.question.QuestionVisibility;
@@ -36,7 +36,7 @@ import com.sep.vox.domain.repository.StandardLevelVersionRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
-public class CreateQuestionBankQuestionUseCase implements IUseCase<CreateQuestionBankQuestionCommand, CreateQuestionResponse> {
+public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateSystemQuestionBankQuestionCommand, CreateQuestionResponse> {
 
     private final UserRepository userRepository;
     private final QuestionRepository questionRepository;
@@ -44,10 +44,9 @@ public class CreateQuestionBankQuestionUseCase implements IUseCase<CreateQuestio
     private final QuestionEvaluationGuideRepository questionEvaluationGuideRepository;
     private final QuestionTopicRepository questionTopicRepository;
     private final StandardLevelVersionRepository standardLevelVersionRepository;
-    private final SchoolLevelVersionRepository schoolLevelVersionRepository;
     private final UserContextPort userContextPort;
 
-    public CreateQuestionBankQuestionUseCase(
+    public CreateSystemQuestionBankQuestionUseCase(
             UserRepository userRepository,
             QuestionRepository questionRepository,
             QuestionAssetRepository questionAssetRepository,
@@ -62,13 +61,12 @@ public class CreateQuestionBankQuestionUseCase implements IUseCase<CreateQuestio
         this.questionEvaluationGuideRepository = questionEvaluationGuideRepository;
         this.questionTopicRepository = questionTopicRepository;
         this.standardLevelVersionRepository = standardLevelVersionRepository;
-        this.schoolLevelVersionRepository = schoolLevelVersionRepository;
         this.userContextPort = userContextPort;
     }
 
     @Override
     @Transactional
-    public CreateQuestionResponse execute(CreateQuestionBankQuestionCommand input) {
+    public CreateQuestionResponse execute(CreateSystemQuestionBankQuestionCommand input) {
         var command = normalize(input);
 
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
@@ -81,10 +79,9 @@ public class CreateQuestionBankQuestionUseCase implements IUseCase<CreateQuestio
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
-        validateLevelVersionSelection(command);
         validateResponseDurationRange(command);
         validateAssetOrders(command.assets());
-        validateLevelVersionExistsAndActive(command);
+        checkStandardLevelVersion(command.standardLevelVersionId());
 
         var now = OffsetDateTime.now();
         var question = Question.create(
@@ -95,7 +92,7 @@ public class CreateQuestionBankQuestionUseCase implements IUseCase<CreateQuestio
             command.promptText(),
             command.preparationText(),
             command.standardLevelVersionId(),
-            command.schoolLevelVersionId(),
+            null,
             QuestionType.valueOf(command.type()),
             command.preparationTimeSeconds(),
             command.minResponseSeconds(),
@@ -107,17 +104,16 @@ public class CreateQuestionBankQuestionUseCase implements IUseCase<CreateQuestio
             now,
             currentUserId
         );
-        question.setStatus(QuestionStatus.valueOf(command.status()));
 
         var saved = questionRepository.save(question);
         createEvaluationGuide(saved.getId(), command);
         createAssets(saved.getId(), command.assets());
 
-        return new CreateQuestionResponse(saved.getId());
+        return CreateQuestionResponseMapper.toResponse(saved.getId());
     }
 
-    private CreateQuestionBankQuestionCommand normalize(CreateQuestionBankQuestionCommand input) {
-        return new CreateQuestionBankQuestionCommand(
+    private CreateSystemQuestionBankQuestionCommand normalize(CreateSystemQuestionBankQuestionCommand input) {
+        return new CreateSystemQuestionBankQuestionCommand(
             input.questionTopicId(),
             StringNormalization.normalizeCode(input.code()),
             StringNormalization.trimAndCollapseSpaces(input.instructionText()),
@@ -125,7 +121,6 @@ public class CreateQuestionBankQuestionUseCase implements IUseCase<CreateQuestio
             StringNormalization.trimAndCollapseSpaces(input.promptText()),
             StringNormalization.trimAndCollapseSpaces(input.preparationText()),
             input.standardLevelVersionId(),
-            input.schoolLevelVersionId(),
             StringNormalization.trimAndCollapseSpaces(input.expectedContent()),
             StringNormalization.trimAndCollapseSpaces(input.keyPoints()),
             StringNormalization.trimAndCollapseSpaces(input.acceptableResponses()),
@@ -136,14 +131,13 @@ public class CreateQuestionBankQuestionUseCase implements IUseCase<CreateQuestio
             input.preparationTimeSeconds(),
             input.minResponseSeconds(),
             input.maxResponseSeconds(),
-            StringNormalization.trimAndCollapseSpaces(input.status()),
             assetsOf(input).stream()
                 .map(this::normalizeAsset)
                 .toList()
         );
     }
 
-    private List<CreateQuestionAssetCommand> assetsOf(CreateQuestionBankQuestionCommand input) {
+    private List<CreateQuestionAssetCommand> assetsOf(CreateSystemQuestionBankQuestionCommand input) {
         return input.assets() == null ? List.of() : input.assets();
     }
 
@@ -170,15 +164,8 @@ public class CreateQuestionBankQuestionUseCase implements IUseCase<CreateQuestio
         return questionTopic;
     }
 
-    private void validateLevelVersionSelection(CreateQuestionBankQuestionCommand command) {
-        var hasStandardLevelVersion = command.standardLevelVersionId() != null;
-        var hasSchoolLevelVersion = command.schoolLevelVersionId() != null;
-        if (hasStandardLevelVersion == hasSchoolLevelVersion) {
-            throw new IllegalArgumentException("Chỉ được chọn một trong 2 phiên bản cấp độ");
-        }
-    }
 
-    private void validateResponseDurationRange(CreateQuestionBankQuestionCommand command) {
+    private void validateResponseDurationRange(CreateSystemQuestionBankQuestionCommand command) {
         if (command.minResponseSeconds() > command.maxResponseSeconds()) {
             throw new IllegalStateException("Thời gian trả lời tối thiểu không được lớn hơn thời gian trả lời tối đa");
         }
@@ -193,15 +180,6 @@ public class CreateQuestionBankQuestionUseCase implements IUseCase<CreateQuestio
         }
     }
 
-    private void validateLevelVersionExistsAndActive(CreateQuestionBankQuestionCommand command) {
-        if (command.standardLevelVersionId() != null) {
-            checkStandardLevelVersion(command.standardLevelVersionId());
-        }
-
-        if (command.schoolLevelVersionId() != null) {
-            checkSchoolLevelVersion(command.schoolLevelVersionId());
-        }
-    }
 
     private void checkStandardLevelVersion(UUID standardLevelVersionId) {
         var standardLevelVersion = standardLevelVersionRepository.findById(standardLevelVersionId)
@@ -211,15 +189,8 @@ public class CreateQuestionBankQuestionUseCase implements IUseCase<CreateQuestio
         }
     }
 
-    private void checkSchoolLevelVersion(UUID schoolLevelVersionId) {
-        var schoolLevelVersion = schoolLevelVersionRepository.findById(schoolLevelVersionId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản cấp độ trường với ID này"));
-        if (!schoolLevelVersion.isActive()) {
-            throw new IllegalStateException("Trạng thái của phiên bản cấp độ trường hiện tại không hoạt động");
-        }
-    }
 
-    private void createEvaluationGuide(UUID questionId, CreateQuestionBankQuestionCommand command) {
+    private void createEvaluationGuide(UUID questionId, CreateSystemQuestionBankQuestionCommand command) {
         if (!hasEvaluationGuide(command)) {
             return;
         }
@@ -236,7 +207,7 @@ public class CreateQuestionBankQuestionUseCase implements IUseCase<CreateQuestio
         questionEvaluationGuideRepository.save(evaluationGuide);
     }
 
-    private boolean hasEvaluationGuide(CreateQuestionBankQuestionCommand command) {
+    private boolean hasEvaluationGuide(CreateSystemQuestionBankQuestionCommand command) {
         return command.expectedContent() != null
             || command.keyPoints() != null
             || command.acceptableResponses() != null

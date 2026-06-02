@@ -15,7 +15,20 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "question_banks", indexes = {
-    @Index(columnList = "language_id, school_id, code", name = "idx_question_banks_language_school_code", unique = true)
+    @Index(columnList = "owner_type, language_id, school_id, code", name = "idx_question_banks_language_school_code", unique = true)
+}, check = {
+    @CheckConstraint(
+        name = "chk_owner_type_and_school_id_valid", 
+        constraint = """
+        (
+            owner_type = 'SYSTEM' AND school_id IS NULL
+        )   
+        OR 
+        (
+            owner_type = 'SCHOOL' AND school_id IS NOT NULL
+        )     
+        """
+    )
 })
 public class QuestionBankJpaEntity {
 
@@ -44,7 +57,15 @@ public class QuestionBankJpaEntity {
     @Column(name = "description", length = 2048)
     private String description;
 
-    @Column(name = "status", nullable = false, check = {
+    @Column(name = "owner_type", nullable = false, length = 20, check = {
+        @CheckConstraint(
+            name = "chk_owner_type_valid", 
+            constraint = "owner_type IN ('SYSTEM', 'SCHOOL')"
+        )
+    })
+    private String ownerType;
+
+    @Column(name = "status", nullable = false, updatable = false, check = {
         @CheckConstraint(
             name = "chk_status_valid", 
             constraint = "status IN ('DRAFT', 'PUBLISHED', 'ARCHIVED')"
@@ -66,14 +87,16 @@ public class QuestionBankJpaEntity {
 
     protected QuestionBankJpaEntity() {}
 
-    public QuestionBankJpaEntity(UUID id, UUID languageId, String code, String name,
-            String description, String status, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy,
+    public QuestionBankJpaEntity(UUID id, UUID languageId, UUID schoolId, String code, String name,
+            String description, String ownerType, String status, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy,
             UUID updatedBy) {
         this.id = id;
         this.languageId = languageId;
+        this.schoolId = schoolId;
         this.code = code;
         this.name = name;
         this.description = description;
+        this.ownerType = ownerType;
         this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -159,6 +182,22 @@ public class QuestionBankJpaEntity {
 
     public void setUpdatedBy(UUID updatedBy) {
         this.updatedBy = updatedBy;
+    }
+
+    public UUID getSchoolId() {
+        return schoolId;
+    }
+
+    public void setSchoolId(UUID schoolId) {
+        this.schoolId = schoolId;
+    }
+
+    public String getOwnerType() {
+        return ownerType;
+    }
+
+    public void setOwnerType(String ownerType) {
+        this.ownerType = ownerType;
     }
 
     

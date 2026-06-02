@@ -3,14 +3,14 @@ package com.sep.vox.interfaces.rest.mapper;
 import java.util.List;
 
 import com.sep.vox.application.port.input.command.CreateQuestionAssetCommand;
-import com.sep.vox.application.port.input.command.CreateQuestionCommand;
+import com.sep.vox.application.port.input.command.CreateSystemQuestionBankQuestionCommand;
 import com.sep.vox.interfaces.rest.dto.request.CreateQuestionAssetRequest;
-import com.sep.vox.interfaces.rest.dto.request.CreateQuestionRequest;
+import com.sep.vox.interfaces.rest.dto.request.CreateSystemQuestionBankQuestionRequest;
 
 public final class CreateQuestionCommandMapper {
 
-    public static CreateQuestionCommand fromRequest(CreateQuestionRequest request) {
-        return new CreateQuestionCommand(
+    public static CreateSystemQuestionBankQuestionCommand fromQuestionBankRequest(CreateSystemQuestionBankQuestionRequest request) {
+        return new CreateSystemQuestionBankQuestionCommand(
             request.questionTopicId(),
             request.code(),
             request.instructionText(),
@@ -18,7 +18,6 @@ public final class CreateQuestionCommandMapper {
             request.promptText(),
             request.preparationText(),
             request.standardLevelVersionId(),
-            request.schoolLevelVersionId(),
             request.expectedContent(),
             request.keyPoints(),
             request.acceptableResponses(),
@@ -29,7 +28,6 @@ public final class CreateQuestionCommandMapper {
             request.preparationTimeSeconds(),
             request.minResponseSeconds(),
             request.maxResponseSeconds(),
-            request.status(),
             toAssetCommands(request.assets())
         );
     }

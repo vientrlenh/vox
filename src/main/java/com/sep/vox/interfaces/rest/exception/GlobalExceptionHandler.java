@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -39,6 +40,7 @@ public class GlobalExceptionHandler {
 
     private static final String AUTHENTICATION_ERROR = "BAD_CREDENTIALS";
     private static final String AUTHORIZATION_ERROR = "ACCESS_DENIED";
+    private static final String USER_DISABLED_ERROR = "USER_DISABLED";
     private static final String VERSION_MISMATCHED_ERROR = "VERSION_MISMATCHED";
 
     @ExceptionHandler(DuplicatedException.class)
@@ -116,6 +118,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException e) {
         var error = new ErrorResponse(AUTHORIZATION_ERROR, "Quyền truy cập không hợp lệ");
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+    }
+
+
+    @ExceptionHandler(DisabledException.class)
+    private ResponseEntity<ErrorResponse> handleDisabled(DisabledException e) {
+        var error = new ErrorResponse(USER_DISABLED_ERROR, e.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
     }
 
 

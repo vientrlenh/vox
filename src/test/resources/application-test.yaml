@@ -25,3 +25,5 @@ system-admin:
 app:
   frontend:
     password-setup-url: http://localhost:5173/test-password-setup-url
+
+GOOGLE_CLIENT_ID: "dummy_client_id_for_test_environment"

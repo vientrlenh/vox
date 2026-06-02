@@ -69,6 +69,20 @@ public class UserRepositoryTests {
     }
 
     @Test
+    void whenFindByEmailAndStatus_thenReturnsOnlyMatchingStatus() {
+        userRepository.save(newUser("active@example.com", "0987654325", UserStatus.ACTIVE));
+        userRepository.save(newUser("inactive@example.com", "0987654326", UserStatus.INACTIVE));
+
+        var activeUser = userRepository.findByEmailAndStatus("active@example.com", UserStatus.ACTIVE);
+        var inactiveAsActive = userRepository.findByEmailAndStatus("inactive@example.com", UserStatus.ACTIVE);
+
+        assertThat(activeUser).isPresent();
+        assertThat(activeUser.get().getEmail().value()).isEqualTo("active@example.com");
+        assertThat(activeUser.get().getStatus()).isEqualTo(UserStatus.ACTIVE);
+        assertThat(inactiveAsActive).isEmpty();
+    }
+
+    @Test
     void whenFindByPhone_thenReturnsUser() {
         userRepository.save(newUser("find-phone@example.com", "0987654324"));
 
@@ -80,6 +94,10 @@ public class UserRepositoryTests {
     }
 
     private static User newUser(String email, String phone) {
+        return newUser(email, phone, UserStatus.ACTIVE);
+    }
+
+    private static User newUser(String email, String phone, UserStatus status) {
         var now = OffsetDateTime.now();
         return new User(
             new Email(email),
@@ -89,7 +107,8 @@ public class UserRepositoryTests {
             null,
             new DateOfBirth(LocalDate.of(2000, 1, 1)),
             "Ho Chi Minh City",
-            UserStatus.ACTIVE,
+            null,
+            status,
             now,
             now,
             null,

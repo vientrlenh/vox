@@ -25,3 +25,4 @@ system-admin:
 app:
   frontend:
     password-setup-url: http://localhost:5173/test-password-setup-url
+    oauth2-success-url: http://localhost:5173/oauth2-success

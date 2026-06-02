@@ -5,9 +5,9 @@ import com.sep.vox.interfaces.rest.dto.request.RefreshRequest;
 
 public final class RefreshCommandMapper {
     
-    public static RefreshCommand fromRequest(RefreshRequest request) {
+    public static RefreshCommand fromRequest(RefreshRequest request, String token) {
         return new RefreshCommand(
-            request.token(), 
+            token, 
             request.deviceId()
         );
     }

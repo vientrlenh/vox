@@ -1,5 +1,17 @@
 package com.sep.vox.interfaces.rest.controller;
 
+import java.io.IOException;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CookieValue;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.sep.vox.application.port.input.usecase.auth.LoginUseCase;
 import com.sep.vox.application.port.input.usecase.auth.RefreshUseCase;
@@ -34,9 +46,13 @@ import org.springframework.web.bind.annotation.RestController;
 import com.sep.vox.application.response.input.auth.LoginResponse;
 import com.sep.vox.application.response.input.auth.RefreshResponse;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
+import com.sep.vox.interfaces.rest.mapper.SendResetPasswordOtpCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.SetUpPasswordCommandMapper;
+import com.sep.vox.interfaces.shared.HttpCookieProvider;
 import com.sep.vox.interfaces.shared.IpAddressReceiver;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 
 
@@ -61,14 +77,20 @@ public class AuthController {
         this.resetPasswordUseCase = resetPasswordUseCase;
     }
 
+    private static final String REFRESH_TOKEN_COOKIE_KEY = "refresh_token";
+    private static final long REFRESH_TOKEN_COOKIE_TTL_SECONDS = 259200L;
+
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request, HttpServletRequest servletRequest) {
+    public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request, HttpServletRequest servletRequest, HttpServletResponse servletResponse) {
         var ipAddress = IpAddressReceiver.getClientIp(servletRequest);
         var userAgent = servletRequest.getHeader("User-Agent");
 
         var command = LoginCommandMapper.fromRequest(request, ipAddress, userAgent);
         var data = loginUseCase.execute(command);
-        var response = ApiResponse.success("Đăng nhập thành công", data);
+        HttpCookieProvider.setCookie(servletResponse, REFRESH_TOKEN_COOKIE_KEY, data.refreshToken(), REFRESH_TOKEN_COOKIE_TTL_SECONDS);
+
+        var response = ApiResponse.success("Đăng nhập thành công", new LoginResponse(data.accessToken(), null, data.roles()));
+
         return ResponseEntity.ok(response);
     }
 
@@ -91,10 +113,13 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<ApiResponse<RefreshResponse>> refresh(@Valid @RequestBody RefreshRequest request) {
-        var command = RefreshCommandMapper.fromRequest(request);
+    public ResponseEntity<ApiResponse<RefreshResponse>> refresh(@Valid @RequestBody RefreshRequest request, @CookieValue(name = REFRESH_TOKEN_COOKIE_KEY, required = true) String token, HttpServletResponse servletResponse) {
+        var command = RefreshCommandMapper.fromRequest(request, token);
         var data = refreshUseCase.execute(command);
-        var response = ApiResponse.success("Yêu cầu thành công", data);
+        HttpCookieProvider.setCookie(servletResponse, REFRESH_TOKEN_COOKIE_KEY, data.refreshToken(), REFRESH_TOKEN_COOKIE_TTL_SECONDS);
+        var response = ApiResponse.success("Yêu cầu thành công", new RefreshResponse(
+            data.accessToken(), null
+        ));
         return ResponseEntity.ok(response);
     }
 
@@ -113,5 +138,21 @@ public class AuthController {
         resetPasswordUseCase.execute(command);
         var response = ApiResponse.success("Mật khẩu đã thay đổi thành công");
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/oauth2/google/start")
+    public void startGoogleLogin(
+        @RequestParam(required = true) String deviceId,
+        @RequestParam(required = true) String deviceName,
+        @RequestParam(required = true) String platform,
+        HttpServletRequest request,
+        HttpServletResponse response
+    ) throws IOException {
+        var session = request.getSession();
+        session.setAttribute("oauth2_device_id", deviceId);
+        session.setAttribute("oauth2_device_name", deviceName);
+        session.setAttribute("oauth2_platform", platform);
+
+        response.sendRedirect("/oauth2/authorization/google");
     }
 }

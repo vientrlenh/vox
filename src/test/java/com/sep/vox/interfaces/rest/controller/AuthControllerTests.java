@@ -8,7 +8,9 @@ import static org.mockito.Mockito.when;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.mock.web.MockHttpServletResponse;
 
 import com.sep.vox.application.port.input.command.ClientDeviceCommand;
 import com.sep.vox.application.port.input.command.LoginCommand;
@@ -61,7 +63,7 @@ public class AuthControllerTests {
                 request.device().platform()
             )
         );
-        var roles = List.of("");
+        var roles = List.of("STUDENT");
         var loginResponse = new LoginResponse("access-token", "refresh-token", roles);
 
         when(servletRequest.getHeader("X-Forwarded-For")).thenReturn(null);
@@ -71,11 +73,17 @@ public class AuthControllerTests {
         when(loginUseCase.execute(expectedCommand))
             .thenReturn(loginResponse);
 
-        var response = controller.login(request, servletRequest);
+        var servletResponse = new MockHttpServletResponse();
+
+        var response = controller.login(request, servletRequest, servletResponse);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().data()).isEqualTo(loginResponse);
+        assertThat(response.getBody().data()).isEqualTo(new LoginResponse("access-token", null, roles));
+        assertThat(servletResponse.getHeader(HttpHeaders.SET_COOKIE))
+            .contains("refresh_token=refresh-token")
+            .contains("HttpOnly")
+            .contains("SameSite=Lax");
         verify(loginUseCase).execute(expectedCommand);
     }
 
@@ -135,18 +143,24 @@ public class AuthControllerTests {
         var sendResetPasswordOtpUseCase = mock(SendResetPasswordOtpUseCase.class);
         var resetPasswordUseCase = mock(ResetPasswordUseCase.class);
         var controller = new AuthController(loginUseCase, registerUseCase, setUpPasswordUseCase, refreshUseCase, sendResetPasswordOtpUseCase, resetPasswordUseCase);
-        var request = new RefreshRequest("old-refresh-token", "device-1");
-        var expectedCommand = new RefreshCommand(request.token(), request.deviceId());
+        var request = new RefreshRequest("device-1");
+        var expectedCommand = new RefreshCommand("old-refresh-token", request.deviceId());
         var refreshResponse = new RefreshResponse("access-token", "new-refresh-token");
 
         when(refreshUseCase.execute(expectedCommand))
             .thenReturn(refreshResponse);
 
-        var response = controller.refresh(request);
+        var servletResponse = new MockHttpServletResponse();
+
+        var response = controller.refresh(request, "old-refresh-token", servletResponse);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().data()).isEqualTo(refreshResponse);
+        assertThat(response.getBody().data()).isEqualTo(new RefreshResponse("access-token", null));
+        assertThat(servletResponse.getHeader(HttpHeaders.SET_COOKIE))
+            .contains("refresh_token=new-refresh-token")
+            .contains("HttpOnly")
+            .contains("SameSite=Lax");
         verify(refreshUseCase).execute(expectedCommand);
     }
 

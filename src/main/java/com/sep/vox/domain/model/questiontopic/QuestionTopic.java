@@ -1,6 +1,6 @@
 package com.sep.vox.domain.model.questiontopic;
 
-import java.time.OffsetDateTime;
+
 import java.util.UUID;
 
 public class QuestionTopic {

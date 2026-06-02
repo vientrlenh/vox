@@ -63,5 +63,12 @@ public class UserRepositoryImpl implements UserRepository {
     public boolean existsByEmailAndStatus(String email, UserStatus status) {
         return springDataUserRepository.existsByEmailAndStatus(email, status.name());
     }
+
+
+    @Override
+    public Optional<User> findByEmailAndStatus(String email, UserStatus status) {
+        return springDataUserRepository.findByEmailAndStatus(email, status.name())
+            .map(UserMapper::toDomain);
+    }
     
 }

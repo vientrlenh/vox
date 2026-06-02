@@ -24,4 +24,6 @@ public interface SpringDataUserRepository extends JpaRepository<UserJpaEntity, U
             AND u.status = 'ACTIVE'
     """)
     int changeUserPassword(@Param("email") String email, @Param("passwordHash") String passwordHash);
+
+    Optional<UserJpaEntity> findByEmailAndStatus(String email, String status);
 }

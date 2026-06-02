@@ -25,6 +25,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import com.sep.vox.application.port.output.PasswordEncoderPort;
 import com.sep.vox.infrastructure.security.Argon2PasswordEncodeProvider;
 import com.sep.vox.infrastructure.security.JwtAuthenticationFilter;
+import com.sep.vox.infrastructure.security.OAuth2AuthenticationSuccessHandler;
 
 @Configuration
 @EnableWebSecurity
@@ -32,9 +33,11 @@ import com.sep.vox.infrastructure.security.JwtAuthenticationFilter;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.oAuth2AuthenticationSuccessHandler = oAuth2AuthenticationSuccessHandler;
     }
     
     private static final long HSTS_MAX_AGE_IN_SECONDS = 31536000;
@@ -82,7 +85,7 @@ public class SecurityConfig {
             .cors(cors -> cors
                 .configurationSource(corsConfigurationSource()))
             .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
             .headers(headers -> headers
                 .frameOptions(HeadersConfigurer
                     .FrameOptionsConfig::sameOrigin)
@@ -98,6 +101,9 @@ public class SecurityConfig {
                 .permitAll()
                 .anyRequest()
                 .authenticated())
+            .oauth2Login(oauth2 -> oauth2
+                .successHandler(oAuth2AuthenticationSuccessHandler)
+            )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }

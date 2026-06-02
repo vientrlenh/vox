@@ -18,6 +18,7 @@ public class User {
     private Gender gender;
     private DateOfBirth dateOfBirth;
     private String address;
+    private String avatarUrl;
     private UserStatus status;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
@@ -28,7 +29,7 @@ public class User {
     public User() {}
 
     public User(UUID id, Email email, String passwordHash, Phone phone,
-            FullName fullName, Gender gender, DateOfBirth dateOfBirth, String address, UserStatus status,
+            FullName fullName, Gender gender, DateOfBirth dateOfBirth, String address, String avatarUrl, UserStatus status,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy, UUID schoolId) {
         this.id = id;
         this.email = email;
@@ -38,6 +39,7 @@ public class User {
         this.gender = gender;
         this.dateOfBirth = dateOfBirth;
         this.address = address;
+        this.avatarUrl = avatarUrl;
         this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -47,7 +49,7 @@ public class User {
     }
 
     public User(Email email, String passwordHash, Phone phone,
-            FullName fullName, Gender gender, DateOfBirth dateOfBirth, String address, UserStatus status,
+            FullName fullName, Gender gender, DateOfBirth dateOfBirth, String address, String avatarUrl, UserStatus status,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy, UUID schoolId) {
         this.email = email;
         this.passwordHash = passwordHash;
@@ -56,6 +58,7 @@ public class User {
         this.gender = gender;
         this.dateOfBirth = dateOfBirth;
         this.address = address;
+        this.avatarUrl = avatarUrl;
         this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -176,6 +179,8 @@ public class User {
         this.schoolId = schoolId;
     }
 
+    
+
     public void updatePasswordAndActivate(String passwordHash, OffsetDateTime now) {
         this.passwordHash = passwordHash;
         this.status = UserStatus.ACTIVE;
@@ -183,7 +188,7 @@ public class User {
     }
 
     
-    public static User createSchoolAdmin(String email, String password, String phone, String fullName, LocalDate dateOfBirth, String address, UUID createdUserId, UUID schoolId, OffsetDateTime now) {
+    public static User createSchoolAdmin(String email, String password, String phone, String fullName, LocalDate dateOfBirth, String address, String avatarUrl, UUID createdUserId, UUID schoolId, OffsetDateTime now) {
         return new User(
             new Email(email), 
             password, 
@@ -192,6 +197,7 @@ public class User {
             null, 
             new DateOfBirth(dateOfBirth), 
             address, 
+            avatarUrl,
             UserStatus.INACTIVE, 
             now, 
             now, 
@@ -199,6 +205,14 @@ public class User {
             createdUserId, 
             schoolId
         );
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
     }
 
 }

@@ -148,6 +148,7 @@ public class SetUpPasswordUseCaseTests {
             null,
             new DateOfBirth(LocalDate.of(2000, 5, 24)),
             "123 Street",
+            null,
             UserStatus.INACTIVE,
             now,
             now,

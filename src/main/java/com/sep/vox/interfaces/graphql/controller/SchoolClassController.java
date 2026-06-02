@@ -9,8 +9,8 @@ import org.springframework.stereotype.Controller;
 
 import com.sep.vox.application.port.input.query.ViewSchoolClassDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolClassesQuery;
-import com.sep.vox.application.port.input.usecase.schooladmin.ViewSchoolClassDetailsUseCase;
-import com.sep.vox.application.port.input.usecase.schooladmin.ViewSchoolClassesUseCase;
+import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassDetailsUseCase;
+import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassesUseCase;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolClassDto;
 

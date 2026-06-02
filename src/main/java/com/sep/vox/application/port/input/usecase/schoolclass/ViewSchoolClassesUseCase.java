@@ -1,4 +1,4 @@
-package com.sep.vox.application.port.input.usecase.schooladmin;
+package com.sep.vox.application.port.input.usecase.schoolclass;
 
 import java.util.UUID;
 

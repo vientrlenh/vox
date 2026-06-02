@@ -1,6 +1,5 @@
-package com.sep.vox.application.port.input.usecase.schooladmin;
+package com.sep.vox.application.port.input.usecase.schoolclass;
 
-import java.time.OffsetDateTime;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -8,45 +7,38 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.port.input.command.DeleteSchoolClassCommand;
+import com.sep.vox.application.port.input.query.ViewSchoolClassDetailsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.dto.SchoolClassDeleteResultDto;
-import com.sep.vox.domain.model.schoolclass.SchoolClassStatus;
+import com.sep.vox.domain.dto.SchoolClassDto;
+import com.sep.vox.domain.mapper.SchoolClassDtoMapper;
 import com.sep.vox.domain.model.user.User;
-import com.sep.vox.domain.repository.SchoolClassDependencyRepository;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
-public class DeleteSchoolClassUseCase implements IUseCase<DeleteSchoolClassCommand, SchoolClassDeleteResultDto> {
-
-    private static final String HARD_DELETE = "HARD";
-    private static final String SOFT_DELETE = "SOFT";
+public class ViewSchoolClassDetailsUseCase implements IUseCase<ViewSchoolClassDetailsQuery, SchoolClassDto> {
 
     private final SchoolClassRepository schoolClassRepository;
-    private final SchoolClassDependencyRepository schoolClassDependencyRepository;
-    private final SchoolRepository schoolRepository;
     private final UserRepository userRepository;
+    private final SchoolRepository schoolRepository;
     private final UserContextPort userContextPort;
 
-    public DeleteSchoolClassUseCase(
+    public ViewSchoolClassDetailsUseCase(
             SchoolClassRepository schoolClassRepository,
-            SchoolClassDependencyRepository schoolClassDependencyRepository,
-            SchoolRepository schoolRepository,
             UserRepository userRepository,
+            SchoolRepository schoolRepository,
             UserContextPort userContextPort) {
         this.schoolClassRepository = schoolClassRepository;
-        this.schoolClassDependencyRepository = schoolClassDependencyRepository;
-        this.schoolRepository = schoolRepository;
         this.userRepository = userRepository;
+        this.schoolRepository = schoolRepository;
         this.userContextPort = userContextPort;
     }
 
     @Override
-    @Transactional
-    public SchoolClassDeleteResultDto execute(DeleteSchoolClassCommand input) {
+    @Transactional(readOnly = true)
+    public SchoolClassDto execute(ViewSchoolClassDetailsQuery input) {
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         var currentUser = findCurrentUser(currentUserId);
         var schoolId = getSchoolId(currentUser);
@@ -57,23 +49,7 @@ public class DeleteSchoolClassUseCase implements IUseCase<DeleteSchoolClassComma
         if (!Objects.equals(schoolClass.getSchoolId(), schoolId)) {
             throw new NotFoundException("Không tìm thấy lớp học");
         }
-
-        if (!schoolClassDependencyRepository.existsDependencyBySchoolClassId(input.id())) {
-            schoolClassRepository.deleteById(input.id());
-            return new SchoolClassDeleteResultDto(input.id(), HARD_DELETE, null, null);
-        }
-
-        var now = OffsetDateTime.now();
-        schoolClass.setStatus(SchoolClassStatus.ARCHIVED);
-        schoolClass.setUpdatedAt(now);
-        schoolClass.setUpdatedBy(currentUserId);
-        var saved = schoolClassRepository.save(schoolClass);
-        return new SchoolClassDeleteResultDto(
-            saved.getId(),
-            SOFT_DELETE,
-            saved.getStatus().name(),
-            saved.getUpdatedAt().toString()
-        );
+        return SchoolClassDtoMapper.toDto(schoolClass);
     }
 
     private User findCurrentUser(UUID currentUserId) {

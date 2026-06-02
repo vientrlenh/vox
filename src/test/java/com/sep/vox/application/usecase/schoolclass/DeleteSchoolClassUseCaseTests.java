@@ -24,6 +24,7 @@ import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.model.schoolclass.SchoolClass;
 import com.sep.vox.domain.model.schoolclass.SchoolClassStatus;
 import com.sep.vox.domain.model.user.User;
+import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassDependencyRepository;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
@@ -106,6 +107,21 @@ class DeleteSchoolClassUseCaseTests {
     }
 
     @Test
+    void delete_school_class_should_throw_when_current_user_is_inactive() {
+        var ids = TestIds.create();
+        mockValidDependencies(ids);
+        when(userRepository.findById(ids.currentUserId()))
+            .thenReturn(Optional.of(user(ids.currentUserId(), ids.schoolId(), UserStatus.INACTIVE)));
+
+        assertThrows(IllegalStateException.class, () -> deleteSchoolClassUseCase.execute(new DeleteSchoolClassCommand(ids.classId())));
+
+        verify(schoolRepository, never()).findById(any());
+        verify(schoolClassRepository, never()).findById(any());
+        verify(schoolClassDependencyRepository, never()).existsDependencyBySchoolClassId(any());
+        verifyNoDeleteOrSave();
+    }
+
+    @Test
     void delete_school_class_should_throw_when_current_user_has_no_school() {
         var ids = TestIds.create();
         mockValidDependencies(ids);
@@ -160,9 +176,14 @@ class DeleteSchoolClassUseCaseTests {
     }
 
     private static User user(UUID userId, UUID schoolId) {
+        return user(userId, schoolId, UserStatus.ACTIVE);
+    }
+
+    private static User user(UUID userId, UUID schoolId, UserStatus status) {
         var user = new User();
         user.setId(userId);
         user.setSchoolId(schoolId);
+        user.setStatus(status);
         return user;
     }
 

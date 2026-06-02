@@ -23,6 +23,7 @@ import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.model.schoolclass.SchoolClass;
 import com.sep.vox.domain.model.schoolclass.SchoolClassStatus;
 import com.sep.vox.domain.model.user.User;
+import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.UserRepository;
@@ -76,6 +77,20 @@ class ViewSchoolClassDetailsUseCaseTests {
         when(userRepository.findById(ids.currentUserId())).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class,
+            () -> viewSchoolClassDetailsUseCase.execute(new ViewSchoolClassDetailsQuery(ids.classId())));
+
+        verify(schoolRepository, never()).findById(any());
+        verify(schoolClassRepository, never()).findById(any());
+    }
+
+    @Test
+    void view_school_class_details_should_throw_when_current_user_is_inactive() {
+        var ids = TestIds.create();
+        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(ids.currentUserId());
+        when(userRepository.findById(ids.currentUserId()))
+            .thenReturn(Optional.of(user(ids.currentUserId(), ids.schoolId(), UserStatus.INACTIVE)));
+
+        assertThrows(IllegalStateException.class,
             () -> viewSchoolClassDetailsUseCase.execute(new ViewSchoolClassDetailsQuery(ids.classId())));
 
         verify(schoolRepository, never()).findById(any());
@@ -149,9 +164,14 @@ class ViewSchoolClassDetailsUseCaseTests {
     }
 
     private static User user(UUID userId, UUID schoolId) {
+        return user(userId, schoolId, UserStatus.ACTIVE);
+    }
+
+    private static User user(UUID userId, UUID schoolId, UserStatus status) {
         var user = new User();
         user.setId(userId);
         user.setSchoolId(schoolId);
+        user.setStatus(status);
         return user;
     }
 

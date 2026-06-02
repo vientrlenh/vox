@@ -27,6 +27,7 @@ import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.model.schoolclass.SchoolClass;
 import com.sep.vox.domain.model.schoolclass.SchoolClassStatus;
 import com.sep.vox.domain.model.user.User;
+import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.UserRepository;
@@ -99,6 +100,19 @@ class ViewSchoolClassesUseCaseTests {
     }
 
     @Test
+    void view_school_classes_should_throw_when_current_user_is_inactive() {
+        var currentUserId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
+        when(userRepository.findById(currentUserId)).thenReturn(Optional.of(user(currentUserId, schoolId, UserStatus.INACTIVE)));
+
+        assertThrows(IllegalStateException.class, () -> viewSchoolClassesUseCase.execute(new ViewSchoolClassesQuery(1, 20)));
+
+        verify(schoolRepository, never()).findById(any());
+        verify(schoolClassRepository, never()).findBySchoolId(any(), any());
+    }
+
+    @Test
     void view_school_classes_should_throw_when_current_user_has_no_school() {
         var currentUserId = UUID.randomUUID();
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
@@ -136,9 +150,14 @@ class ViewSchoolClassesUseCaseTests {
     }
 
     private static User user(UUID userId, UUID schoolId) {
+        return user(userId, schoolId, UserStatus.ACTIVE);
+    }
+
+    private static User user(UUID userId, UUID schoolId, UserStatus status) {
         var user = new User();
         user.setId(userId);
         user.setSchoolId(schoolId);
+        user.setStatus(status);
         return user;
     }
 

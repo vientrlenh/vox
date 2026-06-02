@@ -29,6 +29,7 @@ import com.sep.vox.domain.model.schoolgrade.SchoolGrade;
 import com.sep.vox.domain.model.schoolgrade.SchoolGradeStatus;
 import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
 import com.sep.vox.domain.model.user.User;
+import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
 import com.sep.vox.domain.repository.SchoolLevelRepository;
@@ -118,6 +119,20 @@ public class CreateSchoolClassUseCaseTests {
 
         assertThrows(DuplicatedException.class, () -> createSchoolClassUseCase.execute(validCommand(ids)));
 
+        verify(schoolClassRepository, never()).save(any(SchoolClass.class));
+    }
+
+    @Test
+    void create_school_class_should_throw_when_current_user_is_inactive() {
+        var ids = TestIds.create();
+        mockValidDependencies(ids);
+        when(userRepository.findById(ids.currentUserId()))
+            .thenReturn(Optional.of(user(ids.currentUserId(), ids.schoolId(), UserStatus.INACTIVE)));
+
+        assertThrows(IllegalStateException.class, () -> createSchoolClassUseCase.execute(validCommand(ids)));
+
+        verify(schoolRepository, never()).findById(any());
+        verify(supportedLanguageRepository, never()).findById(any());
         verify(schoolClassRepository, never()).save(any(SchoolClass.class));
     }
 
@@ -217,9 +232,14 @@ public class CreateSchoolClassUseCaseTests {
     }
 
     private User user(UUID userId, UUID schoolId) {
+        return user(userId, schoolId, UserStatus.ACTIVE);
+    }
+
+    private User user(UUID userId, UUID schoolId, UserStatus status) {
         var user = new User();
         user.setId(userId);
         user.setSchoolId(schoolId);
+        user.setStatus(status);
         return user;
     }
 

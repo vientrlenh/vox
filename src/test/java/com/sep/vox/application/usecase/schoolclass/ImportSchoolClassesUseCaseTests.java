@@ -29,6 +29,7 @@ import com.sep.vox.domain.model.schoolgrade.SchoolGrade;
 import com.sep.vox.domain.model.schoolgrade.SchoolGradeStatus;
 import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
 import com.sep.vox.domain.model.user.User;
+import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
 import com.sep.vox.domain.repository.SchoolLevelRepository;
@@ -113,6 +114,22 @@ class ImportSchoolClassesUseCaseTests {
         ));
 
         assertThat(exception.getErrors()).anyMatch(error -> error.rowNumber() == 3 && error.field().equals("code"));
+        verify(schoolClassRepository, never()).save(any(SchoolClass.class));
+    }
+
+    @Test
+    void import_should_throw_when_current_user_is_inactive() {
+        var ids = TestIds.create();
+        mockValidDependencies(ids);
+        when(userRepository.findById(ids.currentUserId()))
+            .thenReturn(Optional.of(user(ids.currentUserId(), ids.schoolId(), UserStatus.INACTIVE)));
+
+        assertThrows(IllegalStateException.class, () -> importSchoolClassesUseCase.execute(
+            new ImportSchoolClassesCommand(List.of(row(2, "ENG", "G10", "A1", "1", "ENG_10_A", "English 10A", null)))
+        ));
+
+        verify(schoolRepository, never()).findById(any());
+        verify(supportedLanguageRepository, never()).findByCode(any());
         verify(schoolClassRepository, never()).save(any(SchoolClass.class));
     }
 
@@ -242,9 +259,14 @@ class ImportSchoolClassesUseCaseTests {
     }
 
     private static User user(UUID userId, UUID schoolId) {
+        return user(userId, schoolId, UserStatus.ACTIVE);
+    }
+
+    private static User user(UUID userId, UUID schoolId, UserStatus status) {
         var user = new User();
         user.setId(userId);
         user.setSchoolId(schoolId);
+        user.setStatus(status);
         return user;
     }
 

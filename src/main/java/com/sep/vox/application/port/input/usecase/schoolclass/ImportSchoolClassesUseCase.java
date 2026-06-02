@@ -24,6 +24,7 @@ import com.sep.vox.domain.model.languagelevel.LevelStatus;
 import com.sep.vox.domain.model.schoolclass.SchoolClass;
 import com.sep.vox.domain.model.schoolgrade.SchoolGradeStatus;
 import com.sep.vox.domain.model.user.User;
+import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
 import com.sep.vox.domain.repository.SchoolLevelRepository;
@@ -250,8 +251,16 @@ public class ImportSchoolClassesUseCase implements IUseCase<ImportSchoolClassesC
     }
 
     private User findCurrentUser(UUID currentUserId) {
-        return userRepository.findById(currentUserId)
+        var user = userRepository.findById(currentUserId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng hiện tại"));
+        validateCurrentUserIsActive(user);
+        return user;
+    }
+
+    private void validateCurrentUserIsActive(User currentUser) {
+        if (currentUser.getStatus() != UserStatus.ACTIVE) {
+            throw new IllegalStateException("Người dùng hiện tại không hoạt động");
+        }
     }
 
     private UUID getSchoolId(User currentUser) {

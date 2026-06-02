@@ -28,6 +28,7 @@ import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.model.schoolclass.SchoolClass;
 import com.sep.vox.domain.model.schoolclass.SchoolClassStatus;
 import com.sep.vox.domain.model.user.User;
+import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolLevelRepository;
 import com.sep.vox.domain.repository.SchoolLevelVersionRepository;
@@ -116,6 +117,20 @@ class UpdateSchoolClassUseCaseTests {
 
         assertThrows(NotFoundException.class, () -> updateSchoolClassUseCase.execute(validCommand(ids)));
 
+        verifyNoAtomicUpdate();
+    }
+
+    @Test
+    void update_school_class_should_throw_when_current_user_is_inactive() {
+        var ids = TestIds.create();
+        mockValidDependencies(ids);
+        when(userRepository.findById(ids.currentUserId()))
+            .thenReturn(Optional.of(user(ids.currentUserId(), ids.schoolId(), UserStatus.INACTIVE)));
+
+        assertThrows(IllegalStateException.class, () -> updateSchoolClassUseCase.execute(validCommand(ids)));
+
+        verify(schoolRepository, never()).findById(any());
+        verify(schoolClassRepository, never()).findById(any());
         verifyNoAtomicUpdate();
     }
 
@@ -274,9 +289,14 @@ class UpdateSchoolClassUseCaseTests {
     }
 
     private static User user(UUID userId, UUID schoolId) {
+        return user(userId, schoolId, UserStatus.ACTIVE);
+    }
+
+    private static User user(UUID userId, UUID schoolId, UserStatus status) {
         var user = new User();
         user.setId(userId);
         user.setSchoolId(schoolId);
+        user.setStatus(status);
         return user;
     }
 

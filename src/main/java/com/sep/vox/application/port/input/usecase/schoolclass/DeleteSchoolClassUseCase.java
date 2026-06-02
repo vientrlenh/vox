@@ -14,6 +14,7 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.SchoolClassDeleteResultDto;
 import com.sep.vox.domain.model.schoolclass.SchoolClassStatus;
 import com.sep.vox.domain.model.user.User;
+import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassDependencyRepository;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
@@ -77,8 +78,16 @@ public class DeleteSchoolClassUseCase implements IUseCase<DeleteSchoolClassComma
     }
 
     private User findCurrentUser(UUID currentUserId) {
-        return userRepository.findById(currentUserId)
+        var user = userRepository.findById(currentUserId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng hiện tại"));
+        validateCurrentUserIsActive(user);
+        return user;
+    }
+
+    private void validateCurrentUserIsActive(User currentUser) {
+        if (currentUser.getStatus() != UserStatus.ACTIVE) {
+            throw new IllegalStateException("Người dùng hiện tại không hoạt động");
+        }
     }
 
     private UUID getSchoolId(User currentUser) {

@@ -10,8 +10,8 @@ import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
-import com.sep.vox.domain.model.schoolclass.SchoolClass;
-import com.sep.vox.domain.model.schoolclass.SchoolClassStatus;
+import com.sep.vox.domain.model.school.SchoolClass;
+import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolClassMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolClassRepository;

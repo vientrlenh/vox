@@ -11,6 +11,7 @@ public interface UserRepository {
     Optional<User> findByPhone(String phone);
     Optional<User> findByEmail(String email);
     Optional<User> findByEmailAndStatus(String email, UserStatus status);
+    Optional<User> findByIdAndStatus(UUID id, UserStatus status);
     User save(User user);
     boolean existsByEmail(String email);
     boolean existsByEmailAndStatus(String email, UserStatus status);

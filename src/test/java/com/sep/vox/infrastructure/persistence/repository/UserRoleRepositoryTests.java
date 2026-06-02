@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
 import com.sep.vox.config.TestContainerConfig;
-import com.sep.vox.domain.model.userrole.UserRole;
+import com.sep.vox.domain.model.user.UserRole;
 import com.sep.vox.domain.repository.UserRoleRepository;
 import com.sep.vox.infrastructure.persistence.adapter.UserRoleRepositoryImpl;
 

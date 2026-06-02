@@ -11,7 +11,7 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.QuestionBankDto;
 import com.sep.vox.domain.mapper.QuestionBankDtoMapper;
-import com.sep.vox.domain.model.questionbank.QuestionBank;
+import com.sep.vox.domain.model.question.QuestionBank;
 import com.sep.vox.domain.repository.QuestionBankRepository;
 
 @Service

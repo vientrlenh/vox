@@ -21,8 +21,8 @@ import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.dto.SchoolClassImportResultDto;
 import com.sep.vox.domain.mapper.SchoolClassDtoMapper;
 import com.sep.vox.domain.model.languagelevel.LevelStatus;
-import com.sep.vox.domain.model.schoolclass.SchoolClass;
-import com.sep.vox.domain.model.schoolgrade.SchoolGradeStatus;
+import com.sep.vox.domain.model.school.SchoolClass;
+import com.sep.vox.domain.model.school.SchoolGradeStatus;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
@@ -109,7 +109,7 @@ public class ImportSchoolClassesUseCase implements IUseCase<ImportSchoolClassesC
             normalizeCode(row.schoolGradeCode()),
             normalizeCode(row.targetSchoolLevelCode()),
             StringNormalization.trimAndCollapseSpaces(row.targetSchoolLevelVersion()),
-            StringNormalization.normalizeClassCode(row.code()),
+            StringNormalization.normalizeCode(row.code()),
             StringNormalization.trimAndCollapseSpaces(row.name()),
             StringNormalization.trimAndCollapseSpaces(row.description())
         );

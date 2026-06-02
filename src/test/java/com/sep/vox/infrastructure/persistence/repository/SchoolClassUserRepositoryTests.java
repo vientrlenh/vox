@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
 import com.sep.vox.config.TestContainerConfig;
-import com.sep.vox.domain.model.schoolclassuser.SchoolClassUser;
+import com.sep.vox.domain.model.school.SchoolClassUser;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.infrastructure.persistence.adapter.SchoolClassUserRepositoryImpl;
 

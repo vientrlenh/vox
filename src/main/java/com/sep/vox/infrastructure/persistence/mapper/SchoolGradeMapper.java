@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
-import com.sep.vox.domain.model.schoolgrade.SchoolGrade;
-import com.sep.vox.domain.model.schoolgrade.SchoolGradeStatus;
+import com.sep.vox.domain.model.school.SchoolGrade;
+import com.sep.vox.domain.model.school.SchoolGradeStatus;
 import com.sep.vox.infrastructure.persistence.entity.SchoolGradeJpaEntity;
 
 public final class SchoolGradeMapper {

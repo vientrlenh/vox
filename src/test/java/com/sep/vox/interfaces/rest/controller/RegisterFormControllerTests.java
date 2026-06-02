@@ -12,8 +12,8 @@ import org.springframework.http.HttpStatus;
 
 import com.sep.vox.application.port.input.command.ApproveRegisterFormCommand;
 import com.sep.vox.application.port.input.command.RejectRegisterFormCommand;
-import com.sep.vox.application.port.input.usecase.systemadmin.ApproveRegisterFormUseCase;
-import com.sep.vox.application.port.input.usecase.systemadmin.RejectRegisterFormUseCase;
+import com.sep.vox.application.port.input.usecase.registration.ApproveRegisterFormUseCase;
+import com.sep.vox.application.port.input.usecase.registration.RejectRegisterFormUseCase;
 import com.sep.vox.interfaces.rest.dto.request.ApproveRegisterFormRequest;
 import com.sep.vox.interfaces.rest.dto.request.RejectRegisterFormRequest;
 

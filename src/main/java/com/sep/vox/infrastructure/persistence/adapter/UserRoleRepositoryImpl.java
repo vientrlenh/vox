@@ -6,7 +6,7 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.domain.model.userrole.UserRole;
+import com.sep.vox.domain.model.user.UserRole;
 import com.sep.vox.domain.repository.UserRoleRepository;
 import com.sep.vox.infrastructure.persistence.mapper.UserRoleMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataUserRoleRepository;

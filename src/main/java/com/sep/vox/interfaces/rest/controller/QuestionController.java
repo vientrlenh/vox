@@ -4,8 +4,7 @@ import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-
-
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -15,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.sep.vox.application.port.input.usecase.question.CreateQuestionUseCase;
 import com.sep.vox.application.port.input.usecase.question.UpdateQuestionUseCase;
+import com.sep.vox.application.response.input.question.CreateQuestionResponse;
 import com.sep.vox.domain.dto.QuestionDto;
 import com.sep.vox.interfaces.rest.dto.request.CreateQuestionRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateQuestionRequest;
@@ -39,8 +39,8 @@ public class QuestionController {
     }
 
     @PostMapping
-    // @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<QuestionDto>> create(@Valid @RequestBody CreateQuestionRequest request) {
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<ApiResponse<CreateQuestionResponse>> create(@Valid @RequestBody CreateQuestionRequest request) {
         var command = CreateQuestionCommandMapper.fromRequest(request);
         var data = createQuestionUseCase.execute(command);
         var response = ApiResponse.success("Tạo câu hỏi thành công", data);

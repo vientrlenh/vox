@@ -187,5 +187,7 @@ public class StandardLevelVersion {
         this.updatedBy = updatedBy;
     }
 
-    
+    public boolean isActive() {
+        return status == LevelStatus.PUBLISHED;
+    }
 }

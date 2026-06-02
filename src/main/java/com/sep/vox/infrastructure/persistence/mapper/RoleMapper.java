@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
-import com.sep.vox.domain.model.role.Role;
+import com.sep.vox.domain.model.user.Role;
 import com.sep.vox.domain.valueobject.RoleCode;
 import com.sep.vox.infrastructure.persistence.entity.RoleJpaEntity;
 

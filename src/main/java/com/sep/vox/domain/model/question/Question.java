@@ -3,44 +3,87 @@ package com.sep.vox.domain.model.question;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-import com.sep.vox.domain.valueobject.QuestionType;
-
 public class Question {
     private UUID id;
-    private UUID topicId;
+    private UUID questionTopicId;
+    private String code;
+    private String instructionText;
     private String questionText;
-    private String audioUrl;
-    private UUID standardLevelId;
-    private QuestionType questionType;
-    private int durationSeconds;
-    private boolean isActive;
+    private String promptText;
+    private String preparationText;
+    private UUID standardLevelVersionId;
+    private UUID schoolLevelVersionId;
+    private QuestionType type;
+    private int preparationTimeSeconds;
+    private int minResponseSeconds;
+    private int maxResponseSeconds;
+    private QuestionScope scope;
+    private QuestionVisibility visibility;
+    private UUID sourceQuestionId;
+    private boolean locked;
+    private QuestionStatus status;
     private OffsetDateTime createdAt;
+    private OffsetDateTime updatedAt;
+    private UUID createdBy;
+    private UUID updatedBy;
 
     public Question() {}
 
-    public Question(UUID id, UUID topicId, String questionText, String audioUrl, UUID standardLevelId,
-            QuestionType questionType, int durationSeconds, boolean isActive, OffsetDateTime createdAt) {
+    public Question(UUID id, UUID questionTopicId, String code, String instructionText, String questionText, String promptText,
+            String preparationText, UUID standardLevelVersionId, UUID schoolLevelVersionId, QuestionType type,
+            int preparationTimeSeconds, int minResponseSeconds, int maxResponseSeconds, QuestionScope scope,
+            QuestionVisibility visibility, UUID sourceQuestionId, boolean locked, QuestionStatus status,
+            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
-        this.topicId = topicId;
+        this.questionTopicId = questionTopicId;
+        this.code = code;
+        this.instructionText = instructionText;
         this.questionText = questionText;
-        this.audioUrl = audioUrl;
-        this.standardLevelId = standardLevelId;
-        this.questionType = questionType;
-        this.durationSeconds = durationSeconds;
-        this.isActive = isActive;
+        this.promptText = promptText;
+        this.preparationText = preparationText;
+        this.standardLevelVersionId = standardLevelVersionId;
+        this.schoolLevelVersionId = schoolLevelVersionId;
+        this.type = type;
+        this.preparationTimeSeconds = preparationTimeSeconds;
+        this.minResponseSeconds = minResponseSeconds;
+        this.maxResponseSeconds = maxResponseSeconds;
+        this.scope = scope;
+        this.visibility = visibility;
+        this.sourceQuestionId = sourceQuestionId;
+        this.locked = locked;
+        this.status = status;
         this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+        this.createdBy = createdBy;
+        this.updatedBy = updatedBy;
     }
 
-    public Question(UUID topicId, String questionText, String audioUrl, UUID standardLevelId,
-            QuestionType questionType, int durationSeconds, boolean isActive, OffsetDateTime createdAt) {
-        this.topicId = topicId;
+    public Question(UUID questionTopicId, String code, String instructionText, String questionText, String promptText,
+            String preparationText, UUID standardLevelVersionId, UUID schoolLevelVersionId, QuestionType type,
+            int preparationTimeSeconds, int minResponseSeconds, int maxResponseSeconds, QuestionScope scope,
+            QuestionVisibility visibility, UUID sourceQuestionId, boolean locked, QuestionStatus status,
+            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+        this.questionTopicId = questionTopicId;
+        this.code = code;
+        this.instructionText = instructionText;
         this.questionText = questionText;
-        this.audioUrl = audioUrl;
-        this.standardLevelId = standardLevelId;
-        this.questionType = questionType;
-        this.durationSeconds = durationSeconds;
-        this.isActive = isActive;
+        this.promptText = promptText;
+        this.preparationText = preparationText;
+        this.standardLevelVersionId = standardLevelVersionId;
+        this.schoolLevelVersionId = schoolLevelVersionId;
+        this.type = type;
+        this.preparationTimeSeconds = preparationTimeSeconds;
+        this.minResponseSeconds = minResponseSeconds;
+        this.maxResponseSeconds = maxResponseSeconds;
+        this.scope = scope;
+        this.visibility = visibility;
+        this.sourceQuestionId = sourceQuestionId;
+        this.locked = locked;
+        this.status = status;
         this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+        this.createdBy = createdBy;
+        this.updatedBy = updatedBy;
     }
 
     public UUID getId() {
@@ -51,12 +94,20 @@ public class Question {
         this.id = id;
     }
 
-    public UUID getTopicId() {
-        return topicId;
+    public UUID getQuestionTopicId() {
+        return questionTopicId;
     }
 
-    public void setTopicId(UUID topicId) {
-        this.topicId = topicId;
+    public void setQuestionTopicId(UUID questionTopicId) {
+        this.questionTopicId = questionTopicId;
+    }
+
+    public String getInstructionText() {
+        return instructionText;
+    }
+
+    public void setInstructionText(String instructionText) {
+        this.instructionText = instructionText;
     }
 
     public String getQuestionText() {
@@ -67,44 +118,108 @@ public class Question {
         this.questionText = questionText;
     }
 
-    public String getAudioUrl() {
-        return audioUrl;
+    public String getPromptText() {
+        return promptText;
     }
 
-    public void setAudioUrl(String audioUrl) {
-        this.audioUrl = audioUrl;
+    public void setPromptText(String promptText) {
+        this.promptText = promptText;
     }
 
-    public UUID getStandardLevelId() {
-        return standardLevelId;
+    public String getPreparationText() {
+        return preparationText;
     }
 
-    public void setStandardLevelId(UUID standardLevelId) {
-        this.standardLevelId = standardLevelId;
+    public void setPreparationText(String preparationText) {
+        this.preparationText = preparationText;
     }
 
-    public QuestionType getQuestionType() {
-        return questionType;
+    public UUID getStandardLevelVersionId() {
+        return standardLevelVersionId;
     }
 
-    public void setQuestionType(QuestionType questionType) {
-        this.questionType = questionType;
+    public void setStandardLevelVersionId(UUID standardLevelVersionId) {
+        this.standardLevelVersionId = standardLevelVersionId;
     }
 
-    public int getDurationSeconds() {
-        return durationSeconds;
+    public UUID getSchoolLevelVersionId() {
+        return schoolLevelVersionId;
     }
 
-    public void setDurationSeconds(int durationSeconds) {
-        this.durationSeconds = durationSeconds;
+    public void setSchoolLevelVersionId(UUID schoolLevelVersionId) {
+        this.schoolLevelVersionId = schoolLevelVersionId;
     }
 
-    public boolean isActive() {
-        return isActive;
+    public QuestionType getType() {
+        return type;
     }
 
-    public void setActive(boolean isActive) {
-        this.isActive = isActive;
+    public void setType(QuestionType type) {
+        this.type = type;
+    }
+
+    public int getPreparationTimeSeconds() {
+        return preparationTimeSeconds;
+    }
+
+    public void setPreparationTimeSeconds(int preparationTimeSeconds) {
+        this.preparationTimeSeconds = preparationTimeSeconds;
+    }
+
+    public int getMinResponseSeconds() {
+        return minResponseSeconds;
+    }
+
+    public void setMinResponseSeconds(int minResponseSeconds) {
+        this.minResponseSeconds = minResponseSeconds;
+    }
+
+    public int getMaxResponseSeconds() {
+        return maxResponseSeconds;
+    }
+
+    public void setMaxResponseSeconds(int maxResponseSeconds) {
+        this.maxResponseSeconds = maxResponseSeconds;
+    }
+
+    public QuestionScope getScope() {
+        return scope;
+    }
+
+    public void setScope(QuestionScope scope) {
+        this.scope = scope;
+    }
+
+    public QuestionVisibility getVisibility() {
+        return visibility;
+    }
+
+    public void setVisibility(QuestionVisibility visibility) {
+        this.visibility = visibility;
+    }
+
+    public UUID getSourceQuestionId() {
+        return sourceQuestionId;
+    }
+
+    public void setSourceQuestionId(UUID sourceQuestionId) {
+        this.sourceQuestionId = sourceQuestionId;
+    }
+
+    public boolean isLocked() {
+        return locked;
+    }
+
+    public void setLocked(boolean locked) {
+        this.locked = locked;
+    }
+
+    public QuestionStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(QuestionStatus status) {
+        this.status = status;
     }
 
     public OffsetDateTime getCreatedAt() {
@@ -113,5 +228,66 @@ public class Question {
 
     public void setCreatedAt(OffsetDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public OffsetDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(OffsetDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public UUID getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(UUID createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public UUID getUpdatedBy() {
+        return updatedBy;
+    }
+
+    public void setUpdatedBy(UUID updatedBy) {
+        this.updatedBy = updatedBy;
+    }
+
+    public String getCode() {
+        return code;
+    }
+
+    public void setCode(String code) {
+        this.code = code;
+    }
+
+    public static Question create(UUID questionTopicId, String code, String instructionText, String questionText, String promptText,
+        String preparationText, UUID standardLevelVersionId, UUID schoolLevelVersionId, QuestionType type,
+        int preparationTimeSeconds, int minResponseSeconds, int maxResponseSeconds, QuestionScope scope,
+        QuestionVisibility visibility, UUID sourceQuestionId, boolean locked, OffsetDateTime now, UUID createdBy) {
+        return new Question(
+            questionTopicId, 
+            code, 
+            instructionText, 
+            questionText, 
+            promptText, 
+            preparationText, 
+            standardLevelVersionId, 
+            schoolLevelVersionId, 
+            type, 
+            preparationTimeSeconds, 
+            minResponseSeconds, 
+            maxResponseSeconds, 
+            scope,
+            visibility,
+            sourceQuestionId,
+            locked,
+            QuestionStatus.DRAFT, 
+            now, 
+            now, 
+            createdBy, 
+            createdBy
+        );
     }
 }

@@ -13,8 +13,8 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.port.input.query.ViewRegisterFormDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewRegisterFormsQuery;
-import com.sep.vox.application.port.input.usecase.systemadmin.ViewRegisterFormDetailsUseCase;
-import com.sep.vox.application.port.input.usecase.systemadmin.ViewRegisterFormsUseCase;
+import com.sep.vox.application.port.input.usecase.registration.ViewRegisterFormDetailsUseCase;
+import com.sep.vox.application.port.input.usecase.registration.ViewRegisterFormsUseCase;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.RegisterFormDto;
 

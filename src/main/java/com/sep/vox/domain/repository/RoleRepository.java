@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import com.sep.vox.domain.model.role.Role;
+import com.sep.vox.domain.model.user.Role;
 
 public interface RoleRepository {
     Optional<Role> findByCode(String code);

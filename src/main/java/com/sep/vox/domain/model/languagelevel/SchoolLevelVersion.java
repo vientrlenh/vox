@@ -272,5 +272,7 @@ public class SchoolLevelVersion {
         this.updatedBy = updatedBy;
     }
 
-    
+    public boolean isActive() {
+        return status == LevelStatus.PUBLISHED;
+    }
 }

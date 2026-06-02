@@ -9,7 +9,7 @@ import com.sep.vox.application.port.input.command.CreateQuestionTopicCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.QuestionTopicDto;
 import com.sep.vox.domain.mapper.QuestionTopicDtoMapper;
-import com.sep.vox.domain.model.questiontopic.QuestionTopic;
+import com.sep.vox.domain.model.question.QuestionTopic;
 import com.sep.vox.domain.repository.QuestionBankRepository;
 import com.sep.vox.domain.repository.QuestionTopicRepository;
 

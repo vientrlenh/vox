@@ -16,8 +16,8 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.mapper.SchoolClassDtoMapper;
 import com.sep.vox.domain.model.languagelevel.LevelStatus;
-import com.sep.vox.domain.model.schoolclass.SchoolClass;
-import com.sep.vox.domain.model.schoolgrade.SchoolGradeStatus;
+import com.sep.vox.domain.model.school.SchoolClass;
+import com.sep.vox.domain.model.school.SchoolGradeStatus;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
@@ -93,7 +93,7 @@ public class CreateSchoolClassUseCase implements IUseCase<CreateSchoolClassComma
         return new CreateSchoolClassCommand(
             input.languageId(),
             input.schoolGradeId(),
-            StringNormalization.normalizeClassCode(input.code()),
+            StringNormalization.normalizeCode(input.code()),
             StringNormalization.trimAndCollapseSpaces(input.name()),
             StringNormalization.trimAndCollapseSpaces(input.description()),
             input.targetSchoolLevelVersionId()

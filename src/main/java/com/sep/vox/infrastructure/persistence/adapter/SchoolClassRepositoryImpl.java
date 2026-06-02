@@ -80,5 +80,10 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
             .map(SchoolClassMapper::toDomain)
             .toList();
     }
+
+    @Override
+    public void deleteById(UUID id) {
+        springDataSchoolClassRepository.deleteById(id);
+    }
     
 }

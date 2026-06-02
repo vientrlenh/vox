@@ -12,4 +12,5 @@ public interface SpringDataSchoolClassUserRepository extends JpaRepository<Schoo
     Optional<SchoolClassUserJpaEntity> findByUserIdAndSchoolClassId(UUID userId, UUID schoolClassId);
     List<SchoolClassUserJpaEntity> findByUserId(UUID userId);
     List<SchoolClassUserJpaEntity> findBySchoolClassId(UUID schoolClassId);
+    boolean existsBySchoolClassId(UUID schoolClassId);
 }

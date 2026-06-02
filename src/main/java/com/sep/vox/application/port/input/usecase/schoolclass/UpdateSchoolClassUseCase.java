@@ -71,15 +71,24 @@ public class UpdateSchoolClassUseCase implements IUseCase<UpdateSchoolClassComma
             schoolClass.getLanguageId()
         );
 
-        schoolClass.setName(command.name());
-        schoolClass.setDescription(command.description());
-        schoolClass.setTargetSchoolLevelVersionId(command.targetSchoolLevelVersionId());
-        schoolClass.setStatus(status);
-        schoolClass.setUpdatedAt(now);
-        schoolClass.setUpdatedBy(currentUserId);
+        var updatedRows = schoolClassRepository.updateMutableFields(
+            command.id(),
+            schoolId,
+            schoolClass.getLanguageId(),
+            command.name(),
+            command.description(),
+            command.targetSchoolLevelVersionId(),
+            status,
+            now,
+            currentUserId
+        );
+        if (updatedRows == 0) {
+            throw new NotFoundException("Không tìm thấy lớp học");
+        }
 
-        var saved = schoolClassRepository.save(schoolClass);
-        return SchoolClassDtoMapper.toDto(saved);
+        var updatedSchoolClass = schoolClassRepository.findById(command.id())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy lớp học"));
+        return SchoolClassDtoMapper.toDto(updatedSchoolClass);
     }
 
     private UpdateSchoolClassCommand normalize(UpdateSchoolClassCommand input) {

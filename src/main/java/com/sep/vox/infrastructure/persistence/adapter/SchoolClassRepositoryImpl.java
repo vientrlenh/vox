@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Repository;
 import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.schoolclass.SchoolClass;
+import com.sep.vox.domain.model.schoolclass.SchoolClassStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolClassMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolClassRepository;
@@ -79,6 +81,22 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
             .stream()
             .map(SchoolClassMapper::toDomain)
             .toList();
+    }
+
+    @Override
+    public int updateMutableFields(UUID id, UUID schoolId, UUID languageId, String name, String description,
+            UUID targetSchoolLevelVersionId, SchoolClassStatus status, OffsetDateTime updatedAt, UUID updatedBy) {
+        return springDataSchoolClassRepository.updateMutableFields(
+            id,
+            schoolId,
+            languageId,
+            name,
+            description,
+            targetSchoolLevelVersionId,
+            status.name(),
+            updatedAt,
+            updatedBy
+        );
     }
 
     @Override

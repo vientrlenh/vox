@@ -3,6 +3,7 @@ package com.sep.vox.application.usecase.schoolclass;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -66,7 +67,17 @@ class UpdateSchoolClassUseCaseTests {
     void update_school_class_should_update_mutable_fields_only() {
         var ids = TestIds.create();
         mockValidDependencies(ids);
-        when(schoolClassRepository.save(any(SchoolClass.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(schoolClassRepository.updateMutableFields(
+            eq(ids.classId()),
+            eq(ids.schoolId()),
+            eq(ids.languageId()),
+            eq("English 10A Updated"),
+            eq("Updated description"),
+            eq(ids.targetLevelVersionId()),
+            eq(SchoolClassStatus.INACTIVE),
+            any(OffsetDateTime.class),
+            eq(ids.currentUserId())
+        )).thenReturn(1);
 
         var result = updateSchoolClassUseCase.execute(validCommand(ids));
 
@@ -81,19 +92,20 @@ class UpdateSchoolClassUseCaseTests {
         assertThat(result.status()).isEqualTo("INACTIVE");
         assertThat(result.updatedBy()).isEqualTo(ids.currentUserId());
 
-        var captor = ArgumentCaptor.forClass(SchoolClass.class);
-        verify(schoolClassRepository).save(captor.capture());
-        var saved = captor.getValue();
-        assertThat(saved.getSchoolId()).isEqualTo(ids.schoolId());
-        assertThat(saved.getLanguageId()).isEqualTo(ids.languageId());
-        assertThat(saved.getSchoolGradeId()).isEqualTo(ids.gradeId());
-        assertThat(saved.getCode().value()).isEqualTo("ENG_10_A");
-        assertThat(saved.getName()).isEqualTo("English 10A Updated");
-        assertThat(saved.getDescription()).isEqualTo("Updated description");
-        assertThat(saved.getTargetSchoolLevelVersionId()).isEqualTo(ids.targetLevelVersionId());
-        assertThat(saved.getStatus()).isEqualTo(SchoolClassStatus.INACTIVE);
-        assertThat(saved.getUpdatedAt()).isNotNull();
-        assertThat(saved.getUpdatedBy()).isEqualTo(ids.currentUserId());
+        var updatedAtCaptor = ArgumentCaptor.forClass(OffsetDateTime.class);
+        verify(schoolClassRepository).updateMutableFields(
+            eq(ids.classId()),
+            eq(ids.schoolId()),
+            eq(ids.languageId()),
+            eq("English 10A Updated"),
+            eq("Updated description"),
+            eq(ids.targetLevelVersionId()),
+            eq(SchoolClassStatus.INACTIVE),
+            updatedAtCaptor.capture(),
+            eq(ids.currentUserId())
+        );
+        assertThat(updatedAtCaptor.getValue()).isNotNull();
+        verify(schoolClassRepository, never()).save(any(SchoolClass.class));
     }
 
     @Test
@@ -104,7 +116,7 @@ class UpdateSchoolClassUseCaseTests {
 
         assertThrows(NotFoundException.class, () -> updateSchoolClassUseCase.execute(validCommand(ids)));
 
-        verify(schoolClassRepository, never()).save(any(SchoolClass.class));
+        verifyNoAtomicUpdate();
     }
 
     @Test
@@ -115,7 +127,7 @@ class UpdateSchoolClassUseCaseTests {
 
         assertThrows(IllegalStateException.class, () -> updateSchoolClassUseCase.execute(validCommand(ids)));
 
-        verify(schoolClassRepository, never()).save(any(SchoolClass.class));
+        verifyNoAtomicUpdate();
     }
 
     @Test
@@ -130,7 +142,7 @@ class UpdateSchoolClassUseCaseTests {
         when(schoolRepository.findById(ids.schoolId())).thenReturn(Optional.of(school(ids.schoolId(), false)));
 
         assertThrows(IllegalStateException.class, () -> updateSchoolClassUseCase.execute(validCommand(ids)));
-        verify(schoolClassRepository, never()).save(any(SchoolClass.class));
+        verifyNoAtomicUpdate();
     }
 
     @Test
@@ -146,7 +158,7 @@ class UpdateSchoolClassUseCaseTests {
             .thenReturn(Optional.of(schoolClass(ids.classId(), UUID.randomUUID(), ids.languageId(), ids.gradeId(), ids.originalLevelVersionId())));
 
         assertThrows(NotFoundException.class, () -> updateSchoolClassUseCase.execute(validCommand(ids)));
-        verify(schoolClassRepository, never()).save(any(SchoolClass.class));
+        verifyNoAtomicUpdate();
     }
 
     @Test
@@ -162,7 +174,7 @@ class UpdateSchoolClassUseCaseTests {
             .thenReturn(Optional.of(levelVersion(ids.targetLevelVersionId(), ids.targetLevelId(), LevelStatus.DRAFT)));
 
         assertThrows(IllegalStateException.class, () -> updateSchoolClassUseCase.execute(validCommand(ids)));
-        verify(schoolClassRepository, never()).save(any(SchoolClass.class));
+        verifyNoAtomicUpdate();
     }
 
     @Test
@@ -179,7 +191,7 @@ class UpdateSchoolClassUseCaseTests {
             .thenReturn(Optional.of(level(ids.targetLevelId(), ids.schoolId(), UUID.randomUUID())));
 
         assertThrows(IllegalArgumentException.class, () -> updateSchoolClassUseCase.execute(validCommand(ids)));
-        verify(schoolClassRepository, never()).save(any(SchoolClass.class));
+        verifyNoAtomicUpdate();
     }
 
     @Test
@@ -197,6 +209,27 @@ class UpdateSchoolClassUseCaseTests {
             )
         ));
 
+        verifyNoAtomicUpdate();
+    }
+
+    @Test
+    void update_school_class_should_throw_when_atomic_update_affects_no_rows() {
+        var ids = TestIds.create();
+        mockValidDependencies(ids);
+        when(schoolClassRepository.updateMutableFields(
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any()
+        )).thenReturn(0);
+
+        assertThrows(NotFoundException.class, () -> updateSchoolClassUseCase.execute(validCommand(ids)));
+
         verify(schoolClassRepository, never()).save(any(SchoolClass.class));
     }
 
@@ -205,11 +238,29 @@ class UpdateSchoolClassUseCaseTests {
         when(userRepository.findById(ids.currentUserId())).thenReturn(Optional.of(user(ids.currentUserId(), ids.schoolId())));
         when(schoolRepository.findById(ids.schoolId())).thenReturn(Optional.of(school(ids.schoolId(), true)));
         when(schoolClassRepository.findById(ids.classId()))
-            .thenReturn(Optional.of(schoolClass(ids.classId(), ids.schoolId(), ids.languageId(), ids.gradeId(), ids.originalLevelVersionId())));
+            .thenReturn(
+                Optional.of(schoolClass(ids.classId(), ids.schoolId(), ids.languageId(), ids.gradeId(), ids.originalLevelVersionId())),
+                Optional.of(schoolClass(
+                    ids.classId(),
+                    ids.schoolId(),
+                    ids.languageId(),
+                    ids.gradeId(),
+                    ids.targetLevelVersionId(),
+                    "English 10A Updated",
+                    "Updated description",
+                    SchoolClassStatus.INACTIVE,
+                    ids.currentUserId()
+                ))
+            );
         when(schoolLevelVersionRepository.findById(ids.targetLevelVersionId()))
             .thenReturn(Optional.of(levelVersion(ids.targetLevelVersionId(), ids.targetLevelId(), LevelStatus.PUBLISHED)));
         when(schoolLevelRepository.findById(ids.targetLevelId()))
             .thenReturn(Optional.of(level(ids.targetLevelId(), ids.schoolId(), ids.languageId())));
+    }
+
+    private void verifyNoAtomicUpdate() {
+        verify(schoolClassRepository, never()).updateMutableFields(any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verify(schoolClassRepository, never()).save(any(SchoolClass.class));
     }
 
     private UpdateSchoolClassCommand validCommand(TestIds ids) {
@@ -238,6 +289,21 @@ class UpdateSchoolClassUseCaseTests {
 
     private static SchoolClass schoolClass(UUID classId, UUID schoolId, UUID languageId, UUID gradeId,
             UUID targetLevelVersionId) {
+        return schoolClass(
+            classId,
+            schoolId,
+            languageId,
+            gradeId,
+            targetLevelVersionId,
+            "English 10A",
+            "Original description",
+            SchoolClassStatus.ACTIVE,
+            UUID.randomUUID()
+        );
+    }
+
+    private static SchoolClass schoolClass(UUID classId, UUID schoolId, UUID languageId, UUID gradeId,
+            UUID targetLevelVersionId, String name, String description, SchoolClassStatus status, UUID updatedBy) {
         var now = OffsetDateTime.now();
         return new SchoolClass(
             classId,
@@ -245,14 +311,14 @@ class UpdateSchoolClassUseCaseTests {
             languageId,
             gradeId,
             new ClassCode("ENG_10_A"),
-            "English 10A",
-            "Original description",
+            name,
+            description,
             targetLevelVersionId,
-            SchoolClassStatus.ACTIVE,
+            status,
             now.minusDays(1),
-            now.minusDays(1),
+            now,
             UUID.randomUUID(),
-            UUID.randomUUID()
+            updatedBy
         );
     }
 

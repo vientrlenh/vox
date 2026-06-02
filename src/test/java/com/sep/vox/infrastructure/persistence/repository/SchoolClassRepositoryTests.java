@@ -157,6 +157,108 @@ class SchoolClassRepositoryTests {
     }
 
     @Test
+    void whenUpdateMutableFieldsWithMatchingConditions_thenUpdatesMutableFieldsOnly() {
+        var schoolId = UUID.randomUUID();
+        var languageId = UUID.randomUUID();
+        var gradeId = UUID.randomUUID();
+        var originalLevelVersionId = UUID.randomUUID();
+        var newLevelVersionId = UUID.randomUUID();
+        var saved = schoolClassRepository.save(newSchoolClass(
+            schoolId,
+            languageId,
+            gradeId,
+            "ENG_12_UPDATE",
+            "English 12 Update",
+            originalLevelVersionId
+        ));
+        var persistedBeforeUpdate = schoolClassRepository.findById(saved.getId()).orElseThrow();
+        var originalCreatedAt = persistedBeforeUpdate.getCreatedAt();
+        var originalCreatedBy = persistedBeforeUpdate.getCreatedBy();
+        var updatedAt = OffsetDateTime.now().plusMinutes(1).withNano(0);
+        var updatedBy = UUID.randomUUID();
+
+        var updatedRows = schoolClassRepository.updateMutableFields(
+            saved.getId(),
+            schoolId,
+            languageId,
+            "English 12 Updated",
+            "Updated repository description",
+            newLevelVersionId,
+            SchoolClassStatus.INACTIVE,
+            updatedAt,
+            updatedBy
+        );
+
+        assertThat(updatedRows).isEqualTo(1);
+        var found = schoolClassRepository.findById(saved.getId()).orElseThrow();
+        assertThat(found.getName()).isEqualTo("English 12 Updated");
+        assertThat(found.getDescription()).isEqualTo("Updated repository description");
+        assertThat(found.getTargetSchoolLevelVersionId()).isEqualTo(newLevelVersionId);
+        assertThat(found.getStatus()).isEqualTo(SchoolClassStatus.INACTIVE);
+        assertThat(found.getUpdatedAt()).isEqualTo(updatedAt);
+        assertThat(found.getUpdatedBy()).isEqualTo(updatedBy);
+        assertThat(found.getSchoolId()).isEqualTo(schoolId);
+        assertThat(found.getLanguageId()).isEqualTo(languageId);
+        assertThat(found.getSchoolGradeId()).isEqualTo(gradeId);
+        assertThat(found.getCode().value()).isEqualTo("ENG_12_UPDATE");
+        assertThat(found.getCreatedAt().toInstant().getEpochSecond()).isEqualTo(originalCreatedAt.toInstant().getEpochSecond());
+        assertThat(found.getCreatedBy()).isEqualTo(originalCreatedBy);
+    }
+
+    @Test
+    void whenUpdateMutableFieldsConditionsDoNotMatch_thenDoesNotUpdate() {
+        var schoolId = UUID.randomUUID();
+        var languageId = UUID.randomUUID();
+        var originalLevelVersionId = UUID.randomUUID();
+        var saved = schoolClassRepository.save(newSchoolClass(
+            schoolId,
+            languageId,
+            UUID.randomUUID(),
+            "ENG_12_NO_UPDATE",
+            "English 12 No Update",
+            originalLevelVersionId
+        ));
+
+        var updatedRows = schoolClassRepository.updateMutableFields(
+            saved.getId(),
+            UUID.randomUUID(),
+            languageId,
+            "Should Not Update",
+            "Should not update description",
+            UUID.randomUUID(),
+            SchoolClassStatus.ARCHIVED,
+            OffsetDateTime.now().plusMinutes(1),
+            UUID.randomUUID()
+        );
+
+        assertThat(updatedRows).isEqualTo(0);
+        var found = schoolClassRepository.findById(saved.getId()).orElseThrow();
+        assertThat(found.getName()).isEqualTo("English 12 No Update");
+        assertThat(found.getDescription()).isEqualTo("Repository test class");
+        assertThat(found.getTargetSchoolLevelVersionId()).isEqualTo(originalLevelVersionId);
+        assertThat(found.getStatus()).isEqualTo(SchoolClassStatus.ACTIVE);
+
+        var wrongLanguageRows = schoolClassRepository.updateMutableFields(
+            saved.getId(),
+            schoolId,
+            UUID.randomUUID(),
+            "Should Not Update Either",
+            "Should not update either",
+            UUID.randomUUID(),
+            SchoolClassStatus.INACTIVE,
+            OffsetDateTime.now().plusMinutes(2),
+            UUID.randomUUID()
+        );
+
+        assertThat(wrongLanguageRows).isEqualTo(0);
+        var afterWrongLanguage = schoolClassRepository.findById(saved.getId()).orElseThrow();
+        assertThat(afterWrongLanguage.getName()).isEqualTo("English 12 No Update");
+        assertThat(afterWrongLanguage.getDescription()).isEqualTo("Repository test class");
+        assertThat(afterWrongLanguage.getTargetSchoolLevelVersionId()).isEqualTo(originalLevelVersionId);
+        assertThat(afterWrongLanguage.getStatus()).isEqualTo(SchoolClassStatus.ACTIVE);
+    }
+
+    @Test
     void whenDeleteById_thenRemovesSchoolClass() {
         var saved = schoolClassRepository.save(newSchoolClass(
             UUID.randomUUID(),

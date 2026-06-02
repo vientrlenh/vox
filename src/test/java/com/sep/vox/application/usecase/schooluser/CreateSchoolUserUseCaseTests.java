@@ -20,17 +20,25 @@ import org.junit.jupiter.api.Test;
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
+import com.sep.vox.application.event.SchoolUserPasswordSetUpEmailRequestedEvent;
 import com.sep.vox.application.port.input.command.CreateSchoolUserCommand;
 import com.sep.vox.application.port.input.usecase.schooluser.CreateSchoolUserUseCase;
+import com.sep.vox.application.port.output.EventPublisherPort;
+import com.sep.vox.application.port.output.PasswordSetUpTokenPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.UserRoleInfo;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.application.response.output.GeneratedPasswordSetUpToken;
 import com.sep.vox.domain.model.role.Role;
+import com.sep.vox.domain.model.school.School;
+import com.sep.vox.domain.model.passwordsetuptoken.PasswordSetUpToken;
 import com.sep.vox.domain.model.schooluser.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.model.userrole.UserRole;
 import com.sep.vox.domain.repository.RoleRepository;
+import com.sep.vox.domain.repository.PasswordSetUpTokenRepository;
+import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.repository.UserRoleRepository;
@@ -48,6 +56,10 @@ public class CreateSchoolUserUseCaseTests {
     private UserRoleRepository userRoleRepository;
     private SchoolUserRepository schoolUserRepository;
     private UserRoleQueryRepository userRoleQueryRepository;
+    private SchoolRepository schoolRepository;
+    private PasswordSetUpTokenPort passwordSetUpTokenPort;
+    private PasswordSetUpTokenRepository passwordSetUpTokenRepository;
+    private EventPublisherPort eventPublisherPort;
     private CreateSchoolUserUseCase createSchoolUserUseCase;
 
     private final UUID schoolId = UUID.randomUUID();
@@ -61,10 +73,18 @@ public class CreateSchoolUserUseCaseTests {
         userRoleRepository = mock(UserRoleRepository.class);
         schoolUserRepository = mock(SchoolUserRepository.class);
         userRoleQueryRepository = mock(UserRoleQueryRepository.class);
+        schoolRepository = mock(SchoolRepository.class);
+        passwordSetUpTokenPort = mock(PasswordSetUpTokenPort.class);
+        passwordSetUpTokenRepository = mock(PasswordSetUpTokenRepository.class);
+        eventPublisherPort = mock(EventPublisherPort.class);
         createSchoolUserUseCase = new CreateSchoolUserUseCase(
             userContextPort, userRepository, roleRepository,
-            userRoleRepository, schoolUserRepository, userRoleQueryRepository
+            userRoleRepository, schoolUserRepository, userRoleQueryRepository,
+            schoolRepository, passwordSetUpTokenPort, passwordSetUpTokenRepository, eventPublisherPort
         );
+        when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(school(schoolId, "Trường A")));
+        when(passwordSetUpTokenPort.generateToken()).thenReturn(new GeneratedPasswordSetUpToken("raw-token", "hashed-token"));
+        when(passwordSetUpTokenRepository.save(any(PasswordSetUpToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
     }
 
     @Test
@@ -92,6 +112,7 @@ public class CreateSchoolUserUseCaseTests {
         assertThat(result.roleCode()).isEqualTo("STUDENT");
         assertThat(result.studentId()).isNull();
         verify(schoolUserRepository, never()).save(any(SchoolUser.class));
+        verify(eventPublisherPort).publish(any(SchoolUserPasswordSetUpEmailRequestedEvent.class));
     }
 
     @Test
@@ -119,6 +140,7 @@ public class CreateSchoolUserUseCaseTests {
 
         assertThat(result.studentId()).isEqualTo("STU-001");
         verify(schoolUserRepository).save(any(SchoolUser.class));
+        verify(eventPublisherPort).publish(any(SchoolUserPasswordSetUpEmailRequestedEvent.class));
     }
 
     @Test
@@ -144,6 +166,7 @@ public class CreateSchoolUserUseCaseTests {
 
         assertThat(result.roleCode()).isEqualTo("TEACHER");
         verify(schoolUserRepository, never()).save(any(SchoolUser.class));
+        verify(eventPublisherPort).publish(any(SchoolUserPasswordSetUpEmailRequestedEvent.class));
     }
 
     @Test
@@ -271,6 +294,13 @@ public class CreateSchoolUserUseCaseTests {
         var now = OffsetDateTime.now();
         var systemId = UUID.randomUUID();
         return new Role(UUID.randomUUID(), new RoleCode(code), code, now, now, systemId, systemId);
+    }
+
+    private School school(UUID id, String name) {
+        var school = new School();
+        school.setId(id);
+        school.setName(name);
+        return school;
     }
 
     private UserRoleInfo roleInfo(String code) {

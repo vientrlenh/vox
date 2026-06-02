@@ -23,18 +23,24 @@ import com.sep.vox.application.common.importer.ImportFileFormat;
 import com.sep.vox.application.common.importer.ImportParserFactory;
 import com.sep.vox.application.common.importer.ImportRow;
 import com.sep.vox.application.common.importer.JsonPathResolver;
+import com.sep.vox.application.event.SchoolUserPasswordSetUpEmailRequestedEvent;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.ImportFieldMapping;
 import com.sep.vox.application.port.input.command.ImportSchoolUsersCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
+import com.sep.vox.application.port.output.EventPublisherPort;
+import com.sep.vox.application.port.output.PasswordSetUpTokenPort;
 import com.sep.vox.application.port.output.SchoolUserImportFileStoragePort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.schooluser.SchoolUserImportError;
 import com.sep.vox.application.response.input.schooluser.SchoolUserImportResponse;
+import com.sep.vox.domain.model.passwordsetuptoken.PasswordSetUpToken;
 import com.sep.vox.domain.model.schooluser.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.userrole.UserRole;
 import com.sep.vox.domain.repository.RoleRepository;
+import com.sep.vox.domain.repository.PasswordSetUpTokenRepository;
+import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.repository.UserRoleRepository;
@@ -50,6 +56,10 @@ public class ImportSchoolUsersUseCase implements IUseCase<ImportSchoolUsersComma
     private final UserRoleRepository userRoleRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final SchoolUserImportFileStoragePort fileStoragePort;
+    private final SchoolRepository schoolRepository;
+    private final PasswordSetUpTokenPort passwordSetUpTokenPort;
+    private final PasswordSetUpTokenRepository passwordSetUpTokenRepository;
+    private final EventPublisherPort eventPublisherPort;
     private final TransactionTemplate transactionTemplate;
     private final ImportParserFactory importParserFactory;
 
@@ -60,6 +70,10 @@ public class ImportSchoolUsersUseCase implements IUseCase<ImportSchoolUsersComma
             UserRoleRepository userRoleRepository,
             SchoolUserRepository schoolUserRepository,
             SchoolUserImportFileStoragePort fileStoragePort,
+            SchoolRepository schoolRepository,
+            PasswordSetUpTokenPort passwordSetUpTokenPort,
+            PasswordSetUpTokenRepository passwordSetUpTokenRepository,
+            EventPublisherPort eventPublisherPort,
             PlatformTransactionManager transactionManager,
             ImportParserFactory importParserFactory) {
         this.userContextPort = userContextPort;
@@ -68,6 +82,10 @@ public class ImportSchoolUsersUseCase implements IUseCase<ImportSchoolUsersComma
         this.userRoleRepository = userRoleRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.fileStoragePort = fileStoragePort;
+        this.schoolRepository = schoolRepository;
+        this.passwordSetUpTokenPort = passwordSetUpTokenPort;
+        this.passwordSetUpTokenRepository = passwordSetUpTokenRepository;
+        this.eventPublisherPort = eventPublisherPort;
         this.importParserFactory = importParserFactory;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
         this.transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
@@ -82,6 +100,9 @@ public class ImportSchoolUsersUseCase implements IUseCase<ImportSchoolUsersComma
         if (!input.schoolId().equals(caller.getSchoolId())) {
             throw new IllegalArgumentException("Không có quyền thực hiện thao tác này");
         }
+
+        var school = schoolRepository.findById(input.schoolId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
 
         var resource = fileStoragePort.load(input.fileId(), input.schoolId(), callerId);
         try {
@@ -208,6 +229,15 @@ public class ImportSchoolUsersUseCase implements IUseCase<ImportSchoolUsersComma
                     if ("STUDENT".equals(resolvedRoleCode) && studentId != null) {
                         schoolUserRepository.save(SchoolUser.create(savedUser.getId(), input.schoolId(), studentId, callerId, now));
                     }
+                    var generatedPasswordSetUpToken = passwordSetUpTokenPort.generateToken();
+                    passwordSetUpTokenRepository.save(PasswordSetUpToken.create(savedUser.getId(), generatedPasswordSetUpToken.hashedToken()));
+                    eventPublisherPort.publish(new SchoolUserPasswordSetUpEmailRequestedEvent(
+                        email,
+                        fullName,
+                        school.getName(),
+                        savedUser.getId(),
+                        generatedPasswordSetUpToken.rawToken()
+                    ));
                     return savedUser.getId();
                 });
 

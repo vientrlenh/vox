@@ -29,15 +29,23 @@ import com.sep.vox.application.common.importer.ImportParserFactory;
 import com.sep.vox.application.port.input.command.ImportFieldMapping;
 import com.sep.vox.application.port.input.command.ImportSchoolUsersCommand;
 import com.sep.vox.application.port.input.usecase.schooluser.ImportSchoolUsersUseCase;
+import com.sep.vox.application.event.SchoolUserPasswordSetUpEmailRequestedEvent;
+import com.sep.vox.application.port.output.EventPublisherPort;
+import com.sep.vox.application.port.output.PasswordSetUpTokenPort;
 import com.sep.vox.application.port.output.ImportFileResource;
 import com.sep.vox.application.port.output.SchoolUserImportFileStoragePort;
+import com.sep.vox.application.response.output.GeneratedPasswordSetUpToken;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.role.Role;
+import com.sep.vox.domain.model.passwordsetuptoken.PasswordSetUpToken;
+import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.model.schooluser.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.model.userrole.UserRole;
 import com.sep.vox.domain.repository.RoleRepository;
+import com.sep.vox.domain.repository.PasswordSetUpTokenRepository;
+import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.repository.UserRoleRepository;
@@ -55,6 +63,10 @@ public class ImportSchoolUsersUseCaseTests {
     private UserRoleRepository userRoleRepository;
     private SchoolUserRepository schoolUserRepository;
     private SchoolUserImportFileStoragePort fileStoragePort;
+    private SchoolRepository schoolRepository;
+    private PasswordSetUpTokenPort passwordSetUpTokenPort;
+    private PasswordSetUpTokenRepository passwordSetUpTokenRepository;
+    private EventPublisherPort eventPublisherPort;
     private ImportParserFactory importParserFactory;
     private ImportSchoolUsersUseCase importSchoolUsersUseCase;
 
@@ -69,6 +81,10 @@ public class ImportSchoolUsersUseCaseTests {
         userRoleRepository = mock(UserRoleRepository.class);
         schoolUserRepository = mock(SchoolUserRepository.class);
         fileStoragePort = mock(SchoolUserImportFileStoragePort.class);
+        schoolRepository = mock(SchoolRepository.class);
+        passwordSetUpTokenPort = mock(PasswordSetUpTokenPort.class);
+        passwordSetUpTokenRepository = mock(PasswordSetUpTokenRepository.class);
+        eventPublisherPort = mock(EventPublisherPort.class);
         importParserFactory = mock(com.sep.vox.application.common.importer.ImportParserFactory.class);
         when(importParserFactory.forFormat(com.sep.vox.application.common.importer.ImportFileFormat.CSV))
             .thenReturn(new com.sep.vox.infrastructure.importer.CsvImportParser());
@@ -80,9 +96,16 @@ public class ImportSchoolUsersUseCaseTests {
             userRoleRepository,
             schoolUserRepository,
             fileStoragePort,
+            schoolRepository,
+            passwordSetUpTokenPort,
+            passwordSetUpTokenRepository,
+            eventPublisherPort,
             new NoopTransactionManager(),
             importParserFactory
         );
+        when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(school(schoolId, "Trường A")));
+        when(passwordSetUpTokenPort.generateToken()).thenReturn(new GeneratedPasswordSetUpToken("raw-token", "hashed-token"));
+        when(passwordSetUpTokenRepository.save(any(PasswordSetUpToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
     }
 
     @Test
@@ -151,6 +174,7 @@ public class ImportSchoolUsersUseCaseTests {
         verify(userRepository).save(any(User.class));
         verify(userRoleRepository).save(any(UserRole.class));
         verify(schoolUserRepository).save(any(SchoolUser.class));
+        verify(eventPublisherPort).publish(any(SchoolUserPasswordSetUpEmailRequestedEvent.class));
     }
 
     @Test
@@ -183,6 +207,7 @@ public class ImportSchoolUsersUseCaseTests {
         assertThat(result.failedCount()).isZero();
         assertThat(result.createdCount()).isEqualTo(0);
         assertThat(result.totalRows()).isEqualTo(1);
+        verify(eventPublisherPort, never()).publish(any());
     }
 
     @Test
@@ -262,6 +287,13 @@ public class ImportSchoolUsersUseCaseTests {
         role.setCreatedAt(now);
         role.setUpdatedAt(now);
         return role;
+    }
+
+    private School school(UUID id, String name) {
+        var school = new School();
+        school.setId(id);
+        school.setName(name);
+        return school;
     }
 
     private static class NoopTransactionManager implements PlatformTransactionManager {

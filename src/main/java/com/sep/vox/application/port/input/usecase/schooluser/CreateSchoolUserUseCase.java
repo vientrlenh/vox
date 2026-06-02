@@ -7,18 +7,24 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
+import com.sep.vox.application.event.SchoolUserPasswordSetUpEmailRequestedEvent;
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.mapper.schooluser.SchoolUserResponseMapper;
 import com.sep.vox.application.port.input.command.CreateSchoolUserCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
+import com.sep.vox.application.port.output.EventPublisherPort;
+import com.sep.vox.application.port.output.PasswordSetUpTokenPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.input.schooluser.SchoolUserResponse;
+import com.sep.vox.domain.model.passwordsetuptoken.PasswordSetUpToken;
 import com.sep.vox.domain.model.schooluser.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.userrole.UserRole;
 import com.sep.vox.domain.repository.RoleRepository;
+import com.sep.vox.domain.repository.PasswordSetUpTokenRepository;
+import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.repository.UserRoleRepository;
@@ -34,6 +40,10 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
     private final UserRoleRepository userRoleRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
+    private final SchoolRepository schoolRepository;
+    private final PasswordSetUpTokenPort passwordSetUpTokenPort;
+    private final PasswordSetUpTokenRepository passwordSetUpTokenRepository;
+    private final EventPublisherPort eventPublisherPort;
 
     public CreateSchoolUserUseCase(
             UserContextPort userContextPort,
@@ -41,13 +51,21 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
             RoleRepository roleRepository,
             UserRoleRepository userRoleRepository,
             SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository) {
+            UserRoleQueryRepository userRoleQueryRepository,
+            SchoolRepository schoolRepository,
+            PasswordSetUpTokenPort passwordSetUpTokenPort,
+            PasswordSetUpTokenRepository passwordSetUpTokenRepository,
+            EventPublisherPort eventPublisherPort) {
         this.userContextPort = userContextPort;
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.userRoleRepository = userRoleRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
+        this.schoolRepository = schoolRepository;
+        this.passwordSetUpTokenPort = passwordSetUpTokenPort;
+        this.passwordSetUpTokenRepository = passwordSetUpTokenRepository;
+        this.eventPublisherPort = eventPublisherPort;
     }
 
     @Override
@@ -64,6 +82,8 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
         }
 
         var command = normalize(input);
+        var school = schoolRepository.findById(command.schoolId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
 
         if (!ALLOWED_ROLE_CODES.contains(command.roleCode())) {
             throw new IllegalArgumentException("Vai trò không hợp lệ, chỉ chấp nhận STUDENT hoặc TEACHER");
@@ -92,6 +112,16 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
                 SchoolUser.create(savedUser.getId(), command.schoolId(), command.studentId(), callerId, now)
             );
         }
+
+        var generatedPasswordSetUpToken = passwordSetUpTokenPort.generateToken();
+        passwordSetUpTokenRepository.save(PasswordSetUpToken.create(savedUser.getId(), generatedPasswordSetUpToken.hashedToken()));
+        eventPublisherPort.publish(new SchoolUserPasswordSetUpEmailRequestedEvent(
+            command.email(),
+            command.fullName(),
+            school.getName(),
+            savedUser.getId(),
+            generatedPasswordSetUpToken.rawToken()
+        ));
 
         var roleInfo = userRoleQueryRepository.findByUserIdWithRoleInfo(savedUser.getId());
         var resolvedRoleCode = roleInfo.isEmpty() ? command.roleCode() : roleInfo.get(0).roleCode();

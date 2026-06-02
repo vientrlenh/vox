@@ -26,6 +26,12 @@ public class SchoolLevelVersionRepositoryImpl implements SchoolLevelVersionRepos
     }
 
     @Override
+    public Optional<SchoolLevelVersion> findBySchoolLevelIdAndVersion(UUID schoolLevelId, int version) {
+        return springDataSchoolLevelVersionRepository.findBySchoolLevelIdAndVersion(schoolLevelId, version)
+            .map(SchoolLevelVersionMapper::toDomain);
+    }
+
+    @Override
     public SchoolLevelVersion save(SchoolLevelVersion version) {
         var entity = SchoolLevelVersionMapper.toJpa(version);
         var saved = springDataSchoolLevelVersionRepository.save(entity);

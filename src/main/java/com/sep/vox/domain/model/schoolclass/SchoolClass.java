@@ -159,5 +159,23 @@ public class SchoolClass {
         this.status = status;
     }
 
+    public static SchoolClass create(UUID schoolId, UUID languageId, UUID schoolGradeId, String code, String name,
+            String description, UUID targetSchoolLevelVersionId, UUID createdUserId, OffsetDateTime now) {
+        return new SchoolClass(
+            schoolId,
+            languageId,
+            schoolGradeId,
+            new ClassCode(code),
+            name,
+            description,
+            targetSchoolLevelVersionId,
+            SchoolClassStatus.ACTIVE,
+            now,
+            now,
+            createdUserId,
+            createdUserId
+        );
+    }
+
     
 }

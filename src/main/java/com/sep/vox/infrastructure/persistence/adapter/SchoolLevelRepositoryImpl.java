@@ -26,6 +26,12 @@ public class SchoolLevelRepositoryImpl implements SchoolLevelRepository {
     }
 
     @Override
+    public Optional<SchoolLevel> findBySchoolIdAndLanguageIdAndCode(UUID schoolId, UUID languageId, String code) {
+        return springDataSchoolLevelRepository.findBySchoolIdAndLanguageIdAndCode(schoolId, languageId, code)
+            .map(SchoolLevelMapper::toDomain);
+    }
+
+    @Override
     public SchoolLevel save(SchoolLevel schoolLevel) {
         var entity = SchoolLevelMapper.toJpa(schoolLevel);
         var saved = springDataSchoolLevelRepository.save(entity);

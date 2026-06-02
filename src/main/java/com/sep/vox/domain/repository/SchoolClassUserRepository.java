@@ -10,5 +10,6 @@ public interface SchoolClassUserRepository {
     Optional<SchoolClassUser> findByUserIdAndSchoolClassId(UUID userId, UUID schoolClassId);
     List<SchoolClassUser> findByUserId(UUID userId);
     List<SchoolClassUser> findBySchoolClassId(UUID schoolClassId);
+    boolean existsBySchoolClassId(UUID schoolClassId);
     SchoolClassUser save(SchoolClassUser schoolClassUser);
 }

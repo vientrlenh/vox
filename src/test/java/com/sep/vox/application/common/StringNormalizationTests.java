@@ -33,6 +33,12 @@ public class StringNormalizationTests {
     }
 
     @Test
+    void should_normalize_class_code_to_uppercase() {
+        assertThat(StringNormalization.normalizeClassCode(" eng_10-a "))
+            .isEqualTo("ENG_10-A");
+    }
+
+    @Test
     void should_remove_accents_for_search_text() {
         assertThat(StringNormalization.normalizeSearchText("  Truong   Dai hoc  "))
             .isEqualTo("Truong Dai hoc");
@@ -46,5 +52,6 @@ public class StringNormalizationTests {
         assertThat(StringNormalization.normalizePhone(null)).isNull();
         assertThat(StringNormalization.normalizeIdentityNumber(null)).isNull();
         assertThat(StringNormalization.normalizeSearchText(null)).isNull();
+        assertThat(StringNormalization.normalizeClassCode(null)).isNull();
     }
 }

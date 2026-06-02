@@ -106,4 +106,15 @@ class SchoolClassUserRepositoryTests {
             .extracting(SchoolClassUser::getUserId)
             .containsExactlyInAnyOrder(userId, anotherUserId);
     }
+
+    @Test
+    void whenExistsBySchoolClassId_thenReturnsWhetherMembershipExists() {
+        var schoolClassId = UUID.randomUUID();
+        schoolClassUserRepository.save(
+            new SchoolClassUser(UUID.randomUUID(), schoolClassId, true, OffsetDateTime.now(), null, UUID.randomUUID())
+        );
+
+        assertThat(schoolClassUserRepository.existsBySchoolClassId(schoolClassId)).isTrue();
+        assertThat(schoolClassUserRepository.existsBySchoolClassId(UUID.randomUUID())).isFalse();
+    }
 }

@@ -1,0 +1,28 @@
+type SchoolClass {
+    id: ID!
+    schoolId: ID!
+    languageId: ID!
+    schoolGradeId: ID!
+    code: String!
+    name: String!
+    description: String
+    targetSchoolLevelVersionId: ID!
+    status: String!
+    createdAt: String
+    updatedAt: String
+    createdBy: ID
+    updatedBy: ID
+}
+
+type SchoolClassPage {
+    content: [SchoolClass!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+extend type Query {
+    schoolClasses(page: Int = 1, size: Int = 20): SchoolClassPage!
+    schoolClass(id: ID!): SchoolClass
+}

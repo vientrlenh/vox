@@ -42,6 +42,11 @@ public class SchoolClassUserRepositoryImpl implements SchoolClassUserRepository 
     }
 
     @Override
+    public boolean existsBySchoolClassId(UUID schoolClassId) {
+        return springDataSchoolClassUserRepository.existsBySchoolClassId(schoolClassId);
+    }
+
+    @Override
     public SchoolClassUser save(SchoolClassUser schoolClassUser) {
         var entity = SchoolClassUserMapper.toJpa(schoolClassUser);
         var saved = springDataSchoolClassUserRepository.save(entity);

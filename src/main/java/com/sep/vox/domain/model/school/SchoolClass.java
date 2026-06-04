@@ -13,7 +13,6 @@ public class SchoolClass {
     private ClassCode code;
     private String name;
     private String description;
-    private UUID targetSchoolLevelVersionId;
     private SchoolClassStatus status;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
@@ -22,7 +21,7 @@ public class SchoolClass {
 
     public SchoolClass() {}
 
-    public SchoolClass(UUID id, UUID schoolId, UUID languageId, UUID schoolGradeId, ClassCode code, String name, String description, UUID targetSchoolLevelVersionId, SchoolClassStatus status, OffsetDateTime createdAt,
+    public SchoolClass(UUID id, UUID schoolId, UUID languageId, UUID schoolGradeId, ClassCode code, String name, String description, SchoolClassStatus status, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.schoolId = schoolId;
@@ -31,7 +30,6 @@ public class SchoolClass {
         this.code = code;
         this.name = name;
         this.description = description;
-        this.targetSchoolLevelVersionId = targetSchoolLevelVersionId;
         this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -39,7 +37,7 @@ public class SchoolClass {
         this.updatedBy = updatedBy;
     }
 
-    public SchoolClass(UUID schoolId, UUID languageId, UUID schoolGradeId, ClassCode code, String name, String description, UUID targetSchoolLevelVersionId, SchoolClassStatus status, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy,
+    public SchoolClass(UUID schoolId, UUID languageId, UUID schoolGradeId, ClassCode code, String name, String description, SchoolClassStatus status, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy,
             UUID updatedBy) {
         this.schoolId = schoolId;
         this.languageId = languageId;
@@ -47,7 +45,6 @@ public class SchoolClass {
         this.code = code;
         this.name = name;
         this.description = description;
-        this.targetSchoolLevelVersionId = targetSchoolLevelVersionId;
         this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -95,13 +92,6 @@ public class SchoolClass {
         this.name = name;
     }
 
-    public UUID getTargetSchoolLevelVersionId() {
-        return targetSchoolLevelVersionId;
-    }
-
-    public void setTargetSchoolLevelVersionId(UUID targetSchoolLevelVersionId) {
-        this.targetSchoolLevelVersionId = targetSchoolLevelVersionId;
-    }
 
     public OffsetDateTime getCreatedAt() {
         return createdAt;
@@ -160,7 +150,7 @@ public class SchoolClass {
     }
 
     public static SchoolClass create(UUID schoolId, UUID languageId, UUID schoolGradeId, String code, String name,
-            String description, UUID targetSchoolLevelVersionId, UUID createdUserId, OffsetDateTime now) {
+            String description, UUID createdUserId, OffsetDateTime now) {
         return new SchoolClass(
             schoolId,
             languageId,
@@ -168,7 +158,6 @@ public class SchoolClass {
             new ClassCode(code),
             name,
             description,
-            targetSchoolLevelVersionId,
             SchoolClassStatus.ACTIVE,
             now,
             now,

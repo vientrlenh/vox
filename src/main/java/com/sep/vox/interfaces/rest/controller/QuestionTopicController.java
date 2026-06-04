@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.sep.vox.application.port.input.usecase.questiontopic.CreateQuestionTopicUseCase;
 import com.sep.vox.application.port.input.usecase.questiontopic.UpdateQuestionTopicUseCase;
+import com.sep.vox.application.response.input.questiontopic.CreateQuestionTopicResponse;
 import com.sep.vox.domain.dto.QuestionTopicDto;
 import com.sep.vox.interfaces.rest.dto.request.CreateQuestionTopicRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateQuestionTopicRequest;
@@ -40,7 +41,7 @@ public class QuestionTopicController {
 
     @PostMapping
     // @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<QuestionTopicDto>> create(@Valid @RequestBody CreateQuestionTopicRequest request) {
+    public ResponseEntity<ApiResponse<CreateQuestionTopicResponse>> create(@Valid @RequestBody CreateQuestionTopicRequest request) {
         var command = CreateQuestionTopicCommandMapper.fromRequest(request);
         var data = createQuestionTopicUseCase.execute(command);
         var response = ApiResponse.success("Tạo chủ đề câu hỏi thành công", data);

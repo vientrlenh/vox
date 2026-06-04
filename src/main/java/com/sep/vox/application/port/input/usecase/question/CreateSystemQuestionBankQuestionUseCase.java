@@ -78,7 +78,9 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
 
         var now = OffsetDateTime.now();
         var question = Question.create(
-            command.questionTopicId(),
+            command.questionTopicId(), 
+            command.minRecommendResultBandId(), 
+            command.maxRecommendResultBandId(),
             command.code(),
             command.instructionText(),
             command.questionText(),
@@ -106,12 +108,13 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
     private CreateSystemQuestionBankQuestionCommand normalize(CreateSystemQuestionBankQuestionCommand input) {
         return new CreateSystemQuestionBankQuestionCommand(
             input.questionTopicId(),
+            input.minRecommendResultBandId(), 
+            input.maxRecommendResultBandId(),
             StringNormalization.normalizeCode(input.code()),
             StringNormalization.trimAndCollapseSpaces(input.instructionText()),
             StringNormalization.trimAndCollapseSpaces(input.questionText()),
             StringNormalization.trimAndCollapseSpaces(input.promptText()),
             StringNormalization.trimAndCollapseSpaces(input.preparationText()),
-            input.standardLevelVersionId(),
             StringNormalization.trimAndCollapseSpaces(input.expectedContent()),
             StringNormalization.trimAndCollapseSpaces(input.keyPoints()),
             StringNormalization.trimAndCollapseSpaces(input.acceptableResponses()),

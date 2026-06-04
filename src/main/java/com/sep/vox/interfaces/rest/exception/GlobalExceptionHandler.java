@@ -16,11 +16,9 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.ImportValidationException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.interfaces.rest.dto.response.ErrorResponse;
-import com.sep.vox.interfaces.rest.dto.response.ImportValidationErrorResponse;
 import com.sep.vox.interfaces.rest.dto.response.ValidationErrorResponse;
 
 @RestControllerAdvice
@@ -33,7 +31,6 @@ public class GlobalExceptionHandler {
     private static final String ILLEGAL_ARGUMENT_ERROR = "ILLEGAL_ARGUMENT";
     private static final String INVALID_STATE_ERROR = "INVALID_STATE";
     private static final String VALIDATION_ERROR = "BAD_REQUEST";
-    private static final String IMPORT_VALIDATION_ERROR = "IMPORT_VALIDATION_FAILED";
     private static final String UNAUTHORIZED_ERROR = "UNAUTHORIZED";
     private static final String FORBIDDEN_ERROR = "FORBIDDEN";
     private static final String INTERNAL_ERROR = "INTERNAL_SERVER_ERROR";
@@ -86,11 +83,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
-    @ExceptionHandler(ImportValidationException.class)
-    public ResponseEntity<ImportValidationErrorResponse> handleImportValidation(ImportValidationException e) {
-        var error = new ImportValidationErrorResponse(IMPORT_VALIDATION_ERROR, e.getMessage(), e.getErrors());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
-    }
 
 
     @ExceptionHandler(ForbiddenException.class)

@@ -7,7 +7,6 @@ public record CreateSchoolClassCommand(
     UUID schoolGradeId,
     String code,
     String name,
-    String description,
-    UUID targetSchoolLevelVersionId
+    String description
 ) {
 }

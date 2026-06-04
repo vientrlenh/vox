@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.exception.ImportValidationException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.ImportSchoolClassRowCommand;
 import com.sep.vox.application.port.input.command.ImportSchoolClassesCommand;
@@ -30,7 +29,7 @@ import com.sep.vox.domain.repository.SupportedLanguageRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
-public class ImportSchoolClassesUseCase implements IUseCase<ImportSchoolClassesCommand, SchoolClassImportResultDto> {
+public class ImportSchoolClassesUseCase implements IUseCase<ImportSchoolClassesCommand, Void> {
 
     private static final int CODE_MAX_LENGTH = 100;
     private static final int NAME_MAX_LENGTH = 255;
@@ -60,7 +59,7 @@ public class ImportSchoolClassesUseCase implements IUseCase<ImportSchoolClassesC
 
     @Override
     @Transactional
-    public SchoolClassImportResultDto execute(ImportSchoolClassesCommand input) {
+    public Void execute(ImportSchoolClassesCommand input) {
         var rows = input == null || input.rows() == null ? List.<ImportSchoolClassRowCommand>of() : input.rows();
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         var currentUser = findCurrentUser(currentUserId);
@@ -68,7 +67,7 @@ public class ImportSchoolClassesUseCase implements IUseCase<ImportSchoolClassesC
         validateSchool(schoolId);
 
         if (rows.isEmpty()) {
-            throwImportError(0, "file", "File import không có dữ liệu");
+            throw new IllegalStateException("File không chứa dữ liệu");
         }
 
         var normalizedRows = rows.stream()
@@ -89,7 +88,7 @@ public class ImportSchoolClassesUseCase implements IUseCase<ImportSchoolClassesC
             createdClasses.add(SchoolClassDtoMapper.toDto(saved));
         }
 
-        return new SchoolClassImportResultDto(rows.size(), createdClasses.size(), List.copyOf(createdClasses));
+        return null;
     }
 
     private NormalizedRow normalize(ImportSchoolClassRowCommand row) {
@@ -119,6 +118,18 @@ public class ImportSchoolClassesUseCase implements IUseCase<ImportSchoolClassesC
         }
     }
 
+    private void requireOrThrow(NormalizedRow row, String value, String field) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalStateException("Trường bắt buộc đang thiếu: " + field);
+        }
+    }
+
+    private void maxLengthOrThrow(NormalizedRow row, String value, String field, int maxLength) {
+        if (value != null && value.length() > maxLength) {
+            throw new IllegalArgumentException("Độ dài trường " + field + " không được vượt quá " + maxLength + " ký tự");
+        }
+    }
+
     private void validateDuplicateCodesInFileOrThrow(List<NormalizedRow> rows) {
         var firstRowByCode = new HashMap<String, Integer>();
         for (var row : rows) {
@@ -127,7 +138,7 @@ public class ImportSchoolClassesUseCase implements IUseCase<ImportSchoolClassesC
             }
             var firstRow = firstRowByCode.putIfAbsent(row.code(), row.rowNumber());
             if (firstRow != null) {
-                throwImportError(row.rowNumber(), "code", "Mã lớp học bị trùng với dòng " + firstRow);
+                throw new IllegalArgumentException("Mã lớp học đã trùng với dòng " + firstRow);
             }
         }
     }
@@ -146,7 +157,7 @@ public class ImportSchoolClassesUseCase implements IUseCase<ImportSchoolClassesC
             .collect(java.util.stream.Collectors.toSet());
         for (var row : rows) {
             if (existingCodes.contains(row.code())) {
-                throwImportError(row.rowNumber(), "code", "Mã lớp học đã tồn tại trong trường");
+                throw new IllegalArgumentException("Mã lớp học đã tồn tại trong trường: " + row.code());
             }
         }
     }
@@ -154,38 +165,23 @@ public class ImportSchoolClassesUseCase implements IUseCase<ImportSchoolClassesC
     private CreateCandidate resolveCandidateOrThrow(NormalizedRow row, UUID schoolId, UUID currentUserId) {
         var language = supportedLanguageRepository.findByCode(row.languageCode());
         if (language.isEmpty()) {
-            throwImportError(row.rowNumber(), "languageCode", "Không tìm thấy ngôn ngữ");
+            throw new NotFoundException("Không tìm thấy ngôn ngữ");
         }
         if (!language.get().isActive()) {
-            throwImportError(row.rowNumber(), "languageCode", "Ngôn ngữ không hoạt động");
+            throw new IllegalStateException("Ngôn ngữ không hoạt động");
         }
 
-        var grade = schoolGradeRepository.findBySchoolIdAndCode(schoolId, row.schoolGradeCode());
-        if (grade.isEmpty()) {
-            throwImportError(row.rowNumber(), "schoolGradeCode", "Không tìm thấy khối học trong trường hiện tại");
-        }
+        var grade = schoolGradeRepository.findBySchoolIdAndCode(schoolId, row.schoolGradeCode()).orElseThrow(() -> new NotFoundException("Không tìm thấy khối học trong trường"));
         if (grade.get().getStatus() != SchoolGradeStatus.ACTIVE) {
-            throwImportError(row.rowNumber(), "schoolGradeCode", "Khối học không hoạt động");
+            throw new IllegalStateException("Khối học không hoạt động");
         }
-
-        var version = parseVersionOrThrow(row);
 
         var now = OffsetDateTime.now();
-        var schoolClass = new SchoolClass();
+        var schoolClass = SchoolClass.create(
+            schoolId, 
+            currentUserId, 
+            grade, null, null, null, currentUserId, now)
         return new CreateCandidate(schoolClass);
-    }
-
-    private int parseVersionOrThrow(NormalizedRow row) {
-        try {
-            var version = Integer.parseInt(row.targetSchoolLevelVersion());
-            if (version <= 0) {
-                throwImportError(row.rowNumber(), "targetSchoolLevelVersion", "Phiên bản cấp độ mục tiêu phải lớn hơn 0");
-            }
-            return version;
-        } catch (NumberFormatException e) {
-            throwImportError(row.rowNumber(), "targetSchoolLevelVersion", "Phiên bản cấp độ mục tiêu phải là số nguyên");
-            return 0;
-        }
     }
 
     private User findCurrentUser(UUID currentUserId) {

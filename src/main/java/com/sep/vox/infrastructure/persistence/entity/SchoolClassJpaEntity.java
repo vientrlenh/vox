@@ -44,9 +44,6 @@ public class SchoolClassJpaEntity {
     @Column(name = "description", length = 2048)
     private String description;
 
-    @Column(name = "target_school_level_version_id", nullable = false)
-    private UUID targetSchoolLevelVersionId;
-
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
             name = "chk_status_valid", 
@@ -69,7 +66,7 @@ public class SchoolClassJpaEntity {
 
     protected SchoolClassJpaEntity() {}
 
-    public SchoolClassJpaEntity(UUID id, UUID schoolId, UUID languageId, UUID schoolGradeId, String code, String name, String description, UUID targetSchoolLevelVersionId, String status, OffsetDateTime createdAt,
+    public SchoolClassJpaEntity(UUID id, UUID schoolId, UUID languageId, UUID schoolGradeId, String code, String name, String description, String status, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.schoolId = schoolId;
@@ -78,7 +75,6 @@ public class SchoolClassJpaEntity {
         this.code = code;
         this.name = name;
         this.description = description;
-        this.targetSchoolLevelVersionId = targetSchoolLevelVersionId;
         this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -86,7 +82,7 @@ public class SchoolClassJpaEntity {
         this.updatedBy = updatedBy;
     }
 
-    public SchoolClassJpaEntity(UUID schoolId, UUID languageId, UUID schoolGradeId, String code, String name, String description, UUID targetSchoolLevelVersionId,String status, OffsetDateTime createdAt,
+    public SchoolClassJpaEntity(UUID schoolId, UUID languageId, UUID schoolGradeId, String code, String name, String description, String status, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.schoolId = schoolId;
         this.languageId = languageId;
@@ -94,7 +90,6 @@ public class SchoolClassJpaEntity {
         this.code = code;
         this.name = name;
         this.description = description;
-        this.targetSchoolLevelVersionId = targetSchoolLevelVersionId;
         this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -140,14 +135,6 @@ public class SchoolClassJpaEntity {
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public UUID getTargetSchoolLevelVersionId() {
-        return targetSchoolLevelVersionId;
-    }
-
-    public void setTargetSchoolLevelVersionId(UUID targetSchoolLevelVersionId) {
-        this.targetSchoolLevelVersionId = targetSchoolLevelVersionId;
     }
 
 

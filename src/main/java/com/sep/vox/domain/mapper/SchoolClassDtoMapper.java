@@ -20,7 +20,6 @@ public final class SchoolClassDtoMapper {
             valueOf(schoolClass.getCode()),
             schoolClass.getName(),
             schoolClass.getDescription(),
-            schoolClass.getTargetSchoolLevelVersionId(),
             valueOf(schoolClass.getStatus()),
             valueOf(schoolClass.getCreatedAt()),
             valueOf(schoolClass.getUpdatedAt())

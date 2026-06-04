@@ -55,9 +55,9 @@ public class QuestionTopicController {
         return viewQuestionTopicDetailsUseCase.execute(query);
     }
 
-    @SchemaMapping(typeName = "QuestionTopic", field = "bank")
-    public QuestionBankDto bank(QuestionTopicDto questionTopic) {
-        var query = new ViewQuestionBankDetailsQuery(questionTopic.bankId());
-        return viewQuestionBankDetailsUseCase.execute(query);
-    }
+    // @SchemaMapping(typeName = "QuestionTopic", field = "bank")
+    // public QuestionBankDto bank(QuestionTopicDto questionTopic) {
+    //     var query = new ViewQuestionBankDetailsQuery(questionTopic.bankId());
+    //     return viewQuestionBankDetailsUseCase.execute(query);
+    // }
 }

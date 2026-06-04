@@ -16,11 +16,13 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.sep.vox.application.common.UploadedFile;
 import com.sep.vox.application.port.input.command.DeleteSchoolClassCommand;
 import com.sep.vox.application.port.input.usecase.schoolclass.CreateSchoolClassUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.DeleteSchoolClassUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.ImportSchoolClassesUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.UpdateSchoolClassUseCase;
+import com.sep.vox.application.response.input.schoolclass.CreateSchoolClassResponse;
 import com.sep.vox.domain.dto.SchoolClassDeleteResultDto;
 import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.dto.SchoolClassImportResultDto;
@@ -55,7 +57,7 @@ public class SchoolClassController {
 
     @PostMapping
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<SchoolClassDto>> create(@Valid @RequestBody CreateSchoolClassRequest request) {
+    public ResponseEntity<ApiResponse<CreateSchoolClassResponse>> create(@Valid @RequestBody CreateSchoolClassRequest request) {
         var command = CreateSchoolClassCommandMapper.fromRequest(request);
         var data = createSchoolClassUseCase.execute(command);
         var response = ApiResponse.success("Tạo lớp học thành công", data);
@@ -64,10 +66,11 @@ public class SchoolClassController {
 
     @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<SchoolClassImportResultDto>> importFile(@RequestPart("file") MultipartFile file) {
+    public ResponseEntity<ApiResponse<Object>> importFile(@RequestPart("file") MultipartFile file) {
         var command = ImportSchoolClassesCommandMapper.fromFile(file);
+        var uploadedFile = new UploadedFile(file.getOriginalFilename(), file.getContentType(), file.getSize(), file.getBytes());
         var data = importSchoolClassesUseCase.execute(command);
-        var response = ApiResponse.success("Import lớp học thành công", data);
+        var response = ApiResponse.success("Thêm lớp học thành công");
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 

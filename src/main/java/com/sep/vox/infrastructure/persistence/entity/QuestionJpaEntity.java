@@ -41,6 +41,12 @@ public class QuestionJpaEntity {
     @Column(name = "question_topic_id", nullable = false, updatable = false)
     private UUID questionTopicId;
 
+    @Column(name = "min_recommend_result_band_id", nullable = false)
+    private UUID minRecommendResultBandId;
+
+    @Column(name = "max_recommend_result_band_id", nullable = false)
+    private UUID maxRecommendResultBandId;
+
     @Column(name = "code", nullable = false, length = 100)
     private String code;
 
@@ -132,13 +138,15 @@ public class QuestionJpaEntity {
 
     protected QuestionJpaEntity() {}
 
-    public QuestionJpaEntity(UUID id, UUID questionTopicId, String code, String instructionText, String questionText,
+    public QuestionJpaEntity(UUID id, UUID questionTopicId, UUID minRecommendResultBandId, UUID maxRecommendResultBandId, String code, String instructionText, String questionText,
             String promptText, String preparationText, String type, int preparationTimeSeconds,
             int minResponseSeconds, int maxResponseSeconds, String scope,
             String visibility, UUID sourceQuestionId, boolean locked, String status,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.questionTopicId = questionTopicId;
+        this.minRecommendResultBandId = minRecommendResultBandId;
+        this.maxRecommendResultBandId = maxRecommendResultBandId;
         this.code = code;
         this.instructionText = instructionText;
         this.questionText = questionText;
@@ -319,5 +327,21 @@ public class QuestionJpaEntity {
         this.updatedBy = updatedBy;
     }
 
-   
+    public UUID getMinRecommendResultBandId() {
+        return minRecommendResultBandId;
+    }
+
+    public void setMinRecommendResultBandId(UUID minRecommendResultBandId) {
+        this.minRecommendResultBandId = minRecommendResultBandId;
+    }
+
+    public UUID getMaxRecommendResultBandId() {
+        return maxRecommendResultBandId;
+    }
+
+    public void setMaxRecommendResultBandId(UUID maxRecommendResultBandId) {
+        this.maxRecommendResultBandId = maxRecommendResultBandId;
+    }
+
+    
 }

@@ -69,9 +69,9 @@ public class QuestionController {
         return viewQuestionDetailsUseCase.execute(query);
     }
 
-    @SchemaMapping(typeName = "Question", field = "topic")
-    public QuestionTopicDto topic(QuestionDto question) {
-        var query = new ViewQuestionTopicDetailsQuery(question.topicId());
-        return viewQuestionTopicDetailsUseCase.execute(query);
-    }
+    // @SchemaMapping(typeName = "Question", field = "topic")
+    // public QuestionTopicDto topic(QuestionDto question) {
+    //     var query = new ViewQuestionTopicDetailsQuery(question.topicId());
+    //     return viewQuestionTopicDetailsUseCase.execute(query);
+    // }
 }

@@ -12,7 +12,9 @@ public final class QuestionMapper {
     public static Question toDomain(QuestionJpaEntity jpa) {
         return new Question(
             jpa.getId(),
-            jpa.getQuestionTopicId(),
+            jpa.getQuestionTopicId(), 
+            jpa.getMinRecommendResultBandId(), 
+            jpa.getMaxRecommendResultBandId(), 
             jpa.getCode(),
             jpa.getInstructionText(),
             jpa.getQuestionText(),
@@ -34,28 +36,30 @@ public final class QuestionMapper {
         );
     }
 
-    public static QuestionJpaEntity toJpa(Question domain) {
+    public static QuestionJpaEntity toJpa(Question question) {
         return new QuestionJpaEntity(
-            domain.getId(),
-            domain.getQuestionTopicId(),
-            domain.getCode(),
-            domain.getInstructionText(),
-            domain.getQuestionText(),
-            domain.getPromptText(),
-            domain.getPreparationText(),
-            domain.getType().name(),
-            domain.getPreparationTimeSeconds(),
-            domain.getMinResponseSeconds(),
-            domain.getMaxResponseSeconds(),
-            domain.getScope().name(),
-            domain.getVisibility().name(),
-            domain.getSourceQuestionId(),
-            domain.isLocked(),
-            domain.getStatus().name(),
-            domain.getCreatedAt(),
-            domain.getUpdatedAt(),
-            domain.getCreatedBy(),
-            domain.getUpdatedBy()
+            question.getId(),
+            question.getQuestionTopicId(), 
+            question.getMinRecommendResultBandId(), 
+            question.getMaxRecommendResultBandId(), 
+            question.getCode(),
+            question.getInstructionText(),
+            question.getQuestionText(),
+            question.getPromptText(),
+            question.getPreparationText(),
+            question.getType().name(),
+            question.getPreparationTimeSeconds(),
+            question.getMinResponseSeconds(),
+            question.getMaxResponseSeconds(),
+            question.getScope().name(),
+            question.getVisibility().name(),
+            question.getSourceQuestionId(),
+            question.isLocked(),
+            question.getStatus().name(),
+            question.getCreatedAt(),
+            question.getUpdatedAt(),
+            question.getCreatedBy(),
+            question.getUpdatedBy()
         );
     }
 }

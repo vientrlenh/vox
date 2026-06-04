@@ -12,7 +12,8 @@ public class FrameworkResultBand {
     private String description;
     private BigDecimal scoreMin; // điểm của trường -> có thể dùng cho quy đổi ra điểm của khung
     private BigDecimal scoreMax;
-    private Boolean isPassingLevel;
+    private int order;
+    private FrameworkResultBandStatus status;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
     private UUID createdBy;
@@ -21,7 +22,7 @@ public class FrameworkResultBand {
     public FrameworkResultBand() {}
 
     public FrameworkResultBand(UUID id, UUID frameworkVersionId, String code, String label, String description,
-            BigDecimal scoreMin, BigDecimal scoreMax, Boolean isPassingLevel, OffsetDateTime createdAt,
+            BigDecimal scoreMin, BigDecimal scoreMax, int order, FrameworkResultBandStatus status, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.frameworkVersionId = frameworkVersionId;
@@ -30,7 +31,8 @@ public class FrameworkResultBand {
         this.description = description;
         this.scoreMin = scoreMin;
         this.scoreMax = scoreMax;
-        this.isPassingLevel = isPassingLevel;
+        this.order = order;
+        this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
@@ -38,7 +40,7 @@ public class FrameworkResultBand {
     }
 
     public FrameworkResultBand(UUID frameworkVersionId, String code, String label, String description,
-            BigDecimal scoreMin, BigDecimal scoreMax, Boolean isPassingLevel, OffsetDateTime createdAt,
+            BigDecimal scoreMin, BigDecimal scoreMax, int order, FrameworkResultBandStatus status, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.frameworkVersionId = frameworkVersionId;
         this.code = code;
@@ -46,7 +48,8 @@ public class FrameworkResultBand {
         this.description = description;
         this.scoreMin = scoreMin;
         this.scoreMax = scoreMax;
-        this.isPassingLevel = isPassingLevel;
+        this.order = order;
+        this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
@@ -109,18 +112,27 @@ public class FrameworkResultBand {
         this.scoreMax = scoreMax;
     }
 
-    public Boolean getIsPassingLevel() {
-        return isPassingLevel;
-    }
-
-    public void setIsPassingLevel(Boolean isPassingLevel) {
-        this.isPassingLevel = isPassingLevel;
-    }
-
     public OffsetDateTime getCreatedAt() {
         return createdAt;
     }
+    
+    public int getOrder() {
+        return order;
+    }
 
+    public void setOrder(int order) {
+        this.order = order;
+    }
+
+    public FrameworkResultBandStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(FrameworkResultBandStatus status) {
+        this.status = status;
+    }
+
+ 
     public void setCreatedAt(OffsetDateTime createdAt) {
         this.createdAt = createdAt;
     }

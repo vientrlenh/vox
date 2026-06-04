@@ -23,7 +23,6 @@ public class ViewQuestionTopicsUseCase implements IUseCase<ViewQuestionTopicsQue
     @Override
     @Transactional(readOnly = true)
     public PageResult<QuestionTopicDto> execute(ViewQuestionTopicsQuery input) {
-        var result = questionTopicRepository.findByBankId(input.bankId(), new PageRequest(input.page(), input.size()));
-        return QuestionTopicDtoMapper.toDtoPage(result);
+        return null;
     }
 }

@@ -7,17 +7,17 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.mapper.question.UpdateQuestionResponseMapper;
 import com.sep.vox.application.port.input.command.UpdateQuestionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.domain.dto.QuestionDto;
-import com.sep.vox.domain.mapper.QuestionDtoMapper;
+import com.sep.vox.application.response.input.question.UpdateQuestionResponse;
 import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.model.question.QuestionType;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.QuestionTopicRepository;
 
 @Service
-public class UpdateQuestionUseCase implements IUseCase<UpdateQuestionCommand, QuestionDto> {
+public class UpdateQuestionUseCase implements IUseCase<UpdateQuestionCommand, UpdateQuestionResponse> {
 
     private final QuestionRepository questionRepository;
     private final QuestionTopicRepository questionTopicRepository;
@@ -31,7 +31,7 @@ public class UpdateQuestionUseCase implements IUseCase<UpdateQuestionCommand, Qu
 
     @Override
     @Transactional
-    public QuestionDto execute(UpdateQuestionCommand input) {
+    public UpdateQuestionResponse execute(UpdateQuestionCommand input) {
         var command = normalize(input);
 
         if (!questionTopicRepository.existsById(command.topicId())) {
@@ -43,15 +43,13 @@ public class UpdateQuestionUseCase implements IUseCase<UpdateQuestionCommand, Qu
 
         question.setQuestionTopicId(command.topicId());
         question.setQuestionText(command.questionText());
-        question.setStandardLevelVersionId(command.standardLevelId());
-        question.setSchoolLevelVersionId(null);
         question.setType(QuestionType.valueOf(command.questionType()));
         question.setMaxResponseSeconds(command.durationSeconds());
         question.setStatus(command.isActive() ? QuestionStatus.PUBLISHED : QuestionStatus.ARCHIVED);
         question.setUpdatedAt(OffsetDateTime.now());
 
         var saved = questionRepository.save(question);
-        return QuestionDtoMapper.toDto(saved);
+        return UpdateQuestionResponseMapper.toResponse(saved.getId());
     }
 
     private UpdateQuestionCommand normalize(UpdateQuestionCommand input) {

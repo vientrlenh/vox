@@ -16,19 +16,15 @@ import com.sep.vox.application.port.input.command.ImportSchoolClassRowCommand;
 import com.sep.vox.application.port.input.command.ImportSchoolClassesCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.dto.ImportRowErrorDto;
 import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.dto.SchoolClassImportResultDto;
 import com.sep.vox.domain.mapper.SchoolClassDtoMapper;
-import com.sep.vox.domain.model.languagelevel.LevelStatus;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolGradeStatus;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
-import com.sep.vox.domain.repository.SchoolLevelRepository;
-import com.sep.vox.domain.repository.SchoolLevelVersionRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;
 import com.sep.vox.domain.repository.UserRepository;
@@ -45,8 +41,6 @@ public class ImportSchoolClassesUseCase implements IUseCase<ImportSchoolClassesC
     private final UserRepository userRepository;
     private final SupportedLanguageRepository supportedLanguageRepository;
     private final SchoolGradeRepository schoolGradeRepository;
-    private final SchoolLevelRepository schoolLevelRepository;
-    private final SchoolLevelVersionRepository schoolLevelVersionRepository;
     private final UserContextPort userContextPort;
 
     public ImportSchoolClassesUseCase(
@@ -55,16 +49,12 @@ public class ImportSchoolClassesUseCase implements IUseCase<ImportSchoolClassesC
             UserRepository userRepository,
             SupportedLanguageRepository supportedLanguageRepository,
             SchoolGradeRepository schoolGradeRepository,
-            SchoolLevelRepository schoolLevelRepository,
-            SchoolLevelVersionRepository schoolLevelVersionRepository,
             UserContextPort userContextPort) {
         this.schoolClassRepository = schoolClassRepository;
         this.schoolRepository = schoolRepository;
         this.userRepository = userRepository;
         this.supportedLanguageRepository = supportedLanguageRepository;
         this.schoolGradeRepository = schoolGradeRepository;
-        this.schoolLevelRepository = schoolLevelRepository;
-        this.schoolLevelVersionRepository = schoolLevelVersionRepository;
         this.userContextPort = userContextPort;
     }
 
@@ -178,37 +168,10 @@ public class ImportSchoolClassesUseCase implements IUseCase<ImportSchoolClassesC
             throwImportError(row.rowNumber(), "schoolGradeCode", "Khối học không hoạt động");
         }
 
-        var level = schoolLevelRepository.findBySchoolIdAndLanguageIdAndCode(
-            schoolId,
-            language.get().getId(),
-            row.targetSchoolLevelCode()
-        );
-        if (level.isEmpty()) {
-            throwImportError(row.rowNumber(), "targetSchoolLevelCode", "Không tìm thấy cấp độ mục tiêu theo ngôn ngữ đã chọn");
-        }
-
         var version = parseVersionOrThrow(row);
 
-        var levelVersion = schoolLevelVersionRepository.findBySchoolLevelIdAndVersion(level.get().getId(), version);
-        if (levelVersion.isEmpty()) {
-            throwImportError(row.rowNumber(), "targetSchoolLevelVersion", "Không tìm thấy phiên bản cấp độ mục tiêu");
-        }
-        if (levelVersion.get().getStatus() != LevelStatus.PUBLISHED) {
-            throwImportError(row.rowNumber(), "targetSchoolLevelVersion", "Phiên bản cấp độ mục tiêu chưa được công bố");
-        }
-
         var now = OffsetDateTime.now();
-        var schoolClass = SchoolClass.create(
-            schoolId,
-            language.get().getId(),
-            grade.get().getId(),
-            row.code(),
-            row.name(),
-            row.description(),
-            levelVersion.get().getId(),
-            currentUserId,
-            now
-        );
+        var schoolClass = new SchoolClass();
         return new CreateCandidate(schoolClass);
     }
 
@@ -254,21 +217,8 @@ public class ImportSchoolClassesUseCase implements IUseCase<ImportSchoolClassesC
         }
     }
 
-    private static void requireOrThrow(NormalizedRow row, String value, String field) {
-        if (isBlank(value)) {
-            throwImportError(row.rowNumber(), field, "Trường bắt buộc không được để trống");
-        }
-    }
 
-    private static void maxLengthOrThrow(NormalizedRow row, String value, String field, int maxLength) {
-        if (value != null && value.length() > maxLength) {
-            throwImportError(row.rowNumber(), field, "Độ dài không được vượt quá " + maxLength + " ký tự");
-        }
-    }
 
-    private static void throwImportError(int rowNumber, String field, String message) {
-        throw new ImportValidationException(List.of(new ImportRowErrorDto(rowNumber, field, message)));
-    }
 
     private static String normalizeCode(String input) {
         if (input == null) {

@@ -2,7 +2,7 @@ package com.sep.vox.application.exception;
 
 import java.util.List;
 
-import com.sep.vox.domain.dto.ImportRowErrorDto;
+import com.sep.vox.application.response.input.schoolclass.ImportRowErrorDto;
 
 public class ImportValidationException extends RuntimeException {
 

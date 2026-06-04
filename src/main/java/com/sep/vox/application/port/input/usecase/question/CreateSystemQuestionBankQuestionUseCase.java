@@ -12,7 +12,7 @@ import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
-import com.sep.vox.application.mapper.questionbank.CreateQuestionResponseMapper;
+import com.sep.vox.application.mapper.question.CreateQuestionResponseMapper;
 import com.sep.vox.application.port.input.command.CreateQuestionAssetCommand;
 import com.sep.vox.application.port.input.command.CreateSystemQuestionBankQuestionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -31,8 +31,6 @@ import com.sep.vox.domain.repository.QuestionAssetRepository;
 import com.sep.vox.domain.repository.QuestionEvaluationGuideRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.QuestionTopicRepository;
-import com.sep.vox.domain.repository.SchoolLevelVersionRepository;
-import com.sep.vox.domain.repository.StandardLevelVersionRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
@@ -43,7 +41,6 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
     private final QuestionAssetRepository questionAssetRepository;
     private final QuestionEvaluationGuideRepository questionEvaluationGuideRepository;
     private final QuestionTopicRepository questionTopicRepository;
-    private final StandardLevelVersionRepository standardLevelVersionRepository;
     private final UserContextPort userContextPort;
 
     public CreateSystemQuestionBankQuestionUseCase(
@@ -52,15 +49,12 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
             QuestionAssetRepository questionAssetRepository,
             QuestionEvaluationGuideRepository questionEvaluationGuideRepository,
             QuestionTopicRepository questionTopicRepository,
-            StandardLevelVersionRepository standardLevelVersionRepository,
-            SchoolLevelVersionRepository schoolLevelVersionRepository,
             UserContextPort userContextPort) {
         this.userRepository = userRepository;
         this.questionRepository = questionRepository;
         this.questionAssetRepository = questionAssetRepository;
         this.questionEvaluationGuideRepository = questionEvaluationGuideRepository;
         this.questionTopicRepository = questionTopicRepository;
-        this.standardLevelVersionRepository = standardLevelVersionRepository;
         this.userContextPort = userContextPort;
     }
 
@@ -81,7 +75,6 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
 
         validateResponseDurationRange(command);
         validateAssetOrders(command.assets());
-        checkStandardLevelVersion(command.standardLevelVersionId());
 
         var now = OffsetDateTime.now();
         var question = Question.create(
@@ -91,8 +84,6 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
             command.questionText(),
             command.promptText(),
             command.preparationText(),
-            command.standardLevelVersionId(),
-            null,
             QuestionType.valueOf(command.type()),
             command.preparationTimeSeconds(),
             command.minResponseSeconds(),
@@ -177,15 +168,6 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
             if (!orders.add(asset.order())) {
                 throw new IllegalStateException("Thứ tự tài nguyên câu hỏi không được trùng lặp");
             }
-        }
-    }
-
-
-    private void checkStandardLevelVersion(UUID standardLevelVersionId) {
-        var standardLevelVersion = standardLevelVersionRepository.findById(standardLevelVersionId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản cấp độ tiêu chuẩn với ID này"));
-        if (!standardLevelVersion.isActive()) {
-            throw new IllegalStateException("Trạng thái của phiên bản cấp độ tiêu chuẩn hiện tại không hoạt động");
         }
     }
 

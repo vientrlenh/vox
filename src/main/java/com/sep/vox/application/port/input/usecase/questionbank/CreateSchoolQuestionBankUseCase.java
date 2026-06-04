@@ -12,7 +12,7 @@ import com.sep.vox.application.mapper.questionbank.CreateQuestionBankResponseMap
 import com.sep.vox.application.port.input.command.CreateSchoolQuestionBankCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.response.input.question.CreateQuestionBankResponse;
+import com.sep.vox.application.response.input.questionbank.CreateQuestionBankResponse;
 import com.sep.vox.domain.model.question.QuestionBank;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
 import com.sep.vox.domain.model.user.UserStatus;

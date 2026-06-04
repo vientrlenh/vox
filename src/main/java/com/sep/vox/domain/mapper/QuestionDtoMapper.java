@@ -18,8 +18,6 @@ public class QuestionDtoMapper {
             domain.getQuestionText(),
             domain.getPromptText(),
             domain.getPreparationText(),
-            domain.getStandardLevelVersionId(),
-            domain.getSchoolLevelVersionId(),
             domain.getType().name(),
             domain.getPreparationTimeSeconds(),
             domain.getMinResponseSeconds(),

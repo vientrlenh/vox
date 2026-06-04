@@ -11,11 +11,11 @@ public final class RubricMapper {
     public static Rubric toDomain(RubricJpaEntity jpa) {
         return new Rubric(
             jpa.getId(),
+            jpa.getLanguageId(),
+            jpa.getFrameworkId(),
             jpa.getCode(),
             jpa.getName(),
             jpa.getDescription(),
-            jpa.getLanguageId(),
-            jpa.getFrameworkId(),
             fromOwnerType(jpa.getOwnerType()),
             jpa.getSchoolId(),
             jpa.getCurrentVersionId()
@@ -25,11 +25,11 @@ public final class RubricMapper {
     public static RubricJpaEntity toJpa(Rubric rubric) {
         return new RubricJpaEntity(
             rubric.getId(),
+            rubric.getLanguageId(),
+            rubric.getFrameworkId(),
             rubric.getCode(),
             rubric.getName(),
             rubric.getDescription(),
-            rubric.getLanguageId(),
-            rubric.getFrameworkId(),
             valueOf(rubric.getOwnerType()),
             rubric.getSchoolId(),
             rubric.getCurrentVersionId()

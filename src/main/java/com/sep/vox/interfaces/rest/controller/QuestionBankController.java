@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.sep.vox.application.port.input.usecase.questionbank.CreateSchoolQuestionBankUseCase;
 import com.sep.vox.application.port.input.usecase.questionbank.CreateSystemQuestionBankUseCase;
-import com.sep.vox.application.response.input.question.CreateQuestionBankResponse;
+import com.sep.vox.application.response.input.questionbank.CreateQuestionBankResponse;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolQuestionBankRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSystemQuestionBankRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;

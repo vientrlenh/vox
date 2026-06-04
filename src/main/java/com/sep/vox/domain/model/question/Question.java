@@ -11,8 +11,6 @@ public class Question {
     private String questionText;
     private String promptText;
     private String preparationText;
-    private UUID standardLevelVersionId;
-    private UUID schoolLevelVersionId;
     private QuestionType type;
     private int preparationTimeSeconds;
     private int minResponseSeconds;
@@ -30,7 +28,7 @@ public class Question {
     public Question() {}
 
     public Question(UUID id, UUID questionTopicId, String code, String instructionText, String questionText, String promptText,
-            String preparationText, UUID standardLevelVersionId, UUID schoolLevelVersionId, QuestionType type,
+            String preparationText, QuestionType type,
             int preparationTimeSeconds, int minResponseSeconds, int maxResponseSeconds, QuestionScope scope,
             QuestionVisibility visibility, UUID sourceQuestionId, boolean locked, QuestionStatus status,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
@@ -41,8 +39,6 @@ public class Question {
         this.questionText = questionText;
         this.promptText = promptText;
         this.preparationText = preparationText;
-        this.standardLevelVersionId = standardLevelVersionId;
-        this.schoolLevelVersionId = schoolLevelVersionId;
         this.type = type;
         this.preparationTimeSeconds = preparationTimeSeconds;
         this.minResponseSeconds = minResponseSeconds;
@@ -59,7 +55,7 @@ public class Question {
     }
 
     public Question(UUID questionTopicId, String code, String instructionText, String questionText, String promptText,
-            String preparationText, UUID standardLevelVersionId, UUID schoolLevelVersionId, QuestionType type,
+            String preparationText, QuestionType type,
             int preparationTimeSeconds, int minResponseSeconds, int maxResponseSeconds, QuestionScope scope,
             QuestionVisibility visibility, UUID sourceQuestionId, boolean locked, QuestionStatus status,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
@@ -69,8 +65,6 @@ public class Question {
         this.questionText = questionText;
         this.promptText = promptText;
         this.preparationText = preparationText;
-        this.standardLevelVersionId = standardLevelVersionId;
-        this.schoolLevelVersionId = schoolLevelVersionId;
         this.type = type;
         this.preparationTimeSeconds = preparationTimeSeconds;
         this.minResponseSeconds = minResponseSeconds;
@@ -132,22 +126,6 @@ public class Question {
 
     public void setPreparationText(String preparationText) {
         this.preparationText = preparationText;
-    }
-
-    public UUID getStandardLevelVersionId() {
-        return standardLevelVersionId;
-    }
-
-    public void setStandardLevelVersionId(UUID standardLevelVersionId) {
-        this.standardLevelVersionId = standardLevelVersionId;
-    }
-
-    public UUID getSchoolLevelVersionId() {
-        return schoolLevelVersionId;
-    }
-
-    public void setSchoolLevelVersionId(UUID schoolLevelVersionId) {
-        this.schoolLevelVersionId = schoolLevelVersionId;
     }
 
     public QuestionType getType() {
@@ -263,7 +241,7 @@ public class Question {
     }
 
     public static Question create(UUID questionTopicId, String code, String instructionText, String questionText, String promptText,
-        String preparationText, UUID standardLevelVersionId, UUID schoolLevelVersionId, QuestionType type,
+        String preparationText, QuestionType type,
         int preparationTimeSeconds, int minResponseSeconds, int maxResponseSeconds, QuestionScope scope,
         QuestionVisibility visibility, UUID sourceQuestionId, boolean locked, OffsetDateTime now, UUID createdBy) {
         return new Question(
@@ -273,8 +251,6 @@ public class Question {
             questionText, 
             promptText, 
             preparationText, 
-            standardLevelVersionId, 
-            schoolLevelVersionId, 
             type, 
             preparationTimeSeconds, 
             minResponseSeconds, 

@@ -14,13 +14,10 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.mapper.SchoolClassDtoMapper;
-import com.sep.vox.domain.model.languagelevel.LevelStatus;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
-import com.sep.vox.domain.repository.SchoolLevelRepository;
-import com.sep.vox.domain.repository.SchoolLevelVersionRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.UserRepository;
 

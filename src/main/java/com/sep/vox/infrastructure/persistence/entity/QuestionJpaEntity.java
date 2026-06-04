@@ -17,26 +17,10 @@ import jakarta.persistence.Table;
 @Table(name = "questions", indexes = {
     @Index(columnList = "question_topic_id, code", name = "idx_questions_question_topic_code", unique = true),
     @Index(columnList = "type", name = "idx_questions_type"),
-    @Index(columnList = "standard_level_version_id", name = "idx_questions_standard_level_version"), 
-    @Index(columnList = "school_level_version_id", name = "idx_questions_school_level_version"),
     @Index(columnList = "scope", name = "idx_questions_scope"),
     @Index(columnList = "visibility", name = "idx_questions_visibility"),
     @Index(columnList = "source_question_id", name = "idx_questions_source_question")
 }, check = {
-    @CheckConstraint(
-        name = "chk_questions_standard_level_version_and_school_level_version_valid", 
-        constraint = """
-            (
-                standard_level_version_id IS NOT NULL 
-                AND school_level_version_id IS NULL
-            )
-            OR
-            (
-                standard_level_version_id IS NULL 
-                AND school_level_version_id IS NOT NULL
-            )        
-        """
-    ), 
     @CheckConstraint(
         name = "chk_questions_min_response_seconds_and_max_response_seconds_valid", 
         constraint = "min_response_seconds <= max_response_seconds"
@@ -71,12 +55,6 @@ public class QuestionJpaEntity {
 
     @Column(name = "preparation_text", columnDefinition = "TEXT")
     private String preparationText;
-
-    @Column(name = "standard_level_version_id")
-    private UUID standardLevelVersionId;
-
-    @Column(name = "school_level_version_id")
-    private UUID schoolLevelVersionId;
 
     @Column(name = "type", nullable = false, length = 50, check = {
         @CheckConstraint(
@@ -155,8 +133,8 @@ public class QuestionJpaEntity {
     protected QuestionJpaEntity() {}
 
     public QuestionJpaEntity(UUID id, UUID questionTopicId, String code, String instructionText, String questionText,
-            String promptText, String preparationText, UUID standardLevelVersionId, UUID schoolLevelVersionId,
-            String type, int preparationTimeSeconds, int minResponseSeconds, int maxResponseSeconds, String scope,
+            String promptText, String preparationText, String type, int preparationTimeSeconds,
+            int minResponseSeconds, int maxResponseSeconds, String scope,
             String visibility, UUID sourceQuestionId, boolean locked, String status,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
@@ -166,8 +144,6 @@ public class QuestionJpaEntity {
         this.questionText = questionText;
         this.promptText = promptText;
         this.preparationText = preparationText;
-        this.standardLevelVersionId = standardLevelVersionId;
-        this.schoolLevelVersionId = schoolLevelVersionId;
         this.type = type;
         this.preparationTimeSeconds = preparationTimeSeconds;
         this.minResponseSeconds = minResponseSeconds;
@@ -237,22 +213,6 @@ public class QuestionJpaEntity {
 
     public void setPreparationText(String preparationText) {
         this.preparationText = preparationText;
-    }
-
-    public UUID getStandardLevelVersionId() {
-        return standardLevelVersionId;
-    }
-
-    public void setStandardLevelVersionId(UUID standardLevelVersionId) {
-        this.standardLevelVersionId = standardLevelVersionId;
-    }
-
-    public UUID getSchoolLevelVersionId() {
-        return schoolLevelVersionId;
-    }
-
-    public void setSchoolLevelVersionId(UUID schoolLevelVersionId) {
-        this.schoolLevelVersionId = schoolLevelVersionId;
     }
 
     public String getType() {

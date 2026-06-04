@@ -1,0 +1,150 @@
+package com.sep.vox.infrastructure.persistence.entity;
+
+import java.time.OffsetDateTime;
+import java.util.UUID;
+
+import org.hibernate.annotations.Generated;
+import org.hibernate.generator.EventType;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "frameworks", indexes = {
+    @Index(columnList = "code", name = "idx_frameworks_code", unique = true),
+    @Index(columnList = "is_active", name = "idx_frameworks_active")
+})
+public class FrameworkJpaEntity {
+
+    @Id
+    @Generated(event = EventType.INSERT)
+    @Column(name = "id", nullable = false, updatable = false, insertable = false, columnDefinition = "UUID DEFAULT uuidv7()")
+    private UUID id;
+
+    @Column(name = "code", nullable = false, length = 50, updatable = false)
+    private String code;
+
+    @Column(name = "name", nullable = false, length = 255)
+    private String name;
+
+    @Column(name = "description", length = 2048)
+    private String description;
+
+    @Column(name = "is_active", nullable = false)
+    private boolean isActive;
+
+    @Column(name = "current_version_id")
+    private UUID currentVersionId;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private OffsetDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private OffsetDateTime updatedAt;
+
+    @Column(name = "created_by", updatable = false)
+    private UUID createdBy;
+
+    @Column(name = "updated_by")
+    private UUID updatedBy;
+
+    protected FrameworkJpaEntity() {}
+
+    public FrameworkJpaEntity(UUID id, String code, String name, String description, boolean isActive,
+            UUID currentVersionId, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy,
+            UUID updatedBy) {
+        this.id = id;
+        this.code = code;
+        this.name = name;
+        this.description = description;
+        this.isActive = isActive;
+        this.currentVersionId = currentVersionId;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+        this.createdBy = createdBy;
+        this.updatedBy = updatedBy;
+    }
+
+    public UUID getId() {
+        return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
+    public String getCode() {
+        return code;
+    }
+
+    public void setCode(String code) {
+        this.code = code;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public boolean isActive() {
+        return isActive;
+    }
+
+    public void setActive(boolean isActive) {
+        this.isActive = isActive;
+    }
+
+    public UUID getCurrentVersionId() {
+        return currentVersionId;
+    }
+
+    public void setCurrentVersionId(UUID currentVersionId) {
+        this.currentVersionId = currentVersionId;
+    }
+
+    public OffsetDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(OffsetDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public OffsetDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(OffsetDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public UUID getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(UUID createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public UUID getUpdatedBy() {
+        return updatedBy;
+    }
+
+    public void setUpdatedBy(UUID updatedBy) {
+        this.updatedBy = updatedBy;
+    }
+}

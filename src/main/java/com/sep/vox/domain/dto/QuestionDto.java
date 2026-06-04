@@ -10,8 +10,6 @@ public record QuestionDto(
     String questionText,
     String promptText,
     String preparationText,
-    UUID standardLevelVersionId,
-    UUID schoolLevelVersionId,
     String type,
     int preparationTimeSeconds,
     int minResponseSeconds,

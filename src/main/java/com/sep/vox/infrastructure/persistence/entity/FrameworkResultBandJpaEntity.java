@@ -54,7 +54,7 @@ public class FrameworkResultBandJpaEntity {
 
     @Column(name = "status", nullable = false, check = {
         @CheckConstraint(
-            name = "chk_framework_result_band_status_valid",
+            name = "chk_framework_result_bands_status_valid",
             constraint = "status IN ('DRAFT', 'PUBLISHED', 'ARCHIVED')"
         )
     })

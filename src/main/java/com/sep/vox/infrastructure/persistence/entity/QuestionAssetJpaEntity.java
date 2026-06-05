@@ -44,7 +44,7 @@ public class QuestionAssetJpaEntity {
 
     @Column(name = "type", length = 100, nullable = false, check = {
         @CheckConstraint(
-            name = "chk_type_valid", 
+            name = "chk_question_assets_type_valid", 
             constraint = "type IN ('AUDIO', 'IMAGE', 'VIDEO', 'TEXT_PASSAGE')"
         )
     })

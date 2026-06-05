@@ -59,7 +59,7 @@ public class QuestionBankJpaEntity {
 
     @Column(name = "owner_type", nullable = false, length = 20, check = {
         @CheckConstraint(
-            name = "chk_owner_type_valid", 
+            name = "chk_question_banks_owner_type_valid", 
             constraint = "owner_type IN ('SYSTEM', 'SCHOOL')"
         )
     })
@@ -67,7 +67,7 @@ public class QuestionBankJpaEntity {
 
     @Column(name = "status", nullable = false, updatable = false, check = {
         @CheckConstraint(
-            name = "chk_status_valid", 
+            name = "chk_quesion_banks_status_valid", 
             constraint = "status IN ('DRAFT', 'PUBLISHED', 'ARCHIVED')"
         )
     })

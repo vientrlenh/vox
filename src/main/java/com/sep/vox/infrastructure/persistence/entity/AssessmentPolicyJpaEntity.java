@@ -26,24 +26,8 @@ import jakarta.persistence.Table;
     @Index(columnList = "passing_result_band_id", name = "idx_assessment_policies_passing_band")
 }, check = {
     @CheckConstraint(
-        name = "chk_assessment_policies_status_valid",
-        constraint = "status IN ('DRAFT', 'PUBLISHED', 'ARCHIVED')"
-    ),
-    @CheckConstraint(
-        name = "chk_assessment_policies_strictness_valid",
-        constraint = "strictness IN ('LENIENT', 'STANDARD', 'STRICT')"
-    ),
-    @CheckConstraint(
         name = "chk_assessment_policies_effective_range_valid",
         constraint = "effective_to IS NULL OR effective_from <= effective_to"
-    ),
-    @CheckConstraint(
-        name = "chk_assessment_policies_version_positive",
-        constraint = "version > 0"
-    ),
-    @CheckConstraint(
-        name = "chk_assessment_policies_passing_score_non_negative",
-        constraint = "passing_score IS NULL OR passing_score >= 0"
     )
 })
 public class AssessmentPolicyJpaEntity {
@@ -77,16 +61,36 @@ public class AssessmentPolicyJpaEntity {
     @Column(name = "passing_result_band_id", nullable = false)
     private UUID passingResultBandId;
 
-    @Column(name = "passing_score", precision = 6, scale = 2)
+    @Column(name = "passing_score", precision = 6, scale = 2, check = {
+        @CheckConstraint(
+            name = "chk_assessment_policies_passing_score_non_negative",
+            constraint = "passing_score IS NULL OR passing_score >= 0"
+        )
+    })
     private BigDecimal passingScore;
 
-    @Column(name = "strictness", nullable = false, length = 20)
+    @Column(name = "strictness", nullable = false, length = 20, check = {
+        @CheckConstraint(
+            name = "chk_assessment_policies_strictness_valid",
+            constraint = "strictness IN ('LENIENT', 'STANDARD', 'STRICT')"
+        )
+    })
     private String strictness;
 
-    @Column(name = "version", nullable = false)
+    @Column(name = "version", nullable = false, check = {
+        @CheckConstraint(
+            name = "chk_assessment_policies_version_positive",
+            constraint = "version > 0"
+        )
+    })
     private int version;
 
-    @Column(name = "status", nullable = false, length = 20)
+    @Column(name = "status", nullable = false, length = 20, check = {
+        @CheckConstraint(
+            name = "chk_assessment_policies_status_valid",
+            constraint = "status IN ('DRAFT', 'PUBLISHED', 'ARCHIVED')"
+        ),
+    })
     private String status;
 
     @Column(name = "effective_from", nullable = false)

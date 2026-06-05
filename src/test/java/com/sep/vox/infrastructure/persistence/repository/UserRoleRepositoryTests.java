@@ -36,7 +36,6 @@ class UserRoleRepositoryTests {
 
         var saved = userRoleRepository.save(new UserRole(userId, roleId, OffsetDateTime.now()));
 
-        assertThat(saved.getId()).isPositive();
         assertThat(saved.getUserId()).isEqualTo(userId);
         assertThat(saved.getRoleId()).isEqualTo(roleId);
         assertThat(saved.getCreatedAt()).isNotNull();

@@ -16,5 +16,5 @@ import org.springframework.data.repository.query.Param;
 import com.sep.vox.infrastructure.persistence.entity.SchoolClassJpaEntity;
 
 public interface SpringDataSchoolClassRepository extends JpaRepository<SchoolClassJpaEntity, UUID>{
-    
+
 }

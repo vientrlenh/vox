@@ -44,7 +44,10 @@ public class FrameworkVersionJpaEntity {
     private String description;
 
     @Column(name = "version", nullable = false, check = {
-        @CheckConstraint(name = "chk_framework_versions_version_positive", constraint = "version > 0")
+        @CheckConstraint(
+            name = "chk_framework_versions_version_positive", 
+            constraint = "version > 0"
+        )
     })
     private int version;
 

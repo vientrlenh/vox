@@ -4,14 +4,14 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 public class UserRole {
-    private long id;
+    private UUID id;
     private UUID userId;
     private UUID roleId;
     private OffsetDateTime createdAt;
 
     public UserRole() {}
 
-    public UserRole(long id, UUID userId, UUID roleId, OffsetDateTime createdAt) {
+    public UserRole(UUID id, UUID userId, UUID roleId, OffsetDateTime createdAt) {
         this.id = id;
         this.userId = userId;
         this.roleId = roleId;
@@ -24,11 +24,11 @@ public class UserRole {
         this.createdAt = createdAt;
     }
 
-    public long getId() {
+    public UUID getId() {
         return id;
     }
 
-    public void setId(long id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 

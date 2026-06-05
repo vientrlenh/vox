@@ -58,7 +58,7 @@ public class QuestionJpaEntity {
 
     @Column(name = "type", nullable = false, length = 50, check = {
         @CheckConstraint(
-            name = "chk_type_valid",
+            name = "chk_questions_type_valid",
             constraint = "type IN ('READ_ALOUD', 'SHORT_ANSWER', 'LONG_ANSWER', 'OPINION', 'DESCRIPTION')"
         )
     })
@@ -66,7 +66,7 @@ public class QuestionJpaEntity {
 
     @Column(name = "preparation_time_seconds", nullable = false, check = {
         @CheckConstraint(
-            name = "chk_preparation_time_seconds_valid", 
+            name = "chk_questions_preparation_time_seconds_valid", 
             constraint = "preparation_time_seconds >= 0"
         )
     })
@@ -74,7 +74,7 @@ public class QuestionJpaEntity {
 
     @Column(name = "min_response_seconds", nullable = false, check = {
         @CheckConstraint(
-            name = "chk_min_response_seconds_valid", 
+            name = "chk_questions_min_response_seconds_valid", 
             constraint = "min_response_seconds >= 0"
         )
     })
@@ -82,7 +82,7 @@ public class QuestionJpaEntity {
 
     @Column(name = "max_response_seconds", nullable = false, check = {
         @CheckConstraint(
-            name = "chk_max_response_seconds_valid", 
+            name = "chk_questions_max_response_seconds_valid", 
             constraint = "max_response_seconds >= 0"
         )
     })
@@ -90,7 +90,7 @@ public class QuestionJpaEntity {
 
     @Column(name = "scope", nullable = false, length = 50, check = {
         @CheckConstraint(
-            name = "chk_question_scope_valid",
+            name = "chk_questions_question_scope_valid",
             constraint = "scope IN ('QUESTION_BANK', 'CLASSROOM_ASSESSMENT', 'CENTRAL_EXAM_DRAFT', 'CENTRAL_EXAM_PAPER')"
         )
     })
@@ -98,7 +98,7 @@ public class QuestionJpaEntity {
 
     @Column(name = "visibility", nullable = false, length = 50, check = {
         @CheckConstraint(
-            name = "chk_question_visibility_valid",
+            name = "chk_questions_question_visibility_valid",
             constraint = "visibility IN ('BANK_VISIBLE', 'AUTHOR_ONLY', 'REVIEWER_ONLY', 'ASSESSMENT_ONLY', 'EXAM_PAPER_ONLY')"
         )
     })

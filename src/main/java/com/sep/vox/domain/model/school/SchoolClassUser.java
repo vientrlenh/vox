@@ -4,7 +4,7 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 public class SchoolClassUser {
-    private long id;
+    private UUID id;
     private UUID userId;
     private UUID schoolClassId;
     private boolean isActive;
@@ -14,7 +14,7 @@ public class SchoolClassUser {
 
     public SchoolClassUser() {}
 
-    public SchoolClassUser(long id, UUID userId, UUID schoolClassId, boolean isActive, OffsetDateTime joinedAt,
+    public SchoolClassUser(UUID id, UUID userId, UUID schoolClassId, boolean isActive, OffsetDateTime joinedAt,
             OffsetDateTime leftAt, UUID assignedBy) {
         this.id = id;
         this.userId = userId;
@@ -35,11 +35,11 @@ public class SchoolClassUser {
         this.assignedBy = assignedBy;
     }
 
-    public long getId() {
+    public UUID getId() {
         return id;
     }
 
-    public void setId(long id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 

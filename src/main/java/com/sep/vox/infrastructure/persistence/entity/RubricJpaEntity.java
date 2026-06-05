@@ -20,10 +20,6 @@ import jakarta.persistence.Table;
     @Index(columnList = "current_version_id", name = "idx_rubrics_current_version")
 }, check = {
     @CheckConstraint(
-        name = "chk_rubrics_owner_type_valid",
-        constraint = "owner_type IN ('SYSTEM', 'SCHOOL')"
-    ),
-    @CheckConstraint(
         name = "chk_rubrics_owner_school_valid",
         constraint = "(owner_type = 'SYSTEM' AND school_id IS NULL) OR (owner_type = 'SCHOOL' AND school_id IS NOT NULL)"
     )
@@ -51,7 +47,12 @@ public class RubricJpaEntity {
     @Column(name = "framework_id", nullable = false)
     private UUID frameworkId;
 
-    @Column(name = "owner_type", nullable = false, length = 20)
+    @Column(name = "owner_type", nullable = false, length = 20, check = {
+        @CheckConstraint(
+            name = "chk_rubrics_owner_type_valid",
+            constraint = "owner_type IN ('SYSTEM', 'SCHOOL')"
+        )
+    })
     private String ownerType;
 
     @Column(name = "school_id")

@@ -19,27 +19,6 @@ import jakarta.persistence.Table;
     @Index(columnList = "policy_id, code", name = "idx_scoring_rules_policy_code", unique = true),
     @Index(columnList = "policy_id, priority", name = "idx_scoring_rules_policy_priority"),
     @Index(columnList = "policy_id, is_active", name = "idx_scoring_rules_policy_active")
-}, check = {
-    @CheckConstraint(
-        name = "chk_scoring_rules_condition_type_valid",
-        constraint = "condition_type IN ('DURATION_LESS_THAN', 'DURATION_GREATER_THAN', 'WORD_COUNT_LESS_THAN', 'WORD_COUNT_GREATER_THAN', 'CRITERION_SCORE_LESS_THAN', 'CRITERION_SCORE_GREATER_THAN', 'CRITERION_BAND_AT_OR_BELOW', 'CRITERION_BAND_AT_OR_ABOVE', 'FINAL_SCORE_LESS_THAN', 'FINAL_SCORE_GREATER_THAN', 'TASK_RELEVANCE_LESS_THAN', 'OFF_TOPIC_RATIO_GREATER_THAN', 'CODE_SWITCHING_RATIO_GREATER_THAN', 'ASR_CONFIDENCE_LESS_THAN', 'AI_CONFIDENCE_LESS_THAN', 'AUDIO_QUALITY_LESS_THAN', 'SILENCE_RATIO_GREATER_THAN', 'SPEECH_RATE_LESS_THAN', 'SPEECH_RATE_GREATER_THAN')"
-    ),
-    @CheckConstraint(
-        name = "chk_scoring_rules_action_type_valid",
-        constraint = "action_type IN ('CAP_FINAL_SCORE', 'CAP_CRITERION_SCORE', 'ADD_FINAL_SCORE_DELTA', 'ADD_CRITERION_SCORE_DELTA', 'CAP_RESULT_BAND', 'SET_RESULT_BAND', 'REQUIRE_HUMAN_REVIEW', 'MARK_RESPONSE_INVALID', 'REQUIRE_RETAKE', 'ADD_FEEDBACK_TAG', 'ADD_REVIEW_REASON', 'STOP_PROCESSING')"
-    ),
-    @CheckConstraint(
-        name = "chk_scoring_rules_applies_to_valid",
-        constraint = "applies_to IN ('FINAL_SCORE', 'CRITERION_SCORE', 'RESULT_BAND', 'HUMAN_REVIEW')"
-    ),
-    @CheckConstraint(
-        name = "chk_scoring_rules_severity_valid",
-        constraint = "severity IN ('INFO', 'WARNING', 'BLOCKING')"
-    ),
-    @CheckConstraint(
-        name = "chk_scoring_rules_priority_positive",
-        constraint = "priority > 0"
-    )
 })
 public class ScoringRuleJpaEntity {
 
@@ -60,25 +39,50 @@ public class ScoringRuleJpaEntity {
     @Column(name = "description", length = 2048)
     private String description;
 
-    @Column(name = "condition_type", nullable = false, length = 50)
+    @Column(name = "condition_type", nullable = false, length = 50, check = {
+        @CheckConstraint(
+            name = "chk_scoring_rules_condition_type_valid",
+            constraint = "condition_type IN ('DURATION_LESS_THAN', 'DURATION_GREATER_THAN', 'WORD_COUNT_LESS_THAN', 'WORD_COUNT_GREATER_THAN', 'CRITERION_SCORE_LESS_THAN', 'CRITERION_SCORE_GREATER_THAN', 'CRITERION_BAND_AT_OR_BELOW', 'CRITERION_BAND_AT_OR_ABOVE', 'FINAL_SCORE_LESS_THAN', 'FINAL_SCORE_GREATER_THAN', 'TASK_RELEVANCE_LESS_THAN', 'OFF_TOPIC_RATIO_GREATER_THAN', 'CODE_SWITCHING_RATIO_GREATER_THAN', 'ASR_CONFIDENCE_LESS_THAN', 'AI_CONFIDENCE_LESS_THAN', 'AUDIO_QUALITY_LESS_THAN', 'SILENCE_RATIO_GREATER_THAN', 'SPEECH_RATE_LESS_THAN', 'SPEECH_RATE_GREATER_THAN')"
+        )
+    })
     private String conditionType;
 
     @Column(name = "condition_params_json", nullable = false, columnDefinition = "TEXT")
     private String conditionParamsJson;
 
-    @Column(name = "action_type", nullable = false, length = 50)
+    @Column(name = "action_type", nullable = false, length = 50, check = {
+        @CheckConstraint(
+            name = "chk_scoring_rules_action_type_valid",
+            constraint = "action_type IN ('CAP_FINAL_SCORE', 'CAP_CRITERION_SCORE', 'ADD_FINAL_SCORE_DELTA', 'ADD_CRITERION_SCORE_DELTA', 'CAP_RESULT_BAND', 'SET_RESULT_BAND', 'REQUIRE_HUMAN_REVIEW', 'MARK_RESPONSE_INVALID', 'REQUIRE_RETAKE', 'ADD_FEEDBACK_TAG', 'ADD_REVIEW_REASON', 'STOP_PROCESSING')"
+        )
+    })
     private String actionType;
 
     @Column(name = "action_params_json", nullable = false, columnDefinition = "TEXT")
     private String actionParamsJson;
 
-    @Column(name = "priority", nullable = false)
+    @Column(name = "priority", nullable = false, check = {
+        @CheckConstraint(
+            name = "chk_scoring_rules_priority_positive",
+            constraint = "priority > 0"
+        )
+    })
     private int priority;
 
-    @Column(name = "applies_to", nullable = false, length = 30)
+    @Column(name = "applies_to", nullable = false, length = 30, check = {
+        @CheckConstraint(
+            name = "chk_scoring_rules_applies_to_valid",
+            constraint = "applies_to IN ('FINAL_SCORE', 'CRITERION_SCORE', 'RESULT_BAND', 'HUMAN_REVIEW')"
+        )
+    })
     private String appliesTo;
 
-    @Column(name = "severity", nullable = false, length = 20)
+    @Column(name = "severity", nullable = false, length = 20, check = {
+        @CheckConstraint(
+            name = "chk_scoring_rules_severity_valid",
+            constraint = "severity IN ('INFO', 'WARNING', 'BLOCKING')"
+        )
+    })
     private String severity;
 
     @Column(name = "stop_processing", nullable = false)

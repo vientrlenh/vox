@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.hibernate.annotations.Generated;
 import org.hibernate.generator.EventType;
 
+import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -15,23 +16,16 @@ import jakarta.persistence.Table;
 
 
 @Entity
-@Table(name = "rubric_criteria", indexes = {
-    @Index(columnList = "rubric_version_id, code", name = "idx_rubric_criteria_version_code", unique = true),
-    @Index(columnList = "rubric_version_id, framework_criterion_id", name = "idx_rubric_criteria_version_framework_criterion", unique = true),
-    @Index(columnList = "framework_criterion_id", name = "idx_rubric_criteria_framework_criterion")
+@Table(name = "rubric_criterions", indexes = {
+    @Index(columnList = "rubric_version_id, code", name = "idx_rubric_criterions_version_code", unique = true),
+    @Index(columnList = "rubric_version_id, framework_criterion_id", name = "idx_rubric_criterions_version_framework_criterion", unique = true),
+    @Index(columnList = "framework_criterion_id", name = "idx_rubric_criterions_framework_criterion")
 }, check = {
-    @jakarta.persistence.CheckConstraint(
-        name = "chk_rubric_criteria_score_range_valid",
+    @CheckConstraint(
+        name = "chk_rubric_criterions_score_range_valid",
         constraint = "min_score <= max_score"
-    ),
-    @jakarta.persistence.CheckConstraint(
-        name = "chk_rubric_criteria_weight_non_negative",
-        constraint = "weight >= 0"
-    ),
-    @jakarta.persistence.CheckConstraint(
-        name = "chk_rubric_criteria_order_positive",
-        constraint = "criterion_order > 0"
     )
+
 })
 public class RubricCriterionJpaEntity {
 
@@ -55,7 +49,12 @@ public class RubricCriterionJpaEntity {
     @Column(name = "description", length = 2048)
     private String description;
 
-    @Column(name = "weight", nullable = false, precision = 6, scale = 2)
+    @Column(name = "weight", nullable = false, precision = 6, scale = 2, check = {
+        @CheckConstraint(
+            name = "chk_rubric_criterions_weight_non_negative",
+            constraint = "weight >= 0"
+        )
+    })
     private BigDecimal weight;
 
     @Column(name = "min_score", nullable = false, precision = 6, scale = 2)
@@ -64,7 +63,12 @@ public class RubricCriterionJpaEntity {
     @Column(name = "max_score", nullable = false, precision = 6, scale = 2)
     private BigDecimal maxScore;
 
-    @Column(name = "criterion_order", nullable = false)
+    @Column(name = "criterion_order", nullable = false, check = {
+        @CheckConstraint(
+            name = "chk_rubric_criterions_order_positive",
+            constraint = "criterion_order > 0"
+        )
+    })
     private int order;
 
     @Column(name = "is_required", nullable = false)

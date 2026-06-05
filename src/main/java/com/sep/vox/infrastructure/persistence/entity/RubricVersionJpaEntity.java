@@ -28,10 +28,6 @@ import jakarta.persistence.Table;
     @CheckConstraint(
         name = "chk_rubric_versions_effective_range_valid",
         constraint = "effective_to IS NULL OR effective_from <= effective_to"
-    ),
-    @CheckConstraint(
-        name = "chk_rubric_versions_version_positive",
-        constraint = "version > 0"
     )
 })
 public class RubricVersionJpaEntity {
@@ -53,7 +49,12 @@ public class RubricVersionJpaEntity {
     @Column(name = "description", length = 2048)
     private String description;
 
-    @Column(name = "version", nullable = false)
+    @Column(name = "version", nullable = false, check = {
+        @CheckConstraint(
+            name = "chk_rubric_versions_version_positive",
+            constraint = "version > 0"
+        )
+    })
     private int version;
 
     @Column(name = "status", nullable = false, length = 20, check = {

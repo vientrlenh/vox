@@ -39,7 +39,6 @@ class SchoolClassUserRepositoryTests {
             new SchoolClassUser(userId, schoolClassId, true, OffsetDateTime.now(), null, assignedBy)
         );
 
-        assertThat(saved.getId()).isPositive();
         assertThat(saved.getUserId()).isEqualTo(userId);
         assertThat(saved.getSchoolClassId()).isEqualTo(schoolClassId);
         assertThat(saved.isActive()).isTrue();

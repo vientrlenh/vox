@@ -43,7 +43,7 @@ public class QuestionTopicJpaEntity {
 
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
-            name = "chk_status_valid", 
+            name = "chk_question_topics_status_valid", 
             constraint = "status IN ('DRAFT', 'PUBLISHED', 'ARCHIVED')"
         )
     })

@@ -21,7 +21,13 @@ public class SupportedLanguageJpaEntity {
     
     @Id
     @Generated(event = EventType.INSERT)
-    @Column(name = "id", nullable = false, updatable = false, insertable = false, columnDefinition = "UUID DEFAULT uuidv7()")
+    @Column(
+        name = "id", 
+        nullable = false, 
+        updatable = false, 
+        insertable = false, 
+        columnDefinition = "UUID DEFAULT uuidv7()"
+    )
     private UUID id;
 
     @Column(name = "code", nullable = false, length = 10)

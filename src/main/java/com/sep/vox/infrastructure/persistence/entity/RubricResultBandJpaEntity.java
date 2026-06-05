@@ -60,7 +60,7 @@ public class RubricResultBandJpaEntity {
 
     @Column(name = "result_order", nullable = false, check = {
         @CheckConstraint(
-            name = "chk_order_valid", 
+            name = "chk_rubric_result_bands_order_valid", 
             constraint = "result_order > 0"
         )
     })

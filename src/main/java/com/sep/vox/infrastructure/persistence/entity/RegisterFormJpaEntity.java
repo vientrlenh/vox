@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.hibernate.annotations.Generated;
 import org.hibernate.generator.EventType;
 
+import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -64,7 +65,12 @@ public class RegisterFormJpaEntity {
     @Column(name = "reason", length = 255)
     private String reason;
 
-    @Column(name = "status", length = 20)
+    @Column(name = "status", length = 20, nullable = false, check = {
+        @CheckConstraint(
+            name = "chk_register_forms_status_valid", 
+            constraint = "status IN ('PENDING', 'APPROVED', 'REJECTED')"
+        )
+    })
     private String status;
 
     @Column(name = "created_at", nullable = false, updatable = false)

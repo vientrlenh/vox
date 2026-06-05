@@ -1,65 +1,55 @@
 package com.sep.vox.application.port.input.usecase.question;
 
+import java.time.OffsetDateTime;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.mapper.question.UpdateQuestionResponseMapper;
 import com.sep.vox.application.port.input.command.UpdateQuestionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.domain.dto.QuestionDto;
-import com.sep.vox.domain.mapper.QuestionDtoMapper;
-import com.sep.vox.domain.repository.LevelFrameworkRepository;
+import com.sep.vox.application.response.input.question.UpdateQuestionResponse;
+import com.sep.vox.domain.model.question.QuestionStatus;
+import com.sep.vox.domain.model.question.QuestionType;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.QuestionTopicRepository;
-import com.sep.vox.domain.repository.StandardLevelRepository;
-import com.sep.vox.domain.valueobject.QuestionType;
 
 @Service
-public class UpdateQuestionUseCase implements IUseCase<UpdateQuestionCommand, QuestionDto> {
+public class UpdateQuestionUseCase implements IUseCase<UpdateQuestionCommand, UpdateQuestionResponse> {
 
     private final QuestionRepository questionRepository;
     private final QuestionTopicRepository questionTopicRepository;
-    private final StandardLevelRepository standardLevelRepository;
-    private final LevelFrameworkRepository levelFrameworkRepository;
 
-    public UpdateQuestionUseCase(QuestionRepository questionRepository, QuestionTopicRepository questionTopicRepository,
-            StandardLevelRepository standardLevelRepository, LevelFrameworkRepository levelFrameworkRepository) {
+    public UpdateQuestionUseCase(
+            QuestionRepository questionRepository,
+            QuestionTopicRepository questionTopicRepository) {
         this.questionRepository = questionRepository;
         this.questionTopicRepository = questionTopicRepository;
-        this.standardLevelRepository = standardLevelRepository;
-        this.levelFrameworkRepository = levelFrameworkRepository;
     }
 
     @Override
     @Transactional
-    public QuestionDto execute(UpdateQuestionCommand input) {
+    public UpdateQuestionResponse execute(UpdateQuestionCommand input) {
         var command = normalize(input);
 
         if (!questionTopicRepository.existsById(command.topicId())) {
-            throw new NotFoundException("Không tìm thấy chủ đề câu hỏi");
+            throw new NotFoundException("Khong tim thay chu de cau hoi");
         }
 
         var question = questionRepository.findById(command.id())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi"));
+            .orElseThrow(() -> new NotFoundException("Khong tim thay cau hoi"));
 
-        question.setTopicId(command.topicId());
+        question.setQuestionTopicId(command.topicId());
         question.setQuestionText(command.questionText());
-        question.setAudioUrl(command.audioUrl());
-        question.setStandardLevelId(command.standardLevelId());
-        question.setQuestionType(new QuestionType(command.questionType()));
-        question.setDurationSeconds(command.durationSeconds());
-        question.setActive(command.isActive());
+        question.setType(QuestionType.valueOf(command.questionType()));
+        question.setMaxResponseSeconds(command.durationSeconds());
+        question.setStatus(command.isActive() ? QuestionStatus.PUBLISHED : QuestionStatus.ARCHIVED);
+        question.setUpdatedAt(OffsetDateTime.now());
 
         var saved = questionRepository.save(question);
-        var standardLevel = standardLevelRepository.findById(saved.getStandardLevelId()).orElse(null);
-        var slCode = standardLevel != null ? standardLevel.getCode().value() : null;
-        var framework = standardLevel != null
-            ? levelFrameworkRepository.findById(standardLevel.getFrameworkId()).orElse(null)
-            : null;
-        var fwCode = framework != null ? framework.getCode().value() : null;
-        var fwName = framework != null ? framework.getName() : null;
-        return QuestionDtoMapper.toDto(saved, slCode, fwCode, fwName);
+        return UpdateQuestionResponseMapper.toResponse(saved.getId());
     }
 
     private UpdateQuestionCommand normalize(UpdateQuestionCommand input) {
@@ -67,7 +57,7 @@ public class UpdateQuestionUseCase implements IUseCase<UpdateQuestionCommand, Qu
             input.id(),
             input.topicId(),
             StringNormalization.trimAndCollapseSpaces(input.questionText()),
-            input.audioUrl(),
+            StringNormalization.trimAndCollapseSpaces(input.audioUrl()),
             input.standardLevelId(),
             StringNormalization.trimAndCollapseSpaces(input.questionType()),
             input.durationSeconds(),

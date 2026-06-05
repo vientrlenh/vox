@@ -4,8 +4,12 @@ import java.util.UUID;
 
 public record QuestionTopicDto(
     UUID id,
-    UUID bankId,
-    String topicName,
-    String description
+    UUID questionBankId,
+    String code,
+    String name,
+    String description,
+    String status, 
+    String createdAt,
+    String updatedAt
 ) {
 }

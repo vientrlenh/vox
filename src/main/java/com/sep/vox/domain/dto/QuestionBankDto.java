@@ -4,12 +4,12 @@ import java.util.UUID;
 
 public record QuestionBankDto(
     UUID id,
-    String bankName,
+    UUID languageId,
+    String code,
+    String name,
     String description,
-    boolean isActive,
+    String status, 
     String createdAt,
-    String updatedAt,
-    UUID createdBy,
-    UUID updatedBy
+    String updatedAt
 ) {
 }

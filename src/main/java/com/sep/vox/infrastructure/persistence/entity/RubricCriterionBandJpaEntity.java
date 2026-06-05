@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.hibernate.annotations.Generated;
 import org.hibernate.generator.EventType;
 
+import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -17,6 +18,11 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "rubric_criterion_bands", indexes = {
     @Index(columnList = "criterion_id, code", name = "idx_rubric_criterion_bands_criterion_code", unique = true)
+}, check = {
+    @CheckConstraint(
+        name = "chk_rubric_criterion_bands_score_range_valid",
+        constraint = "score_min <= score_max"
+    )
 })
 
 public class RubricCriterionBandJpaEntity {

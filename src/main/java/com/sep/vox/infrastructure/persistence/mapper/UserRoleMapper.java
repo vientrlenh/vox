@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
-import com.sep.vox.domain.model.userrole.UserRole;
+import com.sep.vox.domain.model.user.UserRole;
 import com.sep.vox.infrastructure.persistence.entity.UserRoleJpaEntity;
 
 public final class UserRoleMapper {

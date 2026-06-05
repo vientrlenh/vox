@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.hibernate.annotations.Generated;
 import org.hibernate.generator.EventType;
 
+import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -14,31 +15,63 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "question_banks", indexes = {
-    @Index(columnList = "bank_name", name = "idx_question_bank_name")
+    @Index(columnList = "owner_type, language_id, school_id, code", name = "idx_question_banks_language_school_code", unique = true)
+}, check = {
+    @CheckConstraint(
+        name = "chk_owner_type_and_school_id_valid", 
+        constraint = """
+        (
+            owner_type = 'SYSTEM' AND school_id IS NULL
+        )   
+        OR 
+        (
+            owner_type = 'SCHOOL' AND school_id IS NOT NULL
+        )     
+        """
+    )
 })
 public class QuestionBankJpaEntity {
 
     @Id
     @Generated(event = EventType.INSERT)
-    @Column(name = "id", nullable = false, updatable = false, insertable = false, columnDefinition = "UUID DEFAULT uuidv7()")
+    @Column(
+        name = "id", 
+        nullable = false, 
+        updatable = false, 
+        insertable = false, 
+        columnDefinition = "UUID DEFAULT uuidv7()")
     private UUID id;
 
-    // FK chưa link - chờ tạo Grade model
-    // @Column(name = "grade_id", nullable = false)
-    // private UUID gradeId;
+    @Column(name = "language_id", nullable = false, updatable = false)
+    private UUID languageId;
 
-    // FK chưa link - chờ tạo SupportedLanguage model
-    // @Column(name = "language_id", nullable = false)
-    // private UUID languageId;
+    @Column(name = "school_id")
+    private UUID schoolId;
 
-    @Column(name = "bank_name", nullable = false, length = 255)
-    private String bankName;
+    @Column(name = "code", nullable = false, length = 100)
+    private String code;
+
+    @Column(name = "name", nullable = false, length = 255)
+    private String name;
 
     @Column(name = "description", length = 2048)
     private String description;
 
-    @Column(name = "is_active", nullable = false)
-    private boolean isActive;
+    @Column(name = "owner_type", nullable = false, length = 20, check = {
+        @CheckConstraint(
+            name = "chk_owner_type_valid", 
+            constraint = "owner_type IN ('SYSTEM', 'SCHOOL')"
+        )
+    })
+    private String ownerType;
+
+    @Column(name = "status", nullable = false, updatable = false, check = {
+        @CheckConstraint(
+            name = "chk_status_valid", 
+            constraint = "status IN ('DRAFT', 'PUBLISHED', 'ARCHIVED')"
+        )
+    })
+    private String status;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
@@ -46,31 +79,25 @@ public class QuestionBankJpaEntity {
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
 
-    @Column(name = "created_by", nullable = false, updatable = false)
+    @Column(name = "created_by", updatable = false)
     private UUID createdBy;
 
-    @Column(name = "updated_by", nullable = false)
+    @Column(name = "updated_by")
     private UUID updatedBy;
 
     protected QuestionBankJpaEntity() {}
 
-    public QuestionBankJpaEntity(UUID id, String bankName, String description, boolean isActive,
-            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+    public QuestionBankJpaEntity(UUID id, UUID languageId, UUID schoolId, String code, String name,
+            String description, String ownerType, String status, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy,
+            UUID updatedBy) {
         this.id = id;
-        this.bankName = bankName;
+        this.languageId = languageId;
+        this.schoolId = schoolId;
+        this.code = code;
+        this.name = name;
         this.description = description;
-        this.isActive = isActive;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public QuestionBankJpaEntity(String bankName, String description, boolean isActive,
-            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
-        this.bankName = bankName;
-        this.description = description;
-        this.isActive = isActive;
+        this.ownerType = ownerType;
+        this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
@@ -85,28 +112,28 @@ public class QuestionBankJpaEntity {
         this.id = id;
     }
 
-    // public UUID getGradeId() {
-    //     return gradeId;
-    // }
-    //
-    // public void setGradeId(UUID gradeId) {
-    //     this.gradeId = gradeId;
-    // }
-    //
-    // public UUID getLanguageId() {
-    //     return languageId;
-    // }
-    //
-    // public void setLanguageId(UUID languageId) {
-    //     this.languageId = languageId;
-    // }
-
-    public String getBankName() {
-        return bankName;
+    public UUID getLanguageId() {
+        return languageId;
     }
 
-    public void setBankName(String bankName) {
-        this.bankName = bankName;
+    public void setLanguageId(UUID languageId) {
+        this.languageId = languageId;
+    }
+
+    public String getCode() {
+        return code;
+    }
+
+    public void setCode(String code) {
+        this.code = code;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getDescription() {
@@ -117,12 +144,12 @@ public class QuestionBankJpaEntity {
         this.description = description;
     }
 
-    public boolean isActive() {
-        return isActive;
+    public String getStatus() {
+        return status;
     }
 
-    public void setActive(boolean isActive) {
-        this.isActive = isActive;
+    public void setStatus(String status) {
+        this.status = status;
     }
 
     public OffsetDateTime getCreatedAt() {
@@ -156,4 +183,22 @@ public class QuestionBankJpaEntity {
     public void setUpdatedBy(UUID updatedBy) {
         this.updatedBy = updatedBy;
     }
+
+    public UUID getSchoolId() {
+        return schoolId;
+    }
+
+    public void setSchoolId(UUID schoolId) {
+        this.schoolId = schoolId;
+    }
+
+    public String getOwnerType() {
+        return ownerType;
+    }
+
+    public void setOwnerType(String ownerType) {
+        this.ownerType = ownerType;
+    }
+
+    
 }

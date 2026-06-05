@@ -49,17 +49,11 @@ public final class StringNormalization {
         return text.replaceAll("\\p{M}", "");
     }
 
-    public static String normalizeSchoolCode(String input) {
+    public static String normalizeCode(String input) {
         if (input == null) {
             return null;
         }
         return input.strip().toUpperCase(Locale.ROOT);
     }
 
-    public static String normalizeClassCode(String input) {
-        if (input == null) {
-            return null;
-        }
-        return input.strip().toUpperCase(Locale.ROOT);
-    }
 }

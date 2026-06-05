@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
-import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyOwnerType;
+import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStrictness;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStatus;
 import com.sep.vox.infrastructure.persistence.entity.AssessmentPolicyJpaEntity;
 
@@ -12,9 +12,16 @@ public final class AssessmentPolicyMapper {
     public static AssessmentPolicy toDomain(AssessmentPolicyJpaEntity jpa) {
         return new AssessmentPolicy(
             jpa.getId(),
-            fromOwnerType(jpa.getOwnerType()),
             jpa.getSchoolId(),
+            jpa.getSchoolGradeId(),
+            jpa.getSchoolClassId(),
+            jpa.getLanguageId(),
+            jpa.getFrameworkId(),
             jpa.getRubricVersionId(),
+            jpa.getTargetResultBandId(),
+            jpa.getPassingResultBandId(),
+            jpa.getPassingScore(),
+            fromStrictness(jpa.getStrictness()),
             jpa.getVersion(),
             fromStatus(jpa.getStatus()),
             jpa.getEffectiveFrom(),
@@ -29,9 +36,16 @@ public final class AssessmentPolicyMapper {
     public static AssessmentPolicyJpaEntity toJpa(AssessmentPolicy policy) {
         return new AssessmentPolicyJpaEntity(
             policy.getId(),
-            valueOf(policy.getOwnerType()),
             policy.getSchoolId(),
+            policy.getSchoolGradeId(),
+            policy.getSchoolClassId(),
+            policy.getLanguageId(),
+            policy.getFrameworkId(),
             policy.getRubricVersionId(),
+            policy.getTargetResultBandId(),
+            policy.getPassingResultBandId(),
+            policy.getPassingScore(),
+            valueOf(policy.getStrictness()),
             policy.getVersion(),
             valueOf(policy.getStatus()),
             policy.getEffectiveFrom(),
@@ -43,16 +57,16 @@ public final class AssessmentPolicyMapper {
         );
     }
 
-    private static String valueOf(AssessmentPolicyOwnerType type) {
-        return type == null ? null : type.name();
+    private static String valueOf(AssessmentPolicyStrictness strictness) {
+        return strictness == null ? null : strictness.name();
     }
 
     private static String valueOf(AssessmentPolicyStatus status) {
         return status == null ? null : status.name();
     }
 
-    private static AssessmentPolicyOwnerType fromOwnerType(String value) {
-        return value == null ? null : AssessmentPolicyOwnerType.valueOf(value);
+    private static AssessmentPolicyStrictness fromStrictness(String value) {
+        return value == null ? null : AssessmentPolicyStrictness.valueOf(value);
     }
 
     private static AssessmentPolicyStatus fromStatus(String value) {

@@ -1,19 +1,24 @@
 package com.sep.vox.domain.mapper;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.QuestionTopicDto;
-import com.sep.vox.domain.model.questiontopic.QuestionTopic;
+import com.sep.vox.domain.model.question.QuestionTopic;
 
 public class QuestionTopicDtoMapper {
 
     public static QuestionTopicDto toDto(QuestionTopic domain) {
         return new QuestionTopicDto(
             domain.getId(),
-            domain.getBankId(),
-            domain.getTopicName(),
-            domain.getDescription()
+            domain.getQuestionBankId(),
+            domain.getCode(),
+            domain.getName(),
+            domain.getDescription(),
+            domain.getStatus().name(),
+            valueOf(domain.getCreatedAt()),
+            valueOf(domain.getUpdatedAt())
         );
     }
 
@@ -31,5 +36,9 @@ public class QuestionTopicDtoMapper {
             page.totalElements(),
             page.totalPages()
         );
+    }
+
+    private static String valueOf(OffsetDateTime date) {
+        return date == null ? null : date.toString();
     }
 }

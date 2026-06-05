@@ -23,8 +23,8 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.sep.vox.application.port.output.PasswordEncoderPort;
+import com.sep.vox.infrastructure.filter.JwtAuthenticationFilter;
 import com.sep.vox.infrastructure.security.Argon2PasswordEncodeProvider;
-import com.sep.vox.infrastructure.security.JwtAuthenticationFilter;
 import com.sep.vox.infrastructure.security.OAuth2AuthenticationSuccessHandler;
 
 @Configuration

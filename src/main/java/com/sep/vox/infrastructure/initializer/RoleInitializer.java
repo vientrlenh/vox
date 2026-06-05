@@ -9,7 +9,7 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
-import com.sep.vox.domain.model.role.Role;
+import com.sep.vox.domain.model.user.Role;
 import com.sep.vox.domain.repository.RoleRepository;
 import com.sep.vox.domain.valueobject.RoleCode;
 

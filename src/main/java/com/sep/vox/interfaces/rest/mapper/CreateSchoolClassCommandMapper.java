@@ -11,8 +11,7 @@ public final class CreateSchoolClassCommandMapper {
             request.schoolGradeId(),
             request.code(),
             request.name(),
-            request.description(),
-            request.targetSchoolLevelVersionId()
+            request.description()
         );
     }
 }

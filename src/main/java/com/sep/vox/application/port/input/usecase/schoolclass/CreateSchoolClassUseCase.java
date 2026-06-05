@@ -10,34 +10,28 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.mapper.schoolclass.CreateSchoolClassResponseMapper;
 import com.sep.vox.application.port.input.command.CreateSchoolClassCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.dto.SchoolClassDto;
-import com.sep.vox.domain.mapper.SchoolClassDtoMapper;
-import com.sep.vox.domain.model.languagelevel.LevelStatus;
-import com.sep.vox.domain.model.schoolclass.SchoolClass;
-import com.sep.vox.domain.model.schoolgrade.SchoolGradeStatus;
+import com.sep.vox.application.response.input.schoolclass.CreateSchoolClassResponse;
+import com.sep.vox.domain.model.school.SchoolClass;
+import com.sep.vox.domain.model.school.SchoolGradeStatus;
 import com.sep.vox.domain.model.user.User;
-import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
-import com.sep.vox.domain.repository.SchoolLevelRepository;
-import com.sep.vox.domain.repository.SchoolLevelVersionRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
-public class CreateSchoolClassUseCase implements IUseCase<CreateSchoolClassCommand, SchoolClassDto> {
+public class CreateSchoolClassUseCase implements IUseCase<CreateSchoolClassCommand, CreateSchoolClassResponse> {
 
     private final SchoolClassRepository schoolClassRepository;
     private final SchoolRepository schoolRepository;
     private final UserRepository userRepository;
     private final SupportedLanguageRepository supportedLanguageRepository;
     private final SchoolGradeRepository schoolGradeRepository;
-    private final SchoolLevelVersionRepository schoolLevelVersionRepository;
-    private final SchoolLevelRepository schoolLevelRepository;
     private final UserContextPort userContextPort;
 
     public CreateSchoolClassUseCase(
@@ -46,22 +40,18 @@ public class CreateSchoolClassUseCase implements IUseCase<CreateSchoolClassComma
             UserRepository userRepository,
             SupportedLanguageRepository supportedLanguageRepository,
             SchoolGradeRepository schoolGradeRepository,
-            SchoolLevelVersionRepository schoolLevelVersionRepository,
-            SchoolLevelRepository schoolLevelRepository,
             UserContextPort userContextPort) {
         this.schoolClassRepository = schoolClassRepository;
         this.schoolRepository = schoolRepository;
         this.userRepository = userRepository;
         this.supportedLanguageRepository = supportedLanguageRepository;
         this.schoolGradeRepository = schoolGradeRepository;
-        this.schoolLevelVersionRepository = schoolLevelVersionRepository;
-        this.schoolLevelRepository = schoolLevelRepository;
         this.userContextPort = userContextPort;
     }
 
     @Override
     @Transactional
-    public SchoolClassDto execute(CreateSchoolClassCommand input) {
+    public CreateSchoolClassResponse execute(CreateSchoolClassCommand input) {
         var command = normalize(input);
         var now = OffsetDateTime.now();
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
@@ -71,7 +61,7 @@ public class CreateSchoolClassUseCase implements IUseCase<CreateSchoolClassComma
         validateSchool(schoolId);
         validateLanguage(command.languageId());
         validateSchoolGrade(command.schoolGradeId(), schoolId);
-        validateTargetSchoolLevelVersion(command.targetSchoolLevelVersionId(), schoolId, command.languageId());
+
         validateClassCodeIsUnique(schoolId, command.code());
 
         var schoolClass = SchoolClass.create(
@@ -81,36 +71,27 @@ public class CreateSchoolClassUseCase implements IUseCase<CreateSchoolClassComma
             command.code(),
             command.name(),
             command.description(),
-            command.targetSchoolLevelVersionId(),
             currentUserId,
             now
         );
         var saved = schoolClassRepository.save(schoolClass);
-        return SchoolClassDtoMapper.toDto(saved);
+        return CreateSchoolClassResponseMapper.toResponse(saved.getId());
     }
 
     private CreateSchoolClassCommand normalize(CreateSchoolClassCommand input) {
         return new CreateSchoolClassCommand(
             input.languageId(),
             input.schoolGradeId(),
-            StringNormalization.normalizeClassCode(input.code()),
+            StringNormalization.normalizeCode(input.code()),
             StringNormalization.trimAndCollapseSpaces(input.name()),
-            StringNormalization.trimAndCollapseSpaces(input.description()),
-            input.targetSchoolLevelVersionId()
+            StringNormalization.trimAndCollapseSpaces(input.description())
         );
     }
 
     private User findCurrentUser(UUID currentUserId) {
         var user = userRepository.findById(currentUserId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng hiện tại"));
-        validateCurrentUserIsActive(user);
         return user;
-    }
-
-    private void validateCurrentUserIsActive(User currentUser) {
-        if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new IllegalStateException("Người dùng hiện tại không hoạt động");
-        }
     }
 
     private UUID getSchoolId(User currentUser) {
@@ -148,22 +129,6 @@ public class CreateSchoolClassUseCase implements IUseCase<CreateSchoolClassComma
         }
     }
 
-    private void validateTargetSchoolLevelVersion(UUID targetSchoolLevelVersionId, UUID schoolId, UUID languageId) {
-        var levelVersion = schoolLevelVersionRepository.findById(targetSchoolLevelVersionId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản cấp độ mục tiêu"));
-        if (levelVersion.getStatus() != LevelStatus.PUBLISHED) {
-            throw new IllegalStateException("Phiên bản cấp độ mục tiêu chưa được công bố");
-        }
-
-        var schoolLevel = schoolLevelRepository.findById(levelVersion.getSchoolLevelId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy cấp độ trường học"));
-        if (!Objects.equals(schoolLevel.getSchoolId(), schoolId)) {
-            throw new IllegalArgumentException("Cấp độ mục tiêu không thuộc trường hiện tại");
-        }
-        if (!Objects.equals(schoolLevel.getLanguageId(), languageId)) {
-            throw new IllegalArgumentException("Cấp độ mục tiêu không thuộc ngôn ngữ đã chọn");
-        }
-    }
 
     private void validateClassCodeIsUnique(UUID schoolId, String code) {
         if (schoolClassRepository.findBySchoolIdAndCode(schoolId, code).isPresent()) {

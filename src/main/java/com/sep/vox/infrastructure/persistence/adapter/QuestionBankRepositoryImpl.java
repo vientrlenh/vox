@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
-import com.sep.vox.domain.model.questionbank.QuestionBank;
+import com.sep.vox.domain.model.question.QuestionBank;
 import com.sep.vox.domain.repository.QuestionBankRepository;
 import com.sep.vox.infrastructure.persistence.mapper.QuestionBankMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataQuestionBankRepository;

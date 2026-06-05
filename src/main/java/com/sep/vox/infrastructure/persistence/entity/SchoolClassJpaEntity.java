@@ -17,8 +17,7 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "school_classes", indexes = {
     @Index(columnList = "school_id, code", name = "idx_school_class_code", unique = true),
-    @Index(columnList = "school_id, name", name = "idx_school_class_name"),
-    @Index(columnList = "school_id, language_id, target_school_level_version_id", name = "idx_school_class_language_level_school_level_version")
+    @Index(columnList = "school_id, name", name = "idx_school_class_name")
 })
 public class SchoolClassJpaEntity {
     @Id
@@ -44,9 +43,6 @@ public class SchoolClassJpaEntity {
     @Column(name = "description", length = 2048)
     private String description;
 
-    @Column(name = "target_school_level_version_id", nullable = false)
-    private UUID targetSchoolLevelVersionId;
-
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
             name = "chk_status_valid", 
@@ -69,7 +65,7 @@ public class SchoolClassJpaEntity {
 
     protected SchoolClassJpaEntity() {}
 
-    public SchoolClassJpaEntity(UUID id, UUID schoolId, UUID languageId, UUID schoolGradeId, String code, String name, String description, UUID targetSchoolLevelVersionId, String status, OffsetDateTime createdAt,
+    public SchoolClassJpaEntity(UUID id, UUID schoolId, UUID languageId, UUID schoolGradeId, String code, String name, String description, String status, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.schoolId = schoolId;
@@ -78,7 +74,6 @@ public class SchoolClassJpaEntity {
         this.code = code;
         this.name = name;
         this.description = description;
-        this.targetSchoolLevelVersionId = targetSchoolLevelVersionId;
         this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -86,7 +81,7 @@ public class SchoolClassJpaEntity {
         this.updatedBy = updatedBy;
     }
 
-    public SchoolClassJpaEntity(UUID schoolId, UUID languageId, UUID schoolGradeId, String code, String name, String description, UUID targetSchoolLevelVersionId,String status, OffsetDateTime createdAt,
+    public SchoolClassJpaEntity(UUID schoolId, UUID languageId, UUID schoolGradeId, String code, String name, String description, String status, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.schoolId = schoolId;
         this.languageId = languageId;
@@ -94,7 +89,6 @@ public class SchoolClassJpaEntity {
         this.code = code;
         this.name = name;
         this.description = description;
-        this.targetSchoolLevelVersionId = targetSchoolLevelVersionId;
         this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -140,14 +134,6 @@ public class SchoolClassJpaEntity {
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public UUID getTargetSchoolLevelVersionId() {
-        return targetSchoolLevelVersionId;
-    }
-
-    public void setTargetSchoolLevelVersionId(UUID targetSchoolLevelVersionId) {
-        this.targetSchoolLevelVersionId = targetSchoolLevelVersionId;
     }
 
 

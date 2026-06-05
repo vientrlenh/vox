@@ -10,11 +10,8 @@ public record SchoolClassDto(
     String code,
     String name,
     String description,
-    UUID targetSchoolLevelVersionId,
     String status,
-    String createdAt,
-    String updatedAt,
-    UUID createdBy,
-    UUID updatedBy
+    String createdAt, 
+    String updatedAt
 ) {
 }

@@ -70,5 +70,18 @@ public class UserRepositoryImpl implements UserRepository {
         return springDataUserRepository.findByEmailAndStatus(email, status.name())
             .map(UserMapper::toDomain);
     }
+
+
+    @Override
+    public Optional<User> findByIdAndStatus(UUID id, UserStatus status) {
+        return springDataUserRepository.findByIdAndStatus(id, status.name())
+            .map(UserMapper::toDomain);
+    }
+
+
+    @Override
+    public boolean existsByIdAndStatus(UUID id, UserStatus status) {
+        return springDataUserRepository.existsByIdAndStatus(id, status.name());
+    }
     
 }

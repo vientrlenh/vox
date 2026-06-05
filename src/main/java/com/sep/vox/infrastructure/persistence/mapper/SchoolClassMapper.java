@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
-import com.sep.vox.domain.model.schoolclass.SchoolClass;
-import com.sep.vox.domain.model.schoolclass.SchoolClassStatus;
+import com.sep.vox.domain.model.school.SchoolClass;
+import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.valueobject.ClassCode;
 import com.sep.vox.infrastructure.persistence.entity.SchoolClassJpaEntity;
 
@@ -16,7 +16,6 @@ public final class SchoolClassMapper {
             new ClassCode(jpa.getCode()),
             jpa.getName(),
             jpa.getDescription(),
-            jpa.getTargetSchoolLevelVersionId(),
             statusFromString(jpa.getStatus()),
             jpa.getCreatedAt(),
             jpa.getUpdatedAt(),
@@ -34,7 +33,6 @@ public final class SchoolClassMapper {
             valueOf(schoolClass.getCode()),
             schoolClass.getName(),
             schoolClass.getDescription(),
-            schoolClass.getTargetSchoolLevelVersionId(),
             valueOf(schoolClass.getStatus()),
             schoolClass.getCreatedAt(),
             schoolClass.getUpdatedAt(),

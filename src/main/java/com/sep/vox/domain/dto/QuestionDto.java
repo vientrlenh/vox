@@ -4,16 +4,22 @@ import java.util.UUID;
 
 public record QuestionDto(
     UUID id,
-    UUID topicId,
+    UUID questionTopicId,
+    String code,
+    String instructionText,
     String questionText,
-    String audioUrl,
-    UUID standardLevelId,
-    String standardLevelCode,
-    String frameworkCode,
-    String frameworkName,
-    String questionType,
-    int durationSeconds,
-    boolean isActive,
-    String createdAt
+    String promptText,
+    String preparationText,
+    String type,
+    int preparationTimeSeconds,
+    int minResponseSeconds,
+    int maxResponseSeconds,
+    String scope,
+    String visibility,
+    UUID sourceQuestionId,
+    boolean locked,
+    String status,
+    String createdAt,
+    String updatedAt
 ) {
 }

@@ -7,15 +7,14 @@ import java.util.UUID;
 public class RubricResultBand {
     private UUID id;
     private UUID rubricVersionId;
+    private UUID frameworkResultBandId;
     private String code;
     private String name;
     private String description;
-    private BigDecimal scoreMin;
-    private BigDecimal scoreMax;
+    private BigDecimal mappedScoreMin;
+    private BigDecimal mappedScoreMax;
     private int order;
     private Boolean isPassing;
-    private UUID standardLevelVersionId;
-    private UUID schoolLevelVersionId;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
     private UUID createdBy;
@@ -23,40 +22,37 @@ public class RubricResultBand {
 
     public RubricResultBand() {}
 
-    public RubricResultBand(UUID id, UUID rubricVersionId, String code, String name, String description,
-            BigDecimal scoreMin, BigDecimal scoreMax, int order, Boolean isPassing, UUID standardLevelVersionId,
-            UUID schoolLevelVersionId, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy,
-            UUID updatedBy) {
+    public RubricResultBand(UUID id, UUID rubricVersionId, UUID frameworkResultBandId, String code, String name,
+            String description, BigDecimal mappedScoreMin, BigDecimal mappedScoreMax, int order, Boolean isPassing,
+            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.rubricVersionId = rubricVersionId;
+        this.frameworkResultBandId = frameworkResultBandId;
         this.code = code;
         this.name = name;
         this.description = description;
-        this.scoreMin = scoreMin;
-        this.scoreMax = scoreMax;
+        this.mappedScoreMin = mappedScoreMin;
+        this.mappedScoreMax = mappedScoreMax;
         this.order = order;
         this.isPassing = isPassing;
-        this.standardLevelVersionId = standardLevelVersionId;
-        this.schoolLevelVersionId = schoolLevelVersionId;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
         this.updatedBy = updatedBy;
     }
 
-    public RubricResultBand(UUID rubricVersionId, String code, String name, String description, BigDecimal scoreMin,
-            BigDecimal scoreMax, int order, Boolean isPassing, UUID standardLevelVersionId, UUID schoolLevelVersionId,
+    public RubricResultBand(UUID rubricVersionId, UUID frameworkResultBandId, String code, String name,
+            String description, BigDecimal mappedScoreMin, BigDecimal mappedScoreMax, int order, Boolean isPassing,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.rubricVersionId = rubricVersionId;
+        this.frameworkResultBandId = frameworkResultBandId;
         this.code = code;
         this.name = name;
         this.description = description;
-        this.scoreMin = scoreMin;
-        this.scoreMax = scoreMax;
+        this.mappedScoreMin = mappedScoreMin;
+        this.mappedScoreMax = mappedScoreMax;
         this.order = order;
         this.isPassing = isPassing;
-        this.standardLevelVersionId = standardLevelVersionId;
-        this.schoolLevelVersionId = schoolLevelVersionId;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
@@ -77,6 +73,14 @@ public class RubricResultBand {
 
     public void setRubricVersionId(UUID rubricVersionId) {
         this.rubricVersionId = rubricVersionId;
+    }
+
+    public UUID getFrameworkResultBandId() {
+        return frameworkResultBandId;
+    }
+
+    public void setFrameworkResultBandId(UUID frameworkResultBandId) {
+        this.frameworkResultBandId = frameworkResultBandId;
     }
 
     public String getCode() {
@@ -103,20 +107,20 @@ public class RubricResultBand {
         this.description = description;
     }
 
-    public BigDecimal getScoreMin() {
-        return scoreMin;
+    public BigDecimal getMappedScoreMin() {
+        return mappedScoreMin;
     }
 
-    public void setScoreMin(BigDecimal scoreMin) {
-        this.scoreMin = scoreMin;
+    public void setMappedScoreMin(BigDecimal mappedScoreMin) {
+        this.mappedScoreMin = mappedScoreMin;
     }
 
-    public BigDecimal getScoreMax() {
-        return scoreMax;
+    public BigDecimal getMappedScoreMax() {
+        return mappedScoreMax;
     }
 
-    public void setScoreMax(BigDecimal scoreMax) {
-        this.scoreMax = scoreMax;
+    public void setMappedScoreMax(BigDecimal mappedScoreMax) {
+        this.mappedScoreMax = mappedScoreMax;
     }
 
     public int getOrder() {
@@ -133,22 +137,6 @@ public class RubricResultBand {
 
     public void setIsPassing(Boolean isPassing) {
         this.isPassing = isPassing;
-    }
-
-    public UUID getStandardLevelVersionId() {
-        return standardLevelVersionId;
-    }
-
-    public void setStandardLevelVersionId(UUID standardLevelVersionId) {
-        this.standardLevelVersionId = standardLevelVersionId;
-    }
-
-    public UUID getSchoolLevelVersionId() {
-        return schoolLevelVersionId;
-    }
-
-    public void setSchoolLevelVersionId(UUID schoolLevelVersionId) {
-        this.schoolLevelVersionId = schoolLevelVersionId;
     }
 
     public OffsetDateTime getCreatedAt() {

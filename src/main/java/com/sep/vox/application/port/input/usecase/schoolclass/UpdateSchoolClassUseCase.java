@@ -57,11 +57,6 @@ public class UpdateSchoolClassUseCase implements IUseCase<UpdateSchoolClassComma
         }
 
         var status = parseStatus(command.status());
-        validateTargetSchoolLevelVersion(
-            command.targetSchoolLevelVersionId(),
-            schoolId,
-            schoolClass.getLanguageId()
-        );
 
         var updatedRows = schoolClassRepository.updateMutableFields(
             command.id(),

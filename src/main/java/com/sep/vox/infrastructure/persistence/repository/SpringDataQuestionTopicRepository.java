@@ -20,10 +20,10 @@ public interface SpringDataQuestionTopicRepository extends JpaRepository<Questio
         FROM QuestionTopicJpaEntity qt 
         JOIN QuestionBankJpaEntity qb 
             ON qt.questionBankId = qb.id 
-        JOIN SchoolGradeJpaEntity sg 
-            ON qb.schoolGradeId = sg.id
+        JOIN SchoolJpaEntity s 
+            ON qb.schoolId = s.id
         WHERE qt.id = :questionTopicId 
-            AND sg.schoolId = :schoolId
+            AND s.id = :schoolId
     """)
     boolean isTopicBelongToSchool(@Param("questionTopicId") UUID questionTopicId, @Param("schoolId") UUID schoolId);
 }

@@ -12,9 +12,7 @@ public final class QuestionMapper {
     public static Question toDomain(QuestionJpaEntity jpa) {
         return new Question(
             jpa.getId(),
-            jpa.getQuestionTopicId(), 
-            jpa.getMinRecommendResultBandId(), 
-            jpa.getMaxRecommendResultBandId(), 
+            jpa.getQuestionTopicId(),
             jpa.getCode(),
             jpa.getInstructionText(),
             jpa.getQuestionText(),
@@ -40,8 +38,6 @@ public final class QuestionMapper {
         return new QuestionJpaEntity(
             question.getId(),
             question.getQuestionTopicId(), 
-            question.getMinRecommendResultBandId(), 
-            question.getMaxRecommendResultBandId(), 
             question.getCode(),
             question.getInstructionText(),
             question.getQuestionText(),

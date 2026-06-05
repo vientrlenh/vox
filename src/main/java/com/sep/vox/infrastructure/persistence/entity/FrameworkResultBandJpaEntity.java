@@ -49,7 +49,7 @@ public class FrameworkResultBandJpaEntity {
     @Column(name = "score_max", precision = 6, scale = 2)
     private BigDecimal scoreMax;
 
-    @Column(name = "order", nullable = false)
+    @Column(name = "result_band_order", nullable = false)
     private int order;
 
     @Column(name = "status", nullable = false, check = {

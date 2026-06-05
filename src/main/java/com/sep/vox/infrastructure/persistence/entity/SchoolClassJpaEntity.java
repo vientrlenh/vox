@@ -17,8 +17,7 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "school_classes", indexes = {
     @Index(columnList = "school_id, code", name = "idx_school_class_code", unique = true),
-    @Index(columnList = "school_id, name", name = "idx_school_class_name"),
-    @Index(columnList = "school_id, language_id, target_school_level_version_id", name = "idx_school_class_language_level_school_level_version")
+    @Index(columnList = "school_id, name", name = "idx_school_class_name")
 })
 public class SchoolClassJpaEntity {
     @Id

@@ -5,8 +5,6 @@ import java.util.UUID;
 
 public record CreateSystemQuestionBankQuestionCommand(
     UUID questionTopicId,
-    UUID minRecommendResultBandId, 
-    UUID maxRecommendResultBandId,
     String code,
     String instructionText, 
     String questionText,

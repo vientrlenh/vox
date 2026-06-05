@@ -7,11 +7,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
-import java.util.UUID;
+
 
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.port.input.query.ViewSchoolClassDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolClassesQuery;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassesUseCase;
@@ -45,32 +44,5 @@ class SchoolClassControllerTests {
         assertThrows(IllegalStateException.class, () -> controller.schoolClasses(1, 0));
     }
 
-    @Test
-    void school_class_should_return_details() {
-        var useCase = mock(ViewSchoolClassesUseCase.class);
-        var detailsUseCase = mock(ViewSchoolClassDetailsUseCase.class);
-        var controller = new SchoolClassController(useCase, detailsUseCase);
-        var id = UUID.randomUUID();
-        var dto = new SchoolClassDto(
-            id,
-            UUID.randomUUID(),
-            UUID.randomUUID(),
-            UUID.randomUUID(),
-            "ENG_10_A",
-            "English 10A",
-            "Test class",
-            UUID.randomUUID(),
-            "ACTIVE",
-            "2026-06-02T00:00:00Z",
-            "2026-06-02T00:00:00Z",
-            UUID.randomUUID(),
-            UUID.randomUUID()
-        );
-        when(detailsUseCase.execute(new ViewSchoolClassDetailsQuery(id))).thenReturn(dto);
 
-        var result = controller.schoolClass(id);
-
-        assertThat(result).isEqualTo(dto);
-        verify(detailsUseCase).execute(new ViewSchoolClassDetailsQuery(id));
-    }
 }

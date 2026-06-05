@@ -17,7 +17,6 @@ public final class CreateQuestionCommandMapper {
             request.questionText(),
             request.promptText(),
             request.preparationText(),
-            request.standardLevelVersionId(),
             request.expectedContent(),
             request.keyPoints(),
             request.acceptableResponses(),

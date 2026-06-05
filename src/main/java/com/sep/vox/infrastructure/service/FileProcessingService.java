@@ -1,32 +1,243 @@
 package com.sep.vox.infrastructure.service;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
+import java.text.Normalizer;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.regex.Pattern;
 
+import org.apache.commons.csv.CSVFormat;
+import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.springframework.stereotype.Service;
 
+import com.sep.vox.application.common.UploadedFile;
 import com.sep.vox.application.port.output.FileProcessingPort;
+import com.sep.vox.application.response.output.ParseImportFileResult;
+import com.sep.vox.domain.model.importfile.ImportType;
 
 @Service
 public class FileProcessingService implements FileProcessingPort {
-    
-    private static final String[] ALLOWED_FILES = {
-        "Excel", 
-        "Csv"
-    };
+
+    private static final int SAMPLE_ROW_LIMIT = 10;
+    private static final Pattern DIACRITICS = Pattern.compile("\\p{M}+");
+    private static final Pattern NON_ALPHANUMERIC = Pattern.compile("[^\\p{Alnum}]+");
 
     @Override
-    public void importFile() {
-        
+    public ParseImportFileResult parse(UploadedFile file, ImportType type) {
+        validate(file, type);
+
+        var extension = extensionOf(file.fileName());
+        var table = switch (extension) {
+            case "xlsx", "xls" -> parseExcel(file.fileName(), file.content());
+            case "csv" -> parseCsv(file.fileName(), file.content());
+            default -> throw new IllegalArgumentException("Định dạng file không được hỗ trợ để parse");
+        };
+
+        var suggestedMapping = suggestMapping(table.headers(), type);
+        return new ParseImportFileResult(
+            table.headers(),
+            suggestedMapping,
+            table.sampleRows(),
+            table.totalRows()
+        );
+    }
+
+    private void validate(UploadedFile file, ImportType type) {
+        if (file == null) {
+            throw new IllegalArgumentException("File import không được để trống");
+        }
+        if (type == null) {
+            throw new IllegalArgumentException("Loại import không được để trống");
+        }
+        if (file.content() == null || file.content().length == 0 || file.size() <= 0) {
+            throw new IllegalArgumentException("File import không được để trống");
+        }
     }
 
     private String extensionOf(String fileName) {
         if (fileName == null || fileName.isBlank()) {
-            return null;
+            return "";
         }
         var dotIndex = fileName.lastIndexOf(".");
         if (dotIndex < 0 || dotIndex == fileName.length() - 1) {
-            return null;
+            return "";
         }
         return fileName.substring(dotIndex + 1).toLowerCase(Locale.ROOT);
     }
+
+    private ParsedImportTable parseExcel(String fileName, byte[] content) {
+        try (var workbook = WorkbookFactory.create(new ByteArrayInputStream(content))) {
+            var sheet = workbook.getSheetAt(0);
+            var formatter = new DataFormatter();
+            var headerRow = sheet.getRow(sheet.getFirstRowNum());
+            if (headerRow == null) {
+                throw new IllegalArgumentException("File import thiếu header");
+            }
+
+            var headers = getHeadersFromExcelHeader(headerRow, formatter);
+            validateHeaders(headers);
+
+            var sampleRows = new ArrayList<Map<String, String>>();
+            var totalRows = 0L;
+            for (var rowIndex = sheet.getFirstRowNum() + 1; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
+                var row = sheet.getRow(rowIndex);
+                if (row == null) {
+                    continue;
+                }
+                var values = new LinkedHashMap<String, String>();
+                for (var headerIndex = 0; headerIndex < headers.size(); headerIndex++) {
+                    values.put(headers.get(headerIndex), formatter.formatCellValue(row.getCell(headerIndex)));
+                }
+                if (isBlankRow(values)) {
+                    continue;
+                }
+                totalRows++;
+                if (sampleRows.size() < SAMPLE_ROW_LIMIT) {
+                    sampleRows.add(Collections.unmodifiableMap(new LinkedHashMap<>(values)));
+                }
+            }
+
+            return new ParsedImportTable(List.copyOf(headers), List.copyOf(sampleRows), totalRows);
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Không thể đọc dữ liệu từ file " + fileName, e);
+        }
+    }
+
+    private List<String> getHeadersFromExcelHeader(Row headerRow, DataFormatter formatter) {
+        var headers = new ArrayList<String>();
+        for (var cellIndex = headerRow.getFirstCellNum(); cellIndex < headerRow.getLastCellNum(); cellIndex++) {
+            headers.add(formatter.formatCellValue(headerRow.getCell(cellIndex)).strip());
+        }
+        return headers;
+    }
+
+    private ParsedImportTable parseCsv(String fileName, byte[] content) {
+        var csvContent = removeUtf8Bom(new String(content, StandardCharsets.UTF_8));
+        var format = CSVFormat.DEFAULT.builder()
+            .setHeader()
+            .setSkipHeaderRecord(true)
+            .setIgnoreEmptyLines(false)
+            .get();
+        try (
+            var parser = format.parse(new StringReader(csvContent));
+        ) {
+            var headers = new ArrayList<String>(parser.getHeaderMap().keySet());
+            validateHeaders(headers);
+
+            var sampleRows = new ArrayList<Map<String, String>>();
+            var totalRows = 0L;
+            for (var record : parser) {
+                var values = new LinkedHashMap<String, String>();
+                for (var header : headers) {
+                    values.put(header, record.get(header));
+                }
+                if (isBlankRow(values)) {
+                    continue;
+                }
+                totalRows++;
+                if (sampleRows.size() < SAMPLE_ROW_LIMIT) {
+                    sampleRows.add(Collections.unmodifiableMap(new LinkedHashMap<>(values)));
+                }
+            }
+
+            return new ParsedImportTable(List.copyOf(headers), List.copyOf(sampleRows), totalRows);
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Không thể đọc dữ liệu từ file " + fileName, e);
+        }
+    }
+
+    private void validateHeaders(List<String> headers) {
+        if (headers.isEmpty() || headers.stream().allMatch(String::isBlank)) {
+            throw new IllegalArgumentException("File import thiếu header");
+        }
+    }
+
+    private boolean isBlankRow(Map<String, String> row) {
+        return row.values().stream().allMatch(value -> value == null || value.isBlank());
+    }
+
+    private Map<String, String> suggestMapping(List<String> originalHeaders, ImportType type) {
+        var lookup = aliasLookup(type);
+        var mapping = new LinkedHashMap<String, String>();
+        for (var originalHeader : originalHeaders) {
+            var systemField = lookup.get(normalizeHeader(originalHeader));
+            if (systemField != null) {
+                mapping.put(originalHeader, systemField);
+            }
+        }
+        return Collections.unmodifiableMap(new LinkedHashMap<>(mapping));
+    }
+
+    private Map<String, String> aliasLookup(ImportType type) {
+        var ambiguousAliases = new java.util.HashSet<String>();
+        var lookup = new LinkedHashMap<String, String>();
+        for (var entry : aliasesBySystemField(type).entrySet()) {
+            var systemField = entry.getKey();
+            for (var alias : entry.getValue()) {
+                var normalizedAlias = normalizeHeader(alias);
+                var existing = lookup.putIfAbsent(normalizedAlias, systemField);
+                if (existing != null && !existing.equals(systemField)) {
+                    ambiguousAliases.add(normalizedAlias);
+                }
+            }
+        }
+        ambiguousAliases.forEach(lookup::remove);
+        return lookup;
+    }
+
+    private Map<String, List<String>> aliasesBySystemField(ImportType type) {
+        return switch (type) {
+            case SCHOOL_CLASS -> Map.of(
+                "languageCode", List.of("languageCode", "language", "language code", "ngôn ngữ", "ngon ngu", "mã ngôn ngữ", "ma ngon ngu"),
+                "schoolGradeCode", List.of("schoolGradeCode", "grade", "grade code", "khối", "khoi", "mã khối", "ma khoi"),
+                "targetSchoolLevelCode", List.of("targetSchoolLevelCode", "level", "level code", "trình độ", "trinh do", "mã trình độ", "ma trinh do"),
+                "targetSchoolLevelVersion", List.of("targetSchoolLevelVersion", "version", "level version", "phiên bản", "phien ban"),
+                "code", List.of("code", "classCode", "class code", "mã lớp", "ma lop"),
+                "name", List.of("name", "className", "class name", "tên lớp", "ten lop"),
+                "description", List.of("description", "note", "notes", "ghi chú", "ghi chu", "mô tả", "mo ta")
+            );
+            case USER -> Map.of(
+                "role", List.of("role", "userRole", "role code", "vai trò", "vai tro"),
+                "fullName", List.of("fullName", "full name", "name", "họ tên", "ho ten", "họ và tên", "ho va ten"),
+                "email", List.of("email", "mail", "email address", "địa chỉ email", "dia chi email"),
+                "phone", List.of("phone", "phoneNumber", "phone number", "số điện thoại", "so dien thoai", "sdt"),
+                "studentCode", List.of("studentCode", "student code", "mã học sinh", "ma hoc sinh"),
+                "teacherCode", List.of("teacherCode", "teacher code", "mã giáo viên", "ma giao vien"),
+                "classCode", List.of("classCode", "class code", "mã lớp", "ma lop", "lớp", "lop"),
+                "dateOfBirth", List.of("dateOfBirth", "date of birth", "birthday", "dob", "ngày sinh", "ngay sinh")
+            );
+        };
+    }
+
+    private String normalizeHeader(String header) {
+        if (header == null) {
+            return "";
+        }
+        var withoutDiacritics = DIACRITICS.matcher(Normalizer.normalize(header, Normalizer.Form.NFD)).replaceAll("");
+        return NON_ALPHANUMERIC.matcher(withoutDiacritics.toLowerCase(Locale.ROOT).strip())
+            .replaceAll(" ")
+            .strip();
+    }
+
+    private String removeUtf8Bom(String content) {
+        if (!content.isEmpty() && content.charAt(0) == '\uFEFF') {
+            return content.substring(1);
+        }
+        return content;
+    }
+
+    private record ParsedImportTable(
+        List<String> headers,
+        List<Map<String, String>> sampleRows,
+        long totalRows
+    ) {}
 }

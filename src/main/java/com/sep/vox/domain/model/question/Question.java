@@ -6,8 +6,6 @@ import java.util.UUID;
 public class Question {
     private UUID id;
     private UUID questionTopicId;
-    private UUID minRecommendResultBandId;
-    private UUID maxRecommendResultBandId;
     private String code;
     private String instructionText;
     private String questionText;
@@ -29,15 +27,13 @@ public class Question {
 
     public Question() {}
 
-    public Question(UUID id, UUID questionTopicId, UUID minRecommendResultBandId, UUID maxRecommendResultBandId, String code, String instructionText, String questionText, String promptText,
+    public Question(UUID id, UUID questionTopicId, String code, String instructionText, String questionText, String promptText,
             String preparationText, QuestionType type,
             int preparationTimeSeconds, int minResponseSeconds, int maxResponseSeconds, QuestionScope scope,
             QuestionVisibility visibility, UUID sourceQuestionId, boolean locked, QuestionStatus status,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.questionTopicId = questionTopicId;
-        this.minRecommendResultBandId = minRecommendResultBandId;
-        this.maxRecommendResultBandId = maxRecommendResultBandId;
         this.code = code;
         this.instructionText = instructionText;
         this.questionText = questionText;
@@ -58,7 +54,7 @@ public class Question {
         this.updatedBy = updatedBy;
     }
 
-    public Question(UUID questionTopicId, UUID minRecommendResultBandId, UUID maxRecommendResultBandId, String code, String instructionText, String questionText, String promptText,
+    public Question(UUID questionTopicId, String code, String instructionText, String questionText, String promptText,
             String preparationText, QuestionType type,
             int preparationTimeSeconds, int minResponseSeconds, int maxResponseSeconds, QuestionScope scope,
             QuestionVisibility visibility, UUID sourceQuestionId, boolean locked, QuestionStatus status,
@@ -244,30 +240,12 @@ public class Question {
         this.code = code;
     }
 
-    public UUID getMinRecommendResultBandId() {
-        return minRecommendResultBandId;
-    }
-
-    public void setMinRecommendResultBandId(UUID minRecommendResultBandId) {
-        this.minRecommendResultBandId = minRecommendResultBandId;
-    }
-
-    public UUID getMaxRecommendResultBandId() {
-        return maxRecommendResultBandId;
-    }
-
-    public void setMaxRecommendResultBandId(UUID maxRecommendResultBandId) {
-        this.maxRecommendResultBandId = maxRecommendResultBandId;
-    }
-
-    public static Question create(UUID questionTopicId, UUID minRecommendResultBandId, UUID maxRecommendResultBandId, String code, String instructionText, String questionText, String promptText,
+    public static Question create(UUID questionTopicId, String code, String instructionText, String questionText, String promptText,
         String preparationText, QuestionType type,
         int preparationTimeSeconds, int minResponseSeconds, int maxResponseSeconds, QuestionScope scope,
         QuestionVisibility visibility, UUID sourceQuestionId, boolean locked, OffsetDateTime now, UUID createdBy) {
         return new Question(
-            questionTopicId, 
-            minRecommendResultBandId, 
-            maxRecommendResultBandId,
+            questionTopicId,
             code, 
             instructionText, 
             questionText, 

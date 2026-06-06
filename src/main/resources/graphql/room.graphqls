@@ -18,6 +18,6 @@ type SchoolRoomPageResult {
 }
 
 extend type Query {
-    SchoolRoom(id: ID!): SchoolRoomResponse
-    SchoolRooms(schoolId: ID!, page: Int, size: Int): SchoolRoomPageResult
+    schoolRoom(id: ID!): SchoolRoomResponse
+    schoolRooms(schoolId: ID!, page: Int, size: Int): SchoolRoomPageResult
 }

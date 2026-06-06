@@ -65,5 +65,49 @@ public class SchoolRepositoryImpl implements SchoolRepository {
     public boolean existsById(UUID id) {
         return springDataSchoolRepository.existsById(id);
     }
-    
+
+    @Override
+    public boolean existsByCode(String code) {
+        return springDataSchoolRepository.existsByCode(code);
+    }
+
+    @Override
+    public boolean existsByDomain(String domain) {
+        return springDataSchoolRepository.existsByDomain(domain);
+    }
+
+    @Override
+    public boolean existsByContactEmail(String contactEmail) {
+        return springDataSchoolRepository.existsByContactEmail(contactEmail);
+    }
+
+    @Override
+    public boolean existsByContactPhone(String contactPhone) {
+        return springDataSchoolRepository.existsByContactPhone(contactPhone);
+    }
+
+    @Override
+    public boolean existsByDomainAndIdNot(String domain, UUID id) {
+        return springDataSchoolRepository.existsByDomainAndIdNot(domain, id);
+    }
+
+    @Override
+    public boolean existsByContactEmailAndIdNot(String email, UUID id) {
+        return springDataSchoolRepository.existsByContactEmailAndIdNot(email, id);
+    }
+
+    @Override
+    public boolean existsByContactPhoneAndIdNot(String phone, UUID id) {
+        return springDataSchoolRepository.existsByContactPhoneAndIdNot(phone, id);
+    }
+
+    @Override
+    public void deleteById(UUID id) {
+        springDataSchoolRepository.deleteById(id);
+    }
+
+    @Override
+    public boolean existsByCodeAndIdNot(String normalizedCode, UUID id) {
+        return springDataSchoolRepository.existsByCodeAndIdNot(normalizedCode, id);
+    }
 }

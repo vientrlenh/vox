@@ -1,0 +1,31 @@
+type SchoolResponse {
+    id: ID!
+    schoolCode: String!
+    name: String!
+    description: String
+    contactPhone: String!
+    contactEmail: String!
+    schoolDomain: String!
+    address: String!
+    studentCount: Int!
+    isActive: Boolean!
+    createdAt: String
+    createdBy: String
+    updatedAt: String
+    updateBy: String
+}
+
+input UpdateSchoolRequest {
+    id: ID!
+    name: String
+    description: String
+    contactPhone: String
+    contactEmail: String
+    domain: String
+    address: String
+    studentCount: Int
+}
+
+type Mutation {
+    updateSchool(request: UpdateSchoolRequest!): SchoolResponse!
+}

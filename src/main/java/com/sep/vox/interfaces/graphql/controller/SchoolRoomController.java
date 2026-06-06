@@ -24,14 +24,14 @@ public class SchoolRoomController {
         this.viewSchoolRoomsUseCase = viewSchoolRoomsUseCase;
     }
 
-    @QueryMapping(name = "SchoolRoom")
+    @QueryMapping(name = "schoolRoom")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public SchoolRoomResponse getSchoolRoomById(@Argument UUID id) {
         var query = new ViewSchoolRoomDetailsQuery(id);
         return viewSchoolRoomDetailsUseCase.execute(query);
     }
 
-    @QueryMapping(name = "SchoolRooms")
+    @QueryMapping(name = "schoolRooms")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<SchoolRoomResponse> getSchoolRoomsBySchoolId(
             @Argument UUID schoolId,

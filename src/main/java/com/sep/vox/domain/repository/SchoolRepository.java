@@ -14,4 +14,16 @@ public interface SchoolRepository {
     PageResult<School> findAll(PageRequest pageRequest);
     School save(School school);
     boolean existsById(UUID id);
+    boolean existsByCode(String code);
+    boolean existsByDomain(String domain);
+    boolean existsByContactEmail(String contactEmail);
+    boolean existsByContactPhone(String contactPhone);
+
+    boolean existsByDomainAndIdNot(String domain, UUID id);
+    boolean existsByContactEmailAndIdNot(String email, UUID id);
+    boolean existsByContactPhoneAndIdNot(String phone, UUID id);
+
+    void deleteById(UUID id);
+
+    boolean existsByCodeAndIdNot(String normalizedCode, UUID id);
 }

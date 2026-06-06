@@ -10,4 +10,5 @@ import com.sep.vox.infrastructure.persistence.entity.SchoolJpaEntity;
 public interface SpringDataSchoolRepository extends JpaRepository<SchoolJpaEntity, UUID> {
     Optional<SchoolJpaEntity> findByCode(String code);
     Optional<SchoolJpaEntity> findByDomain(String domain);
+    boolean existsByDomain(String domain);
 }

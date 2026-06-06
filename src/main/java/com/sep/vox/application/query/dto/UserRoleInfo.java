@@ -4,7 +4,7 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 public record UserRoleInfo(
-    long id,
+    UUID id,
     UUID userId,
     UUID roleId,
     OffsetDateTime createdAt,

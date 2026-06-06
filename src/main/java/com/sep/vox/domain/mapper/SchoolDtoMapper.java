@@ -24,7 +24,9 @@ public final class SchoolDtoMapper {
             valueOf(school.getDomain()), 
             school.getAddress(), 
             valueOf(school.getStudentCount()), 
-            school.isActive()
+            school.isActive(), 
+            school.getCreatedAt(), 
+            school.getUpdatedAt()
         );
     }
 

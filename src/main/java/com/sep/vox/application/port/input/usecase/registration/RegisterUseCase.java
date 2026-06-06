@@ -1,4 +1,4 @@
-package com.sep.vox.application.port.input.usecase.auth;
+package com.sep.vox.application.port.input.usecase.registration;
 
 import java.time.OffsetDateTime;
 

@@ -1,11 +1,13 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.repository.SchoolRepository;
@@ -40,17 +42,17 @@ public class SchoolRepositoryImpl implements SchoolRepository {
     }
 
     @Override
-    public PageResult<School> findAll(PageRequest pageRequest) {
-        var pageable = org.springframework.data.domain.PageRequest.of(pageRequest.page() - 1, pageRequest.size());
-        var page = springDataSchoolRepository.findAll(pageable);
+    public PageResult<School> findAll(int page, int size) {
+        var pageRequest = PageRequest.of(page - 1, size);
+        var pageable = springDataSchoolRepository.findAll(pageRequest);
         return new PageResult<>(
-            page.getContent().stream()
+            pageable.getContent().stream()
                 .map(SchoolMapper::toDomain)
                 .toList(),
-            page.getNumber() + 1,
-            page.getSize(),
-            page.getTotalElements(),
-            page.getTotalPages()
+            pageable.getNumber() + 1,
+            pageable.getSize(),
+            pageable.getTotalElements(),
+            pageable.getTotalPages()
         );
     }
 
@@ -110,4 +112,12 @@ public class SchoolRepositoryImpl implements SchoolRepository {
     public boolean existsByCodeAndIdNot(String normalizedCode, UUID id) {
         return springDataSchoolRepository.existsByCodeAndIdNot(normalizedCode, id);
     }
+
+
+    @Override
+    public List<School> findByIdIn(Collection<UUID> ids, int page, int size) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'findByIdIn'");
+    }
+
 }

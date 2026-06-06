@@ -13,9 +13,6 @@ public interface SpringDataSchoolRepository extends JpaRepository<SchoolJpaEntit
     Optional<SchoolJpaEntity> findByDomain(String domain);
 
     boolean existsByCode(String code);
-
-    boolean existsByDomain(String domain);
-
     boolean existsByContactEmail(String contactEmail);
 
     boolean existsByContactPhone(String contactPhone);
@@ -25,4 +22,5 @@ public interface SpringDataSchoolRepository extends JpaRepository<SchoolJpaEntit
     boolean existsByContactPhoneAndIdNot(String phone, UUID id);
 
     boolean existsByCodeAndIdNot(String normalizedCode, UUID id);
+    boolean existsByDomain(String domain);
 }

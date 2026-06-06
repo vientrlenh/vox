@@ -15,11 +15,15 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.sep.vox.application.port.input.usecase.auth.LoginUseCase;
 import com.sep.vox.application.port.input.usecase.auth.RefreshUseCase;
-import com.sep.vox.application.port.input.usecase.auth.RegisterUseCase;
 import com.sep.vox.application.port.input.usecase.auth.SetUpPasswordUseCase;
 import com.sep.vox.application.port.input.usecase.auth.SendResetPasswordOtpUseCase;
 import com.sep.vox.application.port.input.usecase.auth.ResetPasswordUseCase;
 
+import com.sep.vox.application.port.input.usecase.auth.SendResetPasswordOtpUseCase;
+import com.sep.vox.application.port.input.usecase.auth.SetUpPasswordUseCase;
+import com.sep.vox.application.port.input.usecase.registration.RegisterUseCase;
+import com.sep.vox.application.response.input.auth.LoginResponse;
+import com.sep.vox.application.response.input.auth.RefreshResponse;
 import com.sep.vox.interfaces.rest.dto.request.LoginRequest;
 import com.sep.vox.interfaces.rest.dto.request.RegisterRequest;
 import com.sep.vox.interfaces.rest.dto.request.SetUpPasswordRequest;
@@ -27,7 +31,6 @@ import com.sep.vox.interfaces.rest.dto.request.RefreshRequest;
 import com.sep.vox.interfaces.rest.dto.request.SendResetPasswordOtpRequest;
 import com.sep.vox.interfaces.rest.dto.request.ResetPasswordRequest;
 
-//import com.sep.vox.interfaces.rest.mapper.*;
 import com.sep.vox.interfaces.rest.mapper.LoginCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.RegisterCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.SetUpPasswordCommandMapper;

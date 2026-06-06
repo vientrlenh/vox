@@ -4,12 +4,10 @@ import java.util.UUID;
 
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
-import org.springframework.graphql.data.method.annotation.SchemaMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 
 import com.sep.vox.application.port.input.query.ViewQuestionDetailsQuery;
-import com.sep.vox.application.port.input.query.ViewQuestionTopicDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewQuestionsByTopicQuery;
 import com.sep.vox.application.port.input.query.ViewQuestionsQuery;
 import com.sep.vox.application.port.input.usecase.question.ViewQuestionDetailsUseCase;
@@ -18,7 +16,6 @@ import com.sep.vox.application.port.input.usecase.question.ViewQuestionsUseCase;
 import com.sep.vox.application.port.input.usecase.questiontopic.ViewQuestionTopicDetailsUseCase;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.QuestionDto;
-import com.sep.vox.domain.dto.QuestionTopicDto;
 
 @Controller("graphqlQuestionController")
 public class QuestionController {

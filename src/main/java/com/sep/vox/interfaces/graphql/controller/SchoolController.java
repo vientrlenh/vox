@@ -16,6 +16,7 @@ import com.sep.vox.application.port.input.usecase.school.ViewSchoolsUseCase;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.dto.SchoolDto;
+import com.sep.vox.domain.dto.SchoolUserDto;
 
 import graphql.schema.DataFetchingEnvironment;
 
@@ -40,12 +41,13 @@ public class SchoolController {
 
     @SchemaMapping(typeName = "School", field = "classes")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public CompletableFuture<List<SchoolClassDto>> classes(
-        SchoolDto school, 
-        @Argument(name = "page") int page, 
-        @Argument(name = "size") int size, 
-        DataFetchingEnvironment env) {
+    public CompletableFuture<List<SchoolClassDto>> classes(SchoolDto school, @Argument(name = "page") int page, @Argument(name = "size") int size, DataFetchingEnvironment env) {
         DataLoader<SchoolClassesKey, List<SchoolClassDto>> loader = env.getDataLoader("schoolClassesBySchool");
         return loader.load(new SchoolClassesKey(school.id(), page, size));
+    }
+
+
+    public PageResult<SchoolUserDto> schoolUsers(@Argument(name = "page") Integer page, @Argument(name = "size") Integer size) {
+        return null;
     }
 }

@@ -21,7 +21,8 @@ public interface SchoolClassRepository {
     List<SchoolClass> findBySchoolIdAndName(UUID schoolId, String name);
     List<SchoolClass> findBySchoolIdAndLanguageIdAndTargetSchoolLevelVersionId(UUID schoolId, UUID languageId, UUID levelId);
     SchoolClass save(SchoolClass schoolClass);
-    int updateMutableFields(UUID id, UUID schoolId, UUID languageId, String name, String description,
-            UUID targetSchoolLevelVersionId, SchoolClassStatus status, OffsetDateTime updatedAt, UUID updatedBy);
+    int updateMutableFields(UUID id, UUID schoolId, String name, boolean nameProvided,
+            String description, boolean descriptionProvided, SchoolClassStatus status, boolean statusProvided,
+            OffsetDateTime updatedAt, UUID updatedBy);
     void deleteById(UUID id);
 }

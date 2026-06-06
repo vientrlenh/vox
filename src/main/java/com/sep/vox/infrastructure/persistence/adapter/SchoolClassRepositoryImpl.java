@@ -104,10 +104,21 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
     }
 
     @Override
-    public int updateMutableFields(UUID id, UUID schoolId, UUID languageId, String name, String description,
-            UUID targetSchoolLevelVersionId, SchoolClassStatus status, OffsetDateTime updatedAt, UUID updatedBy) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'updateMutableFields'");
+    public int updateMutableFields(UUID id, UUID schoolId, String name, boolean nameProvided,
+            String description, boolean descriptionProvided, SchoolClassStatus status, boolean statusProvided,
+            OffsetDateTime updatedAt, UUID updatedBy) {
+        return springDataSchoolClassRepository.updateMutableFields(
+            id,
+            schoolId,
+            name,
+            nameProvided,
+            description,
+            descriptionProvided,
+            valueOf(status),
+            statusProvided,
+            updatedAt,
+            updatedBy
+        );
     }
 
     private static String valueOf(SchoolClassStatus status) {

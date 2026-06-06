@@ -11,7 +11,7 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.DeleteSchoolClassCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.dto.SchoolClassDeleteResultDto;
+import com.sep.vox.application.response.input.schoolclass.DeleteSchoolClassResponse;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
@@ -21,7 +21,7 @@ import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
-public class DeleteSchoolClassUseCase implements IUseCase<DeleteSchoolClassCommand, SchoolClassDeleteResultDto> {
+public class DeleteSchoolClassUseCase implements IUseCase<DeleteSchoolClassCommand, DeleteSchoolClassResponse> {
 
     private static final String HARD_DELETE = "HARD";
     private static final String SOFT_DELETE = "SOFT";
@@ -47,7 +47,7 @@ public class DeleteSchoolClassUseCase implements IUseCase<DeleteSchoolClassComma
 
     @Override
     @Transactional
-    public SchoolClassDeleteResultDto execute(DeleteSchoolClassCommand input) {
+    public DeleteSchoolClassResponse execute(DeleteSchoolClassCommand input) {
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         var currentUser = findCurrentUser(currentUserId);
         var schoolId = getSchoolId(currentUser);
@@ -61,7 +61,7 @@ public class DeleteSchoolClassUseCase implements IUseCase<DeleteSchoolClassComma
 
         if (!schoolClassDependencyRepository.existsDependencyBySchoolClassId(input.id())) {
             schoolClassRepository.deleteById(input.id());
-            return new SchoolClassDeleteResultDto(input.id(), HARD_DELETE, null, null);
+            return new DeleteSchoolClassResponse(input.id(), HARD_DELETE, null, null);
         }
 
         var now = OffsetDateTime.now();
@@ -69,7 +69,7 @@ public class DeleteSchoolClassUseCase implements IUseCase<DeleteSchoolClassComma
         schoolClass.setUpdatedAt(now);
         schoolClass.setUpdatedBy(currentUserId);
         var saved = schoolClassRepository.save(schoolClass);
-        return new SchoolClassDeleteResultDto(
+        return new DeleteSchoolClassResponse(
             saved.getId(),
             SOFT_DELETE,
             saved.getStatus().name(),

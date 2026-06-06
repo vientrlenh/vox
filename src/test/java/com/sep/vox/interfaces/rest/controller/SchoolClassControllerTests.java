@@ -11,10 +11,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 
 import com.sep.vox.application.port.input.command.CreateSchoolClassCommand;
+import com.sep.vox.application.port.input.command.DeleteSchoolClassCommand;
 import com.sep.vox.application.port.input.usecase.schoolclass.CreateSchoolClassUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.DeleteSchoolClassUseCase;
-import com.sep.vox.application.port.input.usecase.schoolclass.UpdateSchoolClassUseCase;
 import com.sep.vox.application.response.input.schoolclass.CreateSchoolClassResponse;
+import com.sep.vox.application.response.input.schoolclass.DeleteSchoolClassResponse;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolClassRequest;
 
 class SchoolClassControllerTests {
@@ -22,9 +23,8 @@ class SchoolClassControllerTests {
     @Test
     void create_should_return_created_response() {
         var createUseCase = mock(CreateSchoolClassUseCase.class);
-        var updateUseCase = mock(UpdateSchoolClassUseCase.class);
         var deleteUseCase = mock(DeleteSchoolClassUseCase.class);
-        var controller = new SchoolClassController(createUseCase, updateUseCase, deleteUseCase);
+        var controller = new SchoolClassController(createUseCase, deleteUseCase);
         var languageId = UUID.randomUUID();
         var gradeId = UUID.randomUUID();
         var schoolClassId = UUID.randomUUID();
@@ -50,5 +50,22 @@ class SchoolClassControllerTests {
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().data()).isEqualTo(new CreateSchoolClassResponse(schoolClassId));
         verify(createUseCase).execute(expectedCommand);
+    }
+
+    @Test
+    void delete_should_return_ok_response() {
+        var createUseCase = mock(CreateSchoolClassUseCase.class);
+        var deleteUseCase = mock(DeleteSchoolClassUseCase.class);
+        var controller = new SchoolClassController(createUseCase, deleteUseCase);
+        var schoolClassId = UUID.randomUUID();
+        var expected = new DeleteSchoolClassResponse(schoolClassId, "SOFT", "ARCHIVED", "2026-06-06T12:00:00Z");
+        when(deleteUseCase.execute(new DeleteSchoolClassCommand(schoolClassId))).thenReturn(expected);
+
+        var response = controller.delete(schoolClassId);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().data()).isEqualTo(expected);
+        verify(deleteUseCase).execute(new DeleteSchoolClassCommand(schoolClassId));
     }
 }

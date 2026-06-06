@@ -74,6 +74,15 @@ class SchoolClassRepositoryTests {
     }
 
     @Test
+    void whenDeleteById_thenRemovesSchoolClass() {
+        var saved = schoolClassRepository.save(newSchoolClass(UUID.randomUUID(), "ENG-DELETE", "English Delete"));
+
+        schoolClassRepository.deleteById(saved.getId());
+
+        assertThat(schoolClassRepository.findById(saved.getId())).isEmpty();
+    }
+
+    @Test
     void whenFindBySchoolIdWithFilters_thenReturnsMatchingPagedClasses() {
         var schoolId = UUID.randomUUID();
         var otherSchoolId = UUID.randomUUID();
@@ -116,6 +125,144 @@ class SchoolClassRepositoryTests {
 
         assertThat(found.content()).hasSize(1);
         assertThat(found.content().get(0).getName()).isEqualTo("Advanced English");
+    }
+
+    @Test
+    void whenUpdateMutableFieldsWithMatchingSchool_thenUpdatesSchoolClass() {
+        var schoolId = UUID.randomUUID();
+        var updatedBy = UUID.randomUUID();
+        var saved = schoolClassRepository.save(newSchoolClass(schoolId, "ENG-UPD", "English Old"));
+        var updatedAt = OffsetDateTime.now().plusMinutes(1);
+
+        var updatedRows = schoolClassRepository.updateMutableFields(
+            saved.getId(),
+            schoolId,
+            "English Updated",
+            true,
+            "Updated description",
+            true,
+            SchoolClassStatus.INACTIVE,
+            true,
+            updatedAt,
+            updatedBy
+        );
+
+        var found = schoolClassRepository.findById(saved.getId());
+        assertThat(updatedRows).isEqualTo(1);
+        assertThat(found).isPresent();
+        assertThat(found.get().getName()).isEqualTo("English Updated");
+        assertThat(found.get().getDescription()).isEqualTo("Updated description");
+        assertThat(found.get().getStatus()).isEqualTo(SchoolClassStatus.INACTIVE);
+        assertThat(found.get().getUpdatedBy()).isEqualTo(updatedBy);
+        assertThat(found.get().getUpdatedAt()).isAfter(saved.getUpdatedAt());
+        assertThat(found.get().getCode().value()).isEqualTo("ENG-UPD");
+        assertThat(found.get().getSchoolId()).isEqualTo(schoolId);
+    }
+
+    @Test
+    void whenUpdateMutableFieldsNameOnly_thenPreservesDescriptionAndStatus() {
+        var schoolId = UUID.randomUUID();
+        var updatedBy = UUID.randomUUID();
+        var saved = schoolClassRepository.save(newSchoolClass(schoolId, "ENG-NAME-UPD", "English Old"));
+
+        var updatedRows = schoolClassRepository.updateMutableFields(
+            saved.getId(),
+            schoolId,
+            "English Name Updated",
+            true,
+            null,
+            false,
+            null,
+            false,
+            OffsetDateTime.now().plusMinutes(1),
+            updatedBy
+        );
+
+        var found = schoolClassRepository.findById(saved.getId());
+        assertThat(updatedRows).isEqualTo(1);
+        assertThat(found).isPresent();
+        assertThat(found.get().getName()).isEqualTo("English Name Updated");
+        assertThat(found.get().getDescription()).isEqualTo("Repository test class");
+        assertThat(found.get().getStatus()).isEqualTo(SchoolClassStatus.ACTIVE);
+        assertThat(found.get().getUpdatedBy()).isEqualTo(updatedBy);
+    }
+
+    @Test
+    void whenUpdateMutableFieldsDescriptionNull_thenClearsDescription() {
+        var schoolId = UUID.randomUUID();
+        var saved = schoolClassRepository.save(newSchoolClass(schoolId, "ENG-DESC-NULL", "English Description"));
+
+        var updatedRows = schoolClassRepository.updateMutableFields(
+            saved.getId(),
+            schoolId,
+            null,
+            false,
+            null,
+            true,
+            null,
+            false,
+            OffsetDateTime.now().plusMinutes(1),
+            UUID.randomUUID()
+        );
+
+        var found = schoolClassRepository.findById(saved.getId());
+        assertThat(updatedRows).isEqualTo(1);
+        assertThat(found).isPresent();
+        assertThat(found.get().getDescription()).isNull();
+        assertThat(found.get().getName()).isEqualTo("English Description");
+        assertThat(found.get().getStatus()).isEqualTo(SchoolClassStatus.ACTIVE);
+    }
+
+    @Test
+    void whenUpdateMutableFieldsStatusOnly_thenPreservesNameAndDescription() {
+        var schoolId = UUID.randomUUID();
+        var saved = schoolClassRepository.save(newSchoolClass(schoolId, "ENG-STATUS-UPD", "English Status"));
+
+        var updatedRows = schoolClassRepository.updateMutableFields(
+            saved.getId(),
+            schoolId,
+            null,
+            false,
+            null,
+            false,
+            SchoolClassStatus.ARCHIVED,
+            true,
+            OffsetDateTime.now().plusMinutes(1),
+            UUID.randomUUID()
+        );
+
+        var found = schoolClassRepository.findById(saved.getId());
+        assertThat(updatedRows).isEqualTo(1);
+        assertThat(found).isPresent();
+        assertThat(found.get().getName()).isEqualTo("English Status");
+        assertThat(found.get().getDescription()).isEqualTo("Repository test class");
+        assertThat(found.get().getStatus()).isEqualTo(SchoolClassStatus.ARCHIVED);
+    }
+
+    @Test
+    void whenUpdateMutableFieldsWithDifferentSchool_thenDoesNotUpdateSchoolClass() {
+        var schoolId = UUID.randomUUID();
+        var saved = schoolClassRepository.save(newSchoolClass(schoolId, "ENG-NO-UPD", "English Old"));
+
+        var updatedRows = schoolClassRepository.updateMutableFields(
+            saved.getId(),
+            UUID.randomUUID(),
+            "English Updated",
+            true,
+            "Updated description",
+            true,
+            SchoolClassStatus.INACTIVE,
+            true,
+            OffsetDateTime.now().plusMinutes(1),
+            UUID.randomUUID()
+        );
+
+        var found = schoolClassRepository.findById(saved.getId());
+        assertThat(updatedRows).isZero();
+        assertThat(found).isPresent();
+        assertThat(found.get().getName()).isEqualTo("English Old");
+        assertThat(found.get().getStatus()).isEqualTo(SchoolClassStatus.ACTIVE);
+        assertThat(found.get().getSchoolId()).isEqualTo(schoolId);
     }
 
     private static SchoolClass newSchoolClass(UUID schoolId, String code, String name) {

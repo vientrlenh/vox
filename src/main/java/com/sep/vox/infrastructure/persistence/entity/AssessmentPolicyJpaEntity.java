@@ -2,6 +2,7 @@ package com.sep.vox.infrastructure.persistence.entity;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
+import java.math.BigDecimal;
 
 import org.hibernate.annotations.Generated;
 import org.hibernate.generator.EventType;
@@ -16,7 +17,18 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "assessment_policies", indexes = {
-    @Index(columnList = "owner_type, school_id, rubric_version_id, version", name = "idx_assessment_policies_owner_rubric_version", unique = true)
+    @Index(columnList = "school_id, school_grade_id, school_class_id, language_id, framework_id, version",
+        name = "idx_assessment_policies_scope_version", unique = true),
+    @Index(columnList = "school_id, school_grade_id, language_id, framework_id, status",
+        name = "idx_assessment_policies_grade_status"),
+    @Index(columnList = "rubric_version_id", name = "idx_assessment_policies_rubric_version"),
+    @Index(columnList = "target_result_band_id", name = "idx_assessment_policies_target_band"),
+    @Index(columnList = "passing_result_band_id", name = "idx_assessment_policies_passing_band")
+}, check = {
+    @CheckConstraint(
+        name = "chk_assessment_policies_effective_range_valid",
+        constraint = "effective_to IS NULL OR effective_from <= effective_to"
+    )
 })
 public class AssessmentPolicyJpaEntity {
 
@@ -25,23 +37,59 @@ public class AssessmentPolicyJpaEntity {
     @Column(name = "id", nullable = false, updatable = false, insertable = false, columnDefinition = "UUID DEFAULT uuidv7()")
     private UUID id;
 
-    @Column(name = "owner_type", nullable = false, length = 20)
-    private String ownerType;
-
-    @Column(name = "school_id")
+    @Column(name = "school_id", nullable = false, updatable = false)
     private UUID schoolId;
+
+    @Column(name = "school_grade_id", nullable = false, updatable = false)
+    private UUID schoolGradeId;
+
+    @Column(name = "school_class_id", updatable = false)
+    private UUID schoolClassId;
+
+    @Column(name = "language_id", nullable = false, updatable = false)
+    private UUID languageId;
+
+    @Column(name = "framework_id", nullable = false, updatable = false)
+    private UUID frameworkId;
 
     @Column(name = "rubric_version_id", nullable = false, updatable = false)
     private UUID rubricVersionId;
 
-    @Column(name = "version", nullable = false)
+    @Column(name = "target_result_band_id", nullable = false)
+    private UUID targetResultBandId;
+
+    @Column(name = "passing_result_band_id", nullable = false)
+    private UUID passingResultBandId;
+
+    @Column(name = "passing_score", precision = 6, scale = 2, check = {
+        @CheckConstraint(
+            name = "chk_assessment_policies_passing_score_non_negative",
+            constraint = "passing_score IS NULL OR passing_score >= 0"
+        )
+    })
+    private BigDecimal passingScore;
+
+    @Column(name = "strictness", nullable = false, length = 20, check = {
+        @CheckConstraint(
+            name = "chk_assessment_policies_strictness_valid",
+            constraint = "strictness IN ('LENIENT', 'STANDARD', 'STRICT')"
+        )
+    })
+    private String strictness;
+
+    @Column(name = "version", nullable = false, check = {
+        @CheckConstraint(
+            name = "chk_assessment_policies_version_positive",
+            constraint = "version > 0"
+        )
+    })
     private int version;
 
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
-            name = "chk_status_valid", 
+            name = "chk_assessment_policies_status_valid",
             constraint = "status IN ('DRAFT', 'PUBLISHED', 'ARCHIVED')"
-        )
+        ),
     })
     private String status;
 
@@ -65,29 +113,22 @@ public class AssessmentPolicyJpaEntity {
 
     protected AssessmentPolicyJpaEntity() {}
 
-    public AssessmentPolicyJpaEntity(UUID id, String ownerType, UUID schoolId, UUID rubricVersionId, int version,
-            String status, OffsetDateTime effectiveFrom, OffsetDateTime effectiveTo, OffsetDateTime createdAt,
-            OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
-        this.id = id;
-        this.ownerType = ownerType;
-        this.schoolId = schoolId;
-        this.rubricVersionId = rubricVersionId;
-        this.version = version;
-        this.status = status;
-        this.effectiveFrom = effectiveFrom;
-        this.effectiveTo = effectiveTo;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public AssessmentPolicyJpaEntity(String ownerType, UUID schoolId, UUID rubricVersionId, int version, String status,
+    public AssessmentPolicyJpaEntity(UUID id, UUID schoolId, UUID schoolGradeId, UUID schoolClassId,
+            UUID languageId, UUID frameworkId, UUID rubricVersionId, UUID targetResultBandId,
+            UUID passingResultBandId, BigDecimal passingScore, String strictness, int version, String status,
             OffsetDateTime effectiveFrom, OffsetDateTime effectiveTo, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
-        this.ownerType = ownerType;
+        this.id = id;
         this.schoolId = schoolId;
+        this.schoolGradeId = schoolGradeId;
+        this.schoolClassId = schoolClassId;
+        this.languageId = languageId;
+        this.frameworkId = frameworkId;
         this.rubricVersionId = rubricVersionId;
+        this.targetResultBandId = targetResultBandId;
+        this.passingResultBandId = passingResultBandId;
+        this.passingScore = passingScore;
+        this.strictness = strictness;
         this.version = version;
         this.status = status;
         this.effectiveFrom = effectiveFrom;
@@ -106,14 +147,6 @@ public class AssessmentPolicyJpaEntity {
         this.id = id;
     }
 
-    public String getOwnerType() {
-        return ownerType;
-    }
-
-    public void setOwnerType(String ownerType) {
-        this.ownerType = ownerType;
-    }
-
     public UUID getSchoolId() {
         return schoolId;
     }
@@ -122,12 +155,76 @@ public class AssessmentPolicyJpaEntity {
         this.schoolId = schoolId;
     }
 
+    public UUID getSchoolGradeId() {
+        return schoolGradeId;
+    }
+
+    public void setSchoolGradeId(UUID schoolGradeId) {
+        this.schoolGradeId = schoolGradeId;
+    }
+
+    public UUID getSchoolClassId() {
+        return schoolClassId;
+    }
+
+    public void setSchoolClassId(UUID schoolClassId) {
+        this.schoolClassId = schoolClassId;
+    }
+
+    public UUID getLanguageId() {
+        return languageId;
+    }
+
+    public void setLanguageId(UUID languageId) {
+        this.languageId = languageId;
+    }
+
+    public UUID getFrameworkId() {
+        return frameworkId;
+    }
+
+    public void setFrameworkId(UUID frameworkId) {
+        this.frameworkId = frameworkId;
+    }
+
     public UUID getRubricVersionId() {
         return rubricVersionId;
     }
 
     public void setRubricVersionId(UUID rubricVersionId) {
         this.rubricVersionId = rubricVersionId;
+    }
+
+    public UUID getTargetResultBandId() {
+        return targetResultBandId;
+    }
+
+    public void setTargetResultBandId(UUID targetResultBandId) {
+        this.targetResultBandId = targetResultBandId;
+    }
+
+    public UUID getPassingResultBandId() {
+        return passingResultBandId;
+    }
+
+    public void setPassingResultBandId(UUID passingResultBandId) {
+        this.passingResultBandId = passingResultBandId;
+    }
+
+    public BigDecimal getPassingScore() {
+        return passingScore;
+    }
+
+    public void setPassingScore(BigDecimal passingScore) {
+        this.passingScore = passingScore;
+    }
+
+    public String getStrictness() {
+        return strictness;
+    }
+
+    public void setStrictness(String strictness) {
+        this.strictness = strictness;
     }
 
     public int getVersion() {

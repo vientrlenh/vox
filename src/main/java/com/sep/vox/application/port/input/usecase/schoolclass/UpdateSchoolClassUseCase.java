@@ -14,13 +14,10 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.mapper.SchoolClassDtoMapper;
-import com.sep.vox.domain.model.languagelevel.LevelStatus;
-import com.sep.vox.domain.model.schoolclass.SchoolClassStatus;
+import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
-import com.sep.vox.domain.repository.SchoolLevelRepository;
-import com.sep.vox.domain.repository.SchoolLevelVersionRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
@@ -30,22 +27,16 @@ public class UpdateSchoolClassUseCase implements IUseCase<UpdateSchoolClassComma
     private final SchoolClassRepository schoolClassRepository;
     private final SchoolRepository schoolRepository;
     private final UserRepository userRepository;
-    private final SchoolLevelRepository schoolLevelRepository;
-    private final SchoolLevelVersionRepository schoolLevelVersionRepository;
     private final UserContextPort userContextPort;
 
     public UpdateSchoolClassUseCase(
             SchoolClassRepository schoolClassRepository,
             SchoolRepository schoolRepository,
             UserRepository userRepository,
-            SchoolLevelRepository schoolLevelRepository,
-            SchoolLevelVersionRepository schoolLevelVersionRepository,
             UserContextPort userContextPort) {
         this.schoolClassRepository = schoolClassRepository;
         this.schoolRepository = schoolRepository;
         this.userRepository = userRepository;
-        this.schoolLevelRepository = schoolLevelRepository;
-        this.schoolLevelVersionRepository = schoolLevelVersionRepository;
         this.userContextPort = userContextPort;
     }
 
@@ -66,11 +57,6 @@ public class UpdateSchoolClassUseCase implements IUseCase<UpdateSchoolClassComma
         }
 
         var status = parseStatus(command.status());
-        validateTargetSchoolLevelVersion(
-            command.targetSchoolLevelVersionId(),
-            schoolId,
-            schoolClass.getLanguageId()
-        );
 
         var updatedRows = schoolClassRepository.updateMutableFields(
             command.id(),
@@ -139,20 +125,4 @@ public class UpdateSchoolClassUseCase implements IUseCase<UpdateSchoolClassComma
         }
     }
 
-    private void validateTargetSchoolLevelVersion(UUID targetSchoolLevelVersionId, UUID schoolId, UUID languageId) {
-        var levelVersion = schoolLevelVersionRepository.findById(targetSchoolLevelVersionId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản cấp độ mục tiêu"));
-        if (levelVersion.getStatus() != LevelStatus.PUBLISHED) {
-            throw new IllegalStateException("Phiên bản cấp độ mục tiêu chưa được công bố");
-        }
-
-        var schoolLevel = schoolLevelRepository.findById(levelVersion.getSchoolLevelId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy cấp độ trường học"));
-        if (!Objects.equals(schoolLevel.getSchoolId(), schoolId)) {
-            throw new IllegalArgumentException("Cấp độ mục tiêu không thuộc trường hiện tại");
-        }
-        if (!Objects.equals(schoolLevel.getLanguageId(), languageId)) {
-            throw new IllegalArgumentException("Cấp độ mục tiêu không thuộc ngôn ngữ của lớp học");
-        }
-    }
 }

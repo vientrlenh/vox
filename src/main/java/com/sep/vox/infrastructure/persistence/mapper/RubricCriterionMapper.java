@@ -11,6 +11,7 @@ public final class RubricCriterionMapper {
         return new RubricCriterion(
             jpa.getId(),
             jpa.getRubricVersionId(),
+            jpa.getFrameworkCriterionId(),
             jpa.getCode(),
             jpa.getName(),
             jpa.getDescription(),
@@ -30,6 +31,7 @@ public final class RubricCriterionMapper {
         return new RubricCriterionJpaEntity(
             criterion.getId(),
             criterion.getRubricVersionId(),
+            criterion.getFrameworkCriterionId(),
             criterion.getCode(),
             criterion.getName(),
             criterion.getDescription(),

@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.hibernate.annotations.Generated;
 import org.hibernate.generator.EventType;
 
+import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -15,8 +16,16 @@ import jakarta.persistence.Table;
 
 
 @Entity
-@Table(name = "rubric_criteria", indexes = {
-    @Index(columnList = "rubric_version_id, code", name = "idx_rubric_criteria_version_code", unique = true)
+@Table(name = "rubric_criterions", indexes = {
+    @Index(columnList = "rubric_version_id, code", name = "idx_rubric_criterions_version_code", unique = true),
+    @Index(columnList = "rubric_version_id, framework_criterion_id", name = "idx_rubric_criterions_version_framework_criterion", unique = true),
+    @Index(columnList = "framework_criterion_id", name = "idx_rubric_criterions_framework_criterion")
+}, check = {
+    @CheckConstraint(
+        name = "chk_rubric_criterions_score_range_valid",
+        constraint = "min_score <= max_score"
+    )
+
 })
 public class RubricCriterionJpaEntity {
 
@@ -28,6 +37,9 @@ public class RubricCriterionJpaEntity {
     @Column(name = "rubric_version_id", nullable = false, updatable = false)
     private UUID rubricVersionId;
 
+    @Column(name = "framework_criterion_id", nullable = false, updatable = false)
+    private UUID frameworkCriterionId;
+
     @Column(name = "code", nullable = false, length = 50)
     private String code;
 
@@ -37,7 +49,12 @@ public class RubricCriterionJpaEntity {
     @Column(name = "description", length = 2048)
     private String description;
 
-    @Column(name = "weight", nullable = false, precision = 6, scale = 2)
+    @Column(name = "weight", nullable = false, precision = 6, scale = 2, check = {
+        @CheckConstraint(
+            name = "chk_rubric_criterions_weight_non_negative",
+            constraint = "weight >= 0"
+        )
+    })
     private BigDecimal weight;
 
     @Column(name = "min_score", nullable = false, precision = 6, scale = 2)
@@ -46,7 +63,12 @@ public class RubricCriterionJpaEntity {
     @Column(name = "max_score", nullable = false, precision = 6, scale = 2)
     private BigDecimal maxScore;
 
-    @Column(name = "criterion_order", nullable = false)
+    @Column(name = "criterion_order", nullable = false, check = {
+        @CheckConstraint(
+            name = "chk_rubric_criterions_order_positive",
+            constraint = "criterion_order > 0"
+        )
+    })
     private int order;
 
     @Column(name = "is_required", nullable = false)
@@ -66,29 +88,12 @@ public class RubricCriterionJpaEntity {
 
     protected RubricCriterionJpaEntity() {}
 
-    public RubricCriterionJpaEntity(UUID id, UUID rubricVersionId, String code, String name, String description,
-            BigDecimal weight, BigDecimal minScore, BigDecimal maxScore, int order, boolean isRequired,
-            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+    public RubricCriterionJpaEntity(UUID id, UUID rubricVersionId, UUID frameworkCriterionId, String code,
+            String name, String description, BigDecimal weight, BigDecimal minScore, BigDecimal maxScore, int order,
+            boolean isRequired, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.rubricVersionId = rubricVersionId;
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.weight = weight;
-        this.minScore = minScore;
-        this.maxScore = maxScore;
-        this.order = order;
-        this.isRequired = isRequired;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public RubricCriterionJpaEntity(UUID rubricVersionId, String code, String name, String description,
-            BigDecimal weight, BigDecimal minScore, BigDecimal maxScore, int order, boolean isRequired,
-            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
-        this.rubricVersionId = rubricVersionId;
+        this.frameworkCriterionId = frameworkCriterionId;
         this.code = code;
         this.name = name;
         this.description = description;
@@ -117,6 +122,14 @@ public class RubricCriterionJpaEntity {
 
     public void setRubricVersionId(UUID rubricVersionId) {
         this.rubricVersionId = rubricVersionId;
+    }
+
+    public UUID getFrameworkCriterionId() {
+        return frameworkCriterionId;
+    }
+
+    public void setFrameworkCriterionId(UUID frameworkCriterionId) {
+        this.frameworkCriterionId = frameworkCriterionId;
     }
 
     public String getCode() {

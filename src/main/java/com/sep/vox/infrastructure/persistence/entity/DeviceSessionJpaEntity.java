@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.hibernate.annotations.Generated;
 import org.hibernate.generator.EventType;
 
+import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -37,7 +38,12 @@ public class DeviceSessionJpaEntity {
     @Column(name = "device_name", nullable = false, updatable = false, length = 255)
     private String deviceName;
 
-    @Column(name = "platform", nullable = false, updatable = false, length = 20)
+    @Column(name = "platform", nullable = false, updatable = false, length = 20, check = {
+        @CheckConstraint(
+            name = "chk_device_sessions_platform_valid", 
+            constraint = "platform IN ('WEB', 'ANDROID', 'IOS', 'DESKTOP')"
+        )
+    })
     private String platform;
 
     @Column(name = "ip_address", nullable = false, updatable = false, length = 255)

@@ -37,7 +37,7 @@ public class QuestionRepositoryImpl implements QuestionRepository {
 
     @Override
     public List<Question> findByTopicId(UUID topicId) {
-        return springDataQuestionRepository.findByTopicId(topicId).stream()
+        return springDataQuestionRepository.findByQuestionTopicId(topicId).stream()
             .map(QuestionMapper::toDomain)
             .toList();
     }
@@ -45,7 +45,7 @@ public class QuestionRepositoryImpl implements QuestionRepository {
     @Override
     public PageResult<Question> findByTopicId(UUID topicId, PageRequest pageRequest) {
         var pageable = org.springframework.data.domain.PageRequest.of(pageRequest.page() - 1, pageRequest.size());
-        var page = springDataQuestionRepository.findByTopicId(topicId, pageable);
+        var page = springDataQuestionRepository.findByQuestionTopicId(topicId, pageable);
         return new PageResult<>(
             page.getContent().stream()
                 .map(QuestionMapper::toDomain)

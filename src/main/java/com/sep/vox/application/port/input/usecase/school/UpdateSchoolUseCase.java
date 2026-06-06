@@ -68,7 +68,7 @@ public class UpdateSchoolUseCase implements IUseCase<UpdateSchoolCommand, School
         }
 
         if (command.code() != null) {
-            String normalizedCode = StringNormalization.normalizeSchoolCode(command.code());
+            String normalizedCode = StringNormalization.normalizeCode(command.code());
             if (schoolRepository.existsByCodeAndIdNot(normalizedCode, command.id())) {
                 throw new DuplicatedException("Mã trường này đã được sử dụng bởi trường khác.");
             }

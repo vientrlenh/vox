@@ -35,9 +35,7 @@ public class UpdateQuestionBankUseCase implements IUseCase<UpdateQuestionBankCom
         var questionBank = questionBankRepository.findById(command.id())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
-        questionBank.setBankName(command.bankName());
         questionBank.setDescription(command.description());
-        questionBank.setActive(command.isActive());
         questionBank.setUpdatedAt(now);
         questionBank.setUpdatedBy(currentUserId);
 

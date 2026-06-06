@@ -35,8 +35,6 @@ public class UpdateQuestionTopicUseCase implements IUseCase<UpdateQuestionTopicC
         var topic = questionTopicRepository.findById(command.id())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy chủ đề câu hỏi"));
 
-        topic.setBankId(command.bankId());
-        topic.setTopicName(command.topicName());
         topic.setDescription(command.description());
 
         var saved = questionTopicRepository.save(topic);

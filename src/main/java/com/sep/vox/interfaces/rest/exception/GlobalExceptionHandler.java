@@ -8,17 +8,17 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.sep.vox.application.exception.DuplicatedException;
-import com.sep.vox.application.exception.ImportValidationException;
+import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.interfaces.rest.dto.response.ErrorResponse;
-import com.sep.vox.interfaces.rest.dto.response.ImportValidationErrorResponse;
 import com.sep.vox.interfaces.rest.dto.response.ValidationErrorResponse;
 
 @RestControllerAdvice
@@ -31,12 +31,13 @@ public class GlobalExceptionHandler {
     private static final String ILLEGAL_ARGUMENT_ERROR = "ILLEGAL_ARGUMENT";
     private static final String INVALID_STATE_ERROR = "INVALID_STATE";
     private static final String VALIDATION_ERROR = "BAD_REQUEST";
-    private static final String IMPORT_VALIDATION_ERROR = "IMPORT_VALIDATION_FAILED";
     private static final String UNAUTHORIZED_ERROR = "UNAUTHORIZED";
+    private static final String FORBIDDEN_ERROR = "FORBIDDEN";
     private static final String INTERNAL_ERROR = "INTERNAL_SERVER_ERROR";
 
     private static final String AUTHENTICATION_ERROR = "BAD_CREDENTIALS";
     private static final String AUTHORIZATION_ERROR = "ACCESS_DENIED";
+    private static final String USER_DISABLED_ERROR = "USER_DISABLED";
     private static final String VERSION_MISMATCHED_ERROR = "VERSION_MISMATCHED";
 
     @ExceptionHandler(DuplicatedException.class)
@@ -82,10 +83,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
-    @ExceptionHandler(ImportValidationException.class)
-    public ResponseEntity<ImportValidationErrorResponse> handleImportValidation(ImportValidationException e) {
-        var error = new ImportValidationErrorResponse(IMPORT_VALIDATION_ERROR, e.getMessage(), e.getErrors());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ErrorResponse> handleForbidden(ForbiddenException e) {
+        var error = new ErrorResponse(FORBIDDEN_ERROR, e.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
     }
 
     @ExceptionHandler(Exception.class)
@@ -107,6 +110,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException e) {
         var error = new ErrorResponse(AUTHORIZATION_ERROR, "Quyền truy cập không hợp lệ");
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+    }
+
+
+    @ExceptionHandler(DisabledException.class)
+    private ResponseEntity<ErrorResponse> handleDisabled(DisabledException e) {
+        var error = new ErrorResponse(USER_DISABLED_ERROR, e.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
     }
 
 

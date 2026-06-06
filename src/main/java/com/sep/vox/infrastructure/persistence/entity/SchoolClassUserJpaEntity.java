@@ -3,13 +3,13 @@ package com.sep.vox.infrastructure.persistence.entity;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
+import org.hibernate.annotations.Generated;
+import org.hibernate.generator.EventType;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
-import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 
 @Entity
@@ -20,13 +20,15 @@ import jakarta.persistence.Table;
 public class SchoolClassUserJpaEntity {
     
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE)
-    @SequenceGenerator(
-        name = "school_class_user_seq_gen",
-        sequenceName = "school_class_user_seq",
-        allocationSize = 50
+    @Generated(event = EventType.INSERT)
+    @Column(
+        name = "id", 
+        nullable = false, 
+        updatable = false, 
+        insertable = false, 
+        columnDefinition = "UUID DEFAULT uuidv7()"
     )
-    private long id;
+    private UUID id;
 
     @Column(name = "user_id", nullable = false, updatable = false)
     private UUID userId;
@@ -48,7 +50,7 @@ public class SchoolClassUserJpaEntity {
 
     protected SchoolClassUserJpaEntity() {}
 
-    public SchoolClassUserJpaEntity(long id, UUID userId, UUID schoolClassId, boolean isActive, OffsetDateTime joinedAt,
+    public SchoolClassUserJpaEntity(UUID id, UUID userId, UUID schoolClassId, boolean isActive, OffsetDateTime joinedAt,
             OffsetDateTime leftAt, UUID assignedBy) {
         this.id = id;
         this.userId = userId;
@@ -69,11 +71,11 @@ public class SchoolClassUserJpaEntity {
         this.assignedBy = assignedBy;
     }
 
-    public long getId() {
+    public UUID getId() {
         return id;
     }
 
-    public void setId(long id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 

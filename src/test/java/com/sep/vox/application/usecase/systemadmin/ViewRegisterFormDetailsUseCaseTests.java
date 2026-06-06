@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.query.ViewRegisterFormDetailsQuery;
-import com.sep.vox.application.port.input.usecase.systemadmin.ViewRegisterFormDetailsUseCase;
+import com.sep.vox.application.port.input.usecase.registration.ViewRegisterFormDetailsUseCase;
 import com.sep.vox.domain.model.registerform.RegisterForm;
 import com.sep.vox.domain.model.registerform.RegisterFormStatus;
 import com.sep.vox.domain.repository.RegisterFormRepository;

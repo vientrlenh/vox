@@ -5,10 +5,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.port.input.query.ViewQuestionTopicsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.QuestionTopicDto;
-import com.sep.vox.domain.mapper.QuestionTopicDtoMapper;
 import com.sep.vox.domain.repository.QuestionTopicRepository;
 
 @Service
@@ -23,7 +21,6 @@ public class ViewQuestionTopicsUseCase implements IUseCase<ViewQuestionTopicsQue
     @Override
     @Transactional(readOnly = true)
     public PageResult<QuestionTopicDto> execute(ViewQuestionTopicsQuery input) {
-        var result = questionTopicRepository.findByBankId(input.bankId(), new PageRequest(input.page(), input.size()));
-        return QuestionTopicDtoMapper.toDtoPage(result);
+        return null;
     }
 }

@@ -22,7 +22,7 @@ import org.mockito.ArgumentCaptor;
 import com.sep.vox.application.event.RegisterFormRejectedEvent;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.RejectRegisterFormCommand;
-import com.sep.vox.application.port.input.usecase.systemadmin.RejectRegisterFormUseCase;
+import com.sep.vox.application.port.input.usecase.registration.RejectRegisterFormUseCase;
 import com.sep.vox.application.port.output.EventPublisherPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.registerform.RegisterForm;

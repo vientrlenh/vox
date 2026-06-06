@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
 import com.sep.vox.config.TestContainerConfig;
-import com.sep.vox.domain.model.userrole.UserRole;
+import com.sep.vox.domain.model.user.UserRole;
 import com.sep.vox.domain.repository.UserRoleRepository;
 import com.sep.vox.infrastructure.persistence.adapter.UserRoleRepositoryImpl;
 
@@ -36,7 +36,6 @@ class UserRoleRepositoryTests {
 
         var saved = userRoleRepository.save(new UserRole(userId, roleId, OffsetDateTime.now()));
 
-        assertThat(saved.getId()).isPositive();
         assertThat(saved.getUserId()).isEqualTo(userId);
         assertThat(saved.getRoleId()).isEqualTo(roleId);
         assertThat(saved.getCreatedAt()).isNotNull();

@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
-import com.sep.vox.domain.model.schoolroom.SchoolRoom;
+import com.sep.vox.domain.model.school.SchoolRoom;
 import com.sep.vox.infrastructure.persistence.entity.SchoolRoomJpaEntity;
 
 public final class SchoolRoomMapper {

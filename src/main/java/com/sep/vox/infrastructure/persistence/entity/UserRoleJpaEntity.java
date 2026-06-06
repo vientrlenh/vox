@@ -4,14 +4,13 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.Generated;
+import org.hibernate.generator.EventType;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
-import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 
 @Entity
@@ -22,13 +21,15 @@ import jakarta.persistence.Table;
 public class UserRoleJpaEntity {
     
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE)
-    @SequenceGenerator(
-        name = "user_role_seq_gen",
-        sequenceName = "user_role_seq",
-        allocationSize = 50
+    @Generated(event = EventType.INSERT)
+    @Column(
+        name = "id", 
+        nullable = false, 
+        updatable = false, 
+        insertable = false, 
+        columnDefinition = "UUID DEFAULT uuidv7()"
     )
-    private long id;
+    private UUID id;
 
     @Column(name = "user_id", nullable = false)
     private UUID userId;
@@ -42,18 +43,18 @@ public class UserRoleJpaEntity {
 
     protected UserRoleJpaEntity() {}
 
-    public UserRoleJpaEntity(long id, UUID userId, UUID roleId, OffsetDateTime createdAt) {
+    public UserRoleJpaEntity(UUID id, UUID userId, UUID roleId, OffsetDateTime createdAt) {
         this.id = id;
         this.userId = userId;
         this.roleId = roleId;
         this.createdAt = createdAt;
     }
 
-    public long getId() {
+    public UUID getId() {
         return id;
     }
 
-    public void setId(long id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 

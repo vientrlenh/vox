@@ -5,6 +5,7 @@ import java.util.UUID;
 import org.hibernate.annotations.Generated;
 import org.hibernate.generator.EventType;
 
+import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -14,7 +15,14 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "rubrics", indexes = {
-    @Index(columnList = "owner_type, school_id, language_id, framework_id, code", name = "idx_rubrics_owner_scope_code", unique = true)
+    @Index(columnList = "owner_type, school_id, language_id, framework_id, code", name = "idx_rubrics_owner_scope_code", unique = true),
+    @Index(columnList = "language_id, framework_id", name = "idx_rubrics_language_framework"),
+    @Index(columnList = "current_version_id", name = "idx_rubrics_current_version")
+}, check = {
+    @CheckConstraint(
+        name = "chk_rubrics_owner_school_valid",
+        constraint = "(owner_type = 'SYSTEM' AND school_id IS NULL) OR (owner_type = 'SCHOOL' AND school_id IS NOT NULL)"
+    )
 })
 
 public class RubricJpaEntity {
@@ -39,7 +47,12 @@ public class RubricJpaEntity {
     @Column(name = "framework_id", nullable = false)
     private UUID frameworkId;
 
-    @Column(name = "owner_type", nullable = false, length = 20)
+    @Column(name = "owner_type", nullable = false, length = 20, check = {
+        @CheckConstraint(
+            name = "chk_rubrics_owner_type_valid",
+            constraint = "owner_type IN ('SYSTEM', 'SCHOOL')"
+        )
+    })
     private String ownerType;
 
     @Column(name = "school_id")
@@ -52,7 +65,7 @@ public class RubricJpaEntity {
 
     
 
-    public RubricJpaEntity(UUID id, String code, String name, String description, UUID languageId, UUID frameworkId,
+    public RubricJpaEntity(UUID id, UUID languageId, UUID frameworkId, String code, String name, String description, 
             String ownerType, UUID schoolId, UUID currentVersionId) {
         this.id = id;
         this.code = code;
@@ -67,7 +80,7 @@ public class RubricJpaEntity {
 
 
 
-    public RubricJpaEntity(String code, String name, String description, UUID languageId, UUID frameworkId,
+    public RubricJpaEntity(UUID languageId, UUID frameworkId, String code, String name, String description, 
             String ownerType, UUID schoolId, UUID currentVersionId) {
         this.code = code;
         this.name = name;

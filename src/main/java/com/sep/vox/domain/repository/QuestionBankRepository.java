@@ -5,7 +5,7 @@ import java.util.UUID;
 
 import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
-import com.sep.vox.domain.model.questionbank.QuestionBank;
+import com.sep.vox.domain.model.question.QuestionBank;
 
 public interface QuestionBankRepository {
     QuestionBank save(QuestionBank questionBank);

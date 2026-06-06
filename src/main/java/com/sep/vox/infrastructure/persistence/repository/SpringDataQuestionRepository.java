@@ -10,6 +10,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import com.sep.vox.infrastructure.persistence.entity.QuestionJpaEntity;
 
 public interface SpringDataQuestionRepository extends JpaRepository<QuestionJpaEntity, UUID> {
-    List<QuestionJpaEntity> findByTopicId(UUID topicId);
-    Page<QuestionJpaEntity> findByTopicId(UUID topicId, Pageable pageable);
+    List<QuestionJpaEntity> findByQuestionTopicId(UUID topicId);
+    Page<QuestionJpaEntity> findByQuestionTopicId(UUID topicId, Pageable pageable);
 }

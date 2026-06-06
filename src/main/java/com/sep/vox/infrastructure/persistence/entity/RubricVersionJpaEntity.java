@@ -17,7 +17,18 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "rubric_versions", indexes = {
-    @Index(columnList = "rubric_id, code", name = "idx_rubric_versions_rubric_id_code")
+    @Index(columnList = "rubric_id, code", name = "idx_rubric_versions_rubric_id_code", unique = true),
+    @Index(columnList = "rubric_id, version", name = "idx_rubric_versions_rubric_id_version", unique = true),
+    @Index(columnList = "status", name = "idx_rubric_versions_status")
+}, check = {
+    @CheckConstraint(
+        name = "chk_rubric_versions_scoring_scale_valid",
+        constraint = "scoring_scale_min <= scoring_scale_max"
+    ),
+    @CheckConstraint(
+        name = "chk_rubric_versions_effective_range_valid",
+        constraint = "effective_to IS NULL OR effective_from <= effective_to"
+    )
 })
 public class RubricVersionJpaEntity {
 
@@ -38,14 +49,16 @@ public class RubricVersionJpaEntity {
     @Column(name = "description", length = 2048)
     private String description;
 
-    @Column(name = "version", nullable = false)
+    @Column(name = "version", nullable = false, check = {
+        @CheckConstraint(
+            name = "chk_rubric_versions_version_positive",
+            constraint = "version > 0"
+        )
+    })
     private int version;
 
     @Column(name = "status", nullable = false, length = 20, check = {
-        @CheckConstraint(
-            name = "chk_status_valid", 
-            constraint = "status IN ('DRAFT', 'PUBLISHED', 'ARCHIVED')"
-        )
+        @CheckConstraint(name = "chk_rubric_versions_status_valid", constraint = "status IN ('DRAFT', 'PUBLISHED', 'ARCHIVED')")
     })
     private String status;
 
@@ -61,7 +74,9 @@ public class RubricVersionJpaEntity {
     @Column(name = "scoring_scale_max", nullable = false, precision = 6, scale = 2)
     private BigDecimal scoringScaleMax;
 
-    @Column(name = "total_score_method", nullable = false, length = 30)
+    @Column(name = "total_score_method", nullable = false, length = 30, check = {
+        @CheckConstraint(name = "chk_rubric_versions_total_score_method_valid", constraint = "total_score_method IN ('WEIGHTED_AVERAGE', 'SUM')")
+    })
     private String totalScoreMethod;
 
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -78,7 +93,7 @@ public class RubricVersionJpaEntity {
 
     protected RubricVersionJpaEntity() {}
 
-    public RubricVersionJpaEntity(UUID id, UUID rubricId, String code, String name, String description, int version, String status, OffsetDateTime effectiveFrom,
+    public RubricVersionJpaEntity(UUID id, UUID rubricId, int version, String code, String name, String description, String status, OffsetDateTime effectiveFrom,
             OffsetDateTime effectiveTo, BigDecimal scoringScaleMin, BigDecimal scoringScaleMax, String totalScoreMethod,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
@@ -99,7 +114,7 @@ public class RubricVersionJpaEntity {
         this.updatedBy = updatedBy;
     }
 
-    public RubricVersionJpaEntity(UUID rubricId, String code, String name, String description, int version, String status, OffsetDateTime effectiveFrom,
+    public RubricVersionJpaEntity(UUID rubricId, int version, String code, String name, String description, String status, OffsetDateTime effectiveFrom,
             OffsetDateTime effectiveTo, BigDecimal scoringScaleMin, BigDecimal scoringScaleMax, String totalScoreMethod,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.rubricId = rubricId;

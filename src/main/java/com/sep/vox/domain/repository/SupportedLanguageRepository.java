@@ -10,4 +10,6 @@ public interface SupportedLanguageRepository {
     Optional<SupportedLanguage> findByCode(String code);
     SupportedLanguage save(SupportedLanguage supportedLanguage);
     long count();
+    boolean existsById(UUID id);
+    boolean existsByIdAndIsActive(UUID id, boolean isActive);
 }

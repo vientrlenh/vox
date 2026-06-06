@@ -1,6 +1,8 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
-import com.sep.vox.domain.model.questionbank.QuestionBank;
+import com.sep.vox.domain.model.question.QuestionBank;
+import com.sep.vox.domain.model.question.QuestionBankOwnerType;
+import com.sep.vox.domain.model.question.QuestionBankStatus;
 import com.sep.vox.infrastructure.persistence.entity.QuestionBankJpaEntity;
 
 public final class QuestionBankMapper {
@@ -8,9 +10,13 @@ public final class QuestionBankMapper {
     public static QuestionBank toDomain(QuestionBankJpaEntity jpa) {
         return new QuestionBank(
             jpa.getId(),
-            jpa.getBankName(),
+            jpa.getLanguageId(),
+            jpa.getSchoolId(),
+            jpa.getCode(),
+            jpa.getName(),
             jpa.getDescription(),
-            jpa.isActive(),
+            QuestionBankOwnerType.valueOf(jpa.getOwnerType()),
+            QuestionBankStatus.valueOf(jpa.getStatus()),
             jpa.getCreatedAt(),
             jpa.getUpdatedAt(),
             jpa.getCreatedBy(),
@@ -21,9 +27,13 @@ public final class QuestionBankMapper {
     public static QuestionBankJpaEntity toJpa(QuestionBank domain) {
         return new QuestionBankJpaEntity(
             domain.getId(),
-            domain.getBankName(),
+            domain.getLanguageId(),
+            domain.getSchoolId(),
+            domain.getCode(),
+            domain.getName(),
             domain.getDescription(),
-            domain.isActive(),
+            domain.getOwnerType().name(),
+            domain.getStatus().name(),
             domain.getCreatedAt(),
             domain.getUpdatedAt(),
             domain.getCreatedBy(),

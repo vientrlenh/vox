@@ -58,7 +58,7 @@ public class UserJpaEntity {
 
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
-            name = "chk_status_valid", 
+            name = "chk_users_status_valid", 
             constraint = "status IN ('ACTIVE', 'INACTIVE', 'LOCKED', 'DISABLED')"
         )
     })

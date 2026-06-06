@@ -12,7 +12,7 @@ import com.sep.vox.application.port.input.command.DeleteSchoolClassCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.SchoolClassDeleteResultDto;
-import com.sep.vox.domain.model.schoolclass.SchoolClassStatus;
+import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassDependencyRepository;

@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import com.sep.vox.domain.model.schoolclassuser.SchoolClassUser;
+import com.sep.vox.domain.model.school.SchoolClassUser;
 
 public interface SchoolClassUserRepository {
     Optional<SchoolClassUser> findByUserIdAndSchoolClassId(UUID userId, UUID schoolClassId);

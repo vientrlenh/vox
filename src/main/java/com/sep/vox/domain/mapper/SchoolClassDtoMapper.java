@@ -5,8 +5,8 @@ import java.util.List;
 
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolClassDto;
-import com.sep.vox.domain.model.schoolclass.SchoolClass;
-import com.sep.vox.domain.model.schoolclass.SchoolClassStatus;
+import com.sep.vox.domain.model.school.SchoolClass;
+import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.valueobject.ClassCode;
 
 public final class SchoolClassDtoMapper {
@@ -20,12 +20,9 @@ public final class SchoolClassDtoMapper {
             valueOf(schoolClass.getCode()),
             schoolClass.getName(),
             schoolClass.getDescription(),
-            schoolClass.getTargetSchoolLevelVersionId(),
             valueOf(schoolClass.getStatus()),
             valueOf(schoolClass.getCreatedAt()),
-            valueOf(schoolClass.getUpdatedAt()),
-            schoolClass.getCreatedBy(),
-            schoolClass.getUpdatedBy()
+            valueOf(schoolClass.getUpdatedAt())
         );
     }
 

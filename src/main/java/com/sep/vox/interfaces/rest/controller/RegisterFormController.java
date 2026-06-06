@@ -10,8 +10,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.sep.vox.application.port.input.usecase.systemadmin.ApproveRegisterFormUseCase;
-import com.sep.vox.application.port.input.usecase.systemadmin.RejectRegisterFormUseCase;
+import com.sep.vox.application.port.input.usecase.registration.ApproveRegisterFormUseCase;
+import com.sep.vox.application.port.input.usecase.registration.RejectRegisterFormUseCase;
 import com.sep.vox.interfaces.rest.dto.request.ApproveRegisterFormRequest;
 import com.sep.vox.interfaces.rest.dto.request.RejectRegisterFormRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;

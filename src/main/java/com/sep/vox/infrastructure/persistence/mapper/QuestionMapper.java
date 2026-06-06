@@ -1,7 +1,10 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.question.Question;
-import com.sep.vox.domain.valueobject.QuestionType;
+import com.sep.vox.domain.model.question.QuestionScope;
+import com.sep.vox.domain.model.question.QuestionStatus;
+import com.sep.vox.domain.model.question.QuestionType;
+import com.sep.vox.domain.model.question.QuestionVisibility;
 import com.sep.vox.infrastructure.persistence.entity.QuestionJpaEntity;
 
 public final class QuestionMapper {
@@ -9,28 +12,50 @@ public final class QuestionMapper {
     public static Question toDomain(QuestionJpaEntity jpa) {
         return new Question(
             jpa.getId(),
-            jpa.getTopicId(),
+            jpa.getQuestionTopicId(),
+            jpa.getCode(),
+            jpa.getInstructionText(),
             jpa.getQuestionText(),
-            jpa.getAudioUrl(),
-            jpa.getStandardLevelId(),
-            new QuestionType(jpa.getQuestionType()),
-            jpa.getDurationSeconds(),
-            jpa.isActive(),
-            jpa.getCreatedAt()
+            jpa.getPromptText(),
+            jpa.getPreparationText(),
+            QuestionType.valueOf(jpa.getType()),
+            jpa.getPreparationTimeSeconds(),
+            jpa.getMinResponseSeconds(),
+            jpa.getMaxResponseSeconds(),
+            QuestionScope.valueOf(jpa.getScope()),
+            QuestionVisibility.valueOf(jpa.getVisibility()),
+            jpa.getSourceQuestionId(),
+            jpa.isLocked(),
+            QuestionStatus.valueOf(jpa.getStatus()),
+            jpa.getCreatedAt(),
+            jpa.getUpdatedAt(),
+            jpa.getCreatedBy(),
+            jpa.getUpdatedBy()
         );
     }
 
-    public static QuestionJpaEntity toJpa(Question domain) {
+    public static QuestionJpaEntity toJpa(Question question) {
         return new QuestionJpaEntity(
-            domain.getId(),
-            domain.getTopicId(),
-            domain.getQuestionText(),
-            domain.getAudioUrl(),
-            domain.getStandardLevelId(),
-            domain.getQuestionType().value(),
-            domain.getDurationSeconds(),
-            domain.isActive(),
-            domain.getCreatedAt()
+            question.getId(),
+            question.getQuestionTopicId(), 
+            question.getCode(),
+            question.getInstructionText(),
+            question.getQuestionText(),
+            question.getPromptText(),
+            question.getPreparationText(),
+            question.getType().name(),
+            question.getPreparationTimeSeconds(),
+            question.getMinResponseSeconds(),
+            question.getMaxResponseSeconds(),
+            question.getScope().name(),
+            question.getVisibility().name(),
+            question.getSourceQuestionId(),
+            question.isLocked(),
+            question.getStatus().name(),
+            question.getCreatedAt(),
+            question.getUpdatedAt(),
+            question.getCreatedBy(),
+            question.getUpdatedBy()
         );
     }
 }

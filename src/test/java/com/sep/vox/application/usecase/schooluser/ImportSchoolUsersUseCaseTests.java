@@ -36,13 +36,15 @@ import com.sep.vox.application.port.output.ImportFileResource;
 import com.sep.vox.application.port.output.SchoolUserImportFileStoragePort;
 import com.sep.vox.application.response.output.GeneratedPasswordSetUpToken;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.model.role.Role;
+import com.sep.vox.domain.model.user.Role;
 import com.sep.vox.domain.model.passwordsetuptoken.PasswordSetUpToken;
 import com.sep.vox.domain.model.school.School;
-import com.sep.vox.domain.model.schooluser.SchoolUser;
+import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
-import com.sep.vox.domain.model.userrole.UserRole;
+import com.sep.vox.domain.model.user.UserRole;
+import com.sep.vox.domain.repository.ImportRowRepository;
+import com.sep.vox.domain.repository.ImportSessionRepository;
 import com.sep.vox.domain.repository.RoleRepository;
 import com.sep.vox.domain.repository.PasswordSetUpTokenRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
@@ -54,6 +56,7 @@ import com.sep.vox.domain.valueobject.Email;
 import com.sep.vox.domain.valueobject.FullName;
 import com.sep.vox.domain.valueobject.Phone;
 import com.sep.vox.domain.valueobject.RoleCode;
+import com.sep.vox.infrastructure.adapter.SchoolUserImportValidator;
 
 public class ImportSchoolUsersUseCaseTests {
 
@@ -64,10 +67,13 @@ public class ImportSchoolUsersUseCaseTests {
     private SchoolUserRepository schoolUserRepository;
     private SchoolUserImportFileStoragePort fileStoragePort;
     private SchoolRepository schoolRepository;
+    private ImportSessionRepository importSessionRepository;
+    private ImportRowRepository importRowRepository;
     private PasswordSetUpTokenPort passwordSetUpTokenPort;
     private PasswordSetUpTokenRepository passwordSetUpTokenRepository;
     private EventPublisherPort eventPublisherPort;
     private ImportParserFactory importParserFactory;
+    private SchoolUserImportValidator importValidator;
     private ImportSchoolUsersUseCase importSchoolUsersUseCase;
 
     private final UUID schoolId = UUID.randomUUID();
@@ -82,12 +88,15 @@ public class ImportSchoolUsersUseCaseTests {
         schoolUserRepository = mock(SchoolUserRepository.class);
         fileStoragePort = mock(SchoolUserImportFileStoragePort.class);
         schoolRepository = mock(SchoolRepository.class);
+        importSessionRepository = mock(ImportSessionRepository.class);
+        importRowRepository = mock(ImportRowRepository.class);
         passwordSetUpTokenPort = mock(PasswordSetUpTokenPort.class);
         passwordSetUpTokenRepository = mock(PasswordSetUpTokenRepository.class);
         eventPublisherPort = mock(EventPublisherPort.class);
         importParserFactory = mock(com.sep.vox.application.common.importer.ImportParserFactory.class);
         when(importParserFactory.forFormat(com.sep.vox.application.common.importer.ImportFileFormat.CSV))
             .thenReturn(new com.sep.vox.infrastructure.importer.CsvImportParser());
+        importValidator = mock(SchoolUserImportValidator.class);
 
         importSchoolUsersUseCase = new ImportSchoolUsersUseCase(
             userContextPort,
@@ -97,15 +106,32 @@ public class ImportSchoolUsersUseCaseTests {
             schoolUserRepository,
             fileStoragePort,
             schoolRepository,
+            importSessionRepository,
+            importRowRepository,
             passwordSetUpTokenPort,
             passwordSetUpTokenRepository,
             eventPublisherPort,
             new NoopTransactionManager(),
-            importParserFactory
+            importParserFactory,
+            importValidator,
+            new tools.jackson.databind.ObjectMapper()
         );
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(school(schoolId, "Trường A")));
         when(passwordSetUpTokenPort.generateToken()).thenReturn(new GeneratedPasswordSetUpToken("raw-token", "hashed-token"));
         when(passwordSetUpTokenRepository.save(any(PasswordSetUpToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(importSessionRepository.save(any())).thenAnswer(invocation -> {
+            var session = invocation.getArgument(0, com.sep.vox.domain.model.importfile.ImportSession.class);
+            if (session.getId() == null) {
+                session.setId(UUID.randomUUID());
+            }
+            return session;
+        });
+        when(importRowRepository.saveAll(any())).thenAnswer(invocation -> {
+            @SuppressWarnings("unchecked")
+            var rows = (java.util.Collection<com.sep.vox.domain.model.importfile.ImportRow>) invocation.getArgument(0, java.util.Collection.class);
+            return new java.util.ArrayList<com.sep.vox.domain.model.importfile.ImportRow>(rows);
+        });
+        when(importRowRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
     }
 
     @Test

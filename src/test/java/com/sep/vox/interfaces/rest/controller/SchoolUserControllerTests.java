@@ -21,6 +21,7 @@ import com.sep.vox.application.port.input.usecase.schooluser.ChangeSchoolUserRol
 import com.sep.vox.application.port.input.usecase.schooluser.CreateSchoolUserUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.DeleteSchoolUserUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.ImportSchoolUsersUseCase;
+import com.sep.vox.application.port.input.usecase.schooluser.PreviewSchoolUserImportFromFileUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.UploadSchoolUserImportFileUseCase;
 import com.sep.vox.application.response.input.schooluser.SchoolUserImportResponse;
 import com.sep.vox.application.response.input.schooluser.SchoolUserImportUploadResponse;
@@ -41,6 +42,7 @@ public class SchoolUserControllerTests {
     private DeleteSchoolUserUseCase deleteSchoolUserUseCase;
     private ChangeSchoolUserRoleUseCase changeSchoolUserRoleUseCase;
     private UploadSchoolUserImportFileUseCase uploadSchoolUserImportFileUseCase;
+    private PreviewSchoolUserImportFromFileUseCase previewSchoolUserImportFromFileUseCase;
     private ImportSchoolUsersUseCase importSchoolUsersUseCase;
     private SchoolUserController controller;
 
@@ -53,11 +55,16 @@ public class SchoolUserControllerTests {
         deleteSchoolUserUseCase = mock(DeleteSchoolUserUseCase.class);
         changeSchoolUserRoleUseCase = mock(ChangeSchoolUserRoleUseCase.class);
         uploadSchoolUserImportFileUseCase = mock(UploadSchoolUserImportFileUseCase.class);
+        previewSchoolUserImportFromFileUseCase = mock(PreviewSchoolUserImportFromFileUseCase.class);
         importSchoolUsersUseCase = mock(ImportSchoolUsersUseCase.class);
+
         controller = new SchoolUserController(
             createSchoolUserUseCase,
-            deleteSchoolUserUseCase, changeSchoolUserRoleUseCase,
-            uploadSchoolUserImportFileUseCase, importSchoolUsersUseCase
+            deleteSchoolUserUseCase,
+            changeSchoolUserRoleUseCase,
+            uploadSchoolUserImportFileUseCase,
+            previewSchoolUserImportFromFileUseCase,
+            importSchoolUsersUseCase
         );
     }
 

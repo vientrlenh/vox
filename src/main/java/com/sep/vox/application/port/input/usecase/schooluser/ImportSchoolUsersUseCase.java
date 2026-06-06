@@ -2,13 +2,11 @@ package com.sep.vox.application.port.input.usecase.schooluser;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -17,12 +15,9 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import com.sep.vox.application.common.DateMapper;
-import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.common.importer.ImportFileFormat;
 import com.sep.vox.application.common.importer.ImportParserFactory;
 import com.sep.vox.application.common.importer.ImportRow;
-import com.sep.vox.application.common.importer.JsonPathResolver;
 import com.sep.vox.application.event.SchoolUserPasswordSetUpEmailRequestedEvent;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.ImportFieldMapping;
@@ -34,21 +29,28 @@ import com.sep.vox.application.port.output.SchoolUserImportFileStoragePort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.schooluser.SchoolUserImportError;
 import com.sep.vox.application.response.input.schooluser.SchoolUserImportResponse;
+import com.sep.vox.domain.model.importfile.ImportSession;
+import com.sep.vox.domain.model.importfile.ImportSessionStatus;
+import com.sep.vox.domain.model.importfile.ImportType;
+import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.model.passwordsetuptoken.PasswordSetUpToken;
-import com.sep.vox.domain.model.schooluser.SchoolUser;
+import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
-import com.sep.vox.domain.model.userrole.UserRole;
+import com.sep.vox.domain.model.user.UserRole;
+import com.sep.vox.domain.repository.ImportRowRepository;
+import com.sep.vox.domain.repository.ImportSessionRepository;
 import com.sep.vox.domain.repository.RoleRepository;
 import com.sep.vox.domain.repository.PasswordSetUpTokenRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.repository.UserRoleRepository;
+import com.sep.vox.infrastructure.adapter.SchoolUserImportValidator;
+
+import tools.jackson.databind.ObjectMapper;
 
 @Service
 public class ImportSchoolUsersUseCase implements IUseCase<ImportSchoolUsersCommand, SchoolUserImportResponse> {
-
-    private static final List<String> ALLOWED_ROLE_CODES = List.of("STUDENT", "TEACHER");
 
     private final UserContextPort userContextPort;
     private final UserRepository userRepository;
@@ -57,11 +59,15 @@ public class ImportSchoolUsersUseCase implements IUseCase<ImportSchoolUsersComma
     private final SchoolUserRepository schoolUserRepository;
     private final SchoolUserImportFileStoragePort fileStoragePort;
     private final SchoolRepository schoolRepository;
+    private final ImportSessionRepository importSessionRepository;
+    private final ImportRowRepository importRowRepository;
     private final PasswordSetUpTokenPort passwordSetUpTokenPort;
     private final PasswordSetUpTokenRepository passwordSetUpTokenRepository;
     private final EventPublisherPort eventPublisherPort;
     private final TransactionTemplate transactionTemplate;
     private final ImportParserFactory importParserFactory;
+    private final SchoolUserImportValidator importValidator;
+    private final ObjectMapper objectMapper;
 
     public ImportSchoolUsersUseCase(
             UserContextPort userContextPort,
@@ -71,11 +77,15 @@ public class ImportSchoolUsersUseCase implements IUseCase<ImportSchoolUsersComma
             SchoolUserRepository schoolUserRepository,
             SchoolUserImportFileStoragePort fileStoragePort,
             SchoolRepository schoolRepository,
+            ImportSessionRepository importSessionRepository,
+            ImportRowRepository importRowRepository,
             PasswordSetUpTokenPort passwordSetUpTokenPort,
             PasswordSetUpTokenRepository passwordSetUpTokenRepository,
             EventPublisherPort eventPublisherPort,
             PlatformTransactionManager transactionManager,
-            ImportParserFactory importParserFactory) {
+            ImportParserFactory importParserFactory,
+            SchoolUserImportValidator importValidator,
+            ObjectMapper objectMapper) {
         this.userContextPort = userContextPort;
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
@@ -83,10 +93,14 @@ public class ImportSchoolUsersUseCase implements IUseCase<ImportSchoolUsersComma
         this.schoolUserRepository = schoolUserRepository;
         this.fileStoragePort = fileStoragePort;
         this.schoolRepository = schoolRepository;
+        this.importSessionRepository = importSessionRepository;
+        this.importRowRepository = importRowRepository;
         this.passwordSetUpTokenPort = passwordSetUpTokenPort;
         this.passwordSetUpTokenRepository = passwordSetUpTokenRepository;
         this.eventPublisherPort = eventPublisherPort;
         this.importParserFactory = importParserFactory;
+        this.importValidator = importValidator;
+        this.objectMapper = objectMapper;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
         this.transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
@@ -104,152 +118,80 @@ public class ImportSchoolUsersUseCase implements IUseCase<ImportSchoolUsersComma
         var school = schoolRepository.findById(input.schoolId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
 
-        var resource = fileStoragePort.load(input.fileId(), input.schoolId(), callerId);
+        var preview = previewImportRows(input, callerId, caller);
         try {
-            var format = ImportFileFormat.valueOf(resource.format());
-            var parser = importParserFactory.forFormat(format);
-
-            List<ImportRow> rows;
-            try (var inputStream = resource.inputStream()) {
-                rows = parser.parse(inputStream);
-            } catch (Exception e) {
-                throw new IllegalArgumentException("Không thể đọc dữ liệu", e);
-            }
-
-            var errors = new ArrayList<SchoolUserImportError>();
+            var errors = new ArrayList<>(preview.errors());
             var createdUserIds = new ArrayList<UUID>();
-            var seenEmails = new HashSet<String>();
-            var seenPhones = new HashSet<String>();
-
-            int failedCount = 0;
+            int failedCount = preview.failedCount();
             int createdCount = 0;
 
-            var mapping = input.mapping() != null ? input.mapping() : Map.<String, ImportFieldMapping>of();
+            if (!input.dryRun()) {
+                var session = preview.session();
+                session.setStatus(ImportSessionStatus.IMPORTING);
+                session.setUpdatedAt(OffsetDateTime.now());
+                session.setUpdatedBy(callerId);
+                importSessionRepository.save(session);
 
-            for (var row : rows) {
-                var rowErrors = new ArrayList<SchoolUserImportError>();
-
-                var emailRaw = resolveField(row, format, mapping.get("email"), "email");
-                var phoneRaw = resolveField(row, format, mapping.get("phone"), "phone");
-                var fullNameRaw = resolveField(row, format, mapping.get("fullName"), "fullName");
-                var dobRaw = resolveField(row, format, mapping.get("dateOfBirth"), "dateOfBirth");
-                var roleRaw = resolveField(row, format, mapping.get("roleCode"), "roleCode");
-                var addressRaw = resolveField(row, format, mapping.get("address"), "address");
-                var studentIdRaw = resolveField(row, format, mapping.get("studentId"), "studentId");
-
-                if (isBlank(emailRaw)) {
-                    rowErrors.add(error(row.rowNumber(), "email", "REQUIRED", "Email không được để trống", emailRaw));
-                }
-                if (isBlank(phoneRaw)) {
-                    rowErrors.add(error(row.rowNumber(), "phone", "REQUIRED", "Số điện thoại không được để trống", phoneRaw));
-                }
-                if (isBlank(fullNameRaw)) {
-                    rowErrors.add(error(row.rowNumber(), "fullName", "REQUIRED", "Họ và tên không được để trống", fullNameRaw));
-                }
-                if (isBlank(dobRaw)) {
-                    rowErrors.add(error(row.rowNumber(), "dateOfBirth", "REQUIRED", "Ngày sinh không được để trống", dobRaw));
-                }
-
-                var defaultRole = input.defaultRole() != null ? input.defaultRole().trim() : null;
-                var roleCode = roleRaw != null ? roleRaw.trim() : null;
-                if (isBlank(roleCode)) {
-                    roleCode = defaultRole;
-                }
-                if (isBlank(roleCode)) {
-                    rowErrors.add(error(row.rowNumber(), "roleCode", "REQUIRED", "Vai trò không được để trống", roleRaw));
-                }
-
-                if (!rowErrors.isEmpty()) {
-                    errors.addAll(rowErrors);
-                    failedCount++;
-                    continue;
-                }
-
-                var email = StringNormalization.normalizeEmail(emailRaw);
-                var phone = StringNormalization.normalizePhone(phoneRaw);
-                var fullName = StringNormalization.trimAndCollapseSpaces(fullNameRaw);
-                var address = addressRaw != null ? StringNormalization.trimAndCollapseSpaces(addressRaw) : null;
-                var studentId = studentIdRaw != null ? studentIdRaw.trim() : null;
-                var resolvedRoleCode = roleCode != null ? roleCode.trim().toUpperCase(Locale.ROOT) : "";
-
-                var dateOfBirth = parseDateOfBirth(dobRaw, mapping.get("dateOfBirth"));
-                if (dateOfBirth == null) {
-                    errors.add(error(row.rowNumber(), "dateOfBirth", "INVALID_FORMAT", "Định dạng ngày không hợp lệ", dobRaw));
-                    failedCount++;
-                    continue;
-                }
-
-                if (!ALLOWED_ROLE_CODES.contains(resolvedRoleCode)) {
-                    errors.add(error(row.rowNumber(), "roleCode", "INVALID_VALUE", "Vai trò không hợp lệ", resolvedRoleCode));
-                    failedCount++;
-                    continue;
-                }
-
-                if (!seenEmails.add(email)) {
-                    errors.add(error(row.rowNumber(), "email", "DUPLICATE", "Email bị trùng trong file", emailRaw));
-                    failedCount++;
-                    continue;
-                }
-                if (!seenPhones.add(phone)) {
-                    errors.add(error(row.rowNumber(), "phone", "DUPLICATE", "Số điện thoại bị trùng trong file", phoneRaw));
-                    failedCount++;
-                    continue;
-                }
-
-                if (userRepository.findByEmail(email).isPresent()) {
-                    errors.add(error(row.rowNumber(), "email", "DUPLICATE", "Email đã tồn tại", emailRaw));
-                    failedCount++;
-                    continue;
-                }
-                if (userRepository.findByPhone(phone).isPresent()) {
-                    errors.add(error(row.rowNumber(), "phone", "DUPLICATE", "Số điện thoại đã tồn tại", phoneRaw));
-                    failedCount++;
-                    continue;
-                }
-
-                var role = roleRepository.findByCode(resolvedRoleCode).orElse(null);
-                if (role == null) {
-                    errors.add(error(row.rowNumber(), "roleCode", "NOT_FOUND", "Không tìm thấy vai trò", resolvedRoleCode));
-                    failedCount++;
-                    continue;
-                }
-
-                if (input.dryRun()) {
-                    continue;
-                }
-
-                var createdId = transactionTemplate.execute(status -> {
-                    var now = OffsetDateTime.now();
-                    User user = resolvedRoleCode.equals("STUDENT")
-                        ? User.createStudent(email, phone, fullName, dateOfBirth, address, null, callerId, input.schoolId(), now)
-                        : User.createTeacher(email, phone, fullName, dateOfBirth, address, null, callerId, input.schoolId(), now);
-
-                    var savedUser = userRepository.save(user);
-                    userRoleRepository.save(new UserRole(savedUser.getId(), role.getId(), now));
-                    if ("STUDENT".equals(resolvedRoleCode) && studentId != null) {
-                        schoolUserRepository.save(SchoolUser.create(savedUser.getId(), input.schoolId(), studentId, callerId, now));
+                for (var validRow : preview.validRows()) {
+                    var role = roleRepository.findByCode(validRow.roleCode()).orElse(null);
+                    if (role == null) {
+                        failedCount++;
+                        errors.add(error((int) validRow.rowNumber(), "roleCode", "NOT_FOUND", "Không tìm thấy vai trò", validRow.roleCode()));
+                        importRowRepository.save(markRowAsFailed(validRow.rowEntity(), List.of(
+                            error((int) validRow.rowNumber(), "roleCode", "NOT_FOUND", "Không tìm thấy vai trò", validRow.roleCode())
+                        )));
+                        continue;
                     }
-                    var generatedPasswordSetUpToken = passwordSetUpTokenPort.generateToken();
-                    passwordSetUpTokenRepository.save(PasswordSetUpToken.create(savedUser.getId(), generatedPasswordSetUpToken.hashedToken()));
-                    eventPublisherPort.publish(new SchoolUserPasswordSetUpEmailRequestedEvent(
-                        email,
-                        fullName,
-                        school.getName(),
-                        savedUser.getId(),
-                        generatedPasswordSetUpToken.rawToken()
-                    ));
-                    return savedUser.getId();
-                });
 
-                if (createdId != null) {
-                    createdUserIds.add(createdId);
-                    createdCount++;
+                    var createdId = transactionTemplate.execute(status -> {
+                    var now = OffsetDateTime.now();
+                        User user = validRow.roleCode().equals("STUDENT")
+                            ? User.createStudent(validRow.email(), validRow.phone(), validRow.fullName(), validRow.dateOfBirth(), validRow.address(), null, callerId, input.schoolId(), now)
+                            : User.createTeacher(validRow.email(), validRow.phone(), validRow.fullName(), validRow.dateOfBirth(), validRow.address(), null, callerId, input.schoolId(), now);
+
+                        var savedUser = userRepository.save(user);
+                        userRoleRepository.save(new UserRole(savedUser.getId(), role.getId(), now));
+                        if ("STUDENT".equals(validRow.roleCode()) && validRow.studentId() != null) {
+                            schoolUserRepository.save(SchoolUser.create(validRow.studentId(), input.schoolId(), savedUser.getId(), now, now));
+                        }
+                        var generatedPasswordSetUpToken = passwordSetUpTokenPort.generateToken();
+                        passwordSetUpTokenRepository.save(PasswordSetUpToken.create(savedUser.getId(), generatedPasswordSetUpToken.hashedToken()));
+                        eventPublisherPort.publish(new SchoolUserPasswordSetUpEmailRequestedEvent(
+                            validRow.email(),
+                            validRow.fullName(),
+                            school.getName(),
+                            savedUser.getId(),
+                            generatedPasswordSetUpToken.rawToken()
+                        ));
+                        return savedUser.getId();
+                    });
+
+                    if (createdId != null) {
+                        createdUserIds.add(createdId);
+                        createdCount++;
+                        importRowRepository.save(markRowAsImported(validRow.rowEntity(), Map.of("createdUserId", createdId.toString())));
+                    }
                 }
             }
 
-            var totalRows = rows.size();
+            var totalRows = preview.totalRows();
             var processedRows = totalRows;
             var skippedCount = totalRows - createdCount - failedCount;
+
+            var finalSession = preview.session();
+            finalSession.setImportedRows(createdCount);
+            finalSession.setSkippedRows(skippedCount);
+            finalSession.setUpdatedAt(OffsetDateTime.now());
+            finalSession.setUpdatedBy(callerId);
+            if (input.dryRun()) {
+                finalSession.setStatus(ImportSessionStatus.PREVIEWED);
+                finalSession.setFailureReason(null);
+            } else {
+                finalSession.setInvalidRows(failedCount);
+                finalSession.setStatus(failedCount >= totalRows ? ImportSessionStatus.FAILED : ImportSessionStatus.COMPLETED);
+                finalSession.setFailureReason(failedCount >= totalRows ? "Không có dòng hợp lệ để import" : null);
+            }
+            importSessionRepository.save(finalSession);
 
             return new SchoolUserImportResponse(
                 input.fileId(),
@@ -271,6 +213,171 @@ public class ImportSchoolUsersUseCase implements IUseCase<ImportSchoolUsersComma
         }
     }
 
+    private PreviewResult previewImportRows(ImportSchoolUsersCommand input, UUID callerId, User caller) {
+        var resource = fileStoragePort.load(input.fileId(), input.schoolId(), callerId);
+        var format = ImportFileFormat.valueOf(resource.format());
+        var parser = importParserFactory.forFormat(format);
+        List<ImportRow> rows;
+        try (var inputStream = resource.inputStream()) {
+            rows = parser.parse(inputStream);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Không thể đọc dữ liệu", e);
+        }
+
+        var now = OffsetDateTime.now();
+        var session = new ImportSession(
+            input.schoolId(),
+            ImportType.USER,
+            resource.originalFileName(),
+            toJson(extractHeaders(rows, format)),
+            toJson(extractSuggestedMapping(input.mapping())),
+            toJson(input.mapping() != null ? input.mapping() : Map.<String, ImportFieldMapping>of()),
+            0,
+            0,
+            0,
+            0,
+            rows.size(),
+            null,
+            ImportSessionStatus.PREVIEWED,
+            null,
+            resource.expiresAt(),
+            now,
+            now,
+            callerId,
+            callerId
+        );
+        session = importSessionRepository.save(session);
+
+        var allErrors = new ArrayList<SchoolUserImportError>();
+        var validRows = new ArrayList<ValidPreviewRow>();
+        var rowEntities = new ArrayList<com.sep.vox.domain.model.importfile.ImportRow>();
+        var seenEmails = new HashSet<String>();
+        var seenPhones = new HashSet<String>();
+        var mapping = input.mapping() != null ? input.mapping() : Map.<String, ImportFieldMapping>of();
+
+        for (var row : rows) {
+            var validation = importValidator.validateAndPrepareRow(row, format, mapping, input.defaultRole(), seenEmails, seenPhones, true);
+            allErrors.addAll(validation.errors());
+
+            var rowEntity = new com.sep.vox.domain.model.importfile.ImportRow(
+                session.getId(),
+                row.rowNumber(),
+                toJson(rawRowPayload(row, format)),
+                toJson(validation.mappedPayload()),
+                toJson(validation.errors()),
+                validation.errors().isEmpty() ? ImportRowStatus.VALID : ImportRowStatus.INVALID
+            );
+            rowEntities.add(rowEntity);
+
+            if (!validation.errors().isEmpty()) {
+                continue;
+            }
+
+            validRows.add(new ValidPreviewRow(
+                row.rowNumber(),
+                validation.email(),
+                validation.phone(),
+                validation.fullName(),
+                validation.dateOfBirth(),
+                validation.address(),
+                validation.studentId(),
+                validation.roleCode(),
+                rowEntity
+            ));
+        }
+
+        var savedRows = importRowRepository.saveAll(rowEntities);
+        var rowsByNumber = new HashMap<Long, com.sep.vox.domain.model.importfile.ImportRow>();
+        for (var saved : savedRows) {
+            rowsByNumber.put(saved.getRowNumber(), saved);
+        }
+
+        var savedValidRows = validRows.stream()
+            .map(valid -> new ValidPreviewRow(
+                valid.rowNumber(),
+                valid.email(),
+                valid.phone(),
+                valid.fullName(),
+                valid.dateOfBirth(),
+                valid.address(),
+                valid.studentId(),
+                valid.roleCode(),
+                rowsByNumber.get(valid.rowNumber())
+            ))
+            .toList();
+
+        session.setValidRows(savedValidRows.size());
+        session.setInvalidRows(allErrors.stream().map(SchoolUserImportError::rowNumber).distinct().count());
+        session.setUpdatedAt(OffsetDateTime.now());
+        session.setUpdatedBy(caller.getId());
+        session = importSessionRepository.save(session);
+
+        var failedCount = (int) allErrors.stream().map(SchoolUserImportError::rowNumber).distinct().count();
+        return new PreviewResult(session, rows.size(), failedCount, allErrors, savedValidRows);
+    }
+
+
+    private Map<String, Object> rawRowPayload(ImportRow row, ImportFileFormat format) {
+        if (format == ImportFileFormat.JSON) {
+            return row.jsonValues() != null ? new HashMap<>(row.jsonValues()) : Map.of();
+        }
+        return row.columns() != null ? new HashMap<>(row.columns()) : Map.of();
+    }
+
+    private List<String> extractHeaders(List<ImportRow> rows, ImportFileFormat format) {
+        if (rows.isEmpty()) {
+            return List.of();
+        }
+        if (format == ImportFileFormat.JSON) {
+            var headers = new LinkedHashSet<String>();
+            for (var row : rows) {
+                if (row.jsonValues() != null) {
+                    headers.addAll(row.jsonValues().keySet());
+                }
+            }
+            return List.copyOf(headers);
+        }
+        return rows.get(0).columns() != null ? new ArrayList<>(rows.get(0).columns().keySet()) : List.of();
+    }
+
+    private Map<String, String> extractSuggestedMapping(Map<String, ImportFieldMapping> mapping) {
+        if (mapping == null || mapping.isEmpty()) {
+            return Map.of();
+        }
+        var result = new HashMap<String, String>();
+        for (var entry : mapping.entrySet()) {
+            if (entry.getValue() != null && entry.getValue().column() != null && !entry.getValue().column().isBlank()) {
+                result.put(entry.getKey(), entry.getValue().column());
+            }
+        }
+        return result;
+    }
+
+    private String toJson(Object value) {
+        try {
+            return objectMapper.writeValueAsString(value != null ? value : Map.of());
+        } catch (Exception e) {
+            throw new IllegalStateException("Không thể chuyển dữ liệu import sang JSON", e);
+        }
+    }
+
+    private com.sep.vox.domain.model.importfile.ImportRow markRowAsImported(
+            com.sep.vox.domain.model.importfile.ImportRow row,
+            Map<String, Object> importedMetadata) {
+        row.setStatus(ImportRowStatus.IMPORTED);
+        row.setErrorsJson(toJson(List.of()));
+        row.setMappedDataJson(toJson(importedMetadata));
+        return row;
+    }
+
+    private com.sep.vox.domain.model.importfile.ImportRow markRowAsFailed(
+            com.sep.vox.domain.model.importfile.ImportRow row,
+            List<SchoolUserImportError> errors) {
+        row.setStatus(ImportRowStatus.FAILED);
+        row.setErrorsJson(toJson(errors));
+        return row;
+    }
+
     private static SchoolUserImportError error(int rowNumber, String field, String code, String message, String rawValue) {
         return new SchoolUserImportError(rowNumber, field, code, message, rawValue);
     }
@@ -279,117 +386,26 @@ public class ImportSchoolUsersUseCase implements IUseCase<ImportSchoolUsersComma
         return value == null || value.isBlank();
     }
 
-    private static String resolveField(ImportRow row, ImportFileFormat format, ImportFieldMapping mapping, String semanticName) {
-        if (mapping == null) {
-            // allow auto-detection via built-in candidates
-        }
-        if (format == ImportFileFormat.JSON) {
-            if (mapping != null && mapping.path() != null && row.jsonValues() != null) {
-                var resolved = JsonPathResolver.resolve(row.jsonValues(), mapping.path());
-                return resolved != null ? resolved.toString() : null;
-            }
-            var resolved = resolveByCandidates(row.jsonValues(), mapping, semanticName);
-            if (resolved != null) {
-                return resolved;
-            }
-            return null;
-        }
-        var resolved = resolveByCandidates(row.columns(), mapping, semanticName);
-        if (resolved != null) {
-            return resolved;
-        }
-        if (mapping != null && mapping.index() != null && row.values() != null) {
-            int index = mapping.index();
-            if (index >= 0 && index < row.values().size()) {
-                return row.values().get(index);
-            }
-        }
-        return null;
+
+    private record ValidPreviewRow(
+        long rowNumber,
+        String email,
+        String phone,
+        String fullName,
+        LocalDate dateOfBirth,
+        String address,
+        String studentId,
+        String roleCode,
+        com.sep.vox.domain.model.importfile.ImportRow rowEntity
+    ) {
     }
 
-    private static String resolveByCandidates(Map<String, ?> values, ImportFieldMapping mapping, String semanticName) {
-        if (values == null) {
-            return null;
-        }
-        for (var candidate : candidateNames(mapping, semanticName)) {
-            var direct = values.get(candidate);
-            if (direct != null) {
-                return direct.toString();
-            }
-        }
-        for (var entry : values.entrySet()) {
-            var key = entry.getKey();
-            var normalizedKey = normalizeHeader(key != null ? key.toString() : null);
-            if (normalizedKey == null) {
-                continue;
-            }
-            for (var candidate : candidateNames(mapping, semanticName)) {
-                if (normalizedKey.equals(normalizeHeader(candidate))) {
-                    var value = entry.getValue();
-                    return value != null ? value.toString() : null;
-                }
-            }
-        }
-        return null;
-    }
-
-    private static List<String> candidateNames(ImportFieldMapping mapping, String semanticName) {
-        var candidates = new LinkedHashSet<String>();
-        if (mapping != null) {
-            if (mapping.column() != null && !mapping.column().isBlank()) {
-                candidates.add(mapping.column());
-            }
-            if (mapping.aliases() != null) {
-                for (var alias : mapping.aliases()) {
-                    if (alias != null && !alias.isBlank()) {
-                        candidates.add(alias);
-                    }
-                }
-            }
-        }
-        // built-in defaults when mapping does not provide explicit names
-        if (candidates.isEmpty()) {
-            switch (semanticName) {
-                case "email" -> candidates.addAll(List.of("Email", "E-mail", "E mail", "email", "Địa chỉ mail", "Địa chỉ email"));
-                case "phone" -> candidates.addAll(List.of("Phone", "Phone Number", "Số điện thoại", "Điện thoại", "sđt", "Số điện thoại liên lạc"));
-                case "fullName" -> candidates.addAll(List.of("Full Name", "Họ và tên", "Tên", "Name", "fullName", "Họ tên"));
-                case "dateOfBirth" -> candidates.addAll(List.of("DOB", "Date of Birth", "Ngày sinh", "Birth Date", "dateOfBirth"));
-                case "roleCode" -> candidates.addAll(List.of("Role", "Vai trò", "role", "Chức vụ"));
-                case "address" -> candidates.addAll(List.of("Address", "Địa chỉ", "address", "Nơi ở", "Nơi ở hiện tại", "Địa chỉ liên lạc"));
-                case "studentId" -> candidates.addAll(List.of("Student ID", "Mã học sinh", "studentId", "mã HS"));
-                default -> {
-                    // fallback generic names
-                    candidates.add(semanticName);
-                }
-            }
-        }
-        return List.copyOf(candidates);
-    }
-
-    private static String normalizeHeader(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        return StringNormalization.normalizeSearchText(value).toLowerCase(Locale.ROOT);
-    }
-
-    private static LocalDate parseDateOfBirth(String rawValue, ImportFieldMapping mapping) {
-        if (rawValue == null) {
-            return null;
-        }
-        var customFormat = mapping != null ? mapping.dateFormat() : null;
-        if (customFormat == null || customFormat.isBlank()) {
-            try {
-                return DateMapper.toLocalDate(rawValue.strip());
-            } catch (IllegalArgumentException e) {
-                return null;
-            }
-        }
-        try {
-            var formatter = DateTimeFormatter.ofPattern(customFormat.strip());
-            return LocalDate.parse(rawValue.strip(), formatter);
-        } catch (DateTimeParseException e) {
-            return null;
-        }
+    private record PreviewResult(
+        ImportSession session,
+        int totalRows,
+        int failedCount,
+        List<SchoolUserImportError> errors,
+        List<ValidPreviewRow> validRows
+    ) {
     }
 }

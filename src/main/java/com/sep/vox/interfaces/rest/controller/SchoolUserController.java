@@ -24,7 +24,10 @@ import com.sep.vox.application.port.input.usecase.schooluser.ChangeSchoolUserRol
 import com.sep.vox.application.port.input.usecase.schooluser.CreateSchoolUserUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.DeleteSchoolUserUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.ImportSchoolUsersUseCase;
+import com.sep.vox.application.port.input.usecase.schooluser.PreviewSchoolUserImportFromFileUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.UploadSchoolUserImportFileUseCase;
+import com.sep.vox.application.port.input.command.PreviewSchoolUserImportFromFileCommand;
+import com.sep.vox.application.response.input.importfile.CreateImportSessionResponse;
 import com.sep.vox.application.response.input.schooluser.SchoolUserImportResponse;
 import com.sep.vox.application.response.input.schooluser.SchoolUserImportUploadResponse;
 import com.sep.vox.application.response.input.schooluser.SchoolUserResponse;
@@ -50,6 +53,7 @@ public class SchoolUserController {
     private final DeleteSchoolUserUseCase deleteSchoolUserUseCase;
     private final ChangeSchoolUserRoleUseCase changeSchoolUserRoleUseCase;
     private final UploadSchoolUserImportFileUseCase uploadSchoolUserImportFileUseCase;
+    private final PreviewSchoolUserImportFromFileUseCase previewSchoolUserImportFromFileUseCase;
     private final ImportSchoolUsersUseCase importSchoolUsersUseCase;
 
     public SchoolUserController(
@@ -57,11 +61,13 @@ public class SchoolUserController {
             DeleteSchoolUserUseCase deleteSchoolUserUseCase,
             ChangeSchoolUserRoleUseCase changeSchoolUserRoleUseCase,
             UploadSchoolUserImportFileUseCase uploadSchoolUserImportFileUseCase,
+            PreviewSchoolUserImportFromFileUseCase previewSchoolUserImportFromFileUseCase,
             ImportSchoolUsersUseCase importSchoolUsersUseCase) {
         this.createSchoolUserUseCase = createSchoolUserUseCase;
         this.deleteSchoolUserUseCase = deleteSchoolUserUseCase;
         this.changeSchoolUserRoleUseCase = changeSchoolUserRoleUseCase;
         this.uploadSchoolUserImportFileUseCase = uploadSchoolUserImportFileUseCase;
+        this.previewSchoolUserImportFromFileUseCase = previewSchoolUserImportFromFileUseCase;
         this.importSchoolUsersUseCase = importSchoolUsersUseCase;
     }
 
@@ -106,6 +112,21 @@ public class SchoolUserController {
         var command = UploadSchoolUserImportFileCommandMapper.fromRequest(schoolId, file);
         var data = uploadSchoolUserImportFileUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Upload file import thành công", data));
+    }
+
+    @PostMapping("/import/preview")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public ResponseEntity<ApiResponse<CreateImportSessionResponse>> previewImportFile(
+            @PathVariable UUID schoolId,
+            @Valid @RequestBody SchoolUserImportRequest request) {
+        var previewCommand = new PreviewSchoolUserImportFromFileCommand(
+            schoolId,
+            request.fileId(),
+            request.defaultRole(),
+            SchoolUserImportCommandMapper.fromRequest(schoolId, request).mapping()
+        );
+        var data = previewSchoolUserImportFromFileUseCase.execute(previewCommand);
+        return ResponseEntity.ok(ApiResponse.success("Tạo phiên preview import người dùng thành công", data));
     }
 
     @PostMapping("/import")

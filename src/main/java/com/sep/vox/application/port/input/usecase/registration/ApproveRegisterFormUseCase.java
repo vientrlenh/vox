@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.event.PasswordSetUpEmailRequestedEvent;
+import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.ApproveRegisterFormCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -76,7 +77,13 @@ public class ApproveRegisterFormUseCase implements IUseCase<ApproveRegisterFormC
             throw new IllegalStateException("Đơn đăng ký không ở trạng thái chờ hoặc không tồn tại");
         }
 
+        if (userRepository.existsByPhone(command.contactPhone())) {
+            throw new DuplicatedException("Người dùng với số điện thoại này đã tồn tại");
+        }
 
+        if (schoolRepository.existsByDomain(command.schoolDomain())) {
+            throw new DuplicatedException("Domain yêu cầu đã tồn tại trong hệ thống");
+        }
         var savedSchool = saveSchool(command, currentUserId, now);
         var savedSchoolAdmin = saveSchoolAdmin(command, currentUserId, savedSchool.getId(), now);
         saveSchoolAdminUserRole(savedSchoolAdmin.getId(), schoolAdminRole.getId());

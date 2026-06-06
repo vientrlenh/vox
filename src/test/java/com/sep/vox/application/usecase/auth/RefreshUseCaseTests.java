@@ -84,7 +84,7 @@ class RefreshUseCaseTests {
         var savedNewToken = activeRefreshToken(newTokenId, sessionId, "new-token-hash");
         var user = activeUser(userId);
         var roles = List.of(new UserRoleInfo(
-            1L,
+            UUID.randomUUID(),
             userId,
             roleId,
             OffsetDateTime.now(),

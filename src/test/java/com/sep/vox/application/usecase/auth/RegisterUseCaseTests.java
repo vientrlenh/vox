@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import com.sep.vox.application.port.input.command.RegisterCommand;
-import com.sep.vox.application.port.input.usecase.auth.RegisterUseCase;
+import com.sep.vox.application.port.input.usecase.registration.RegisterUseCase;
 import com.sep.vox.domain.model.registerform.RegisterForm;
 import com.sep.vox.domain.model.registerform.RegisterFormStatus;
 import com.sep.vox.domain.repository.RegisterFormRepository;

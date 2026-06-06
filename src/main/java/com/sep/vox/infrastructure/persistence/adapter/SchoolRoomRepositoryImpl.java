@@ -63,4 +63,10 @@ public class SchoolRoomRepositoryImpl implements SchoolRoomRepository {
                 entityPage.getTotalPages()
         );
     }
+
+    @Override
+    public Optional<SchoolRoom> findByIdForUpdate(UUID id) {
+        return springDataSchoolRoomRepository.findByIdForUpdate(id)
+                .map(SchoolRoomMapper::toDomain);
+    }
 }

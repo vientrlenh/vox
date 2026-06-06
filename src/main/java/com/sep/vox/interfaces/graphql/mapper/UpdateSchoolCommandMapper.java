@@ -14,7 +14,6 @@ public class UpdateSchoolCommandMapper {
 
         return new UpdateSchoolCommand(
                 schoolId,
-                request.schoolCode(),
                 request.name(),
                 request.description(),
                 request.contactPhone(),

@@ -5,7 +5,7 @@ import com.sep.vox.application.port.input.command.AddSchoolRoomCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.SchoolRoomResponse.SchoolRoomResponse;
-import com.sep.vox.domain.model.schoolroom.SchoolRoom;
+import com.sep.vox.domain.model.school.SchoolRoom;
 import com.sep.vox.domain.repository.SchoolRoomRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -60,7 +60,11 @@ public class AddSchoolRoomUseCase implements IUseCase<AddSchoolRoomCommand, Scho
                 savedRoom.getCode(),
                 savedRoom.getName(),
                 savedRoom.getDescription(),
-                savedRoom.isActive()
+                savedRoom.isActive(),
+                savedRoom.getCreatedAt(),
+                savedRoom.getCreatedBy(),
+                savedRoom.getUpdatedAt(),
+                savedRoom.getUpdatedBy()
         );
     }
 }

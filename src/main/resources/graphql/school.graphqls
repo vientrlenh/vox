@@ -1,3 +1,6 @@
+# ==================================================================
+# School
+# ==================================================================
 type SchoolResponse {
     id: ID!
     schoolCode: String!
@@ -26,6 +29,41 @@ input UpdateSchoolRequest {
     studentCount: Int
 }
 
-type Mutation {
-    updateSchool(request: UpdateSchoolRequest!): SchoolResponse!
+extend type Mutation {
+    updateSchool(request: UpdateSchoolRequest!): ID!
+    updateSchoolRoom(input: UpdateSchoolRoomInput!): ID!
+}
+
+# ==================================================================
+# School Room
+# ==================================================================
+type SchoolRoomResponse {
+    id: ID!
+    name: String!
+    description: String
+    isActive: Boolean!
+    createdAt: String
+    createdBy: String
+    updatedAt: String
+    updateBy: String
+    schoolId: ID!
+}
+input UpdateSchoolRoomInput {
+    id: ID!
+    name: String
+    description: String
+    isActive: Boolean
+}
+
+type SchoolRoomPageResult {
+    totalElements: Int!
+    totalPages: Int!
+    currentPage: Int!
+    pageSize: Int!
+    content: [SchoolRoomResponse!]!
+}
+
+extend type Query {
+    schoolRoom(id: ID!): SchoolRoomResponse
+    schoolRooms(schoolId: ID!, page: Int, size: Int): SchoolRoomPageResult
 }

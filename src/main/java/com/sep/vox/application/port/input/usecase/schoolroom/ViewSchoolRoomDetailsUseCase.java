@@ -4,7 +4,7 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.query.ViewSchoolRoomDetailsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.response.SchoolRoomResponse.SchoolRoomResponse;
-import com.sep.vox.domain.model.schoolroom.SchoolRoom;
+import com.sep.vox.domain.model.school.SchoolRoom;
 import com.sep.vox.domain.repository.SchoolRoomRepository;
 import org.springframework.stereotype.Service;
 
@@ -33,7 +33,11 @@ public class ViewSchoolRoomDetailsUseCase implements IUseCase<ViewSchoolRoomDeta
                 room.getCode(),
                 room.getName(),
                 room.getDescription(),
-                room.isActive()
+                room.isActive(),
+                room.getCreatedAt(),
+                room.getCreatedBy(),
+                room.getUpdatedAt(),
+                room.getUpdatedBy()
         );
     }
 }

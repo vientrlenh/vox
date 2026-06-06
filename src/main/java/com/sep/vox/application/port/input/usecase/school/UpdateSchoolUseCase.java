@@ -7,7 +7,6 @@ import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.UpdateSchoolCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.response.SchoolResponse.SchoolResponse;
 import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
@@ -15,7 +14,6 @@ import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.valueobject.Email;
 import com.sep.vox.domain.valueobject.Phone;
-import com.sep.vox.domain.valueobject.SchoolCode;
 import com.sep.vox.domain.valueobject.SchoolDomain;
 import com.sep.vox.domain.valueobject.StudentCount;
 import org.springframework.stereotype.Service;
@@ -25,7 +23,7 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Service
-public class UpdateSchoolUseCase implements IUseCase<UpdateSchoolCommand, SchoolResponse> {
+public class UpdateSchoolUseCase implements IUseCase<UpdateSchoolCommand, UUID> {
 
     private final SchoolRepository schoolRepository;
     private final UserRepository userRepository;
@@ -39,7 +37,7 @@ public class UpdateSchoolUseCase implements IUseCase<UpdateSchoolCommand, School
 
     @Override
     @Transactional
-    public SchoolResponse execute(UpdateSchoolCommand command) {
+    public UUID execute(UpdateSchoolCommand command) {
         // 1. Lấy thông tin trường
         School school = schoolRepository.findById(command.id())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học với ID đã cho."));
@@ -67,13 +65,6 @@ public class UpdateSchoolUseCase implements IUseCase<UpdateSchoolCommand, School
             school.setDescription(StringNormalization.trimAndCollapseSpaces(command.description()));
         }
 
-        if (command.code() != null) {
-            String normalizedCode = StringNormalization.normalizeCode(command.code());
-            if (schoolRepository.existsByCodeAndIdNot(normalizedCode, command.id())) {
-                throw new DuplicatedException("Mã trường này đã được sử dụng bởi trường khác.");
-            }
-            school.setCode(new SchoolCode(normalizedCode));
-        }
 
         if (command.contactPhone() != null) {
             String normalizedPhone = StringNormalization.normalizePhone(command.contactPhone());
@@ -113,22 +104,6 @@ public class UpdateSchoolUseCase implements IUseCase<UpdateSchoolCommand, School
 
         School updatedSchool = schoolRepository.save(school);
 
-        // 5. Map sang SchoolResponse
-        return new SchoolResponse(
-                updatedSchool.getId(),
-                updatedSchool.getCode().value(),
-                updatedSchool.getName(),
-                updatedSchool.getDescription(),
-                updatedSchool.getContactPhone().value(),
-                updatedSchool.getContactEmail().value(),
-                updatedSchool.getDomain().value(),
-                updatedSchool.getAddress(),
-                updatedSchool.getStudentCount().value(),
-                updatedSchool.isActive(),
-                updatedSchool.getCreatedAt(),
-                updatedSchool.getCreatedBy(),
-                updatedSchool.getUpdatedAt(),
-                updatedSchool.getUpdatedBy()
-        );
+        return updatedSchool.getId();
     }
 }

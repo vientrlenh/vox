@@ -1,5 +1,6 @@
 package com.sep.vox.application.response.SchoolRoomResponse;
 
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 public record SchoolRoomResponse(
@@ -8,6 +9,10 @@ public record SchoolRoomResponse(
         String code,
         String name,
         String description,
-        boolean isActive
+        boolean isActive,
+        OffsetDateTime createdAt,
+        UUID createdBy,
+        OffsetDateTime updatedAt,
+        UUID updateBy
 ) {
 }

@@ -32,7 +32,7 @@ public class DeleteSchoolUseCase implements IUseCase<DeleteSchoolCommand, School
 
     @Override
     @Transactional
-    public SchoolResponse execute(@NonNull DeleteSchoolCommand command) {
+    public SchoolResponse execute(DeleteSchoolCommand command) {
         // 1. Kiểm tra trường học có tồn tại không
         School school = schoolRepository.findById(command.id())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học với ID đã cho."));

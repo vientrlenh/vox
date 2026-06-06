@@ -4,7 +4,6 @@ import java.util.UUID;
 
 public record UpdateSchoolRequest(
         UUID id,
-        String schoolCode,
         String name,
         String description,
         String contactPhone,

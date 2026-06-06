@@ -1,16 +1,16 @@
-package com.sep.vox.interfaces.rest.mapper;
+package com.sep.vox.interfaces.graphql.mapper;
 
 import com.sep.vox.application.port.input.command.UpdateSchoolRoomCommand;
-import com.sep.vox.interfaces.rest.dto.request.UpdateSchoolRoomRequest;
+import com.sep.vox.interfaces.graphql.dto.request.UpdateSchoolRoomRequest;
 
 import java.util.UUID;
 
-public class UpdateSchoolRoomCommandMapper {
+public class UpdateSchoolRoomMapper {
     public static UpdateSchoolRoomCommand fromRequest(UUID id, UpdateSchoolRoomRequest request) {
+        if (request == null) return null;
+
         return new UpdateSchoolRoomCommand(
                 id,
-                request.schoolId(),
-                request.code(),
                 request.name(),
                 request.description(),
                 request.isActive()

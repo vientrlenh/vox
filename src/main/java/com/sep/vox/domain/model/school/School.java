@@ -9,7 +9,8 @@ import com.sep.vox.domain.valueobject.SchoolCode;
 import com.sep.vox.domain.valueobject.SchoolDomain;
 import com.sep.vox.domain.valueobject.StudentCount;
 
-public class School {
+public class
+School {
     private UUID id;
     private SchoolCode code;
     private String name;

@@ -2,7 +2,7 @@ package com.sep.vox.application.mapper.schooluser;
 
 import com.sep.vox.application.query.dto.SchoolUserInfo;
 import com.sep.vox.application.response.input.schooluser.SchoolUserResponse;
-import com.sep.vox.domain.model.schooluser.SchoolUser;
+import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 
 public class SchoolUserResponseMapper {

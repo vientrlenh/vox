@@ -21,7 +21,7 @@ import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUserUseCa
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.UserRoleInfo;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
-import com.sep.vox.domain.model.schooluser.SchoolUser;
+import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -58,7 +58,7 @@ public class ViewSchoolUserUseCaseTests {
         var targetId = UUID.randomUUID();
         var caller = user(callerId, schoolId);
         var target = user(targetId, schoolId);
-        var schoolUser = SchoolUser.create(targetId, schoolId, "STU-001", callerId, OffsetDateTime.now());
+        var schoolUser = new SchoolUser("STU-001", schoolId, targetId, OffsetDateTime.now(), OffsetDateTime.now().plusYears(100));
         var command = new ViewSchoolUserCommand(schoolId, targetId);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
@@ -159,6 +159,6 @@ public class ViewSchoolUserUseCaseTests {
     }
 
     private UserRoleInfo roleInfo(String code) {
-        return new UserRoleInfo(1L, UUID.randomUUID(), UUID.randomUUID(), OffsetDateTime.now(), code, code);
+        return new UserRoleInfo(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), OffsetDateTime.now(), code, code);
     }
 }

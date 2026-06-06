@@ -1,7 +1,6 @@
 package com.sep.vox.interfaces.graphql.controller;
 
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 import org.dataloader.DataLoader;
@@ -17,7 +16,6 @@ import com.sep.vox.application.port.input.usecase.school.ViewSchoolsUseCase;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.dto.SchoolDto;
-import com.sep.vox.domain.dto.SchoolUserDto;
 
 import graphql.schema.DataFetchingEnvironment;
 
@@ -45,11 +43,5 @@ public class SchoolController {
     public CompletableFuture<List<SchoolClassDto>> classes(SchoolDto school, @Argument(name = "page") int page, @Argument(name = "size") int size, DataFetchingEnvironment env) {
         DataLoader<SchoolClassesKey, List<SchoolClassDto>> loader = env.getDataLoader("schoolClassesBySchool");
         return loader.load(new SchoolClassesKey(school.id(), page, size));
-    }
-
-
-    @QueryMapping(name = "schoolUsers")
-    public PageResult<SchoolUserDto> schoolUsers(@Argument(name = "schoolId") UUID schoolId, @Argument(name = "page") Integer page, @Argument(name = "size") Integer size) {
-        return null;
     }
 }

@@ -19,9 +19,9 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.input.schooluser.SchoolUserResponse;
 import com.sep.vox.domain.model.passwordsetuptoken.PasswordSetUpToken;
-import com.sep.vox.domain.model.schooluser.SchoolUser;
+import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
-import com.sep.vox.domain.model.userrole.UserRole;
+import com.sep.vox.domain.model.user.UserRole;
 import com.sep.vox.domain.repository.RoleRepository;
 import com.sep.vox.domain.repository.PasswordSetUpTokenRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
@@ -29,10 +29,13 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.repository.UserRoleRepository;
 
+import java.time.ZoneOffset;
+
 @Service
 public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand, SchoolUserResponse> {
 
     private static final List<String> ALLOWED_ROLE_CODES = List.of("STUDENT", "TEACHER");
+    private static final OffsetDateTime SCHOOL_USER_END_DATE = OffsetDateTime.of(9999, 12, 31, 23, 59, 59, 0, ZoneOffset.UTC);
 
     private final UserContextPort userContextPort;
     private final UserRepository userRepository;
@@ -109,7 +112,7 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
         SchoolUser savedSchoolUser = null;
         if ("STUDENT".equals(command.roleCode()) && command.studentId() != null) {
             savedSchoolUser = schoolUserRepository.save(
-                SchoolUser.create(savedUser.getId(), command.schoolId(), command.studentId(), callerId, now)
+                SchoolUser.create(command.studentId(), command.schoolId(), savedUser.getId(), now, SCHOOL_USER_END_DATE)
             );
         }
 

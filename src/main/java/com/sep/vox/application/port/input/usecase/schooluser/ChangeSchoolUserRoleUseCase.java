@@ -14,7 +14,7 @@ import com.sep.vox.domain.repository.RoleRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.repository.UserRoleRepository;
-import com.sep.vox.domain.model.userrole.UserRole;
+import com.sep.vox.domain.model.user.UserRole;
 
 @Service
 public class ChangeSchoolUserRoleUseCase implements IUseCase<ChangeSchoolUserRoleCommand, Void> {

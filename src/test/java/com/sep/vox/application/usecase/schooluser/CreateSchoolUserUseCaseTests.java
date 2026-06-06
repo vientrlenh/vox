@@ -29,13 +29,13 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.UserRoleInfo;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.output.GeneratedPasswordSetUpToken;
-import com.sep.vox.domain.model.role.Role;
+import com.sep.vox.domain.model.user.Role;
 import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.model.passwordsetuptoken.PasswordSetUpToken;
-import com.sep.vox.domain.model.schooluser.SchoolUser;
+import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
-import com.sep.vox.domain.model.userrole.UserRole;
+import com.sep.vox.domain.model.user.UserRole;
 import com.sep.vox.domain.repository.RoleRepository;
 import com.sep.vox.domain.repository.PasswordSetUpTokenRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
@@ -124,7 +124,7 @@ public class CreateSchoolUserUseCaseTests {
             schoolId, "student@school.edu.vn", "0987654321",
             "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT", "STU-001"
         );
-        var schoolUser = SchoolUser.create(savedUser.getId(), schoolId, "STU-001", callerId, OffsetDateTime.now());
+        var schoolUser = new SchoolUser("STU-001", schoolId, savedUser.getId(), OffsetDateTime.now(), OffsetDateTime.now().plusYears(100));
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
         when(userRepository.findById(callerId)).thenReturn(Optional.of(caller));
@@ -304,6 +304,6 @@ public class CreateSchoolUserUseCaseTests {
     }
 
     private UserRoleInfo roleInfo(String code) {
-        return new UserRoleInfo(1L, UUID.randomUUID(), UUID.randomUUID(), OffsetDateTime.now(), code, code);
+        return new UserRoleInfo(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), OffsetDateTime.now(), code, code);
     }
 }

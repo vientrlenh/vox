@@ -5,7 +5,7 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.domain.model.schooluser.SchoolUser;
+import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolUserMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolUserRepository;

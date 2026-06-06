@@ -31,6 +31,10 @@ public class SchoolUser {
         this.endDate = endDate;
     }
 
+    public static SchoolUser create(String studentId, UUID schoolId, UUID userId, OffsetDateTime startDate, OffsetDateTime endDate) {
+        return new SchoolUser(studentId, schoolId, userId, startDate, endDate);
+    }
+
     public UUID getId() {
         return id;
     }

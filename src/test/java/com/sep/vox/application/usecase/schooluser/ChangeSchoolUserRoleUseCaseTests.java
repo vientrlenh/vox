@@ -23,11 +23,11 @@ import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.ChangeSchoolUserRoleCommand;
 import com.sep.vox.application.port.input.usecase.schooluser.ChangeSchoolUserRoleUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.model.role.Role;
-import com.sep.vox.domain.model.schooluser.SchoolUser;
+import com.sep.vox.domain.model.school.SchoolUser;
+import com.sep.vox.domain.model.user.Role;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
-import com.sep.vox.domain.model.userrole.UserRole;
+import com.sep.vox.domain.model.user.UserRole;
 import com.sep.vox.domain.repository.RoleRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
@@ -71,9 +71,9 @@ public class ChangeSchoolUserRoleUseCaseTests {
         var teacherRoleId = UUID.randomUUID();
         var studentRole = role(studentRoleId, "STUDENT");
         var teacherRole = role(teacherRoleId, "TEACHER");
-        var existingUserRole = new UserRole(1L, targetId, studentRoleId, OffsetDateTime.now());
+        var existingUserRole = new UserRole(UUID.randomUUID(), targetId, studentRoleId, OffsetDateTime.now());
         var command = new ChangeSchoolUserRoleCommand(schoolId, targetId, "TEACHER");
-        var existingSchoolUser = new SchoolUser(targetId, schoolId, "STU-001", OffsetDateTime.now(), callerId);
+        var existingSchoolUser = new SchoolUser("STU-001", schoolId, targetId, OffsetDateTime.now(), OffsetDateTime.now().plusYears(100));
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
         when(userRepository.findById(callerId)).thenReturn(Optional.of(caller));
@@ -88,7 +88,7 @@ public class ChangeSchoolUserRoleUseCaseTests {
         var result = changeSchoolUserRoleUseCase.execute(command);
 
         assertThat(result).isNull();
-        verify(userRoleRepository).save(argThat(ur -> ur.getId() == 1L && ur.getRoleId().equals(teacherRoleId)));
+        verify(userRoleRepository).save(argThat(ur -> ur.getRoleId().equals(teacherRoleId)));
         verify(schoolUserRepository).save(argThat(su -> su.getUserId().equals(targetId) && su.getStudentId() == null));
     }
 
@@ -99,7 +99,7 @@ public class ChangeSchoolUserRoleUseCaseTests {
         var target = user(targetId, schoolId);
         var studentRoleId = UUID.randomUUID();
         var studentRole = role(studentRoleId, "STUDENT");
-        var existingUserRole = new UserRole(1L, targetId, studentRoleId, OffsetDateTime.now());
+        var existingUserRole = new UserRole(UUID.randomUUID(), targetId, studentRoleId, OffsetDateTime.now());
         var command = new ChangeSchoolUserRoleCommand(schoolId, targetId, "STUDENT");
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);

@@ -11,6 +11,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
+import com.sep.vox.application.port.input.query.ViewSchoolClassDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolClassesQuery;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassesUseCase;
@@ -45,5 +46,31 @@ class SchoolClassControllerTests {
 
         assertThrows(IllegalStateException.class, () -> controller.schoolClasses(0, 20, null, null, null, null));
         assertThrows(IllegalStateException.class, () -> controller.schoolClasses(1, 0, null, null, null, null));
+    }
+
+    @Test
+    void school_class_should_return_details() {
+        var useCase = mock(ViewSchoolClassesUseCase.class);
+        var detailsUseCase = mock(ViewSchoolClassDetailsUseCase.class);
+        var controller = new SchoolClassController(useCase, detailsUseCase);
+        var classId = UUID.randomUUID();
+        var expected = new SchoolClassResponse(
+            classId,
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            "ENG-01",
+            "English 01",
+            "Starter class",
+            "ACTIVE",
+            "2026-06-06T12:00:00Z",
+            "2026-06-06T12:00:00Z"
+        );
+        when(detailsUseCase.execute(new ViewSchoolClassDetailsQuery(classId))).thenReturn(expected);
+
+        var result = controller.schoolClass(classId);
+
+        assertThat(result).isEqualTo(expected);
+        verify(detailsUseCase).execute(new ViewSchoolClassDetailsQuery(classId));
     }
 }

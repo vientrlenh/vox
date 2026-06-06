@@ -60,6 +60,20 @@ class SchoolClassRepositoryTests {
     }
 
     @Test
+    void whenFindById_thenReturnsSchoolClass() {
+        var schoolId = UUID.randomUUID();
+        var saved = schoolClassRepository.save(newSchoolClass(schoolId, "ENG-DETAIL", "English Detail"));
+
+        var found = schoolClassRepository.findById(saved.getId());
+
+        assertThat(found).isPresent();
+        assertThat(found.get().getId()).isEqualTo(saved.getId());
+        assertThat(found.get().getSchoolId()).isEqualTo(schoolId);
+        assertThat(found.get().getCode().value()).isEqualTo("ENG-DETAIL");
+        assertThat(found.get().getStatus()).isEqualTo(SchoolClassStatus.ACTIVE);
+    }
+
+    @Test
     void whenFindBySchoolIdWithFilters_thenReturnsMatchingPagedClasses() {
         var schoolId = UUID.randomUUID();
         var otherSchoolId = UUID.randomUUID();

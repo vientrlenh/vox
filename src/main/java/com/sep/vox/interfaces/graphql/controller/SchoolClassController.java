@@ -11,8 +11,8 @@ import com.sep.vox.application.port.input.query.ViewSchoolClassDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolClassesQuery;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassesUseCase;
+import com.sep.vox.application.response.input.schoolclass.SchoolClassResponse;
 import com.sep.vox.domain.common.PageResult;
-import com.sep.vox.domain.dto.SchoolClassDto;
 
 @Controller("graphqlSchoolClassController")
 public class SchoolClassController {
@@ -29,19 +29,23 @@ public class SchoolClassController {
 
     @QueryMapping(name = "schoolClasses")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public PageResult<SchoolClassDto> schoolClasses(
+    public PageResult<SchoolClassResponse> schoolClasses(
             @Argument(name = "page") int page,
-            @Argument(name = "size") int size) {
+            @Argument(name = "size") int size,
+            @Argument(name = "search") String search,
+            @Argument(name = "status") String status,
+            @Argument(name = "languageId") UUID languageId,
+            @Argument(name = "schoolGradeId") UUID schoolGradeId) {
         if (page <= 0 || size <= 0) {
             throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
         }
-        var query = new ViewSchoolClassesQuery(page, size);
+        var query = new ViewSchoolClassesQuery(page, size, search, status, languageId, schoolGradeId);
         return viewSchoolClassesUseCase.execute(query);
     }
 
     @QueryMapping(name = "schoolClass")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public SchoolClassDto schoolClass(@Argument(name = "id") UUID id) {
+    public SchoolClassResponse schoolClass(@Argument(name = "id") UUID id) {
         var query = new ViewSchoolClassDetailsQuery(id);
         return viewSchoolClassDetailsUseCase.execute(query);
     }

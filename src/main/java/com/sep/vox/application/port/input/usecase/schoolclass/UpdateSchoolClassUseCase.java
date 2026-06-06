@@ -9,11 +9,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.mapper.schoolclass.SchoolClassResponseMapper;
 import com.sep.vox.application.port.input.command.UpdateSchoolClassCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.dto.SchoolClassDto;
-import com.sep.vox.domain.mapper.SchoolClassDtoMapper;
+import com.sep.vox.application.response.input.schoolclass.SchoolClassResponse;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
@@ -22,7 +22,7 @@ import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
-public class UpdateSchoolClassUseCase implements IUseCase<UpdateSchoolClassCommand, SchoolClassDto> {
+public class UpdateSchoolClassUseCase implements IUseCase<UpdateSchoolClassCommand, SchoolClassResponse> {
 
     private final SchoolClassRepository schoolClassRepository;
     private final SchoolRepository schoolRepository;
@@ -42,7 +42,7 @@ public class UpdateSchoolClassUseCase implements IUseCase<UpdateSchoolClassComma
 
     @Override
     @Transactional
-    public SchoolClassDto execute(UpdateSchoolClassCommand input) {
+    public SchoolClassResponse execute(UpdateSchoolClassCommand input) {
         var command = normalize(input);
         var now = OffsetDateTime.now();
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
@@ -75,7 +75,7 @@ public class UpdateSchoolClassUseCase implements IUseCase<UpdateSchoolClassComma
 
         var updatedSchoolClass = schoolClassRepository.findById(command.id())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy lớp học"));
-        return SchoolClassDtoMapper.toDto(updatedSchoolClass);
+        return SchoolClassResponseMapper.toResponse(updatedSchoolClass);
     }
 
     private UpdateSchoolClassCommand normalize(UpdateSchoolClassCommand input) {

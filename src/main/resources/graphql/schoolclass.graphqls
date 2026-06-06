@@ -6,12 +6,9 @@ type SchoolClass {
     code: String!
     name: String!
     description: String
-    targetSchoolLevelVersionId: ID!
     status: String!
     createdAt: String
     updatedAt: String
-    createdBy: ID
-    updatedBy: ID
 }
 
 type SchoolClassPage {
@@ -23,6 +20,6 @@ type SchoolClassPage {
 }
 
 extend type Query {
-    schoolClasses(page: Int = 1, size: Int = 20): SchoolClassPage!
+    schoolClasses(page: Int = 1, size: Int = 20, search: String, status: String, languageId: ID, schoolGradeId: ID): SchoolClassPage!
     schoolClass(id: ID!): SchoolClass
 }

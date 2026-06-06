@@ -1,8 +1,8 @@
-package com.sep.vox.domain.dto;
+package com.sep.vox.application.response.input.schoolclass;
 
 import java.util.UUID;
 
-public record SchoolClassDto(
+public record SchoolClassResponse(
     UUID id,
     UUID schoolId,
     UUID languageId,
@@ -11,7 +11,7 @@ public record SchoolClassDto(
     String name,
     String description,
     String status,
-    String createdAt, 
+    String createdAt,
     String updatedAt
 ) {
 }

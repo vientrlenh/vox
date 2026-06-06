@@ -21,8 +21,8 @@ import com.sep.vox.application.port.input.usecase.schoolclass.CreateSchoolClassU
 import com.sep.vox.application.port.input.usecase.schoolclass.DeleteSchoolClassUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.UpdateSchoolClassUseCase;
 import com.sep.vox.application.response.input.schoolclass.CreateSchoolClassResponse;
+import com.sep.vox.application.response.input.schoolclass.SchoolClassResponse;
 import com.sep.vox.domain.dto.SchoolClassDeleteResultDto;
-import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolClassRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateSchoolClassRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
@@ -65,7 +65,7 @@ public class SchoolClassController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<SchoolClassDto>> update(
+    public ResponseEntity<ApiResponse<SchoolClassResponse>> update(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateSchoolClassRequest request) {
         var command = UpdateSchoolClassCommandMapper.fromRequest(id, request);

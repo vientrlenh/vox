@@ -1,18 +1,21 @@
-package com.sep.vox.domain.mapper;
+package com.sep.vox.application.mapper.schoolclass;
 
 import java.time.OffsetDateTime;
 import java.util.List;
 
+import com.sep.vox.application.response.input.schoolclass.SchoolClassResponse;
 import com.sep.vox.domain.common.PageResult;
-import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.valueobject.ClassCode;
 
-public final class SchoolClassDtoMapper {
+public final class SchoolClassResponseMapper {
 
-    public static SchoolClassDto toDto(SchoolClass schoolClass) {
-        return new SchoolClassDto(
+    private SchoolClassResponseMapper() {
+    }
+
+    public static SchoolClassResponse toResponse(SchoolClass schoolClass) {
+        return new SchoolClassResponse(
             schoolClass.getId(),
             schoolClass.getSchoolId(),
             schoolClass.getLanguageId(),
@@ -26,15 +29,15 @@ public final class SchoolClassDtoMapper {
         );
     }
 
-    public static List<SchoolClassDto> toDtoList(List<SchoolClass> list) {
+    public static List<SchoolClassResponse> toResponseList(List<SchoolClass> list) {
         return list.stream()
-            .map(SchoolClassDtoMapper::toDto)
+            .map(SchoolClassResponseMapper::toResponse)
             .toList();
     }
 
-    public static PageResult<SchoolClassDto> toDtoPage(PageResult<SchoolClass> page) {
+    public static PageResult<SchoolClassResponse> toResponsePage(PageResult<SchoolClass> page) {
         return new PageResult<>(
-            toDtoList(page.content()),
+            toResponseList(page.content()),
             page.page(),
             page.size(),
             page.totalElements(),

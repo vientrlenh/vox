@@ -90,7 +90,7 @@ public class LoginUseCaseTests {
             null
         );
         var roles = List.of(new UserRoleInfo(
-            1L,
+            UUID.randomUUID(),
             userId,
             roleId,
             OffsetDateTime.now(),

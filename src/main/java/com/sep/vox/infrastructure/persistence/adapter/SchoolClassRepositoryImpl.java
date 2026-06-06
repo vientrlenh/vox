@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.common.PageRequest;
@@ -47,8 +48,34 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
 
     @Override
     public PageResult<SchoolClass> findBySchoolId(UUID schoolId, PageRequest pageRequest) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'findBySchoolId'");
+        return findBySchoolId(schoolId, null, null, null, null, pageRequest);
+    }
+
+    @Override
+    public PageResult<SchoolClass> findBySchoolId(UUID schoolId, String search, SchoolClassStatus status,
+            UUID languageId, UUID schoolGradeId, PageRequest pageRequest) {
+        var pageable = org.springframework.data.domain.PageRequest.of(
+            pageRequest.page() - 1,
+            pageRequest.size(),
+            Sort.by(Sort.Direction.DESC, "createdAt").and(Sort.by(Sort.Direction.ASC, "id"))
+        );
+        var page = springDataSchoolClassRepository.findBySchoolIdWithFilters(
+            schoolId,
+            blankToNull(search),
+            valueOf(status),
+            languageId,
+            schoolGradeId,
+            pageable
+        );
+        return new PageResult<>(
+            page.getContent().stream()
+                .map(SchoolClassMapper::toDomain)
+                .toList(),
+            page.getNumber() + 1,
+            page.getSize(),
+            page.getTotalElements(),
+            page.getTotalPages()
+        );
     }
 
     @Override
@@ -81,6 +108,14 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
             UUID targetSchoolLevelVersionId, SchoolClassStatus status, OffsetDateTime updatedAt, UUID updatedBy) {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'updateMutableFields'");
+    }
+
+    private static String valueOf(SchoolClassStatus status) {
+        return status == null ? null : status.name();
+    }
+
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value;
     }
     
 }

@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.school;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.port.input.query.ViewSchoolsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -19,6 +20,7 @@ public class ViewSchoolsUseCase implements IUseCase<ViewSchoolsQuery, PageResult
     }
 
     @Override
+    @Transactional(readOnly = true)
     public PageResult<SchoolDto> execute(ViewSchoolsQuery input) {
         var schools = schoolRepository.findAll(input.page(), input.size());
         return SchoolDtoMapper.toSchoolDtoPage(schools);

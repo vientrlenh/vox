@@ -1,6 +1,7 @@
 package com.sep.vox.interfaces.graphql.controller;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 import org.dataloader.DataLoader;
@@ -47,7 +48,8 @@ public class SchoolController {
     }
 
 
-    public PageResult<SchoolUserDto> schoolUsers(@Argument(name = "page") Integer page, @Argument(name = "size") Integer size) {
+    @QueryMapping(name = "schoolUsers")
+    public PageResult<SchoolUserDto> schoolUsers(@Argument(name = "schoolId") UUID schoolId, @Argument(name = "page") Integer page, @Argument(name = "size") Integer size) {
         return null;
     }
 }

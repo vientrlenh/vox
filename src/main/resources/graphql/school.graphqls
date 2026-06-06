@@ -71,6 +71,6 @@ extend type Query {
     school(id: ID!): School
     schoolClasses(page: Int = 1, size: Int = 20): SchoolClassPage!
     schoolClass(id: ID!): SchoolClass
-    schoolUsers(page: Int = 1, size: Int = 20): SchoolUserPage
+    schoolUsers(schoolId: ID!, page: Int = 1, size: Int = 20): SchoolUserPage
     schoolUser(id: ID!): SchoolUser
 }

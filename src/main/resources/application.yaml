@@ -8,7 +8,8 @@ spring:
   graphql:
     graphiql:
       enabled: true
-      
+
+
   external-events:
     provider: ${EXTERNAL_EVENT_PROVIDER:}
     kafka:

@@ -13,16 +13,21 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
-      rabbitmq:
+      kafka:
         condition: service_started
     ports:
       - '${APP_PORT}:8080'
+    environment:
+      DB_URL: postgres:5432
+      REDIS_HOST: redis
+      EXTERNAL_EVENT_PROVIDER: kafka
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     networks:
       - vox-network
 
   postgres:
     image: postgres:18-alpine
-    container_name: vox-postgres
+    container_name: vox-db-postgres
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${DB_NAME}
@@ -49,16 +54,44 @@ services:
     networks:
       - vox-network
 
-  rabbitmq:
-    image: rabbitmq:3.12-management-alpine
-    container_name: vox-rabbitmq
+  kafka:
+    image: apache/kafka:4.0.2
+    container_name: vox-kafka
     restart: unless-stopped
-    environment:
-      RABBITMQ_DEFAULT_USER: ${SPRING_RABBITMQ_USERNAME}
-      RABBITMQ_DEFAULT_PASS: ${SPRING_RABBITMQ_PASSWORD}
     ports:
-      - '${RABBITMQ_PORT}:5672'
-      - '${RABBITMQ_MANAGEMENT_PORT}:15672'
+      - '${KAFKA_PORT}:9092'
+    environment:
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    networks:
+      - vox-network
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: vox-kafka-ui
+    restart: unless-stopped
+    depends_on:
+      kafka:
+        condition: service_started
+    environment:
+      KAFKA_CLUSTERS_0_NAME: vox-local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+    ports:
+      - '${KAFKA_UI_PORT}:8080'
     networks:
       - vox-network
 

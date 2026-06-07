@@ -1,15 +1,23 @@
+# syntax=docker/dockerfile:1.7
+
 # Build stage
 FROM gradle:9.5-jdk25 AS build
 WORKDIR /workspace
 
-# Copy Gradle wrapper and configuration first for caching
 COPY gradlew gradlew.bat ./
-COPY gradle/wrapper/gradle-wrapper.jar gradle/wrapper/gradle-wrapper.properties ./gradle/wrapper/
+COPY gradle ./gradle
 COPY build.gradle settings.gradle ./
-COPY src ./src
 
 RUN chmod +x gradlew
-RUN ./gradlew bootJar --no-daemon
+
+# Warm up Gradle dependency cache
+RUN --mount=type=cache,target=/home/gradle/.gradle \
+    ./gradlew dependencies --no-daemon || true
+
+COPY src ./src
+
+RUN --mount=type=cache,target=/home/gradle/.gradle \
+    ./gradlew bootJar --no-daemon
 
 # Runtime stage
 FROM eclipse-temurin:25-jre-jammy

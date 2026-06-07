@@ -68,7 +68,10 @@ public class ListSchoolUsersUseCaseTests {
             "INACTIVE",
             schoolId,
             "STU-001",
-            OffsetDateTime.now()
+            OffsetDateTime.now(),
+            UUID.randomUUID(),
+            null,
+            null
         );
         var page = new PageResult<>(List.of(info), 0, 20, 1, 1);
 

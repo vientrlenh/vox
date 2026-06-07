@@ -33,7 +33,7 @@ import com.sep.vox.application.event.SchoolUserPasswordSetUpEmailRequestedEvent;
 import com.sep.vox.application.port.output.EventPublisherPort;
 import com.sep.vox.application.port.output.PasswordSetUpTokenPort;
 import com.sep.vox.application.port.output.ImportFileResource;
-import com.sep.vox.application.port.output.SchoolUserImportFileStoragePort;
+import com.sep.vox.application.port.output.ImportFileStoragePort;
 import com.sep.vox.application.response.output.GeneratedPasswordSetUpToken;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.user.Role;
@@ -65,7 +65,7 @@ public class ImportSchoolUsersUseCaseTests {
     private RoleRepository roleRepository;
     private UserRoleRepository userRoleRepository;
     private SchoolUserRepository schoolUserRepository;
-    private SchoolUserImportFileStoragePort fileStoragePort;
+    private ImportFileStoragePort fileStoragePort;
     private SchoolRepository schoolRepository;
     private ImportSessionRepository importSessionRepository;
     private ImportRowRepository importRowRepository;
@@ -86,7 +86,7 @@ public class ImportSchoolUsersUseCaseTests {
         roleRepository = mock(RoleRepository.class);
         userRoleRepository = mock(UserRoleRepository.class);
         schoolUserRepository = mock(SchoolUserRepository.class);
-        fileStoragePort = mock(SchoolUserImportFileStoragePort.class);
+        fileStoragePort = mock(ImportFileStoragePort.class);
         schoolRepository = mock(SchoolRepository.class);
         importSessionRepository = mock(ImportSessionRepository.class);
         importRowRepository = mock(ImportRowRepository.class);

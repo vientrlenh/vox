@@ -94,7 +94,7 @@ public class CreateSchoolUserUseCaseTests {
         var studentRole = role("STUDENT");
         var command = new CreateSchoolUserCommand(
             schoolId, "student@school.edu.vn", "0987654321",
-            "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT", null
+            "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT", null, null, null
         );
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
@@ -122,7 +122,7 @@ public class CreateSchoolUserUseCaseTests {
         var studentRole = role("STUDENT");
         var command = new CreateSchoolUserCommand(
             schoolId, "student@school.edu.vn", "0987654321",
-            "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT", "STU-001"
+            "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT", "STU-001", null, null
         );
         var schoolUser = new SchoolUser("STU-001", schoolId, savedUser.getId(), OffsetDateTime.now(), OffsetDateTime.now().plusYears(100));
 
@@ -150,7 +150,7 @@ public class CreateSchoolUserUseCaseTests {
         var teacherRole = role("TEACHER");
         var command = new CreateSchoolUserCommand(
             schoolId, "teacher@school.edu.vn", "0987654322",
-            "Tran Thi B", LocalDate.of(1985, 3, 20), "456 Street", "TEACHER", null
+            "Tran Thi B", LocalDate.of(1985, 3, 20), "456 Street", "TEACHER", null, null, null
         );
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
@@ -175,7 +175,7 @@ public class CreateSchoolUserUseCaseTests {
         var caller = callerUser(callerId, otherSchoolId);
         var command = new CreateSchoolUserCommand(
             schoolId, "student@school.edu.vn", "0987654321",
-            "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT", null
+            "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT", null, null, null
         );
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
@@ -191,7 +191,7 @@ public class CreateSchoolUserUseCaseTests {
         var caller = callerUser(callerId, schoolId);
         var command = new CreateSchoolUserCommand(
             schoolId, "student@school.edu.vn", "0987654321",
-            "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "SCHOOL_ADMIN", null
+            "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "SCHOOL_ADMIN", null, null, null
         );
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
@@ -206,7 +206,7 @@ public class CreateSchoolUserUseCaseTests {
         var caller = callerUser(callerId, schoolId);
         var command = new CreateSchoolUserCommand(
             schoolId, "student@school.edu.vn", "0987654321",
-            "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT", null
+            "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT", null, null, null
         );
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
@@ -222,7 +222,7 @@ public class CreateSchoolUserUseCaseTests {
         var caller = callerUser(callerId, schoolId, UserStatus.INACTIVE);
         var command = new CreateSchoolUserCommand(
             schoolId, "student@school.edu.vn", "0987654321",
-            "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT", null
+            "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT", null, null, null
         );
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
@@ -238,7 +238,7 @@ public class CreateSchoolUserUseCaseTests {
         var studentRole = role("STUDENT");
         var command = new CreateSchoolUserCommand(
             schoolId, "student@school.edu.vn", "0987654321",
-            "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT", null
+            "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT", null, null, null
         );
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
@@ -256,7 +256,7 @@ public class CreateSchoolUserUseCaseTests {
         var studentRole = role("STUDENT");
         var command = new CreateSchoolUserCommand(
             schoolId, "student@school.edu.vn", "0987654321",
-            "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT", null
+            "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT", null, null, null
         );
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);

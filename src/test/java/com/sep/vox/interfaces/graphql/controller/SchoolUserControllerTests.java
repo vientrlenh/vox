@@ -18,6 +18,8 @@ import com.sep.vox.application.port.input.usecase.schooluser.ListSchoolUsersUseC
 import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUserUseCase;
 import com.sep.vox.application.response.input.schooluser.SchoolUserResponse;
 import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.repository.SchoolRepository;
+import com.sep.vox.domain.repository.UserRepository;
 
 public class SchoolUserControllerTests {
 
@@ -25,7 +27,7 @@ public class SchoolUserControllerTests {
     void school_users_should_return_page_from_use_case() {
         var listSchoolUsersUseCase = mock(ListSchoolUsersUseCase.class);
         var viewSchoolUserUseCase = mock(ViewSchoolUserUseCase.class);
-        var controller = new SchoolUserController(listSchoolUsersUseCase, viewSchoolUserUseCase);
+        var controller = new SchoolUserController(listSchoolUsersUseCase, viewSchoolUserUseCase, mock(UserRepository.class), mock(SchoolRepository.class));
         var schoolId = UUID.randomUUID();
         var userId = UUID.randomUUID();
         var response = schoolUserResponse(userId, "STUDENT", "STU-001", schoolId);
@@ -44,7 +46,7 @@ public class SchoolUserControllerTests {
     void school_user_should_return_details_from_use_case() {
         var listSchoolUsersUseCase = mock(ListSchoolUsersUseCase.class);
         var viewSchoolUserUseCase = mock(ViewSchoolUserUseCase.class);
-        var controller = new SchoolUserController(listSchoolUsersUseCase, viewSchoolUserUseCase);
+        var controller = new SchoolUserController(listSchoolUsersUseCase, viewSchoolUserUseCase, mock(UserRepository.class), mock(SchoolRepository.class));
         var schoolId = UUID.randomUUID();
         var userId = UUID.randomUUID();
         var response = schoolUserResponse(userId, "TEACHER", null, schoolId);
@@ -62,7 +64,7 @@ public class SchoolUserControllerTests {
     void school_users_should_reject_invalid_paging() {
         var listSchoolUsersUseCase = mock(ListSchoolUsersUseCase.class);
         var viewSchoolUserUseCase = mock(ViewSchoolUserUseCase.class);
-        var controller = new SchoolUserController(listSchoolUsersUseCase, viewSchoolUserUseCase);
+        var controller = new SchoolUserController(listSchoolUsersUseCase, viewSchoolUserUseCase, mock(UserRepository.class), mock(SchoolRepository.class));
 
         assertThatThrownBy(() -> controller.schoolUsers(UUID.randomUUID(), 0, 20))
             .isInstanceOf(IllegalStateException.class)
@@ -72,7 +74,8 @@ public class SchoolUserControllerTests {
     private SchoolUserResponse schoolUserResponse(UUID id, String roleCode, String studentId, UUID schoolId) {
         return new SchoolUserResponse(
             id, "user@school.edu.vn", "0987654321", "John Cena",
-            roleCode, "INACTIVE", schoolId, studentId, OffsetDateTime.now()
+            roleCode, "INACTIVE", schoolId, studentId, OffsetDateTime.now(),
+            UUID.randomUUID(), null, null
         );
     }
 }

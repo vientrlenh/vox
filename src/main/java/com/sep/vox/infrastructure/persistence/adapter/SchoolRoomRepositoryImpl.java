@@ -43,14 +43,20 @@ public class SchoolRoomRepositoryImpl implements SchoolRoomRepository {
         return springDataSchoolRoomRepository.existsBySchoolIdAndCode(schoolId, code);
     }
 
-    @Override
-    public PageResult<SchoolRoom> findBySchoolId(UUID schoolId, int page, int size) {
-        Pageable springPageable = PageRequest.of(page, size);
 
-        // Gọi hàm của Spring Data
+
+    @Override
+    public Optional<SchoolRoom> findByIdForUpdate(UUID id) {
+        return springDataSchoolRoomRepository.findByIdForUpdate(id)
+                .map(SchoolRoomMapper::toDomain);
+    }
+
+    @Override
+    public PageResult<SchoolRoom> findAllBySchoolId(UUID schoolId, com.sep.vox.domain.common.PageRequest pageRequest) {
+        Pageable springPageable = PageRequest.of(pageRequest.page(), pageRequest.size());
+
         Page<SchoolRoomJpaEntity> entityPage = springDataSchoolRoomRepository.findBySchoolId(schoolId, springPageable);
 
-        // Map sang Domain Model
         List<SchoolRoom> domainContent = entityPage.getContent().stream()
                 .map(SchoolRoomMapper::toDomain)
                 .toList();
@@ -62,11 +68,5 @@ public class SchoolRoomRepositoryImpl implements SchoolRoomRepository {
                 entityPage.getTotalElements(),
                 entityPage.getTotalPages()
         );
-    }
-
-    @Override
-    public Optional<SchoolRoom> findByIdForUpdate(UUID id) {
-        return springDataSchoolRoomRepository.findByIdForUpdate(id)
-                .map(SchoolRoomMapper::toDomain);
     }
 }

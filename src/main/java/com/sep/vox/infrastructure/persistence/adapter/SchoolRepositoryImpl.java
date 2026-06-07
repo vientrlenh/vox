@@ -68,25 +68,13 @@ public class SchoolRepositoryImpl implements SchoolRepository {
         return springDataSchoolRepository.existsById(id);
     }
 
-    @Override
-    public boolean existsByCode(String code) {
-        return springDataSchoolRepository.existsByCode(code);
-    }
 
     @Override
     public boolean existsByDomain(String domain) {
         return springDataSchoolRepository.existsByDomain(domain);
     }
 
-    @Override
-    public boolean existsByContactEmail(String contactEmail) {
-        return springDataSchoolRepository.existsByContactEmail(contactEmail);
-    }
 
-    @Override
-    public boolean existsByContactPhone(String contactPhone) {
-        return springDataSchoolRepository.existsByContactPhone(contactPhone);
-    }
 
     @Override
     public boolean existsByDomainAndIdNot(String domain, UUID id) {
@@ -108,10 +96,6 @@ public class SchoolRepositoryImpl implements SchoolRepository {
         springDataSchoolRepository.deleteById(id);
     }
 
-    @Override
-    public boolean existsByCodeAndIdNot(String normalizedCode, UUID id) {
-        return springDataSchoolRepository.existsByCodeAndIdNot(normalizedCode, id);
-    }
 
 
     @Override

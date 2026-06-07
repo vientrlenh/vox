@@ -2,21 +2,32 @@ package com.sep.vox.interfaces.rest.controller;
 
 import com.sep.vox.application.port.input.usecase.school.DeleteSchoolUseCase;
 import com.sep.vox.application.port.input.usecase.school.UpdateSchoolStatusUseCase;
+import com.sep.vox.application.port.input.usecase.schoolgrade.CreateSchoolGradeUseCase;
+import com.sep.vox.application.port.input.usecase.schoolgrade.DeleteSchoolGradeUseCase;
 import com.sep.vox.application.port.input.usecase.schoolroom.AddSchoolRoomUseCase;
 import com.sep.vox.application.port.input.usecase.schoolroom.DeleteSchoolRoomUseCase;
+import com.sep.vox.application.response.SchoolGradeResponse.SchoolGradeResponse;
 import com.sep.vox.application.response.SchoolResponse.SchoolResponse;
 import com.sep.vox.application.response.SchoolRoomResponse.SchoolRoomResponse;
 import com.sep.vox.interfaces.rest.dto.request.AddSchoolRoomRequest;
+import com.sep.vox.interfaces.rest.dto.request.CreateSchoolGradeRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
-import com.sep.vox.interfaces.rest.mapper.AddSchoolRoomCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.DeleteSchoolCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.DeleteSchoolRoomCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.UpdateSchoolStatusCommandMapper;
+
+
+import com.sep.vox.interfaces.rest.mapper.*;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.UUID;
 
@@ -28,14 +39,17 @@ public class SchoolController {
     private final UpdateSchoolStatusUseCase updateSchoolStatusUseCase;
     private final AddSchoolRoomUseCase addSchoolRoomUseCase;
     private final DeleteSchoolRoomUseCase deleteSchoolRoomUseCase;
+    private final CreateSchoolGradeUseCase createSchoolGradeUseCase;
+    private final DeleteSchoolGradeUseCase deleteSchoolGradeUseCase;
 
 
-
-    public SchoolController(DeleteSchoolUseCase deleteSchoolUseCase, UpdateSchoolStatusUseCase updateSchoolStatusUseCase, AddSchoolRoomUseCase addSchoolRoomUseCase, DeleteSchoolRoomUseCase deleteSchoolRoomUseCase) {
+    public SchoolController(DeleteSchoolUseCase deleteSchoolUseCase, UpdateSchoolStatusUseCase updateSchoolStatusUseCase, AddSchoolRoomUseCase addSchoolRoomUseCase, DeleteSchoolRoomUseCase deleteSchoolRoomUseCase, CreateSchoolGradeUseCase createSchoolGradeUseCase, DeleteSchoolGradeUseCase deleteSchoolGradeUseCase) {
         this.deleteSchoolUseCase = deleteSchoolUseCase;
         this.updateSchoolStatusUseCase = updateSchoolStatusUseCase;
         this.addSchoolRoomUseCase = addSchoolRoomUseCase;
         this.deleteSchoolRoomUseCase = deleteSchoolRoomUseCase;
+        this.createSchoolGradeUseCase = createSchoolGradeUseCase;
+        this.deleteSchoolGradeUseCase = deleteSchoolGradeUseCase;
     }
 
 
@@ -110,5 +124,42 @@ public class SchoolController {
         // Trả về ApiResponse chuẩn của team bạn
         return ResponseEntity.ok(ApiResponse.success("Xóa thành công school room", result));
     }
+
+    //====================================SCHOOL GRADE ==============================================
+
+    @Operation(summary = "Thêm khối học sinh vd: khối 10,11,12")
+    @PostMapping("/{schoolId}/grade")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    // Controller ném ra UUID của Grade vừa tạo, bọc trong ApiResponse
+    public ResponseEntity<ApiResponse<UUID>> createSchoolGrade(
+            @PathVariable UUID schoolId,
+            @Valid @RequestBody CreateSchoolGradeRequest request) {
+
+        var command = CreateSchoolGradeCommandMapper.fromRequest(schoolId, request);
+
+        UUID newGradeId = createSchoolGradeUseCase.execute(command);
+
+        return ResponseEntity.ok(ApiResponse.success("Thêm thành công khối của trường", newGradeId));
+    }
+
+
+
+    @Operation(summary = "Xóa khối theo id của trường ")
+    @DeleteMapping("/{id}/grade")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public ResponseEntity<ApiResponse<SchoolGradeResponse>> deleteSchoolGrade(
+            @PathVariable UUID id
+    ) {
+
+        // Map ID từ URL vào Command
+        var command = DeleteSchoolGradeCommandMapper.fromRequest(id);
+
+        // Thực thi UseCase
+        var result = deleteSchoolGradeUseCase.execute(command);
+
+        // Trả về ApiResponse chuẩn của team bạn
+        return ResponseEntity.ok(ApiResponse.success("Xóa thành công school grade", result));
+    }
+
 
 }

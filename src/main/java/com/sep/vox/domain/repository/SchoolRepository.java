@@ -15,10 +15,8 @@ public interface SchoolRepository {
     PageResult<School> findAll(int page, int size);
     School save(School school);
     boolean existsById(UUID id);
-    boolean existsByCode(String code);
     boolean existsByDomain(String domain);
-    boolean existsByContactEmail(String contactEmail);
-    boolean existsByContactPhone(String contactPhone);
+
 
     boolean existsByDomainAndIdNot(String domain, UUID id);
     boolean existsByContactEmailAndIdNot(String email, UUID id);
@@ -26,6 +24,5 @@ public interface SchoolRepository {
 
     void deleteById(UUID id);
 
-    boolean existsByCodeAndIdNot(String normalizedCode, UUID id);
     List<School> findByIdIn(Collection<UUID> ids, int page, int size);
 }

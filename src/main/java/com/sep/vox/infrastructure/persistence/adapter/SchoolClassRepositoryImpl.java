@@ -93,5 +93,10 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
             .map(SchoolClassMapper::toDomain)
             .toList();
     }
-    
+
+    @Override
+    public boolean existsBySchoolGradeId(UUID schoolGradeId) {
+        return springDataSchoolClassRepository.existsBySchoolGradeId(schoolGradeId);
+    }
+
 }

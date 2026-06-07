@@ -40,4 +40,6 @@ public interface SpringDataSchoolClassRepository extends JpaRepository<SchoolCla
         ORDER BY ranked.school_id, ranked.rn
     """, nativeQuery = true)
     List<SchoolClassJpaEntity> findBySchoolIdIn(@Param("schoolIds") Collection<UUID> schoolIds, @Param("fromRow") int fromRow, @Param("toRow") int toRow);
+
+    boolean existsBySchoolGradeId(UUID schoolGradeId);
 }

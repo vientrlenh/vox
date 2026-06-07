@@ -1,17 +1,17 @@
 package com.sep.vox.application.port.input.usecase.schoolroom;
 
-import com.sep.vox.application.port.input.query.ViewSchoolRoomsBySchoolIdQuery;
+import com.sep.vox.application.port.input.query.ViewSchoolRoomsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.response.SchoolRoomResponse.SchoolRoomResponse;
 import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.dto.SchoolRoomFromDto;
+import com.sep.vox.domain.mapper.SchoolRoomDtoMapper;
 import com.sep.vox.domain.model.school.SchoolRoom;
 import com.sep.vox.domain.repository.SchoolRoomRepository;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
-public class ViewSchoolRoomsUseCase implements IUseCase<ViewSchoolRoomsBySchoolIdQuery, PageResult<SchoolRoomResponse>> {
+public class ViewSchoolRoomsUseCase implements IUseCase<ViewSchoolRoomsQuery, PageResult<SchoolRoomFromDto>> {
 
     private final SchoolRoomRepository schoolRoomRepository;
 
@@ -20,34 +20,23 @@ public class ViewSchoolRoomsUseCase implements IUseCase<ViewSchoolRoomsBySchoolI
     }
 
     @Override
-    public PageResult<SchoolRoomResponse> execute(ViewSchoolRoomsBySchoolIdQuery query) {
-        // Lấy từ DB lên
-        PageResult<SchoolRoom> pagedRooms = schoolRoomRepository.findBySchoolId(
-                query.schoolId(), query.page(), query.size());
+    @Transactional(readOnly = true)
+    public PageResult<SchoolRoomFromDto> execute(ViewSchoolRoomsQuery query) {
 
-        // Map sang Response
-        List<SchoolRoomResponse> mappedContent = pagedRooms.content().stream()
-                .map(room -> new SchoolRoomResponse(
-                        room.getId(),
-                        room.getSchoolId(),
-                        room.getCode(),
-                        room.getName(),
-                        room.getDescription(),
-                        room.isActive(),
-                        room.getCreatedAt(),
-                        room.getCreatedBy(),
-                        room.getUpdatedAt(),
-                        room.getUpdatedBy()
-                ))
-                .toList();
+        // Cần đảm bảo bạn đã tạo hàm findAllBySchoolId(schoolId, pageRequest) trong SchoolRoomRepository
+        PageResult<SchoolRoom> pageResult = schoolRoomRepository.findAllBySchoolId(
+                query.schoolId(),
+                query.pageRequest()
+        );
 
-        // Bọc lại
         return new PageResult<>(
-                mappedContent,
-                pagedRooms.page(),
-                pagedRooms.size(),
-                pagedRooms.totalElements(),
-                pagedRooms.totalPages()
+                pageResult.content().stream()
+                        .map(SchoolRoomDtoMapper::toDto)
+                        .toList(),
+                pageResult.page(),
+                pageResult.size(),
+                pageResult.totalElements(),
+                pageResult.totalPages()
         );
     }
 }

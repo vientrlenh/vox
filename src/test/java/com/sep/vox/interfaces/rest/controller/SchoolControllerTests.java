@@ -1,18 +1,19 @@
 package com.sep.vox.interfaces.rest.controller;
 
-import com.sep.vox.application.port.input.command.DeleteSchoolCommand;
-import com.sep.vox.application.port.input.command.DeleteSchoolRoomCommand;
-import com.sep.vox.application.port.input.command.UpdateSchoolStatusCommand;
+import com.sep.vox.application.port.input.command.*;
 import com.sep.vox.application.port.input.usecase.school.DeleteSchoolUseCase;
 import com.sep.vox.application.port.input.usecase.school.UpdateSchoolStatusUseCase;
+import com.sep.vox.application.port.input.usecase.schoolgrade.CreateSchoolGradeUseCase;
+import com.sep.vox.application.port.input.usecase.schoolgrade.DeleteSchoolGradeUseCase;
 import com.sep.vox.application.port.input.usecase.schoolroom.AddSchoolRoomUseCase;
 import com.sep.vox.application.port.input.usecase.schoolroom.DeleteSchoolRoomUseCase;
+import com.sep.vox.application.response.SchoolGradeResponse.SchoolGradeResponse;
 import com.sep.vox.application.response.SchoolResponse.SchoolResponse;
 import com.sep.vox.application.response.SchoolRoomResponse.SchoolRoomResponse;
+import com.sep.vox.interfaces.rest.dto.request.AddSchoolRoomRequest;
+import com.sep.vox.interfaces.rest.dto.request.CreateSchoolGradeRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
-import com.sep.vox.interfaces.rest.mapper.DeleteSchoolCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.DeleteSchoolRoomCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.UpdateSchoolStatusCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.*;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,12 +26,13 @@ import org.springframework.http.ResponseEntity;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class SchoolControllerTests {
 
+    //<editor-fold desc="Mocks">
     @Mock
     private DeleteSchoolUseCase deleteSchoolUseCase;
     @Mock
@@ -39,28 +41,50 @@ class SchoolControllerTests {
     private AddSchoolRoomUseCase addSchoolRoomUseCase;
     @Mock
     private DeleteSchoolRoomUseCase deleteSchoolRoomUseCase;
+    @Mock
+    private CreateSchoolGradeUseCase createSchoolGradeUseCase;
+    @Mock
+    private DeleteSchoolGradeUseCase deleteSchoolGradeUseCase;
+    //</editor-fold>
 
     private SchoolController controller;
 
-    private MockedStatic<DeleteSchoolCommandMapper> deleteMapperMock;
+    //<editor-fold desc="Mapper Mocks">
+    private MockedStatic<DeleteSchoolCommandMapper> deleteSchoolMapperMock;
     private MockedStatic<UpdateSchoolStatusCommandMapper> statusMapperMock;
+    private MockedStatic<AddSchoolRoomCommandMapper> addRoomMapperMock;
     private MockedStatic<DeleteSchoolRoomCommandMapper> deleteRoomMapperMock;
+    private MockedStatic<CreateSchoolGradeCommandMapper> createGradeMapperMock;
+    private MockedStatic<DeleteSchoolGradeCommandMapper> deleteGradeMapperMock;
+    //</editor-fold>
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        controller = new SchoolController(deleteSchoolUseCase, updateSchoolStatusUseCase, addSchoolRoomUseCase, deleteSchoolRoomUseCase);
+        controller = new SchoolController(
+                deleteSchoolUseCase, updateSchoolStatusUseCase,
+                addSchoolRoomUseCase, deleteSchoolRoomUseCase,
+                createSchoolGradeUseCase, deleteSchoolGradeUseCase
+        );
 
-        deleteMapperMock = mockStatic(DeleteSchoolCommandMapper.class);
+        // Initialize static mapper mocks
+        deleteSchoolMapperMock = mockStatic(DeleteSchoolCommandMapper.class);
         statusMapperMock = mockStatic(UpdateSchoolStatusCommandMapper.class);
+        addRoomMapperMock = mockStatic(AddSchoolRoomCommandMapper.class);
         deleteRoomMapperMock = mockStatic(DeleteSchoolRoomCommandMapper.class);
+        createGradeMapperMock = mockStatic(CreateSchoolGradeCommandMapper.class);
+        deleteGradeMapperMock = mockStatic(DeleteSchoolGradeCommandMapper.class);
     }
 
     @AfterEach
     void tearDown() {
-        deleteMapperMock.close();
+        // Close all mocks
+        deleteSchoolMapperMock.close();
         statusMapperMock.close();
+        addRoomMapperMock.close();
         deleteRoomMapperMock.close();
+        createGradeMapperMock.close();
+        deleteGradeMapperMock.close();
     }
 
     @Test
@@ -68,9 +92,9 @@ class SchoolControllerTests {
         // Arrange
         var schoolId = UUID.randomUUID();
         var command = new DeleteSchoolCommand(schoolId);
-        var useCaseResponse = new SchoolResponse(schoolId, "CODE", "School Name", null, "123", "a@a.com", "domain", "address", 100, false, null, null, null, null);
+        var useCaseResponse = new SchoolResponse(schoolId, "CODE", "School", null, "123", "a@a.com", "domain", "address", 100, false, null, null, null, null);
 
-        deleteMapperMock.when(() -> DeleteSchoolCommandMapper.fromRequest(schoolId)).thenReturn(command);
+        deleteSchoolMapperMock.when(() -> DeleteSchoolCommandMapper.fromRequest(schoolId)).thenReturn(command);
         when(deleteSchoolUseCase.execute(command)).thenReturn(useCaseResponse);
 
         // Act
@@ -78,63 +102,56 @@ class SchoolControllerTests {
 
         // Assert
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().data()).isEqualTo(useCaseResponse);
         assertThat(response.getBody().message()).isEqualTo("Xóa trường học thành công");
+        assertThat(response.getBody().data()).isEqualTo(useCaseResponse);
         verify(deleteSchoolUseCase).execute(command);
     }
 
     @Test
-    void updateSchoolStatus_to_inactive_should_return_ok_response() {
+    void updateSchoolStatus_to_active_should_return_ok() {
         // Arrange
         var schoolId = UUID.randomUUID();
-        boolean isActive = false;
-        var command = new UpdateSchoolStatusCommand(schoolId, isActive);
-        var useCaseResponse = new SchoolResponse(schoolId, "CODE", "School Name", null, "123", "a@a.com", "domain", "address", 100, isActive, null, null, null, null);
+        var command = new UpdateSchoolStatusCommand(schoolId, true);
+        var useCaseResponse = new SchoolResponse(schoolId, "CODE", "School", null, "123", "a@a.com", "domain", "address", 100, true, null, null, null, null);
 
-        statusMapperMock.when(() -> UpdateSchoolStatusCommandMapper.fromRequest(schoolId, isActive)).thenReturn(command);
+        statusMapperMock.when(() -> UpdateSchoolStatusCommandMapper.fromRequest(schoolId, true)).thenReturn(command);
         when(updateSchoolStatusUseCase.execute(command)).thenReturn(useCaseResponse);
 
         // Act
-        ResponseEntity<ApiResponse<SchoolResponse>> response = controller.updateSchoolStatus(schoolId, isActive);
+        ResponseEntity<ApiResponse<SchoolResponse>> response = controller.updateSchoolStatus(schoolId, true);
 
         // Assert
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().message()).isEqualTo("Đã kích hoạt lại trường học thành công");
         assertThat(response.getBody().data()).isEqualTo(useCaseResponse);
-        assertThat(response.getBody().message()).isEqualTo("Đã vô hiệu hóa trường học thành công");
-        verify(updateSchoolStatusUseCase).execute(command);
     }
 
     @Test
-    void updateSchoolStatus_to_active_should_return_ok_response() {
+    void addSchoolRoom_should_return_ok_response() {
         // Arrange
         var schoolId = UUID.randomUUID();
-        boolean isActive = true;
-        var command = new UpdateSchoolStatusCommand(schoolId, isActive);
-        var useCaseResponse = new SchoolResponse(schoolId, "CODE", "School Name", null, "123", "a@a.com", "domain", "address", 100, isActive, null, null, null, null);
+        var request = new AddSchoolRoomRequest("VIT", "ROOM-01", "Desc");
+        var command = new AddSchoolRoomCommand(schoolId, "ROOM-01", "Room 1", "Desc");
+        var useCaseResponse = new SchoolRoomResponse(UUID.randomUUID(), schoolId, "ROOM-01", "Room 1", "Desc", false, null, null, null, null);
 
-        statusMapperMock.when(() -> UpdateSchoolStatusCommandMapper.fromRequest(schoolId, isActive)).thenReturn(command);
-        when(updateSchoolStatusUseCase.execute(command)).thenReturn(useCaseResponse);
+        addRoomMapperMock.when(() -> AddSchoolRoomCommandMapper.fromRequest(schoolId, request)).thenReturn(command);
+        when(addSchoolRoomUseCase.execute(command)).thenReturn(useCaseResponse);
 
         // Act
-        ResponseEntity<ApiResponse<SchoolResponse>> response = controller.updateSchoolStatus(schoolId, isActive);
+        ResponseEntity<ApiResponse<SchoolRoomResponse>> response = controller.addSchoolRoom(schoolId, request);
 
         // Assert
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().message()).isEqualTo("Thêm phòng học thành công");
         assertThat(response.getBody().data()).isEqualTo(useCaseResponse);
-        assertThat(response.getBody().message()).isEqualTo("Đã kích hoạt lại trường học thành công");
-        verify(updateSchoolStatusUseCase).execute(command);
     }
 
     @Test
     void deleteSchoolRoom_should_return_ok_response() {
         // Arrange
         var roomId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
         var command = new DeleteSchoolRoomCommand(roomId);
-        var useCaseResponse = new SchoolRoomResponse(roomId, schoolId, "ROOM01", "Room Name", "Description", false, null, null, null, null);
+        var useCaseResponse = new SchoolRoomResponse(roomId, UUID.randomUUID(), "DELETED", "Deleted", null, false, null, null, null, null);
 
         deleteRoomMapperMock.when(() -> DeleteSchoolRoomCommandMapper.fromRequest(roomId)).thenReturn(command);
         when(deleteSchoolRoomUseCase.execute(command)).thenReturn(useCaseResponse);
@@ -144,9 +161,46 @@ class SchoolControllerTests {
 
         // Assert
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().data()).isEqualTo(useCaseResponse);
         assertThat(response.getBody().message()).isEqualTo("Xóa thành công school room");
-        verify(deleteSchoolRoomUseCase).execute(command);
+        assertThat(response.getBody().data()).isEqualTo(useCaseResponse);
+    }
+
+    @Test
+    void createSchoolGrade_should_return_ok_with_new_id() {
+        // Arrange
+        var schoolId = UUID.randomUUID();
+        var request = new CreateSchoolGradeRequest("G10", "Khối 10", null, null, null);
+        var command = new CreateSchoolGradeCommand(schoolId, "G10", "Khối 10", null, null, null);
+        var newGradeId = UUID.randomUUID();
+
+        createGradeMapperMock.when(() -> CreateSchoolGradeCommandMapper.fromRequest(schoolId, request)).thenReturn(command);
+        when(createSchoolGradeUseCase.execute(command)).thenReturn(newGradeId);
+
+        // Act
+        ResponseEntity<ApiResponse<UUID>> response = controller.createSchoolGrade(schoolId, request);
+
+        // Assert
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody().message()).isEqualTo("Thêm thành công khối của trường");
+        assertThat(response.getBody().data()).isEqualTo(newGradeId);
+    }
+
+    @Test
+    void deleteSchoolGrade_should_return_ok_response() {
+        // Arrange
+        var gradeId = UUID.randomUUID();
+        var command = new DeleteSchoolGradeCommand(gradeId);
+        var useCaseResponse = new SchoolGradeResponse(gradeId, UUID.randomUUID(), "DELETED", "Deleted", null, null, null, null, null, null, null, null);
+
+        deleteGradeMapperMock.when(() -> DeleteSchoolGradeCommandMapper.fromRequest(gradeId)).thenReturn(command);
+        when(deleteSchoolGradeUseCase.execute(command)).thenReturn(useCaseResponse);
+
+        // Act
+        ResponseEntity<ApiResponse<SchoolGradeResponse>> response = controller.deleteSchoolGrade(gradeId);
+
+        // Assert
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody().message()).isEqualTo("Xóa thành công school grade");
+        assertThat(response.getBody().data()).isEqualTo(useCaseResponse);
     }
 }

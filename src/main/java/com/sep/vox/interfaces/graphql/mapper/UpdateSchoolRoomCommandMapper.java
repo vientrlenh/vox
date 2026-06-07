@@ -5,7 +5,7 @@ import com.sep.vox.interfaces.graphql.dto.request.UpdateSchoolRoomRequest;
 
 import java.util.UUID;
 
-public class UpdateSchoolRoomMapper {
+public class UpdateSchoolRoomCommandMapper {
     public static UpdateSchoolRoomCommand fromRequest(UUID id, UpdateSchoolRoomRequest request) {
         if (request == null) return null;
 

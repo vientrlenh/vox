@@ -31,7 +31,7 @@ public class DeleteSchoolRoomUseCase implements IUseCase<DeleteSchoolRoomCommand
     }
 
     @Override
-    @Transactional // Bắt buộc có để dùng Lock an toàn
+    @Transactional
     public SchoolRoomResponse execute(DeleteSchoolRoomCommand command) {
 
         // 1. GỌI HÀM LOCK: Khóa an toàn giống hệt Update

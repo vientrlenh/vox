@@ -1,0 +1,118 @@
+type Framework {
+    id: ID!
+    code: String!
+    name: String!
+    description: String
+    isActive: Boolean!
+    currentVersionId: ID
+    createdAt: String
+    updatedAt: String
+}
+
+type FrameworkPage {
+    content: [Framework!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+type FrameworkVersion {
+    id: ID!
+    frameworkId: ID!
+    code: String!
+    name: String!
+    description: String
+    version: Int!
+    effectiveFrom: String!
+    effectiveTo: String
+    status: String!
+    createdAt: String
+    updatedAt: String
+    criteria: [FrameworkCriterion!]!
+    resultBands: [FrameworkResultBand!]!
+}
+
+type FrameworkVersionPage {
+    content: [FrameworkVersion!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+type FrameworkCriterion {
+    id: ID!
+    frameworkVersionId: ID!
+    code: String!
+    name: String!
+    description: String
+    bands: [FrameworkCriterionBand!]!
+}
+
+type FrameworkCriterionBand {
+    id: ID!
+    frameworkCriterionId: ID!
+    frameworkResultBandId: ID!
+    descriptor: String
+    positiveSignals: String
+    negativeSignals: String
+}
+
+type FrameworkResultBand {
+    id: ID!
+    frameworkVersionId: ID!
+    code: String!
+    label: String!
+    description: String
+    scoreMin: Float
+    scoreMax: Float
+    order: Int!
+    status: String!
+}
+
+input UpdateFrameworkVersionInput {
+    frameworkId: ID!
+    versionId: ID!
+    code: String!
+    name: String!
+    description: String
+    effectiveFrom: String!
+    effectiveTo: String
+    criteria: [CriterionInput!]
+    resultBands: [ResultBandInput!]
+}
+
+input CriterionInput {
+    code: String!
+    name: String!
+    description: String
+    bands: [CriterionBandInput!]
+}
+
+input CriterionBandInput {
+    resultBandCode: String!
+    descriptor: String
+    positiveSignals: String
+    negativeSignals: String
+}
+
+input ResultBandInput {
+    code: String!
+    label: String!
+    description: String
+    scoreMin: Float
+    scoreMax: Float
+    order: Int!
+}
+
+extend type Query {
+    frameworks(page: Int = 1, size: Int = 20): FrameworkPage!
+    framework(id: ID!): Framework
+    frameworkVersions(frameworkId: ID!, page: Int = 1, size: Int = 20): FrameworkVersionPage!
+    frameworkVersion(id: ID!): FrameworkVersion
+}
+
+extend type Mutation {
+    updateFrameworkVersion(input: UpdateFrameworkVersionInput!): Boolean!
+}

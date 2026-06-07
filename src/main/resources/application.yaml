@@ -51,6 +51,18 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: true
+  
+  storage:
+    provider: ${STORAGE_PROVIDER:}
+    s3:
+      bucket: ${AWS_S3_BUCKET:}
+      region: ${AWS_REGION:ap-southeast-1}
+      endpoint: ${AWS_S3_ENDPOINT:}
+      access-key: ${AWS_ACCESS_KEY_ID:}
+      secret-key: ${AWS_SECRET_ACCESS_KEY:}
+      key-prefix: ${AWS_S3_KEY_PREFIX:}
+      public-base-url: ${AWS_S3_PUBLIC_BASE_URL:}
+      path-style-access-enabled: ${AWS_S3_PATH_STYLE:false}
 
 springdoc:
   swagger-ui:
@@ -79,6 +91,7 @@ app:
   frontend:
     password-setup-url: ${PASSWORD_SETUP_URL}
     oauth2-success-url: ${OAUTH2_SUCCESS_URL}
+  
 
 system-admin:
   email: ${SYS_ADMIN_EMAIL}

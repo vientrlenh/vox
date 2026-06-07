@@ -5,7 +5,6 @@ import java.util.List;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.listener.MessageListener;
 import org.springframework.stereotype.Component;
 
@@ -13,7 +12,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.sep.vox.application.port.input.ExternalEventHandler;
 
 @Component
-@ConditionalOnProperty(prefix = "spring.external-events", name = "provider", havingValue = "kafka")
 public class KafkaExternalEventListener implements MessageListener<String, JsonNode> {
 
     private static final Logger log = LoggerFactory.getLogger(KafkaExternalEventListener.class);

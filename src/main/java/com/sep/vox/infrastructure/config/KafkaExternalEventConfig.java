@@ -8,10 +8,14 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
@@ -27,8 +31,12 @@ import com.sep.vox.infrastructure.event.publisher.ExternalEventKafkaValueSeriali
 
 @Configuration
 @EnableConfigurationProperties(ExternalEventKafkaProperties.class)
-@ConditionalOnProperty(prefix = "spring.external-events", name = "provider", havingValue = "kafka")
+@ConditionalOnProperty(prefix = "app.external-events", name = "provider", havingValue = "kafka")
 public class KafkaExternalEventConfig {
+
+    private static final Logger log = LoggerFactory.getLogger(KafkaExternalEventConfig.class);
+
+    private Map<String, KafkaMessageListenerContainer<String, JsonNode>> listenerContainers;
 
     @Bean
     public ProducerFactory<String, Object> externalEventProducerFactory(ExternalEventKafkaProperties properties) {
@@ -63,16 +71,20 @@ public class KafkaExternalEventConfig {
             String name = entry.getKey();
             ExternalEventKafkaProperties.ConsumerGroupConfig groupConfig = entry.getValue();
 
+            if (groupConfig.getTopics() == null || groupConfig.getTopics().isEmpty()) {
+                continue;
+            }
+
             Map<String, Object> configs = new HashMap<>();
             configs.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, properties.getBootstrapServers());
             configs.put(ConsumerConfig.GROUP_ID_CONFIG, groupConfig.getGroupId());
             configs.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
             configs.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ExternalEventKafkaValueDeserializer.class);
-            configs.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+            configs.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, groupConfig.getAutoOffsetReset());
 
             ConsumerFactory<String, JsonNode> consumerFactory = new DefaultKafkaConsumerFactory<>(configs);
 
-            String[] topics = groupConfig.getTopics().split(",");
+            String[] topics = groupConfig.getTopics().toArray(String[]::new);
             ContainerProperties containerProps = new ContainerProperties(topics);
             containerProps.setMessageListener(listener);
 
@@ -82,7 +94,18 @@ public class KafkaExternalEventConfig {
             containers.put(name, container);
         }
 
+        this.listenerContainers = containers;
         return containers;
+    }
+
+    @EventListener(ContextRefreshedEvent.class)
+    public void startListenerContainers() {
+        if (listenerContainers != null) {
+            for (var entry : listenerContainers.entrySet()) {
+                log.info("Starting Kafka listener container: {}", entry.getKey());
+                entry.getValue().start();
+            }
+        }
     }
 
     private boolean hasText(String value) {

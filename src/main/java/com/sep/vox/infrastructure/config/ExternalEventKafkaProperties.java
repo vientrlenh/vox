@@ -1,11 +1,13 @@
 package com.sep.vox.infrastructure.config;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties(prefix = "spring.external-events.kafka")
+@ConfigurationProperties(prefix = "app.external-events.kafka")
 public class ExternalEventKafkaProperties {
 
     private String bootstrapServers;
@@ -58,7 +60,8 @@ public class ExternalEventKafkaProperties {
     public static class ConsumerGroupConfig {
 
         private String groupId;
-        private String topics;
+        private List<String> topics = new ArrayList<>();
+        private String autoOffsetReset = "earliest";
 
         public String getGroupId() {
             return groupId;
@@ -68,12 +71,20 @@ public class ExternalEventKafkaProperties {
             this.groupId = groupId;
         }
 
-        public String getTopics() {
+        public List<String> getTopics() {
             return topics;
         }
 
-        public void setTopics(String topics) {
+        public void setTopics(List<String> topics) {
             this.topics = topics;
+        }
+
+        public String getAutoOffsetReset() {
+            return autoOffsetReset;
+        }
+
+        public void setAutoOffsetReset(String autoOffsetReset) {
+            this.autoOffsetReset = autoOffsetReset;
         }
     }
 }

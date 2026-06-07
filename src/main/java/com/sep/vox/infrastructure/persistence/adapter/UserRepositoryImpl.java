@@ -83,5 +83,11 @@ public class UserRepositoryImpl implements UserRepository {
     public boolean existsByIdAndStatus(UUID id, UserStatus status) {
         return springDataUserRepository.existsByIdAndStatus(id, status.name());
     }
+
+
+    @Override
+    public boolean existsByPhone(String phone) {
+        return springDataUserRepository.existsByPhone(phone);
+    }
     
 }

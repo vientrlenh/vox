@@ -1,0 +1,76 @@
+type School {
+    id: ID!
+    code: String!
+    name: String
+    description: String
+    contactPhone: String 
+    contactEmail: String
+    domain: String 
+    address: String 
+    studentCount: Int 
+    isActive: Boolean
+    createdAt: String 
+    updatedAt: String
+    classes(page: Int = 1, size: Int = 10): [SchoolClass!]
+    users(page: Int = 1, size: Int = 10): [SchoolUser!]
+}
+
+type SchoolPage {
+    content: [School!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+type SchoolClass {
+    id: ID!
+    schoolId: ID!
+    languageId: ID!
+    schoolGradeId: ID!
+    code: String!
+    name: String!
+    description: String
+    targetSchoolLevelVersionId: ID!
+    status: String!
+    createdAt: String
+    updatedAt: String
+    createdBy: ID
+    updatedBy: ID
+}
+
+type SchoolClassPage {
+    content: [SchoolClass!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+type SchoolUser {
+    id: ID!
+    studentId: String
+    schoolId: ID!
+    userId: ID!
+    startDate: String
+    endDate: String
+    school: School
+    user: User
+}
+
+type SchoolUserPage {
+    content: [SchoolUser!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+extend type Query {
+    schools(page: Int = 1, size: Int = 20): SchoolPage!
+    school(id: ID!): School
+    schoolClasses(page: Int = 1, size: Int = 20): SchoolClassPage!
+    schoolClass(id: ID!): SchoolClass
+    schoolUsers(schoolId: ID!, page: Int = 1, size: Int = 20): SchoolUserPage
+    schoolUser(id: ID!): SchoolUser
+}

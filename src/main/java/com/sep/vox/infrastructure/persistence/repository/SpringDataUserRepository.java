@@ -28,4 +28,5 @@ public interface SpringDataUserRepository extends JpaRepository<UserJpaEntity, U
     Optional<UserJpaEntity> findByEmailAndStatus(String email, String status);
     Optional<UserJpaEntity> findByIdAndStatus(UUID id, String status);
     boolean existsByIdAndStatus(UUID id, String status);
+    boolean existsByPhone(String phone);
 }

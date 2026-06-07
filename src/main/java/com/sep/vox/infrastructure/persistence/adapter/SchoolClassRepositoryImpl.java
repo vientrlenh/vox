@@ -15,6 +15,7 @@ import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolClassMapper;
+import com.sep.vox.infrastructure.persistence.mapper.SchoolMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolClassRepository;
 
 @Repository
@@ -127,6 +128,16 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
 
     private static String blankToNull(String value) {
         return value == null || value.isBlank() ? null : value;
+    }
+
+    @Override
+    public List<SchoolClass> findBySchoolIdIn(Collection<UUID> schoolIds, int page, int size) {
+        var fromRow = (page - 1) * size + 1;
+        var toRow = page * size;
+        return springDataSchoolClassRepository.findBySchoolIdIn(schoolIds, fromRow, toRow)
+            .stream()
+            .map(SchoolClassMapper::toDomain)
+            .toList();
     }
     
 }

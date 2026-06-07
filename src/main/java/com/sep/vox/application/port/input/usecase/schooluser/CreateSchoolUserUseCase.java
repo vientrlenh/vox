@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.schooluser;
 import java.time.OffsetDateTime;
 import java.util.List;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -105,7 +106,12 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
             ? User.createStudent(command.email(), command.phone(), command.fullName(), command.dateOfBirth(), command.address(), null, callerId, command.schoolId(), now)
             : User.createTeacher(command.email(), command.phone(), command.fullName(), command.dateOfBirth(), command.address(), null, callerId, command.schoolId(), now);
 
-        var savedUser = userRepository.save(user);
+        User savedUser;
+        try {
+            savedUser = userRepository.save(user);
+        } catch (DataIntegrityViolationException e) {
+            throw new DuplicatedException("Email hoặc số điện thoại đã tồn tại");
+        }
 
         userRoleRepository.save(new UserRole(savedUser.getId(), role.getId(), now));
 

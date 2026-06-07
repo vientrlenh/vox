@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
@@ -143,28 +144,39 @@ public class ImportSchoolUsersUseCase implements IUseCase<ImportSchoolUsersComma
                         continue;
                     }
 
-                    var createdId = transactionTemplate.execute(status -> {
-                    var now = OffsetDateTime.now();
-                        User user = validRow.roleCode().equals("STUDENT")
-                            ? User.createStudent(validRow.email(), validRow.phone(), validRow.fullName(), validRow.dateOfBirth(), validRow.address(), null, callerId, input.schoolId(), now)
-                            : User.createTeacher(validRow.email(), validRow.phone(), validRow.fullName(), validRow.dateOfBirth(), validRow.address(), null, callerId, input.schoolId(), now);
+                    UUID createdId;
+                    try {
+                        createdId = transactionTemplate.execute(status -> {
+                        var now = OffsetDateTime.now();
+                            User user = validRow.roleCode().equals("STUDENT")
+                                ? User.createStudent(validRow.email(), validRow.phone(), validRow.fullName(), validRow.dateOfBirth(), validRow.address(), null, callerId, input.schoolId(), now)
+                                : User.createTeacher(validRow.email(), validRow.phone(), validRow.fullName(), validRow.dateOfBirth(), validRow.address(), null, callerId, input.schoolId(), now);
 
-                        var savedUser = userRepository.save(user);
-                        userRoleRepository.save(new UserRole(savedUser.getId(), role.getId(), now));
-                        if ("STUDENT".equals(validRow.roleCode()) && validRow.studentId() != null) {
-                            schoolUserRepository.save(SchoolUser.create(validRow.studentId(), input.schoolId(), savedUser.getId(), now, now));
-                        }
-                        var generatedPasswordSetUpToken = passwordSetUpTokenPort.generateToken();
-                        passwordSetUpTokenRepository.save(PasswordSetUpToken.create(savedUser.getId(), generatedPasswordSetUpToken.hashedToken()));
-                        eventPublisherPort.publish(new SchoolUserPasswordSetUpEmailRequestedEvent(
-                            validRow.email(),
-                            validRow.fullName(),
-                            school.getName(),
-                            savedUser.getId(),
-                            generatedPasswordSetUpToken.rawToken()
-                        ));
-                        return savedUser.getId();
-                    });
+                            var savedUser = userRepository.save(user);
+                            userRoleRepository.save(new UserRole(savedUser.getId(), role.getId(), now));
+                            if ("STUDENT".equals(validRow.roleCode()) && validRow.studentId() != null) {
+                                schoolUserRepository.save(SchoolUser.create(validRow.studentId(), input.schoolId(), savedUser.getId(), now, now));
+                            }
+                            var generatedPasswordSetUpToken = passwordSetUpTokenPort.generateToken();
+                            passwordSetUpTokenRepository.save(PasswordSetUpToken.create(savedUser.getId(), generatedPasswordSetUpToken.hashedToken()));
+                            eventPublisherPort.publish(new SchoolUserPasswordSetUpEmailRequestedEvent(
+                                validRow.email(),
+                                validRow.fullName(),
+                                school.getName(),
+                                savedUser.getId(),
+                                generatedPasswordSetUpToken.rawToken()
+                            ));
+                            return savedUser.getId();
+                        });
+                    } catch (DataIntegrityViolationException e) {
+                        failedCount++;
+                        var rowErrors = List.of(
+                            error((int) validRow.rowNumber(), "email", "DUPLICATE", "Email hoặc số điện thoại đã tồn tại", validRow.email())
+                        );
+                        errors.addAll(rowErrors);
+                        importRowRepository.save(markRowAsFailed(validRow.rowEntity(), rowErrors));
+                        continue;
+                    }
 
                     if (createdId != null) {
                         createdUserIds.add(createdId);

@@ -87,8 +87,11 @@ public class ChangeSchoolUserRoleUseCase implements IUseCase<ChangeSchoolUserRol
         var newRole = roleRepository.findByCode(newRoleCode)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy vai trò: " + newRoleCode));
 
-        schoolRoleRow.setRoleId(newRole.getId());
-        userRoleRepository.save(schoolRoleRow);
+        var updated = userRoleRepository.compareAndSetRoleId(
+            schoolRoleRow.getId(), schoolRoleRow.getRoleId(), newRole.getId());
+        if (updated == 0) {
+            throw new IllegalStateException("Vai trò của người dùng vừa được thay đổi bởi thao tác khác, vui lòng thử lại");
+        }
 
         if ("TEACHER".equals(newRoleCode)) {
             schoolUserRepository.findByUserId(input.userId())

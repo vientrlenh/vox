@@ -96,7 +96,7 @@ public class ImportSchoolUsersUseCaseTests {
         importParserFactory = mock(com.sep.vox.application.common.importer.ImportParserFactory.class);
         when(importParserFactory.forFormat(com.sep.vox.application.common.importer.ImportFileFormat.CSV))
             .thenReturn(new com.sep.vox.infrastructure.importer.CsvImportParser());
-        importValidator = mock(SchoolUserImportValidator.class);
+        importValidator = new SchoolUserImportValidator(userRepository, roleRepository);
 
         importSchoolUsersUseCase = new ImportSchoolUsersUseCase(
             userContextPort,

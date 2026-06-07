@@ -82,14 +82,38 @@ public class ChangeSchoolUserRoleUseCaseTests {
         when(roleRepository.findById(studentRoleId)).thenReturn(Optional.of(studentRole));
         when(roleRepository.findByCode("TEACHER")).thenReturn(Optional.of(teacherRole));
         when(schoolUserRepository.findByUserId(targetId)).thenReturn(Optional.of(existingSchoolUser));
-        when(userRoleRepository.save(any(UserRole.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(userRoleRepository.compareAndSetRoleId(existingUserRole.getId(), studentRoleId, teacherRoleId)).thenReturn(1);
         when(schoolUserRepository.save(any(SchoolUser.class))).thenAnswer(inv -> inv.getArgument(0));
 
         var result = changeSchoolUserRoleUseCase.execute(command);
 
         assertThat(result).isNull();
-        verify(userRoleRepository).save(argThat(ur -> ur.getRoleId().equals(teacherRoleId)));
+        verify(userRoleRepository).compareAndSetRoleId(existingUserRole.getId(), studentRoleId, teacherRoleId);
         verify(schoolUserRepository).save(argThat(su -> su.getUserId().equals(targetId) && su.getStudentId() == null));
+    }
+
+    @Test
+    void change_role_should_throw_when_concurrent_update_wins_the_race() {
+        var targetId = UUID.randomUUID();
+        var caller = user(callerId, schoolId);
+        var target = user(targetId, schoolId);
+        var studentRoleId = UUID.randomUUID();
+        var teacherRoleId = UUID.randomUUID();
+        var studentRole = role(studentRoleId, "STUDENT");
+        var teacherRole = role(teacherRoleId, "TEACHER");
+        var existingUserRole = new UserRole(UUID.randomUUID(), targetId, studentRoleId, OffsetDateTime.now());
+        var command = new ChangeSchoolUserRoleCommand(schoolId, targetId, "TEACHER");
+
+        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
+        when(userRepository.findById(callerId)).thenReturn(Optional.of(caller));
+        when(userRepository.findById(targetId)).thenReturn(Optional.of(target));
+        when(userRoleRepository.findByUserId(targetId)).thenReturn(List.of(existingUserRole));
+        when(roleRepository.findById(studentRoleId)).thenReturn(Optional.of(studentRole));
+        when(roleRepository.findByCode("TEACHER")).thenReturn(Optional.of(teacherRole));
+        when(userRoleRepository.compareAndSetRoleId(existingUserRole.getId(), studentRoleId, teacherRoleId)).thenReturn(0);
+
+        assertThrows(IllegalStateException.class, () -> changeSchoolUserRoleUseCase.execute(command));
+        verify(schoolUserRepository, never()).save(any(SchoolUser.class));
     }
 
     @Test

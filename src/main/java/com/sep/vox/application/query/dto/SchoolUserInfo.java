@@ -12,7 +12,10 @@ public record SchoolUserInfo(
     String status,
     UUID schoolId,
     String studentId,
-    OffsetDateTime createdAt
+    OffsetDateTime createdAt,
+    UUID userId,
+    OffsetDateTime startDate,
+    OffsetDateTime endDate
 ) {
 
 }

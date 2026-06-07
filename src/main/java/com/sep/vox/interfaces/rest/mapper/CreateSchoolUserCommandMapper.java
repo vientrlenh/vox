@@ -10,6 +10,8 @@ public final class CreateSchoolUserCommandMapper {
 
     public static CreateSchoolUserCommand fromRequest(UUID schoolId, CreateSchoolUserRequest request) {
         var dateOfBirth = DateMapper.toLocalDate(request.dateOfBirth().strip());
+        var startDate = request.startDate() != null ? DateMapper.toLocalDate(request.startDate().strip()) : null;
+        var endDate = request.endDate() != null ? DateMapper.toLocalDate(request.endDate().strip()) : null;
         return new CreateSchoolUserCommand(
             schoolId,
             request.email(),
@@ -18,7 +20,9 @@ public final class CreateSchoolUserCommandMapper {
             dateOfBirth,
             request.address(),
             request.roleCode(),
-            request.studentId()
+            request.studentId(),
+            startDate,
+            endDate
         );
     }
 }

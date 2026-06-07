@@ -75,12 +75,32 @@ public class SchoolUserImportValidator {
             rowErrors.add(error(row.rowNumber(), "roleCode", "REQUIRED", "Vai trò không được để trống", roleRaw));
         }
 
+        var startDateRaw = resolveField(row, format, mapping.get("startDate"), "startDate");
+        var endDateRaw = resolveField(row, format, mapping.get("endDate"), "endDate");
+
         var email = emailRaw != null ? StringNormalization.normalizeEmail(emailRaw) : null;
         var phone = phoneRaw != null ? StringNormalization.normalizePhone(phoneRaw) : null;
         var fullName = fullNameRaw != null ? StringNormalization.trimAndCollapseSpaces(fullNameRaw) : null;
         var address = addressRaw != null ? StringNormalization.trimAndCollapseSpaces(addressRaw) : null;
         var studentId = studentIdRaw != null ? studentIdRaw.trim() : null;
         var roleCode = resolvedRoleRaw != null ? resolvedRoleRaw.trim().toUpperCase(Locale.ROOT) : "";
+
+        var startDate = startDateRaw != null && !startDateRaw.isBlank()
+            ? parseDateOfBirth(startDateRaw, mapping.get("startDate"))
+            : null;
+        var endDate = endDateRaw != null && !endDateRaw.isBlank()
+            ? parseDateOfBirth(endDateRaw, mapping.get("endDate"))
+            : null;
+
+        if (startDateRaw != null && !startDateRaw.isBlank() && startDate == null) {
+            rowErrors.add(error(row.rowNumber(), "startDate", "INVALID_FORMAT", "Định dạng ngày bắt đầu không hợp lệ", startDateRaw));
+        }
+        if (endDateRaw != null && !endDateRaw.isBlank() && endDate == null) {
+            rowErrors.add(error(row.rowNumber(), "endDate", "INVALID_FORMAT", "Định dạng ngày kết thúc không hợp lệ", endDateRaw));
+        }
+        if (startDate != null && endDate != null && !startDate.isBefore(endDate)) {
+            rowErrors.add(error(row.rowNumber(), "endDate", "INVALID_VALUE", "Ngày kết thúc phải sau ngày bắt đầu", endDateRaw));
+        }
 
         var dateOfBirth = parseDateOfBirth(dobRaw, mapping.get("dateOfBirth"));
 
@@ -109,11 +129,11 @@ public class SchoolUserImportValidator {
             }
         }
 
-        var payload = mappedPayload(email, phone, fullName, dobRaw, roleCode, address, studentId);
+        var payload = mappedPayload(email, phone, fullName, dobRaw, roleCode, address, studentId, startDateRaw, endDateRaw);
         if (!rowErrors.isEmpty()) {
             return RowValidationResult.invalid(rowErrors, payload);
         }
-        return RowValidationResult.valid(email, phone, fullName, dateOfBirth, address, studentId, roleCode, payload);
+        return RowValidationResult.valid(email, phone, fullName, dateOfBirth, address, studentId, roleCode, startDate, endDate, payload);
     }
 
     private static Map<String, Object> mappedPayload(
@@ -123,7 +143,9 @@ public class SchoolUserImportValidator {
             String dateOfBirth,
             String roleCode,
             String address,
-            String studentId) {
+            String studentId,
+            String startDate,
+            String endDate) {
         var payload = new java.util.HashMap<String, Object>();
         payload.put("email", email);
         payload.put("phone", phone);
@@ -132,6 +154,8 @@ public class SchoolUserImportValidator {
         payload.put("roleCode", roleCode);
         payload.put("address", address);
         payload.put("studentId", studentId);
+        payload.put("startDate", startDate);
+        payload.put("endDate", endDate);
         return payload;
     }
 
@@ -209,6 +233,8 @@ public class SchoolUserImportValidator {
                 case "roleCode" -> candidates.addAll(List.of("Role", "Vai trò", "role", "Chức vụ"));
                 case "address" -> candidates.addAll(List.of("Address", "Địa chỉ", "address", "Nơi ở", "Nơi ở hiện tại", "Địa chỉ liên lạc"));
                 case "studentId" -> candidates.addAll(List.of("Student ID", "Mã học sinh", "studentId", "mã HS"));
+                case "startDate" -> candidates.addAll(List.of("Start Date", "Ngày bắt đầu", "startDate", "Ngày vào học"));
+                case "endDate" -> candidates.addAll(List.of("End Date", "Ngày kết thúc", "endDate", "Ngày ra trường"));
                 default -> candidates.add(semanticName);
             }
         }
@@ -258,6 +284,8 @@ public class SchoolUserImportValidator {
         String address,
         String studentId,
         String roleCode,
+        LocalDate startDate,
+        LocalDate endDate,
         List<SchoolUserImportError> errors,
         Map<String, Object> mappedPayload
     ) {
@@ -269,12 +297,14 @@ public class SchoolUserImportValidator {
                 String address,
                 String studentId,
                 String roleCode,
+                LocalDate startDate,
+                LocalDate endDate,
                 Map<String, Object> payload) {
-            return new RowValidationResult(email, phone, fullName, dateOfBirth, address, studentId, roleCode, List.of(), payload);
+            return new RowValidationResult(email, phone, fullName, dateOfBirth, address, studentId, roleCode, startDate, endDate, List.of(), payload);
         }
 
         public static RowValidationResult invalid(List<SchoolUserImportError> errors, Map<String, Object> payload) {
-            return new RowValidationResult(null, null, null, null, null, null, null, List.copyOf(errors), payload);
+            return new RowValidationResult(null, null, null, null, null, null, null, null, null, List.copyOf(errors), payload);
         }
     }
 }

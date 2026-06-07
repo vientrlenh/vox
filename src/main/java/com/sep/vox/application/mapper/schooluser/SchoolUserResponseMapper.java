@@ -17,7 +17,10 @@ public class SchoolUserResponseMapper {
             user.getStatus() != null ? user.getStatus().name() : null,
             user.getSchoolId(),
             schoolUser != null ? schoolUser.getStudentId() : null,
-            user.getCreatedAt()
+            user.getCreatedAt(),
+            user.getId(),
+            schoolUser != null ? schoolUser.getStartDate() : null,
+            schoolUser != null ? schoolUser.getEndDate() : null
         );
     }
 
@@ -31,7 +34,10 @@ public class SchoolUserResponseMapper {
             info.status(),
             info.schoolId(),
             info.studentId(),
-            info.createdAt()
+            info.createdAt(),
+            info.userId(),
+            info.startDate(),
+            info.endDate()
         );
     }
 }

@@ -34,7 +34,10 @@ public class JpaSchoolUserQueryRepository implements SchoolUserQueryRepository {
                 u.status,
                 u.schoolId,
                 su.studentId,
-                u.createdAt
+                u.createdAt,
+                u.id,
+                su.startDate,
+                su.endDate
             )
             FROM UserJpaEntity u
             JOIN UserRoleJpaEntity ur

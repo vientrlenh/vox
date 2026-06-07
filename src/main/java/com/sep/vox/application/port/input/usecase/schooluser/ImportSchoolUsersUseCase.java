@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.schooluser;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -155,7 +156,13 @@ public class ImportSchoolUsersUseCase implements IUseCase<ImportSchoolUsersComma
                             var savedUser = userRepository.save(user);
                             userRoleRepository.save(new UserRole(savedUser.getId(), role.getId(), now));
                             if ("STUDENT".equals(validRow.roleCode()) && validRow.studentId() != null) {
-                                schoolUserRepository.save(SchoolUser.create(validRow.studentId(), input.schoolId(), savedUser.getId(), now, now));
+                                var startDate = validRow.startDate() != null
+                                    ? validRow.startDate().atStartOfDay(ZoneOffset.UTC).toOffsetDateTime()
+                                    : now;
+                                var endDate = validRow.endDate() != null
+                                    ? validRow.endDate().atStartOfDay(ZoneOffset.UTC).toOffsetDateTime()
+                                    : OffsetDateTime.of(9999, 12, 31, 23, 59, 59, 0, ZoneOffset.UTC);
+                                schoolUserRepository.save(SchoolUser.create(validRow.studentId(), input.schoolId(), savedUser.getId(), startDate, endDate));
                             }
                             var generatedPasswordSetUpToken = passwordSetUpTokenPort.generateToken();
                             passwordSetUpTokenRepository.save(PasswordSetUpToken.create(savedUser.getId(), generatedPasswordSetUpToken.hashedToken()));
@@ -217,10 +224,12 @@ public class ImportSchoolUsersUseCase implements IUseCase<ImportSchoolUsersComma
                 createdUserIds
             );
         } finally {
-            try {
-                fileStoragePort.delete(input.fileId(), input.schoolId(), callerId);
-            } catch (Exception ignored) {
-                // the scheduled job should've handle this, i think
+            if (!input.dryRun()) {
+                try {
+                    fileStoragePort.delete(input.fileId(), input.schoolId(), callerId);
+                } catch (Exception ignored) {
+                    // the scheduled job should've handle this, i think
+                }
             }
         }
     }
@@ -294,6 +303,8 @@ public class ImportSchoolUsersUseCase implements IUseCase<ImportSchoolUsersComma
                 validation.address(),
                 validation.studentId(),
                 validation.roleCode(),
+                validation.startDate(),
+                validation.endDate(),
                 rowEntity
             ));
         }
@@ -314,6 +325,8 @@ public class ImportSchoolUsersUseCase implements IUseCase<ImportSchoolUsersComma
                 valid.address(),
                 valid.studentId(),
                 valid.roleCode(),
+                valid.startDate(),
+                valid.endDate(),
                 rowsByNumber.get(valid.rowNumber())
             ))
             .toList();
@@ -394,11 +407,6 @@ public class ImportSchoolUsersUseCase implements IUseCase<ImportSchoolUsersComma
         return new SchoolUserImportError(rowNumber, field, code, message, rawValue);
     }
 
-    private static boolean isBlank(String value) {
-        return value == null || value.isBlank();
-    }
-
-
     private record ValidPreviewRow(
         long rowNumber,
         String email,
@@ -408,6 +416,8 @@ public class ImportSchoolUsersUseCase implements IUseCase<ImportSchoolUsersComma
         String address,
         String studentId,
         String roleCode,
+        LocalDate startDate,
+        LocalDate endDate,
         com.sep.vox.domain.model.importfile.ImportRow rowEntity
     ) {
     }

@@ -11,7 +11,9 @@ public record CreateSchoolUserCommand(
     LocalDate dateOfBirth,
     String address,
     String roleCode,
-    String studentId
+    String studentId,
+    LocalDate startDate,
+    LocalDate endDate
 ) {
 
 }

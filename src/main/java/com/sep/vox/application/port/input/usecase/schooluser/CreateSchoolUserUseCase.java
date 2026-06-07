@@ -117,8 +117,14 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
 
         SchoolUser savedSchoolUser = null;
         if ("STUDENT".equals(command.roleCode()) && command.studentId() != null) {
+            var startDate = command.startDate() != null
+                ? command.startDate().atStartOfDay(ZoneOffset.UTC).toOffsetDateTime()
+                : now;
+            var endDate = command.endDate() != null
+                ? command.endDate().atStartOfDay(ZoneOffset.UTC).toOffsetDateTime()
+                : SCHOOL_USER_END_DATE;
             savedSchoolUser = schoolUserRepository.save(
-                SchoolUser.create(command.studentId(), command.schoolId(), savedUser.getId(), now, SCHOOL_USER_END_DATE)
+                SchoolUser.create(command.studentId(), command.schoolId(), savedUser.getId(), startDate, endDate)
             );
         }
 
@@ -147,7 +153,9 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
             input.dateOfBirth(),
             input.address() != null ? StringNormalization.trimAndCollapseSpaces(input.address()) : null,
             input.roleCode() != null ? input.roleCode().trim().toUpperCase() : null,
-            input.studentId() != null ? input.studentId().trim() : null
+            input.studentId() != null ? input.studentId().trim() : null,
+            input.startDate(),
+            input.endDate()
         );
     }
 }

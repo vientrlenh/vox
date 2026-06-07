@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.schoolroom;
 
+import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.DeleteSchoolRoomCommand;
@@ -35,16 +36,28 @@ public class DeleteSchoolRoomUseCase implements IUseCase<DeleteSchoolRoomCommand
     public SchoolRoomResponse execute(DeleteSchoolRoomCommand command) {
 
         // 1. GỌI HÀM LOCK: Khóa an toàn giống hệt Update
-        SchoolRoom room = schoolRoomRepository.findByIdForUpdate(command.id())
+        SchoolRoom room = schoolRoomRepository.findById(command.id())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy phòng học với ID đã cho."));
 
-        // 2. Validate User
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+
+        // Kiểm tra xem phòng học có đúng là của trường học này không
+        if (!room.getSchoolId().equals(command.schoolId())) {
+            throw new IllegalArgumentException("Phòng học này không thuộc về trường học đã chỉ định.");
+        }
+
+
+        // 2. Validate User & Bảo mật
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản của bạn."));
 
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
             throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
+        }
+
+        // Logic check quyền: Nếu user có schoolId (tức là Admin của 1 trường cụ thể)
+        if (currentUser.getSchoolId() != null && !currentUser.getSchoolId().equals(room.getSchoolId())) {
+            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền xóa trường học của đơn vị khác.");
         }
 
         // 3. THỰC HIỆN XÓA MỀM (SOFT DELETE)

@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.school;
 
+import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.UpdateSchoolStatusCommand;
@@ -37,13 +38,18 @@ public class UpdateSchoolStatusUseCase implements IUseCase<UpdateSchoolStatusCom
         School school = schoolRepository.findById(command.id())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học với ID đã cho."));
 
-        // 2. Lấy thông tin người dùng đang thực hiện thay đổi
+        // 2. Validate User & Bảo mật
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản của bạn."));
 
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
             throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
+        }
+
+        // Logic check quyền: Nếu user có schoolId (tức là Admin của 1 trường cụ thể)
+        if (currentUser.getSchoolId() != null && !currentUser.getSchoolId().equals(school.getId())) {
+            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền xóa trường học của đơn vị khác.");
         }
 
         // 3. Validate Logic: Tránh cập nhật thừa

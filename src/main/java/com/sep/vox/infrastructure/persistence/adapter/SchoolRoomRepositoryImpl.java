@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -44,13 +45,6 @@ public class SchoolRoomRepositoryImpl implements SchoolRoomRepository {
     }
 
 
-
-    @Override
-    public Optional<SchoolRoom> findByIdForUpdate(UUID id) {
-        return springDataSchoolRoomRepository.findByIdForUpdate(id)
-                .map(SchoolRoomMapper::toDomain);
-    }
-
     @Override
     public PageResult<SchoolRoom> findAllBySchoolId(UUID schoolId, com.sep.vox.domain.common.PageRequest pageRequest) {
         Pageable springPageable = PageRequest.of(pageRequest.page(), pageRequest.size());
@@ -68,5 +62,15 @@ public class SchoolRoomRepositoryImpl implements SchoolRoomRepository {
                 entityPage.getTotalElements(),
                 entityPage.getTotalPages()
         );
+    }
+
+    @Override
+    public boolean existsBySchoolIdAndIsActive(UUID schoolId, boolean isActive) {
+        return springDataSchoolRoomRepository.existsBySchoolIdAndIsActive(schoolId, isActive);
+    }
+
+    @Override
+    public int updateSchoolRoomAtomic(UUID id, String name, String description, OffsetDateTime now, UUID updatedBy) {
+        return springDataSchoolRoomRepository.updateSchoolRoomAtomic(id, name, description, now, updatedBy);
     }
 }

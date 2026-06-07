@@ -90,14 +90,14 @@ class SchoolControllerTests {
     void updateSchool_should_call_usecase_and_return_id() {
         // Arrange
         var schoolId = UUID.randomUUID();
-        var request = new UpdateSchoolRequest(schoolId, "New Name", "Desc", "123", "a@a.com", "domain", "address", 100);
+        var request = new UpdateSchoolRequest( "New Name", "Desc", "123", "a@a.com", "domain", "address", 100);
         var command = new UpdateSchoolCommand(schoolId, "New Name", "Desc", "123", "a@a.com", "domain", "address", 100);
 
         schoolMapperMock.when(() -> UpdateSchoolCommandMapper.fromRequest(schoolId, request)).thenReturn(command);
         when(updateSchoolUseCase.execute(command)).thenReturn(schoolId);
 
         // Act
-        UUID result = controller.updateSchool(request);
+        UUID result = controller.updateSchool(schoolId, request);
 
         // Assert
         assertThat(result).isEqualTo(schoolId);
@@ -158,14 +158,14 @@ class SchoolControllerTests {
     void updateSchoolRoom_should_call_usecase_and_return_id() {
         // Arrange
         var roomId = UUID.randomUUID();
-        var request = new UpdateSchoolRoomRequest(roomId, "New Name", "New Desc", false);
-        var command = new UpdateSchoolRoomCommand(roomId, "New Name", "New Desc", false);
+        var request = new UpdateSchoolRoomRequest("Room1", "New Name");
+        var command = new UpdateSchoolRoomCommand(roomId, "New Name", "New Desc");
 
         roomMapperMock.when(() -> UpdateSchoolRoomCommandMapper.fromRequest(roomId, request)).thenReturn(command);
         when(updateSchoolRoomUseCase.execute(command)).thenReturn(roomId);
 
         // Act
-        UUID result = controller.updateSchoolRoom(request);
+        UUID result = controller.updateSchoolRoom(roomId, request);
 
         // Assert
         assertThat(result).isEqualTo(roomId);
@@ -176,14 +176,14 @@ class SchoolControllerTests {
     void updateSchoolGrade_should_call_usecase_and_return_id() {
         // Arrange
         var gradeId = UUID.randomUUID();
-        var request = new UpdateSchoolGradeRequest(gradeId,UUID.randomUUID(), "New Grade", null, null, null);
-        var command = new UpdateSchoolGradeCommand(gradeId, UUID.randomUUID(), null, null, null, null);
+        var request = new UpdateSchoolGradeRequest( "New Grade", "Vit", null, null);
+        var command = new UpdateSchoolGradeCommand(gradeId, "Vit", "null", null, null);
 
-        gradeMapperMock.when(() -> UpdateSchoolGradeCommandMapper.fromRequest(request)).thenReturn(command);
+        gradeMapperMock.when(() -> UpdateSchoolGradeCommandMapper.fromRequest(gradeId, request)).thenReturn(command);
         when(updateSchoolGradeUseCase.execute(command)).thenReturn(gradeId);
 
         // Act
-        UUID result = controller.updateSchoolGrade(request);
+        UUID result = controller.updateSchoolGrade(gradeId, request);
 
         // Assert
         assertThat(result).isEqualTo(gradeId);

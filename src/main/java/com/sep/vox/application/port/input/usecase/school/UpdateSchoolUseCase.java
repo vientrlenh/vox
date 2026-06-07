@@ -12,10 +12,6 @@ import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.UserRepository;
-import com.sep.vox.domain.valueobject.Email;
-import com.sep.vox.domain.valueobject.Phone;
-import com.sep.vox.domain.valueobject.SchoolDomain;
-import com.sep.vox.domain.valueobject.StudentCount;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,72 +34,69 @@ public class UpdateSchoolUseCase implements IUseCase<UpdateSchoolCommand, UUID> 
     @Override
     @Transactional
     public UUID execute(UpdateSchoolCommand command) {
-        // 1. Lấy thông tin trường
+        // 1. Validate sự tồn tại và quyền truy cập (Giữ nguyên vì đây là bước bảo mật quan trọng)
         School school = schoolRepository.findById(command.id())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học với ID đã cho."));
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học."));
 
-        // 2. Lấy User và Check quyền System Admin / School Admin
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản của bạn."));
+                .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
 
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
+            throw new UnauthorizedException("Tài khoản đã bị khóa.");
         }
 
-        // Cảnh báo: Chỉ Admin của đúng trường đó mới được sửa. System Admin có quyền sửa mọi trường.
         if (currentUser.getSchoolId() != null && !currentUser.getSchoolId().equals(school.getId())) {
-            throw new UnauthorizedException("CẢNH BÁO BẢO MẬT: Bạn không có quyền cập nhật thông tin của trường học khác!");
+            throw new UnauthorizedException("Bạn không có quyền sửa trường này.");
         }
 
-        // 3. CẬP NHẬT TỪNG PHẦN (PARTIAL UPDATE)
-        if (command.name() != null) {
-            school.setName(StringNormalization.trimAndCollapseSpaces(command.name()));
-        }
+        // 2. Chuẩn hóa dữ liệu trước khi gửi xuống DB
+        String name = (command.name() != null) ? StringNormalization.trimAndCollapseSpaces(command.name()) : null;
+        String description = (command.description() != null) ? StringNormalization.trimAndCollapseSpaces(command.description()) : null;
+        String address = (command.address() != null) ? StringNormalization.trimAndCollapseSpaces(command.address()) : null;
 
-        if (command.description() != null) {
-            school.setDescription(StringNormalization.trimAndCollapseSpaces(command.description()));
-        }
-
-
+        String phone = null;
         if (command.contactPhone() != null) {
-            String normalizedPhone = StringNormalization.normalizePhone(command.contactPhone());
-            if (schoolRepository.existsByContactPhoneAndIdNot(normalizedPhone, command.id())) {
-                throw new DuplicatedException("Số điện thoại này đã được sử dụng bởi trường khác.");
+            phone = StringNormalization.normalizePhone(command.contactPhone());
+            if (schoolRepository.existsByContactPhoneAndIdNot(phone, command.id())) {
+                throw new DuplicatedException("Số điện thoại này đã được sử dụng.");
             }
-            school.setContactPhone(new Phone(normalizedPhone));
         }
 
+        String email = null;
         if (command.contactEmail() != null) {
-            String normalizedEmail = StringNormalization.normalizeEmail(command.contactEmail());
-            if (schoolRepository.existsByContactEmailAndIdNot(normalizedEmail, command.id())) {
-                throw new DuplicatedException("Email này đã được sử dụng bởi trường khác.");
+            email = StringNormalization.normalizeEmail(command.contactEmail());
+            if (schoolRepository.existsByContactEmailAndIdNot(email, command.id())) {
+                throw new DuplicatedException("Email này đã được sử dụng.");
             }
-            school.setContactEmail(new Email(normalizedEmail));
         }
 
+        String domain = null;
         if (command.domain() != null) {
-            String normalizedDomain = StringNormalization.normalizeDomain(command.domain());
-            if (schoolRepository.existsByDomainAndIdNot(normalizedDomain, command.id())) {
-                throw new DuplicatedException("Tên miền này đã được sử dụng bởi trường khác.");
+            domain = StringNormalization.normalizeDomain(command.domain());
+            if (schoolRepository.existsByDomainAndIdNot(domain, command.id())) {
+                throw new DuplicatedException("Tên miền này đã được sử dụng.");
             }
-            school.setDomain(new SchoolDomain(normalizedDomain));
         }
 
-        if (command.address() != null) {
-            school.setAddress(StringNormalization.trimAndCollapseSpaces(command.address()));
+        // 3. Thực thi Atomic Update
+        int updatedRows = schoolRepository.updateSchoolAtomic(
+                command.id(),
+                name,
+                description,
+                phone,
+                email,
+                domain,
+                address,
+                command.studentCount(),
+                OffsetDateTime.now(),
+                currentUserId
+        );
+
+        if (updatedRows == 0) {
+            throw new NotFoundException("Cập nhật thất bại hoặc không có thay đổi.");
         }
 
-        if (command.studentCount() != null) {
-            school.setStudentCount(new StudentCount(command.studentCount()));
-        }
-
-        // 4. Cập nhật người sửa cuối và lưu xuống DB
-        school.setUpdatedBy(currentUserId);
-        school.setUpdatedAt(OffsetDateTime.now());
-
-        School updatedSchool = schoolRepository.save(school);
-
-        return updatedSchool.getId();
+        return command.id();
     }
 }

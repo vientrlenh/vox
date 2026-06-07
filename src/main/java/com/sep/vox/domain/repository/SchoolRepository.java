@@ -1,5 +1,6 @@
 package com.sep.vox.domain.repository;
 
+import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -25,4 +26,9 @@ public interface SchoolRepository {
     void deleteById(UUID id);
 
     List<School> findByIdIn(Collection<UUID> ids, int page, int size);
+
+
+    int updateSchoolAtomic(UUID id, String name, String description, String phone,
+                           String email, String domain, String address, Integer studentCount,
+                           OffsetDateTime now, UUID updatedBy);
 }

@@ -67,10 +67,9 @@ public class SchoolController {
     //Nhập id school vào update gì đó => SchoolID => check
     @MutationMapping(name = "updateSchool")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public UUID updateSchool(@Argument(name = "request") UpdateSchoolRequest request) {
+    public UUID updateSchool(@Argument(name = "id") UUID id, @Argument(name = "input") UpdateSchoolRequest request) {
 
-        var command = UpdateSchoolCommandMapper.fromRequest(request.id(), request);
-
+        var command = UpdateSchoolCommandMapper.fromRequest(id, request);
 
         return updateSchoolUseCase.execute(command);
 
@@ -122,9 +121,12 @@ public class SchoolController {
     // nhập Id của room muốn đổi => update (200) trả về school Id
     @MutationMapping(name = "updateSchoolRoom")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public UUID updateSchoolRoom(@Argument("input") UpdateSchoolRoomRequest request) {
-
-        var command = UpdateSchoolRoomCommandMapper.fromRequest(request.id(), request);
+    public UUID updateSchoolRoom(
+            @Argument(name = "id") UUID id,
+            @Argument(name = "input") UpdateSchoolRoomRequest request
+    ) {
+        // Mapper truyền cả id và request
+        var command = UpdateSchoolRoomCommandMapper.fromRequest(id, request);
         return updateSchoolRoomUseCase.execute(command);
     }
 
@@ -138,8 +140,11 @@ public class SchoolController {
     //========================SCHOOL GRADE =======================
     @MutationMapping(name = "updateSchoolGrade")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public UUID updateSchoolGrade(@Argument(name = "input") UpdateSchoolGradeRequest request) {
-        var command = UpdateSchoolGradeCommandMapper.fromRequest(request);
+    public UUID updateSchoolGrade(
+            @Argument(name = "id") UUID id,
+            @Argument(name = "input") UpdateSchoolGradeRequest request
+    ) {
+        var command = UpdateSchoolGradeCommandMapper.fromRequest(id, request);
         return updateSchoolGradeUseCase.execute(command);
     }
 

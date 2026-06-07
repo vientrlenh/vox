@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.schoolroom;
 
 import com.sep.vox.application.common.StringNormalization;
+import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.UpdateSchoolRoomCommand;
@@ -35,16 +36,21 @@ public class UpdateSchoolRoomUseCase implements IUseCase<UpdateSchoolRoomCommand
     public UUID execute(UpdateSchoolRoomCommand command) {
 
         // 1. GỌI HÀM LOCK: Đóng băng dòng dữ liệu này dưới Database
-        SchoolRoom room = schoolRoomRepository.findByIdForUpdate(command.id())
+        SchoolRoom room = schoolRoomRepository.findById(command.id())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy phòng học với ID đã cho."));
 
-        // 2. Validate User
+        // 2. Validate User & Bảo mật
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản của bạn."));
 
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
             throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
+        }
+
+        // Logic check quyền: Nếu user có schoolId (tức là Admin của 1 trường cụ thể)
+        if (currentUser.getSchoolId() != null && !currentUser.getSchoolId().equals(room.getSchoolId())) {
+            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền sửa trường học của đơn vị khác.");
         }
 
         // 3. CẬP NHẬT PARTIAL VÀO OBJECT
@@ -55,16 +61,19 @@ public class UpdateSchoolRoomUseCase implements IUseCase<UpdateSchoolRoomCommand
             room.setDescription(StringNormalization.trimAndCollapseSpaces(command.description()));
         }
 
-        if (command.isActive() != null) {
-            room.setActive(command.isActive());
+        // 4. Thực thi Atomic Update
+        int updatedRows = schoolRoomRepository.updateSchoolRoomAtomic(
+                command.id(),
+                room.getName(),
+                room.getDescription(),
+                OffsetDateTime.now(),
+                currentUserId
+        );
+
+        if (updatedRows == 0) {
+            throw new NotFoundException("Cập nhật thất bại.");
         }
 
-        room.setUpdatedBy(currentUserId);
-        room.setUpdatedAt(OffsetDateTime.now());
-
-        var result = schoolRoomRepository.save(room);
-
-        return result.getId();
-
+        return room.getSchoolId(); // Trả về schoolId theo yêu cầu của bạn
     }
 }

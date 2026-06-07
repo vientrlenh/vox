@@ -1,5 +1,6 @@
 package com.sep.vox.domain.repository;
 
+import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -13,7 +14,9 @@ public interface SchoolRoomRepository {
     SchoolRoom save(SchoolRoom room);
     boolean existsBySchoolIdAndCode(UUID schoolId, String code);
 
-    Optional<SchoolRoom> findByIdForUpdate(UUID id);
 
     PageResult<SchoolRoom> findAllBySchoolId(UUID schoolId, PageRequest pageRequest);
+
+    boolean existsBySchoolIdAndIsActive(UUID schoolId, boolean isActive);
+    int updateSchoolRoomAtomic(UUID id, String name, String description, OffsetDateTime now, UUID updatedBy);
 }

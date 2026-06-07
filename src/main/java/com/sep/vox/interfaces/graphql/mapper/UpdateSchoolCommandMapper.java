@@ -9,11 +9,11 @@ import java.util.UUID;
 @Component
 public class UpdateSchoolCommandMapper {
 
-    public static UpdateSchoolCommand fromRequest(UUID schoolId, UpdateSchoolRequest request) {
+    public static UpdateSchoolCommand fromRequest(UUID id,UpdateSchoolRequest request) {
         if (request == null) return null;
 
         return new UpdateSchoolCommand(
-                schoolId,
+                id,
                 request.name(),
                 request.description(),
                 request.contactPhone(),

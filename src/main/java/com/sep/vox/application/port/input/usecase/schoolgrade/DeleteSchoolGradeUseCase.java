@@ -39,45 +39,40 @@ public class DeleteSchoolGradeUseCase implements IUseCase<DeleteSchoolGradeComma
     }
 
     @Override
-    @Transactional // Bắt buộc để Lock và Delete hoạt động
+    @Transactional
     public SchoolGradeResponse execute(DeleteSchoolGradeCommand command) {
+        // 1. Lock dữ liệu an toàn
+        //command.id = grade.id
+        SchoolGrade grade = schoolGradeRepository.findByIdForDelete(command.id(), command.schoolId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy khối lớp này."));
 
-        // 1. Lock dữ liệu để an toàn khi cập nhật
-        SchoolGrade grade = schoolGradeRepository.findByIdForDelete(command.id())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy khối lớp/năm học."));
-
-        // 2. Validate User và Quyền sở hữu trường học (Controller đã lo check Role)
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        // 2. Validate User & Bảo mật
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy tài khoản."));
 
         if (currentUser.getSchoolId() != null && !currentUser.getSchoolId().equals(grade.getSchoolId())) {
-            throw new ForbiddenException("Bạn không có quyền thực hiện hành động này trên khối lớp của trường khác.");
+            throw new ForbiddenException("Bạn không có quyền thao tác trên khối lớp của trường khác.");
         }
 
         // 3. Logic chặn xóa
         if (grade.getStatus() == SchoolGradeStatus.ARCHIVED) {
-            throw new IllegalStateException("Khối lớp/năm học đã được lưu trữ từ trước.");
+            throw new IllegalStateException("Khối lớp này đã được lưu trữ (xóa mềm) từ trước.");
         }
 
         boolean isUsed = schoolClassRepository.existsBySchoolGradeId(grade.getId());
         if (isUsed) {
-            throw new IllegalStateException("Không thể xóa vì khối lớp/năm học đang có lớp học sử dụng.");
+            throw new IllegalStateException("Không thể xóa vì khối lớp đang có lớp học sử dụng.");
         }
 
-        // 4. XỬ LÝ NHÁNH DELETE (Soft vs Hard)
+        // 4. XỬ LÝ NHÁNH DELETE
         if (grade.getStatus() == SchoolGradeStatus.ACTIVE) {
-            // Đang ACTIVE -> Xóa mềm (Chuyển thành ARCHIVED)
             grade.setStatus(SchoolGradeStatus.ARCHIVED);
             grade.setUpdatedAt(OffsetDateTime.now());
             grade.setUpdatedBy(currentUserId);
-
-            // Hàm save() sẽ giúp Hibernate tự update lại xuống DB
             schoolGradeRepository.save(grade);
-
         } else if (grade.getStatus() == SchoolGradeStatus.INACTIVE) {
-            // Đang INACTIVE -> Xóa cứng bay màu khỏi DB
-            schoolGradeRepository.deleteById(grade.getId());
+            schoolGradeRepository.deleteByIdAndSchoolId(grade.getId(), grade.getSchoolId());
         }
 
         // 5. Nhả Response

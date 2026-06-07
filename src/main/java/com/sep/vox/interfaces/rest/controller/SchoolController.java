@@ -32,7 +32,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/school")
+@RequestMapping("/api/v1/schools")
 public class SchoolController {
 
     private final DeleteSchoolUseCase deleteSchoolUseCase;
@@ -57,12 +57,12 @@ public class SchoolController {
     @Operation(summary = "Xóa trường học")
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public ResponseEntity<ApiResponse<SchoolResponse>> deleteSchool(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<UUID>> deleteSchool(@PathVariable UUID id) {
 
         var command = DeleteSchoolCommandMapper.fromRequest(id);
 
         // Hứng response từ UseCase
-        SchoolResponse response = deleteSchoolUseCase.execute(command);
+        var response = deleteSchoolUseCase.execute(command);
 
         return ResponseEntity.ok(ApiResponse.success("Xóa trường học thành công", response));
     }
@@ -109,14 +109,15 @@ public class SchoolController {
     }
 
     @Operation(summary = "Xóa phòng học theo id ")
-    @DeleteMapping("/{id}/room")
+    @DeleteMapping("/{schoolId}/rooms/{roomId}")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<SchoolRoomResponse>> deleteSchoolRoom(
-            @PathVariable UUID id
+            @PathVariable("schoolId") UUID schoolId,
+            @PathVariable UUID roomId
     ) {
 
         // Map ID từ URL vào Command
-        var command = DeleteSchoolRoomCommandMapper.fromRequest(id);
+        var command = DeleteSchoolRoomCommandMapper.fromRequest(roomId,schoolId);
 
         // Thực thi UseCase
         var result = deleteSchoolRoomUseCase.execute(command);
@@ -128,9 +129,8 @@ public class SchoolController {
     //====================================SCHOOL GRADE ==============================================
 
     @Operation(summary = "Thêm khối học sinh vd: khối 10,11,12")
-    @PostMapping("/{schoolId}/grade")
+    @PostMapping("/{schoolId}/grades")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    // Controller ném ra UUID của Grade vừa tạo, bọc trong ApiResponse
     public ResponseEntity<ApiResponse<UUID>> createSchoolGrade(
             @PathVariable UUID schoolId,
             @Valid @RequestBody CreateSchoolGradeRequest request) {
@@ -145,14 +145,15 @@ public class SchoolController {
 
 
     @Operation(summary = "Xóa khối theo id của trường ")
-    @DeleteMapping("/{id}/grade")
+    @DeleteMapping("/{schoolId}/grades/{gradeId}")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<SchoolGradeResponse>> deleteSchoolGrade(
-            @PathVariable UUID id
+            @PathVariable UUID schoolId,
+            @PathVariable UUID gradeId
     ) {
 
         // Map ID từ URL vào Command
-        var command = DeleteSchoolGradeCommandMapper.fromRequest(id);
+        var command = DeleteSchoolGradeCommandMapper.fromRequest(schoolId,gradeId);
 
         // Thực thi UseCase
         var result = deleteSchoolGradeUseCase.execute(command);

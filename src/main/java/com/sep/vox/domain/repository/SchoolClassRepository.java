@@ -25,4 +25,6 @@ public interface SchoolClassRepository {
     List<SchoolClass> findBySchoolIdIn(Collection<UUID> schoolIds, int page, int size);
 
     boolean existsBySchoolGradeId(UUID schoolGradeId);
+
+    boolean existsBySchoolIdAndStatus(UUID schoolId, String status);
 }

@@ -1,48 +1,58 @@
 package com.sep.vox.application.port.input.usecase.school;
 
+import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.DeleteSchoolCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.response.SchoolResponse.SchoolResponse;
 import com.sep.vox.domain.model.school.School;
+import com.sep.vox.domain.model.school.SchoolClassStatus;
+import com.sep.vox.domain.model.school.SchoolGradeStatus;
+import com.sep.vox.domain.model.school.SchoolRoom;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
-import com.sep.vox.domain.repository.SchoolRepository;
-import com.sep.vox.domain.repository.UserRepository;
-import org.jspecify.annotations.NonNull;
+import com.sep.vox.domain.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Service
-public class DeleteSchoolUseCase implements IUseCase<DeleteSchoolCommand, SchoolResponse> {
+public class DeleteSchoolUseCase implements IUseCase<DeleteSchoolCommand, UUID> {
 
     private final SchoolRepository schoolRepository;
+    private final SchoolGradeRepository schoolGradeRepository;
+    private final SchoolClassRepository schoolClassRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
+    private final SchoolRoomRepository schoolRoomRepository;
 
-    public DeleteSchoolUseCase(SchoolRepository schoolRepository, UserRepository userRepository, UserContextPort userContextPort) {
+    // Nhớ inject thêm 2 cái repo của Grade và Class vào đây nha
+    public DeleteSchoolUseCase(
+            SchoolRepository schoolRepository,
+            SchoolGradeRepository schoolGradeRepository,
+            SchoolClassRepository schoolClassRepository,
+            UserRepository userRepository,
+            UserContextPort userContextPort, SchoolRoomRepository schoolRoomRepository) {
         this.schoolRepository = schoolRepository;
+        this.schoolGradeRepository = schoolGradeRepository;
+        this.schoolClassRepository = schoolClassRepository;
         this.userRepository = userRepository;
         this.userContextPort = userContextPort;
+        this.schoolRoomRepository = schoolRoomRepository;
     }
 
     @Override
-    @Transactional
-    public SchoolResponse execute(DeleteSchoolCommand command) {
-        // 1. Kiểm tra trường học có tồn tại không
+    @Transactional // Bắt buộc có để Lock dữ liệu
+    public UUID execute(DeleteSchoolCommand command) {
+
+        // 1. Lock dữ liệu trường học (Tránh đụng độ khi có người đang update)
         School school = schoolRepository.findById(command.id())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học với ID đã cho."));
 
-        // 2. Kiểm tra trường học có đang hoạt động không.
-        if (school.isActive()) {
-            throw new IllegalStateException("Trường học đang hoạt động. Vui lòng vô hiệu hóa trường học trước khi xóa vĩnh viễn.");
-        }
-
-        // 3. Lấy thông tin người dùng đang thực hiện xóa
+        // 2. Validate User & Bảo mật
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản của bạn."));
@@ -51,28 +61,45 @@ public class DeleteSchoolUseCase implements IUseCase<DeleteSchoolCommand, School
             throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
         }
 
-        // 4. MAP DỮ LIỆU SANG RESPONSE (Chụp lại khoảnh khắc trước khi xóa)
-        SchoolResponse response = new SchoolResponse(
-                school.getId(),
-                school.getCode().value(),
-                school.getName(),
-                school.getDescription(),
-                school.getContactPhone().value(),
-                school.getContactEmail().value(),
-                school.getDomain().value(),
-                school.getAddress(),
-                school.getStudentCount().value(),
-                school.isActive(),
-                school.getCreatedAt(),
-                school.getCreatedBy(),
-                school.getUpdatedAt(),
-                school.getUpdatedBy()
-        );
+//        // Logic check quyền: Nếu user có schoolId (tức là Admin của 1 trường cụ thể)
+//        if (currentUser.getSchoolId() != null && !currentUser.getSchoolId().equals(school.getId())) {
+//            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền xóa trường học của đơn vị khác.");
+//        }
 
-        // 5. [XÓA CỨNG]: XÓA KHỎI DATABASE
-        schoolRepository.deleteById(school.getId());
+        // 3. Logic Xóa Mềm
+        if (!school.isActive()) {
+            throw new IllegalStateException("Trường học này đã bị vô hiệu hóa (xóa) từ trước rồi.");
+        }
 
-        // 6. Trả về thông tin trường học vừa bị xóa
-        return response;
+        // 4. KIỂM TRA RÀNG BUỘC (Dependencies Check)
+        // check xem có room nào của trường đang activce không
+        boolean hasActiveRooms = schoolRoomRepository.existsBySchoolIdAndIsActive(school.getId(), true);
+        if (hasActiveRooms) {
+            throw new IllegalStateException("Không thể xóa. Trường này vẫn còn Phòng học đang hoạt động.");
+        }
+
+        // Check xem có khối (Grade) nào đang ACTIVE không
+        boolean hasActiveGrades = schoolGradeRepository.existsBySchoolIdAndStatus(school.getId(), SchoolGradeStatus.ACTIVE.name());
+        if (hasActiveGrades) {
+            throw new IllegalStateException("Không thể xóa. Trường này vẫn còn Khối/Năm học đang hoạt động.");
+        }
+
+        // Check xem có lớp (Class) nào đang ACTIVE không
+        boolean hasActiveClasses = schoolClassRepository.existsBySchoolIdAndStatus(school.getId(), SchoolClassStatus.ACTIVE.name());
+        if (hasActiveClasses) {
+            throw new IllegalStateException("Không thể xóa. Trường này vẫn còn Lớp học đang hoạt động.");
+        }
+
+
+
+        // 5. THỰC HIỆN XÓA MỀM VÀ LƯU DB
+        school.setActive(false);
+        school.setUpdatedAt(OffsetDateTime.now());
+        school.setUpdatedBy(currentUserId);
+
+        schoolRepository.save(school);
+
+        // 6. Nhả về mỗi ID
+        return school.getId();
     }
 }

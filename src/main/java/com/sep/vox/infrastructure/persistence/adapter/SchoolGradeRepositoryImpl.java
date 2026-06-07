@@ -1,10 +1,13 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
 import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.model.school.SchoolGradeStatus;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.school.SchoolGrade;
@@ -45,11 +48,6 @@ public class SchoolGradeRepositoryImpl implements SchoolGradeRepository {
         return springDataSchoolGradeRepository.existsBySchoolIdAndCode(schoolId, code);
     }
 
-    @Override
-    public Optional<SchoolGrade> findByIdForUpdate(UUID schoolGradeId, UUID schoolId) {
-        return springDataSchoolGradeRepository.findByIdAndSchoolIdForUpdate(schoolGradeId,schoolId)
-            .map(SchoolGradeMapper::toDomain);
-    }
 
     @Override
     public PageResult<SchoolGrade> findAllBySchoolId(UUID schoolId, PageRequest pageRequest) {
@@ -77,14 +75,25 @@ public class SchoolGradeRepositoryImpl implements SchoolGradeRepository {
     }
 
     @Override
-    public void deleteById(UUID id) {
-        springDataSchoolGradeRepository.deleteById(id);
+    public void deleteByIdAndSchoolId(UUID id, UUID schoolId) {
+        springDataSchoolGradeRepository.deleteByIdAndSchoolId(id, schoolId);
     }
 
     @Override
-    public Optional<SchoolGrade> findByIdForDelete(UUID schoolGradeId) {
-        return springDataSchoolGradeRepository.findByIdForDelete(schoolGradeId)
+    public Optional<SchoolGrade> findByIdForDelete(UUID id, UUID schoolId) {
+        return springDataSchoolGradeRepository.findByIdAndSchoolIdForDelete(id, schoolId)
             .map(SchoolGradeMapper::toDomain);
+    }
+
+
+    @Override
+    public boolean existsBySchoolIdAndStatus(UUID schoolId, String status) {
+        return springDataSchoolGradeRepository.existsBySchoolIdAndStatus(schoolId, status);
+    }
+
+    @Override
+    public int updateSchoolGradeAtomic(UUID id, String name, String description, LocalDate startDate, LocalDate endDate, OffsetDateTime now, UUID updatedBy) {
+        return springDataSchoolGradeRepository.updateSchoolGradeAtomic(id, name, description, startDate, endDate, now, updatedBy);
     }
 
 }

@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.UUID;
 
 
+import com.sep.vox.domain.model.school.SchoolClassStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -42,4 +43,6 @@ public interface SpringDataSchoolClassRepository extends JpaRepository<SchoolCla
     List<SchoolClassJpaEntity> findBySchoolIdIn(@Param("schoolIds") Collection<UUID> schoolIds, @Param("fromRow") int fromRow, @Param("toRow") int toRow);
 
     boolean existsBySchoolGradeId(UUID schoolGradeId);
+
+    boolean existsBySchoolIdAndStatus(UUID schoolId, String status);
 }

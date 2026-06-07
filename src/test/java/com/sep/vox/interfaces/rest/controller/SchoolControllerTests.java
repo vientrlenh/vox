@@ -95,10 +95,10 @@ class SchoolControllerTests {
         var useCaseResponse = new SchoolResponse(schoolId, "CODE", "School", null, "123", "a@a.com", "domain", "address", 100, false, null, null, null, null);
 
         deleteSchoolMapperMock.when(() -> DeleteSchoolCommandMapper.fromRequest(schoolId)).thenReturn(command);
-        when(deleteSchoolUseCase.execute(command)).thenReturn(useCaseResponse);
+        when(deleteSchoolUseCase.execute(command)).thenReturn(schoolId);
 
         // Act
-        ResponseEntity<ApiResponse<SchoolResponse>> response = controller.deleteSchool(schoolId);
+        ResponseEntity<ApiResponse<UUID>> response = controller.deleteSchool(schoolId);
 
         // Assert
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -150,14 +150,15 @@ class SchoolControllerTests {
     void deleteSchoolRoom_should_return_ok_response() {
         // Arrange
         var roomId = UUID.randomUUID();
-        var command = new DeleteSchoolRoomCommand(roomId);
+        var schoolId = UUID.randomUUID();
+        var command = new DeleteSchoolRoomCommand(roomId,schoolId);
         var useCaseResponse = new SchoolRoomResponse(roomId, UUID.randomUUID(), "DELETED", "Deleted", null, false, null, null, null, null);
 
-        deleteRoomMapperMock.when(() -> DeleteSchoolRoomCommandMapper.fromRequest(roomId)).thenReturn(command);
+        deleteRoomMapperMock.when(() -> DeleteSchoolRoomCommandMapper.fromRequest(roomId, schoolId)).thenReturn(command);
         when(deleteSchoolRoomUseCase.execute(command)).thenReturn(useCaseResponse);
 
         // Act
-        ResponseEntity<ApiResponse<SchoolRoomResponse>> response = controller.deleteSchoolRoom(roomId);
+        ResponseEntity<ApiResponse<SchoolRoomResponse>> response = controller.deleteSchoolRoom(roomId, schoolId);
 
         // Assert
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -189,14 +190,15 @@ class SchoolControllerTests {
     void deleteSchoolGrade_should_return_ok_response() {
         // Arrange
         var gradeId = UUID.randomUUID();
-        var command = new DeleteSchoolGradeCommand(gradeId);
+        var schoolId = UUID.randomUUID();
+        var command = new DeleteSchoolGradeCommand(gradeId,schoolId);
         var useCaseResponse = new SchoolGradeResponse(gradeId, UUID.randomUUID(), "DELETED", "Deleted", null, null, null, null, null, null, null, null);
 
-        deleteGradeMapperMock.when(() -> DeleteSchoolGradeCommandMapper.fromRequest(gradeId)).thenReturn(command);
+        deleteGradeMapperMock.when(() -> DeleteSchoolGradeCommandMapper.fromRequest(gradeId, schoolId)).thenReturn(command);
         when(deleteSchoolGradeUseCase.execute(command)).thenReturn(useCaseResponse);
 
         // Act
-        ResponseEntity<ApiResponse<SchoolGradeResponse>> response = controller.deleteSchoolGrade(gradeId);
+        ResponseEntity<ApiResponse<SchoolGradeResponse>> response = controller.deleteSchoolGrade(gradeId, schoolId);
 
         // Assert
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);

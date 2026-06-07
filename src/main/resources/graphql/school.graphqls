@@ -38,8 +38,8 @@ type School {
 
 
 
-input UpdateSchoolRequest {
-    id: ID!
+# Đổi tên cho đồng bộ với GraphQL (dùng Input thay vì Request)
+input UpdateSchoolInput {
     name: String
     description: String
     contactPhone: String
@@ -59,8 +59,8 @@ type SchoolPage {
 
 
 extend type Mutation {
-    updateSchool(request: UpdateSchoolRequest!): ID!
-    updateSchoolRoom(input: UpdateSchoolRoomInput!): ID!
+    updateSchoolRoom(id: ID!, input: UpdateSchoolRoomInput!): ID!
+    updateSchool(id: ID!, input: UpdateSchoolInput!): ID!
 }
 
 
@@ -82,10 +82,8 @@ type SchoolRoomDto {
 }
 
 input UpdateSchoolRoomInput {
-    id: ID!
     name: String
     description: String
-    isActive: Boolean
 }
 
 type SchoolRoomPageResult {
@@ -155,8 +153,6 @@ extend type Query {
 
 #================ SCHOOL GRADE =============
 input UpdateSchoolGradeInput {
-    schoolGradeId: ID!
-    schoolId: ID!
 
     name: String
     description: String
@@ -166,7 +162,7 @@ input UpdateSchoolGradeInput {
 
 extend type Mutation {
     # Nhả về ID của Grade sau khi cập nhật thành công
-    updateSchoolGrade(input: UpdateSchoolGradeInput!): ID!
+    updateSchoolGrade(id: ID!, input: UpdateSchoolGradeInput!): ID!
 }
 
 type SchoolGradeDto {

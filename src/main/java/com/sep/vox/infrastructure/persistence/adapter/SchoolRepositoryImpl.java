@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -104,4 +105,12 @@ public class SchoolRepositoryImpl implements SchoolRepository {
         throw new UnsupportedOperationException("Unimplemented method 'findByIdIn'");
     }
 
+    @Override
+    public int updateSchoolAtomic(UUID id, String name, String description, String phone,
+                                  String email, String domain, String address, Integer studentCount,
+                                  OffsetDateTime now, UUID updatedBy) {
+        return springDataSchoolRepository.updateSchoolAtomic(
+                id, name, description, phone, email, domain, address, studentCount, now, updatedBy
+        );
+    }
 }

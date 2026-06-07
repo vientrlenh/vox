@@ -6,10 +6,9 @@ import com.sep.vox.interfaces.graphql.dto.request.UpdateSchoolGradeRequest;
 import java.util.UUID;
 
 public class UpdateSchoolGradeCommandMapper {
-    public static UpdateSchoolGradeCommand fromRequest(UpdateSchoolGradeRequest request) {
+    public static UpdateSchoolGradeCommand fromRequest(UUID id, UpdateSchoolGradeRequest request) {
         return new UpdateSchoolGradeCommand(
-                request.schoolGradeId(),
-                request.schoolId(),
+                id,
                 request.name(),
                 request.description(),
                 request.startDate(),

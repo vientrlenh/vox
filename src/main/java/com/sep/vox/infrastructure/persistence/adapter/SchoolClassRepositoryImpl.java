@@ -99,4 +99,9 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
         return springDataSchoolClassRepository.existsBySchoolGradeId(schoolGradeId);
     }
 
+    @Override
+    public boolean existsBySchoolIdAndStatus(UUID schoolId, String status) {
+        return springDataSchoolClassRepository.existsBySchoolIdAndStatus(schoolId, status);
+    }
+
 }

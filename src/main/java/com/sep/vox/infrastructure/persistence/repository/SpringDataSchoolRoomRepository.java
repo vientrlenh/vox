@@ -1,6 +1,7 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
 
+import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -11,6 +12,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.sep.vox.infrastructure.persistence.entity.SchoolRoomJpaEntity;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -18,11 +20,25 @@ public interface SpringDataSchoolRoomRepository extends JpaRepository<SchoolRoom
     // Thêm dòng này để Spring Data tự động query kiểm tra mã code
     boolean existsBySchoolIdAndCode(UUID schoolId, String code);
 
+    boolean existsBySchoolIdAndIsActive(UUID schoolId, boolean isActive);
+
     Page<SchoolRoomJpaEntity> findBySchoolId(UUID schoolId, Pageable pageable);
 
 
-    // CHỈ CẦN DÙNG LOCK ĐỂ CHẶN NGƯỜI KHÁC SỬA CÙNG LÚC
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT r FROM SchoolRoomJpaEntity r WHERE r.id = :id")
-    Optional<SchoolRoomJpaEntity> findByIdForUpdate(@Param("id") UUID id);
+    @Modifying
+    @Query("""
+            UPDATE SchoolRoomJpaEntity r SET 
+            r.name = COALESCE(:name, r.name),
+            r.description = COALESCE(:description, r.description),
+            r.updatedAt = :updatedAt,
+            r.updatedBy = :updatedBy
+            WHERE r.id = :id
+            """)
+    int updateSchoolRoomAtomic(
+            @Param("id") UUID id,
+            @Param("name") String name,
+            @Param("description") String description,
+            @Param("updatedAt") OffsetDateTime updatedAt,
+            @Param("updatedBy") UUID updatedBy
+    );
 }

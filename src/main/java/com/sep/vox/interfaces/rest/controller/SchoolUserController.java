@@ -25,11 +25,11 @@ import com.sep.vox.application.port.input.usecase.schooluser.CreateSchoolUserUse
 import com.sep.vox.application.port.input.usecase.schooluser.DeleteSchoolUserUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.ImportSchoolUsersUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.PreviewSchoolUserImportFromFileUseCase;
-import com.sep.vox.application.port.input.usecase.schooluser.UploadSchoolUserImportFileUseCase;
+import com.sep.vox.application.port.input.usecase.importfile.UploadImportFileUseCase;
 import com.sep.vox.application.port.input.command.PreviewSchoolUserImportFromFileCommand;
 import com.sep.vox.application.response.input.importfile.CreateImportSessionResponse;
 import com.sep.vox.application.response.input.schooluser.SchoolUserImportResponse;
-import com.sep.vox.application.response.input.schooluser.SchoolUserImportUploadResponse;
+import com.sep.vox.application.response.input.importfile.ImportFileUploadResponse;
 import com.sep.vox.application.response.input.schooluser.SchoolUserResponse;
 import com.sep.vox.interfaces.rest.dto.request.ChangeSchoolUserRoleRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolUserRequest;
@@ -38,7 +38,7 @@ import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 import com.sep.vox.interfaces.rest.mapper.ChangeSchoolUserRoleCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateSchoolUserCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.SchoolUserImportCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.UploadSchoolUserImportFileCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.UploadImportFileCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.DeleteSchoolUserCommandMapper;
 
 import jakarta.validation.Valid;
@@ -52,7 +52,7 @@ public class SchoolUserController {
     private final CreateSchoolUserUseCase createSchoolUserUseCase;
     private final DeleteSchoolUserUseCase deleteSchoolUserUseCase;
     private final ChangeSchoolUserRoleUseCase changeSchoolUserRoleUseCase;
-    private final UploadSchoolUserImportFileUseCase uploadSchoolUserImportFileUseCase;
+    private final UploadImportFileUseCase uploadSchoolUserImportFileUseCase;
     private final PreviewSchoolUserImportFromFileUseCase previewSchoolUserImportFromFileUseCase;
     private final ImportSchoolUsersUseCase importSchoolUsersUseCase;
 
@@ -60,7 +60,7 @@ public class SchoolUserController {
             CreateSchoolUserUseCase createSchoolUserUseCase,
             DeleteSchoolUserUseCase deleteSchoolUserUseCase,
             ChangeSchoolUserRoleUseCase changeSchoolUserRoleUseCase,
-            UploadSchoolUserImportFileUseCase uploadSchoolUserImportFileUseCase,
+            UploadImportFileUseCase uploadSchoolUserImportFileUseCase,
             PreviewSchoolUserImportFromFileUseCase previewSchoolUserImportFromFileUseCase,
             ImportSchoolUsersUseCase importSchoolUsersUseCase) {
         this.createSchoolUserUseCase = createSchoolUserUseCase;
@@ -104,12 +104,12 @@ public class SchoolUserController {
 
     @PostMapping(value = "/import/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<SchoolUserImportUploadResponse>> uploadImportFile(
+    public ResponseEntity<ApiResponse<ImportFileUploadResponse>> uploadImportFile(
             @PathVariable UUID schoolId,
             @Parameter(description = "File import (CSV/XLSX/JSON)", content = @Content(mediaType = MediaType.APPLICATION_OCTET_STREAM_VALUE, schema = @Schema(type = "string", format = "binary")))
             @RequestPart("file") MultipartFile file) {
         validateUploadFile(file);
-        var command = UploadSchoolUserImportFileCommandMapper.fromRequest(schoolId, file);
+        var command = UploadImportFileCommandMapper.fromRequest(schoolId, file);
         var data = uploadSchoolUserImportFileUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Upload file import thành công", data));
     }

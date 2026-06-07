@@ -17,7 +17,7 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.ImportFieldMapping;
 import com.sep.vox.application.port.input.command.PreviewSchoolUserImportFromFileCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.SchoolUserImportFileStoragePort;
+import com.sep.vox.application.port.output.ImportFileStoragePort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.importfile.CreateImportSessionResponse;
 import com.sep.vox.application.response.input.schooluser.SchoolUserImportError;
@@ -39,7 +39,7 @@ public class PreviewSchoolUserImportFromFileUseCase implements IUseCase<PreviewS
     private final UserContextPort userContextPort;
     private final UserRepository userRepository;
     private final SchoolRepository schoolRepository;
-    private final SchoolUserImportFileStoragePort fileStoragePort;
+    private final ImportFileStoragePort fileStoragePort;
     private final ImportSessionRepository importSessionRepository;
     private final ImportRowRepository importRowRepository;
     private final ImportParserFactory importParserFactory;
@@ -50,7 +50,7 @@ public class PreviewSchoolUserImportFromFileUseCase implements IUseCase<PreviewS
             UserContextPort userContextPort,
             UserRepository userRepository,
             SchoolRepository schoolRepository,
-            SchoolUserImportFileStoragePort fileStoragePort,
+            ImportFileStoragePort fileStoragePort,
             ImportSessionRepository importSessionRepository,
             ImportRowRepository importRowRepository,
             ImportParserFactory importParserFactory,

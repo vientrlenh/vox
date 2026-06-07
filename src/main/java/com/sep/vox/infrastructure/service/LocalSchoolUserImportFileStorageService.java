@@ -16,11 +16,11 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.output.ImportFileData;
 import com.sep.vox.application.port.output.ImportFileResource;
-import com.sep.vox.application.port.output.SchoolUserImportFileStoragePort;
+import com.sep.vox.application.port.output.ImportFileStoragePort;
 import com.sep.vox.application.port.output.StoredImportFile;
 
 @Service
-public class LocalSchoolUserImportFileStorageService implements SchoolUserImportFileStoragePort {
+public class LocalSchoolUserImportFileStorageService implements ImportFileStoragePort {
 
     private static final String META_SUFFIX = ".properties";
     private static final String FILE_PREFIX = "vox-import-";

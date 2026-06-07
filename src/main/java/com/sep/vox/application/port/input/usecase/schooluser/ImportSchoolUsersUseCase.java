@@ -27,7 +27,7 @@ import com.sep.vox.application.port.input.command.ImportSchoolUsersCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.EventPublisherPort;
 import com.sep.vox.application.port.output.PasswordSetUpTokenPort;
-import com.sep.vox.application.port.output.SchoolUserImportFileStoragePort;
+import com.sep.vox.application.port.output.ImportFileStoragePort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.schooluser.SchoolUserImportError;
 import com.sep.vox.application.response.input.schooluser.SchoolUserImportResponse;
@@ -59,7 +59,7 @@ public class ImportSchoolUsersUseCase implements IUseCase<ImportSchoolUsersComma
     private final RoleRepository roleRepository;
     private final UserRoleRepository userRoleRepository;
     private final SchoolUserRepository schoolUserRepository;
-    private final SchoolUserImportFileStoragePort fileStoragePort;
+    private final ImportFileStoragePort fileStoragePort;
     private final SchoolRepository schoolRepository;
     private final ImportSessionRepository importSessionRepository;
     private final ImportRowRepository importRowRepository;
@@ -77,7 +77,7 @@ public class ImportSchoolUsersUseCase implements IUseCase<ImportSchoolUsersComma
             RoleRepository roleRepository,
             UserRoleRepository userRoleRepository,
             SchoolUserRepository schoolUserRepository,
-            SchoolUserImportFileStoragePort fileStoragePort,
+            ImportFileStoragePort fileStoragePort,
             SchoolRepository schoolRepository,
             ImportSessionRepository importSessionRepository,
             ImportRowRepository importRowRepository,

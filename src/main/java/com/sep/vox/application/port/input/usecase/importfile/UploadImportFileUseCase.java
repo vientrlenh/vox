@@ -1,39 +1,38 @@
-package com.sep.vox.application.port.input.usecase.schooluser;
+package com.sep.vox.application.port.input.usecase.importfile;
 
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.port.input.command.UploadSchoolUserImportFileCommand;
+import com.sep.vox.application.port.input.command.UploadImportFileCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.ImportFileData;
-import com.sep.vox.application.port.output.SchoolUserImportFileStoragePort;
+import com.sep.vox.application.port.output.ImportFileStoragePort;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.response.input.schooluser.SchoolUserImportUploadResponse;
+import com.sep.vox.application.response.input.importfile.ImportFileUploadResponse;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
-public class UploadSchoolUserImportFileUseCase implements IUseCase<UploadSchoolUserImportFileCommand, SchoolUserImportUploadResponse> {
+public class UploadImportFileUseCase implements IUseCase<UploadImportFileCommand, ImportFileUploadResponse> {
 
     private final UserContextPort userContextPort;
     private final UserRepository userRepository;
-    private final SchoolUserImportFileStoragePort fileStoragePort;
+    private final ImportFileStoragePort fileStoragePort;
 
-    public UploadSchoolUserImportFileUseCase(
+    public UploadImportFileUseCase(
             UserContextPort userContextPort,
             UserRepository userRepository,
-            SchoolUserImportFileStoragePort fileStoragePort) {
+            ImportFileStoragePort fileStoragePort) {
         this.userContextPort = userContextPort;
         this.userRepository = userRepository;
         this.fileStoragePort = fileStoragePort;
     }
 
     @Override
-    public SchoolUserImportUploadResponse execute(UploadSchoolUserImportFileCommand input) {
+    public ImportFileUploadResponse execute(UploadImportFileCommand input) {
         var callerId = userContextPort.getCurrentAuthenticatedUserId();
         var caller = userRepository.findById(callerId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
-        SchoolUserStatusValidator.requireActive(caller);
-        if (!input.schoolId().equals(caller.getSchoolId())) {
+        if (caller.getSchoolId() == null || !input.schoolId().equals(caller.getSchoolId())) {
             throw new IllegalArgumentException("Không có quyền thực hiện thao tác này");
         }
         if (input.content() == null || input.content().length == 0) {
@@ -46,7 +45,7 @@ public class UploadSchoolUserImportFileUseCase implements IUseCase<UploadSchoolU
             input.content()
         ), caller.getSchoolId(), callerId);
 
-        return new SchoolUserImportUploadResponse(
+        return new ImportFileUploadResponse(
             stored.fileId(),
             stored.originalFileName(),
             stored.format(),

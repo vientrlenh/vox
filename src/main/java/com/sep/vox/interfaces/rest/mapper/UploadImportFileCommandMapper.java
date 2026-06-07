@@ -4,16 +4,16 @@ import java.util.UUID;
 
 import org.springframework.web.multipart.MultipartFile;
 
-import com.sep.vox.application.port.input.command.UploadSchoolUserImportFileCommand;
+import com.sep.vox.application.port.input.command.UploadImportFileCommand;
 
-public final class UploadSchoolUserImportFileCommandMapper {
+public final class UploadImportFileCommandMapper {
 
-    private UploadSchoolUserImportFileCommandMapper() {
+    private UploadImportFileCommandMapper() {
     }
 
-    public static UploadSchoolUserImportFileCommand fromRequest(UUID schoolId, MultipartFile file) {
+    public static UploadImportFileCommand fromRequest(UUID schoolId, MultipartFile file) {
         try {
-            return new UploadSchoolUserImportFileCommand(
+            return new UploadImportFileCommand(
                 schoolId,
                 file.getOriginalFilename(),
                 file.getContentType(),

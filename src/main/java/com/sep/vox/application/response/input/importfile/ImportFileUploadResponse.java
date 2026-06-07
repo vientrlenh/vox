@@ -1,8 +1,8 @@
-package com.sep.vox.application.response.input.schooluser;
+package com.sep.vox.application.response.input.importfile;
 
 import java.time.OffsetDateTime;
 
-public record SchoolUserImportUploadResponse(
+public record ImportFileUploadResponse(
     String fileId,
     String originalFileName,
     String format,

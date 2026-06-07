@@ -19,7 +19,7 @@ public final class UserDtoMapper {
             valueOf(user.getPhone()), 
             valueOf(user.getFullName()), 
             valueOf(user.getGender()), 
-            user.getDateOfBirth().toString(), 
+            user.getDateOfBirth().value().toString(),
             user.getAddress(), 
             user.getAvatarUrl(), 
             user.getCreatedAt().toString(), 

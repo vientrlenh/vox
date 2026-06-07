@@ -84,7 +84,7 @@ public class SchoolUserImportValidator {
 
         var dateOfBirth = parseDateOfBirth(dobRaw, mapping.get("dateOfBirth"));
 
-        if (dateOfBirth == null && dobRaw != null) {
+        if (dateOfBirth == null && !isBlank(dobRaw)) {
             rowErrors.add(error(row.rowNumber(), "dateOfBirth", "INVALID_FORMAT", "Định dạng ngày không hợp lệ", dobRaw));
         }
         if (!ALLOWED_ROLE_CODES.contains(roleCode)) {

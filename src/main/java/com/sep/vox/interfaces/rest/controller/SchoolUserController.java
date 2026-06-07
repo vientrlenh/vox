@@ -136,7 +136,12 @@ public class SchoolUserController {
             @Valid @RequestBody SchoolUserImportRequest request) {
         var command = SchoolUserImportCommandMapper.fromRequest(schoolId, request);
         var data = importSchoolUsersUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Import người dùng thành công", data));
+        var message = data.failedCount() > 0 && data.createdCount() == 0
+            ? "Import người dùng không thành công"
+            : data.failedCount() > 0
+                ? "Import người dùng hoàn thành với một số lỗi"
+                : "Import người dùng thành công";
+        return ResponseEntity.ok(ApiResponse.success(message, data));
     }
 
     private void validateUploadFile(MultipartFile file) {

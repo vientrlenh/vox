@@ -33,6 +33,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client:4.0.6'
 	implementation 'org.apache.poi:poi-ooxml:5.5.1'
 	implementation 'org.apache.commons:commons-csv:1.14.1'
+	implementation 'org.springframework.kafka:spring-kafka:4.0.0'
 	implementation platform('software.amazon.awssdk:bom:2.32.18')
 	implementation 'software.amazon.awssdk:s3'
 	compileOnly 'org.projectlombok:lombok'

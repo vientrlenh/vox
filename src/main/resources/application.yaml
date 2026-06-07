@@ -8,7 +8,18 @@ spring:
   graphql:
     graphiql:
       enabled: true
-  
+      
+  external-events:
+    provider: ${EXTERNAL_EVENT_PROVIDER:}
+    kafka:
+      bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+      client-id: ${KAFKA_CLIENT_ID:vox}
+      acks: ${KAFKA_ACKS:all}
+      topic-prefix: ${KAFKA_TOPIC_PREFIX:vox}
+      topics:
+        SendResetPasswordOtpEvent: ${KAFKA_TOPIC_RESET_PASSWORD_OTP:}
+        RegisterFormRejectedEvent: ${KAFKA_TOPIC_REGISTER_REJECTED:}
+        PasswordSetUpEmailRequestedEvent: ${KAFKA_TOPIC_PASSWORD_SETUP:}
 
   data:
     redis:
@@ -91,6 +102,7 @@ app:
   frontend:
     password-setup-url: ${PASSWORD_SETUP_URL}
     oauth2-success-url: ${OAUTH2_SUCCESS_URL}
+  
   
 
 system-admin:

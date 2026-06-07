@@ -10,9 +10,9 @@ import org.dataloader.BatchLoaderEnvironment;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.graphql.execution.BatchLoaderRegistry;
 
+import com.sep.vox.application.mapper.schoolclass.SchoolClassResponseMapper;
 import com.sep.vox.application.port.input.query.key.SchoolClassesKey;
-import com.sep.vox.domain.dto.SchoolClassDto;
-import com.sep.vox.domain.mapper.SchoolClassDtoMapper;
+import com.sep.vox.application.response.input.schoolclass.SchoolClassResponse;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 
 import reactor.core.publisher.Mono;
@@ -24,10 +24,10 @@ public class SchoolGraphQlDataLoaderConfig {
             BatchLoaderRegistry registry,
             SchoolClassRepository schoolClassRepository) {
 
-        registry.<SchoolClassesKey, List<SchoolClassDto>>forName("schoolClassesBySchool")
+        registry.<SchoolClassesKey, List<SchoolClassResponse>>forName("schoolClassesBySchool")
         .registerMappedBatchLoader((Set<SchoolClassesKey> keys, BatchLoaderEnvironment env) ->
             Mono.fromSupplier(() -> {
-                Map<SchoolClassesKey, List<SchoolClassDto>> result = new HashMap<SchoolClassesKey, List<SchoolClassDto>>();
+                Map<SchoolClassesKey, List<SchoolClassResponse>> result = new HashMap<SchoolClassesKey, List<SchoolClassResponse>>();
 
                 keys.forEach(key -> result.put(key, List.of()));
 
@@ -45,8 +45,8 @@ public class SchoolGraphQlDataLoaderConfig {
                     var classesBySchoolId = schoolClassRepository
                         .findBySchoolIdIn(schoolIds, pageKey.page(), pageKey.size())
                         .stream()
-                        .map(SchoolClassDtoMapper::toDto)
-                        .collect(Collectors.groupingBy(SchoolClassDto::schoolId));
+                        .map(SchoolClassResponseMapper::toResponse)
+                        .collect(Collectors.groupingBy(SchoolClassResponse::schoolId));
 
                     for (var key : groupedKeys) {
                         result.put(

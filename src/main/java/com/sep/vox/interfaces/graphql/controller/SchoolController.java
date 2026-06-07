@@ -14,8 +14,8 @@ import org.springframework.stereotype.Controller;
 import com.sep.vox.application.port.input.query.ViewSchoolsQuery;
 import com.sep.vox.application.port.input.query.key.SchoolClassesKey;
 import com.sep.vox.application.port.input.usecase.school.ViewSchoolsUseCase;
+import com.sep.vox.application.response.input.schoolclass.SchoolClassResponse;
 import com.sep.vox.domain.common.PageResult;
-import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.dto.SchoolDto;
 import com.sep.vox.domain.dto.SchoolUserDto;
 
@@ -42,8 +42,8 @@ public class SchoolController {
 
     @SchemaMapping(typeName = "School", field = "classes")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public CompletableFuture<List<SchoolClassDto>> classes(SchoolDto school, @Argument(name = "page") int page, @Argument(name = "size") int size, DataFetchingEnvironment env) {
-        DataLoader<SchoolClassesKey, List<SchoolClassDto>> loader = env.getDataLoader("schoolClassesBySchool");
+    public CompletableFuture<List<SchoolClassResponse>> classes(SchoolDto school, @Argument(name = "page") int page, @Argument(name = "size") int size, DataFetchingEnvironment env) {
+        DataLoader<SchoolClassesKey, List<SchoolClassResponse>> loader = env.getDataLoader("schoolClassesBySchool");
         return loader.load(new SchoolClassesKey(school.id(), page, size));
     }
 

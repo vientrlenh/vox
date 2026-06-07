@@ -21,6 +21,10 @@ spring:
         SendResetPasswordOtpEvent: ${KAFKA_TOPIC_RESET_PASSWORD_OTP:}
         RegisterFormRejectedEvent: ${KAFKA_TOPIC_REGISTER_REJECTED:}
         PasswordSetUpEmailRequestedEvent: ${KAFKA_TOPIC_PASSWORD_SETUP:}
+      consumer-groups:
+        default:
+          group-id: ${KAFKA_GROUP_ID:vox}
+          topics: ${KAFKA_CONSUMER_TOPICS:}
 
   data:
     redis:

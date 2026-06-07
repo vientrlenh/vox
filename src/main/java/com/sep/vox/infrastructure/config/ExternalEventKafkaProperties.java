@@ -13,6 +13,7 @@ public class ExternalEventKafkaProperties {
     private String acks = "all";
     private String topicPrefix;
     private final Map<String, String> topics = new LinkedHashMap<>();
+    private final Map<String, ConsumerGroupConfig> consumerGroups = new LinkedHashMap<>();
 
     public String getBootstrapServers() {
         return bootstrapServers;
@@ -48,5 +49,31 @@ public class ExternalEventKafkaProperties {
 
     public Map<String, String> getTopics() {
         return topics;
+    }
+
+    public Map<String, ConsumerGroupConfig> getConsumerGroups() {
+        return consumerGroups;
+    }
+
+    public static class ConsumerGroupConfig {
+
+        private String groupId;
+        private String topics;
+
+        public String getGroupId() {
+            return groupId;
+        }
+
+        public void setGroupId(String groupId) {
+            this.groupId = groupId;
+        }
+
+        public String getTopics() {
+            return topics;
+        }
+
+        public void setTopics(String topics) {
+            this.topics = topics;
+        }
     }
 }

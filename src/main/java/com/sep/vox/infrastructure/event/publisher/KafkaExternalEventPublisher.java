@@ -11,7 +11,7 @@ import com.sep.vox.infrastructure.config.ExternalEventKafkaProperties;
 import com.sep.vox.infrastructure.exception.InfrastructureException;
 
 @Component
-@ConditionalOnProperty(prefix = "spring.external-events", name = "provider", havingValue = "kafka")
+@ConditionalOnProperty(prefix = "app.external-events", name = "provider", havingValue = "kafka")
 public class KafkaExternalEventPublisher implements ExternalEventPublisherPort {
 
     private final KafkaTemplate<String, Object> kafkaTemplate;

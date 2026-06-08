@@ -13,7 +13,6 @@ import org.springframework.kafka.annotation.EnableKafka;
 public class ExternalEventProperties {
 
     private String topicPrefix;
-    private final Map<String, String> topics = new LinkedHashMap<>();
     private final Map<String, ConsumerGroupConfig> consumerGroups = new LinkedHashMap<>();
 
     public String getTopicPrefix() {
@@ -22,10 +21,6 @@ public class ExternalEventProperties {
 
     public void setTopicPrefix(String topicPrefix) {
         this.topicPrefix = topicPrefix;
-    }
-
-    public Map<String, String> getTopics() {
-        return topics;
     }
 
     public Map<String, ConsumerGroupConfig> getConsumerGroups() {

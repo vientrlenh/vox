@@ -5,6 +5,7 @@ import java.util.Locale;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
+import com.sep.vox.application.event.ExternalEventTopic;
 import com.sep.vox.application.port.output.ExternalEventPublisherPort;
 import com.sep.vox.infrastructure.config.ExternalEventProperties;
 import com.sep.vox.infrastructure.exception.InfrastructureException;
@@ -37,13 +38,14 @@ public class KafkaExternalEventPublisher implements ExternalEventPublisherPort {
     }
 
     private String resolveTopic(Object event) {
-        var eventName = event.getClass().getSimpleName();
-        var configuredTopic = properties.getTopics().get(eventName);
-        if (hasText(configuredTopic)) {
-            return configuredTopic;
+        // Ưu tiên: annotation trên class
+        var annotation = event.getClass().getAnnotation(ExternalEventTopic.class);
+        if (annotation != null) {
+            return annotation.value();
         }
 
-        var defaultTopic = toKebabCase(eventName);
+        // Fallback: auto-generate
+        var defaultTopic = toKebabCase(event.getClass().getSimpleName());
         if (!hasText(properties.getTopicPrefix())) {
             return defaultTopic;
         }

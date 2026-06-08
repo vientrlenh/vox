@@ -107,15 +107,6 @@ server:
 app:
   external-events:
     topic-prefix: ${KAFKA_TOPIC_PREFIX:vox}
-    topics:
-      # User domain → user-events topic
-      DummyUserRegisteredExternalEvent: ${KAFKA_TOPIC_USER:user-events}
-      # Notification domain → notifications topic
-      SendResetPasswordOtpEvent: ${KAFKA_TOPIC_NOTIFICATION:notifications}
-      RegisterFormRejectedEvent: ${KAFKA_TOPIC_NOTIFICATION:notifications}
-      PasswordSetUpEmailRequestedEvent: ${KAFKA_TOPIC_NOTIFICATION:notifications}
-      # Audit domain → audit-events topic
-      DummyReportGeneratedExternalEvent: ${KAFKA_TOPIC_AUDIT:audit-events}
     consumer-groups:
       user-service:
         group-id: ${KAFKA_USER_GROUP_ID:vox-user}

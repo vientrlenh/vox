@@ -10,14 +10,18 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.sep.vox.application.common.UploadedFile;
 import com.sep.vox.application.port.input.command.DeleteSchoolClassCommand;
+import com.sep.vox.application.port.input.command.PreviewSchoolClassImportFromFileCommand;
 import com.sep.vox.application.port.input.usecase.schoolclass.CreateSchoolClassUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.DeleteSchoolClassUseCase;
+import com.sep.vox.application.port.input.usecase.schoolclass.PreviewSchoolClassImportFromFileUseCase;
+import com.sep.vox.application.response.input.importfile.PreviewSchoolClassImportResponse;
 import com.sep.vox.application.response.input.schoolclass.CreateSchoolClassResponse;
 import com.sep.vox.application.response.input.schoolclass.DeleteSchoolClassResponse;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolClassRequest;
@@ -32,12 +36,15 @@ public class SchoolClassController {
 
     private final CreateSchoolClassUseCase createSchoolClassUseCase;
     private final DeleteSchoolClassUseCase deleteSchoolClassUseCase;
+    private final PreviewSchoolClassImportFromFileUseCase previewSchoolClassImportFromFileUseCase;
 
     public SchoolClassController(
             CreateSchoolClassUseCase createSchoolClassUseCase,
-            DeleteSchoolClassUseCase deleteSchoolClassUseCase) {
+            DeleteSchoolClassUseCase deleteSchoolClassUseCase,
+            PreviewSchoolClassImportFromFileUseCase previewSchoolClassImportFromFileUseCase) {
         this.createSchoolClassUseCase = createSchoolClassUseCase;
         this.deleteSchoolClassUseCase = deleteSchoolClassUseCase;
+        this.previewSchoolClassImportFromFileUseCase = previewSchoolClassImportFromFileUseCase;
     }
 
     @PostMapping
@@ -50,9 +57,12 @@ public class SchoolClassController {
     }
 
     @PostMapping("/import/preview")
-    public ResponseEntity<ApiResponse<Object>> createImportFileSession(MultipartFile file) throws IOException {
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public ResponseEntity<ApiResponse<PreviewSchoolClassImportResponse>> createImportFileSession(@RequestParam("file") MultipartFile file) throws IOException {
         var uploadedFile = UploadedFile.upload(file.getOriginalFilename(), file.getContentType(), file.getSize(), file.getBytes());
-        return null;
+        var data = previewSchoolClassImportFromFileUseCase.execute(new PreviewSchoolClassImportFromFileCommand(uploadedFile));
+        var response = ApiResponse.success("Preview import lop hoc thanh cong", data);
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")

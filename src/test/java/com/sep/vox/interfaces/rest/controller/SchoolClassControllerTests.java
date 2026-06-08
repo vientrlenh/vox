@@ -1,19 +1,27 @@
 package com.sep.vox.interfaces.rest.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
+import org.springframework.mock.web.MockMultipartFile;
 
 import com.sep.vox.application.port.input.command.CreateSchoolClassCommand;
 import com.sep.vox.application.port.input.command.DeleteSchoolClassCommand;
+import com.sep.vox.application.port.input.command.PreviewSchoolClassImportFromFileCommand;
 import com.sep.vox.application.port.input.usecase.schoolclass.CreateSchoolClassUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.DeleteSchoolClassUseCase;
+import com.sep.vox.application.port.input.usecase.schoolclass.PreviewSchoolClassImportFromFileUseCase;
+import com.sep.vox.application.response.input.importfile.PreviewSchoolClassImportResponse;
 import com.sep.vox.application.response.input.schoolclass.CreateSchoolClassResponse;
 import com.sep.vox.application.response.input.schoolclass.DeleteSchoolClassResponse;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolClassRequest;
@@ -24,7 +32,8 @@ class SchoolClassControllerTests {
     void create_should_return_created_response() {
         var createUseCase = mock(CreateSchoolClassUseCase.class);
         var deleteUseCase = mock(DeleteSchoolClassUseCase.class);
-        var controller = new SchoolClassController(createUseCase, deleteUseCase);
+        var previewUseCase = mock(PreviewSchoolClassImportFromFileUseCase.class);
+        var controller = new SchoolClassController(createUseCase, deleteUseCase, previewUseCase);
         var languageId = UUID.randomUUID();
         var gradeId = UUID.randomUUID();
         var schoolClassId = UUID.randomUUID();
@@ -56,7 +65,8 @@ class SchoolClassControllerTests {
     void delete_should_return_ok_response() {
         var createUseCase = mock(CreateSchoolClassUseCase.class);
         var deleteUseCase = mock(DeleteSchoolClassUseCase.class);
-        var controller = new SchoolClassController(createUseCase, deleteUseCase);
+        var previewUseCase = mock(PreviewSchoolClassImportFromFileUseCase.class);
+        var controller = new SchoolClassController(createUseCase, deleteUseCase, previewUseCase);
         var schoolClassId = UUID.randomUUID();
         var expected = new DeleteSchoolClassResponse(schoolClassId, "SOFT", "ARCHIVED", "2026-06-06T12:00:00Z");
         when(deleteUseCase.execute(new DeleteSchoolClassCommand(schoolClassId))).thenReturn(expected);
@@ -67,5 +77,37 @@ class SchoolClassControllerTests {
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().data()).isEqualTo(expected);
         verify(deleteUseCase).execute(new DeleteSchoolClassCommand(schoolClassId));
+    }
+
+    @Test
+    void createImportFileSession_should_return_preview_response() throws Exception {
+        var createUseCase = mock(CreateSchoolClassUseCase.class);
+        var deleteUseCase = mock(DeleteSchoolClassUseCase.class);
+        var previewUseCase = mock(PreviewSchoolClassImportFromFileUseCase.class);
+        var controller = new SchoolClassController(createUseCase, deleteUseCase, previewUseCase);
+        var importSessionId = UUID.randomUUID();
+        var expected = new PreviewSchoolClassImportResponse(
+            importSessionId,
+            "classes.csv",
+            List.of("code", "name"),
+            Map.of("code", "code", "name", "name"),
+            List.of(Map.of("code", "ENG-01", "name", "English 01")),
+            1L,
+            "2026-06-09T10:00:00+07:00"
+        );
+        var file = new MockMultipartFile(
+            "file",
+            "classes.csv",
+            "text/csv",
+            "code,name\nENG-01,English 01\n".getBytes(StandardCharsets.UTF_8)
+        );
+        when(previewUseCase.execute(any(PreviewSchoolClassImportFromFileCommand.class))).thenReturn(expected);
+
+        var response = controller.createImportFileSession(file);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().data()).isEqualTo(expected);
+        verify(previewUseCase).execute(any(PreviewSchoolClassImportFromFileCommand.class));
     }
 }

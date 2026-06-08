@@ -176,10 +176,22 @@ class SchoolControllerTests {
     void updateSchoolGrade_should_call_usecase_and_return_id() {
         // Arrange
         var gradeId = UUID.randomUUID();
-        var request = new UpdateSchoolGradeRequest( "New Grade", "Vit", null, null);
-        var command = new UpdateSchoolGradeCommand(gradeId, "Vit", "null", null, null);
+        var request = new UpdateSchoolGradeRequest("New Grade", "Vit", null, null);
 
-        gradeMapperMock.when(() -> UpdateSchoolGradeCommandMapper.fromRequest(gradeId, request)).thenReturn(command);
+        // Đảm bảo truyền đúng 6 tham số theo đúng thứ tự trong record:
+        // (UUID schoolGradeId, UUID schoolId, String name, String description, LocalDate startDate, LocalDate endDate)
+        var command = new UpdateSchoolGradeCommand(
+                gradeId,
+                "New Grade",     // name
+                "Vit",           // description
+                null,            // startDate
+                null             // endDate
+        );
+
+        // Mock Mapper phải trả về đúng object command này
+        gradeMapperMock.when(() -> UpdateSchoolGradeCommandMapper.fromRequest(gradeId, request))
+                .thenReturn(command);
+
         when(updateSchoolGradeUseCase.execute(command)).thenReturn(gradeId);
 
         // Act

@@ -1,6 +1,7 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
@@ -16,6 +17,14 @@ public class ImportRowRepositoryImpl implements ImportRowRepository {
 
     public ImportRowRepositoryImpl(SpringDataImportRowRepository springDataImportRowRepository) {
         this.springDataImportRowRepository = springDataImportRowRepository;
+    }
+
+    @Override
+    public List<ImportRow> findBySessionIdOrderByRowNumber(UUID sessionId) {
+        return springDataImportRowRepository.findBySessionIdOrderByRowNumber(sessionId)
+            .stream()
+            .map(ImportRowMapper::toDomain)
+            .toList();
     }
 
     @Override

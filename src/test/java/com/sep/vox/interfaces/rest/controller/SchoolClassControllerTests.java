@@ -15,15 +15,19 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockMultipartFile;
 
+import com.sep.vox.application.port.input.command.AcceptSchoolClassImportCommand;
 import com.sep.vox.application.port.input.command.CreateSchoolClassCommand;
 import com.sep.vox.application.port.input.command.DeleteSchoolClassCommand;
 import com.sep.vox.application.port.input.command.PreviewSchoolClassImportFromFileCommand;
+import com.sep.vox.application.port.input.usecase.schoolclass.AcceptSchoolClassImportUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.CreateSchoolClassUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.DeleteSchoolClassUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.PreviewSchoolClassImportFromFileUseCase;
+import com.sep.vox.application.response.input.importfile.AcceptSchoolClassImportResponse;
 import com.sep.vox.application.response.input.importfile.PreviewSchoolClassImportResponse;
 import com.sep.vox.application.response.input.schoolclass.CreateSchoolClassResponse;
 import com.sep.vox.application.response.input.schoolclass.DeleteSchoolClassResponse;
+import com.sep.vox.interfaces.rest.dto.request.AcceptSchoolClassImportRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolClassRequest;
 
 class SchoolClassControllerTests {
@@ -33,7 +37,8 @@ class SchoolClassControllerTests {
         var createUseCase = mock(CreateSchoolClassUseCase.class);
         var deleteUseCase = mock(DeleteSchoolClassUseCase.class);
         var previewUseCase = mock(PreviewSchoolClassImportFromFileUseCase.class);
-        var controller = new SchoolClassController(createUseCase, deleteUseCase, previewUseCase);
+        var acceptUseCase = mock(AcceptSchoolClassImportUseCase.class);
+        var controller = new SchoolClassController(createUseCase, deleteUseCase, previewUseCase, acceptUseCase);
         var languageId = UUID.randomUUID();
         var gradeId = UUID.randomUUID();
         var schoolClassId = UUID.randomUUID();
@@ -66,7 +71,8 @@ class SchoolClassControllerTests {
         var createUseCase = mock(CreateSchoolClassUseCase.class);
         var deleteUseCase = mock(DeleteSchoolClassUseCase.class);
         var previewUseCase = mock(PreviewSchoolClassImportFromFileUseCase.class);
-        var controller = new SchoolClassController(createUseCase, deleteUseCase, previewUseCase);
+        var acceptUseCase = mock(AcceptSchoolClassImportUseCase.class);
+        var controller = new SchoolClassController(createUseCase, deleteUseCase, previewUseCase, acceptUseCase);
         var schoolClassId = UUID.randomUUID();
         var expected = new DeleteSchoolClassResponse(schoolClassId, "SOFT", "ARCHIVED", "2026-06-06T12:00:00Z");
         when(deleteUseCase.execute(new DeleteSchoolClassCommand(schoolClassId))).thenReturn(expected);
@@ -84,7 +90,8 @@ class SchoolClassControllerTests {
         var createUseCase = mock(CreateSchoolClassUseCase.class);
         var deleteUseCase = mock(DeleteSchoolClassUseCase.class);
         var previewUseCase = mock(PreviewSchoolClassImportFromFileUseCase.class);
-        var controller = new SchoolClassController(createUseCase, deleteUseCase, previewUseCase);
+        var acceptUseCase = mock(AcceptSchoolClassImportUseCase.class);
+        var controller = new SchoolClassController(createUseCase, deleteUseCase, previewUseCase, acceptUseCase);
         var importSessionId = UUID.randomUUID();
         var expected = new PreviewSchoolClassImportResponse(
             importSessionId,
@@ -109,5 +116,31 @@ class SchoolClassControllerTests {
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().data()).isEqualTo(expected);
         verify(previewUseCase).execute(any(PreviewSchoolClassImportFromFileCommand.class));
+    }
+
+    @Test
+    void acceptImportSession_should_return_accept_response() {
+        var createUseCase = mock(CreateSchoolClassUseCase.class);
+        var deleteUseCase = mock(DeleteSchoolClassUseCase.class);
+        var previewUseCase = mock(PreviewSchoolClassImportFromFileUseCase.class);
+        var acceptUseCase = mock(AcceptSchoolClassImportUseCase.class);
+        var controller = new SchoolClassController(createUseCase, deleteUseCase, previewUseCase, acceptUseCase);
+        var importSessionId = UUID.randomUUID();
+        var request = new AcceptSchoolClassImportRequest(Map.of(
+            "Mã lớp", "code",
+            "Tên lớp", "name",
+            "Ngôn ngữ", "languageCode",
+            "Khối", "schoolGradeCode"
+        ));
+        var expected = new AcceptSchoolClassImportResponse(importSessionId, 2L, 1L, 1L, 0L, "COMPLETED");
+        var expectedCommand = new AcceptSchoolClassImportCommand(importSessionId, request.confirmedMapping());
+        when(acceptUseCase.execute(expectedCommand)).thenReturn(expected);
+
+        var response = controller.acceptImportSession(importSessionId, request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().data()).isEqualTo(expected);
+        verify(acceptUseCase).execute(expectedCommand);
     }
 }

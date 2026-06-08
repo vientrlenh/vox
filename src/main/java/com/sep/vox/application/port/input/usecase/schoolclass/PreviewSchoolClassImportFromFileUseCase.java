@@ -85,9 +85,9 @@ public class PreviewSchoolClassImportFromFileUseCase implements IUseCase<Preview
 
     private User findCurrentUser(UUID currentUserId) {
         var user = userRepository.findById(currentUserId)
-            .orElseThrow(() -> new NotFoundException("Khong tim thay nguoi dung hien tai"));
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng hiện tại"));
         if (user.getStatus() != UserStatus.ACTIVE) {
-            throw new IllegalStateException("Nguoi dung hien tai khong hoat dong");
+            throw new IllegalStateException("Người dùng hiện tại không hoạt động");
         }
         return user;
     }
@@ -95,16 +95,16 @@ public class PreviewSchoolClassImportFromFileUseCase implements IUseCase<Preview
     private UUID getSchoolId(User currentUser) {
         var schoolId = currentUser.getSchoolId();
         if (schoolId == null) {
-            throw new IllegalStateException("Nguoi dung hien tai khong thuoc truong nao");
+            throw new IllegalStateException("Người dùng hiện tại không thuộc trường nào");
         }
         return schoolId;
     }
 
     private void validateSchool(UUID schoolId) {
         var school = schoolRepository.findById(schoolId)
-            .orElseThrow(() -> new NotFoundException("Khong tim thay truong hoc"));
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
         if (!school.isActive()) {
-            throw new IllegalStateException("Truong hoc khong hoat dong");
+            throw new IllegalStateException("Trường học không hoạt động");
         }
     }
 

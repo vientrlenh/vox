@@ -42,7 +42,7 @@ public class ViewImportSessionUseCase implements IUseCase<ViewImportSessionQuery
     @Transactional(readOnly = true)
     public ImportSessionDetailsResponse execute(ViewImportSessionQuery input) {
         if (input == null || input.importSessionId() == null) {
-            throw new IllegalArgumentException("Phien import khong duoc de trong");
+            throw new IllegalArgumentException("Phiên import không được để trống");
         }
 
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
@@ -57,9 +57,9 @@ public class ViewImportSessionUseCase implements IUseCase<ViewImportSessionQuery
 
     private User findCurrentUser(UUID currentUserId) {
         var user = userRepository.findById(currentUserId)
-            .orElseThrow(() -> new NotFoundException("Khong tim thay nguoi dung hien tai"));
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng hiện tại"));
         if (user.getStatus() != UserStatus.ACTIVE) {
-            throw new IllegalStateException("Nguoi dung hien tai khong hoat dong");
+            throw new IllegalStateException("Người dùng hiện tại không hoạt động");
         }
         return user;
     }
@@ -67,27 +67,27 @@ public class ViewImportSessionUseCase implements IUseCase<ViewImportSessionQuery
     private UUID getSchoolId(User currentUser) {
         var schoolId = currentUser.getSchoolId();
         if (schoolId == null) {
-            throw new IllegalStateException("Nguoi dung hien tai khong thuoc truong nao");
+            throw new IllegalStateException("Người dùng hiện tại không thuộc trường nào");
         }
         return schoolId;
     }
 
     private void validateSchool(UUID schoolId) {
         var school = schoolRepository.findById(schoolId)
-            .orElseThrow(() -> new NotFoundException("Khong tim thay truong hoc"));
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
         if (!school.isActive()) {
-            throw new IllegalStateException("Truong hoc khong hoat dong");
+            throw new IllegalStateException("Trường học không hoạt động");
         }
     }
 
     private ImportSession findSession(UUID importSessionId) {
         return importSessionRepository.findById(importSessionId)
-            .orElseThrow(() -> new NotFoundException("Khong tim thay phien import"));
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên import"));
     }
 
     private void validateSessionBelongsToSchool(ImportSession session, UUID schoolId) {
         if (!Objects.equals(session.getSchoolId(), schoolId)) {
-            throw new IllegalArgumentException("Phien import khong thuoc truong hien tai");
+            throw new IllegalArgumentException("Phiên import không thuộc trường hiện tại");
         }
     }
 }

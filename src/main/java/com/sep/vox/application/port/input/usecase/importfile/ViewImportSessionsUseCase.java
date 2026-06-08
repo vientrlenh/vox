@@ -45,7 +45,7 @@ public class ViewImportSessionsUseCase implements IUseCase<ViewImportSessionsQue
     @Transactional(readOnly = true)
     public PageResult<ImportSessionSummaryResponse> execute(ViewImportSessionsQuery input) {
         if (input == null || input.page() <= 0 || input.size() <= 0) {
-            throw new IllegalArgumentException("So trang hoac kich thuoc trang yeu cau khong hop le");
+            throw new IllegalArgumentException("Số trang và kích thước trang không hợp lệ");
         }
         var type = parseType(input.type());
         var status = parseStatus(input.status());
@@ -66,9 +66,9 @@ public class ViewImportSessionsUseCase implements IUseCase<ViewImportSessionsQue
 
     private User findCurrentUser(UUID currentUserId) {
         var user = userRepository.findById(currentUserId)
-            .orElseThrow(() -> new NotFoundException("Khong tim thay nguoi dung hien tai"));
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng hiện tại"));
         if (user.getStatus() != UserStatus.ACTIVE) {
-            throw new IllegalStateException("Nguoi dung hien tai khong hoat dong");
+            throw new IllegalStateException("Người dùng hiện tại không hoạt động");
         }
         return user;
     }
@@ -76,16 +76,16 @@ public class ViewImportSessionsUseCase implements IUseCase<ViewImportSessionsQue
     private UUID getSchoolId(User currentUser) {
         var schoolId = currentUser.getSchoolId();
         if (schoolId == null) {
-            throw new IllegalStateException("Nguoi dung hien tai khong thuoc truong nao");
+            throw new IllegalStateException("Người dùng hiện tại không thuộc trường nào");
         }
         return schoolId;
     }
 
     private void validateSchool(UUID schoolId) {
         var school = schoolRepository.findById(schoolId)
-            .orElseThrow(() -> new NotFoundException("Khong tim thay truong hoc"));
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
         if (!school.isActive()) {
-            throw new IllegalStateException("Truong hoc khong hoat dong");
+            throw new IllegalStateException("Trường học không hoạt động");
         }
     }
 
@@ -97,7 +97,7 @@ public class ViewImportSessionsUseCase implements IUseCase<ViewImportSessionsQue
         try {
             return ImportType.valueOf(normalized);
         } catch (IllegalArgumentException exception) {
-            throw new IllegalArgumentException("Loai import khong hop le");
+            throw new IllegalArgumentException("Loại import không hợp lệ");
         }
     }
 
@@ -109,7 +109,7 @@ public class ViewImportSessionsUseCase implements IUseCase<ViewImportSessionsQue
         try {
             return ImportSessionStatus.valueOf(normalized);
         } catch (IllegalArgumentException exception) {
-            throw new IllegalArgumentException("Trang thai import khong hop le");
+            throw new IllegalArgumentException("Trạng thái import không hợp lệ");
         }
     }
 }

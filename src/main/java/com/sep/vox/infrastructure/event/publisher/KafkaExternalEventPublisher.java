@@ -2,24 +2,22 @@ package com.sep.vox.infrastructure.event.publisher;
 
 import java.util.Locale;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
 import com.sep.vox.application.port.output.ExternalEventPublisherPort;
-import com.sep.vox.infrastructure.config.ExternalEventKafkaProperties;
+import com.sep.vox.infrastructure.config.ExternalEventProperties;
 import com.sep.vox.infrastructure.exception.InfrastructureException;
 
 @Component
-@ConditionalOnProperty(prefix = "app.external-events", name = "provider", havingValue = "kafka")
 public class KafkaExternalEventPublisher implements ExternalEventPublisherPort {
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
-    private final ExternalEventKafkaProperties properties;
+    private final ExternalEventProperties properties;
 
     public KafkaExternalEventPublisher(
             KafkaTemplate<String, Object> kafkaTemplate,
-            ExternalEventKafkaProperties properties) {
+            ExternalEventProperties properties) {
         this.kafkaTemplate = kafkaTemplate;
         this.properties = properties;
     }

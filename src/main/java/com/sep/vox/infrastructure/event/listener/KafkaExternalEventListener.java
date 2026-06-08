@@ -5,16 +5,18 @@ import java.util.List;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.kafka.listener.MessageListener;
+import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sep.vox.application.port.input.ExternalEventHandler;
 
 @Component
-public class KafkaExternalEventListener implements MessageListener<String, JsonNode> {
+public class KafkaExternalEventListener {
 
     private static final Logger log = LoggerFactory.getLogger(KafkaExternalEventListener.class);
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final List<ExternalEventHandler> handlers;
 
@@ -22,10 +24,34 @@ public class KafkaExternalEventListener implements MessageListener<String, JsonN
         this.handlers = handlers;
     }
 
-    @Override
-    public void onMessage(ConsumerRecord<String, JsonNode> record) {
+    @KafkaListener(
+        topics = "${app.external-events.consumer-groups.user-service.topics}",
+        groupId = "${app.external-events.consumer-groups.user-service.group-id}"
+    )
+    public void onUserEvent(ConsumerRecord<String, Object> record) {
+        dispatch(record);
+    }
+
+    @KafkaListener(
+        topics = "${app.external-events.consumer-groups.notification-service.topics}",
+        groupId = "${app.external-events.consumer-groups.notification-service.group-id}"
+    )
+    public void onNotificationEvent(ConsumerRecord<String, Object> record) {
+        dispatch(record);
+    }
+
+    @KafkaListener(
+        topics = "${app.external-events.consumer-groups.audit-service.topics}",
+        groupId = "${app.external-events.consumer-groups.audit-service.group-id}"
+    )
+    public void onAuditEvent(ConsumerRecord<String, Object> record) {
+        dispatch(record);
+    }
+
+    private void dispatch(ConsumerRecord<String, Object> record) {
         String eventType = record.key();
-        JsonNode payload = record.value();
+        Object value = record.value();
+        JsonNode payload = OBJECT_MAPPER.valueToTree(value);
 
         log.info("Nhan external event: type={}, topic={}, partition={}, offset={}",
             eventType, record.topic(), record.partition(), record.offset());

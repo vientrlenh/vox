@@ -94,6 +94,7 @@ class SchoolControllerTests {
         var schoolId = UUID.randomUUID();
         var command = new DeleteSchoolCommand(schoolId);
 
+        // UseCase trả về UUID (ID của trường đã xóa), không phải SchoolResponse
         deleteSchoolMapperMock.when(() -> DeleteSchoolCommandMapper.fromRequest(schoolId)).thenReturn(command);
         when(deleteSchoolUseCase.execute(command)).thenReturn(schoolId);
 
@@ -103,8 +104,10 @@ class SchoolControllerTests {
         // Assert
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody().message()).isEqualTo("Xóa trường học thành công");
-        // SỬA Ở ĐÂY: So sánh UUID với UUID, không so sánh với SchoolResponse
+
+        // ĐÚNG: So sánh UUID với UUID
         assertThat(response.getBody().data()).isEqualTo(schoolId);
+
         verify(deleteSchoolUseCase).execute(command);
     }
 

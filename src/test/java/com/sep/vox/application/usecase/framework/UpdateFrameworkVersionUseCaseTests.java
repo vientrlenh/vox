@@ -83,7 +83,7 @@ public class UpdateFrameworkVersionUseCaseTests {
         version.setStatus(FrameworkVersionStatus.DRAFT);
 
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
-        when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.of(version));
+        when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.of(version));
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(frameworkCriterionRepository.findByFrameworkVersionId(versionId))
             .thenReturn(List.of());
@@ -120,7 +120,7 @@ public class UpdateFrameworkVersionUseCaseTests {
         );
 
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
-        when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.empty());
+        when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> useCase.execute(command));
     }
@@ -142,7 +142,7 @@ public class UpdateFrameworkVersionUseCaseTests {
         version.setFrameworkId(otherFrameworkId);
 
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
-        when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.of(version));
+        when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.of(version));
 
         assertThrows(IllegalArgumentException.class, () -> useCase.execute(command));
     }
@@ -164,7 +164,7 @@ public class UpdateFrameworkVersionUseCaseTests {
         version.setStatus(FrameworkVersionStatus.PUBLISHED);
 
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
-        when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.of(version));
+        when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.of(version));
 
         assertThrows(IllegalStateException.class, () -> useCase.execute(command));
     }
@@ -192,7 +192,7 @@ public class UpdateFrameworkVersionUseCaseTests {
         oldBand.setId(UUID.randomUUID());
 
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
-        when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.of(version));
+        when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.of(version));
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(frameworkCriterionRepository.findByFrameworkVersionId(versionId))
             .thenReturn(List.of());

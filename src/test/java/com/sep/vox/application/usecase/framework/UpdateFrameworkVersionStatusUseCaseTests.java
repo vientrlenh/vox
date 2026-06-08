@@ -58,7 +58,7 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
         version.setStatus(FrameworkVersionStatus.DRAFT);
 
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
-        when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.of(version));
+        when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.of(version));
         when(frameworkVersionRepository.findByFrameworkIdAndStatus(frameworkId, FrameworkVersionStatus.PUBLISHED))
             .thenReturn(List.of());
 
@@ -84,7 +84,7 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
         version.setStatus(FrameworkVersionStatus.PUBLISHED);
 
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
-        when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.of(version));
+        when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.of(version));
 
         useCase.execute(command);
 
@@ -114,7 +114,7 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
         );
 
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
-        when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.empty());
+        when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> useCase.execute(command));
     }
@@ -135,7 +135,7 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
         version.setFrameworkId(otherFrameworkId);
 
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
-        when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.of(version));
+        when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.of(version));
 
         assertThrows(IllegalArgumentException.class, () -> useCase.execute(command));
     }
@@ -165,7 +165,7 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
         publishedVersion.setStatus(FrameworkVersionStatus.PUBLISHED);
 
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
-        when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.of(version));
+        when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.of(version));
         when(frameworkVersionRepository.findByFrameworkIdAndStatus(frameworkId, FrameworkVersionStatus.PUBLISHED))
             .thenReturn(List.of(publishedVersion));
 
@@ -197,7 +197,7 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
         publishedVersion.setStatus(FrameworkVersionStatus.PUBLISHED);
 
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
-        when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.of(version));
+        when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.of(version));
         when(frameworkVersionRepository.findByFrameworkIdAndStatus(frameworkId, FrameworkVersionStatus.PUBLISHED))
             .thenReturn(List.of(publishedVersion));
 

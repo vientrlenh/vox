@@ -32,7 +32,7 @@ public class UpdateFrameworkVersionStatusUseCase implements IUseCase<UpdateFrame
         frameworkRepository.findById(input.frameworkId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy framework"));
 
-        var version = frameworkVersionRepository.findById(input.versionId())
+        var version = frameworkVersionRepository.findByIdForUpdate(input.versionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản framework"));
 
         if (!version.getFrameworkId().equals(input.frameworkId())) {

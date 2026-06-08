@@ -11,6 +11,7 @@ import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
 
 public interface FrameworkVersionRepository {
     Optional<FrameworkVersion> findById(UUID id);
+    Optional<FrameworkVersion> findByIdForUpdate(UUID id);
     PageResult<FrameworkVersion> findByFrameworkId(UUID frameworkId, PageRequest pageRequest);
     List<FrameworkVersion> findByFrameworkIdAndStatus(UUID frameworkId, FrameworkVersionStatus status);
     Optional<FrameworkVersion> findByFrameworkIdAndVersion(UUID frameworkId, int version);

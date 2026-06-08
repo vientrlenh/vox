@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.graphql.exception;
 
+import com.sep.vox.application.exception.ForbiddenException;
 import org.springframework.graphql.execution.DataFetcherExceptionResolverAdapter;
 import org.springframework.graphql.execution.ErrorType;
 import org.springframework.security.access.AccessDeniedException;
@@ -17,6 +18,13 @@ public class GlobalExceptionResolver extends DataFetcherExceptionResolverAdapter
     
     @Override
     protected GraphQLError resolveToSingleError(Throwable ex, DataFetchingEnvironment env) {
+//        Throwable rootCause = ex.getCause();
+//
+//        if (!(rootCause instanceof NotFoundException || rootCause instanceof ForbiddenException || rootCause instanceof UnauthorizedException || rootCause instanceof DuplicatedException || rootCause instanceof IllegalArgumentException || rootCause instanceof IllegalStateException)) {
+//            ex.printStackTrace();
+//        }
+
+
         if (ex instanceof NotFoundException) {
             return GraphQLError.newError()
                 .errorType(ErrorType.NOT_FOUND)
@@ -63,6 +71,16 @@ public class GlobalExceptionResolver extends DataFetcherExceptionResolverAdapter
         }
 
         if (ex instanceof AccessDeniedException) {
+            return GraphQLError.newError()
+                    .errorType(ErrorType.FORBIDDEN)
+                    .message(ex.getMessage())
+                    .path(env.getExecutionStepInfo().getPath())
+                    .location(env.getField().getSourceLocation())
+                    .build();
+        }
+
+        // ĐÃ THÊM: Xử lý ForbiddenException bạn ném ra từ UseCase
+        if (ex instanceof ForbiddenException) {
             return GraphQLError.newError()
                     .errorType(ErrorType.FORBIDDEN)
                     .message(ex.getMessage())

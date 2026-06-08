@@ -51,4 +51,29 @@ public final class JsonSerialization {
             throw new IllegalStateException("Could not deserialize JSON to string list", exception);
         }
     }
+
+    public static List<Map<String, String>> toStringMapList(String json) {
+        if (json == null || json.isBlank()) {
+            return List.of();
+        }
+        try {
+            List<?> raw = OBJECT_MAPPER.readValue(json, List.class);
+            return raw.stream()
+                .filter(Map.class::isInstance)
+                .map(Map.class::cast)
+                .map(JsonSerialization::toStringMap)
+                .toList();
+        } catch (Exception exception) {
+            throw new IllegalStateException("Could not deserialize JSON to string map list", exception);
+        }
+    }
+
+    private static Map<String, String> toStringMap(Map<?, ?> raw) {
+        var result = new LinkedHashMap<String, String>();
+        raw.forEach((key, value) -> result.put(
+            key == null ? null : key.toString(),
+            value == null ? null : value.toString()
+        ));
+        return result;
+    }
 }

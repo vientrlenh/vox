@@ -10,10 +10,15 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
+import com.sep.vox.application.port.input.query.ViewImportRowsQuery;
 import com.sep.vox.application.port.input.query.ViewImportSessionQuery;
 import com.sep.vox.application.port.input.query.ViewImportSessionsQuery;
+import com.sep.vox.application.port.input.usecase.importfile.ViewImportRowsUseCase;
 import com.sep.vox.application.port.input.usecase.importfile.ViewImportSessionUseCase;
 import com.sep.vox.application.port.input.usecase.importfile.ViewImportSessionsUseCase;
+import com.sep.vox.application.response.input.importfile.ImportDataEntryResponse;
+import com.sep.vox.application.response.input.importfile.ImportRowErrorResponse;
+import com.sep.vox.application.response.input.importfile.ImportRowResponse;
 import com.sep.vox.application.response.input.importfile.ImportSessionDetailsResponse;
 import com.sep.vox.application.response.input.importfile.ImportSessionSummaryResponse;
 import com.sep.vox.domain.common.PageResult;
@@ -24,7 +29,8 @@ class ImportControllerTests {
     void importSession_should_return_details_from_use_case() {
         var detailsUseCase = mock(ViewImportSessionUseCase.class);
         var listUseCase = mock(ViewImportSessionsUseCase.class);
-        var controller = new ImportController(detailsUseCase, listUseCase);
+        var rowsUseCase = mock(ViewImportRowsUseCase.class);
+        var controller = new ImportController(detailsUseCase, listUseCase, rowsUseCase);
         var sessionId = UUID.randomUUID();
         var expected = new ImportSessionDetailsResponse(
             sessionId,
@@ -58,7 +64,8 @@ class ImportControllerTests {
     void importSessions_should_return_page_from_use_case() {
         var detailsUseCase = mock(ViewImportSessionUseCase.class);
         var listUseCase = mock(ViewImportSessionsUseCase.class);
-        var controller = new ImportController(detailsUseCase, listUseCase);
+        var rowsUseCase = mock(ViewImportRowsUseCase.class);
+        var controller = new ImportController(detailsUseCase, listUseCase, rowsUseCase);
         var summary = new ImportSessionSummaryResponse(
             UUID.randomUUID(),
             UUID.randomUUID(),
@@ -83,5 +90,32 @@ class ImportControllerTests {
         assertThat(result).isEqualTo(expected);
         assertThat(result.content()).containsExactly(summary);
         verify(listUseCase).execute(query);
+    }
+
+    @Test
+    void importRows_should_return_page_from_use_case() {
+        var detailsUseCase = mock(ViewImportSessionUseCase.class);
+        var listUseCase = mock(ViewImportSessionsUseCase.class);
+        var rowsUseCase = mock(ViewImportRowsUseCase.class);
+        var controller = new ImportController(detailsUseCase, listUseCase, rowsUseCase);
+        var sessionId = UUID.randomUUID();
+        var row = new ImportRowResponse(
+            UUID.randomUUID(),
+            sessionId,
+            1L,
+            List.of(new ImportDataEntryResponse("Mã lớp", "A01")),
+            List.of(new ImportDataEntryResponse("code", "A01")),
+            List.of(new ImportRowErrorResponse("code", "Mã lớp đã tồn tại trong hệ thống")),
+            "INVALID"
+        );
+        var expected = new PageResult<>(List.of(row), 1, 20, 1L, 1);
+        var query = new ViewImportRowsQuery(sessionId, 1, 20, "INVALID");
+        when(rowsUseCase.execute(query)).thenReturn(expected);
+
+        var result = controller.importRows(sessionId, 1, 20, "INVALID");
+
+        assertThat(result).isEqualTo(expected);
+        assertThat(result.content()).containsExactly(row);
+        verify(rowsUseCase).execute(query);
     }
 }

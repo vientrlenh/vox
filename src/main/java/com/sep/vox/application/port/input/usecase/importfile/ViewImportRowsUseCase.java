@@ -32,18 +32,21 @@ public class ViewImportRowsUseCase implements IUseCase<ViewImportRowsQuery, Page
     private final UserRepository userRepository;
     private final SchoolRepository schoolRepository;
     private final UserContextPort userContextPort;
+    private final ImportRowResponseMapper importRowResponseMapper;
 
     public ViewImportRowsUseCase(
             ImportSessionRepository importSessionRepository,
             ImportRowRepository importRowRepository,
             UserRepository userRepository,
             SchoolRepository schoolRepository,
-            UserContextPort userContextPort) {
+            UserContextPort userContextPort,
+            ImportRowResponseMapper importRowResponseMapper) {
         this.importSessionRepository = importSessionRepository;
         this.importRowRepository = importRowRepository;
         this.userRepository = userRepository;
         this.schoolRepository = schoolRepository;
         this.userContextPort = userContextPort;
+        this.importRowResponseMapper = importRowResponseMapper;
     }
 
     @Override
@@ -70,7 +73,7 @@ public class ViewImportRowsUseCase implements IUseCase<ViewImportRowsQuery, Page
             status,
             new PageRequest(input.page(), input.size())
         );
-        return ImportRowResponseMapper.toResponsePage(rows);
+        return importRowResponseMapper.toResponsePage(rows);
     }
 
     private User findCurrentUser(UUID currentUserId) {

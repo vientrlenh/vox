@@ -15,11 +15,12 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.common.JsonSerialization;
 import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.mapper.importfile.ImportRowResponseMapper;
 import com.sep.vox.application.port.input.query.ViewImportRowsQuery;
 import com.sep.vox.application.port.input.usecase.importfile.ViewImportRowsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.support.FakeJsonSerializationPort;
 import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.importfile.ImportRow;
@@ -42,6 +43,7 @@ class ViewImportRowsUseCaseTests {
     private UserRepository userRepository;
     private SchoolRepository schoolRepository;
     private UserContextPort userContextPort;
+    private FakeJsonSerializationPort jsonSerializationPort;
     private ViewImportRowsUseCase useCase;
 
     @BeforeEach
@@ -51,12 +53,14 @@ class ViewImportRowsUseCaseTests {
         userRepository = mock(UserRepository.class);
         schoolRepository = mock(SchoolRepository.class);
         userContextPort = mock(UserContextPort.class);
+        jsonSerializationPort = new FakeJsonSerializationPort();
         useCase = new ViewImportRowsUseCase(
             importSessionRepository,
             importRowRepository,
             userRepository,
             schoolRepository,
-            userContextPort
+            userContextPort,
+            new ImportRowResponseMapper(jsonSerializationPort)
         );
     }
 
@@ -65,7 +69,7 @@ class ViewImportRowsUseCaseTests {
         var userId = UUID.randomUUID();
         var schoolId = UUID.randomUUID();
         var sessionId = UUID.randomUUID();
-        var row = row(sessionId, ImportRowStatus.INVALID);
+        var row = row(sessionId, ImportRowStatus.INVALID, jsonSerializationPort);
         var page = new PageResult<>(List.of(row), 1, 20, 1L, 1);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
@@ -171,14 +175,14 @@ class ViewImportRowsUseCaseTests {
         assertThrows(IllegalStateException.class, () -> useCase.execute(new ViewImportRowsQuery(UUID.randomUUID(), 1, 20, null)));
     }
 
-    private static ImportRow row(UUID sessionId, ImportRowStatus status) {
+    private static ImportRow row(UUID sessionId, ImportRowStatus status, FakeJsonSerializationPort jsonSerializationPort) {
         return new ImportRow(
             UUID.randomUUID(),
             sessionId,
             1L,
-            JsonSerialization.toJson(Map.of("Mã lớp", "A01")),
-            JsonSerialization.toJson(Map.of("code", "A01")),
-            JsonSerialization.toJson(List.of(Map.of("field", "code", "message", "Mã lớp đã tồn tại trong hệ thống"))),
+            jsonSerializationPort.toJson(Map.of("Mã lớp", "A01")),
+            jsonSerializationPort.toJson(Map.of("code", "A01")),
+            jsonSerializationPort.toJson(List.of(Map.of("field", "code", "message", "Mã lớp đã tồn tại trong hệ thống"))),
             status
         );
     }

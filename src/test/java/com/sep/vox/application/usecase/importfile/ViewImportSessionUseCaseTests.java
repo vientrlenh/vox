@@ -12,10 +12,11 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.common.JsonSerialization;
+import com.sep.vox.application.mapper.importfile.ImportSessionResponseMapper;
 import com.sep.vox.application.port.input.query.ViewImportSessionQuery;
 import com.sep.vox.application.port.input.usecase.importfile.ViewImportSessionUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.support.FakeJsonSerializationPort;
 import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
@@ -32,6 +33,7 @@ class ViewImportSessionUseCaseTests {
     private UserRepository userRepository;
     private SchoolRepository schoolRepository;
     private UserContextPort userContextPort;
+    private FakeJsonSerializationPort jsonSerializationPort;
     private ViewImportSessionUseCase useCase;
 
     @BeforeEach
@@ -40,7 +42,14 @@ class ViewImportSessionUseCaseTests {
         userRepository = mock(UserRepository.class);
         schoolRepository = mock(SchoolRepository.class);
         userContextPort = mock(UserContextPort.class);
-        useCase = new ViewImportSessionUseCase(importSessionRepository, userRepository, schoolRepository, userContextPort);
+        jsonSerializationPort = new FakeJsonSerializationPort();
+        useCase = new ViewImportSessionUseCase(
+            importSessionRepository,
+            userRepository,
+            schoolRepository,
+            userContextPort,
+            new ImportSessionResponseMapper(jsonSerializationPort)
+        );
     }
 
     @Test
@@ -49,8 +58,8 @@ class ViewImportSessionUseCaseTests {
         var schoolId = UUID.randomUUID();
         var sessionId = UUID.randomUUID();
         var session = session(sessionId, schoolId);
-        session.setOriginalHeadersJson(JsonSerialization.toJson(java.util.List.of("Mã lớp")));
-        session.setSuggestedMappingJson(JsonSerialization.toJson(java.util.Map.of("Mã lớp", "code")));
+        session.setOriginalHeadersJson(jsonSerializationPort.toJson(java.util.List.of("Mã lớp")));
+        session.setSuggestedMappingJson(jsonSerializationPort.toJson(java.util.Map.of("Mã lớp", "code")));
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(activeUser(userId, schoolId)));

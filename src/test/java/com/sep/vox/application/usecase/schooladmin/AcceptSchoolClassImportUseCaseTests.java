@@ -18,10 +18,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import com.sep.vox.application.common.JsonSerialization;
 import com.sep.vox.application.port.input.command.AcceptSchoolClassImportCommand;
 import com.sep.vox.application.port.input.usecase.schoolclass.AcceptSchoolClassImportUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.support.FakeJsonSerializationPort;
 import com.sep.vox.domain.model.importfile.ImportRow;
 import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.model.importfile.ImportSession;
@@ -53,6 +53,7 @@ class AcceptSchoolClassImportUseCaseTests {
     private UserRepository userRepository;
     private SchoolRepository schoolRepository;
     private UserContextPort userContextPort;
+    private FakeJsonSerializationPort jsonSerializationPort;
     private AcceptSchoolClassImportUseCase useCase;
 
     @BeforeEach
@@ -65,6 +66,7 @@ class AcceptSchoolClassImportUseCaseTests {
         userRepository = mock(UserRepository.class);
         schoolRepository = mock(SchoolRepository.class);
         userContextPort = mock(UserContextPort.class);
+        jsonSerializationPort = new FakeJsonSerializationPort();
         useCase = new AcceptSchoolClassImportUseCase(
             importSessionRepository,
             importRowRepository,
@@ -73,7 +75,8 @@ class AcceptSchoolClassImportUseCaseTests {
             schoolGradeRepository,
             userRepository,
             schoolRepository,
-            userContextPort
+            userContextPort,
+            jsonSerializationPort
         );
     }
 
@@ -86,8 +89,8 @@ class AcceptSchoolClassImportUseCaseTests {
         var gradeId = UUID.randomUUID();
         var session = previewedSession(sessionId, schoolId);
         var rows = List.of(
-            row(sessionId, 1L, Map.of("Mã lớp", "ENG-01", "Tên lớp", "English 01", "Ngôn ngữ", "EN", "Khối", "G10")),
-            row(sessionId, 2L, Map.of("Mã lớp", "", "Tên lớp", "Missing code", "Ngôn ngữ", "EN", "Khối", "G10"))
+            row(sessionId, 1L, Map.of("Mã lớp", "ENG-01", "Tên lớp", "English 01", "Ngôn ngữ", "EN", "Khối", "G10"), jsonSerializationPort),
+            row(sessionId, 2L, Map.of("Mã lớp", "", "Tên lớp", "Missing code", "Ngôn ngữ", "EN", "Khối", "G10"), jsonSerializationPort)
         );
         var mapping = Map.of(
             "Mã lớp", "code",
@@ -187,8 +190,8 @@ class AcceptSchoolClassImportUseCaseTests {
         );
     }
 
-    private static ImportRow row(UUID sessionId, long rowNumber, Map<String, String> rawData) {
-        return new ImportRow(UUID.randomUUID(), sessionId, rowNumber, JsonSerialization.toJson(rawData), null, null, ImportRowStatus.PENDING);
+    private static ImportRow row(UUID sessionId, long rowNumber, Map<String, String> rawData, FakeJsonSerializationPort jsonSerializationPort) {
+        return new ImportRow(UUID.randomUUID(), sessionId, rowNumber, jsonSerializationPort.toJson(rawData), null, null, ImportRowStatus.PENDING);
     }
 
     private static User activeUser(UUID id, UUID schoolId) {

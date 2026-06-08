@@ -12,11 +12,11 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.JsonSerialization;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.AcceptSchoolClassImportCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
+import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.importfile.AcceptSchoolClassImportResponse;
 import com.sep.vox.domain.model.importfile.ImportRow;
@@ -50,6 +50,7 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
     private final UserRepository userRepository;
     private final SchoolRepository schoolRepository;
     private final UserContextPort userContextPort;
+    private final JsonSerializationPort jsonSerializationPort;
 
     public AcceptSchoolClassImportUseCase(
             ImportSessionRepository importSessionRepository,
@@ -59,7 +60,8 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
             SchoolGradeRepository schoolGradeRepository,
             UserRepository userRepository,
             SchoolRepository schoolRepository,
-            UserContextPort userContextPort) {
+            UserContextPort userContextPort,
+            JsonSerializationPort jsonSerializationPort) {
         this.importSessionRepository = importSessionRepository;
         this.importRowRepository = importRowRepository;
         this.schoolClassRepository = schoolClassRepository;
@@ -68,6 +70,7 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
         this.userRepository = userRepository;
         this.schoolRepository = schoolRepository;
         this.userContextPort = userContextPort;
+        this.jsonSerializationPort = jsonSerializationPort;
     }
 
     @Override
@@ -87,7 +90,7 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
         validateRequiredMapping(input.confirmedMapping());
 
         session.setStatus(ImportSessionStatus.IMPORTING);
-        session.setConfirmedMappingJson(JsonSerialization.toJson(input.confirmedMapping()));
+        session.setConfirmedMappingJson(jsonSerializationPort.toJson(input.confirmedMapping()));
         session.setUpdatedAt(now);
         session.setUpdatedBy(currentUserId);
         importSessionRepository.save(session);
@@ -201,14 +204,14 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
         var seenCodes = new HashSet<String>();
 
         for (var row : rows) {
-            var rawData = JsonSerialization.toStringMap(row.getRawDataJson());
+            var rawData = jsonSerializationPort.toStringMap(row.getRawDataJson());
             var mappedData = mapRawData(rawData, confirmedMapping);
             var normalized = normalize(mappedData);
             var errors = validateRow(normalized, schoolId, seenCodes);
 
-            row.setMappedDataJson(JsonSerialization.toJson(normalized));
+            row.setMappedDataJson(jsonSerializationPort.toJson(normalized));
             if (!errors.isEmpty()) {
-                row.setErrorsJson(JsonSerialization.toJson(errors));
+                row.setErrorsJson(jsonSerializationPort.toJson(errors));
                 row.setStatus(ImportRowStatus.INVALID);
                 continue;
             }
@@ -229,7 +232,7 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
                 row.setStatus(ImportRowStatus.IMPORTED);
                 importedRows++;
             } catch (IllegalArgumentException exception) {
-                row.setErrorsJson(JsonSerialization.toJson(List.of(error("code", exception.getMessage()))));
+                row.setErrorsJson(jsonSerializationPort.toJson(List.of(error("code", exception.getMessage()))));
                 row.setStatus(ImportRowStatus.INVALID);
             }
         }

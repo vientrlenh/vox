@@ -8,10 +8,10 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.JsonSerialization;
 import com.sep.vox.application.port.input.command.PreviewSchoolClassImportFromFileCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.FileProcessingPort;
+import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.importfile.PreviewSchoolClassImportResponse;
 import com.sep.vox.application.response.output.ParseImportFileResult;
@@ -39,6 +39,7 @@ public class PreviewSchoolClassImportFromFileUseCase implements IUseCase<Preview
     private final UserContextPort userContextPort;
     private final UserRepository userRepository;
     private final SchoolRepository schoolRepository;
+    private final JsonSerializationPort jsonSerializationPort;
 
     public PreviewSchoolClassImportFromFileUseCase(
             FileProcessingPort fileProcessingPort,
@@ -46,13 +47,15 @@ public class PreviewSchoolClassImportFromFileUseCase implements IUseCase<Preview
             ImportRowRepository importRowRepository,
             UserContextPort userContextPort,
             UserRepository userRepository,
-            SchoolRepository schoolRepository) {
+            SchoolRepository schoolRepository,
+            JsonSerializationPort jsonSerializationPort) {
         this.fileProcessingPort = fileProcessingPort;
         this.importSessionRepository = importSessionRepository;
         this.importRowRepository = importRowRepository;
         this.userContextPort = userContextPort;
         this.userRepository = userRepository;
         this.schoolRepository = schoolRepository;
+        this.jsonSerializationPort = jsonSerializationPort;
     }
 
     @Override
@@ -130,8 +133,8 @@ public class PreviewSchoolClassImportFromFileUseCase implements IUseCase<Preview
             schoolId,
             ImportType.SCHOOL_CLASS,
             safeFileName(input.file().fileName()),
-            JsonSerialization.toJson(parsed.originalHeaders()),
-            JsonSerialization.toJson(parsed.suggestedMapping()),
+            jsonSerializationPort.toJson(parsed.originalHeaders()),
+            jsonSerializationPort.toJson(parsed.suggestedMapping()),
             null,
             0L,
             0L,
@@ -159,7 +162,7 @@ public class PreviewSchoolClassImportFromFileUseCase implements IUseCase<Preview
             rows.add(new ImportRow(
                 sessionId,
                 rowNumber,
-                JsonSerialization.toJson(rawRow),
+                jsonSerializationPort.toJson(rawRow),
                 null,
                 null,
                 ImportRowStatus.PENDING

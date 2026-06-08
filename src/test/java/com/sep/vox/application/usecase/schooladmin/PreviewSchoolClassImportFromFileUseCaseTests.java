@@ -24,6 +24,7 @@ import com.sep.vox.application.port.input.usecase.schoolclass.PreviewSchoolClass
 import com.sep.vox.application.port.output.FileProcessingPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.output.ParseImportFileResult;
+import com.sep.vox.application.support.FakeJsonSerializationPort;
 import com.sep.vox.domain.model.importfile.ImportRow;
 import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.model.importfile.ImportSession;
@@ -45,6 +46,7 @@ class PreviewSchoolClassImportFromFileUseCaseTests {
     private UserContextPort userContextPort;
     private UserRepository userRepository;
     private SchoolRepository schoolRepository;
+    private FakeJsonSerializationPort jsonSerializationPort;
     private PreviewSchoolClassImportFromFileUseCase useCase;
 
     @BeforeEach
@@ -55,13 +57,15 @@ class PreviewSchoolClassImportFromFileUseCaseTests {
         userContextPort = mock(UserContextPort.class);
         userRepository = mock(UserRepository.class);
         schoolRepository = mock(SchoolRepository.class);
+        jsonSerializationPort = new FakeJsonSerializationPort();
         useCase = new PreviewSchoolClassImportFromFileUseCase(
             fileProcessingPort,
             importSessionRepository,
             importRowRepository,
             userContextPort,
             userRepository,
-            schoolRepository
+            schoolRepository,
+            jsonSerializationPort
         );
     }
 

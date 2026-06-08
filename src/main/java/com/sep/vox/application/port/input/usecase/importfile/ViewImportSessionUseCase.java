@@ -26,16 +26,19 @@ public class ViewImportSessionUseCase implements IUseCase<ViewImportSessionQuery
     private final UserRepository userRepository;
     private final SchoolRepository schoolRepository;
     private final UserContextPort userContextPort;
+    private final ImportSessionResponseMapper importSessionResponseMapper;
 
     public ViewImportSessionUseCase(
             ImportSessionRepository importSessionRepository,
             UserRepository userRepository,
             SchoolRepository schoolRepository,
-            UserContextPort userContextPort) {
+            UserContextPort userContextPort,
+            ImportSessionResponseMapper importSessionResponseMapper) {
         this.importSessionRepository = importSessionRepository;
         this.userRepository = userRepository;
         this.schoolRepository = schoolRepository;
         this.userContextPort = userContextPort;
+        this.importSessionResponseMapper = importSessionResponseMapper;
     }
 
     @Override
@@ -52,7 +55,7 @@ public class ViewImportSessionUseCase implements IUseCase<ViewImportSessionQuery
 
         var session = findSession(input.importSessionId());
         validateSessionBelongsToSchool(session, schoolId);
-        return ImportSessionResponseMapper.toDetails(session);
+        return importSessionResponseMapper.toDetails(session);
     }
 
     private User findCurrentUser(UUID currentUserId) {

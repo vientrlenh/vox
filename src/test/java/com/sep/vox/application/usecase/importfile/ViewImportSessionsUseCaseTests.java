@@ -13,9 +13,11 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.sep.vox.application.mapper.importfile.ImportSessionResponseMapper;
 import com.sep.vox.application.port.input.query.ViewImportSessionsQuery;
 import com.sep.vox.application.port.input.usecase.importfile.ViewImportSessionsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.support.FakeJsonSerializationPort;
 import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.importfile.ImportSession;
@@ -42,7 +44,13 @@ class ViewImportSessionsUseCaseTests {
         userRepository = mock(UserRepository.class);
         schoolRepository = mock(SchoolRepository.class);
         userContextPort = mock(UserContextPort.class);
-        useCase = new ViewImportSessionsUseCase(importSessionRepository, userRepository, schoolRepository, userContextPort);
+        useCase = new ViewImportSessionsUseCase(
+            importSessionRepository,
+            userRepository,
+            schoolRepository,
+            userContextPort,
+            new ImportSessionResponseMapper(new FakeJsonSerializationPort())
+        );
     }
 
     @Test

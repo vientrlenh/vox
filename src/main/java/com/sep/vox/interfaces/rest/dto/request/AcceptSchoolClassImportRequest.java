@@ -5,7 +5,7 @@ import java.util.Map;
 import jakarta.validation.constraints.NotEmpty;
 
 public record AcceptSchoolClassImportRequest(
-    @NotEmpty(message = "Mapping import khong duoc de trong")
+    @NotEmpty(message = "Mapping import không được để trống")
     Map<String, String> confirmedMapping
 ) {
 }

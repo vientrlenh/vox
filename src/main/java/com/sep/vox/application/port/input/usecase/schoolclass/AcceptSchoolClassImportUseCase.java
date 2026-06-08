@@ -79,6 +79,7 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         var currentUser = findCurrentUser(currentUserId);
         var schoolId = getSchoolId(currentUser);
+        validateRequestedSchool(input.schoolId(), schoolId);
         validateSchool(schoolId);
 
         var session = findSession(input.importSessionId());
@@ -169,6 +170,15 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
             session.setStatus(ImportSessionStatus.EXPIRED);
             importSessionRepository.save(session);
             throw new IllegalStateException("Phiên import đã hết hạn");
+        }
+    }
+
+    private void validateRequestedSchool(UUID requestedSchoolId, UUID currentSchoolId) {
+        if (requestedSchoolId == null) {
+            throw new IllegalArgumentException("Trường học không được để trống");
+        }
+        if (!Objects.equals(requestedSchoolId, currentSchoolId)) {
+            throw new IllegalArgumentException("Trường học không khớp với người dùng hiện tại");
         }
     }
 

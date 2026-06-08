@@ -36,7 +36,7 @@ import com.sep.vox.interfaces.rest.mapper.CreateSchoolClassCommandMapper;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/api/v1/school-classes")
+@RequestMapping("/api/v1/schools/{schoolId}/classes")
 public class SchoolClassController {
 
     private final CreateSchoolClassUseCase createSchoolClassUseCase;
@@ -57,21 +57,25 @@ public class SchoolClassController {
 
     @PostMapping
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<CreateSchoolClassResponse>> create(@Valid @RequestBody CreateSchoolClassRequest request) {
-        var command = CreateSchoolClassCommandMapper.fromRequest(request);
+    public ResponseEntity<ApiResponse<CreateSchoolClassResponse>> create(
+            @PathVariable UUID schoolId,
+            @Valid @RequestBody CreateSchoolClassRequest request) {
+        var command = CreateSchoolClassCommandMapper.fromRequest(schoolId, request);
         var data = createSchoolClassUseCase.execute(command);
         var response = ApiResponse.success("Tạo lớp học thành công", data);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping(
-    value = "/import/preview",
-    consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+        value = "/import/preview",
+        consumes = MediaType.MULTIPART_FORM_DATA_VALUE
     )
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<PreviewSchoolClassImportResponse>> createImportFileSession(@RequestParam("file") MultipartFile file) throws IOException {
+    public ResponseEntity<ApiResponse<PreviewSchoolClassImportResponse>> createImportFileSession(
+            @PathVariable UUID schoolId,
+            @RequestParam("file") MultipartFile file) throws IOException {
         var uploadedFile = UploadedFile.upload(file.getOriginalFilename(), file.getContentType(), file.getSize(), file.getBytes());
-        var data = previewSchoolClassImportFromFileUseCase.execute(new PreviewSchoolClassImportFromFileCommand(uploadedFile));
+        var data = previewSchoolClassImportFromFileUseCase.execute(new PreviewSchoolClassImportFromFileCommand(schoolId, uploadedFile));
         var response = ApiResponse.success("Preview import lớp học thành công", data);
         return ResponseEntity.ok(response);
     }
@@ -79,18 +83,21 @@ public class SchoolClassController {
     @PostMapping("/import/{sessionId}/accept")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<AcceptSchoolClassImportResponse>> acceptImportSession(
+            @PathVariable UUID schoolId,
             @PathVariable UUID sessionId,
             @Valid @RequestBody AcceptSchoolClassImportRequest request) {
-        var command = AcceptSchoolClassImportCommandMapper.fromRequest(sessionId, request);
+        var command = AcceptSchoolClassImportCommandMapper.fromRequest(schoolId, sessionId, request);
         var data = acceptSchoolClassImportUseCase.execute(command);
         var response = ApiResponse.success("Import lớp học thành công", data);
         return ResponseEntity.ok(response);
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{classId}")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<DeleteSchoolClassResponse>> delete(@PathVariable UUID id) {
-        var data = deleteSchoolClassUseCase.execute(new DeleteSchoolClassCommand(id));
+    public ResponseEntity<ApiResponse<DeleteSchoolClassResponse>> delete(
+            @PathVariable UUID schoolId,
+            @PathVariable UUID classId) {
+        var data = deleteSchoolClassUseCase.execute(new DeleteSchoolClassCommand(schoolId, classId));
         var response = ApiResponse.success("Xóa lớp học thành công", data);
         return ResponseEntity.ok(response);
     }

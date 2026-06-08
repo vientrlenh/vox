@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.schoolclass;
 
 import java.time.OffsetDateTime;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -65,6 +66,7 @@ public class PreviewSchoolClassImportFromFileUseCase implements IUseCase<Preview
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         var currentUser = findCurrentUser(currentUserId);
         var schoolId = getSchoolId(currentUser);
+        validateRequestedSchool(input.schoolId(), schoolId);
         validateSchool(schoolId);
 
         var parsed = fileProcessingPort.parse(input.file(), ImportType.SCHOOL_CLASS);
@@ -105,6 +107,15 @@ public class PreviewSchoolClassImportFromFileUseCase implements IUseCase<Preview
             .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
         if (!school.isActive()) {
             throw new IllegalStateException("Trường học không hoạt động");
+        }
+    }
+
+    private void validateRequestedSchool(UUID requestedSchoolId, UUID currentSchoolId) {
+        if (requestedSchoolId == null) {
+            throw new IllegalArgumentException("Trường học không được để trống");
+        }
+        if (!Objects.equals(requestedSchoolId, currentSchoolId)) {
+            throw new IllegalArgumentException("Trường học không khớp với người dùng hiện tại");
         }
     }
 

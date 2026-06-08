@@ -69,7 +69,7 @@ class CreateSchoolClassUseCaseTests {
         var languageId = UUID.randomUUID();
         var gradeId = UUID.randomUUID();
         var savedId = UUID.randomUUID();
-        var command = new CreateSchoolClassCommand(languageId, gradeId, "  eng-01  ", "  English   01  ", "  Starter   class  ");
+        var command = new CreateSchoolClassCommand(schoolId, languageId, gradeId, "  eng-01  ", "  English   01  ", "  Starter   class  ");
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(activeUser(userId, schoolId)));
@@ -104,7 +104,7 @@ class CreateSchoolClassUseCaseTests {
         var schoolId = UUID.randomUUID();
         var languageId = UUID.randomUUID();
         var gradeId = UUID.randomUUID();
-        var command = new CreateSchoolClassCommand(languageId, gradeId, "ENG-01", "English 01", null);
+        var command = new CreateSchoolClassCommand(schoolId, languageId, gradeId, "ENG-01", "English 01", null);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(activeUser(userId, schoolId)));
@@ -123,13 +123,26 @@ class CreateSchoolClassUseCaseTests {
     @Test
     void create_should_throw_when_current_user_is_inactive() {
         var userId = UUID.randomUUID();
-        var command = new CreateSchoolClassCommand(UUID.randomUUID(), UUID.randomUUID(), "ENG-01", "English 01", null);
+        var command = new CreateSchoolClassCommand(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "ENG-01", "English 01", null);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user(userId, UUID.randomUUID(), UserStatus.INACTIVE)));
 
         assertThrows(IllegalStateException.class, () -> useCase.execute(command));
 
+        verifyNoInteractions(schoolRepository, supportedLanguageRepository, schoolGradeRepository, schoolClassRepository);
+    }
+
+    @Test
+    void create_should_throw_when_requested_school_differs_from_current_user_school() {
+        var userId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var command = new CreateSchoolClassCommand(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "ENG-01", "English 01", null);
+
+        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(activeUser(userId, schoolId)));
+
+        assertThrows(IllegalArgumentException.class, () -> useCase.execute(command));
         verifyNoInteractions(schoolRepository, supportedLanguageRepository, schoolGradeRepository, schoolClassRepository);
     }
 

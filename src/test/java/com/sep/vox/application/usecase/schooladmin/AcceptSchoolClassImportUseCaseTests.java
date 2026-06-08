@@ -107,7 +107,7 @@ class AcceptSchoolClassImportUseCaseTests {
         when(schoolClassRepository.findBySchoolIdAndCode(schoolId, "ENG-01")).thenReturn(Optional.empty());
         when(schoolClassRepository.save(any(SchoolClass.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        var response = useCase.execute(new AcceptSchoolClassImportCommand(sessionId, mapping));
+        var response = useCase.execute(new AcceptSchoolClassImportCommand(schoolId, sessionId, mapping));
 
         assertThat(response.importedRows()).isEqualTo(1L);
         assertThat(response.invalidRows()).isEqualTo(1L);
@@ -134,10 +134,32 @@ class AcceptSchoolClassImportUseCaseTests {
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(importSessionRepository.findById(sessionId)).thenReturn(Optional.of(previewedSession(sessionId, schoolId)));
 
-        assertThrows(IllegalArgumentException.class, () -> useCase.execute(new AcceptSchoolClassImportCommand(sessionId, mapping)));
+        assertThrows(IllegalArgumentException.class, () -> useCase.execute(new AcceptSchoolClassImportCommand(schoolId, sessionId, mapping)));
 
         verify(importRowRepository, never()).findBySessionIdOrderByRowNumber(any());
         verify(schoolClassRepository, never()).save(any());
+    }
+
+    @Test
+    void execute_should_throw_when_requested_school_differs_from_current_user_school() {
+        var userId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var mapping = Map.of(
+            "MÃ£ lá»›p", "code",
+            "TÃªn lá»›p", "name",
+            "NgÃ´n ngá»¯", "languageCode",
+            "Khá»‘i", "schoolGradeCode"
+        );
+
+        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(activeUser(userId, schoolId)));
+
+        assertThrows(IllegalArgumentException.class,
+            () -> useCase.execute(new AcceptSchoolClassImportCommand(UUID.randomUUID(), sessionId, mapping)));
+
+        verify(importSessionRepository, never()).findById(any());
+        verify(importRowRepository, never()).findBySessionIdOrderByRowNumber(any());
     }
 
     private static ImportSession previewedSession(UUID id, UUID schoolId) {

@@ -41,6 +41,7 @@ class SchoolClassControllerTests {
         var controller = new SchoolClassController(createUseCase, deleteUseCase, previewUseCase, acceptUseCase);
         var languageId = UUID.randomUUID();
         var gradeId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
         var schoolClassId = UUID.randomUUID();
         var request = new CreateSchoolClassRequest(
             languageId,
@@ -50,6 +51,7 @@ class SchoolClassControllerTests {
             "Starter class"
         );
         var expectedCommand = new CreateSchoolClassCommand(
+            schoolId,
             languageId,
             gradeId,
             "ENG-01",
@@ -58,7 +60,7 @@ class SchoolClassControllerTests {
         );
         when(createUseCase.execute(expectedCommand)).thenReturn(new CreateSchoolClassResponse(schoolClassId));
 
-        var response = controller.create(request);
+        var response = controller.create(schoolId, request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(response.getBody()).isNotNull();
@@ -73,16 +75,17 @@ class SchoolClassControllerTests {
         var previewUseCase = mock(PreviewSchoolClassImportFromFileUseCase.class);
         var acceptUseCase = mock(AcceptSchoolClassImportUseCase.class);
         var controller = new SchoolClassController(createUseCase, deleteUseCase, previewUseCase, acceptUseCase);
+        var schoolId = UUID.randomUUID();
         var schoolClassId = UUID.randomUUID();
         var expected = new DeleteSchoolClassResponse(schoolClassId, "SOFT", "ARCHIVED", "2026-06-06T12:00:00Z");
-        when(deleteUseCase.execute(new DeleteSchoolClassCommand(schoolClassId))).thenReturn(expected);
+        when(deleteUseCase.execute(new DeleteSchoolClassCommand(schoolId, schoolClassId))).thenReturn(expected);
 
-        var response = controller.delete(schoolClassId);
+        var response = controller.delete(schoolId, schoolClassId);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().data()).isEqualTo(expected);
-        verify(deleteUseCase).execute(new DeleteSchoolClassCommand(schoolClassId));
+        verify(deleteUseCase).execute(new DeleteSchoolClassCommand(schoolId, schoolClassId));
     }
 
     @Test
@@ -92,6 +95,7 @@ class SchoolClassControllerTests {
         var previewUseCase = mock(PreviewSchoolClassImportFromFileUseCase.class);
         var acceptUseCase = mock(AcceptSchoolClassImportUseCase.class);
         var controller = new SchoolClassController(createUseCase, deleteUseCase, previewUseCase, acceptUseCase);
+        var schoolId = UUID.randomUUID();
         var importSessionId = UUID.randomUUID();
         var expected = new PreviewSchoolClassImportResponse(
             importSessionId,
@@ -110,7 +114,7 @@ class SchoolClassControllerTests {
         );
         when(previewUseCase.execute(any(PreviewSchoolClassImportFromFileCommand.class))).thenReturn(expected);
 
-        var response = controller.createImportFileSession(file);
+        var response = controller.createImportFileSession(schoolId, file);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
@@ -125,6 +129,7 @@ class SchoolClassControllerTests {
         var previewUseCase = mock(PreviewSchoolClassImportFromFileUseCase.class);
         var acceptUseCase = mock(AcceptSchoolClassImportUseCase.class);
         var controller = new SchoolClassController(createUseCase, deleteUseCase, previewUseCase, acceptUseCase);
+        var schoolId = UUID.randomUUID();
         var importSessionId = UUID.randomUUID();
         var request = new AcceptSchoolClassImportRequest(Map.of(
             "Mã lớp", "code",
@@ -133,10 +138,10 @@ class SchoolClassControllerTests {
             "Khối", "schoolGradeCode"
         ));
         var expected = new AcceptSchoolClassImportResponse(importSessionId, 2L, 1L, 1L, 0L, "COMPLETED");
-        var expectedCommand = new AcceptSchoolClassImportCommand(importSessionId, request.confirmedMapping());
+        var expectedCommand = new AcceptSchoolClassImportCommand(schoolId, importSessionId, request.confirmedMapping());
         when(acceptUseCase.execute(expectedCommand)).thenReturn(expected);
 
-        var response = controller.acceptImportSession(importSessionId, request);
+        var response = controller.acceptImportSession(schoolId, importSessionId, request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();

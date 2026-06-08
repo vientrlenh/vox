@@ -10,7 +10,7 @@ public final class AcceptSchoolClassImportCommandMapper {
     private AcceptSchoolClassImportCommandMapper() {
     }
 
-    public static AcceptSchoolClassImportCommand fromRequest(UUID sessionId, AcceptSchoolClassImportRequest request) {
-        return new AcceptSchoolClassImportCommand(sessionId, request.confirmedMapping());
+    public static AcceptSchoolClassImportCommand fromRequest(UUID schoolId, UUID sessionId, AcceptSchoolClassImportRequest request) {
+        return new AcceptSchoolClassImportCommand(schoolId, sessionId, request.confirmedMapping());
     }
 }

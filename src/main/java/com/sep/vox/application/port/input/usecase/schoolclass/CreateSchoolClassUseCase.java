@@ -59,6 +59,7 @@ public class CreateSchoolClassUseCase implements IUseCase<CreateSchoolClassComma
         var currentUser = findCurrentUser(currentUserId);
         var schoolId = getSchoolId(currentUser);
 
+        validateRequestedSchool(command.schoolId(), schoolId);
         validateSchool(schoolId);
         validateLanguage(command.languageId());
         validateSchoolGrade(command.schoolGradeId(), schoolId);
@@ -81,6 +82,7 @@ public class CreateSchoolClassUseCase implements IUseCase<CreateSchoolClassComma
 
     private CreateSchoolClassCommand normalize(CreateSchoolClassCommand input) {
         return new CreateSchoolClassCommand(
+            input.schoolId(),
             input.languageId(),
             input.schoolGradeId(),
             StringNormalization.normalizeCode(input.code()),
@@ -123,6 +125,15 @@ public class CreateSchoolClassUseCase implements IUseCase<CreateSchoolClassComma
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ngôn ngữ"));
         if (!language.isActive()) {
             throw new IllegalStateException("Ngôn ngữ không hoạt động");
+        }
+    }
+
+    private void validateRequestedSchool(UUID requestedSchoolId, UUID currentSchoolId) {
+        if (requestedSchoolId == null) {
+            throw new IllegalArgumentException("Trường học không được để trống");
+        }
+        if (!Objects.equals(requestedSchoolId, currentSchoolId)) {
+            throw new IllegalArgumentException("Trường học không khớp với người dùng hiện tại");
         }
     }
 

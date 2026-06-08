@@ -51,6 +51,7 @@ public class DeleteSchoolClassUseCase implements IUseCase<DeleteSchoolClassComma
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         var currentUser = findCurrentUser(currentUserId);
         var schoolId = getSchoolId(currentUser);
+        validateRequestedSchool(input.schoolId(), schoolId);
         validateSchool(schoolId);
 
         var schoolClass = schoolClassRepository.findById(input.id())
@@ -103,6 +104,14 @@ public class DeleteSchoolClassUseCase implements IUseCase<DeleteSchoolClassComma
             .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
         if (!school.isActive()) {
             throw new IllegalStateException("Trường học không hoạt động");
+        }
+    }
+    private void validateRequestedSchool(UUID requestedSchoolId, UUID currentSchoolId) {
+        if (requestedSchoolId == null) {
+            throw new IllegalArgumentException("Trường học không được để trống");
+        }
+        if (!Objects.equals(requestedSchoolId, currentSchoolId)) {
+            throw new IllegalArgumentException("Trường học không khớp với người dùng hiện tại");
         }
     }
 }

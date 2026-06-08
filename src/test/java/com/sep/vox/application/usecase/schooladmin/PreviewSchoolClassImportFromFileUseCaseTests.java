@@ -89,7 +89,7 @@ class PreviewSchoolClassImportFromFileUseCaseTests {
             return session;
         });
 
-        var response = useCase.execute(new PreviewSchoolClassImportFromFileCommand(file));
+        var response = useCase.execute(new PreviewSchoolClassImportFromFileCommand(schoolId, file));
 
         assertThat(response.importSessionId()).isEqualTo(sessionId);
         assertThat(response.fileName()).isEqualTo("classes.csv");
@@ -121,7 +121,22 @@ class PreviewSchoolClassImportFromFileUseCaseTests {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user(userId, UUID.randomUUID(), UserStatus.INACTIVE)));
 
-        assertThrows(IllegalStateException.class, () -> useCase.execute(new PreviewSchoolClassImportFromFileCommand(file)));
+        assertThrows(IllegalStateException.class, () -> useCase.execute(new PreviewSchoolClassImportFromFileCommand(UUID.randomUUID(), file)));
+
+        verifyNoInteractions(schoolRepository, fileProcessingPort, importSessionRepository, importRowRepository);
+    }
+
+    @Test
+    void execute_should_throw_when_requested_school_differs_from_current_user_school() {
+        var userId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var file = UploadedFile.upload("classes.csv", "text/csv", 1, new byte[] { 1 });
+
+        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(activeUser(userId, schoolId)));
+
+        assertThrows(IllegalArgumentException.class,
+            () -> useCase.execute(new PreviewSchoolClassImportFromFileCommand(UUID.randomUUID(), file)));
 
         verifyNoInteractions(schoolRepository, fileProcessingPort, importSessionRepository, importRowRepository);
     }

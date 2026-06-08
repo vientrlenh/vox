@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import com.sep.vox.application.port.input.command.UpdateSchoolClassCommand;
 import com.sep.vox.application.port.input.query.ViewSchoolClassDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolClassesQuery;
+import com.sep.vox.application.port.input.usecase.school.ViewSchoolsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.UpdateSchoolClassUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassesUseCase;
@@ -30,7 +31,7 @@ class SchoolClassControllerTests {
         var useCase = mock(ViewSchoolClassesUseCase.class);
         var detailsUseCase = mock(ViewSchoolClassDetailsUseCase.class);
         var updateUseCase = mock(UpdateSchoolClassUseCase.class);
-        var controller = new SchoolClassController(useCase, detailsUseCase, updateUseCase);
+        var controller = new SchoolController(mock(ViewSchoolsUseCase.class), useCase, detailsUseCase, updateUseCase);
         var languageId = UUID.randomUUID();
         var gradeId = UUID.randomUUID();
         var expected = new PageResult<SchoolClassResponse>(List.of(), 1, 20, 0, 0);
@@ -45,7 +46,8 @@ class SchoolClassControllerTests {
 
     @Test
     void school_classes_should_throw_when_page_or_size_invalid() {
-        var controller = new SchoolClassController(
+        var controller = new SchoolController(
+            mock(ViewSchoolsUseCase.class),
             mock(ViewSchoolClassesUseCase.class),
             mock(ViewSchoolClassDetailsUseCase.class),
             mock(UpdateSchoolClassUseCase.class)
@@ -60,7 +62,7 @@ class SchoolClassControllerTests {
         var useCase = mock(ViewSchoolClassesUseCase.class);
         var detailsUseCase = mock(ViewSchoolClassDetailsUseCase.class);
         var updateUseCase = mock(UpdateSchoolClassUseCase.class);
-        var controller = new SchoolClassController(useCase, detailsUseCase, updateUseCase);
+        var controller = new SchoolController(mock(ViewSchoolsUseCase.class), useCase, detailsUseCase, updateUseCase);
         var classId = UUID.randomUUID();
         var expected = new SchoolClassResponse(
             classId,
@@ -87,7 +89,7 @@ class SchoolClassControllerTests {
         var useCase = mock(ViewSchoolClassesUseCase.class);
         var detailsUseCase = mock(ViewSchoolClassDetailsUseCase.class);
         var updateUseCase = mock(UpdateSchoolClassUseCase.class);
-        var controller = new SchoolClassController(useCase, detailsUseCase, updateUseCase);
+        var controller = new SchoolController(mock(ViewSchoolsUseCase.class), useCase, detailsUseCase, updateUseCase);
         var classId = UUID.randomUUID();
         var input = Map.<String, Object>of("name", "English 02");
         var command = new UpdateSchoolClassCommand(classId, "English 02", true, null, false, null, false);
@@ -105,7 +107,7 @@ class SchoolClassControllerTests {
         var useCase = mock(ViewSchoolClassesUseCase.class);
         var detailsUseCase = mock(ViewSchoolClassDetailsUseCase.class);
         var updateUseCase = mock(UpdateSchoolClassUseCase.class);
-        var controller = new SchoolClassController(useCase, detailsUseCase, updateUseCase);
+        var controller = new SchoolController(mock(ViewSchoolsUseCase.class), useCase, detailsUseCase, updateUseCase);
         var classId = UUID.randomUUID();
         var input = new HashMap<String, Object>();
         input.put("description", null);
@@ -124,7 +126,7 @@ class SchoolClassControllerTests {
         var useCase = mock(ViewSchoolClassesUseCase.class);
         var detailsUseCase = mock(ViewSchoolClassDetailsUseCase.class);
         var updateUseCase = mock(UpdateSchoolClassUseCase.class);
-        var controller = new SchoolClassController(useCase, detailsUseCase, updateUseCase);
+        var controller = new SchoolController(mock(ViewSchoolsUseCase.class), useCase, detailsUseCase, updateUseCase);
         var classId = UUID.randomUUID();
         var input = Map.<String, Object>of("status", "INACTIVE");
         var command = new UpdateSchoolClassCommand(classId, null, false, null, false, "INACTIVE", true);

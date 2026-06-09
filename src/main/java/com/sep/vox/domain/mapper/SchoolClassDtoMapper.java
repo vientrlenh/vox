@@ -11,6 +11,9 @@ import com.sep.vox.domain.valueobject.ClassCode;
 
 public final class SchoolClassDtoMapper {
 
+    private SchoolClassDtoMapper() {
+    }
+
     public static SchoolClassDto toDto(SchoolClass schoolClass) {
         return new SchoolClassDto(
             schoolClass.getId(),

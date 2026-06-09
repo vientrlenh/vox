@@ -5,7 +5,9 @@ import java.util.UUID;
 public record UpdateSchoolClassCommand(
         UUID id,
         String name,
+        boolean nameProvided,
         String description,
-        UUID targetSchoolLevelVersionId,
-        String status) {
+        boolean descriptionProvided,
+        String status,
+        boolean statusProvided) {
 }

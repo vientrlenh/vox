@@ -60,7 +60,11 @@ public class DeleteSchoolUserUseCaseTests {
 
         var result = deleteSchoolUserUseCase.execute(command);
 
-        assertThat(result).isNull();
+        assertThat(result).isNotNull();
+        assertThat(result.id()).isEqualTo(targetId);
+        assertThat(result.deleteType()).isEqualTo("SOFT");
+        assertThat(result.status()).isEqualTo("DISABLED");
+
         verify(userRepository).save(argThat(u -> u.getStatus() == UserStatus.DISABLED));
     }
 

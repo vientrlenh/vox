@@ -3,9 +3,9 @@ package com.sep.vox.application.port.input.usecase.question;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.permission.QuestionCommandPermissionChecker;
 import com.sep.vox.application.port.input.query.ViewTeacherMyQuestionsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
+import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.QuestionReadQueryRepository;
 import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
@@ -15,20 +15,20 @@ import com.sep.vox.domain.dto.QuestionDto;
 public class ViewTeacherMyQuestionsUseCase implements IUseCase<ViewTeacherMyQuestionsQuery, PageResult<QuestionDto>> {
 
     private final QuestionReadQueryRepository questionReadQueryRepository;
-    private final QuestionCommandPermissionChecker permissionChecker;
+    private final UserContextPort userContextPort;
 
     public ViewTeacherMyQuestionsUseCase(
             QuestionReadQueryRepository questionReadQueryRepository,
-            QuestionCommandPermissionChecker permissionChecker) {
+            UserContextPort userContextPort) {
         this.questionReadQueryRepository = questionReadQueryRepository;
-        this.permissionChecker = permissionChecker;
+        this.userContextPort = userContextPort;
     }
 
     @Override
     @Transactional(readOnly = true)
     public PageResult<QuestionDto> execute(ViewTeacherMyQuestionsQuery input) {
-        var user = permissionChecker.resolveCurrentUser();
+        var userId = userContextPort.getCurrentAuthenticatedUserId();
         return questionReadQueryRepository.findTeacherMyQuestions(
-                user.userId(), new PageRequest(input.page(), input.size()));
+                userId, new PageRequest(input.page(), input.size()));
     }
 }

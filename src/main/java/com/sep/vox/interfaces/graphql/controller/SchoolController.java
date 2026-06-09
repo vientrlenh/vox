@@ -14,14 +14,17 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 
 import com.sep.vox.application.port.input.query.ViewSchoolClassDetailsQuery;
+import com.sep.vox.application.port.input.query.ViewSchoolClassUsersQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolClassesQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolsQuery;
 import com.sep.vox.application.port.input.query.key.SchoolClassesKey;
 import com.sep.vox.application.port.input.usecase.school.ViewSchoolsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.UpdateSchoolClassUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassDetailsUseCase;
+import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassUsersUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassesUseCase;
 import com.sep.vox.application.response.input.schoolclass.SchoolClassResponse;
+import com.sep.vox.application.response.input.schoolclass.SchoolClassUserResponse;
 import com.sep.vox.application.response.input.schoolclass.UpdateSchoolClassResponse;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolClassDto;
@@ -37,16 +40,19 @@ public class SchoolController {
     private final ViewSchoolsUseCase viewSchoolsUseCase;
     private final ViewSchoolClassesUseCase viewSchoolClassesUseCase;
     private final ViewSchoolClassDetailsUseCase viewSchoolClassDetailsUseCase;
+    private final ViewSchoolClassUsersUseCase viewSchoolClassUsersUseCase;
     private final UpdateSchoolClassUseCase updateSchoolClassUseCase;
 
     public SchoolController(
             ViewSchoolsUseCase viewSchoolsUseCase,
             ViewSchoolClassesUseCase viewSchoolClassesUseCase,
             ViewSchoolClassDetailsUseCase viewSchoolClassDetailsUseCase,
+            ViewSchoolClassUsersUseCase viewSchoolClassUsersUseCase,
             UpdateSchoolClassUseCase updateSchoolClassUseCase) {
         this.viewSchoolsUseCase = viewSchoolsUseCase;
         this.viewSchoolClassesUseCase = viewSchoolClassesUseCase;
         this.viewSchoolClassDetailsUseCase = viewSchoolClassDetailsUseCase;
+        this.viewSchoolClassUsersUseCase = viewSchoolClassUsersUseCase;
         this.updateSchoolClassUseCase = updateSchoolClassUseCase;
     }
 
@@ -88,6 +94,18 @@ public class SchoolController {
     public SchoolClassResponse schoolClass(@Argument(name = "id") UUID id) {
         var query = new ViewSchoolClassDetailsQuery(id);
         return viewSchoolClassDetailsUseCase.execute(query);
+    }
+
+    @QueryMapping(name = "schoolClassUsers")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public PageResult<SchoolClassUserResponse> schoolClassUsers(
+            @Argument(name = "schoolClassId") UUID schoolClassId,
+            @Argument(name = "page") int page,
+            @Argument(name = "size") int size) {
+        if (page <= 0 || size <= 0) {
+            throw new IllegalStateException("Sá»‘ trang hoáº·c kÃ­ch cá»¡ trang yÃªu cáº§u khÃ´ng há»£p lá»‡");
+        }
+        return viewSchoolClassUsersUseCase.execute(new ViewSchoolClassUsersQuery(schoolClassId, page, size));
     }
 
     @MutationMapping(name = "updateSchoolClass")

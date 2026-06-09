@@ -44,6 +44,25 @@ type SchoolClassPage {
     totalPages: Int!
 }
 
+type SchoolClassUser {
+    id: ID!
+    userId: ID!
+    schoolClassId: ID!
+    isActive: Boolean!
+    joinedAt: String
+    leftAt: String
+    assignedBy: ID
+    user: User
+}
+
+type SchoolClassUserPage {
+    content: [SchoolClassUser!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
 type UpdateSchoolClassResponse {
     schoolClassId: ID!
 }
@@ -78,6 +97,7 @@ extend type Query {
     school(id: ID!): School
     schoolClasses(page: Int = 1, size: Int = 20, search: String, status: String, languageId: ID, schoolGradeId: ID): SchoolClassPage!
     schoolClass(id: ID!): SchoolClass
+    schoolClassUsers(schoolClassId: ID!, page: Int = 1, size: Int = 20): SchoolClassUserPage!
     schoolUsers(schoolId: ID!, page: Int = 1, size: Int = 20): SchoolUserPage
     schoolUser(id: ID!): SchoolUser
 }

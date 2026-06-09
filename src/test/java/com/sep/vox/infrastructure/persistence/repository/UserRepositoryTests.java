@@ -58,6 +58,19 @@ public class UserRepositoryTests {
     }
 
     @Test
+    void whenFindByIdIn_thenReturnsMatchingUsers() {
+        var saved1 = userRepository.save(newUser("find-id-in-1@example.com", "0987654331"));
+        var saved2 = userRepository.save(newUser("find-id-in-2@example.com", "0987654332"));
+        userRepository.save(newUser("find-id-in-other@example.com", "0987654333"));
+
+        var found = userRepository.findByIdIn(java.util.Set.of(saved1.getId(), saved2.getId()));
+
+        assertThat(found)
+            .extracting(user -> user.getEmail().value())
+            .containsExactlyInAnyOrder("find-id-in-1@example.com", "find-id-in-2@example.com");
+    }
+
+    @Test
     void whenFindByEmail_thenReturnsUser() {
         userRepository.save(newUser("test@example.com", "0987654323"));
 

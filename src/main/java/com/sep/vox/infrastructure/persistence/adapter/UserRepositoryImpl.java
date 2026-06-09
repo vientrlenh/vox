@@ -1,5 +1,7 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -25,6 +27,17 @@ public class UserRepositoryImpl implements UserRepository {
     public Optional<User> findById(UUID id) {
         return springDataUserRepository.findById(id)
             .map(UserMapper::toDomain);
+    }
+
+    @Override
+    public List<User> findByIdIn(Collection<UUID> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        return springDataUserRepository.findByIdIn(ids)
+            .stream()
+            .map(UserMapper::toDomain)
+            .toList();
     }
 
     @Override

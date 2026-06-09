@@ -36,7 +36,8 @@ import com.sep.vox.application.response.input.importfile.PreviewSchoolClassImpor
 import com.sep.vox.application.response.input.importfile.PreviewSchoolUserImportResponse;
 import com.sep.vox.application.response.input.schoolclass.CreateSchoolClassResponse;
 import com.sep.vox.application.response.input.schoolclass.DeleteSchoolClassResponse;
-import com.sep.vox.application.response.input.schooluser.SchoolUserResponse;
+import com.sep.vox.application.response.input.schooluser.CreateSchoolUserResponse;
+import com.sep.vox.application.response.input.schooluser.DeleteSchoolUserResponse;
 import com.sep.vox.interfaces.rest.dto.request.AcceptSchoolClassImportRequest;
 import com.sep.vox.interfaces.rest.dto.request.AcceptSchoolUserImportRequest;
 import com.sep.vox.interfaces.rest.dto.request.ChangeSchoolUserRoleRequest;
@@ -136,7 +137,7 @@ public class SchoolController {
     
     @PostMapping("/{schoolId}/users")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<SchoolUserResponse>> createUser(
+    public ResponseEntity<ApiResponse<CreateSchoolUserResponse>> createUser(
             @PathVariable UUID schoolId,
             @Valid @RequestBody CreateSchoolUserRequest request) {
         var command = CreateSchoolUserCommandMapper.fromRequest(schoolId, request);
@@ -146,12 +147,12 @@ public class SchoolController {
 
     @DeleteMapping("/{schoolId}/users/{userId}")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<Object>> deleteUser(
+    public ResponseEntity<ApiResponse<DeleteSchoolUserResponse>> deleteUser(
             @PathVariable UUID schoolId,
             @PathVariable UUID userId) {
         var command = DeleteSchoolUserCommandMapper.fromRequest(schoolId, userId);
-        deleteSchoolUserUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Xóa người dùng thành công"));
+        var data = deleteSchoolUserUseCase.execute(command);
+        return ResponseEntity.ok(ApiResponse.success("Xóa người dùng thành công", data));
     }
 
     @PatchMapping("/{schoolId}/users/{userId}/role")

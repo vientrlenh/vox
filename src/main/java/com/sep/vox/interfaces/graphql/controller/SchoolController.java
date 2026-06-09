@@ -24,10 +24,12 @@ import com.sep.vox.application.port.input.usecase.schoolclass.UpdateSchoolClassU
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassesUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.ListSchoolUsersUseCase;
+import com.sep.vox.application.port.input.usecase.schooluser.UpdateSchoolUserUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUserUseCase;
 import com.sep.vox.application.response.input.schoolclass.SchoolClassResponse;
 import com.sep.vox.application.response.input.schoolclass.UpdateSchoolClassResponse;
 import com.sep.vox.application.response.input.schooluser.SchoolUserResponse;
+import com.sep.vox.application.response.input.schooluser.UpdateSchoolUserResponse;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.dto.SchoolDto;
@@ -38,6 +40,7 @@ import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 import com.sep.vox.interfaces.graphql.mapper.UpdateSchoolClassCommandMapper;
+import com.sep.vox.interfaces.graphql.mapper.UpdateSchoolUserCommandMapper;
 
 import graphql.schema.DataFetchingEnvironment;
 
@@ -50,6 +53,7 @@ public class SchoolController {
     private final UpdateSchoolClassUseCase updateSchoolClassUseCase;
     private final ListSchoolUsersUseCase listSchoolUsersUseCase;
     private final ViewSchoolUserUseCase viewSchoolUserUseCase;
+    private final UpdateSchoolUserUseCase updateSchoolUserUseCase;
     private final UserRepository userRepository;
     private final SchoolRepository schoolRepository;
 
@@ -60,6 +64,7 @@ public class SchoolController {
             UpdateSchoolClassUseCase updateSchoolClassUseCase,
             ListSchoolUsersUseCase listSchoolUsersUseCase,
             ViewSchoolUserUseCase viewSchoolUserUseCase,
+            UpdateSchoolUserUseCase updateSchoolUserUseCase,
             UserRepository userRepository,
             SchoolRepository schoolRepository) {
         this.viewSchoolsUseCase = viewSchoolsUseCase;
@@ -68,6 +73,7 @@ public class SchoolController {
         this.updateSchoolClassUseCase = updateSchoolClassUseCase;
         this.listSchoolUsersUseCase = listSchoolUsersUseCase;
         this.viewSchoolUserUseCase = viewSchoolUserUseCase;
+        this.updateSchoolUserUseCase = updateSchoolUserUseCase;
         this.userRepository = userRepository;
         this.schoolRepository = schoolRepository;
     }
@@ -171,5 +177,15 @@ public class SchoolController {
     @SchemaMapping(typeName = "SchoolUser", field = "endDate")
     public String endDate(SchoolUserResponse schoolUser) {
         return schoolUser.endDate() != null ? schoolUser.endDate().toString() : null;
+    }
+
+    @MutationMapping(name = "updateSchoolUser")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public UpdateSchoolUserResponse updateSchoolUser(
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "userId") UUID userId,
+            @Argument(name = "input") Map<String, Object> input) {
+        var command = UpdateSchoolUserCommandMapper.fromInput(schoolId, userId, input);
+        return updateSchoolUserUseCase.execute(command);
     }
 }

@@ -9,10 +9,11 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.DeleteSchoolUserCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.response.input.schooluser.DeleteSchoolUserResponse;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
-public class DeleteSchoolUserUseCase implements IUseCase<DeleteSchoolUserCommand, Void> {
+public class DeleteSchoolUserUseCase implements IUseCase<DeleteSchoolUserCommand, DeleteSchoolUserResponse> {
 
     private final UserContextPort userContextPort;
     private final UserRepository userRepository;
@@ -24,7 +25,7 @@ public class DeleteSchoolUserUseCase implements IUseCase<DeleteSchoolUserCommand
 
     @Override
     @Transactional
-    public Void execute(DeleteSchoolUserCommand input) {
+    public DeleteSchoolUserResponse execute(DeleteSchoolUserCommand input) {
         var now = OffsetDateTime.now();
         var callerId = userContextPort.getCurrentAuthenticatedUserId();
 
@@ -45,6 +46,6 @@ public class DeleteSchoolUserUseCase implements IUseCase<DeleteSchoolUserCommand
         targetUser.softDelete(callerId, now);
         userRepository.save(targetUser);
 
-        return null;
+        return new DeleteSchoolUserResponse(input.userId(), "SOFT", "DISABLED", now.toString());
     }
 }

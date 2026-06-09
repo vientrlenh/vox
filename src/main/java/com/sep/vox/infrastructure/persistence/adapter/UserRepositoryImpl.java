@@ -28,6 +28,12 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     @Override
+    public Optional<User> findByIdForUpdate(UUID id) {
+        return springDataUserRepository.findByIdForUpdate(id)
+            .map(UserMapper::toDomain);
+    }
+
+    @Override
     public Optional<User> findByPhone(String phone) {
         return springDataUserRepository.findByPhone(phone)
             .map(UserMapper::toDomain);

@@ -26,6 +26,7 @@ import com.sep.vox.application.port.input.usecase.schoolclass.UpdateSchoolClassU
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassesUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.ListSchoolUsersUseCase;
+import com.sep.vox.application.port.input.usecase.schooluser.UpdateSchoolUserUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUserUseCase;
 import com.sep.vox.application.response.input.schoolclass.SchoolClassResponse;
 import com.sep.vox.application.response.input.schoolclass.UpdateSchoolClassResponse;
@@ -42,6 +43,7 @@ class SchoolControllerTests {
     private UpdateSchoolClassUseCase updateSchoolClassUseCase;
     private ListSchoolUsersUseCase listSchoolUsersUseCase;
     private ViewSchoolUserUseCase viewSchoolUserUseCase;
+    private UpdateSchoolUserUseCase updateSchoolUserUseCase;
     private UserRepository userRepository;
     private SchoolRepository schoolRepository;
     private SchoolController controller;
@@ -57,6 +59,7 @@ class SchoolControllerTests {
         updateSchoolClassUseCase = mock(UpdateSchoolClassUseCase.class);
         listSchoolUsersUseCase = mock(ListSchoolUsersUseCase.class);
         viewSchoolUserUseCase = mock(ViewSchoolUserUseCase.class);
+        updateSchoolUserUseCase = mock(UpdateSchoolUserUseCase.class);
         userRepository = mock(UserRepository.class);
         schoolRepository = mock(SchoolRepository.class);
 
@@ -64,6 +67,7 @@ class SchoolControllerTests {
             viewSchoolsUseCase, viewSchoolClassesUseCase,
             viewSchoolClassDetailsUseCase, updateSchoolClassUseCase,
             listSchoolUsersUseCase, viewSchoolUserUseCase,
+            updateSchoolUserUseCase,
             userRepository, schoolRepository
         );
     }

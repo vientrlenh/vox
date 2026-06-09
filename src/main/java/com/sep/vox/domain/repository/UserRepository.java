@@ -8,6 +8,7 @@ import com.sep.vox.domain.model.user.UserStatus;
 
 public interface UserRepository {
     Optional<User> findById(UUID id);
+    Optional<User> findByIdForUpdate(UUID id);
     Optional<User> findByPhone(String phone);
     Optional<User> findByEmail(String email);
     Optional<User> findByEmailAndStatus(String email, UserStatus status);

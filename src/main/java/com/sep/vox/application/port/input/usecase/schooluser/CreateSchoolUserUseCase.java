@@ -11,14 +11,12 @@ import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.event.SchoolUserPasswordSetUpEmailRequestedEvent;
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.mapper.schooluser.SchoolUserResponseMapper;
 import com.sep.vox.application.port.input.command.CreateSchoolUserCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.EventPublisherPort;
 import com.sep.vox.application.port.output.PasswordSetUpTokenPort;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
-import com.sep.vox.application.response.input.schooluser.SchoolUserResponse;
+import com.sep.vox.application.response.input.schooluser.CreateSchoolUserResponse;
 import com.sep.vox.domain.model.passwordsetuptoken.PasswordSetUpToken;
 import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
@@ -33,7 +31,7 @@ import com.sep.vox.domain.repository.UserRoleRepository;
 import java.time.ZoneOffset;
 
 @Service
-public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand, SchoolUserResponse> {
+public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand, CreateSchoolUserResponse> {
 
     private static final List<String> ALLOWED_ROLE_CODES = List.of("STUDENT", "TEACHER");
     private static final OffsetDateTime SCHOOL_USER_END_DATE = OffsetDateTime.of(9999, 12, 31, 23, 59, 59, 0, ZoneOffset.UTC);
@@ -43,7 +41,6 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
     private final RoleRepository roleRepository;
     private final UserRoleRepository userRoleRepository;
     private final SchoolUserRepository schoolUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
     private final SchoolRepository schoolRepository;
     private final PasswordSetUpTokenPort passwordSetUpTokenPort;
     private final PasswordSetUpTokenRepository passwordSetUpTokenRepository;
@@ -55,7 +52,6 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
             RoleRepository roleRepository,
             UserRoleRepository userRoleRepository,
             SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
             SchoolRepository schoolRepository,
             PasswordSetUpTokenPort passwordSetUpTokenPort,
             PasswordSetUpTokenRepository passwordSetUpTokenRepository,
@@ -65,7 +61,6 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
         this.roleRepository = roleRepository;
         this.userRoleRepository = userRoleRepository;
         this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
         this.schoolRepository = schoolRepository;
         this.passwordSetUpTokenPort = passwordSetUpTokenPort;
         this.passwordSetUpTokenRepository = passwordSetUpTokenRepository;
@@ -74,7 +69,7 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
 
     @Override
     @Transactional
-    public SchoolUserResponse execute(CreateSchoolUserCommand input) {
+    public CreateSchoolUserResponse execute(CreateSchoolUserCommand input) {
         var now = OffsetDateTime.now();
         var callerId = userContextPort.getCurrentAuthenticatedUserId();
 
@@ -115,7 +110,6 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
 
         userRoleRepository.save(new UserRole(savedUser.getId(), role.getId(), now));
 
-        SchoolUser savedSchoolUser = null;
         if ("STUDENT".equals(command.roleCode()) && command.studentId() != null) {
             var startDate = command.startDate() != null
                 ? command.startDate().atStartOfDay(ZoneOffset.UTC).toOffsetDateTime()
@@ -123,7 +117,7 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
             var endDate = command.endDate() != null
                 ? command.endDate().atStartOfDay(ZoneOffset.UTC).toOffsetDateTime()
                 : SCHOOL_USER_END_DATE;
-            savedSchoolUser = schoolUserRepository.save(
+            schoolUserRepository.save(
                 SchoolUser.create(command.studentId(), command.schoolId(), savedUser.getId(), startDate, endDate)
             );
         }
@@ -138,10 +132,7 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
             generatedPasswordSetUpToken.rawToken()
         ));
 
-        var roleInfo = userRoleQueryRepository.findByUserIdWithRoleInfo(savedUser.getId());
-        var resolvedRoleCode = roleInfo.isEmpty() ? command.roleCode() : roleInfo.get(0).roleCode();
-
-        return SchoolUserResponseMapper.toResponse(savedUser, resolvedRoleCode, savedSchoolUser);
+        return new CreateSchoolUserResponse(savedUser.getId());
     }
 
     private CreateSchoolUserCommand normalize(CreateSchoolUserCommand input) {

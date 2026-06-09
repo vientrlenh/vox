@@ -40,6 +40,7 @@ import com.sep.vox.application.response.input.importfile.PreviewSchoolClassImpor
 import com.sep.vox.application.response.input.importfile.PreviewSchoolUserImportResponse;
 import com.sep.vox.application.response.input.schoolclass.CreateSchoolClassResponse;
 import com.sep.vox.application.response.input.schoolclass.DeleteSchoolClassResponse;
+import com.sep.vox.application.response.input.schooluser.CreateSchoolUserResponse;
 import com.sep.vox.application.response.input.schooluser.SchoolUserResponse;
 import com.sep.vox.interfaces.rest.dto.request.AcceptSchoolClassImportRequest;
 import com.sep.vox.interfaces.rest.dto.request.AcceptSchoolUserImportRequest;
@@ -181,7 +182,7 @@ class SchoolControllerTests {
             "student@school.edu.vn", "0987654321", "John Cena",
             "2005-01-15", "123 Street", "STUDENT", null, null, null
         );
-        var expected = schoolUserResponse(userId, "STUDENT", null);
+        var expected = new CreateSchoolUserResponse(userId);
         when(createSchoolUserUseCase.execute(any(CreateSchoolUserCommand.class))).thenReturn(expected);
 
         var response = controller.createUser(schoolId, request);

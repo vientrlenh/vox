@@ -3,7 +3,6 @@ package com.sep.vox.application.port.input.usecase.schooluser;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -19,6 +18,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.event.SchoolUserPasswordSetUpEmailRequestedEvent;
 import com.sep.vox.application.exception.NotFoundException;
@@ -361,12 +361,8 @@ public class AcceptSchoolUserImportUseCase implements IUseCase<AcceptSchoolUserI
 
     private void validateDateField(List<Map<String, String>> errors, Map<String, String> data, String field, String message) {
         var value = data.get(field);
-        if (isPresent(value)) {
-            try {
-                LocalDate.parse(value);
-            } catch (DateTimeParseException e) {
-                errors.add(error(field, message));
-            }
+        if (isPresent(value) && parseDate(value) == null) {
+            errors.add(error(field, message));
         }
     }
 
@@ -389,8 +385,8 @@ public class AcceptSchoolUserImportUseCase implements IUseCase<AcceptSchoolUserI
             return null;
         }
         try {
-            return LocalDate.parse(value);
-        } catch (DateTimeParseException e) {
+            return DateMapper.toLocalDate(value.strip());
+        } catch (IllegalArgumentException e) {
             return null;
         }
     }

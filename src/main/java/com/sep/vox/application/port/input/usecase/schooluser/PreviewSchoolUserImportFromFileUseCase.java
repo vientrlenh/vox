@@ -2,191 +2,178 @@ package com.sep.vox.application.port.input.usecase.schooluser;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.importer.ImportFileFormat;
-import com.sep.vox.application.common.importer.ImportParserFactory;
-import com.sep.vox.application.common.importer.ImportRow;
 import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.port.input.command.ImportFieldMapping;
 import com.sep.vox.application.port.input.command.PreviewSchoolUserImportFromFileCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.ImportFileStoragePort;
+import com.sep.vox.application.port.output.FileProcessingPort;
+import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.response.input.importfile.CreateImportSessionResponse;
-import com.sep.vox.application.response.input.schooluser.SchoolUserImportError;
+import com.sep.vox.application.response.input.importfile.PreviewSchoolUserImportResponse;
+import com.sep.vox.application.response.output.ParseImportFileResult;
+import com.sep.vox.domain.model.importfile.ImportRow;
 import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
+import com.sep.vox.domain.model.user.User;
+import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.ImportRowRepository;
 import com.sep.vox.domain.repository.ImportSessionRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.UserRepository;
-import com.sep.vox.infrastructure.adapter.SchoolUserImportValidator;
-
-import tools.jackson.databind.ObjectMapper;
 
 @Service
-public class PreviewSchoolUserImportFromFileUseCase implements IUseCase<PreviewSchoolUserImportFromFileCommand, CreateImportSessionResponse> {
+public class PreviewSchoolUserImportFromFileUseCase implements IUseCase<PreviewSchoolUserImportFromFileCommand, PreviewSchoolUserImportResponse> {
 
+    private static final int SESSION_EXPIRY_DAYS = 1;
+
+    private final FileProcessingPort fileProcessingPort;
+    private final ImportSessionRepository importSessionRepository;
+    private final ImportRowRepository importRowRepository;
     private final UserContextPort userContextPort;
     private final UserRepository userRepository;
     private final SchoolRepository schoolRepository;
-    private final ImportFileStoragePort fileStoragePort;
-    private final ImportSessionRepository importSessionRepository;
-    private final ImportRowRepository importRowRepository;
-    private final ImportParserFactory importParserFactory;
-    private final SchoolUserImportValidator importValidator;
-    private final ObjectMapper objectMapper;
+    private final JsonSerializationPort jsonSerializationPort;
 
     public PreviewSchoolUserImportFromFileUseCase(
+            FileProcessingPort fileProcessingPort,
+            ImportSessionRepository importSessionRepository,
+            ImportRowRepository importRowRepository,
             UserContextPort userContextPort,
             UserRepository userRepository,
             SchoolRepository schoolRepository,
-            ImportFileStoragePort fileStoragePort,
-            ImportSessionRepository importSessionRepository,
-            ImportRowRepository importRowRepository,
-            ImportParserFactory importParserFactory,
-            SchoolUserImportValidator importValidator,
-            ObjectMapper objectMapper) {
+            JsonSerializationPort jsonSerializationPort) {
+        this.fileProcessingPort = fileProcessingPort;
+        this.importSessionRepository = importSessionRepository;
+        this.importRowRepository = importRowRepository;
         this.userContextPort = userContextPort;
         this.userRepository = userRepository;
         this.schoolRepository = schoolRepository;
-        this.fileStoragePort = fileStoragePort;
-        this.importSessionRepository = importSessionRepository;
-        this.importRowRepository = importRowRepository;
-        this.importParserFactory = importParserFactory;
-        this.importValidator = importValidator;
-        this.objectMapper = objectMapper;
+        this.jsonSerializationPort = jsonSerializationPort;
     }
 
     @Override
-    public CreateImportSessionResponse execute(PreviewSchoolUserImportFromFileCommand input) {
-        var callerId = userContextPort.getCurrentAuthenticatedUserId();
-        var caller = userRepository.findById(callerId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
-        SchoolUserStatusValidator.requireActive(caller);
-        if (!input.schoolId().equals(caller.getSchoolId())) {
-            throw new IllegalArgumentException("Không có quyền thực hiện thao tác này");
-        }
-
-        schoolRepository.findById(input.schoolId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
-
-        var resource = fileStoragePort.load(input.fileId(), input.schoolId(), callerId);
-        var format = ImportFileFormat.valueOf(resource.format());
-        var parser = importParserFactory.forFormat(format);
-
-        List<ImportRow> rows;
-        try (var inputStream = resource.inputStream()) {
-            rows = parser.parse(inputStream);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Không thể đọc dữ liệu", e);
+    @Transactional
+    public PreviewSchoolUserImportResponse execute(PreviewSchoolUserImportFromFileCommand input) {
+        if (input == null || input.file() == null) {
+            throw new IllegalArgumentException("File import không được để trống");
         }
 
         var now = OffsetDateTime.now();
-        var session = new ImportSession(
-            input.schoolId(),
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        var currentUser = findCurrentUser(currentUserId);
+        var schoolId = getSchoolId(currentUser);
+        validateRequestedSchool(input.schoolId(), schoolId);
+        validateSchool(schoolId);
+
+        var parsed = fileProcessingPort.parse(input.file(), ImportType.USER);
+        var expiresAt = now.plusDays(SESSION_EXPIRY_DAYS);
+        var savedSession = importSessionRepository.save(createSession(input, parsed, schoolId, currentUserId, now, expiresAt));
+        saveRows(savedSession.getId(), parsed);
+
+        return new PreviewSchoolUserImportResponse(
+            savedSession.getId(),
+            safeFileName(input.file().fileName()),
+            parsed.originalHeaders(),
+            parsed.suggestedMapping(),
+            parsed.sampleRows(),
+            parsed.totalRows(),
+            expiresAt.toString()
+        );
+    }
+
+    private User findCurrentUser(UUID currentUserId) {
+        var user = userRepository.findById(currentUserId)
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng hiện tại"));
+        if (user.getStatus() != UserStatus.ACTIVE) {
+            throw new IllegalStateException("Người dùng hiện tại không hoạt động");
+        }
+        return user;
+    }
+
+    private UUID getSchoolId(User currentUser) {
+        var schoolId = currentUser.getSchoolId();
+        if (schoolId == null) {
+            throw new IllegalStateException("Người dùng hiện tại không thuộc trường nào");
+        }
+        return schoolId;
+    }
+
+    private void validateSchool(UUID schoolId) {
+        var school = schoolRepository.findById(schoolId)
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
+        if (!school.isActive()) {
+            throw new IllegalStateException("Trường học không hoạt động");
+        }
+    }
+
+    private void validateRequestedSchool(UUID requestedSchoolId, UUID currentSchoolId) {
+        if (requestedSchoolId == null) {
+            throw new IllegalArgumentException("Trường học không được để trống");
+        }
+        if (!Objects.equals(requestedSchoolId, currentSchoolId)) {
+            throw new IllegalArgumentException("Trường học không khớp với người dùng hiện tại");
+        }
+    }
+
+    private ImportSession createSession(
+            PreviewSchoolUserImportFromFileCommand input,
+            ParseImportFileResult parsed,
+            UUID schoolId,
+            UUID currentUserId,
+            OffsetDateTime now,
+            OffsetDateTime expiresAt) {
+        return new ImportSession(
+            schoolId,
             ImportType.USER,
-            resource.originalFileName(),
-            toJson(extractHeaders(rows, format)),
-            toJson(extractSuggestedMapping(input.mapping())),
-            toJson(input.mapping() != null ? input.mapping() : Map.<String, ImportFieldMapping>of()),
-            0,
-            0,
-            0,
-            0,
-            rows.size(),
+            safeFileName(input.file().fileName()),
+            jsonSerializationPort.toJson(parsed.originalHeaders()),
+            jsonSerializationPort.toJson(parsed.suggestedMapping()),
+            null,
+            0L,
+            0L,
+            0L,
+            0L,
+            parsed.totalRows(),
             null,
             ImportSessionStatus.PREVIEWED,
             null,
-            resource.expiresAt(),
+            expiresAt,
             now,
             now,
-            callerId,
-            callerId
+            currentUserId,
+            currentUserId
         );
-        session = importSessionRepository.save(session);
+    }
 
-        var allErrors = new ArrayList<SchoolUserImportError>();
-        var rowEntities = new ArrayList<com.sep.vox.domain.model.importfile.ImportRow>();
-        var seenEmails = new HashSet<String>();
-        var seenPhones = new HashSet<String>();
-        var mapping = input.mapping() != null ? input.mapping() : Map.<String, ImportFieldMapping>of();
-
-        for (var row : rows) {
-            var validation = importValidator.validateAndPrepareRow(row, format, mapping, input.defaultRole(), seenEmails, seenPhones, false);
-            allErrors.addAll(validation.errors());
-            rowEntities.add(new com.sep.vox.domain.model.importfile.ImportRow(
-                session.getId(),
-                row.rowNumber(),
-                toJson(rawRowPayload(row, format)),
-                toJson(validation.mappedPayload()),
-                toJson(validation.errors()),
-                validation.errors().isEmpty() ? ImportRowStatus.VALID : ImportRowStatus.INVALID
+    private void saveRows(UUID sessionId, ParseImportFileResult parsed) {
+        if (parsed.rows().isEmpty()) {
+            return;
+        }
+        var rows = new ArrayList<ImportRow>();
+        var rowNumber = 1L;
+        for (Map<String, String> rawRow : parsed.rows()) {
+            rows.add(new ImportRow(
+                sessionId,
+                rowNumber,
+                jsonSerializationPort.toJson(rawRow),
+                null,
+                null,
+                ImportRowStatus.PENDING
             ));
+            rowNumber++;
         }
-
-        importRowRepository.saveAll(rowEntities);
-        session.setValidRows((int) rowEntities.stream().filter(item -> item.getStatus() == ImportRowStatus.VALID).count());
-        session.setInvalidRows(allErrors.stream().map(SchoolUserImportError::rowNumber).distinct().count());
-        session.setUpdatedAt(now);
-        session.setUpdatedBy(callerId);
-        importSessionRepository.save(session);
-
-        return new CreateImportSessionResponse(session.getId());
+        importRowRepository.saveAll(rows);
     }
 
-
-    private Map<String, Object> rawRowPayload(ImportRow row, ImportFileFormat format) {
-        if (format == ImportFileFormat.JSON) {
-            return row.jsonValues() != null ? new HashMap<>(row.jsonValues()) : Map.of();
-        }
-        return row.columns() != null ? new HashMap<>(row.columns()) : Map.of();
+    private String safeFileName(String fileName) {
+        return fileName == null || fileName.isBlank() ? "import-file" : fileName;
     }
-
-    private List<String> extractHeaders(List<ImportRow> rows, ImportFileFormat format) {
-        if (rows.isEmpty()) {
-            return List.of();
-        }
-        if (format == ImportFileFormat.JSON) {
-            var headers = new LinkedHashSet<String>();
-            for (var row : rows) {
-                if (row.jsonValues() != null) {
-                    headers.addAll(row.jsonValues().keySet());
-                }
-            }
-            return List.copyOf(headers);
-        }
-        return rows.get(0).columns() != null ? new ArrayList<>(rows.get(0).columns().keySet()) : List.of();
-    }
-
-    private Map<String, String> extractSuggestedMapping(Map<String, ImportFieldMapping> mapping) {
-        if (mapping == null || mapping.isEmpty()) {
-            return Map.of();
-        }
-        var result = new HashMap<String, String>();
-        for (var entry : mapping.entrySet()) {
-            if (entry.getValue() != null && entry.getValue().column() != null && !entry.getValue().column().isBlank()) {
-                result.put(entry.getKey(), entry.getValue().column());
-            }
-        }
-        return result;
-    }
-
-    private String toJson(Object value) {
-        try {
-            return objectMapper.writeValueAsString(value != null ? value : Map.of());
-        } catch (Exception e) {
-            throw new IllegalStateException("Không thể xử lý dữ liệu preview", e);
-        }
-    }
-
 }

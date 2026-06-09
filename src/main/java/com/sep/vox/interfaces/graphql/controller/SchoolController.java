@@ -26,7 +26,7 @@ import com.sep.vox.application.response.input.schoolclass.UpdateSchoolClassRespo
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.dto.SchoolDto;
-import com.sep.vox.domain.dto.SchoolUserDto;
+
 import com.sep.vox.interfaces.graphql.mapper.UpdateSchoolClassCommandMapper;
 
 import graphql.schema.DataFetchingEnvironment;
@@ -99,9 +99,4 @@ public class SchoolController {
         return updateSchoolClassUseCase.execute(command);
     }
 
-
-    @QueryMapping(name = "schoolUsers")
-    public PageResult<SchoolUserDto> schoolUsers(@Argument(name = "schoolId") UUID schoolId, @Argument(name = "page") Integer page, @Argument(name = "size") Integer size) {
-        return null;
-    }
 }

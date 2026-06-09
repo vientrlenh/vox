@@ -8,6 +8,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -25,8 +26,10 @@ import com.sep.vox.application.port.input.usecase.schoolclass.AcceptSchoolClassU
 import com.sep.vox.application.port.input.usecase.schoolclass.CreateSchoolClassUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.CreateSchoolClassUserUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.DeleteSchoolClassUseCase;
+import com.sep.vox.application.port.input.usecase.schoolclass.DeleteSchoolClassUserUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.PreviewSchoolClassImportFromFileUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.PreviewSchoolClassUserImportFromFileUseCase;
+import com.sep.vox.application.port.input.usecase.schoolclass.UpdateSchoolClassUserStatusUseCase;
 import com.sep.vox.application.response.input.importfile.AcceptSchoolClassImportResponse;
 import com.sep.vox.application.response.input.importfile.AcceptSchoolClassUserImportResponse;
 import com.sep.vox.application.response.input.importfile.PreviewSchoolClassImportResponse;
@@ -34,15 +37,20 @@ import com.sep.vox.application.response.input.importfile.PreviewSchoolClassUserI
 import com.sep.vox.application.response.input.schoolclass.CreateSchoolClassResponse;
 import com.sep.vox.application.response.input.schoolclass.CreateSchoolClassUserResponse;
 import com.sep.vox.application.response.input.schoolclass.DeleteSchoolClassResponse;
+import com.sep.vox.application.response.input.schoolclass.DeleteSchoolClassUserResponse;
+import com.sep.vox.application.response.input.schoolclass.UpdateSchoolClassUserStatusResponse;
 import com.sep.vox.interfaces.rest.dto.request.AcceptSchoolClassImportRequest;
 import com.sep.vox.interfaces.rest.dto.request.AcceptSchoolClassUserImportRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolClassRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolClassUserRequest;
+import com.sep.vox.interfaces.rest.dto.request.UpdateSchoolClassUserStatusRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 import com.sep.vox.interfaces.rest.mapper.AcceptSchoolClassImportCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.AcceptSchoolClassUserImportCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateSchoolClassCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateSchoolClassUserCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.DeleteSchoolClassUserCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.UpdateSchoolClassUserStatusCommandMapper;
 
 import jakarta.validation.Valid;
 
@@ -53,6 +61,8 @@ public class SchoolController {
     private final CreateSchoolClassUseCase createSchoolClassUseCase;
     private final CreateSchoolClassUserUseCase createSchoolClassUserUseCase;
     private final DeleteSchoolClassUseCase deleteSchoolClassUseCase;
+    private final DeleteSchoolClassUserUseCase deleteSchoolClassUserUseCase;
+    private final UpdateSchoolClassUserStatusUseCase updateSchoolClassUserStatusUseCase;
     private final PreviewSchoolClassImportFromFileUseCase previewSchoolClassImportFromFileUseCase;
     private final AcceptSchoolClassImportUseCase acceptSchoolClassImportUseCase;
     private final PreviewSchoolClassUserImportFromFileUseCase previewSchoolClassUserImportFromFileUseCase;
@@ -62,6 +72,8 @@ public class SchoolController {
             CreateSchoolClassUseCase createSchoolClassUseCase,
             CreateSchoolClassUserUseCase createSchoolClassUserUseCase,
             DeleteSchoolClassUseCase deleteSchoolClassUseCase,
+            DeleteSchoolClassUserUseCase deleteSchoolClassUserUseCase,
+            UpdateSchoolClassUserStatusUseCase updateSchoolClassUserStatusUseCase,
             PreviewSchoolClassImportFromFileUseCase previewSchoolClassImportFromFileUseCase,
             AcceptSchoolClassImportUseCase acceptSchoolClassImportUseCase,
             PreviewSchoolClassUserImportFromFileUseCase previewSchoolClassUserImportFromFileUseCase,
@@ -69,6 +81,8 @@ public class SchoolController {
         this.createSchoolClassUseCase = createSchoolClassUseCase;
         this.createSchoolClassUserUseCase = createSchoolClassUserUseCase;
         this.deleteSchoolClassUseCase = deleteSchoolClassUseCase;
+        this.deleteSchoolClassUserUseCase = deleteSchoolClassUserUseCase;
+        this.updateSchoolClassUserStatusUseCase = updateSchoolClassUserStatusUseCase;
         this.previewSchoolClassImportFromFileUseCase = previewSchoolClassImportFromFileUseCase;
         this.acceptSchoolClassImportUseCase = acceptSchoolClassImportUseCase;
         this.previewSchoolClassUserImportFromFileUseCase = previewSchoolClassUserImportFromFileUseCase;
@@ -96,6 +110,31 @@ public class SchoolController {
         var data = createSchoolClassUserUseCase.execute(command);
         var response = ApiResponse.success("Thêm người dùng vào lớp học thành công", data);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @DeleteMapping("/{schoolId}/classes/{classId}/users/{userId}")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public ResponseEntity<ApiResponse<DeleteSchoolClassUserResponse>> deleteClassUser(
+            @PathVariable UUID schoolId,
+            @PathVariable UUID classId,
+            @PathVariable UUID userId) {
+        var command = DeleteSchoolClassUserCommandMapper.fromPath(schoolId, classId, userId);
+        var data = deleteSchoolClassUserUseCase.execute(command);
+        var response = ApiResponse.success("Xóa người dùng khỏi lớp học thành công", data);
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/{schoolId}/classes/{classId}/users/{userId}/status")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public ResponseEntity<ApiResponse<UpdateSchoolClassUserStatusResponse>> updateClassUserStatus(
+            @PathVariable UUID schoolId,
+            @PathVariable UUID classId,
+            @PathVariable UUID userId,
+            @Valid @RequestBody UpdateSchoolClassUserStatusRequest request) {
+        var command = UpdateSchoolClassUserStatusCommandMapper.fromRequest(schoolId, classId, userId, request);
+        var data = updateSchoolClassUserStatusUseCase.execute(command);
+        var response = ApiResponse.success("Cập nhật trạng thái người dùng trong lớp học thành công", data);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping(

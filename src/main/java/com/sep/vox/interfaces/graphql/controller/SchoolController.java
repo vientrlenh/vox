@@ -103,7 +103,7 @@ public class SchoolController {
             @Argument(name = "page") int page,
             @Argument(name = "size") int size) {
         if (page <= 0 || size <= 0) {
-            throw new IllegalStateException("Sá»‘ trang hoáº·c kÃ­ch cá»¡ trang yÃªu cáº§u khÃ´ng há»£p lá»‡");
+            throw new IllegalStateException("Số trang hoặc kích cỡ trang yêu cầu không hợp lệ");
         }
         return viewSchoolClassUsersUseCase.execute(new ViewSchoolClassUsersQuery(schoolClassId, page, size));
     }

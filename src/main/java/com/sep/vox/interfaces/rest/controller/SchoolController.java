@@ -21,17 +21,21 @@ import com.sep.vox.application.port.input.command.DeleteSchoolClassCommand;
 import com.sep.vox.application.port.input.command.PreviewSchoolClassImportFromFileCommand;
 import com.sep.vox.application.port.input.usecase.schoolclass.AcceptSchoolClassImportUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.CreateSchoolClassUseCase;
+import com.sep.vox.application.port.input.usecase.schoolclass.CreateSchoolClassUserUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.DeleteSchoolClassUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.PreviewSchoolClassImportFromFileUseCase;
 import com.sep.vox.application.response.input.importfile.AcceptSchoolClassImportResponse;
 import com.sep.vox.application.response.input.importfile.PreviewSchoolClassImportResponse;
 import com.sep.vox.application.response.input.schoolclass.CreateSchoolClassResponse;
+import com.sep.vox.application.response.input.schoolclass.CreateSchoolClassUserResponse;
 import com.sep.vox.application.response.input.schoolclass.DeleteSchoolClassResponse;
 import com.sep.vox.interfaces.rest.dto.request.AcceptSchoolClassImportRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolClassRequest;
+import com.sep.vox.interfaces.rest.dto.request.CreateSchoolClassUserRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 import com.sep.vox.interfaces.rest.mapper.AcceptSchoolClassImportCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateSchoolClassCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.CreateSchoolClassUserCommandMapper;
 
 import jakarta.validation.Valid;
 
@@ -40,16 +44,19 @@ import jakarta.validation.Valid;
 public class SchoolController {
 
     private final CreateSchoolClassUseCase createSchoolClassUseCase;
+    private final CreateSchoolClassUserUseCase createSchoolClassUserUseCase;
     private final DeleteSchoolClassUseCase deleteSchoolClassUseCase;
     private final PreviewSchoolClassImportFromFileUseCase previewSchoolClassImportFromFileUseCase;
     private final AcceptSchoolClassImportUseCase acceptSchoolClassImportUseCase;
 
     public SchoolController(
             CreateSchoolClassUseCase createSchoolClassUseCase,
+            CreateSchoolClassUserUseCase createSchoolClassUserUseCase,
             DeleteSchoolClassUseCase deleteSchoolClassUseCase,
             PreviewSchoolClassImportFromFileUseCase previewSchoolClassImportFromFileUseCase,
             AcceptSchoolClassImportUseCase acceptSchoolClassImportUseCase) {
         this.createSchoolClassUseCase = createSchoolClassUseCase;
+        this.createSchoolClassUserUseCase = createSchoolClassUserUseCase;
         this.deleteSchoolClassUseCase = deleteSchoolClassUseCase;
         this.previewSchoolClassImportFromFileUseCase = previewSchoolClassImportFromFileUseCase;
         this.acceptSchoolClassImportUseCase = acceptSchoolClassImportUseCase;
@@ -63,6 +70,18 @@ public class SchoolController {
         var command = CreateSchoolClassCommandMapper.fromRequest(schoolId, request);
         var data = createSchoolClassUseCase.execute(command);
         var response = ApiResponse.success("Tạo lớp học thành công", data);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping("/{schoolId}/classes/{classId}/users")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public ResponseEntity<ApiResponse<CreateSchoolClassUserResponse>> createClassUser(
+            @PathVariable UUID schoolId,
+            @PathVariable UUID classId,
+            @Valid @RequestBody CreateSchoolClassUserRequest request) {
+        var command = CreateSchoolClassUserCommandMapper.fromRequest(schoolId, classId, request);
+        var data = createSchoolClassUserUseCase.execute(command);
+        var response = ApiResponse.success("Thêm người dùng vào lớp học thành công", data);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 

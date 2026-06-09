@@ -3,6 +3,7 @@ package com.sep.vox.interfaces.rest.mapper;
 import java.util.List;
 
 import com.sep.vox.application.port.input.command.CreateQuestionAssetCommand;
+import com.sep.vox.application.port.input.command.CreateSchoolQuestionBankQuestionCommand;
 import com.sep.vox.application.port.input.command.CreateSystemQuestionBankQuestionCommand;
 import com.sep.vox.interfaces.rest.dto.request.CreateQuestionAssetRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSystemQuestionBankQuestionRequest;
@@ -11,6 +12,28 @@ public final class CreateQuestionCommandMapper {
 
     public static CreateSystemQuestionBankQuestionCommand fromQuestionBankRequest(CreateSystemQuestionBankQuestionRequest request) {
         return new CreateSystemQuestionBankQuestionCommand(
+            request.questionTopicId(),
+            request.code(),
+            request.instructionText(),
+            request.questionText(),
+            request.promptText(),
+            request.preparationText(),
+            request.expectedContent(),
+            request.keyPoints(),
+            request.acceptableResponses(),
+            request.offTopicExamples(),
+            request.scoringHints(),
+            request.commonMistakes(),
+            request.type(),
+            request.preparationTimeSeconds(),
+            request.minResponseSeconds(),
+            request.maxResponseSeconds(),
+            toAssetCommands(request.assets())
+        );
+    }
+
+    public static CreateSchoolQuestionBankQuestionCommand fromSchoolRequest(CreateSystemQuestionBankQuestionRequest request) {
+        return new CreateSchoolQuestionBankQuestionCommand(
             request.questionTopicId(),
             request.code(),
             request.instructionText(),

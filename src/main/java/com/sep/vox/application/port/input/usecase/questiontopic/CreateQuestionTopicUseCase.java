@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.questiontopic;
 
+import java.time.OffsetDateTime;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -8,8 +10,10 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.mapper.questiontopic.CreateQuestionTopicResponseMapper;
 import com.sep.vox.application.port.input.command.CreateQuestionTopicCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
+import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.questiontopic.CreateQuestionTopicResponse;
 import com.sep.vox.domain.model.question.QuestionTopic;
+import com.sep.vox.domain.model.question.QuestionTopicStatus;
 import com.sep.vox.domain.repository.QuestionBankRepository;
 import com.sep.vox.domain.repository.QuestionTopicRepository;
 
@@ -18,10 +22,13 @@ public class CreateQuestionTopicUseCase implements IUseCase<CreateQuestionTopicC
 
     private final QuestionTopicRepository questionTopicRepository;
     private final QuestionBankRepository questionBankRepository;
+    private final UserContextPort userContextPort;
 
-    public CreateQuestionTopicUseCase(QuestionTopicRepository questionTopicRepository, QuestionBankRepository questionBankRepository) {
+    public CreateQuestionTopicUseCase(QuestionTopicRepository questionTopicRepository,
+            QuestionBankRepository questionBankRepository, UserContextPort userContextPort) {
         this.questionTopicRepository = questionTopicRepository;
         this.questionBankRepository = questionBankRepository;
+        this.userContextPort = userContextPort;
     }
 
     @Override
@@ -33,7 +40,19 @@ public class CreateQuestionTopicUseCase implements IUseCase<CreateQuestionTopicC
             throw new NotFoundException("Không tìm thấy ngân hàng câu hỏi");
         }
 
-        var topic = new QuestionTopic();
+        var now = OffsetDateTime.now();
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        var code = StringNormalization.normalizeCode(command.topicName());
+
+        var topic = new QuestionTopic(
+            command.bankId(),
+            code,
+            command.topicName(),
+            command.description(),
+            QuestionTopicStatus.DRAFT,
+            now, now,
+            currentUserId, currentUserId
+        );
         var saved = questionTopicRepository.save(topic);
         return CreateQuestionTopicResponseMapper.toResponse(saved.getId());
     }

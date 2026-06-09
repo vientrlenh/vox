@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -16,6 +17,7 @@ import com.sep.vox.application.port.input.command.ReviewQuestionCommand;
 import com.sep.vox.application.port.input.command.UpdateQuestionAssetsCommand;
 import com.sep.vox.application.port.input.command.UpdateQuestionContentCommand;
 import com.sep.vox.application.port.input.command.UpdateQuestionEvaluationGuideCommand;
+import com.sep.vox.application.port.input.usecase.question.CreateSchoolQuestionBankQuestionUseCase;
 import com.sep.vox.application.port.input.usecase.question.CreateSystemQuestionBankQuestionUseCase;
 import com.sep.vox.application.port.input.usecase.question.ReviewQuestionUseCase;
 import com.sep.vox.application.port.input.usecase.question.UpdateQuestionAssetsUseCase;
@@ -38,19 +40,22 @@ import jakarta.validation.Valid;
 @RequestMapping("/api/v1/questions")
 public class QuestionController {
 
-    private final CreateSystemQuestionBankQuestionUseCase createQuestionBankQuestionUseCase;
+    private final CreateSystemQuestionBankQuestionUseCase createSystemQuestionBankQuestionUseCase;
+    private final CreateSchoolQuestionBankQuestionUseCase createSchoolQuestionBankQuestionUseCase;
     private final UpdateQuestionContentUseCase updateQuestionContentUseCase;
     private final UpdateQuestionAssetsUseCase updateQuestionAssetsUseCase;
     private final UpdateQuestionEvaluationGuideUseCase updateQuestionEvaluationGuideUseCase;
     private final ReviewQuestionUseCase reviewQuestionUseCase;
 
     public QuestionController(
-            CreateSystemQuestionBankQuestionUseCase createQuestionBankQuestionUseCase,
+            CreateSystemQuestionBankQuestionUseCase createSystemQuestionBankQuestionUseCase,
+            CreateSchoolQuestionBankQuestionUseCase createSchoolQuestionBankQuestionUseCase,
             UpdateQuestionContentUseCase updateQuestionContentUseCase,
             UpdateQuestionAssetsUseCase updateQuestionAssetsUseCase,
             UpdateQuestionEvaluationGuideUseCase updateQuestionEvaluationGuideUseCase,
             ReviewQuestionUseCase reviewQuestionUseCase) {
-        this.createQuestionBankQuestionUseCase = createQuestionBankQuestionUseCase;
+        this.createSystemQuestionBankQuestionUseCase = createSystemQuestionBankQuestionUseCase;
+        this.createSchoolQuestionBankQuestionUseCase = createSchoolQuestionBankQuestionUseCase;
         this.updateQuestionContentUseCase = updateQuestionContentUseCase;
         this.updateQuestionAssetsUseCase = updateQuestionAssetsUseCase;
         this.updateQuestionEvaluationGuideUseCase = updateQuestionEvaluationGuideUseCase;
@@ -59,11 +64,21 @@ public class QuestionController {
 
     @PostMapping("/system")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public ResponseEntity<ApiResponse<CreateQuestionResponse>> create(
+    public ResponseEntity<ApiResponse<CreateQuestionResponse>> createSystem(
             @Valid @RequestBody CreateSystemQuestionBankQuestionRequest request) {
         var command = CreateQuestionCommandMapper.fromQuestionBankRequest(request);
-        var data = createQuestionBankQuestionUseCase.execute(command);
-        var response = ApiResponse.success("Táº¡o cÃ¢u há»i thÃ nh cÃ´ng", data);
+        var data = createSystemQuestionBankQuestionUseCase.execute(command);
+        var response = ApiResponse.success("Tạo câu hỏi thành công", data);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping("/school")
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
+    public ResponseEntity<ApiResponse<CreateQuestionResponse>> createSchool(
+            @Valid @RequestBody CreateSystemQuestionBankQuestionRequest request) {
+        var command = CreateQuestionCommandMapper.fromSchoolRequest(request);
+        var data = createSchoolQuestionBankQuestionUseCase.execute(command);
+        var response = ApiResponse.success("Tạo câu hỏi thành công", data);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -118,7 +133,7 @@ public class QuestionController {
         return ResponseEntity.ok(ApiResponse.success("cập nhật thành công", data));
     }
 
-    @PostMapping("/{questionId}/review-actions")
+    @PatchMapping("/{questionId}/review-actions")
     @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN', 'SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UpdateQuestionResponse>> reviewAction(
             @PathVariable UUID questionId,

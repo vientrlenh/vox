@@ -6,6 +6,16 @@ enum QuestionType {
     DESCRIPTION
 }
 
+enum QuestionStatus {
+    DRAFT
+    SUBMITTED_FOR_REVIEW
+    REVISION_REQUESTED
+    APPROVED
+    REJECTED
+    PUBLISHED
+    ARCHIVED
+}
+
 type QuestionBank {
     id: ID!
     bankName: String!
@@ -33,6 +43,25 @@ type QuestionTopic {
     bank: QuestionBank
 }
 
+type QuestionTopicDto {
+    id: ID!
+    questionBankId: ID!
+    code: String!
+    name: String!
+    description: String
+    status: String!
+    createdAt: String
+    updatedAt: String
+}
+
+type QuestionTopicDtoPage {
+    content: [QuestionTopicDto!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
 type QuestionTopicPage {
     content: [QuestionTopic!]!
     page: Int!
@@ -57,6 +86,83 @@ type Question {
     topic: QuestionTopic
 }
 
+type QuestionDto {
+    id: ID!
+    questionTopicId: ID!
+    code: String!
+    instructionText: String
+    questionText: String!
+    promptText: String
+    preparationText: String
+    type: String!
+    preparationTimeSeconds: Int!
+    minResponseSeconds: Int!
+    maxResponseSeconds: Int!
+    scope: String!
+    visibility: String!
+    sourceQuestionId: ID
+    locked: Boolean!
+    status: String!
+    createdAt: String
+    updatedAt: String
+}
+
+type QuestionDtoPage {
+    content: [QuestionDto!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+type QuestionAssetDto {
+    id: ID!
+    questionId: ID!
+    title: String
+    durationSeconds: Int
+    altText: String
+    type: String!
+    url: String
+    transcript: String
+    description: String
+    order: Int!
+}
+
+type QuestionEvaluationGuideDto {
+    id: ID!
+    questionId: ID!
+    expectedContent: String
+    keyPoints: String
+    acceptableResponses: String
+    offTopicExamples: String
+    scoringHints: String
+    commonMistakes: String
+}
+
+type QuestionDetailDto {
+    id: ID!
+    questionTopicId: ID!
+    code: String!
+    instructionText: String
+    questionText: String!
+    promptText: String
+    preparationText: String
+    type: String!
+    preparationTimeSeconds: Int!
+    minResponseSeconds: Int!
+    maxResponseSeconds: Int!
+    scope: String!
+    visibility: String!
+    sourceQuestionId: ID
+    locked: Boolean!
+    status: String!
+    createdAt: String
+    updatedAt: String
+    questionTopic: QuestionTopicDto
+    evaluationGuide: QuestionEvaluationGuideDto
+    assets: [QuestionAssetDto!]
+}
+
 type QuestionPage {
     content: [Question!]!
     page: Int!
@@ -75,4 +181,32 @@ extend type Query {
     questions(page: Int = 0, size: Int = 20): QuestionPage!
     questionsByTopic(topicId: ID!, page: Int = 0, size: Int = 20): QuestionPage!
     question(id: ID!): Question
+
+    # Common
+    questionDetail(questionId: ID!): QuestionDetailDto
+
+    # Teacher queries (QuestionController)
+    teacherMyQuestions(page: Int = 0, size: Int = 20): QuestionDtoPage!
+    teacherReviewQueue(page: Int = 0, size: Int = 20): QuestionDtoPage!
+
+    # School queries (QuestionController)
+    schoolReviewQueue(page: Int = 0, size: Int = 20): QuestionDtoPage!
+
+    # Admin queries (QuestionController)
+    adminQuestions(page: Int = 0, size: Int = 20, includeArchived: Boolean, status: String, keyword: String): QuestionDtoPage!
+    adminReviewQueue(page: Int = 0, size: Int = 20): QuestionDtoPage!
+
+    # Teacher queries (QuestionTopicController)
+    teacherBankTopics(bankId: ID!, page: Int = 0, size: Int = 20): QuestionTopicDtoPage!
+    teacherTopicQuestions(bankId: ID!, topicId: ID!, page: Int = 0, size: Int = 20, status: String, keyword: String): QuestionDtoPage!
+
+    # School queries (QuestionTopicController)
+    schoolBankTopics(bankId: ID!, page: Int = 0, size: Int = 20): QuestionTopicDtoPage!
+    schoolTopicQuestions(bankId: ID!, topicId: ID!, page: Int = 0, size: Int = 20, status: String, keyword: String): QuestionDtoPage!
+
+    # Admin queries (QuestionTopicController)
+    adminBankTopics(bankId: ID!, page: Int = 0, size: Int = 20, includeArchived: Boolean): QuestionTopicDtoPage!
+
+    # Admin queries (QuestionBankController)
+    adminBankQuestions(bankId: ID!, page: Int = 0, size: Int = 20, includeArchived: Boolean, status: String, keyword: String): QuestionDtoPage!
 }

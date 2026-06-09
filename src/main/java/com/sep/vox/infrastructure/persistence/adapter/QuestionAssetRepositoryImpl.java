@@ -1,6 +1,7 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
@@ -34,5 +35,18 @@ public class QuestionAssetRepositoryImpl implements QuestionAssetRepository {
             .stream()
             .map(QuestionAssetMapper::toDomain)
             .toList();
+    }
+
+    @Override
+    public List<QuestionAsset> findByQuestionId(UUID questionId) {
+        return springDataQuestionAssetRepository.findByQuestionIdOrderByOrder(questionId)
+            .stream()
+            .map(QuestionAssetMapper::toDomain)
+            .toList();
+    }
+
+    @Override
+    public void deleteByQuestionId(UUID questionId) {
+        springDataQuestionAssetRepository.deleteByQuestionId(questionId);
     }
 }

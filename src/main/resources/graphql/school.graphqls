@@ -31,12 +31,9 @@ type SchoolClass {
     code: String!
     name: String!
     description: String
-    targetSchoolLevelVersionId: ID!
     status: String!
     createdAt: String
     updatedAt: String
-    createdBy: ID
-    updatedBy: ID
 }
 
 type SchoolClassPage {
@@ -45,6 +42,16 @@ type SchoolClassPage {
     size: Int!
     totalElements: Int!
     totalPages: Int!
+}
+
+type UpdateSchoolClassResponse {
+    schoolClassId: ID!
+}
+
+input UpdateSchoolClassInput {
+    name: String
+    description: String
+    status: String
 }
 
 type SchoolUser {
@@ -69,8 +76,12 @@ type SchoolUserPage {
 extend type Query {
     schools(page: Int = 1, size: Int = 20): SchoolPage!
     school(id: ID!): School
-    schoolClasses(page: Int = 1, size: Int = 20): SchoolClassPage!
+    schoolClasses(page: Int = 1, size: Int = 20, search: String, status: String, languageId: ID, schoolGradeId: ID): SchoolClassPage!
     schoolClass(id: ID!): SchoolClass
     schoolUsers(schoolId: ID!, page: Int = 1, size: Int = 20): SchoolUserPage
     schoolUser(id: ID!): SchoolUser
+}
+
+extend type Mutation {
+    updateSchoolClass(id: ID!, input: UpdateSchoolClassInput!): UpdateSchoolClassResponse!
 }

@@ -22,9 +22,6 @@ public record CreateSchoolClassRequest(
     String name,
 
     @Size(max = 2048, message = "Mô tả không được vượt quá 2048 ký tự")
-    String description,
-
-    @NotNull(message = "ID phiên bản cấp độ mục tiêu không được để trống")
-    UUID targetSchoolLevelVersionId
+    String description
 ) {
 }

@@ -6,16 +6,6 @@ enum QuestionType {
     DESCRIPTION
 }
 
-enum QuestionStatus {
-    DRAFT
-    SUBMITTED_FOR_REVIEW
-    REVISION_REQUESTED
-    APPROVED
-    REJECTED
-    PUBLISHED
-    ARCHIVED
-}
-
 type QuestionBank {
     id: ID!
     bankName: String!
@@ -37,14 +27,6 @@ type QuestionBankPage {
 
 type QuestionTopic {
     id: ID!
-    bankId: ID!
-    topicName: String!
-    description: String
-    bank: QuestionBank
-}
-
-type QuestionTopicDto {
-    id: ID!
     questionBankId: ID!
     code: String!
     name: String!
@@ -52,14 +34,6 @@ type QuestionTopicDto {
     status: String!
     createdAt: String
     updatedAt: String
-}
-
-type QuestionTopicDtoPage {
-    content: [QuestionTopicDto!]!
-    page: Int!
-    size: Int!
-    totalElements: Int!
-    totalPages: Int!
 }
 
 type QuestionTopicPage {
@@ -70,52 +44,7 @@ type QuestionTopicPage {
     totalPages: Int!
 }
 
-type Question {
-    id: ID!
-    topicId: ID!
-    questionText: String!
-    audioUrl: String
-    standardLevelId: ID!
-    standardLevelCode: String
-    frameworkCode: String
-    frameworkName: String
-    questionType: QuestionType!
-    durationSeconds: Int!
-    isActive: Boolean!
-    createdAt: String!
-    topic: QuestionTopic
-}
-
-type QuestionDto {
-    id: ID!
-    questionTopicId: ID!
-    code: String!
-    instructionText: String
-    questionText: String!
-    promptText: String
-    preparationText: String
-    type: String!
-    preparationTimeSeconds: Int!
-    minResponseSeconds: Int!
-    maxResponseSeconds: Int!
-    scope: String!
-    visibility: String!
-    sourceQuestionId: ID
-    locked: Boolean!
-    status: String!
-    createdAt: String
-    updatedAt: String
-}
-
-type QuestionDtoPage {
-    content: [QuestionDto!]!
-    page: Int!
-    size: Int!
-    totalElements: Int!
-    totalPages: Int!
-}
-
-type QuestionAssetDto {
+type QuestionAsset {
     id: ID!
     questionId: ID!
     title: String
@@ -128,7 +57,7 @@ type QuestionAssetDto {
     order: Int!
 }
 
-type QuestionEvaluationGuideDto {
+type QuestionEvaluationGuide {
     id: ID!
     questionId: ID!
     expectedContent: String
@@ -139,7 +68,7 @@ type QuestionEvaluationGuideDto {
     commonMistakes: String
 }
 
-type QuestionDetailDto {
+type Question {
     id: ID!
     questionTopicId: ID!
     code: String!
@@ -158,9 +87,9 @@ type QuestionDetailDto {
     status: String!
     createdAt: String
     updatedAt: String
-    questionTopic: QuestionTopicDto
-    evaluationGuide: QuestionEvaluationGuideDto
-    assets: [QuestionAssetDto!]
+    questionTopic: QuestionTopic
+    assets: [QuestionAsset!]
+    evaluationGuide: QuestionEvaluationGuide
 }
 
 type QuestionPage {
@@ -182,31 +111,28 @@ extend type Query {
     questionsByTopic(topicId: ID!, page: Int = 0, size: Int = 20): QuestionPage!
     question(id: ID!): Question
 
-    # Common
-    questionDetail(questionId: ID!): QuestionDetailDto
-
     # Teacher queries (QuestionController)
-    teacherMyQuestions(page: Int = 0, size: Int = 20): QuestionDtoPage!
-    teacherReviewQueue(page: Int = 0, size: Int = 20): QuestionDtoPage!
+    teacherMyQuestions(page: Int = 0, size: Int = 20): QuestionPage!
+    teacherReviewQueue(page: Int = 0, size: Int = 20): QuestionPage!
 
     # School queries (QuestionController)
-    schoolReviewQueue(page: Int = 0, size: Int = 20): QuestionDtoPage!
+    schoolReviewQueue(page: Int = 0, size: Int = 20): QuestionPage!
 
     # Admin queries (QuestionController)
-    adminQuestions(page: Int = 0, size: Int = 20, includeArchived: Boolean, status: String, keyword: String): QuestionDtoPage!
-    adminReviewQueue(page: Int = 0, size: Int = 20): QuestionDtoPage!
+    adminQuestions(page: Int = 0, size: Int = 20, includeArchived: Boolean, status: String, keyword: String): QuestionPage!
+    adminReviewQueue(page: Int = 0, size: Int = 20): QuestionPage!
 
     # Teacher queries (QuestionTopicController)
-    teacherBankTopics(bankId: ID!, page: Int = 0, size: Int = 20): QuestionTopicDtoPage!
-    teacherTopicQuestions(bankId: ID!, topicId: ID!, page: Int = 0, size: Int = 20, status: String, keyword: String): QuestionDtoPage!
+    teacherBankTopics(bankId: ID!, page: Int = 0, size: Int = 20): QuestionTopicPage!
+    teacherTopicQuestions(bankId: ID!, topicId: ID!, page: Int = 0, size: Int = 20, status: String, keyword: String): QuestionPage!
 
     # School queries (QuestionTopicController)
-    schoolBankTopics(bankId: ID!, page: Int = 0, size: Int = 20): QuestionTopicDtoPage!
-    schoolTopicQuestions(bankId: ID!, topicId: ID!, page: Int = 0, size: Int = 20, status: String, keyword: String): QuestionDtoPage!
+    schoolBankTopics(bankId: ID!, page: Int = 0, size: Int = 20): QuestionTopicPage!
+    schoolTopicQuestions(bankId: ID!, topicId: ID!, page: Int = 0, size: Int = 20, status: String, keyword: String): QuestionPage!
 
     # Admin queries (QuestionTopicController)
-    adminBankTopics(bankId: ID!, page: Int = 0, size: Int = 20, includeArchived: Boolean): QuestionTopicDtoPage!
+    adminBankTopics(bankId: ID!, page: Int = 0, size: Int = 20, includeArchived: Boolean): QuestionTopicPage!
 
     # Admin queries (QuestionBankController)
-    adminBankQuestions(bankId: ID!, page: Int = 0, size: Int = 20, includeArchived: Boolean, status: String, keyword: String): QuestionDtoPage!
+    adminBankQuestions(bankId: ID!, page: Int = 0, size: Int = 20, includeArchived: Boolean, status: String, keyword: String): QuestionPage!
 }

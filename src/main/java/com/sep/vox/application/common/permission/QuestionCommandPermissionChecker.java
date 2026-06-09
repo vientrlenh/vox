@@ -97,18 +97,19 @@ public class QuestionCommandPermissionChecker {
 
     /**
      * Implements REVIEW_QUESTION_ACTION flowchart.
+     * Uses QuestionStatus as the target status for the transition.
      */
     public void checkCanReviewAction(Question question, QuestionTopic topic, QuestionBank bank,
-                                     ReviewAction action, UserContext user) {
-        switch (action) {
-            case SUBMIT_FOR_REVIEW -> checkSubmitForReview(question, topic, bank, user);
-            case REQUEST_REVISION -> checkRequestRevision(question, bank, user);
-            case APPROVE -> checkApprove(question, bank, user);
-            case REJECT -> checkReject(question, bank, user);
-            case PUBLISH -> checkPublish(question, topic, bank, user);
-            case ARCHIVE -> checkArchive(question, bank, user);
-            case RESTORE -> checkRestore(question, bank, user);
-            case CLONE_FOR_REVISION -> checkCloneForRevision(question, bank, user);
+                                     QuestionStatus targetStatus, UserContext user) {
+        switch (targetStatus) {
+            case SUBMITTED_FOR_REVIEW -> checkSubmitForReview(question, topic, bank, user);
+            case REVISION_REQUESTED -> checkRequestRevision(question, bank, user);
+            case APPROVED -> checkApprove(question, bank, user);
+            case REJECTED -> checkReject(question, bank, user);
+            case PUBLISHED -> checkPublish(question, topic, bank, user);
+            case ARCHIVED -> checkArchive(question, bank, user);
+            case DRAFT -> checkRestore(question, bank, user);
+            default -> throw new ForbiddenException("Trạng thái đích không hợp lệ: " + targetStatus.name());
         }
     }
 
@@ -308,35 +309,6 @@ public class QuestionCommandPermissionChecker {
 
         switch (user.role()) {
             case STUDENT, TEACHER -> throw new ForbiddenException("Bạn không có quyền khôi phục câu hỏi");
-            case SCHOOL_ADMIN -> {
-                if (!isSchoolBankOwner(bank, user)) {
-                    throw new ForbiddenException("Trường không sở hữu ngân hàng câu hỏi này");
-                }
-            }
-            case SYSTEM_ADMIN -> { /* allowed */ }
-        }
-    }
-
-    private void checkCloneForRevision(Question question, QuestionBank bank, UserContext user) {
-        // Only PUBLISHED, ARCHIVED, REJECTED can be cloned
-        if (question.getStatus() != QuestionStatus.PUBLISHED
-                && question.getStatus() != QuestionStatus.ARCHIVED
-                && question.getStatus() != QuestionStatus.REJECTED) {
-            throw new ForbiddenException("Chỉ có thể sao chép câu hỏi ở trạng thái đã xuất bản, lưu trữ hoặc bị từ chối");
-        }
-
-        switch (user.role()) {
-            case STUDENT -> throw new ForbiddenException("Học sinh không được phép sao chép câu hỏi");
-            case TEACHER -> {
-                // Teacher must be able to view the source question
-                // For QUESTION_BANK scope: author or reviewer
-                if (question.getScope() == QuestionScope.QUESTION_BANK) {
-                    if (!question.getCreatedBy().equals(user.userId())
-                            && !isTeacherReviewer(question, bank, user)) {
-                        throw new ForbiddenException("Bạn không có quyền sao chép câu hỏi này");
-                    }
-                }
-            }
             case SCHOOL_ADMIN -> {
                 if (!isSchoolBankOwner(bank, user)) {
                     throw new ForbiddenException("Trường không sở hữu ngân hàng câu hỏi này");

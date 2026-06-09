@@ -1,9 +1,11 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
+import org.springframework.graphql.data.method.annotation.SchemaMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 
@@ -17,17 +19,20 @@ import com.sep.vox.application.port.input.query.ViewTeacherMyQuestionsQuery;
 import com.sep.vox.application.port.input.query.ViewTeacherReviewQueueQuery;
 import com.sep.vox.application.port.input.usecase.question.ViewAdminQuestionsUseCase;
 import com.sep.vox.application.port.input.usecase.question.ViewAdminReviewQueueUseCase;
-import com.sep.vox.application.port.input.usecase.question.ViewQuestionDetailUseCase;
+import com.sep.vox.application.port.input.usecase.question.ViewQuestionAssetsUseCase;
 import com.sep.vox.application.port.input.usecase.question.ViewQuestionDetailsUseCase;
+import com.sep.vox.application.port.input.usecase.question.ViewQuestionEvaluationGuideUseCase;
+import com.sep.vox.application.port.input.usecase.question.ViewQuestionTopicByQuestionUseCase;
 import com.sep.vox.application.port.input.usecase.question.ViewQuestionsByTopicUseCase;
 import com.sep.vox.application.port.input.usecase.question.ViewQuestionsUseCase;
 import com.sep.vox.application.port.input.usecase.question.ViewSchoolReviewQueueUseCase;
 import com.sep.vox.application.port.input.usecase.question.ViewTeacherMyQuestionsUseCase;
 import com.sep.vox.application.port.input.usecase.question.ViewTeacherReviewQueueUseCase;
-import com.sep.vox.application.port.input.usecase.questiontopic.ViewQuestionTopicDetailsUseCase;
 import com.sep.vox.domain.common.PageResult;
-import com.sep.vox.domain.dto.QuestionDetailDto;
+import com.sep.vox.domain.dto.QuestionAssetDto;
 import com.sep.vox.domain.dto.QuestionDto;
+import com.sep.vox.domain.dto.QuestionEvaluationGuideDto;
+import com.sep.vox.domain.dto.QuestionTopicDto;
 
 @Controller("graphqlQuestionController")
 public class QuestionController {
@@ -35,38 +40,41 @@ public class QuestionController {
     private final ViewQuestionsUseCase viewQuestionsUseCase;
     private final ViewQuestionDetailsUseCase viewQuestionDetailsUseCase;
     private final ViewQuestionsByTopicUseCase viewQuestionsByTopicUseCase;
-    private final ViewQuestionTopicDetailsUseCase viewQuestionTopicDetailsUseCase;
-    private final ViewQuestionDetailUseCase viewQuestionDetailUseCase;
     private final ViewTeacherMyQuestionsUseCase viewTeacherMyQuestionsUseCase;
     private final ViewTeacherReviewQueueUseCase viewTeacherReviewQueueUseCase;
     private final ViewSchoolReviewQueueUseCase viewSchoolReviewQueueUseCase;
     private final ViewAdminQuestionsUseCase viewAdminQuestionsUseCase;
     private final ViewAdminReviewQueueUseCase viewAdminReviewQueueUseCase;
+    private final ViewQuestionTopicByQuestionUseCase viewQuestionTopicByQuestionUseCase;
+    private final ViewQuestionAssetsUseCase viewQuestionAssetsUseCase;
+    private final ViewQuestionEvaluationGuideUseCase viewQuestionEvaluationGuideUseCase;
 
     public QuestionController(
             ViewQuestionsUseCase viewQuestionsUseCase,
             ViewQuestionDetailsUseCase viewQuestionDetailsUseCase,
             ViewQuestionsByTopicUseCase viewQuestionsByTopicUseCase,
-            ViewQuestionTopicDetailsUseCase viewQuestionTopicDetailsUseCase,
-            ViewQuestionDetailUseCase viewQuestionDetailUseCase,
             ViewTeacherMyQuestionsUseCase viewTeacherMyQuestionsUseCase,
             ViewTeacherReviewQueueUseCase viewTeacherReviewQueueUseCase,
             ViewSchoolReviewQueueUseCase viewSchoolReviewQueueUseCase,
             ViewAdminQuestionsUseCase viewAdminQuestionsUseCase,
-            ViewAdminReviewQueueUseCase viewAdminReviewQueueUseCase) {
+            ViewAdminReviewQueueUseCase viewAdminReviewQueueUseCase,
+            ViewQuestionTopicByQuestionUseCase viewQuestionTopicByQuestionUseCase,
+            ViewQuestionAssetsUseCase viewQuestionAssetsUseCase,
+            ViewQuestionEvaluationGuideUseCase viewQuestionEvaluationGuideUseCase) {
         this.viewQuestionsUseCase = viewQuestionsUseCase;
         this.viewQuestionDetailsUseCase = viewQuestionDetailsUseCase;
         this.viewQuestionsByTopicUseCase = viewQuestionsByTopicUseCase;
-        this.viewQuestionTopicDetailsUseCase = viewQuestionTopicDetailsUseCase;
-        this.viewQuestionDetailUseCase = viewQuestionDetailUseCase;
         this.viewTeacherMyQuestionsUseCase = viewTeacherMyQuestionsUseCase;
         this.viewTeacherReviewQueueUseCase = viewTeacherReviewQueueUseCase;
         this.viewSchoolReviewQueueUseCase = viewSchoolReviewQueueUseCase;
         this.viewAdminQuestionsUseCase = viewAdminQuestionsUseCase;
         this.viewAdminReviewQueueUseCase = viewAdminReviewQueueUseCase;
+        this.viewQuestionTopicByQuestionUseCase = viewQuestionTopicByQuestionUseCase;
+        this.viewQuestionAssetsUseCase = viewQuestionAssetsUseCase;
+        this.viewQuestionEvaluationGuideUseCase = viewQuestionEvaluationGuideUseCase;
     }
 
-    // ==================== EXISTING QUERIES ====================
+    // ==================== QUERIES ====================
 
     @QueryMapping(name = "questions")
     @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
@@ -92,19 +100,10 @@ public class QuestionController {
     }
 
     @QueryMapping(name = "question")
-    @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN', 'SYSTEM_ADMIN')")
     public QuestionDto question(@Argument(name = "id") UUID id) {
         var query = new ViewQuestionDetailsQuery(id);
         return viewQuestionDetailsUseCase.execute(query);
-    }
-
-    // ==================== NEW QUERIES ====================
-
-    @QueryMapping(name = "questionDetail")
-    @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN', 'SYSTEM_ADMIN')")
-    public QuestionDetailDto questionDetail(@Argument(name = "questionId") UUID questionId) {
-        var query = new ViewQuestionDetailsQuery(questionId);
-        return viewQuestionDetailUseCase.execute(query);
     }
 
     @QueryMapping(name = "teacherMyQuestions")
@@ -153,6 +152,23 @@ public class QuestionController {
             @Argument(name = "size") int size) {
         var query = new ViewAdminReviewQueueQuery(page, size);
         return viewAdminReviewQueueUseCase.execute(query);
+    }
+
+    // ==================== SCHEMA MAPPINGS (nested fields on Question) ====================
+
+    @SchemaMapping(typeName = "Question", field = "questionTopic")
+    public QuestionTopicDto questionTopic(QuestionDto question) {
+        return viewQuestionTopicByQuestionUseCase.execute(question.questionTopicId());
+    }
+
+    @SchemaMapping(typeName = "Question", field = "assets")
+    public List<QuestionAssetDto> assets(QuestionDto question) {
+        return viewQuestionAssetsUseCase.execute(question.id());
+    }
+
+    @SchemaMapping(typeName = "Question", field = "evaluationGuide")
+    public QuestionEvaluationGuideDto evaluationGuide(QuestionDto question) {
+        return viewQuestionEvaluationGuideUseCase.execute(question.id()).orElse(null);
     }
 
 }

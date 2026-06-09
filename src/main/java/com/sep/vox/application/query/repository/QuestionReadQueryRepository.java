@@ -5,14 +5,13 @@ import java.util.UUID;
 
 import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
-import com.sep.vox.domain.dto.QuestionDetailDto;
 import com.sep.vox.domain.dto.QuestionDto;
 import com.sep.vox.domain.dto.QuestionTopicDto;
 
 public interface QuestionReadQueryRepository {
 
     // Common
-    Optional<QuestionDetailDto> findVisibleQuestionDetail(UUID questionId, UUID userId, String role, UUID schoolId);
+    Optional<QuestionDto> findVisibleQuestion(UUID questionId, UUID userId, String role, UUID schoolId);
 
     // Teacher - QuestionController
     PageResult<QuestionDto> findTeacherMyQuestions(UUID userId, PageRequest page);

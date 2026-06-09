@@ -34,7 +34,7 @@ public class QuestionBankController {
     }
 
     @QueryMapping(name = "questionBanks")
-    // @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
     public PageResult<QuestionBankDto> questionBanks(@Argument(name = "page") int page, @Argument(name = "size") int size) {
         if (page <= 0 || size <= 0) {
             throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
@@ -44,7 +44,7 @@ public class QuestionBankController {
     }
 
     @QueryMapping(name = "questionBank")
-    // @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
     public QuestionBankDto questionBank(@Argument(name = "id") UUID id) {
         var query = new ViewQuestionBankDetailsQuery(id);
         return viewQuestionBankDetailsUseCase.execute(query);

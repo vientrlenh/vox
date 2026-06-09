@@ -9,13 +9,11 @@ import org.springframework.stereotype.Repository;
 import com.sep.vox.application.query.repository.QuestionReadQueryRepository;
 import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
-import com.sep.vox.domain.dto.QuestionDetailDto;
 import com.sep.vox.domain.dto.QuestionDto;
 import com.sep.vox.domain.dto.QuestionTopicDto;
-import com.sep.vox.infrastructure.persistence.entity.QuestionAssetJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.QuestionEvaluationGuideJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.QuestionJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.QuestionTopicJpaEntity;
+import com.sep.vox.infrastructure.persistence.mapper.QuestionReadDtoMapper;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
@@ -31,8 +29,7 @@ public class JpaQuestionReadQueryRepository implements QuestionReadQueryReposito
     // ==================== COMMON ====================
 
     @Override
-    public Optional<QuestionDetailDto> findVisibleQuestionDetail(UUID questionId, UUID userId, String role, UUID schoolId) {
-        // Load question
+    public Optional<QuestionDto> findVisibleQuestion(UUID questionId, UUID userId, String role, UUID schoolId) {
         QuestionJpaEntity question;
         try {
             question = em.createQuery("""
@@ -66,34 +63,7 @@ public class JpaQuestionReadQueryRepository implements QuestionReadQueryReposito
         } catch (NoResultException e) {
             return Optional.empty();
         }
-
-        // Load topic
-        QuestionTopicJpaEntity topic = em.find(QuestionTopicJpaEntity.class, question.getQuestionTopicId());
-
-        // Load assets
-        List<QuestionAssetJpaEntity> assets = em.createQuery(
-                "SELECT a FROM QuestionAssetJpaEntity a WHERE a.questionId = :questionId ORDER BY a.order",
-                QuestionAssetJpaEntity.class)
-                .setParameter("questionId", questionId)
-                .getResultList();
-
-        // Load evaluation guide
-        QuestionEvaluationGuideJpaEntity guide = null;
-        try {
-            guide = em.createQuery(
-                    "SELECT g FROM QuestionEvaluationGuideJpaEntity g WHERE g.questionId = :questionId",
-                    QuestionEvaluationGuideJpaEntity.class)
-                    .setParameter("questionId", questionId)
-                    .getSingleResult();
-        } catch (NoResultException ignored) {
-        }
-
-        // Map to DTO
-        QuestionTopicDto topicDto = topic != null ? toTopicDto(topic) : null;
-        var guideDto = guide != null ? toGuideDto(guide) : null;
-        var assetDtos = assets.stream().map(this::toAssetDto).toList();
-
-        return Optional.of(toDetailDto(question, topicDto, guideDto, assetDtos));
+        return Optional.of(QuestionReadDtoMapper.toDto(question));
     }
 
     // ==================== TEACHER ====================
@@ -113,7 +83,7 @@ public class JpaQuestionReadQueryRepository implements QuestionReadQueryReposito
                 .setMaxResults(page.size())
                 .getResultList();
 
-        return toDtoPage(results, total, page);
+        return QuestionReadDtoMapper.toDtoPage(results, total, page);
     }
 
     @Override
@@ -180,7 +150,7 @@ public class JpaQuestionReadQueryRepository implements QuestionReadQueryReposito
                 .setMaxResults(page.size())
                 .getResultList();
 
-        return toDtoPage(results, total, page);
+        return QuestionReadDtoMapper.toDtoPage(results, total, page);
     }
 
     @Override
@@ -195,7 +165,7 @@ public class JpaQuestionReadQueryRepository implements QuestionReadQueryReposito
                 .setMaxResults(page.size())
                 .getResultList();
 
-        return toDtoPage(results, total, page);
+        return QuestionReadDtoMapper.toDtoPage(results, total, page);
     }
 
     // ==================== TEACHER - TOPIC CONTROLLER ====================
@@ -229,7 +199,7 @@ public class JpaQuestionReadQueryRepository implements QuestionReadQueryReposito
                 .setMaxResults(page.size())
                 .getResultList();
 
-        return toTopicDtoPage(results, total, page);
+        return QuestionReadDtoMapper.toTopicDtoPage(results, total, page);
     }
 
     @Override
@@ -283,7 +253,7 @@ public class JpaQuestionReadQueryRepository implements QuestionReadQueryReposito
                 .setMaxResults(page.size())
                 .getResultList();
 
-        return toDtoPage(results, total, page);
+        return QuestionReadDtoMapper.toDtoPage(results, total, page);
     }
 
     // ==================== SCHOOL - TOPIC CONTROLLER ====================
@@ -311,7 +281,7 @@ public class JpaQuestionReadQueryRepository implements QuestionReadQueryReposito
                 .setMaxResults(page.size())
                 .getResultList();
 
-        return toTopicDtoPage(results, total, page);
+        return QuestionReadDtoMapper.toTopicDtoPage(results, total, page);
     }
 
     @Override
@@ -358,7 +328,7 @@ public class JpaQuestionReadQueryRepository implements QuestionReadQueryReposito
                 .setMaxResults(page.size())
                 .getResultList();
 
-        return toDtoPage(results, total, page);
+        return QuestionReadDtoMapper.toDtoPage(results, total, page);
     }
 
     // ==================== ADMIN - TOPIC CONTROLLER ====================
@@ -383,7 +353,7 @@ public class JpaQuestionReadQueryRepository implements QuestionReadQueryReposito
                 .setMaxResults(page.size())
                 .getResultList();
 
-        return toTopicDtoPage(results, total, page);
+        return QuestionReadDtoMapper.toTopicDtoPage(results, total, page);
     }
 
     // ==================== ADMIN - BANK CONTROLLER ====================
@@ -426,7 +396,7 @@ public class JpaQuestionReadQueryRepository implements QuestionReadQueryReposito
                 .setMaxResults(page.size())
                 .getResultList();
 
-        return toDtoPage(results, total, page);
+        return QuestionReadDtoMapper.toDtoPage(results, total, page);
     }
 
     // ==================== HELPER METHODS ====================
@@ -454,110 +424,6 @@ public class JpaQuestionReadQueryRepository implements QuestionReadQueryReposito
                 .setMaxResults(page.size())
                 .getResultList();
 
-        return toDtoPage(results, total, page);
-    }
-
-    private PageResult<QuestionDto> toDtoPage(List<QuestionJpaEntity> entities, Long total, PageRequest page) {
-        List<QuestionDto> dtos = entities.stream().map(this::toDto).toList();
-        int totalPages = (int) Math.ceil((double) total / page.size());
-        return new PageResult<>(dtos, page.page(), page.size(), total, totalPages);
-    }
-
-    private PageResult<QuestionTopicDto> toTopicDtoPage(List<QuestionTopicJpaEntity> entities, Long total, PageRequest page) {
-        List<QuestionTopicDto> dtos = entities.stream().map(this::toTopicDto).toList();
-        int totalPages = (int) Math.ceil((double) total / page.size());
-        return new PageResult<>(dtos, page.page(), page.size(), total, totalPages);
-    }
-
-    private QuestionDto toDto(QuestionJpaEntity e) {
-        return new QuestionDto(
-                e.getId(),
-                e.getQuestionTopicId(),
-                e.getCode(),
-                e.getInstructionText(),
-                e.getQuestionText(),
-                e.getPromptText(),
-                e.getPreparationText(),
-                e.getType(),
-                e.getPreparationTimeSeconds(),
-                e.getMinResponseSeconds(),
-                e.getMaxResponseSeconds(),
-                e.getScope(),
-                e.getVisibility(),
-                e.getSourceQuestionId(),
-                e.isLocked(),
-                e.getStatus(),
-                e.getCreatedAt() != null ? e.getCreatedAt().toString() : null,
-                e.getUpdatedAt() != null ? e.getUpdatedAt().toString() : null
-        );
-    }
-
-    private QuestionTopicDto toTopicDto(QuestionTopicJpaEntity e) {
-        return new QuestionTopicDto(
-                e.getId(),
-                e.getQuestionBankId(),
-                e.getCode(),
-                e.getName(),
-                e.getDescription(),
-                e.getStatus(),
-                e.getCreatedAt() != null ? e.getCreatedAt().toString() : null,
-                e.getUpdatedAt() != null ? e.getUpdatedAt().toString() : null
-        );
-    }
-
-    private QuestionDetailDto toDetailDto(QuestionJpaEntity q, QuestionTopicDto topic,
-            com.sep.vox.domain.dto.QuestionEvaluationGuideDto guide,
-            List<com.sep.vox.domain.dto.QuestionAssetDto> assets) {
-        return new QuestionDetailDto(
-                q.getId(),
-                q.getQuestionTopicId(),
-                q.getCode(),
-                q.getInstructionText(),
-                q.getQuestionText(),
-                q.getPromptText(),
-                q.getPreparationText(),
-                q.getType(),
-                q.getPreparationTimeSeconds(),
-                q.getMinResponseSeconds(),
-                q.getMaxResponseSeconds(),
-                q.getScope(),
-                q.getVisibility(),
-                q.getSourceQuestionId(),
-                q.isLocked(),
-                q.getStatus(),
-                q.getCreatedAt() != null ? q.getCreatedAt().toString() : null,
-                q.getUpdatedAt() != null ? q.getUpdatedAt().toString() : null,
-                topic,
-                guide,
-                assets
-        );
-    }
-
-    private com.sep.vox.domain.dto.QuestionEvaluationGuideDto toGuideDto(QuestionEvaluationGuideJpaEntity e) {
-        return new com.sep.vox.domain.dto.QuestionEvaluationGuideDto(
-                e.getId(),
-                e.getQuestionId(),
-                e.getExpectedContent(),
-                e.getKeyPoints(),
-                e.getAcceptableResponses(),
-                e.getOffTopicExamples(),
-                e.getScoringHints(),
-                e.getCommonMistakes()
-        );
-    }
-
-    private com.sep.vox.domain.dto.QuestionAssetDto toAssetDto(QuestionAssetJpaEntity e) {
-        return new com.sep.vox.domain.dto.QuestionAssetDto(
-                e.getId(),
-                e.getQuestionId(),
-                e.getTitle(),
-                e.getDurationSeconds(),
-                e.getAltText(),
-                e.getType(),
-                e.getUrl(),
-                e.getTranscript(),
-                e.getDescription(),
-                e.getOrder()
-        );
+        return QuestionReadDtoMapper.toDtoPage(results, total, page);
     }
 }

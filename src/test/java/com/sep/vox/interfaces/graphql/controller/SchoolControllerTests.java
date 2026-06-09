@@ -24,7 +24,7 @@ import com.sep.vox.application.response.input.schoolclass.SchoolClassResponse;
 import com.sep.vox.application.response.input.schoolclass.UpdateSchoolClassResponse;
 import com.sep.vox.domain.common.PageResult;
 
-class SchoolClassControllerTests {
+class SchoolControllerTests {
 
     @Test
     void school_classes_should_return_page_result() {

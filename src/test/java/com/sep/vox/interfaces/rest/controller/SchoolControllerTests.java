@@ -30,7 +30,7 @@ import com.sep.vox.application.response.input.schoolclass.DeleteSchoolClassRespo
 import com.sep.vox.interfaces.rest.dto.request.AcceptSchoolClassImportRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolClassRequest;
 
-class SchoolClassControllerTests {
+class SchoolControllerTests {
 
     @Test
     void create_should_return_created_response() {

@@ -1,4 +1,4 @@
-package com.sep.vox.application.port.input.usecase.schoolclass;
+package com.sep.vox.application.port.input.usecase.schoolclassuser;
 
 import java.time.OffsetDateTime;
 import java.util.Map;

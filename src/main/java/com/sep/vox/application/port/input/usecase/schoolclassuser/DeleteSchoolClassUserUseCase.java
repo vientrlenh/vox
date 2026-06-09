@@ -1,4 +1,4 @@
-package com.sep.vox.application.port.input.usecase.schoolclass;
+package com.sep.vox.application.port.input.usecase.schoolclassuser;
 
 import java.time.OffsetDateTime;
 import java.util.Objects;
@@ -8,10 +8,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.port.input.command.UpdateSchoolClassUserStatusCommand;
+import com.sep.vox.application.port.input.command.DeleteSchoolClassUserCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.response.input.schoolclass.UpdateSchoolClassUserStatusResponse;
+import com.sep.vox.application.response.input.schoolclassuser.DeleteSchoolClassUserResponse;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.model.school.SchoolClassUser;
@@ -23,7 +23,7 @@ import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
-public class UpdateSchoolClassUserStatusUseCase implements IUseCase<UpdateSchoolClassUserStatusCommand, UpdateSchoolClassUserStatusResponse> {
+public class DeleteSchoolClassUserUseCase implements IUseCase<DeleteSchoolClassUserCommand, DeleteSchoolClassUserResponse> {
 
     private final SchoolClassUserRepository schoolClassUserRepository;
     private final SchoolClassRepository schoolClassRepository;
@@ -31,7 +31,7 @@ public class UpdateSchoolClassUserStatusUseCase implements IUseCase<UpdateSchool
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
 
-    public UpdateSchoolClassUserStatusUseCase(
+    public DeleteSchoolClassUserUseCase(
             SchoolClassUserRepository schoolClassUserRepository,
             SchoolClassRepository schoolClassRepository,
             SchoolRepository schoolRepository,
@@ -46,7 +46,7 @@ public class UpdateSchoolClassUserStatusUseCase implements IUseCase<UpdateSchool
 
     @Override
     @Transactional
-    public UpdateSchoolClassUserStatusResponse execute(UpdateSchoolClassUserStatusCommand input) {
+    public DeleteSchoolClassUserResponse execute(DeleteSchoolClassUserCommand input) {
         validateCommand(input);
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         var currentUser = findCurrentUser(currentUserId);
@@ -58,16 +58,15 @@ public class UpdateSchoolClassUserStatusUseCase implements IUseCase<UpdateSchool
         validateTargetUser(input.userId(), schoolId);
         var membership = findMembership(input.userId(), input.classId());
 
-        if (input.isActive()) {
-            activate(membership);
-        } else {
-            deactivate(membership);
+        if (membership.isActive()) {
+            membership.deactivate(OffsetDateTime.now());
+            schoolClassUserRepository.save(membership);
         }
 
-        return new UpdateSchoolClassUserStatusResponse(input.classId());
+        return new DeleteSchoolClassUserResponse(input.classId());
     }
 
-    private void validateCommand(UpdateSchoolClassUserStatusCommand input) {
+    private void validateCommand(DeleteSchoolClassUserCommand input) {
         if (input.schoolId() == null) {
             throw new IllegalArgumentException("Trường học không được để trống");
         }
@@ -76,20 +75,6 @@ public class UpdateSchoolClassUserStatusUseCase implements IUseCase<UpdateSchool
         }
         if (input.userId() == null) {
             throw new IllegalArgumentException("Người dùng không được để trống");
-        }
-    }
-
-    private void activate(SchoolClassUser membership) {
-        if (!membership.isActive() || membership.getLeftAt() != null) {
-            membership.activate();
-            schoolClassUserRepository.save(membership);
-        }
-    }
-
-    private void deactivate(SchoolClassUser membership) {
-        if (membership.isActive()) {
-            membership.deactivate(OffsetDateTime.now());
-            schoolClassUserRepository.save(membership);
         }
     }
 

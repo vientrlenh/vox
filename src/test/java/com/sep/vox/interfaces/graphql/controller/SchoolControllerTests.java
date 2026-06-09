@@ -20,10 +20,10 @@ import com.sep.vox.application.port.input.query.ViewSchoolClassesQuery;
 import com.sep.vox.application.port.input.usecase.school.ViewSchoolsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.UpdateSchoolClassUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassDetailsUseCase;
-import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassUsersUseCase;
+import com.sep.vox.application.port.input.usecase.schoolclassuser.ViewSchoolClassUsersUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassesUseCase;
 import com.sep.vox.application.response.input.schoolclass.SchoolClassResponse;
-import com.sep.vox.application.response.input.schoolclass.SchoolClassUserResponse;
+import com.sep.vox.application.response.input.schoolclassuser.SchoolClassUserResponse;
 import com.sep.vox.application.response.input.schoolclass.UpdateSchoolClassResponse;
 import com.sep.vox.domain.common.PageResult;
 

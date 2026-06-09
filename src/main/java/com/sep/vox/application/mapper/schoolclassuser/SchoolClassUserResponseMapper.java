@@ -1,10 +1,10 @@
-package com.sep.vox.application.mapper.schoolclass;
+package com.sep.vox.application.mapper.schoolclassuser;
 
 import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.UUID;
 
-import com.sep.vox.application.response.input.schoolclass.SchoolClassUserResponse;
+import com.sep.vox.application.response.input.schoolclassuser.SchoolClassUserResponse;
 import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.domain.model.school.SchoolClassUser;
 import com.sep.vox.domain.model.user.Gender;

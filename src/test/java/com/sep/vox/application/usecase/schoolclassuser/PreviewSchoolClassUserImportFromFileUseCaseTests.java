@@ -1,4 +1,4 @@
-package com.sep.vox.application.usecase.schoolclass;
+package com.sep.vox.application.usecase.schoolclassuser;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -20,7 +20,7 @@ import org.mockito.ArgumentCaptor;
 
 import com.sep.vox.application.common.UploadedFile;
 import com.sep.vox.application.port.input.command.PreviewSchoolClassUserImportFromFileCommand;
-import com.sep.vox.application.port.input.usecase.schoolclass.PreviewSchoolClassUserImportFromFileUseCase;
+import com.sep.vox.application.port.input.usecase.schoolclassuser.PreviewSchoolClassUserImportFromFileUseCase;
 import com.sep.vox.application.port.output.FileProcessingPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.output.ParseImportFileResult;

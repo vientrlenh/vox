@@ -1,4 +1,4 @@
-package com.sep.vox.application.port.input.usecase.schoolclass;
+package com.sep.vox.application.port.input.usecase.schoolclassuser;
 
 import java.time.OffsetDateTime;
 import java.util.Objects;
@@ -7,12 +7,11 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.port.input.command.CreateSchoolClassUserCommand;
+import com.sep.vox.application.port.input.command.UpdateSchoolClassUserStatusCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.response.input.schoolclass.CreateSchoolClassUserResponse;
+import com.sep.vox.application.response.input.schoolclassuser.UpdateSchoolClassUserStatusResponse;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.model.school.SchoolClassUser;
@@ -24,7 +23,7 @@ import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
-public class CreateSchoolClassUserUseCase implements IUseCase<CreateSchoolClassUserCommand, CreateSchoolClassUserResponse> {
+public class UpdateSchoolClassUserStatusUseCase implements IUseCase<UpdateSchoolClassUserStatusCommand, UpdateSchoolClassUserStatusResponse> {
 
     private final SchoolClassUserRepository schoolClassUserRepository;
     private final SchoolClassRepository schoolClassRepository;
@@ -32,7 +31,7 @@ public class CreateSchoolClassUserUseCase implements IUseCase<CreateSchoolClassU
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
 
-    public CreateSchoolClassUserUseCase(
+    public UpdateSchoolClassUserStatusUseCase(
             SchoolClassUserRepository schoolClassUserRepository,
             SchoolClassRepository schoolClassRepository,
             SchoolRepository schoolRepository,
@@ -47,9 +46,8 @@ public class CreateSchoolClassUserUseCase implements IUseCase<CreateSchoolClassU
 
     @Override
     @Transactional
-    public CreateSchoolClassUserResponse execute(CreateSchoolClassUserCommand input) {
+    public UpdateSchoolClassUserStatusResponse execute(UpdateSchoolClassUserStatusCommand input) {
         validateCommand(input);
-        var now = OffsetDateTime.now();
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         var currentUser = findCurrentUser(currentUserId);
         var schoolId = getSchoolId(currentUser);
@@ -58,21 +56,18 @@ public class CreateSchoolClassUserUseCase implements IUseCase<CreateSchoolClassU
         validateSchool(schoolId);
         validateSchoolClass(input.classId(), schoolId);
         validateTargetUser(input.userId(), schoolId);
-        validateMembershipIsUnique(input.userId(), input.classId());
+        var membership = findMembership(input.userId(), input.classId());
 
-        var schoolClassUser = new SchoolClassUser(
-            input.userId(),
-            input.classId(),
-            true,
-            now,
-            null,
-            currentUserId
-        );
-        var saved = schoolClassUserRepository.save(schoolClassUser);
-        return new CreateSchoolClassUserResponse(saved.getId());
+        if (input.isActive()) {
+            activate(membership);
+        } else {
+            deactivate(membership);
+        }
+
+        return new UpdateSchoolClassUserStatusResponse(input.classId());
     }
 
-    private void validateCommand(CreateSchoolClassUserCommand input) {
+    private void validateCommand(UpdateSchoolClassUserStatusCommand input) {
         if (input.schoolId() == null) {
             throw new IllegalArgumentException("Trường học không được để trống");
         }
@@ -81,6 +76,20 @@ public class CreateSchoolClassUserUseCase implements IUseCase<CreateSchoolClassU
         }
         if (input.userId() == null) {
             throw new IllegalArgumentException("Người dùng không được để trống");
+        }
+    }
+
+    private void activate(SchoolClassUser membership) {
+        if (!membership.isActive() || membership.getLeftAt() != null) {
+            membership.activate();
+            schoolClassUserRepository.save(membership);
+        }
+    }
+
+    private void deactivate(SchoolClassUser membership) {
+        if (membership.isActive()) {
+            membership.deactivate(OffsetDateTime.now());
+            schoolClassUserRepository.save(membership);
         }
     }
 
@@ -142,9 +151,8 @@ public class CreateSchoolClassUserUseCase implements IUseCase<CreateSchoolClassU
         }
     }
 
-    private void validateMembershipIsUnique(UUID userId, UUID classId) {
-        if (schoolClassUserRepository.findByUserIdAndSchoolClassId(userId, classId).isPresent()) {
-            throw new DuplicatedException("Người dùng đã thuộc lớp học");
-        }
+    private SchoolClassUser findMembership(UUID userId, UUID classId) {
+        return schoolClassUserRepository.findByUserIdAndSchoolClassId(userId, classId)
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng trong lớp học"));
     }
 }

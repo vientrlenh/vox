@@ -1,4 +1,4 @@
-package com.sep.vox.application.usecase.schoolclass;
+package com.sep.vox.application.usecase.schoolclassuser;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import com.sep.vox.application.port.input.command.AcceptSchoolClassUserImportCommand;
-import com.sep.vox.application.port.input.usecase.schoolclass.AcceptSchoolClassUserImportUseCase;
+import com.sep.vox.application.port.input.usecase.schoolclassuser.AcceptSchoolClassUserImportUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.support.FakeJsonSerializationPort;
 import com.sep.vox.domain.model.importfile.ImportRow;

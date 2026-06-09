@@ -1,4 +1,4 @@
-package com.sep.vox.application.response.input.schoolclass;
+package com.sep.vox.application.response.input.schoolclassuser;
 
 import java.util.UUID;
 

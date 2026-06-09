@@ -1,4 +1,4 @@
-package com.sep.vox.application.usecase.schoolclass;
+package com.sep.vox.application.usecase.schoolclassuser;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -17,10 +17,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.port.input.command.CreateSchoolClassUserCommand;
-import com.sep.vox.application.port.input.usecase.schoolclass.CreateSchoolClassUserUseCase;
+import com.sep.vox.application.port.input.command.DeleteSchoolClassUserCommand;
+import com.sep.vox.application.port.input.usecase.schoolclassuser.DeleteSchoolClassUserUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.model.school.SchoolClass;
@@ -34,14 +33,14 @@ import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.valueobject.ClassCode;
 
-class CreateSchoolClassUserUseCaseTests {
+class DeleteSchoolClassUserUseCaseTests {
 
     private SchoolClassUserRepository schoolClassUserRepository;
     private SchoolClassRepository schoolClassRepository;
     private SchoolRepository schoolRepository;
     private UserRepository userRepository;
     private UserContextPort userContextPort;
-    private CreateSchoolClassUserUseCase useCase;
+    private DeleteSchoolClassUserUseCase useCase;
 
     @BeforeEach
     void setUp() {
@@ -50,7 +49,7 @@ class CreateSchoolClassUserUseCaseTests {
         schoolRepository = mock(SchoolRepository.class);
         userRepository = mock(UserRepository.class);
         userContextPort = mock(UserContextPort.class);
-        useCase = new CreateSchoolClassUserUseCase(
+        useCase = new DeleteSchoolClassUserUseCase(
             schoolClassUserRepository,
             schoolClassRepository,
             schoolRepository,
@@ -60,114 +59,80 @@ class CreateSchoolClassUserUseCaseTests {
     }
 
     @Test
-    void create_should_save_active_membership_for_current_users_school() {
+    void delete_should_soft_delete_active_membership() {
         var currentUserId = UUID.randomUUID();
         var targetUserId = UUID.randomUUID();
         var schoolId = UUID.randomUUID();
         var classId = UUID.randomUUID();
-        var savedId = UUID.randomUUID();
-        var command = new CreateSchoolClassUserCommand(schoolId, classId, targetUserId);
-
+        var membership = membership(targetUserId, classId, true, null, currentUserId);
         mockValidContext(currentUserId, schoolId, classId, targetUserId);
-        when(schoolClassUserRepository.findByUserIdAndSchoolClassId(targetUserId, classId)).thenReturn(Optional.empty());
-        when(schoolClassUserRepository.save(any(SchoolClassUser.class))).thenAnswer(invocation -> {
-            var schoolClassUser = invocation.getArgument(0, SchoolClassUser.class);
-            schoolClassUser.setId(savedId);
-            return schoolClassUser;
-        });
+        when(schoolClassUserRepository.findByUserIdAndSchoolClassId(targetUserId, classId)).thenReturn(Optional.of(membership));
 
-        var response = useCase.execute(command);
+        var response = useCase.execute(new DeleteSchoolClassUserCommand(schoolId, classId, targetUserId));
 
-        assertThat(response.schoolClassUserId()).isEqualTo(savedId);
+        assertThat(response.schoolClassId()).isEqualTo(classId);
         var captor = ArgumentCaptor.forClass(SchoolClassUser.class);
         verify(schoolClassUserRepository).save(captor.capture());
+        assertThat(captor.getValue().isActive()).isFalse();
+        assertThat(captor.getValue().getLeftAt()).isNotNull();
         assertThat(captor.getValue().getUserId()).isEqualTo(targetUserId);
         assertThat(captor.getValue().getSchoolClassId()).isEqualTo(classId);
-        assertThat(captor.getValue().isActive()).isTrue();
-        assertThat(captor.getValue().getJoinedAt()).isNotNull();
-        assertThat(captor.getValue().getLeftAt()).isNull();
         assertThat(captor.getValue().getAssignedBy()).isEqualTo(currentUserId);
     }
 
     @Test
-    void create_should_throw_when_membership_already_exists() {
+    void delete_should_be_idempotent_when_membership_is_inactive() {
         var currentUserId = UUID.randomUUID();
         var targetUserId = UUID.randomUUID();
         var schoolId = UUID.randomUUID();
         var classId = UUID.randomUUID();
-        var command = new CreateSchoolClassUserCommand(schoolId, classId, targetUserId);
-
+        var leftAt = OffsetDateTime.now().minusDays(1);
+        var membership = membership(targetUserId, classId, false, leftAt, currentUserId);
         mockValidContext(currentUserId, schoolId, classId, targetUserId);
-        when(schoolClassUserRepository.findByUserIdAndSchoolClassId(targetUserId, classId))
-            .thenReturn(Optional.of(new SchoolClassUser(targetUserId, classId, true, OffsetDateTime.now(), null, currentUserId)));
+        when(schoolClassUserRepository.findByUserIdAndSchoolClassId(targetUserId, classId)).thenReturn(Optional.of(membership));
 
-        assertThrows(DuplicatedException.class, () -> useCase.execute(command));
+        var response = useCase.execute(new DeleteSchoolClassUserCommand(schoolId, classId, targetUserId));
 
+        assertThat(response.schoolClassId()).isEqualTo(classId);
+        assertThat(membership.getLeftAt()).isEqualTo(leftAt);
         verify(schoolClassUserRepository, never()).save(any());
     }
 
     @Test
-    void create_should_throw_when_class_not_found() {
+    void delete_should_throw_when_membership_not_found() {
         var currentUserId = UUID.randomUUID();
         var targetUserId = UUID.randomUUID();
         var schoolId = UUID.randomUUID();
         var classId = UUID.randomUUID();
-        var command = new CreateSchoolClassUserCommand(schoolId, classId, targetUserId);
+        mockValidContext(currentUserId, schoolId, classId, targetUserId);
+        when(schoolClassUserRepository.findByUserIdAndSchoolClassId(targetUserId, classId)).thenReturn(Optional.empty());
 
-        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
-        when(userRepository.findById(currentUserId)).thenReturn(Optional.of(activeUser(currentUserId, schoolId)));
-        when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
-        when(schoolClassRepository.findById(classId)).thenReturn(Optional.empty());
-
-        assertThrows(NotFoundException.class, () -> useCase.execute(command));
-
-        verifyNoInteractions(schoolClassUserRepository);
+        assertThrows(NotFoundException.class, () -> useCase.execute(new DeleteSchoolClassUserCommand(schoolId, classId, targetUserId)));
     }
 
     @Test
-    void create_should_throw_when_class_belongs_to_other_school() {
+    void delete_should_throw_when_class_belongs_to_other_school() {
         var currentUserId = UUID.randomUUID();
         var targetUserId = UUID.randomUUID();
         var schoolId = UUID.randomUUID();
         var classId = UUID.randomUUID();
-        var command = new CreateSchoolClassUserCommand(schoolId, classId, targetUserId);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(userRepository.findById(currentUserId)).thenReturn(Optional.of(activeUser(currentUserId, schoolId)));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(schoolClassRepository.findById(classId)).thenReturn(Optional.of(activeSchoolClass(classId, UUID.randomUUID())));
 
-        assertThrows(NotFoundException.class, () -> useCase.execute(command));
+        assertThrows(NotFoundException.class, () -> useCase.execute(new DeleteSchoolClassUserCommand(schoolId, classId, targetUserId)));
 
         verifyNoInteractions(schoolClassUserRepository);
     }
 
     @Test
-    void create_should_throw_when_target_user_not_found() {
+    void delete_should_throw_when_target_user_is_inactive() {
         var currentUserId = UUID.randomUUID();
         var targetUserId = UUID.randomUUID();
         var schoolId = UUID.randomUUID();
         var classId = UUID.randomUUID();
-        var command = new CreateSchoolClassUserCommand(schoolId, classId, targetUserId);
-
-        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
-        when(userRepository.findById(currentUserId)).thenReturn(Optional.of(activeUser(currentUserId, schoolId)));
-        when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
-        when(schoolClassRepository.findById(classId)).thenReturn(Optional.of(activeSchoolClass(classId, schoolId)));
-        when(userRepository.findById(targetUserId)).thenReturn(Optional.empty());
-
-        assertThrows(NotFoundException.class, () -> useCase.execute(command));
-
-        verifyNoInteractions(schoolClassUserRepository);
-    }
-
-    @Test
-    void create_should_throw_when_target_user_is_inactive() {
-        var currentUserId = UUID.randomUUID();
-        var targetUserId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
-        var classId = UUID.randomUUID();
-        var command = new CreateSchoolClassUserCommand(schoolId, classId, targetUserId);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(userRepository.findById(currentUserId)).thenReturn(Optional.of(activeUser(currentUserId, schoolId)));
@@ -175,60 +140,15 @@ class CreateSchoolClassUserUseCaseTests {
         when(schoolClassRepository.findById(classId)).thenReturn(Optional.of(activeSchoolClass(classId, schoolId)));
         when(userRepository.findById(targetUserId)).thenReturn(Optional.of(user(targetUserId, schoolId, UserStatus.INACTIVE)));
 
-        assertThrows(IllegalStateException.class, () -> useCase.execute(command));
+        assertThrows(IllegalStateException.class, () -> useCase.execute(new DeleteSchoolClassUserCommand(schoolId, classId, targetUserId)));
 
         verifyNoInteractions(schoolClassUserRepository);
     }
 
     @Test
-    void create_should_throw_when_target_user_belongs_to_other_school() {
+    void delete_should_throw_when_current_user_school_mismatches_request() {
         var currentUserId = UUID.randomUUID();
-        var targetUserId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
-        var classId = UUID.randomUUID();
-        var command = new CreateSchoolClassUserCommand(schoolId, classId, targetUserId);
-
-        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
-        when(userRepository.findById(currentUserId)).thenReturn(Optional.of(activeUser(currentUserId, schoolId)));
-        when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
-        when(schoolClassRepository.findById(classId)).thenReturn(Optional.of(activeSchoolClass(classId, schoolId)));
-        when(userRepository.findById(targetUserId)).thenReturn(Optional.of(activeUser(targetUserId, UUID.randomUUID())));
-
-        assertThrows(IllegalArgumentException.class, () -> useCase.execute(command));
-
-        verifyNoInteractions(schoolClassUserRepository);
-    }
-
-    @Test
-    void create_should_throw_when_current_user_is_inactive() {
-        var currentUserId = UUID.randomUUID();
-        var command = new CreateSchoolClassUserCommand(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
-
-        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
-        when(userRepository.findById(currentUserId)).thenReturn(Optional.of(user(currentUserId, UUID.randomUUID(), UserStatus.INACTIVE)));
-
-        assertThrows(IllegalStateException.class, () -> useCase.execute(command));
-
-        verifyNoInteractions(schoolRepository, schoolClassRepository, schoolClassUserRepository);
-    }
-
-    @Test
-    void create_should_throw_when_current_user_has_no_school() {
-        var currentUserId = UUID.randomUUID();
-        var command = new CreateSchoolClassUserCommand(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
-
-        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
-        when(userRepository.findById(currentUserId)).thenReturn(Optional.of(activeUser(currentUserId, null)));
-
-        assertThrows(IllegalStateException.class, () -> useCase.execute(command));
-
-        verifyNoInteractions(schoolRepository, schoolClassRepository, schoolClassUserRepository);
-    }
-
-    @Test
-    void create_should_throw_when_requested_school_differs_from_current_user_school() {
-        var currentUserId = UUID.randomUUID();
-        var command = new CreateSchoolClassUserCommand(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
+        var command = new DeleteSchoolClassUserCommand(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(userRepository.findById(currentUserId)).thenReturn(Optional.of(activeUser(currentUserId, UUID.randomUUID())));
@@ -244,6 +164,12 @@ class CreateSchoolClassUserUseCaseTests {
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(schoolClassRepository.findById(classId)).thenReturn(Optional.of(activeSchoolClass(classId, schoolId)));
         when(userRepository.findById(targetUserId)).thenReturn(Optional.of(activeUser(targetUserId, schoolId)));
+    }
+
+    private static SchoolClassUser membership(UUID userId, UUID classId, boolean isActive, OffsetDateTime leftAt, UUID assignedBy) {
+        var membership = new SchoolClassUser(userId, classId, isActive, OffsetDateTime.now().minusDays(2), leftAt, assignedBy);
+        membership.setId(UUID.randomUUID());
+        return membership;
     }
 
     private static User activeUser(UUID id, UUID schoolId) {

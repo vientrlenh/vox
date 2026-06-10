@@ -7,7 +7,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -191,10 +190,6 @@ class SchoolControllerTests {
     }
 
     private SchoolUserResponse schoolUserResponse(UUID id, String roleCode, String studentId) {
-        return new SchoolUserResponse(
-            id, "user@school.edu.vn", "0987654321", "John Cena",
-            roleCode, "INACTIVE", schoolId, studentId, OffsetDateTime.now(),
-            UUID.randomUUID(), null, null
-        );
+        return new SchoolUserResponse(id, schoolId, id, roleCode, studentId, null, null);
     }
 }

@@ -195,12 +195,11 @@ class SchoolControllerTests {
     }
 
     @Test
-    void delete_user_should_return_ok() {
+    void delete_user_should_return_no_content() {
         var response = controller.deleteUser(schoolId, userId);
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().message()).isEqualTo("Xóa người dùng thành công");
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        assertThat(response.getBody()).isNull();
         verify(deleteSchoolUserUseCase).execute(new DeleteSchoolUserCommand(schoolId, userId));
     }
 
@@ -253,10 +252,6 @@ class SchoolControllerTests {
     }
 
     private SchoolUserResponse schoolUserResponse(UUID id, String roleCode, String studentId) {
-        return new SchoolUserResponse(
-            id, "user@school.edu.vn", "0987654321", "John Cena",
-            roleCode, "INACTIVE", schoolId, studentId, OffsetDateTime.now(),
-            UUID.randomUUID(), null, null
-        );
+        return new SchoolUserResponse(id, schoolId, id, roleCode, studentId, null, null);
     }
 }

@@ -58,7 +58,8 @@ public class ViewSchoolUserUseCaseTests {
         var targetId = UUID.randomUUID();
         var caller = user(callerId, schoolId);
         var target = user(targetId, schoolId);
-        var schoolUser = new SchoolUser("STU-001", schoolId, targetId, OffsetDateTime.now(), OffsetDateTime.now().plusYears(100));
+        var schoolUserId = UUID.randomUUID();
+        var schoolUser = new SchoolUser(schoolUserId, "STU-001", schoolId, targetId, OffsetDateTime.now(), OffsetDateTime.now().plusYears(100));
         var command = new ViewSchoolUserCommand(schoolId, targetId);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
@@ -70,7 +71,8 @@ public class ViewSchoolUserUseCaseTests {
         var result = viewSchoolUserUseCase.execute(command);
 
         assertThat(result).isNotNull();
-        assertThat(result.id()).isEqualTo(targetId);
+        assertThat(result.id()).isEqualTo(schoolUserId);
+        assertThat(result.userId()).isEqualTo(targetId);
         assertThat(result.roleCode()).isEqualTo("STUDENT");
         assertThat(result.studentId()).isEqualTo("STU-001");
     }

@@ -1,6 +1,5 @@
 package com.sep.vox.application.usecase.schooluser;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -58,12 +57,7 @@ public class DeleteSchoolUserUseCaseTests {
         when(userRepository.findById(targetId)).thenReturn(Optional.of(target));
         when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        var result = deleteSchoolUserUseCase.execute(command);
-
-        assertThat(result).isNotNull();
-        assertThat(result.id()).isEqualTo(targetId);
-        assertThat(result.deleteType()).isEqualTo("SOFT");
-        assertThat(result.status()).isEqualTo("DISABLED");
+        deleteSchoolUserUseCase.execute(command);
 
         verify(userRepository).save(argThat(u -> u.getStatus() == UserStatus.DISABLED));
     }

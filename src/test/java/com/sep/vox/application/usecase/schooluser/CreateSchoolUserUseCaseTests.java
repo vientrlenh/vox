@@ -103,7 +103,7 @@ public class CreateSchoolUserUseCaseTests {
         var result = createSchoolUserUseCase.execute(command);
 
         assertThat(result).isNotNull();
-        assertThat(result.schoolUserId()).isEqualTo(savedUser.getId());
+        assertThat(result.id()).isEqualTo(savedUser.getId());
         verify(schoolUserRepository, never()).save(any(SchoolUser.class));
         verify(eventPublisherPort).publish(any(SchoolUserPasswordSetUpEmailRequestedEvent.class));
     }
@@ -129,7 +129,7 @@ public class CreateSchoolUserUseCaseTests {
         when(schoolUserRepository.save(any(SchoolUser.class))).thenReturn(schoolUser);
         var result = createSchoolUserUseCase.execute(command);
 
-        assertThat(result.schoolUserId()).isEqualTo(savedUser.getId());
+        assertThat(result.id()).isEqualTo(savedUser.getId());
         verify(schoolUserRepository).save(any(SchoolUser.class));
         verify(eventPublisherPort).publish(any(SchoolUserPasswordSetUpEmailRequestedEvent.class));
     }
@@ -153,7 +153,7 @@ public class CreateSchoolUserUseCaseTests {
         when(userRoleRepository.save(any(UserRole.class))).thenReturn(new UserRole(savedUser.getId(), teacherRole.getId(), OffsetDateTime.now()));
         var result = createSchoolUserUseCase.execute(command);
 
-        assertThat(result.schoolUserId()).isEqualTo(savedUser.getId());
+        assertThat(result.id()).isEqualTo(savedUser.getId());
         verify(schoolUserRepository, never()).save(any(SchoolUser.class));
         verify(eventPublisherPort).publish(any(SchoolUserPasswordSetUpEmailRequestedEvent.class));
     }

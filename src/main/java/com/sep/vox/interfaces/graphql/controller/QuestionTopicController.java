@@ -17,9 +17,6 @@ import com.sep.vox.application.port.input.usecase.question.ViewSchoolBankTopicsU
 import com.sep.vox.application.port.input.usecase.question.ViewSchoolTopicQuestionsUseCase;
 import com.sep.vox.application.port.input.usecase.question.ViewTeacherBankTopicsUseCase;
 import com.sep.vox.application.port.input.usecase.question.ViewTeacherTopicQuestionsUseCase;
-import com.sep.vox.application.port.input.usecase.questionbank.ViewQuestionBankDetailsUseCase;
-import com.sep.vox.application.port.input.usecase.questiontopic.ViewQuestionTopicDetailsUseCase;
-import com.sep.vox.application.port.input.usecase.questiontopic.ViewQuestionTopicsUseCase;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.QuestionDto;
 import com.sep.vox.domain.dto.QuestionTopicDto;
@@ -27,9 +24,6 @@ import com.sep.vox.domain.dto.QuestionTopicDto;
 @Controller("graphqlQuestionTopicController")
 public class QuestionTopicController {
 
-    private final ViewQuestionTopicsUseCase viewQuestionTopicsUseCase;
-    private final ViewQuestionTopicDetailsUseCase viewQuestionTopicDetailsUseCase;
-    private final ViewQuestionBankDetailsUseCase viewQuestionBankDetailsUseCase;
     private final ViewTeacherBankTopicsUseCase viewTeacherBankTopicsUseCase;
     private final ViewSchoolBankTopicsUseCase viewSchoolBankTopicsUseCase;
     private final ViewAdminBankTopicsUseCase viewAdminBankTopicsUseCase;
@@ -37,17 +31,11 @@ public class QuestionTopicController {
     private final ViewSchoolTopicQuestionsUseCase viewSchoolTopicQuestionsUseCase;
 
     public QuestionTopicController(
-            ViewQuestionTopicsUseCase viewQuestionTopicsUseCase,
-            ViewQuestionTopicDetailsUseCase viewQuestionTopicDetailsUseCase,
-            ViewQuestionBankDetailsUseCase viewQuestionBankDetailsUseCase,
             ViewTeacherBankTopicsUseCase viewTeacherBankTopicsUseCase,
             ViewSchoolBankTopicsUseCase viewSchoolBankTopicsUseCase,
             ViewAdminBankTopicsUseCase viewAdminBankTopicsUseCase,
             ViewTeacherTopicQuestionsUseCase viewTeacherTopicQuestionsUseCase,
             ViewSchoolTopicQuestionsUseCase viewSchoolTopicQuestionsUseCase) {
-        this.viewQuestionTopicsUseCase = viewQuestionTopicsUseCase;
-        this.viewQuestionTopicDetailsUseCase = viewQuestionTopicDetailsUseCase;
-        this.viewQuestionBankDetailsUseCase = viewQuestionBankDetailsUseCase;
         this.viewTeacherBankTopicsUseCase = viewTeacherBankTopicsUseCase;
         this.viewSchoolBankTopicsUseCase = viewSchoolBankTopicsUseCase;
         this.viewAdminBankTopicsUseCase = viewAdminBankTopicsUseCase;

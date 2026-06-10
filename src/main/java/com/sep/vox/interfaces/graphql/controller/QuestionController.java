@@ -12,8 +12,6 @@ import org.springframework.stereotype.Controller;
 import com.sep.vox.application.port.input.query.ViewAdminQuestionsQuery;
 import com.sep.vox.application.port.input.query.ViewAdminReviewQueueQuery;
 import com.sep.vox.application.port.input.query.ViewQuestionDetailsQuery;
-import com.sep.vox.application.port.input.query.ViewQuestionsByTopicQuery;
-import com.sep.vox.application.port.input.query.ViewQuestionsQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolReviewQueueQuery;
 import com.sep.vox.application.port.input.query.ViewTeacherMyQuestionsQuery;
 import com.sep.vox.application.port.input.query.ViewTeacherReviewQueueQuery;
@@ -23,8 +21,6 @@ import com.sep.vox.application.port.input.usecase.question.ViewQuestionAssetsUse
 import com.sep.vox.application.port.input.usecase.question.ViewQuestionDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.question.ViewQuestionEvaluationGuideUseCase;
 import com.sep.vox.application.port.input.usecase.question.ViewQuestionTopicByQuestionUseCase;
-import com.sep.vox.application.port.input.usecase.question.ViewQuestionsByTopicUseCase;
-import com.sep.vox.application.port.input.usecase.question.ViewQuestionsUseCase;
 import com.sep.vox.application.port.input.usecase.question.ViewSchoolReviewQueueUseCase;
 import com.sep.vox.application.port.input.usecase.question.ViewTeacherMyQuestionsUseCase;
 import com.sep.vox.application.port.input.usecase.question.ViewTeacherReviewQueueUseCase;
@@ -37,9 +33,7 @@ import com.sep.vox.domain.dto.QuestionTopicDto;
 @Controller("graphqlQuestionController")
 public class QuestionController {
 
-    private final ViewQuestionsUseCase viewQuestionsUseCase;
     private final ViewQuestionDetailsUseCase viewQuestionDetailsUseCase;
-    private final ViewQuestionsByTopicUseCase viewQuestionsByTopicUseCase;
     private final ViewTeacherMyQuestionsUseCase viewTeacherMyQuestionsUseCase;
     private final ViewTeacherReviewQueueUseCase viewTeacherReviewQueueUseCase;
     private final ViewSchoolReviewQueueUseCase viewSchoolReviewQueueUseCase;
@@ -50,9 +44,7 @@ public class QuestionController {
     private final ViewQuestionEvaluationGuideUseCase viewQuestionEvaluationGuideUseCase;
 
     public QuestionController(
-            ViewQuestionsUseCase viewQuestionsUseCase,
             ViewQuestionDetailsUseCase viewQuestionDetailsUseCase,
-            ViewQuestionsByTopicUseCase viewQuestionsByTopicUseCase,
             ViewTeacherMyQuestionsUseCase viewTeacherMyQuestionsUseCase,
             ViewTeacherReviewQueueUseCase viewTeacherReviewQueueUseCase,
             ViewSchoolReviewQueueUseCase viewSchoolReviewQueueUseCase,
@@ -61,9 +53,7 @@ public class QuestionController {
             ViewQuestionTopicByQuestionUseCase viewQuestionTopicByQuestionUseCase,
             ViewQuestionAssetsUseCase viewQuestionAssetsUseCase,
             ViewQuestionEvaluationGuideUseCase viewQuestionEvaluationGuideUseCase) {
-        this.viewQuestionsUseCase = viewQuestionsUseCase;
         this.viewQuestionDetailsUseCase = viewQuestionDetailsUseCase;
-        this.viewQuestionsByTopicUseCase = viewQuestionsByTopicUseCase;
         this.viewTeacherMyQuestionsUseCase = viewTeacherMyQuestionsUseCase;
         this.viewTeacherReviewQueueUseCase = viewTeacherReviewQueueUseCase;
         this.viewSchoolReviewQueueUseCase = viewSchoolReviewQueueUseCase;
@@ -75,29 +65,6 @@ public class QuestionController {
     }
 
     // ==================== QUERIES ====================
-
-    @QueryMapping(name = "questions")
-    @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
-    public PageResult<QuestionDto> questions(@Argument(name = "page") int page, @Argument(name = "size") int size) {
-        if (page <= 0 || size <= 0) {
-            throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
-        }
-        var query = new ViewQuestionsQuery(page, size);
-        return viewQuestionsUseCase.execute(query);
-    }
-
-    @QueryMapping(name = "questionsByTopic")
-    @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
-    public PageResult<QuestionDto> questionsByTopic(
-            @Argument(name = "topicId") UUID topicId,
-            @Argument(name = "page") int page,
-            @Argument(name = "size") int size) {
-        if (page <= 0 || size <= 0) {
-            throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
-        }
-        var query = new ViewQuestionsByTopicQuery(topicId, page, size);
-        return viewQuestionsByTopicUseCase.execute(query);
-    }
 
     @QueryMapping(name = "question")
     @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN', 'SYSTEM_ADMIN')")

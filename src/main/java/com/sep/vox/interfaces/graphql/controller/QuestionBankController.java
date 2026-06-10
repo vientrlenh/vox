@@ -9,10 +9,14 @@ import org.springframework.stereotype.Controller;
 
 import com.sep.vox.application.port.input.query.ViewAdminBankQuestionsQuery;
 import com.sep.vox.application.port.input.query.ViewQuestionBankDetailsQuery;
-import com.sep.vox.application.port.input.query.ViewQuestionBanksQuery;
+import com.sep.vox.application.port.input.query.ViewSchoolQuestionBanksQuery;
+import com.sep.vox.application.port.input.query.ViewTeacherQuestionBanksQuery;
 import com.sep.vox.application.port.input.usecase.question.ViewAdminBankQuestionsUseCase;
-import com.sep.vox.application.port.input.usecase.questionbank.ViewQuestionBankDetailsUseCase;
-import com.sep.vox.application.port.input.usecase.questionbank.ViewQuestionBanksUseCase;
+import com.sep.vox.application.port.input.usecase.questionbank.ViewAdminQuestionBankDetailsUseCase;
+import com.sep.vox.application.port.input.usecase.questionbank.ViewSchoolQuestionBankDetailsUseCase;
+import com.sep.vox.application.port.input.usecase.questionbank.ViewSchoolQuestionBanksUseCase;
+import com.sep.vox.application.port.input.usecase.questionbank.ViewTeacherQuestionBankDetailsUseCase;
+import com.sep.vox.application.port.input.usecase.questionbank.ViewTeacherQuestionBanksUseCase;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.QuestionBankDto;
 import com.sep.vox.domain.dto.QuestionDto;
@@ -20,34 +24,64 @@ import com.sep.vox.domain.dto.QuestionDto;
 @Controller("graphqlQuestionBankController")
 public class QuestionBankController {
 
-    private final ViewQuestionBanksUseCase viewQuestionBanksUseCase;
-    private final ViewQuestionBankDetailsUseCase viewQuestionBankDetailsUseCase;
+    private final ViewTeacherQuestionBanksUseCase viewTeacherQuestionBanksUseCase;
+    private final ViewTeacherQuestionBankDetailsUseCase viewTeacherQuestionBankDetailsUseCase;
+    private final ViewSchoolQuestionBanksUseCase viewSchoolQuestionBanksUseCase;
+    private final ViewSchoolQuestionBankDetailsUseCase viewSchoolQuestionBankDetailsUseCase;
+    private final ViewAdminQuestionBankDetailsUseCase viewAdminQuestionBankDetailsUseCase;
     private final ViewAdminBankQuestionsUseCase viewAdminBankQuestionsUseCase;
 
     public QuestionBankController(
-            ViewQuestionBanksUseCase viewQuestionBanksUseCase,
-            ViewQuestionBankDetailsUseCase viewQuestionBankDetailsUseCase,
+            ViewTeacherQuestionBanksUseCase viewTeacherQuestionBanksUseCase,
+            ViewTeacherQuestionBankDetailsUseCase viewTeacherQuestionBankDetailsUseCase,
+            ViewSchoolQuestionBanksUseCase viewSchoolQuestionBanksUseCase,
+            ViewSchoolQuestionBankDetailsUseCase viewSchoolQuestionBankDetailsUseCase,
+            ViewAdminQuestionBankDetailsUseCase viewAdminQuestionBankDetailsUseCase,
             ViewAdminBankQuestionsUseCase viewAdminBankQuestionsUseCase) {
-        this.viewQuestionBanksUseCase = viewQuestionBanksUseCase;
-        this.viewQuestionBankDetailsUseCase = viewQuestionBankDetailsUseCase;
+        this.viewTeacherQuestionBanksUseCase = viewTeacherQuestionBanksUseCase;
+        this.viewTeacherQuestionBankDetailsUseCase = viewTeacherQuestionBankDetailsUseCase;
+        this.viewSchoolQuestionBanksUseCase = viewSchoolQuestionBanksUseCase;
+        this.viewSchoolQuestionBankDetailsUseCase = viewSchoolQuestionBankDetailsUseCase;
+        this.viewAdminQuestionBankDetailsUseCase = viewAdminQuestionBankDetailsUseCase;
         this.viewAdminBankQuestionsUseCase = viewAdminBankQuestionsUseCase;
     }
 
-    @QueryMapping(name = "questionBanks")
-    @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
-    public PageResult<QuestionBankDto> questionBanks(@Argument(name = "page") int page, @Argument(name = "size") int size) {
+    @QueryMapping(name = "teacherQuestionBanks")
+    @PreAuthorize("hasRole('TEACHER')")
+    public PageResult<QuestionBankDto> teacherQuestionBanks(
+            @Argument(name = "page") int page, @Argument(name = "size") int size) {
         if (page <= 0 || size <= 0) {
             throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
         }
-        var query = new ViewQuestionBanksQuery(page, size);
-        return viewQuestionBanksUseCase.execute(query);
+        return viewTeacherQuestionBanksUseCase.execute(new ViewTeacherQuestionBanksQuery(page, size));
     }
 
-    @QueryMapping(name = "questionBank")
-    @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
-    public QuestionBankDto questionBank(@Argument(name = "id") UUID id) {
-        var query = new ViewQuestionBankDetailsQuery(id);
-        return viewQuestionBankDetailsUseCase.execute(query);
+    @QueryMapping(name = "teacherQuestionBank")
+    @PreAuthorize("hasRole('TEACHER')")
+    public QuestionBankDto teacherQuestionBank(@Argument(name = "id") UUID id) {
+        return viewTeacherQuestionBankDetailsUseCase.execute(new ViewQuestionBankDetailsQuery(id));
+    }
+
+    @QueryMapping(name = "schoolQuestionBanks")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public PageResult<QuestionBankDto> schoolQuestionBanks(
+            @Argument(name = "page") int page, @Argument(name = "size") int size) {
+        if (page <= 0 || size <= 0) {
+            throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
+        }
+        return viewSchoolQuestionBanksUseCase.execute(new ViewSchoolQuestionBanksQuery(page, size));
+    }
+
+    @QueryMapping(name = "schoolQuestionBank")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public QuestionBankDto schoolQuestionBank(@Argument(name = "id") UUID id) {
+        return viewSchoolQuestionBankDetailsUseCase.execute(new ViewQuestionBankDetailsQuery(id));
+    }
+
+    @QueryMapping(name = "adminQuestionBank")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public QuestionBankDto adminQuestionBank(@Argument(name = "id") UUID id) {
+        return viewAdminQuestionBankDetailsUseCase.execute(new ViewQuestionBankDetailsQuery(id));
     }
 
     @QueryMapping(name = "adminBankQuestions")
@@ -59,7 +93,7 @@ public class QuestionBankController {
             @Argument(name = "includeArchived") Boolean includeArchived,
             @Argument(name = "status") String status,
             @Argument(name = "keyword") String keyword) {
-        var query = new ViewAdminBankQuestionsQuery(bankId, page, size, includeArchived, status, keyword);
-        return viewAdminBankQuestionsUseCase.execute(query);
+        return viewAdminBankQuestionsUseCase.execute(
+            new ViewAdminBankQuestionsQuery(bankId, page, size, includeArchived, status, keyword));
     }
 }

@@ -101,38 +101,26 @@ type QuestionPage {
 }
 
 extend type Query {
-    questionBanks(page: Int = 0, size: Int = 20): QuestionBankPage!
-    questionBank(id: ID!): QuestionBank
+    # QuestionBank queries
+    teacherQuestionBanks(page: Int = 0, size: Int = 20): QuestionBankPage!
+    teacherQuestionBank(id: ID!): QuestionBank
+    schoolQuestionBanks(page: Int = 0, size: Int = 20): QuestionBankPage!
+    schoolQuestionBank(id: ID!): QuestionBank
+    adminQuestionBank(id: ID!): QuestionBank
+    adminBankQuestions(bankId: ID!, page: Int = 0, size: Int = 20, includeArchived: Boolean, status: String, keyword: String): QuestionPage!
 
-    questionTopics(bankId: ID!, page: Int = 0, size: Int = 20): QuestionTopicPage!
-    questionTopic(id: ID!): QuestionTopic
-
-    questions(page: Int = 0, size: Int = 20): QuestionPage!
-    questionsByTopic(topicId: ID!, page: Int = 0, size: Int = 20): QuestionPage!
+    # Question queries
     question(id: ID!): Question
-
-    # Teacher queries (QuestionController)
     teacherMyQuestions(page: Int = 0, size: Int = 20): QuestionPage!
     teacherReviewQueue(page: Int = 0, size: Int = 20): QuestionPage!
-
-    # School queries (QuestionController)
     schoolReviewQueue(page: Int = 0, size: Int = 20): QuestionPage!
-
-    # Admin queries (QuestionController)
     adminQuestions(page: Int = 0, size: Int = 20, includeArchived: Boolean, status: String, keyword: String): QuestionPage!
     adminReviewQueue(page: Int = 0, size: Int = 20): QuestionPage!
 
-    # Teacher queries (QuestionTopicController)
+    # QuestionTopic queries
     teacherBankTopics(bankId: ID!, page: Int = 0, size: Int = 20): QuestionTopicPage!
     teacherTopicQuestions(bankId: ID!, topicId: ID!, page: Int = 0, size: Int = 20, status: String, keyword: String): QuestionPage!
-
-    # School queries (QuestionTopicController)
     schoolBankTopics(bankId: ID!, page: Int = 0, size: Int = 20): QuestionTopicPage!
     schoolTopicQuestions(bankId: ID!, topicId: ID!, page: Int = 0, size: Int = 20, status: String, keyword: String): QuestionPage!
-
-    # Admin queries (QuestionTopicController)
     adminBankTopics(bankId: ID!, page: Int = 0, size: Int = 20, includeArchived: Boolean): QuestionTopicPage!
-
-    # Admin queries (QuestionBankController)
-    adminBankQuestions(bankId: ID!, page: Int = 0, size: Int = 20, includeArchived: Boolean, status: String, keyword: String): QuestionPage!
 }

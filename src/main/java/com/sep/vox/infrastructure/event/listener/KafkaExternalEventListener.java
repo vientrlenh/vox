@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sep.vox.application.port.input.ExternalEventHandler;
+import com.sep.vox.interfaces.event.ExternalEventHandler;
 
 @Component
 public class KafkaExternalEventListener {

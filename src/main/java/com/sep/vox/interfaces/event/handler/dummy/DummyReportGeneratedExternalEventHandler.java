@@ -1,11 +1,12 @@
-package com.sep.vox.application.port.input.handler.dummy;
+package com.sep.vox.interfaces.event.handler.dummy;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.sep.vox.application.port.input.ExternalEventHandler;
+import com.sep.vox.interfaces.event.ExternalEventHandler;
+import com.sep.vox.interfaces.event.mapper.DummyReportGeneratedEventMapper;
 
 @Component
 public class DummyReportGeneratedExternalEventHandler implements ExternalEventHandler {
@@ -19,16 +20,10 @@ public class DummyReportGeneratedExternalEventHandler implements ExternalEventHa
             return;
         }
 
+        var data = DummyReportGeneratedEventMapper.fromJson(payload);
         log.info(
             "Dummy consume report generated event: reportId={}, requestedBy={}, status={}",
-            textOf(payload, "reportId"),
-            textOf(payload, "requestedBy"),
-            textOf(payload, "status")
+            data.reportId(), data.requestedBy(), data.status()
         );
-    }
-
-    private String textOf(JsonNode payload, String fieldName) {
-        var node = payload == null ? null : payload.get(fieldName);
-        return node == null || node.isNull() ? null : node.asText();
     }
 }

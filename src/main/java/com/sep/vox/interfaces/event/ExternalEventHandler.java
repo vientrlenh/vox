@@ -1,4 +1,4 @@
-package com.sep.vox.application.port.input;
+package com.sep.vox.interfaces.event;
 
 import com.fasterxml.jackson.databind.JsonNode;
 

@@ -128,6 +128,49 @@ class SchoolClassRepositoryTests {
     }
 
     @Test
+    void whenFindBySchoolIdWithNullSearch_thenReturnsClassesWithoutSearchError() {
+        var schoolId = UUID.randomUUID();
+        var otherSchoolId = UUID.randomUUID();
+        schoolClassRepository.save(newSchoolClass(schoolId, "ENG-NULL-01", "English Null 01"));
+        schoolClassRepository.save(newSchoolClass(schoolId, "MATH-NULL-01", "Mathematics Null 01"));
+        schoolClassRepository.save(newSchoolClass(otherSchoolId, "ENG-OTHER-NULL", "Other English Null"));
+
+        var found = schoolClassRepository.findBySchoolId(
+            schoolId,
+            null,
+            null,
+            null,
+            null,
+            new PageRequest(1, 10)
+        );
+
+        assertThat(found.content()).hasSize(2);
+        assertThat(found.content())
+            .extracting(SchoolClass::getSchoolId)
+            .containsOnly(schoolId);
+        assertThat(found.totalElements()).isEqualTo(2);
+    }
+
+    @Test
+    void whenFindBySchoolIdWithBlankSearch_thenReturnsClassesWithoutSearchError() {
+        var schoolId = UUID.randomUUID();
+        schoolClassRepository.save(newSchoolClass(schoolId, "ENG-BLANK-01", "English Blank 01"));
+        schoolClassRepository.save(newSchoolClass(schoolId, "MATH-BLANK-01", "Mathematics Blank 01"));
+
+        var found = schoolClassRepository.findBySchoolId(
+            schoolId,
+            "   ",
+            null,
+            null,
+            null,
+            new PageRequest(1, 10)
+        );
+
+        assertThat(found.content()).hasSize(2);
+        assertThat(found.totalElements()).isEqualTo(2);
+    }
+
+    @Test
     void whenUpdateMutableFieldsWithMatchingSchool_thenUpdatesSchoolClass() {
         var schoolId = UUID.randomUUID();
         var updatedBy = UUID.randomUUID();

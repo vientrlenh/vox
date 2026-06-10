@@ -21,16 +21,31 @@ public interface SpringDataSchoolClassRepository extends JpaRepository<SchoolCla
         SELECT schoolClass
         FROM SchoolClassJpaEntity schoolClass
         WHERE schoolClass.schoolId = :schoolId
-            AND (:search IS NULL
-                OR LOWER(schoolClass.code) LIKE LOWER(CONCAT('%', :search, '%'))
-                OR LOWER(schoolClass.name) LIKE LOWER(CONCAT('%', :search, '%')))
             AND (:status IS NULL OR schoolClass.status = :status)
             AND (:languageId IS NULL OR schoolClass.languageId = :languageId)
             AND (:schoolGradeId IS NULL OR schoolClass.schoolGradeId = :schoolGradeId)
         """)
     Page<SchoolClassJpaEntity> findBySchoolIdWithFilters(
         @Param("schoolId") UUID schoolId,
-        @Param("search") String search,
+        @Param("status") String status,
+        @Param("languageId") UUID languageId,
+        @Param("schoolGradeId") UUID schoolGradeId,
+        Pageable pageable
+    );
+
+    @Query("""
+        SELECT schoolClass
+        FROM SchoolClassJpaEntity schoolClass
+        WHERE schoolClass.schoolId = :schoolId
+            AND (LOWER(schoolClass.code) LIKE :searchPattern
+                OR LOWER(schoolClass.name) LIKE :searchPattern)
+            AND (:status IS NULL OR schoolClass.status = :status)
+            AND (:languageId IS NULL OR schoolClass.languageId = :languageId)
+            AND (:schoolGradeId IS NULL OR schoolClass.schoolGradeId = :schoolGradeId)
+        """)
+    Page<SchoolClassJpaEntity> findBySchoolIdWithSearchAndFilters(
+        @Param("schoolId") UUID schoolId,
+        @Param("searchPattern") String searchPattern,
         @Param("status") String status,
         @Param("languageId") UUID languageId,
         @Param("schoolGradeId") UUID schoolGradeId,

@@ -115,7 +115,8 @@ public class CreateSchoolUserUseCaseTests {
         var studentRole = role("STUDENT");
         var command = new CreateSchoolUserCommand(
             schoolId, "student@school.edu.vn", "0987654321",
-            "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT", "STU-001", null, null
+            "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT", "STU-001",
+            LocalDate.of(2023, 1, 1), LocalDate.of(2029, 1, 1)
         );
         var schoolUser = new SchoolUser("STU-001", schoolId, savedUser.getId(), OffsetDateTime.now(), OffsetDateTime.now().plusYears(100));
 

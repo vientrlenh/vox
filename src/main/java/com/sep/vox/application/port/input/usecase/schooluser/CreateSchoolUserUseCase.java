@@ -35,7 +35,6 @@ import java.time.ZoneOffset;
 public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand, CreateSchoolUserResponse> {
 
     private static final List<String> ALLOWED_ROLE_CODES = List.of("STUDENT", "TEACHER");
-    private static final OffsetDateTime SCHOOL_USER_END_DATE = OffsetDateTime.of(9999, 12, 31, 23, 59, 59, 0, ZoneOffset.UTC);
 
     private final UserContextPort userContextPort;
     private final UserRepository userRepository;
@@ -112,12 +111,11 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
         userRoleRepository.save(new UserRole(savedUser.getId(), role.getId(), now));
 
         if ("STUDENT".equals(command.roleCode()) && command.studentId() != null) {
-            var startDate = command.startDate() != null
-                ? command.startDate().atStartOfDay(ZoneOffset.UTC).toOffsetDateTime()
-                : now;
-            var endDate = command.endDate() != null
-                ? command.endDate().atStartOfDay(ZoneOffset.UTC).toOffsetDateTime()
-                : SCHOOL_USER_END_DATE;
+            if (command.startDate() == null || command.endDate() == null) {
+                throw new IllegalArgumentException("Ngày bắt đầu và ngày kết thúc là bắt buộc đối với học sinh");
+            }
+            var startDate = command.startDate().atStartOfDay(ZoneOffset.UTC).toOffsetDateTime();
+            var endDate = command.endDate().atStartOfDay(ZoneOffset.UTC).toOffsetDateTime();
             schoolUserRepository.save(
                 SchoolUser.create(command.studentId(), command.schoolId(), savedUser.getId(), startDate, endDate)
             );

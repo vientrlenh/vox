@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
+import com.sep.vox.application.common.UserStatusValidator;
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateSchoolUserCommand;
@@ -40,14 +41,14 @@ public class UpdateSchoolUserUseCase implements IUseCase<UpdateSchoolUserCommand
 
         var caller = userRepository.findById(callerId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
-        SchoolUserStatusValidator.requireActive(caller);
+        UserStatusValidator.requireActive(caller);
         if (!input.schoolId().equals(caller.getSchoolId())) {
             throw new IllegalArgumentException("Không có quyền thực hiện thao tác này");
         }
 
         var target = userRepository.findByIdForUpdate(input.userId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
-        SchoolUserStatusValidator.requireActive(target);
+        UserStatusValidator.requireActive(target);
         if (!input.schoolId().equals(target.getSchoolId())) {
             throw new NotFoundException("Không tìm thấy người dùng");
         }

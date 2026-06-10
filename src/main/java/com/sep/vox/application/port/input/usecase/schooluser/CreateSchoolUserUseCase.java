@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
+import com.sep.vox.application.common.UserStatusValidator;
 import com.sep.vox.application.event.SchoolUserPasswordSetUpEmailRequestedEvent;
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.NotFoundException;
@@ -75,7 +76,7 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
 
         var caller = userRepository.findById(callerId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
-        SchoolUserStatusValidator.requireActive(caller);
+        UserStatusValidator.requireActive(caller);
         if (!input.schoolId().equals(caller.getSchoolId())) {
             throw new IllegalArgumentException("Không có quyền thực hiện thao tác này");
         }

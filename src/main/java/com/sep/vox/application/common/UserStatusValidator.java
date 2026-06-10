@@ -1,19 +1,19 @@
-package com.sep.vox.application.port.input.usecase.schooluser;
+package com.sep.vox.application.common;
 
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 
-final class SchoolUserStatusValidator {
+public final class UserStatusValidator {
 
-    private SchoolUserStatusValidator() {
+    private UserStatusValidator() {
     }
 
-    static void requireActive(User user) {
+    public static void requireActive(User user) {
         requireActive(user, "Tài khoản người dùng không hợp lệ cho thao tác này");
     }
 
-    static void requireActive(User user, String message) {
+    public static void requireActive(User user, String message) {
         if (user == null || user.getStatus() != UserStatus.ACTIVE) {
             throw new UnauthorizedException(message);
         }

@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.common.UserStatusValidator;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.mapper.schooluser.SchoolUserResponseMapper;
 import com.sep.vox.application.port.input.command.ListSchoolUsersCommand;
@@ -41,7 +42,7 @@ public class ListSchoolUsersUseCase implements IUseCase<ListSchoolUsersCommand, 
 
         var caller = userRepository.findById(callerId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
-        SchoolUserStatusValidator.requireActive(caller);
+        UserStatusValidator.requireActive(caller);
         if (!input.schoolId().equals(caller.getSchoolId())) {
             throw new IllegalArgumentException("Không có quyền thực hiện thao tác này");
         }

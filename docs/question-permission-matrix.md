@@ -26,6 +26,7 @@ REST:
 - `POST /api/v1/question-banks/system`
 - `POST /api/v1/question-banks/school`
 - `PATCH /api/v1/question-banks/{bankId}`
+- `DELETE /api/v1/question-banks/{bankId}`
 - `PATCH /api/v1/question-banks/{bankId}/review-actions`
 
 GraphQL:
@@ -44,6 +45,7 @@ REST:
 
 - `POST /api/v1/question-topics`
 - `PUT /api/v1/question-topics/{id}`
+- `DELETE /api/v1/question-topics/{topicId}`
 - `PATCH /api/v1/question-topics/{topicId}/review-actions`
 
 GraphQL:
@@ -65,8 +67,13 @@ REST:
 - `POST /api/v1/questions/system`
 - `POST /api/v1/questions/school`
 - `PUT /api/v1/questions/{questionId}/content`
+- `POST /api/v1/questions/{questionId}/assets`
 - `PUT /api/v1/questions/{questionId}/assets`
+- `DELETE /api/v1/questions/{questionId}/assets`
+- `POST /api/v1/questions/{questionId}/evaluation-guide`
 - `PUT /api/v1/questions/{questionId}/evaluation-guide`
+- `DELETE /api/v1/questions/{questionId}/evaluation-guide`
+- `DELETE /api/v1/questions/{questionId}`
 - `PATCH /api/v1/questions/{questionId}/review-actions`
 
 GraphQL:
@@ -114,6 +121,99 @@ GraphQL:
 | `TEACHER_REVIEWER` | `OK`: xem queue review qua `teacherReviewQueue(...)` neu `SUBMITTED_FOR_REVIEW + REVIEWER_ONLY + khong phai minh tao + cung school`; ngoai ra co the thay trong `teacherQuestions(...)` va `teacherTopicQuestions(...)` neu query hop le | `OK`: xem detail neu cau dang o review queue hop le, qua `question(id)` | `NO`: reviewer khong co quyen tao theo vai reviewer | `NO`: reviewer khong sua content cau nguoi khac | `OK`: approve/reject/revision requested khi queue review hop le |
 | `TEACHER_UNRELATED` | `OK`: trong `teacherQuestions(...)` hoac `teacherTopicQuestions(...)`, chi thay cau cua nguoi khac neu `status = PUBLISHED` va `visibility = BANK_VISIBLE`, thuoc `SYSTEM` hoac school minh | `OK`: xem detail neu `question PUBLISHED + BANK_VISIBLE`, bank/topic `PUBLISHED`, va bank la `SYSTEM` hoac school minh, qua `question(id)` | `NO` | `NO` | `NO` |
 | `STUDENT` | `NO`: khong co query cho student | `NO` | `NO` | `NO` | `NO` |
+
+### Delete on `QUESTION_BANK`
+
+`DELETE /api/v1/questions/{questionId}` dung cung nhom role voi update content:
+
+- `SYSTEM_ADMIN`: `OK`
+- `SCHOOL_ADMIN`: `OK` voi question school cua school minh khi permission update cho phep
+- `TEACHER_OWNER`: `OK` voi question cua minh khi permission update cho phep
+- `TEACHER_REVIEWER`: `NO`
+- `TEACHER_UNRELATED`: `NO`
+- `STUDENT`: `NO`
+
+Rule xoa hien tai:
+
+- neu question dang `DRAFT` va chua duoc su dung thi `HARD_DELETE`
+- neu question da duoc su dung hoac khong con o `DRAFT` thi chuyen thanh `ARCHIVED`
+
+Cach xac dinh `chua duoc su dung` trong code hien tai:
+
+- chua co question khac tham chieu no qua `sourceQuestionId`
+
+Luu y:
+
+- `delete` hien tai dang bam cung permission voi `update content`
+- nghia la role nao sua duoc theo flow hien tai thi moi co the goi `DELETE`
+
+### Delete Asset on `QUESTION`
+
+`DELETE /api/v1/questions/{questionId}/assets` dung cung nhom role voi update content:
+
+- `SYSTEM_ADMIN`: `OK`
+- `SCHOOL_ADMIN`: `OK` voi question school cua school minh khi permission update cho phep
+- `TEACHER_OWNER`: `OK` voi question cua minh khi permission update cho phep
+- `TEACHER_REVIEWER`: `NO`
+- `TEACHER_UNRELATED`: `NO`
+- `STUDENT`: `NO`
+
+Rule xoa asset hien tai:
+
+- chi duoc xoa khi question dang `DRAFT`
+- khong co chuyen archive cho asset
+- neu question khong con o `DRAFT` thi tu choi xoa
+
+### Delete Evaluation Guide on `QUESTION`
+
+`DELETE /api/v1/questions/{questionId}/evaluation-guide` dung cung nhom role voi update content:
+
+- `SYSTEM_ADMIN`: `OK`
+- `SCHOOL_ADMIN`: `OK` voi question school cua school minh khi permission update cho phep
+- `TEACHER_OWNER`: `OK` voi question cua minh khi permission update cho phep
+- `TEACHER_REVIEWER`: `NO`
+- `TEACHER_UNRELATED`: `NO`
+- `STUDENT`: `NO`
+
+Rule xoa evaluation guide hien tai:
+
+- chi duoc xoa khi question dang `DRAFT`
+- khong co chuyen archive cho evaluation guide
+- neu question khong con o `DRAFT` thi tu choi xoa
+
+## Delete on `QUESTION_TOPIC`
+
+`DELETE /api/v1/question-topics/{topicId}` dung cung nhom role voi update topic:
+
+- `SYSTEM_ADMIN`: `OK`
+- `SCHOOL_ADMIN`: `OK` voi topic duoc phep update
+- `TEACHER_OWNER`: `NO`
+- `TEACHER_REVIEWER`: `NO`
+- `TEACHER_UNRELATED`: `NO`
+- `STUDENT`: `NO`
+
+Rule xoa topic hien tai:
+
+- chi duoc xoa khi topic dang `DRAFT`
+- khi xoa topic se xoa cung toan bo question, asset va evaluation guide ben duoi topic do
+- neu topic khong con o `DRAFT` thi tu choi xoa
+
+## Delete on `QUESTION_BANK`
+
+`DELETE /api/v1/question-banks/{bankId}` dung cung nhom role voi update bank:
+
+- `SYSTEM_ADMIN`: `OK`
+- `SCHOOL_ADMIN`: `OK` voi bank duoc phep update
+- `TEACHER_OWNER`: `NO`
+- `TEACHER_REVIEWER`: `NO`
+- `TEACHER_UNRELATED`: `NO`
+- `STUDENT`: `NO`
+
+Rule xoa bank hien tai:
+
+- chi duoc xoa khi bank dang `DRAFT`
+- khi xoa bank se xoa cung toan bo topic, question, asset va evaluation guide ben duoi bank do
+- neu bank khong con o `DRAFT` thi tu choi xoa
 
 ### Scope = `CLASSROOM_ASSESSMENT`
 
@@ -198,6 +298,59 @@ GraphQL:
 - ngoai ra mac dinh khong duoc
 
 ## Question `QUESTION_BANK` - Detailed Action Rules
+
+### Status Gates
+
+`Question` update/delete khong chi phu thuoc role, ma con phu thuoc trang thai hien tai.
+
+Voi `TEACHER_OWNER` va `SCHOOL_ADMIN`, `update content`, `update assets`, `update evaluation-guide` chi di qua duoc khi:
+
+- `scope = QUESTION_BANK`
+- `locked = false`
+- bank va topic khong `ARCHIVED`
+- question dang o mot trong cac trang thai:
+  - `DRAFT`
+  - `REVISION_REQUESTED`
+  - `REJECTED`
+
+Voi `TEACHER_OWNER` va `SCHOOL_ADMIN`, `DELETE /api/v1/questions/{questionId}` chi goi duoc khi van thoa toan bo dieu kien `canEditContent` o tren.
+
+Sau khi da goi duoc `DELETE`:
+
+- neu question dang `DRAFT` va chua duoc question khac tham chieu qua `sourceQuestionId` thi `HARD_DELETE`
+- neu question dang `REVISION_REQUESTED` hoac `REJECTED` thi khong xoa cung, ma chuyen `ARCHIVED`
+
+Voi `DELETE /api/v1/questions/{questionId}/assets` va `DELETE /api/v1/questions/{questionId}/evaluation-guide`:
+
+- van phai thoa dieu kien `canEditContent`
+- dong thoi question phai dang `DRAFT`
+- neu question khong con o `DRAFT` thi tu choi xoa
+
+Voi `SYSTEM_ADMIN`:
+
+- code hien tai dang bypass `canEditContent` trong `QuestionPermissionQuery`
+- vi vay system admin co quyen sua/xoa rong hon role khac
+- day la hanh vi code hien tai, khong phai nghiep vu da duoc siet chat hoan toan
+
+Voi `QuestionBank`:
+
+- `PATCH /api/v1/question-banks/{bankId}` va `DELETE /api/v1/question-banks/{bankId}` chi di qua khi role thoa `canUpdateBank`
+- `canUpdateBank` hien tai cho phep bank o:
+  - `DRAFT`
+  - `PUBLISHED`
+- nhung `DELETE /api/v1/question-banks/{bankId}` con check them:
+  - bank phai dang `DRAFT`
+- neu khong phai `DRAFT` thi tu choi xoa
+
+Voi `QuestionTopic`:
+
+- `PUT /api/v1/question-topics/{id}` va `DELETE /api/v1/question-topics/{topicId}` chi di qua khi role thoa `canUpdateTopic`
+- `canUpdateTopic` hien tai cho phep topic khi:
+  - topic khong `ARCHIVED`
+  - bank dang `DRAFT` hoac `PUBLISHED`
+- nhung `DELETE /api/v1/question-topics/{topicId}` con check them:
+  - topic phai dang `DRAFT`
+- neu khong phai `DRAFT` thi tu choi xoa
 
 ### SYSTEM_ADMIN
 

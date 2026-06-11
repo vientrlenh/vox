@@ -10,6 +10,7 @@ import com.sep.vox.domain.model.question.QuestionBank;
 public interface QuestionBankRepository {
     QuestionBank save(QuestionBank questionBank);
     Optional<QuestionBank> findById(UUID id);
+    void deleteById(UUID id);
     PageResult<QuestionBank> findAll(PageRequest pageRequest);
     boolean existsById(UUID id);
 }

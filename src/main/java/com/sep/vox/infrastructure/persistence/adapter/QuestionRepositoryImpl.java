@@ -36,6 +36,11 @@ public class QuestionRepositoryImpl implements QuestionRepository {
     }
 
     @Override
+    public void deleteById(UUID id) {
+        springDataQuestionRepository.deleteById(id);
+    }
+
+    @Override
     public List<Question> findByTopicId(UUID topicId) {
         return springDataQuestionRepository.findByQuestionTopicId(topicId).stream()
             .map(QuestionMapper::toDomain)
@@ -75,5 +80,10 @@ public class QuestionRepositoryImpl implements QuestionRepository {
     @Override
     public boolean existsById(UUID id) {
         return springDataQuestionRepository.existsById(id);
+    }
+
+    @Override
+    public boolean existsBySourceQuestionId(UUID sourceQuestionId) {
+        return springDataQuestionRepository.existsBySourceQuestionId(sourceQuestionId);
     }
 }

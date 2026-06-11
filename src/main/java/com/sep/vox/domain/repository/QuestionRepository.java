@@ -11,8 +11,10 @@ import com.sep.vox.domain.model.question.Question;
 public interface QuestionRepository {
     Question save(Question question);
     Optional<Question> findById(UUID id);
+    void deleteById(UUID id);
     List<Question> findByTopicId(UUID topicId);
     PageResult<Question> findByTopicId(UUID topicId, PageRequest pageRequest);
     PageResult<Question> findAll(PageRequest pageRequest);
     boolean existsById(UUID id);
+    boolean existsBySourceQuestionId(UUID sourceQuestionId);
 }

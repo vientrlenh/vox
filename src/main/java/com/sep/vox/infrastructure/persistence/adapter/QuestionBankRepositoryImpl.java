@@ -35,6 +35,11 @@ public class QuestionBankRepositoryImpl implements QuestionBankRepository {
     }
 
     @Override
+    public void deleteById(UUID id) {
+        springDataQuestionBankRepository.deleteById(id);
+    }
+
+    @Override
     public PageResult<QuestionBank> findAll(PageRequest pageRequest) {
         var pageable = org.springframework.data.domain.PageRequest.of(pageRequest.page() - 1, pageRequest.size());
         var page = springDataQuestionBankRepository.findAll(pageable);

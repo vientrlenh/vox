@@ -36,6 +36,11 @@ public class QuestionTopicRepositoryImpl implements QuestionTopicRepository {
     }
 
     @Override
+    public void deleteById(UUID id) {
+        springDataQuestionTopicRepository.deleteById(id);
+    }
+
+    @Override
     public List<QuestionTopic> findByQuestionBankId(UUID questionBankId) {
         return springDataQuestionTopicRepository.findByQuestionBankId(questionBankId).stream()
             .map(QuestionTopicMapper::toDomain)

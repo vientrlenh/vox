@@ -11,6 +11,7 @@ import com.sep.vox.domain.model.question.QuestionTopic;
 public interface QuestionTopicRepository {
     QuestionTopic save(QuestionTopic questionTopic);
     Optional<QuestionTopic> findById(UUID id);
+    void deleteById(UUID id);
     List<QuestionTopic> findByQuestionBankId(UUID bankId);
     PageResult<QuestionTopic> findByQuestionBankId(UUID bankId, PageRequest pageRequest);
     boolean existsById(UUID id);

@@ -17,6 +17,7 @@ import com.sep.vox.application.port.input.query.ViewSchoolClassDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolClassUsersQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolClassesQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolsQuery;
+import com.sep.vox.application.port.input.query.key.SchoolClassGradeKey;
 import com.sep.vox.application.port.input.query.key.SchoolClassesKey;
 import com.sep.vox.application.port.input.usecase.school.ViewSchoolsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.UpdateSchoolClassUseCase;
@@ -29,7 +30,9 @@ import com.sep.vox.application.response.input.schoolclass.UpdateSchoolClassRespo
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.dto.SchoolDto;
+import com.sep.vox.domain.dto.SchoolGradeDto;
 import com.sep.vox.domain.dto.SchoolUserDto;
+import com.sep.vox.domain.dto.SupportedLanguageDto;
 import com.sep.vox.interfaces.graphql.mapper.UpdateSchoolClassCommandMapper;
 
 import graphql.schema.DataFetchingEnvironment;
@@ -94,6 +97,27 @@ public class SchoolController {
     public SchoolClassResponse schoolClass(@Argument(name = "id") UUID id) {
         var query = new ViewSchoolClassDetailsQuery(id);
         return viewSchoolClassDetailsUseCase.execute(query);
+    }
+
+    @SchemaMapping(typeName = "SchoolClass", field = "school")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public CompletableFuture<SchoolDto> school(SchoolClassResponse schoolClass, DataFetchingEnvironment env) {
+        DataLoader<UUID, SchoolDto> loader = env.getDataLoader("schoolById");
+        return loader.load(schoolClass.schoolId());
+    }
+
+    @SchemaMapping(typeName = "SchoolClass", field = "schoolGrade")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public CompletableFuture<SchoolGradeDto> schoolGrade(SchoolClassResponse schoolClass, DataFetchingEnvironment env) {
+        DataLoader<SchoolClassGradeKey, SchoolGradeDto> loader = env.getDataLoader("schoolGradeByClass");
+        return loader.load(new SchoolClassGradeKey(schoolClass.schoolGradeId(), schoolClass.schoolId()));
+    }
+
+    @SchemaMapping(typeName = "SchoolClass", field = "language")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public CompletableFuture<SupportedLanguageDto> language(SchoolClassResponse schoolClass, DataFetchingEnvironment env) {
+        DataLoader<UUID, SupportedLanguageDto> loader = env.getDataLoader("supportedLanguageById");
+        return loader.load(schoolClass.languageId());
     }
 
     @QueryMapping(name = "schoolClassUsers")

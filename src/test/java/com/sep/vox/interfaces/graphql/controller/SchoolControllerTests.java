@@ -10,13 +10,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
+import org.dataloader.DataLoader;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.port.input.command.UpdateSchoolClassCommand;
 import com.sep.vox.application.port.input.query.ViewSchoolClassDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolClassUsersQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolClassesQuery;
+import com.sep.vox.application.port.input.query.key.SchoolClassGradeKey;
 import com.sep.vox.application.port.input.usecase.school.ViewSchoolsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.UpdateSchoolClassUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassDetailsUseCase;
@@ -26,6 +29,11 @@ import com.sep.vox.application.response.input.schoolclass.SchoolClassResponse;
 import com.sep.vox.application.response.input.schoolclassuser.SchoolClassUserResponse;
 import com.sep.vox.application.response.input.schoolclass.UpdateSchoolClassResponse;
 import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.dto.SchoolDto;
+import com.sep.vox.domain.dto.SchoolGradeDto;
+import com.sep.vox.domain.dto.SupportedLanguageDto;
+
+import graphql.schema.DataFetchingEnvironment;
 
 class SchoolControllerTests {
 
@@ -88,6 +96,80 @@ class SchoolControllerTests {
 
         assertThat(result).isEqualTo(expected);
         verify(detailsUseCase).execute(new ViewSchoolClassDetailsQuery(classId));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void school_class_school_field_should_load_related_school() {
+        var controller = new SchoolController(
+            mock(ViewSchoolsUseCase.class),
+            mock(ViewSchoolClassesUseCase.class),
+            mock(ViewSchoolClassDetailsUseCase.class),
+            mock(ViewSchoolClassUsersUseCase.class),
+            mock(UpdateSchoolClassUseCase.class)
+        );
+        var schoolId = UUID.randomUUID();
+        var response = schoolClassResponse(schoolId, UUID.randomUUID(), UUID.randomUUID());
+        var expected = new SchoolDto(schoolId, "SCH", "School", null, null, null, null, null, 0, true, null, null);
+        var env = mock(DataFetchingEnvironment.class);
+        var loader = mock(DataLoader.class);
+        when(env.<UUID, SchoolDto>getDataLoader("schoolById")).thenReturn(loader);
+        when(loader.load(schoolId)).thenReturn(CompletableFuture.completedFuture(expected));
+
+        var result = controller.school(response, env).join();
+
+        assertThat(result).isEqualTo(expected);
+        verify(loader).load(schoolId);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void school_class_school_grade_field_should_load_related_grade_with_school_scope() {
+        var controller = new SchoolController(
+            mock(ViewSchoolsUseCase.class),
+            mock(ViewSchoolClassesUseCase.class),
+            mock(ViewSchoolClassDetailsUseCase.class),
+            mock(ViewSchoolClassUsersUseCase.class),
+            mock(UpdateSchoolClassUseCase.class)
+        );
+        var schoolId = UUID.randomUUID();
+        var gradeId = UUID.randomUUID();
+        var response = schoolClassResponse(schoolId, UUID.randomUUID(), gradeId);
+        var expected = new SchoolGradeDto(gradeId, schoolId, "G10", "Grade 10", null, null, null, "ACTIVE", null, null);
+        var env = mock(DataFetchingEnvironment.class);
+        var loader = mock(DataLoader.class);
+        var key = new SchoolClassGradeKey(gradeId, schoolId);
+        when(env.<SchoolClassGradeKey, SchoolGradeDto>getDataLoader("schoolGradeByClass")).thenReturn(loader);
+        when(loader.load(key)).thenReturn(CompletableFuture.completedFuture(expected));
+
+        var result = controller.schoolGrade(response, env).join();
+
+        assertThat(result).isEqualTo(expected);
+        verify(loader).load(key);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void school_class_language_field_should_load_related_language() {
+        var controller = new SchoolController(
+            mock(ViewSchoolsUseCase.class),
+            mock(ViewSchoolClassesUseCase.class),
+            mock(ViewSchoolClassDetailsUseCase.class),
+            mock(ViewSchoolClassUsersUseCase.class),
+            mock(UpdateSchoolClassUseCase.class)
+        );
+        var languageId = UUID.randomUUID();
+        var response = schoolClassResponse(UUID.randomUUID(), languageId, UUID.randomUUID());
+        var expected = new SupportedLanguageDto(languageId, "EN", "English", null, true, null, null);
+        var env = mock(DataFetchingEnvironment.class);
+        var loader = mock(DataLoader.class);
+        when(env.<UUID, SupportedLanguageDto>getDataLoader("supportedLanguageById")).thenReturn(loader);
+        when(loader.load(languageId)).thenReturn(CompletableFuture.completedFuture(expected));
+
+        var result = controller.language(response, env).join();
+
+        assertThat(result).isEqualTo(expected);
+        verify(loader).load(languageId);
     }
 
     @Test
@@ -178,5 +260,20 @@ class SchoolControllerTests {
 
         assertThat(result).isEqualTo(expected);
         verify(updateUseCase).execute(command);
+    }
+
+    private static SchoolClassResponse schoolClassResponse(UUID schoolId, UUID languageId, UUID gradeId) {
+        return new SchoolClassResponse(
+            UUID.randomUUID(),
+            schoolId,
+            languageId,
+            gradeId,
+            "ENG-01",
+            "English 01",
+            "Starter class",
+            "ACTIVE",
+            "2026-06-06T12:00:00Z",
+            "2026-06-06T12:00:00Z"
+        );
     }
 }

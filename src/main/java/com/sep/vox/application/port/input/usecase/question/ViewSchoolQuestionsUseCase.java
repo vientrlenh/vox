@@ -4,7 +4,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.port.input.query.ViewTeacherTopicQuestionsQuery;
+import com.sep.vox.application.port.input.query.ViewSchoolQuestionsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.QuestionReadQueryRepository;
@@ -14,13 +14,13 @@ import com.sep.vox.domain.dto.QuestionDto;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
-public class ViewTeacherTopicQuestionsUseCase implements IUseCase<ViewTeacherTopicQuestionsQuery, PageResult<QuestionDto>> {
+public class ViewSchoolQuestionsUseCase implements IUseCase<ViewSchoolQuestionsQuery, PageResult<QuestionDto>> {
 
     private final QuestionReadQueryRepository questionReadQueryRepository;
     private final UserContextPort userContextPort;
     private final UserRepository userRepository;
 
-    public ViewTeacherTopicQuestionsUseCase(
+    public ViewSchoolQuestionsUseCase(
             QuestionReadQueryRepository questionReadQueryRepository,
             UserContextPort userContextPort,
             UserRepository userRepository) {
@@ -31,13 +31,16 @@ public class ViewTeacherTopicQuestionsUseCase implements IUseCase<ViewTeacherTop
 
     @Override
     @Transactional(readOnly = true)
-    public PageResult<QuestionDto> execute(ViewTeacherTopicQuestionsQuery input) {
+    public PageResult<QuestionDto> execute(ViewSchoolQuestionsQuery input) {
         var userId = userContextPort.getCurrentAuthenticatedUserId();
         var user = userRepository.findById(userId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
-        return questionReadQueryRepository.findTeacherTopicQuestions(
-                input.bankId(), input.topicId(), userId, user.getSchoolId(),
-                input.scope(), input.status(), input.type(), input.keyword(),
-                new PageRequest(input.page(), input.size()));
+            .orElseThrow(() -> new NotFoundException("KhÃ´ng tÃ¬m tháº¥y ngÆ°á»i dÃ¹ng"));
+        return questionReadQueryRepository.findSchoolVisibleQuestions(
+            user.getSchoolId(),
+            input.scope(),
+            input.status(),
+            input.type(),
+            input.keyword(),
+            new PageRequest(input.page(), input.size()));
     }
 }

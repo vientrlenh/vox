@@ -26,8 +26,6 @@ public class JpaQuestionReadQueryRepository implements QuestionReadQueryReposito
     @PersistenceContext
     private EntityManager em;
 
-    // ==================== COMMON ====================
-
     @Override
     public Optional<QuestionDto> findVisibleQuestion(UUID questionId, UUID userId, String role, UUID schoolId) {
         QuestionJpaEntity question;
@@ -52,7 +50,10 @@ public class JpaQuestionReadQueryRepository implements QuestionReadQueryReposito
                             OR (q.visibility = 'REVIEWER_ONLY' AND q.createdBy <> :userId AND qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId AND q.status = 'SUBMITTED_FOR_REVIEW')
                         ))
                     ))
-                    OR (:role = 'SCHOOL_ADMIN' AND qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId AND qt.status <> 'ARCHIVED' AND q.status <> 'ARCHIVED')
+                    OR (:role = 'SCHOOL_ADMIN' AND (
+                        (qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId AND qt.status <> 'ARCHIVED' AND q.status <> 'ARCHIVED')
+                        OR (qb.ownerType = 'SYSTEM' AND qb.status = 'PUBLISHED' AND qt.status = 'PUBLISHED' AND q.status = 'PUBLISHED' AND q.visibility = 'BANK_VISIBLE')
+                    ))
                   )
                 """, QuestionJpaEntity.class)
                 .setParameter("questionId", questionId)
@@ -65,8 +66,6 @@ public class JpaQuestionReadQueryRepository implements QuestionReadQueryReposito
         }
         return Optional.of(QuestionReadDtoMapper.toDto(question));
     }
-
-    // ==================== TEACHER ====================
 
     @Override
     public PageResult<QuestionDto> findTeacherMyQuestions(UUID userId, PageRequest page) {
@@ -87,6 +86,42 @@ public class JpaQuestionReadQueryRepository implements QuestionReadQueryReposito
     }
 
     @Override
+    public PageResult<QuestionDto> findTeacherVisibleQuestions(UUID userId, UUID schoolId, String scope, String status, String type, String keyword, PageRequest page) {
+        StringBuilder where = new StringBuilder("""
+            WHERE qb.status <> 'ARCHIVED'
+              AND qt.status <> 'ARCHIVED'
+              AND (
+                (
+                  qb.status = 'PUBLISHED'
+                  AND qt.status = 'PUBLISHED'
+                  AND (
+                    qb.ownerType = 'SYSTEM'
+                    OR (qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId)
+                  )
+                  AND (
+                    (q.visibility = 'BANK_VISIBLE' AND q.status = 'PUBLISHED')
+                    OR (q.visibility = 'BANK_VISIBLE' AND q.status IN ('DRAFT','SUBMITTED_FOR_REVIEW','REVISION_REQUESTED','APPROVED','REJECTED') AND q.createdBy = :userId)
+                    OR (q.visibility = 'AUTHOR_ONLY' AND q.createdBy = :userId)
+                    OR (q.visibility = 'REVIEWER_ONLY' AND q.createdBy <> :userId AND qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId AND q.status = 'SUBMITTED_FOR_REVIEW')
+                  )
+                )
+                OR (
+                  qb.ownerType = 'SCHOOL'
+                  AND qb.schoolId = :schoolId
+                  AND qb.status = 'DRAFT'
+                  AND (
+                    q.createdBy = :userId
+                    OR (q.visibility = 'REVIEWER_ONLY' AND q.createdBy <> :userId AND q.status = 'SUBMITTED_FOR_REVIEW')
+                  )
+                )
+              )
+            """);
+
+        appendQuestionFilters(where, scope, status, type, keyword);
+        return findQuestionsWithJoinAndFilters(where.toString(), userId, schoolId, scope, status, type, keyword, page);
+    }
+
+    @Override
     public PageResult<QuestionDto> findTeacherReviewQueue(UUID userId, UUID schoolId, PageRequest page) {
         String where = """
             WHERE q.status = 'SUBMITTED_FOR_REVIEW'
@@ -99,7 +134,20 @@ public class JpaQuestionReadQueryRepository implements QuestionReadQueryReposito
         return findQuestionsWithJoin(where, userId, schoolId, page);
     }
 
-    // ==================== SCHOOL ====================
+    @Override
+    public PageResult<QuestionDto> findSchoolVisibleQuestions(UUID schoolId, String scope, String status, String type, String keyword, PageRequest page) {
+        StringBuilder where = new StringBuilder("""
+            WHERE qb.status <> 'ARCHIVED'
+              AND qt.status <> 'ARCHIVED'
+              AND (
+                (qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId AND q.status <> 'ARCHIVED')
+                OR (qb.ownerType = 'SYSTEM' AND qb.status = 'PUBLISHED' AND qt.status = 'PUBLISHED' AND q.status = 'PUBLISHED' AND q.visibility = 'BANK_VISIBLE')
+              )
+            """);
+
+        appendQuestionFilters(where, scope, status, type, keyword);
+        return findQuestionsWithJoinAndFilters(where.toString(), null, schoolId, scope, status, type, keyword, page);
+    }
 
     @Override
     public PageResult<QuestionDto> findSchoolReviewQueue(UUID schoolId, PageRequest page) {
@@ -112,8 +160,6 @@ public class JpaQuestionReadQueryRepository implements QuestionReadQueryReposito
 
         return findQuestionsWithJoin(where, null, schoolId, page);
     }
-
-    // ==================== ADMIN ====================
 
     @Override
     public PageResult<QuestionDto> findAdminQuestions(Boolean includeArchived, String status, String keyword, PageRequest page) {
@@ -168,17 +214,15 @@ public class JpaQuestionReadQueryRepository implements QuestionReadQueryReposito
         return QuestionReadDtoMapper.toDtoPage(results, total, page);
     }
 
-    // ==================== TEACHER - TOPIC CONTROLLER ====================
-
     @Override
     public PageResult<QuestionTopicDto> findTeacherBankTopics(UUID bankId, UUID userId, UUID schoolId, PageRequest page) {
         String where = """
             WHERE qt.questionBankId = :bankId
-              AND qb.status <> 'ARCHIVED'
-              AND qt.status <> 'ARCHIVED'
+              AND qb.status = 'PUBLISHED'
+              AND qt.status = 'PUBLISHED'
               AND (
-                (qb.status = 'PUBLISHED' AND qt.status = 'PUBLISHED')
-                OR (qb.status = 'DRAFT' AND (qb.createdBy = :userId OR (qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId)))
+                qb.ownerType = 'SYSTEM'
+                OR (qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId)
               )
             """;
 
@@ -203,10 +247,37 @@ public class JpaQuestionReadQueryRepository implements QuestionReadQueryReposito
     }
 
     @Override
-    public PageResult<QuestionDto> findTeacherTopicQuestions(UUID bankId, UUID topicId, UUID userId, UUID schoolId, String status, String keyword, PageRequest page) {
+    public Optional<QuestionTopicDto> findTeacherTopicDetail(UUID topicId, UUID userId, UUID schoolId) {
+        try {
+            var topic = em.createQuery("""
+                SELECT qt FROM QuestionTopicJpaEntity qt
+                JOIN QuestionBankJpaEntity qb ON qt.questionBankId = qb.id
+                WHERE qt.id = :topicId
+                  AND qb.status = 'PUBLISHED'
+                  AND qt.status = 'PUBLISHED'
+                  AND (
+                    qb.ownerType = 'SYSTEM'
+                    OR (qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId)
+                  )
+                """, QuestionTopicJpaEntity.class)
+                .setParameter("topicId", topicId)
+                .setParameter("schoolId", schoolId)
+                .getSingleResult();
+            return Optional.of(QuestionReadDtoMapper.toTopicDto(topic));
+        } catch (NoResultException e) {
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    public PageResult<QuestionDto> findTeacherTopicQuestions(UUID bankId, UUID topicId, UUID userId, UUID schoolId, String scope, String status, String type, String keyword, PageRequest page) {
         StringBuilder where = new StringBuilder("""
             WHERE qb.id = :bankId AND qt.id = :topicId
               AND qb.status = 'PUBLISHED' AND qt.status = 'PUBLISHED'
+              AND (
+                qb.ownerType = 'SYSTEM'
+                OR (qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId)
+              )
               AND (
                 (q.visibility = 'BANK_VISIBLE' AND q.status = 'PUBLISHED')
                 OR (q.visibility = 'BANK_VISIBLE' AND q.status IN ('DRAFT','SUBMITTED_FOR_REVIEW','REVISION_REQUESTED','APPROVED','REJECTED') AND q.createdBy = :userId)
@@ -215,55 +286,18 @@ public class JpaQuestionReadQueryRepository implements QuestionReadQueryReposito
               )
             """);
 
-        if (status != null && !status.isBlank()) {
-            where.append(" AND q.status = :status");
-        }
-        if (keyword != null && !keyword.isBlank()) {
-            where.append(" AND (LOWER(q.questionText) LIKE :keyword OR LOWER(q.code) LIKE :keyword)");
-        }
-
-        String joinClause = "FROM QuestionJpaEntity q JOIN QuestionTopicJpaEntity qt ON q.questionTopicId = qt.id JOIN QuestionBankJpaEntity qb ON qt.questionBankId = qb.id ";
-        String countSql = "SELECT COUNT(q) " + joinClause + where;
-        String dataSql = "SELECT q " + joinClause + where + " ORDER BY q.updatedAt DESC";
-
-        TypedQuery<Long> countQuery = em.createQuery(countSql, Long.class)
-                .setParameter("bankId", bankId)
-                .setParameter("topicId", topicId)
-                .setParameter("userId", userId)
-                .setParameter("schoolId", schoolId);
-        TypedQuery<QuestionJpaEntity> dataQuery = em.createQuery(dataSql, QuestionJpaEntity.class)
-                .setParameter("bankId", bankId)
-                .setParameter("topicId", topicId)
-                .setParameter("userId", userId)
-                .setParameter("schoolId", schoolId);
-
-        if (status != null && !status.isBlank()) {
-            countQuery.setParameter("status", status);
-            dataQuery.setParameter("status", status);
-        }
-        if (keyword != null && !keyword.isBlank()) {
-            String kw = "%" + keyword.toLowerCase() + "%";
-            countQuery.setParameter("keyword", kw);
-            dataQuery.setParameter("keyword", kw);
-        }
-
-        Long total = countQuery.getSingleResult();
-        List<QuestionJpaEntity> results = dataQuery
-                .setFirstResult((page.page() - 1) * page.size())
-                .setMaxResults(page.size())
-                .getResultList();
-
-        return QuestionReadDtoMapper.toDtoPage(results, total, page);
+        appendQuestionFilters(where, scope, status, type, keyword);
+        return findTopicQuestions(bankId, topicId, userId, schoolId, where.toString(), scope, status, type, keyword, page);
     }
-
-    // ==================== SCHOOL - TOPIC CONTROLLER ====================
 
     @Override
     public PageResult<QuestionTopicDto> findSchoolBankTopics(UUID bankId, UUID schoolId, PageRequest page) {
         String where = """
             WHERE qt.questionBankId = :bankId
-              AND qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId
-              AND qt.status <> 'ARCHIVED'
+              AND (
+                (qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId AND qt.status <> 'ARCHIVED')
+                OR (qb.ownerType = 'SYSTEM' AND qb.status = 'PUBLISHED' AND qt.status = 'PUBLISHED')
+              )
             """;
 
         String countSql = "SELECT COUNT(qt) FROM QuestionTopicJpaEntity qt JOIN QuestionBankJpaEntity qb ON qt.questionBankId = qb.id " + where;
@@ -285,53 +319,39 @@ public class JpaQuestionReadQueryRepository implements QuestionReadQueryReposito
     }
 
     @Override
-    public PageResult<QuestionDto> findSchoolTopicQuestions(UUID bankId, UUID topicId, UUID schoolId, String status, String keyword, PageRequest page) {
-        StringBuilder where = new StringBuilder("""
-            WHERE qb.id = :bankId AND qt.id = :topicId
-              AND qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId
-              AND qt.status <> 'ARCHIVED' AND q.status <> 'ARCHIVED'
-            """);
-
-        if (status != null && !status.isBlank()) {
-            where.append(" AND q.status = :status");
-        }
-        if (keyword != null && !keyword.isBlank()) {
-            where.append(" AND (LOWER(q.questionText) LIKE :keyword OR LOWER(q.code) LIKE :keyword)");
-        }
-
-        String joinClause = "FROM QuestionJpaEntity q JOIN QuestionTopicJpaEntity qt ON q.questionTopicId = qt.id JOIN QuestionBankJpaEntity qb ON qt.questionBankId = qb.id ";
-        String countSql = "SELECT COUNT(q) " + joinClause + where;
-        String dataSql = "SELECT q " + joinClause + where + " ORDER BY q.updatedAt DESC";
-
-        TypedQuery<Long> countQuery = em.createQuery(countSql, Long.class)
-                .setParameter("bankId", bankId)
+    public Optional<QuestionTopicDto> findSchoolTopicDetail(UUID topicId, UUID schoolId) {
+        try {
+            var topic = em.createQuery("""
+                SELECT qt FROM QuestionTopicJpaEntity qt
+                JOIN QuestionBankJpaEntity qb ON qt.questionBankId = qb.id
+                WHERE qt.id = :topicId
+                  AND (
+                    (qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId AND qt.status <> 'ARCHIVED')
+                    OR (qb.ownerType = 'SYSTEM' AND qb.status = 'PUBLISHED' AND qt.status = 'PUBLISHED')
+                  )
+                """, QuestionTopicJpaEntity.class)
                 .setParameter("topicId", topicId)
-                .setParameter("schoolId", schoolId);
-        TypedQuery<QuestionJpaEntity> dataQuery = em.createQuery(dataSql, QuestionJpaEntity.class)
-                .setParameter("bankId", bankId)
-                .setParameter("topicId", topicId)
-                .setParameter("schoolId", schoolId);
-
-        if (status != null && !status.isBlank()) {
-            countQuery.setParameter("status", status);
-            dataQuery.setParameter("status", status);
+                .setParameter("schoolId", schoolId)
+                .getSingleResult();
+            return Optional.of(QuestionReadDtoMapper.toTopicDto(topic));
+        } catch (NoResultException e) {
+            return Optional.empty();
         }
-        if (keyword != null && !keyword.isBlank()) {
-            String kw = "%" + keyword.toLowerCase() + "%";
-            countQuery.setParameter("keyword", kw);
-            dataQuery.setParameter("keyword", kw);
-        }
-
-        Long total = countQuery.getSingleResult();
-        List<QuestionJpaEntity> results = dataQuery
-                .setFirstResult((page.page() - 1) * page.size())
-                .setMaxResults(page.size())
-                .getResultList();
-
-        return QuestionReadDtoMapper.toDtoPage(results, total, page);
     }
 
-    // ==================== ADMIN - TOPIC CONTROLLER ====================
+    @Override
+    public PageResult<QuestionDto> findSchoolTopicQuestions(UUID bankId, UUID topicId, UUID schoolId, String scope, String status, String type, String keyword, PageRequest page) {
+        StringBuilder where = new StringBuilder("""
+            WHERE qb.id = :bankId AND qt.id = :topicId
+              AND (
+                (qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId AND qt.status <> 'ARCHIVED' AND q.status <> 'ARCHIVED')
+                OR (qb.ownerType = 'SYSTEM' AND qb.status = 'PUBLISHED' AND qt.status = 'PUBLISHED' AND q.status = 'PUBLISHED' AND q.visibility = 'BANK_VISIBLE')
+              )
+            """);
+
+        appendQuestionFilters(where, scope, status, type, keyword);
+        return findTopicQuestions(bankId, topicId, null, schoolId, where.toString(), scope, status, type, keyword, page);
+    }
 
     @Override
     public PageResult<QuestionTopicDto> findAdminBankTopics(UUID bankId, Boolean includeArchived, PageRequest page) {
@@ -356,20 +376,38 @@ public class JpaQuestionReadQueryRepository implements QuestionReadQueryReposito
         return QuestionReadDtoMapper.toTopicDtoPage(results, total, page);
     }
 
-    // ==================== ADMIN - BANK CONTROLLER ====================
+    @Override
+    public Optional<QuestionTopicDto> findAdminTopicDetail(UUID topicId) {
+        try {
+            var topic = em.createQuery("""
+                SELECT qt FROM QuestionTopicJpaEntity qt
+                WHERE qt.id = :topicId
+                """, QuestionTopicJpaEntity.class)
+                .setParameter("topicId", topicId)
+                .getSingleResult();
+            return Optional.of(QuestionReadDtoMapper.toTopicDto(topic));
+        } catch (NoResultException e) {
+            return Optional.empty();
+        }
+    }
 
     @Override
-    public PageResult<QuestionDto> findAdminBankQuestions(UUID bankId, Boolean includeArchived, String status, String keyword, PageRequest page) {
+    public PageResult<QuestionDto> findAdminTopicQuestions(UUID bankId, UUID topicId, Boolean includeArchived, String scope, String status, String type, String keyword, PageRequest page) {
+        StringBuilder where = new StringBuilder("WHERE qb.id = :bankId AND qt.id = :topicId");
+        if (!Boolean.TRUE.equals(includeArchived)) {
+            where.append(" AND qt.status <> 'ARCHIVED'");
+        }
+        appendQuestionFilters(where, scope, status, type, keyword);
+        return findAdminTopicQuestionsInternal(bankId, topicId, where.toString(), scope, status, type, keyword, page);
+    }
+
+    @Override
+    public PageResult<QuestionDto> findAdminBankQuestions(UUID bankId, Boolean includeArchived, String scope, String status, String type, String keyword, PageRequest page) {
         StringBuilder where = new StringBuilder("WHERE qb.id = :bankId");
         if (!Boolean.TRUE.equals(includeArchived)) {
             where.append(" AND qt.status <> 'ARCHIVED'");
         }
-        if (status != null && !status.isBlank()) {
-            where.append(" AND q.status = :status");
-        }
-        if (keyword != null && !keyword.isBlank()) {
-            where.append(" AND (LOWER(q.questionText) LIKE :keyword OR LOWER(q.code) LIKE :keyword)");
-        }
+        appendQuestionFilters(where, scope, status, type, keyword);
 
         String joinClause = "FROM QuestionJpaEntity q JOIN QuestionTopicJpaEntity qt ON q.questionTopicId = qt.id JOIN QuestionBankJpaEntity qb ON qt.questionBankId = qb.id ";
         String countSql = "SELECT COUNT(q) " + joinClause + where;
@@ -380,15 +418,7 @@ public class JpaQuestionReadQueryRepository implements QuestionReadQueryReposito
         TypedQuery<QuestionJpaEntity> dataQuery = em.createQuery(dataSql, QuestionJpaEntity.class)
                 .setParameter("bankId", bankId);
 
-        if (status != null && !status.isBlank()) {
-            countQuery.setParameter("status", status);
-            dataQuery.setParameter("status", status);
-        }
-        if (keyword != null && !keyword.isBlank()) {
-            String kw = "%" + keyword.toLowerCase() + "%";
-            countQuery.setParameter("keyword", kw);
-            dataQuery.setParameter("keyword", kw);
-        }
+        bindOptionalQuestionFilters(countQuery, dataQuery, scope, status, type, keyword);
 
         Long total = countQuery.getSingleResult();
         List<QuestionJpaEntity> results = dataQuery
@@ -399,9 +429,101 @@ public class JpaQuestionReadQueryRepository implements QuestionReadQueryReposito
         return QuestionReadDtoMapper.toDtoPage(results, total, page);
     }
 
-    // ==================== HELPER METHODS ====================
+    private PageResult<QuestionDto> findAdminTopicQuestionsInternal(UUID bankId, UUID topicId, String where, String scope, String status, String type, String keyword, PageRequest page) {
+        String joinClause = "FROM QuestionJpaEntity q JOIN QuestionTopicJpaEntity qt ON q.questionTopicId = qt.id JOIN QuestionBankJpaEntity qb ON qt.questionBankId = qb.id ";
+        String countSql = "SELECT COUNT(q) " + joinClause + where;
+        String dataSql = "SELECT q " + joinClause + where + " ORDER BY q.updatedAt DESC";
+
+        TypedQuery<Long> countQuery = em.createQuery(countSql, Long.class)
+            .setParameter("bankId", bankId)
+            .setParameter("topicId", topicId);
+        TypedQuery<QuestionJpaEntity> dataQuery = em.createQuery(dataSql, QuestionJpaEntity.class)
+            .setParameter("bankId", bankId)
+            .setParameter("topicId", topicId);
+
+        bindOptionalQuestionFilters(countQuery, dataQuery, scope, status, type, keyword);
+
+        Long total = countQuery.getSingleResult();
+        List<QuestionJpaEntity> results = dataQuery
+            .setFirstResult((page.page() - 1) * page.size())
+            .setMaxResults(page.size())
+            .getResultList();
+
+        return QuestionReadDtoMapper.toDtoPage(results, total, page);
+    }
+
+    private PageResult<QuestionDto> findTopicQuestions(UUID bankId, UUID topicId, UUID userId, UUID schoolId, String where, String scope, String status, String type, String keyword, PageRequest page) {
+        String joinClause = "FROM QuestionJpaEntity q JOIN QuestionTopicJpaEntity qt ON q.questionTopicId = qt.id JOIN QuestionBankJpaEntity qb ON qt.questionBankId = qb.id ";
+        String countSql = "SELECT COUNT(q) " + joinClause + where;
+        String dataSql = "SELECT q " + joinClause + where + " ORDER BY q.updatedAt DESC";
+
+        TypedQuery<Long> countQuery = em.createQuery(countSql, Long.class)
+                .setParameter("bankId", bankId)
+                .setParameter("topicId", topicId);
+        TypedQuery<QuestionJpaEntity> dataQuery = em.createQuery(dataSql, QuestionJpaEntity.class)
+                .setParameter("bankId", bankId)
+                .setParameter("topicId", topicId);
+
+        if (userId != null) {
+            countQuery.setParameter("userId", userId);
+            dataQuery.setParameter("userId", userId);
+        }
+        if (schoolId != null) {
+            countQuery.setParameter("schoolId", schoolId);
+            dataQuery.setParameter("schoolId", schoolId);
+        }
+
+        bindOptionalQuestionFilters(countQuery, dataQuery, scope, status, type, keyword);
+
+        Long total = countQuery.getSingleResult();
+        List<QuestionJpaEntity> results = dataQuery
+                .setFirstResult((page.page() - 1) * page.size())
+                .setMaxResults(page.size())
+                .getResultList();
+
+        return QuestionReadDtoMapper.toDtoPage(results, total, page);
+    }
+
+    private void appendQuestionFilters(StringBuilder where, String scope, String status, String type, String keyword) {
+        if (scope != null && !scope.isBlank()) {
+            where.append(" AND q.scope = :scope");
+        }
+        if (status != null && !status.isBlank()) {
+            where.append(" AND q.status = :status");
+        }
+        if (type != null && !type.isBlank()) {
+            where.append(" AND q.type = :type");
+        }
+        if (keyword != null && !keyword.isBlank()) {
+            where.append(" AND (LOWER(q.questionText) LIKE :keyword OR LOWER(q.code) LIKE :keyword)");
+        }
+    }
+
+    private void bindOptionalQuestionFilters(TypedQuery<Long> countQuery, TypedQuery<QuestionJpaEntity> dataQuery, String scope, String status, String type, String keyword) {
+        if (scope != null && !scope.isBlank()) {
+            countQuery.setParameter("scope", scope);
+            dataQuery.setParameter("scope", scope);
+        }
+        if (status != null && !status.isBlank()) {
+            countQuery.setParameter("status", status);
+            dataQuery.setParameter("status", status);
+        }
+        if (type != null && !type.isBlank()) {
+            countQuery.setParameter("type", type);
+            dataQuery.setParameter("type", type);
+        }
+        if (keyword != null && !keyword.isBlank()) {
+            String kw = "%" + keyword.toLowerCase() + "%";
+            countQuery.setParameter("keyword", kw);
+            dataQuery.setParameter("keyword", kw);
+        }
+    }
 
     private PageResult<QuestionDto> findQuestionsWithJoin(String whereClause, UUID userId, UUID schoolId, PageRequest page) {
+        return findQuestionsWithJoinAndFilters(whereClause, userId, schoolId, null, null, null, null, page);
+    }
+
+    private PageResult<QuestionDto> findQuestionsWithJoinAndFilters(String whereClause, UUID userId, UUID schoolId, String scope, String status, String type, String keyword, PageRequest page) {
         String joinClause = "FROM QuestionJpaEntity q JOIN QuestionTopicJpaEntity qt ON q.questionTopicId = qt.id JOIN QuestionBankJpaEntity qb ON qt.questionBankId = qb.id ";
         String countSql = "SELECT COUNT(q) " + joinClause + whereClause;
         String dataSql = "SELECT q " + joinClause + whereClause + " ORDER BY q.updatedAt DESC";
@@ -417,6 +539,8 @@ public class JpaQuestionReadQueryRepository implements QuestionReadQueryReposito
             countQuery.setParameter("schoolId", schoolId);
             dataQuery.setParameter("schoolId", schoolId);
         }
+
+        bindOptionalQuestionFilters(countQuery, dataQuery, scope, status, type, keyword);
 
         Long total = countQuery.getSingleResult();
         List<QuestionJpaEntity> results = dataQuery

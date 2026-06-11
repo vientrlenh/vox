@@ -8,6 +8,8 @@ import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.QuestionBankDto;
 
 public interface QuestionBankReadQueryRepository {
+    PageResult<QuestionBankDto> findAdminQuestionBanks(PageRequest pageRequest);
+    PageResult<QuestionBankDto> findAdminSchoolQuestionBanks(UUID schoolId, PageRequest pageRequest);
     PageResult<QuestionBankDto> findTeacherQuestionBanks(UUID userId, UUID schoolId, PageRequest pageRequest);
     Optional<QuestionBankDto> findTeacherQuestionBank(UUID bankId, UUID userId, UUID schoolId);
     PageResult<QuestionBankDto> findSchoolQuestionBanks(UUID schoolId, PageRequest pageRequest);

@@ -37,7 +37,7 @@ public class ViewSchoolTopicQuestionsUseCase implements IUseCase<ViewSchoolTopic
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
         return questionReadQueryRepository.findSchoolTopicQuestions(
                 input.bankId(), input.topicId(), user.getSchoolId(),
-                input.status(), input.keyword(),
+                input.scope(), input.status(), input.type(), input.keyword(),
                 new PageRequest(input.page(), input.size()));
     }
 }

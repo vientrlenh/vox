@@ -22,6 +22,53 @@ public class JpaQuestionBankReadQueryRepository implements QuestionBankReadQuery
     private EntityManager em;
 
     @Override
+    public PageResult<QuestionBankDto> findAdminQuestionBanks(PageRequest pageRequest) {
+        var totalElements = em.createQuery("""
+            SELECT COUNT(qb) FROM QuestionBankJpaEntity qb
+            """, Long.class).getSingleResult();
+
+        var content = em.createQuery("""
+            SELECT qb FROM QuestionBankJpaEntity qb
+            ORDER BY qb.createdAt DESC
+            """, QuestionBankJpaEntity.class)
+            .setFirstResult((pageRequest.page() - 1) * pageRequest.size())
+            .setMaxResults(pageRequest.size())
+            .getResultList()
+            .stream()
+            .map(this::toDto)
+            .toList();
+
+        var totalPages = (int) Math.ceil((double) totalElements / pageRequest.size());
+        return new PageResult<>(content, pageRequest.page(), pageRequest.size(), totalElements, totalPages);
+    }
+
+    @Override
+    public PageResult<QuestionBankDto> findAdminSchoolQuestionBanks(UUID schoolId, PageRequest pageRequest) {
+        var totalElements = em.createQuery("""
+            SELECT COUNT(qb) FROM QuestionBankJpaEntity qb
+            WHERE qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId
+            """, Long.class)
+            .setParameter("schoolId", schoolId)
+            .getSingleResult();
+
+        var content = em.createQuery("""
+            SELECT qb FROM QuestionBankJpaEntity qb
+            WHERE qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId
+            ORDER BY qb.createdAt DESC
+            """, QuestionBankJpaEntity.class)
+            .setParameter("schoolId", schoolId)
+            .setFirstResult((pageRequest.page() - 1) * pageRequest.size())
+            .setMaxResults(pageRequest.size())
+            .getResultList()
+            .stream()
+            .map(this::toDto)
+            .toList();
+
+        var totalPages = (int) Math.ceil((double) totalElements / pageRequest.size());
+        return new PageResult<>(content, pageRequest.page(), pageRequest.size(), totalElements, totalPages);
+    }
+
+    @Override
     public PageResult<QuestionBankDto> findTeacherQuestionBanks(UUID userId, UUID schoolId, PageRequest pageRequest) {
         var countQuery = em.createQuery("""
             SELECT COUNT(qb) FROM QuestionBankJpaEntity qb
@@ -102,7 +149,10 @@ public class JpaQuestionBankReadQueryRepository implements QuestionBankReadQuery
             var entity = em.createQuery("""
                 SELECT qb FROM QuestionBankJpaEntity qb
                 WHERE qb.id = :bankId
-                AND qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId
+                AND (
+                    (qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId)
+                    OR (qb.ownerType = 'SYSTEM' AND qb.status = 'PUBLISHED')
+                )
                 """, QuestionBankJpaEntity.class)
                 .setParameter("bankId", bankId)
                 .setParameter("schoolId", schoolId)

@@ -115,9 +115,13 @@ public class JpaQuestionViewPermissionQuery implements QuestionViewPermissionQue
                 JOIN QuestionTopicJpaEntity qt ON q.questionTopicId = qt.id
                 JOIN QuestionBankJpaEntity qb ON qt.questionBankId = qb.id
                 WHERE q.id = :questionId
-                  AND qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId
-                  AND qb.status <> 'ARCHIVED' AND qt.status <> 'ARCHIVED'
-                  AND q.status <> 'ARCHIVED'
+                  AND (
+                    (qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId
+                        AND qb.status <> 'ARCHIVED' AND qt.status <> 'ARCHIVED' AND q.status <> 'ARCHIVED')
+                    OR (qb.ownerType = 'SYSTEM'
+                        AND qb.status = 'PUBLISHED' AND qt.status = 'PUBLISHED'
+                        AND q.status = 'PUBLISHED' AND q.visibility = 'BANK_VISIBLE')
+                  )
                 """)
                 .setParameter("questionId", questionId)
                 .setParameter("schoolId", schoolId)
@@ -134,7 +138,7 @@ public class JpaQuestionViewPermissionQuery implements QuestionViewPermissionQue
             return true;
         }
         // Path 2: published, BANK_VISIBLE
-        if (isPublishedBankVisible(q.getId())) {
+        if (isPublishedBankVisible(q.getId(), schoolId)) {
             return true;
         }
         // Path 3: review queue
@@ -240,7 +244,7 @@ public class JpaQuestionViewPermissionQuery implements QuestionViewPermissionQue
         }
     }
 
-    private boolean isPublishedBankVisible(UUID questionId) {
+    private boolean isPublishedBankVisible(UUID questionId, UUID schoolId) {
         try {
             em.createQuery("""
                 SELECT 1 FROM QuestionJpaEntity q
@@ -249,8 +253,13 @@ public class JpaQuestionViewPermissionQuery implements QuestionViewPermissionQue
                 WHERE q.id = :questionId
                   AND qb.status = 'PUBLISHED' AND qt.status = 'PUBLISHED'
                   AND q.status = 'PUBLISHED' AND q.visibility = 'BANK_VISIBLE'
+                  AND (
+                    qb.ownerType = 'SYSTEM'
+                    OR (qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId)
+                  )
                 """)
                 .setParameter("questionId", questionId)
+                .setParameter("schoolId", schoolId)
                 .getSingleResult();
             return true;
         } catch (NoResultException e) {

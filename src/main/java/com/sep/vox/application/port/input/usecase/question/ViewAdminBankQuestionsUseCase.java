@@ -23,7 +23,7 @@ public class ViewAdminBankQuestionsUseCase implements IUseCase<ViewAdminBankQues
     @Transactional(readOnly = true)
     public PageResult<QuestionDto> execute(ViewAdminBankQuestionsQuery input) {
         return questionReadQueryRepository.findAdminBankQuestions(
-                input.bankId(), input.includeArchived(), input.status(), input.keyword(),
+                input.bankId(), input.includeArchived(), input.scope(), input.status(), input.type(), input.keyword(),
                 new PageRequest(input.page(), input.size()));
     }
 }

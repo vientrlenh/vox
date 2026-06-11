@@ -12,8 +12,10 @@ import org.springframework.stereotype.Controller;
 import com.sep.vox.application.port.input.query.ViewAdminQuestionsQuery;
 import com.sep.vox.application.port.input.query.ViewAdminReviewQueueQuery;
 import com.sep.vox.application.port.input.query.ViewQuestionDetailsQuery;
+import com.sep.vox.application.port.input.query.ViewSchoolQuestionsQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolReviewQueueQuery;
 import com.sep.vox.application.port.input.query.ViewTeacherMyQuestionsQuery;
+import com.sep.vox.application.port.input.query.ViewTeacherQuestionsQuery;
 import com.sep.vox.application.port.input.query.ViewTeacherReviewQueueQuery;
 import com.sep.vox.application.port.input.usecase.question.ViewAdminQuestionsUseCase;
 import com.sep.vox.application.port.input.usecase.question.ViewAdminReviewQueueUseCase;
@@ -21,8 +23,10 @@ import com.sep.vox.application.port.input.usecase.question.ViewQuestionAssetsUse
 import com.sep.vox.application.port.input.usecase.question.ViewQuestionDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.question.ViewQuestionEvaluationGuideUseCase;
 import com.sep.vox.application.port.input.usecase.question.ViewQuestionTopicByQuestionUseCase;
+import com.sep.vox.application.port.input.usecase.question.ViewSchoolQuestionsUseCase;
 import com.sep.vox.application.port.input.usecase.question.ViewSchoolReviewQueueUseCase;
 import com.sep.vox.application.port.input.usecase.question.ViewTeacherMyQuestionsUseCase;
+import com.sep.vox.application.port.input.usecase.question.ViewTeacherQuestionsUseCase;
 import com.sep.vox.application.port.input.usecase.question.ViewTeacherReviewQueueUseCase;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.QuestionAssetDto;
@@ -35,7 +39,9 @@ public class QuestionController {
 
     private final ViewQuestionDetailsUseCase viewQuestionDetailsUseCase;
     private final ViewTeacherMyQuestionsUseCase viewTeacherMyQuestionsUseCase;
+    private final ViewTeacherQuestionsUseCase viewTeacherQuestionsUseCase;
     private final ViewTeacherReviewQueueUseCase viewTeacherReviewQueueUseCase;
+    private final ViewSchoolQuestionsUseCase viewSchoolQuestionsUseCase;
     private final ViewSchoolReviewQueueUseCase viewSchoolReviewQueueUseCase;
     private final ViewAdminQuestionsUseCase viewAdminQuestionsUseCase;
     private final ViewAdminReviewQueueUseCase viewAdminReviewQueueUseCase;
@@ -46,7 +52,9 @@ public class QuestionController {
     public QuestionController(
             ViewQuestionDetailsUseCase viewQuestionDetailsUseCase,
             ViewTeacherMyQuestionsUseCase viewTeacherMyQuestionsUseCase,
+            ViewTeacherQuestionsUseCase viewTeacherQuestionsUseCase,
             ViewTeacherReviewQueueUseCase viewTeacherReviewQueueUseCase,
+            ViewSchoolQuestionsUseCase viewSchoolQuestionsUseCase,
             ViewSchoolReviewQueueUseCase viewSchoolReviewQueueUseCase,
             ViewAdminQuestionsUseCase viewAdminQuestionsUseCase,
             ViewAdminReviewQueueUseCase viewAdminReviewQueueUseCase,
@@ -55,7 +63,9 @@ public class QuestionController {
             ViewQuestionEvaluationGuideUseCase viewQuestionEvaluationGuideUseCase) {
         this.viewQuestionDetailsUseCase = viewQuestionDetailsUseCase;
         this.viewTeacherMyQuestionsUseCase = viewTeacherMyQuestionsUseCase;
+        this.viewTeacherQuestionsUseCase = viewTeacherQuestionsUseCase;
         this.viewTeacherReviewQueueUseCase = viewTeacherReviewQueueUseCase;
+        this.viewSchoolQuestionsUseCase = viewSchoolQuestionsUseCase;
         this.viewSchoolReviewQueueUseCase = viewSchoolReviewQueueUseCase;
         this.viewAdminQuestionsUseCase = viewAdminQuestionsUseCase;
         this.viewAdminReviewQueueUseCase = viewAdminReviewQueueUseCase;
@@ -82,6 +92,19 @@ public class QuestionController {
         return viewTeacherMyQuestionsUseCase.execute(query);
     }
 
+    @QueryMapping(name = "teacherQuestions")
+    @PreAuthorize("hasRole('TEACHER')")
+    public PageResult<QuestionDto> teacherQuestions(
+            @Argument(name = "page") int page,
+            @Argument(name = "size") int size,
+            @Argument(name = "scope") String scope,
+            @Argument(name = "status") String status,
+            @Argument(name = "type") String type,
+            @Argument(name = "keyword") String keyword) {
+        var query = new ViewTeacherQuestionsQuery(page, size, scope, status, type, keyword);
+        return viewTeacherQuestionsUseCase.execute(query);
+    }
+
     @QueryMapping(name = "teacherReviewQueue")
     @PreAuthorize("hasRole('TEACHER')")
     public PageResult<QuestionDto> teacherReviewQueue(
@@ -98,6 +121,19 @@ public class QuestionController {
             @Argument(name = "size") int size) {
         var query = new ViewSchoolReviewQueueQuery(page, size);
         return viewSchoolReviewQueueUseCase.execute(query);
+    }
+
+    @QueryMapping(name = "schoolQuestions")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public PageResult<QuestionDto> schoolQuestions(
+            @Argument(name = "page") int page,
+            @Argument(name = "size") int size,
+            @Argument(name = "scope") String scope,
+            @Argument(name = "status") String status,
+            @Argument(name = "type") String type,
+            @Argument(name = "keyword") String keyword) {
+        var query = new ViewSchoolQuestionsQuery(page, size, scope, status, type, keyword);
+        return viewSchoolQuestionsUseCase.execute(query);
     }
 
     @QueryMapping(name = "adminQuestions")

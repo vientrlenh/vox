@@ -7,7 +7,9 @@ public record ViewTeacherTopicQuestionsQuery(
     UUID topicId,
     int page,
     int size,
+    String scope,
     String status,
+    String type,
     String keyword
 ) {
 }

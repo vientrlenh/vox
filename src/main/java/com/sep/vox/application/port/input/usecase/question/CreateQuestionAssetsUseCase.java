@@ -1,71 +1,79 @@
 package com.sep.vox.application.port.input.usecase.question;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.mapper.question.UpdateQuestionResponseMapper;
-import com.sep.vox.application.port.input.command.UpdateQuestionEvaluationGuideCommand;
+import com.sep.vox.application.port.input.command.UpdateQuestionAssetsCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.QuestionPermissionQuery;
 import com.sep.vox.application.response.input.question.UpdateQuestionResponse;
-import com.sep.vox.domain.model.question.QuestionEvaluationGuide;
-import com.sep.vox.domain.repository.QuestionEvaluationGuideRepository;
+import com.sep.vox.domain.model.question.QuestionAsset;
+import com.sep.vox.domain.model.question.QuestionAssetType;
+import com.sep.vox.domain.repository.QuestionAssetRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 
 @Service
-public class UpdateQuestionEvaluationGuideUseCase implements IUseCase<UpdateQuestionEvaluationGuideCommand, UpdateQuestionResponse> {
+public class CreateQuestionAssetsUseCase implements IUseCase<UpdateQuestionAssetsCommand, UpdateQuestionResponse> {
 
     private final QuestionRepository questionRepository;
-    private final QuestionEvaluationGuideRepository questionEvaluationGuideRepository;
+    private final QuestionAssetRepository questionAssetRepository;
     private final QuestionPermissionQuery permissionQuery;
     private final UserContextPort userContextPort;
 
-    public UpdateQuestionEvaluationGuideUseCase(
+    public CreateQuestionAssetsUseCase(
             QuestionRepository questionRepository,
-            QuestionEvaluationGuideRepository questionEvaluationGuideRepository,
+            QuestionAssetRepository questionAssetRepository,
             QuestionPermissionQuery permissionQuery,
             UserContextPort userContextPort) {
         this.questionRepository = questionRepository;
-        this.questionEvaluationGuideRepository = questionEvaluationGuideRepository;
+        this.questionAssetRepository = questionAssetRepository;
         this.permissionQuery = permissionQuery;
         this.userContextPort = userContextPort;
     }
 
     @Override
     @Transactional
-    public UpdateQuestionResponse execute(UpdateQuestionEvaluationGuideCommand input) {
+    public UpdateQuestionResponse execute(UpdateQuestionAssetsCommand input) {
         if (!permissionQuery.canEditContent(input.questionId())) {
-            throw new ForbiddenException("Khong co quyen chinh sua huong dan danh gia");
+            throw new ForbiddenException("Khong co quyen tao tai san cau hoi");
         }
 
         var question = questionRepository.findById(input.questionId())
             .orElseThrow(() -> new NotFoundException("Khong tim thay cau hoi"));
 
-        if (questionEvaluationGuideRepository.findByQuestionId(input.questionId()).isEmpty()) {
-            throw new NotFoundException("Cau hoi chua co huong dan danh gia de cap nhat");
+        if (!questionAssetRepository.findByQuestionId(input.questionId()).isEmpty()) {
+            throw new DuplicatedException("Cau hoi da co tai san, hay dung endpoint update");
         }
 
-        questionEvaluationGuideRepository.deleteByQuestionId(input.questionId());
+        var now = OffsetDateTime.now();
+        var newAssets = new ArrayList<QuestionAsset>();
+        for (var item : input.assets()) {
+            var asset = new QuestionAsset(
+                UUID.randomUUID(),
+                input.questionId(),
+                item.title(),
+                item.durationSeconds(),
+                item.altText(),
+                QuestionAssetType.valueOf(item.type()),
+                item.url(),
+                item.transcript(),
+                item.description(),
+                item.order()
+            );
+            newAssets.add(asset);
+        }
+        questionAssetRepository.saveAll(newAssets);
 
-        var guide = new QuestionEvaluationGuide(
-            UUID.randomUUID(),
-            input.questionId(),
-            input.expectedContent(),
-            input.keyPoints(),
-            input.acceptableResponses(),
-            input.offTopicExamples(),
-            input.scoringHints(),
-            input.commonMistakes()
-        );
-        questionEvaluationGuideRepository.save(guide);
-
-        question.setUpdatedAt(OffsetDateTime.now());
+        question.setUpdatedAt(now);
         question.setUpdatedBy(userContextPort.getCurrentAuthenticatedUserId());
         questionRepository.save(question);
 

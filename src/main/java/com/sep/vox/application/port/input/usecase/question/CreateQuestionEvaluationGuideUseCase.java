@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.mapper.question.UpdateQuestionResponseMapper;
@@ -19,14 +20,14 @@ import com.sep.vox.domain.repository.QuestionEvaluationGuideRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 
 @Service
-public class UpdateQuestionEvaluationGuideUseCase implements IUseCase<UpdateQuestionEvaluationGuideCommand, UpdateQuestionResponse> {
+public class CreateQuestionEvaluationGuideUseCase implements IUseCase<UpdateQuestionEvaluationGuideCommand, UpdateQuestionResponse> {
 
     private final QuestionRepository questionRepository;
     private final QuestionEvaluationGuideRepository questionEvaluationGuideRepository;
     private final QuestionPermissionQuery permissionQuery;
     private final UserContextPort userContextPort;
 
-    public UpdateQuestionEvaluationGuideUseCase(
+    public CreateQuestionEvaluationGuideUseCase(
             QuestionRepository questionRepository,
             QuestionEvaluationGuideRepository questionEvaluationGuideRepository,
             QuestionPermissionQuery permissionQuery,
@@ -41,17 +42,15 @@ public class UpdateQuestionEvaluationGuideUseCase implements IUseCase<UpdateQues
     @Transactional
     public UpdateQuestionResponse execute(UpdateQuestionEvaluationGuideCommand input) {
         if (!permissionQuery.canEditContent(input.questionId())) {
-            throw new ForbiddenException("Khong co quyen chinh sua huong dan danh gia");
+            throw new ForbiddenException("Khong co quyen tao huong dan danh gia");
         }
 
         var question = questionRepository.findById(input.questionId())
             .orElseThrow(() -> new NotFoundException("Khong tim thay cau hoi"));
 
-        if (questionEvaluationGuideRepository.findByQuestionId(input.questionId()).isEmpty()) {
-            throw new NotFoundException("Cau hoi chua co huong dan danh gia de cap nhat");
+        if (questionEvaluationGuideRepository.findByQuestionId(input.questionId()).isPresent()) {
+            throw new DuplicatedException("Cau hoi da co huong dan danh gia, hay dung endpoint update");
         }
-
-        questionEvaluationGuideRepository.deleteByQuestionId(input.questionId());
 
         var guide = new QuestionEvaluationGuide(
             UUID.randomUUID(),

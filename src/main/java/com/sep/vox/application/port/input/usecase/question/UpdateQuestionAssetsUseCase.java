@@ -43,17 +43,19 @@ public class UpdateQuestionAssetsUseCase implements IUseCase<UpdateQuestionAsset
     @Transactional
     public UpdateQuestionResponse execute(UpdateQuestionAssetsCommand input) {
         if (!permissionQuery.canEditContent(input.questionId())) {
-            throw new ForbiddenException("Không có quyền chỉnh sửa tài sản câu hỏi");
+            throw new ForbiddenException("Khong co quyen chinh sua tai san cau hoi");
         }
 
         var question = questionRepository.findById(input.questionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi"));
+            .orElseThrow(() -> new NotFoundException("Khong tim thay cau hoi"));
 
-        // Delete existing assets
+        if (questionAssetRepository.findByQuestionId(input.questionId()).isEmpty()) {
+            throw new NotFoundException("Cau hoi chua co tai san de cap nhat");
+        }
+
         questionAssetRepository.deleteByQuestionId(input.questionId());
 
-        // Create new assets
-        OffsetDateTime now = OffsetDateTime.now();
+        var now = OffsetDateTime.now();
         var newAssets = new ArrayList<QuestionAsset>();
         for (var item : input.assets()) {
             var asset = new QuestionAsset(

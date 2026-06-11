@@ -1,14 +1,13 @@
 package com.sep.vox.interfaces.rest.mapper;
 
-import java.util.List;
-
-import com.sep.vox.application.port.input.command.CreateQuestionAssetCommand;
 import com.sep.vox.application.port.input.command.CreateSchoolQuestionBankQuestionCommand;
 import com.sep.vox.application.port.input.command.CreateSystemQuestionBankQuestionCommand;
-import com.sep.vox.interfaces.rest.dto.request.CreateQuestionAssetRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSystemQuestionBankQuestionRequest;
 
 public final class CreateQuestionCommandMapper {
+
+    private CreateQuestionCommandMapper() {
+    }
 
     public static CreateSystemQuestionBankQuestionCommand fromQuestionBankRequest(CreateSystemQuestionBankQuestionRequest request) {
         return new CreateSystemQuestionBankQuestionCommand(
@@ -18,17 +17,10 @@ public final class CreateQuestionCommandMapper {
             request.questionText(),
             request.promptText(),
             request.preparationText(),
-            request.expectedContent(),
-            request.keyPoints(),
-            request.acceptableResponses(),
-            request.offTopicExamples(),
-            request.scoringHints(),
-            request.commonMistakes(),
             request.type(),
             request.preparationTimeSeconds(),
             request.minResponseSeconds(),
-            request.maxResponseSeconds(),
-            toAssetCommands(request.assets())
+            request.maxResponseSeconds()
         );
     }
 
@@ -40,40 +32,10 @@ public final class CreateQuestionCommandMapper {
             request.questionText(),
             request.promptText(),
             request.preparationText(),
-            request.expectedContent(),
-            request.keyPoints(),
-            request.acceptableResponses(),
-            request.offTopicExamples(),
-            request.scoringHints(),
-            request.commonMistakes(),
             request.type(),
             request.preparationTimeSeconds(),
             request.minResponseSeconds(),
-            request.maxResponseSeconds(),
-            toAssetCommands(request.assets())
-        );
-    }
-
-    private static List<CreateQuestionAssetCommand> toAssetCommands(List<CreateQuestionAssetRequest> requests) {
-        if (requests == null) {
-            return List.of();
-        }
-
-        return requests.stream()
-            .map(CreateQuestionCommandMapper::toAssetCommand)
-            .toList();
-    }
-
-    private static CreateQuestionAssetCommand toAssetCommand(CreateQuestionAssetRequest request) {
-        return new CreateQuestionAssetCommand(
-            request.title(),
-            request.durationSeconds(),
-            request.altText(),
-            request.type(),
-            request.url(),
-            request.transcript(),
-            request.description(),
-            request.order()
+            request.maxResponseSeconds()
         );
     }
 }

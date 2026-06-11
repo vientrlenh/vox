@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.command;
 
-import java.util.List;
 import java.util.UUID;
 
 public record CreateSchoolQuestionBankQuestionCommand(
@@ -10,16 +9,9 @@ public record CreateSchoolQuestionBankQuestionCommand(
     String questionText,
     String promptText,
     String preparationText,
-    String expectedContent,
-    String keyPoints,
-    String acceptableResponses,
-    String offTopicExamples,
-    String scoringHints,
-    String commonMistakes,
     String type,
     int preparationTimeSeconds,
     int minResponseSeconds,
-    int maxResponseSeconds,
-    List<CreateQuestionAssetCommand> assets
+    int maxResponseSeconds
 ) {
 }

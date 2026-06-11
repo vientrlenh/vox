@@ -1,34 +1,32 @@
 package com.sep.vox.domain.model.school;
 
-import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-public class SchoolGrade {
+public class SchoolGradeLevel {
     private UUID id;
-    private UUID schoolGradeLevelId;
+    private UUID schoolId;
     private String code;
     private String name;
     private String description;
-    private LocalDate startDate;
-    private LocalDate endDate;
-    private SchoolGradeStatus status;
+    private int order;
+    private SchoolGradeLevelStatus status;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
     private UUID createdBy;
     private UUID updatedBy;
 
-    public SchoolGrade() {}
+    public SchoolGradeLevel() {}
 
-    public SchoolGrade(UUID id, UUID schoolGradeLevelId, String code, String name, String description, LocalDate startDate, LocalDate endDate, SchoolGradeStatus status,
-            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+    public SchoolGradeLevel(UUID id, UUID schoolId, String code, String name, String description, int order, 
+            SchoolGradeLevelStatus status, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy,
+            UUID updatedBy) {
         this.id = id;
-        this.schoolGradeLevelId = schoolGradeLevelId;
+        this.schoolId = schoolId;
         this.code = code;
         this.name = name;
         this.description = description;
-        this.startDate = startDate;
-        this.endDate = endDate;
+        this.order = order;
         this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -36,14 +34,13 @@ public class SchoolGrade {
         this.updatedBy = updatedBy;
     }
 
-    public SchoolGrade(UUID schoolGradeLevelId, String code, String name, String description, LocalDate startDate, LocalDate endDate, SchoolGradeStatus status, OffsetDateTime createdAt,
-            OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
-        this.schoolGradeLevelId = schoolGradeLevelId;
+    public SchoolGradeLevel(UUID schoolId, String code, String name, String description, int order, SchoolGradeLevelStatus status,
+            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+        this.schoolId = schoolId;
         this.code = code;
         this.name = name;
         this.description = description;
-        this.startDate = startDate;
-        this.endDate = endDate;
+        this.order = order;
         this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -57,6 +54,14 @@ public class SchoolGrade {
 
     public void setId(UUID id) {
         this.id = id;
+    }
+
+    public UUID getSchoolId() {
+        return schoolId;
+    }
+
+    public void setSchoolId(UUID schoolId) {
+        this.schoolId = schoolId;
     }
 
     public String getCode() {
@@ -83,11 +88,11 @@ public class SchoolGrade {
         this.description = description;
     }
 
-    public SchoolGradeStatus getStatus() {
+    public SchoolGradeLevelStatus getStatus() {
         return status;
     }
 
-    public void setStatus(SchoolGradeStatus status) {
+    public void setStatus(SchoolGradeLevelStatus status) {
         this.status = status;
     }
 
@@ -123,28 +128,12 @@ public class SchoolGrade {
         this.updatedBy = updatedBy;
     }
 
-    public UUID getSchoolGradeLevelId() {
-        return schoolGradeLevelId;
+    public int getOrder() {
+        return order;
     }
 
-    public void setSchoolGradeLevelId(UUID schoolGradeLevelId) {
-        this.schoolGradeLevelId = schoolGradeLevelId;
-    }
-
-    public LocalDate getStartDate() {
-        return startDate;
-    }
-
-    public void setStartDate(LocalDate startDate) {
-        this.startDate = startDate;
-    }
-
-    public LocalDate getEndDate() {
-        return endDate;
-    }
-
-    public void setEndDate(LocalDate endDate) {
-        this.endDate = endDate;
+    public void setOrder(int order) {
+        this.order = order;
     }
 
     

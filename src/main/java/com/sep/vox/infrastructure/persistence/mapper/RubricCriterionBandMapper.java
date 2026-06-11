@@ -1,8 +1,8 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.rubric.RubricCriterionBand;
-import com.sep.vox.domain.valueobject.rubriccriterionbandexample.RubricCriterionBandExamples;
-import com.sep.vox.domain.valueobject.rubriccriterionsignal.RubricCriterionSignals;
+import com.sep.vox.domain.valueobject.framework.RubricCriterionSignals;
+import com.sep.vox.domain.valueobject.rubric.RubricCriterionBandExamples;
 import com.sep.vox.infrastructure.persistence.entity.RubricCriterionBandJpaEntity;
 
 public final class RubricCriterionBandMapper {

@@ -19,7 +19,6 @@ public class ScoringRule {
     private ScoringRuleActionType actionType;
     private ScoringRuleActionParams actionParams;
     private int priority;
-    private ScoringRuleAppliesTo appliesTo;
     private ScoringRuleSeverity severity;
     private boolean stopProcessing;
     private boolean isActive;
@@ -33,8 +32,7 @@ public class ScoringRule {
 
     public ScoringRule(UUID id, UUID policyId, String code, String name, String description,
             ScoringRuleConditionType conditionType, ScoringRuleConditionParams conditionParams,
-            ScoringRuleActionType actionType, ScoringRuleActionParams actionParams, int priority,
-            ScoringRuleAppliesTo appliesTo, ScoringRuleSeverity severity, boolean stopProcessing, boolean isActive,
+            ScoringRuleActionType actionType, ScoringRuleActionParams actionParams, int priority, ScoringRuleSeverity severity, boolean stopProcessing, boolean isActive,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.policyId = policyId;
@@ -46,7 +44,6 @@ public class ScoringRule {
         this.actionType = actionType;
         this.actionParams = actionParams;
         this.priority = priority;
-        this.appliesTo = appliesTo;
         this.severity = severity;
         this.stopProcessing = stopProcessing;
         this.isActive = isActive;
@@ -58,8 +55,7 @@ public class ScoringRule {
 
     public ScoringRule(UUID policyId, String code, String name, String description,
             ScoringRuleConditionType conditionType, ScoringRuleConditionParams conditionParams,
-            ScoringRuleActionType actionType, ScoringRuleActionParams actionParams, int priority,
-            ScoringRuleAppliesTo appliesTo, ScoringRuleSeverity severity, boolean stopProcessing, boolean isActive,
+            ScoringRuleActionType actionType, ScoringRuleActionParams actionParams, int priority, ScoringRuleSeverity severity, boolean stopProcessing, boolean isActive,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.policyId = policyId;
         this.code = code;
@@ -70,7 +66,6 @@ public class ScoringRule {
         this.actionType = actionType;
         this.actionParams = actionParams;
         this.priority = priority;
-        this.appliesTo = appliesTo;
         this.severity = severity;
         this.stopProcessing = stopProcessing;
         this.isActive = isActive;
@@ -160,13 +155,6 @@ public class ScoringRule {
         this.priority = priority;
     }
 
-    public ScoringRuleAppliesTo getAppliesTo() {
-        return appliesTo;
-    }
-
-    public void setAppliesTo(ScoringRuleAppliesTo appliesTo) {
-        this.appliesTo = appliesTo;
-    }
 
     public ScoringRuleSeverity getSeverity() {
         return severity;

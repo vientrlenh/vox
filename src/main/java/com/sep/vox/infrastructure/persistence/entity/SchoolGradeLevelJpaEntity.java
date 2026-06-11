@@ -1,6 +1,5 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
-import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -15,32 +14,27 @@ import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "school_grades", indexes = {
-    @Index(columnList = "school_grade_level_id, code", name = "idx_school_grades_level_code", unique = true),
-    @Index(columnList = "school_grade_level_id", name = "idx_school_grades_level")
-}, check = {
-    @CheckConstraint(
-        name = "chk_school_grades_start_end_date_valid", 
-        constraint = "start_date < end_date"
-    )
+@Table(name = "school_grade_levels", indexes = {
+    @Index(columnList = "school_id, code", name = "idx_school_grade_levels_school_code", unique = true),
+    @Index(columnList = "school_id, grade_level_order", name = "idx_school_grade_levels_school_order", unique = true)
 })
-public class SchoolGradeJpaEntity {
+public class SchoolGradeLevelJpaEntity {
     @Id
     @Generated(event = EventType.INSERT)
     @Column(
-        name = "id", 
-        nullable = false, 
-        updatable = false, 
-        insertable = false, 
+        name = "id",
+        nullable = false,
+        updatable = false,
+        insertable = false,
         columnDefinition = "UUID DEFAULT uuidv7()"
     )
     private UUID id;
 
-    @Column(name = "school_grade_level_id", nullable = false, updatable = false)
-    private UUID schoolGradeLevelId;
-    
+    @Column(name = "school_id", nullable = false, updatable = false)
+    private UUID schoolId;
+
     @Column(name = "code", nullable = false, updatable = false, length = 100)
-    private String code; 
+    private String code;
 
     @Column(name = "name", nullable = false, length = 255)
     private String name;
@@ -48,16 +42,18 @@ public class SchoolGradeJpaEntity {
     @Column(name = "description", length = 2048)
     private String description;
 
-    @Column(name = "start_date", nullable = false)
-    private LocalDate startDate;
-
-    @Column(name = "end_date", nullable = false)
-    private LocalDate endDate;
+    @Column(name = "grade_level_order", nullable = false, check = {
+        @CheckConstraint(
+            name = "chk_school_grade_levels_order_positive",
+            constraint = "grade_level_order > 0"
+        )
+    })
+    private int order;
 
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
-            name = "chk_status_valid", 
-            constraint = "status IN ('INACTIVE', 'ACTIVE', 'ARCHIVED')"
+            name = "chk_school_grade_levels_status_valid",
+            constraint = "status IN ('ACTIVE', 'INACTIVE')"
         )
     })
     private String status;
@@ -74,34 +70,16 @@ public class SchoolGradeJpaEntity {
     @Column(name = "updated_by")
     private UUID updatedBy;
 
-    protected SchoolGradeJpaEntity() {}
+    protected SchoolGradeLevelJpaEntity() {}
 
-    public SchoolGradeJpaEntity(UUID id, UUID schoolGradeLevelId, String code, String name, String description,
-            LocalDate startDate, LocalDate endDate, String status, OffsetDateTime createdAt, OffsetDateTime updatedAt,
-            UUID createdBy, UUID updatedBy) {
+    public SchoolGradeLevelJpaEntity(UUID id, UUID schoolId, String code, String name, String description, int order,
+            String status, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
-        this.schoolGradeLevelId = schoolGradeLevelId;
+        this.schoolId = schoolId;
         this.code = code;
         this.name = name;
         this.description = description;
-        this.startDate = startDate;
-        this.endDate = endDate;
-        this.status = status;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public SchoolGradeJpaEntity(UUID schoolGradeLevelId, String code, String name, String description,
-            LocalDate startDate, LocalDate endDate, String status, OffsetDateTime createdAt,
-            OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
-        this.schoolGradeLevelId = schoolGradeLevelId;
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.startDate = startDate;
-        this.endDate = endDate;
+        this.order = order;
         this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -117,12 +95,12 @@ public class SchoolGradeJpaEntity {
         this.id = id;
     }
 
-    public UUID getSchoolGradeLevelId() {
-        return schoolGradeLevelId;
+    public UUID getSchoolId() {
+        return schoolId;
     }
 
-    public void setSchoolGradeLevelId(UUID schoolGradeLevelId) {
-        this.schoolGradeLevelId = schoolGradeLevelId;
+    public void setSchoolId(UUID schoolId) {
+        this.schoolId = schoolId;
     }
 
     public String getCode() {
@@ -149,20 +127,12 @@ public class SchoolGradeJpaEntity {
         this.description = description;
     }
 
-    public LocalDate getStartDate() {
-        return startDate;
+    public int getOrder() {
+        return order;
     }
 
-    public void setStartDate(LocalDate startDate) {
-        this.startDate = startDate;
-    }
-
-    public LocalDate getEndDate() {
-        return endDate;
-    }
-
-    public void setEndDate(LocalDate endDate) {
-        this.endDate = endDate;
+    public void setOrder(int order) {
+        this.order = order;
     }
 
     public String getStatus() {
@@ -204,6 +174,4 @@ public class SchoolGradeJpaEntity {
     public void setUpdatedBy(UUID updatedBy) {
         this.updatedBy = updatedBy;
     }
-
-    
 }

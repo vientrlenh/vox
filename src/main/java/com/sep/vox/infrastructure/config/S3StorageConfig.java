@@ -36,7 +36,7 @@ public class S3StorageConfig {
                 AwsBasicCredentials.create(properties.getAccessKey(), properties.getSecretKey())
             ));
         } else {
-            builder.credentialsProvider(DefaultCredentialsProvider.create());
+            builder.credentialsProvider(DefaultCredentialsProvider.builder().build());
         }
 
         return builder.build();

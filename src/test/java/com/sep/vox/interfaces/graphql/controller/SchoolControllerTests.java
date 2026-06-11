@@ -32,6 +32,7 @@ import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolDto;
 import com.sep.vox.domain.dto.SchoolGradeDto;
 import com.sep.vox.domain.dto.SupportedLanguageDto;
+import com.sep.vox.domain.dto.UserDto;
 
 import graphql.schema.DataFetchingEnvironment;
 
@@ -202,6 +203,39 @@ class SchoolControllerTests {
 
         assertThrows(IllegalStateException.class, () -> controller.schoolClassUsers(UUID.randomUUID(), 0, 20));
         assertThrows(IllegalStateException.class, () -> controller.schoolClassUsers(UUID.randomUUID(), 1, 0));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void school_class_user_user_field_should_load_related_user() {
+        var controller = new SchoolController(
+            mock(ViewSchoolsUseCase.class),
+            mock(ViewSchoolClassesUseCase.class),
+            mock(ViewSchoolClassDetailsUseCase.class),
+            mock(ViewSchoolClassUsersUseCase.class),
+            mock(UpdateSchoolClassUseCase.class)
+        );
+        var userId = UUID.randomUUID();
+        var response = new SchoolClassUserResponse(
+            UUID.randomUUID(),
+            userId,
+            UUID.randomUUID(),
+            true,
+            "2026-06-06T12:00:00Z",
+            null,
+            UUID.randomUUID(),
+            null
+        );
+        var expected = new UserDto(userId, "student@example.com", null, "Student", null, null, null, null, null, null);
+        var env = mock(DataFetchingEnvironment.class);
+        var loader = mock(DataLoader.class);
+        when(env.<UUID, UserDto>getDataLoader("userById")).thenReturn(loader);
+        when(loader.load(userId)).thenReturn(CompletableFuture.completedFuture(expected));
+
+        var result = controller.user(response, env).join();
+
+        assertThat(result).isEqualTo(expected);
+        verify(loader).load(userId);
     }
 
     @Test

@@ -1,10 +1,7 @@
 package com.sep.vox.application.port.input.usecase.schoolclassuser;
 
-import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -61,12 +58,8 @@ public class ViewSchoolClassUsersUseCase implements IUseCase<ViewSchoolClassUser
         var fromIndex = Math.min((input.page() - 1) * input.size(), totalElements);
         var toIndex = Math.min(fromIndex + input.size(), totalElements);
         var pageMemberships = memberships.subList(fromIndex, toIndex);
-        var usersById = findUsersById(pageMemberships.stream()
-            .map(com.sep.vox.domain.model.school.SchoolClassUser::getUserId)
-            .filter(Objects::nonNull)
-            .collect(Collectors.toSet()));
         var content = pageMemberships.stream()
-            .map(schoolClassUser -> SchoolClassUserResponseMapper.toResponse(schoolClassUser, usersById))
+            .map(SchoolClassUserResponseMapper::toResponse)
             .toList();
 
         return new PageResult<>(content, input.page(), input.size(), totalElements, totalPages);
@@ -114,12 +107,4 @@ public class ViewSchoolClassUsersUseCase implements IUseCase<ViewSchoolClassUser
         }
     }
 
-    private Map<UUID, User> findUsersById(java.util.Set<UUID> userIds) {
-        if (userIds.isEmpty()) {
-            return Map.of();
-        }
-        return userRepository.findByIdIn(userIds)
-            .stream()
-            .collect(Collectors.toMap(User::getId, Function.identity()));
-    }
 }

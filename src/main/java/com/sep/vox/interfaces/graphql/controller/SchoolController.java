@@ -33,6 +33,7 @@ import com.sep.vox.domain.dto.SchoolDto;
 import com.sep.vox.domain.dto.SchoolGradeDto;
 import com.sep.vox.domain.dto.SchoolUserDto;
 import com.sep.vox.domain.dto.SupportedLanguageDto;
+import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.interfaces.graphql.mapper.UpdateSchoolClassCommandMapper;
 
 import graphql.schema.DataFetchingEnvironment;
@@ -130,6 +131,13 @@ public class SchoolController {
             throw new IllegalStateException("Số trang hoặc kích cỡ trang yêu cầu không hợp lệ");
         }
         return viewSchoolClassUsersUseCase.execute(new ViewSchoolClassUsersQuery(schoolClassId, page, size));
+    }
+
+    @SchemaMapping(typeName = "SchoolClassUser", field = "user")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public CompletableFuture<UserDto> user(SchoolClassUserResponse schoolClassUser, DataFetchingEnvironment env) {
+        DataLoader<UUID, UserDto> loader = env.getDataLoader("userById");
+        return loader.load(schoolClassUser.userId());
     }
 
     @MutationMapping(name = "updateSchoolClass")

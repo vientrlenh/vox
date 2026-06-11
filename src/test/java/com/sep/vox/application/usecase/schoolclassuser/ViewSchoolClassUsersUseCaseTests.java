@@ -61,7 +61,7 @@ class ViewSchoolClassUsersUseCaseTests {
     }
 
     @Test
-    void execute_should_return_page_with_nested_users() {
+    void execute_should_return_page_with_memberships_without_nested_users() {
         var currentUserId = UUID.randomUUID();
         var schoolId = UUID.randomUUID();
         var classId = UUID.randomUUID();
@@ -77,8 +77,6 @@ class ViewSchoolClassUsersUseCaseTests {
 
         mockValidContext(currentUserId, schoolId, classId);
         when(schoolClassUserRepository.findBySchoolClassId(classId)).thenReturn(memberships);
-        when(userRepository.findByIdIn(java.util.Set.of(user1Id, user2Id)))
-            .thenReturn(List.of(activeUser(user1Id, schoolId, "user1@example.com"), activeUser(user2Id, schoolId, "user2@example.com")));
 
         var result = useCase.execute(new ViewSchoolClassUsersQuery(classId, 1, 2));
 
@@ -88,13 +86,15 @@ class ViewSchoolClassUsersUseCaseTests {
         assertThat(result.totalPages()).isEqualTo(2);
         assertThat(result.content()).hasSize(2);
         assertThat(result.content().get(0).userId()).isEqualTo(user1Id);
-        assertThat(result.content().get(0).user().email()).isEqualTo("user1@example.com");
+        assertThat(result.content().get(0).schoolClassId()).isEqualTo(classId);
+        assertThat(result.content().get(0).user()).isNull();
         assertThat(result.content().get(1).isActive()).isFalse();
-        assertThat(result.content().get(1).user().email()).isEqualTo("user2@example.com");
+        assertThat(result.content().get(1).userId()).isEqualTo(user2Id);
+        assertThat(result.content().get(1).user()).isNull();
     }
 
     @Test
-    void execute_should_keep_membership_when_user_lookup_missing() {
+    void execute_should_keep_membership_user_field_null_for_nested_graphql_resolver() {
         var currentUserId = UUID.randomUUID();
         var schoolId = UUID.randomUUID();
         var classId = UUID.randomUUID();
@@ -103,7 +103,6 @@ class ViewSchoolClassUsersUseCaseTests {
 
         mockValidContext(currentUserId, schoolId, classId);
         when(schoolClassUserRepository.findBySchoolClassId(classId)).thenReturn(memberships);
-        when(userRepository.findByIdIn(java.util.Set.of(userId))).thenReturn(List.of());
 
         var result = useCase.execute(new ViewSchoolClassUsersQuery(classId, 1, 20));
 

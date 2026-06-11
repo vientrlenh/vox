@@ -17,14 +17,17 @@ import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.dto.SchoolDto;
 import com.sep.vox.domain.dto.SchoolGradeDto;
 import com.sep.vox.domain.dto.SupportedLanguageDto;
+import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.domain.mapper.SchoolClassDtoMapper;
 import com.sep.vox.domain.mapper.SchoolDtoMapper;
 import com.sep.vox.domain.mapper.SchoolGradeDtoMapper;
 import com.sep.vox.domain.mapper.SupportedLanguageDtoMapper;
+import com.sep.vox.domain.mapper.UserDtoMapper;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;
+import com.sep.vox.domain.repository.UserRepository;
 
 import reactor.core.publisher.Mono;
 
@@ -36,7 +39,8 @@ public class SchoolGraphQlDataLoaderConfig {
             SchoolClassRepository schoolClassRepository,
             SchoolRepository schoolRepository,
             SchoolGradeRepository schoolGradeRepository,
-            SupportedLanguageRepository supportedLanguageRepository) {
+            SupportedLanguageRepository supportedLanguageRepository,
+            UserRepository userRepository) {
 
         registry.<SchoolClassesKey, List<SchoolClassDto>>forName("schoolClassesBySchool")
         .registerMappedBatchLoader((Set<SchoolClassesKey> keys, BatchLoaderEnvironment env) ->
@@ -106,6 +110,14 @@ public class SchoolGraphQlDataLoaderConfig {
                     .ifPresent(language -> result.put(language.id(), language)));
                 return result;
             })
+        );
+
+        registry.<UUID, UserDto>forName("userById")
+        .registerMappedBatchLoader((Set<UUID> userIds, BatchLoaderEnvironment env) ->
+            Mono.fromSupplier(() -> userRepository.findByIdIn(userIds)
+                .stream()
+                .map(UserDtoMapper::toUserDto)
+                .collect(Collectors.toMap(UserDto::id, user -> user)))
         );
     }
 

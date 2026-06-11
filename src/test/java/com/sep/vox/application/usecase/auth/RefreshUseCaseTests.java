@@ -75,6 +75,7 @@ class RefreshUseCaseTests {
     @Test
     void refresh_should_rotate_token_when_request_is_valid() {
         var userId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
         var sessionId = UUID.randomUUID();
         var oldTokenId = UUID.randomUUID();
         var newTokenId = UUID.randomUUID();
@@ -82,7 +83,7 @@ class RefreshUseCaseTests {
         var deviceSession = activeSession(sessionId, userId, "device-1");
         var oldToken = activeRefreshToken(oldTokenId, sessionId, "old-token-hash");
         var savedNewToken = activeRefreshToken(newTokenId, sessionId, "new-token-hash");
-        var user = activeUser(userId);
+        var user = activeUser(userId, schoolId);
         var roles = List.of(new UserRoleInfo(
             UUID.randomUUID(),
             userId,
@@ -107,7 +108,7 @@ class RefreshUseCaseTests {
             .thenReturn(Optional.of(user));
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId))
             .thenReturn(roles);
-        when(authTokenPort.generateJwtToken(userId.toString(), "test@example.com", List.of("SCHOOL_ADMIN")))
+        when(authTokenPort.generateJwtToken(userId.toString(), schoolId, "test@example.com", List.of("SCHOOL_ADMIN")))
             .thenReturn("access-token");
 
         var result = refreshUseCase.execute(new RefreshCommand("old-refresh-token", "device-1"));
@@ -121,7 +122,7 @@ class RefreshUseCaseTests {
         verify(refreshTokenRepository).markUsedAndReplacedBy(any(UUID.class), any(UUID.class), any(OffsetDateTime.class));
         verify(userRepository).findById(userId);
         verify(userRoleQueryRepository).findByUserIdWithRoleInfo(userId);
-        verify(authTokenPort).generateJwtToken(userId.toString(), "test@example.com", List.of("SCHOOL_ADMIN"));
+        verify(authTokenPort).generateJwtToken(userId.toString(), schoolId, "test@example.com", List.of("SCHOOL_ADMIN"));
     }
 
     @Test
@@ -272,7 +273,7 @@ class RefreshUseCaseTests {
         );
     }
 
-    private static User activeUser(UUID userId) {
+    private static User activeUser(UUID userId, UUID schoolId) {
         return new User(
             userId,
             new Email("test@example.com"),
@@ -288,7 +289,7 @@ class RefreshUseCaseTests {
             OffsetDateTime.now(),
             null,
             null,
-            null
+            schoolId
         );
     }
 

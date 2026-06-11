@@ -67,7 +67,7 @@ public class LoginUseCase implements IUseCase<LoginCommand, LoginResponse> {
         var userRoles = getUserRoles(user.getId());
         
         var deviceSession = createDeviceSession(userId, command);
-        var accessToken = authTokenPort.generateJwtToken(user.getId().toString(), user.getEmail().value(), userRoles);
+        var accessToken = authTokenPort.generateJwtToken(user.getId().toString(), user.getSchoolId(), user.getEmail().value(), userRoles);
         var sessionToken = sessionTokenManagerPort.generateToken();
         createRefreshToken(deviceSession, sessionToken, now);
 

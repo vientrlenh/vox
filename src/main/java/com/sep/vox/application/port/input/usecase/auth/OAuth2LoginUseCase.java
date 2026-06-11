@@ -58,7 +58,7 @@ public class OAuth2LoginUseCase implements IUseCase<OAuth2LoginCommand, LoginRes
         var now = OffsetDateTime.now();
         var userRoles = getUserRoles(user.getId());
         var deviceSession = createDeviceSession(user.getId(), input);
-        var accessToken = authTokenPort.generateJwtToken(user.getId().toString(), user.getEmail().value(), userRoles);
+        var accessToken = authTokenPort.generateJwtToken(user.getId().toString(), user.getSchoolId(), user.getEmail().value(), userRoles);
         var sessionToken = sessionTokenManagerPort.generateToken();
         createRefreshToken(deviceSession, sessionToken, now);
 

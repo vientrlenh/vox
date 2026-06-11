@@ -67,7 +67,7 @@ public class RefreshUseCase implements IUseCase<RefreshCommand, RefreshResponse>
 
         var user = userRepository.findById(deviceSession.getUserId())
             .orElseThrow(() -> new UnauthorizedException("Token yêu cầu không hợp lệ"));
-        var accessToken = authTokenPort.generateJwtToken(user.getId().toString(), user.getEmail().value(), getUserRoles(user.getId()));
+        var accessToken = authTokenPort.generateJwtToken(user.getId().toString(), user.getSchoolId(), user.getEmail().value(), getUserRoles(user.getId()));
         return RefreshResponseMapper.toResponse(accessToken, newRefreshToken.rawToken());
     }
     

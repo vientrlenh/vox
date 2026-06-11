@@ -71,9 +71,10 @@ class OAuth2LoginUseCaseTests {
     @Test
     void oauth2Login_should_return_tokens_when_google_email_matches_active_user() {
         var userId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
         var sessionId = UUID.randomUUID();
         var roleId = UUID.randomUUID();
-        var user = activeUser(userId);
+        var user = activeUser(userId, schoolId);
         var savedDeviceSession = new DeviceSession(
             sessionId,
             userId,
@@ -99,7 +100,7 @@ class OAuth2LoginUseCaseTests {
             .thenReturn(roles);
         when(deviceSessionRepository.save(any(DeviceSession.class)))
             .thenReturn(savedDeviceSession);
-        when(authTokenPort.generateJwtToken(userId.toString(), "student@example.com", List.of("STUDENT")))
+        when(authTokenPort.generateJwtToken(userId.toString(), schoolId, "student@example.com", List.of("STUDENT")))
             .thenReturn("access-token");
         when(sessionTokenManagerPort.generateToken())
             .thenReturn(new GeneratedSessionToken("refresh-token", "hashed-refresh-token"));
@@ -121,7 +122,7 @@ class OAuth2LoginUseCaseTests {
         assertThat(deviceSession.getUserAgent()).isEqualTo("JUnit User Agent");
 
         verify(refreshTokenRepository).save(any(RefreshToken.class));
-        verify(authTokenPort).generateJwtToken(userId.toString(), "student@example.com", List.of("STUDENT"));
+        verify(authTokenPort).generateJwtToken(userId.toString(), schoolId, "student@example.com", List.of("STUDENT"));
     }
 
     @Test
@@ -185,7 +186,7 @@ class OAuth2LoginUseCaseTests {
         );
     }
 
-    private static User activeUser(UUID userId) {
+    private static User activeUser(UUID userId, UUID schoolId) {
         return new User(
             userId,
             new Email("student@example.com"),
@@ -201,7 +202,7 @@ class OAuth2LoginUseCaseTests {
             OffsetDateTime.now(),
             null,
             null,
-            null
+            schoolId
         );
     }
 }

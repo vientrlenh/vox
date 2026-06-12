@@ -8,6 +8,7 @@ import java.util.UUID;
 
 import javax.crypto.SecretKey;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,9 +35,12 @@ public class JwtTokenProvider implements AuthTokenPort {
     private static final Logger LOGGER = LoggerFactory.getLogger(JwtTokenProvider.class);
 
     @Override
-    public String generateJwtToken(String userId, String email, List<String> roles) {
+    public String generateJwtToken(String userId, @Nullable UUID schoolId, String email, List<String> roles) {
         var claims = new HashMap<String, Object>();
         claims.put("userId", userId);
+        if (schoolId != null) {
+            claims.put("schoolId", schoolId.toString());
+        }
         claims.put("email", email);
         claims.put("roles", roles);
         return createToken(userId, claims, expirationMs, secret);
@@ -53,6 +57,13 @@ public class JwtTokenProvider implements AuthTokenPort {
        var claims = getClaimsFromToken(token);
        var userIdStr = claims.get("userId", String.class);
        return UUID.fromString(userIdStr);
+    }
+
+    @Override
+    public @Nullable UUID getSchoolIdFromToken(String token) {
+       var claims = getClaimsFromToken(token);
+       var schoolIdStr = claims.get("schoolId", String.class);
+       return schoolIdStr == null ? null : UUID.fromString(schoolIdStr);
     }
 
 

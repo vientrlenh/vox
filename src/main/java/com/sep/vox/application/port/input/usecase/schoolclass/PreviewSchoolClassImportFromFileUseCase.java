@@ -21,11 +21,13 @@ import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
+import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.ImportRowRepository;
 import com.sep.vox.domain.repository.ImportSessionRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
@@ -40,6 +42,7 @@ public class PreviewSchoolClassImportFromFileUseCase implements IUseCase<Preview
     private final UserRepository userRepository;
     private final SchoolRepository schoolRepository;
     private final JsonSerializationPort jsonSerializationPort;
+    private final SchoolUserRepository schoolUserRepository;
 
     public PreviewSchoolClassImportFromFileUseCase(
             FileProcessingPort fileProcessingPort,
@@ -48,7 +51,8 @@ public class PreviewSchoolClassImportFromFileUseCase implements IUseCase<Preview
             UserContextPort userContextPort,
             UserRepository userRepository,
             SchoolRepository schoolRepository,
-            JsonSerializationPort jsonSerializationPort) {
+            JsonSerializationPort jsonSerializationPort,
+            SchoolUserRepository schoolUserRepository) {
         this.fileProcessingPort = fileProcessingPort;
         this.importSessionRepository = importSessionRepository;
         this.importRowRepository = importRowRepository;
@@ -56,6 +60,7 @@ public class PreviewSchoolClassImportFromFileUseCase implements IUseCase<Preview
         this.userRepository = userRepository;
         this.schoolRepository = schoolRepository;
         this.jsonSerializationPort = jsonSerializationPort;
+        this.schoolUserRepository = schoolUserRepository;
     }
 
     @Override
@@ -98,11 +103,9 @@ public class PreviewSchoolClassImportFromFileUseCase implements IUseCase<Preview
     }
 
     private UUID getSchoolId(User currentUser) {
-        var schoolId = currentUser.getSchoolId();
-        if (schoolId == null) {
-            throw new IllegalStateException("Người dùng hiện tại không thuộc trường nào");
-        }
-        return schoolId;
+        return schoolUserRepository.findByUserId(currentUser.getId())
+            .map(SchoolUser::getSchoolId)
+            .orElseThrow(() -> new IllegalStateException("Người dùng hiện tại không thuộc trường nào"));
     }
 
     private void validateSchool(UUID schoolId) {

@@ -1,5 +1,7 @@
 package com.sep.vox.application.usecase.importfile;
 
+import com.sep.vox.application.usecase.TestSchoolUserRepository;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -43,7 +45,13 @@ class RejectImportSessionUseCaseTests {
         userRepository = mock(UserRepository.class);
         schoolRepository = mock(SchoolRepository.class);
         userContextPort = mock(UserContextPort.class);
-        useCase = new RejectImportSessionUseCase(importSessionRepository, userRepository, schoolRepository, userContextPort);
+        useCase = new RejectImportSessionUseCase(
+            importSessionRepository,
+            userRepository,
+            schoolRepository,
+            userContextPort,
+            TestSchoolUserRepository.create()
+        );
     }
 
     @Test
@@ -211,7 +219,7 @@ class RejectImportSessionUseCaseTests {
     private static User user(UUID id, UUID schoolId, UserStatus status) {
         var user = new User();
         user.setId(id);
-        user.setSchoolId(schoolId);
+        TestSchoolUserRepository.remember(id, schoolId);
         user.setStatus(status);
         return user;
     }

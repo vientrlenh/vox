@@ -1,6 +1,8 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
 import java.util.Optional;
+import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,6 +13,8 @@ import org.springframework.data.repository.query.Param;
 import com.sep.vox.infrastructure.persistence.entity.UserJpaEntity;
 
 public interface SpringDataUserRepository extends JpaRepository<UserJpaEntity, UUID>{
+    List<UserJpaEntity> findByIdIn(Collection<UUID> ids);
+    List<UserJpaEntity> findByEmailIn(Collection<String> emails);
     Optional<UserJpaEntity> findByEmail(String email);
     Optional<UserJpaEntity> findByPhone(String phone);
     boolean existsByEmail(String email);

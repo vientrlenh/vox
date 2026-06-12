@@ -1,5 +1,7 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -29,6 +31,17 @@ public class SupportedLanguageRepositoryImpl implements SupportedLanguageReposit
     public Optional<SupportedLanguage> findByCode(String code) {
         return springDataSupportedLanguageRepository.findByCode(code)
             .map(SupportedLanguageMapper::toDomain);
+    }
+
+    @Override
+    public List<SupportedLanguage> findByCodeIn(Collection<String> codes) {
+        if (codes == null || codes.isEmpty()) {
+            return List.of();
+        }
+        return springDataSupportedLanguageRepository.findByCodeIn(codes)
+            .stream()
+            .map(SupportedLanguageMapper::toDomain)
+            .toList();
     }
 
     @Override

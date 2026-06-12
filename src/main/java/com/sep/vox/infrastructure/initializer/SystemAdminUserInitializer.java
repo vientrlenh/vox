@@ -101,7 +101,6 @@ public class SystemAdminUserInitializer implements ApplicationRunner {
             now,
             now,
             null,
-            null,
             null
         );
     }

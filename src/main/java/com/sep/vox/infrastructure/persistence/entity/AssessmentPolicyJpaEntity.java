@@ -37,10 +37,10 @@ public class AssessmentPolicyJpaEntity {
     @Column(name = "id", nullable = false, updatable = false, insertable = false, columnDefinition = "UUID DEFAULT uuidv7()")
     private UUID id;
 
-    @Column(name = "school_id", nullable = false, updatable = false)
+    @Column(name = "school_id", updatable = false)
     private UUID schoolId;
 
-    @Column(name = "school_grade_level_id", nullable = false, updatable = false)
+    @Column(name = "school_grade_level_id", updatable = false)
     private UUID schoolGradeLevelId;
 
     @Column(name = "school_grade_id", updatable = false)

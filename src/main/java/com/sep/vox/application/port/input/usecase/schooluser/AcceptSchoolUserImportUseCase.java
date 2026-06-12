@@ -37,7 +37,7 @@ import com.sep.vox.domain.model.passwordsetuptoken.PasswordSetUpToken;
 import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserRole;
-import com.sep.vox.domain.model.user.UserStatus;
+import com.sep.vox.application.common.UserStatusValidator;
 import com.sep.vox.domain.repository.ImportRowRepository;
 import com.sep.vox.domain.repository.ImportSessionRepository;
 import com.sep.vox.domain.repository.PasswordSetUpTokenRepository;
@@ -237,9 +237,7 @@ public class AcceptSchoolUserImportUseCase implements IUseCase<AcceptSchoolUserI
     private User findCurrentUser(UUID currentUserId) {
         var user = userRepository.findById(currentUserId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng hiện tại"));
-        if (user.getStatus() != UserStatus.ACTIVE) {
-            throw new IllegalStateException("Người dùng hiện tại không hoạt động");
-        }
+        UserStatusValidator.requireActive(user);
         return user;
     }
 

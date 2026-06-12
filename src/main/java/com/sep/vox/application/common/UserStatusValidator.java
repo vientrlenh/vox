@@ -18,4 +18,14 @@ public final class UserStatusValidator {
             throw new UnauthorizedException(message);
         }
     }
+
+    public static void requireActiveTarget(User user) {
+        requireActiveTarget(user, "Người dùng không còn hoạt động");
+    }
+
+    public static void requireActiveTarget(User user, String message) {
+        if (user == null || user.getStatus() != UserStatus.ACTIVE) {
+            throw new IllegalStateException(message);
+        }
+    }
 }

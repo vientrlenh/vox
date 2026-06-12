@@ -48,7 +48,7 @@ public class UpdateSchoolUserUseCase implements IUseCase<UpdateSchoolUserCommand
 
         var target = userRepository.findByIdForUpdate(input.userId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
-        UserStatusValidator.requireActive(target);
+        UserStatusValidator.requireActiveTarget(target);
         if (!input.schoolId().equals(target.getSchoolId())) {
             throw new NotFoundException("Không tìm thấy người dùng");
         }

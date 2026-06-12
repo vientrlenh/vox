@@ -55,7 +55,7 @@ public class ChangeSchoolUserRoleUseCase implements IUseCase<ChangeSchoolUserRol
 
         var targetUser = userRepository.findById(input.userId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
-        UserStatusValidator.requireActive(targetUser);
+        UserStatusValidator.requireActiveTarget(targetUser);
         if (!input.schoolId().equals(targetUser.getSchoolId())) {
             throw new NotFoundException("Không tìm thấy người dùng");
         }

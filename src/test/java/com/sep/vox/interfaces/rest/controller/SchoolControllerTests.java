@@ -19,7 +19,6 @@ import org.springframework.mock.web.MockMultipartFile;
 
 import com.sep.vox.application.port.input.command.AcceptSchoolClassImportCommand;
 import com.sep.vox.application.port.input.command.AcceptSchoolUserImportCommand;
-import com.sep.vox.application.port.input.command.ChangeSchoolUserRoleCommand;
 import com.sep.vox.application.port.input.command.CreateSchoolClassCommand;
 import com.sep.vox.application.port.input.command.CreateSchoolUserCommand;
 import com.sep.vox.application.port.input.command.DeleteSchoolClassCommand;
@@ -37,7 +36,6 @@ import com.sep.vox.application.port.input.usecase.schoolclass.CreateSchoolClassU
 import com.sep.vox.application.port.input.usecase.schoolclass.DeleteSchoolClassUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.PreviewSchoolClassImportFromFileUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.AcceptSchoolUserImportUseCase;
-import com.sep.vox.application.port.input.usecase.schooluser.ChangeSchoolUserRoleUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.CreateSchoolUserUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.DeleteSchoolUserUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.PreviewSchoolUserImportFromFileUseCase;
@@ -51,7 +49,6 @@ import com.sep.vox.application.response.input.schooluser.CreateSchoolUserRespons
 import com.sep.vox.application.response.input.schooluser.SchoolUserResponse;
 import com.sep.vox.interfaces.rest.dto.request.AcceptSchoolClassImportRequest;
 import com.sep.vox.interfaces.rest.dto.request.AcceptSchoolUserImportRequest;
-import com.sep.vox.interfaces.rest.dto.request.ChangeSchoolUserRoleRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolClassRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolUserRequest;
 import com.sep.vox.application.port.input.usecase.schoolclassuser.AcceptSchoolClassUserImportUseCase;
@@ -80,7 +77,6 @@ class SchoolControllerTests {
     private AcceptSchoolClassImportUseCase acceptSchoolClassImportUseCase;
     private CreateSchoolUserUseCase createSchoolUserUseCase;
     private DeleteSchoolUserUseCase deleteSchoolUserUseCase;
-    private ChangeSchoolUserRoleUseCase changeSchoolUserRoleUseCase;
     private PreviewSchoolUserImportFromFileUseCase previewSchoolUserImportFromFileUseCase;
     private AcceptSchoolUserImportUseCase acceptSchoolUserImportUseCase;
     private CreateSchoolClassUserUseCase createSchoolClassUserUseCase;
@@ -103,7 +99,6 @@ class SchoolControllerTests {
         acceptSchoolClassImportUseCase = mock(AcceptSchoolClassImportUseCase.class);
         createSchoolUserUseCase = mock(CreateSchoolUserUseCase.class);
         deleteSchoolUserUseCase = mock(DeleteSchoolUserUseCase.class);
-        changeSchoolUserRoleUseCase = mock(ChangeSchoolUserRoleUseCase.class);
         previewSchoolUserImportFromFileUseCase = mock(PreviewSchoolUserImportFromFileUseCase.class);
         acceptSchoolUserImportUseCase = mock(AcceptSchoolUserImportUseCase.class);
         createSchoolClassUserUseCase = mock(CreateSchoolClassUserUseCase.class);
@@ -116,7 +111,7 @@ class SchoolControllerTests {
             updateSchoolClassUserStatusUseCase,
             previewSchoolClassImportFromFileUseCase, acceptSchoolClassImportUseCase,
             createSchoolUserUseCase, deleteSchoolUserUseCase,
-            changeSchoolUserRoleUseCase, previewSchoolUserImportFromFileUseCase,
+            previewSchoolUserImportFromFileUseCase,
             acceptSchoolUserImportUseCase,
             previewSchoolClassUserImportFromFileUseCase, acceptSchoolClassUserImportUseCase
         );
@@ -134,7 +129,7 @@ class SchoolControllerTests {
         var controller = new SchoolController(createUseCase, createClassUserUseCase, deleteUseCase,
             mock(DeleteSchoolClassUserUseCase.class), mock(UpdateSchoolClassUserStatusUseCase.class), previewUseCase,
             acceptUseCase, mock(CreateSchoolUserUseCase.class), mock(DeleteSchoolUserUseCase.class),
-            mock(ChangeSchoolUserRoleUseCase.class), mock(PreviewSchoolUserImportFromFileUseCase.class),
+            mock(PreviewSchoolUserImportFromFileUseCase.class),
             mock(AcceptSchoolUserImportUseCase.class), previewClassUserUseCase, acceptClassUserUseCase);
         var languageId = UUID.randomUUID();
         var gradeId = UUID.randomUUID();
@@ -175,7 +170,7 @@ class SchoolControllerTests {
         var controller = new SchoolController(createUseCase, createClassUserUseCase, deleteUseCase,
             mock(DeleteSchoolClassUserUseCase.class), mock(UpdateSchoolClassUserStatusUseCase.class), previewUseCase,
             acceptUseCase, mock(CreateSchoolUserUseCase.class), mock(DeleteSchoolUserUseCase.class),
-            mock(ChangeSchoolUserRoleUseCase.class), mock(PreviewSchoolUserImportFromFileUseCase.class),
+            mock(PreviewSchoolUserImportFromFileUseCase.class),
             mock(AcceptSchoolUserImportUseCase.class), previewClassUserUseCase, acceptClassUserUseCase);
         var schoolId = UUID.randomUUID();
         var classId = UUID.randomUUID();
@@ -206,7 +201,7 @@ class SchoolControllerTests {
         var controller = new SchoolController(createUseCase, createClassUserUseCase, deleteUseCase,
             mock(DeleteSchoolClassUserUseCase.class), mock(UpdateSchoolClassUserStatusUseCase.class), previewUseCase,
             acceptUseCase, mock(CreateSchoolUserUseCase.class), mock(DeleteSchoolUserUseCase.class),
-            mock(ChangeSchoolUserRoleUseCase.class), mock(PreviewSchoolUserImportFromFileUseCase.class),
+            mock(PreviewSchoolUserImportFromFileUseCase.class),
             mock(AcceptSchoolUserImportUseCase.class), previewClassUserUseCase, acceptClassUserUseCase);
         var schoolId = UUID.randomUUID();
         var schoolClassId = UUID.randomUUID();
@@ -231,7 +226,7 @@ class SchoolControllerTests {
         var controller = new SchoolController(createUseCase, createClassUserUseCase, deleteUseCase,
             mock(DeleteSchoolClassUserUseCase.class), mock(UpdateSchoolClassUserStatusUseCase.class), previewUseCase,
             acceptUseCase, mock(CreateSchoolUserUseCase.class), mock(DeleteSchoolUserUseCase.class),
-            mock(ChangeSchoolUserRoleUseCase.class), mock(PreviewSchoolUserImportFromFileUseCase.class),
+            mock(PreviewSchoolUserImportFromFileUseCase.class),
             mock(AcceptSchoolUserImportUseCase.class), previewClassUserUseCase, acceptClassUserUseCase);
         var schoolId = UUID.randomUUID();
         var importSessionId = UUID.randomUUID();
@@ -272,7 +267,7 @@ class SchoolControllerTests {
         var controller = new SchoolController(createUseCase, createClassUserUseCase, deleteUseCase,
             mock(DeleteSchoolClassUserUseCase.class), mock(UpdateSchoolClassUserStatusUseCase.class), previewUseCase,
             acceptUseCase, mock(CreateSchoolUserUseCase.class), mock(DeleteSchoolUserUseCase.class),
-            mock(ChangeSchoolUserRoleUseCase.class), mock(PreviewSchoolUserImportFromFileUseCase.class),
+            mock(PreviewSchoolUserImportFromFileUseCase.class),
             mock(AcceptSchoolUserImportUseCase.class), previewClassUserUseCase, acceptClassUserUseCase);
         var schoolId = UUID.randomUUID();
         var importSessionId = UUID.randomUUID();
@@ -319,18 +314,6 @@ class SchoolControllerTests {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
         assertThat(response.getBody()).isNull();
         verify(deleteSchoolUserUseCase).execute(new DeleteSchoolUserCommand(schoolId, userId));
-    }
-
-    @Test
-    void change_role_should_return_ok() {
-        var request = new ChangeSchoolUserRoleRequest("TEACHER");
-
-        var response = controller.changeUserRole(schoolId, userId, request);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().message()).isEqualTo("Cập nhật vai trò người dùng thành công");
-        verify(changeSchoolUserRoleUseCase).execute(new ChangeSchoolUserRoleCommand(schoolId, userId, "TEACHER"));
     }
 
     @Test
@@ -385,7 +368,7 @@ class SchoolControllerTests {
         var controller = new SchoolController(createUseCase, createClassUserUseCase, deleteUseCase,
             mock(DeleteSchoolClassUserUseCase.class), mock(UpdateSchoolClassUserStatusUseCase.class), previewUseCase,
             acceptUseCase, mock(CreateSchoolUserUseCase.class), mock(DeleteSchoolUserUseCase.class),
-            mock(ChangeSchoolUserRoleUseCase.class), mock(PreviewSchoolUserImportFromFileUseCase.class),
+            mock(PreviewSchoolUserImportFromFileUseCase.class),
             mock(AcceptSchoolUserImportUseCase.class), previewClassUserUseCase, acceptClassUserUseCase);
         var schoolId = UUID.randomUUID();
         var importSessionId = UUID.randomUUID();
@@ -426,7 +409,7 @@ class SchoolControllerTests {
         var controller = new SchoolController(createUseCase, createClassUserUseCase, deleteUseCase,
             mock(DeleteSchoolClassUserUseCase.class), mock(UpdateSchoolClassUserStatusUseCase.class), previewUseCase,
             acceptUseCase, mock(CreateSchoolUserUseCase.class), mock(DeleteSchoolUserUseCase.class),
-            mock(ChangeSchoolUserRoleUseCase.class), mock(PreviewSchoolUserImportFromFileUseCase.class),
+            mock(PreviewSchoolUserImportFromFileUseCase.class),
             mock(AcceptSchoolUserImportUseCase.class), previewClassUserUseCase, acceptClassUserUseCase);
         var schoolId = UUID.randomUUID();
         var importSessionId = UUID.randomUUID();
@@ -460,7 +443,7 @@ class SchoolControllerTests {
         var controller = new SchoolController(createUseCase, createClassUserUseCase, deleteUseCase,
             deleteClassUserUseCase, updateClassUserStatusUseCase, previewUseCase, acceptUseCase,
             mock(CreateSchoolUserUseCase.class), mock(DeleteSchoolUserUseCase.class),
-            mock(ChangeSchoolUserRoleUseCase.class), mock(PreviewSchoolUserImportFromFileUseCase.class),
+            mock(PreviewSchoolUserImportFromFileUseCase.class),
             mock(AcceptSchoolUserImportUseCase.class), previewClassUserUseCase, acceptClassUserUseCase);
         var schoolId = UUID.randomUUID();
         var classId = UUID.randomUUID();
@@ -489,7 +472,7 @@ class SchoolControllerTests {
         var controller = new SchoolController(createUseCase, createClassUserUseCase, deleteUseCase,
             deleteClassUserUseCase, updateClassUserStatusUseCase, previewUseCase, acceptUseCase,
             mock(CreateSchoolUserUseCase.class), mock(DeleteSchoolUserUseCase.class),
-            mock(ChangeSchoolUserRoleUseCase.class), mock(PreviewSchoolUserImportFromFileUseCase.class),
+            mock(PreviewSchoolUserImportFromFileUseCase.class),
             mock(AcceptSchoolUserImportUseCase.class), previewClassUserUseCase, acceptClassUserUseCase);
         var schoolId = UUID.randomUUID();
         var classId = UUID.randomUUID();

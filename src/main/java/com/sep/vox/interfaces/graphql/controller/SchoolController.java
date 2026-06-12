@@ -39,9 +39,7 @@ import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.dto.SchoolDto;
 import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.domain.mapper.SchoolDtoMapper;
-import com.sep.vox.domain.mapper.UserDtoMapper;
 import com.sep.vox.domain.repository.SchoolRepository;
-import com.sep.vox.domain.repository.UserRepository;
 
 import com.sep.vox.domain.dto.SchoolGradeDto;
 import com.sep.vox.domain.dto.SupportedLanguageDto;
@@ -61,7 +59,6 @@ public class SchoolController {
     private final ListSchoolUsersUseCase listSchoolUsersUseCase;
     private final ViewSchoolUserUseCase viewSchoolUserUseCase;
     private final UpdateSchoolUserUseCase updateSchoolUserUseCase;
-    private final UserRepository userRepository;
     private final SchoolRepository schoolRepository;
 
     public SchoolController(
@@ -72,7 +69,6 @@ public class SchoolController {
             ListSchoolUsersUseCase listSchoolUsersUseCase,
             ViewSchoolUserUseCase viewSchoolUserUseCase,
             UpdateSchoolUserUseCase updateSchoolUserUseCase,
-            UserRepository userRepository,
             SchoolRepository schoolRepository,
             ViewSchoolClassUsersUseCase viewSchoolClassUsersUseCase) {
         this.viewSchoolsUseCase = viewSchoolsUseCase;
@@ -83,8 +79,15 @@ public class SchoolController {
         this.listSchoolUsersUseCase = listSchoolUsersUseCase;
         this.viewSchoolUserUseCase = viewSchoolUserUseCase;
         this.updateSchoolUserUseCase = updateSchoolUserUseCase;
-        this.userRepository = userRepository;
         this.schoolRepository = schoolRepository;
+    }
+
+    @QueryMapping(name = "school")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public SchoolDto school(@Argument(name = "id") UUID id) {
+        return schoolRepository.findById(id)
+            .map(SchoolDtoMapper::toSchoolDto)
+            .orElse(null);
     }
 
     @QueryMapping(name = "schools")
@@ -102,6 +105,21 @@ public class SchoolController {
     public CompletableFuture<List<SchoolClassDto>> classes(SchoolDto school, @Argument(name = "page") int page, @Argument(name = "size") int size, DataFetchingEnvironment env) {
         DataLoader<SchoolClassesKey, List<SchoolClassDto>> loader = env.getDataLoader("schoolClassesBySchool");
         return loader.load(new SchoolClassesKey(school.id(), page, size));
+    }
+
+    @SchemaMapping(typeName = "School", field = "users")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public PageResult<SchoolUserResponse> users(SchoolDto school, @Argument(name = "page") int page, @Argument(name = "size") int size) {
+        if (page <= 0 || size <= 0) {
+            throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
+        }
+        return listSchoolUsersUseCase.execute(new ListSchoolUsersCommand(school.id(), page, size));
+    }
+
+    @SchemaMapping(typeName = "School", field = "user")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public SchoolUserResponse user(SchoolDto school, @Argument(name = "userId") UUID userId) {
+        return viewSchoolUserUseCase.execute(new ViewSchoolUserCommand(school.id(), userId));
     }
 
     @QueryMapping(name = "schoolClasses")
@@ -176,46 +194,11 @@ public class SchoolController {
         return updateSchoolClassUseCase.execute(command);
     }
 
-    @QueryMapping(name = "schoolUsers")
-    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public PageResult<SchoolUserResponse> schoolUsers(
-            @Argument(name = "schoolId") UUID schoolId,
-            @Argument(name = "page") int page,
-            @Argument(name = "size") int size) {
-        if (page <= 0 || size <= 0) {
-            throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
-        }
-        var query = new ListSchoolUsersCommand(schoolId, page, size);
-        return listSchoolUsersUseCase.execute(query);
-    }
-
-    @QueryMapping(name = "schoolUser")
-    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public SchoolUserResponse schoolUser(
-            @Argument(name = "schoolId") UUID schoolId,
-            @Argument(name = "userId") UUID userId) {
-        var query = new ViewSchoolUserCommand(schoolId, userId);
-        return viewSchoolUserUseCase.execute(query);
-    }
-
     @SchemaMapping(typeName = "SchoolUser", field = "user")
-    public UserDto user(SchoolUserResponse schoolUser) {
-        if (schoolUser.userId() == null) {
-            return null;
-        }
-        return userRepository.findById(schoolUser.userId())
-            .map(UserDtoMapper::toUserDto)
-            .orElse(null);
-    }
-
-    @SchemaMapping(typeName = "SchoolUser", field = "school")
-    public SchoolDto school(SchoolUserResponse schoolUser) {
-        if (schoolUser.schoolId() == null) {
-            return null;
-        }
-        return schoolRepository.findById(schoolUser.schoolId())
-            .map(SchoolDtoMapper::toSchoolDto)
-            .orElse(null);
+    public CompletableFuture<UserDto> user(SchoolUserResponse schoolUser, DataFetchingEnvironment env) {
+        if (schoolUser.userId() == null) return CompletableFuture.completedFuture(null);
+        DataLoader<UUID, UserDto> loader = env.getDataLoader("userById");
+        return loader.load(schoolUser.userId());
     }
 
     @SchemaMapping(typeName = "SchoolUser", field = "startDate")
@@ -226,6 +209,41 @@ public class SchoolController {
     @SchemaMapping(typeName = "SchoolUser", field = "endDate")
     public String endDate(SchoolUserResponse schoolUser) {
         return schoolUser.endDate() != null ? schoolUser.endDate().toString() : null;
+    }
+
+    @SchemaMapping(typeName = "SchoolUser", field = "fullName")
+    public CompletableFuture<String> fullName(SchoolUserResponse schoolUser, DataFetchingEnvironment env) {
+        if (schoolUser.userId() == null) return CompletableFuture.completedFuture(null);
+        DataLoader<UUID, UserDto> loader = env.getDataLoader("userById");
+        return loader.load(schoolUser.userId()).thenApply(u -> u != null ? u.fullName() : null);
+    }
+
+    @SchemaMapping(typeName = "SchoolUser", field = "email")
+    public CompletableFuture<String> email(SchoolUserResponse schoolUser, DataFetchingEnvironment env) {
+        if (schoolUser.userId() == null) return CompletableFuture.completedFuture(null);
+        DataLoader<UUID, UserDto> loader = env.getDataLoader("userById");
+        return loader.load(schoolUser.userId()).thenApply(u -> u != null ? u.email() : null);
+    }
+
+    @SchemaMapping(typeName = "SchoolUser", field = "phone")
+    public CompletableFuture<String> phone(SchoolUserResponse schoolUser, DataFetchingEnvironment env) {
+        if (schoolUser.userId() == null) return CompletableFuture.completedFuture(null);
+        DataLoader<UUID, UserDto> loader = env.getDataLoader("userById");
+        return loader.load(schoolUser.userId()).thenApply(u -> u != null ? u.phone() : null);
+    }
+
+    @SchemaMapping(typeName = "SchoolUser", field = "address")
+    public CompletableFuture<String> address(SchoolUserResponse schoolUser, DataFetchingEnvironment env) {
+        if (schoolUser.userId() == null) return CompletableFuture.completedFuture(null);
+        DataLoader<UUID, UserDto> loader = env.getDataLoader("userById");
+        return loader.load(schoolUser.userId()).thenApply(u -> u != null ? u.address() : null);
+    }
+
+    @SchemaMapping(typeName = "SchoolUser", field = "dateOfBirth")
+    public CompletableFuture<String> dateOfBirth(SchoolUserResponse schoolUser, DataFetchingEnvironment env) {
+        if (schoolUser.userId() == null) return CompletableFuture.completedFuture(null);
+        DataLoader<UUID, UserDto> loader = env.getDataLoader("userById");
+        return loader.load(schoolUser.userId()).thenApply(u -> u != null ? u.dateOfBirth() : null);
     }
 
     @MutationMapping(name = "updateSchoolUser")

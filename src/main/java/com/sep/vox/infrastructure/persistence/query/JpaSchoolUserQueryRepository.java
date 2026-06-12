@@ -26,7 +26,7 @@ public class JpaSchoolUserQueryRepository implements SchoolUserQueryRepository {
 
         var items = em.createQuery("""
             SELECT new com.sep.vox.application.query.dto.SchoolUserInfo(
-                u.id,
+                su.id,
                 u.email,
                 u.phone,
                 u.fullName,

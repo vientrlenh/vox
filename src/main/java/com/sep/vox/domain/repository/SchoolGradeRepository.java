@@ -1,5 +1,7 @@
 package com.sep.vox.domain.repository;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -9,4 +11,6 @@ public interface SchoolGradeRepository {
     Optional<SchoolGrade> findById(UUID id);
     Optional<SchoolGrade> findBySchoolIdAndCode(UUID schoolId, String code);
     SchoolGrade save(SchoolGrade grade);
+
+    List<SchoolGrade> findAllById(List<UUID> gradeIds);
 }

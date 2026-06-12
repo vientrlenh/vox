@@ -1,5 +1,7 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -37,5 +39,11 @@ public class SchoolGradeRepositoryImpl implements SchoolGradeRepository {
         var saved = springDataSchoolGradeRepository.save(entity);
         return SchoolGradeMapper.toDomain(saved);
     }
-    
+
+    @Override
+    public List<SchoolGrade> findAllById(List<UUID> gradeIds) {
+       return springDataSchoolGradeRepository.findAllById(gradeIds).stream()
+            .map(SchoolGradeMapper::toDomain)
+            .toList();
+    }
 }

@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -29,5 +30,23 @@ public class RubricCriterionRepositoryImpl implements RubricCriterionRepository 
         var entity = RubricCriterionMapper.toJpa(criterion);
         var saved = springDataRubricCriterionRepository.save(entity);
         return RubricCriterionMapper.toDomain(saved);
+    }
+
+    @Override
+    public void deleteById(UUID id) {
+            springDataRubricCriterionRepository.deleteById(id);
+    }
+
+    @Override
+    public void deleteByRubricVersionId(UUID rubricVersionId) {
+        springDataRubricCriterionRepository.deleteByRubricVersionId(rubricVersionId);
+    }
+
+    @Override
+    public void saveAll(List<RubricCriterion> criteria) {
+        var entities = criteria.stream()
+                .map(RubricCriterionMapper::toJpa)
+                .toList();
+        springDataRubricCriterionRepository.saveAll(entities);
     }
 }

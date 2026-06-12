@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -30,4 +31,31 @@ public class RubricVersionRepositoryImpl implements RubricVersionRepository {
         var saved = springDataRubricVersionRepository.save(entity);
         return RubricVersionMapper.toDomain(saved);
     }
+
+    @Override
+    public void deleteById(UUID id) {
+        springDataRubricVersionRepository.deleteById(id);
+    }
+
+    @Override
+    public boolean existsByRubricIdAndIdNot(UUID rubricId, UUID rubricVersionId) {
+       return springDataRubricVersionRepository.existsByRubricIdAndIdNot(rubricId, rubricVersionId);
+    }
+
+    @Override
+    public List<RubricVersion> findByRubricId(UUID rubricId) {
+        return springDataRubricVersionRepository.findByRubricId(rubricId).stream()
+                .map(RubricVersionMapper::toDomain)
+                .toList();
+    }
+
+    @Override
+    public void saveAll(List<RubricVersion> rubricVersions) {
+        var entities = rubricVersions.stream()
+                .map(RubricVersionMapper::toJpa)
+                .toList();
+        springDataRubricVersionRepository.saveAll(entities);
+    }
 }
+
+

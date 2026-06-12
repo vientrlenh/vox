@@ -23,4 +23,6 @@ public interface SchoolClassRepository {
             UUID targetSchoolLevelVersionId, SchoolClassStatus status, OffsetDateTime updatedAt, UUID updatedBy);
     void deleteById(UUID id);
     List<SchoolClass> findBySchoolIdIn(Collection<UUID> schoolIds, int page, int size);
+
+    List<SchoolClass>findAllById(List<UUID> schoolIds);
 }

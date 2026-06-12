@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -30,5 +31,23 @@ public class RubricResultBandRepositoryImpl implements RubricResultBandRepositor
         var saved = springDataRubricResultBandRepository.save(entity);
         return RubricResultBandMapper.toDomain(saved);
     }
-    
+
+    @Override
+    public void deleteById(UUID id) {
+        springDataRubricResultBandRepository.deleteById(id);
+    }
+
+    @Override
+    public void deleteByRubricVersionId(UUID rubricVersionId) {
+         springDataRubricResultBandRepository.deleteByRubricVersionId(rubricVersionId);
+    }
+
+    @Override
+    public void saveAll(List<RubricResultBand> bands) {
+        var entities = bands.stream()
+                .map(RubricResultBandMapper::toJpa)
+                .toList();
+        springDataRubricResultBandRepository.saveAll(entities);
+    }
 }
+

@@ -93,5 +93,13 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
             .map(SchoolClassMapper::toDomain)
             .toList();
     }
-    
+
+    @Override
+    public List<SchoolClass> findAllById(List<UUID> schoolIds) {
+        return springDataSchoolClassRepository.findAllById(schoolIds)
+                .stream()
+                .map(SchoolClassMapper::toDomain)
+                .toList();
+    }
+
 }

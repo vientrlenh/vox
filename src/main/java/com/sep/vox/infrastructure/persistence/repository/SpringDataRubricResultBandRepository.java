@@ -7,5 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import com.sep.vox.infrastructure.persistence.entity.RubricResultBandJpaEntity;
 
 public interface SpringDataRubricResultBandRepository extends JpaRepository<RubricResultBandJpaEntity, UUID> {
+
+    void deleteByRubricVersionId(UUID rubricVersionId);
     
 }
+

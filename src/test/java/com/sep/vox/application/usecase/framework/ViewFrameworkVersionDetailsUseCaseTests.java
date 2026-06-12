@@ -78,6 +78,8 @@ public class ViewFrameworkVersionDetailsUseCaseTests {
         when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.of(version));
         when(frameworkCriterionRepository.findByFrameworkVersionId(versionId))
             .thenReturn(List.of(criterion));
+        when(frameworkCriterionBandRepository.findByFrameworkCriterionIdIn(List.of(criterion.getId())))
+            .thenReturn(List.of());
         when(frameworkResultBandRepository.findByFrameworkVersionId(versionId))
             .thenReturn(List.of(resultBand));
 
@@ -88,6 +90,7 @@ public class ViewFrameworkVersionDetailsUseCaseTests {
         assertThat(result.status()).isEqualTo(FrameworkVersionStatus.PUBLISHED.toString());
         verify(frameworkVersionRepository).findById(versionId);
         verify(frameworkCriterionRepository).findByFrameworkVersionId(versionId);
+        verify(frameworkCriterionBandRepository).findByFrameworkCriterionIdIn(List.of(criterion.getId()));
         verify(frameworkResultBandRepository).findByFrameworkVersionId(versionId);
     }
 

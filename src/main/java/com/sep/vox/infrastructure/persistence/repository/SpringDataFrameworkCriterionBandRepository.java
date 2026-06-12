@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -12,6 +13,7 @@ import com.sep.vox.infrastructure.persistence.entity.FrameworkCriterionBandJpaEn
 
 public interface SpringDataFrameworkCriterionBandRepository extends JpaRepository<FrameworkCriterionBandJpaEntity, UUID> {
     List<FrameworkCriterionBandJpaEntity> findByFrameworkCriterionId(UUID frameworkCriterionId);
+    List<FrameworkCriterionBandJpaEntity> findByFrameworkCriterionIdIn(Collection<UUID> frameworkCriterionIds);
     List<FrameworkCriterionBandJpaEntity> findByFrameworkResultBandId(UUID frameworkResultBandId);
 
     @Modifying

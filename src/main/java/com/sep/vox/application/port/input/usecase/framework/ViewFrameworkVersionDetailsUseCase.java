@@ -1,6 +1,10 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
+import java.util.List;
+
 import org.springframework.stereotype.Service;
+
+import com.sep.vox.domain.model.framework.FrameworkCriterionBand;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.NotFoundException;
@@ -40,9 +44,10 @@ public class ViewFrameworkVersionDetailsUseCase implements IUseCase<ViewFramewor
 
         var criteria = frameworkCriterionRepository.findByFrameworkVersionId(version.getId());
 
-        var allBands = criteria.stream()
-            .flatMap(c -> frameworkCriterionBandRepository.findByFrameworkCriterionId(c.getId()).stream())
-            .toList();
+        var criterionIds = criteria.stream().map(c -> c.getId()).toList();
+        List<FrameworkCriterionBand> allBands = criterionIds.isEmpty()
+            ? List.of()
+            : frameworkCriterionBandRepository.findByFrameworkCriterionIdIn(criterionIds);
 
         var resultBands = frameworkResultBandRepository.findByFrameworkVersionId(version.getId());
 

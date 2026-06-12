@@ -49,6 +49,9 @@ public class RubricCriterionJpaEntity {
     @Column(name = "description", length = 2048)
     private String description;
 
+    @Column(name = "examples_json", columnDefinition = "TEXT")
+    private String examplesJson;
+
     @Column(name = "weight", nullable = false, precision = 6, scale = 2, check = {
         @CheckConstraint(
             name = "chk_rubric_criterions_weight_non_negative",
@@ -89,14 +92,16 @@ public class RubricCriterionJpaEntity {
     protected RubricCriterionJpaEntity() {}
 
     public RubricCriterionJpaEntity(UUID id, UUID rubricVersionId, UUID frameworkCriterionId, String code,
-            String name, String description, BigDecimal weight, BigDecimal minScore, BigDecimal maxScore, int order,
-            boolean isRequired, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            String name, String description, String examplesJson, BigDecimal weight, BigDecimal minScore,
+            BigDecimal maxScore, int order, boolean isRequired, OffsetDateTime createdAt,
+            OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.rubricVersionId = rubricVersionId;
         this.frameworkCriterionId = frameworkCriterionId;
         this.code = code;
         this.name = name;
         this.description = description;
+        this.examplesJson = examplesJson;
         this.weight = weight;
         this.minScore = minScore;
         this.maxScore = maxScore;
@@ -154,6 +159,14 @@ public class RubricCriterionJpaEntity {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getExamplesJson() {
+        return examplesJson;
+    }
+
+    public void setExamplesJson(String examplesJson) {
+        this.examplesJson = examplesJson;
     }
 
     public BigDecimal getWeight() {

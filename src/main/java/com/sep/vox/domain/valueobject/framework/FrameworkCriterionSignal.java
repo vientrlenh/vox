@@ -1,12 +1,12 @@
-package com.sep.vox.domain.valueobject.rubriccriterionsignal;
+package com.sep.vox.domain.valueobject.framework;
 
-public record RubricCriterionSignal(
+public record FrameworkCriterionSignal(
     String code,
     String description,
-    RubricCriterionSignalImportance importance,
+    FrameworkCriterionSignalImportance importance,
     String evidenceHint
 ) {
-    public RubricCriterionSignal {
+    public FrameworkCriterionSignal {
         if (code == null || code.isBlank()) {
             throw new IllegalArgumentException("Code của dấu hiệu không được để trống");
         }

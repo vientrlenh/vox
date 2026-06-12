@@ -153,7 +153,6 @@ public class SetUpPasswordUseCaseTests {
             now,
             now,
             null,
-            null,
             null
         );
     }

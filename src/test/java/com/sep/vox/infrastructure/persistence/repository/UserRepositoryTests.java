@@ -125,7 +125,6 @@ public class UserRepositoryTests {
             now,
             now,
             null,
-            null,
             null
         );
     }

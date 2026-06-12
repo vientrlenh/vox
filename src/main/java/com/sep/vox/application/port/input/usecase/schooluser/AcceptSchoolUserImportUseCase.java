@@ -51,7 +51,7 @@ import com.sep.vox.domain.repository.UserRoleRepository;
 public class AcceptSchoolUserImportUseCase implements IUseCase<AcceptSchoolUserImportCommand, AcceptSchoolUserImportResponse> {
 
     private static final Set<String> REQUIRED_FIELDS = Set.of("email", "fullName", "roleCode", "phone", "dateOfBirth", "startDate", "endDate", "address");
-    private static final Set<String> SUPPORTED_FIELDS = Set.of("email", "fullName", "roleCode", "phone", "dateOfBirth", "startDate", "endDate", "address", "studentId");
+    private static final Set<String> SUPPORTED_FIELDS = Set.of("email", "fullName", "roleCode", "phone", "dateOfBirth", "startDate", "endDate", "address"); //"studentId");
 
     private final ImportSessionRepository importSessionRepository;
     private final ImportRowRepository importRowRepository;
@@ -124,7 +124,7 @@ public class AcceptSchoolUserImportUseCase implements IUseCase<AcceptSchoolUserI
 
         var rows = importRowRepository.findBySessionIdOrderByRowNumber(session.getId());
         var seenEmails = new HashSet<String>();
-        var seenStudentIds = new HashSet<String>();
+        // var seenStudentIds = new HashSet<String>();
         var importedCount = 0L;
         var invalidCount = 0L;
 
@@ -132,7 +132,7 @@ public class AcceptSchoolUserImportUseCase implements IUseCase<AcceptSchoolUserI
             var rawData = jsonSerializationPort.toStringMap(row.getRawDataJson());
             var mappedData = mapRawData(rawData, input.confirmedMapping());
             var normalized = normalize(mappedData);
-            var errors = validateRow(normalized, schoolId, seenEmails, seenStudentIds);
+            var errors = validateRow(normalized, schoolId, seenEmails); //, seenStudentIds);
 
             row.setMappedDataJson(jsonSerializationPort.toJson(normalized));
             if (!errors.isEmpty()) {
@@ -159,23 +159,16 @@ public class AcceptSchoolUserImportUseCase implements IUseCase<AcceptSchoolUserI
                     var ts = OffsetDateTime.now();
                     var dateOfBirth = parseDate(normalizedData.get("dateOfBirth"));
                     User user = "STUDENT".equals(roleCode)
-                        ? User.createStudent(normalizedData.get("email"), normalizedData.get("phone"), normalizedData.get("fullName"), dateOfBirth, normalizedData.get("address"), null, currentUserId, schoolId, ts)
-                        : User.createTeacher(normalizedData.get("email"), normalizedData.get("phone"), normalizedData.get("fullName"), dateOfBirth, normalizedData.get("address"), null, currentUserId, schoolId, ts);
+                        ? User.createStudent(normalizedData.get("email"), normalizedData.get("phone"), normalizedData.get("fullName"), dateOfBirth, normalizedData.get("address"), null, currentUserId, ts)
+                        : User.createTeacher(normalizedData.get("email"), normalizedData.get("phone"), normalizedData.get("fullName"), dateOfBirth, normalizedData.get("address"), null, currentUserId, ts);
 
                     var savedUser = userRepository.save(user);
                     userRoleRepository.save(new UserRole(savedUser.getId(), role.getId(), ts));
 
                     if ("STUDENT".equals(roleCode)) {
-                        var startDate = parseDate(normalizedData.get("startDate"));
-                        var endDate = parseDate(normalizedData.get("endDate"));
-                        var startOffset = startDate != null
-                            ? startDate.atStartOfDay(ZoneOffset.UTC).toOffsetDateTime()
-                            : ts;
-                        var endOffset = endDate != null
-                            ? endDate.atStartOfDay(ZoneOffset.UTC).toOffsetDateTime()
-                            : OffsetDateTime.of(9999, 12, 31, 23, 59, 59, 0, ZoneOffset.UTC);
-                        var studentId = normalizedData.get("studentId");
-                        schoolUserRepository.save(SchoolUser.create(studentId, schoolId, savedUser.getId(), startOffset, endOffset));
+                        var startOffset = parseDate(normalizedData.get("startDate")).atStartOfDay(ZoneOffset.UTC).toOffsetDateTime();
+                        var endOffset = parseDate(normalizedData.get("endDate")).atStartOfDay(ZoneOffset.UTC).toOffsetDateTime();
+                        schoolUserRepository.save(SchoolUser.create(savedUser.getId(), schoolId, startOffset, endOffset));
                     }
 
                     var generatedToken = passwordSetUpTokenPort.generateToken();
@@ -242,11 +235,9 @@ public class AcceptSchoolUserImportUseCase implements IUseCase<AcceptSchoolUserI
     }
 
     private UUID getSchoolId(User currentUser) {
-        var schoolId = currentUser.getSchoolId();
-        if (schoolId == null) {
-            throw new IllegalStateException("Người dùng hiện tại không thuộc trường nào");
-        }
-        return schoolId;
+        return schoolUserRepository.findByUserId(currentUser.getId())
+            .map(SchoolUser::getSchoolId)
+            .orElseThrow(() -> new IllegalStateException("Người dùng hiện tại không thuộc trường nào"));
     }
 
     private void validateRequestedSchool(UUID requestedSchoolId, UUID currentSchoolId) {
@@ -318,11 +309,11 @@ public class AcceptSchoolUserImportUseCase implements IUseCase<AcceptSchoolUserI
         normalized.put("startDate", trimOrNull(mappedData.get("startDate")));
         normalized.put("endDate", trimOrNull(mappedData.get("endDate")));
         normalized.put("address", StringNormalization.trimAndCollapseSpaces(mappedData.get("address")));
-        normalized.put("studentId", trimOrNull(mappedData.get("studentId")));
+        //normalized.put("studentId", trimOrNull(mappedData.get("studentId")));
         return normalized;
     }
-
-    private List<Map<String, String>> validateRow(Map<String, String> data, UUID schoolId, Set<String> seenEmails, Set<String> seenStudentIds) {
+//Set<String> seenStudentIds
+    private List<Map<String, String>> validateRow(Map<String, String> data, UUID schoolId, Set<String> seenEmails) {
         var errors = new ArrayList<Map<String, String>>();
 
         addMissingError(errors, data, "email", "Email không được để trống");
@@ -349,10 +340,10 @@ public class AcceptSchoolUserImportUseCase implements IUseCase<AcceptSchoolUserI
         validateDateField(errors, data, "startDate", "Ngày bắt đầu không hợp lệ");
         validateDateField(errors, data, "endDate", "Ngày kết thúc không hợp lệ");
 
-        var studentId = data.get("studentId");
-        if (isPresent(studentId) && !seenStudentIds.add(studentId)) {
-            errors.add(error("studentId", "Mã học sinh bị trùng trong file import"));
-        }
+        // var studentId = data.get("studentId");
+        // if (isPresent(studentId) && !seenStudentIds.add(studentId)) {
+        //     errors.add(error("studentId", "Mã học sinh bị trùng trong file import"));
+        // }
 
         return errors;
     }

@@ -10,10 +10,9 @@ public class SchoolUserResponseMapper {
     public static SchoolUserResponse toResponse(User user, String roleCode, SchoolUser schoolUser) {
         return new SchoolUserResponse(
             schoolUser != null ? schoolUser.getId() : null,
-            user.getSchoolId(),
+            schoolUser != null ? schoolUser.getSchoolId() : null,
             user.getId(),
             roleCode,
-            schoolUser != null ? schoolUser.getStudentId() : null,
             schoolUser != null ? schoolUser.getStartDate() : null,
             schoolUser != null ? schoolUser.getEndDate() : null
         );
@@ -25,7 +24,6 @@ public class SchoolUserResponseMapper {
             info.schoolId(),
             info.userId(),
             info.roleCode(),
-            info.studentId(),
             info.startDate(),
             info.endDate()
         );

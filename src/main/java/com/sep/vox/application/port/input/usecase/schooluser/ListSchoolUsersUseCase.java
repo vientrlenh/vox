@@ -15,6 +15,7 @@ import com.sep.vox.application.query.repository.SchoolUserQueryRepository;
 import com.sep.vox.application.response.input.schooluser.SchoolUserResponse;
 import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
@@ -25,14 +26,17 @@ public class ListSchoolUsersUseCase implements IUseCase<ListSchoolUsersCommand, 
     private final UserContextPort userContextPort;
     private final UserRepository userRepository;
     private final SchoolUserQueryRepository schoolUserQueryRepository;
+    private final SchoolUserRepository schoolUserRepository;
 
     public ListSchoolUsersUseCase(
             UserContextPort userContextPort,
             UserRepository userRepository,
-            SchoolUserQueryRepository schoolUserQueryRepository) {
+            SchoolUserQueryRepository schoolUserQueryRepository,
+            SchoolUserRepository schoolUserRepository) {
         this.userContextPort = userContextPort;
         this.userRepository = userRepository;
         this.schoolUserQueryRepository = schoolUserQueryRepository;
+        this.schoolUserRepository = schoolUserRepository;
     }
 
     @Override
@@ -43,7 +47,9 @@ public class ListSchoolUsersUseCase implements IUseCase<ListSchoolUsersCommand, 
         var caller = userRepository.findById(callerId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
         UserStatusValidator.requireActive(caller);
-        if (!input.schoolId().equals(caller.getSchoolId())) {
+        var callerSchoolUser = schoolUserRepository.findByUserId(callerId)
+            .orElseThrow(() -> new IllegalArgumentException("Không có quyền thực hiện thao tác này"));
+        if (!input.schoolId().equals(callerSchoolUser.getSchoolId())) {
             throw new IllegalArgumentException("Không có quyền thực hiện thao tác này");
         }
 

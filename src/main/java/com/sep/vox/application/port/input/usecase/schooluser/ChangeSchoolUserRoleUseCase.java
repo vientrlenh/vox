@@ -49,14 +49,18 @@ public class ChangeSchoolUserRoleUseCase implements IUseCase<ChangeSchoolUserRol
         var caller = userRepository.findById(callerId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
         UserStatusValidator.requireActive(caller);
-        if (!input.schoolId().equals(caller.getSchoolId())) {
+        var callerSchoolUser = schoolUserRepository.findByUserId(callerId)
+            .orElseThrow(() -> new IllegalArgumentException("Không có quyền thực hiện thao tác này"));
+        if (!input.schoolId().equals(callerSchoolUser.getSchoolId())) {
             throw new IllegalArgumentException("Không có quyền thực hiện thao tác này");
         }
 
         var targetUser = userRepository.findById(input.userId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
         UserStatusValidator.requireActiveTarget(targetUser);
-        if (!input.schoolId().equals(targetUser.getSchoolId())) {
+        var targetSchoolUser = schoolUserRepository.findByUserId(input.userId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
+        if (!input.schoolId().equals(targetSchoolUser.getSchoolId())) {
             throw new NotFoundException("Không tìm thấy người dùng");
         }
 
@@ -94,13 +98,6 @@ public class ChangeSchoolUserRoleUseCase implements IUseCase<ChangeSchoolUserRol
             throw new IllegalStateException("Vai trò của người dùng vừa được thay đổi bởi thao tác khác, vui lòng thử lại");
         }
 
-        if ("TEACHER".equals(newRoleCode)) {
-            schoolUserRepository.findByUserId(input.userId())
-                .ifPresent(schoolUser -> {
-                    schoolUser.setStudentId(null);
-                    schoolUserRepository.save(schoolUser);
-                });
-        }
 
         return null;
     }

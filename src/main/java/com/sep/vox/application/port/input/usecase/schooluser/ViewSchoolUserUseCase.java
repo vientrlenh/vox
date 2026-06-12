@@ -41,21 +41,22 @@ public class ViewSchoolUserUseCase implements IUseCase<ViewSchoolUserCommand, Sc
         var caller = userRepository.findById(callerId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
         UserStatusValidator.requireActive(caller);
-        if (!input.schoolId().equals(caller.getSchoolId())) {
+        var callerSchoolUser = schoolUserRepository.findByUserId(callerId)
+            .orElseThrow(() -> new IllegalArgumentException("Không có quyền thực hiện thao tác này"));
+        if (!input.schoolId().equals(callerSchoolUser.getSchoolId())) {
             throw new IllegalArgumentException("Không có quyền thực hiện thao tác này");
         }
 
         var targetUser = userRepository.findById(input.userId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
         UserStatusValidator.requireActiveTarget(targetUser);
-        if (!input.schoolId().equals(targetUser.getSchoolId())) {
+        var schoolUser = schoolUserRepository.findByUserId(input.userId()).orElse(null);
+        if (schoolUser == null || !input.schoolId().equals(schoolUser.getSchoolId())) {
             throw new NotFoundException("Không tìm thấy người dùng");
         }
 
         var roleInfo = userRoleQueryRepository.findByUserIdWithRoleInfo(input.userId());
         var roleCode = roleInfo.isEmpty() ? null : roleInfo.get(0).roleCode();
-
-        var schoolUser = schoolUserRepository.findByUserId(input.userId()).orElse(null);
 
         return SchoolUserResponseMapper.toResponse(targetUser, roleCode, schoolUser);
     }

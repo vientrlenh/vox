@@ -20,7 +20,6 @@ public final class CreateSchoolUserCommandMapper {
             dateOfBirth,
             request.address(),
             request.roleCode(),
-            request.studentId(),
             startDate,
             endDate
         );

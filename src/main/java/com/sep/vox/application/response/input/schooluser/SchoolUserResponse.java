@@ -9,7 +9,6 @@ public record SchoolUserResponse(
     UUID schoolId,
     UUID userId,
     String roleCode,
-    String studentId,
     OffsetDateTime startDate,
     OffsetDateTime endDate
 ) {

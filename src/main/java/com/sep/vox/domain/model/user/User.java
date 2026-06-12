@@ -203,17 +203,17 @@ public class User {
         this.avatarUrl = avatarUrl;
     }
 
-    public static User createStudent(String email, String phone, String fullName, LocalDate dateOfBirth, String address, String avatarUrl, UUID createdBy, UUID schoolId, OffsetDateTime now) {
-        return createSchoolUser(email, phone, fullName, dateOfBirth, address, avatarUrl, createdBy, schoolId, now);
+    public static User createStudent(String email, String phone, String fullName, LocalDate dateOfBirth, String address, String avatarUrl, UUID createdBy, OffsetDateTime now) {
+        return createSchoolUser(email, phone, fullName, dateOfBirth, address, avatarUrl, createdBy, now);
     }
 
-    public static User createTeacher(String email, String phone, String fullName, LocalDate dateOfBirth, String address, String avatarUrl, UUID createdBy, UUID schoolId, OffsetDateTime now) {
-        return createSchoolUser(email, phone, fullName, dateOfBirth, address, avatarUrl, createdBy, schoolId, now);
+    public static User createTeacher(String email, String phone, String fullName, LocalDate dateOfBirth, String address, String avatarUrl, UUID createdBy, OffsetDateTime now) {
+        return createSchoolUser(email, phone, fullName, dateOfBirth, address, avatarUrl, createdBy, now);
     }
 
     private static final String PASSWORD_NOT_SET = "__PASSWORD_NOT_SET__";
 
-    private static User createSchoolUser(String email, String phone, String fullName, LocalDate dateOfBirth, String address, String avatarUrl, UUID createdBy, UUID schoolId, OffsetDateTime now) {
+    private static User createSchoolUser(String email, String phone, String fullName, LocalDate dateOfBirth, String address, String avatarUrl, UUID createdBy, OffsetDateTime now) {
         return new User(
             new Email(email),
             PASSWORD_NOT_SET,
@@ -227,8 +227,7 @@ public class User {
             now,
             now,
             createdBy,
-            createdBy,
-            schoolId
+            createdBy
         );
     }
 

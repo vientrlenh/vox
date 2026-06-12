@@ -11,7 +11,6 @@ public record SchoolUserInfo(
     String roleCode,
     String status,
     UUID schoolId,
-    String studentId,
     OffsetDateTime createdAt,
     UUID userId,
     OffsetDateTime startDate,

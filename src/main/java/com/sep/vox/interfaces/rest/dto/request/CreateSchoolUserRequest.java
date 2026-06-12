@@ -27,9 +27,6 @@ public record CreateSchoolUserRequest(
     @NotBlank(message = "Vai trò không được để trống")
     String roleCode,
 
-    @Size(max = 100, message = "Mã học sinh không được vượt quá 100 ký tự")
-    String studentId,
-
     String startDate,
 
     String endDate

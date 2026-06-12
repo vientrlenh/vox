@@ -84,13 +84,13 @@ public class CreateSchoolUserUseCaseTests {
     }
 
     @Test
-    void create_student_without_student_id_should_succeed() {
+    void create_student_without_dates_should_throw() {
         var caller = callerUser(callerId, schoolId);
         var savedUser = savedUser(schoolId);
         var studentRole = role("STUDENT");
         var command = new CreateSchoolUserCommand(
             schoolId, "student@school.edu.vn", "0987654321",
-            "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT", null, null, null
+            "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT", null, null
         );
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
@@ -100,25 +100,22 @@ public class CreateSchoolUserUseCaseTests {
         when(userRepository.findByPhone("0987654321")).thenReturn(Optional.empty());
         when(userRepository.save(any(User.class))).thenReturn(savedUser);
         when(userRoleRepository.save(any(UserRole.class))).thenReturn(new UserRole(savedUser.getId(), studentRole.getId(), OffsetDateTime.now()));
-        var result = createSchoolUserUseCase.execute(command);
 
-        assertThat(result).isNotNull();
-        assertThat(result.id()).isEqualTo(savedUser.getId());
+        assertThrows(IllegalArgumentException.class, () -> createSchoolUserUseCase.execute(command));
         verify(schoolUserRepository, never()).save(any(SchoolUser.class));
-        verify(eventPublisherPort).publish(any(SchoolUserPasswordSetUpEmailRequestedEvent.class));
     }
 
     @Test
-    void create_student_with_student_id_should_save_school_user() {
+    void create_student_with_dates_should_save_school_user() {
         var caller = callerUser(callerId, schoolId);
         var savedUser = savedUser(schoolId);
         var studentRole = role("STUDENT");
         var command = new CreateSchoolUserCommand(
             schoolId, "student@school.edu.vn", "0987654321",
-            "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT", "STU-001",
+            "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT",
             LocalDate.of(2023, 1, 1), LocalDate.of(2029, 1, 1)
         );
-        var schoolUser = new SchoolUser("STU-001", schoolId, savedUser.getId(), OffsetDateTime.now(), OffsetDateTime.now().plusYears(100));
+        var schoolUser = new SchoolUser(schoolId, savedUser.getId(), OffsetDateTime.now(), OffsetDateTime.now().plusYears(100));
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
         when(userRepository.findById(callerId)).thenReturn(Optional.of(caller));
@@ -142,7 +139,7 @@ public class CreateSchoolUserUseCaseTests {
         var teacherRole = role("TEACHER");
         var command = new CreateSchoolUserCommand(
             schoolId, "teacher@school.edu.vn", "0987654322",
-            "Tran Thi B", LocalDate.of(1985, 3, 20), "456 Street", "TEACHER", null, null, null
+            "Tran Thi B", LocalDate.of(1985, 3, 20), "456 Street", "TEACHER", null, null
         );
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
@@ -165,7 +162,7 @@ public class CreateSchoolUserUseCaseTests {
         var caller = callerUser(callerId, otherSchoolId);
         var command = new CreateSchoolUserCommand(
             schoolId, "student@school.edu.vn", "0987654321",
-            "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT", null, null, null
+            "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT", null, null
         );
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
@@ -181,7 +178,7 @@ public class CreateSchoolUserUseCaseTests {
         var caller = callerUser(callerId, schoolId);
         var command = new CreateSchoolUserCommand(
             schoolId, "student@school.edu.vn", "0987654321",
-            "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "SCHOOL_ADMIN", null, null, null
+            "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "SCHOOL_ADMIN", null, null
         );
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
@@ -196,7 +193,7 @@ public class CreateSchoolUserUseCaseTests {
         var caller = callerUser(callerId, schoolId);
         var command = new CreateSchoolUserCommand(
             schoolId, "student@school.edu.vn", "0987654321",
-            "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT", null, null, null
+            "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT", null, null
         );
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
@@ -212,7 +209,7 @@ public class CreateSchoolUserUseCaseTests {
         var caller = callerUser(callerId, schoolId, UserStatus.INACTIVE);
         var command = new CreateSchoolUserCommand(
             schoolId, "student@school.edu.vn", "0987654321",
-            "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT", null, null, null
+            "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT", null, null
         );
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
@@ -228,7 +225,7 @@ public class CreateSchoolUserUseCaseTests {
         var studentRole = role("STUDENT");
         var command = new CreateSchoolUserCommand(
             schoolId, "student@school.edu.vn", "0987654321",
-            "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT", null, null, null
+            "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT", null, null
         );
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
@@ -246,7 +243,7 @@ public class CreateSchoolUserUseCaseTests {
         var studentRole = role("STUDENT");
         var command = new CreateSchoolUserCommand(
             schoolId, "student@school.edu.vn", "0987654321",
-            "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT", null, null, null
+            "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT", null, null
         );
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
@@ -265,10 +262,14 @@ public class CreateSchoolUserUseCaseTests {
 
     private User callerUser(UUID id, UUID userSchoolId, UserStatus status) {
         var now = OffsetDateTime.now();
-        return new User(id, new Email("admin@school.edu.vn"), "hash",
+        var user = new User(id, new Email("admin@school.edu.vn"), "hash",
             new Phone("0900000000"), new FullName("Admin User"), null,
             new DateOfBirth(LocalDate.of(1980, 1, 1)), "Admin Street", null,
-            status, now, now, id, id, userSchoolId);
+            status, now, now, id, id);
+        when(schoolUserRepository.findByUserId(id)).thenReturn(Optional.of(
+            new SchoolUser(userSchoolId, id, now, now.plusYears(100))
+        ));
+        return user;
     }
 
     private User savedUser(UUID userSchoolId) {
@@ -277,7 +278,7 @@ public class CreateSchoolUserUseCaseTests {
         return new User(id, new Email("student@school.edu.vn"), "__PASSWORD_NOT_SET__",
             new Phone("0987654321"), new FullName("Nguyen Van A"), null,
             new DateOfBirth(LocalDate.of(2005, 1, 15)), "123 Street", null,
-            UserStatus.INACTIVE, now, now, callerId, callerId, userSchoolId);
+            UserStatus.INACTIVE, now, now, callerId, callerId);
     }
 
     private Role role(String code) {

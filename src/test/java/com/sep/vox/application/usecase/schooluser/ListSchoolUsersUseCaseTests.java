@@ -27,6 +27,8 @@ import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
+import com.sep.vox.domain.model.school.SchoolUser;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.valueobject.DateOfBirth;
 import com.sep.vox.domain.valueobject.Email;
@@ -38,6 +40,7 @@ public class ListSchoolUsersUseCaseTests {
     private UserContextPort userContextPort;
     private UserRepository userRepository;
     private SchoolUserQueryRepository schoolUserQueryRepository;
+    private SchoolUserRepository schoolUserRepository;
     private ListSchoolUsersUseCase listSchoolUsersUseCase;
 
     private final UUID schoolId = UUID.randomUUID();
@@ -48,10 +51,12 @@ public class ListSchoolUsersUseCaseTests {
         userContextPort = mock(UserContextPort.class);
         userRepository = mock(UserRepository.class);
         schoolUserQueryRepository = mock(SchoolUserQueryRepository.class);
+        schoolUserRepository = mock(SchoolUserRepository.class);
         listSchoolUsersUseCase = new ListSchoolUsersUseCase(
             userContextPort,
             userRepository,
-            schoolUserQueryRepository
+            schoolUserQueryRepository,
+            schoolUserRepository
         );
     }
 
@@ -67,7 +72,6 @@ public class ListSchoolUsersUseCaseTests {
             "STUDENT",
             "INACTIVE",
             schoolId,
-            "STU-001",
             OffsetDateTime.now(),
             UUID.randomUUID(),
             null,
@@ -90,7 +94,6 @@ public class ListSchoolUsersUseCaseTests {
         SchoolUserResponse response = result.content().get(0);
         assertThat(response.id()).isEqualTo(userId);
         assertThat(response.roleCode()).isEqualTo("STUDENT");
-        assertThat(response.studentId()).isEqualTo("STU-001");
 
         verify(schoolUserQueryRepository).findBySchoolIdAndRoleCodes(
             schoolId,
@@ -133,9 +136,12 @@ public class ListSchoolUsersUseCaseTests {
 
     private User callerUser(UUID id, UUID userSchoolId, UserStatus status) {
         var now = OffsetDateTime.now();
+        when(schoolUserRepository.findByUserId(id)).thenReturn(Optional.of(
+            new SchoolUser(userSchoolId, id, now, now.plusYears(100))
+        ));
         return new User(id, new Email("admin@school.edu.vn"), "hash",
             new Phone("0900000000"), new FullName("Admin User"), null,
             new DateOfBirth(LocalDate.of(1980, 1, 1)), "Admin Street", null,
-            status, now, now, id, id, userSchoolId);
+            status, now, now, id, id);
     }
 }

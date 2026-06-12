@@ -23,6 +23,8 @@ import com.sep.vox.application.port.input.usecase.schooluser.DeleteSchoolUserUse
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
+import com.sep.vox.domain.model.school.SchoolUser;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.valueobject.DateOfBirth;
 import com.sep.vox.domain.valueobject.Email;
@@ -33,6 +35,7 @@ public class DeleteSchoolUserUseCaseTests {
 
     private UserContextPort userContextPort;
     private UserRepository userRepository;
+    private SchoolUserRepository schoolUserRepository;
     private DeleteSchoolUserUseCase deleteSchoolUserUseCase;
 
     private final UUID schoolId = UUID.randomUUID();
@@ -42,7 +45,8 @@ public class DeleteSchoolUserUseCaseTests {
     void setUp() {
         userContextPort = mock(UserContextPort.class);
         userRepository = mock(UserRepository.class);
-        deleteSchoolUserUseCase = new DeleteSchoolUserUseCase(userContextPort, userRepository);
+        schoolUserRepository = mock(SchoolUserRepository.class);
+        deleteSchoolUserUseCase = new DeleteSchoolUserUseCase(userContextPort, userRepository, schoolUserRepository);
     }
 
     @Test
@@ -120,9 +124,12 @@ public class DeleteSchoolUserUseCaseTests {
 
     private User user(UUID id, UUID userSchoolId, UserStatus status) {
         var now = OffsetDateTime.now();
+        when(schoolUserRepository.findByUserId(id)).thenReturn(Optional.of(
+            new SchoolUser(userSchoolId, id, now, now.plusYears(100))
+        ));
         return new User(id, new Email("user@school.edu.vn"), "hash",
             new Phone("0987654321"), new FullName("Nguyen Van A"), null,
             new DateOfBirth(LocalDate.of(2000, 1, 1)), "123 Street", null,
-            status, now, now, id, id, userSchoolId);
+            status, now, now, id, id);
     }
 }

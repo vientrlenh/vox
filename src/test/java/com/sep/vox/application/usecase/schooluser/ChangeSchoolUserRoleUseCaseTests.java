@@ -3,7 +3,6 @@ package com.sep.vox.application.usecase.schooluser;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -63,7 +62,7 @@ public class ChangeSchoolUserRoleUseCaseTests {
     }
 
     @Test
-    void change_role_student_to_teacher_should_update_role_and_clear_student_id() {
+    void change_role_student_to_teacher_should_update_role() {
         var targetId = UUID.randomUUID();
         var caller = user(callerId, schoolId);
         var target = user(targetId, schoolId);
@@ -73,7 +72,7 @@ public class ChangeSchoolUserRoleUseCaseTests {
         var teacherRole = role(teacherRoleId, "TEACHER");
         var existingUserRole = new UserRole(UUID.randomUUID(), targetId, studentRoleId, OffsetDateTime.now());
         var command = new ChangeSchoolUserRoleCommand(schoolId, targetId, "TEACHER");
-        var existingSchoolUser = new SchoolUser("STU-001", schoolId, targetId, OffsetDateTime.now(), OffsetDateTime.now().plusYears(100));
+        var existingSchoolUser = new SchoolUser(schoolId, targetId, OffsetDateTime.now(), OffsetDateTime.now().plusYears(100));
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
         when(userRepository.findById(callerId)).thenReturn(Optional.of(caller));
@@ -83,13 +82,12 @@ public class ChangeSchoolUserRoleUseCaseTests {
         when(roleRepository.findByCode("TEACHER")).thenReturn(Optional.of(teacherRole));
         when(schoolUserRepository.findByUserId(targetId)).thenReturn(Optional.of(existingSchoolUser));
         when(userRoleRepository.compareAndSetRoleId(existingUserRole.getId(), studentRoleId, teacherRoleId)).thenReturn(1);
-        when(schoolUserRepository.save(any(SchoolUser.class))).thenAnswer(inv -> inv.getArgument(0));
 
         var result = changeSchoolUserRoleUseCase.execute(command);
 
         assertThat(result).isNull();
         verify(userRoleRepository).compareAndSetRoleId(existingUserRole.getId(), studentRoleId, teacherRoleId);
-        verify(schoolUserRepository).save(argThat(su -> su.getUserId().equals(targetId) && su.getStudentId() == null));
+        verify(schoolUserRepository, never()).save(any(SchoolUser.class));
     }
 
     @Test
@@ -201,10 +199,13 @@ public class ChangeSchoolUserRoleUseCaseTests {
 
     private User user(UUID id, UUID userSchoolId, UserStatus status) {
         var now = OffsetDateTime.now();
+        when(schoolUserRepository.findByUserId(id)).thenReturn(Optional.of(
+            new SchoolUser(userSchoolId, id, now, now.plusYears(100))
+        ));
         return new User(id, new Email("user@school.edu.vn"), "hash",
             new Phone("0987654321"), new FullName("Nguyen Van A"), null,
             new DateOfBirth(LocalDate.of(2000, 1, 1)), "123 Street", null,
-            status, now, now, id, id, userSchoolId);
+            status, now, now, id, id);
     }
 
     private Role role(UUID id, String code) {

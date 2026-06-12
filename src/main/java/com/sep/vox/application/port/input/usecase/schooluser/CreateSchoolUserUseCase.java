@@ -76,7 +76,9 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
         var caller = userRepository.findById(callerId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
         UserStatusValidator.requireActive(caller);
-        if (!input.schoolId().equals(caller.getSchoolId())) {
+        var callerSchoolUser = schoolUserRepository.findByUserId(callerId)
+            .orElseThrow(() -> new IllegalArgumentException("Không có quyền thực hiện thao tác này"));
+        if (!input.schoolId().equals(callerSchoolUser.getSchoolId())) {
             throw new IllegalArgumentException("Không có quyền thực hiện thao tác này");
         }
 
@@ -98,8 +100,8 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
         }
 
         User user = command.roleCode().equals("STUDENT")
-            ? User.createStudent(command.email(), command.phone(), command.fullName(), command.dateOfBirth(), command.address(), null, callerId, command.schoolId(), now)
-            : User.createTeacher(command.email(), command.phone(), command.fullName(), command.dateOfBirth(), command.address(), null, callerId, command.schoolId(), now);
+            ? User.createStudent(command.email(), command.phone(), command.fullName(), command.dateOfBirth(), command.address(), null, callerId, now)
+            : User.createTeacher(command.email(), command.phone(), command.fullName(), command.dateOfBirth(), command.address(), null, callerId, now);
 
         User savedUser;
         try {
@@ -110,14 +112,14 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
 
         userRoleRepository.save(new UserRole(savedUser.getId(), role.getId(), now));
 
-        if ("STUDENT".equals(command.roleCode()) && command.studentId() != null) {
+        if ("STUDENT".equals(command.roleCode())) {
             if (command.startDate() == null || command.endDate() == null) {
                 throw new IllegalArgumentException("Ngày bắt đầu và ngày kết thúc là bắt buộc đối với học sinh");
             }
             var startDate = command.startDate().atStartOfDay(ZoneOffset.UTC).toOffsetDateTime();
             var endDate = command.endDate().atStartOfDay(ZoneOffset.UTC).toOffsetDateTime();
             schoolUserRepository.save(
-                SchoolUser.create(command.studentId(), command.schoolId(), savedUser.getId(), startDate, endDate)
+                SchoolUser.create(savedUser.getId(), command.schoolId(), startDate, endDate)
             );
         }
 
@@ -143,7 +145,6 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
             input.dateOfBirth(),
             input.address() != null ? StringNormalization.trimAndCollapseSpaces(input.address()) : null,
             input.roleCode() != null ? input.roleCode().trim().toUpperCase() : null,
-            input.studentId() != null ? input.studentId().trim() : null,
             input.startDate(),
             input.endDate()
         );

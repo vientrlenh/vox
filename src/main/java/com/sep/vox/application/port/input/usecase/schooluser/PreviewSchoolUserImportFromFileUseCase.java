@@ -27,6 +27,7 @@ import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.repository.ImportRowRepository;
 import com.sep.vox.domain.repository.ImportSessionRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
@@ -41,6 +42,7 @@ public class PreviewSchoolUserImportFromFileUseCase implements IUseCase<PreviewS
     private final UserRepository userRepository;
     private final SchoolRepository schoolRepository;
     private final JsonSerializationPort jsonSerializationPort;
+    private final SchoolUserRepository schoolUserRepository;
 
     public PreviewSchoolUserImportFromFileUseCase(
             FileProcessingPort fileProcessingPort,
@@ -49,7 +51,8 @@ public class PreviewSchoolUserImportFromFileUseCase implements IUseCase<PreviewS
             UserContextPort userContextPort,
             UserRepository userRepository,
             SchoolRepository schoolRepository,
-            JsonSerializationPort jsonSerializationPort) {
+            JsonSerializationPort jsonSerializationPort,
+            SchoolUserRepository schoolUserRepository) {
         this.fileProcessingPort = fileProcessingPort;
         this.importSessionRepository = importSessionRepository;
         this.importRowRepository = importRowRepository;
@@ -57,6 +60,7 @@ public class PreviewSchoolUserImportFromFileUseCase implements IUseCase<PreviewS
         this.userRepository = userRepository;
         this.schoolRepository = schoolRepository;
         this.jsonSerializationPort = jsonSerializationPort;
+        this.schoolUserRepository = schoolUserRepository;
     }
 
     @Override
@@ -97,11 +101,9 @@ public class PreviewSchoolUserImportFromFileUseCase implements IUseCase<PreviewS
     }
 
     private UUID getSchoolId(User currentUser) {
-        var schoolId = currentUser.getSchoolId();
-        if (schoolId == null) {
-            throw new IllegalStateException("Người dùng hiện tại không thuộc trường nào");
-        }
-        return schoolId;
+        return schoolUserRepository.findByUserId(currentUser.getId())
+            .map(com.sep.vox.domain.model.school.SchoolUser::getSchoolId)
+            .orElseThrow(() -> new IllegalStateException("Người dùng hiện tại không thuộc trường nào"));
     }
 
     private void validateSchool(UUID schoolId) {

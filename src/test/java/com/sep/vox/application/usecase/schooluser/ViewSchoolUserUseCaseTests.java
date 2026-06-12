@@ -59,7 +59,7 @@ public class ViewSchoolUserUseCaseTests {
         var caller = user(callerId, schoolId);
         var target = user(targetId, schoolId);
         var schoolUserId = UUID.randomUUID();
-        var schoolUser = new SchoolUser(schoolUserId, "STU-001", schoolId, targetId, OffsetDateTime.now(), OffsetDateTime.now().plusYears(100));
+        var schoolUser = new SchoolUser(schoolUserId, schoolId, targetId, OffsetDateTime.now(), OffsetDateTime.now().plusYears(100));
         var command = new ViewSchoolUserCommand(schoolId, targetId);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
@@ -74,11 +74,10 @@ public class ViewSchoolUserUseCaseTests {
         assertThat(result.id()).isEqualTo(schoolUserId);
         assertThat(result.userId()).isEqualTo(targetId);
         assertThat(result.roleCode()).isEqualTo("STUDENT");
-        assertThat(result.studentId()).isEqualTo("STU-001");
     }
 
     @Test
-    void view_should_return_null_student_id_for_teacher() {
+    void view_should_return_teacher_role() {
         var targetId = UUID.randomUUID();
         var caller = user(callerId, schoolId);
         var target = user(targetId, schoolId);
@@ -88,12 +87,10 @@ public class ViewSchoolUserUseCaseTests {
         when(userRepository.findById(callerId)).thenReturn(Optional.of(caller));
         when(userRepository.findById(targetId)).thenReturn(Optional.of(target));
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(targetId)).thenReturn(List.of(roleInfo("TEACHER")));
-        when(schoolUserRepository.findByUserId(targetId)).thenReturn(Optional.empty());
 
         var result = viewSchoolUserUseCase.execute(command);
 
         assertThat(result.roleCode()).isEqualTo("TEACHER");
-        assertThat(result.studentId()).isNull();
     }
 
     @Test
@@ -150,14 +147,17 @@ public class ViewSchoolUserUseCaseTests {
 
     private User user(UUID id, UUID userSchoolId) {
         return user(id, userSchoolId, UserStatus.ACTIVE);
-        }
+    }
 
-        private User user(UUID id, UUID userSchoolId, UserStatus status) {
+    private User user(UUID id, UUID userSchoolId, UserStatus status) {
         var now = OffsetDateTime.now();
+        when(schoolUserRepository.findByUserId(id)).thenReturn(Optional.of(
+            new SchoolUser(UUID.randomUUID(), userSchoolId, id, now, now.plusYears(100))
+        ));
         return new User(id, new Email("user@school.edu.vn"), "hash",
             new Phone("0987654321"), new FullName("Nguyen Van A"), null,
             new DateOfBirth(LocalDate.of(2000, 1, 1)), "123 Street", null,
-            status, now, now, id, id, userSchoolId);
+            status, now, now, id, id);
     }
 
     private UserRoleInfo roleInfo(String code) {

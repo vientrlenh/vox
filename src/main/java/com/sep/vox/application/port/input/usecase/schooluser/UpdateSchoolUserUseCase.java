@@ -16,6 +16,7 @@ import com.sep.vox.application.response.input.schooluser.UpdateSchoolUserRespons
 import com.sep.vox.domain.valueobject.DateOfBirth;
 import com.sep.vox.domain.valueobject.FullName;
 import com.sep.vox.domain.valueobject.Phone;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
@@ -23,10 +24,12 @@ public class UpdateSchoolUserUseCase implements IUseCase<UpdateSchoolUserCommand
 
     private final UserContextPort userContextPort;
     private final UserRepository userRepository;
+    private final SchoolUserRepository schoolUserRepository;
 
-    public UpdateSchoolUserUseCase(UserContextPort userContextPort, UserRepository userRepository) {
+    public UpdateSchoolUserUseCase(UserContextPort userContextPort, UserRepository userRepository, SchoolUserRepository schoolUserRepository) {
         this.userContextPort = userContextPort;
         this.userRepository = userRepository;
+        this.schoolUserRepository = schoolUserRepository;
     }
 
     @Override
@@ -42,14 +45,18 @@ public class UpdateSchoolUserUseCase implements IUseCase<UpdateSchoolUserCommand
         var caller = userRepository.findById(callerId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
         UserStatusValidator.requireActive(caller);
-        if (!input.schoolId().equals(caller.getSchoolId())) {
+        var callerSchoolUser = schoolUserRepository.findByUserId(callerId)
+            .orElseThrow(() -> new IllegalArgumentException("Không có quyền thực hiện thao tác này"));
+        if (!input.schoolId().equals(callerSchoolUser.getSchoolId())) {
             throw new IllegalArgumentException("Không có quyền thực hiện thao tác này");
         }
 
         var target = userRepository.findByIdForUpdate(input.userId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
         UserStatusValidator.requireActiveTarget(target);
-        if (!input.schoolId().equals(target.getSchoolId())) {
+        var targetSchoolUser = schoolUserRepository.findByUserId(input.userId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
+        if (!input.schoolId().equals(targetSchoolUser.getSchoolId())) {
             throw new NotFoundException("Không tìm thấy người dùng");
         }
 

@@ -32,8 +32,7 @@ public class JpaSchoolUserQueryRepository implements SchoolUserQueryRepository {
                 u.fullName,
                 r.code,
                 u.status,
-                u.schoolId,
-                su.studentId,
+                su.schoolId,
                 u.createdAt,
                 u.id,
                 su.startDate,
@@ -44,9 +43,9 @@ public class JpaSchoolUserQueryRepository implements SchoolUserQueryRepository {
                 ON u.id = ur.userId
             JOIN RoleJpaEntity r
                 ON ur.roleId = r.id
-            LEFT JOIN SchoolUserJpaEntity su
+            JOIN SchoolUserJpaEntity su
                 ON su.userId = u.id
-            WHERE u.schoolId = :schoolId
+            WHERE su.schoolId = :schoolId
                 AND r.code IN :roleCodes
             ORDER BY u.createdAt DESC
         """, SchoolUserInfo.class)
@@ -63,7 +62,9 @@ public class JpaSchoolUserQueryRepository implements SchoolUserQueryRepository {
                 ON u.id = ur.userId
             JOIN RoleJpaEntity r
                 ON ur.roleId = r.id
-            WHERE u.schoolId = :schoolId
+            JOIN SchoolUserJpaEntity su
+                ON su.userId = u.id
+            WHERE su.schoolId = :schoolId
                 AND r.code IN :roleCodes
         """, Long.class)
         .setParameter("schoolId", schoolId)

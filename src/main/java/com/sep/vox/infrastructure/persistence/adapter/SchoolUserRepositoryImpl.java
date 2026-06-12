@@ -31,4 +31,5 @@ public class SchoolUserRepositoryImpl implements SchoolUserRepository {
         var saved = springDataSchoolUserRepository.save(entity);
         return SchoolUserMapper.toDomain(saved);
     }
+    
 }

@@ -143,7 +143,6 @@ public class ApproveRegisterFormUseCaseTests {
         assertThat(savedSchoolAdmin.getFullName().value()).isEqualTo("Nguyen Van A");
         assertThat(savedSchoolAdmin.getDateOfBirth().value()).isEqualTo(command.dateOfBirth());
         assertThat(savedSchoolAdmin.getAddress()).isEqualTo("123 Contact Street");
-        assertThat(savedSchoolAdmin.getSchoolId()).isEqualTo(schoolId);
         assertThat(savedSchoolAdmin.getCreatedBy()).isEqualTo(currentUserId);
         assertThat(savedSchoolAdmin.getUpdatedBy()).isEqualTo(currentUserId);
 

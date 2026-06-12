@@ -196,7 +196,6 @@ public class LoginUseCaseTests {
             OffsetDateTime.now(),
             OffsetDateTime.now(),
             null,
-            null,
             null
         );
     }

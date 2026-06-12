@@ -24,13 +24,12 @@ public class User {
     private OffsetDateTime updatedAt;
     private UUID createdBy;
     private UUID updatedBy;
-    private UUID schoolId;
 
     public User() {}
 
     public User(UUID id, Email email, String passwordHash, Phone phone,
             FullName fullName, Gender gender, DateOfBirth dateOfBirth, String address, String avatarUrl, UserStatus status,
-            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy, UUID schoolId) {
+            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.email = email;
         this.passwordHash = passwordHash;
@@ -45,12 +44,11 @@ public class User {
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
         this.updatedBy = updatedBy;
-        this.schoolId = schoolId;
     }
 
     public User(Email email, String passwordHash, Phone phone,
             FullName fullName, Gender gender, DateOfBirth dateOfBirth, String address, String avatarUrl, UserStatus status,
-            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy, UUID schoolId) {
+            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.email = email;
         this.passwordHash = passwordHash;
         this.phone = phone;
@@ -64,7 +62,6 @@ public class User {
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
         this.updatedBy = updatedBy;
-        this.schoolId = schoolId;
     }
 
 
@@ -171,15 +168,7 @@ public class User {
         this.status = status;
     }
 
-    public UUID getSchoolId() {
-        return schoolId;
-    }
 
-    public void setSchoolId(UUID schoolId) {
-        this.schoolId = schoolId;
-    }
-
-    
 
     public void updatePasswordAndActivate(String passwordHash, OffsetDateTime now) {
         this.passwordHash = passwordHash;
@@ -188,7 +177,7 @@ public class User {
     }
 
     
-    public static User createSchoolAdmin(String email, String password, String phone, String fullName, LocalDate dateOfBirth, String address, String avatarUrl, UUID createdUserId, UUID schoolId, OffsetDateTime now) {
+    public static User createSchoolAdmin(String email, String password, String phone, String fullName, LocalDate dateOfBirth, String address, String avatarUrl, UUID createdUserId, OffsetDateTime now) {
         return new User(
             new Email(email), 
             password, 
@@ -202,8 +191,7 @@ public class User {
             now, 
             now, 
             createdUserId, 
-            createdUserId, 
-            schoolId
+            createdUserId
         );
     }
 

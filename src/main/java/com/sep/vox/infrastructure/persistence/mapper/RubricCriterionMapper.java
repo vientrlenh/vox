@@ -1,6 +1,7 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.rubric.RubricCriterion;
+import com.sep.vox.domain.valueobject.rubric.RubricCriterionExamples;
 import com.sep.vox.infrastructure.persistence.entity.RubricCriterionJpaEntity;
 
 public final class RubricCriterionMapper {
@@ -15,6 +16,7 @@ public final class RubricCriterionMapper {
             jpa.getCode(),
             jpa.getName(),
             jpa.getDescription(),
+            JsonValueObjectMapper.fromJson(jpa.getExamplesJson(), RubricCriterionExamples.class),
             jpa.getWeight(),
             jpa.getMinScore(),
             jpa.getMaxScore(),
@@ -35,6 +37,7 @@ public final class RubricCriterionMapper {
             criterion.getCode(),
             criterion.getName(),
             criterion.getDescription(),
+            JsonValueObjectMapper.toJson(criterion.getExamples()),
             criterion.getWeight(),
             criterion.getMinScore(),
             criterion.getMaxScore(),

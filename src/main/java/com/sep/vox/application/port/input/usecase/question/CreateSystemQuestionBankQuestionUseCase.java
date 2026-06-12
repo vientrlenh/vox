@@ -26,17 +26,16 @@ import com.sep.vox.domain.model.question.QuestionScope;
 import com.sep.vox.domain.model.question.QuestionTopic;
 import com.sep.vox.domain.model.question.QuestionType;
 import com.sep.vox.domain.model.question.QuestionVisibility;
-import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.QuestionAssetRepository;
 import com.sep.vox.domain.repository.QuestionEvaluationGuideRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.QuestionTopicRepository;
-import com.sep.vox.domain.repository.UserRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
 public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateSystemQuestionBankQuestionCommand, CreateQuestionResponse> {
 
-    private final UserRepository userRepository;
+    private final SchoolUserRepository schoolUserRepository;
     private final QuestionRepository questionRepository;
     private final QuestionAssetRepository questionAssetRepository;
     private final QuestionEvaluationGuideRepository questionEvaluationGuideRepository;
@@ -44,13 +43,13 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
     private final UserContextPort userContextPort;
 
     public CreateSystemQuestionBankQuestionUseCase(
-            UserRepository userRepository,
+            SchoolUserRepository schoolUserRepository,
             QuestionRepository questionRepository,
             QuestionAssetRepository questionAssetRepository,
             QuestionEvaluationGuideRepository questionEvaluationGuideRepository,
             QuestionTopicRepository questionTopicRepository,
             UserContextPort userContextPort) {
-        this.userRepository = userRepository;
+        this.schoolUserRepository = schoolUserRepository;
         this.questionRepository = questionRepository;
         this.questionAssetRepository = questionAssetRepository;
         this.questionEvaluationGuideRepository = questionEvaluationGuideRepository;
@@ -64,12 +63,11 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
         var command = normalize(input);
 
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentUser = userRepository.findByIdAndStatus(currentUserId, UserStatus.ACTIVE)
-            .orElseThrow(() -> new UnauthorizedException("Trạng thái người dùng không hợp lệ"));
+        var schoolUser = schoolUserRepository.findByUserId(currentUserId)
+            .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
 
         var questionTopic = getQuestionTopic(command.questionTopicId());
-        if (currentUser.getSchoolId() == null
-                || !questionTopicRepository.isTopicBelongToSchool(questionTopic.getId(), currentUser.getSchoolId())) {
+        if (!questionTopicRepository.isTopicBelongToSchool(questionTopic.getId(), schoolUser.getSchoolId())) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 

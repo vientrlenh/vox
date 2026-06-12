@@ -3,13 +3,15 @@ package com.sep.vox.domain.model.framework;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
+import com.sep.vox.domain.valueobject.framework.FrameworkCriterionSignals;
+
 public class FrameworkCriterionBand {
     private UUID id;
     private UUID frameworkCriterionId;
     private UUID frameworkResultBandId;
     private String descriptor;
-    private String positiveSignals;
-    private String negativeSignals;
+    private FrameworkCriterionSignals positiveSignals;
+    private FrameworkCriterionSignals negativeSignals;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
     private UUID createdBy;
@@ -18,7 +20,7 @@ public class FrameworkCriterionBand {
     public FrameworkCriterionBand() {}
 
     public FrameworkCriterionBand(UUID id, UUID frameworkCriterionId, UUID frameworkResultBandId, String descriptor,
-            String positiveSignals, String negativeSignals, OffsetDateTime createdAt, OffsetDateTime updatedAt,
+            FrameworkCriterionSignals positiveSignals, FrameworkCriterionSignals negativeSignals, OffsetDateTime createdAt, OffsetDateTime updatedAt,
             UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.frameworkCriterionId = frameworkCriterionId;
@@ -33,7 +35,7 @@ public class FrameworkCriterionBand {
     }
 
     public FrameworkCriterionBand(UUID frameworkCriterionId, UUID frameworkResultBandId, String descriptor,
-            String positiveSignals, String negativeSignals, OffsetDateTime createdAt, OffsetDateTime updatedAt,
+            FrameworkCriterionSignals positiveSignals, FrameworkCriterionSignals negativeSignals, OffsetDateTime createdAt, OffsetDateTime updatedAt,
             UUID createdBy, UUID updatedBy) {
         this.frameworkCriterionId = frameworkCriterionId;
         this.frameworkResultBandId = frameworkResultBandId;
@@ -78,19 +80,19 @@ public class FrameworkCriterionBand {
         this.descriptor = descriptor;
     }
 
-    public String getPositiveSignals() {
+    public FrameworkCriterionSignals getPositiveSignals() {
         return positiveSignals;
     }
 
-    public void setPositiveSignals(String positiveSignals) {
+    public void setPositiveSignals(FrameworkCriterionSignals positiveSignals) {
         this.positiveSignals = positiveSignals;
     }
 
-    public String getNegativeSignals() {
+    public FrameworkCriterionSignals getNegativeSignals() {
         return negativeSignals;
     }
 
-    public void setNegativeSignals(String negativeSignals) {
+    public void setNegativeSignals(FrameworkCriterionSignals negativeSignals) {
         this.negativeSignals = negativeSignals;
     }
 

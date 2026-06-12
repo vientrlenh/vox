@@ -12,15 +12,16 @@ import com.sep.vox.application.port.input.query.ViewImportSessionsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.importfile.ImportSessionSummaryResponse;
-import com.sep.vox.application.service.UserSchoolResolver;
 import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
+import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.ImportSessionRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
@@ -31,7 +32,7 @@ public class ViewImportSessionsUseCase implements IUseCase<ViewImportSessionsQue
     private final SchoolRepository schoolRepository;
     private final UserContextPort userContextPort;
     private final ImportSessionResponseMapper importSessionResponseMapper;
-    private final UserSchoolResolver userSchoolResolver;
+    private final SchoolUserRepository schoolUserRepository;
 
     public ViewImportSessionsUseCase(
             ImportSessionRepository importSessionRepository,
@@ -39,13 +40,13 @@ public class ViewImportSessionsUseCase implements IUseCase<ViewImportSessionsQue
             SchoolRepository schoolRepository,
             UserContextPort userContextPort,
             ImportSessionResponseMapper importSessionResponseMapper,
-            UserSchoolResolver userSchoolResolver) {
+            SchoolUserRepository schoolUserRepository) {
         this.importSessionRepository = importSessionRepository;
         this.userRepository = userRepository;
         this.schoolRepository = schoolRepository;
         this.userContextPort = userContextPort;
         this.importSessionResponseMapper = importSessionResponseMapper;
-        this.userSchoolResolver = userSchoolResolver;
+        this.schoolUserRepository = schoolUserRepository;
     }
 
     @Override
@@ -81,11 +82,9 @@ public class ViewImportSessionsUseCase implements IUseCase<ViewImportSessionsQue
     }
 
     private UUID getSchoolId(User currentUser) {
-        var schoolId = userSchoolResolver.findSchoolId(currentUser.getId()).orElse(null);
-        if (schoolId == null) {
-            throw new IllegalStateException("Người dùng hiện tại không thuộc trường nào");
-        }
-        return schoolId;
+        return schoolUserRepository.findByUserId(currentUser.getId())
+            .map(SchoolUser::getSchoolId)
+            .orElseThrow(() -> new IllegalStateException("Người dùng hiện tại không thuộc trường nào"));
     }
 
     private void validateSchool(UUID schoolId) {

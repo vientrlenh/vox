@@ -20,12 +20,12 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.importfile.AcceptSchoolClassUserImportResponse;
-import com.sep.vox.application.service.UserSchoolResolver;
 import com.sep.vox.domain.model.importfile.ImportRow;
 import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
+import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.model.school.SchoolClassUser;
@@ -36,6 +36,7 @@ import com.sep.vox.domain.repository.ImportSessionRepository;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
@@ -52,7 +53,7 @@ public class AcceptSchoolClassUserImportUseCase implements IUseCase<AcceptSchool
     private final SchoolRepository schoolRepository;
     private final UserContextPort userContextPort;
     private final JsonSerializationPort jsonSerializationPort;
-    private final UserSchoolResolver userSchoolResolver;
+    private final SchoolUserRepository schoolUserRepository;
 
     public AcceptSchoolClassUserImportUseCase(
             ImportSessionRepository importSessionRepository,
@@ -63,7 +64,7 @@ public class AcceptSchoolClassUserImportUseCase implements IUseCase<AcceptSchool
             SchoolRepository schoolRepository,
             UserContextPort userContextPort,
             JsonSerializationPort jsonSerializationPort,
-            UserSchoolResolver userSchoolResolver) {
+            SchoolUserRepository schoolUserRepository) {
         this.importSessionRepository = importSessionRepository;
         this.importRowRepository = importRowRepository;
         this.schoolClassUserRepository = schoolClassUserRepository;
@@ -72,7 +73,7 @@ public class AcceptSchoolClassUserImportUseCase implements IUseCase<AcceptSchool
         this.schoolRepository = schoolRepository;
         this.userContextPort = userContextPort;
         this.jsonSerializationPort = jsonSerializationPort;
-        this.userSchoolResolver = userSchoolResolver;
+        this.schoolUserRepository = schoolUserRepository;
     }
 
     @Override
@@ -141,11 +142,9 @@ public class AcceptSchoolClassUserImportUseCase implements IUseCase<AcceptSchool
     }
 
     private UUID getSchoolId(User currentUser) {
-        var schoolId = userSchoolResolver.findSchoolId(currentUser.getId()).orElse(null);
-        if (schoolId == null) {
-            throw new IllegalStateException("Người dùng hiện tại không thuộc trường nào");
-        }
-        return schoolId;
+        return schoolUserRepository.findByUserId(currentUser.getId())
+            .map(SchoolUser::getSchoolId)
+            .orElseThrow(() -> new IllegalStateException("Người dùng hiện tại không thuộc trường nào"));
     }
 
     private void validateSchool(UUID schoolId) {
@@ -280,7 +279,9 @@ public class AcceptSchoolClassUserImportUseCase implements IUseCase<AcceptSchool
                 if (user.getStatus() != UserStatus.ACTIVE) {
                     errors.add(error("email", "Người dùng không hoạt động"));
                 }
-                if (!Objects.equals(userSchoolResolver.findSchoolId(user.getId()).orElse(null), schoolId)) {
+                if (!Objects.equals(schoolUserRepository.findByUserId(user.getId())
+            .map(SchoolUser::getSchoolId)
+            .orElse(null), schoolId)) {
                     errors.add(error("email", "Người dùng không thuộc trường hiện tại"));
                 }
             }

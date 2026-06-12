@@ -15,7 +15,7 @@ import com.sep.vox.application.port.input.command.CreateSchoolClassCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.schoolclass.CreateSchoolClassResponse;
-import com.sep.vox.application.service.UserSchoolResolver;
+import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolGradeStatus;
 import com.sep.vox.domain.model.user.User;
@@ -23,6 +23,7 @@ import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
@@ -35,7 +36,7 @@ public class CreateSchoolClassUseCase implements IUseCase<CreateSchoolClassComma
     private final SupportedLanguageRepository supportedLanguageRepository;
     private final SchoolGradeRepository schoolGradeRepository;
     private final UserContextPort userContextPort;
-    private final UserSchoolResolver userSchoolResolver;
+    private final SchoolUserRepository schoolUserRepository;
 
     public CreateSchoolClassUseCase(
             SchoolClassRepository schoolClassRepository,
@@ -44,14 +45,14 @@ public class CreateSchoolClassUseCase implements IUseCase<CreateSchoolClassComma
             SupportedLanguageRepository supportedLanguageRepository,
             SchoolGradeRepository schoolGradeRepository,
             UserContextPort userContextPort,
-            UserSchoolResolver userSchoolResolver) {
+            SchoolUserRepository schoolUserRepository) {
         this.schoolClassRepository = schoolClassRepository;
         this.schoolRepository = schoolRepository;
         this.userRepository = userRepository;
         this.supportedLanguageRepository = supportedLanguageRepository;
         this.schoolGradeRepository = schoolGradeRepository;
         this.userContextPort = userContextPort;
-        this.userSchoolResolver = userSchoolResolver;
+        this.schoolUserRepository = schoolUserRepository;
     }
 
     @Override
@@ -109,11 +110,9 @@ public class CreateSchoolClassUseCase implements IUseCase<CreateSchoolClassComma
     }
 
     private UUID getSchoolId(User currentUser) {
-        var schoolId = userSchoolResolver.findSchoolId(currentUser.getId()).orElse(null);
-        if (schoolId == null) {
-            throw new IllegalStateException("Người dùng hiện tại không thuộc trường nào");
-        }
-        return schoolId;
+        return schoolUserRepository.findByUserId(currentUser.getId())
+            .map(SchoolUser::getSchoolId)
+            .orElseThrow(() -> new IllegalStateException("Người dùng hiện tại không thuộc trường nào"));
     }
 
     private void validateSchool(UUID schoolId) {

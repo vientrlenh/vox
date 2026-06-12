@@ -1,14 +1,6 @@
 package com.sep.vox.application.usecase.auth;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.when;
+import com.sep.vox.application.usecase.TestSchoolUserRepository;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -16,8 +8,17 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.RefreshCommand;
@@ -68,13 +69,15 @@ class RefreshUseCaseTests {
             userRoleQueryRepository,
             sessionTokenManagerPort,
             sessionManagerPort,
-            authTokenPort
+            authTokenPort,
+            TestSchoolUserRepository.create()
         );
     }
 
     @Test
     void refresh_should_rotate_token_when_request_is_valid() {
         var userId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
         var sessionId = UUID.randomUUID();
         var oldTokenId = UUID.randomUUID();
         var newTokenId = UUID.randomUUID();
@@ -82,7 +85,7 @@ class RefreshUseCaseTests {
         var deviceSession = activeSession(sessionId, userId, "device-1");
         var oldToken = activeRefreshToken(oldTokenId, sessionId, "old-token-hash");
         var savedNewToken = activeRefreshToken(newTokenId, sessionId, "new-token-hash");
-        var user = activeUser(userId);
+        var user = activeUser(userId, schoolId);
         var roles = List.of(new UserRoleInfo(
             UUID.randomUUID(),
             userId,
@@ -107,7 +110,7 @@ class RefreshUseCaseTests {
             .thenReturn(Optional.of(user));
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId))
             .thenReturn(roles);
-        when(authTokenPort.generateJwtToken(userId.toString(), "test@example.com", List.of("SCHOOL_ADMIN")))
+        when(authTokenPort.generateJwtToken(userId.toString(), schoolId, "test@example.com", List.of("SCHOOL_ADMIN")))
             .thenReturn("access-token");
 
         var result = refreshUseCase.execute(new RefreshCommand("old-refresh-token", "device-1"));
@@ -121,7 +124,7 @@ class RefreshUseCaseTests {
         verify(refreshTokenRepository).markUsedAndReplacedBy(any(UUID.class), any(UUID.class), any(OffsetDateTime.class));
         verify(userRepository).findById(userId);
         verify(userRoleQueryRepository).findByUserIdWithRoleInfo(userId);
-        verify(authTokenPort).generateJwtToken(userId.toString(), "test@example.com", List.of("SCHOOL_ADMIN"));
+        verify(authTokenPort).generateJwtToken(userId.toString(), schoolId, "test@example.com", List.of("SCHOOL_ADMIN"));
     }
 
     @Test
@@ -272,7 +275,8 @@ class RefreshUseCaseTests {
         );
     }
 
-    private static User activeUser(UUID userId) {
+    private static User activeUser(UUID userId, UUID schoolId) {
+        TestSchoolUserRepository.remember(userId, schoolId);
         return new User(
             userId,
             new Email("test@example.com"),

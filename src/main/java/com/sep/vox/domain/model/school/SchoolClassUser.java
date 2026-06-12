@@ -91,5 +91,15 @@ public class SchoolClassUser {
         this.assignedBy = assignedBy;
     }
 
+    public void deactivate(OffsetDateTime leftAt) {
+        this.isActive = false;
+        this.leftAt = leftAt;
+    }
+
+    public void activate() {
+        this.isActive = true;
+        this.leftAt = null;
+    }
+
     
 }

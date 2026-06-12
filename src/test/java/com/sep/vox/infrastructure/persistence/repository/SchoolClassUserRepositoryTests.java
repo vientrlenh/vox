@@ -3,6 +3,7 @@ package com.sep.vox.infrastructure.persistence.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.OffsetDateTime;
+import java.util.Set;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -58,6 +59,33 @@ class SchoolClassUserRepositoryTests {
         assertThat(found).isPresent();
         assertThat(found.get().getUserId()).isEqualTo(userId);
         assertThat(found.get().getSchoolClassId()).isEqualTo(schoolClassId);
+    }
+
+    @Test
+    void whenFindByUserIdInAndSchoolClassIdIn_thenReturnsMatchingMemberships() {
+        var userId = UUID.randomUUID();
+        var anotherUserId = UUID.randomUUID();
+        var classId = UUID.randomUUID();
+        var anotherClassId = UUID.randomUUID();
+        schoolClassUserRepository.save(
+            new SchoolClassUser(userId, classId, true, OffsetDateTime.now(), null, UUID.randomUUID())
+        );
+        schoolClassUserRepository.save(
+            new SchoolClassUser(anotherUserId, anotherClassId, true, OffsetDateTime.now(), null, UUID.randomUUID())
+        );
+        schoolClassUserRepository.save(
+            new SchoolClassUser(UUID.randomUUID(), UUID.randomUUID(), true, OffsetDateTime.now(), null, UUID.randomUUID())
+        );
+
+        var found = schoolClassUserRepository.findByUserIdInAndSchoolClassIdIn(
+            Set.of(userId, anotherUserId),
+            Set.of(classId, anotherClassId)
+        );
+
+        assertThat(found)
+            .hasSize(2)
+            .extracting(membership -> membership.getUserId() + "|" + membership.getSchoolClassId())
+            .containsExactlyInAnyOrder(userId + "|" + classId, anotherUserId + "|" + anotherClassId);
     }
 
     @Test

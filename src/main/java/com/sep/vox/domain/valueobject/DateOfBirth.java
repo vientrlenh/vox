@@ -7,7 +7,7 @@ public record DateOfBirth(
 ) {
     public DateOfBirth {
         if (value != null) {
-            final var ageThresHold = 18;
+            final var ageThresHold = 14;
             final var now = LocalDate.now();
             final var age = now.getYear() - value.getYear();
             if (age < ageThresHold) {

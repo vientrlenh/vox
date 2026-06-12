@@ -1,12 +1,6 @@
 package com.sep.vox.application.usecase.auth;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import com.sep.vox.application.usecase.TestSchoolUserRepository;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -14,8 +8,15 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
 
@@ -62,23 +63,26 @@ public class LoginUseCaseTests {
         sessionTokenManagerPort = mock(SessionTokenManagerPort.class);
         deviceSessionRepository = mock(DeviceSessionRepository.class);
         refreshTokenRepository = mock(RefreshTokenRepository.class);
+        var schoolUserRepository = TestSchoolUserRepository.create();
         loginUseCase = new LoginUseCase(
             authenticationManagerPort,
             userRepository,
             userRoleQueryRepository,
             authTokenPort,
-            sessionTokenManagerPort, 
+            sessionTokenManagerPort,
             deviceSessionRepository,
-            refreshTokenRepository
+            refreshTokenRepository,
+            schoolUserRepository
         );
     }
 
     @Test
     void login_should_return_tokens_when_credentials_are_valid() {
         var userId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
         var sessionId = UUID.randomUUID();
         var roleId = UUID.randomUUID();
-        var user = activeUser(userId);
+        var user = activeUser(userId, schoolId, "test@example.com");
         var deviceSession = new DeviceSession(
             sessionId,
             userId,
@@ -104,7 +108,7 @@ public class LoginUseCaseTests {
             .thenReturn(Optional.of(user));
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId))
             .thenReturn(roles);
-        when(authTokenPort.generateJwtToken(userId.toString(), user.getEmail().value(), List.of("SCHOOL_ADMIN")))
+        when(authTokenPort.generateJwtToken(userId.toString(), schoolId, user.getEmail().value(), List.of("SCHOOL_ADMIN")))
             .thenReturn("access-token");
         when(sessionTokenManagerPort.generateToken())
             .thenReturn(new GeneratedSessionToken("refresh-token", "hashed-refresh-token"));
@@ -120,10 +124,55 @@ public class LoginUseCaseTests {
         verify(authenticationManagerPort).setAuthenticationAndGetUserId("test@example.com", "123456");
         verify(userRepository).findById(userId);
         verify(userRoleQueryRepository).findByUserIdWithRoleInfo(userId);
-        verify(authTokenPort).generateJwtToken(userId.toString(), user.getEmail().value(), List.of("SCHOOL_ADMIN"));
+        verify(authTokenPort).generateJwtToken(userId.toString(), schoolId, user.getEmail().value(), List.of("SCHOOL_ADMIN"));
         verify(sessionTokenManagerPort).generateToken();
         verify(deviceSessionRepository).save(any(DeviceSession.class));
         verify(refreshTokenRepository).save(any(RefreshToken.class));
+    }
+
+    @Test
+    void login_should_generate_token_when_user_has_no_school() {
+        var userId = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var roleId = UUID.randomUUID();
+        var user = activeUser(userId, null, "sysadmin@example.com");
+        var deviceSession = new DeviceSession(
+            sessionId,
+            userId,
+            "device-1",
+            "Chrome on Windows",
+            SessionPlatform.WEB,
+            "203.0.113.10",
+            "JUnit User Agent",
+            null
+        );
+        var roles = List.of(new UserRoleInfo(
+            UUID.randomUUID(),
+            userId,
+            roleId,
+            OffsetDateTime.now(),
+            "SYSTEM_ADMIN",
+            "System admin"
+        ));
+
+        when(authenticationManagerPort.setAuthenticationAndGetUserId("sysadmin@example.com", "123456"))
+            .thenReturn(userId);
+        when(userRepository.findById(userId))
+            .thenReturn(Optional.of(user));
+        when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId))
+            .thenReturn(roles);
+        when(authTokenPort.generateJwtToken(userId.toString(), null, user.getEmail().value(), List.of("SYSTEM_ADMIN")))
+            .thenReturn("access-token");
+        when(sessionTokenManagerPort.generateToken())
+            .thenReturn(new GeneratedSessionToken("refresh-token", "hashed-refresh-token"));
+        when(deviceSessionRepository.save(any(DeviceSession.class)))
+            .thenReturn(deviceSession);
+
+        var result = loginUseCase.execute(validLoginCommand("sysadmin@example.com", "123456"));
+
+        assertThat(result.accessToken()).isEqualTo("access-token");
+        assertThat(result.refreshToken()).isEqualTo("refresh-token");
+        verify(authTokenPort).generateJwtToken(userId.toString(), null, user.getEmail().value(), List.of("SYSTEM_ADMIN"));
     }
 
     @Test
@@ -181,10 +230,11 @@ public class LoginUseCaseTests {
         );
     }
 
-    private User activeUser(UUID userId) {
+    private User activeUser(UUID userId, UUID schoolId, String email) {
+        TestSchoolUserRepository.remember(userId, schoolId);
         return new User(
             userId,
-            new Email("test@example.com"),
+            new Email(email),
             "password-hash",
             new Phone("0987654321"),
             new FullName("Test User"),

@@ -12,6 +12,7 @@ import com.sep.vox.application.port.input.query.ViewSchoolClassDetailsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.schoolclass.SchoolClassResponse;
+import com.sep.vox.application.service.UserSchoolResolver;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
@@ -25,16 +26,19 @@ public class ViewSchoolClassDetailsUseCase implements IUseCase<ViewSchoolClassDe
     private final UserRepository userRepository;
     private final SchoolRepository schoolRepository;
     private final UserContextPort userContextPort;
+    private final UserSchoolResolver userSchoolResolver;
 
     public ViewSchoolClassDetailsUseCase(
             SchoolClassRepository schoolClassRepository,
             UserRepository userRepository,
             SchoolRepository schoolRepository,
-            UserContextPort userContextPort) {
+            UserContextPort userContextPort,
+            UserSchoolResolver userSchoolResolver) {
         this.schoolClassRepository = schoolClassRepository;
         this.userRepository = userRepository;
         this.schoolRepository = schoolRepository;
         this.userContextPort = userContextPort;
+        this.userSchoolResolver = userSchoolResolver;
     }
 
     @Override
@@ -67,7 +71,7 @@ public class ViewSchoolClassDetailsUseCase implements IUseCase<ViewSchoolClassDe
     }
 
     private UUID getSchoolId(User currentUser) {
-        var schoolId = currentUser.getSchoolId();
+        var schoolId = userSchoolResolver.findSchoolId(currentUser.getId()).orElse(null);
         if (schoolId == null) {
             throw new IllegalStateException("Người dùng hiện tại không thuộc trường nào");
         }

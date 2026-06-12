@@ -12,6 +12,7 @@ import com.sep.vox.application.port.input.command.DeleteSchoolClassCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.schoolclass.DeleteSchoolClassResponse;
+import com.sep.vox.application.service.UserSchoolResolver;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
@@ -31,18 +32,21 @@ public class DeleteSchoolClassUseCase implements IUseCase<DeleteSchoolClassComma
     private final SchoolRepository schoolRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
+    private final UserSchoolResolver userSchoolResolver;
 
     public DeleteSchoolClassUseCase(
             SchoolClassRepository schoolClassRepository,
             SchoolClassDependencyRepository schoolClassDependencyRepository,
             SchoolRepository schoolRepository,
             UserRepository userRepository,
-            UserContextPort userContextPort) {
+            UserContextPort userContextPort,
+            UserSchoolResolver userSchoolResolver) {
         this.schoolClassRepository = schoolClassRepository;
         this.schoolClassDependencyRepository = schoolClassDependencyRepository;
         this.schoolRepository = schoolRepository;
         this.userRepository = userRepository;
         this.userContextPort = userContextPort;
+        this.userSchoolResolver = userSchoolResolver;
     }
 
     @Override
@@ -92,7 +96,7 @@ public class DeleteSchoolClassUseCase implements IUseCase<DeleteSchoolClassComma
     }
 
     private UUID getSchoolId(User currentUser) {
-        var schoolId = currentUser.getSchoolId();
+        var schoolId = userSchoolResolver.findSchoolId(currentUser.getId()).orElse(null);
         if (schoolId == null) {
             throw new IllegalStateException("Người dùng hiện tại không thuộc trường nào");
         }

@@ -1,5 +1,7 @@
 package com.sep.vox.application.usecase.schoolclass;
 
+import com.sep.vox.application.usecase.TestUserSchoolResolver;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -76,7 +78,8 @@ class AcceptSchoolClassImportUseCaseTests {
             userRepository,
             schoolRepository,
             userContextPort,
-            jsonSerializationPort
+            jsonSerializationPort,
+            TestUserSchoolResolver.create()
         );
     }
 
@@ -197,7 +200,7 @@ class AcceptSchoolClassImportUseCaseTests {
     private static User activeUser(UUID id, UUID schoolId) {
         var user = new User();
         user.setId(id);
-        user.setSchoolId(schoolId);
+        TestUserSchoolResolver.remember(id, schoolId);
         user.setStatus(UserStatus.ACTIVE);
         return user;
     }
@@ -220,7 +223,6 @@ class AcceptSchoolClassImportUseCaseTests {
     private static SchoolGrade activeGrade(UUID id, UUID schoolId, String code) {
         var grade = new SchoolGrade();
         grade.setId(id);
-        grade.setSchoolId(schoolId);
         grade.setCode(code);
         grade.setStatus(SchoolGradeStatus.ACTIVE);
         return grade;

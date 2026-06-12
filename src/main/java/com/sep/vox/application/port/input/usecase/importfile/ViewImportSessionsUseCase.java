@@ -12,6 +12,7 @@ import com.sep.vox.application.port.input.query.ViewImportSessionsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.importfile.ImportSessionSummaryResponse;
+import com.sep.vox.application.service.UserSchoolResolver;
 import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.importfile.ImportSessionStatus;
@@ -30,18 +31,21 @@ public class ViewImportSessionsUseCase implements IUseCase<ViewImportSessionsQue
     private final SchoolRepository schoolRepository;
     private final UserContextPort userContextPort;
     private final ImportSessionResponseMapper importSessionResponseMapper;
+    private final UserSchoolResolver userSchoolResolver;
 
     public ViewImportSessionsUseCase(
             ImportSessionRepository importSessionRepository,
             UserRepository userRepository,
             SchoolRepository schoolRepository,
             UserContextPort userContextPort,
-            ImportSessionResponseMapper importSessionResponseMapper) {
+            ImportSessionResponseMapper importSessionResponseMapper,
+            UserSchoolResolver userSchoolResolver) {
         this.importSessionRepository = importSessionRepository;
         this.userRepository = userRepository;
         this.schoolRepository = schoolRepository;
         this.userContextPort = userContextPort;
         this.importSessionResponseMapper = importSessionResponseMapper;
+        this.userSchoolResolver = userSchoolResolver;
     }
 
     @Override
@@ -77,7 +81,7 @@ public class ViewImportSessionsUseCase implements IUseCase<ViewImportSessionsQue
     }
 
     private UUID getSchoolId(User currentUser) {
-        var schoolId = currentUser.getSchoolId();
+        var schoolId = userSchoolResolver.findSchoolId(currentUser.getId()).orElse(null);
         if (schoolId == null) {
             throw new IllegalStateException("Người dùng hiện tại không thuộc trường nào");
         }

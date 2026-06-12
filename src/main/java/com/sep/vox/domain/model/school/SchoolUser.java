@@ -71,8 +71,8 @@ public class SchoolUser {
 
     public static SchoolUser create(UUID userId, UUID schoolId, OffsetDateTime now, OffsetDateTime endDate) {
         return new SchoolUser(
-            userId, 
             schoolId, 
+            userId, 
             now, 
             endDate
         );

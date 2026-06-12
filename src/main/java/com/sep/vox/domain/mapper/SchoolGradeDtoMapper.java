@@ -10,9 +10,13 @@ public final class SchoolGradeDtoMapper {
     }
 
     public static SchoolGradeDto toDto(SchoolGrade schoolGrade) {
+        return toDto(schoolGrade, null);
+    }
+
+    public static SchoolGradeDto toDto(SchoolGrade schoolGrade, java.util.UUID schoolId) {
         return new SchoolGradeDto(
             schoolGrade.getId(),
-            schoolGrade.getSchoolId(),
+            schoolId,
             schoolGrade.getCode(),
             schoolGrade.getName(),
             schoolGrade.getDescription(),

@@ -20,6 +20,7 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.importfile.AcceptSchoolClassUserImportResponse;
+import com.sep.vox.application.service.UserSchoolResolver;
 import com.sep.vox.domain.model.importfile.ImportRow;
 import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.model.importfile.ImportSession;
@@ -51,6 +52,7 @@ public class AcceptSchoolClassUserImportUseCase implements IUseCase<AcceptSchool
     private final SchoolRepository schoolRepository;
     private final UserContextPort userContextPort;
     private final JsonSerializationPort jsonSerializationPort;
+    private final UserSchoolResolver userSchoolResolver;
 
     public AcceptSchoolClassUserImportUseCase(
             ImportSessionRepository importSessionRepository,
@@ -60,7 +62,8 @@ public class AcceptSchoolClassUserImportUseCase implements IUseCase<AcceptSchool
             UserRepository userRepository,
             SchoolRepository schoolRepository,
             UserContextPort userContextPort,
-            JsonSerializationPort jsonSerializationPort) {
+            JsonSerializationPort jsonSerializationPort,
+            UserSchoolResolver userSchoolResolver) {
         this.importSessionRepository = importSessionRepository;
         this.importRowRepository = importRowRepository;
         this.schoolClassUserRepository = schoolClassUserRepository;
@@ -69,6 +72,7 @@ public class AcceptSchoolClassUserImportUseCase implements IUseCase<AcceptSchool
         this.schoolRepository = schoolRepository;
         this.userContextPort = userContextPort;
         this.jsonSerializationPort = jsonSerializationPort;
+        this.userSchoolResolver = userSchoolResolver;
     }
 
     @Override
@@ -137,7 +141,7 @@ public class AcceptSchoolClassUserImportUseCase implements IUseCase<AcceptSchool
     }
 
     private UUID getSchoolId(User currentUser) {
-        var schoolId = currentUser.getSchoolId();
+        var schoolId = userSchoolResolver.findSchoolId(currentUser.getId()).orElse(null);
         if (schoolId == null) {
             throw new IllegalStateException("Người dùng hiện tại không thuộc trường nào");
         }
@@ -276,7 +280,7 @@ public class AcceptSchoolClassUserImportUseCase implements IUseCase<AcceptSchool
                 if (user.getStatus() != UserStatus.ACTIVE) {
                     errors.add(error("email", "Người dùng không hoạt động"));
                 }
-                if (!Objects.equals(user.getSchoolId(), schoolId)) {
+                if (!Objects.equals(userSchoolResolver.findSchoolId(user.getId()).orElse(null), schoolId)) {
                     errors.add(error("email", "Người dùng không thuộc trường hiện tại"));
                 }
             }

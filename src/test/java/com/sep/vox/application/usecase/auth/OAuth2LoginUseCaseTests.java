@@ -1,5 +1,7 @@
 package com.sep.vox.application.usecase.auth;
 
+import com.sep.vox.application.usecase.TestUserSchoolResolver;
+
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -57,13 +59,15 @@ class OAuth2LoginUseCaseTests {
         refreshTokenRepository = mock(RefreshTokenRepository.class);
         authTokenPort = mock(AuthTokenPort.class);
         sessionTokenManagerPort = mock(SessionTokenManagerPort.class);
+        var userSchoolResolver = TestUserSchoolResolver.create();
         oAuth2LoginUseCase = new OAuth2LoginUseCase(
             userRepository,
             userRoleQueryRepository,
             deviceSessionRepository,
             refreshTokenRepository,
             authTokenPort,
-            sessionTokenManagerPort
+            sessionTokenManagerPort,
+            userSchoolResolver
         );
     }
 
@@ -186,6 +190,7 @@ class OAuth2LoginUseCaseTests {
     }
 
     private static User activeUser(UUID userId, UUID schoolId) {
+        TestUserSchoolResolver.remember(userId, schoolId);
         return new User(
             userId,
             new Email("student@example.com"),

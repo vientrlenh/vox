@@ -20,6 +20,7 @@ import com.sep.vox.application.port.output.SessionTokenManagerPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.input.auth.LoginResponse;
 import com.sep.vox.application.response.output.GeneratedSessionToken;
+import com.sep.vox.application.service.UserSchoolResolver;
 import com.sep.vox.domain.model.devicesession.DeviceSession;
 import com.sep.vox.domain.model.devicesession.SessionPlatform;
 import com.sep.vox.domain.model.refreshtoken.RefreshToken;
@@ -37,6 +38,7 @@ public class LoginUseCase implements IUseCase<LoginCommand, LoginResponse> {
     private final SessionTokenManagerPort sessionTokenManagerPort;
     private final DeviceSessionRepository deviceSessionRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final UserSchoolResolver userSchoolResolver;
 
     public LoginUseCase(AuthenticationManagerPort authenticationManagerPort, 
                         UserRepository userRepository, 
@@ -44,7 +46,8 @@ public class LoginUseCase implements IUseCase<LoginCommand, LoginResponse> {
                         AuthTokenPort authTokenPort, 
                         SessionTokenManagerPort sessionTokenManagerPort, 
                         DeviceSessionRepository deviceSessionRepository, 
-                        RefreshTokenRepository refreshTokenRepository) {
+                        RefreshTokenRepository refreshTokenRepository,
+                        UserSchoolResolver userSchoolResolver) {
         this.authenticationManagerPort = authenticationManagerPort;
         this.userRepository = userRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
@@ -52,6 +55,7 @@ public class LoginUseCase implements IUseCase<LoginCommand, LoginResponse> {
         this.sessionTokenManagerPort = sessionTokenManagerPort;
         this.deviceSessionRepository = deviceSessionRepository;
         this.refreshTokenRepository = refreshTokenRepository;
+        this.userSchoolResolver = userSchoolResolver;
     }
 
     @Override
@@ -67,7 +71,8 @@ public class LoginUseCase implements IUseCase<LoginCommand, LoginResponse> {
         var userRoles = getUserRoles(user.getId());
         
         var deviceSession = createDeviceSession(userId, command);
-        var accessToken = authTokenPort.generateJwtToken(user.getId().toString(), user.getSchoolId(), user.getEmail().value(), userRoles);
+        var schoolId = userSchoolResolver.findSchoolId(user.getId()).orElse(null);
+        var accessToken = authTokenPort.generateJwtToken(user.getId().toString(), schoolId, user.getEmail().value(), userRoles);
         var sessionToken = sessionTokenManagerPort.generateToken();
         createRefreshToken(deviceSession, sessionToken, now);
 

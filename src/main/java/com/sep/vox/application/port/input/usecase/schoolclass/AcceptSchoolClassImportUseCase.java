@@ -19,6 +19,7 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.importfile.AcceptSchoolClassImportResponse;
+import com.sep.vox.application.service.UserSchoolResolver;
 import com.sep.vox.domain.model.importfile.ImportRow;
 import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.model.importfile.ImportSession;
@@ -51,6 +52,7 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
     private final SchoolRepository schoolRepository;
     private final UserContextPort userContextPort;
     private final JsonSerializationPort jsonSerializationPort;
+    private final UserSchoolResolver userSchoolResolver;
 
     public AcceptSchoolClassImportUseCase(
             ImportSessionRepository importSessionRepository,
@@ -61,7 +63,8 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
             UserRepository userRepository,
             SchoolRepository schoolRepository,
             UserContextPort userContextPort,
-            JsonSerializationPort jsonSerializationPort) {
+            JsonSerializationPort jsonSerializationPort,
+            UserSchoolResolver userSchoolResolver) {
         this.importSessionRepository = importSessionRepository;
         this.importRowRepository = importRowRepository;
         this.schoolClassRepository = schoolClassRepository;
@@ -71,6 +74,7 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
         this.schoolRepository = schoolRepository;
         this.userContextPort = userContextPort;
         this.jsonSerializationPort = jsonSerializationPort;
+        this.userSchoolResolver = userSchoolResolver;
     }
 
     @Override
@@ -139,7 +143,7 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
     }
 
     private UUID getSchoolId(User currentUser) {
-        var schoolId = currentUser.getSchoolId();
+        var schoolId = userSchoolResolver.findSchoolId(currentUser.getId()).orElse(null);
         if (schoolId == null) {
             throw new IllegalStateException("Người dùng hiện tại không thuộc trường nào");
         }

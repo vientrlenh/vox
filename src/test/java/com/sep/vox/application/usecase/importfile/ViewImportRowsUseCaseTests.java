@@ -1,5 +1,7 @@
 package com.sep.vox.application.usecase.importfile;
 
+import com.sep.vox.application.usecase.TestUserSchoolResolver;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
@@ -60,7 +62,8 @@ class ViewImportRowsUseCaseTests {
             userRepository,
             schoolRepository,
             userContextPort,
-            new ImportRowResponseMapper(jsonSerializationPort)
+            new ImportRowResponseMapper(jsonSerializationPort),
+            TestUserSchoolResolver.create()
         );
     }
 
@@ -215,7 +218,7 @@ class ViewImportRowsUseCaseTests {
     private static User activeUser(UUID id, UUID schoolId) {
         var user = new User();
         user.setId(id);
-        user.setSchoolId(schoolId);
+        TestUserSchoolResolver.remember(id, schoolId);
         user.setStatus(UserStatus.ACTIVE);
         return user;
     }

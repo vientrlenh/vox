@@ -1,5 +1,7 @@
 package com.sep.vox.application.usecase.auth;
 
+import com.sep.vox.application.usecase.TestUserSchoolResolver;
+
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -67,7 +69,8 @@ class RefreshUseCaseTests {
             userRoleQueryRepository,
             sessionTokenManagerPort,
             sessionManagerPort,
-            authTokenPort
+            authTokenPort,
+            TestUserSchoolResolver.create()
         );
     }
 
@@ -273,6 +276,7 @@ class RefreshUseCaseTests {
     }
 
     private static User activeUser(UUID userId, UUID schoolId) {
+        TestUserSchoolResolver.remember(userId, schoolId);
         return new User(
             userId,
             new Email("test@example.com"),

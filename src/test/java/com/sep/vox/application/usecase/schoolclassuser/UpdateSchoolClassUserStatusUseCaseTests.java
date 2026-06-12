@@ -1,5 +1,7 @@
 package com.sep.vox.application.usecase.schoolclassuser;
 
+import com.sep.vox.application.usecase.TestUserSchoolResolver;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -53,7 +55,8 @@ class UpdateSchoolClassUserStatusUseCaseTests {
             schoolClassRepository,
             schoolRepository,
             userRepository,
-            userContextPort
+            userContextPort,
+            TestUserSchoolResolver.create()
         );
     }
 
@@ -145,7 +148,7 @@ class UpdateSchoolClassUserStatusUseCaseTests {
     private static User activeUser(UUID id, UUID schoolId) {
         var user = new User();
         user.setId(id);
-        user.setSchoolId(schoolId);
+        TestUserSchoolResolver.remember(id, schoolId);
         user.setStatus(UserStatus.ACTIVE);
         return user;
     }

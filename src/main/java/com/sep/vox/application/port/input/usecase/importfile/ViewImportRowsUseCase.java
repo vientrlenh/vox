@@ -13,6 +13,7 @@ import com.sep.vox.application.port.input.query.ViewImportRowsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.importfile.ImportRowResponse;
+import com.sep.vox.application.service.UserSchoolResolver;
 import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.importfile.ImportRowStatus;
@@ -33,6 +34,7 @@ public class ViewImportRowsUseCase implements IUseCase<ViewImportRowsQuery, Page
     private final SchoolRepository schoolRepository;
     private final UserContextPort userContextPort;
     private final ImportRowResponseMapper importRowResponseMapper;
+    private final UserSchoolResolver userSchoolResolver;
 
     public ViewImportRowsUseCase(
             ImportSessionRepository importSessionRepository,
@@ -40,13 +42,15 @@ public class ViewImportRowsUseCase implements IUseCase<ViewImportRowsQuery, Page
             UserRepository userRepository,
             SchoolRepository schoolRepository,
             UserContextPort userContextPort,
-            ImportRowResponseMapper importRowResponseMapper) {
+            ImportRowResponseMapper importRowResponseMapper,
+            UserSchoolResolver userSchoolResolver) {
         this.importSessionRepository = importSessionRepository;
         this.importRowRepository = importRowRepository;
         this.userRepository = userRepository;
         this.schoolRepository = schoolRepository;
         this.userContextPort = userContextPort;
         this.importRowResponseMapper = importRowResponseMapper;
+        this.userSchoolResolver = userSchoolResolver;
     }
 
     @Override
@@ -86,7 +90,7 @@ public class ViewImportRowsUseCase implements IUseCase<ViewImportRowsQuery, Page
     }
 
     private UUID getSchoolId(User currentUser) {
-        var schoolId = currentUser.getSchoolId();
+        var schoolId = userSchoolResolver.findSchoolId(currentUser.getId()).orElse(null);
         if (schoolId == null) {
             throw new IllegalStateException("Người dùng hiện tại không thuộc trường nào");
         }

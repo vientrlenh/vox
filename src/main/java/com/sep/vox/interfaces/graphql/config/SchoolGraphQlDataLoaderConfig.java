@@ -94,8 +94,10 @@ public class SchoolGraphQlDataLoaderConfig {
             Mono.fromSupplier(() -> {
                 Map<SchoolClassGradeKey, SchoolGradeDto> result = new HashMap<>();
                 keys.forEach(key -> schoolGradeRepository.findById(key.schoolGradeId())
-                    .filter(grade -> key.schoolId().equals(grade.getSchoolId()))
-                    .map(SchoolGradeDtoMapper::toDto)
+                    .filter(grade -> schoolGradeRepository.findBySchoolIdAndCode(key.schoolId(), grade.getCode())
+                        .map(schoolGrade -> schoolGrade.getId().equals(grade.getId()))
+                        .orElse(false))
+                    .map(grade -> SchoolGradeDtoMapper.toDto(grade, key.schoolId()))
                     .ifPresent(grade -> result.put(key, grade)));
                 return result;
             })

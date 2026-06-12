@@ -29,6 +29,7 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.output.GeneratedPasswordSetUpToken;
 import com.sep.vox.domain.model.passwordsetuptoken.PasswordSetUpToken;
 import com.sep.vox.domain.model.school.School;
+import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.Role;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserRole;
@@ -36,6 +37,7 @@ import com.sep.vox.domain.repository.PasswordSetUpTokenRepository;
 import com.sep.vox.domain.repository.RegisterFormRepository;
 import com.sep.vox.domain.repository.RoleRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.repository.UserRoleRepository;
 import com.sep.vox.domain.valueobject.RoleCode;
@@ -44,6 +46,7 @@ public class ApproveRegisterFormUseCaseTests {
 
     private UserRepository userRepository;
     private SchoolRepository schoolRepository;
+    private SchoolUserRepository schoolUserRepository;
     private RegisterFormRepository registerFormRepository;
     private RoleRepository roleRepository;
     private UserRoleRepository userRoleRepository;
@@ -57,6 +60,7 @@ public class ApproveRegisterFormUseCaseTests {
     void setUp() {
         userRepository = mock(UserRepository.class);
         schoolRepository = mock(SchoolRepository.class);
+        schoolUserRepository = mock(SchoolUserRepository.class);
         registerFormRepository = mock(RegisterFormRepository.class);
         roleRepository = mock(RoleRepository.class);
         userRoleRepository = mock(UserRoleRepository.class);
@@ -68,6 +72,7 @@ public class ApproveRegisterFormUseCaseTests {
         approveRegisterFormUseCase = new ApproveRegisterFormUseCase(
             userRepository,
             schoolRepository,
+            schoolUserRepository,
             registerFormRepository,
             roleRepository,
             userRoleRepository,
@@ -104,6 +109,7 @@ public class ApproveRegisterFormUseCaseTests {
             return user;
         });
         when(userRoleRepository.save(any(UserRole.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(schoolUserRepository.save(any(SchoolUser.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(passwordSetUpTokenPort.generateToken()).thenReturn(token);
         when(passwordSetUpTokenRepository.save(any(PasswordSetUpToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -150,6 +156,11 @@ public class ApproveRegisterFormUseCaseTests {
         verify(userRoleRepository).save(userRoleCaptor.capture());
         assertThat(userRoleCaptor.getValue().getUserId()).isEqualTo(schoolAdminId);
         assertThat(userRoleCaptor.getValue().getRoleId()).isEqualTo(roleId);
+
+        var schoolUserCaptor = ArgumentCaptor.forClass(SchoolUser.class);
+        verify(schoolUserRepository).save(schoolUserCaptor.capture());
+        assertThat(schoolUserCaptor.getValue().getSchoolId()).isEqualTo(schoolId);
+        assertThat(schoolUserCaptor.getValue().getUserId()).isEqualTo(schoolAdminId);
 
         var passwordTokenCaptor = ArgumentCaptor.forClass(PasswordSetUpToken.class);
         verify(passwordSetUpTokenRepository).save(passwordTokenCaptor.capture());

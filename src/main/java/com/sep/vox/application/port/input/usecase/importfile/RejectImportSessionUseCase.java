@@ -13,6 +13,7 @@ import com.sep.vox.application.port.input.command.RejectImportSessionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.importfile.RejectImportSessionResponse;
+import com.sep.vox.application.service.UserSchoolResolver;
 import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.user.User;
@@ -28,16 +29,19 @@ public class RejectImportSessionUseCase implements IUseCase<RejectImportSessionC
     private final UserRepository userRepository;
     private final SchoolRepository schoolRepository;
     private final UserContextPort userContextPort;
+    private final UserSchoolResolver userSchoolResolver;
 
     public RejectImportSessionUseCase(
             ImportSessionRepository importSessionRepository,
             UserRepository userRepository,
             SchoolRepository schoolRepository,
-            UserContextPort userContextPort) {
+            UserContextPort userContextPort,
+            UserSchoolResolver userSchoolResolver) {
         this.importSessionRepository = importSessionRepository;
         this.userRepository = userRepository;
         this.schoolRepository = schoolRepository;
         this.userContextPort = userContextPort;
+        this.userSchoolResolver = userSchoolResolver;
     }
 
     @Override
@@ -80,7 +84,7 @@ public class RejectImportSessionUseCase implements IUseCase<RejectImportSessionC
     }
 
     private UUID getSchoolId(User currentUser) {
-        var schoolId = currentUser.getSchoolId();
+        var schoolId = userSchoolResolver.findSchoolId(currentUser.getId()).orElse(null);
         if (schoolId == null) {
             throw new IllegalStateException("Người dùng hiện tại không thuộc trường nào");
         }

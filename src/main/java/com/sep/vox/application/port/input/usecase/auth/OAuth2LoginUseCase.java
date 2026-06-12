@@ -17,6 +17,7 @@ import com.sep.vox.application.port.output.SessionTokenManagerPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.input.auth.LoginResponse;
 import com.sep.vox.application.response.output.GeneratedSessionToken;
+import com.sep.vox.application.service.UserSchoolResolver;
 import com.sep.vox.domain.model.devicesession.DeviceSession;
 import com.sep.vox.domain.model.devicesession.SessionPlatform;
 import com.sep.vox.domain.model.refreshtoken.RefreshToken;
@@ -34,15 +35,17 @@ public class OAuth2LoginUseCase implements IUseCase<OAuth2LoginCommand, LoginRes
     private final RefreshTokenRepository refreshTokenRepository;
     private final AuthTokenPort authTokenPort;
     private final SessionTokenManagerPort sessionTokenManagerPort;
+    private final UserSchoolResolver userSchoolResolver;
 
     
-    public OAuth2LoginUseCase(UserRepository userRepository, UserRoleQueryRepository userRoleQueryRepository, DeviceSessionRepository deviceSessionRepository, RefreshTokenRepository refreshTokenRepository, AuthTokenPort authTokenPort, SessionTokenManagerPort sessionTokenManagerPort) {
+    public OAuth2LoginUseCase(UserRepository userRepository, UserRoleQueryRepository userRoleQueryRepository, DeviceSessionRepository deviceSessionRepository, RefreshTokenRepository refreshTokenRepository, AuthTokenPort authTokenPort, SessionTokenManagerPort sessionTokenManagerPort, UserSchoolResolver userSchoolResolver) {
         this.userRepository = userRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
         this.deviceSessionRepository = deviceSessionRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.authTokenPort = authTokenPort;
         this.sessionTokenManagerPort = sessionTokenManagerPort;
+        this.userSchoolResolver = userSchoolResolver;
     }
 
     @Override
@@ -58,7 +61,8 @@ public class OAuth2LoginUseCase implements IUseCase<OAuth2LoginCommand, LoginRes
         var now = OffsetDateTime.now();
         var userRoles = getUserRoles(user.getId());
         var deviceSession = createDeviceSession(user.getId(), input);
-        var accessToken = authTokenPort.generateJwtToken(user.getId().toString(), user.getSchoolId(), user.getEmail().value(), userRoles);
+        var schoolId = userSchoolResolver.findSchoolId(user.getId()).orElse(null);
+        var accessToken = authTokenPort.generateJwtToken(user.getId().toString(), schoolId, user.getEmail().value(), userRoles);
         var sessionToken = sessionTokenManagerPort.generateToken();
         createRefreshToken(deviceSession, sessionToken, now);
 

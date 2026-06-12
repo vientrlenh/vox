@@ -18,6 +18,7 @@ import com.sep.vox.application.port.output.SessionTokenManagerPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.input.auth.RefreshResponse;
 import com.sep.vox.application.response.output.GeneratedSessionToken;
+import com.sep.vox.application.service.UserSchoolResolver;
 import com.sep.vox.domain.model.devicesession.DeviceSession;
 import com.sep.vox.domain.model.refreshtoken.RefreshToken;
 import com.sep.vox.domain.repository.DeviceSessionRepository;
@@ -34,9 +35,10 @@ public class RefreshUseCase implements IUseCase<RefreshCommand, RefreshResponse>
     private final SessionTokenManagerPort sessionTokenManagerPort;
     private final SessionManagerPort sessionManagerPort;
     private final AuthTokenPort authTokenPort;
+    private final UserSchoolResolver userSchoolResolver;
 
 
-    public RefreshUseCase(DeviceSessionRepository deviceSessionRepository, RefreshTokenRepository refreshTokenRepository, UserRepository userRepository, UserRoleQueryRepository userRoleQueryRepository, SessionTokenManagerPort sessionTokenManagerPort, SessionManagerPort sessionManagerPort, AuthTokenPort authTokenPort) {
+    public RefreshUseCase(DeviceSessionRepository deviceSessionRepository, RefreshTokenRepository refreshTokenRepository, UserRepository userRepository, UserRoleQueryRepository userRoleQueryRepository, SessionTokenManagerPort sessionTokenManagerPort, SessionManagerPort sessionManagerPort, AuthTokenPort authTokenPort, UserSchoolResolver userSchoolResolver) {
         this.deviceSessionRepository = deviceSessionRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.userRepository = userRepository;
@@ -44,6 +46,7 @@ public class RefreshUseCase implements IUseCase<RefreshCommand, RefreshResponse>
         this.sessionTokenManagerPort = sessionTokenManagerPort;
         this.sessionManagerPort = sessionManagerPort;
         this.authTokenPort = authTokenPort;
+        this.userSchoolResolver = userSchoolResolver;
     }
 
     @Override
@@ -67,7 +70,8 @@ public class RefreshUseCase implements IUseCase<RefreshCommand, RefreshResponse>
 
         var user = userRepository.findById(deviceSession.getUserId())
             .orElseThrow(() -> new UnauthorizedException("Token yêu cầu không hợp lệ"));
-        var accessToken = authTokenPort.generateJwtToken(user.getId().toString(), user.getSchoolId(), user.getEmail().value(), getUserRoles(user.getId()));
+        var schoolId = userSchoolResolver.findSchoolId(user.getId()).orElse(null);
+        var accessToken = authTokenPort.generateJwtToken(user.getId().toString(), schoolId, user.getEmail().value(), getUserRoles(user.getId()));
         return RefreshResponseMapper.toResponse(accessToken, newRefreshToken.rawToken());
     }
     

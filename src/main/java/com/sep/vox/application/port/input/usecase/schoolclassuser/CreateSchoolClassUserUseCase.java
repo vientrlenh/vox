@@ -13,6 +13,7 @@ import com.sep.vox.application.port.input.command.CreateSchoolClassUserCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.schoolclassuser.CreateSchoolClassUserResponse;
+import com.sep.vox.application.service.UserSchoolResolver;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.model.school.SchoolClassUser;
@@ -31,18 +32,21 @@ public class CreateSchoolClassUserUseCase implements IUseCase<CreateSchoolClassU
     private final SchoolRepository schoolRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
+    private final UserSchoolResolver userSchoolResolver;
 
     public CreateSchoolClassUserUseCase(
             SchoolClassUserRepository schoolClassUserRepository,
             SchoolClassRepository schoolClassRepository,
             SchoolRepository schoolRepository,
             UserRepository userRepository,
-            UserContextPort userContextPort) {
+            UserContextPort userContextPort,
+            UserSchoolResolver userSchoolResolver) {
         this.schoolClassUserRepository = schoolClassUserRepository;
         this.schoolClassRepository = schoolClassRepository;
         this.schoolRepository = schoolRepository;
         this.userRepository = userRepository;
         this.userContextPort = userContextPort;
+        this.userSchoolResolver = userSchoolResolver;
     }
 
     @Override
@@ -98,7 +102,7 @@ public class CreateSchoolClassUserUseCase implements IUseCase<CreateSchoolClassU
     }
 
     private UUID getSchoolId(User currentUser) {
-        var schoolId = currentUser.getSchoolId();
+        var schoolId = userSchoolResolver.findSchoolId(currentUser.getId()).orElse(null);
         if (schoolId == null) {
             throw new IllegalStateException("Người dùng hiện tại không thuộc trường nào");
         }
@@ -137,7 +141,7 @@ public class CreateSchoolClassUserUseCase implements IUseCase<CreateSchoolClassU
         if (targetUser.getStatus() != UserStatus.ACTIVE) {
             throw new IllegalStateException("Người dùng không hoạt động");
         }
-        if (!Objects.equals(targetUser.getSchoolId(), schoolId)) {
+        if (!Objects.equals(userSchoolResolver.findSchoolId(targetUser.getId()).orElse(null), schoolId)) {
             throw new IllegalArgumentException("Người dùng không thuộc trường hiện tại");
         }
     }

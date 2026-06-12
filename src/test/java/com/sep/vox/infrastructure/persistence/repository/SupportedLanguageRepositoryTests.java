@@ -3,6 +3,7 @@ package com.sep.vox.infrastructure.persistence.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.OffsetDateTime;
+import java.util.Set;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -61,6 +62,19 @@ class SupportedLanguageRepositoryTests {
 
         assertThat(found).isPresent();
         assertThat(found.get().getName()).isEqualTo("Japanese");
+    }
+
+    @Test
+    void whenFindByCodeIn_thenReturnsMatchingSupportedLanguages() {
+        supportedLanguageRepository.save(newSupportedLanguage("KO", "Korean"));
+        supportedLanguageRepository.save(newSupportedLanguage("IT", "Italian"));
+
+        var found = supportedLanguageRepository.findByCodeIn(Set.of("KO", "IT", "MISSING"));
+
+        assertThat(found)
+            .hasSize(2)
+            .extracting(language -> language.getCode().value())
+            .containsExactlyInAnyOrder("KO", "IT");
     }
 
     @Test

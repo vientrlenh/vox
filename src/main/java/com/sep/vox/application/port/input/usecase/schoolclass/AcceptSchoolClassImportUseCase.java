@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.schoolclass;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -24,8 +25,11 @@ import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
+import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.school.SchoolClass;
+import com.sep.vox.domain.model.school.SchoolGrade;
 import com.sep.vox.domain.model.school.SchoolGradeStatus;
+import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.ImportRowRepository;
@@ -33,6 +37,7 @@ import com.sep.vox.domain.repository.ImportSessionRepository;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
@@ -51,6 +56,7 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
     private final SchoolRepository schoolRepository;
     private final UserContextPort userContextPort;
     private final JsonSerializationPort jsonSerializationPort;
+    private final SchoolUserRepository schoolUserRepository;
 
     public AcceptSchoolClassImportUseCase(
             ImportSessionRepository importSessionRepository,
@@ -61,7 +67,8 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
             UserRepository userRepository,
             SchoolRepository schoolRepository,
             UserContextPort userContextPort,
-            JsonSerializationPort jsonSerializationPort) {
+            JsonSerializationPort jsonSerializationPort,
+            SchoolUserRepository schoolUserRepository) {
         this.importSessionRepository = importSessionRepository;
         this.importRowRepository = importRowRepository;
         this.schoolClassRepository = schoolClassRepository;
@@ -71,6 +78,7 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
         this.schoolRepository = schoolRepository;
         this.userContextPort = userContextPort;
         this.jsonSerializationPort = jsonSerializationPort;
+        this.schoolUserRepository = schoolUserRepository;
     }
 
     @Override
@@ -139,11 +147,9 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
     }
 
     private UUID getSchoolId(User currentUser) {
-        var schoolId = currentUser.getSchoolId();
-        if (schoolId == null) {
-            throw new IllegalStateException("Người dùng hiện tại không thuộc trường nào");
-        }
-        return schoolId;
+        return schoolUserRepository.findByUserId(currentUser.getId())
+            .map(SchoolUser::getSchoolId)
+            .orElseThrow(() -> new IllegalStateException("Người dùng hiện tại không thuộc trường nào"));
     }
 
     private void validateSchool(UUID schoolId) {
@@ -202,14 +208,32 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
     private long processRows(List<ImportRow> rows, Map<String, String> confirmedMapping, UUID schoolId, UUID currentUserId, OffsetDateTime now) {
         var importedRows = 0L;
         var seenCodes = new HashSet<String>();
+        var rowContexts = new ArrayList<RowContext>();
+        var classCodes = new HashSet<String>();
+        var languageCodes = new HashSet<String>();
+        var schoolGradeCodes = new HashSet<String>();
 
         for (var row : rows) {
             var rawData = jsonSerializationPort.toStringMap(row.getRawDataJson());
             var mappedData = mapRawData(rawData, confirmedMapping);
             var normalized = normalize(mappedData);
-            var errors = validateRow(normalized, schoolId, seenCodes);
-
             row.setMappedDataJson(jsonSerializationPort.toJson(normalized));
+            rowContexts.add(new RowContext(row, normalized));
+
+            addIfPresent(classCodes, normalized.get("code"));
+            addIfPresent(languageCodes, normalized.get("languageCode"));
+            addIfPresent(schoolGradeCodes, normalized.get("schoolGradeCode"));
+        }
+
+        var existingClassesByCode = findExistingClassesByCode(schoolId, classCodes);
+        var languagesByCode = findLanguagesByCode(languageCodes);
+        var gradesByCode = findGradesByCode(schoolId, schoolGradeCodes);
+
+        for (var rowContext : rowContexts) {
+            var row = rowContext.row();
+            var normalized = rowContext.normalized();
+            var errors = validateRow(normalized, seenCodes, existingClassesByCode, languagesByCode, gradesByCode);
+
             if (!errors.isEmpty()) {
                 row.setErrorsJson(jsonSerializationPort.toJson(errors));
                 row.setStatus(ImportRowStatus.INVALID);
@@ -217,10 +241,12 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
             }
 
             try {
+                var language = languagesByCode.get(normalized.get("languageCode"));
+                var schoolGrade = gradesByCode.get(normalized.get("schoolGradeCode"));
                 var schoolClass = SchoolClass.create(
                     schoolId,
-                    supportedLanguageRepository.findByCode(normalized.get("languageCode")).orElseThrow().getId(),
-                    schoolGradeRepository.findBySchoolIdAndCode(schoolId, normalized.get("schoolGradeCode")).orElseThrow().getId(),
+                    language.getId(),
+                    schoolGrade.getId(),
                     normalized.get("code"),
                     normalized.get("name"),
                     normalized.get("description"),
@@ -238,6 +264,27 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
         }
 
         return importedRows;
+    }
+
+    private Map<String, SchoolClass> findExistingClassesByCode(UUID schoolId, Set<String> codes) {
+        var existingClassesByCode = new LinkedHashMap<String, SchoolClass>();
+        schoolClassRepository.findBySchoolIdAndCodeIn(schoolId, codes)
+            .forEach(schoolClass -> existingClassesByCode.putIfAbsent(schoolClass.getCode().value(), schoolClass));
+        return existingClassesByCode;
+    }
+
+    private Map<String, SupportedLanguage> findLanguagesByCode(Set<String> codes) {
+        var languagesByCode = new LinkedHashMap<String, SupportedLanguage>();
+        supportedLanguageRepository.findByCodeIn(codes)
+            .forEach(language -> languagesByCode.putIfAbsent(language.getCode().value(), language));
+        return languagesByCode;
+    }
+
+    private Map<String, SchoolGrade> findGradesByCode(UUID schoolId, Set<String> codes) {
+        var gradesByCode = new LinkedHashMap<String, SchoolGrade>();
+        schoolGradeRepository.findBySchoolIdAndCodeIn(schoolId, codes)
+            .forEach(grade -> gradesByCode.putIfAbsent(grade.getCode(), grade));
+        return gradesByCode;
     }
 
     private Map<String, String> mapRawData(Map<String, String> rawData, Map<String, String> confirmedMapping) {
@@ -264,8 +311,10 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
         return normalized;
     }
 
-    private List<Map<String, String>> validateRow(Map<String, String> mappedData, UUID schoolId, Set<String> seenCodes) {
-        var errors = new java.util.ArrayList<Map<String, String>>();
+    private List<Map<String, String>> validateRow(Map<String, String> mappedData, Set<String> seenCodes,
+            Map<String, SchoolClass> existingClassesByCode, Map<String, SupportedLanguage> languagesByCode,
+            Map<String, SchoolGrade> gradesByCode) {
+        var errors = new ArrayList<Map<String, String>>();
         addMissingError(errors, mappedData, "code", "Mã lớp không được để trống");
         addMissingError(errors, mappedData, "name", "ên lớp không được để trống");
         addMissingError(errors, mappedData, "languageCode", "Mã ngôn ngữ không được để trống");
@@ -275,27 +324,27 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
         if (isPresent(code)) {
             if (!seenCodes.add(code)) {
                 errors.add(error("code", "Mã lớp bị trùng trong file import"));
-            } else if (schoolClassRepository.findBySchoolIdAndCode(schoolId, code).isPresent()) {
+            } else if (existingClassesByCode.containsKey(code)) {
                 errors.add(error("code", "Mã lớp đã tồn tại trong hệ thống"));
             }
         }
 
         var languageCode = mappedData.get("languageCode");
         if (isPresent(languageCode)) {
-            var language = supportedLanguageRepository.findByCode(languageCode);
-            if (language.isEmpty()) {
+            var language = languagesByCode.get(languageCode);
+            if (language == null) {
                 errors.add(error("languageCode", "Không tìm thấy ngôn ngữ"));
-            } else if (!language.get().isActive()) {
+            } else if (!language.isActive()) {
                 errors.add(error("languageCode", "Ngôn ngữ không hoạt động"));
             }
         }
 
         var schoolGradeCode = mappedData.get("schoolGradeCode");
         if (isPresent(schoolGradeCode)) {
-            var schoolGrade = schoolGradeRepository.findBySchoolIdAndCode(schoolId, schoolGradeCode);
-            if (schoolGrade.isEmpty()) {
+            var schoolGrade = gradesByCode.get(schoolGradeCode);
+            if (schoolGrade == null) {
                 errors.add(error("schoolGradeCode", "Không tìm thấy khối học"));
-            } else if (schoolGrade.get().getStatus() != SchoolGradeStatus.ACTIVE) {
+            } else if (schoolGrade.getStatus() != SchoolGradeStatus.ACTIVE) {
                 errors.add(error("schoolGradeCode", "Khối học không hoạt động"));
             }
         }
@@ -313,7 +362,16 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
         return value != null && !value.isBlank();
     }
 
+    private void addIfPresent(Set<String> values, String value) {
+        if (isPresent(value)) {
+            values.add(value);
+        }
+    }
+
     private Map<String, String> error(String field, String message) {
         return Map.of("field", field, "message", message);
+    }
+
+    private record RowContext(ImportRow row, Map<String, String> normalized) {
     }
 }

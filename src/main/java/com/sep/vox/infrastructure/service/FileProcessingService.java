@@ -220,6 +220,10 @@ public class FileProcessingService implements FileProcessingPort {
                 "classCode", List.of("classCode", "class code", "mã lớp", "ma lop", "lớp", "lop"),
                 "dateOfBirth", List.of("dateOfBirth", "date of birth", "birthday", "dob", "ngày sinh", "ngay sinh")
             );
+            case SCHOOL_CLASS_USER -> Map.of(
+                "email", List.of("email", "mail", "email address", "địa chỉ email", "dia chi email"),
+                "classCode", List.of("classCode", "class code", "mã lớp", "ma lop", "lớp", "lop")
+            );
         };
     }
 

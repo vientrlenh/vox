@@ -15,7 +15,6 @@ import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolClassMapper;
-import com.sep.vox.infrastructure.persistence.mapper.SchoolMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolClassRepository;
 
 @Repository
@@ -60,14 +59,23 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
             pageRequest.size(),
             Sort.by(Sort.Direction.DESC, "createdAt").and(Sort.by(Sort.Direction.ASC, "id"))
         );
-        var page = springDataSchoolClassRepository.findBySchoolIdWithFilters(
-            schoolId,
-            blankToNull(search),
-            valueOf(status),
-            languageId,
-            schoolGradeId,
-            pageable
-        );
+        var normalizedSearch = blankToNull(search);
+        var page = normalizedSearch == null
+            ? springDataSchoolClassRepository.findBySchoolIdWithFilters(
+                schoolId,
+                valueOf(status),
+                languageId,
+                schoolGradeId,
+                pageable
+            )
+            : springDataSchoolClassRepository.findBySchoolIdWithSearchAndFilters(
+                schoolId,
+                "%" + normalizedSearch.toLowerCase() + "%",
+                valueOf(status),
+                languageId,
+                schoolGradeId,
+                pageable
+            );
         return new PageResult<>(
             page.getContent().stream()
                 .map(SchoolClassMapper::toDomain)
@@ -87,8 +95,13 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
 
     @Override
     public List<SchoolClass> findBySchoolIdAndCodeIn(UUID schoolId, Collection<String> codes) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'findBySchoolIdAndCodeIn'");
+        if (schoolId == null || codes == null || codes.isEmpty()) {
+            return List.of();
+        }
+        return springDataSchoolClassRepository.findBySchoolIdAndCodeIn(schoolId, codes)
+            .stream()
+            .map(SchoolClassMapper::toDomain)
+            .toList();
     }
 
     @Override

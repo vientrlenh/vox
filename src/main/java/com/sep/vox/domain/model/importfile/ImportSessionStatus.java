@@ -6,5 +6,6 @@ public enum ImportSessionStatus {
     IMPORTING, 
     COMPLETED, 
     FAILED, 
-    EXPIRED
+    EXPIRED,
+    CANCELLED
 }

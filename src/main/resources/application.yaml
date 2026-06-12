@@ -8,14 +8,31 @@ spring:
   graphql:
     graphiql:
       enabled: true
-  
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        acks: all
+        client.id: ${KAFKA_CLIENT_ID:vox}
+    consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+        spring.json.value.default.type: com.fasterxml.jackson.databind.JsonNode
+      auto-offset-reset: earliest
+    listener:
+      ack-mode: manual_immediate
 
   data:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       timeout: ${REDIS_TIMEOUT:2s}
-      
+
   mail:
     host: smtp.gmail.com
     port: 587
@@ -32,13 +49,13 @@ spring:
     oauth2:
       client:
         registration:
-          google: 
+          google:
             client-id: ${GOOGLE_CLIENT_ID}
             client-secret: ${GOOGLE_CLIENT_SECRET}
             scope:
               - profile
               - email
-          
+
   datasource:
     url: jdbc:postgresql://${DB_URL}/${DB_NAME}
     username: ${DB_USER}
@@ -52,13 +69,25 @@ spring:
       ddl-auto: update
     show-sql: true
 
+  storage:
+    provider: ${STORAGE_PROVIDER:}
+    s3:
+      bucket: ${AWS_S3_BUCKET:}
+      region: ${AWS_REGION:ap-southeast-1}
+      endpoint: ${AWS_S3_ENDPOINT:}
+      access-key: ${AWS_ACCESS_KEY_ID:}
+      secret-key: ${AWS_SECRET_ACCESS_KEY:}
+      key-prefix: ${AWS_S3_KEY_PREFIX:}
+      public-base-url: ${AWS_S3_PUBLIC_BASE_URL:}
+      path-style-access-enabled: ${AWS_S3_PATH_STYLE:false}
+
 springdoc:
   swagger-ui:
     path: /api-doc.html
     enabled: true
   api-docs:
     path: /v3/api-spec
-  
+
 
 jwt:
   secret: ${JWT_SECRET}
@@ -76,6 +105,19 @@ server:
   forward-headers-strategy: framework
 
 app:
+  external-events:
+    topic-prefix: ${KAFKA_TOPIC_PREFIX:vox}
+    consumer-groups:
+      user-service:
+        group-id: ${KAFKA_USER_GROUP_ID:vox-user}
+        topics: ${KAFKA_CONSUMER_TOPIC_USER:user-events}
+      notification-service:
+        group-id: ${KAFKA_NOTIFICATION_GROUP_ID:vox-notification}
+        topics: ${KAFKA_CONSUMER_TOPIC_NOTIFICATION:notifications}
+      audit-service:
+        group-id: ${KAFKA_AUDIT_GROUP_ID:vox-audit}
+        topics: ${KAFKA_CONSUMER_TOPIC_AUDIT:audit-events}
+
   frontend:
     password-setup-url: ${PASSWORD_SETUP_URL}
     oauth2-success-url: ${OAUTH2_SUCCESS_URL}

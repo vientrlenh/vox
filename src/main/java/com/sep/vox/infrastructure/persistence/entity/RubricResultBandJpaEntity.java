@@ -16,13 +16,11 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "rubric_result_bands", indexes = {
-    @Index(columnList = "rubric_version_id, code", name = "idx_rubric_result_bands_version_id_code", unique = true),
-    @Index(columnList = "rubric_version_id, framework_result_band_id", name = "idx_rubric_result_bands_version_framework_band", unique = true),
-    @Index(columnList = "framework_result_band_id", name = "idx_rubric_result_bands_framework_band")
+    @Index(columnList = "rubric_version_id, code", name = "idx_rubric_result_bands_version_id_code", unique = true)
 }, check = {
     @CheckConstraint(
-        name = "chk_rubric_result_bands_mapped_score_min_max_valid", 
-        constraint = "mapped_score_min <= mapped_score_max"
+        name = "chk_rubric_result_bands_score_min_max_valid", 
+        constraint = "score_min <= score_max"
     )
 })
 public class RubricResultBandJpaEntity {
@@ -40,9 +38,6 @@ public class RubricResultBandJpaEntity {
     @Column(name = "rubric_version_id", nullable = false, updatable = false)
     private UUID rubricVersionId;
 
-    @Column(name = "framework_result_band_id", nullable = false, updatable = false)
-    private UUID frameworkResultBandId;
-
     @Column(name = "code", nullable = false)
     private String code;
 
@@ -52,11 +47,11 @@ public class RubricResultBandJpaEntity {
     @Column(name = "description", length = 2048)
     private String description;
 
-    @Column(name = "mapped_score_min", nullable = false, precision = 6, scale = 2)
-    private BigDecimal mappedScoreMin;
+    @Column(name = "score_min", nullable = false, precision = 6, scale = 2)
+    private BigDecimal scoreMin;
 
-    @Column(name = "mapped_score_max", nullable = false, precision = 6, scale = 2)
-    private BigDecimal mappedScoreMax;
+    @Column(name = "score_max", nullable = false, precision = 6, scale = 2)
+    private BigDecimal scoreMax;
 
     @Column(name = "result_order", nullable = false, check = {
         @CheckConstraint(
@@ -65,9 +60,6 @@ public class RubricResultBandJpaEntity {
         )
     })
     private int order;
-
-    @Column(name = "is_passing")
-    private Boolean isPassing;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
@@ -86,19 +78,16 @@ public class RubricResultBandJpaEntity {
 
 
     public RubricResultBandJpaEntity(UUID id, UUID rubricVersionId, String code, String name, String description,
-            BigDecimal mappedScoreMin, BigDecimal mappedScoreMax, int order, Boolean isPassing,
-            UUID frameworkResultBandId, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy,
-            UUID updatedBy) {
+            BigDecimal scoreMin, BigDecimal scoreMax, int order, OffsetDateTime createdAt,
+            OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.rubricVersionId = rubricVersionId;
-        this.frameworkResultBandId = frameworkResultBandId;
         this.code = code;
         this.name = name;
         this.description = description;
-        this.mappedScoreMin = mappedScoreMin;
-        this.mappedScoreMax = mappedScoreMax;
+        this.scoreMin = scoreMin;
+        this.scoreMax = scoreMax;
         this.order = order;
-        this.isPassing = isPassing;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
@@ -107,18 +96,15 @@ public class RubricResultBandJpaEntity {
 
 
     public RubricResultBandJpaEntity(UUID rubricVersionId, String code, String name, String description,
-            BigDecimal mappedScoreMin, BigDecimal mappedScoreMax, int order, Boolean isPassing,
-            UUID frameworkResultBandId, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy,
-            UUID updatedBy) {
+            BigDecimal scoreMin, BigDecimal scoreMax, int order, OffsetDateTime createdAt,
+            OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.rubricVersionId = rubricVersionId;
-        this.frameworkResultBandId = frameworkResultBandId;
         this.code = code;
         this.name = name;
         this.description = description;
-        this.mappedScoreMin = mappedScoreMin;
-        this.mappedScoreMax = mappedScoreMax;
+        this.scoreMin = scoreMin;
+        this.scoreMax = scoreMax;
         this.order = order;
-        this.isPassing = isPassing;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
@@ -143,14 +129,6 @@ public class RubricResultBandJpaEntity {
 
     public void setRubricVersionId(UUID rubricVersionId) {
         this.rubricVersionId = rubricVersionId;
-    }
-
-    public UUID getFrameworkResultBandId() {
-        return frameworkResultBandId;
-    }
-
-    public void setFrameworkResultBandId(UUID frameworkResultBandId) {
-        this.frameworkResultBandId = frameworkResultBandId;
     }
 
 
@@ -184,23 +162,23 @@ public class RubricResultBandJpaEntity {
     }
 
 
-    public BigDecimal getMappedScoreMin() {
-        return mappedScoreMin;
+    public BigDecimal getScoreMin() {
+        return scoreMin;
     }
 
 
-    public void setMappedScoreMin(BigDecimal mappedScoreMin) {
-        this.mappedScoreMin = mappedScoreMin;
+    public void setScoreMin(BigDecimal scoreMin) {
+        this.scoreMin = scoreMin;
     }
 
 
-    public BigDecimal getMappedScoreMax() {
-        return mappedScoreMax;
+    public BigDecimal getScoreMax() {
+        return scoreMax;
     }
 
 
-    public void setMappedScoreMax(BigDecimal mappedScoreMax) {
-        this.mappedScoreMax = mappedScoreMax;
+    public void setScoreMax(BigDecimal scoreMax) {
+        this.scoreMax = scoreMax;
     }
 
 
@@ -211,16 +189,6 @@ public class RubricResultBandJpaEntity {
 
     public void setOrder(int order) {
         this.order = order;
-    }
-
-
-    public Boolean getIsPassing() {
-        return isPassing;
-    }
-
-
-    public void setIsPassing(Boolean isPassing) {
-        this.isPassing = isPassing;
     }
 
 

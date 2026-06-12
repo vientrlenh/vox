@@ -5,14 +5,16 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.mapper.schoolclass.SchoolClassResponseMapper;
 import com.sep.vox.application.port.input.query.ViewSchoolClassesQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.response.input.schoolclass.SchoolClassResponse;
 import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
-import com.sep.vox.domain.dto.SchoolClassDto;
-import com.sep.vox.domain.mapper.SchoolClassDtoMapper;
+import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
@@ -20,7 +22,7 @@ import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
-public class ViewSchoolClassesUseCase implements IUseCase<ViewSchoolClassesQuery, PageResult<SchoolClassDto>> {
+public class ViewSchoolClassesUseCase implements IUseCase<ViewSchoolClassesQuery, PageResult<SchoolClassResponse>> {
 
     private final SchoolClassRepository schoolClassRepository;
     private final UserRepository userRepository;
@@ -40,14 +42,21 @@ public class ViewSchoolClassesUseCase implements IUseCase<ViewSchoolClassesQuery
 
     @Override
     @Transactional(readOnly = true)
-    public PageResult<SchoolClassDto> execute(ViewSchoolClassesQuery input) {
+    public PageResult<SchoolClassResponse> execute(ViewSchoolClassesQuery input) {
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         var currentUser = findCurrentUser(currentUserId);
         var schoolId = getSchoolId(currentUser);
         validateSchool(schoolId);
 
-        var result = schoolClassRepository.findBySchoolId(schoolId, new PageRequest(input.page(), input.size()));
-        return SchoolClassDtoMapper.toDtoPage(result);
+        var result = schoolClassRepository.findBySchoolId(
+            schoolId,
+            StringNormalization.trimAndCollapseSpaces(input.search()),
+            parseStatus(input.status()),
+            input.languageId(),
+            input.schoolGradeId(),
+            new PageRequest(input.page(), input.size())
+        );
+        return SchoolClassResponseMapper.toResponsePage(result);
     }
 
     private User findCurrentUser(UUID currentUserId) {
@@ -76,6 +85,18 @@ public class ViewSchoolClassesUseCase implements IUseCase<ViewSchoolClassesQuery
             .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
         if (!school.isActive()) {
             throw new IllegalStateException("Trường học không hoạt động");
+        }
+    }
+
+    private SchoolClassStatus parseStatus(String status) {
+        var normalized = StringNormalization.trimAndCollapseSpaces(status);
+        if (normalized == null) {
+            return null;
+        }
+        try {
+            return SchoolClassStatus.valueOf(normalized);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Trạng thái lớp học không hợp lệ");
         }
     }
 }

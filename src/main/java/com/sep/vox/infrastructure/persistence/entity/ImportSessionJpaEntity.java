@@ -74,7 +74,7 @@ public class ImportSessionJpaEntity {
     @Column(name = "status", nullable = false, length = 30, check = {
         @CheckConstraint(
             name = "chk_import_sessions_status_valid",
-            constraint = "status IN ('PREVIEWED', 'VALIDATING', 'IMPORTING', 'COMPLETED', 'FAILED', 'EXPIRED')"
+            constraint = "status IN ('PREVIEWED', 'VALIDATING', 'IMPORTING', 'COMPLETED', 'FAILED', 'EXPIRED', 'CANCELLED')"
         ),
     })
     private String status;

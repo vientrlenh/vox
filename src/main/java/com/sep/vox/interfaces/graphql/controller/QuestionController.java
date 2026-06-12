@@ -86,8 +86,10 @@ public class QuestionController {
     @QueryMapping(name = "teacherMyQuestions")
     @PreAuthorize("hasRole('TEACHER')")
     public PageResult<QuestionDto> teacherMyQuestions(
-            @Argument(name = "page") int page,
-            @Argument(name = "size") int size) {
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
+        page = page == null ? 1 : page;
+        size = size == null ? 20 : size;
         var query = new ViewTeacherMyQuestionsQuery(page, size);
         return viewTeacherMyQuestionsUseCase.execute(query);
     }
@@ -95,12 +97,14 @@ public class QuestionController {
     @QueryMapping(name = "teacherQuestions")
     @PreAuthorize("hasRole('TEACHER')")
     public PageResult<QuestionDto> teacherQuestions(
-            @Argument(name = "page") int page,
-            @Argument(name = "size") int size,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size,
             @Argument(name = "scope") String scope,
             @Argument(name = "status") String status,
             @Argument(name = "type") String type,
             @Argument(name = "keyword") String keyword) {
+        page = page == null ? 1 : page;
+        size = size == null ? 20 : size;
         var query = new ViewTeacherQuestionsQuery(page, size, scope, status, type, keyword);
         return viewTeacherQuestionsUseCase.execute(query);
     }
@@ -108,8 +112,10 @@ public class QuestionController {
     @QueryMapping(name = "teacherReviewQueue")
     @PreAuthorize("hasRole('TEACHER')")
     public PageResult<QuestionDto> teacherReviewQueue(
-            @Argument(name = "page") int page,
-            @Argument(name = "size") int size) {
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
+        page = page == null ? 1 : page;
+        size = size == null ? 20 : size;
         var query = new ViewTeacherReviewQueueQuery(page, size);
         return viewTeacherReviewQueueUseCase.execute(query);
     }
@@ -117,8 +123,10 @@ public class QuestionController {
     @QueryMapping(name = "schoolReviewQueue")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<QuestionDto> schoolReviewQueue(
-            @Argument(name = "page") int page,
-            @Argument(name = "size") int size) {
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
+        page = page == null ? 1 : page;
+        size = size == null ? 20 : size;
         var query = new ViewSchoolReviewQueueQuery(page, size);
         return viewSchoolReviewQueueUseCase.execute(query);
     }
@@ -126,12 +134,14 @@ public class QuestionController {
     @QueryMapping(name = "schoolQuestions")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<QuestionDto> schoolQuestions(
-            @Argument(name = "page") int page,
-            @Argument(name = "size") int size,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size,
             @Argument(name = "scope") String scope,
             @Argument(name = "status") String status,
             @Argument(name = "type") String type,
             @Argument(name = "keyword") String keyword) {
+        page = page == null ? 1 : page;
+        size = size == null ? 20 : size;
         var query = new ViewSchoolQuestionsQuery(page, size, scope, status, type, keyword);
         return viewSchoolQuestionsUseCase.execute(query);
     }
@@ -139,11 +149,13 @@ public class QuestionController {
     @QueryMapping(name = "adminQuestions")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<QuestionDto> adminQuestions(
-            @Argument(name = "page") int page,
-            @Argument(name = "size") int size,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size,
             @Argument(name = "includeArchived") Boolean includeArchived,
             @Argument(name = "status") String status,
             @Argument(name = "keyword") String keyword) {
+        page = page == null ? 1 : page;
+        size = size == null ? 20 : size;
         var query = new ViewAdminQuestionsQuery(page, size, includeArchived, status, keyword);
         return viewAdminQuestionsUseCase.execute(query);
     }
@@ -151,8 +163,10 @@ public class QuestionController {
     @QueryMapping(name = "adminReviewQueue")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<QuestionDto> adminReviewQueue(
-            @Argument(name = "page") int page,
-            @Argument(name = "size") int size) {
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
+        page = page == null ? 1 : page;
+        size = size == null ? 20 : size;
         var query = new ViewAdminReviewQueueQuery(page, size);
         return viewAdminReviewQueueUseCase.execute(query);
     }

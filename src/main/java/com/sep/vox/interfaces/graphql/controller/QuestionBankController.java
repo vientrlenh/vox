@@ -53,7 +53,9 @@ public class QuestionBankController {
     @QueryMapping(name = "teacherQuestionBanks")
     @PreAuthorize("hasRole('TEACHER')")
     public PageResult<QuestionBankDto> teacherQuestionBanks(
-            @Argument(name = "page") int page, @Argument(name = "size") int size) {
+            @Argument(name = "page") Integer page, @Argument(name = "size") Integer size) {
+        page = page == null ? 1 : page;
+        size = size == null ? 20 : size;
         if (page <= 0 || size <= 0) {
             throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
         }
@@ -69,7 +71,9 @@ public class QuestionBankController {
     @QueryMapping(name = "schoolQuestionBanks")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<QuestionBankDto> schoolQuestionBanks(
-            @Argument(name = "page") int page, @Argument(name = "size") int size) {
+            @Argument(name = "page") Integer page, @Argument(name = "size") Integer size) {
+        page = page == null ? 1 : page;
+        size = size == null ? 20 : size;
         if (page <= 0 || size <= 0) {
             throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
         }
@@ -85,8 +89,10 @@ public class QuestionBankController {
     @QueryMapping(name = "adminQuestionBanks")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<QuestionBankDto> adminQuestionBanks(
-            @Argument(name = "page") int page,
-            @Argument(name = "size") int size) {
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
+        page = page == null ? 1 : page;
+        size = size == null ? 20 : size;
         return viewAdminQuestionBanksUseCase.execute(new ViewAdminQuestionBanksQuery(page, size));
     }
 
@@ -94,8 +100,10 @@ public class QuestionBankController {
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<QuestionBankDto> adminSchoolQuestionBanks(
             @Argument(name = "schoolId") UUID schoolId,
-            @Argument(name = "page") int page,
-            @Argument(name = "size") int size) {
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
+        page = page == null ? 1 : page;
+        size = size == null ? 20 : size;
         return viewAdminSchoolQuestionBanksUseCase.execute(new ViewAdminSchoolQuestionBanksQuery(schoolId, page, size));
     }
 

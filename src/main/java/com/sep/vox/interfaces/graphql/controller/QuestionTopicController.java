@@ -65,8 +65,10 @@ public class QuestionTopicController {
     @PreAuthorize("hasRole('TEACHER')")
     public PageResult<QuestionTopicDto> teacherBankTopics(
             @Argument(name = "bankId") UUID bankId,
-            @Argument(name = "page") int page,
-            @Argument(name = "size") int size) {
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
+        page = page == null ? 1 : page;
+        size = size == null ? 20 : size;
         var query = new ViewTeacherBankTopicsQuery(bankId, page, size);
         return viewTeacherBankTopicsUseCase.execute(query);
     }
@@ -81,8 +83,10 @@ public class QuestionTopicController {
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<QuestionTopicDto> schoolBankTopics(
             @Argument(name = "bankId") UUID bankId,
-            @Argument(name = "page") int page,
-            @Argument(name = "size") int size) {
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
+        page = page == null ? 1 : page;
+        size = size == null ? 20 : size;
         var query = new ViewSchoolBankTopicsQuery(bankId, page, size);
         return viewSchoolBankTopicsUseCase.execute(query);
     }
@@ -97,9 +101,11 @@ public class QuestionTopicController {
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<QuestionTopicDto> adminBankTopics(
             @Argument(name = "bankId") UUID bankId,
-            @Argument(name = "page") int page,
-            @Argument(name = "size") int size,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size,
             @Argument(name = "includeArchived") Boolean includeArchived) {
+        page = page == null ? 1 : page;
+        size = size == null ? 20 : size;
         var query = new ViewAdminBankTopicsQuery(bankId, page, size, includeArchived);
         return viewAdminBankTopicsUseCase.execute(query);
     }
@@ -115,12 +121,14 @@ public class QuestionTopicController {
     public PageResult<QuestionDto> teacherTopicQuestions(
             @Argument(name = "bankId") UUID bankId,
             @Argument(name = "topicId") UUID topicId,
-            @Argument(name = "page") int page,
-            @Argument(name = "size") int size,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size,
             @Argument(name = "scope") String scope,
             @Argument(name = "status") String status,
             @Argument(name = "type") String type,
             @Argument(name = "keyword") String keyword) {
+        page = page == null ? 1 : page;
+        size = size == null ? 20 : size;
         var query = new ViewTeacherTopicQuestionsQuery(bankId, topicId, page, size, scope, status, type, keyword);
         return viewTeacherTopicQuestionsUseCase.execute(query);
     }
@@ -130,12 +138,14 @@ public class QuestionTopicController {
     public PageResult<QuestionDto> schoolTopicQuestions(
             @Argument(name = "bankId") UUID bankId,
             @Argument(name = "topicId") UUID topicId,
-            @Argument(name = "page") int page,
-            @Argument(name = "size") int size,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size,
             @Argument(name = "scope") String scope,
             @Argument(name = "status") String status,
             @Argument(name = "type") String type,
             @Argument(name = "keyword") String keyword) {
+        page = page == null ? 1 : page;
+        size = size == null ? 20 : size;
         var query = new ViewSchoolTopicQuestionsQuery(bankId, topicId, page, size, scope, status, type, keyword);
         return viewSchoolTopicQuestionsUseCase.execute(query);
     }
@@ -145,13 +155,15 @@ public class QuestionTopicController {
     public PageResult<QuestionDto> adminTopicQuestions(
             @Argument(name = "bankId") UUID bankId,
             @Argument(name = "topicId") UUID topicId,
-            @Argument(name = "page") int page,
-            @Argument(name = "size") int size,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size,
             @Argument(name = "includeArchived") Boolean includeArchived,
             @Argument(name = "scope") String scope,
             @Argument(name = "status") String status,
             @Argument(name = "type") String type,
             @Argument(name = "keyword") String keyword) {
+        page = page == null ? 1 : page;
+        size = size == null ? 20 : size;
         var query = new ViewAdminTopicQuestionsQuery(bankId, topicId, page, size, includeArchived, scope, status, type, keyword);
         return viewAdminTopicQuestionsUseCase.execute(query);
     }

@@ -102,32 +102,32 @@ type QuestionPage {
 
 extend type Query {
     # QuestionBank queries
-    teacherQuestionBanks(page: Int = 0, size: Int = 20): QuestionBankPage!
+    teacherQuestionBanks(page: Int = 1, size: Int = 20): QuestionBankPage!
     teacherQuestionBank(id: ID!): QuestionBank
-    schoolQuestionBanks(page: Int = 0, size: Int = 20): QuestionBankPage!
+    schoolQuestionBanks(page: Int = 1, size: Int = 20): QuestionBankPage!
     schoolQuestionBank(id: ID!): QuestionBank
-    adminQuestionBanks(page: Int = 0, size: Int = 20): QuestionBankPage!
-    adminSchoolQuestionBanks(schoolId: ID!, page: Int = 0, size: Int = 20): QuestionBankPage!
+    adminQuestionBanks(page: Int = 1, size: Int = 20): QuestionBankPage!
+    adminSchoolQuestionBanks(schoolId: ID!, page: Int = 1, size: Int = 20): QuestionBankPage!
     adminQuestionBank(id: ID!): QuestionBank
 
     # Question queries
     question(id: ID!): Question
-    teacherMyQuestions(page: Int = 0, size: Int = 20): QuestionPage!
-    teacherQuestions(page: Int = 0, size: Int = 20, scope: String, status: String, type: String, keyword: String): QuestionPage!
-    teacherReviewQueue(page: Int = 0, size: Int = 20): QuestionPage!
-    schoolQuestions(page: Int = 0, size: Int = 20, scope: String, status: String, type: String, keyword: String): QuestionPage!
-    schoolReviewQueue(page: Int = 0, size: Int = 20): QuestionPage!
-    adminQuestions(page: Int = 0, size: Int = 20, includeArchived: Boolean, status: String, keyword: String): QuestionPage!
-    adminReviewQueue(page: Int = 0, size: Int = 20): QuestionPage!
+    teacherMyQuestions(page: Int = 1, size: Int = 20): QuestionPage!
+    teacherQuestions(page: Int = 1, size: Int = 20, scope: String, status: String, type: String, keyword: String): QuestionPage!
+    teacherReviewQueue(page: Int = 1, size: Int = 20): QuestionPage!
+    schoolQuestions(page: Int = 1, size: Int = 20, scope: String, status: String, type: String, keyword: String): QuestionPage!
+    schoolReviewQueue(page: Int = 1, size: Int = 20): QuestionPage!
+    adminQuestions(page: Int = 1, size: Int = 20, includeArchived: Boolean, status: String, keyword: String): QuestionPage!
+    adminReviewQueue(page: Int = 1, size: Int = 20): QuestionPage!
 
     # QuestionTopic queries
-    teacherBankTopics(bankId: ID!, page: Int = 0, size: Int = 20): QuestionTopicPage!
+    teacherBankTopics(bankId: ID!, page: Int = 1, size: Int = 20): QuestionTopicPage!
     teacherQuestionTopic(id: ID!): QuestionTopic
-    teacherTopicQuestions(bankId: ID!, topicId: ID!, page: Int = 0, size: Int = 20, scope: String, status: String, type: String, keyword: String): QuestionPage!
-    schoolBankTopics(bankId: ID!, page: Int = 0, size: Int = 20): QuestionTopicPage!
+    teacherTopicQuestions(bankId: ID!, topicId: ID!, page: Int = 1, size: Int = 20, scope: String, status: String, type: String, keyword: String): QuestionPage!
+    schoolBankTopics(bankId: ID!, page: Int = 1, size: Int = 20): QuestionTopicPage!
     schoolQuestionTopic(id: ID!): QuestionTopic
-    schoolTopicQuestions(bankId: ID!, topicId: ID!, page: Int = 0, size: Int = 20, scope: String, status: String, type: String, keyword: String): QuestionPage!
-    adminBankTopics(bankId: ID!, page: Int = 0, size: Int = 20, includeArchived: Boolean): QuestionTopicPage!
+    schoolTopicQuestions(bankId: ID!, topicId: ID!, page: Int = 1, size: Int = 20, scope: String, status: String, type: String, keyword: String): QuestionPage!
+    adminBankTopics(bankId: ID!, page: Int = 1, size: Int = 20, includeArchived: Boolean): QuestionTopicPage!
     adminQuestionTopic(id: ID!): QuestionTopic
-    adminTopicQuestions(bankId: ID!, topicId: ID!, page: Int = 0, size: Int = 20, includeArchived: Boolean, scope: String, status: String, type: String, keyword: String): QuestionPage!
+    adminTopicQuestions(bankId: ID!, topicId: ID!, page: Int = 1, size: Int = 20, includeArchived: Boolean, scope: String, status: String, type: String, keyword: String): QuestionPage!
 }

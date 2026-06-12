@@ -34,6 +34,7 @@ import com.sep.vox.domain.valueobject.Phone;
 public class SeedDataInitializer implements ApplicationRunner {
 
     private static final String SEED_PASSWORD = "Abc@1234";
+    private static final UUID DEFAULT_SCHOOL_CREATED_BY_ID = UUID.fromString("019ea126-32d2-74e9-bdfd-212d74abbd5c");
     private static final Logger LOGGER = LoggerFactory.getLogger(SeedDataInitializer.class);
 
     private final UserRepository userRepository;
@@ -77,37 +78,41 @@ public class SeedDataInitializer implements ApplicationRunner {
 
         // Create 3 schools
         var now = OffsetDateTime.now();
+        var schoolCreatedBy = defaultIfNull(null);
         var school1 = schoolRepository.save(School.create(
                 "LQD", "THPT Lê Quý Đôn", "Trường THPT Lê Quý Đôn - TP.HCM",
-                "02838234567", "contact@lequydon.edu.vn", "lequydon",
-                "123 Lê Quý Đôn, Quận 3, TP.HCM", 1200, null, now
+                "0904000001", "contact@lequydon.edu.vn", "lequydon.edu.vn",
+                "123 Lê Quý Đôn, Quận 3, TP.HCM", 1200, schoolCreatedBy, now
         ));
         var school2 = schoolRepository.save(School.create(
                 "NHH", "THPT Nguyễn Huệ", "Trường THPT Nguyễn Huệ - TP.HCM",
-                "02838345678", "contact@nguyenhue.edu.vn", "nguyenhue",
-                "456 Nguyễn Huệ, Quận 1, TP.HCM", 1000, null, now
+                "0904000002", "contact@nguyenhue.edu.vn", "nguyenhue.edu.vn",
+                "456 Nguyễn Huệ, Quận 1, TP.HCM", 1000, schoolCreatedBy, now
         ));
         var school3 = schoolRepository.save(School.create(
                 "THD", "THPT Trần Hưng Đạo", "Trường THPT Trần Hưng Đạo - TP.HCM",
-                "02838456789", "contact@tranhungdao.edu.vn", "tranhungdao",
-                "789 Trần Hưng Đạo, Quận 5, TP.HCM", 800, null, now
+                "0904000003", "contact@tranhungdao.edu.vn", "tranhungdao.edu.vn",
+                "789 Trần Hưng Đạo, Quận 5, TP.HCM", 800, schoolCreatedBy, now
         ));
 
         // 3 School Admins (1 per school, ACTIVE for immediate login)
         var admin1 = saveUser("admin1@vox.local", hashedPassword, "0901000001",
                 "Nguyễn Văn Admin", Gender.MALE, LocalDate.of(1985, 1, 15),
-                "TP.HCM", UserStatus.ACTIVE, school1.getId(), now);
+                "TP.HCM", UserStatus.ACTIVE, school1.getId(), null, now);
         assignRole(admin1, schoolAdminRole, now);
+        admin1 = linkAdminOwnership(admin1, school1, now);
 
         var admin2 = saveUser("admin2@vox.local", hashedPassword, "0901000002",
                 "Trần Thị Quản", Gender.FEMALE, LocalDate.of(1988, 3, 20),
-                "TP.HCM", UserStatus.ACTIVE, school2.getId(), now);
+                "TP.HCM", UserStatus.ACTIVE, school2.getId(), null, now);
         assignRole(admin2, schoolAdminRole, now);
+        admin2 = linkAdminOwnership(admin2, school2, now);
 
         var admin3 = saveUser("admin3@vox.local", hashedPassword, "0901000003",
                 "Lê Văn Trị", Gender.MALE, LocalDate.of(1982, 7, 10),
-                "TP.HCM", UserStatus.ACTIVE, school3.getId(), now);
+                "TP.HCM", UserStatus.ACTIVE, school3.getId(), null, now);
         assignRole(admin3, schoolAdminRole, now);
+        admin3 = linkAdminOwnership(admin3, school3, now);
 
         // 10 Teachers
         var teachers = List.of(
@@ -123,7 +128,7 @@ public class SeedDataInitializer implements ApplicationRunner {
                 teacherData("teacher10@vox.local", "0902000010", "Hồ Thị Bích", Gender.FEMALE, LocalDate.of(1996, 3, 19), school3.getId())
         );
         for (var t : teachers) {
-            var user = saveUser(t.email, hashedPassword, t.phone, t.fullName, t.gender, t.dob, "TP.HCM", UserStatus.ACTIVE, t.schoolId, now);
+            var user = saveUser(t.email, hashedPassword, t.phone, t.fullName, t.gender, t.dob, "TP.HCM", UserStatus.ACTIVE, t.schoolId, creatorIdForSchool(t.schoolId, school1, admin1, school2, admin2, school3, admin3), now);
             assignRole(user, teacherRole, now);
         }
 
@@ -138,7 +143,7 @@ public class SeedDataInitializer implements ApplicationRunner {
                 studentData("student7@vox.local", "0903000007", "Đặng Minh Khoa", Gender.MALE, LocalDate.of(2007, 6, 12), school3.getId())
         );
         for (var s : students) {
-            var user = saveUser(s.email, hashedPassword, s.phone, s.fullName, s.gender, s.dob, "TP.HCM", UserStatus.ACTIVE, s.schoolId, now);
+            var user = saveUser(s.email, hashedPassword, s.phone, s.fullName, s.gender, s.dob, "TP.HCM", UserStatus.ACTIVE, s.schoolId, creatorIdForSchool(s.schoolId, school1, admin1, school2, admin2, school3, admin3), now);
             assignRole(user, studentRole, now);
         }
 
@@ -147,16 +152,47 @@ public class SeedDataInitializer implements ApplicationRunner {
 
     private User saveUser(String email, String passwordHash, String phone, String fullName,
                           Gender gender, LocalDate dob, String address, UserStatus status,
-                          UUID schoolId, OffsetDateTime now) {
+                          UUID schoolId, UUID createdBy, OffsetDateTime now) {
         return userRepository.save(new User(
                 new Email(email), passwordHash, new Phone(phone), new FullName(fullName),
                 gender, new DateOfBirth(dob), address, null, status,
-                now, now, null, null, schoolId
+                now, now, createdBy, createdBy, schoolId
         ));
     }
 
     private void assignRole(User user, Role role, OffsetDateTime now) {
         userRoleRepository.save(new UserRole(user.getId(), role.getId(), now));
+    }
+
+    private UUID defaultIfNull(UUID value) {
+        return value == null ? DEFAULT_SCHOOL_CREATED_BY_ID : value;
+    }
+
+    private User linkAdminOwnership(User admin, School school, OffsetDateTime now) {
+        admin.setCreatedBy(admin.getId());
+        admin.setUpdatedBy(admin.getId());
+        admin.setUpdatedAt(now);
+        var savedAdmin = userRepository.save(admin);
+
+        school.setCreatedBy(savedAdmin.getId());
+        school.setUpdatedBy(savedAdmin.getId());
+        school.setUpdatedAt(now);
+        schoolRepository.save(school);
+
+        return savedAdmin;
+    }
+
+    private UUID creatorIdForSchool(UUID schoolId, School school1, User admin1, School school2, User admin2, School school3, User admin3) {
+        if (school1.getId().equals(schoolId)) {
+            return admin1.getId();
+        }
+        if (school2.getId().equals(schoolId)) {
+            return admin2.getId();
+        }
+        if (school3.getId().equals(schoolId)) {
+            return admin3.getId();
+        }
+        return DEFAULT_SCHOOL_CREATED_BY_ID;
     }
 
     private TeacherData teacherData(String email, String phone, String fullName, Gender gender, LocalDate dob, UUID schoolId) {

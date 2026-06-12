@@ -35,9 +35,7 @@ import com.sep.vox.application.response.input.importfile.AcceptSchoolClassUserIm
 import com.sep.vox.application.response.input.importfile.PreviewSchoolClassImportResponse;
 import com.sep.vox.application.response.input.importfile.PreviewSchoolClassUserImportResponse;
 import com.sep.vox.application.response.input.schoolclass.CreateSchoolClassResponse;
-import com.sep.vox.application.response.input.schoolclass.DeleteSchoolClassResponse;
 import com.sep.vox.application.response.input.schoolclassuser.CreateSchoolClassUserResponse;
-import com.sep.vox.application.response.input.schoolclassuser.DeleteSchoolClassUserResponse;
 import com.sep.vox.application.response.input.schoolclassuser.UpdateSchoolClassUserStatusResponse;
 import com.sep.vox.interfaces.rest.dto.request.AcceptSchoolClassImportRequest;
 import com.sep.vox.interfaces.rest.dto.request.AcceptSchoolClassUserImportRequest;
@@ -114,13 +112,13 @@ public class SchoolController {
 
     @DeleteMapping("/{schoolId}/classes/{classId}/users/{userId}")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<DeleteSchoolClassUserResponse>> deleteClassUser(
+    public ResponseEntity<ApiResponse<Void>> deleteClassUser(
             @PathVariable UUID schoolId,
             @PathVariable UUID classId,
             @PathVariable UUID userId) {
         var command = DeleteSchoolClassUserCommandMapper.fromPath(schoolId, classId, userId);
-        var data = deleteSchoolClassUserUseCase.execute(command);
-        var response = ApiResponse.success("Xóa người dùng khỏi lớp học thành công", data);
+        deleteSchoolClassUserUseCase.execute(command);
+        var response = ApiResponse.<Void>success("Xóa người dùng khỏi lớp học thành công");
         return ResponseEntity.ok(response);
     }
 
@@ -191,11 +189,11 @@ public class SchoolController {
 
     @DeleteMapping("/{schoolId}/classes/{classId}")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<DeleteSchoolClassResponse>> delete(
+    public ResponseEntity<ApiResponse<Void>> delete(
             @PathVariable UUID schoolId,
             @PathVariable UUID classId) {
-        var data = deleteSchoolClassUseCase.execute(new DeleteSchoolClassCommand(schoolId, classId));
-        var response = ApiResponse.success("Xóa lớp học thành công", data);
+        deleteSchoolClassUseCase.execute(new DeleteSchoolClassCommand(schoolId, classId));
+        var response = ApiResponse.<Void>success("Xóa lớp học thành công");
         return ResponseEntity.ok(response);
     }
 }

@@ -38,9 +38,7 @@ import com.sep.vox.application.response.input.importfile.AcceptSchoolClassUserIm
 import com.sep.vox.application.response.input.importfile.PreviewSchoolClassImportResponse;
 import com.sep.vox.application.response.input.importfile.PreviewSchoolClassUserImportResponse;
 import com.sep.vox.application.response.input.schoolclass.CreateSchoolClassResponse;
-import com.sep.vox.application.response.input.schoolclass.DeleteSchoolClassResponse;
 import com.sep.vox.application.response.input.schoolclassuser.CreateSchoolClassUserResponse;
-import com.sep.vox.application.response.input.schoolclassuser.DeleteSchoolClassUserResponse;
 import com.sep.vox.application.response.input.schoolclassuser.UpdateSchoolClassUserStatusResponse;
 import com.sep.vox.interfaces.rest.dto.request.AcceptSchoolClassImportRequest;
 import com.sep.vox.interfaces.rest.dto.request.AcceptSchoolClassUserImportRequest;
@@ -134,14 +132,12 @@ class SchoolControllerTests {
             acceptUseCase, previewClassUserUseCase, acceptClassUserUseCase);
         var schoolId = UUID.randomUUID();
         var schoolClassId = UUID.randomUUID();
-        var expected = new DeleteSchoolClassResponse(schoolClassId, "SOFT", "ARCHIVED", "2026-06-06T12:00:00Z");
-        when(deleteUseCase.execute(new DeleteSchoolClassCommand(schoolId, schoolClassId))).thenReturn(expected);
-
         var response = controller.delete(schoolId, schoolClassId);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().data()).isEqualTo(expected);
+        assertThat(response.getBody().message()).isEqualTo("Xóa lớp học thành công");
+        assertThat(response.getBody().data()).isNull();
         verify(deleteUseCase).execute(new DeleteSchoolClassCommand(schoolId, schoolClassId));
     }
 
@@ -303,15 +299,12 @@ class SchoolControllerTests {
         var classId = UUID.randomUUID();
         var userId = UUID.randomUUID();
         var expectedCommand = new DeleteSchoolClassUserCommand(schoolId, classId, userId);
-        var expected = new DeleteSchoolClassUserResponse(classId);
-        when(deleteClassUserUseCase.execute(expectedCommand)).thenReturn(expected);
-
         var response = controller.deleteClassUser(schoolId, classId, userId);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().message()).isEqualTo("Xóa người dùng khỏi lớp học thành công");
-        assertThat(response.getBody().data()).isEqualTo(expected);
+        assertThat(response.getBody().data()).isNull();
         verify(deleteClassUserUseCase).execute(expectedCommand);
     }
 

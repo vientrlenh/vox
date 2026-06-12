@@ -65,6 +65,8 @@ public class ChangeSchoolRubricVersionStatusUseCase implements IUseCase<ChangeSc
             throw new ForbiddenException("Hành động bị từ chối: Không thể chuyển trạng thái Rubric của trường khác.");
         }
 
+
+
         OffsetDateTime now = OffsetDateTime.now();
 
         // 4. XỬ LÝ LOGIC MÁY TRẠNG THÁI (STATE MACHINE) CHẶT CHẼ
@@ -82,18 +84,7 @@ public class ChangeSchoolRubricVersionStatusUseCase implements IUseCase<ChangeSc
                 throw new IllegalStateException("Không thể ban hành Rubric này vì Khung tiêu chuẩn (Framework) gốc đang bị vô hiệu hóa.");
             }
 
-            // Cập nhật currentVersionId cho Vỏ Rubric + Audit Log
-//            rubric.setCurrentVersionId(version.getId());
-//            rubric.setUpdatedAt(now);
-//            rubric.setUpdatedBy(currentUserId);
-//            rubricRepository.save(rubric);
-
         } else if (command.status() == RubricStatus.ARCHIVED) {
-            // Không cho Archive bản đang là Current Version
-            if (rubric.getCurrentVersionId() != null && rubric.getCurrentVersionId().equals(version.getId())) {
-                throw new IllegalStateException("Không thể lưu trữ (ARCHIVE) phiên bản đang được áp dụng hiện hành.");
-            }
-
         } else if (command.status() == RubricStatus.DRAFT) {
             // CHẶN LỖ HỔNG LÙI TRẠNG THÁI
             throw new IllegalStateException("Hành động bị từ chối: Không thể chuyển một phiên bản đã Ban hành/Lưu trữ quay ngược lại trạng thái Nháp (DRAFT). Vui lòng tạo phiên bản mới.");

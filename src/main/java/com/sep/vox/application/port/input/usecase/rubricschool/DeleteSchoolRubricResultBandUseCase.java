@@ -22,18 +22,21 @@ public class DeleteSchoolRubricResultBandUseCase implements IUseCase<DeleteSchoo
     private final RubricRepository rubricRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
+    private final SchoolRepository schoolRepository; // BỔ SUNG
 
     public DeleteSchoolRubricResultBandUseCase(
             RubricResultBandRepository rubricResultBandRepository,
             RubricVersionRepository rubricVersionRepository,
             RubricRepository rubricRepository,
             UserRepository userRepository,
-            UserContextPort userContextPort) {
+            UserContextPort userContextPort,
+            SchoolRepository schoolRepository) { // BỔ SUNG
         this.rubricResultBandRepository = rubricResultBandRepository;
         this.rubricVersionRepository = rubricVersionRepository;
         this.rubricRepository = rubricRepository;
         this.userRepository = userRepository;
         this.userContextPort = userContextPort;
+        this.schoolRepository = schoolRepository;
     }
 
     @Override
@@ -51,7 +54,6 @@ public class DeleteSchoolRubricResultBandUseCase implements IUseCase<DeleteSchoo
         RubricVersion version = rubricVersionRepository.findById(command.versionId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản Rubric."));
         if (version.getStatus() != RubricStatus.DRAFT) {
-            // FIX: Đổi chữ "Tiêu chí" -> "Thang điểm"
             throw new IllegalStateException("Chỉ được xóa Thang điểm khi phiên bản đang là bản Nháp (DRAFT).");
         }
 
@@ -64,7 +66,14 @@ public class DeleteSchoolRubricResultBandUseCase implements IUseCase<DeleteSchoo
             throw new ForbiddenException("Bạn không có quyền xóa dữ liệu của trường khác.");
         }
 
-        // 4. Lấy ResultBand ra kiểm tra (Đã đổi tên biến thành resultBand)
+        // BỔ SUNG: Kiểm tra xem trường học có đang hoạt động không
+        var school = schoolRepository.findById(command.schoolId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học."));
+        if (!school.isActive()) {
+            throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");
+        }
+
+        // 4. Lấy ResultBand ra kiểm tra
         RubricResultBand resultBand = rubricResultBandRepository.findById(command.resultBandId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy Thang điểm kết quả này."));
 
@@ -72,7 +81,7 @@ public class DeleteSchoolRubricResultBandUseCase implements IUseCase<DeleteSchoo
             throw new IllegalArgumentException("Thang điểm kết quả này không thuộc về phiên bản Rubric đang chọn.");
         }
 
-        // 5. FIX: Gọi ĐÚNG Repository để xóa cứng Thang điểm
+        // 5. Xóa cứng Thang điểm (Không cần Cascade Delete vì không có FK reference trực tiếp ID của bảng này)
         rubricResultBandRepository.deleteById(resultBand.getId());
 
         return null;

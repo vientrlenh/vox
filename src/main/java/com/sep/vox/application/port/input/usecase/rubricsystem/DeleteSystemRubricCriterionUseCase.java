@@ -22,32 +22,58 @@ public class DeleteSystemRubricCriterionUseCase implements IUseCase<DeleteSystem
     private final RubricRepository rubricRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
+    private final RubricCriterionBandRepository rubricCriterionBandRepository; // BỔ SUNG
 
-    public DeleteSystemRubricCriterionUseCase(RubricCriterionRepository rubricCriterionRepository, RubricVersionRepository rubricVersionRepository, RubricRepository rubricRepository, UserRepository userRepository, UserContextPort userContextPort) {
+    public DeleteSystemRubricCriterionUseCase(
+            RubricCriterionRepository rubricCriterionRepository,
+            RubricVersionRepository rubricVersionRepository,
+            RubricRepository rubricRepository,
+            UserRepository userRepository,
+            UserContextPort userContextPort,
+            RubricCriterionBandRepository rubricCriterionBandRepository) { // BỔ SUNG
         this.rubricCriterionRepository = rubricCriterionRepository;
         this.rubricVersionRepository = rubricVersionRepository;
         this.rubricRepository = rubricRepository;
         this.userRepository = userRepository;
         this.userContextPort = userContextPort;
+        this.rubricCriterionBandRepository = rubricCriterionBandRepository;
     }
 
     @Override
     @Transactional
     public Void execute(DeleteSystemRubricCriterionCommand command) {
+        // 1. Xác thực
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         var currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Lỗi tài khoản."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
 
-        RubricVersion version = rubricVersionRepository.findById(command.versionId()).orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản."));
-        if (version.getStatus() != RubricStatus.DRAFT) throw new IllegalStateException("Chỉ xóa được khi là DRAFT.");
+        // 2. Check Version (DRAFT)
+        RubricVersion version = rubricVersionRepository.findById(command.versionId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản."));
+        if (version.getStatus() != RubricStatus.DRAFT) {
+            throw new IllegalStateException("Chỉ xóa được khi là DRAFT.");
+        }
 
-        Rubric rubric = rubricRepository.findById(version.getRubricId()).orElseThrow(() -> new NotFoundException("Không tìm thấy Rubric."));
-        if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) throw new ForbiddenException("Không thể xóa dữ liệu của trường.");
+        // 3. Check Quyền System
+        Rubric rubric = rubricRepository.findById(version.getRubricId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy Rubric."));
+        if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
+            throw new ForbiddenException("Không thể xóa dữ liệu của trường.");
+        }
 
-        RubricCriterion criterion = rubricCriterionRepository.findById(command.criterionId()).orElseThrow(() -> new NotFoundException("Không tìm thấy Tiêu chí."));
-        if (!criterion.getRubricVersionId().equals(version.getId())) throw new IllegalArgumentException("Tiêu chí sai phiên bản.");
+        // 4. Lấy và kiểm tra Tiêu chí
+        RubricCriterion criterion = rubricCriterionRepository.findById(command.criterionId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy Tiêu chí."));
+        if (!criterion.getRubricVersionId().equals(version.getId())) {
+            throw new IllegalArgumentException("Tiêu chí sai phiên bản.");
+        }
 
+        // 5. CASCADE DELETE: Xóa dữ liệu nối (RubricCriterionBand) trước khi xóa Tiêu chí cha
+        rubricCriterionBandRepository.deleteByCriterionId(criterion.getId());
+
+        // 6. Xóa cứng Tiêu chí
         rubricCriterionRepository.deleteById(criterion.getId());
-        return criterion.getId();
+
+        return null;
     }
 }

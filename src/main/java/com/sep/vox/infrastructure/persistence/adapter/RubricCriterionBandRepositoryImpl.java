@@ -30,4 +30,9 @@ public class RubricCriterionBandRepositoryImpl implements RubricCriterionBandRep
         var saved = springDataRubricCriterionBandRepository.save(entity);
         return RubricCriterionBandMapper.toDomain(saved);
     }
+
+    @Override
+    public void deleteByCriterionId(UUID rubricCriterionId) {
+        springDataRubricCriterionBandRepository.deleteByCriterionId(rubricCriterionId);
+    }
 }

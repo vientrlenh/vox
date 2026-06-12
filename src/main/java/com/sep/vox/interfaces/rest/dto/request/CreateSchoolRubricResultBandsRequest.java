@@ -35,9 +35,6 @@ public record CreateSchoolRubricResultBandsRequest(
 
                 @NotNull(message = "Thứ tự không được để trống")
                 @Min(value = 1, message = "Thứ tự (Order) phải lớn hơn 0")
-                Integer order,
-
-                @NotNull(message = "Cờ đậu/rớt (Is Passing) không được để trống")
-                Boolean isPassing
+                Integer order
         ) {}
 }

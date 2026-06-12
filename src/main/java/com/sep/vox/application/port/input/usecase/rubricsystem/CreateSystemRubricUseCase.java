@@ -7,9 +7,11 @@ import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.CreateSystemRubricCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.domain.model.framework.Framework;
 import com.sep.vox.domain.model.rubric.*;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
+import com.sep.vox.domain.repository.FrameworkRepository;
 import com.sep.vox.domain.repository.RubricRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;
@@ -31,18 +33,21 @@ public class CreateSystemRubricUseCase implements IUseCase<CreateSystemRubricCom
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
     private final SupportedLanguageRepository languageRepository;
+    private final FrameworkRepository frameworkRepository; // BỔ SUNG
 
     public CreateSystemRubricUseCase(
             RubricRepository rubricRepository,
             RubricVersionRepository rubricVersionRepository,
             UserRepository userRepository,
             UserContextPort userContextPort,
-            SupportedLanguageRepository languageRepository) {
+            SupportedLanguageRepository languageRepository,
+            FrameworkRepository frameworkRepository) { // BỔ SUNG
         this.rubricRepository = rubricRepository;
         this.rubricVersionRepository = rubricVersionRepository;
         this.userRepository = userRepository;
         this.userContextPort = userContextPort;
         this.languageRepository = languageRepository;
+        this.frameworkRepository = frameworkRepository;
     }
 
     @Override
@@ -62,11 +67,17 @@ public class CreateSystemRubricUseCase implements IUseCase<CreateSystemRubricCom
             throw new NotFoundException("Ngôn ngữ không tồn tại.");
         }
 
+        // BỔ SUNG: Kiểm tra Framework gốc
+        Framework framework = frameworkRepository.findById(command.frameworkId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy Khung tiêu chuẩn (Framework)."));
+        if (!framework.isActive()) {
+            throw new IllegalStateException("Không thể sử dụng Khung tiêu chuẩn (Framework) này vì nó đang bị vô hiệu hóa.");
+        }
+
         boolean isSystemRubricExisted = rubricRepository.existsByOwnerTypeAndLanguageId(RubricOwnerType.SYSTEM, command.languageId());
         if (isSystemRubricExisted) {
             throw new IllegalStateException("Hệ thống đã có một bộ Rubric cho ngôn ngữ này. Chỉ được phép tồn tại duy nhất 1 bộ Rubric hệ thống cho mỗi ngôn ngữ.");
         }
-
 
         if (command.versions() == null || command.versions().isEmpty()) {
             throw new IllegalArgumentException("Rubric hệ thống phải có ít nhất 1 phiên bản.");
@@ -84,19 +95,19 @@ public class CreateSystemRubricUseCase implements IUseCase<CreateSystemRubricCom
                 safeCode,
                 safeName,
                 safeDesc,
-                RubricOwnerType.SYSTEM, // SYSTEM Owner
-                null,                   // schoolId = null
+                RubricOwnerType.SYSTEM,
+                null,
                 null
         );
 
         Rubric savedRubric = rubricRepository.save(newRubric);
 
-        // 4. XỬ LÝ DANH SÁCH VERSION (THÊM BỘ LỌC CHỐNG TRÙNG LẶP)
-        Set<Integer> uniqueVersions = new HashSet<>(); // Bổ sung dòng này
+        // 4. XỬ LÝ DANH SÁCH VERSION
+        Set<Integer> uniqueVersions = new HashSet<>();
 
         List<RubricVersion> versionsToSave = command.versions().stream().map(vCmd -> {
 
-            // Bổ sung Block Validate chống trùng version
+            // Block Validate chống trùng version
             if (!uniqueVersions.add(vCmd.version())) {
                 throw new DuplicatedException("Hệ thống lỗi: Bạn đang gửi nhiều phiên bản có cùng số Version (" + vCmd.version() + ").");
             }

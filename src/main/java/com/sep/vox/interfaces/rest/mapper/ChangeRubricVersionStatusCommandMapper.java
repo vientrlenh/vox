@@ -10,15 +10,12 @@ import java.util.UUID;
 public class ChangeRubricVersionStatusCommandMapper {
 
     // SYSTEM
-    public static ChangeSystemRubricVersionStatusCommand fromSystemRequest(UUID versionId, RubricStatusRequest requestStatus) {
-        // Dịch từ Enum REST sang Enum Domain
-        RubricStatus domainStatus = RubricStatus.valueOf(requestStatus.name());
-        return new ChangeSystemRubricVersionStatusCommand(versionId, domainStatus);
+    public static ChangeSystemRubricVersionStatusCommand fromSystemRequest(UUID versionId, RubricStatus requestStatus) {
+        return new ChangeSystemRubricVersionStatusCommand(versionId, requestStatus);
     }
 
     //SCHOOL
-    public static ChangeSchoolRubricVersionStatusCommand fromSchoolRequest(UUID schoolId, UUID versionId, RubricStatusRequest status) {
-        RubricStatus domainStatus = RubricStatus.valueOf(status.name());
-        return new ChangeSchoolRubricVersionStatusCommand(schoolId, versionId, domainStatus);
+    public static ChangeSchoolRubricVersionStatusCommand fromSchoolRequest(UUID schoolId, UUID versionId, RubricStatus status) {
+        return new ChangeSchoolRubricVersionStatusCommand(schoolId, versionId, status);
     }
 }

@@ -72,30 +72,22 @@ public class ChangeSystemRubricVersionStatusUseCase implements IUseCase<ChangeSy
                 throw new IllegalStateException("Chỉ có thể ban hành (PUBLISH) phiên bản đang ở trạng thái Nháp (DRAFT).");
             }
 
-            // KIỂM TRA FRAMEWORK GỐC (Fix lỗi text thông báo)
+            // KIỂM TRA FRAMEWORK GỐC
             Framework framework = frameworkRepository.findById(rubric.getFrameworkId())
                     .orElseThrow(() -> new NotFoundException("Không tìm thấy Khung tiêu chuẩn (Framework) liên kết."));
             if (!framework.isActive()) {
                 throw new IllegalStateException("Không thể ban hành Rubric này vì Khung tiêu chuẩn (Framework) gốc đang bị vô hiệu hóa.");
             }
 
-            // Cập nhật currentVersionId cho Vỏ Rubric + Audit Log
-//            rubric.setUpdatedAt(now);
-//            rubric.setUpdatedBy(currentUserId);
-            rubricRepository.save(rubric);
+            // ĐÃ BỎ LỆNH SAVE RUBRIC DƯ THỪA Ở ĐÂY VÌ MODEL KHÔNG CÒN CURRENTVERSIONID
 
         } else if (command.status() == RubricStatus.ARCHIVED) {
-            // Không cho Archive bản đang là Current Version
-            if (rubric.getCurrentVersionId() != null && rubric.getCurrentVersionId().equals(version.getId())) {
-                throw new IllegalStateException("Không thể lưu trữ (ARCHIVE) phiên bản đang được áp dụng hiện hành.");
-            }
-
         } else if (command.status() == RubricStatus.DRAFT) {
-            // CHẶN LỖ HỔNG LÙI TRẠNG THÁI: Đã Publish/Archive thì không cho quay về Draft
+            // CHẶN LỖ HỔNG LÙI TRẠNG THÁI
             throw new IllegalStateException("Hành động bị từ chối: Không thể chuyển một phiên bản đã Ban hành/Lưu trữ quay ngược lại trạng thái Nháp (DRAFT). Vui lòng tạo phiên bản mới.");
         }
 
-        // 5. Lưu xuống DB
+        // 5. Lưu trạng thái mới cho Version
         version.setStatus(command.status());
         version.setUpdatedAt(now);
         version.setUpdatedBy(currentUserId);

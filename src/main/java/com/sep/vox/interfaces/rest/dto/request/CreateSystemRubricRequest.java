@@ -47,7 +47,7 @@ public record CreateSystemRubricRequest(
                 RubricTotalScoreMethod totalScoreMethod,
                 @NotBlank(message = "Ngày bắt đầu không được để trống")
                 String effectiveFrom,
-                @NotBlank(message = "Ngày kết thúc không được để trống")
+
                 String effectiveTo
         ) {}
 }

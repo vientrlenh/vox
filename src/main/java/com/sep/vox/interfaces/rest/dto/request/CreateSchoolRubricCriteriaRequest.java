@@ -7,10 +7,9 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
-// Đổi tên thành Criteria (số nhiều) để thể hiện việc thêm nhiều tiêu chí
 public record CreateSchoolRubricCriteriaRequest(
         @NotEmpty(message = "Phải có ít nhất 1 tiêu chí được gửi lên")
-        @Valid // Quan trọng: Để Spring validate từng phần tử trong mảng
+        @Valid
         List<CriterionItemRequest> criteria
 ) {
     public record CriterionItemRequest(
@@ -24,6 +23,9 @@ public record CreateSchoolRubricCriteriaRequest(
             String name,
 
             String description,
+
+            @Valid // Để Spring validate luôn cả các ví dụ bên trong
+            List<CriterionExampleRequest> examples, // BỔ SUNG MẢNG EXAMPLES
 
             @NotNull(message = "Trọng số không được để trống")
             @DecimalMin(value = "0.0", message = "Trọng số phải lớn hơn hoặc bằng 0")
@@ -41,6 +43,17 @@ public record CreateSchoolRubricCriteriaRequest(
 
             @NotNull(message = "Cờ bắt buộc (Is Required) không được để trống")
             Boolean isRequired
-    ) {
-    }
+    ) {}
+
+    // BỔ SUNG RECORD CHO EXAMPLE
+    public record CriterionExampleRequest(
+            @NotBlank(message = "Nội dung ví dụ (transcript) không được để trống")
+            String transcript,
+
+            @NotBlank(message = "Giải thích (explanation) không được để trống")
+            String explanation,
+
+            @NotNull(message = "Điểm kỳ vọng không được để trống")
+            BigDecimal expectedScore
+    ) {}
 }

@@ -16,7 +16,6 @@ public record CreateSchoolRubricResultBandsCommand(
             String description,
             BigDecimal mappedScoreMin,
             BigDecimal mappedScoreMax,
-            Integer order,
-            Boolean isPassing
+            Integer order
     ) {}
 }

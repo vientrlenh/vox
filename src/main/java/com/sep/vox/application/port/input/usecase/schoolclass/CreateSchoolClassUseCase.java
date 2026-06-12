@@ -140,9 +140,9 @@ public class CreateSchoolClassUseCase implements IUseCase<CreateSchoolClassComma
     private void validateSchoolGrade(UUID schoolGradeId, UUID schoolId) {
         var grade = schoolGradeRepository.findById(schoolGradeId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy khối học"));
-        if (!Objects.equals(grade.getSchoolId(), schoolId)) {
-            throw new IllegalArgumentException("Khối học không thuộc trường hiện tại");
-        }
+//        if (!Objects.equals(grade.getSchoolId(), schoolId)) {
+//            throw new IllegalArgumentException("Khối học không thuộc trường hiện tại");
+//        }
         if (grade.getStatus() != SchoolGradeStatus.ACTIVE) {
             throw new IllegalStateException("Khối học không hoạt động");
         }

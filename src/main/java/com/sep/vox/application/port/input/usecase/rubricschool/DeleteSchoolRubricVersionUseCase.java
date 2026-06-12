@@ -12,11 +12,7 @@ import com.sep.vox.domain.model.rubric.RubricStatus;
 import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
-import com.sep.vox.domain.repository.RubricCriterionRepository;
-import com.sep.vox.domain.repository.RubricRepository;
-import com.sep.vox.domain.repository.RubricResultBandRepository;
-import com.sep.vox.domain.repository.RubricVersionRepository;
-import com.sep.vox.domain.repository.UserRepository;
+import com.sep.vox.domain.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +28,7 @@ public class DeleteSchoolRubricVersionUseCase implements IUseCase<DeleteSchoolRu
     private final RubricResultBandRepository rubricResultBandRepository;     // THÊM MỚI
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
+    private final SchoolRepository schoolRepository;
 
     public DeleteSchoolRubricVersionUseCase(
             RubricVersionRepository rubricVersionRepository,
@@ -39,13 +36,14 @@ public class DeleteSchoolRubricVersionUseCase implements IUseCase<DeleteSchoolRu
             RubricCriterionRepository rubricCriterionRepository,
             RubricResultBandRepository rubricResultBandRepository,
             UserRepository userRepository,
-            UserContextPort userContextPort) {
+            UserContextPort userContextPort, SchoolRepository schoolRepository) {
         this.rubricVersionRepository = rubricVersionRepository;
         this.rubricRepository = rubricRepository;
         this.rubricCriterionRepository = rubricCriterionRepository;
         this.rubricResultBandRepository = rubricResultBandRepository;
         this.userRepository = userRepository;
         this.userContextPort = userContextPort;
+        this.schoolRepository = schoolRepository;
     }
 
     @Override
@@ -72,6 +70,13 @@ public class DeleteSchoolRubricVersionUseCase implements IUseCase<DeleteSchoolRu
                 !rubric.getSchoolId().equals(command.schoolId()) ||
                 (currentUser.getSchoolId() != null && !currentUser.getSchoolId().equals(rubric.getSchoolId()))) {
             throw new ForbiddenException("BẢO MẬT: Bạn không có quyền can thiệp vào phiên bản của trường khác.");
+        }
+
+        // BỔ SUNG: Kiểm tra xem trường học có đang hoạt động không
+        var school = schoolRepository.findById(command.schoolId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học."));
+        if (!school.isActive()) {
+            throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");
         }
 
 

@@ -7,4 +7,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import com.sep.vox.infrastructure.persistence.entity.RubricCriterionBandJpaEntity;
 
 public interface SpringDataRubricCriterionBandRepository extends JpaRepository<RubricCriterionBandJpaEntity, UUID> {
+    void deleteByCriterionId(UUID criterionId);
 }

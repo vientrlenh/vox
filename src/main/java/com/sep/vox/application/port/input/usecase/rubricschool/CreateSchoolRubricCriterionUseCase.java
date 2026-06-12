@@ -13,10 +13,9 @@ import com.sep.vox.domain.model.rubric.RubricStatus;
 import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
-import com.sep.vox.domain.repository.RubricCriterionRepository;
-import com.sep.vox.domain.repository.RubricRepository;
-import com.sep.vox.domain.repository.RubricVersionRepository;
-import com.sep.vox.domain.repository.UserRepository;
+import com.sep.vox.domain.repository.*;
+import com.sep.vox.domain.valueobject.rubric.RubricCriterionExample;
+import com.sep.vox.domain.valueobject.rubric.RubricCriterionExamples;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,25 +35,26 @@ public class CreateSchoolRubricCriterionUseCase implements IUseCase<CreateSchool
     private final RubricRepository rubricRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
+    private final SchoolRepository schoolRepository;
 
     public CreateSchoolRubricCriterionUseCase(
             RubricCriterionRepository rubricCriterionRepository,
             RubricVersionRepository rubricVersionRepository,
             RubricRepository rubricRepository,
             UserRepository userRepository,
-            UserContextPort userContextPort) {
+            UserContextPort userContextPort, SchoolRepository schoolRepository) {
         this.rubricCriterionRepository = rubricCriterionRepository;
         this.rubricVersionRepository = rubricVersionRepository;
         this.rubricRepository = rubricRepository;
         this.userRepository = userRepository;
         this.userContextPort = userContextPort;
+        this.schoolRepository = schoolRepository;
     }
 
     @Override
     @Transactional
     public List<UUID> execute(CreateSchoolRubricCriteriaCommand command) {
-
-        // 1. Xác thực tài khoản (Bổ sung check ACTIVE)
+        // 1. Xác thực tài khoản
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
@@ -63,7 +63,7 @@ public class CreateSchoolRubricCriterionUseCase implements IUseCase<CreateSchool
             throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
         }
 
-        // 2. Lấy Version và kiểm tra trạng thái DRAFT
+        // 2. Lấy Version và kiểm tra DRAFT
         RubricVersion version = rubricVersionRepository.findById(command.versionId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản Rubric này."));
 
@@ -71,7 +71,7 @@ public class CreateSchoolRubricCriterionUseCase implements IUseCase<CreateSchool
             throw new IllegalStateException("Chỉ được phép thêm tiêu chí khi Rubric đang ở trạng thái Nháp (DRAFT).");
         }
 
-        // 3. Kiểm tra Rubric gốc & Quyền của Trường
+        // 3. Kiểm tra Rubric gốc & Quyền
         Rubric rubric = rubricRepository.findById(version.getRubricId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc."));
 
@@ -80,30 +80,45 @@ public class CreateSchoolRubricCriterionUseCase implements IUseCase<CreateSchool
             throw new ForbiddenException("BẢO MẬT: Bạn không có quyền chỉnh sửa Rubric của trường khác.");
         }
 
-        OffsetDateTime now = OffsetDateTime.now();
+        // (Bổ sung) Kiểm tra xem trường học có đang hoạt động không
+        var school = schoolRepository.findById(command.schoolId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học."));
 
-        // 4. Lặp và xử lý danh sách tiêu chí (CÓ CHỐNG TRÙNG LẶP)
+        if (!school.isActive()) {
+            throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");
+        }
+
+
+
+        OffsetDateTime now = OffsetDateTime.now();
         Set<String> uniqueCodes = new HashSet<>();
         Set<UUID> uniqueFrameworkIds = new HashSet<>();
 
+        // 4. Xử lý danh sách tiêu chí
         List<RubricCriterion> criteriaToSave = command.criteria().stream().map(cCmd -> {
 
             String safeCode = StringNormalization.trimAndCollapseSpaces(cCmd.code());
             String safeName = StringNormalization.trimAndCollapseSpaces(cCmd.name());
 
-            // Check trùng mã Code ngay trong mảng gửi lên
             if (!uniqueCodes.add(safeCode)) {
                 throw new IllegalArgumentException("Dữ liệu gửi lên bị trùng lặp Mã tiêu chí (Code): " + safeCode);
             }
 
-            // Check trùng Framework Criterion ID ngay trong mảng gửi lên
             if (!uniqueFrameworkIds.add(cCmd.frameworkCriterionId())) {
                 throw new IllegalArgumentException("Dữ liệu gửi lên bị trùng lặp Framework Criterion cho tiêu chí: " + safeName);
             }
 
-            // Validate Logic điểm
             if (cCmd.minScore().compareTo(cCmd.maxScore()) > 0) {
                 throw new IllegalArgumentException("Tiêu chí '" + safeCode + "': Điểm sàn không được lớn hơn điểm trần.");
+            }
+
+            // TẠO VALUE OBJECT CHO EXAMPLES (Đã fix lỗi .values())
+            RubricCriterionExamples examplesVO = null;
+            if (cCmd.examples() != null && !cCmd.examples().isEmpty()) {
+                List<RubricCriterionExample> exampleList = cCmd.examples().stream()
+                        .map(exCmd -> new RubricCriterionExample(exCmd.transcript(), exCmd.explanation(), exCmd.expectedScore()))
+                        .toList();
+                examplesVO = new RubricCriterionExamples(exampleList);
             }
 
             return new RubricCriterion(
@@ -112,6 +127,7 @@ public class CreateSchoolRubricCriterionUseCase implements IUseCase<CreateSchool
                     safeCode,
                     safeName,
                     cCmd.description() != null ? StringNormalization.trimAndCollapseSpaces(cCmd.description()) : null,
+                    examplesVO, // Gắn Value Object vào đây
                     cCmd.weight(),
                     cCmd.minScore(),
                     cCmd.maxScore(),
@@ -121,12 +137,11 @@ public class CreateSchoolRubricCriterionUseCase implements IUseCase<CreateSchool
             );
         }).collect(Collectors.toList());
 
-        // 5. Lưu vào Database & Bắt lỗi trùng lặp với dữ liệu cũ
+        // 5. Lưu xuống DB
         try {
             rubricCriterionRepository.saveAll(criteriaToSave);
         } catch (DataIntegrityViolationException e) {
-            // Lỗi này xảy ra khi safeCode hoặc frameworkCriterionId đã có sẵn trong bảng của Version này từ trước.
-            throw new IllegalStateException("Lỗi lưu dữ liệu: Mã tiêu chí hoặc Khung tiêu chuẩn (Framework) đã tồn tại trong phiên bản Rubric này từ trước. Vui lòng kiểm tra lại.");
+            throw new IllegalStateException("Lỗi lưu dữ liệu: Mã tiêu chí hoặc Khung tiêu chuẩn đã tồn tại trong phiên bản này từ trước.");
         }
 
         return criteriaToSave.stream().map(RubricCriterion::getId).collect(Collectors.toList());

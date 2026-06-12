@@ -15,7 +15,6 @@ public record CreateSystemRubricResultBandsCommand (
             String description,
             BigDecimal mappedScoreMin,
             BigDecimal mappedScoreMax,
-            Integer order,
-            Boolean isPassing
+            Integer order
     ) {}
 }

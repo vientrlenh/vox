@@ -51,7 +51,7 @@ public class CreateSystemRubricResultBandsUseCase implements IUseCase<CreateSyst
     @Override
     @Transactional
     public List<UUID> execute(CreateSystemRubricResultBandsCommand command) {
-// 1. Xác thực tài khoản (BỔ SUNG CHECK ACTIVE)
+        // 1. Xác thực tài khoản (BỔ SUNG CHECK ACTIVE)
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         var currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
@@ -133,7 +133,6 @@ public class CreateSystemRubricResultBandsUseCase implements IUseCase<CreateSyst
                     bCmd.mappedScoreMin(),
                     bCmd.mappedScoreMax(),
                     bCmd.order(),
-                    bCmd.isPassing(),
                     now, now, currentUserId, currentUserId
             );
         }).collect(Collectors.toList());

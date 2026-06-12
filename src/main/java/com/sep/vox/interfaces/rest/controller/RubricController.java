@@ -4,6 +4,7 @@ package com.sep.vox.interfaces.rest.controller;
 import com.sep.vox.application.port.input.usecase.rubricschool.*;
 
 import com.sep.vox.application.port.input.usecase.rubricsystem.*;
+import com.sep.vox.domain.model.rubric.RubricStatus;
 import com.sep.vox.interfaces.rest.dto.request.*;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 import com.sep.vox.interfaces.rest.mapper.*;
@@ -36,12 +37,22 @@ public class RubricController {
     private final DeleteSystemRubricVersionUseCase deleteSystemRubricVersionUseCase;
     private final DeleteSystemRubricCriterionUseCase deleteSystemRubricCriterionUseCase;
     private final DeleteSystemRubricResultBandUseCase deleteSystemRubricResultBandUseCase;
-    private final CreateSchoolRubricApplicabilityUseCase createSchoolRubricApplicabilityUseCase;
-    private final CreateSystemRubricApplicabilityUseCase createSystemRubricApplicabilityUseCase;
     private final ChangeSystemRubricVersionStatusUseCase changeSystemRubricVersionStatusUseCase;
     private final ChangeSchoolRubricVersionStatusUseCase changeSchoolRubricVersionStatusUseCase;
 
-    public RubricController(CreateSchoolRubricCriterionUseCase createSchoolRubricCriterionUseCase, CreateSchoolRubricUseCase createSchoolRubricUseCase, CreateSystemRubricUseCase createSystemRubricUseCase, CreateSystemRubricCriteriaUseCase createSystemRubricCriteriaUseCase, CreateSchoolRubricResultBandsUseCase createSchoolRubricResultBandsUseCase, CreateSystemRubricResultBandsUseCase createSystemRubricResultBandsUseCase, DeleteSchoolRubricVersionUseCase deleteSchoolRubricVersionUseCase, DeleteSchoolRubricCriterionUseCase deleteSchoolRubricCriterionUseCase, DeleteSchoolRubricResultBandUseCase deleteSchoolRubricResultBandUseCase, DeleteSystemRubricUseCase deleteSystemRubricUseCase, DeleteSystemRubricVersionUseCase deleteSystemRubricVersionUseCase, DeleteSystemRubricCriterionUseCase deleteSystemRubricCriterionUseCase, DeleteSystemRubricResultBandUseCase deleteSystemRubricResultBandUseCase, CreateSchoolRubricApplicabilityUseCase createSchoolRubricApplicabilityUseCase, CreateSystemRubricApplicabilityUseCase createSystemRubricApplicabilityUseCase, ChangeSystemRubricVersionStatusUseCase changeSystemRubricVersionStatusUseCase, ChangeSchoolRubricVersionStatusUseCase changeSchoolRubricVersionStatusUseCase) {
+    public RubricController(CreateSchoolRubricCriterionUseCase createSchoolRubricCriterionUseCase,
+                            CreateSchoolRubricUseCase createSchoolRubricUseCase,
+                            CreateSystemRubricUseCase createSystemRubricUseCase,
+                            CreateSystemRubricCriteriaUseCase createSystemRubricCriteriaUseCase,
+                            CreateSchoolRubricResultBandsUseCase createSchoolRubricResultBandsUseCase,
+                            CreateSystemRubricResultBandsUseCase createSystemRubricResultBandsUseCase,
+                            DeleteSchoolRubricVersionUseCase deleteSchoolRubricVersionUseCase,
+                            DeleteSchoolRubricCriterionUseCase deleteSchoolRubricCriterionUseCase,
+                            DeleteSchoolRubricResultBandUseCase deleteSchoolRubricResultBandUseCase,
+                            DeleteSystemRubricUseCase deleteSystemRubricUseCase,
+                            DeleteSystemRubricVersionUseCase deleteSystemRubricVersionUseCase,
+                            DeleteSystemRubricCriterionUseCase deleteSystemRubricCriterionUseCase, DeleteSystemRubricResultBandUseCase deleteSystemRubricResultBandUseCase, ChangeSystemRubricVersionStatusUseCase changeSystemRubricVersionStatusUseCase,
+                            ChangeSchoolRubricVersionStatusUseCase changeSchoolRubricVersionStatusUseCase) {
         this.createSchoolRubricCriterionUseCase = createSchoolRubricCriterionUseCase;
         this.createSchoolRubricUseCase = createSchoolRubricUseCase;
         this.createSystemRubricUseCase = createSystemRubricUseCase;
@@ -55,14 +66,12 @@ public class RubricController {
         this.deleteSystemRubricVersionUseCase = deleteSystemRubricVersionUseCase;
         this.deleteSystemRubricCriterionUseCase = deleteSystemRubricCriterionUseCase;
         this.deleteSystemRubricResultBandUseCase = deleteSystemRubricResultBandUseCase;
-        this.createSchoolRubricApplicabilityUseCase = createSchoolRubricApplicabilityUseCase;
-        this.createSystemRubricApplicabilityUseCase = createSystemRubricApplicabilityUseCase;
         this.changeSystemRubricVersionStatusUseCase = changeSystemRubricVersionStatusUseCase;
         this.changeSchoolRubricVersionStatusUseCase = changeSchoolRubricVersionStatusUseCase;
     }
 
     //==========================RUBRIC  & RUBRIC VERSION===================================
-    // API 1: TẠO RUBRIC & VERSION (DRAFT) = tối ưu/chưa chạy lại
+    // API 1: TẠO RUBRIC & VERSION (DRAFT) = tối ưu/chưa chạy lại => Check Đợt 2
     @Operation(summary = "Tạo mới một bộ tiêu chí (Rubric) cho trường học")
     @PostMapping("/schools/{schoolId}/rubrics")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
@@ -77,7 +86,7 @@ public class RubricController {
     }
 
 
-    //Tạo mới 1 rubric cho 1 hệ thống đã tối ưu / chưa chạy lại
+    //Tạo mới 1 rubric cho 1 hệ thống đã tối ưu / => đã check đợt 2
     @Operation(summary = "Tạo mới một (Rubric) cho hệ thống")
     @PostMapping("/system/rubrics")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')") // Phân quyền cao hơn
@@ -91,7 +100,7 @@ public class RubricController {
     }
 
 
-    //Xóa rubric version của trường -> ko cho xoa rubric gốc (đã tối ưu/chưa chạy lại)
+    //Xóa rubric version của trường -> ko cho xoa rubric gốc (đã tối ưu/chưa chạy lại) => check đợt 2
     @Operation(summary = "Xử lý phiên bản Rubric (Xóa nếu DRAFT, Lưu trữ nếu PUBLISHED)")
     @DeleteMapping("/schools/{schoolId}/rubric-versions/{versionId}")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
@@ -100,26 +109,25 @@ public class RubricController {
             @PathVariable UUID versionId
     ) {
         var command = DeleteSchoolRubricCommandMapper.versionFromRequest(schoolId, versionId);
-        var response = deleteSchoolRubricVersionUseCase.execute(command);
+        deleteSchoolRubricVersionUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Xóa phiên bản Rubric thành công"));
     }
 
 
-    // Đang làm ở đây - dc xoa rubric gốc
-    @Operation(summary = "Xóa rubric của hệ thống")
-    @DeleteMapping("/system/{rubricId}")
+    // Đang làm ở đây - dc xoa rubric gốc => Check đợt 2
+    @Operation(summary = "Xóa toàn bộ Rubric của hệ thống (Chỉ cho phép khi chưa có bản nào được PUBLISHED/ARCHIVED)")
+    @DeleteMapping("/system/rubrics/{rubricId}") // SỬA PATH Ở ĐÂY CHO CHUẨN
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteSystemRubric(
             @PathVariable UUID rubricId
     ) {
         var command = DeleteSystemRubricCommandMapper.fromRequest(rubricId);
-        var response = deleteSystemRubricUseCase.execute(command);
-
+        deleteSystemRubricUseCase.execute(command); // UseCase trả về Void nên ko cần gán biến
         return ResponseEntity.ok(ApiResponse.success("Xóa bộ Rubric hệ thống thành công"));
     }
 
 
-    // Xóa rubric version hệ thồng
+    // Xóa rubric version hệ thồng => Đã check 2
     @Operation(summary = "Xóa rubric version của hệ thống")
     @DeleteMapping("/system/rubric-versions/{versionId}")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
@@ -127,31 +135,31 @@ public class RubricController {
             @PathVariable UUID versionId
     ) {
         var command = DeleteSystemRubricCommandMapper.versionFromRequest(versionId);
-        var response = deleteSystemRubricVersionUseCase.execute(command);
+        deleteSystemRubricVersionUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Xử lý phiên bản hệ thống thành công"));
     }
 
-    // Update RubricVersion của system admin
+    // Update Status RubricVersion của system admin => đã check 2
     @Operation(summary = "Đổi trạng thái Phiên bản Rubric Hệ thống (Ví dụ: DRAFT -> PUBLISHED, ARCHIVED)")
     @PatchMapping("/system/rubric-versions/{versionId}/status")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> changeSystemRubricVersionStatus(
             @PathVariable UUID versionId,
-            @RequestParam(name = "status") RubricStatusRequest status // Nhận Enum của REST
+            @RequestParam(name = "status") RubricStatus status
     ) {
         var command = ChangeRubricVersionStatusCommandMapper.fromSystemRequest(versionId, status);
         var responseId = changeSystemRubricVersionStatusUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Chuyển trạng thái phiên bản thành công!", responseId));
     }
 
-    // API: CẬP NHẬT TRẠNG THÁI PHIÊN BẢN RUBRIC TRƯỜNG HỌC
+    // API: CẬP NHẬT TRẠNG THÁI PHIÊN BẢN RUBRIC TRƯỜNG HỌC => đã check 2
     @Operation(summary = "Đổi trạng thái Phiên bản Rubric Trường học (Ví dụ: DRAFT -> PUBLISHED, ARCHIVED)")
     @PatchMapping("/schools/{schoolId}/rubric-versions/{versionId}/status")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> changeSchoolRubricVersionStatus(
             @PathVariable UUID schoolId,
             @PathVariable UUID versionId,
-            @RequestParam(name = "status") RubricStatusRequest status
+            @RequestParam(name = "status") RubricStatus status
     ) {
         var command = ChangeRubricVersionStatusCommandMapper.fromSchoolRequest(schoolId, versionId, status);
         var responseId = changeSchoolRubricVersionStatusUseCase.execute(command);
@@ -160,7 +168,7 @@ public class RubricController {
 
 
     //=====================RUBRIC CRITERION===============================
-    //Thêm Rubric Creitrion vào Rubric Version đã tối ưu/ chưa chạy lại
+    //Thêm Rubric Creitrion vào Rubric Version đã tối ưu/ chưa chạy lại =>check 2
     @Operation(summary = "Thêm một Tiêu chí (Criterion) vào Phiên bản Rubric (RubricVersion) cho trường học")
     @PostMapping("/schools/{schoolId}/rubric-versions/{versionId}/criteria")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
@@ -178,6 +186,7 @@ public class RubricController {
 
     // Phục vụ cho việc tạo bài kiểm tra đầu vào (cá nhân hóa đánh giá năng lực)
     //Đã tối ưu/chưa chạy lại
+    // đã check 2
     @Operation(summary = "Thêm Rubric version hệ thống")
     @PostMapping("/system/rubric-versions/{versionId}/criteria")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
@@ -194,6 +203,7 @@ public class RubricController {
 
     // Xóa 1 version Rubric khỏi rubric của trường
     // đã tối ưu / chưa chạy lại
+    //Check 2
     @Operation(summary = "Xóa một Tiêu chí khỏi phiên bản Rubric")
     @DeleteMapping("/schools/{schoolId}/rubric-versions/{versionId}/criteria/{criterionId}")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
@@ -208,8 +218,9 @@ public class RubricController {
     }
 
 
-    // Xóa tiêu chí hệ thống
+    // Xóa tiêu chí rubric trong hệ thống
     // Đã tối ưu / chưa chạy lại
+    // check 2
     @Operation(summary = "Xóa một Tiêu chí(Rubric Version) khỏi phiên bản Rubric Hệ thống")
     @DeleteMapping("/system/rubric-versions/{versionId}/criteria/{criterionId}")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
@@ -218,13 +229,14 @@ public class RubricController {
             @PathVariable UUID criterionId
     ) {
         var command = DeleteSystemRubricCommandMapper.criterionFromRequest(versionId, criterionId);
-        var response = deleteSystemRubricCriterionUseCase.execute(command);
+        deleteSystemRubricCriterionUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Xóa tiêu chí hệ thống thành công"));
     }
 
     //=====================RUBRIC RESULT BAND===============================
     // Phục vụ : Đánh giá sinh viên của trường (Giỏi, Khá, Trung Bình)
     //Đã tối ưu/ chưa chạy lại
+    // Check 2
     @Operation(summary = "Thêm một Thang điểm kết quả/đánh giá (Result Band) vào Phiên bản Rubric của Trường")
     @PostMapping("/schools/{schoolId}/rubric-versions/{versionId}/result-bands")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
@@ -241,6 +253,7 @@ public class RubricController {
 
     //Phục vụ: Đánh giá sinh viên của system (Giỏi, Khá, Trung Bình)
     //Đã tối ưu/ chưa chạy lại
+    // Check 2
     @Operation(summary = "Thêm một Thang điểm kết quả/đánh giá vào Rubric Hệ thống")
     @PostMapping("/system/rubric-versions/{versionId}/result-bands")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
@@ -254,6 +267,7 @@ public class RubricController {
     }
 
     // API: XÓA LẺ 1 THANG ĐIỂM KẾT QUẢ (RESULT BAND)
+    //Check 2
     @Operation(summary = "Xóa một Thang điểm kết quả khỏi phiên bản Rubric")
     @DeleteMapping("/schools/{schoolId}/rubric-versions/{versionId}/result-bands/{resultBandId}")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
@@ -263,7 +277,7 @@ public class RubricController {
             @PathVariable UUID resultBandId
     ) {
         var command = DeleteSchoolRubricCommandMapper.resultBandFromRequest(schoolId, versionId, resultBandId);
-        var response = deleteSchoolRubricResultBandUseCase.execute(command);
+        deleteSchoolRubricResultBandUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Xóa thang điểm thành công"));
     }
 
@@ -277,38 +291,8 @@ public class RubricController {
             @PathVariable UUID resultBandId
     ) {
         var command = DeleteSystemRubricCommandMapper.resultBandFromRequest(versionId, resultBandId);
-        var response = deleteSystemRubricResultBandUseCase.execute(command);
+        deleteSystemRubricResultBandUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Xóa thang điểm hệ thống thành công"));
     }
-
-    //==============================RUBRIC APPLICABILITY===============================
-     // API: Cấu hình phạm vi áp dụng (Applicability) cho Rubric Version của trường
-     // Đã tối ưu / chưa chạy lại
-     @Operation(summary = "Apply rubric version  ckho các khối, lớp của trường")
-     @PostMapping("/schools/{schoolId}/rubric-versions/{versionId}/applicabilities")
-     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-     public ResponseEntity<ApiResponse<List<UUID>>> createSchoolRubricApplicability(
-             @PathVariable UUID schoolId,
-             @PathVariable UUID versionId,
-             @Valid @RequestBody CreateSchoolRubricApplicabilityRequest request
-     ) {
-         var command = CreateRubricApplicabilityCommandMapper.fromSchoolRequest(schoolId, versionId, request);
-         var applicabilityIds = createSchoolRubricApplicabilityUseCase.execute(command);
-         return ResponseEntity.ok(ApiResponse.success("Cấu hình phạm vi áp dụng thành công", applicabilityIds));
-     }
-
-     // Create Rubric Application cho system
-    @Operation(summary = "Apply rubric version cho các khối, lớp của hệ thống")
-    @PostMapping("/system/rubric-versions/{versionId}/applicabilities")
-    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public ResponseEntity<ApiResponse<List<UUID>>> createSystemRubricApplicability(
-            @PathVariable UUID versionId,
-            @Valid @RequestBody CreateSystemRubricApplicabilityRequest request
-    ) {
-        var command = CreateRubricApplicabilityCommandMapper.fromSystemRequest(versionId, request);
-        var applicabilityIds = createSystemRubricApplicabilityUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Thiết lập thời gian áp dụng thành công", applicabilityIds));
-    }
-
 
 }

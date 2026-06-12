@@ -19,8 +19,7 @@ public class CreateSchoolRubricResultBandsCommandMapper {
                         b.description(),
                         b.mappedScoreMin(),
                         b.mappedScoreMax(),
-                        b.order(),
-                        b.isPassing()
+                        b.order()
                 ))
                 .collect(Collectors.toList());
 

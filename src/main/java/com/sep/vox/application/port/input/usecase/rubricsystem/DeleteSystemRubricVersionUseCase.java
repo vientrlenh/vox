@@ -55,7 +55,7 @@ public class DeleteSystemRubricVersionUseCase implements IUseCase<DeleteSystemRu
             throw new ForbiddenException("Không thể can thiệp vào phiên bản của trường học.");
         }
 
-        // LOGIC XÓA (CÓ DỌN RÁC) HOẶC LƯU TRỮ
+        // Delete CadeCache
         if (version.getStatus() == RubricStatus.DRAFT) {
             rubricCriterionRepository.deleteByRubricVersionId(version.getId());
             rubricResultBandRepository.deleteByRubricVersionId(version.getId());

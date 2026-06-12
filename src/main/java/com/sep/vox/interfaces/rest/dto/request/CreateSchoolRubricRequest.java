@@ -26,7 +26,7 @@ public record CreateSchoolRubricRequest(
         UUID frameworkId,
 
         @NotEmpty(message = "Rubric phải có ít nhất 1 phiên bản")
-        @Valid // Quan trọng: Bật @Valid để Spring check các validation bên trong record con
+        @Valid
         List<RubricSchoolVersionRequest> versions
 ) {
     public record RubricSchoolVersionRequest(
@@ -41,10 +41,11 @@ public record CreateSchoolRubricRequest(
 
             @NotNull(message = "Phương pháp tính tổng điểm không được để trống")
             RubricTotalScoreMethod totalScoreMethod,
-            @NotBlank(message = "Ngày bắt đầu không được để trống")
+
+            @NotBlank(message = "Ngày bắt đầu áp dụng không được để trống")
             String effectiveFrom,
-            @NotBlank(message = "Ngày kết thúc không được để trống")
+
+            // Đã gỡ @NotBlank để cho phép null (Áp dụng vô thời hạn)
             String effectiveTo
-    ) {
-    }
+    ) {}
 }

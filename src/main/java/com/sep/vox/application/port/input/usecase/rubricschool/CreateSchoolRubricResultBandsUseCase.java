@@ -33,6 +33,7 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
     private final FrameworkResultBandRepository frameworkResultBandRepository;
+    private final SchoolRepository schoolRepository;
 
     public CreateSchoolRubricResultBandsUseCase(
             RubricResultBandRepository rubricResultBandRepository,
@@ -40,13 +41,14 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
             RubricRepository rubricRepository,
             UserRepository userRepository,
             UserContextPort userContextPort,
-            FrameworkResultBandRepository frameworkResultBandRepository) {
+            FrameworkResultBandRepository frameworkResultBandRepository, SchoolRepository schoolRepository) {
         this.rubricResultBandRepository = rubricResultBandRepository;
         this.rubricVersionRepository = rubricVersionRepository;
         this.rubricRepository = rubricRepository;
         this.userRepository = userRepository;
         this.userContextPort = userContextPort;
         this.frameworkResultBandRepository = frameworkResultBandRepository;
+        this.schoolRepository = schoolRepository;
     }
 
     @Override
@@ -75,6 +77,12 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
         if (!rubric.getSchoolId().equals(command.schoolId()) ||
                 (currentUser.getSchoolId() != null && !currentUser.getSchoolId().equals(rubric.getSchoolId()))) {
             throw new ForbiddenException("BẢO MẬT: Bạn không có quyền chỉnh sửa Rubric của trường khác.");
+        }
+        // BỔ SUNG: Kiểm tra xem trường học có đang hoạt động không
+        var school = schoolRepository.findById(command.schoolId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học."));
+        if (!school.isActive()) {
+            throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");
         }
 
         OffsetDateTime now = OffsetDateTime.now();
@@ -135,7 +143,6 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
                     bCmd.mappedScoreMin(),
                     bCmd.mappedScoreMax(),
                     bCmd.order(),
-                    bCmd.isPassing(),
                     now, now, currentUserId, currentUserId
             );
         }).collect(Collectors.toList());

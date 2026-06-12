@@ -17,8 +17,7 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "users", indexes = {
     @Index(columnList = "email", name = "idx_user_email", unique = true),
-    @Index(columnList = "phone", name = "idx_user_phone", unique = true),
-    @Index(columnList = "school_id", name = "idx_user_school")
+    @Index(columnList = "phone", name = "idx_user_phone", unique = true)
 })
 public class UserJpaEntity {
     
@@ -76,14 +75,11 @@ public class UserJpaEntity {
     @Column(name = "updated_by")
     private UUID updatedBy;
 
-    @Column(name = "school_id")
-    private UUID schoolId;
-
     protected UserJpaEntity() {}
 
     public UserJpaEntity(UUID id, String email, String passwordHash, String phone,
             String fullName, String gender, LocalDate dateOfBirth, String address, String avatarUrl, String status,
-            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy, UUID schoolId) {
+            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.email = email;
         this.passwordHash = passwordHash;
@@ -98,7 +94,6 @@ public class UserJpaEntity {
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
         this.updatedBy = updatedBy;
-        this.schoolId = schoolId;
     }
 
     
@@ -205,14 +200,6 @@ public class UserJpaEntity {
 
     public void setUpdatedBy(UUID updatedBy) {
         this.updatedBy = updatedBy;
-    }
-
-    public UUID getSchoolId() {
-        return schoolId;
-    }
-
-    public void setSchoolId(UUID schoolId) {
-        this.schoolId = schoolId;
     }
 
     public String getAvatarUrl() {

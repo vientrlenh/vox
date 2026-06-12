@@ -200,7 +200,6 @@ class OAuth2LoginUseCaseTests {
             OffsetDateTime.now(),
             OffsetDateTime.now(),
             null,
-            null,
             null
         );
     }

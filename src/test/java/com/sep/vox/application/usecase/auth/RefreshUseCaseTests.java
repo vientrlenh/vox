@@ -287,7 +287,6 @@ class RefreshUseCaseTests {
             OffsetDateTime.now(),
             OffsetDateTime.now(),
             null,
-            null,
             null
         );
     }

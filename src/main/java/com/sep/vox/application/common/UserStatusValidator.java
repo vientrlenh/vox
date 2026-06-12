@@ -20,12 +20,7 @@ public final class UserStatusValidator {
     }
 
     public static void requireActiveTarget(User user) {
-        requireActiveTarget(user, "Người dùng không còn hoạt động");
+        requireActive(user, "Người dùng không còn hoạt động");
     }
 
-    public static void requireActiveTarget(User user, String message) {
-        if (user == null || user.getStatus() != UserStatus.ACTIVE) {
-            throw new IllegalStateException(message);
-        }
-    }
 }

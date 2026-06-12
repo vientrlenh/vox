@@ -47,6 +47,7 @@ public class ViewSchoolUserUseCase implements IUseCase<ViewSchoolUserCommand, Sc
 
         var targetUser = userRepository.findById(input.userId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
+        UserStatusValidator.requireActiveTarget(targetUser);
         if (!input.schoolId().equals(targetUser.getSchoolId())) {
             throw new NotFoundException("Không tìm thấy người dùng");
         }

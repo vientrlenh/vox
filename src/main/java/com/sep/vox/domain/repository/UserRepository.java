@@ -11,6 +11,7 @@ import com.sep.vox.domain.model.user.UserStatus;
 public interface UserRepository {
     Optional<User> findById(UUID id);
     List<User> findByIdIn(Collection<UUID> ids);
+    List<User> findByEmailIn(Collection<String> emails);
     Optional<User> findByPhone(String phone);
     Optional<User> findByEmail(String email);
     Optional<User> findByEmailAndStatus(String email, UserStatus status);

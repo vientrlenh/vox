@@ -14,6 +14,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -116,18 +117,29 @@ class AcceptSchoolClassUserImportUseCaseTests {
         when(importSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
         when(importSessionRepository.save(any(ImportSession.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(importRowRepository.findBySessionIdOrderByRowNumber(sessionId)).thenReturn(rows);
-        when(userRepository.findByEmail("student@example.com")).thenReturn(Optional.of(validUser));
-        when(userRepository.findByEmail("missing@example.com")).thenReturn(Optional.empty());
-        when(userRepository.findByEmail("inactive@example.com")).thenReturn(Optional.of(inactiveUser));
-        when(userRepository.findByEmail("other-school@example.com")).thenReturn(Optional.of(otherSchoolUser));
-        when(userRepository.findByEmail("duplicate-file@example.com")).thenReturn(Optional.of(duplicateFileUser));
-        when(userRepository.findByEmail("duplicate-db@example.com")).thenReturn(Optional.of(duplicateDbUser));
-        when(schoolClassRepository.findBySchoolIdAndCode(schoolId, "ENG-01")).thenReturn(Optional.of(activeClass));
-        when(schoolClassRepository.findBySchoolIdAndCode(schoolId, "MISSING")).thenReturn(Optional.empty());
-        when(schoolClassRepository.findBySchoolIdAndCode(schoolId, "INACTIVE-01")).thenReturn(Optional.of(inactiveClass));
-        when(schoolClassRepository.findBySchoolIdAndCode(schoolId, "DUP-DB")).thenReturn(Optional.of(duplicateDbClass));
-        when(schoolClassUserRepository.findByUserIdAndSchoolClassId(duplicateDbUser.getId(), duplicateDbClassId))
-            .thenReturn(Optional.of(new SchoolClassUser(duplicateDbUser.getId(), duplicateDbClassId, true, OffsetDateTime.now(), null, currentUserId)));
+        var expectedEmails = Set.of(
+            "student@example.com",
+            "missing@example.com",
+            "inactive@example.com",
+            "other-school@example.com",
+            "duplicate-file@example.com",
+            "duplicate-db@example.com"
+        );
+        var expectedClassCodes = Set.of("ENG-01", "MISSING", "INACTIVE-01", "DUP-DB");
+        when(userRepository.findByEmailIn(expectedEmails)).thenReturn(List.of(
+            validUser,
+            inactiveUser,
+            otherSchoolUser,
+            duplicateFileUser,
+            duplicateDbUser
+        ));
+        when(schoolClassRepository.findBySchoolIdAndCodeIn(schoolId, expectedClassCodes)).thenReturn(List.of(
+            activeClass,
+            inactiveClass,
+            duplicateDbClass
+        ));
+        when(schoolClassUserRepository.findByUserIdInAndSchoolClassIdIn(any(), any()))
+            .thenReturn(List.of(new SchoolClassUser(duplicateDbUser.getId(), duplicateDbClassId, true, OffsetDateTime.now(), null, currentUserId)));
         when(schoolClassUserRepository.save(any(SchoolClassUser.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         var response = useCase.execute(new AcceptSchoolClassUserImportCommand(schoolId, sessionId, mapping));
@@ -137,6 +149,12 @@ class AcceptSchoolClassUserImportUseCaseTests {
         assertThat(response.invalidRows()).isEqualTo(7L);
         assertThat(response.skippedRows()).isZero();
         assertThat(response.status()).isEqualTo("COMPLETED");
+        verify(userRepository).findByEmailIn(expectedEmails);
+        verify(schoolClassRepository).findBySchoolIdAndCodeIn(schoolId, expectedClassCodes);
+        verify(schoolClassUserRepository).findByUserIdInAndSchoolClassIdIn(any(), any());
+        verify(userRepository, never()).findByEmail(any());
+        verify(schoolClassRepository, never()).findBySchoolIdAndCode(any(), any());
+        verify(schoolClassUserRepository, never()).findByUserIdAndSchoolClassId(any(), any());
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<ImportRow>> rowsCaptor = ArgumentCaptor.forClass(List.class);

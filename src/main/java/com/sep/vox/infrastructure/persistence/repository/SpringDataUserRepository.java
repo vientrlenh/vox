@@ -14,6 +14,7 @@ import com.sep.vox.infrastructure.persistence.entity.UserJpaEntity;
 
 public interface SpringDataUserRepository extends JpaRepository<UserJpaEntity, UUID>{
     List<UserJpaEntity> findByIdIn(Collection<UUID> ids);
+    List<UserJpaEntity> findByEmailIn(Collection<String> emails);
     Optional<UserJpaEntity> findByEmail(String email);
     Optional<UserJpaEntity> findByPhone(String phone);
     boolean existsByEmail(String email);

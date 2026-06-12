@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,6 +69,19 @@ public class UserRepositoryTests {
         assertThat(found)
             .extracting(user -> user.getEmail().value())
             .containsExactlyInAnyOrder("find-id-in-1@example.com", "find-id-in-2@example.com");
+    }
+
+    @Test
+    void whenFindByEmailIn_thenReturnsMatchingUsers() {
+        userRepository.save(newUser("find-email-in-1@example.com", "0987654341"));
+        userRepository.save(newUser("find-email-in-2@example.com", "0987654342"));
+        userRepository.save(newUser("find-email-in-other@example.com", "0987654343"));
+
+        var found = userRepository.findByEmailIn(Set.of("find-email-in-1@example.com", "find-email-in-2@example.com", "missing@example.com"));
+
+        assertThat(found)
+            .extracting(user -> user.getEmail().value())
+            .containsExactlyInAnyOrder("find-email-in-1@example.com", "find-email-in-2@example.com");
     }
 
     @Test

@@ -41,6 +41,17 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     @Override
+    public List<User> findByEmailIn(Collection<String> emails) {
+        if (emails == null || emails.isEmpty()) {
+            return List.of();
+        }
+        return springDataUserRepository.findByEmailIn(emails)
+            .stream()
+            .map(UserMapper::toDomain)
+            .toList();
+    }
+
+    @Override
     public Optional<User> findByPhone(String phone) {
         return springDataUserRepository.findByPhone(phone)
             .map(UserMapper::toDomain);

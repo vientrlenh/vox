@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -23,6 +24,17 @@ public class SchoolClassUserRepositoryImpl implements SchoolClassUserRepository 
     public Optional<SchoolClassUser> findByUserIdAndSchoolClassId(UUID userId, UUID schoolClassId) {
         return springDataSchoolClassUserRepository.findByUserIdAndSchoolClassId(userId, schoolClassId)
             .map(SchoolClassUserMapper::toDomain);
+    }
+
+    @Override
+    public List<SchoolClassUser> findByUserIdInAndSchoolClassIdIn(Collection<UUID> userIds, Collection<UUID> schoolClassIds) {
+        if (userIds == null || userIds.isEmpty() || schoolClassIds == null || schoolClassIds.isEmpty()) {
+            return List.of();
+        }
+        return springDataSchoolClassUserRepository.findByUserIdInAndSchoolClassIdIn(userIds, schoolClassIds)
+            .stream()
+            .map(SchoolClassUserMapper::toDomain)
+            .toList();
     }
 
     @Override

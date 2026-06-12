@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.question;
 
 import java.time.OffsetDateTime;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,10 +21,12 @@ import com.sep.vox.domain.model.question.QuestionType;
 import com.sep.vox.domain.model.question.QuestionVisibility;
 import com.sep.vox.domain.model.question.QuestionBankStatus;
 import com.sep.vox.domain.model.question.QuestionTopicStatus;
+import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.QuestionBankRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.QuestionTopicRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
@@ -34,18 +37,21 @@ public class CreateSchoolQuestionBankQuestionUseCase implements IUseCase<CreateS
     private final QuestionTopicRepository questionTopicRepository;
     private final QuestionBankRepository questionBankRepository;
     private final UserContextPort userContextPort;
+    private final SchoolUserRepository schoolUserRepository;
 
     public CreateSchoolQuestionBankQuestionUseCase(
             UserRepository userRepository,
             QuestionRepository questionRepository,
             QuestionTopicRepository questionTopicRepository,
             QuestionBankRepository questionBankRepository,
-            UserContextPort userContextPort) {
+            UserContextPort userContextPort,
+            SchoolUserRepository schoolUserRepository) {
         this.userRepository = userRepository;
         this.questionRepository = questionRepository;
         this.questionTopicRepository = questionTopicRepository;
         this.questionBankRepository = questionBankRepository;
         this.userContextPort = userContextPort;
+        this.schoolUserRepository = schoolUserRepository;
     }
 
     @Override
@@ -57,14 +63,12 @@ public class CreateSchoolQuestionBankQuestionUseCase implements IUseCase<CreateS
         var currentUser = userRepository.findByIdAndStatus(currentUserId, UserStatus.ACTIVE)
             .orElseThrow(() -> new UnauthorizedException("Trang thai nguoi dung khong hop le"));
 
-        if (currentUser.getSchoolId() == null) {
-            throw new ForbiddenException("Nguoi dung khong thuoc truong nao");
-        }
+        var schoolId = getSchoolId(currentUser.getId());
 
         var questionTopic = questionTopicRepository.findById(command.questionTopicId())
             .orElseThrow(() -> new NotFoundException("Khong tim thay chu de cau hoi"));
 
-        if (!questionTopicRepository.isTopicBelongToSchool(questionTopic.getId(), currentUser.getSchoolId())) {
+        if (!questionTopicRepository.isTopicBelongToSchool(questionTopic.getId(), schoolId)) {
             throw new ForbiddenException("Quyen truy cap bi tu choi");
         }
 
@@ -123,5 +127,11 @@ public class CreateSchoolQuestionBankQuestionUseCase implements IUseCase<CreateS
         if (command.minResponseSeconds() > command.maxResponseSeconds()) {
             throw new IllegalStateException("Thoi gian tra loi toi thieu khong duoc lon hon thoi gian tra loi toi da");
         }
+    }
+
+    private UUID getSchoolId(UUID userId) {
+        return schoolUserRepository.findByUserId(userId)
+            .map(SchoolUser::getSchoolId)
+            .orElseThrow(() -> new IllegalStateException("Nguoi dung hien tai khong thuoc truong nao"));
     }
 }

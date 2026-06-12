@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.question;
 
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,6 +13,8 @@ import com.sep.vox.application.query.repository.QuestionReadQueryRepository;
 import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.QuestionTopicDto;
+import com.sep.vox.domain.model.school.SchoolUser;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
@@ -19,14 +23,17 @@ public class ViewTeacherBankTopicsUseCase implements IUseCase<ViewTeacherBankTop
     private final QuestionReadQueryRepository questionReadQueryRepository;
     private final UserContextPort userContextPort;
     private final UserRepository userRepository;
+    private final SchoolUserRepository schoolUserRepository;
 
     public ViewTeacherBankTopicsUseCase(
             QuestionReadQueryRepository questionReadQueryRepository,
             UserContextPort userContextPort,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            SchoolUserRepository schoolUserRepository) {
         this.questionReadQueryRepository = questionReadQueryRepository;
         this.userContextPort = userContextPort;
         this.userRepository = userRepository;
+        this.schoolUserRepository = schoolUserRepository;
     }
 
     @Override
@@ -36,7 +43,13 @@ public class ViewTeacherBankTopicsUseCase implements IUseCase<ViewTeacherBankTop
         var user = userRepository.findById(userId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
         return questionReadQueryRepository.findTeacherBankTopics(
-                input.bankId(), userId, user.getSchoolId(),
+                input.bankId(), userId, getSchoolId(user.getId()),
                 new PageRequest(input.page(), input.size()));
+    }
+
+    private UUID getSchoolId(UUID userId) {
+        return schoolUserRepository.findByUserId(userId)
+            .map(SchoolUser::getSchoolId)
+            .orElseThrow(() -> new IllegalStateException("Nguoi dung hien tai khong thuoc truong nao"));
     }
 }

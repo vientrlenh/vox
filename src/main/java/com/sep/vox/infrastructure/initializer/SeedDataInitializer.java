@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.port.output.PasswordEncoderPort;
 import com.sep.vox.domain.model.school.School;
+import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.Gender;
 import com.sep.vox.domain.model.user.Role;
 import com.sep.vox.domain.model.user.User;
@@ -22,6 +23,7 @@ import com.sep.vox.domain.model.user.UserRole;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.RoleRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.repository.UserRoleRepository;
 import com.sep.vox.domain.valueobject.DateOfBirth;
@@ -41,6 +43,7 @@ public class SeedDataInitializer implements ApplicationRunner {
     private final RoleRepository roleRepository;
     private final UserRoleRepository userRoleRepository;
     private final SchoolRepository schoolRepository;
+    private final SchoolUserRepository schoolUserRepository;
     private final PasswordEncoderPort passwordEncoderPort;
 
     public SeedDataInitializer(
@@ -48,12 +51,14 @@ public class SeedDataInitializer implements ApplicationRunner {
             RoleRepository roleRepository,
             UserRoleRepository userRoleRepository,
             SchoolRepository schoolRepository,
+            SchoolUserRepository schoolUserRepository,
             PasswordEncoderPort passwordEncoderPort
     ) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.userRoleRepository = userRoleRepository;
         this.schoolRepository = schoolRepository;
+        this.schoolUserRepository = schoolUserRepository;
         this.passwordEncoderPort = passwordEncoderPort;
     }
 
@@ -98,19 +103,22 @@ public class SeedDataInitializer implements ApplicationRunner {
         // 3 School Admins (1 per school, ACTIVE for immediate login)
         var admin1 = saveUser("admin1@vox.local", hashedPassword, "0901000001",
                 "Nguyễn Văn Admin", Gender.MALE, LocalDate.of(1985, 1, 15),
-                "TP.HCM", UserStatus.ACTIVE, school1.getId(), null, now);
+                "TP.HCM", UserStatus.ACTIVE, null, now);
+        saveSchoolUser(admin1.getId(), school1.getId(), now);
         assignRole(admin1, schoolAdminRole, now);
         admin1 = linkAdminOwnership(admin1, school1, now);
 
         var admin2 = saveUser("admin2@vox.local", hashedPassword, "0901000002",
                 "Trần Thị Quản", Gender.FEMALE, LocalDate.of(1988, 3, 20),
-                "TP.HCM", UserStatus.ACTIVE, school2.getId(), null, now);
+                "TP.HCM", UserStatus.ACTIVE, null, now);
+        saveSchoolUser(admin2.getId(), school2.getId(), now);
         assignRole(admin2, schoolAdminRole, now);
         admin2 = linkAdminOwnership(admin2, school2, now);
 
         var admin3 = saveUser("admin3@vox.local", hashedPassword, "0901000003",
                 "Lê Văn Trị", Gender.MALE, LocalDate.of(1982, 7, 10),
-                "TP.HCM", UserStatus.ACTIVE, school3.getId(), null, now);
+                "TP.HCM", UserStatus.ACTIVE, null, now);
+        saveSchoolUser(admin3.getId(), school3.getId(), now);
         assignRole(admin3, schoolAdminRole, now);
         admin3 = linkAdminOwnership(admin3, school3, now);
 
@@ -128,7 +136,8 @@ public class SeedDataInitializer implements ApplicationRunner {
                 teacherData("teacher10@vox.local", "0902000010", "Hồ Thị Bích", Gender.FEMALE, LocalDate.of(1996, 3, 19), school3.getId())
         );
         for (var t : teachers) {
-            var user = saveUser(t.email, hashedPassword, t.phone, t.fullName, t.gender, t.dob, "TP.HCM", UserStatus.ACTIVE, t.schoolId, creatorIdForSchool(t.schoolId, school1, admin1, school2, admin2, school3, admin3), now);
+            var user = saveUser(t.email, hashedPassword, t.phone, t.fullName, t.gender, t.dob, "TP.HCM", UserStatus.ACTIVE, creatorIdForSchool(t.schoolId, school1, admin1, school2, admin2, school3, admin3), now);
+            saveSchoolUser(user.getId(), t.schoolId, now);
             assignRole(user, teacherRole, now);
         }
 
@@ -143,7 +152,8 @@ public class SeedDataInitializer implements ApplicationRunner {
                 studentData("student7@vox.local", "0903000007", "Đặng Minh Khoa", Gender.MALE, LocalDate.of(2007, 6, 12), school3.getId())
         );
         for (var s : students) {
-            var user = saveUser(s.email, hashedPassword, s.phone, s.fullName, s.gender, s.dob, "TP.HCM", UserStatus.ACTIVE, s.schoolId, creatorIdForSchool(s.schoolId, school1, admin1, school2, admin2, school3, admin3), now);
+            var user = saveUser(s.email, hashedPassword, s.phone, s.fullName, s.gender, s.dob, "TP.HCM", UserStatus.ACTIVE, creatorIdForSchool(s.schoolId, school1, admin1, school2, admin2, school3, admin3), now);
+            saveSchoolUser(user.getId(), s.schoolId, now);
             assignRole(user, studentRole, now);
         }
 
@@ -152,11 +162,11 @@ public class SeedDataInitializer implements ApplicationRunner {
 
     private User saveUser(String email, String passwordHash, String phone, String fullName,
                           Gender gender, LocalDate dob, String address, UserStatus status,
-                          UUID schoolId, UUID createdBy, OffsetDateTime now) {
+                          UUID createdBy, OffsetDateTime now) {
         return userRepository.save(new User(
                 new Email(email), passwordHash, new Phone(phone), new FullName(fullName),
                 gender, new DateOfBirth(dob), address, null, status,
-                now, now, createdBy, createdBy, schoolId
+                now, now, createdBy, createdBy
         ));
     }
 
@@ -166,6 +176,10 @@ public class SeedDataInitializer implements ApplicationRunner {
 
     private UUID defaultIfNull(UUID value) {
         return value == null ? DEFAULT_SCHOOL_CREATED_BY_ID : value;
+    }
+
+    private void saveSchoolUser(UUID userId, UUID schoolId, OffsetDateTime now) {
+        schoolUserRepository.save(SchoolUser.create(userId, schoolId, now, null));
     }
 
     private User linkAdminOwnership(User admin, School school, OffsetDateTime now) {

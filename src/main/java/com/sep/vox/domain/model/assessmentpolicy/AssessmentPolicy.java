@@ -8,13 +8,14 @@ import java.util.UUID;
 public class AssessmentPolicy {
     private UUID id;
     private UUID schoolId;
+    private UUID schoolGradeLevelId;
     private UUID schoolGradeId;
     private UUID schoolClassId;
     private UUID languageId;
-    private UUID frameworkId;
+    private UUID frameworkVersionId;
     private UUID rubricVersionId;
-    private UUID targetResultBandId;
-    private UUID passingResultBandId;
+    private UUID targetFrameworkBandId; // band nào ở khung được map với khối hoặc lớp nào
+    private UUID minimumFrameworkBandId; // phải đạt tối thiểu band X mới qua
     private BigDecimal passingScore;
     private AssessmentPolicyStrictness strictness;
     private int version;
@@ -28,20 +29,21 @@ public class AssessmentPolicy {
 
     public AssessmentPolicy() {}
 
-    public AssessmentPolicy(UUID id, UUID schoolId, UUID schoolGradeId, UUID schoolClassId, UUID languageId,
-            UUID frameworkId, UUID rubricVersionId, UUID targetResultBandId, UUID passingResultBandId,
-            BigDecimal passingScore, AssessmentPolicyStrictness strictness, int version, AssessmentPolicyStatus status,
-            OffsetDateTime effectiveFrom, OffsetDateTime effectiveTo, OffsetDateTime createdAt,
-            OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+    public AssessmentPolicy(UUID id, UUID schoolId, UUID schoolGradeLevelId, UUID schoolGradeId, UUID schoolClassId,
+            UUID languageId, UUID frameworkVersionId, UUID rubricVersionId, UUID targetFrameworkBandId,
+            UUID minimumFrameworkBandId, BigDecimal passingScore, AssessmentPolicyStrictness strictness, int version,
+            AssessmentPolicyStatus status, OffsetDateTime effectiveFrom, OffsetDateTime effectiveTo,
+            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.schoolId = schoolId;
+        this.schoolGradeLevelId = schoolGradeLevelId;
         this.schoolGradeId = schoolGradeId;
         this.schoolClassId = schoolClassId;
         this.languageId = languageId;
-        this.frameworkId = frameworkId;
+        this.frameworkVersionId = frameworkVersionId;
         this.rubricVersionId = rubricVersionId;
-        this.targetResultBandId = targetResultBandId;
-        this.passingResultBandId = passingResultBandId;
+        this.targetFrameworkBandId = targetFrameworkBandId;
+        this.minimumFrameworkBandId = minimumFrameworkBandId;
         this.passingScore = passingScore;
         this.strictness = strictness;
         this.version = version;
@@ -54,19 +56,20 @@ public class AssessmentPolicy {
         this.updatedBy = updatedBy;
     }
 
-    public AssessmentPolicy(UUID schoolId, UUID schoolGradeId, UUID schoolClassId, UUID languageId, UUID frameworkId,
-            UUID rubricVersionId, UUID targetResultBandId, UUID passingResultBandId, BigDecimal passingScore,
-            AssessmentPolicyStrictness strictness, int version, AssessmentPolicyStatus status,
-            OffsetDateTime effectiveFrom, OffsetDateTime effectiveTo, OffsetDateTime createdAt,
-            OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+    public AssessmentPolicy(UUID schoolId, UUID schoolGradeLevelId, UUID schoolGradeId, UUID schoolClassId,
+            UUID languageId, UUID frameworkVersionId, UUID rubricVersionId, UUID targetFrameworkBandId,
+            UUID minimumFrameworkBandId, BigDecimal passingScore, AssessmentPolicyStrictness strictness, int version,
+            AssessmentPolicyStatus status, OffsetDateTime effectiveFrom, OffsetDateTime effectiveTo,
+            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.schoolId = schoolId;
+        this.schoolGradeLevelId = schoolGradeLevelId;
         this.schoolGradeId = schoolGradeId;
         this.schoolClassId = schoolClassId;
         this.languageId = languageId;
-        this.frameworkId = frameworkId;
+        this.frameworkVersionId = frameworkVersionId;
         this.rubricVersionId = rubricVersionId;
-        this.targetResultBandId = targetResultBandId;
-        this.passingResultBandId = passingResultBandId;
+        this.targetFrameworkBandId = targetFrameworkBandId;
+        this.minimumFrameworkBandId = minimumFrameworkBandId;
         this.passingScore = passingScore;
         this.strictness = strictness;
         this.version = version;
@@ -95,6 +98,14 @@ public class AssessmentPolicy {
         this.schoolId = schoolId;
     }
 
+    public UUID getSchoolGradeLevelId() {
+        return schoolGradeLevelId;
+    }
+
+    public void setSchoolGradeLevelId(UUID schoolGradeLevelId) {
+        this.schoolGradeLevelId = schoolGradeLevelId;
+    }
+
     public UUID getSchoolGradeId() {
         return schoolGradeId;
     }
@@ -119,12 +130,12 @@ public class AssessmentPolicy {
         this.languageId = languageId;
     }
 
-    public UUID getFrameworkId() {
-        return frameworkId;
+    public UUID getFrameworkVersionId() {
+        return frameworkVersionId;
     }
 
-    public void setFrameworkId(UUID frameworkId) {
-        this.frameworkId = frameworkId;
+    public void setFrameworkVersionId(UUID frameworkVersionId) {
+        this.frameworkVersionId = frameworkVersionId;
     }
 
     public UUID getRubricVersionId() {
@@ -135,20 +146,20 @@ public class AssessmentPolicy {
         this.rubricVersionId = rubricVersionId;
     }
 
-    public UUID getTargetResultBandId() {
-        return targetResultBandId;
+    public UUID getTargetFrameworkBandId() {
+        return targetFrameworkBandId;
     }
 
-    public void setTargetResultBandId(UUID targetResultBandId) {
-        this.targetResultBandId = targetResultBandId;
+    public void setTargetFrameworkBandId(UUID targetFrameworkBandId) {
+        this.targetFrameworkBandId = targetFrameworkBandId;
     }
 
-    public UUID getPassingResultBandId() {
-        return passingResultBandId;
+    public UUID getMinimumFrameworkBandId() {
+        return minimumFrameworkBandId;
     }
 
-    public void setPassingResultBandId(UUID passingResultBandId) {
-        this.passingResultBandId = passingResultBandId;
+    public void setMinimumFrameworkBandId(UUID minimumFrameworkBandId) {
+        this.minimumFrameworkBandId = minimumFrameworkBandId;
     }
 
     public BigDecimal getPassingScore() {
@@ -231,7 +242,6 @@ public class AssessmentPolicy {
         this.updatedBy = updatedBy;
     }
 
-    
 
     
 }

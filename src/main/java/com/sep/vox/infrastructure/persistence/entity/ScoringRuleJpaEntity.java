@@ -53,7 +53,7 @@ public class ScoringRuleJpaEntity {
     @Column(name = "action_type", nullable = false, length = 50, check = {
         @CheckConstraint(
             name = "chk_scoring_rules_action_type_valid",
-            constraint = "action_type IN ('CAP_FINAL_SCORE', 'CAP_CRITERION_SCORE', 'ADD_FINAL_SCORE_DELTA', 'ADD_CRITERION_SCORE_DELTA', 'CAP_RESULT_BAND', 'SET_RESULT_BAND', 'REQUIRE_HUMAN_REVIEW', 'MARK_RESPONSE_INVALID', 'REQUIRE_RETAKE', 'ADD_FEEDBACK_TAG', 'ADD_REVIEW_REASON', 'STOP_PROCESSING')"
+            constraint = "action_type IN ('CAP_FINAL_SCORE', 'CAP_CRITERION_SCORE', 'ADD_FINAL_SCORE_DELTA', 'ADD_CRITERION_SCORE_DELTA', 'CAP_FRAMEWORK_RESULT_BAND', 'SET_FRAMEWORK_RESULT_BAND', 'REQUIRE_HUMAN_REVIEW', 'MARK_RESPONSE_INVALID', 'REQUIRE_RETAKE', 'ADD_FEEDBACK_TAG', 'ADD_REVIEW_REASON')"
         )
     })
     private String actionType;
@@ -68,14 +68,6 @@ public class ScoringRuleJpaEntity {
         )
     })
     private int priority;
-
-    @Column(name = "applies_to", nullable = false, length = 30, check = {
-        @CheckConstraint(
-            name = "chk_scoring_rules_applies_to_valid",
-            constraint = "applies_to IN ('FINAL_SCORE', 'CRITERION_SCORE', 'RESULT_BAND', 'HUMAN_REVIEW')"
-        )
-    })
-    private String appliesTo;
 
     @Column(name = "severity", nullable = false, length = 20, check = {
         @CheckConstraint(
@@ -109,8 +101,8 @@ public class ScoringRuleJpaEntity {
 
     public ScoringRuleJpaEntity(UUID id, UUID policyId, String code, String name, String description,
             String conditionType, String conditionParamsJson, String actionType, String actionParamsJson, int priority,
-            String appliesTo, String severity, boolean stopProcessing, boolean isActive, OffsetDateTime createdAt,
-            OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            String severity, boolean stopProcessing, boolean isActive, OffsetDateTime createdAt, OffsetDateTime updatedAt,
+            UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.policyId = policyId;
         this.code = code;
@@ -121,7 +113,6 @@ public class ScoringRuleJpaEntity {
         this.actionType = actionType;
         this.actionParamsJson = actionParamsJson;
         this.priority = priority;
-        this.appliesTo = appliesTo;
         this.severity = severity;
         this.stopProcessing = stopProcessing;
         this.isActive = isActive;
@@ -133,9 +124,9 @@ public class ScoringRuleJpaEntity {
 
 
     public ScoringRuleJpaEntity(UUID policyId, String code, String name, String description, String conditionType,
-            String conditionParamsJson, String actionType, String actionParamsJson, int priority, String appliesTo,
-            String severity, boolean stopProcessing, boolean isActive, OffsetDateTime createdAt,
-            OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            String conditionParamsJson, String actionType, String actionParamsJson, int priority, String severity,
+            boolean stopProcessing, boolean isActive, OffsetDateTime createdAt, OffsetDateTime updatedAt,
+            UUID createdBy, UUID updatedBy) {
         this.policyId = policyId;
         this.code = code;
         this.name = name;
@@ -145,7 +136,6 @@ public class ScoringRuleJpaEntity {
         this.actionType = actionType;
         this.actionParamsJson = actionParamsJson;
         this.priority = priority;
-        this.appliesTo = appliesTo;
         this.severity = severity;
         this.stopProcessing = stopProcessing;
         this.isActive = isActive;
@@ -253,16 +243,6 @@ public class ScoringRuleJpaEntity {
 
     public void setPriority(int priority) {
         this.priority = priority;
-    }
-
-
-    public String getAppliesTo() {
-        return appliesTo;
-    }
-
-
-    public void setAppliesTo(String appliesTo) {
-        this.appliesTo = appliesTo;
     }
 
 

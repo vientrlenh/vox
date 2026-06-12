@@ -7,39 +7,44 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.mapper.schoolclass.SchoolClassResponseMapper;
 import com.sep.vox.application.port.input.query.ViewSchoolClassDetailsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.dto.SchoolClassDto;
-import com.sep.vox.domain.mapper.SchoolClassDtoMapper;
+import com.sep.vox.application.response.input.schoolclass.SchoolClassResponse;
+import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
-public class ViewSchoolClassDetailsUseCase implements IUseCase<ViewSchoolClassDetailsQuery, SchoolClassDto> {
+public class ViewSchoolClassDetailsUseCase implements IUseCase<ViewSchoolClassDetailsQuery, SchoolClassResponse> {
 
     private final SchoolClassRepository schoolClassRepository;
     private final UserRepository userRepository;
     private final SchoolRepository schoolRepository;
     private final UserContextPort userContextPort;
+    private final SchoolUserRepository schoolUserRepository;
 
     public ViewSchoolClassDetailsUseCase(
             SchoolClassRepository schoolClassRepository,
             UserRepository userRepository,
             SchoolRepository schoolRepository,
-            UserContextPort userContextPort) {
+            UserContextPort userContextPort,
+            SchoolUserRepository schoolUserRepository) {
         this.schoolClassRepository = schoolClassRepository;
         this.userRepository = userRepository;
         this.schoolRepository = schoolRepository;
         this.userContextPort = userContextPort;
+        this.schoolUserRepository = schoolUserRepository;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public SchoolClassDto execute(ViewSchoolClassDetailsQuery input) {
+    public SchoolClassResponse execute(ViewSchoolClassDetailsQuery input) {
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         var currentUser = findCurrentUser(currentUserId);
         var schoolId = getSchoolId(currentUser);
@@ -50,7 +55,7 @@ public class ViewSchoolClassDetailsUseCase implements IUseCase<ViewSchoolClassDe
         if (!Objects.equals(schoolClass.getSchoolId(), schoolId)) {
             throw new NotFoundException("Không tìm thấy lớp học");
         }
-        return SchoolClassDtoMapper.toDto(schoolClass);
+        return SchoolClassResponseMapper.toResponse(schoolClass);
     }
 
     private User findCurrentUser(UUID currentUserId) {
@@ -67,11 +72,9 @@ public class ViewSchoolClassDetailsUseCase implements IUseCase<ViewSchoolClassDe
     }
 
     private UUID getSchoolId(User currentUser) {
-        var schoolId = currentUser.getSchoolId();
-        if (schoolId == null) {
-            throw new IllegalStateException("Người dùng hiện tại không thuộc trường nào");
-        }
-        return schoolId;
+        return schoolUserRepository.findByUserId(currentUser.getId())
+            .map(SchoolUser::getSchoolId)
+            .orElseThrow(() -> new IllegalStateException("Người dùng hiện tại không thuộc trường nào"));
     }
 
     private void validateSchool(UUID schoolId) {

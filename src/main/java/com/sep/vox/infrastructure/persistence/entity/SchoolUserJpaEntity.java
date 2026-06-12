@@ -36,8 +36,6 @@ public class SchoolUserJpaEntity {
     )
     private UUID id;
     
-    @Column(name = "student_id", length = 255)
-    private String studentId; 
 
     @Column(name = "school_id", nullable = false, updatable = false)
     private UUID schoolId;
@@ -48,15 +46,15 @@ public class SchoolUserJpaEntity {
     @Column(name = "start_date", nullable = false)
     private OffsetDateTime startDate;
 
-    @Column(name = "end_date", nullable = false)
+    @Column(name = "end_date")
     private OffsetDateTime endDate;
 
     protected SchoolUserJpaEntity() {}
 
-    public SchoolUserJpaEntity(UUID id, String studentId, UUID schoolId, UUID userId, OffsetDateTime startDate,
+    public SchoolUserJpaEntity(UUID id, UUID schoolId, UUID userId, OffsetDateTime startDate,
             OffsetDateTime endDate) {
         this.id = id;
-        this.studentId = studentId;
+
         this.schoolId = schoolId;
         this.userId = userId;
         this.startDate = startDate;
@@ -71,13 +69,6 @@ public class SchoolUserJpaEntity {
         this.id = id;
     }
 
-    public String getStudentId() {
-        return studentId;
-    }
-
-    public void setStudentId(String studentId) {
-        this.studentId = studentId;
-    }
 
     public UUID getSchoolId() {
         return schoolId;

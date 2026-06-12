@@ -44,18 +44,6 @@ public class RubricCriterionBandJpaEntity {
     @Column(name = "score_max", nullable = false, precision = 6, scale = 2)
     private BigDecimal scoreMax;
 
-    @Column(name = "descriptor", nullable = false, length = 4096)
-    private String descriptor;
-
-    @Column(name = "positive_signals_json", nullable = false, columnDefinition = "TEXT")
-    private String positiveSignalsJson;
-
-    @Column(name = "negative_signals_json", nullable = false, columnDefinition = "TEXT")
-    private String negativeSignalsJson;
-
-    @Column(name = "examples_json", nullable = false, columnDefinition = "TEXT")
-    private String examplesJson;
-
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 
@@ -71,17 +59,13 @@ public class RubricCriterionBandJpaEntity {
     protected RubricCriterionBandJpaEntity() {}
 
     public RubricCriterionBandJpaEntity(UUID id, UUID criterionId, String code, BigDecimal scoreMin,
-            BigDecimal scoreMax, String descriptor, String positiveSignalsJson, String negativeSignalsJson,
-            String examplesJson, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            BigDecimal scoreMax, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy,
+            UUID updatedBy) {
         this.id = id;
         this.criterionId = criterionId;
         this.code = code;
         this.scoreMin = scoreMin;
         this.scoreMax = scoreMax;
-        this.descriptor = descriptor;
-        this.positiveSignalsJson = positiveSignalsJson;
-        this.negativeSignalsJson = negativeSignalsJson;
-        this.examplesJson = examplesJson;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
@@ -89,16 +73,11 @@ public class RubricCriterionBandJpaEntity {
     }
 
     public RubricCriterionBandJpaEntity(UUID criterionId, String code, BigDecimal scoreMin, BigDecimal scoreMax,
-            String descriptor, String positiveSignalsJson, String negativeSignalsJson, String examplesJson,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.criterionId = criterionId;
         this.code = code;
         this.scoreMin = scoreMin;
         this.scoreMax = scoreMax;
-        this.descriptor = descriptor;
-        this.positiveSignalsJson = positiveSignalsJson;
-        this.negativeSignalsJson = negativeSignalsJson;
-        this.examplesJson = examplesJson;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
@@ -143,38 +122,6 @@ public class RubricCriterionBandJpaEntity {
 
     public void setScoreMax(BigDecimal scoreMax) {
         this.scoreMax = scoreMax;
-    }
-
-    public String getDescriptor() {
-        return descriptor;
-    }
-
-    public void setDescriptor(String descriptor) {
-        this.descriptor = descriptor;
-    }
-
-    public String getPositiveSignalsJson() {
-        return positiveSignalsJson;
-    }
-
-    public void setPositiveSignalsJson(String positiveSignalsJson) {
-        this.positiveSignalsJson = positiveSignalsJson;
-    }
-
-    public String getNegativeSignalsJson() {
-        return negativeSignalsJson;
-    }
-
-    public void setNegativeSignalsJson(String negativeSignalsJson) {
-        this.negativeSignalsJson = negativeSignalsJson;
-    }
-
-    public String getExamplesJson() {
-        return examplesJson;
-    }
-
-    public void setExamplesJson(String examplesJson) {
-        this.examplesJson = examplesJson;
     }
 
     public OffsetDateTime getCreatedAt() {

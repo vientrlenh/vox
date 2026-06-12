@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.questionbank;
 
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,6 +13,8 @@ import com.sep.vox.application.query.repository.QuestionBankReadQueryRepository;
 import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.QuestionBankDto;
+import com.sep.vox.domain.model.school.SchoolUser;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
@@ -19,14 +23,17 @@ public class ViewSchoolQuestionBanksUseCase implements IUseCase<ViewSchoolQuesti
     private final QuestionBankReadQueryRepository questionBankReadQueryRepository;
     private final UserContextPort userContextPort;
     private final UserRepository userRepository;
+    private final SchoolUserRepository schoolUserRepository;
 
     public ViewSchoolQuestionBanksUseCase(
             QuestionBankReadQueryRepository questionBankReadQueryRepository,
             UserContextPort userContextPort,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            SchoolUserRepository schoolUserRepository) {
         this.questionBankReadQueryRepository = questionBankReadQueryRepository;
         this.userContextPort = userContextPort;
         this.userRepository = userRepository;
+        this.schoolUserRepository = schoolUserRepository;
     }
 
     @Override
@@ -34,8 +41,14 @@ public class ViewSchoolQuestionBanksUseCase implements IUseCase<ViewSchoolQuesti
     public PageResult<QuestionBankDto> execute(ViewSchoolQuestionBanksQuery input) {
         var userId = userContextPort.getCurrentAuthenticatedUserId();
         var user = userRepository.findById(userId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
+            .orElseThrow(() -> new NotFoundException("KhÃ´ng tÃ¬m tháº¥y ngÆ°á»i dÃ¹ng"));
         return questionBankReadQueryRepository.findSchoolQuestionBanks(
-            user.getSchoolId(), new PageRequest(input.page(), input.size()));
+            getSchoolId(user.getId()), new PageRequest(input.page(), input.size()));
+    }
+
+    private UUID getSchoolId(UUID userId) {
+        return schoolUserRepository.findByUserId(userId)
+            .map(SchoolUser::getSchoolId)
+            .orElseThrow(() -> new IllegalStateException("Nguoi dung hien tai khong thuoc truong nao"));
     }
 }

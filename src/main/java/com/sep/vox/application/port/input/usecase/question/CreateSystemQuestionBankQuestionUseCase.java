@@ -20,25 +20,32 @@ import com.sep.vox.domain.model.question.QuestionScope;
 import com.sep.vox.domain.model.question.QuestionTopic;
 import com.sep.vox.domain.model.question.QuestionType;
 import com.sep.vox.domain.model.question.QuestionVisibility;
+import com.sep.vox.domain.model.school.SchoolUser;
+
 import com.sep.vox.domain.model.user.UserStatus;
+
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.QuestionTopicRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
 public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateSystemQuestionBankQuestionCommand, CreateQuestionResponse> {
 
     private final UserRepository userRepository;
+    private final SchoolUserRepository schoolUserRepository;
     private final QuestionRepository questionRepository;
     private final QuestionTopicRepository questionTopicRepository;
     private final UserContextPort userContextPort;
 
     public CreateSystemQuestionBankQuestionUseCase(
             UserRepository userRepository,
+            SchoolUserRepository schoolUserRepository,
             QuestionRepository questionRepository,
             QuestionTopicRepository questionTopicRepository,
             UserContextPort userContextPort) {
         this.userRepository = userRepository;
+        this.schoolUserRepository = schoolUserRepository;
         this.questionRepository = questionRepository;
         this.questionTopicRepository = questionTopicRepository;
         this.userContextPort = userContextPort;
@@ -52,10 +59,10 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         var currentUser = userRepository.findByIdAndStatus(currentUserId, UserStatus.ACTIVE)
             .orElseThrow(() -> new UnauthorizedException("Trang thai nguoi dung khong hop le"));
+        var schoolId = getSchoolId(currentUser.getId());
 
         var questionTopic = getQuestionTopic(command.questionTopicId());
-        if (currentUser.getSchoolId() == null
-                || !questionTopicRepository.isTopicBelongToSchool(questionTopic.getId(), currentUser.getSchoolId())) {
+        if (!questionTopicRepository.isTopicBelongToSchool(questionTopic.getId(), schoolId)) {
             throw new ForbiddenException("Quyen truy cap bi tu choi");
         }
 
@@ -114,5 +121,11 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
         if (command.minResponseSeconds() > command.maxResponseSeconds()) {
             throw new IllegalStateException("Thoi gian tra loi toi thieu khong duoc lon hon thoi gian tra loi toi da");
         }
+    }
+
+    private UUID getSchoolId(UUID userId) {
+        return schoolUserRepository.findByUserId(userId)
+            .map(SchoolUser::getSchoolId)
+            .orElseThrow(() -> new IllegalStateException("Nguoi dung hien tai khong thuoc truong nao"));
     }
 }

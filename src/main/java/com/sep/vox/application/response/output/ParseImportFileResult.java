@@ -6,6 +6,7 @@ import java.util.Map;
 public record ParseImportFileResult(
     List<String> originalHeaders, 
     Map<String, String> suggestedMapping, 
+    List<Map<String, String>> rows,
     List<Map<String, String>> sampleRows, 
     long totalRows
 ) {

@@ -33,11 +33,11 @@ public class FrameworkCriterionBandJpaEntity {
     @Column(name = "descriptor", columnDefinition = "TEXT")
     private String descriptor;
 
-    @Column(name = "positive_signals", columnDefinition = "TEXT")
-    private String positiveSignals;
+    @Column(name = "positive_signals_json", columnDefinition = "TEXT")
+    private String positiveSignalsJson;
 
-    @Column(name = "negative_signals", columnDefinition = "TEXT")
-    private String negativeSignals;
+    @Column(name = "negative_signals_json", columnDefinition = "TEXT")
+    private String negativeSignalsJson;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
@@ -54,14 +54,14 @@ public class FrameworkCriterionBandJpaEntity {
     protected FrameworkCriterionBandJpaEntity() {}
 
     public FrameworkCriterionBandJpaEntity(UUID id, UUID frameworkCriterionId, UUID frameworkResultBandId,
-            String descriptor, String positiveSignals, String negativeSignals, OffsetDateTime createdAt,
+            String descriptor, String positiveSignalsJson, String negativeSignalsJson, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.frameworkCriterionId = frameworkCriterionId;
         this.frameworkResultBandId = frameworkResultBandId;
         this.descriptor = descriptor;
-        this.positiveSignals = positiveSignals;
-        this.negativeSignals = negativeSignals;
+        this.positiveSignalsJson = positiveSignalsJson;
+        this.negativeSignalsJson = negativeSignalsJson;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
@@ -76,10 +76,10 @@ public class FrameworkCriterionBandJpaEntity {
     public void setFrameworkResultBandId(UUID frameworkResultBandId) { this.frameworkResultBandId = frameworkResultBandId; }
     public String getDescriptor() { return descriptor; }
     public void setDescriptor(String descriptor) { this.descriptor = descriptor; }
-    public String getPositiveSignals() { return positiveSignals; }
-    public void setPositiveSignals(String positiveSignals) { this.positiveSignals = positiveSignals; }
-    public String getNegativeSignals() { return negativeSignals; }
-    public void setNegativeSignals(String negativeSignals) { this.negativeSignals = negativeSignals; }
+    public String getPositiveSignalsJson() { return positiveSignalsJson; }
+    public void setPositiveSignalsJson(String positiveSignalsJson) { this.positiveSignalsJson = positiveSignalsJson; }
+    public String getNegativeSignalsJson() { return negativeSignalsJson; }
+    public void setNegativeSignalsJson(String negativeSignalsJson) { this.negativeSignalsJson = negativeSignalsJson; }
     public OffsetDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(OffsetDateTime createdAt) { this.createdAt = createdAt; }
     public OffsetDateTime getUpdatedAt() { return updatedAt; }

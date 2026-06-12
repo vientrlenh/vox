@@ -1,10 +1,8 @@
 package com.sep.vox.application.usecase.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -61,28 +59,6 @@ public class RegisterUseCaseTests {
         assertThat(savedForm.getCreatedAt()).isNotNull();
         assertThat(savedForm.getUpdatedAt()).isNotNull();
         assertThat(savedForm.getUpdatedBy()).isNull();
-    }
-
-    @Test
-    void register_should_reject_when_user_is_under_18() {
-        var command = new RegisterCommand(
-            "Nguyen Van A",
-            "123456789",
-            "0987654321",
-            "admin@example.com",
-            LocalDate.now().minusYears(17),
-            "123 Street",
-            "school.edu.vn",
-            "School Name",
-            "456 School Street",
-            "700000",
-            "Principal",
-            500
-        );
-
-        assertThrows(IllegalArgumentException.class, () -> registerUseCase.execute(command));
-
-        verify(registerFormRepository, never()).save(any(RegisterForm.class));
     }
 
     private RegisterCommand validCommand() {

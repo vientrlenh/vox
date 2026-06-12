@@ -10,6 +10,8 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.UserRoleInfo;
 import com.sep.vox.application.query.repository.QuestionPermissionQuery;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.domain.model.school.SchoolUser;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.infrastructure.persistence.entity.QuestionJpaEntity;
@@ -27,14 +29,17 @@ public class JpaQuestionPermissionQuery implements QuestionPermissionQuery {
     private final UserContextPort userContextPort;
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserRepository userRepository;
+    private final SchoolUserRepository schoolUserRepository;
 
     public JpaQuestionPermissionQuery(
             UserContextPort userContextPort,
             UserRoleQueryRepository userRoleQueryRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            SchoolUserRepository schoolUserRepository) {
         this.userContextPort = userContextPort;
         this.userRoleQueryRepository = userRoleQueryRepository;
         this.userRepository = userRepository;
+        this.schoolUserRepository = schoolUserRepository;
     }
 
     private ResolvedUser resolveCurrentUser() {
@@ -43,7 +48,7 @@ public class JpaQuestionPermissionQuery implements QuestionPermissionQuery {
             .orElseThrow(() -> new ForbiddenException("Không tìm thấy người dùng"));
         var roleInfos = userRoleQueryRepository.findByUserIdWithRoleInfo(userId);
         String role = resolveRole(roleInfos);
-        return new ResolvedUser(userId, role, user.getSchoolId());
+        return new ResolvedUser(userId, role, getSchoolId(userId));
     }
 
     private String resolveRole(List<UserRoleInfo> roleInfos) {
@@ -267,6 +272,12 @@ public class JpaQuestionPermissionQuery implements QuestionPermissionQuery {
         } catch (NoResultException e) {
             return false;
         }
+    }
+
+    private UUID getSchoolId(UUID userId) {
+        return schoolUserRepository.findByUserId(userId)
+            .map(SchoolUser::getSchoolId)
+            .orElseThrow(() -> new ForbiddenException("Nguoi dung hien tai khong thuoc truong nao"));
     }
 
     private record ResolvedUser(UUID userId, String role, UUID schoolId) {}

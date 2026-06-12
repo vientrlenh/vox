@@ -36,19 +36,21 @@ public class CreateSchoolRubricCriterionUseCase implements IUseCase<CreateSchool
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
     private final SchoolRepository schoolRepository;
+    private final SchoolUserRepository schoolUserRepository; // BỔ SUNG
 
     public CreateSchoolRubricCriterionUseCase(
             RubricCriterionRepository rubricCriterionRepository,
             RubricVersionRepository rubricVersionRepository,
             RubricRepository rubricRepository,
             UserRepository userRepository,
-            UserContextPort userContextPort, SchoolRepository schoolRepository) {
+            UserContextPort userContextPort, SchoolRepository schoolRepository, SchoolUserRepository schoolUserRepository) {
         this.rubricCriterionRepository = rubricCriterionRepository;
         this.rubricVersionRepository = rubricVersionRepository;
         this.rubricRepository = rubricRepository;
         this.userRepository = userRepository;
         this.userContextPort = userContextPort;
         this.schoolRepository = schoolRepository;
+        this.schoolUserRepository = schoolUserRepository;
     }
 
     @Override
@@ -75,8 +77,10 @@ public class CreateSchoolRubricCriterionUseCase implements IUseCase<CreateSchool
         Rubric rubric = rubricRepository.findById(version.getRubricId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc."));
 
-        if (!rubric.getSchoolId().equals(command.schoolId()) ||
-                (currentUser.getSchoolId() != null && !currentUser.getSchoolId().equals(rubric.getSchoolId()))) {
+        var schoolUser = schoolUserRepository.findByUserId(currentUserId)
+                .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
+
+        if (!rubric.getSchoolId().equals(command.schoolId()) || !schoolUser.getSchoolId().equals(rubric.getSchoolId())) {
             throw new ForbiddenException("BẢO MẬT: Bạn không có quyền chỉnh sửa Rubric của trường khác.");
         }
 

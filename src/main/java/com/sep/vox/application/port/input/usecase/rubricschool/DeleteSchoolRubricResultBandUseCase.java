@@ -22,7 +22,8 @@ public class DeleteSchoolRubricResultBandUseCase implements IUseCase<DeleteSchoo
     private final RubricRepository rubricRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
-    private final SchoolRepository schoolRepository; // BỔ SUNG
+    private final SchoolRepository schoolRepository;
+    private final SchoolUserRepository schoolUserRepository; // BỔ SUNG
 
     public DeleteSchoolRubricResultBandUseCase(
             RubricResultBandRepository rubricResultBandRepository,
@@ -30,13 +31,15 @@ public class DeleteSchoolRubricResultBandUseCase implements IUseCase<DeleteSchoo
             RubricRepository rubricRepository,
             UserRepository userRepository,
             UserContextPort userContextPort,
-            SchoolRepository schoolRepository) { // BỔ SUNG
+            SchoolRepository schoolRepository,
+            SchoolUserRepository schoolUserRepository) { // BỔ SUNG
         this.rubricResultBandRepository = rubricResultBandRepository;
         this.rubricVersionRepository = rubricVersionRepository;
         this.rubricRepository = rubricRepository;
         this.userRepository = userRepository;
         this.userContextPort = userContextPort;
         this.schoolRepository = schoolRepository;
+        this.schoolUserRepository = schoolUserRepository;
     }
 
     @Override
@@ -57,16 +60,20 @@ public class DeleteSchoolRubricResultBandUseCase implements IUseCase<DeleteSchoo
             throw new IllegalStateException("Chỉ được xóa Thang điểm khi phiên bản đang là bản Nháp (DRAFT).");
         }
 
-        // 3. Check School Ownership
+        // 3. Check School Ownership BẰNG SCHOOL_USER
         Rubric rubric = rubricRepository.findById(version.getRubricId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy Rubric gốc."));
+
+        var schoolUser = schoolUserRepository.findByUserId(currentUserId)
+                .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
+
         if (rubric.getOwnerType() != RubricOwnerType.SCHOOL ||
                 !rubric.getSchoolId().equals(command.schoolId()) ||
-                (currentUser.getSchoolId() != null && !currentUser.getSchoolId().equals(rubric.getSchoolId()))) {
+                !schoolUser.getSchoolId().equals(rubric.getSchoolId())) {
             throw new ForbiddenException("Bạn không có quyền xóa dữ liệu của trường khác.");
         }
 
-        // BỔ SUNG: Kiểm tra xem trường học có đang hoạt động không
+        // Kiểm tra xem trường học có đang hoạt động không
         var school = schoolRepository.findById(command.schoolId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học."));
         if (!school.isActive()) {
@@ -81,7 +88,7 @@ public class DeleteSchoolRubricResultBandUseCase implements IUseCase<DeleteSchoo
             throw new IllegalArgumentException("Thang điểm kết quả này không thuộc về phiên bản Rubric đang chọn.");
         }
 
-        // 5. Xóa cứng Thang điểm (Không cần Cascade Delete vì không có FK reference trực tiếp ID của bảng này)
+        // 5. Xóa cứng Thang điểm
         rubricResultBandRepository.deleteById(resultBand.getId());
 
         return null;

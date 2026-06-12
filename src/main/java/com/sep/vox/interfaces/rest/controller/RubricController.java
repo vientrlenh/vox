@@ -204,7 +204,7 @@ public class RubricController {
     // Xóa 1 version Rubric khỏi rubric của trường
     // đã tối ưu / chưa chạy lại
     //Check 2
-    @Operation(summary = "Xóa một Tiêu chí khỏi phiên bản Rubric")
+    @Operation(summary = "Xóa một Tiêu chí khỏi phiên bản Rubric của trường")
     @DeleteMapping("/schools/{schoolId}/rubric-versions/{versionId}/criteria/{criterionId}")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteSchoolRubricCriterion(

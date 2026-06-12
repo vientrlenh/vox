@@ -9,4 +9,5 @@ public interface RubricCriterionBandRepository {
     Optional<RubricCriterionBand> findById(UUID id);
     RubricCriterionBand save(RubricCriterionBand band);
     void deleteByCriterionId(UUID criterionId);
+    void deleteByRubricVersionId(UUID rubricVersionId);
 }

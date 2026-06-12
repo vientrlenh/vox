@@ -35,4 +35,9 @@ public class RubricCriterionBandRepositoryImpl implements RubricCriterionBandRep
     public void deleteByCriterionId(UUID rubricCriterionId) {
         springDataRubricCriterionBandRepository.deleteByCriterionId(rubricCriterionId);
     }
+
+    @Override
+    public void deleteByRubricVersionId(UUID rubricVersionId) {
+        springDataRubricCriterionBandRepository.deleteByRubricVersionId(rubricVersionId);
+    }
 }

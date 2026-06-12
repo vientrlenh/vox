@@ -34,6 +34,7 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
     private final UserContextPort userContextPort;
     private final FrameworkResultBandRepository frameworkResultBandRepository;
     private final SchoolRepository schoolRepository;
+    private final SchoolUserRepository schoolUserRepository; // BỔ SUNG
 
     public CreateSchoolRubricResultBandsUseCase(
             RubricResultBandRepository rubricResultBandRepository,
@@ -41,7 +42,9 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
             RubricRepository rubricRepository,
             UserRepository userRepository,
             UserContextPort userContextPort,
-            FrameworkResultBandRepository frameworkResultBandRepository, SchoolRepository schoolRepository) {
+            FrameworkResultBandRepository frameworkResultBandRepository,
+            SchoolRepository schoolRepository,
+            SchoolUserRepository schoolUserRepository) { // BỔ SUNG
         this.rubricResultBandRepository = rubricResultBandRepository;
         this.rubricVersionRepository = rubricVersionRepository;
         this.rubricRepository = rubricRepository;
@@ -49,12 +52,13 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
         this.userContextPort = userContextPort;
         this.frameworkResultBandRepository = frameworkResultBandRepository;
         this.schoolRepository = schoolRepository;
+        this.schoolUserRepository = schoolUserRepository;
     }
 
     @Override
     @Transactional
     public List<UUID> execute(CreateSchoolRubricResultBandsCommand command) {
-        // 1. Xác thực người dùng (BỔ SUNG CHECK ACTIVE)
+        // 1. Xác thực người dùng
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
@@ -63,7 +67,7 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
             throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
         }
 
-        // 2 & 3. Validate Version và quyền School (Giữ nguyên của bạn)
+        // 2 & 3. Validate Version và quyền School
         RubricVersion version = rubricVersionRepository.findById(command.versionId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản Rubric."));
 
@@ -74,11 +78,16 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
         Rubric rubric = rubricRepository.findById(version.getRubricId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc."));
 
-        if (!rubric.getSchoolId().equals(command.schoolId()) ||
-                (currentUser.getSchoolId() != null && !currentUser.getSchoolId().equals(rubric.getSchoolId()))) {
+        // Lấy thông tin liên kết trường học của User hiện tại
+        var schoolUser = schoolUserRepository.findByUserId(currentUserId)
+                .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
+
+        // Xác thực quyền chỉnh sửa
+        if (!rubric.getSchoolId().equals(command.schoolId()) || !schoolUser.getSchoolId().equals(rubric.getSchoolId())) {
             throw new ForbiddenException("BẢO MẬT: Bạn không có quyền chỉnh sửa Rubric của trường khác.");
         }
-        // BỔ SUNG: Kiểm tra xem trường học có đang hoạt động không
+
+        // Kiểm tra xem trường học có đang hoạt động không
         var school = schoolRepository.findById(command.schoolId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học."));
         if (!school.isActive()) {
@@ -100,7 +109,7 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
         Map<UUID, FrameworkResultBand> frameworkBandMap = existingFrameworkBands.stream()
                 .collect(Collectors.toMap(FrameworkResultBand::getId, band -> band));
 
-        // BỔ SUNG: Khởi tạo Set để chống trùng lặp dữ liệu nội bộ
+        // Khởi tạo Set để chống trùng lặp dữ liệu nội bộ
         Set<String> uniqueCodes = new HashSet<>();
         Set<UUID> uniqueFrameworkIds = new HashSet<>();
 
@@ -110,7 +119,7 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
             String safeCode = StringNormalization.trimAndCollapseSpaces(bCmd.code());
             String safeName = StringNormalization.trimAndCollapseSpaces(bCmd.name());
 
-            // BỔ SUNG: Check trùng lặp Mã (Code) và FrameworkBandId
+            // Check trùng lặp Mã (Code) và FrameworkBandId
             if (!uniqueCodes.add(safeCode)) {
                 throw new IllegalArgumentException("Dữ liệu gửi lên bị trùng lặp Mã thang điểm (Code): " + safeCode);
             }
@@ -147,7 +156,7 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
             );
         }).collect(Collectors.toList());
 
-        // 5. Lưu hàng loạt xuống Database (BỔ SUNG BỌC LỖI TRY-CATCH)
+        // 5. Lưu hàng loạt xuống Database
         try {
             rubricResultBandRepository.saveAll(bandsToSave);
         } catch (DataIntegrityViolationException e) {

@@ -35,6 +35,7 @@ public class CreateSchoolRubricUseCase implements IUseCase<CreateSchoolRubricCom
     private final UserContextPort userContextPort;
     private final SupportedLanguageRepository languageRepository;
     private final FrameworkRepository frameworkRepository; // BỔ SUNG
+    private final SchoolUserRepository schoolUserRepository;
 
     public CreateSchoolRubricUseCase(
             RubricRepository rubricRepository,
@@ -43,7 +44,7 @@ public class CreateSchoolRubricUseCase implements IUseCase<CreateSchoolRubricCom
             UserRepository userRepository,
             UserContextPort userContextPort,
             SupportedLanguageRepository languageRepository,
-            FrameworkRepository frameworkRepository) { // BỔ SUNG
+            FrameworkRepository frameworkRepository, SchoolUserRepository schoolUserRepository) { // BỔ SUNG
         this.rubricRepository = rubricRepository;
         this.rubricVersionRepository = rubricVersionRepository;
         this.schoolRepository = schoolRepository;
@@ -51,6 +52,7 @@ public class CreateSchoolRubricUseCase implements IUseCase<CreateSchoolRubricCom
         this.userContextPort = userContextPort;
         this.languageRepository = languageRepository;
         this.frameworkRepository = frameworkRepository;
+        this.schoolUserRepository = schoolUserRepository;
     }
 
     @Override
@@ -62,14 +64,20 @@ public class CreateSchoolRubricUseCase implements IUseCase<CreateSchoolRubricCom
         User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản đã bị khóa.");
 
-        School school = schoolRepository.findById(command.schoolId()).orElseThrow(() -> new NotFoundException("Không tìm thấy trường học."));
-        if (currentUser.getSchoolId() != null && !currentUser.getSchoolId().equals(school.getId())) {
-            throw new ForbiddenException("Bạn không có quyền tạo Rubric cho trường khác.");
-        }
 
+        // 2. Kiểm tra Trường học (Active)
+        School school = schoolRepository.findById(command.schoolId()).orElseThrow(() -> new NotFoundException("Không tìm thấy trường học."));
 
         if (!school.isActive()) {
             throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");
+        }
+
+        // 3. KIỂM TRA QUYỀN SCHOOL BẰNG BẢNG SCHOOL_USER
+        var schoolUser = schoolUserRepository.findByUserId(currentUserId)
+                .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
+
+        if (!schoolUser.getSchoolId().equals(command.schoolId())) {
+            throw new ForbiddenException("Bạn không có quyền tạo Rubric cho trường khác.");
         }
 
 

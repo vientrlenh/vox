@@ -28,15 +28,17 @@ public class DeleteSchoolRubricCriterionUseCase implements IUseCase<DeleteSchool
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
     private final SchoolRepository schoolRepository;
+    private final SchoolUserRepository schoolUserRepository; // BỔ SUNG
 
 
-    public DeleteSchoolRubricCriterionUseCase(RubricCriterionRepository rubricCriterionRepository, RubricVersionRepository rubricVersionRepository, RubricRepository rubricRepository, UserRepository userRepository, UserContextPort userContextPort, SchoolRepository schoolRepository) {
+    public DeleteSchoolRubricCriterionUseCase(RubricCriterionRepository rubricCriterionRepository, RubricVersionRepository rubricVersionRepository, RubricRepository rubricRepository, UserRepository userRepository, UserContextPort userContextPort, SchoolRepository schoolRepository, SchoolUserRepository schoolUserRepository) {
         this.rubricCriterionRepository = rubricCriterionRepository;
         this.rubricVersionRepository = rubricVersionRepository;
         this.rubricRepository = rubricRepository;
         this.userRepository = userRepository;
         this.userContextPort = userContextPort;
         this.schoolRepository = schoolRepository;
+        this.schoolUserRepository = schoolUserRepository;
     }
 
     @Override
@@ -55,10 +57,17 @@ public class DeleteSchoolRubricCriterionUseCase implements IUseCase<DeleteSchool
             throw new IllegalStateException("Chỉ được xóa Tiêu chí khi phiên bản đang là bản Nháp (DRAFT).");
         }
 
-        // 3. Check School Ownership
-        Rubric rubric = rubricRepository.findById(version.getRubricId()).orElseThrow(() -> new NotFoundException("Không tìm thấy Rubric."));
-        if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || !rubric.getSchoolId().equals(command.schoolId()) || (currentUser.getSchoolId() != null && !currentUser.getSchoolId().equals(rubric.getSchoolId()))) {
-            throw new ForbiddenException("Bạn không có quyền xóa dữ liệu của trường khác.");
+        // 3. Check School Ownership (BẰNG SCHOOL_USER)
+        Rubric rubric = rubricRepository.findById(version.getRubricId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy Rubric."));
+
+        var schoolUser = schoolUserRepository.findByUserId(currentUserId)
+                .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
+
+        if (rubric.getOwnerType() != RubricOwnerType.SCHOOL ||
+                !rubric.getSchoolId().equals(command.schoolId()) ||
+                !schoolUser.getSchoolId().equals(rubric.getSchoolId())) {
+            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền xóa dữ liệu của trường khác.");
         }
 
         // (Bổ sung) Kiểm tra xem trường học có đang hoạt động không

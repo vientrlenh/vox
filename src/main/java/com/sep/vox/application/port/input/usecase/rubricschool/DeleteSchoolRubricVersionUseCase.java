@@ -24,11 +24,13 @@ public class DeleteSchoolRubricVersionUseCase implements IUseCase<DeleteSchoolRu
 
     private final RubricVersionRepository rubricVersionRepository;
     private final RubricRepository rubricRepository;
-    private final RubricCriterionRepository rubricCriterionRepository;       // THÊM MỚI
-    private final RubricResultBandRepository rubricResultBandRepository;     // THÊM MỚI
+    private final RubricCriterionRepository rubricCriterionRepository;
+    private final RubricResultBandRepository rubricResultBandRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
     private final SchoolRepository schoolRepository;
+    private final SchoolUserRepository schoolUserRepository;
+    private final RubricCriterionBandRepository rubricCriterionBandRepository; // BỔ SUNG ĐỂ DỌN RÁC
 
     public DeleteSchoolRubricVersionUseCase(
             RubricVersionRepository rubricVersionRepository,
@@ -36,7 +38,10 @@ public class DeleteSchoolRubricVersionUseCase implements IUseCase<DeleteSchoolRu
             RubricCriterionRepository rubricCriterionRepository,
             RubricResultBandRepository rubricResultBandRepository,
             UserRepository userRepository,
-            UserContextPort userContextPort, SchoolRepository schoolRepository) {
+            UserContextPort userContextPort,
+            SchoolRepository schoolRepository,
+            SchoolUserRepository schoolUserRepository,
+            RubricCriterionBandRepository rubricCriterionBandRepository) { // BỔ SUNG
         this.rubricVersionRepository = rubricVersionRepository;
         this.rubricRepository = rubricRepository;
         this.rubricCriterionRepository = rubricCriterionRepository;
@@ -44,6 +49,8 @@ public class DeleteSchoolRubricVersionUseCase implements IUseCase<DeleteSchoolRu
         this.userRepository = userRepository;
         this.userContextPort = userContextPort;
         this.schoolRepository = schoolRepository;
+        this.schoolUserRepository = schoolUserRepository;
+        this.rubricCriterionBandRepository = rubricCriterionBandRepository;
     }
 
     @Override
@@ -62,17 +69,20 @@ public class DeleteSchoolRubricVersionUseCase implements IUseCase<DeleteSchoolRu
         RubricVersion version = rubricVersionRepository.findById(command.versionId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản Rubric này."));
 
-        // 3. Kiểm tra quyền sở hữu
+        // 3. KIỂM TRA QUYỀN SỞ HỮU BẰNG BẢNG SCHOOL_USER
         Rubric rubric = rubricRepository.findById(version.getRubricId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc."));
 
+        var schoolUser = schoolUserRepository.findByUserId(currentUserId)
+                .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
+
         if (rubric.getOwnerType() != RubricOwnerType.SCHOOL ||
                 !rubric.getSchoolId().equals(command.schoolId()) ||
-                (currentUser.getSchoolId() != null && !currentUser.getSchoolId().equals(rubric.getSchoolId()))) {
+                !schoolUser.getSchoolId().equals(rubric.getSchoolId())) {
             throw new ForbiddenException("BẢO MẬT: Bạn không có quyền can thiệp vào phiên bản của trường khác.");
         }
 
-        // BỔ SUNG: Kiểm tra xem trường học có đang hoạt động không
+        // Kiểm tra xem trường học có đang hoạt động không
         var school = schoolRepository.findById(command.schoolId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học."));
         if (!school.isActive()) {
@@ -83,12 +93,14 @@ public class DeleteSchoolRubricVersionUseCase implements IUseCase<DeleteSchoolRu
         // 4. LOGIC XỬ LÝ (DRAFT vs PUBLISHED)
         if (version.getStatus() == RubricStatus.DRAFT) {
 
+            rubricCriterionBandRepository.deleteByRubricVersionId(version.getId());
+
             rubricCriterionRepository.deleteByRubricVersionId(version.getId());
             rubricResultBandRepository.deleteByRubricVersionId(version.getId());
+
             rubricVersionRepository.deleteById(version.getId());
 
         } else if (version.getStatus() == RubricStatus.PUBLISHED) {
-            // Xóa mềm (Archive)
             version.setStatus(RubricStatus.ARCHIVED);
 
             OffsetDateTime now = OffsetDateTime.now();
@@ -97,6 +109,7 @@ public class DeleteSchoolRubricVersionUseCase implements IUseCase<DeleteSchoolRu
             version.setUpdatedBy(currentUserId);
 
             rubricVersionRepository.save(version);
+
         } else {
             throw new IllegalStateException("Thao tác thất bại. Phiên bản này đã bị đưa vào Lưu trữ (ARCHIVED) từ trước.");
         }

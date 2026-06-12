@@ -14,6 +14,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -108,9 +109,9 @@ class AcceptSchoolClassImportUseCaseTests {
         when(importSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
         when(importSessionRepository.save(any(ImportSession.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(importRowRepository.findBySessionIdOrderByRowNumber(sessionId)).thenReturn(rows);
-        when(supportedLanguageRepository.findByCode("EN")).thenReturn(Optional.of(activeLanguage(languageId, "EN")));
-        when(schoolGradeRepository.findBySchoolIdAndCode(schoolId, "G10")).thenReturn(Optional.of(activeGrade(gradeId, schoolId, "G10")));
-        when(schoolClassRepository.findBySchoolIdAndCode(schoolId, "ENG-01")).thenReturn(Optional.empty());
+        when(supportedLanguageRepository.findByCodeIn(Set.of("EN"))).thenReturn(List.of(activeLanguage(languageId, "EN")));
+        when(schoolGradeRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("G10"))).thenReturn(List.of(activeGrade(gradeId, schoolId, "G10")));
+        when(schoolClassRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("ENG-01"))).thenReturn(List.of());
         when(schoolClassRepository.save(any(SchoolClass.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         var response = useCase.execute(new AcceptSchoolClassImportCommand(schoolId, sessionId, mapping));
@@ -119,6 +120,12 @@ class AcceptSchoolClassImportUseCaseTests {
         assertThat(response.invalidRows()).isEqualTo(1L);
         assertThat(response.status()).isEqualTo("COMPLETED");
         verify(schoolClassRepository).save(any(SchoolClass.class));
+        verify(schoolClassRepository).findBySchoolIdAndCodeIn(schoolId, Set.of("ENG-01"));
+        verify(supportedLanguageRepository).findByCodeIn(Set.of("EN"));
+        verify(schoolGradeRepository).findBySchoolIdAndCodeIn(schoolId, Set.of("G10"));
+        verify(schoolClassRepository, never()).findBySchoolIdAndCode(any(), any());
+        verify(supportedLanguageRepository, never()).findByCode(any());
+        verify(schoolGradeRepository, never()).findBySchoolIdAndCode(any(), any());
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<ImportRow>> rowsCaptor = ArgumentCaptor.forClass(List.class);

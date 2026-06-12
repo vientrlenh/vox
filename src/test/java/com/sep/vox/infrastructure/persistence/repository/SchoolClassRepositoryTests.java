@@ -3,6 +3,7 @@ package com.sep.vox.infrastructure.persistence.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.OffsetDateTime;
+import java.util.Set;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -57,6 +58,25 @@ class SchoolClassRepositoryTests {
         assertThat(found.get().getSchoolId()).isEqualTo(schoolId);
         assertThat(found.get().getName()).isEqualTo("English 01");
         assertThat(schoolClassRepository.findBySchoolIdAndCode(schoolId, "MISSING")).isEmpty();
+    }
+
+    @Test
+    void whenFindBySchoolIdAndCodeIn_thenReturnsOnlyMatchingClasses() {
+        var schoolId = UUID.randomUUID();
+        var otherSchoolId = UUID.randomUUID();
+        schoolClassRepository.save(newSchoolClass(schoolId, "ENG-BATCH-01", "English Batch 01"));
+        schoolClassRepository.save(newSchoolClass(schoolId, "MATH-BATCH-01", "Mathematics Batch 01"));
+        schoolClassRepository.save(newSchoolClass(otherSchoolId, "SCI-BATCH-01", "Science Batch Other"));
+
+        var found = schoolClassRepository.findBySchoolIdAndCodeIn(
+            schoolId,
+            Set.of("ENG-BATCH-01", "MATH-BATCH-01", "SCI-BATCH-01", "MISSING")
+        );
+
+        assertThat(found)
+            .hasSize(2)
+            .extracting(schoolClass -> schoolClass.getCode().value())
+            .containsExactlyInAnyOrder("ENG-BATCH-01", "MATH-BATCH-01");
     }
 
     @Test

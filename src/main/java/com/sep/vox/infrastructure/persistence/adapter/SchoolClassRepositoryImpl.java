@@ -95,8 +95,13 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
 
     @Override
     public List<SchoolClass> findBySchoolIdAndCodeIn(UUID schoolId, Collection<String> codes) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'findBySchoolIdAndCodeIn'");
+        if (schoolId == null || codes == null || codes.isEmpty()) {
+            return List.of();
+        }
+        return springDataSchoolClassRepository.findBySchoolIdAndCodeIn(schoolId, codes)
+            .stream()
+            .map(SchoolClassMapper::toDomain)
+            .toList();
     }
 
     @Override

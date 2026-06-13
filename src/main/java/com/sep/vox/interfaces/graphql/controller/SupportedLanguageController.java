@@ -1,19 +1,24 @@
 package com.sep.vox.interfaces.graphql.controller;
 
 import java.util.UUID;
+import java.util.Map;
 
 import org.springframework.graphql.data.method.annotation.Argument;
+import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 
+import com.sep.vox.application.port.input.usecase.supportedlanguage.UpdateSupportedLanguageUseCase;
 import com.sep.vox.application.port.input.query.ViewSupportedLanguageDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewSupportedLanguagesQuery;
 import com.sep.vox.application.port.input.usecase.supportedlanguage.ViewSupportedLanguageDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.supportedlanguage.ViewSupportedLanguagesUseCase;
+import com.sep.vox.application.response.input.supportedlanguage.UpdateSupportedLanguageResponse;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SupportedLanguageDto;
+import com.sep.vox.interfaces.graphql.mapper.UpdateSupportedLanguageCommandMapper;
 
 @Controller("graphqlSupportedLanguageController")
 public class SupportedLanguageController {
@@ -22,12 +27,15 @@ public class SupportedLanguageController {
 
     private final ViewSupportedLanguagesUseCase viewSupportedLanguagesUseCase;
     private final ViewSupportedLanguageDetailsUseCase viewSupportedLanguageDetailsUseCase;
+    private final UpdateSupportedLanguageUseCase updateSupportedLanguageUseCase;
 
     public SupportedLanguageController(
             ViewSupportedLanguagesUseCase viewSupportedLanguagesUseCase,
-            ViewSupportedLanguageDetailsUseCase viewSupportedLanguageDetailsUseCase) {
+            ViewSupportedLanguageDetailsUseCase viewSupportedLanguageDetailsUseCase,
+            UpdateSupportedLanguageUseCase updateSupportedLanguageUseCase) {
         this.viewSupportedLanguagesUseCase = viewSupportedLanguagesUseCase;
         this.viewSupportedLanguageDetailsUseCase = viewSupportedLanguageDetailsUseCase;
+        this.updateSupportedLanguageUseCase = updateSupportedLanguageUseCase;
     }
 
     @QueryMapping(name = "supportedLanguages")
@@ -45,6 +53,15 @@ public class SupportedLanguageController {
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public SupportedLanguageDto supportedLanguage(@Argument(name = "id") UUID id) {
         return viewSupportedLanguageDetailsUseCase.execute(new ViewSupportedLanguageDetailsQuery(id, !isSystemAdmin()));
+    }
+
+    @MutationMapping(name = "updateSupportedLanguage")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public UpdateSupportedLanguageResponse updateSupportedLanguage(
+            @Argument(name = "id") UUID id,
+            @Argument(name = "input") Map<String, Object> input) {
+        var command = UpdateSupportedLanguageCommandMapper.fromInput(id, input);
+        return updateSupportedLanguageUseCase.execute(command);
     }
 
     private boolean isSystemAdmin() {

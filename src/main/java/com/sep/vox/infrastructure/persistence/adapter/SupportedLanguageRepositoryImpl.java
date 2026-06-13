@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -75,6 +76,25 @@ public class SupportedLanguageRepositoryImpl implements SupportedLanguageReposit
         var entity = SupportedLanguageMapper.toJpa(supportedLanguage);
         var saved = springDataSupportedLanguageRepository.save(entity);
         return SupportedLanguageMapper.toDomain(saved);
+    }
+
+    @Override
+    public int updateMutableFields(UUID id, String code, boolean codeProvided, String name, boolean nameProvided,
+            String description, boolean descriptionProvided, Boolean isActive, boolean isActiveProvided,
+            OffsetDateTime updatedAt, UUID updatedBy) {
+        return springDataSupportedLanguageRepository.updateMutableFields(
+            id,
+            code,
+            codeProvided,
+            name,
+            nameProvided,
+            description,
+            descriptionProvided,
+            isActive,
+            isActiveProvided,
+            updatedAt,
+            updatedBy
+        );
     }
 
     @Override

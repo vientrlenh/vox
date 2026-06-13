@@ -5,7 +5,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.junit.jupiter.api.AfterEach;
@@ -14,10 +16,13 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import com.sep.vox.application.port.input.command.UpdateSupportedLanguageCommand;
 import com.sep.vox.application.port.input.query.ViewSupportedLanguageDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewSupportedLanguagesQuery;
+import com.sep.vox.application.port.input.usecase.supportedlanguage.UpdateSupportedLanguageUseCase;
 import com.sep.vox.application.port.input.usecase.supportedlanguage.ViewSupportedLanguageDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.supportedlanguage.ViewSupportedLanguagesUseCase;
+import com.sep.vox.application.response.input.supportedlanguage.UpdateSupportedLanguageResponse;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SupportedLanguageDto;
 
@@ -33,7 +38,8 @@ class SupportedLanguageControllerTests {
         authenticate("ROLE_SYSTEM_ADMIN");
         var listUseCase = mock(ViewSupportedLanguagesUseCase.class);
         var detailsUseCase = mock(ViewSupportedLanguageDetailsUseCase.class);
-        var controller = new SupportedLanguageController(listUseCase, detailsUseCase);
+        var updateUseCase = mock(UpdateSupportedLanguageUseCase.class);
+        var controller = new SupportedLanguageController(listUseCase, detailsUseCase, updateUseCase);
         var expected = new PageResult<SupportedLanguageDto>(List.of(), 1, 20, 0, 0);
         var query = new ViewSupportedLanguagesQuery(1, 20, "eng", false);
         when(listUseCase.execute(query)).thenReturn(expected);
@@ -49,7 +55,8 @@ class SupportedLanguageControllerTests {
         authenticate("ROLE_SCHOOL_ADMIN");
         var listUseCase = mock(ViewSupportedLanguagesUseCase.class);
         var detailsUseCase = mock(ViewSupportedLanguageDetailsUseCase.class);
-        var controller = new SupportedLanguageController(listUseCase, detailsUseCase);
+        var updateUseCase = mock(UpdateSupportedLanguageUseCase.class);
+        var controller = new SupportedLanguageController(listUseCase, detailsUseCase, updateUseCase);
         var expected = new PageResult<SupportedLanguageDto>(List.of(), 1, 20, 0, 0);
         var query = new ViewSupportedLanguagesQuery(1, 20, "eng", true);
         when(listUseCase.execute(query)).thenReturn(expected);
@@ -65,7 +72,8 @@ class SupportedLanguageControllerTests {
         authenticate("ROLE_SYSTEM_ADMIN");
         var listUseCase = mock(ViewSupportedLanguagesUseCase.class);
         var detailsUseCase = mock(ViewSupportedLanguageDetailsUseCase.class);
-        var controller = new SupportedLanguageController(listUseCase, detailsUseCase);
+        var updateUseCase = mock(UpdateSupportedLanguageUseCase.class);
+        var controller = new SupportedLanguageController(listUseCase, detailsUseCase, updateUseCase);
         var id = UUID.randomUUID();
         var expected = new SupportedLanguageDto(id, "EN", "English", null, false, null, null);
         when(detailsUseCase.execute(new ViewSupportedLanguageDetailsQuery(id, false))).thenReturn(expected);
@@ -81,7 +89,8 @@ class SupportedLanguageControllerTests {
         authenticate("ROLE_SCHOOL_ADMIN");
         var listUseCase = mock(ViewSupportedLanguagesUseCase.class);
         var detailsUseCase = mock(ViewSupportedLanguageDetailsUseCase.class);
-        var controller = new SupportedLanguageController(listUseCase, detailsUseCase);
+        var updateUseCase = mock(UpdateSupportedLanguageUseCase.class);
+        var controller = new SupportedLanguageController(listUseCase, detailsUseCase, updateUseCase);
         var id = UUID.randomUUID();
         var expected = new SupportedLanguageDto(id, "EN", "English", null, true, null, null);
         when(detailsUseCase.execute(new ViewSupportedLanguageDetailsQuery(id, true))).thenReturn(expected);
@@ -90,6 +99,66 @@ class SupportedLanguageControllerTests {
 
         assertThat(result).isEqualTo(expected);
         verify(detailsUseCase).execute(new ViewSupportedLanguageDetailsQuery(id, true));
+    }
+
+    @Test
+    void update_supported_language_should_map_input_presence_and_return_response() {
+        var listUseCase = mock(ViewSupportedLanguagesUseCase.class);
+        var detailsUseCase = mock(ViewSupportedLanguageDetailsUseCase.class);
+        var updateUseCase = mock(UpdateSupportedLanguageUseCase.class);
+        var controller = new SupportedLanguageController(listUseCase, detailsUseCase, updateUseCase);
+        var id = UUID.randomUUID();
+        var input = new HashMap<String, Object>();
+        input.put("code", "fr");
+        input.put("name", "French");
+        input.put("description", null);
+        input.put("isActive", false);
+        var command = new UpdateSupportedLanguageCommand(
+            id,
+            "fr",
+            true,
+            "French",
+            true,
+            null,
+            true,
+            false,
+            true
+        );
+        var expected = new UpdateSupportedLanguageResponse(id);
+        when(updateUseCase.execute(command)).thenReturn(expected);
+
+        var result = controller.updateSupportedLanguage(id, input);
+
+        assertThat(result).isEqualTo(expected);
+        verify(updateUseCase).execute(command);
+    }
+
+    @Test
+    void update_supported_language_should_keep_absent_fields_unprovided() {
+        var listUseCase = mock(ViewSupportedLanguagesUseCase.class);
+        var detailsUseCase = mock(ViewSupportedLanguageDetailsUseCase.class);
+        var updateUseCase = mock(UpdateSupportedLanguageUseCase.class);
+        var controller = new SupportedLanguageController(listUseCase, detailsUseCase, updateUseCase);
+        var id = UUID.randomUUID();
+        var input = Map.<String, Object>of("name", "French");
+        var command = new UpdateSupportedLanguageCommand(
+            id,
+            null,
+            false,
+            "French",
+            true,
+            null,
+            false,
+            null,
+            false
+        );
+        var expected = new UpdateSupportedLanguageResponse(id);
+        when(updateUseCase.execute(command)).thenReturn(expected);
+
+        var result = controller.updateSupportedLanguage(id, input);
+
+        assertThat(result).isEqualTo(expected);
+        verify(updateUseCase).execute(command);
     }
 
     private static void authenticate(String authority) {

@@ -132,6 +132,78 @@ class SupportedLanguageRepositoryTests {
         assertThat(result.totalPages()).isGreaterThanOrEqualTo(2);
     }
 
+    @Test
+    void whenUpdateMutableFields_thenOnlyProvidedFieldsAreUpdated() {
+        var saved = supportedLanguageRepository.save(newSupportedLanguage("RU", "Russian", true));
+        var updatedAt = OffsetDateTime.parse("2026-06-10T10:00:00Z");
+        var updatedBy = UUID.randomUUID();
+
+        var updatedRows = supportedLanguageRepository.updateMutableFields(
+            saved.getId(),
+            "ES",
+            true,
+            null,
+            false,
+            "Spanish language",
+            true,
+            false,
+            true,
+            updatedAt,
+            updatedBy
+        );
+
+        var updated = supportedLanguageRepository.findById(saved.getId()).orElseThrow();
+        assertThat(updatedRows).isEqualTo(1);
+        assertThat(updated.getCode().value()).isEqualTo("ES");
+        assertThat(updated.getName()).isEqualTo("Russian");
+        assertThat(updated.getDescription()).isEqualTo("Spanish language");
+        assertThat(updated.isActive()).isFalse();
+        assertThat(updated.getUpdatedAt()).isEqualTo(updatedAt);
+        assertThat(updated.getUpdatedBy()).isEqualTo(updatedBy);
+    }
+
+    @Test
+    void whenUpdateMutableFieldsWithNullDescription_thenClearsDescription() {
+        var saved = supportedLanguageRepository.save(newSupportedLanguage("VI", "Vietnamese", true));
+
+        var updatedRows = supportedLanguageRepository.updateMutableFields(
+            saved.getId(),
+            null,
+            false,
+            null,
+            false,
+            null,
+            true,
+            null,
+            false,
+            OffsetDateTime.now(),
+            UUID.randomUUID()
+        );
+
+        var updated = supportedLanguageRepository.findById(saved.getId()).orElseThrow();
+        assertThat(updatedRows).isEqualTo(1);
+        assertThat(updated.getDescription()).isNull();
+    }
+
+    @Test
+    void whenUpdateMutableFieldsWithMissingId_thenReturnsZero() {
+        var updatedRows = supportedLanguageRepository.updateMutableFields(
+            UUID.randomUUID(),
+            "ID",
+            true,
+            "Indonesian",
+            true,
+            "Indonesian language",
+            true,
+            true,
+            true,
+            OffsetDateTime.now(),
+            UUID.randomUUID()
+        );
+
+        assertThat(updatedRows).isZero();
+    }
+
     private static SupportedLanguage newSupportedLanguage(String code, String name) {
         return newSupportedLanguage(code, name, true);
     }

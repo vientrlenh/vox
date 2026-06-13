@@ -30,6 +30,8 @@ import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassDependencyRepository;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
+import com.sep.vox.domain.model.school.SchoolUser;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.valueobject.ClassCode;
 
@@ -40,6 +42,7 @@ class DeleteSchoolClassUseCaseTests {
     private SchoolRepository schoolRepository;
     private UserRepository userRepository;
     private UserContextPort userContextPort;
+    private SchoolUserRepository schoolUserRepository;
     private DeleteSchoolClassUseCase useCase;
 
     @BeforeEach
@@ -49,13 +52,14 @@ class DeleteSchoolClassUseCaseTests {
         schoolRepository = mock(SchoolRepository.class);
         userRepository = mock(UserRepository.class);
         userContextPort = mock(UserContextPort.class);
+        schoolUserRepository = mock(SchoolUserRepository.class);
         useCase = new DeleteSchoolClassUseCase(
             schoolClassRepository,
             schoolClassDependencyRepository,
             schoolRepository,
             userRepository,
             userContextPort,
-            TestSchoolUserRepository.create()
+            schoolUserRepository
         );
     }
 
@@ -144,7 +148,8 @@ class DeleteSchoolClassUseCaseTests {
         var userId = UUID.randomUUID();
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user(userId, UUID.randomUUID(), UserStatus.INACTIVE)));
+        var _u1 = user(userId, UUID.randomUUID(), UserStatus.INACTIVE);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(_u1));
 
         assertThrows(IllegalStateException.class, () -> useCase.execute(new DeleteSchoolClassCommand(UUID.randomUUID(), UUID.randomUUID())));
 
@@ -156,7 +161,8 @@ class DeleteSchoolClassUseCaseTests {
         var userId = UUID.randomUUID();
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user(userId, null, UserStatus.ACTIVE)));
+        var _user = user(userId, null, UserStatus.ACTIVE);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(_user));
 
         assertThrows(IllegalStateException.class, () -> useCase.execute(new DeleteSchoolClassCommand(UUID.randomUUID(), UUID.randomUUID())));
 
@@ -171,7 +177,8 @@ class DeleteSchoolClassUseCaseTests {
         school.setActive(false);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user(userId, schoolId, UserStatus.ACTIVE)));
+        var _user1 = user(userId, schoolId, UserStatus.ACTIVE);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(_user1));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(school));
 
         assertThrows(IllegalStateException.class, () -> useCase.execute(new DeleteSchoolClassCommand(schoolId, UUID.randomUUID())));
@@ -181,15 +188,19 @@ class DeleteSchoolClassUseCaseTests {
 
     private void stubActiveContext(UUID userId, UUID schoolId) {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user(userId, schoolId, UserStatus.ACTIVE)));
+        var _user2 = user(userId, schoolId, UserStatus.ACTIVE);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(_user2));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
     }
 
-    private static User user(UUID id, UUID schoolId, UserStatus status) {
+    private User user(UUID id, UUID schoolId, UserStatus status) {
         var user = new User();
         user.setId(id);
         TestSchoolUserRepository.remember(id, schoolId);
         user.setStatus(status);
+        when(schoolUserRepository.findByUserId(id)).thenReturn(
+            schoolId != null ? Optional.of(new SchoolUser(schoolId, id, java.time.OffsetDateTime.now(), java.time.OffsetDateTime.now().plusYears(100))) : Optional.empty()
+        );
         return user;
     }
 

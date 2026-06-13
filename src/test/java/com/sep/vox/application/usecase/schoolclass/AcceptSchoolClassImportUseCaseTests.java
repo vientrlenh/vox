@@ -43,6 +43,8 @@ import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;
+import com.sep.vox.domain.model.school.SchoolUser;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.valueobject.LanguageCode;
 
@@ -57,6 +59,7 @@ class AcceptSchoolClassImportUseCaseTests {
     private SchoolRepository schoolRepository;
     private UserContextPort userContextPort;
     private FakeJsonSerializationPort jsonSerializationPort;
+    private SchoolUserRepository schoolUserRepository;
     private AcceptSchoolClassImportUseCase useCase;
 
     @BeforeEach
@@ -70,6 +73,7 @@ class AcceptSchoolClassImportUseCaseTests {
         schoolRepository = mock(SchoolRepository.class);
         userContextPort = mock(UserContextPort.class);
         jsonSerializationPort = new FakeJsonSerializationPort();
+        schoolUserRepository = mock(SchoolUserRepository.class);
         useCase = new AcceptSchoolClassImportUseCase(
             importSessionRepository,
             importRowRepository,
@@ -80,7 +84,7 @@ class AcceptSchoolClassImportUseCaseTests {
             schoolRepository,
             userContextPort,
             jsonSerializationPort,
-            TestSchoolUserRepository.create()
+            schoolUserRepository
         );
     }
 
@@ -104,7 +108,8 @@ class AcceptSchoolClassImportUseCaseTests {
         );
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(activeUser(userId, schoolId)));
+        var _user = activeUser(userId, schoolId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(_user));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(importSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
         when(importSessionRepository.save(any(ImportSession.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -143,7 +148,8 @@ class AcceptSchoolClassImportUseCaseTests {
         var mapping = Map.of("Mã lớp", "code");
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(activeUser(userId, schoolId)));
+        var _user1 = activeUser(userId, schoolId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(_user1));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(importSessionRepository.findById(sessionId)).thenReturn(Optional.of(previewedSession(sessionId, schoolId)));
 
@@ -166,7 +172,8 @@ class AcceptSchoolClassImportUseCaseTests {
         );
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(activeUser(userId, schoolId)));
+        var _user2 = activeUser(userId, schoolId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(_user2));
 
         assertThrows(IllegalArgumentException.class,
             () -> useCase.execute(new AcceptSchoolClassImportCommand(UUID.randomUUID(), sessionId, mapping)));
@@ -204,11 +211,14 @@ class AcceptSchoolClassImportUseCaseTests {
         return new ImportRow(UUID.randomUUID(), sessionId, rowNumber, jsonSerializationPort.toJson(rawData), null, null, ImportRowStatus.PENDING);
     }
 
-    private static User activeUser(UUID id, UUID schoolId) {
+    private User activeUser(UUID id, UUID schoolId) {
         var user = new User();
         user.setId(id);
         TestSchoolUserRepository.remember(id, schoolId);
         user.setStatus(UserStatus.ACTIVE);
+        when(schoolUserRepository.findByUserId(id)).thenReturn(
+            schoolId != null ? Optional.of(new SchoolUser(schoolId, id, java.time.OffsetDateTime.now(), java.time.OffsetDateTime.now().plusYears(100))) : Optional.empty()
+        );
         return user;
     }
 

@@ -27,6 +27,8 @@ import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.ImportSessionRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
+import com.sep.vox.domain.model.school.SchoolUser;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 class ViewImportSessionUseCaseTests {
@@ -36,6 +38,7 @@ class ViewImportSessionUseCaseTests {
     private SchoolRepository schoolRepository;
     private UserContextPort userContextPort;
     private FakeJsonSerializationPort jsonSerializationPort;
+    private SchoolUserRepository schoolUserRepository;
     private ViewImportSessionUseCase useCase;
 
     @BeforeEach
@@ -45,13 +48,14 @@ class ViewImportSessionUseCaseTests {
         schoolRepository = mock(SchoolRepository.class);
         userContextPort = mock(UserContextPort.class);
         jsonSerializationPort = new FakeJsonSerializationPort();
+        schoolUserRepository = mock(SchoolUserRepository.class);
         useCase = new ViewImportSessionUseCase(
             importSessionRepository,
             userRepository,
             schoolRepository,
             userContextPort,
             new ImportSessionResponseMapper(jsonSerializationPort),
-            TestSchoolUserRepository.create()
+            schoolUserRepository
         );
     }
 
@@ -65,7 +69,8 @@ class ViewImportSessionUseCaseTests {
         session.setSuggestedMappingJson(jsonSerializationPort.toJson(java.util.Map.of("Mã lớp", "code")));
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(activeUser(userId, schoolId)));
+        var _user = activeUser(userId, schoolId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(_user));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(importSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
 
@@ -83,7 +88,8 @@ class ViewImportSessionUseCaseTests {
         var sessionId = UUID.randomUUID();
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(activeUser(userId, schoolId)));
+        var _user1 = activeUser(userId, schoolId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(_user1));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(importSessionRepository.findById(sessionId)).thenReturn(Optional.of(session(sessionId, UUID.randomUUID())));
 
@@ -115,11 +121,14 @@ class ViewImportSessionUseCaseTests {
         );
     }
 
-    private static User activeUser(UUID id, UUID schoolId) {
+    private User activeUser(UUID id, UUID schoolId) {
         var user = new User();
         user.setId(id);
         TestSchoolUserRepository.remember(id, schoolId);
         user.setStatus(UserStatus.ACTIVE);
+        when(schoolUserRepository.findByUserId(id)).thenReturn(
+            schoolId != null ? Optional.of(new SchoolUser(schoolId, id, java.time.OffsetDateTime.now(), java.time.OffsetDateTime.now().plusYears(100))) : Optional.empty()
+        );
         return user;
     }
 

@@ -1,7 +1,6 @@
 package com.sep.vox.application.usecase.supportedlanguage;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -71,8 +70,9 @@ class CreateSupportedLanguageUseCaseTests {
         var command = new CreateSupportedLanguageCommand("en", "English", null);
         when(supportedLanguageRepository.findByCode("EN")).thenReturn(Optional.of(existingLanguage()));
 
-        assertThrows(DuplicatedException.class, () -> useCase.execute(command));
+        var exception = org.junit.jupiter.api.Assertions.assertThrows(DuplicatedException.class, () -> useCase.execute(command));
 
+        assertThat(exception).hasMessage("Ngôn ngữ đã tồn tại với mã: EN");
         verify(supportedLanguageRepository).findByCode("EN");
         verify(supportedLanguageRepository, never()).save(any());
     }
@@ -82,7 +82,7 @@ class CreateSupportedLanguageUseCaseTests {
         var command = new CreateSupportedLanguageCommand("en-us", "English", null);
         when(supportedLanguageRepository.findByCode("EN-US")).thenReturn(Optional.empty());
 
-        assertThrows(IllegalArgumentException.class, () -> useCase.execute(command));
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, () -> useCase.execute(command));
 
         verify(supportedLanguageRepository, never()).save(any());
     }

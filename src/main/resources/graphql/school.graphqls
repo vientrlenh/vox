@@ -52,16 +52,6 @@ type SchoolGrade {
     updatedAt: String
 }
 
-type SupportedLanguage {
-    id: ID!
-    code: String
-    name: String
-    description: String
-    isActive: Boolean!
-    createdAt: String
-    updatedAt: String
-}
-
 type SchoolClassPage {
     content: [SchoolClass!]!
     page: Int!

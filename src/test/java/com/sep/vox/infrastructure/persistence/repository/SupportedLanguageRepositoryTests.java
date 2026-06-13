@@ -14,6 +14,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
 import com.sep.vox.config.TestContainerConfig;
+import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;
 import com.sep.vox.domain.valueobject.LanguageCode;
@@ -85,13 +86,66 @@ class SupportedLanguageRepositoryTests {
         assertThat(supportedLanguageRepository.count()).isEqualTo(before + 1);
     }
 
+    @Test
+    void whenFindAllWithSearch_thenMatchesCodeOrNameCaseInsensitive() {
+        supportedLanguageRepository.save(newSupportedLanguage("PT", "Portuguese"));
+        supportedLanguageRepository.save(newSupportedLanguage("NL", "Dutch"));
+
+        var result = supportedLanguageRepository.findAll("port", null, new PageRequest(1, 20));
+
+        assertThat(result.content())
+            .extracting(language -> language.getCode().value())
+            .contains("PT")
+            .doesNotContain("NL");
+    }
+
+    @Test
+    void whenFindAllWithActiveFilter_thenReturnsMatchingLanguages() {
+        supportedLanguageRepository.save(newSupportedLanguage("TR", "Turkish", true));
+        supportedLanguageRepository.save(newSupportedLanguage("PL", "Polish", false));
+
+        var active = supportedLanguageRepository.findAll(null, true, new PageRequest(1, 20));
+        var inactive = supportedLanguageRepository.findAll(null, false, new PageRequest(1, 20));
+
+        assertThat(active.content())
+            .extracting(language -> language.getCode().value())
+            .contains("TR")
+            .doesNotContain("PL");
+        assertThat(inactive.content())
+            .extracting(language -> language.getCode().value())
+            .contains("PL")
+            .doesNotContain("TR");
+    }
+
+    @Test
+    void whenFindAll_thenReturnsRequestedPageSortedByCreatedAtDescending() {
+        supportedLanguageRepository.save(newSupportedLanguage("SV", "Swedish", true, OffsetDateTime.parse("2026-06-01T10:00:00Z")));
+        supportedLanguageRepository.save(newSupportedLanguage("DA", "Danish", true, OffsetDateTime.parse("2026-06-02T10:00:00Z")));
+
+        var result = supportedLanguageRepository.findAll(null, null, new PageRequest(1, 1));
+
+        assertThat(result.content()).hasSize(1);
+        assertThat(result.content().get(0).getCode().value()).isEqualTo("DA");
+        assertThat(result.page()).isEqualTo(1);
+        assertThat(result.size()).isEqualTo(1);
+        assertThat(result.totalElements()).isGreaterThanOrEqualTo(2);
+        assertThat(result.totalPages()).isGreaterThanOrEqualTo(2);
+    }
+
     private static SupportedLanguage newSupportedLanguage(String code, String name) {
-        var now = OffsetDateTime.now();
+        return newSupportedLanguage(code, name, true);
+    }
+
+    private static SupportedLanguage newSupportedLanguage(String code, String name, boolean active) {
+        return newSupportedLanguage(code, name, active, OffsetDateTime.now());
+    }
+
+    private static SupportedLanguage newSupportedLanguage(String code, String name, boolean active, OffsetDateTime now) {
         return new SupportedLanguage(
             new LanguageCode(code),
             name,
             name + " language",
-            true,
+            active,
             now,
             now,
             UUID.randomUUID(),

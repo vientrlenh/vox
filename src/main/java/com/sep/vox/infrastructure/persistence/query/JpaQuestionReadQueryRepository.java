@@ -40,10 +40,13 @@ public class JpaQuestionReadQueryRepository implements QuestionReadQueryReposito
                     :role = 'SYSTEM_ADMIN'
                     OR (:role = 'TEACHER' AND (
                         (qt.status = 'PUBLISHED' AND qb.status = 'PUBLISHED' AND (
+                            (qb.ownerType = 'SYSTEM' OR (qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId))
+                            AND (
                             (q.visibility = 'BANK_VISIBLE' AND q.status = 'PUBLISHED')
                             OR (q.visibility = 'BANK_VISIBLE' AND q.status IN ('DRAFT','SUBMITTED_FOR_REVIEW','REVISION_REQUESTED','APPROVED','REJECTED') AND q.createdBy = :userId)
                             OR (q.visibility = 'AUTHOR_ONLY' AND q.createdBy = :userId)
                             OR (q.visibility = 'REVIEWER_ONLY' AND q.createdBy <> :userId AND qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId AND q.status = 'SUBMITTED_FOR_REVIEW')
+                            )
                         ))
                         OR (qb.status = 'DRAFT' AND qt.status <> 'ARCHIVED' AND (
                             q.createdBy = :userId
@@ -231,13 +234,11 @@ public class JpaQuestionReadQueryRepository implements QuestionReadQueryReposito
 
         Long total = em.createQuery(countSql, Long.class)
                 .setParameter("bankId", bankId)
-                .setParameter("userId", userId)
                 .setParameter("schoolId", schoolId)
                 .getSingleResult();
 
         List<QuestionTopicJpaEntity> results = em.createQuery(dataSql, QuestionTopicJpaEntity.class)
                 .setParameter("bankId", bankId)
-                .setParameter("userId", userId)
                 .setParameter("schoolId", schoolId)
                 .setFirstResult((page.page() - 1) * page.size())
                 .setMaxResults(page.size())

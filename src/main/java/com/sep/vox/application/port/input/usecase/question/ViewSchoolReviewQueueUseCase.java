@@ -41,7 +41,7 @@ public class ViewSchoolReviewQueueUseCase implements IUseCase<ViewSchoolReviewQu
     public PageResult<QuestionDto> execute(ViewSchoolReviewQueueQuery input) {
         var userId = userContextPort.getCurrentAuthenticatedUserId();
         var user = userRepository.findById(userId)
-            .orElseThrow(() -> new NotFoundException("KhÃ´ng tÃ¬m tháº¥y ngÆ°á»i dÃ¹ng"));
+            .orElseThrow(() -> new NotFoundException("Khong tim thay nguoi dung"));
         return questionReadQueryRepository.findSchoolReviewQueue(
                 getSchoolId(user.getId()), new PageRequest(input.page(), input.size()));
     }

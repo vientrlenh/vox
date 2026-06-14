@@ -38,6 +38,7 @@ import com.sep.vox.infrastructure.persistence.adapter.QuestionTopicRepositoryImp
 @Import({
     TestContainerConfig.class,
     JpaQuestionReadQueryRepository.class,
+    JpaQuestionTopicReadQueryRepository.class,
     QuestionBankRepositoryImpl.class,
     QuestionTopicRepositoryImpl.class,
     QuestionRepositoryImpl.class
@@ -47,6 +48,9 @@ class JpaQuestionReadQueryRepositoryTests {
 
     @Autowired
     private JpaQuestionReadQueryRepository repository;
+
+    @Autowired
+    private JpaQuestionTopicReadQueryRepository topicRepository;
 
     @Autowired
     private QuestionBankRepository questionBankRepository;
@@ -211,7 +215,7 @@ class JpaQuestionReadQueryRepositoryTests {
         var sameSchoolBank = persistBank(UUID.randomUUID(), schoolId, QuestionBankOwnerType.SCHOOL, QuestionBankStatus.PUBLISHED, "TBANK");
         persistTopic(sameSchoolBank.getId(), teacherId, "TOPIC_VISIBLE", QuestionTopicStatus.PUBLISHED);
 
-        var result = repository.findTeacherBankTopics(sameSchoolBank.getId(), teacherId, schoolId, new PageRequest(1, 20));
+        var result = topicRepository.findTeacherBankTopics(sameSchoolBank.getId(), teacherId, schoolId, new PageRequest(1, 20));
 
         assertThat(result.content()).extracting(QuestionTopicDto::code).containsExactly("TOPIC_VISIBLE");
     }
@@ -223,7 +227,7 @@ class JpaQuestionReadQueryRepositoryTests {
         persistQuestion(topic.getId(), teacherId, "VISIBLE_Q", QuestionScope.QUESTION_BANK, QuestionStatus.PUBLISHED, QuestionVisibility.BANK_VISIBLE);
         persistQuestion(topic.getId(), otherTeacherId, "HIDDEN_REVIEW_Q", QuestionScope.QUESTION_BANK, QuestionStatus.SUBMITTED_FOR_REVIEW, QuestionVisibility.REVIEWER_ONLY);
 
-        var result = repository.findTeacherTopicQuestions(bank.getId(), topic.getId(), teacherId, schoolId, null, "PUBLISHED", null, null, new PageRequest(1, 20));
+        var result = topicRepository.findTeacherTopicQuestions(bank.getId(), topic.getId(), teacherId, schoolId, null, "PUBLISHED", null, null, new PageRequest(1, 20));
 
         assertThat(result.content()).extracting(question -> question.code()).containsExactly("VISIBLE_Q");
     }
@@ -233,7 +237,7 @@ class JpaQuestionReadQueryRepositoryTests {
         var schoolBank = persistBank(UUID.randomUUID(), schoolId, QuestionBankOwnerType.SCHOOL, QuestionBankStatus.DRAFT, "SBANK");
         persistTopic(schoolBank.getId(), teacherId, "SCHOOL_DRAFT_TOPIC", QuestionTopicStatus.DRAFT);
 
-        var result = repository.findSchoolBankTopics(schoolBank.getId(), schoolId, new PageRequest(1, 20));
+        var result = topicRepository.findSchoolBankTopics(schoolBank.getId(), schoolId, new PageRequest(1, 20));
 
         assertThat(result.content()).extracting(QuestionTopicDto::code).containsExactly("SCHOOL_DRAFT_TOPIC");
     }
@@ -244,7 +248,7 @@ class JpaQuestionReadQueryRepositoryTests {
         var topic = persistTopic(bank.getId(), teacherId, "SCHOOL_TOPIC", QuestionTopicStatus.DRAFT);
         persistQuestion(topic.getId(), teacherId, "SCHOOL_Q", QuestionScope.QUESTION_BANK, QuestionStatus.DRAFT, QuestionVisibility.AUTHOR_ONLY);
 
-        var result = repository.findSchoolTopicQuestions(bank.getId(), topic.getId(), schoolId, null, null, null, null, new PageRequest(1, 20));
+        var result = topicRepository.findSchoolTopicQuestions(bank.getId(), topic.getId(), schoolId, null, null, null, null, new PageRequest(1, 20));
 
         assertThat(result.content()).extracting(question -> question.code()).containsExactly("SCHOOL_Q");
     }
@@ -255,8 +259,8 @@ class JpaQuestionReadQueryRepositoryTests {
         persistTopic(bank.getId(), teacherId, "ADMIN_PUBLISHED_TOPIC", QuestionTopicStatus.PUBLISHED);
         persistTopic(bank.getId(), teacherId, "ADMIN_ARCHIVED_TOPIC", QuestionTopicStatus.ARCHIVED);
 
-        var resultWithoutArchived = repository.findAdminBankTopics(bank.getId(), false, new PageRequest(1, 20));
-        var resultWithArchived = repository.findAdminBankTopics(bank.getId(), true, new PageRequest(1, 20));
+        var resultWithoutArchived = topicRepository.findAdminBankTopics(bank.getId(), false, new PageRequest(1, 20));
+        var resultWithArchived = topicRepository.findAdminBankTopics(bank.getId(), true, new PageRequest(1, 20));
 
         assertThat(resultWithoutArchived.content()).extracting(QuestionTopicDto::code).containsExactly("ADMIN_PUBLISHED_TOPIC");
         assertThat(resultWithArchived.content()).extracting(QuestionTopicDto::code)
@@ -270,7 +274,7 @@ class JpaQuestionReadQueryRepositoryTests {
         persistQuestion(topic.getId(), teacherId, "ADMIN_Q1", QuestionScope.QUESTION_BANK, QuestionStatus.PUBLISHED, QuestionVisibility.BANK_VISIBLE);
         persistQuestion(topic.getId(), teacherId, "ADMIN_Q2", QuestionScope.CENTRAL_EXAM_DRAFT, QuestionStatus.PUBLISHED, QuestionVisibility.BANK_VISIBLE);
 
-        var result = repository.findAdminTopicQuestions(bank.getId(), topic.getId(), false, "CENTRAL_EXAM_DRAFT", "PUBLISHED", null, null, new PageRequest(1, 20));
+        var result = topicRepository.findAdminTopicQuestions(bank.getId(), topic.getId(), false, "CENTRAL_EXAM_DRAFT", "PUBLISHED", null, null, new PageRequest(1, 20));
 
         assertThat(result.content()).extracting(question -> question.code()).containsExactly("ADMIN_Q2");
     }

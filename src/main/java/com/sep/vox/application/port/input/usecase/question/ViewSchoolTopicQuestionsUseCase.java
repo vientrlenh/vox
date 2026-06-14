@@ -9,7 +9,7 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.query.ViewSchoolTopicQuestionsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.repository.QuestionReadQueryRepository;
+import com.sep.vox.application.query.repository.QuestionTopicReadQueryRepository;
 import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.QuestionDto;
@@ -20,17 +20,17 @@ import com.sep.vox.domain.repository.UserRepository;
 @Service
 public class ViewSchoolTopicQuestionsUseCase implements IUseCase<ViewSchoolTopicQuestionsQuery, PageResult<QuestionDto>> {
 
-    private final QuestionReadQueryRepository questionReadQueryRepository;
+    private final QuestionTopicReadQueryRepository questionTopicReadQueryRepository;
     private final UserContextPort userContextPort;
     private final UserRepository userRepository;
     private final SchoolUserRepository schoolUserRepository;
 
     public ViewSchoolTopicQuestionsUseCase(
-            QuestionReadQueryRepository questionReadQueryRepository,
+            QuestionTopicReadQueryRepository questionTopicReadQueryRepository,
             UserContextPort userContextPort,
             UserRepository userRepository,
             SchoolUserRepository schoolUserRepository) {
-        this.questionReadQueryRepository = questionReadQueryRepository;
+        this.questionTopicReadQueryRepository = questionTopicReadQueryRepository;
         this.userContextPort = userContextPort;
         this.userRepository = userRepository;
         this.schoolUserRepository = schoolUserRepository;
@@ -42,7 +42,7 @@ public class ViewSchoolTopicQuestionsUseCase implements IUseCase<ViewSchoolTopic
         var userId = userContextPort.getCurrentAuthenticatedUserId();
         var user = userRepository.findById(userId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
-        return questionReadQueryRepository.findSchoolTopicQuestions(
+        return questionTopicReadQueryRepository.findSchoolTopicQuestions(
                 input.bankId(), input.topicId(), getSchoolId(user.getId()),
                 input.scope(), input.status(), input.type(), input.keyword(),
                 new PageRequest(input.page(), input.size()));

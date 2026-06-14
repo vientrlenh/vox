@@ -41,7 +41,7 @@ public class ViewSchoolQuestionsUseCase implements IUseCase<ViewSchoolQuestionsQ
     public PageResult<QuestionDto> execute(ViewSchoolQuestionsQuery input) {
         var userId = userContextPort.getCurrentAuthenticatedUserId();
         var user = userRepository.findById(userId)
-            .orElseThrow(() -> new NotFoundException("KhÃƒÂ´ng tÃƒÂ¬m thÃ¡ÂºÂ¥y ngÃ†Â°Ã¡Â»Âi dÃƒÂ¹ng"));
+            .orElseThrow(() -> new NotFoundException("Khong tim thay nguoi dung"));
         return questionReadQueryRepository.findSchoolVisibleQuestions(
             getSchoolId(user.getId()),
             input.scope(),

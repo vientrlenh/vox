@@ -1,6 +1,6 @@
 package com.sep.vox.interfaces.event.mapper;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 
 public final class DummyReportGeneratedEventMapper {
 

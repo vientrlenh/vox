@@ -18,20 +18,50 @@ spring:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+      acks: all # wait for all replicas
+      retries: 3 # retry on transient failure
+      batch-size: 16384 # 16KB default
+      buffer-memory: 33554432 # 32MB producer buffer
+      compression-type: zstd # compression-ration=high, speed=fast, cpu-usage=moderate
       properties:
-        acks: all
-        client.id: ${KAFKA_CLIENT_ID:vox}
+        enable:
+          idempotence: true
+      transaction-id-prefix: tx- # transactional producer
     consumer:
+      group-id: ${KAFKA_GROUP_ID:vox}
+      enable-auto-commit: false
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JacksonJsonDeserializer 
+      max-poll-records: 500 # max records per pools 
+      fetch-min-size: 1
+      fetch-max-wait: 500ms
       properties:
-        spring.json.trusted.packages: "*"
-        spring.json.value.default.type: com.fasterxml.jackson.databind.JsonNode
+        spring:
+          json:
+            trusted:
+              packages: "*"
+        session:
+          timeout:
+            ms: 30000
+        heartbeat: 
+          interval:
+            ms: 10000
       auto-offset-reset: earliest
+      isolation-level: read-committed # only read committed messages
     listener:
-      ack-mode: manual_immediate
-
+      ack-mode: MANUAL_IMMEDIATE # commit right away
+      concurrency: 3
+      poll-timeout: 3000ms
+      type: single
+    streams:
+      application-id: "vox"
+      auto-startup: true
+    properties: 
+      "[prop.shared]": "value"
+    admin: 
+      properties: 
+        "[prop.admin]": "value"
   data:
     redis:
       host: ${REDIS_HOST:localhost}

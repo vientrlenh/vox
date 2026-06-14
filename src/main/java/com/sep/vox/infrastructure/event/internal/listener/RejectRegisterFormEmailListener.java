@@ -1,4 +1,4 @@
-package com.sep.vox.infrastructure.event.listener;
+package com.sep.vox.infrastructure.event.internal.listener;
 
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;

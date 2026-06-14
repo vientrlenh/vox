@@ -1,6 +1,6 @@
 package com.sep.vox.interfaces.event;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 
 @FunctionalInterface
 public interface ExternalEventHandler {

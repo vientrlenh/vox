@@ -1,4 +1,4 @@
-package com.sep.vox.infrastructure.event.listener;
+package com.sep.vox.infrastructure.event.external.consumer;
 
 import java.util.List;
 
@@ -8,19 +8,20 @@ import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sep.vox.interfaces.event.ExternalEventHandler;
 
-@Component
-public class KafkaExternalEventListener {
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
-    private static final Logger log = LoggerFactory.getLogger(KafkaExternalEventListener.class);
+@Component
+public class KafkaEventConsumer {
+
+    private static final Logger log = LoggerFactory.getLogger(KafkaEventConsumer.class);
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final List<ExternalEventHandler> handlers;
 
-    public KafkaExternalEventListener(List<ExternalEventHandler> handlers) {
+    public KafkaEventConsumer(List<ExternalEventHandler> handlers) {
         this.handlers = handlers;
     }
 

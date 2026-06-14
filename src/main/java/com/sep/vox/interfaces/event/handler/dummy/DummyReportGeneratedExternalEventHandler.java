@@ -4,9 +4,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.databind.JsonNode;
+
 import com.sep.vox.interfaces.event.ExternalEventHandler;
 import com.sep.vox.interfaces.event.mapper.DummyReportGeneratedEventMapper;
+
+import tools.jackson.databind.JsonNode;
 
 @Component
 public class DummyReportGeneratedExternalEventHandler implements ExternalEventHandler {

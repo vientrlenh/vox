@@ -1,4 +1,4 @@
-package com.sep.vox.infrastructure.event.publisher;
+package com.sep.vox.infrastructure.event.external.producer;
 
 import java.util.Locale;
 
@@ -11,12 +11,12 @@ import com.sep.vox.infrastructure.config.ExternalEventProperties;
 import com.sep.vox.infrastructure.exception.InfrastructureException;
 
 @Component
-public class KafkaExternalEventPublisher implements ExternalEventPublisherPort {
+public class KafkaEventProducer implements ExternalEventPublisherPort {
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final ExternalEventProperties properties;
 
-    public KafkaExternalEventPublisher(
+    public KafkaEventProducer(
             KafkaTemplate<String, Object> kafkaTemplate,
             ExternalEventProperties properties) {
         this.kafkaTemplate = kafkaTemplate;

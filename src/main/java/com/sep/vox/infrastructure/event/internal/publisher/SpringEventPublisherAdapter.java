@@ -1,4 +1,4 @@
-package com.sep.vox.infrastructure.event.publisher;
+package com.sep.vox.infrastructure.event.internal.publisher;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;

@@ -1,4 +1,4 @@
-package com.sep.vox.infrastructure.event.listener;
+package com.sep.vox.infrastructure.event.internal.listener;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -9,20 +9,20 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
-import com.sep.vox.application.event.SchoolUserPasswordSetUpEmailRequestedEvent;
+import com.sep.vox.application.event.PasswordSetUpEmailRequestedEvent;
 import com.sep.vox.application.port.output.MailSendingPort;
 import com.sep.vox.application.port.output.MailTemplatePort;
 
 @Component
-public class SchoolUserPasswordSetUpEmailListener {
-
+public class PasswordSetUpEmailListener {
+    
     private static final String SUBJECT = "Thiết lập mật khẩu tài khoản VOX";
     private static final String EXPIRES_IN = "48 giờ";
 
     private final MailSendingPort mailSendingPort;
     private final MailTemplatePort mailTemplatePort;
-
-    public SchoolUserPasswordSetUpEmailListener(MailSendingPort mailSendingPort, MailTemplatePort mailTemplatePort) {
+    
+    public PasswordSetUpEmailListener(MailSendingPort mailSendingPort, MailTemplatePort mailTemplatePort) {
         this.mailSendingPort = mailSendingPort;
         this.mailTemplatePort = mailTemplatePort;
     }
@@ -31,12 +31,12 @@ public class SchoolUserPasswordSetUpEmailListener {
     private String passwordSetupBaseUrl;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handle(SchoolUserPasswordSetUpEmailRequestedEvent event) throws Exception {
+    public void handle(PasswordSetUpEmailRequestedEvent event) throws Exception {
         var setupUrl = buildPasswordSetupUrl(event.userId(), event.rawToken());
-        var html = mailTemplatePort.renderSchoolUserPasswordSetUpEmail(
-            event.schoolUserName(),
-            event.schoolName(),
-            setupUrl,
+        var html = mailTemplatePort.renderPasswordSetUpEmail(
+            event.schoolAdminName(), 
+            event.schoolName(), 
+            setupUrl, 
             EXPIRES_IN
         );
 

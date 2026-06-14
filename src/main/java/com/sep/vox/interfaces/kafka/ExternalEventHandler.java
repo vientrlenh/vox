@@ -1,4 +1,4 @@
-package com.sep.vox.interfaces.event;
+package com.sep.vox.interfaces.kafka;
 
 import tools.jackson.databind.JsonNode;
 

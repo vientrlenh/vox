@@ -1,12 +1,12 @@
-package com.sep.vox.interfaces.event.handler.dummy;
+package com.sep.vox.interfaces.kafka.handler.dummy;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 
-import com.sep.vox.interfaces.event.ExternalEventHandler;
-import com.sep.vox.interfaces.event.mapper.DummyUserRegisteredEventMapper;
+import com.sep.vox.interfaces.kafka.ExternalEventHandler;
+import com.sep.vox.interfaces.kafka.mapper.DummyUserRegisteredEventMapper;
 
 import tools.jackson.databind.JsonNode;
 

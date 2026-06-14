@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
-import com.sep.vox.interfaces.event.ExternalEventHandler;
+import com.sep.vox.interfaces.kafka.ExternalEventHandler;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;

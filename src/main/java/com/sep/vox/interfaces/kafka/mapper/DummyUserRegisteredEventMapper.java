@@ -1,0 +1,25 @@
+package com.sep.vox.interfaces.kafka.mapper;
+
+import com.sep.vox.interfaces.kafka.dto.UserRegisteredPayload;
+
+import tools.jackson.databind.JsonNode;
+
+public final class DummyUserRegisteredEventMapper {
+
+    private DummyUserRegisteredEventMapper() {}
+
+    public static UserRegisteredPayload fromJson(JsonNode payload) {
+        return new UserRegisteredPayload(
+            textOf(payload, "userId"),
+            textOf(payload, "email"),
+            textOf(payload, "fullName")
+        );
+    }
+
+    private static String textOf(JsonNode node, String field) {
+        if (node == null) return null;
+        var child = node.get(field);
+        return child == null || child.isNull() ? null : child.asString();
+    }
+
+}

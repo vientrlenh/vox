@@ -12,7 +12,7 @@ import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabas
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
-import com.sep.vox.config.TestContainerConfig;
+import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
@@ -22,11 +22,10 @@ import com.sep.vox.infrastructure.persistence.adapter.ImportSessionRepositoryImp
 @DataJpaTest
 @ActiveProfiles("test")
 @Import({
-    TestContainerConfig.class,
     ImportSessionRepositoryImpl.class
 })
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-class ImportSessionRepositoryTests {
+class ImportSessionRepositoryTests extends ContainerTestConfig {
 
     @Autowired
     private ImportSessionRepository importSessionRepository;

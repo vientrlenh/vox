@@ -24,9 +24,7 @@ import com.sep.vox.application.port.input.command.CreateSchoolUserCommand;
 import com.sep.vox.application.port.input.command.DeleteSchoolClassCommand;
 import com.sep.vox.application.port.input.command.DeleteSchoolUserCommand;
 import com.sep.vox.application.port.input.command.AcceptSchoolClassUserImportCommand;
-import com.sep.vox.application.port.input.command.CreateSchoolClassCommand;
 import com.sep.vox.application.port.input.command.CreateSchoolClassUserCommand;
-import com.sep.vox.application.port.input.command.DeleteSchoolClassCommand;
 import com.sep.vox.application.port.input.command.DeleteSchoolClassUserCommand;
 import com.sep.vox.application.port.input.command.PreviewSchoolClassImportFromFileCommand;
 import com.sep.vox.application.port.input.command.PreviewSchoolClassUserImportFromFileCommand;
@@ -44,9 +42,7 @@ import com.sep.vox.application.response.input.importfile.AcceptSchoolUserImportR
 import com.sep.vox.application.response.input.importfile.PreviewSchoolClassImportResponse;
 import com.sep.vox.application.response.input.importfile.PreviewSchoolUserImportResponse;
 import com.sep.vox.application.response.input.schoolclass.CreateSchoolClassResponse;
-import com.sep.vox.application.response.input.schoolclass.DeleteSchoolClassResponse;
 import com.sep.vox.application.response.input.schooluser.CreateSchoolUserResponse;
-import com.sep.vox.application.response.input.schooluser.SchoolUserResponse;
 import com.sep.vox.interfaces.rest.dto.request.AcceptSchoolClassImportRequest;
 import com.sep.vox.interfaces.rest.dto.request.AcceptSchoolUserImportRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolClassRequest;
@@ -56,16 +52,11 @@ import com.sep.vox.application.port.input.usecase.schoolclassuser.CreateSchoolCl
 import com.sep.vox.application.port.input.usecase.schoolclassuser.DeleteSchoolClassUserUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclassuser.PreviewSchoolClassUserImportFromFileUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclassuser.UpdateSchoolClassUserStatusUseCase;
-import com.sep.vox.application.response.input.importfile.AcceptSchoolClassImportResponse;
 import com.sep.vox.application.response.input.importfile.AcceptSchoolClassUserImportResponse;
-import com.sep.vox.application.response.input.importfile.PreviewSchoolClassImportResponse;
 import com.sep.vox.application.response.input.importfile.PreviewSchoolClassUserImportResponse;
-import com.sep.vox.application.response.input.schoolclass.CreateSchoolClassResponse;
 import com.sep.vox.application.response.input.schoolclassuser.CreateSchoolClassUserResponse;
 import com.sep.vox.application.response.input.schoolclassuser.UpdateSchoolClassUserStatusResponse;
-import com.sep.vox.interfaces.rest.dto.request.AcceptSchoolClassImportRequest;
 import com.sep.vox.interfaces.rest.dto.request.AcceptSchoolClassUserImportRequest;
-import com.sep.vox.interfaces.rest.dto.request.CreateSchoolClassRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolClassUserRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateSchoolClassUserStatusRequest;
 
@@ -350,10 +341,6 @@ class SchoolControllerTests {
         assertThat(response.getBody().message()).isEqualTo("Import người dùng thành công");
         assertThat(response.getBody().data()).isEqualTo(expected);
         verify(acceptSchoolUserImportUseCase).execute(any(AcceptSchoolUserImportCommand.class));
-    }
-
-    private SchoolUserResponse schoolUserResponse(UUID id, String roleCode) {
-        return new SchoolUserResponse(id, schoolId, id, roleCode, null, null);
     }
 
     @Test

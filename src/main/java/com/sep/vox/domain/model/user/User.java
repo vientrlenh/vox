@@ -176,11 +176,13 @@ public class User {
         this.updatedAt = now;
     }
 
+    private static final String PASSWORD_NOT_SET = "__PASSWORD_NOT_SET__";
+
     
-    public static User createSchoolAdmin(String email, String password, String phone, String fullName, LocalDate dateOfBirth, String address, String avatarUrl, UUID createdUserId, OffsetDateTime now) {
+    public static User createSchoolAdmin(String email, String phone, String fullName, LocalDate dateOfBirth, String address, String avatarUrl, UUID createdUserId, OffsetDateTime now) {
         return new User(
             new Email(email), 
-            password, 
+            PASSWORD_NOT_SET, 
             new Phone(phone), 
             new FullName(fullName), 
             null, 
@@ -203,17 +205,7 @@ public class User {
         this.avatarUrl = avatarUrl;
     }
 
-    public static User createStudent(String email, String phone, String fullName, LocalDate dateOfBirth, String address, String avatarUrl, UUID createdBy, OffsetDateTime now) {
-        return createSchoolUser(email, phone, fullName, dateOfBirth, address, avatarUrl, createdBy, now);
-    }
-
-    public static User createTeacher(String email, String phone, String fullName, LocalDate dateOfBirth, String address, String avatarUrl, UUID createdBy, OffsetDateTime now) {
-        return createSchoolUser(email, phone, fullName, dateOfBirth, address, avatarUrl, createdBy, now);
-    }
-
-    private static final String PASSWORD_NOT_SET = "__PASSWORD_NOT_SET__";
-
-    private static User createSchoolUser(String email, String phone, String fullName, LocalDate dateOfBirth, String address, String avatarUrl, UUID createdBy, OffsetDateTime now) {
+    public static User create(String email, String phone, String fullName, LocalDate dateOfBirth, String address, String avatarUrl, UUID createdBy, OffsetDateTime now) {
         return new User(
             new Email(email),
             PASSWORD_NOT_SET,

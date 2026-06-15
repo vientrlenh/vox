@@ -3,19 +3,18 @@ package com.sep.vox.application.port.input.usecase.schooluser;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.UserStatusValidator;
 import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.mapper.schooluser.SchoolUserResponseMapper;
 import com.sep.vox.application.port.input.command.ViewSchoolUserCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
-import com.sep.vox.application.response.input.schooluser.SchoolUserResponse;
+import com.sep.vox.domain.dto.SchoolUserDto;
+import com.sep.vox.domain.mapper.SchoolUserDtoMapper;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
-public class ViewSchoolUserUseCase implements IUseCase<ViewSchoolUserCommand, SchoolUserResponse> {
+public class ViewSchoolUserUseCase implements IUseCase<ViewSchoolUserCommand, SchoolUserDto> {
 
     private final UserContextPort userContextPort;
     private final UserRepository userRepository;
@@ -35,29 +34,21 @@ public class ViewSchoolUserUseCase implements IUseCase<ViewSchoolUserCommand, Sc
 
     @Override
     @Transactional
-    public SchoolUserResponse execute(ViewSchoolUserCommand input) {
+    public SchoolUserDto execute(ViewSchoolUserCommand input) {
         var callerId = userContextPort.getCurrentAuthenticatedUserId();
 
         var caller = userRepository.findById(callerId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
-        UserStatusValidator.requireActive(caller);
-        var callerSchoolUser = schoolUserRepository.findByUserId(callerId)
+
+        var callerSchoolUser = schoolUserRepository.findByUserId(caller.getId())
             .orElseThrow(() -> new IllegalArgumentException("Không có quyền thực hiện thao tác này"));
         if (!input.schoolId().equals(callerSchoolUser.getSchoolId())) {
             throw new IllegalArgumentException("Không có quyền thực hiện thao tác này");
         }
 
-        var targetUser = userRepository.findById(input.userId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
-        UserStatusValidator.requireActiveTarget(targetUser);
-        var schoolUser = schoolUserRepository.findByUserId(input.userId()).orElse(null);
-        if (schoolUser == null || !input.schoolId().equals(schoolUser.getSchoolId())) {
-            throw new NotFoundException("Không tìm thấy người dùng");
-        }
+        var schoolUser = schoolUserRepository.findBySchoolIdAndUserId(input.schoolId(), input.userId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng nhà trường theo yêu cầu"));
 
-        var roleInfo = userRoleQueryRepository.findByUserIdWithRoleInfo(input.userId());
-        var roleCode = roleInfo.isEmpty() ? null : roleInfo.get(0).roleCode();
-
-        return SchoolUserResponseMapper.toResponse(targetUser, roleCode, schoolUser);
+        return SchoolUserDtoMapper.toSchoolUserDto(schoolUser);
     }
 }

@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.common.UserStatusValidator;
 import com.sep.vox.application.event.SchoolUserPasswordSetUpEmailRequestedEvent;
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.NotFoundException;
@@ -22,6 +21,7 @@ import com.sep.vox.domain.model.passwordsetuptoken.PasswordSetUpToken;
 import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserRole;
+import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.RoleRepository;
 import com.sep.vox.domain.repository.PasswordSetUpTokenRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
@@ -73,10 +73,9 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
         var now = OffsetDateTime.now();
         var callerId = userContextPort.getCurrentAuthenticatedUserId();
 
-        var caller = userRepository.findById(callerId)
+        var caller = userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
-        UserStatusValidator.requireActive(caller);
-        var callerSchoolUser = schoolUserRepository.findByUserId(callerId)
+        var callerSchoolUser = schoolUserRepository.findByUserId(caller.getId())
             .orElseThrow(() -> new IllegalArgumentException("Không có quyền thực hiện thao tác này"));
         if (!input.schoolId().equals(callerSchoolUser.getSchoolId())) {
             throw new IllegalArgumentException("Không có quyền thực hiện thao tác này");
@@ -100,8 +99,8 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
         }
 
         User user = command.roleCode().equals("STUDENT")
-            ? User.createStudent(command.email(), command.phone(), command.fullName(), command.dateOfBirth(), command.address(), null, callerId, now)
-            : User.createTeacher(command.email(), command.phone(), command.fullName(), command.dateOfBirth(), command.address(), null, callerId, now);
+            ? User.create(command.email(), command.phone(), command.fullName(), command.dateOfBirth(), command.address(), null, callerId, now)
+            : User.create(command.email(), command.phone(), command.fullName(), command.dateOfBirth(), command.address(), null, callerId, now);
 
         User savedUser;
         try {

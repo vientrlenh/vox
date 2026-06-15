@@ -73,7 +73,6 @@ public class ViewSchoolUserUseCaseTests {
         assertThat(result).isNotNull();
         assertThat(result.id()).isEqualTo(schoolUserId);
         assertThat(result.userId()).isEqualTo(targetId);
-        assertThat(result.roleCode()).isEqualTo("STUDENT");
     }
 
     @Test
@@ -90,7 +89,7 @@ public class ViewSchoolUserUseCaseTests {
 
         var result = viewSchoolUserUseCase.execute(command);
 
-        assertThat(result.roleCode()).isEqualTo("TEACHER");
+        assertThat(result).isNotNull();
     }
 
     @Test

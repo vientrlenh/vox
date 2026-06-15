@@ -18,7 +18,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.config.TestContainerConfig;
+import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.domain.model.question.Question;
 import com.sep.vox.domain.model.question.QuestionBank;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
@@ -55,7 +55,6 @@ import jakarta.persistence.NoResultException;
 @DataJpaTest
 @ActiveProfiles("test")
 @Import({
-    TestContainerConfig.class,
     JpaQuestionViewPermissionQuery.class,
     JpaUserRoleQueryRepository.class,
     QuestionBankRepositoryImpl.class,
@@ -66,7 +65,7 @@ import jakarta.persistence.NoResultException;
     JpaQuestionViewPermissionQueryTests.TestConfig.class
 })
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-class JpaQuestionViewPermissionQueryTests {
+class JpaQuestionViewPermissionQueryTests extends ContainerTestConfig {
 
     @Autowired
     private JpaQuestionViewPermissionQuery query;

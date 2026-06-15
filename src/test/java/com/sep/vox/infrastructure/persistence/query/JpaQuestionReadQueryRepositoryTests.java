@@ -13,7 +13,7 @@ import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabas
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
-import com.sep.vox.config.TestContainerConfig;
+import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.model.question.Question;
 import com.sep.vox.domain.model.question.QuestionBank;
@@ -36,7 +36,6 @@ import com.sep.vox.infrastructure.persistence.adapter.QuestionTopicRepositoryImp
 @DataJpaTest
 @ActiveProfiles("test")
 @Import({
-    TestContainerConfig.class,
     JpaQuestionReadQueryRepository.class,
     JpaQuestionTopicReadQueryRepository.class,
     QuestionBankRepositoryImpl.class,
@@ -44,7 +43,7 @@ import com.sep.vox.infrastructure.persistence.adapter.QuestionTopicRepositoryImp
     QuestionRepositoryImpl.class
 })
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-class JpaQuestionReadQueryRepositoryTests {
+class JpaQuestionReadQueryRepositoryTests extends ContainerTestConfig {
 
     @Autowired
     private JpaQuestionReadQueryRepository repository;

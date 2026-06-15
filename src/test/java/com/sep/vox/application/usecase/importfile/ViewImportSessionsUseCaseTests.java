@@ -30,6 +30,8 @@ import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.ImportSessionRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
+import com.sep.vox.domain.model.school.SchoolUser;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 class ViewImportSessionsUseCaseTests {
@@ -38,6 +40,7 @@ class ViewImportSessionsUseCaseTests {
     private UserRepository userRepository;
     private SchoolRepository schoolRepository;
     private UserContextPort userContextPort;
+    private SchoolUserRepository schoolUserRepository;
     private ViewImportSessionsUseCase useCase;
 
     @BeforeEach
@@ -46,13 +49,14 @@ class ViewImportSessionsUseCaseTests {
         userRepository = mock(UserRepository.class);
         schoolRepository = mock(SchoolRepository.class);
         userContextPort = mock(UserContextPort.class);
+        schoolUserRepository = mock(SchoolUserRepository.class);
         useCase = new ViewImportSessionsUseCase(
             importSessionRepository,
             userRepository,
             schoolRepository,
             userContextPort,
             new ImportSessionResponseMapper(new FakeJsonSerializationPort()),
-            TestSchoolUserRepository.create()
+            schoolUserRepository
         );
     }
 
@@ -63,7 +67,8 @@ class ViewImportSessionsUseCaseTests {
         var page = new PageResult<ImportSession>(List.of(), 1, 20, 0L, 0);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(activeUser(userId, schoolId)));
+        var _user = activeUser(userId, schoolId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(_user));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(importSessionRepository.findBySchoolId(
             schoolId,
@@ -88,11 +93,14 @@ class ViewImportSessionsUseCaseTests {
         assertThrows(IllegalArgumentException.class, () -> useCase.execute(new ViewImportSessionsQuery(1, 20, null, "UNKNOWN")));
     }
 
-    private static User activeUser(UUID id, UUID schoolId) {
+    private User activeUser(UUID id, UUID schoolId) {
         var user = new User();
         user.setId(id);
         TestSchoolUserRepository.remember(id, schoolId);
         user.setStatus(UserStatus.ACTIVE);
+        when(schoolUserRepository.findByUserId(id)).thenReturn(
+            schoolId != null ? Optional.of(new SchoolUser(schoolId, id, java.time.OffsetDateTime.now(), java.time.OffsetDateTime.now().plusYears(100))) : Optional.empty()
+        );
         return user;
     }
 

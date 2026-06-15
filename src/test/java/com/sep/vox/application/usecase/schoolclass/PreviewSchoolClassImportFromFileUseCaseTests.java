@@ -38,6 +38,8 @@ import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.ImportRowRepository;
 import com.sep.vox.domain.repository.ImportSessionRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
+import com.sep.vox.domain.model.school.SchoolUser;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 class PreviewSchoolClassImportFromFileUseCaseTests {
@@ -49,6 +51,7 @@ class PreviewSchoolClassImportFromFileUseCaseTests {
     private UserRepository userRepository;
     private SchoolRepository schoolRepository;
     private FakeJsonSerializationPort jsonSerializationPort;
+    private SchoolUserRepository schoolUserRepository;
     private PreviewSchoolClassImportFromFileUseCase useCase;
 
     @BeforeEach
@@ -60,6 +63,7 @@ class PreviewSchoolClassImportFromFileUseCaseTests {
         userRepository = mock(UserRepository.class);
         schoolRepository = mock(SchoolRepository.class);
         jsonSerializationPort = new FakeJsonSerializationPort();
+        schoolUserRepository = mock(SchoolUserRepository.class);
         useCase = new PreviewSchoolClassImportFromFileUseCase(
             fileProcessingPort,
             importSessionRepository,
@@ -68,7 +72,7 @@ class PreviewSchoolClassImportFromFileUseCaseTests {
             userRepository,
             schoolRepository,
             jsonSerializationPort,
-            TestSchoolUserRepository.create()
+            schoolUserRepository
         );
     }
 
@@ -87,7 +91,8 @@ class PreviewSchoolClassImportFromFileUseCaseTests {
         );
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(activeUser(userId, schoolId)));
+        var _user = activeUser(userId, schoolId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(_user));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(fileProcessingPort.parse(file, ImportType.SCHOOL_CLASS)).thenReturn(parsed);
         when(importSessionRepository.save(any(ImportSession.class))).thenAnswer(invocation -> {
@@ -126,7 +131,8 @@ class PreviewSchoolClassImportFromFileUseCaseTests {
         var file = UploadedFile.upload("classes.csv", "text/csv", 1, new byte[] { 1 });
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user(userId, UUID.randomUUID(), UserStatus.INACTIVE)));
+        var _u5 = user(userId, UUID.randomUUID(), UserStatus.INACTIVE);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(_u5));
 
         assertThrows(IllegalStateException.class, () -> useCase.execute(new PreviewSchoolClassImportFromFileCommand(UUID.randomUUID(), file)));
 
@@ -140,7 +146,8 @@ class PreviewSchoolClassImportFromFileUseCaseTests {
         var file = UploadedFile.upload("classes.csv", "text/csv", 1, new byte[] { 1 });
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(activeUser(userId, schoolId)));
+        var _user1 = activeUser(userId, schoolId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(_user1));
 
         assertThrows(IllegalArgumentException.class,
             () -> useCase.execute(new PreviewSchoolClassImportFromFileCommand(UUID.randomUUID(), file)));
@@ -148,15 +155,18 @@ class PreviewSchoolClassImportFromFileUseCaseTests {
         verifyNoInteractions(schoolRepository, fileProcessingPort, importSessionRepository, importRowRepository);
     }
 
-    private static User activeUser(UUID id, UUID schoolId) {
+    private User activeUser(UUID id, UUID schoolId) {
         return user(id, schoolId, UserStatus.ACTIVE);
     }
 
-    private static User user(UUID id, UUID schoolId, UserStatus status) {
+    private User user(UUID id, UUID schoolId, UserStatus status) {
         var user = new User();
         user.setId(id);
         TestSchoolUserRepository.remember(id, schoolId);
         user.setStatus(status);
+        when(schoolUserRepository.findByUserId(id)).thenReturn(
+            schoolId != null ? Optional.of(new SchoolUser(schoolId, id, java.time.OffsetDateTime.now(), java.time.OffsetDateTime.now().plusYears(100))) : Optional.empty()
+        );
         return user;
     }
 

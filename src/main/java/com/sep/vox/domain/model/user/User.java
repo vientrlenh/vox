@@ -203,4 +203,38 @@ public class User {
         this.avatarUrl = avatarUrl;
     }
 
+    public static User createStudent(String email, String phone, String fullName, LocalDate dateOfBirth, String address, String avatarUrl, UUID createdBy, OffsetDateTime now) {
+        return createSchoolUser(email, phone, fullName, dateOfBirth, address, avatarUrl, createdBy, now);
+    }
+
+    public static User createTeacher(String email, String phone, String fullName, LocalDate dateOfBirth, String address, String avatarUrl, UUID createdBy, OffsetDateTime now) {
+        return createSchoolUser(email, phone, fullName, dateOfBirth, address, avatarUrl, createdBy, now);
+    }
+
+    private static final String PASSWORD_NOT_SET = "__PASSWORD_NOT_SET__";
+
+    private static User createSchoolUser(String email, String phone, String fullName, LocalDate dateOfBirth, String address, String avatarUrl, UUID createdBy, OffsetDateTime now) {
+        return new User(
+            new Email(email),
+            PASSWORD_NOT_SET,
+            new Phone(phone),
+            new FullName(fullName),
+            null,
+            new DateOfBirth(dateOfBirth),
+            address,
+            avatarUrl,
+            UserStatus.INACTIVE,
+            now,
+            now,
+            createdBy,
+            createdBy
+        );
+    }
+
+    public void softDelete(UUID updatedBy, OffsetDateTime now) {
+        this.status = UserStatus.DISABLED;
+        this.updatedBy = updatedBy;
+        this.updatedAt = now;
+    }
+
 }

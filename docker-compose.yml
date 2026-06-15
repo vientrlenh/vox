@@ -55,7 +55,7 @@ services:
       - vox-network
 
   kafka:
-    image: apache/kafka:4.0.2
+    image: apache/kafka:4.3.0
     container_name: vox-kafka
     restart: unless-stopped
     ports:
@@ -81,6 +81,11 @@ services:
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
     networks:
       - vox-network
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest

@@ -62,7 +62,7 @@ public class FrameworkVersionController {
             @Valid @RequestBody UpdateFrameworkVersionStatusRequest request) {
         var command = UpdateFrameworkVersionStatusCommandMapper.fromRequest(frameworkId, versionId, request);
         var updatedVersionId = updateFrameworkVersionStatusUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success(null, updatedVersionId));
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái phiên bản framework thành công", updatedVersionId));
     }
 
     @DeleteMapping("/{versionId}")

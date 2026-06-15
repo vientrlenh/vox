@@ -9,17 +9,15 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
-import com.sep.vox.config.TestContainerConfig;
+import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.infrastructure.persistence.entity.RubricApplicabilityJpaEntity;
 
 @DataJpaTest
 @ActiveProfiles("test")
-@Import(TestContainerConfig.class)
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-class RubricApplicabilityRepositoryTests {
+class RubricApplicabilityRepositoryTests extends ContainerTestConfig {
 
     @Autowired
     private SpringDataRubricApplicabilityRepository repository;

@@ -14,7 +14,7 @@ import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabas
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
-import com.sep.vox.config.TestContainerConfig;
+import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.domain.model.school.SchoolGrade;
 import com.sep.vox.domain.model.school.SchoolGradeStatus;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
@@ -26,11 +26,10 @@ import jakarta.persistence.EntityManager;
 @DataJpaTest
 @ActiveProfiles("test")
 @Import({
-    TestContainerConfig.class,
     SchoolGradeRepositoryImpl.class
 })
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-class SchoolGradeRepositoryTests {
+class SchoolGradeRepositoryTests extends ContainerTestConfig {
 
     @Autowired
     private SchoolGradeRepository schoolGradeRepository;

@@ -1,9 +1,15 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.sep.vox.domain.common.PageResult;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.rubric.RubricResultBand;
@@ -48,6 +54,31 @@ public class RubricResultBandRepositoryImpl implements RubricResultBandRepositor
                 .map(RubricResultBandMapper::toJpa)
                 .toList();
         springDataRubricResultBandRepository.saveAll(entities);
+    }
+
+    @Override
+    public void updateResultBandAtomic(UUID id, String code, String name, String description, BigDecimal scoreMin, BigDecimal scoreMax, Integer order, OffsetDateTime updatedAt, UUID updatedBy) {
+        springDataRubricResultBandRepository.updateResultBandAtomic(id, code, name, description, scoreMin, scoreMax, order, updatedAt, updatedBy);
+    }
+
+    @Override
+    public PageResult<RubricResultBand> findAllByRubricVersionId(UUID rubricVersionId, int page, int size) {
+        // Tối ưu: Mặc định sort theo order TĂNG DẦN để bảng kết quả hiển thị chuẩn
+        Pageable pageable = PageRequest.of(page, size, Sort.by("order").ascending());
+
+        var entityPage = springDataRubricResultBandRepository.findAllByRubricVersionId(rubricVersionId, pageable);
+
+        List<RubricResultBand> bands = entityPage.getContent().stream()
+                .map(RubricResultBandMapper::toDomain)
+                .toList();
+
+        return new PageResult<>(
+                bands,
+                entityPage.getNumber(),
+                entityPage.getSize(),
+                entityPage.getTotalElements(),
+                entityPage.getTotalPages()
+        );
     }
 }
 

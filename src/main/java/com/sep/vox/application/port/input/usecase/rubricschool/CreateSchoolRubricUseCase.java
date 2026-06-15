@@ -95,7 +95,7 @@ public class CreateSchoolRubricUseCase implements IUseCase<CreateSchoolRubricCom
 
         // 4. Kiểm tra Rubric duy nhất theo ngôn ngữ
         boolean isRubricExisted = rubricRepository.existsByOwnerTypeAndSchoolIdAndLanguageId(
-                RubricOwnerType.SCHOOL,
+                RubricOwnerType.SCHOOL.toString(),
                 command.schoolId(),
                 command.languageId()
         );

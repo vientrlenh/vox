@@ -3,8 +3,6 @@ package com.sep.vox.interfaces.rest.mapper;
 import com.sep.vox.application.port.input.command.ChangeSchoolRubricVersionStatusCommand;
 import com.sep.vox.application.port.input.command.ChangeSystemRubricVersionStatusCommand;
 import com.sep.vox.domain.model.rubric.RubricStatus;
-import com.sep.vox.interfaces.rest.dto.request.RubricStatusRequest;
-
 import java.util.UUID;
 
 public class ChangeRubricVersionStatusCommandMapper {

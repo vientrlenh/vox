@@ -1,8 +1,16 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.infrastructure.persistence.mapper.RubricCriterionMapper;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.rubric.RubricCriterionBand;
@@ -40,4 +48,43 @@ public class RubricCriterionBandRepositoryImpl implements RubricCriterionBandRep
     public void deleteByRubricVersionId(UUID rubricVersionId) {
         springDataRubricCriterionBandRepository.deleteByRubricVersionId(rubricVersionId);
     }
+
+    @Override
+    public void saveAll(List<RubricCriterionBand> rubricCriterionBands) {
+        var entities = rubricCriterionBands.stream()
+                .map(RubricCriterionBandMapper::toJpa)
+                .toList();
+        springDataRubricCriterionBandRepository.saveAll(entities);
+    }
+
+    @Override
+    public void deleteById(UUID id) {
+        springDataRubricCriterionBandRepository.deleteById(id);
+    }
+
+    @Override
+    public void updateBandAtomic(UUID id, String code, BigDecimal scoreMin, BigDecimal scoreMax, OffsetDateTime updatedAt, UUID updatedBy) {
+        springDataRubricCriterionBandRepository.updateBandAtomic(id, code, scoreMin, scoreMax,updatedAt, updatedBy);
+    }
+
+    @Override
+    public PageResult<RubricCriterionBand> findAllByCriterionId(UUID criterionId, int page, int size) {
+        // Tối ưu: Mặc định sort theo scoreMax GIẢM DẦN (Điểm cao nằm trên cùng, điểm thấp nằm dưới)
+        Pageable pageable = PageRequest.of(page, size, Sort.by("scoreMax").descending());
+
+        var entityPage = springDataRubricCriterionBandRepository.findAllByCriterionId(criterionId, pageable);
+
+        List<RubricCriterionBand> bands = entityPage.getContent().stream()
+                .map(RubricCriterionBandMapper::toDomain)
+                .toList();
+
+        return new PageResult<>(
+                bands,
+                entityPage.getNumber(),
+                entityPage.getSize(),
+                entityPage.getTotalElements(),
+                entityPage.getTotalPages()
+        );
+    }
+
 }

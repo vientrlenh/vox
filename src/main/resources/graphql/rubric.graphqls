@@ -1,0 +1,214 @@
+input UpdateRubricInput {
+    name: String
+    description: String
+}
+
+input UpdateRubricVersionInput {
+    code: String
+    name: String
+    description: String
+    effectiveFrom: String
+    effectiveTo: String
+    scoringScaleMin: Float
+    scoringScaleMax: Float
+    totalScoreMethod: String
+}
+
+input UpdateRubricCriterionInput {
+    code: String
+    name: String
+    description: String
+    examplesJson: String # Nhận chuỗi JSON từ Frontend
+    weight: Float
+    minScore: Float
+    maxScore: Float
+    order: Int
+    isRequired: Boolean
+}
+
+input UpdateRubricCriterionBandInput {
+    code: String
+    scoreMin: Float
+    scoreMax: Float
+}
+
+
+input UpdateRubricResultBandInput {
+    code: String
+    name: String
+    description: String
+    scoreMin: Float
+    scoreMax: Float
+    order: Int
+}
+
+
+#========================= RUBRIC =====================================
+# Bên Controller trả về cái gì thì bên đây cũng như thế
+# ViewRubricDetailsUseCase
+# nhận từ Argument - và nó sẽ được đưa vào ở extend schoolId: ID!, id: ID!
+type RubricDto {
+    id: ID!
+    code: String!
+    name: String!
+    description: String
+    languageId: ID!
+    frameworkId: ID!
+    ownerType: String!
+    currentVersionId: ID
+}
+#Page
+type RubricDtoPage {
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+    content: [RubricDto!]!
+}
+#===================RUBRIC VERSION ==================================
+
+type RubricVersionDto {
+    id: ID!
+    rubricId: ID!
+    version: Int!
+    code: String!
+    name: String!
+    description: String
+    status: String!
+    effectiveFrom: String!
+    effectiveTo: String
+    scoringScaleMin: Float!
+    scoringScaleMax: Float!
+    totalScoreMethod: String!
+}
+type RubricVersionDtoPage {
+    content: [RubricVersionDto!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+#=====================================RUBRIC CRITERION===========================
+type RubricCriterionDto {
+    id: ID!
+    rubricVersionId: ID!
+    frameworkCriterionId: ID!
+    code: String!
+    name: String!
+    description: String
+    examplesJson: String  # Trả về nguyên chuỗi JSON cho Frontend tự parse
+    weight: Float!
+    minScore: Float!
+    maxScore: Float!
+    order: Int!
+    isRequired: Boolean!
+}
+
+type RubricCriterionDtoPage {
+    content: [RubricCriterionDto!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+
+#=======================RUBRIC CRITERION BAND ====================
+type RubricCriterionBandDto {
+    id: ID!
+    criterionId: ID!
+    code: String!
+    scoreMin: Float!
+    scoreMax: Float!
+    createdAt: String
+    updatedAt: String
+    createdBy: ID
+    updatedBy: ID
+}
+type RubricCriterionBandDtoPage {
+    content: [RubricCriterionBandDto!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+#====================RUBRIC RESULT BAND =========================
+type RubricResultBandDto {
+    id: ID!
+    rubricVersionId: ID!
+    code: String!
+    name: String!
+    description: String
+    scoreMin: Float!
+    scoreMax: Float!
+    order: Int!
+    createdAt: String
+    updatedAt: String
+    createdBy: ID
+    updatedBy: ID
+}
+
+type RubricResultBandDtoPage {
+    content: [RubricResultBandDto!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+
+# 2. Định nghĩa Mutation
+extend type Mutation {
+    updateSystemRubric(id: ID!, input: UpdateRubricInput!): ID!
+    updateSchoolRubric(schoolId: ID!, id: ID!, input: UpdateRubricInput!): ID!
+
+    # RUBRIC VERSION
+    updateSystemRubricVersion(versionId: ID!, input: UpdateRubricVersionInput!): ID!
+    updateSchoolRubricVersion(schoolId: ID!, versionId: ID!, input: UpdateRubricVersionInput!): ID!
+
+    # RUBRIC CRITERION
+    updateSystemRubricCriterion(criterionId: ID!, input: UpdateRubricCriterionInput!): ID!
+    updateSchoolRubricCriterion(schoolId: ID!, criterionId: ID!, input: UpdateRubricCriterionInput!): ID!
+
+    # RUBRIC CRITERION BAND
+    updateSchoolRubricCriterionBand(schoolId: ID!, bandId: ID!, input: UpdateRubricCriterionBandInput!): ID!
+    updateSystemRubricCriterionBand(bandId: ID!, input: UpdateRubricCriterionBandInput!): ID!
+
+    # RUBRIC CRITERION RESULT
+    updateSystemRubricResultBand(resultBandId: ID!, input: UpdateRubricResultBandInput!): ID!
+    updateSchoolRubricResultBand(schoolId: ID!, resultBandId: ID!, input: UpdateRubricResultBandInput!): ID!
+}
+
+extend type Query {
+    # RUBRIC
+    viewSystemRubric(id: ID!): RubricDto
+    viewSchoolRubric(schoolId: ID!, id: ID!): RubricDto
+    viewSystemRubrics(page: Int = 0, size: Int = 10): RubricDtoPage!
+    viewSchoolRubrics(schoolId: ID!, page: Int = 0, size: Int = 10): RubricDtoPage!
+
+    # RUBRIC VERSION
+    viewSchoolRubricVersion(schoolId: ID!, versionId: ID!): RubricVersionDto
+    viewSystemRubricVersion(versionId: ID!): RubricVersionDto
+    viewSchoolRubricVersions(schoolId: ID!, rubricId: ID!, status: String, page: Int = 0, size: Int = 10): RubricVersionDtoPage!
+    viewSystemRubricVersions(rubricId: ID!, status: String, page: Int = 0, size: Int = 10): RubricVersionDtoPage!
+
+    # RUBRIC CRITERION
+    viewSystemRubricCriterion(criterionId: ID!): RubricCriterionDto
+    viewSchoolRubricCriterion(schoolId: ID!, criterionId: ID!): RubricCriterionDto
+    viewSystemRubricCriteria(versionId: ID!, page: Int = 0, size: Int = 10): RubricCriterionDtoPage!
+    viewSchoolRubricCriteria(schoolId: ID!, versionId: ID!, page: Int = 0, size: Int = 10): RubricCriterionDtoPage!
+
+    # RUBRIC CRITERION BAND
+    viewSystemRubricCriterionBand(bandId: ID!): RubricCriterionBandDto
+    viewSchoolRubricCriterionBand(schoolId: ID!, bandId: ID!): RubricCriterionBandDto
+    viewSchoolRubricCriterionBands(schoolId: ID!, criterionId: ID!, page: Int = 0, size: Int = 10): RubricCriterionBandDtoPage!
+    viewSystemRubricCriterionBands(criterionId: ID!, page: Int = 0, size: Int = 10): RubricCriterionBandDtoPage!
+
+    # RUBRIC CRITERION RESULT
+    viewSystemRubricResultBand(resultBandId: ID!): RubricResultBandDto
+    viewSchoolRubricResultBand(schoolId: ID!, resultBandId: ID!): RubricResultBandDto
+    viewSystemRubricResultBands(versionId: ID!, page: Int = 0, size: Int = 10): RubricResultBandDtoPage!
+    viewSchoolRubricResultBands(schoolId: ID!, versionId: ID!, page: Int = 0, size: Int = 10): RubricResultBandDtoPage!
+}

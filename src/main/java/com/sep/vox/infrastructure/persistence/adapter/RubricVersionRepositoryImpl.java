@@ -1,9 +1,15 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.sep.vox.domain.common.PageResult;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.rubric.RubricVersion;
@@ -55,6 +61,32 @@ public class RubricVersionRepositoryImpl implements RubricVersionRepository {
                 .map(RubricVersionMapper::toJpa)
                 .toList();
         springDataRubricVersionRepository.saveAll(entities);
+    }
+
+    @Override
+    public void updateRubricVersionAtomic(UUID id, String code, String name, String description, OffsetDateTime effectiveFrom, OffsetDateTime effectiveTo, BigDecimal scoringScaleMin, BigDecimal scoringScaleMax, String totalScoreMethod, OffsetDateTime updatedAt, UUID updatedBy) {
+        springDataRubricVersionRepository.updateRubricVersionAtomic(id, code, name, description, effectiveFrom, effectiveTo, scoringScaleMin, scoringScaleMax, totalScoreMethod, updatedAt, updatedBy);
+    }
+
+    @Override
+    public PageResult<RubricVersion> findAllByRubricIdAndStatus(UUID rubricId,String status, int page, int size) {
+        // Tối ưu: Mặc định sort theo version giảm dần (bản mới nhất nằm trên cùng)
+        Pageable pageable = PageRequest.of(page, size, Sort.by("version").descending());
+
+        var entityPage = springDataRubricVersionRepository.findAllByRubricIdAndStatus(rubricId, status, pageable);
+
+        // Giả sử bạn có RubricVersionMapper để chuyển Entity -> Domain
+        List<RubricVersion> versions = entityPage.getContent().stream()
+                .map(RubricVersionMapper::toDomain)
+                .toList();
+
+        return new PageResult<>(
+                versions,
+                entityPage.getNumber(),
+                entityPage.getSize(),
+                entityPage.getTotalElements(),
+                entityPage.getTotalPages()
+        );
     }
 }
 

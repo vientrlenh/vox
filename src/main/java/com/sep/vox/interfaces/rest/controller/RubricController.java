@@ -39,6 +39,10 @@ public class RubricController {
     private final DeleteSystemRubricResultBandUseCase deleteSystemRubricResultBandUseCase;
     private final ChangeSystemRubricVersionStatusUseCase changeSystemRubricVersionStatusUseCase;
     private final ChangeSchoolRubricVersionStatusUseCase changeSchoolRubricVersionStatusUseCase;
+    private final CreateSystemRubricCriterionBandsUseCase createSystemRubricCriterionBandsUseCase;
+    private final CreateSchoolRubricCriterionBandsUseCase createSchoolRubricCriterionBandsUseCase;
+    private final DeleteSystemRubricCriterionBandUseCase deleteSystemRubricCriterionBandUseCase;
+    private final DeleteSchoolRubricCriterionBandUseCase deleteSchoolRubricCriterionBandUseCase;
 
     public RubricController(CreateSchoolRubricCriterionUseCase createSchoolRubricCriterionUseCase,
                             CreateSchoolRubricUseCase createSchoolRubricUseCase,
@@ -52,7 +56,7 @@ public class RubricController {
                             DeleteSystemRubricUseCase deleteSystemRubricUseCase,
                             DeleteSystemRubricVersionUseCase deleteSystemRubricVersionUseCase,
                             DeleteSystemRubricCriterionUseCase deleteSystemRubricCriterionUseCase, DeleteSystemRubricResultBandUseCase deleteSystemRubricResultBandUseCase, ChangeSystemRubricVersionStatusUseCase changeSystemRubricVersionStatusUseCase,
-                            ChangeSchoolRubricVersionStatusUseCase changeSchoolRubricVersionStatusUseCase) {
+                            ChangeSchoolRubricVersionStatusUseCase changeSchoolRubricVersionStatusUseCase, CreateSystemRubricCriterionBandsUseCase createSystemRubricCriterionBandsUseCase, CreateSchoolRubricCriterionBandsUseCase createSchoolRubricCriterionBandsUseCase, DeleteSystemRubricCriterionBandUseCase deleteSystemRubricCriterionBandUseCase, DeleteSchoolRubricCriterionBandUseCase deleteSchoolRubricCriterionBandUseCase) {
         this.createSchoolRubricCriterionUseCase = createSchoolRubricCriterionUseCase;
         this.createSchoolRubricUseCase = createSchoolRubricUseCase;
         this.createSystemRubricUseCase = createSystemRubricUseCase;
@@ -68,6 +72,10 @@ public class RubricController {
         this.deleteSystemRubricResultBandUseCase = deleteSystemRubricResultBandUseCase;
         this.changeSystemRubricVersionStatusUseCase = changeSystemRubricVersionStatusUseCase;
         this.changeSchoolRubricVersionStatusUseCase = changeSchoolRubricVersionStatusUseCase;
+        this.createSystemRubricCriterionBandsUseCase = createSystemRubricCriterionBandsUseCase;
+        this.createSchoolRubricCriterionBandsUseCase = createSchoolRubricCriterionBandsUseCase;
+        this.deleteSystemRubricCriterionBandUseCase = deleteSystemRubricCriterionBandUseCase;
+        this.deleteSchoolRubricCriterionBandUseCase = deleteSchoolRubricCriterionBandUseCase;
     }
 
     //==========================RUBRIC  & RUBRIC VERSION===================================
@@ -187,7 +195,7 @@ public class RubricController {
     // Phục vụ cho việc tạo bài kiểm tra đầu vào (cá nhân hóa đánh giá năng lực)
     //Đã tối ưu/chưa chạy lại
     // đã check 2
-    @Operation(summary = "Thêm Rubric version hệ thống")
+    @Operation(summary = "Thêm tiêu chí Rubric Criterion cho Rubric version hệ thống")
     @PostMapping("/system/rubric-versions/{versionId}/criteria")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<List<UUID>>> createSystemRubricCriterion(
@@ -295,4 +303,59 @@ public class RubricController {
         return ResponseEntity.ok(ApiResponse.success("Xóa thang điểm hệ thống thành công"));
     }
 
+    //=====================RUBRIC CRITERION BAND ============================================
+    @Operation(summary = "Thêm cấu hình điểm (Criterion Band) cho một Tiêu chí trong hệ thống")
+    @PostMapping("/system/rubric-versions/{versionId}/criteria/{criterionId}/bands")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public ResponseEntity<ApiResponse<List<UUID>>> createSystemRubricCriterionBands(
+            @PathVariable UUID versionId,
+            @PathVariable UUID criterionId,
+            @Valid @RequestBody CreateSystemRubricCriterionBandsRequest request
+    ) {
+        var command = CreateRubricCriterionBandsCommandMapper.fromSystemRequest(versionId, criterionId, request);
+        var responseIds = createSystemRubricCriterionBandsUseCase.execute(command);
+        return ResponseEntity.ok(ApiResponse.success("Thêm cấu hình điểm cho Tiêu chí thành công", responseIds));
+    }
+
+    @Operation(summary = "Thêm cấu hình điểm (Criterion Band) cho một Tiêu chí của Trường học")
+    @PostMapping("/schools/{schoolId}/rubric-versions/{versionId}/criteria/{criterionId}/bands")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public ResponseEntity<ApiResponse<List<UUID>>> createSchoolRubricCriterionBands(
+            @PathVariable UUID schoolId,
+            @PathVariable UUID versionId,
+            @PathVariable UUID criterionId,
+            @Valid @RequestBody CreateSchoolRubricCriterionBandsRequest request
+    ) {
+        var command = CreateRubricCriterionBandsCommandMapper.fromSchoolRequest(schoolId, versionId, criterionId, request);
+        var responseIds = createSchoolRubricCriterionBandsUseCase.execute(command);
+        return ResponseEntity.ok(ApiResponse.success("Thêm cấu hình điểm cho Tiêu chí thành công", responseIds));
+    }
+
+
+    @Operation(summary = "Xóa một cấu hình điểm (Criterion Band) khỏi Tiêu chí trong Hệ thống")
+    @DeleteMapping("/system/rubric-versions/{versionId}/criteria/{criterionId}/bands/{bandId}")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> deleteSystemRubricCriterionBand(
+            @PathVariable UUID versionId,
+            @PathVariable UUID criterionId,
+            @PathVariable UUID bandId
+    ) {
+        var command = DeleteSystemRubricCommandMapper.criterionBandFromRequest(versionId, criterionId, bandId);
+        deleteSystemRubricCriterionBandUseCase.execute(command);
+        return ResponseEntity.ok(ApiResponse.success("Xóa cấu hình điểm thành công"));
+    }
+
+    @Operation(summary = "Xóa một cấu hình điểm (Criterion Band) khỏi Tiêu chí của Trường học")
+    @DeleteMapping("/schools/{schoolId}/rubric-versions/{versionId}/criteria/{criterionId}/bands/{bandId}")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> deleteSchoolRubricCriterionBand(
+            @PathVariable UUID schoolId,
+            @PathVariable UUID versionId,
+            @PathVariable UUID criterionId,
+            @PathVariable UUID bandId
+    ) {
+        var command = DeleteSchoolRubricCommandMapper.criterionBandFromRequest(schoolId, versionId, criterionId, bandId);
+         deleteSchoolRubricCriterionBandUseCase.execute(command);
+        return ResponseEntity.ok(ApiResponse.success("Xóa cấu hình điểm thành công"));
+    }
 }

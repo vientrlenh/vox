@@ -1,9 +1,6 @@
 package com.sep.vox.interfaces.rest.mapper;
 
-import com.sep.vox.application.port.input.command.DeleteSystemRubricCommand;
-import com.sep.vox.application.port.input.command.DeleteSystemRubricCriterionCommand;
-import com.sep.vox.application.port.input.command.DeleteSystemRubricResultBandCommand;
-import com.sep.vox.application.port.input.command.DeleteSystemRubricVersionCommand;
+import com.sep.vox.application.port.input.command.*;
 
 import java.util.UUID;
 
@@ -26,5 +23,11 @@ public class DeleteSystemRubricCommandMapper {
     // 3. Cho Result Band
     public static DeleteSystemRubricResultBandCommand resultBandFromRequest(UUID versionId, UUID resultBandId) {
         return new DeleteSystemRubricResultBandCommand(versionId, resultBandId);
+    }
+
+
+    //4. Cho Criterion ResultBand
+    public static DeleteSystemRubricCriterionBandCommand criterionBandFromRequest(UUID versionId, UUID criterionId, UUID bandId) {
+        return new DeleteSystemRubricCriterionBandCommand(versionId, criterionId, bandId);
     }
 }

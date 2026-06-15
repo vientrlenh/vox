@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.rest.mapper;
 
+import com.sep.vox.application.port.input.command.DeleteSchoolRubricCriterionBandCommand;
 import com.sep.vox.application.port.input.command.DeleteSchoolRubricCriterionCommand;
 import com.sep.vox.application.port.input.command.DeleteSchoolRubricResultBandCommand;
 import com.sep.vox.application.port.input.command.DeleteSchoolRubricVersionCommand;
@@ -21,5 +22,10 @@ public class DeleteSchoolRubricCommandMapper {
     // 3. Cho Result Band
     public static DeleteSchoolRubricResultBandCommand resultBandFromRequest(UUID schoolId, UUID versionId, UUID resultBandId) {
         return new DeleteSchoolRubricResultBandCommand(schoolId, versionId, resultBandId);
+    }
+
+    // 4. Cho Criterion Band
+    public static DeleteSchoolRubricCriterionBandCommand criterionBandFromRequest(UUID schoolId, UUID versionId, UUID criterionId, UUID bandId) {
+        return new DeleteSchoolRubricCriterionBandCommand(schoolId, versionId, criterionId, bandId);
     }
 }

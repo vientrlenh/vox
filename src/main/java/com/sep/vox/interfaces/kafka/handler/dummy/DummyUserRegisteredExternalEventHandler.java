@@ -1,7 +1,6 @@
 package com.sep.vox.interfaces.kafka.handler.dummy;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import org.springframework.stereotype.Component;
 
 
@@ -13,7 +12,6 @@ import tools.jackson.databind.JsonNode;
 @Component
 public class DummyUserRegisteredExternalEventHandler implements ExternalEventHandler {
 
-    private static final Logger log = LoggerFactory.getLogger(DummyUserRegisteredExternalEventHandler.class);
     private static final String EVENT_TYPE = "DummyUserRegisteredExternalEvent";
 
     @Override
@@ -23,9 +21,6 @@ public class DummyUserRegisteredExternalEventHandler implements ExternalEventHan
         }
 
         var data = DummyUserRegisteredEventMapper.fromJson(payload);
-        log.info(
-            "Dummy consume user registered event: userId={}, email={}, fullName={}",
-            data.userId(), data.email(), data.fullName()
-        );
+        // userRegisterUseCase.execute(new DummyUserRegisteredCommand(data.userId(), data.email(), data.fullName()))
     }
 }

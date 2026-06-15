@@ -1,28 +1,28 @@
-package com.sep.vox.infrastructure.serialization;
+package com.sep.vox.infrastructure.service;
 
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.output.JsonSerializationPort;
 
-import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
-@Component
-public class JacksonJsonSerializationAdapter implements JsonSerializationPort {
+@Service
+public class JacksonJsonSerializationService implements JsonSerializationPort {
 
-    private final ObjectMapper objectMapper;
+    private final JsonMapper jsonMapper;
 
-    public JacksonJsonSerializationAdapter(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
+    public JacksonJsonSerializationService(JsonMapper jsonMapper) {
+        this.jsonMapper = jsonMapper;
     }
 
     @Override
     public String toJson(Object value) {
         try {
-            return objectMapper.writeValueAsString(value);
+            return jsonMapper.writeValueAsString(value);
         } catch (Exception exception) {
             throw new IllegalStateException("Could not serialize value to JSON", exception);
         }
@@ -34,7 +34,7 @@ public class JacksonJsonSerializationAdapter implements JsonSerializationPort {
             return Map.of();
         }
         try {
-            Map<?, ?> raw = objectMapper.readValue(json, Map.class);
+            Map<?, ?> raw = jsonMapper.readValue(json, Map.class);
             return toStringMap(raw);
         } catch (Exception exception) {
             throw new IllegalStateException("Could not deserialize JSON to string map", exception);
@@ -47,7 +47,7 @@ public class JacksonJsonSerializationAdapter implements JsonSerializationPort {
             return List.of();
         }
         try {
-            List<?> raw = objectMapper.readValue(json, List.class);
+            List<?> raw = jsonMapper.readValue(json, List.class);
             return raw.stream()
                 .map(value -> value == null ? null : value.toString())
                 .toList();
@@ -62,7 +62,7 @@ public class JacksonJsonSerializationAdapter implements JsonSerializationPort {
             return List.of();
         }
         try {
-            List<?> raw = objectMapper.readValue(json, List.class);
+            List<?> raw = jsonMapper.readValue(json, List.class);
             return raw.stream()
                 .filter(Map.class::isInstance)
                 .map(Map.class::cast)

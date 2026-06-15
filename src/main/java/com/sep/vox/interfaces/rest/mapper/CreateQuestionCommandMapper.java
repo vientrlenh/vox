@@ -18,6 +18,8 @@ public final class CreateQuestionCommandMapper {
             request.promptText(),
             request.preparationText(),
             request.type(),
+            request.scope(),
+            request.visibility(),
             request.preparationTimeSeconds(),
             request.minResponseSeconds(),
             request.maxResponseSeconds()
@@ -33,6 +35,8 @@ public final class CreateQuestionCommandMapper {
             request.promptText(),
             request.preparationText(),
             request.type(),
+            request.scope(),
+            request.visibility(),
             request.preparationTimeSeconds(),
             request.minResponseSeconds(),
             request.maxResponseSeconds()

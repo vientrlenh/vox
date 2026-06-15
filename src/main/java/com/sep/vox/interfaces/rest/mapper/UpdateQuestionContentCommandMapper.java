@@ -18,6 +18,8 @@ public final class UpdateQuestionContentCommandMapper {
             request.promptText(),
             request.preparationText(),
             request.type(),
+            request.scope(),
+            request.visibility(),
             request.preparationTimeSeconds(),
             request.minResponseSeconds(),
             request.maxResponseSeconds()

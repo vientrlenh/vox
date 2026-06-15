@@ -13,7 +13,9 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.QuestionPermissionQuery;
 import com.sep.vox.application.response.input.question.UpdateQuestionResponse;
+import com.sep.vox.domain.model.question.QuestionScope;
 import com.sep.vox.domain.model.question.QuestionType;
+import com.sep.vox.domain.model.question.QuestionVisibility;
 import com.sep.vox.domain.repository.QuestionRepository;
 
 @Service
@@ -47,6 +49,8 @@ public class UpdateQuestionContentUseCase implements IUseCase<UpdateQuestionCont
         question.setPromptText(input.promptText());
         question.setPreparationText(input.preparationText());
         question.setType(QuestionType.valueOf(input.type()));
+        question.setScope(QuestionScope.valueOf(input.scope()));
+        question.setVisibility(QuestionVisibility.valueOf(input.visibility()));
         question.setPreparationTimeSeconds(input.preparationTimeSeconds());
         question.setMinResponseSeconds(input.minResponseSeconds());
         question.setMaxResponseSeconds(input.maxResponseSeconds());

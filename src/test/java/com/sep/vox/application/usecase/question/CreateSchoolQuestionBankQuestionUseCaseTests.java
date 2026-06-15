@@ -76,7 +76,7 @@ class CreateSchoolQuestionBankQuestionUseCaseTests {
         });
 
         var response = useCase.execute(new CreateSchoolQuestionBankQuestionCommand(
-            topicId, "Q1", null, "Question", null, null, "SHORT_ANSWER", 10, 20, 30
+            topicId, "Q1", null, "Question", null, null, "SHORT_ANSWER", "QUESTION_BANK", "BANK_VISIBLE", 10, 20, 30
         ));
 
         assertThat(response.questionId()).isEqualTo(questionId);
@@ -97,7 +97,7 @@ class CreateSchoolQuestionBankQuestionUseCaseTests {
         when(questionBankRepository.findById(bankId)).thenReturn(Optional.of(bank(bankId, QuestionBankStatus.ARCHIVED)));
 
         assertThrows(ForbiddenException.class, () -> useCase.execute(new CreateSchoolQuestionBankQuestionCommand(
-            topicId, "Q1", null, "Question", null, null, "SHORT_ANSWER", 10, 20, 30
+            topicId, "Q1", null, "Question", null, null, "SHORT_ANSWER", "QUESTION_BANK", "BANK_VISIBLE", 10, 20, 30
         )));
     }
 

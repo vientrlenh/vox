@@ -20,6 +20,8 @@ public record QuestionDto(
     boolean locked,
     String status,
     String createdAt,
-    String updatedAt
+    String updatedAt,
+    UUID createdBy,
+    UUID updatedBy
 ) {
 }

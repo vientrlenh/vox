@@ -46,7 +46,7 @@ public class JpaQuestionTopicPermissionQuery implements QuestionTopicPermissionQ
             .orElseThrow(() -> new ForbiddenException("Không tìm thấy người dùng"));
         var roleInfos = userRoleQueryRepository.findByUserIdWithRoleInfo(userId);
         String role = resolveRole(roleInfos);
-        return new ResolvedUser(userId, role, getSchoolId(userId));
+        return new ResolvedUser(userId, role, resolveSchoolId(role, userId));
     }
 
     private String resolveRole(List<UserRoleInfo> roleInfos) {
@@ -96,10 +96,10 @@ public class JpaQuestionTopicPermissionQuery implements QuestionTopicPermissionQ
         var user = resolveCurrentUser();
 
         if ("SYSTEM_ADMIN".equals(user.role())) {
-            return existsTopicWithBankAndTopicStatus(topicId, "DRAFT", "PUBLISHED", "DRAFT");
+            return existsTopicWithBankAndTopicStatuses(topicId, List.of("DRAFT", "PUBLISHED"), List.of("DRAFT"));
         }
         if ("SCHOOL_ADMIN".equals(user.role())) {
-            return isSchoolOwnerOfTopicWithStatus(topicId, user.schoolId(), "DRAFT", "PUBLISHED", "DRAFT");
+            return isSchoolOwnerOfTopicWithStatuses(topicId, user.schoolId(), List.of("DRAFT", "PUBLISHED"), List.of("DRAFT"));
         }
         return false;
     }
@@ -109,10 +109,10 @@ public class JpaQuestionTopicPermissionQuery implements QuestionTopicPermissionQ
         var user = resolveCurrentUser();
 
         if ("SYSTEM_ADMIN".equals(user.role())) {
-            return existsTopicWithBankAndTopicStatus(topicId, "DRAFT", "PUBLISHED", "DRAFT", "PUBLISHED");
+            return existsTopicWithBankAndTopicStatuses(topicId, List.of("DRAFT", "PUBLISHED"), List.of("DRAFT", "PUBLISHED"));
         }
         if ("SCHOOL_ADMIN".equals(user.role())) {
-            return isSchoolOwnerOfTopicWithStatus(topicId, user.schoolId(), "DRAFT", "PUBLISHED", "DRAFT", "PUBLISHED");
+            return isSchoolOwnerOfTopicWithStatuses(topicId, user.schoolId(), List.of("DRAFT", "PUBLISHED"), List.of("DRAFT", "PUBLISHED"));
         }
         return false;
     }
@@ -122,10 +122,10 @@ public class JpaQuestionTopicPermissionQuery implements QuestionTopicPermissionQ
         var user = resolveCurrentUser();
 
         if ("SYSTEM_ADMIN".equals(user.role())) {
-            return existsTopicWithBankAndTopicStatus(topicId, "DRAFT", "PUBLISHED", "ARCHIVED");
+            return existsTopicWithBankAndTopicStatuses(topicId, List.of("DRAFT", "PUBLISHED"), List.of("ARCHIVED"));
         }
         if ("SCHOOL_ADMIN".equals(user.role())) {
-            return isSchoolOwnerOfTopicWithStatus(topicId, user.schoolId(), "DRAFT", "PUBLISHED", "ARCHIVED");
+            return isSchoolOwnerOfTopicWithStatuses(topicId, user.schoolId(), List.of("DRAFT", "PUBLISHED"), List.of("ARCHIVED"));
         }
         return false;
     }
@@ -201,26 +201,7 @@ public class JpaQuestionTopicPermissionQuery implements QuestionTopicPermissionQ
         }
     }
 
-    private boolean existsTopicWithBankAndTopicStatus(UUID topicId, String bankStatuses, String topicStatuses) {
-        try {
-            em.createQuery("""
-                SELECT 1 FROM QuestionTopicJpaEntity qt
-                JOIN QuestionBankJpaEntity qb ON qt.questionBankId = qb.id
-                WHERE qt.id = :topicId
-                  AND qb.status IN :bankStatuses
-                  AND qt.status = :topicStatus
-                """)
-                .setParameter("topicId", topicId)
-                .setParameter("bankStatuses", List.of(bankStatuses))
-                .setParameter("topicStatus", topicStatuses)
-                .getSingleResult();
-            return true;
-        } catch (NoResultException e) {
-            return false;
-        }
-    }
-
-    private boolean existsTopicWithBankAndTopicStatus(UUID topicId, String bankStatus, String... topicStatuses) {
+    private boolean existsTopicWithBankAndTopicStatuses(UUID topicId, List<String> bankStatuses, List<String> topicStatuses) {
         try {
             em.createQuery("""
                 SELECT 1 FROM QuestionTopicJpaEntity qt
@@ -230,8 +211,8 @@ public class JpaQuestionTopicPermissionQuery implements QuestionTopicPermissionQ
                   AND qt.status IN :topicStatuses
                 """)
                 .setParameter("topicId", topicId)
-                .setParameter("bankStatuses", List.of(bankStatus))
-                .setParameter("topicStatuses", List.of(topicStatuses))
+                .setParameter("bankStatuses", bankStatuses)
+                .setParameter("topicStatuses", topicStatuses)
                 .getSingleResult();
             return true;
         } catch (NoResultException e) {
@@ -239,7 +220,7 @@ public class JpaQuestionTopicPermissionQuery implements QuestionTopicPermissionQ
         }
     }
 
-    private boolean isSchoolOwnerOfTopicWithStatus(UUID topicId, UUID schoolId, String bankStatus, String... topicStatuses) {
+    private boolean isSchoolOwnerOfTopicWithStatuses(UUID topicId, UUID schoolId, List<String> bankStatuses, List<String> topicStatuses) {
         try {
             em.createQuery("""
                 SELECT 1 FROM QuestionTopicJpaEntity qt
@@ -251,13 +232,20 @@ public class JpaQuestionTopicPermissionQuery implements QuestionTopicPermissionQ
                 """)
                 .setParameter("topicId", topicId)
                 .setParameter("schoolId", schoolId)
-                .setParameter("bankStatuses", List.of(bankStatus))
-                .setParameter("topicStatuses", List.of(topicStatuses))
+                .setParameter("bankStatuses", bankStatuses)
+                .setParameter("topicStatuses", topicStatuses)
                 .getSingleResult();
             return true;
         } catch (NoResultException e) {
             return false;
         }
+    }
+
+    private UUID resolveSchoolId(String role, UUID userId) {
+        if ("SYSTEM_ADMIN".equals(role)) {
+            return null;
+        }
+        return getSchoolId(userId);
     }
 
     private UUID getSchoolId(UUID userId) {

@@ -87,6 +87,8 @@ type Question {
     status: String!
     createdAt: String
     updatedAt: String
+    createdBy: ID
+    updatedBy: ID
     questionTopic: QuestionTopic
     assets: [QuestionAsset!]
     evaluationGuide: QuestionEvaluationGuide

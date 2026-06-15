@@ -124,14 +124,16 @@ public class JpaQuestionBankReadQueryRepository implements QuestionBankReadQuery
     public PageResult<QuestionBankDto> findSchoolQuestionBanks(UUID schoolId, PageRequest pageRequest) {
         var countQuery = em.createQuery("""
             SELECT COUNT(qb) FROM QuestionBankJpaEntity qb
-            WHERE qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId
+            WHERE (qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId)
+               OR (qb.ownerType = 'SYSTEM' AND qb.status = 'PUBLISHED')
             """, Long.class)
             .setParameter("schoolId", schoolId);
         var totalElements = countQuery.getSingleResult();
 
         var query = em.createQuery("""
             SELECT qb FROM QuestionBankJpaEntity qb
-            WHERE qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId
+            WHERE (qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId)
+               OR (qb.ownerType = 'SYSTEM' AND qb.status = 'PUBLISHED')
             ORDER BY qb.createdAt DESC
             """, QuestionBankJpaEntity.class)
             .setParameter("schoolId", schoolId)
@@ -185,7 +187,7 @@ public class JpaQuestionBankReadQueryRepository implements QuestionBankReadQuery
             entity.getCode(),
             entity.getName(),
             entity.getDescription(),
-            entity.getStatus(),
+            "PUBLISHED".equals(entity.getStatus()),
             entity.getCreatedAt() != null ? entity.getCreatedAt().toString() : null,
             entity.getUpdatedAt() != null ? entity.getUpdatedAt().toString() : null
         );

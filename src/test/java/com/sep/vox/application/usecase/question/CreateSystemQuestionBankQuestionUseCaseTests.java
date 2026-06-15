@@ -20,57 +20,58 @@ import com.sep.vox.application.port.input.command.CreateSystemQuestionBankQuesti
 import com.sep.vox.application.port.input.usecase.question.CreateSystemQuestionBankQuestionUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.question.Question;
+import com.sep.vox.domain.model.question.QuestionBank;
+import com.sep.vox.domain.model.question.QuestionBankOwnerType;
+import com.sep.vox.domain.model.question.QuestionBankStatus;
 import com.sep.vox.domain.model.question.QuestionScope;
 import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.model.question.QuestionTopic;
 import com.sep.vox.domain.model.question.QuestionTopicStatus;
 import com.sep.vox.domain.model.question.QuestionType;
 import com.sep.vox.domain.model.question.QuestionVisibility;
-import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
+import com.sep.vox.domain.repository.QuestionBankRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.QuestionTopicRepository;
-import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 class CreateSystemQuestionBankQuestionUseCaseTests {
 
     private UserRepository userRepository;
-    private SchoolUserRepository schoolUserRepository;
     private QuestionRepository questionRepository;
     private QuestionTopicRepository questionTopicRepository;
+    private QuestionBankRepository questionBankRepository;
     private UserContextPort userContextPort;
     private CreateSystemQuestionBankQuestionUseCase useCase;
 
     @BeforeEach
     void setUp() {
         userRepository = mock(UserRepository.class);
-        schoolUserRepository = mock(SchoolUserRepository.class);
         questionRepository = mock(QuestionRepository.class);
         questionTopicRepository = mock(QuestionTopicRepository.class);
+        questionBankRepository = mock(QuestionBankRepository.class);
         userContextPort = mock(UserContextPort.class);
         useCase = new CreateSystemQuestionBankQuestionUseCase(
-            userRepository, schoolUserRepository, questionRepository, questionTopicRepository, userContextPort
+            userRepository, questionRepository, questionTopicRepository, questionBankRepository, userContextPort
         );
     }
 
     @Test
     void create_should_save_normalized_question_for_accessible_topic() {
         var userId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
         var topicId = UUID.randomUUID();
+        var bankId = UUID.randomUUID();
         var questionId = UUID.randomUUID();
         var command = new CreateSystemQuestionBankQuestionCommand(
             topicId, "  q-01  ", "  Instruction  ", "  Question   text  ", "  Prompt  ", "  Preparation  ",
-            "  SHORT_ANSWER  ", 15, 30, 60
+            "  SHORT_ANSWER  ", "  CENTRAL_EXAM_DRAFT  ", "  REVIEWER_ONLY  ", 15, 30, 60
         );
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(userRepository.findByIdAndStatus(userId, UserStatus.ACTIVE)).thenReturn(Optional.of(activeUser(userId)));
-        when(schoolUserRepository.findByUserId(userId)).thenReturn(Optional.of(new SchoolUser(schoolId, userId, OffsetDateTime.now(), null)));
-        when(questionTopicRepository.findById(topicId)).thenReturn(Optional.of(activeTopic(topicId)));
-        when(questionTopicRepository.isTopicBelongToSchool(topicId, schoolId)).thenReturn(true);
+        when(questionTopicRepository.findById(topicId)).thenReturn(Optional.of(activeTopic(topicId, bankId)));
+        when(questionBankRepository.findById(bankId)).thenReturn(Optional.of(systemBank(bankId)));
         when(questionRepository.save(any(Question.class))).thenAnswer(invocation -> {
             var question = invocation.getArgument(0, Question.class);
             question.setId(questionId);
@@ -85,25 +86,24 @@ class CreateSystemQuestionBankQuestionUseCaseTests {
         assertThat(captor.getValue().getCode()).isEqualTo("Q-01");
         assertThat(captor.getValue().getQuestionText()).isEqualTo("Question text");
         assertThat(captor.getValue().getType()).isEqualTo(QuestionType.SHORT_ANSWER);
-        assertThat(captor.getValue().getScope()).isEqualTo(QuestionScope.QUESTION_BANK);
-        assertThat(captor.getValue().getVisibility()).isEqualTo(QuestionVisibility.BANK_VISIBLE);
+        assertThat(captor.getValue().getScope()).isEqualTo(QuestionScope.CENTRAL_EXAM_DRAFT);
+        assertThat(captor.getValue().getVisibility()).isEqualTo(QuestionVisibility.REVIEWER_ONLY);
         assertThat(captor.getValue().getStatus()).isEqualTo(QuestionStatus.DRAFT);
     }
 
     @Test
     void create_should_throw_when_topic_not_in_current_school() {
         var userId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
         var topicId = UUID.randomUUID();
+        var bankId = UUID.randomUUID();
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(userRepository.findByIdAndStatus(userId, UserStatus.ACTIVE)).thenReturn(Optional.of(activeUser(userId)));
-        when(schoolUserRepository.findByUserId(userId)).thenReturn(Optional.of(new SchoolUser(schoolId, userId, OffsetDateTime.now(), null)));
-        when(questionTopicRepository.findById(topicId)).thenReturn(Optional.of(activeTopic(topicId)));
-        when(questionTopicRepository.isTopicBelongToSchool(topicId, schoolId)).thenReturn(false);
+        when(questionTopicRepository.findById(topicId)).thenReturn(Optional.of(activeTopic(topicId, bankId)));
+        when(questionBankRepository.findById(bankId)).thenReturn(Optional.of(schoolBank(bankId)));
 
         assertThrows(ForbiddenException.class, () -> useCase.execute(new CreateSystemQuestionBankQuestionCommand(
-            topicId, "Q1", null, "Text", null, null, "SHORT_ANSWER", 10, 20, 30
+            topicId, "Q1", null, "Text", null, null, "SHORT_ANSWER", "QUESTION_BANK", "BANK_VISIBLE", 10, 20, 30
         )));
     }
 
@@ -114,8 +114,42 @@ class CreateSystemQuestionBankQuestionUseCaseTests {
         return user;
     }
 
-    private QuestionTopic activeTopic(UUID id) {
-        return new QuestionTopic(id, UUID.randomUUID(), "TOPIC", "Topic", null, QuestionTopicStatus.PUBLISHED,
+    private QuestionTopic activeTopic(UUID id, UUID bankId) {
+        return new QuestionTopic(id, bankId, "TOPIC", "Topic", null, QuestionTopicStatus.PUBLISHED,
             OffsetDateTime.now(), OffsetDateTime.now(), UUID.randomUUID(), UUID.randomUUID());
+    }
+
+    private QuestionBank systemBank(UUID id) {
+        return new QuestionBank(
+            id,
+            UUID.randomUUID(),
+            null,
+            "SYS_BANK",
+            "System Bank",
+            null,
+            QuestionBankOwnerType.SYSTEM,
+            QuestionBankStatus.PUBLISHED,
+            OffsetDateTime.now(),
+            OffsetDateTime.now(),
+            UUID.randomUUID(),
+            UUID.randomUUID()
+        );
+    }
+
+    private QuestionBank schoolBank(UUID id) {
+        return new QuestionBank(
+            id,
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            "SCHOOL_BANK",
+            "School Bank",
+            null,
+            QuestionBankOwnerType.SCHOOL,
+            QuestionBankStatus.PUBLISHED,
+            OffsetDateTime.now(),
+            OffsetDateTime.now(),
+            UUID.randomUUID(),
+            UUID.randomUUID()
+        );
     }
 }

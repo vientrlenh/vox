@@ -40,7 +40,7 @@ class QuestionControllerTests {
         var questionId = UUID.randomUUID();
         var request = createQuestionRequest(topicId, "SYS_Q");
         var command = new CreateSystemQuestionBankQuestionCommand(
-            topicId, "SYS_Q", "Instruction", "Question text", "Prompt", "Preparation", "SHORT_ANSWER", 15, 30, 60);
+            topicId, "SYS_Q", "Instruction", "Question text", "Prompt", "Preparation", "SHORT_ANSWER", "QUESTION_BANK", "BANK_VISIBLE", 15, 30, 60);
         var expected = new CreateQuestionResponse(questionId);
         when(useCase.execute(command)).thenReturn(expected);
 
@@ -66,7 +66,7 @@ class QuestionControllerTests {
         var questionId = UUID.randomUUID();
         var request = createQuestionRequest(topicId, "SCH_Q");
         var command = new CreateSchoolQuestionBankQuestionCommand(
-            topicId, "SCH_Q", "Instruction", "Question text", "Prompt", "Preparation", "SHORT_ANSWER", 15, 30, 60);
+            topicId, "SCH_Q", "Instruction", "Question text", "Prompt", "Preparation", "SHORT_ANSWER", "QUESTION_BANK", "BANK_VISIBLE", 15, 30, 60);
         var expected = new CreateQuestionResponse(questionId);
         when(useCase.execute(command)).thenReturn(expected);
 
@@ -89,8 +89,8 @@ class QuestionControllerTests {
             mock(ReviewQuestionUseCase.class)
         );
         var questionId = UUID.randomUUID();
-        var request = new UpdateQuestionContentRequest("Instruction", "Updated question", "Prompt", "Preparation", "SHORT_ANSWER", 10, 20, 40);
-        var command = new UpdateQuestionContentCommand(questionId, "Instruction", "Updated question", "Prompt", "Preparation", "SHORT_ANSWER", 10, 20, 40);
+        var request = new UpdateQuestionContentRequest("Instruction", "Updated question", "Prompt", "Preparation", "SHORT_ANSWER", "QUESTION_BANK", "BANK_VISIBLE", 10, 20, 40);
+        var command = new UpdateQuestionContentCommand(questionId, "Instruction", "Updated question", "Prompt", "Preparation", "SHORT_ANSWER", "QUESTION_BANK", "BANK_VISIBLE", 10, 20, 40);
         var expected = new UpdateQuestionResponse(questionId);
         when(useCase.execute(command)).thenReturn(expected);
 
@@ -197,6 +197,8 @@ class QuestionControllerTests {
             "Prompt",
             "Preparation",
             "SHORT_ANSWER",
+            "QUESTION_BANK",
+            "BANK_VISIBLE",
             15,
             30,
             60

@@ -9,6 +9,8 @@ public record UpdateQuestionContentCommand(
     String promptText,
     String preparationText,
     String type,
+    String scope,
+    String visibility,
     int preparationTimeSeconds,
     int minResponseSeconds,
     int maxResponseSeconds

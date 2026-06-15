@@ -48,7 +48,7 @@ public class JpaQuestionPermissionQuery implements QuestionPermissionQuery {
             .orElseThrow(() -> new ForbiddenException("Không tìm thấy người dùng"));
         var roleInfos = userRoleQueryRepository.findByUserIdWithRoleInfo(userId);
         String role = resolveRole(roleInfos);
-        return new ResolvedUser(userId, role, getSchoolId(userId));
+        return new ResolvedUser(userId, role, resolveSchoolId(role, userId));
     }
 
     private String resolveRole(List<UserRoleInfo> roleInfos) {
@@ -272,6 +272,13 @@ public class JpaQuestionPermissionQuery implements QuestionPermissionQuery {
         } catch (NoResultException e) {
             return false;
         }
+    }
+
+    private UUID resolveSchoolId(String role, UUID userId) {
+        if ("SYSTEM_ADMIN".equals(role)) {
+            return null;
+        }
+        return getSchoolId(userId);
     }
 
     private UUID getSchoolId(UUID userId) {

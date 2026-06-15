@@ -17,7 +17,7 @@ public class QuestionBankDtoMapper {
             domain.getCode(),
             domain.getName(),
             domain.getDescription(),
-            domain.getStatus().name(),
+            domain.getStatus() == com.sep.vox.domain.model.question.QuestionBankStatus.PUBLISHED,
             valueOf(domain.getCreatedAt()),
             valueOf(domain.getUpdatedAt())
         );

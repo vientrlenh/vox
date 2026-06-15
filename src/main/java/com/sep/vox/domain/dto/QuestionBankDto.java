@@ -6,10 +6,17 @@ public record QuestionBankDto(
     UUID id,
     UUID languageId,
     String code,
-    String name,
+    String bankName,
     String description,
-    String status, 
+    boolean isActive,
     String createdAt,
     String updatedAt
 ) {
+    public String name() {
+        return bankName;
+    }
+
+    public String status() {
+        return isActive ? "PUBLISHED" : "ARCHIVED";
+    }
 }

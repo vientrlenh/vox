@@ -195,7 +195,7 @@ class QuestionBankControllerTests {
             code,
             code,
             code,
-            "PUBLISHED",
+            true,
             "2026-06-14T10:00:00Z",
             "2026-06-14T10:00:00Z"
         );

@@ -51,12 +51,14 @@ class UpdateQuestionContentUseCaseTests {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
 
         var response = useCase.execute(new UpdateQuestionContentCommand(
-            questionId, "Instruction", "Updated", "Prompt", "Preparation", "LONG_ANSWER", 15, 30, 60
+            questionId, "Instruction", "Updated", "Prompt", "Preparation", "LONG_ANSWER", "CENTRAL_EXAM_DRAFT", "REVIEWER_ONLY", 15, 30, 60
         ));
 
         assertThat(response.questionId()).isEqualTo(questionId);
         assertThat(question.getQuestionText()).isEqualTo("Updated");
         assertThat(question.getType()).isEqualTo(QuestionType.LONG_ANSWER);
+        assertThat(question.getScope()).isEqualTo(QuestionScope.CENTRAL_EXAM_DRAFT);
+        assertThat(question.getVisibility()).isEqualTo(QuestionVisibility.REVIEWER_ONLY);
         assertThat(question.getUpdatedBy()).isEqualTo(userId);
     }
 
@@ -66,7 +68,7 @@ class UpdateQuestionContentUseCaseTests {
         when(permissionQuery.canEditContent(questionId)).thenReturn(false);
 
         assertThrows(ForbiddenException.class, () -> useCase.execute(new UpdateQuestionContentCommand(
-            questionId, null, "Text", null, null, "SHORT_ANSWER", 10, 20, 30
+            questionId, null, "Text", null, null, "SHORT_ANSWER", "QUESTION_BANK", "BANK_VISIBLE", 10, 20, 30
         )));
     }
 

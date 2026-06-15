@@ -16,38 +16,38 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.question.CreateQuestionResponse;
 import com.sep.vox.domain.model.question.Question;
+import com.sep.vox.domain.model.question.QuestionBankOwnerType;
 import com.sep.vox.domain.model.question.QuestionScope;
 import com.sep.vox.domain.model.question.QuestionTopic;
 import com.sep.vox.domain.model.question.QuestionType;
 import com.sep.vox.domain.model.question.QuestionVisibility;
-import com.sep.vox.domain.model.school.SchoolUser;
 
 import com.sep.vox.domain.model.user.UserStatus;
 
+import com.sep.vox.domain.repository.QuestionBankRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.QuestionTopicRepository;
-import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
 public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateSystemQuestionBankQuestionCommand, CreateQuestionResponse> {
 
     private final UserRepository userRepository;
-    private final SchoolUserRepository schoolUserRepository;
     private final QuestionRepository questionRepository;
     private final QuestionTopicRepository questionTopicRepository;
+    private final QuestionBankRepository questionBankRepository;
     private final UserContextPort userContextPort;
 
     public CreateSystemQuestionBankQuestionUseCase(
             UserRepository userRepository,
-            SchoolUserRepository schoolUserRepository,
             QuestionRepository questionRepository,
             QuestionTopicRepository questionTopicRepository,
+            QuestionBankRepository questionBankRepository,
             UserContextPort userContextPort) {
         this.userRepository = userRepository;
-        this.schoolUserRepository = schoolUserRepository;
         this.questionRepository = questionRepository;
         this.questionTopicRepository = questionTopicRepository;
+        this.questionBankRepository = questionBankRepository;
         this.userContextPort = userContextPort;
     }
 
@@ -57,12 +57,13 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
         var command = normalize(input);
 
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentUser = userRepository.findByIdAndStatus(currentUserId, UserStatus.ACTIVE)
+        userRepository.findByIdAndStatus(currentUserId, UserStatus.ACTIVE)
             .orElseThrow(() -> new UnauthorizedException("Trang thai nguoi dung khong hop le"));
-        var schoolId = getSchoolId(currentUser.getId());
 
         var questionTopic = getQuestionTopic(command.questionTopicId());
-        if (!questionTopicRepository.isTopicBelongToSchool(questionTopic.getId(), schoolId)) {
+        var questionBank = questionBankRepository.findById(questionTopic.getQuestionBankId())
+            .orElseThrow(() -> new NotFoundException("Khong tim thay ngan hang cau hoi voi ID nay"));
+        if (questionBank.getOwnerType() != QuestionBankOwnerType.SYSTEM) {
             throw new ForbiddenException("Quyen truy cap bi tu choi");
         }
 
@@ -80,8 +81,8 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
             command.preparationTimeSeconds(),
             command.minResponseSeconds(),
             command.maxResponseSeconds(),
-            QuestionScope.QUESTION_BANK,
-            QuestionVisibility.BANK_VISIBLE,
+            QuestionScope.valueOf(command.scope()),
+            QuestionVisibility.valueOf(command.visibility()),
             null,
             false,
             now,
@@ -101,6 +102,8 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
             StringNormalization.trimAndCollapseSpaces(input.promptText()),
             StringNormalization.trimAndCollapseSpaces(input.preparationText()),
             StringNormalization.trimAndCollapseSpaces(input.type()),
+            StringNormalization.trimAndCollapseSpaces(input.scope()),
+            StringNormalization.trimAndCollapseSpaces(input.visibility()),
             input.preparationTimeSeconds(),
             input.minResponseSeconds(),
             input.maxResponseSeconds()
@@ -123,9 +126,4 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
         }
     }
 
-    private UUID getSchoolId(UUID userId) {
-        return schoolUserRepository.findByUserId(userId)
-            .map(SchoolUser::getSchoolId)
-            .orElseThrow(() -> new IllegalStateException("Nguoi dung hien tai khong thuoc truong nao"));
-    }
 }

@@ -3,10 +3,11 @@ package com.sep.vox.infrastructure.persistence.query;
 import java.util.List;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.UserRoleInfo;
 import com.sep.vox.application.query.repository.QuestionViewPermissionQuery;
@@ -22,6 +23,8 @@ import jakarta.persistence.PersistenceContext;
 
 @Repository
 public class JpaQuestionViewPermissionQuery implements QuestionViewPermissionQuery {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(JpaQuestionViewPermissionQuery.class);
 
     @PersistenceContext
     private EntityManager em;
@@ -44,11 +47,11 @@ public class JpaQuestionViewPermissionQuery implements QuestionViewPermissionQue
 
     private ResolvedUser resolveCurrentUser() {
         UUID userId = userContextPort.getCurrentAuthenticatedUserId();
-        var user = userRepository.findById(userId)
-            .orElseThrow(() -> new ForbiddenException("Không tìm thấy người dùng"));
+        userRepository.findById(userId)
+            .orElseThrow(() -> new ForbiddenException("Khong tim thay nguoi dung"));
         var roleInfos = userRoleQueryRepository.findByUserIdWithRoleInfo(userId);
         String role = resolveRole(roleInfos);
-        return new ResolvedUser(userId, role, getSchoolId(userId));
+        return new ResolvedUser(userId, role, resolveSchoolId(role, userId));
     }
 
     private String resolveRole(List<UserRoleInfo> roleInfos) {
@@ -64,7 +67,7 @@ public class JpaQuestionViewPermissionQuery implements QuestionViewPermissionQue
         if (roleInfos.stream().anyMatch(r -> "STUDENT".equals(r.roleCode()))) {
             return "STUDENT";
         }
-        throw new ForbiddenException("Người dùng không có vai trò hợp lệ");
+        throw new ForbiddenException("Nguoi dung khong co vai tro hop le");
     }
 
     private QuestionJpaEntity loadQuestion(UUID questionId) {
@@ -76,8 +79,6 @@ public class JpaQuestionViewPermissionQuery implements QuestionViewPermissionQue
             .getSingleResult();
     }
 
-    // ==================== MAIN ENTRY ====================
-
     @Override
     public boolean canViewQuestionDetail(UUID questionId) {
         var user = resolveCurrentUser();
@@ -87,18 +88,20 @@ public class JpaQuestionViewPermissionQuery implements QuestionViewPermissionQue
         }
 
         var question = loadQuestion(questionId);
-
-        return switch (question.getScope()) {
+        var allowed = switch (question.getScope()) {
             case "QUESTION_BANK" -> canViewQuestionBank(question, user);
             case "CLASSROOM_ASSESSMENT" -> canViewClassroomAssessment(question, user);
             case "CENTRAL_EXAM_DRAFT" -> canViewCentralExamDraft(question, user);
             case "CENTRAL_EXAM_PAPER" -> canViewCentralExamPaper(question, user);
             default -> false;
         };
-    }
 
-    // ==================== QUESTION_BANK ====================
-    // Rules: theo status + visibility + role, giống hiện tại
+        if (!allowed) {
+            logDeniedQuestionDetail(questionId, question, user);
+        }
+
+        return allowed;
+    }
 
     private boolean canViewQuestionBank(QuestionJpaEntity q, ResolvedUser user) {
         if ("SYSTEM_ADMIN".equals(user.role())) {
@@ -108,7 +111,7 @@ public class JpaQuestionViewPermissionQuery implements QuestionViewPermissionQue
             return canSchoolAdminViewQuestion(q.getId(), user.schoolId());
         }
         if ("TEACHER".equals(user.role())) {
-            return canTeacherViewQuestionBank(q, user.userId(), user.schoolId());
+            return canTeacherViewQuestionBank(q.getId(), user.userId(), user.schoolId());
         }
         return false;
     }
@@ -137,68 +140,52 @@ public class JpaQuestionViewPermissionQuery implements QuestionViewPermissionQue
         }
     }
 
-    private boolean canTeacherViewQuestionBank(QuestionJpaEntity q, UUID userId, UUID schoolId) {
-        // Path 1: own question
-        if (isTeacherOwnNonArchived(q.getId(), userId)) {
+    private boolean canTeacherViewQuestionBank(UUID questionId, UUID userId, UUID schoolId) {
+        if (isTeacherOwnNonArchived(questionId, userId)) {
             return true;
         }
-        // Path 2: published, BANK_VISIBLE
-        if (isPublishedBankVisible(q.getId(), schoolId)) {
+        if (isPublishedBankVisible(questionId, schoolId)) {
             return true;
         }
-        // Path 3: review queue
-        if (isReviewQueueQuestion(q.getId(), userId, schoolId)) {
+        if (isReviewQueueQuestion(questionId, userId, schoolId)) {
             return true;
         }
         return false;
     }
-
-    // ==================== CLASSROOM_ASSESSMENT ====================
-    // Rules: teacher tạo nó xem được, hoặc ai xem được bài assessment thì xem được câu hỏi
 
     private boolean canViewClassroomAssessment(QuestionJpaEntity q, ResolvedUser user) {
         if ("SYSTEM_ADMIN".equals(user.role())) {
             return !"ARCHIVED".equals(q.getStatus());
         }
         if ("SCHOOL_ADMIN".equals(user.role())) {
-            return isSameSchool(q.getId(), user.schoolId());
+            return isSameSchool(q.getId(), user.schoolId())
+                || isPublishedBankVisible(q.getId(), user.schoolId());
         }
         if ("TEACHER".equals(user.role())) {
-            // Teacher tạo câu hỏi này
             if (userIdEquals(q.getCreatedBy(), user.userId())) {
                 return true;
             }
-            // TODO: khi implement module assessment, thêm check:
-            // if (canViewAssessment(assessmentId, user)) return true;
-            return false;
+            return isPublishedBankVisible(q.getId(), user.schoolId());
         }
         return false;
     }
-
-    // ==================== CENTRAL_EXAM_DRAFT ====================
-    // Rules: teacher tạo xem được, tùy status mà school/teacher khác xem được
 
     private boolean canViewCentralExamDraft(QuestionJpaEntity q, ResolvedUser user) {
         if ("SYSTEM_ADMIN".equals(user.role())) {
             return !"ARCHIVED".equals(q.getStatus());
         }
         if ("SCHOOL_ADMIN".equals(user.role())) {
-            // School admin xem được nếu cùng school và question không ARCHIVED
-            return isSameSchool(q.getId(), user.schoolId())
-                && !"ARCHIVED".equals(q.getStatus());
+            return (isSameSchool(q.getId(), user.schoolId())
+                && !"ARCHIVED".equals(q.getStatus()))
+                || isPublishedBankVisible(q.getId(), user.schoolId());
         }
         if ("TEACHER".equals(user.role())) {
-            // Teacher tạo luôn xem được
             if (userIdEquals(q.getCreatedBy(), user.userId())) {
                 return true;
             }
-            // Teacher khác: chỉ xem được khi PUBLISHED + cùng school + BANK_VISIBLE
-            if ("PUBLISHED".equals(q.getStatus())
-                    && "BANK_VISIBLE".equals(q.getVisibility())
-                    && isSameSchool(q.getId(), user.schoolId())) {
+            if (isPublishedBankVisible(q.getId(), user.schoolId())) {
                 return true;
             }
-            // Reviewer: SUBMITTED_FOR_REVIEW + REVIEWER_ONLY + cùng school
             if ("SUBMITTED_FOR_REVIEW".equals(q.getStatus())
                     && "REVIEWER_ONLY".equals(q.getVisibility())
                     && !userIdEquals(q.getCreatedBy(), user.userId())
@@ -210,24 +197,22 @@ public class JpaQuestionViewPermissionQuery implements QuestionViewPermissionQue
         return false;
     }
 
-    // ==================== CENTRAL_EXAM_PAPER ====================
-    // Rules: giáo viên phụ trách tạo đề xem được, school admin xem được
-
     private boolean canViewCentralExamPaper(QuestionJpaEntity q, ResolvedUser user) {
         if ("SYSTEM_ADMIN".equals(user.role())) {
             return true;
         }
         if ("SCHOOL_ADMIN".equals(user.role())) {
-            return isSameSchool(q.getId(), user.schoolId());
+            return isSameSchool(q.getId(), user.schoolId())
+                || isPublishedBankVisible(q.getId(), user.schoolId());
         }
         if ("TEACHER".equals(user.role())) {
-            // Giáo viên phụ trách tạo đề
-            return userIdEquals(q.getCreatedBy(), user.userId());
+            if (userIdEquals(q.getCreatedBy(), user.userId())) {
+                return true;
+            }
+            return isPublishedBankVisible(q.getId(), user.schoolId());
         }
         return false;
     }
-
-    // ==================== HELPERS ====================
 
     private boolean isTeacherOwnNonArchived(UUID questionId, UUID userId) {
         try {
@@ -314,6 +299,53 @@ public class JpaQuestionViewPermissionQuery implements QuestionViewPermissionQue
 
     private boolean userIdEquals(UUID a, UUID b) {
         return a != null && a.equals(b);
+    }
+
+    private void logDeniedQuestionDetail(UUID questionId, QuestionJpaEntity question, ResolvedUser user) {
+        try {
+            var metadata = em.createQuery("""
+                SELECT qb.ownerType, qb.schoolId, qb.status, qt.status
+                FROM QuestionJpaEntity q
+                JOIN QuestionTopicJpaEntity qt ON q.questionTopicId = qt.id
+                JOIN QuestionBankJpaEntity qb ON qt.questionBankId = qb.id
+                WHERE q.id = :questionId
+                """, Object[].class)
+                .setParameter("questionId", questionId)
+                .getSingleResult();
+
+            LOGGER.debug(
+                "Denied question detail: questionId={}, role={}, userId={}, schoolId={}, scope={}, questionStatus={}, visibility={}, bankOwnerType={}, bankSchoolId={}, bankStatus={}, topicStatus={}",
+                questionId,
+                user.role(),
+                user.userId(),
+                user.schoolId(),
+                question.getScope(),
+                question.getStatus(),
+                question.getVisibility(),
+                metadata[0],
+                metadata[1],
+                metadata[2],
+                metadata[3]
+            );
+        } catch (NoResultException e) {
+            LOGGER.debug(
+                "Denied question detail without metadata: questionId={}, role={}, userId={}, schoolId={}, scope={}, questionStatus={}, visibility={}",
+                questionId,
+                user.role(),
+                user.userId(),
+                user.schoolId(),
+                question.getScope(),
+                question.getStatus(),
+                question.getVisibility()
+            );
+        }
+    }
+
+    private UUID resolveSchoolId(String role, UUID userId) {
+        if ("SYSTEM_ADMIN".equals(role)) {
+            return null;
+        }
+        return getSchoolId(userId);
     }
 
     private UUID getSchoolId(UUID userId) {

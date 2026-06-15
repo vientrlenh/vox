@@ -30,7 +30,9 @@ public final class QuestionReadDtoMapper {
                 e.isLocked(),
                 e.getStatus(),
                 e.getCreatedAt() != null ? e.getCreatedAt().toString() : null,
-                e.getUpdatedAt() != null ? e.getUpdatedAt().toString() : null
+                e.getUpdatedAt() != null ? e.getUpdatedAt().toString() : null,
+                e.getCreatedBy(),
+                e.getUpdatedBy()
         );
     }
 

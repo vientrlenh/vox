@@ -84,10 +84,9 @@ public class FrameworkController {
 
     @MutationMapping(name = "updateFrameworkVersion")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public boolean updateFrameworkVersion(@Argument(name = "input") UpdateFrameworkVersionInput input) {
+    public UUID updateFrameworkVersion(@Argument(name = "input") UpdateFrameworkVersionInput input) {
         var command = toCommand(input);
-        updateFrameworkVersionUseCase.execute(command);
-        return true;
+        return updateFrameworkVersionUseCase.execute(command);
     }
 
     private UpdateFrameworkVersionCommand toCommand(UpdateFrameworkVersionInput input) {

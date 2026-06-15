@@ -56,22 +56,22 @@ public class FrameworkVersionController {
 
     @PatchMapping("/{versionId}/status")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public ResponseEntity<ApiResponse<Void>> updateVersionStatus(
+    public ResponseEntity<ApiResponse<UUID>> updateVersionStatus(
             @PathVariable UUID frameworkId,
             @PathVariable UUID versionId,
             @Valid @RequestBody UpdateFrameworkVersionStatusRequest request) {
         var command = UpdateFrameworkVersionStatusCommandMapper.fromRequest(frameworkId, versionId, request);
-        updateFrameworkVersionStatusUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái phiên bản thành công"));
+        var updatedVersionId = updateFrameworkVersionStatusUseCase.execute(command);
+        return ResponseEntity.ok(ApiResponse.success(null, updatedVersionId));
     }
 
     @DeleteMapping("/{versionId}")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public ResponseEntity<ApiResponse<Void>> deleteVersion(
+    public ResponseEntity<Void> deleteVersion(
             @PathVariable UUID frameworkId,
             @PathVariable UUID versionId) {
         var command = new DeleteFrameworkVersionCommand(frameworkId, versionId);
         deleteFrameworkVersionUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Xóa phiên bản framework thành công"));
+        return ResponseEntity.noContent().build();
     }
 }

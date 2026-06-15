@@ -28,7 +28,7 @@ import com.sep.vox.domain.repository.FrameworkResultBandRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
 
 @Service
-public class UpdateFrameworkVersionUseCase implements IUseCase<UpdateFrameworkVersionCommand, Void> {
+public class UpdateFrameworkVersionUseCase implements IUseCase<UpdateFrameworkVersionCommand, UUID> {
 
     private final FrameworkRepository frameworkRepository;
     private final FrameworkVersionRepository frameworkVersionRepository;
@@ -54,7 +54,7 @@ public class UpdateFrameworkVersionUseCase implements IUseCase<UpdateFrameworkVe
 
     @Override
     @Transactional
-    public Void execute(UpdateFrameworkVersionCommand input) {
+    public UUID execute(UpdateFrameworkVersionCommand input) {
         var now = OffsetDateTime.now();
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
@@ -97,7 +97,7 @@ public class UpdateFrameworkVersionUseCase implements IUseCase<UpdateFrameworkVe
             replaceCriteria(input.versionId(), input.criteria(), input.resultBands(), now, currentUserId);
         }
 
-        return null;
+        return input.versionId();
     }
 
     private void replaceResultBands(UUID versionId, List<UpdateFrameworkVersionCommand.ResultBandInput> bandInputs,

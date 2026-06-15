@@ -14,7 +14,7 @@ import com.sep.vox.domain.repository.FrameworkRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
 
 @Service
-public class UpdateFrameworkVersionStatusUseCase implements IUseCase<UpdateFrameworkVersionStatusCommand, Void> {
+public class UpdateFrameworkVersionStatusUseCase implements IUseCase<UpdateFrameworkVersionStatusCommand, UUID> {
 
     private final FrameworkRepository frameworkRepository;
     private final FrameworkVersionRepository frameworkVersionRepository;
@@ -28,7 +28,7 @@ public class UpdateFrameworkVersionStatusUseCase implements IUseCase<UpdateFrame
 
     @Override
     @Transactional
-    public Void execute(UpdateFrameworkVersionStatusCommand input) {
+    public UUID execute(UpdateFrameworkVersionStatusCommand input) {
         frameworkRepository.findById(input.frameworkId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy framework"));
 
@@ -49,7 +49,7 @@ public class UpdateFrameworkVersionStatusUseCase implements IUseCase<UpdateFrame
             throw new IllegalArgumentException("Trạng thái không hợp lệ để cập nhật");
         }
 
-        return null;
+        return input.versionId();
     }
 
     private void validateNoConflictingPublished(UUID frameworkId, UUID versionId, OffsetDateTime effectiveFrom, OffsetDateTime effectiveTo) {

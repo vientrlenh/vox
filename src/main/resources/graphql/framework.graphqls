@@ -114,5 +114,5 @@ extend type Query {
 }
 
 extend type Mutation {
-    updateFrameworkVersion(input: UpdateFrameworkVersionInput!): Boolean!
+    updateFrameworkVersion(input: UpdateFrameworkVersionInput!): ID!
 }

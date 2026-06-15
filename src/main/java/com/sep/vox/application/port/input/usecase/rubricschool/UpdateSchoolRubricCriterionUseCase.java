@@ -34,7 +34,9 @@ public class UpdateSchoolRubricCriterionUseCase implements IUseCase<UpdateSchool
     private final UserContextPort userContextPort;
     private final SchoolRepository schoolRepository;
     private final SchoolUserRepository schoolUserRepository;
-    private final ObjectMapper objectMapper; // Dùng để parse JSON
+
+    // SỬA LỖI 1: Tự khởi tạo ObjectMapper ở đây để dùng cho việc dịch JSON
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public UpdateSchoolRubricCriterionUseCase(
             RubricCriterionRepository rubricCriterionRepository,
@@ -43,8 +45,7 @@ public class UpdateSchoolRubricCriterionUseCase implements IUseCase<UpdateSchool
             UserRepository userRepository,
             UserContextPort userContextPort,
             SchoolRepository schoolRepository,
-            SchoolUserRepository schoolUserRepository,
-            ObjectMapper objectMapper) {
+            SchoolUserRepository schoolUserRepository) {
         this.rubricCriterionRepository = rubricCriterionRepository;
         this.rubricVersionRepository = rubricVersionRepository;
         this.rubricRepository = rubricRepository;
@@ -52,7 +53,6 @@ public class UpdateSchoolRubricCriterionUseCase implements IUseCase<UpdateSchool
         this.userContextPort = userContextPort;
         this.schoolRepository = schoolRepository;
         this.schoolUserRepository = schoolUserRepository;
-        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -117,10 +117,12 @@ public class UpdateSchoolRubricCriterionUseCase implements IUseCase<UpdateSchool
         // 7. Validate chuỗi JSON (Bẫy bằng Value Object RubricCriterionExamples)
         if (command.examplesJson() != null && !command.examplesJson().isBlank()) {
             try {
+                // SỬA LỖI 2: Dùng objectMapper để parse JSON thành List object
                 List<RubricCriterionExample> parsedExamples = objectMapper.readValue(
                         command.examplesJson(),
                         new TypeReference<List<RubricCriterionExample>>() {}
                 );
+
                 new RubricCriterionExamples(parsedExamples); // Kích hoạt ném lỗi nếu List rỗng hoặc chứa null
             } catch (IllegalArgumentException e) {
                 throw new IllegalArgumentException(e.getMessage());

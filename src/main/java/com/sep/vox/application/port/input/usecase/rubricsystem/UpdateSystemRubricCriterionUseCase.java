@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.rubricsystem;
 
-import com.fasterxml.jackson.core.type.TypeReference; // THÊM IMPORT NÀY
-import com.fasterxml.jackson.databind.ObjectMapper; // THÊM IMPORT NÀY
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
@@ -16,8 +16,8 @@ import com.sep.vox.domain.repository.RubricCriterionRepository;
 import com.sep.vox.domain.repository.RubricRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 import com.sep.vox.domain.repository.UserRepository;
-import com.sep.vox.domain.valueobject.rubric.RubricCriterionExample; // THÊM IMPORT NÀY
-import com.sep.vox.domain.valueobject.rubric.RubricCriterionExamples; // THÊM IMPORT NÀY
+import com.sep.vox.domain.valueobject.rubric.RubricCriterionExample;
+import com.sep.vox.domain.valueobject.rubric.RubricCriterionExamples;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,21 +35,19 @@ public class UpdateSystemRubricCriterionUseCase implements IUseCase<UpdateSystem
     private final RubricRepository rubricRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
-    private final ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public UpdateSystemRubricCriterionUseCase(
             RubricCriterionRepository rubricCriterionRepository,
             RubricVersionRepository rubricVersionRepository,
             RubricRepository rubricRepository,
             UserRepository userRepository,
-            UserContextPort userContextPort,
-            ObjectMapper objectMapper) { // Bổ sung vào constructor
+            UserContextPort userContextPort) {
         this.rubricCriterionRepository = rubricCriterionRepository;
         this.rubricVersionRepository = rubricVersionRepository;
         this.rubricRepository = rubricRepository;
         this.userRepository = userRepository;
         this.userContextPort = userContextPort;
-        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -99,24 +97,21 @@ public class UpdateSystemRubricCriterionUseCase implements IUseCase<UpdateSystem
         }
 
         // =========================================================
-        // Check lỗi exmaplesJson
+        // Check lỗi examplesJson
         if (command.examplesJson() != null && !command.examplesJson().isBlank()) {
             try {
-                // 1. Parse chuỗi JSON thành List
+                // Parse chuỗi JSON thành List bằng biến objectMapper đã khởi tạo ở trên
                 List<RubricCriterionExample> parsedExamples = objectMapper.readValue(
                         command.examplesJson(),
                         new TypeReference<List<RubricCriterionExample>>() {}
                 );
 
-                // 2. Kích hoạt bẫy lỗi từ Record của bạn
-                // Nếu rỗng hoặc chứa null, nó sẽ văng IllegalArgumentException ra ngay!
+                // Kích hoạt bẫy lỗi từ Record
                 new RubricCriterionExamples(parsedExamples);
 
             } catch (IllegalArgumentException e) {
-                // Hứng đúng câu chửi "Ví dụ của tiêu chí... không được để trống" từ record của bạn
                 throw new IllegalArgumentException(e.getMessage());
             } catch (Exception e) {
-                // Hứng lỗi nếu Frontend gửi lên JSON bị sai cú pháp, thiếu ngoặc kép, v.v.
                 throw new IllegalArgumentException("Định dạng JSON của phần Examples không hợp lệ.");
             }
         }

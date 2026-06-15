@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -48,22 +49,25 @@ class UpdateQuestionAssetsUseCaseTests {
     }
 
     @Test
-    void update_should_replace_assets_and_touch_question() {
+    void update_should_diff_assets_and_touch_question() {
         var userId = UUID.randomUUID();
         var questionId = UUID.randomUUID();
+        var existingAssetId = UUID.randomUUID();
         when(permissionQuery.canEditContent(questionId)).thenReturn(true);
         when(questionRepository.findById(questionId)).thenReturn(Optional.of(question(questionId, QuestionStatus.DRAFT)));
         when(assetRepository.findByQuestionId(questionId)).thenReturn(List.of(
-            new QuestionAsset(questionId, "Old", null, null, QuestionAssetType.IMAGE, "old", null, null, 1)
+            new QuestionAsset(existingAssetId, questionId, "Old", null, null, QuestionAssetType.IMAGE, "old", null, null, 1),
+            new QuestionAsset(UUID.randomUUID(), questionId, "Removed", null, null, QuestionAssetType.AUDIO, "old-2", null, null, 2)
         ));
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(questionRepository.save(any(Question.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        var response = useCase.execute(command(questionId));
+        var response = useCase.execute(command(questionId, existingAssetId));
 
         assertThat(response.questionId()).isEqualTo(questionId);
-        verify(assetRepository).deleteByQuestionId(questionId);
-        verify(assetRepository).saveAll(any());
+        verify(assetRepository).deleteById(any(UUID.class));
+        verify(assetRepository).flush();
+        verify(assetRepository, times(2)).saveAll(any());
     }
 
     @Test
@@ -77,8 +81,13 @@ class UpdateQuestionAssetsUseCaseTests {
     }
 
     private UpdateQuestionAssetsCommand command(UUID questionId) {
+        return command(questionId, UUID.randomUUID());
+    }
+
+    private UpdateQuestionAssetsCommand command(UUID questionId, UUID existingAssetId) {
         return new UpdateQuestionAssetsCommand(questionId, List.of(
-            new UpdateQuestionAssetsCommand.AssetItem("Image", null, "Alt", "IMAGE", "url", null, "desc", 1)
+            new UpdateQuestionAssetsCommand.AssetItem(existingAssetId, "Image", null, "Alt", "IMAGE", "url", null, "desc", 1),
+            new UpdateQuestionAssetsCommand.AssetItem(null, "New", 30, "Alt 2", "AUDIO", "url-2", "Transcript", "desc-2", 2)
         ));
     }
 

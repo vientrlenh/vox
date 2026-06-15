@@ -9,4 +9,5 @@ public interface QuestionEvaluationGuideRepository {
     QuestionEvaluationGuide save(QuestionEvaluationGuide questionEvaluationGuide);
     Optional<QuestionEvaluationGuide> findByQuestionId(UUID questionId);
     void deleteByQuestionId(UUID questionId);
+    void flush();
 }

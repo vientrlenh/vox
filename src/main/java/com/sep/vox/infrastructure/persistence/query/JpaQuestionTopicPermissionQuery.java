@@ -70,7 +70,7 @@ public class JpaQuestionTopicPermissionQuery implements QuestionTopicPermissionQ
         var user = resolveCurrentUser();
 
         if ("SYSTEM_ADMIN".equals(user.role())) {
-            return existsBankWithStatus(bankId, "DRAFT", "PUBLISHED");
+            return isSystemBankWithStatus(bankId, "DRAFT", "PUBLISHED");
         }
         if ("SCHOOL_ADMIN".equals(user.role())) {
             return isSchoolOwnerWithBankStatus(bankId, user.schoolId(), "DRAFT", "PUBLISHED");
@@ -83,7 +83,7 @@ public class JpaQuestionTopicPermissionQuery implements QuestionTopicPermissionQ
         var user = resolveCurrentUser();
 
         if ("SYSTEM_ADMIN".equals(user.role())) {
-            return existsTopicWithBankStatus(topicId, "DRAFT", "PUBLISHED");
+            return existsSystemTopicWithBankStatus(topicId, "DRAFT", "PUBLISHED");
         }
         if ("SCHOOL_ADMIN".equals(user.role())) {
             return isSchoolOwnerOfTopic(topicId, user.schoolId(), "DRAFT", "PUBLISHED");
@@ -96,7 +96,7 @@ public class JpaQuestionTopicPermissionQuery implements QuestionTopicPermissionQ
         var user = resolveCurrentUser();
 
         if ("SYSTEM_ADMIN".equals(user.role())) {
-            return existsTopicWithBankAndTopicStatuses(topicId, List.of("DRAFT", "PUBLISHED"), List.of("DRAFT"));
+            return existsSystemTopicWithBankAndTopicStatuses(topicId, List.of("DRAFT", "PUBLISHED"), List.of("DRAFT"));
         }
         if ("SCHOOL_ADMIN".equals(user.role())) {
             return isSchoolOwnerOfTopicWithStatuses(topicId, user.schoolId(), List.of("DRAFT", "PUBLISHED"), List.of("DRAFT"));
@@ -109,7 +109,7 @@ public class JpaQuestionTopicPermissionQuery implements QuestionTopicPermissionQ
         var user = resolveCurrentUser();
 
         if ("SYSTEM_ADMIN".equals(user.role())) {
-            return existsTopicWithBankAndTopicStatuses(topicId, List.of("DRAFT", "PUBLISHED"), List.of("DRAFT", "PUBLISHED"));
+            return existsSystemTopicWithBankAndTopicStatuses(topicId, List.of("DRAFT", "PUBLISHED"), List.of("DRAFT", "PUBLISHED"));
         }
         if ("SCHOOL_ADMIN".equals(user.role())) {
             return isSchoolOwnerOfTopicWithStatuses(topicId, user.schoolId(), List.of("DRAFT", "PUBLISHED"), List.of("DRAFT", "PUBLISHED"));
@@ -122,7 +122,7 @@ public class JpaQuestionTopicPermissionQuery implements QuestionTopicPermissionQ
         var user = resolveCurrentUser();
 
         if ("SYSTEM_ADMIN".equals(user.role())) {
-            return existsTopicWithBankAndTopicStatuses(topicId, List.of("DRAFT", "PUBLISHED"), List.of("ARCHIVED"));
+            return existsSystemTopicWithBankAndTopicStatuses(topicId, List.of("DRAFT", "PUBLISHED"), List.of("ARCHIVED"));
         }
         if ("SCHOOL_ADMIN".equals(user.role())) {
             return isSchoolOwnerOfTopicWithStatuses(topicId, user.schoolId(), List.of("DRAFT", "PUBLISHED"), List.of("ARCHIVED"));
@@ -213,6 +213,62 @@ public class JpaQuestionTopicPermissionQuery implements QuestionTopicPermissionQ
                 .setParameter("topicId", topicId)
                 .setParameter("bankStatuses", bankStatuses)
                 .setParameter("topicStatuses", topicStatuses)
+                .getSingleResult();
+            return true;
+        } catch (NoResultException e) {
+            return false;
+        }
+    }
+
+    private boolean existsSystemTopicWithBankAndTopicStatuses(UUID topicId, List<String> bankStatuses, List<String> topicStatuses) {
+        try {
+            em.createQuery("""
+                SELECT 1 FROM QuestionTopicJpaEntity qt
+                JOIN QuestionBankJpaEntity qb ON qt.questionBankId = qb.id
+                WHERE qt.id = :topicId
+                  AND qb.ownerType = 'SYSTEM'
+                  AND qb.status IN :bankStatuses
+                  AND qt.status IN :topicStatuses
+                """)
+                .setParameter("topicId", topicId)
+                .setParameter("bankStatuses", bankStatuses)
+                .setParameter("topicStatuses", topicStatuses)
+                .getSingleResult();
+            return true;
+        } catch (NoResultException e) {
+            return false;
+        }
+    }
+
+    private boolean existsSystemTopicWithBankStatus(UUID topicId, String... bankStatuses) {
+        try {
+            em.createQuery("""
+                SELECT 1 FROM QuestionTopicJpaEntity qt
+                JOIN QuestionBankJpaEntity qb ON qt.questionBankId = qb.id
+                WHERE qt.id = :topicId
+                  AND qt.status <> 'ARCHIVED'
+                  AND qb.ownerType = 'SYSTEM'
+                  AND qb.status IN :bankStatuses
+                """)
+                .setParameter("topicId", topicId)
+                .setParameter("bankStatuses", List.of(bankStatuses))
+                .getSingleResult();
+            return true;
+        } catch (NoResultException e) {
+            return false;
+        }
+    }
+
+    private boolean isSystemBankWithStatus(UUID bankId, String... statuses) {
+        try {
+            em.createQuery("""
+                SELECT 1 FROM QuestionBankJpaEntity qb
+                WHERE qb.id = :bankId
+                  AND qb.ownerType = 'SYSTEM'
+                  AND qb.status IN :statuses
+                """)
+                .setParameter("bankId", bankId)
+                .setParameter("statuses", List.of(statuses))
                 .getSingleResult();
             return true;
         } catch (NoResultException e) {

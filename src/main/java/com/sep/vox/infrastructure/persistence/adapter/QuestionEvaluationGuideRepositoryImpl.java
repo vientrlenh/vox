@@ -36,4 +36,9 @@ public class QuestionEvaluationGuideRepositoryImpl implements QuestionEvaluation
     public void deleteByQuestionId(UUID questionId) {
         springDataQuestionEvaluationGuideRepository.deleteByQuestionId(questionId);
     }
+
+    @Override
+    public void flush() {
+        springDataQuestionEvaluationGuideRepository.flush();
+    }
 }

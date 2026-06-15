@@ -1,6 +1,7 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
 import java.util.List;
+import java.util.UUID;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -12,6 +13,7 @@ public record UpdateQuestionAssetsRequest(
     List<AssetItem> assets
 ) {
     public record AssetItem(
+        UUID id,
         String title,
         Integer durationSeconds,
         String altText,

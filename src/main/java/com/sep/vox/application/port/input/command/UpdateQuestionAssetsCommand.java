@@ -8,6 +8,7 @@ public record UpdateQuestionAssetsCommand(
     List<AssetItem> assets
 ) {
     public record AssetItem(
+        UUID id,
         String title,
         Integer durationSeconds,
         String altText,

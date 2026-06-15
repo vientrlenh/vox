@@ -46,7 +46,17 @@ public class QuestionAssetRepositoryImpl implements QuestionAssetRepository {
     }
 
     @Override
+    public void deleteById(UUID id) {
+        springDataQuestionAssetRepository.deleteById(id);
+    }
+
+    @Override
     public void deleteByQuestionId(UUID questionId) {
         springDataQuestionAssetRepository.deleteByQuestionId(questionId);
+    }
+
+    @Override
+    public void flush() {
+        springDataQuestionAssetRepository.flush();
     }
 }

@@ -1,8 +1,6 @@
 package com.sep.vox.application.port.input.usecase.question;
 
 import java.time.OffsetDateTime;
-import java.util.UUID;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,22 +45,15 @@ public class UpdateQuestionEvaluationGuideUseCase implements IUseCase<UpdateQues
         var question = questionRepository.findById(input.questionId())
             .orElseThrow(() -> new NotFoundException("Khong tim thay cau hoi"));
 
-        if (questionEvaluationGuideRepository.findByQuestionId(input.questionId()).isEmpty()) {
-            throw new NotFoundException("Cau hoi chua co huong dan danh gia de cap nhat");
-        }
+        var guide = questionEvaluationGuideRepository.findByQuestionId(input.questionId())
+            .orElseThrow(() -> new NotFoundException("Cau hoi chua co huong dan danh gia de cap nhat"));
 
-        questionEvaluationGuideRepository.deleteByQuestionId(input.questionId());
-
-        var guide = new QuestionEvaluationGuide(
-            UUID.randomUUID(),
-            input.questionId(),
-            input.expectedContent(),
-            input.keyPoints(),
-            input.acceptableResponses(),
-            input.offTopicExamples(),
-            input.scoringHints(),
-            input.commonMistakes()
-        );
+        guide.setExpectedContent(input.expectedContent());
+        guide.setKeyPoints(input.keyPoints());
+        guide.setAcceptableResponses(input.acceptableResponses());
+        guide.setOffTopicExamples(input.offTopicExamples());
+        guide.setScoringHints(input.scoringHints());
+        guide.setCommonMistakes(input.commonMistakes());
         questionEvaluationGuideRepository.save(guide);
 
         question.setUpdatedAt(OffsetDateTime.now());

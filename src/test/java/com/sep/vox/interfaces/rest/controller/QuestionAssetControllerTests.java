@@ -27,8 +27,9 @@ class QuestionAssetControllerTests {
         var useCase = mock(CreateQuestionAssetsUseCase.class);
         var controller = controller(useCase, mock(DeleteQuestionAssetsUseCase.class), mock(UpdateQuestionAssetsUseCase.class));
         var questionId = UUID.randomUUID();
-        var request = request();
-        var command = command(questionId);
+        var assetId = UUID.randomUUID();
+        var request = request(assetId);
+        var command = command(questionId, assetId);
         var expected = new UpdateQuestionResponse(questionId);
         when(useCase.execute(command)).thenReturn(expected);
 
@@ -45,8 +46,9 @@ class QuestionAssetControllerTests {
         var useCase = mock(UpdateQuestionAssetsUseCase.class);
         var controller = controller(mock(CreateQuestionAssetsUseCase.class), mock(DeleteQuestionAssetsUseCase.class), useCase);
         var questionId = UUID.randomUUID();
-        var request = request();
-        var command = command(questionId);
+        var assetId = UUID.randomUUID();
+        var request = request(assetId);
+        var command = command(questionId, assetId);
         var expected = new UpdateQuestionResponse(questionId);
         when(useCase.execute(command)).thenReturn(expected);
 
@@ -93,15 +95,15 @@ class QuestionAssetControllerTests {
         return new QuestionAssetController(createUseCase, deleteUseCase, updateUseCase);
     }
 
-    private UpdateQuestionAssetsRequest request() {
+    private UpdateQuestionAssetsRequest request(UUID assetId) {
         return new UpdateQuestionAssetsRequest(List.of(
-            new UpdateQuestionAssetsRequest.AssetItem("Image", null, "Alt", "IMAGE", "https://vox.local/image.jpg", null, "desc", 1)
+            new UpdateQuestionAssetsRequest.AssetItem(assetId, "Image", null, "Alt", "IMAGE", "https://vox.local/image.jpg", null, "desc", 1)
         ));
     }
 
-    private UpdateQuestionAssetsCommand command(UUID questionId) {
+    private UpdateQuestionAssetsCommand command(UUID questionId, UUID assetId) {
         return new UpdateQuestionAssetsCommand(questionId, List.of(
-            new UpdateQuestionAssetsCommand.AssetItem("Image", null, "Alt", "IMAGE", "https://vox.local/image.jpg", null, "desc", 1)
+            new UpdateQuestionAssetsCommand.AssetItem(assetId, "Image", null, "Alt", "IMAGE", "https://vox.local/image.jpg", null, "desc", 1)
         ));
     }
 }

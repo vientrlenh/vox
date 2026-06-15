@@ -52,7 +52,7 @@ public class JpaQuestionReadQueryRepository implements QuestionReadQueryReposito
                         ))
                     ))
                     OR (:role = 'SCHOOL_ADMIN' AND (
-                        (qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId AND qt.status <> 'ARCHIVED' AND q.status <> 'ARCHIVED')
+                        (qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId AND qt.status <> 'ARCHIVED' AND q.status <> 'ARCHIVED' AND q.visibility <> 'AUTHOR_ONLY')
                         OR (qb.ownerType = 'SYSTEM' AND qb.status = 'PUBLISHED' AND qt.status = 'PUBLISHED' AND q.status = 'PUBLISHED' AND q.visibility = 'BANK_VISIBLE')
                     ))
                   )
@@ -141,7 +141,7 @@ public class JpaQuestionReadQueryRepository implements QuestionReadQueryReposito
             WHERE qb.status <> 'ARCHIVED'
               AND qt.status <> 'ARCHIVED'
               AND (
-                (qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId AND q.status <> 'ARCHIVED')
+                (qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId AND q.status <> 'ARCHIVED' AND q.visibility <> 'AUTHOR_ONLY')
                 OR (qb.ownerType = 'SYSTEM' AND qb.status = 'PUBLISHED' AND qt.status = 'PUBLISHED' AND q.status = 'PUBLISHED' AND q.visibility = 'BANK_VISIBLE')
               )
             """);

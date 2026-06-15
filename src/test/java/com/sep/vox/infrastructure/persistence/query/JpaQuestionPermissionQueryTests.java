@@ -113,7 +113,7 @@ class JpaQuestionPermissionQueryTests {
     }
 
     @Test
-    void canEditContent_should_reject_teacher_owner_for_classroom_assessment_scope() {
+    void canEditContent_should_allow_teacher_owner_for_classroom_assessment_scope_when_status_is_editable() {
         var teacher = persistUser("teacher-owner-2@example.com", "0900000002", "TEACHER", schoolId);
         var question = persistQuestion(teacher.getId(), schoolId, QuestionBankOwnerType.SCHOOL,
             QuestionBankStatus.DRAFT, QuestionTopicStatus.DRAFT, QuestionScope.CLASSROOM_ASSESSMENT,
@@ -122,7 +122,7 @@ class JpaQuestionPermissionQueryTests {
 
         var permitted = query.canEditContent(question.getId());
 
-        assertThat(permitted).isFalse();
+        assertThat(permitted).isTrue();
     }
 
     @Test
@@ -162,6 +162,19 @@ class JpaQuestionPermissionQueryTests {
         var permitted = query.canEditContent(question.getId());
 
         assertThat(permitted).isTrue();
+    }
+
+    @Test
+    void canEditContent_should_reject_school_admin_for_same_school_classroom_assessment_question_when_status_is_editable() {
+        var schoolAdmin = persistUser("school-admin-edit-3@example.com", "0900000106", "SCHOOL_ADMIN", schoolId);
+        var question = persistQuestion(UUID.randomUUID(), schoolId, QuestionBankOwnerType.SCHOOL,
+            QuestionBankStatus.DRAFT, QuestionTopicStatus.DRAFT, QuestionScope.CLASSROOM_ASSESSMENT,
+            QuestionStatus.DRAFT, QuestionVisibility.BANK_VISIBLE, false);
+        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(schoolAdmin.getId());
+
+        var permitted = query.canEditContent(question.getId());
+
+        assertThat(permitted).isFalse();
     }
 
     @Test
@@ -205,16 +218,29 @@ class JpaQuestionPermissionQueryTests {
     }
 
     @Test
-    void canEditContent_should_allow_system_admin_even_when_scope_is_not_question_bank() {
+    void canEditContent_should_allow_system_admin_for_system_question() {
         var systemAdmin = persistUser("system-admin-edit@example.com", "0900000105", "SYSTEM_ADMIN", schoolId);
-        var question = persistQuestion(UUID.randomUUID(), schoolId, QuestionBankOwnerType.SCHOOL,
-            QuestionBankStatus.PUBLISHED, QuestionTopicStatus.PUBLISHED, QuestionScope.CENTRAL_EXAM_PAPER,
-            QuestionStatus.PUBLISHED, QuestionVisibility.EXAM_PAPER_ONLY, true);
+        var question = persistQuestion(UUID.randomUUID(), schoolId, QuestionBankOwnerType.SYSTEM,
+            QuestionBankStatus.DRAFT, QuestionTopicStatus.DRAFT, QuestionScope.CENTRAL_EXAM_PAPER,
+            QuestionStatus.REVISION_REQUESTED, QuestionVisibility.EXAM_PAPER_ONLY, false);
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(systemAdmin.getId());
 
         var permitted = query.canEditContent(question.getId());
 
         assertThat(permitted).isTrue();
+    }
+
+    @Test
+    void canEditContent_should_reject_system_admin_for_school_question() {
+        var systemAdmin = persistUser("system-admin-edit-2@example.com", "0900000120", "SYSTEM_ADMIN", schoolId);
+        var question = persistQuestion(UUID.randomUUID(), schoolId, QuestionBankOwnerType.SCHOOL,
+            QuestionBankStatus.DRAFT, QuestionTopicStatus.DRAFT, QuestionScope.QUESTION_BANK,
+            QuestionStatus.DRAFT, QuestionVisibility.BANK_VISIBLE, false);
+        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(systemAdmin.getId());
+
+        var permitted = query.canEditContent(question.getId());
+
+        assertThat(permitted).isFalse();
     }
 
     @Test
@@ -392,6 +418,19 @@ class JpaQuestionPermissionQueryTests {
     }
 
     @Test
+    void canReview_should_allow_teacher_owner_to_restore_archived_own_question() {
+        var teacher = persistUser("teacher-owner-13@example.com", "0900000020", "TEACHER", schoolId);
+        var question = persistQuestion(teacher.getId(), schoolId, QuestionBankOwnerType.SCHOOL,
+            QuestionBankStatus.PUBLISHED, QuestionTopicStatus.PUBLISHED, QuestionScope.QUESTION_BANK,
+            QuestionStatus.ARCHIVED, QuestionVisibility.AUTHOR_ONLY, false);
+        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(teacher.getId());
+
+        var permitted = query.canReview(question.getId(), QuestionStatus.DRAFT);
+
+        assertThat(permitted).isTrue();
+    }
+
+    @Test
     void canReview_should_reject_teacher_reviewer_for_restore_action() {
         var creator = persistUser("teacher-owner-12@example.com", "0900000018", "TEACHER", schoolId);
         var reviewer = persistUser("teacher-reviewer-7@example.com", "0900000019", "TEACHER", schoolId);
@@ -419,11 +458,24 @@ class JpaQuestionPermissionQueryTests {
     }
 
     @Test
-    void canReview_should_allow_system_admin_for_any_review_action() {
+    void canReview_should_reject_system_admin_for_school_question() {
         var systemAdmin = persistUser("system-admin-review@example.com", "0900000110", "SYSTEM_ADMIN", schoolId);
         var question = persistQuestion(UUID.randomUUID(), schoolId, QuestionBankOwnerType.SCHOOL,
             QuestionBankStatus.DRAFT, QuestionTopicStatus.DRAFT, QuestionScope.CLASSROOM_ASSESSMENT,
             QuestionStatus.DRAFT, QuestionVisibility.AUTHOR_ONLY, true);
+        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(systemAdmin.getId());
+
+        var permitted = query.canReview(question.getId(), QuestionStatus.ARCHIVED);
+
+        assertThat(permitted).isFalse();
+    }
+
+    @Test
+    void canReview_should_allow_system_admin_for_system_question() {
+        var systemAdmin = persistUser("system-admin-review-2@example.com", "0900000121", "SYSTEM_ADMIN", schoolId);
+        var question = persistQuestion(UUID.randomUUID(), schoolId, QuestionBankOwnerType.SYSTEM,
+            QuestionBankStatus.DRAFT, QuestionTopicStatus.DRAFT, QuestionScope.CENTRAL_EXAM_PAPER,
+            QuestionStatus.DRAFT, QuestionVisibility.AUTHOR_ONLY, false);
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(systemAdmin.getId());
 
         var permitted = query.canReview(question.getId(), QuestionStatus.ARCHIVED);

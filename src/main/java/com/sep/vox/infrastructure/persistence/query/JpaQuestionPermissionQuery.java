@@ -72,7 +72,7 @@ public class JpaQuestionPermissionQuery implements QuestionPermissionQuery {
         var user = resolveCurrentUser();
 
         if ("SYSTEM_ADMIN".equals(user.role())) {
-            return true;
+            return isSystemQuestionEditable(questionId);
         }
 
         try {
@@ -84,10 +84,9 @@ public class JpaQuestionPermissionQuery implements QuestionPermissionQuery {
                   AND q.locked = false
                   AND qb.status <> 'ARCHIVED' AND qt.status <> 'ARCHIVED'
                   AND q.status IN ('DRAFT', 'REVISION_REQUESTED', 'REJECTED')
-                  AND q.scope = 'QUESTION_BANK'
                   AND (
                     (:role = 'TEACHER' AND q.createdBy = :userId)
-                    OR (:role = 'SCHOOL_ADMIN' AND qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId)
+                    OR (:role = 'SCHOOL_ADMIN' AND q.scope = 'QUESTION_BANK' AND qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId)
                   )
                 """, QuestionJpaEntity.class)
                 .setParameter("questionId", questionId)
@@ -106,7 +105,7 @@ public class JpaQuestionPermissionQuery implements QuestionPermissionQuery {
         var user = resolveCurrentUser();
 
         if ("SYSTEM_ADMIN".equals(user.role())) {
-            return true;
+            return canSystemAdminReview(questionId, targetStatus);
         }
 
         return switch (targetStatus) {
@@ -227,6 +226,9 @@ public class JpaQuestionPermissionQuery implements QuestionPermissionQuery {
     }
 
     private boolean canRestore(UUID questionId, ResolvedUser user) {
+        if ("TEACHER".equals(user.role())) {
+            return isTeacherOwnerArchivedQuestion(questionId, user.userId());
+        }
         if ("SCHOOL_ADMIN".equals(user.role())) {
             return isSchoolOwner(questionId, user.schoolId());
         }
@@ -267,6 +269,74 @@ public class JpaQuestionPermissionQuery implements QuestionPermissionQuery {
                 .setParameter("questionId", questionId)
                 .setParameter("userId", userId)
                 .setParameter("schoolId", schoolId)
+                .getSingleResult();
+            return true;
+        } catch (NoResultException e) {
+            return false;
+        }
+    }
+
+    private boolean isTeacherOwnerArchivedQuestion(UUID questionId, UUID userId) {
+        try {
+            em.createQuery("""
+                SELECT 1 FROM QuestionJpaEntity q
+                JOIN QuestionTopicJpaEntity qt ON q.questionTopicId = qt.id
+                JOIN QuestionBankJpaEntity qb ON qt.questionBankId = qb.id
+                WHERE q.id = :questionId
+                  AND q.createdBy = :userId
+                  AND q.status = 'ARCHIVED'
+                  AND qb.status <> 'ARCHIVED' AND qt.status <> 'ARCHIVED'
+                """)
+                .setParameter("questionId", questionId)
+                .setParameter("userId", userId)
+                .getSingleResult();
+            return true;
+        } catch (NoResultException e) {
+            return false;
+        }
+    }
+
+    private boolean isSystemQuestionEditable(UUID questionId) {
+        return systemQuestionMatches(questionId, List.of("DRAFT", "REVISION_REQUESTED", "REJECTED"), false);
+    }
+
+    private boolean canSystemAdminReview(UUID questionId, QuestionStatus targetStatus) {
+        return switch (targetStatus) {
+            case SUBMITTED_FOR_REVIEW -> systemQuestionMatches(
+                questionId,
+                List.of("DRAFT", "REVISION_REQUESTED", "REJECTED"),
+                false
+            );
+            case REVISION_REQUESTED, APPROVED, REJECTED -> systemQuestionMatches(
+                questionId,
+                List.of("SUBMITTED_FOR_REVIEW"),
+                false
+            );
+            case PUBLISHED -> systemQuestionMatches(questionId, List.of("APPROVED"), false);
+            case ARCHIVED -> systemQuestionMatches(
+                questionId,
+                List.of("DRAFT", "REVISION_REQUESTED", "REJECTED", "APPROVED", "PUBLISHED", "SUBMITTED_FOR_REVIEW"),
+                true
+            );
+            case DRAFT -> systemQuestionMatches(questionId, List.of("ARCHIVED"), true);
+        };
+    }
+
+    private boolean systemQuestionMatches(UUID questionId, List<String> statuses, boolean ignoreLocked) {
+        try {
+            em.createQuery("""
+                SELECT 1 FROM QuestionJpaEntity q
+                JOIN QuestionTopicJpaEntity qt ON q.questionTopicId = qt.id
+                JOIN QuestionBankJpaEntity qb ON qt.questionBankId = qb.id
+                WHERE q.id = :questionId
+                  AND qb.ownerType = 'SYSTEM'
+                  AND qb.status <> 'ARCHIVED' AND qt.status <> 'ARCHIVED'
+                  AND q.status IN :statuses
+                  AND (:ignoreLocked = true OR q.locked = false)
+                """)
+                .setParameter("questionId", questionId)
+                .setParameter("statuses", statuses)
+                .setParameter("ignoreLocked", ignoreLocked)
                 .getSingleResult();
             return true;
         } catch (NoResultException e) {

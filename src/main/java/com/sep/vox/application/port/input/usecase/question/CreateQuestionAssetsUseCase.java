@@ -2,8 +2,6 @@ package com.sep.vox.application.port.input.usecase.question;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.UUID;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -58,7 +56,6 @@ public class CreateQuestionAssetsUseCase implements IUseCase<UpdateQuestionAsset
         var newAssets = new ArrayList<QuestionAsset>();
         for (var item : input.assets()) {
             var asset = new QuestionAsset(
-                UUID.randomUUID(),
                 input.questionId(),
                 item.title(),
                 item.durationSeconds(),

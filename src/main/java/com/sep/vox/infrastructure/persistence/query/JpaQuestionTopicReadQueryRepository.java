@@ -154,7 +154,7 @@ public class JpaQuestionTopicReadQueryRepository implements QuestionTopicReadQue
         StringBuilder where = new StringBuilder("""
             WHERE qb.id = :bankId AND qt.id = :topicId
               AND (
-                (qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId AND qt.status <> 'ARCHIVED' AND q.status <> 'ARCHIVED')
+                (qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId AND qt.status <> 'ARCHIVED' AND q.status <> 'ARCHIVED' AND q.visibility <> 'AUTHOR_ONLY')
                 OR (qb.ownerType = 'SYSTEM' AND qb.status = 'PUBLISHED' AND qt.status = 'PUBLISHED' AND q.status = 'PUBLISHED' AND q.visibility = 'BANK_VISIBLE')
               )
             """);

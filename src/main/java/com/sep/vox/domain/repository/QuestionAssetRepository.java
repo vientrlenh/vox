@@ -9,5 +9,7 @@ public interface QuestionAssetRepository {
     QuestionAsset save(QuestionAsset questionAsset);
     List<QuestionAsset> saveAll(List<QuestionAsset> questionAssets);
     List<QuestionAsset> findByQuestionId(UUID questionId);
+    void deleteById(UUID id);
     void deleteByQuestionId(UUID questionId);
+    void flush();
 }

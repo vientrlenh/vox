@@ -46,19 +46,34 @@ class UpdateQuestionEvaluationGuideUseCaseTests {
     }
 
     @Test
-    void update_should_replace_existing_guide() {
+    void update_should_modify_existing_guide() {
         var questionId = UUID.randomUUID();
+        var existingGuide = new QuestionEvaluationGuide(
+            UUID.randomUUID(),
+            questionId,
+            "Old expected",
+            "Old key",
+            "Old acceptable",
+            "Old off topic",
+            "Old hints",
+            "Old mistakes"
+        );
         when(permissionQuery.canEditContent(questionId)).thenReturn(true);
         when(questionRepository.findById(questionId)).thenReturn(Optional.of(question(questionId, QuestionStatus.DRAFT)));
-        when(guideRepository.findByQuestionId(questionId)).thenReturn(Optional.of(new QuestionEvaluationGuide()));
+        when(guideRepository.findByQuestionId(questionId)).thenReturn(Optional.of(existingGuide));
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(UUID.randomUUID());
         when(questionRepository.save(any(Question.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         var response = useCase.execute(command(questionId));
 
         assertThat(response.questionId()).isEqualTo(questionId);
-        verify(guideRepository).deleteByQuestionId(questionId);
-        verify(guideRepository).save(any(QuestionEvaluationGuide.class));
+        assertThat(existingGuide.getExpectedContent()).isEqualTo("Expected");
+        assertThat(existingGuide.getKeyPoints()).isEqualTo("Key");
+        assertThat(existingGuide.getAcceptableResponses()).isEqualTo("Accept");
+        assertThat(existingGuide.getOffTopicExamples()).isEqualTo("Off");
+        assertThat(existingGuide.getScoringHints()).isEqualTo("Hints");
+        assertThat(existingGuide.getCommonMistakes()).isEqualTo("Mistakes");
+        verify(guideRepository).save(existingGuide);
     }
 
     @Test

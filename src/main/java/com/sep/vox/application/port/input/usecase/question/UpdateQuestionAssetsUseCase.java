@@ -2,11 +2,14 @@ package com.sep.vox.application.port.input.usecase.question;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.UUID;
+import java.util.HashSet;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.mapper.question.UpdateQuestionResponseMapper;
@@ -49,17 +52,68 @@ public class UpdateQuestionAssetsUseCase implements IUseCase<UpdateQuestionAsset
         var question = questionRepository.findById(input.questionId())
             .orElseThrow(() -> new NotFoundException("Khong tim thay cau hoi"));
 
-        if (questionAssetRepository.findByQuestionId(input.questionId()).isEmpty()) {
+        var existingAssets = questionAssetRepository.findByQuestionId(input.questionId());
+        if (existingAssets.isEmpty()) {
             throw new NotFoundException("Cau hoi chua co tai san de cap nhat");
         }
 
-        questionAssetRepository.deleteByQuestionId(input.questionId());
+        ensureUniqueOrders(input);
+
+        var existingById = existingAssets.stream()
+            .filter(asset -> asset.getId() != null)
+            .collect(Collectors.toMap(QuestionAsset::getId, Function.identity()));
+        var incomingIds = input.assets().stream()
+            .map(UpdateQuestionAssetsCommand.AssetItem::id)
+            .filter(id -> id != null)
+            .toList();
+        if (incomingIds.size() != new HashSet<>(incomingIds).size()) {
+            throw new DuplicatedException("Danh sach tai san co id bi trung lap");
+        }
+        var unknownIds = incomingIds.stream()
+            .filter(id -> !existingById.containsKey(id))
+            .toList();
+        if (!unknownIds.isEmpty()) {
+            throw new NotFoundException("Khong tim thay tai san cau hoi de cap nhat");
+        }
+
+        var incomingIdSet = new HashSet<>(incomingIds);
+        existingAssets.stream()
+            .filter(asset -> asset.getId() != null && !incomingIdSet.contains(asset.getId()))
+            .forEach(asset -> questionAssetRepository.deleteById(asset.getId()));
+
+        var tempOrderBase = Math.max(existingAssets.size(), input.assets().size()) + 10_000;
+        var retainedAssets = new ArrayList<QuestionAsset>();
+        for (int index = 0; index < input.assets().size(); index++) {
+            var item = input.assets().get(index);
+            if (item.id() == null) {
+                continue;
+            }
+            var asset = existingById.get(item.id());
+            asset.setOrder(tempOrderBase + index);
+            retainedAssets.add(asset);
+        }
+        if (!retainedAssets.isEmpty()) {
+            questionAssetRepository.saveAll(retainedAssets);
+        }
+        questionAssetRepository.flush();
 
         var now = OffsetDateTime.now();
-        var newAssets = new ArrayList<QuestionAsset>();
+        var assetsToSave = new ArrayList<QuestionAsset>();
         for (var item : input.assets()) {
-            var asset = new QuestionAsset(
-                UUID.randomUUID(),
+            if (item.id() != null) {
+                var asset = existingById.get(item.id());
+                asset.setTitle(item.title());
+                asset.setDurationSeconds(item.durationSeconds());
+                asset.setAltText(item.altText());
+                asset.setType(QuestionAssetType.valueOf(item.type()));
+                asset.setUrl(item.url());
+                asset.setTranscript(item.transcript());
+                asset.setDescription(item.description());
+                asset.setOrder(item.order());
+                assetsToSave.add(asset);
+                continue;
+            }
+            assetsToSave.add(new QuestionAsset(
                 input.questionId(),
                 item.title(),
                 item.durationSeconds(),
@@ -69,15 +123,23 @@ public class UpdateQuestionAssetsUseCase implements IUseCase<UpdateQuestionAsset
                 item.transcript(),
                 item.description(),
                 item.order()
-            );
-            newAssets.add(asset);
+            ));
         }
-        questionAssetRepository.saveAll(newAssets);
+        questionAssetRepository.saveAll(assetsToSave);
 
         question.setUpdatedAt(now);
         question.setUpdatedBy(userContextPort.getCurrentAuthenticatedUserId());
         questionRepository.save(question);
 
         return UpdateQuestionResponseMapper.toResponse(question.getId());
+    }
+
+    private void ensureUniqueOrders(UpdateQuestionAssetsCommand input) {
+        var orders = input.assets().stream()
+            .map(UpdateQuestionAssetsCommand.AssetItem::order)
+            .toList();
+        if (orders.size() != new HashSet<>(orders).size()) {
+            throw new DuplicatedException("Danh sach tai san co thu tu bi trung lap");
+        }
     }
 }

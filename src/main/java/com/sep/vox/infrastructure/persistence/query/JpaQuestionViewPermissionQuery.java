@@ -105,7 +105,7 @@ public class JpaQuestionViewPermissionQuery implements QuestionViewPermissionQue
 
     private boolean canViewQuestionBank(QuestionJpaEntity q, ResolvedUser user) {
         if ("SYSTEM_ADMIN".equals(user.role())) {
-            return q.getStatus() != null && !"ARCHIVED".equals(q.getStatus());
+            return true;
         }
         if ("SCHOOL_ADMIN".equals(user.role())) {
             return canSchoolAdminViewQuestion(q.getId(), user.schoolId());
@@ -125,7 +125,8 @@ public class JpaQuestionViewPermissionQuery implements QuestionViewPermissionQue
                 WHERE q.id = :questionId
                   AND (
                     (qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId
-                        AND qb.status <> 'ARCHIVED' AND qt.status <> 'ARCHIVED' AND q.status <> 'ARCHIVED')
+                        AND qb.status <> 'ARCHIVED' AND qt.status <> 'ARCHIVED'
+                        AND q.visibility <> 'AUTHOR_ONLY')
                     OR (qb.ownerType = 'SYSTEM'
                         AND qb.status = 'PUBLISHED' AND qt.status = 'PUBLISHED'
                         AND q.status = 'PUBLISHED' AND q.visibility = 'BANK_VISIBLE')
@@ -141,7 +142,7 @@ public class JpaQuestionViewPermissionQuery implements QuestionViewPermissionQue
     }
 
     private boolean canTeacherViewQuestionBank(UUID questionId, UUID userId, UUID schoolId) {
-        if (isTeacherOwnNonArchived(questionId, userId)) {
+        if (isTeacherOwnQuestion(questionId, userId)) {
             return true;
         }
         if (isPublishedBankVisible(questionId, schoolId)) {
@@ -155,10 +156,10 @@ public class JpaQuestionViewPermissionQuery implements QuestionViewPermissionQue
 
     private boolean canViewClassroomAssessment(QuestionJpaEntity q, ResolvedUser user) {
         if ("SYSTEM_ADMIN".equals(user.role())) {
-            return !"ARCHIVED".equals(q.getStatus());
+            return true;
         }
         if ("SCHOOL_ADMIN".equals(user.role())) {
-            return isSameSchool(q.getId(), user.schoolId())
+            return isSameSchoolAndVisibleToSchoolAdmin(q.getId(), user.schoolId())
                 || isPublishedBankVisible(q.getId(), user.schoolId());
         }
         if ("TEACHER".equals(user.role())) {
@@ -172,11 +173,10 @@ public class JpaQuestionViewPermissionQuery implements QuestionViewPermissionQue
 
     private boolean canViewCentralExamDraft(QuestionJpaEntity q, ResolvedUser user) {
         if ("SYSTEM_ADMIN".equals(user.role())) {
-            return !"ARCHIVED".equals(q.getStatus());
+            return true;
         }
         if ("SCHOOL_ADMIN".equals(user.role())) {
-            return (isSameSchool(q.getId(), user.schoolId())
-                && !"ARCHIVED".equals(q.getStatus()))
+            return isSameSchoolAndVisibleToSchoolAdmin(q.getId(), user.schoolId())
                 || isPublishedBankVisible(q.getId(), user.schoolId());
         }
         if ("TEACHER".equals(user.role())) {
@@ -202,7 +202,7 @@ public class JpaQuestionViewPermissionQuery implements QuestionViewPermissionQue
             return true;
         }
         if ("SCHOOL_ADMIN".equals(user.role())) {
-            return isSameSchool(q.getId(), user.schoolId())
+            return isSameSchoolAndVisibleToSchoolAdmin(q.getId(), user.schoolId())
                 || isPublishedBankVisible(q.getId(), user.schoolId());
         }
         if ("TEACHER".equals(user.role())) {
@@ -214,7 +214,7 @@ public class JpaQuestionViewPermissionQuery implements QuestionViewPermissionQue
         return false;
     }
 
-    private boolean isTeacherOwnNonArchived(UUID questionId, UUID userId) {
+    private boolean isTeacherOwnQuestion(UUID questionId, UUID userId) {
         try {
             em.createQuery("""
                 SELECT 1 FROM QuestionJpaEntity q
@@ -223,7 +223,6 @@ public class JpaQuestionViewPermissionQuery implements QuestionViewPermissionQue
                 WHERE q.id = :questionId
                   AND q.createdBy = :userId
                   AND qb.status <> 'ARCHIVED' AND qt.status <> 'ARCHIVED'
-                  AND q.status <> 'ARCHIVED'
                 """)
                 .setParameter("questionId", questionId)
                 .setParameter("userId", userId)
@@ -287,6 +286,25 @@ public class JpaQuestionViewPermissionQuery implements QuestionViewPermissionQue
                 JOIN QuestionBankJpaEntity qb ON qt.questionBankId = qb.id
                 WHERE q.id = :questionId
                   AND qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId
+                """)
+                .setParameter("questionId", questionId)
+                .setParameter("schoolId", schoolId)
+                .getSingleResult();
+            return true;
+        } catch (NoResultException e) {
+            return false;
+        }
+    }
+
+    private boolean isSameSchoolAndVisibleToSchoolAdmin(UUID questionId, UUID schoolId) {
+        try {
+            em.createQuery("""
+                SELECT 1 FROM QuestionJpaEntity q
+                JOIN QuestionTopicJpaEntity qt ON q.questionTopicId = qt.id
+                JOIN QuestionBankJpaEntity qb ON qt.questionBankId = qb.id
+                WHERE q.id = :questionId
+                  AND qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId
+                  AND q.visibility <> 'AUTHOR_ONLY'
                 """)
                 .setParameter("questionId", questionId)
                 .setParameter("schoolId", schoolId)

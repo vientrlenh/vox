@@ -71,7 +71,7 @@ public class JpaQuestionBankPermissionQuery implements QuestionBankPermissionQue
         var user = resolveCurrentUser();
 
         if ("SYSTEM_ADMIN".equals(user.role())) {
-            return existsBankWithStatus(bankId, "DRAFT", "PUBLISHED");
+            return isSystemBankWithStatus(bankId, "DRAFT", "PUBLISHED");
         }
         if ("SCHOOL_ADMIN".equals(user.role())) {
             return isSchoolOwnerWithStatus(bankId, user.schoolId(), "DRAFT", "PUBLISHED");
@@ -84,7 +84,7 @@ public class JpaQuestionBankPermissionQuery implements QuestionBankPermissionQue
         var user = resolveCurrentUser();
 
         if ("SYSTEM_ADMIN".equals(user.role())) {
-            return existsBankWithStatus(bankId, "DRAFT");
+            return isSystemBankWithStatus(bankId, "DRAFT");
         }
         if ("SCHOOL_ADMIN".equals(user.role())) {
             return isSchoolOwnerWithStatus(bankId, user.schoolId(), "DRAFT");
@@ -97,7 +97,7 @@ public class JpaQuestionBankPermissionQuery implements QuestionBankPermissionQue
         var user = resolveCurrentUser();
 
         if ("SYSTEM_ADMIN".equals(user.role())) {
-            return existsBankWithStatus(bankId, "DRAFT", "PUBLISHED");
+            return isSystemBankWithStatus(bankId, "DRAFT", "PUBLISHED");
         }
         if ("SCHOOL_ADMIN".equals(user.role())) {
             return isSchoolOwnerWithStatus(bankId, user.schoolId(), "DRAFT", "PUBLISHED");
@@ -110,7 +110,7 @@ public class JpaQuestionBankPermissionQuery implements QuestionBankPermissionQue
         var user = resolveCurrentUser();
 
         if ("SYSTEM_ADMIN".equals(user.role())) {
-            return existsBankWithStatus(bankId, "ARCHIVED");
+            return isSystemBankWithStatus(bankId, "ARCHIVED");
         }
         if ("SCHOOL_ADMIN".equals(user.role())) {
             return isSchoolOwnerWithStatus(bankId, user.schoolId(), "ARCHIVED");
@@ -124,6 +124,24 @@ public class JpaQuestionBankPermissionQuery implements QuestionBankPermissionQue
             em.createQuery("""
                 SELECT 1 FROM QuestionBankJpaEntity qb
                 WHERE qb.id = :bankId
+                  AND qb.status IN :statuses
+                """)
+                .setParameter("bankId", bankId)
+                .setParameter("statuses", statusList)
+                .getSingleResult();
+            return true;
+        } catch (NoResultException e) {
+            return false;
+        }
+    }
+
+    private boolean isSystemBankWithStatus(UUID bankId, String... statuses) {
+        try {
+            var statusList = List.of(statuses);
+            em.createQuery("""
+                SELECT 1 FROM QuestionBankJpaEntity qb
+                WHERE qb.id = :bankId
+                  AND qb.ownerType = 'SYSTEM'
                   AND qb.status IN :statuses
                 """)
                 .setParameter("bankId", bankId)

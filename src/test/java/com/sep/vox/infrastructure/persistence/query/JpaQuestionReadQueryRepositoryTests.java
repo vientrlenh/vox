@@ -134,9 +134,11 @@ class JpaQuestionReadQueryRepositoryTests {
     }
 
     @Test
-    void findSchoolVisibleQuestions_should_return_school_questions_and_system_published_only() {
+    void findSchoolVisibleQuestions_should_exclude_author_only_and_return_system_published_only() {
         persistQuestion(otherTeacherId, schoolId, QuestionBankOwnerType.SCHOOL, QuestionBankStatus.DRAFT, QuestionTopicStatus.DRAFT,
             "SCHOOL_DRAFT", QuestionScope.QUESTION_BANK, QuestionStatus.DRAFT, QuestionVisibility.AUTHOR_ONLY);
+        persistQuestion(otherTeacherId, schoolId, QuestionBankOwnerType.SCHOOL, QuestionBankStatus.DRAFT, QuestionTopicStatus.DRAFT,
+            "SCHOOL_REVIEWER_ONLY", QuestionScope.QUESTION_BANK, QuestionStatus.SUBMITTED_FOR_REVIEW, QuestionVisibility.REVIEWER_ONLY);
         persistQuestion(UUID.randomUUID(), null, QuestionBankOwnerType.SYSTEM, QuestionBankStatus.PUBLISHED, QuestionTopicStatus.PUBLISHED,
             "SYSTEM_PUBLISHED", QuestionScope.QUESTION_BANK, QuestionStatus.PUBLISHED, QuestionVisibility.BANK_VISIBLE);
         persistQuestion(otherTeacherId, otherSchoolId, QuestionBankOwnerType.SCHOOL, QuestionBankStatus.PUBLISHED, QuestionTopicStatus.PUBLISHED,
@@ -146,7 +148,8 @@ class JpaQuestionReadQueryRepositoryTests {
 
         assertThat(result.content())
             .extracting(question -> question.code())
-            .contains("SCHOOL_DRAFT", "SYSTEM_PUBLISHED")
+            .contains("SCHOOL_REVIEWER_ONLY", "SYSTEM_PUBLISHED")
+            .doesNotContain("SCHOOL_DRAFT")
             .doesNotContain("OTHER_SCHOOL");
     }
 
@@ -243,14 +246,16 @@ class JpaQuestionReadQueryRepositoryTests {
     }
 
     @Test
-    void findSchoolTopicQuestions_should_return_same_school_questions_and_exclude_other_school() {
+    void findSchoolTopicQuestions_should_exclude_author_only_and_include_other_visible_same_school_questions() {
         var bank = persistBank(UUID.randomUUID(), schoolId, QuestionBankOwnerType.SCHOOL, QuestionBankStatus.DRAFT, "SBANK2");
         var topic = persistTopic(bank.getId(), teacherId, "SCHOOL_TOPIC", QuestionTopicStatus.DRAFT);
         persistQuestion(topic.getId(), teacherId, "SCHOOL_Q", QuestionScope.QUESTION_BANK, QuestionStatus.DRAFT, QuestionVisibility.AUTHOR_ONLY);
+        persistQuestion(topic.getId(), otherTeacherId, "SCHOOL_REVIEW_Q", QuestionScope.QUESTION_BANK, QuestionStatus.SUBMITTED_FOR_REVIEW, QuestionVisibility.REVIEWER_ONLY);
 
         var result = topicRepository.findSchoolTopicQuestions(bank.getId(), topic.getId(), schoolId, null, null, null, null, new PageRequest(1, 20));
 
-        assertThat(result.content()).extracting(question -> question.code()).containsExactly("SCHOOL_Q");
+        assertThat(result.content()).extracting(question -> question.code())
+            .containsExactly("SCHOOL_REVIEW_Q");
     }
 
     @Test
@@ -303,15 +308,14 @@ class JpaQuestionReadQueryRepositoryTests {
     }
 
     @Test
-    void findVisibleQuestion_should_return_question_for_school_admin_in_same_school() {
+    void findVisibleQuestion_should_reject_author_only_question_for_school_admin_in_same_school() {
         var bank = persistBank(UUID.randomUUID(), schoolId, QuestionBankOwnerType.SCHOOL, QuestionBankStatus.DRAFT, "VBANK2");
         var topic = persistTopic(bank.getId(), otherTeacherId, "VTOPIC2", QuestionTopicStatus.DRAFT);
         var question = persistQuestion(topic.getId(), otherTeacherId, "VQ2", QuestionScope.QUESTION_BANK, QuestionStatus.DRAFT, QuestionVisibility.AUTHOR_ONLY);
 
         var result = repository.findVisibleQuestion(question.getId(), UUID.randomUUID(), "SCHOOL_ADMIN", schoolId);
 
-        assertThat(result).isPresent();
-        assertThat(result.get().code()).isEqualTo("VQ2");
+        assertThat(result).isEmpty();
     }
 
     private Question persistQuestion(

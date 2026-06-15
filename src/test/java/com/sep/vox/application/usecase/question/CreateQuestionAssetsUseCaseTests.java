@@ -80,7 +80,7 @@ class CreateQuestionAssetsUseCaseTests {
 
     private UpdateQuestionAssetsCommand command(UUID questionId) {
         return new UpdateQuestionAssetsCommand(questionId, List.of(
-            new UpdateQuestionAssetsCommand.AssetItem("Image", null, "Alt", "IMAGE", "url", null, "desc", 1)
+            new UpdateQuestionAssetsCommand.AssetItem(null, "Image", null, "Alt", "IMAGE", "url", null, "desc", 1)
         ));
     }
 

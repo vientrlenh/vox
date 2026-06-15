@@ -140,6 +140,20 @@ class JpaQuestionViewPermissionQueryTests {
     }
 
     @Test
+    void canViewQuestionDetail_should_reject_school_admin_for_same_school_author_only_question() {
+        var schoolAdmin = persistUser("school-admin-4@example.com", "0910000022", "SCHOOL_ADMIN", schoolId);
+        var creator = persistUser("teacher-owner-17@example.com", "0910000023", "TEACHER", schoolId);
+        var question = persistQuestion(creator.getId(), schoolId, QuestionBankOwnerType.SCHOOL,
+            QuestionBankStatus.DRAFT, QuestionTopicStatus.DRAFT, QuestionScope.QUESTION_BANK,
+            QuestionStatus.DRAFT, QuestionVisibility.AUTHOR_ONLY);
+        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(schoolAdmin.getId());
+
+        var permitted = query.canViewQuestionDetail(question.getId());
+
+        assertThat(permitted).isFalse();
+    }
+
+    @Test
     void canViewQuestionDetail_should_allow_teacher_reviewer_for_submitted_reviewer_only_question() {
         var creator = persistUser("teacher-owner-9@example.com", "0910000003", "TEACHER", schoolId);
         var reviewer = persistUser("teacher-reviewer-3@example.com", "0910000004", "TEACHER", schoolId);
@@ -175,6 +189,45 @@ class JpaQuestionViewPermissionQueryTests {
             QuestionBankStatus.DRAFT, QuestionTopicStatus.DRAFT, QuestionScope.CLASSROOM_ASSESSMENT,
             QuestionStatus.DRAFT, QuestionVisibility.AUTHOR_ONLY);
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(teacher.getId());
+
+        var permitted = query.canViewQuestionDetail(question.getId());
+
+        assertThat(permitted).isTrue();
+    }
+
+    @Test
+    void canViewQuestionDetail_should_allow_teacher_owner_for_archived_own_question() {
+        var teacher = persistUser("teacher-owner-18@example.com", "0910000024", "TEACHER", schoolId);
+        var question = persistQuestion(teacher.getId(), schoolId, QuestionBankOwnerType.SCHOOL,
+            QuestionBankStatus.PUBLISHED, QuestionTopicStatus.PUBLISHED, QuestionScope.QUESTION_BANK,
+            QuestionStatus.ARCHIVED, QuestionVisibility.AUTHOR_ONLY);
+        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(teacher.getId());
+
+        var permitted = query.canViewQuestionDetail(question.getId());
+
+        assertThat(permitted).isTrue();
+    }
+
+    @Test
+    void canViewQuestionDetail_should_allow_school_admin_for_archived_same_school_question() {
+        var schoolAdmin = persistUser("school-admin-5@example.com", "0910000025", "SCHOOL_ADMIN", schoolId);
+        var question = persistQuestion(UUID.randomUUID(), schoolId, QuestionBankOwnerType.SCHOOL,
+            QuestionBankStatus.PUBLISHED, QuestionTopicStatus.PUBLISHED, QuestionScope.QUESTION_BANK,
+            QuestionStatus.ARCHIVED, QuestionVisibility.BANK_VISIBLE);
+        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(schoolAdmin.getId());
+
+        var permitted = query.canViewQuestionDetail(question.getId());
+
+        assertThat(permitted).isTrue();
+    }
+
+    @Test
+    void canViewQuestionDetail_should_allow_system_admin_for_archived_question() {
+        var systemAdmin = persistUser("system-admin-1@example.com", "0910000026", "SYSTEM_ADMIN", schoolId);
+        var question = persistQuestion(UUID.randomUUID(), schoolId, QuestionBankOwnerType.SCHOOL,
+            QuestionBankStatus.PUBLISHED, QuestionTopicStatus.PUBLISHED, QuestionScope.QUESTION_BANK,
+            QuestionStatus.ARCHIVED, QuestionVisibility.AUTHOR_ONLY);
+        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(systemAdmin.getId());
 
         var permitted = query.canViewQuestionDetail(question.getId());
 

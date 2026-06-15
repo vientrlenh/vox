@@ -1,6 +1,7 @@
 package com.sep.vox.interfaces.graphql.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -12,10 +13,13 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.dataloader.DataLoader;
 import org.junit.jupiter.api.Test;
 
+import com.sep.vox.application.port.input.command.ListSchoolUsersCommand;
 import com.sep.vox.application.port.input.command.UpdateSchoolClassCommand;
+import com.sep.vox.application.port.input.command.ViewSchoolUserCommand;
 import com.sep.vox.application.port.input.query.ViewSchoolClassDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolClassUsersQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolClassesQuery;
@@ -25,10 +29,15 @@ import com.sep.vox.application.port.input.usecase.schoolclass.UpdateSchoolClassU
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclassuser.ViewSchoolClassUsersUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassesUseCase;
+import com.sep.vox.application.port.input.usecase.schooluser.ListSchoolUsersUseCase;
+import com.sep.vox.application.port.input.usecase.schooluser.UpdateSchoolUserUseCase;
+import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUserUseCase;
 import com.sep.vox.application.response.input.schoolclass.SchoolClassResponse;
 import com.sep.vox.application.response.input.schoolclassuser.SchoolClassUserResponse;
 import com.sep.vox.application.response.input.schoolclass.UpdateSchoolClassResponse;
+import com.sep.vox.application.response.input.schooluser.SchoolUserResponse;
 import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.dto.SchoolDto;
 import com.sep.vox.domain.dto.SchoolGradeDto;
 import com.sep.vox.domain.dto.SupportedLanguageDto;
@@ -38,13 +47,47 @@ import graphql.schema.DataFetchingEnvironment;
 
 class SchoolControllerTests {
 
+    private ViewSchoolsUseCase viewSchoolsUseCase;
+    private ViewSchoolClassesUseCase viewSchoolClassesUseCase;
+    private ViewSchoolClassDetailsUseCase viewSchoolClassDetailsUseCase;
+    private UpdateSchoolClassUseCase updateSchoolClassUseCase;
+    private ListSchoolUsersUseCase listSchoolUsersUseCase;
+    private ViewSchoolUserUseCase viewSchoolUserUseCase;
+    private UpdateSchoolUserUseCase updateSchoolUserUseCase;
+    private SchoolRepository schoolRepository;
+    private SchoolController controller;
+
+    private final UUID schoolId = UUID.randomUUID();
+    private final UUID userId = UUID.randomUUID();
+
+    @BeforeEach
+    void setUp() {
+        viewSchoolsUseCase = mock(ViewSchoolsUseCase.class);
+        viewSchoolClassesUseCase = mock(ViewSchoolClassesUseCase.class);
+        viewSchoolClassDetailsUseCase = mock(ViewSchoolClassDetailsUseCase.class);
+        updateSchoolClassUseCase = mock(UpdateSchoolClassUseCase.class);
+        listSchoolUsersUseCase = mock(ListSchoolUsersUseCase.class);
+        viewSchoolUserUseCase = mock(ViewSchoolUserUseCase.class);
+        updateSchoolUserUseCase = mock(UpdateSchoolUserUseCase.class);
+        schoolRepository = mock(SchoolRepository.class);
+
+        controller = new SchoolController(
+            viewSchoolsUseCase, viewSchoolClassesUseCase,
+            viewSchoolClassDetailsUseCase, updateSchoolClassUseCase,
+            listSchoolUsersUseCase, viewSchoolUserUseCase,
+            updateSchoolUserUseCase,
+            schoolRepository,
+            mock(com.sep.vox.application.port.input.usecase.schoolclassuser.ViewSchoolClassUsersUseCase.class)
+        );
+    }
+
     @Test
     void school_classes_should_return_page_result() {
         var useCase = mock(ViewSchoolClassesUseCase.class);
         var detailsUseCase = mock(ViewSchoolClassDetailsUseCase.class);
         var classUsersUseCase = mock(ViewSchoolClassUsersUseCase.class);
         var updateUseCase = mock(UpdateSchoolClassUseCase.class);
-        var controller = new SchoolController(mock(ViewSchoolsUseCase.class), useCase, detailsUseCase, classUsersUseCase, updateUseCase);
+        var controller = new SchoolController(mock(ViewSchoolsUseCase.class), useCase, detailsUseCase, updateUseCase, mock(ListSchoolUsersUseCase.class), mock(ViewSchoolUserUseCase.class), mock(UpdateSchoolUserUseCase.class), mock(SchoolRepository.class), classUsersUseCase);
         var languageId = UUID.randomUUID();
         var gradeId = UUID.randomUUID();
         var expected = new PageResult<SchoolClassResponse>(List.of(), 1, 20, 0, 0);
@@ -63,8 +106,12 @@ class SchoolControllerTests {
             mock(ViewSchoolsUseCase.class),
             mock(ViewSchoolClassesUseCase.class),
             mock(ViewSchoolClassDetailsUseCase.class),
-            mock(ViewSchoolClassUsersUseCase.class),
-            mock(UpdateSchoolClassUseCase.class)
+            mock(UpdateSchoolClassUseCase.class),
+            mock(ListSchoolUsersUseCase.class),
+            mock(ViewSchoolUserUseCase.class),
+            mock(UpdateSchoolUserUseCase.class),
+            mock(SchoolRepository.class),
+            mock(ViewSchoolClassUsersUseCase.class)
         );
 
         assertThrows(IllegalStateException.class, () -> controller.schoolClasses(0, 20, null, null, null, null));
@@ -77,7 +124,7 @@ class SchoolControllerTests {
         var detailsUseCase = mock(ViewSchoolClassDetailsUseCase.class);
         var classUsersUseCase = mock(ViewSchoolClassUsersUseCase.class);
         var updateUseCase = mock(UpdateSchoolClassUseCase.class);
-        var controller = new SchoolController(mock(ViewSchoolsUseCase.class), useCase, detailsUseCase, classUsersUseCase, updateUseCase);
+        var controller = new SchoolController(mock(ViewSchoolsUseCase.class), useCase, detailsUseCase, updateUseCase, mock(ListSchoolUsersUseCase.class), mock(ViewSchoolUserUseCase.class), mock(UpdateSchoolUserUseCase.class), mock(SchoolRepository.class), classUsersUseCase);
         var classId = UUID.randomUUID();
         var expected = new SchoolClassResponse(
             classId,
@@ -106,8 +153,12 @@ class SchoolControllerTests {
             mock(ViewSchoolsUseCase.class),
             mock(ViewSchoolClassesUseCase.class),
             mock(ViewSchoolClassDetailsUseCase.class),
-            mock(ViewSchoolClassUsersUseCase.class),
-            mock(UpdateSchoolClassUseCase.class)
+            mock(UpdateSchoolClassUseCase.class),
+            mock(ListSchoolUsersUseCase.class),
+            mock(ViewSchoolUserUseCase.class),
+            mock(UpdateSchoolUserUseCase.class),
+            mock(SchoolRepository.class),
+            mock(ViewSchoolClassUsersUseCase.class)
         );
         var schoolId = UUID.randomUUID();
         var response = schoolClassResponse(schoolId, UUID.randomUUID(), UUID.randomUUID());
@@ -130,8 +181,12 @@ class SchoolControllerTests {
             mock(ViewSchoolsUseCase.class),
             mock(ViewSchoolClassesUseCase.class),
             mock(ViewSchoolClassDetailsUseCase.class),
-            mock(ViewSchoolClassUsersUseCase.class),
-            mock(UpdateSchoolClassUseCase.class)
+            mock(UpdateSchoolClassUseCase.class),
+            mock(ListSchoolUsersUseCase.class),
+            mock(ViewSchoolUserUseCase.class),
+            mock(UpdateSchoolUserUseCase.class),
+            mock(SchoolRepository.class),
+            mock(ViewSchoolClassUsersUseCase.class)
         );
         var schoolId = UUID.randomUUID();
         var gradeId = UUID.randomUUID();
@@ -156,8 +211,12 @@ class SchoolControllerTests {
             mock(ViewSchoolsUseCase.class),
             mock(ViewSchoolClassesUseCase.class),
             mock(ViewSchoolClassDetailsUseCase.class),
-            mock(ViewSchoolClassUsersUseCase.class),
-            mock(UpdateSchoolClassUseCase.class)
+            mock(UpdateSchoolClassUseCase.class),
+            mock(ListSchoolUsersUseCase.class),
+            mock(ViewSchoolUserUseCase.class),
+            mock(UpdateSchoolUserUseCase.class),
+            mock(SchoolRepository.class),
+            mock(ViewSchoolClassUsersUseCase.class)
         );
         var languageId = UUID.randomUUID();
         var response = schoolClassResponse(UUID.randomUUID(), languageId, UUID.randomUUID());
@@ -179,7 +238,7 @@ class SchoolControllerTests {
         var detailsUseCase = mock(ViewSchoolClassDetailsUseCase.class);
         var classUsersUseCase = mock(ViewSchoolClassUsersUseCase.class);
         var updateUseCase = mock(UpdateSchoolClassUseCase.class);
-        var controller = new SchoolController(mock(ViewSchoolsUseCase.class), useCase, detailsUseCase, classUsersUseCase, updateUseCase);
+        var controller = new SchoolController(mock(ViewSchoolsUseCase.class), useCase, detailsUseCase, updateUseCase, mock(ListSchoolUsersUseCase.class), mock(ViewSchoolUserUseCase.class), mock(UpdateSchoolUserUseCase.class), mock(SchoolRepository.class), classUsersUseCase);
         var classId = UUID.randomUUID();
         var expected = new PageResult<SchoolClassUserResponse>(List.of(), 1, 20, 0, 0);
         var query = new ViewSchoolClassUsersQuery(classId, 1, 20);
@@ -197,8 +256,12 @@ class SchoolControllerTests {
             mock(ViewSchoolsUseCase.class),
             mock(ViewSchoolClassesUseCase.class),
             mock(ViewSchoolClassDetailsUseCase.class),
-            mock(ViewSchoolClassUsersUseCase.class),
-            mock(UpdateSchoolClassUseCase.class)
+            mock(UpdateSchoolClassUseCase.class),
+            mock(ListSchoolUsersUseCase.class),
+            mock(ViewSchoolUserUseCase.class),
+            mock(UpdateSchoolUserUseCase.class),
+            mock(SchoolRepository.class),
+            mock(ViewSchoolClassUsersUseCase.class)
         );
 
         assertThrows(IllegalStateException.class, () -> controller.schoolClassUsers(UUID.randomUUID(), 0, 20));
@@ -212,8 +275,12 @@ class SchoolControllerTests {
             mock(ViewSchoolsUseCase.class),
             mock(ViewSchoolClassesUseCase.class),
             mock(ViewSchoolClassDetailsUseCase.class),
-            mock(ViewSchoolClassUsersUseCase.class),
-            mock(UpdateSchoolClassUseCase.class)
+            mock(UpdateSchoolClassUseCase.class),
+            mock(ListSchoolUsersUseCase.class),
+            mock(ViewSchoolUserUseCase.class),
+            mock(UpdateSchoolUserUseCase.class),
+            mock(SchoolRepository.class),
+            mock(ViewSchoolClassUsersUseCase.class)
         );
         var userId = UUID.randomUUID();
         var response = new SchoolClassUserResponse(
@@ -244,7 +311,7 @@ class SchoolControllerTests {
         var detailsUseCase = mock(ViewSchoolClassDetailsUseCase.class);
         var classUsersUseCase = mock(ViewSchoolClassUsersUseCase.class);
         var updateUseCase = mock(UpdateSchoolClassUseCase.class);
-        var controller = new SchoolController(mock(ViewSchoolsUseCase.class), useCase, detailsUseCase, classUsersUseCase, updateUseCase);
+        var controller = new SchoolController(mock(ViewSchoolsUseCase.class), useCase, detailsUseCase, updateUseCase, mock(ListSchoolUsersUseCase.class), mock(ViewSchoolUserUseCase.class), mock(UpdateSchoolUserUseCase.class), mock(SchoolRepository.class), classUsersUseCase);
         var classId = UUID.randomUUID();
         var input = Map.<String, Object>of("name", "English 02");
         var command = new UpdateSchoolClassCommand(classId, "English 02", true, null, false, null, false);
@@ -263,7 +330,7 @@ class SchoolControllerTests {
         var detailsUseCase = mock(ViewSchoolClassDetailsUseCase.class);
         var classUsersUseCase = mock(ViewSchoolClassUsersUseCase.class);
         var updateUseCase = mock(UpdateSchoolClassUseCase.class);
-        var controller = new SchoolController(mock(ViewSchoolsUseCase.class), useCase, detailsUseCase, classUsersUseCase, updateUseCase);
+        var controller = new SchoolController(mock(ViewSchoolsUseCase.class), useCase, detailsUseCase, updateUseCase, mock(ListSchoolUsersUseCase.class), mock(ViewSchoolUserUseCase.class), mock(UpdateSchoolUserUseCase.class), mock(SchoolRepository.class), classUsersUseCase);
         var classId = UUID.randomUUID();
         var input = new HashMap<String, Object>();
         input.put("description", null);
@@ -283,7 +350,7 @@ class SchoolControllerTests {
         var detailsUseCase = mock(ViewSchoolClassDetailsUseCase.class);
         var classUsersUseCase = mock(ViewSchoolClassUsersUseCase.class);
         var updateUseCase = mock(UpdateSchoolClassUseCase.class);
-        var controller = new SchoolController(mock(ViewSchoolsUseCase.class), useCase, detailsUseCase, classUsersUseCase, updateUseCase);
+        var controller = new SchoolController(mock(ViewSchoolsUseCase.class), useCase, detailsUseCase, updateUseCase, mock(ListSchoolUsersUseCase.class), mock(ViewSchoolUserUseCase.class), mock(UpdateSchoolUserUseCase.class), mock(SchoolRepository.class), classUsersUseCase);
         var classId = UUID.randomUUID();
         var input = Map.<String, Object>of("status", "INACTIVE");
         var command = new UpdateSchoolClassCommand(classId, null, false, null, false, "INACTIVE", true);
@@ -294,6 +361,45 @@ class SchoolControllerTests {
 
         assertThat(result).isEqualTo(expected);
         verify(updateUseCase).execute(command);
+    }
+
+    @Test
+    void school_users_field_should_return_page_from_use_case() {
+        var school = new SchoolDto(schoolId, "SCH", "School", null, null, null, null, null, 0, true, null, null);
+        var response = schoolUserResponse(userId, "STUDENT");
+        var page = new PageResult<>(List.of(response), 1, 20, 1, 1);
+        when(listSchoolUsersUseCase.execute(new ListSchoolUsersCommand(schoolId, 1, 20))).thenReturn(page);
+
+        var result = controller.users(school, 1, 20);
+
+        assertThat(result).isEqualTo(page);
+        assertThat(result.content()).containsExactly(response);
+        verify(listSchoolUsersUseCase).execute(new ListSchoolUsersCommand(schoolId, 1, 20));
+    }
+
+    @Test
+    void school_user_field_should_return_details_from_use_case() {
+        var school = new SchoolDto(schoolId, "SCH", "School", null, null, null, null, null, 0, true, null, null);
+        var response = schoolUserResponse(userId, "TEACHER");
+        when(viewSchoolUserUseCase.execute(new ViewSchoolUserCommand(schoolId, userId))).thenReturn(response);
+
+        var result = controller.user(school, userId);
+
+        assertThat(result).isEqualTo(response);
+        assertThat(result.id()).isEqualTo(userId);
+        verify(viewSchoolUserUseCase).execute(new ViewSchoolUserCommand(schoolId, userId));
+    }
+
+    @Test
+    void school_users_field_should_reject_invalid_paging() {
+        var school = new SchoolDto(schoolId, "SCH", "School", null, null, null, null, null, 0, true, null, null);
+        assertThatThrownBy(() -> controller.users(school, 0, 20))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessage("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
+    }
+
+    private SchoolUserResponse schoolUserResponse(UUID id, String roleCode) {
+        return new SchoolUserResponse(id, schoolId, id, roleCode, null, null);
     }
 
     private static SchoolClassResponse schoolClassResponse(UUID schoolId, UUID languageId, UUID gradeId) {

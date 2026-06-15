@@ -18,12 +18,24 @@ public class SmtpEmailTemplateRenderService implements MailTemplatePort {
         "templates/email/register-form-rejected.html";
     private static final String RESET_PASSWORD_OTP_TEMPLATE =
         "templates/email/reset-password-otp.html";
+    private static final String SCHOOL_USER_PASSWORD_SETUP_TEMPLATE =
+        "templates/email/school-user-password-setup.html";
 
     @Override
     public String renderPasswordSetUpEmail(String schoolAdminName, String schoolName, String passwordSetupUrl,
             String expiresIn) {
         return loadTemplate(PASSWORD_SETUP_TEMPLATE)
             .replace("{{schoolAdminName}}", escapeHtml(schoolAdminName))
+            .replace("{{schoolName}}", escapeHtml(schoolName))
+            .replace("{{passwordSetupUrl}}", escapeHtml(passwordSetupUrl))
+            .replace("{{expiresIn}}", escapeHtml(expiresIn));
+    }
+
+    @Override
+    public String renderSchoolUserPasswordSetUpEmail(String schoolUserName, String schoolName,
+            String passwordSetupUrl, String expiresIn) {
+        return loadTemplate(SCHOOL_USER_PASSWORD_SETUP_TEMPLATE)
+            .replace("{{schoolUserName}}", escapeHtml(schoolUserName))
             .replace("{{schoolName}}", escapeHtml(schoolName))
             .replace("{{passwordSetupUrl}}", escapeHtml(passwordSetupUrl))
             .replace("{{expiresIn}}", escapeHtml(expiresIn));

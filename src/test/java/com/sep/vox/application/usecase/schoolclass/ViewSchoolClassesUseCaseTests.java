@@ -29,6 +29,8 @@ import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
+import com.sep.vox.domain.model.school.SchoolUser;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 class ViewSchoolClassesUseCaseTests {
@@ -37,6 +39,7 @@ class ViewSchoolClassesUseCaseTests {
     private UserRepository userRepository;
     private SchoolRepository schoolRepository;
     private UserContextPort userContextPort;
+    private SchoolUserRepository schoolUserRepository;
     private ViewSchoolClassesUseCase useCase;
 
     @BeforeEach
@@ -45,12 +48,13 @@ class ViewSchoolClassesUseCaseTests {
         userRepository = mock(UserRepository.class);
         schoolRepository = mock(SchoolRepository.class);
         userContextPort = mock(UserContextPort.class);
+        schoolUserRepository = mock(SchoolUserRepository.class);
         useCase = new ViewSchoolClassesUseCase(
             schoolClassRepository,
             userRepository,
             schoolRepository,
             userContextPort,
-            TestSchoolUserRepository.create()
+            schoolUserRepository
         );
     }
 
@@ -74,7 +78,8 @@ class ViewSchoolClassesUseCaseTests {
         var page = new PageResult<>(List.of(schoolClass), 1, 20, 1, 1);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user(userId, schoolId, UserStatus.ACTIVE)));
+        var _user = user(userId, schoolId, UserStatus.ACTIVE);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(_user));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(schoolClassRepository.findBySchoolId(
             schoolId,
@@ -107,7 +112,8 @@ class ViewSchoolClassesUseCaseTests {
         var schoolId = UUID.randomUUID();
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user(userId, schoolId, UserStatus.ACTIVE)));
+        var _user1 = user(userId, schoolId, UserStatus.ACTIVE);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(_user1));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
 
         assertThrows(
@@ -121,7 +127,8 @@ class ViewSchoolClassesUseCaseTests {
         var userId = UUID.randomUUID();
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user(userId, UUID.randomUUID(), UserStatus.INACTIVE)));
+        var _u3 = user(userId, UUID.randomUUID(), UserStatus.INACTIVE);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(_u3));
 
         assertThrows(
             IllegalStateException.class,
@@ -131,11 +138,14 @@ class ViewSchoolClassesUseCaseTests {
         verifyNoInteractions(schoolRepository, schoolClassRepository);
     }
 
-    private static User user(UUID id, UUID schoolId, UserStatus status) {
+    private User user(UUID id, UUID schoolId, UserStatus status) {
         var user = new User();
         user.setId(id);
         TestSchoolUserRepository.remember(id, schoolId);
         user.setStatus(status);
+        when(schoolUserRepository.findByUserId(id)).thenReturn(
+            schoolId != null ? Optional.of(new SchoolUser(schoolId, id, java.time.OffsetDateTime.now(), java.time.OffsetDateTime.now().plusYears(100))) : Optional.empty()
+        );
         return user;
     }
 

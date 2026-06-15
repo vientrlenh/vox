@@ -6,13 +6,20 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import jakarta.persistence.LockModeType;
+
 import com.sep.vox.infrastructure.persistence.entity.UserJpaEntity;
 
 public interface SpringDataUserRepository extends JpaRepository<UserJpaEntity, UUID>{
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT u FROM UserJpaEntity u WHERE u.id = :id")
+    Optional<UserJpaEntity> findByIdForUpdate(@Param("id") UUID id);
+
     List<UserJpaEntity> findByIdIn(Collection<UUID> ids);
     List<UserJpaEntity> findByEmailIn(Collection<String> emails);
     Optional<UserJpaEntity> findByEmail(String email);

@@ -7,8 +7,7 @@ public final class SchoolUserMapper {
     
     public static SchoolUser toDomain(SchoolUserJpaEntity jpa) {
         return new SchoolUser(
-            jpa.getId(), 
-            jpa.getStudentId(), 
+            jpa.getId(),  
             jpa.getSchoolId(), 
             jpa.getUserId(), 
             jpa.getStartDate(), 
@@ -18,8 +17,7 @@ public final class SchoolUserMapper {
 
     public static SchoolUserJpaEntity toJpa(SchoolUser schoolUser) {
         return new SchoolUserJpaEntity(
-            schoolUser.getId(), 
-            schoolUser.getStudentId(), 
+            schoolUser.getId(),  
             schoolUser.getSchoolId(), 
             schoolUser.getUserId(), 
             schoolUser.getStartDate(), 

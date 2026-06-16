@@ -6,7 +6,7 @@ import java.util.UUID;
 
 public class SchoolGrade {
     private UUID id;
-    private UUID schoolId;
+    private UUID schoolGradeLevelId;
     private String code;
     private String name;
     private String description;
@@ -20,10 +20,10 @@ public class SchoolGrade {
 
     public SchoolGrade() {}
 
-    public SchoolGrade(UUID id, UUID schoolId, String code, String name, String description, LocalDate startDate, LocalDate endDate, SchoolGradeStatus status,
+    public SchoolGrade(UUID id, UUID schoolGradeLevelId, String code, String name, String description, LocalDate startDate, LocalDate endDate, SchoolGradeStatus status,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
-        this.schoolId = schoolId;
+        this.schoolGradeLevelId = schoolGradeLevelId;
         this.code = code;
         this.name = name;
         this.description = description;
@@ -36,9 +36,9 @@ public class SchoolGrade {
         this.updatedBy = updatedBy;
     }
 
-    public SchoolGrade(UUID schoolId, String code, String name, String description, LocalDate startDate, LocalDate endDate, SchoolGradeStatus status, OffsetDateTime createdAt,
+    public SchoolGrade(UUID schoolGradeLevelId, String code, String name, String description, LocalDate startDate, LocalDate endDate, SchoolGradeStatus status, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
-        this.schoolId = schoolId;
+        this.schoolGradeLevelId = schoolGradeLevelId;
         this.code = code;
         this.name = name;
         this.description = description;
@@ -123,12 +123,12 @@ public class SchoolGrade {
         this.updatedBy = updatedBy;
     }
 
-    public UUID getSchoolId() {
-        return schoolId;
+    public UUID getSchoolGradeLevelId() {
+        return schoolGradeLevelId;
     }
 
-    public void setSchoolId(UUID schoolId) {
-        this.schoolId = schoolId;
+    public void setSchoolGradeLevelId(UUID schoolGradeLevelId) {
+        this.schoolGradeLevelId = schoolGradeLevelId;
     }
 
     public LocalDate getStartDate() {

@@ -16,7 +16,8 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "school_grades", indexes = {
-    @Index(columnList = "school_id, code", name = "idx_school_grades_school_code", unique = true)
+    @Index(columnList = "school_grade_level_id, code", name = "idx_school_grades_level_code", unique = true),
+    @Index(columnList = "school_grade_level_id", name = "idx_school_grades_level")
 }, check = {
     @CheckConstraint(
         name = "chk_school_grades_start_end_date_valid", 
@@ -35,8 +36,8 @@ public class SchoolGradeJpaEntity {
     )
     private UUID id;
 
-    @Column(name = "school_id", nullable = false, updatable = false)
-    private UUID schoolId;
+    @Column(name = "school_grade_level_id", nullable = false, updatable = false)
+    private UUID schoolGradeLevelId;
     
     @Column(name = "code", nullable = false, updatable = false, length = 100)
     private String code; 
@@ -75,11 +76,11 @@ public class SchoolGradeJpaEntity {
 
     protected SchoolGradeJpaEntity() {}
 
-    public SchoolGradeJpaEntity(UUID id, UUID schoolId, String code, String name, String description,
+    public SchoolGradeJpaEntity(UUID id, UUID schoolGradeLevelId, String code, String name, String description,
             LocalDate startDate, LocalDate endDate, String status, OffsetDateTime createdAt, OffsetDateTime updatedAt,
             UUID createdBy, UUID updatedBy) {
         this.id = id;
-        this.schoolId = schoolId;
+        this.schoolGradeLevelId = schoolGradeLevelId;
         this.code = code;
         this.name = name;
         this.description = description;
@@ -92,10 +93,10 @@ public class SchoolGradeJpaEntity {
         this.updatedBy = updatedBy;
     }
 
-    public SchoolGradeJpaEntity(UUID schoolId, String code, String name, String description, LocalDate startDate,
-            LocalDate endDate, String status, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy,
-            UUID updatedBy) {
-        this.schoolId = schoolId;
+    public SchoolGradeJpaEntity(UUID schoolGradeLevelId, String code, String name, String description,
+            LocalDate startDate, LocalDate endDate, String status, OffsetDateTime createdAt,
+            OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+        this.schoolGradeLevelId = schoolGradeLevelId;
         this.code = code;
         this.name = name;
         this.description = description;
@@ -116,12 +117,12 @@ public class SchoolGradeJpaEntity {
         this.id = id;
     }
 
-    public UUID getSchoolId() {
-        return schoolId;
+    public UUID getSchoolGradeLevelId() {
+        return schoolGradeLevelId;
     }
 
-    public void setSchoolId(UUID schoolId) {
-        this.schoolId = schoolId;
+    public void setSchoolGradeLevelId(UUID schoolGradeLevelId) {
+        this.schoolGradeLevelId = schoolGradeLevelId;
     }
 
     public String getCode() {

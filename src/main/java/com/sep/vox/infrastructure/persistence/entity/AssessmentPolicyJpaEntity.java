@@ -17,13 +17,13 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "assessment_policies", indexes = {
-    @Index(columnList = "school_id, school_grade_id, school_class_id, language_id, framework_id, version",
+    @Index(columnList = "school_id, school_grade_level_id, school_grade_id, school_class_id, language_id, framework_version_id, version",
         name = "idx_assessment_policies_scope_version", unique = true),
-    @Index(columnList = "school_id, school_grade_id, language_id, framework_id, status",
+    @Index(columnList = "school_id, school_grade_level_id, school_grade_id, language_id, framework_version_id, status",
         name = "idx_assessment_policies_grade_status"),
     @Index(columnList = "rubric_version_id", name = "idx_assessment_policies_rubric_version"),
-    @Index(columnList = "target_result_band_id", name = "idx_assessment_policies_target_band"),
-    @Index(columnList = "passing_result_band_id", name = "idx_assessment_policies_passing_band")
+    @Index(columnList = "target_framework_band_id", name = "idx_assessment_policies_target_band"),
+    @Index(columnList = "minimum_framework_band_id", name = "idx_assessment_policies_minimum_band")
 }, check = {
     @CheckConstraint(
         name = "chk_assessment_policies_effective_range_valid",
@@ -37,10 +37,13 @@ public class AssessmentPolicyJpaEntity {
     @Column(name = "id", nullable = false, updatable = false, insertable = false, columnDefinition = "UUID DEFAULT uuidv7()")
     private UUID id;
 
-    @Column(name = "school_id", nullable = false, updatable = false)
+    @Column(name = "school_id", updatable = false)
     private UUID schoolId;
 
-    @Column(name = "school_grade_id", nullable = false, updatable = false)
+    @Column(name = "school_grade_level_id", updatable = false)
+    private UUID schoolGradeLevelId;
+
+    @Column(name = "school_grade_id", updatable = false)
     private UUID schoolGradeId;
 
     @Column(name = "school_class_id", updatable = false)
@@ -49,17 +52,17 @@ public class AssessmentPolicyJpaEntity {
     @Column(name = "language_id", nullable = false, updatable = false)
     private UUID languageId;
 
-    @Column(name = "framework_id", nullable = false, updatable = false)
-    private UUID frameworkId;
+    @Column(name = "framework_version_id", nullable = false, updatable = false)
+    private UUID frameworkVersionId;
 
     @Column(name = "rubric_version_id", nullable = false, updatable = false)
     private UUID rubricVersionId;
 
-    @Column(name = "target_result_band_id", nullable = false)
-    private UUID targetResultBandId;
+    @Column(name = "target_framework_band_id", nullable = false)
+    private UUID targetFrameworkBandId;
 
-    @Column(name = "passing_result_band_id", nullable = false)
-    private UUID passingResultBandId;
+    @Column(name = "minimum_framework_band_id", nullable = false)
+    private UUID minimumFrameworkBandId;
 
     @Column(name = "passing_score", precision = 6, scale = 2, check = {
         @CheckConstraint(
@@ -113,20 +116,21 @@ public class AssessmentPolicyJpaEntity {
 
     protected AssessmentPolicyJpaEntity() {}
 
-    public AssessmentPolicyJpaEntity(UUID id, UUID schoolId, UUID schoolGradeId, UUID schoolClassId,
-            UUID languageId, UUID frameworkId, UUID rubricVersionId, UUID targetResultBandId,
-            UUID passingResultBandId, BigDecimal passingScore, String strictness, int version, String status,
-            OffsetDateTime effectiveFrom, OffsetDateTime effectiveTo, OffsetDateTime createdAt,
-            OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+    public AssessmentPolicyJpaEntity(UUID id, UUID schoolId, UUID schoolGradeLevelId, UUID schoolGradeId,
+            UUID schoolClassId, UUID languageId, UUID frameworkVersionId, UUID rubricVersionId,
+            UUID targetFrameworkBandId, UUID minimumFrameworkBandId, BigDecimal passingScore, String strictness,
+            int version, String status, OffsetDateTime effectiveFrom, OffsetDateTime effectiveTo,
+            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.schoolId = schoolId;
+        this.schoolGradeLevelId = schoolGradeLevelId;
         this.schoolGradeId = schoolGradeId;
         this.schoolClassId = schoolClassId;
         this.languageId = languageId;
-        this.frameworkId = frameworkId;
+        this.frameworkVersionId = frameworkVersionId;
         this.rubricVersionId = rubricVersionId;
-        this.targetResultBandId = targetResultBandId;
-        this.passingResultBandId = passingResultBandId;
+        this.targetFrameworkBandId = targetFrameworkBandId;
+        this.minimumFrameworkBandId = minimumFrameworkBandId;
         this.passingScore = passingScore;
         this.strictness = strictness;
         this.version = version;
@@ -155,6 +159,14 @@ public class AssessmentPolicyJpaEntity {
         this.schoolId = schoolId;
     }
 
+    public UUID getSchoolGradeLevelId() {
+        return schoolGradeLevelId;
+    }
+
+    public void setSchoolGradeLevelId(UUID schoolGradeLevelId) {
+        this.schoolGradeLevelId = schoolGradeLevelId;
+    }
+
     public UUID getSchoolGradeId() {
         return schoolGradeId;
     }
@@ -179,12 +191,12 @@ public class AssessmentPolicyJpaEntity {
         this.languageId = languageId;
     }
 
-    public UUID getFrameworkId() {
-        return frameworkId;
+    public UUID getFrameworkVersionId() {
+        return frameworkVersionId;
     }
 
-    public void setFrameworkId(UUID frameworkId) {
-        this.frameworkId = frameworkId;
+    public void setFrameworkVersionId(UUID frameworkVersionId) {
+        this.frameworkVersionId = frameworkVersionId;
     }
 
     public UUID getRubricVersionId() {
@@ -195,20 +207,20 @@ public class AssessmentPolicyJpaEntity {
         this.rubricVersionId = rubricVersionId;
     }
 
-    public UUID getTargetResultBandId() {
-        return targetResultBandId;
+    public UUID getTargetFrameworkBandId() {
+        return targetFrameworkBandId;
     }
 
-    public void setTargetResultBandId(UUID targetResultBandId) {
-        this.targetResultBandId = targetResultBandId;
+    public void setTargetFrameworkBandId(UUID targetFrameworkBandId) {
+        this.targetFrameworkBandId = targetFrameworkBandId;
     }
 
-    public UUID getPassingResultBandId() {
-        return passingResultBandId;
+    public UUID getMinimumFrameworkBandId() {
+        return minimumFrameworkBandId;
     }
 
-    public void setPassingResultBandId(UUID passingResultBandId) {
-        this.passingResultBandId = passingResultBandId;
+    public void setMinimumFrameworkBandId(UUID minimumFrameworkBandId) {
+        this.minimumFrameworkBandId = minimumFrameworkBandId;
     }
 
     public BigDecimal getPassingScore() {

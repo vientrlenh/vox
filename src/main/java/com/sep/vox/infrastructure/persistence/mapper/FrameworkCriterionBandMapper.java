@@ -1,6 +1,7 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.framework.FrameworkCriterionBand;
+import com.sep.vox.domain.valueobject.framework.FrameworkCriterionSignals;
 import com.sep.vox.infrastructure.persistence.entity.FrameworkCriterionBandJpaEntity;
 
 public final class FrameworkCriterionBandMapper {
@@ -13,8 +14,8 @@ public final class FrameworkCriterionBandMapper {
             jpa.getFrameworkCriterionId(),
             jpa.getFrameworkResultBandId(),
             jpa.getDescriptor(),
-            jpa.getPositiveSignals(),
-            jpa.getNegativeSignals(),
+            JsonValueObjectMapper.fromJson(jpa.getPositiveSignalsJson(), FrameworkCriterionSignals.class),
+            JsonValueObjectMapper.fromJson(jpa.getNegativeSignalsJson(), FrameworkCriterionSignals.class),
             jpa.getCreatedAt(),
             jpa.getUpdatedAt(),
             jpa.getCreatedBy(),
@@ -28,8 +29,8 @@ public final class FrameworkCriterionBandMapper {
             band.getFrameworkCriterionId(),
             band.getFrameworkResultBandId(),
             band.getDescriptor(),
-            band.getPositiveSignals(),
-            band.getNegativeSignals(),
+            JsonValueObjectMapper.toJson(band.getPositiveSignals()),
+            JsonValueObjectMapper.toJson(band.getNegativeSignals()),
             band.getCreatedAt(),
             band.getUpdatedAt(),
             band.getCreatedBy(),

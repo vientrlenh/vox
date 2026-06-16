@@ -17,12 +17,14 @@ import com.sep.vox.application.port.output.PasswordSetUpTokenPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.passwordsetuptoken.PasswordSetUpToken;
 import com.sep.vox.domain.model.school.School;
+import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserRole;
 import com.sep.vox.domain.repository.PasswordSetUpTokenRepository;
 import com.sep.vox.domain.repository.RegisterFormRepository;
 import com.sep.vox.domain.repository.RoleRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.repository.UserRoleRepository;
 
@@ -31,6 +33,7 @@ public class ApproveRegisterFormUseCase implements IUseCase<ApproveRegisterFormC
 
     private final UserRepository userRepository;
     private final SchoolRepository schoolRepository;
+    private final SchoolUserRepository schoolUserRepository;
     private final RegisterFormRepository registerFormRepository;
     private final RoleRepository roleRepository;
     private final UserRoleRepository userRoleRepository;
@@ -41,7 +44,8 @@ public class ApproveRegisterFormUseCase implements IUseCase<ApproveRegisterFormC
 
     public ApproveRegisterFormUseCase(
             UserRepository userRepository,
-            SchoolRepository schoolRepository,
+            SchoolRepository schoolRepository, 
+            SchoolUserRepository schoolUserRepository,
             RegisterFormRepository registerFormRepository,
             RoleRepository roleRepository,
             UserRoleRepository userRoleRepository,
@@ -51,6 +55,7 @@ public class ApproveRegisterFormUseCase implements IUseCase<ApproveRegisterFormC
             EventPublisherPort eventPublisherPort) {
         this.userRepository = userRepository;
         this.schoolRepository = schoolRepository;
+        this.schoolUserRepository = schoolUserRepository;
         this.registerFormRepository = registerFormRepository;
         this.roleRepository = roleRepository;
         this.userRoleRepository = userRoleRepository;
@@ -59,8 +64,6 @@ public class ApproveRegisterFormUseCase implements IUseCase<ApproveRegisterFormC
         this.userContextPort = userContextPort;
         this.eventPublisherPort = eventPublisherPort;
     }
-
-    private static final String PASSWORD_NOT_SET = "__PASSWORD_NOT_SET__";
 
     @Override
     @Transactional
@@ -87,6 +90,9 @@ public class ApproveRegisterFormUseCase implements IUseCase<ApproveRegisterFormC
         var savedSchool = saveSchool(command, currentUserId, now);
         var savedSchoolAdmin = saveSchoolAdmin(command, currentUserId, savedSchool.getId(), now);
         saveSchoolAdminUserRole(savedSchoolAdmin.getId(), schoolAdminRole.getId());
+
+        var schoolUser = SchoolUser.create(savedSchoolAdmin.getId(), savedSchool.getId(), now, null);
+        schoolUserRepository.save(schoolUser);
 
         var passwordToken = passwordSetUpTokenPort.generateToken();
         var passwordSetUpToken = PasswordSetUpToken.create(savedSchoolAdmin.getId(), passwordToken.hashedToken());
@@ -138,15 +144,13 @@ public class ApproveRegisterFormUseCase implements IUseCase<ApproveRegisterFormC
 
     private User saveSchoolAdmin(ApproveRegisterFormCommand command, UUID createdUserId, UUID schoolId, OffsetDateTime now) {
         var schoolAdmin = User.createSchoolAdmin(
-            command.contactEmail(), 
-            PASSWORD_NOT_SET, 
+            command.contactEmail(),  
             command.contactPhone(), 
             command.contactFullName(), 
             command.dateOfBirth(), 
             command.contactAddress(), 
             null,
             createdUserId, 
-            schoolId, 
             now
         );
         return userRepository.save(schoolAdmin);

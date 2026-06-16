@@ -1,12 +1,6 @@
 package com.sep.vox.application.usecase.auth;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import com.sep.vox.application.usecase.TestSchoolUserRepository;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -14,9 +8,16 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.ClientDeviceCommand;
@@ -58,22 +59,25 @@ class OAuth2LoginUseCaseTests {
         refreshTokenRepository = mock(RefreshTokenRepository.class);
         authTokenPort = mock(AuthTokenPort.class);
         sessionTokenManagerPort = mock(SessionTokenManagerPort.class);
+        var schoolUserRepository = TestSchoolUserRepository.create();
         oAuth2LoginUseCase = new OAuth2LoginUseCase(
             userRepository,
             userRoleQueryRepository,
             deviceSessionRepository,
             refreshTokenRepository,
             authTokenPort,
-            sessionTokenManagerPort
+            sessionTokenManagerPort,
+            schoolUserRepository
         );
     }
 
     @Test
     void oauth2Login_should_return_tokens_when_google_email_matches_active_user() {
         var userId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
         var sessionId = UUID.randomUUID();
         var roleId = UUID.randomUUID();
-        var user = activeUser(userId);
+        var user = activeUser(userId, schoolId);
         var savedDeviceSession = new DeviceSession(
             sessionId,
             userId,
@@ -99,7 +103,7 @@ class OAuth2LoginUseCaseTests {
             .thenReturn(roles);
         when(deviceSessionRepository.save(any(DeviceSession.class)))
             .thenReturn(savedDeviceSession);
-        when(authTokenPort.generateJwtToken(userId.toString(), "student@example.com", List.of("STUDENT")))
+        when(authTokenPort.generateJwtToken(userId.toString(), schoolId, "student@example.com", List.of("STUDENT")))
             .thenReturn("access-token");
         when(sessionTokenManagerPort.generateToken())
             .thenReturn(new GeneratedSessionToken("refresh-token", "hashed-refresh-token"));
@@ -121,7 +125,7 @@ class OAuth2LoginUseCaseTests {
         assertThat(deviceSession.getUserAgent()).isEqualTo("JUnit User Agent");
 
         verify(refreshTokenRepository).save(any(RefreshToken.class));
-        verify(authTokenPort).generateJwtToken(userId.toString(), "student@example.com", List.of("STUDENT"));
+        verify(authTokenPort).generateJwtToken(userId.toString(), schoolId, "student@example.com", List.of("STUDENT"));
     }
 
     @Test
@@ -185,7 +189,8 @@ class OAuth2LoginUseCaseTests {
         );
     }
 
-    private static User activeUser(UUID userId) {
+    private static User activeUser(UUID userId, UUID schoolId) {
+        TestSchoolUserRepository.remember(userId, schoolId);
         return new User(
             userId,
             new Email("student@example.com"),
@@ -199,7 +204,6 @@ class OAuth2LoginUseCaseTests {
             UserStatus.ACTIVE,
             OffsetDateTime.now(),
             OffsetDateTime.now(),
-            null,
             null,
             null
         );

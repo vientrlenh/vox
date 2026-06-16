@@ -1,4 +1,13 @@
 package com.sep.vox.application.port.input.query;
 
-public record ViewSchoolClassesQuery(int page, int size) {
+import java.util.UUID;
+
+public record ViewSchoolClassesQuery(
+    int page,
+    int size,
+    String search,
+    String status,
+    UUID languageId,
+    UUID schoolGradeId
+) {
 }

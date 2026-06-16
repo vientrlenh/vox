@@ -53,5 +53,9 @@ public class UserRoleRepositoryImpl implements UserRoleRepository {
         return springDataUserRoleRepository.findByUserIdAndRoleId(userId, roleId)
             .map(UserRoleMapper::toDomain);
     }
-    
+    @Override
+    public int compareAndSetRoleId(UUID userRoleId, UUID expectedRoleId, UUID newRoleId) {
+        return springDataUserRoleRepository.compareAndSetRoleId(userRoleId, expectedRoleId, newRoleId);
+    }
+
 }

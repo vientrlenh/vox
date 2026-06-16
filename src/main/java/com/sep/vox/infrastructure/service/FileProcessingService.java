@@ -46,6 +46,7 @@ public class FileProcessingService implements FileProcessingPort {
         return new ParseImportFileResult(
             table.headers(),
             suggestedMapping,
+            table.rows(),
             table.sampleRows(),
             table.totalRows()
         );
@@ -86,6 +87,7 @@ public class FileProcessingService implements FileProcessingPort {
             var headers = getHeadersFromExcelHeader(headerRow, formatter);
             validateHeaders(headers);
 
+            var rows = new ArrayList<Map<String, String>>();
             var sampleRows = new ArrayList<Map<String, String>>();
             var totalRows = 0L;
             for (var rowIndex = sheet.getFirstRowNum() + 1; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
@@ -101,12 +103,13 @@ public class FileProcessingService implements FileProcessingPort {
                     continue;
                 }
                 totalRows++;
+                rows.add(Collections.unmodifiableMap(new LinkedHashMap<>(values)));
                 if (sampleRows.size() < SAMPLE_ROW_LIMIT) {
                     sampleRows.add(Collections.unmodifiableMap(new LinkedHashMap<>(values)));
                 }
             }
 
-            return new ParsedImportTable(List.copyOf(headers), List.copyOf(sampleRows), totalRows);
+            return new ParsedImportTable(List.copyOf(headers), List.copyOf(rows), List.copyOf(sampleRows), totalRows);
         } catch (IOException e) {
             throw new IllegalArgumentException("Không thể đọc dữ liệu từ file " + fileName, e);
         }
@@ -133,6 +136,7 @@ public class FileProcessingService implements FileProcessingPort {
             var headers = new ArrayList<String>(parser.getHeaderMap().keySet());
             validateHeaders(headers);
 
+            var rows = new ArrayList<Map<String, String>>();
             var sampleRows = new ArrayList<Map<String, String>>();
             var totalRows = 0L;
             for (var record : parser) {
@@ -144,12 +148,13 @@ public class FileProcessingService implements FileProcessingPort {
                     continue;
                 }
                 totalRows++;
+                rows.add(Collections.unmodifiableMap(new LinkedHashMap<>(values)));
                 if (sampleRows.size() < SAMPLE_ROW_LIMIT) {
                     sampleRows.add(Collections.unmodifiableMap(new LinkedHashMap<>(values)));
                 }
             }
 
-            return new ParsedImportTable(List.copyOf(headers), List.copyOf(sampleRows), totalRows);
+            return new ParsedImportTable(List.copyOf(headers), List.copyOf(rows), List.copyOf(sampleRows), totalRows);
         } catch (IOException e) {
             throw new IllegalArgumentException("Không thể đọc dữ liệu từ file " + fileName, e);
         }
@@ -206,14 +211,19 @@ public class FileProcessingService implements FileProcessingPort {
                 "description", List.of("description", "note", "notes", "ghi chú", "ghi chu", "mô tả", "mo ta")
             );
             case USER -> Map.of(
-                "role", List.of("role", "userRole", "role code", "vai trò", "vai tro"),
+                "roleCode", List.of("roleCode", "role", "userRole", "role code", "vai trò", "vai tro", "mã vai trò", "ma vai tro"),
                 "fullName", List.of("fullName", "full name", "name", "họ tên", "ho ten", "họ và tên", "ho va ten"),
                 "email", List.of("email", "mail", "email address", "địa chỉ email", "dia chi email"),
                 "phone", List.of("phone", "phoneNumber", "phone number", "số điện thoại", "so dien thoai", "sdt"),
-                "studentCode", List.of("studentCode", "student code", "mã học sinh", "ma hoc sinh"),
-                "teacherCode", List.of("teacherCode", "teacher code", "mã giáo viên", "ma giao vien"),
-                "classCode", List.of("classCode", "class code", "mã lớp", "ma lop", "lớp", "lop"),
-                "dateOfBirth", List.of("dateOfBirth", "date of birth", "birthday", "dob", "ngày sinh", "ngay sinh")
+                "studentId", List.of("studentId", "student code", "student id", "mã học sinh", "ma hoc sinh"),
+                "dateOfBirth", List.of("dateOfBirth", "date of birth", "birthday", "dob", "ngày sinh", "ngay sinh"),
+                "startDate", List.of("startDate", "start date", "ngày bắt đầu", "ngay bat dau"),
+                "endDate", List.of("endDate", "end date", "ngày kết thúc", "ngay ket thuc"),
+                "address", List.of("address", "địa chỉ", "dia chi")
+            );
+            case SCHOOL_CLASS_USER -> Map.of(
+                "email", List.of("email", "mail", "email address", "địa chỉ email", "dia chi email"),
+                "classCode", List.of("classCode", "class code", "mã lớp", "ma lop", "lớp", "lop")
             );
         };
     }
@@ -237,6 +247,7 @@ public class FileProcessingService implements FileProcessingPort {
 
     private record ParsedImportTable(
         List<String> headers,
+        List<Map<String, String>> rows,
         List<Map<String, String>> sampleRows,
         long totalRows
     ) {}

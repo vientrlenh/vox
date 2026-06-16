@@ -5,6 +5,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.sep.vox.infrastructure.persistence.entity.UserRoleJpaEntity;
 
@@ -13,4 +16,16 @@ public interface SpringDataUserRoleRepository extends JpaRepository<UserRoleJpaE
     List<UserRoleJpaEntity> findByRoleId(UUID roleId);
     boolean existsByRoleId(UUID roleId);
     Optional<UserRoleJpaEntity> findByUserIdAndRoleId(UUID userId, UUID roleId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+        UPDATE UserRoleJpaEntity ur
+        SET ur.roleId = :newRoleId
+        WHERE ur.id = :id
+            AND ur.roleId = :expectedRoleId
+    """)
+    int compareAndSetRoleId(
+        @Param("id") UUID id,
+        @Param("expectedRoleId") UUID expectedRoleId,
+        @Param("newRoleId") UUID newRoleId);
 }

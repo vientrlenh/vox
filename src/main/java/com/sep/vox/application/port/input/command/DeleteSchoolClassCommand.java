@@ -2,5 +2,5 @@ package com.sep.vox.application.port.input.command;
 
 import java.util.UUID;
 
-public record DeleteSchoolClassCommand(UUID id) {
+public record DeleteSchoolClassCommand(UUID schoolId, UUID id) {
 }

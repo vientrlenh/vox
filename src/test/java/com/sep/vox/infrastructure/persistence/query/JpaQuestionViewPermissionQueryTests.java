@@ -208,7 +208,7 @@ class JpaQuestionViewPermissionQueryTests extends ContainerTestConfig {
     }
 
     @Test
-    void canViewQuestionDetail_should_allow_school_admin_for_archived_same_school_question() {
+    void canViewQuestionDetail_should_reject_school_admin_for_archived_same_school_question() {
         var schoolAdmin = persistUser("school-admin-5@example.com", "0910000025", "SCHOOL_ADMIN", schoolId);
         var question = persistQuestion(UUID.randomUUID(), schoolId, QuestionBankOwnerType.SCHOOL,
             QuestionBankStatus.PUBLISHED, QuestionTopicStatus.PUBLISHED, QuestionScope.QUESTION_BANK,
@@ -217,11 +217,11 @@ class JpaQuestionViewPermissionQueryTests extends ContainerTestConfig {
 
         var permitted = query.canViewQuestionDetail(question.getId());
 
-        assertThat(permitted).isTrue();
+        assertThat(permitted).isFalse();
     }
 
     @Test
-    void canViewQuestionDetail_should_allow_system_admin_for_archived_question() {
+    void canViewQuestionDetail_should_reject_system_admin_for_archived_question() {
         var systemAdmin = persistUser("system-admin-1@example.com", "0910000026", "SYSTEM_ADMIN", schoolId);
         var question = persistQuestion(UUID.randomUUID(), schoolId, QuestionBankOwnerType.SCHOOL,
             QuestionBankStatus.PUBLISHED, QuestionTopicStatus.PUBLISHED, QuestionScope.QUESTION_BANK,
@@ -230,7 +230,7 @@ class JpaQuestionViewPermissionQueryTests extends ContainerTestConfig {
 
         var permitted = query.canViewQuestionDetail(question.getId());
 
-        assertThat(permitted).isTrue();
+        assertThat(permitted).isFalse();
     }
 
     @Test

@@ -180,36 +180,43 @@ class JpaQuestionReadQueryRepositoryTests extends ContainerTestConfig {
 
     @Test
     void findAdminQuestions_should_exclude_archived_when_flag_is_false() {
+        var adminUserId = UUID.randomUUID();
         persistQuestion(teacherId, schoolId, QuestionBankOwnerType.SCHOOL, QuestionBankStatus.PUBLISHED, QuestionTopicStatus.PUBLISHED,
             "ADMIN_VISIBLE", QuestionScope.QUESTION_BANK, QuestionStatus.PUBLISHED, QuestionVisibility.BANK_VISIBLE);
         persistQuestion(teacherId, schoolId, QuestionBankOwnerType.SCHOOL, QuestionBankStatus.ARCHIVED, QuestionTopicStatus.PUBLISHED,
             "ADMIN_ARCHIVED_BANK", QuestionScope.QUESTION_BANK, QuestionStatus.PUBLISHED, QuestionVisibility.BANK_VISIBLE);
 
-        var result = repository.findAdminQuestions(false, null, null, new PageRequest(1, 20));
+        var result = repository.findAdminQuestions(adminUserId, false, null, null, new PageRequest(1, 20));
 
         assertThat(result.content()).extracting(question -> question.code()).contains("ADMIN_VISIBLE").doesNotContain("ADMIN_ARCHIVED_BANK");
     }
 
     @Test
     void findAdminQuestions_should_include_archived_when_flag_is_true_and_filter_by_keyword() {
-        persistQuestion(teacherId, schoolId, QuestionBankOwnerType.SCHOOL, QuestionBankStatus.ARCHIVED, QuestionTopicStatus.PUBLISHED,
+        var adminUserId = UUID.randomUUID();
+        persistQuestion(adminUserId, schoolId, QuestionBankOwnerType.SCHOOL, QuestionBankStatus.ARCHIVED, QuestionTopicStatus.PUBLISHED,
             "ADMIN_KEYWORD_MATCH", QuestionScope.QUESTION_BANK, QuestionStatus.PUBLISHED, QuestionVisibility.BANK_VISIBLE);
 
-        var result = repository.findAdminQuestions(true, null, "admin_keyword_match", new PageRequest(1, 20));
+        var result = repository.findAdminQuestions(adminUserId, true, null, "admin_keyword_match", new PageRequest(1, 20));
 
         assertThat(result.content()).extracting(question -> question.code()).containsExactly("ADMIN_KEYWORD_MATCH");
     }
 
     @Test
-    void findAdminReviewQueue_should_return_all_submitted_for_review_questions() {
-        persistQuestion(teacherId, schoolId, QuestionBankOwnerType.SCHOOL, QuestionBankStatus.PUBLISHED, QuestionTopicStatus.PUBLISHED,
-            "ADMIN_QUEUE_1", QuestionScope.QUESTION_BANK, QuestionStatus.SUBMITTED_FOR_REVIEW, QuestionVisibility.REVIEWER_ONLY);
+    void findAdminReviewQueue_should_return_only_admin_own_or_system_bank_visible_submitted_questions() {
+        var adminUserId = UUID.randomUUID();
+        persistQuestion(adminUserId, schoolId, QuestionBankOwnerType.SCHOOL, QuestionBankStatus.PUBLISHED, QuestionTopicStatus.PUBLISHED,
+            "ADMIN_OWN_QUEUE", QuestionScope.QUESTION_BANK, QuestionStatus.SUBMITTED_FOR_REVIEW, QuestionVisibility.REVIEWER_ONLY);
+        persistQuestion(otherTeacherId, otherSchoolId, QuestionBankOwnerType.SYSTEM, QuestionBankStatus.PUBLISHED, QuestionTopicStatus.PUBLISHED,
+            "SYSTEM_QUEUE", QuestionScope.QUESTION_BANK, QuestionStatus.SUBMITTED_FOR_REVIEW, QuestionVisibility.BANK_VISIBLE);
         persistQuestion(otherTeacherId, otherSchoolId, QuestionBankOwnerType.SCHOOL, QuestionBankStatus.PUBLISHED, QuestionTopicStatus.PUBLISHED,
-            "ADMIN_QUEUE_2", QuestionScope.CENTRAL_EXAM_DRAFT, QuestionStatus.SUBMITTED_FOR_REVIEW, QuestionVisibility.BANK_VISIBLE);
+            "HIDDEN_QUEUE", QuestionScope.CENTRAL_EXAM_DRAFT, QuestionStatus.SUBMITTED_FOR_REVIEW, QuestionVisibility.BANK_VISIBLE);
 
-        var result = repository.findAdminReviewQueue(new PageRequest(1, 20));
+        var result = repository.findAdminReviewQueue(adminUserId, new PageRequest(1, 20));
 
-        assertThat(result.content()).extracting(question -> question.code()).contains("ADMIN_QUEUE_1", "ADMIN_QUEUE_2");
+        assertThat(result.content()).extracting(question -> question.code())
+            .contains("ADMIN_OWN_QUEUE", "SYSTEM_QUEUE")
+            .doesNotContain("HIDDEN_QUEUE");
     }
 
     @Test
@@ -328,9 +335,10 @@ class JpaQuestionReadQueryRepositoryTests extends ContainerTestConfig {
             QuestionStatus questionStatus,
             QuestionVisibility visibility) {
         var now = OffsetDateTime.now();
+        var bankSchoolId = ownerType == QuestionBankOwnerType.SYSTEM ? null : questionSchoolId;
         var bank = questionBankRepository.save(new QuestionBank(
             UUID.randomUUID(),
-            questionSchoolId,
+            bankSchoolId,
             "BANK_" + code,
             "Bank " + code,
             null,

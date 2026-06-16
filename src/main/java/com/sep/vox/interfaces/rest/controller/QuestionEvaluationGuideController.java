@@ -41,7 +41,7 @@ public class QuestionEvaluationGuideController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN', 'SYSTEM_ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UpdateQuestionResponse>> create(
             @PathVariable UUID questionId,
             @Valid @RequestBody UpdateQuestionEvaluationGuideRequest request) {
@@ -52,7 +52,7 @@ public class QuestionEvaluationGuideController {
     }
 
     @PutMapping
-    @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN', 'SYSTEM_ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UpdateQuestionResponse>> update(
             @PathVariable UUID questionId,
             @Valid @RequestBody UpdateQuestionEvaluationGuideRequest request) {
@@ -62,7 +62,7 @@ public class QuestionEvaluationGuideController {
     }
 
     @DeleteMapping
-    @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN', 'SYSTEM_ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UpdateQuestionResponse>> delete(@PathVariable UUID questionId) {
         var data = deleteQuestionEvaluationGuideUseCase.execute(questionId);
         return ResponseEntity.ok(ApiResponse.success("Xoa huong dan danh gia thanh cong", data));

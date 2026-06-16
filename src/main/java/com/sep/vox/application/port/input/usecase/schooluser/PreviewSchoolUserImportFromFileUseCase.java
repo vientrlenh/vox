@@ -9,7 +9,6 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.UserStatusValidator;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.PreviewSchoolUserImportFromFileCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -96,7 +95,6 @@ public class PreviewSchoolUserImportFromFileUseCase implements IUseCase<PreviewS
     private User findCurrentUser(UUID currentUserId) {
         var user = userRepository.findById(currentUserId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng hiện tại"));
-        UserStatusValidator.requireActive(user);
         return user;
     }
 

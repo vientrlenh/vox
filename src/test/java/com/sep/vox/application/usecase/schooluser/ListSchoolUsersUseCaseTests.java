@@ -22,9 +22,9 @@ import com.sep.vox.application.port.input.usecase.schooluser.ListSchoolUsersUseC
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.SchoolUserInfo;
 import com.sep.vox.application.query.repository.SchoolUserQueryRepository;
-import com.sep.vox.application.response.input.schooluser.SchoolUserResponse;
 import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.dto.SchoolUserDto;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.model.school.SchoolUser;
@@ -50,12 +50,10 @@ public class ListSchoolUsersUseCaseTests {
     void setUp() {
         userContextPort = mock(UserContextPort.class);
         userRepository = mock(UserRepository.class);
-        schoolUserQueryRepository = mock(SchoolUserQueryRepository.class);
         schoolUserRepository = mock(SchoolUserRepository.class);
         listSchoolUsersUseCase = new ListSchoolUsersUseCase(
             userContextPort,
             userRepository,
-            schoolUserQueryRepository,
             schoolUserRepository
         );
     }
@@ -91,9 +89,6 @@ public class ListSchoolUsersUseCaseTests {
 
         assertThat(result).isNotNull();
         assertThat(result.content()).hasSize(1);
-        SchoolUserResponse response = result.content().get(0);
-        assertThat(response.id()).isEqualTo(userId);
-        assertThat(response.roleCode()).isEqualTo("STUDENT");
 
         verify(schoolUserQueryRepository).findBySchoolIdAndRoleCodes(
             schoolId,

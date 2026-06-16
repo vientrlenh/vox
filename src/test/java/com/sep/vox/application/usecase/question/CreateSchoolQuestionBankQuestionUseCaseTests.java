@@ -7,6 +7,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -17,6 +18,8 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.command.CreateSchoolQuestionBankQuestionCommand;
 import com.sep.vox.application.port.input.usecase.question.CreateSchoolQuestionBankQuestionUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.query.dto.UserRoleInfo;
+import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.question.Question;
 import com.sep.vox.domain.model.question.QuestionBank;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
@@ -40,6 +43,7 @@ class CreateSchoolQuestionBankQuestionUseCaseTests {
     private QuestionBankRepository questionBankRepository;
     private UserContextPort userContextPort;
     private SchoolUserRepository schoolUserRepository;
+    private UserRoleQueryRepository userRoleQueryRepository;
     private CreateSchoolQuestionBankQuestionUseCase useCase;
 
     @BeforeEach
@@ -50,8 +54,9 @@ class CreateSchoolQuestionBankQuestionUseCaseTests {
         questionBankRepository = mock(QuestionBankRepository.class);
         userContextPort = mock(UserContextPort.class);
         schoolUserRepository = mock(SchoolUserRepository.class);
+        userRoleQueryRepository = mock(UserRoleQueryRepository.class);
         useCase = new CreateSchoolQuestionBankQuestionUseCase(
-            userRepository, questionRepository, questionTopicRepository, questionBankRepository, userContextPort, schoolUserRepository
+            userRepository, questionRepository, questionTopicRepository, questionBankRepository, userContextPort, schoolUserRepository, userRoleQueryRepository
         );
     }
 
@@ -66,6 +71,7 @@ class CreateSchoolQuestionBankQuestionUseCaseTests {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(userRepository.findByIdAndStatus(userId, UserStatus.ACTIVE)).thenReturn(Optional.of(activeUser(userId)));
         when(schoolUserRepository.findByUserId(userId)).thenReturn(Optional.of(new SchoolUser(schoolId, userId, OffsetDateTime.now(), null)));
+        when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId)).thenReturn(List.of(teacherRole(userId)));
         when(questionTopicRepository.findById(topicId)).thenReturn(Optional.of(topic(topicId, bankId, QuestionTopicStatus.PUBLISHED)));
         when(questionTopicRepository.isTopicBelongToSchool(topicId, schoolId)).thenReturn(true);
         when(questionBankRepository.findById(bankId)).thenReturn(Optional.of(bank(bankId, QuestionBankStatus.PUBLISHED)));
@@ -92,6 +98,7 @@ class CreateSchoolQuestionBankQuestionUseCaseTests {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(userRepository.findByIdAndStatus(userId, UserStatus.ACTIVE)).thenReturn(Optional.of(activeUser(userId)));
         when(schoolUserRepository.findByUserId(userId)).thenReturn(Optional.of(new SchoolUser(schoolId, userId, OffsetDateTime.now(), null)));
+        when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId)).thenReturn(List.of(teacherRole(userId)));
         when(questionTopicRepository.findById(topicId)).thenReturn(Optional.of(topic(topicId, bankId, QuestionTopicStatus.PUBLISHED)));
         when(questionTopicRepository.isTopicBelongToSchool(topicId, schoolId)).thenReturn(true);
         when(questionBankRepository.findById(bankId)).thenReturn(Optional.of(bank(bankId, QuestionBankStatus.ARCHIVED)));
@@ -116,5 +123,9 @@ class CreateSchoolQuestionBankQuestionUseCaseTests {
     private QuestionBank bank(UUID bankId, QuestionBankStatus status) {
         return new QuestionBank(bankId, UUID.randomUUID(), UUID.randomUUID(), "BANK", "Bank", null, QuestionBankOwnerType.SCHOOL, status,
             OffsetDateTime.now(), OffsetDateTime.now(), UUID.randomUUID(), UUID.randomUUID());
+    }
+
+    private UserRoleInfo teacherRole(UUID userId) {
+        return new UserRoleInfo(UUID.randomUUID(), userId, UUID.randomUUID(), OffsetDateTime.now(), "TEACHER", "Teacher");
     }
 }

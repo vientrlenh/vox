@@ -85,14 +85,23 @@ public class JpaQuestionTopicReadQueryRepository implements QuestionTopicReadQue
             WHERE qb.id = :bankId AND qt.id = :topicId
               AND qb.status = 'PUBLISHED' AND qt.status = 'PUBLISHED'
               AND (
-                qb.ownerType = 'SYSTEM'
-                OR (qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId)
-              )
-              AND (
-                (q.visibility = 'BANK_VISIBLE' AND q.status = 'PUBLISHED')
-                OR (q.visibility = 'BANK_VISIBLE' AND q.status IN ('DRAFT','SUBMITTED_FOR_REVIEW','REVISION_REQUESTED','APPROVED','REJECTED') AND q.createdBy = :userId)
-                OR (q.visibility = 'AUTHOR_ONLY' AND q.createdBy = :userId)
-                OR (q.visibility = 'REVIEWER_ONLY' AND q.createdBy <> :userId AND qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId AND q.status = 'SUBMITTED_FOR_REVIEW')
+                q.createdBy = :userId
+                OR (
+                  q.visibility = 'REVIEWER_ONLY'
+                  AND q.scope IN ('QUESTION_BANK', 'CENTRAL_EXAM_DRAFT')
+                  AND q.status = 'SUBMITTED_FOR_REVIEW'
+                  AND q.createdBy <> :userId
+                  AND qb.ownerType = 'SCHOOL'
+                  AND qb.schoolId = :schoolId
+                )
+                OR (
+                  q.visibility = 'BANK_VISIBLE'
+                  AND q.status = 'PUBLISHED'
+                  AND (
+                    qb.ownerType = 'SYSTEM'
+                    OR (qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId)
+                  )
+                )
               )
             """);
 
@@ -154,8 +163,21 @@ public class JpaQuestionTopicReadQueryRepository implements QuestionTopicReadQue
         StringBuilder where = new StringBuilder("""
             WHERE qb.id = :bankId AND qt.id = :topicId
               AND (
-                (qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId AND qt.status <> 'ARCHIVED' AND q.status <> 'ARCHIVED' AND q.visibility <> 'AUTHOR_ONLY')
-                OR (qb.ownerType = 'SYSTEM' AND qb.status = 'PUBLISHED' AND qt.status = 'PUBLISHED' AND q.status = 'PUBLISHED' AND q.visibility = 'BANK_VISIBLE')
+                (
+                  qb.ownerType = 'SCHOOL'
+                  AND qb.schoolId = :schoolId
+                  AND qt.status <> 'ARCHIVED'
+                  AND q.status <> 'ARCHIVED'
+                  AND q.visibility <> 'AUTHOR_ONLY'
+                )
+                OR (
+                  q.scope = 'QUESTION_BANK'
+                  AND qb.ownerType = 'SYSTEM'
+                  AND qb.status = 'PUBLISHED'
+                  AND qt.status = 'PUBLISHED'
+                  AND q.status = 'PUBLISHED'
+                  AND q.visibility = 'BANK_VISIBLE'
+                )
               )
             """);
 

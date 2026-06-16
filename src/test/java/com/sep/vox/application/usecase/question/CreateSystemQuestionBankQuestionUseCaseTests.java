@@ -53,7 +53,7 @@ class CreateSystemQuestionBankQuestionUseCaseTests {
         questionBankRepository = mock(QuestionBankRepository.class);
         userContextPort = mock(UserContextPort.class);
         useCase = new CreateSystemQuestionBankQuestionUseCase(
-            userRepository, questionRepository, questionTopicRepository, questionBankRepository, userContextPort
+            userRepository, questionBankRepository, questionRepository, questionTopicRepository, userContextPort
         );
     }
 
@@ -92,7 +92,7 @@ class CreateSystemQuestionBankQuestionUseCaseTests {
     }
 
     @Test
-    void create_should_throw_when_topic_not_in_current_school() {
+    void create_should_throw_when_topic_is_not_in_system_bank() {
         var userId = UUID.randomUUID();
         var topicId = UUID.randomUUID();
         var bankId = UUID.randomUUID();

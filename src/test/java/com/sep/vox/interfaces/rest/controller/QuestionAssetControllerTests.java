@@ -78,9 +78,9 @@ class QuestionAssetControllerTests {
 
     @Test
     void endpoints_should_use_expected_roles() throws Exception {
-        assertRole("create", "hasAnyRole('TEACHER', 'SCHOOL_ADMIN', 'SYSTEM_ADMIN')", UUID.class, UpdateQuestionAssetsRequest.class);
-        assertRole("update", "hasAnyRole('TEACHER', 'SCHOOL_ADMIN', 'SYSTEM_ADMIN')", UUID.class, UpdateQuestionAssetsRequest.class);
-        assertRole("delete", "hasAnyRole('TEACHER', 'SCHOOL_ADMIN', 'SYSTEM_ADMIN')", UUID.class);
+        assertRole("create", "hasAnyRole('TEACHER', 'SYSTEM_ADMIN')", UUID.class, UpdateQuestionAssetsRequest.class);
+        assertRole("update", "hasAnyRole('TEACHER', 'SYSTEM_ADMIN')", UUID.class, UpdateQuestionAssetsRequest.class);
+        assertRole("delete", "hasAnyRole('TEACHER', 'SYSTEM_ADMIN')", UUID.class);
     }
 
     private void assertRole(String methodName, String expected, Class<?>... parameterTypes) throws Exception {

@@ -151,7 +151,7 @@ class JpaQuestionPermissionQueryTests extends ContainerTestConfig {
     }
 
     @Test
-    void canEditContent_should_allow_school_admin_for_same_school_question_bank_question() {
+    void canEditContent_should_reject_school_admin_for_same_school_question_bank_question() {
         var schoolAdmin = persistUser("school-admin-edit-1@example.com", "0900000101", "SCHOOL_ADMIN", schoolId);
         var question = persistQuestion(UUID.randomUUID(), schoolId, QuestionBankOwnerType.SCHOOL,
             QuestionBankStatus.DRAFT, QuestionTopicStatus.DRAFT, QuestionScope.QUESTION_BANK,
@@ -160,7 +160,7 @@ class JpaQuestionPermissionQueryTests extends ContainerTestConfig {
 
         var permitted = query.canEditContent(question.getId());
 
-        assertThat(permitted).isTrue();
+        assertThat(permitted).isFalse();
     }
 
     @Test
@@ -220,8 +220,8 @@ class JpaQuestionPermissionQueryTests extends ContainerTestConfig {
     void canEditContent_should_allow_system_admin_for_system_question() {
         var systemAdmin = persistUser("system-admin-edit@example.com", "0900000105", "SYSTEM_ADMIN", schoolId);
         var question = persistQuestion(UUID.randomUUID(), schoolId, QuestionBankOwnerType.SYSTEM,
-            QuestionBankStatus.DRAFT, QuestionTopicStatus.DRAFT, QuestionScope.CENTRAL_EXAM_PAPER,
-            QuestionStatus.REVISION_REQUESTED, QuestionVisibility.EXAM_PAPER_ONLY, false);
+            QuestionBankStatus.DRAFT, QuestionTopicStatus.DRAFT, QuestionScope.QUESTION_BANK,
+            QuestionStatus.REVISION_REQUESTED, QuestionVisibility.BANK_VISIBLE, false);
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(systemAdmin.getId());
 
         var permitted = query.canEditContent(question.getId());
@@ -473,8 +473,8 @@ class JpaQuestionPermissionQueryTests extends ContainerTestConfig {
     void canReview_should_allow_system_admin_for_system_question() {
         var systemAdmin = persistUser("system-admin-review-2@example.com", "0900000121", "SYSTEM_ADMIN", schoolId);
         var question = persistQuestion(UUID.randomUUID(), schoolId, QuestionBankOwnerType.SYSTEM,
-            QuestionBankStatus.DRAFT, QuestionTopicStatus.DRAFT, QuestionScope.CENTRAL_EXAM_PAPER,
-            QuestionStatus.DRAFT, QuestionVisibility.AUTHOR_ONLY, false);
+            QuestionBankStatus.DRAFT, QuestionTopicStatus.DRAFT, QuestionScope.QUESTION_BANK,
+            QuestionStatus.DRAFT, QuestionVisibility.BANK_VISIBLE, false);
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(systemAdmin.getId());
 
         var permitted = query.canReview(question.getId(), QuestionStatus.ARCHIVED);

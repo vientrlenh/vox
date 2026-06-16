@@ -32,14 +32,14 @@ import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassesU
 import com.sep.vox.application.port.input.usecase.schooluser.ListSchoolUsersUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.UpdateSchoolUserUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUserUseCase;
-import com.sep.vox.application.response.input.schoolclass.SchoolClassResponse;
 import com.sep.vox.application.response.input.schoolclassuser.SchoolClassUserResponse;
 import com.sep.vox.application.response.input.schoolclass.UpdateSchoolClassResponse;
-import com.sep.vox.application.response.input.schooluser.SchoolUserResponse;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.repository.SchoolRepository;
+import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.dto.SchoolDto;
 import com.sep.vox.domain.dto.SchoolGradeDto;
+import com.sep.vox.domain.dto.SchoolUserDto;
 import com.sep.vox.domain.dto.SupportedLanguageDto;
 import com.sep.vox.domain.dto.UserDto;
 
@@ -90,7 +90,7 @@ class SchoolControllerTests {
         var controller = new SchoolController(mock(ViewSchoolsUseCase.class), useCase, detailsUseCase, updateUseCase, mock(ListSchoolUsersUseCase.class), mock(ViewSchoolUserUseCase.class), mock(UpdateSchoolUserUseCase.class), mock(SchoolRepository.class), classUsersUseCase);
         var languageId = UUID.randomUUID();
         var gradeId = UUID.randomUUID();
-        var expected = new PageResult<SchoolClassResponse>(List.of(), 1, 20, 0, 0);
+        var expected = new PageResult<SchoolClassDto>(List.of(), 1, 20, 0, 0);
         var query = new ViewSchoolClassesQuery(1, 20, "eng", "ACTIVE", languageId, gradeId);
         when(useCase.execute(query)).thenReturn(expected);
 
@@ -126,7 +126,7 @@ class SchoolControllerTests {
         var updateUseCase = mock(UpdateSchoolClassUseCase.class);
         var controller = new SchoolController(mock(ViewSchoolsUseCase.class), useCase, detailsUseCase, updateUseCase, mock(ListSchoolUsersUseCase.class), mock(ViewSchoolUserUseCase.class), mock(UpdateSchoolUserUseCase.class), mock(SchoolRepository.class), classUsersUseCase);
         var classId = UUID.randomUUID();
-        var expected = new SchoolClassResponse(
+        var expected = new SchoolClassDto(
             classId,
             UUID.randomUUID(),
             UUID.randomUUID(),
@@ -161,7 +161,7 @@ class SchoolControllerTests {
             mock(ViewSchoolClassUsersUseCase.class)
         );
         var schoolId = UUID.randomUUID();
-        var response = schoolClassResponse(schoolId, UUID.randomUUID(), UUID.randomUUID());
+        var response = schoolClassDto(schoolId, UUID.randomUUID(), UUID.randomUUID());
         var expected = new SchoolDto(schoolId, "SCH", "School", null, null, null, null, null, 0, true, null, null);
         var env = mock(DataFetchingEnvironment.class);
         var loader = mock(DataLoader.class);
@@ -190,7 +190,7 @@ class SchoolControllerTests {
         );
         var schoolId = UUID.randomUUID();
         var gradeId = UUID.randomUUID();
-        var response = schoolClassResponse(schoolId, UUID.randomUUID(), gradeId);
+        var response = schoolClassDto(schoolId, UUID.randomUUID(), gradeId);
         var expected = new SchoolGradeDto(gradeId, schoolId, "G10", "Grade 10", null, null, null, "ACTIVE", null, null);
         var env = mock(DataFetchingEnvironment.class);
         var loader = mock(DataLoader.class);
@@ -219,7 +219,7 @@ class SchoolControllerTests {
             mock(ViewSchoolClassUsersUseCase.class)
         );
         var languageId = UUID.randomUUID();
-        var response = schoolClassResponse(UUID.randomUUID(), languageId, UUID.randomUUID());
+        var response = schoolClassDto(UUID.randomUUID(), languageId, UUID.randomUUID());
         var expected = new SupportedLanguageDto(languageId, "EN", "English", null, true, null, null);
         var env = mock(DataFetchingEnvironment.class);
         var loader = mock(DataLoader.class);
@@ -366,7 +366,7 @@ class SchoolControllerTests {
     @Test
     void school_users_field_should_return_page_from_use_case() {
         var school = new SchoolDto(schoolId, "SCH", "School", null, null, null, null, null, 0, true, null, null);
-        var response = schoolUserResponse(userId, "STUDENT");
+        var response = schoolUserDto(UUID.randomUUID(), schoolId, userId);
         var page = new PageResult<>(List.of(response), 1, 20, 1, 1);
         when(listSchoolUsersUseCase.execute(new ListSchoolUsersCommand(schoolId, 1, 20))).thenReturn(page);
 
@@ -380,7 +380,7 @@ class SchoolControllerTests {
     @Test
     void school_user_field_should_return_details_from_use_case() {
         var school = new SchoolDto(schoolId, "SCH", "School", null, null, null, null, null, 0, true, null, null);
-        var response = schoolUserResponse(userId, "TEACHER");
+        var response = schoolUserDto(UUID.randomUUID(), userId, schoolId);
         when(viewSchoolUserUseCase.execute(new ViewSchoolUserCommand(schoolId, userId))).thenReturn(response);
 
         var result = controller.user(school, userId);
@@ -398,12 +398,12 @@ class SchoolControllerTests {
             .hasMessage("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
     }
 
-    private SchoolUserResponse schoolUserResponse(UUID id, String roleCode) {
-        return new SchoolUserResponse(id, schoolId, id, roleCode, null, null);
+    private SchoolUserDto schoolUserDto(UUID id, UUID schoolId, UUID userId) {
+        return new SchoolUserDto(id, schoolId, userId, null, null);
     }
 
-    private static SchoolClassResponse schoolClassResponse(UUID schoolId, UUID languageId, UUID gradeId) {
-        return new SchoolClassResponse(
+    private static SchoolClassDto schoolClassDto(UUID schoolId, UUID languageId, UUID gradeId) {
+        return new SchoolClassDto(
             UUID.randomUUID(),
             schoolId,
             languageId,

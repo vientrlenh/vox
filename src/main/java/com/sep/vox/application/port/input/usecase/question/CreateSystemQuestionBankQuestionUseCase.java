@@ -21,9 +21,7 @@ import com.sep.vox.domain.model.question.QuestionScope;
 import com.sep.vox.domain.model.question.QuestionTopic;
 import com.sep.vox.domain.model.question.QuestionType;
 import com.sep.vox.domain.model.question.QuestionVisibility;
-
 import com.sep.vox.domain.model.user.UserStatus;
-
 import com.sep.vox.domain.repository.QuestionBankRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.QuestionTopicRepository;
@@ -33,21 +31,21 @@ import com.sep.vox.domain.repository.UserRepository;
 public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateSystemQuestionBankQuestionCommand, CreateQuestionResponse> {
 
     private final UserRepository userRepository;
+    private final QuestionBankRepository questionBankRepository;
     private final QuestionRepository questionRepository;
     private final QuestionTopicRepository questionTopicRepository;
-    private final QuestionBankRepository questionBankRepository;
     private final UserContextPort userContextPort;
 
     public CreateSystemQuestionBankQuestionUseCase(
             UserRepository userRepository,
+            QuestionBankRepository questionBankRepository,
             QuestionRepository questionRepository,
             QuestionTopicRepository questionTopicRepository,
-            QuestionBankRepository questionBankRepository,
             UserContextPort userContextPort) {
         this.userRepository = userRepository;
+        this.questionBankRepository = questionBankRepository;
         this.questionRepository = questionRepository;
         this.questionTopicRepository = questionTopicRepository;
-        this.questionBankRepository = questionBankRepository;
         this.userContextPort = userContextPort;
     }
 
@@ -61,12 +59,7 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
             .orElseThrow(() -> new UnauthorizedException("Trang thai nguoi dung khong hop le"));
 
         var questionTopic = getQuestionTopic(command.questionTopicId());
-        var questionBank = questionBankRepository.findById(questionTopic.getQuestionBankId())
-            .orElseThrow(() -> new NotFoundException("Khong tim thay ngan hang cau hoi voi ID nay"));
-        if (questionBank.getOwnerType() != QuestionBankOwnerType.SYSTEM) {
-            throw new ForbiddenException("Quyen truy cap bi tu choi");
-        }
-
+        validateSystemTopic(questionTopic);
         validateResponseDurationRange(command);
 
         var now = OffsetDateTime.now();
@@ -120,10 +113,18 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
         return questionTopic;
     }
 
+    private void validateSystemTopic(QuestionTopic questionTopic) {
+        var bank = questionBankRepository.findById(questionTopic.getQuestionBankId())
+            .orElseThrow(() -> new NotFoundException("Khong tim thay ngan hang cau hoi"));
+
+        if (bank.getOwnerType() != QuestionBankOwnerType.SYSTEM) {
+            throw new ForbiddenException("Chi duoc tao cau hoi he thong trong ngan hang he thong");
+        }
+    }
+
     private void validateResponseDurationRange(CreateSystemQuestionBankQuestionCommand command) {
         if (command.minResponseSeconds() > command.maxResponseSeconds()) {
             throw new IllegalStateException("Thoi gian tra loi toi thieu khong duoc lon hon thoi gian tra loi toi da");
         }
     }
-
 }

@@ -17,6 +17,7 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreateQuestionTopicCommand;
 import com.sep.vox.application.port.input.usecase.questiontopic.CreateQuestionTopicUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.query.repository.QuestionTopicPermissionQuery;
 import com.sep.vox.domain.model.question.QuestionTopic;
 import com.sep.vox.domain.model.question.QuestionTopicStatus;
 import com.sep.vox.domain.repository.QuestionBankRepository;
@@ -26,6 +27,7 @@ class CreateQuestionTopicUseCaseTests {
 
     private QuestionTopicRepository questionTopicRepository;
     private QuestionBankRepository questionBankRepository;
+    private QuestionTopicPermissionQuery permissionQuery;
     private UserContextPort userContextPort;
     private CreateQuestionTopicUseCase useCase;
 
@@ -33,8 +35,9 @@ class CreateQuestionTopicUseCaseTests {
     void setUp() {
         questionTopicRepository = mock(QuestionTopicRepository.class);
         questionBankRepository = mock(QuestionBankRepository.class);
+        permissionQuery = mock(QuestionTopicPermissionQuery.class);
         userContextPort = mock(UserContextPort.class);
-        useCase = new CreateQuestionTopicUseCase(questionTopicRepository, questionBankRepository, userContextPort);
+        useCase = new CreateQuestionTopicUseCase(questionTopicRepository, questionBankRepository, permissionQuery, userContextPort);
     }
 
     @Test
@@ -45,6 +48,7 @@ class CreateQuestionTopicUseCaseTests {
         var command = new CreateQuestionTopicCommand(bankId, "  Speaking   topic  ", "  Topic   description  ");
 
         when(questionBankRepository.existsById(bankId)).thenReturn(true);
+        when(permissionQuery.canCreateTopic(bankId)).thenReturn(true);
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(questionTopicRepository.save(any(QuestionTopic.class))).thenAnswer(invocation -> {
             var topic = invocation.getArgument(0, QuestionTopic.class);

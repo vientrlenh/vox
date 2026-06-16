@@ -12,20 +12,24 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.graphql.execution.BatchLoaderRegistry;
 
 import com.sep.vox.application.port.input.query.key.SchoolClassesKey;
+import com.sep.vox.application.port.input.query.key.SchoolUsersKey;
 import com.sep.vox.application.port.input.query.key.SchoolClassGradeKey;
 import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.dto.SchoolDto;
 import com.sep.vox.domain.dto.SchoolGradeDto;
+import com.sep.vox.domain.dto.SchoolUserDto;
 import com.sep.vox.domain.dto.SupportedLanguageDto;
 import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.domain.mapper.SchoolClassDtoMapper;
 import com.sep.vox.domain.mapper.SchoolDtoMapper;
 import com.sep.vox.domain.mapper.SchoolGradeDtoMapper;
+import com.sep.vox.domain.mapper.SchoolUserDtoMapper;
 import com.sep.vox.domain.mapper.SupportedLanguageDtoMapper;
 import com.sep.vox.domain.mapper.UserDtoMapper;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
@@ -40,7 +44,8 @@ public class SchoolGraphQlDataLoaderConfig {
             SchoolRepository schoolRepository,
             SchoolGradeRepository schoolGradeRepository,
             SupportedLanguageRepository supportedLanguageRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository, 
+            SchoolUserRepository schoolUserRepository) {
 
         registry.<SchoolClassesKey, List<SchoolClassDto>>forName("schoolClassesBySchool")
         .registerMappedBatchLoader((Set<SchoolClassesKey> keys, BatchLoaderEnvironment env) ->
@@ -74,6 +79,39 @@ public class SchoolGraphQlDataLoaderConfig {
                     }
                 }
 
+                return result;
+            })
+        );
+
+        registry.<SchoolUsersKey, List<SchoolUserDto>>forName("schoolUsersBySchool")
+        .registerMappedBatchLoader((Set<SchoolUsersKey> keys, BatchLoaderEnvironment env) -> 
+            Mono.fromSupplier(() -> {
+                Map<SchoolUsersKey, List<SchoolUserDto>> result = new HashMap<SchoolUsersKey, List<SchoolUserDto>>();
+
+                keys.forEach(key -> result.put(key, List.of()));
+
+                var keysByPage = keys.stream().collect(Collectors.groupingBy(key -> new PageKey(key.page(), key.size())));
+
+                for (var entry : keysByPage.entrySet()) {
+                    var pageKey = entry.getKey();
+                    var groupedKeys = entry.getValue();
+
+                    var schoolIds = groupedKeys.stream()
+                        .map(SchoolUsersKey::schoolId)
+                        .toList();
+
+                    var usersBySchoolId = schoolUserRepository.findBySchoolIdIn(schoolIds, pageKey.page(), pageKey.size())
+                        .stream()
+                        .map(SchoolUserDtoMapper::toSchoolUserDto)
+                        .collect(Collectors.groupingBy(SchoolUserDto::schoolId));
+                    
+                    for (var key : groupedKeys) {
+                        result.put(
+                            key, 
+                            usersBySchoolId.getOrDefault(key.schoolId(), List.of())
+                        );
+                    }
+                }
                 return result;
             })
         );

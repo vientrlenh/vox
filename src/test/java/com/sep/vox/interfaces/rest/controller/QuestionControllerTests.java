@@ -152,9 +152,9 @@ class QuestionControllerTests {
     @Test
     void endpoints_should_use_expected_roles() throws Exception {
         assertRole("createSystem", "hasRole('SYSTEM_ADMIN')", CreateSystemQuestionBankQuestionRequest.class);
-        assertRole("createSchool", "hasAnyRole('SCHOOL_ADMIN', 'TEACHER')", CreateSystemQuestionBankQuestionRequest.class);
-        assertRole("updateContent", "hasAnyRole('TEACHER', 'SCHOOL_ADMIN', 'SYSTEM_ADMIN')", UUID.class, UpdateQuestionContentRequest.class);
-        assertRole("delete", "hasAnyRole('TEACHER', 'SCHOOL_ADMIN', 'SYSTEM_ADMIN')", UUID.class);
+        assertRole("createSchool", "hasRole('TEACHER')", CreateSystemQuestionBankQuestionRequest.class);
+        assertRole("updateContent", "hasAnyRole('TEACHER', 'SYSTEM_ADMIN')", UUID.class, UpdateQuestionContentRequest.class);
+        assertRole("delete", "hasAnyRole('TEACHER', 'SYSTEM_ADMIN')", UUID.class);
         assertRole("reviewAction", "hasAnyRole('TEACHER', 'SCHOOL_ADMIN', 'SYSTEM_ADMIN')", UUID.class, ReviewQuestionRequest.class);
     }
 

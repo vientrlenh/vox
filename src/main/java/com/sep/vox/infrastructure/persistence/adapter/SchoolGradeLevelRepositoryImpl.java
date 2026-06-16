@@ -24,9 +24,8 @@ public class SchoolGradeLevelRepositoryImpl implements SchoolGradeLevelRepositor
     }
 
     @Override
-    public Optional<SchoolGradeLevel> findBySchoolIdAndCode(UUID schoolId, String code) {
-        // Tui viết luôn ruột để bạn gọi sau này không bị lỗi NullPointerException
-        return schoolGradeLevelRepository.findBySchoolIdAndCode(schoolId, code)
+    public Optional<SchoolGradeLevel> findBySchoolIdAndCode(UUID schoolId) {
+        return schoolGradeLevelRepository.findBySchoolId(schoolId)
                 .map(SchoolGradeLevelMapper::toDomain);
     }
 

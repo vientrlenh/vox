@@ -7,7 +7,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface SpringDataSchoolGradeLevelRepository extends JpaRepository<SchoolGradeLevelJpaEntity, UUID> {
-    Optional<SchoolGradeLevelJpaEntity> findBySchoolIdAndCode(UUID schoolId, String code);
+    Optional<SchoolGradeLevelJpaEntity> findBySchoolId(UUID schoolId);
     boolean existsBySchoolIdAndCode(UUID schoolId, String code);
     boolean existsBySchoolIdAndOrder(UUID schoolId, int order);
 }

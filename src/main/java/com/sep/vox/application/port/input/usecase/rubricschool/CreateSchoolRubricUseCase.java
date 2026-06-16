@@ -58,113 +58,95 @@ public class CreateSchoolRubricUseCase implements IUseCase<CreateSchoolRubricCom
     @Override
     @Transactional
     public UUID execute(CreateSchoolRubricCommand command) {
-
-        // 1. Kiểm tra tài khoản & Quyền
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
-        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản đã bị khóa.");
 
+        // 1. Validate User & Permission
+        validateUserAccess(currentUserId, command.schoolId());
 
-        // 2. Kiểm tra Trường học (Active)
-        School school = schoolRepository.findById(command.schoolId()).orElseThrow(() -> new NotFoundException("Không tìm thấy trường học."));
+        // 2. Validate Ngôn ngữ & Framework
+        validateInfrastructure(command.languageId(), command.frameworkId());
 
-        if (!school.isActive()) {
-            throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");
+        // 3. Kiểm tra Rubric duy nhất (Business Rule)
+        validateRubricUniqueness(command.schoolId(), command.languageId());
+
+        // 4. Lưu Rubric gốc
+        Rubric savedRubric = saveRubric(command);
+
+        // 5. Xử lý và lưu danh sách phiên bản
+        saveRubricVersions(savedRubric.getId(), command, currentUserId);
+
+        return savedRubric.getId();
+    }
+
+    private void validateUserAccess(UUID userId, UUID schoolId) {
+        if (!userRepository.existsByIdAndStatus(userId, UserStatus.ACTIVE)) {
+            throw new UnauthorizedException("Tài khoản không tồn tại hoặc đã bị khóa.");
         }
 
-        // 3. KIỂM TRA QUYỀN SCHOOL BẰNG BẢNG SCHOOL_USER
-        var schoolUser = schoolUserRepository.findByUserId(currentUserId)
-                .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
+        // Tối ưu: Chỉ lấy schoolId thay vì toàn bộ thực thể
+        schoolUserRepository.findSchoolIdByUserId(userId)
+                .filter(id -> id.equals(schoolId))
+                .orElseThrow(() -> new ForbiddenException("Bạn không có quyền quản lý trường học này."));
 
-        if (!schoolUser.getSchoolId().equals(command.schoolId())) {
-            throw new ForbiddenException("Bạn không có quyền tạo Rubric cho trường khác.");
+        // Kiểm tra trường active
+        if (!schoolRepository.existsByIdAndIsActiveTrue(schoolId)) {
+            throw new ForbiddenException("Trường học đang bị vô hiệu hóa.");
         }
+    }
 
+    private void validateInfrastructure(UUID langId, UUID frameworkId) {
+        if (!languageRepository.existsById(langId)) throw new NotFoundException("Ngôn ngữ không tồn tại.");
 
-        // 2. Kiểm tra Ngôn ngữ
-        if (!languageRepository.existsById(command.languageId())) {
-            throw new NotFoundException("Ngôn ngữ không tồn tại.");
+        frameworkRepository.findById(frameworkId)
+                .filter(Framework::isActive)
+                .orElseThrow(() -> new NotFoundException("Framework không tồn tại hoặc bị vô hiệu hóa."));
+    }
+
+    private void validateRubricUniqueness(UUID schoolId, UUID langId) {
+        if (rubricRepository.existsByOwnerTypeAndSchoolIdAndLanguageId(RubricOwnerType.SCHOOL.toString(), schoolId, langId)) {
+            throw new IllegalStateException("Trường học đã có Rubric cho ngôn ngữ này.");
         }
+    }
 
-        // 3. BỔ SUNG: Kiểm tra Framework gốc
-        Framework framework = frameworkRepository.findById(command.frameworkId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Khung tiêu chuẩn (Framework)."));
-        if (!framework.isActive()) {
-            throw new IllegalStateException("Không thể sử dụng Khung tiêu chuẩn (Framework) này vì nó đang bị vô hiệu hóa.");
-        }
-
-        // 4. Kiểm tra Rubric duy nhất theo ngôn ngữ
-        boolean isRubricExisted = rubricRepository.existsByOwnerTypeAndSchoolIdAndLanguageId(
-                RubricOwnerType.SCHOOL.toString(),
-                command.schoolId(),
-                command.languageId()
-        );
-
-        if (isRubricExisted) {
-            throw new IllegalStateException("Trường học này đã khởi tạo một bộ Rubric cho ngôn ngữ được chọn. Mỗi trường chỉ được phép có tối đa 1 bộ Rubric cho mỗi ngôn ngữ.");
-        }
-
-        if (command.versions() == null || command.versions().isEmpty()) {
-            throw new IllegalArgumentException("Rubric phải có ít nhất 1 phiên bản.");
-        }
-
-        // 5. TẠO RUBRIC GỐC (Map đúng chuẩn Constructor)
-        String safeCode = StringNormalization.trimAndCollapseSpaces(command.code());
-        String safeName = StringNormalization.trimAndCollapseSpaces(command.name());
-        String safeDesc = command.description() != null ? StringNormalization.trimAndCollapseSpaces(command.description()) : null;
-
-        Rubric newRubric = new Rubric(
+    private Rubric saveRubric(CreateSchoolRubricCommand command) {
+        return rubricRepository.save(new Rubric(
                 command.languageId(),
                 command.frameworkId(),
-                safeCode,
-                safeName,
-                safeDesc,
+                StringNormalization.trimAndCollapseSpaces(command.code()),
+                StringNormalization.trimAndCollapseSpaces(command.name()),
+                StringNormalization.trimAndCollapseSpaces(command.description()),
                 RubricOwnerType.SCHOOL,
                 command.schoolId(),
-                null // currentVersionId ban đầu luôn null
-        );
+                null
+        ));
+    }
 
-        Rubric savedRubric = rubricRepository.save(newRubric);
+    private void saveRubricVersions(UUID rubricId, CreateSchoolRubricCommand command, UUID userId) {
+        List<CreateSchoolRubricCommand.RubricVersionItemCommand> versionCmds = command.versions();
+        if (versionCmds == null || versionCmds.isEmpty()) throw new IllegalArgumentException("Rubric cần ít nhất 1 phiên bản.");
 
-        // 6. XỬ LÝ DANH SÁCH VERSION
         OffsetDateTime now = OffsetDateTime.now();
-        Set<Integer> uniqueVersions = new HashSet<>();
+        Set<Integer> seenVersions = new HashSet<>();
 
-        List<RubricVersion> versionsToSave = command.versions().stream().map(vCmd -> {
-
-            if (!uniqueVersions.add(vCmd.version())) {
-                throw new IllegalArgumentException("Lỗi: Bạn đang gửi nhiều phiên bản có cùng số Version (" + vCmd.version() + ").");
-            }
-
-            if (vCmd.scoringScaleMin().compareTo(vCmd.scoringScaleMax()) > 0) {
-                throw new IllegalArgumentException("Version " + vCmd.version() + ": Điểm sàn không được lớn hơn điểm trần.");
-            }
+        List<RubricVersion> versions = versionCmds.stream().map(vCmd -> {
+            // Validation trong Stream
+            if (!seenVersions.add(vCmd.version())) throw new IllegalArgumentException("Trùng phiên bản: " + vCmd.version());
+            if (vCmd.scoringScaleMin().compareTo(vCmd.scoringScaleMax()) > 0) throw new IllegalArgumentException("Điểm sàn > trần.");
 
             OffsetDateTime validFrom = vCmd.effectiveFrom() != null ? vCmd.effectiveFrom() : now;
-            if (vCmd.effectiveTo() != null && vCmd.effectiveTo().isBefore(validFrom)) {
-                throw new IllegalArgumentException("Version " + vCmd.version() + ": Ngày kết thúc không được trước ngày bắt đầu.");
-            }
+            if (vCmd.effectiveTo() != null && vCmd.effectiveTo().isBefore(validFrom)) throw new IllegalArgumentException("Ngày kết thúc không hợp lệ.");
 
-            // Map đúng chuẩn Constructor của Domain Model
             return new RubricVersion(
-                    savedRubric.getId(),
-                    vCmd.version(),
-                    safeCode + "_V" + vCmd.version(),
-                    safeName + " - Version " + vCmd.version(),
-                    safeDesc,
-                    RubricStatus.DRAFT, // Mặc định là Nháp
-                    validFrom,
-                    vCmd.effectiveTo(),
-                    vCmd.scoringScaleMin(),
-                    vCmd.scoringScaleMax(),
-                    vCmd.totalScoreMethod(),
-                    now, now, currentUserId, currentUserId
+                    rubricId, vCmd.version(),
+                    command.code() + "_V" + vCmd.version(),
+                    command.name() + " - V" + vCmd.version(),
+                    command.description(), RubricStatus.DRAFT,
+                    validFrom, vCmd.effectiveTo(),
+                    vCmd.scoringScaleMin(), vCmd.scoringScaleMax(),
+                    vCmd.totalScoreMethod(), now, now, userId, userId
             );
         }).toList();
 
-        // 7. Lưu hàng loạt
-        rubricVersionRepository.saveAll(versionsToSave);
-
-        return savedRubric.getId();
+        rubricVersionRepository.saveAll(versions);
     }
 }

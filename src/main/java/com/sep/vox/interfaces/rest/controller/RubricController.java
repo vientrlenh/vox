@@ -79,7 +79,7 @@ public class RubricController {
     }
 
     //==========================RUBRIC  & RUBRIC VERSION===================================
-    // API 1: TẠO RUBRIC & VERSION (DRAFT) = tối ưu/chưa chạy lại => Check Đợt 2
+    // API 1: TẠO RUBRIC & VERSION (DRAFT) = tối ưu/chưa chạy lại => Check Đợt 3
     @Operation(summary = "Tạo mới một bộ tiêu chí (Rubric) cho trường học")
     @PostMapping("/schools/{schoolId}/rubrics")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")

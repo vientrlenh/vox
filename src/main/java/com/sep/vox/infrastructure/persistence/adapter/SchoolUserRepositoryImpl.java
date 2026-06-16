@@ -78,5 +78,10 @@ public class SchoolUserRepositoryImpl implements SchoolUserRepository {
         return springDataSchoolUserRepository.findBySchoolIdAndUserId(schoolId, userId)
             .map(SchoolUserMapper::toDomain);
     }
-    
+
+    @Override
+    public Optional<UUID> findSchoolIdByUserId(UUID userId) {
+        return springDataSchoolUserRepository.findSchoolIdByUserId(userId);
+    }
+
 }

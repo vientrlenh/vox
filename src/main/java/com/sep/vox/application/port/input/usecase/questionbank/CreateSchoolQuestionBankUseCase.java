@@ -7,7 +7,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.mapper.questionbank.CreateQuestionBankResponseMapper;
 import com.sep.vox.application.port.input.command.CreateSchoolQuestionBankCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -15,20 +14,19 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.questionbank.CreateQuestionBankResponse;
 import com.sep.vox.domain.model.question.QuestionBank;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
-import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.QuestionBankRepository;
-import com.sep.vox.domain.repository.UserRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
 public class CreateSchoolQuestionBankUseCase implements IUseCase<CreateSchoolQuestionBankCommand, CreateQuestionBankResponse> {
 
     private final QuestionBankRepository questionBankRepository;
-    private final UserRepository userRepository;
+    private final SchoolUserRepository schoolUserRepository;
     private final UserContextPort userContextPort;
 
-    public CreateSchoolQuestionBankUseCase(QuestionBankRepository questionBankRepository, UserRepository userRepository, UserContextPort userContextPort) {
+    public CreateSchoolQuestionBankUseCase(QuestionBankRepository questionBankRepository, SchoolUserRepository schoolUserRepository, UserContextPort userContextPort) {
         this.questionBankRepository = questionBankRepository;
-        this.userRepository = userRepository;
+        this.schoolUserRepository = schoolUserRepository;
         this.userContextPort = userContextPort;
     }
 
@@ -38,10 +36,10 @@ public class CreateSchoolQuestionBankUseCase implements IUseCase<CreateSchoolQue
         var command = normalize(input);
 
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentUser = userRepository.findByIdAndStatus(currentUserId, UserStatus.ACTIVE)
-            .orElseThrow(() -> new UnauthorizedException("Trạng thái người dùng không hợp lệ"));
+        var schoolUser = schoolUserRepository.findByUserId(currentUserId)
+            .orElseThrow(() -> new ForbiddenException("Quyền truy cập không hợp lệ"));
         
-        if (currentUser.getSchoolId() == null || !currentUser.getSchoolId().equals(command.schoolId())) {
+        if (!schoolUser.getSchoolId().equals(command.schoolId())) {
             throw new ForbiddenException("Quyền truy cập không hợp lệ");
         }
 

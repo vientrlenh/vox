@@ -28,8 +28,7 @@ public final class UserMapper {
             jpa.getCreatedAt(),
             jpa.getUpdatedAt(),
             jpa.getCreatedBy(),
-            jpa.getUpdatedBy(),
-            jpa.getSchoolId()
+            jpa.getUpdatedBy()
         );
     }
 
@@ -48,8 +47,7 @@ public final class UserMapper {
             user.getCreatedAt(), 
             user.getUpdatedAt(), 
             user.getCreatedBy(), 
-            user.getUpdatedBy(),
-            user.getSchoolId()
+            user.getUpdatedBy()
         );
     }
 

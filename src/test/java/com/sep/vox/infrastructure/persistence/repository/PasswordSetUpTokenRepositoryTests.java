@@ -12,7 +12,7 @@ import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabas
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
-import com.sep.vox.config.TestContainerConfig;
+import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.domain.model.passwordsetuptoken.PasswordSetUpToken;
 import com.sep.vox.domain.repository.PasswordSetUpTokenRepository;
 import com.sep.vox.infrastructure.persistence.adapter.PasswordSetUpTokenRepositoryImpl;
@@ -22,11 +22,10 @@ import jakarta.persistence.EntityManager;
 @DataJpaTest
 @ActiveProfiles("test")
 @Import({
-    TestContainerConfig.class,
     PasswordSetUpTokenRepositoryImpl.class
 })
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-class PasswordSetUpTokenRepositoryTests {
+class PasswordSetUpTokenRepositoryTests extends ContainerTestConfig {
 
     @Autowired
     private PasswordSetUpTokenRepository passwordSetUpTokenRepository;

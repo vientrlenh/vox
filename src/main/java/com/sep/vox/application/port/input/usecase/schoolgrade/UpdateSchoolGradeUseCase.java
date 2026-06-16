@@ -8,26 +8,37 @@ import com.sep.vox.application.port.input.command.UpdateSchoolGradeCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.school.SchoolGrade;
-import com.sep.vox.domain.model.user.User;
+import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.UserStatus;
+import com.sep.vox.domain.repository.SchoolGradeLevelRepository;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
-import com.sep.vox.domain.repository.SchoolRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
 public class UpdateSchoolGradeUseCase implements IUseCase<UpdateSchoolGradeCommand, UUID> {
     private final SchoolGradeRepository schoolGradeRepository;
+    private final SchoolGradeLevelRepository schoolGradeLevelRepository; // Bổ sung repo cầu nối
+    private final SchoolUserRepository schoolUserRepository; // Bổ sung repo bảo mật
     private final UserContextPort userContextPort;
     private final UserRepository userRepository;
 
-    public UpdateSchoolGradeUseCase(SchoolGradeRepository schoolGradeRepository, SchoolRepository schoolRepository, UserContextPort userContextPort, UserRepository userRepository) {
+    public UpdateSchoolGradeUseCase(
+            SchoolGradeRepository schoolGradeRepository,
+            SchoolGradeLevelRepository schoolGradeLevelRepository,
+            SchoolUserRepository schoolUserRepository,
+            UserContextPort userContextPort,
+            UserRepository userRepository) {
         this.schoolGradeRepository = schoolGradeRepository;
+        this.schoolGradeLevelRepository = schoolGradeLevelRepository;
+        this.schoolUserRepository = schoolUserRepository;
         this.userContextPort = userContextPort;
         this.userRepository = userRepository;
     }
@@ -35,28 +46,39 @@ public class UpdateSchoolGradeUseCase implements IUseCase<UpdateSchoolGradeComma
     @Override
     @Transactional
     public UUID execute(UpdateSchoolGradeCommand command) {
-        // 1. Kiểm tra tồn tại
+        // 1. Kiểm tra tồn tại của School Grade
         SchoolGrade grade = schoolGradeRepository.findById(command.schoolGradeId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy khối lớp."));
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy năm học/khóa học (School Grade)."));
 
-        // 2. Validate quyền
+        // 2. Lấy School Grade Level làm "cầu nối" để xác định School ID của cục dữ liệu này
+        var gradeLevel = schoolGradeLevelRepository.findById(grade.getSchoolGradeLevelId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy Khối Lớp chứa năm học này."));
+
+        // 3. Validate User (Tối ưu bằng hàm exists)
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
-
-        if (currentUser.getSchoolId() != null && !currentUser.getSchoolId().equals(grade.getSchoolId())) {
-            throw new ForbiddenException("Bạn không có quyền sửa khối lớp của trường khác.");
+        if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
+            throw new UnauthorizedException("Tài khoản không tồn tại hoặc đã bị khóa.");
         }
 
-        // 3. Validate logic ngày tháng
+        // VÒNG BẢO MẬT: KIỂM TRA QUYỀN SCHOOL USER
+        Optional<SchoolUser> schoolUserOpt = schoolUserRepository.findByUserId(currentUserId);
+        if (schoolUserOpt.isPresent()) {
+            SchoolUser schoolUser = schoolUserOpt.get();
+            // So sánh SchoolId của người dùng với SchoolId của Khối Lớp chứa năm học này
+            if (!schoolUser.getSchoolId().equals(gradeLevel.getSchoolId())) {
+                throw new ForbiddenException("BẢO MẬT: Bạn không có quyền sửa dữ liệu của trường khác.");
+            }
+        }
+
+        // 4. Validate logic ngày tháng
         LocalDate startDate = (command.startDate() != null) ? command.startDate() : grade.getStartDate();
         LocalDate endDate = (command.endDate() != null) ? command.endDate() : grade.getEndDate();
 
         if (startDate != null && endDate != null && !startDate.isBefore(endDate)) {
-            throw new IllegalArgumentException("Ngày bắt đầu phải trước ngày kết thúc.");
+            throw new IllegalArgumentException("Ngày bắt đầu phải diễn ra trước ngày kết thúc.");
         }
 
-        // 4. Atomic Update
+        // 5. Atomic Update
         int updatedRows = schoolGradeRepository.updateSchoolGradeAtomic(
                 command.schoolGradeId(),
                 command.name() != null ? StringNormalization.trimAndCollapseSpaces(command.name()) : null,
@@ -68,7 +90,7 @@ public class UpdateSchoolGradeUseCase implements IUseCase<UpdateSchoolGradeComma
         );
 
         if (updatedRows == 0) {
-            throw new NotFoundException("Cập nhật thất bại.");
+            throw new NotFoundException("Cập nhật thất bại hoặc không có thông tin nào thay đổi.");
         }
 
         return command.schoolGradeId();

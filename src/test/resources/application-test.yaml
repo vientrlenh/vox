@@ -7,6 +7,10 @@ spring:
         properties:
             hibernate:
                 format-sql: true
+    datasource:
+        hikari:
+            maximum-pool-size: 2
+            minimum-idle: 0
 
     mail:
         username: test@example.com

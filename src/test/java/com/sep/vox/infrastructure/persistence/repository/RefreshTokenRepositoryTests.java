@@ -12,7 +12,7 @@ import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabas
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
-import com.sep.vox.config.TestContainerConfig;
+import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.domain.model.refreshtoken.RefreshToken;
 import com.sep.vox.domain.repository.RefreshTokenRepository;
 import com.sep.vox.infrastructure.persistence.adapter.RefreshTokenRepositoryImpl;
@@ -20,11 +20,10 @@ import com.sep.vox.infrastructure.persistence.adapter.RefreshTokenRepositoryImpl
 @DataJpaTest
 @ActiveProfiles("test")
 @Import({
-    TestContainerConfig.class,
     RefreshTokenRepositoryImpl.class
 })
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-class RefreshTokenRepositoryTests {
+class RefreshTokenRepositoryTests extends ContainerTestConfig {
 
     @Autowired
     private RefreshTokenRepository refreshTokenRepository;

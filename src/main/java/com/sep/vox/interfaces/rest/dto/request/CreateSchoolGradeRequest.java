@@ -15,8 +15,8 @@ public record CreateSchoolGradeRequest(
         String description,
 
         @NotNull(message = "Ngày bắt đầu không được để trống")
-        LocalDate startDate,
+        String startDate,
 
         @NotNull(message = "Ngày kết thúc không được để trống")
-        LocalDate endDate
+        String endDate
 ) {}

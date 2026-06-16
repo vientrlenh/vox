@@ -2,12 +2,14 @@ package com.sep.vox.infrastructure.persistence.adapter;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
+
 import java.util.UUID;
 
 import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
-import com.sep.vox.domain.model.school.SchoolGradeStatus;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.school.SchoolGrade;
@@ -27,14 +29,15 @@ public class SchoolGradeRepositoryImpl implements SchoolGradeRepository {
     @Override
     public Optional<SchoolGrade> findById(UUID id) {
         return springDataSchoolGradeRepository.findById(id)
-            .map(SchoolGradeMapper::toDomain);
+                .map(SchoolGradeMapper::toDomain);
     }
 
     @Override
     public Optional<SchoolGrade> findBySchoolIdAndCode(UUID schoolId, String code) {
         return springDataSchoolGradeRepository.findBySchoolIdAndCode(schoolId, code)
-            .map(SchoolGradeMapper::toDomain);
+                .map(SchoolGradeMapper::toDomain);
     }
+
 
     @Override
     public SchoolGrade save(SchoolGrade grade) {
@@ -43,11 +46,27 @@ public class SchoolGradeRepositoryImpl implements SchoolGradeRepository {
         return SchoolGradeMapper.toDomain(saved);
     }
 
+
     @Override
-    public boolean existsBySchoolIdAndCode(UUID schoolId, String code) {
-        return springDataSchoolGradeRepository.existsBySchoolIdAndCode(schoolId, code);
+    public boolean existsBySchoolGradeLevelIdAndCode(UUID schoolGradeLevelId, String code) {
+        return springDataSchoolGradeRepository.existsBySchoolGradeLevelIdAndCode(schoolGradeLevelId, code);
     }
 
+    @Override
+    public List<SchoolGrade> findBySchoolIdAndCodeIn(UUID schoolId, Collection<String> codes) {
+        if (schoolId == null || codes == null || codes.isEmpty()) {
+            return List.of();
+        }
+        return springDataSchoolGradeRepository.findBySchoolIdAndCodeIn(schoolId, codes)
+                .stream()
+                .map(SchoolGradeMapper::toDomain)
+                .toList();
+    }
+
+    @Override
+    public boolean existsBySchoolGradeLevelId(UUID schoolGradeLevelId) {
+        return springDataSchoolGradeRepository.existsBySchoolGradeLevelId(schoolGradeLevelId);
+    }
 
     @Override
     public PageResult<SchoolGrade> findAllBySchoolId(UUID schoolId, PageRequest pageRequest) {
@@ -74,17 +93,6 @@ public class SchoolGradeRepositoryImpl implements SchoolGradeRepository {
         );
     }
 
-    @Override
-    public void deleteByIdAndSchoolId(UUID id, UUID schoolId) {
-        springDataSchoolGradeRepository.deleteByIdAndSchoolId(id, schoolId);
-    }
-
-    @Override
-    public Optional<SchoolGrade> findByIdForDelete(UUID id, UUID schoolId) {
-        return springDataSchoolGradeRepository.findByIdAndSchoolIdForDelete(id, schoolId)
-            .map(SchoolGradeMapper::toDomain);
-    }
-
 
     @Override
     public boolean existsBySchoolIdAndStatus(UUID schoolId, String status) {
@@ -96,4 +104,8 @@ public class SchoolGradeRepositoryImpl implements SchoolGradeRepository {
         return springDataSchoolGradeRepository.updateSchoolGradeAtomic(id, name, description, startDate, endDate, now, updatedBy);
     }
 
+    @Override
+    public void deleteById(UUID schoolGradeId) {
+        springDataSchoolGradeRepository.deleteById(schoolGradeId);
+    }
 }

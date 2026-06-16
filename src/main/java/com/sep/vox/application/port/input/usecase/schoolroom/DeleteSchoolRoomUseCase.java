@@ -8,57 +8,67 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.SchoolRoomResponse.SchoolRoomResponse;
 import com.sep.vox.domain.model.school.SchoolRoom;
-import com.sep.vox.domain.model.user.User;
+import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolRoomRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
-public class DeleteSchoolRoomUseCase implements IUseCase<DeleteSchoolRoomCommand, SchoolRoomResponse> {
+public class DeleteSchoolRoomUseCase implements IUseCase<DeleteSchoolRoomCommand, Void> {
 
     private final SchoolRoomRepository schoolRoomRepository;
+    private final SchoolUserRepository schoolUserRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
 
-    public DeleteSchoolRoomUseCase(SchoolRoomRepository schoolRoomRepository, UserRepository userRepository, UserContextPort userContextPort) {
+    public DeleteSchoolRoomUseCase(
+            SchoolRoomRepository schoolRoomRepository,
+            SchoolUserRepository schoolUserRepository,
+            UserRepository userRepository,
+            UserContextPort userContextPort) {
         this.schoolRoomRepository = schoolRoomRepository;
+        this.schoolUserRepository = schoolUserRepository;
         this.userRepository = userRepository;
         this.userContextPort = userContextPort;
     }
 
     @Override
     @Transactional
-    public SchoolRoomResponse execute(DeleteSchoolRoomCommand command) {
+    public Void execute(DeleteSchoolRoomCommand command) {
 
-        // 1. GỌI HÀM LOCK: Khóa an toàn giống hệt Update
+        // 1. Validate User (Tối ưu bằng hàm exists)
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
+            throw new UnauthorizedException("Tài khoản của bạn không tồn tại hoặc đã bị khóa.");
+        }
+
+        // VÒNG BẢO MẬT 1: KIỂM TRA QUYỀN SCHOOL USER
+        Optional<SchoolUser> schoolUserOpt = schoolUserRepository.findByUserId(currentUserId);
+        if (schoolUserOpt.isPresent()) {
+            SchoolUser schoolUser = schoolUserOpt.get();
+            if (!schoolUser.getSchoolId().equals(command.schoolId())) {
+                // Sửa lại câu báo lỗi cho đúng ngữ cảnh Phòng học
+                throw new ForbiddenException("BẢO MẬT: Bạn không có quyền xóa phòng học của trường khác.");
+            }
+        }
+
+
+        // 2. Tìm phòng học cần xóa
         SchoolRoom room = schoolRoomRepository.findById(command.id())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy phòng học với ID đã cho."));
 
-
-        // Kiểm tra xem phòng học có đúng là của trường học này không
+        // VÒNG BẢO MẬT 2: KIỂM TRA PHÒNG HỌC CÓ ĐÚNG CỦA TRƯỜNG NÀY KHÔNG
         if (!room.getSchoolId().equals(command.schoolId())) {
-            throw new IllegalArgumentException("Phòng học này không thuộc về trường học đã chỉ định.");
+            throw new ForbiddenException("BẢO MẬT: Phòng học này không thuộc về trường học đã chỉ định.");
         }
 
-
-        // 2. Validate User & Bảo mật
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản của bạn."));
-
-        if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
-        }
-
-        // Logic check quyền: Nếu user có schoolId (tức là Admin của 1 trường cụ thể)
-        if (currentUser.getSchoolId() != null && !currentUser.getSchoolId().equals(room.getSchoolId())) {
-            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền xóa trường học của đơn vị khác.");
-        }
 
         // 3. THỰC HIỆN XÓA MỀM (SOFT DELETE)
         if (!room.isActive()) {
@@ -72,18 +82,7 @@ public class DeleteSchoolRoomUseCase implements IUseCase<DeleteSchoolRoomCommand
         // 4. LƯU LẠI VÀO DB
         SchoolRoom deletedRoom = schoolRoomRepository.save(room);
 
-        // Trả về ID
-        return new SchoolRoomResponse(
-                room.getId(),
-                room.getSchoolId(),
-                room.getCode(),
-                room.getName(),
-                room.getDescription(),
-                room.isActive(),
-                room.getCreatedAt(),
-                room.getCreatedBy(),
-                room.getUpdatedAt(),
-                room.getUpdatedBy()
-        );
+        // 5. Trả về dữ liệu mới
+        return null;
     }
 }

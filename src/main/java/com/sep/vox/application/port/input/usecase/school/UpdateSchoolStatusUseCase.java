@@ -8,14 +8,16 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.SchoolResponse.SchoolResponse;
 import com.sep.vox.domain.model.school.School;
-import com.sep.vox.domain.model.user.User;
+import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -23,11 +25,17 @@ public class UpdateSchoolStatusUseCase implements IUseCase<UpdateSchoolStatusCom
 
     private final SchoolRepository schoolRepository;
     private final UserRepository userRepository;
+    private final SchoolUserRepository schoolUserRepository; // Bổ sung Repository này
     private final UserContextPort userContextPort;
 
-    public UpdateSchoolStatusUseCase(SchoolRepository schoolRepository, UserRepository userRepository, UserContextPort userContextPort) {
+    public UpdateSchoolStatusUseCase(
+            SchoolRepository schoolRepository,
+            UserRepository userRepository,
+            SchoolUserRepository schoolUserRepository,
+            UserContextPort userContextPort) {
         this.schoolRepository = schoolRepository;
         this.userRepository = userRepository;
+        this.schoolUserRepository = schoolUserRepository;
         this.userContextPort = userContextPort;
     }
 
@@ -40,16 +48,19 @@ public class UpdateSchoolStatusUseCase implements IUseCase<UpdateSchoolStatusCom
 
         // 2. Validate User & Bảo mật
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản của bạn."));
-
-        if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
+        if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
+            throw new UnauthorizedException("Tài khoản của bạn không tồn tại hoặc đã bị khóa.");
         }
 
-        // Logic check quyền: Nếu user có schoolId (tức là Admin của 1 trường cụ thể)
-        if (currentUser.getSchoolId() != null && !currentUser.getSchoolId().equals(school.getId())) {
-            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền xóa trường học của đơn vị khác.");
+        // VÒNG BẢO MẬT: KIỂM TRA BẰNG SCHOOL USER
+        Optional<SchoolUser> schoolUserOpt = schoolUserRepository.findByUserId(currentUserId);
+
+        // Nếu user có liên kết với một trường học (tức là School Admin)
+        if (schoolUserOpt.isPresent()) {
+            SchoolUser schoolUser = schoolUserOpt.get();
+            if (!schoolUser.getSchoolId().equals(school.getId())) {
+                throw new ForbiddenException("BẢO MẬT: Bạn không có quyền cập nhật trạng thái trường học của đơn vị khác.");
+            }
         }
 
         // 3. Validate Logic: Tránh cập nhật thừa

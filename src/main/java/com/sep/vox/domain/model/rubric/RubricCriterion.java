@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
+import com.sep.vox.domain.valueobject.rubric.RubricCriterionExamples;
+
 
 public class RubricCriterion {
     private UUID id;
@@ -12,6 +14,7 @@ public class RubricCriterion {
     private String code;
     private String name;
     private String description;
+    private RubricCriterionExamples examples;
     private BigDecimal weight;
     private BigDecimal minScore;
     private BigDecimal maxScore;
@@ -25,7 +28,7 @@ public class RubricCriterion {
     public RubricCriterion() {}
 
     public RubricCriterion(UUID id, UUID rubricVersionId, UUID frameworkCriterionId, String code, String name,
-            String description, BigDecimal weight, BigDecimal minScore, BigDecimal maxScore, int order,
+            String description, RubricCriterionExamples examples, BigDecimal weight, BigDecimal minScore, BigDecimal maxScore, int order,
             boolean isRequired, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.rubricVersionId = rubricVersionId;
@@ -33,6 +36,7 @@ public class RubricCriterion {
         this.code = code;
         this.name = name;
         this.description = description;
+        this.examples = examples;
         this.weight = weight;
         this.minScore = minScore;
         this.maxScore = maxScore;
@@ -45,13 +49,14 @@ public class RubricCriterion {
     }
 
     public RubricCriterion(UUID rubricVersionId, UUID frameworkCriterionId, String code, String name,
-            String description, BigDecimal weight, BigDecimal minScore, BigDecimal maxScore, int order,
+            String description, RubricCriterionExamples examples, BigDecimal weight, BigDecimal minScore, BigDecimal maxScore, int order,
             boolean isRequired, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.rubricVersionId = rubricVersionId;
         this.frameworkCriterionId = frameworkCriterionId;
         this.code = code;
         this.name = name;
         this.description = description;
+        this.examples = examples;
         this.weight = weight;
         this.minScore = minScore;
         this.maxScore = maxScore;
@@ -129,6 +134,14 @@ public class RubricCriterion {
 
     public BigDecimal getMaxScore() {
         return maxScore;
+    }
+
+    public RubricCriterionExamples getExamples() {
+        return examples;
+    }
+
+    public void setExamples(RubricCriterionExamples examples) {
+        this.examples = examples;
     }
 
     public void setMaxScore(BigDecimal maxScore) {

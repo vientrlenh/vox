@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.schoolgrade;
 import com.sep.vox.application.port.input.query.ViewSchoolGradesQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.dto.SchoolGradeDto;
 import com.sep.vox.domain.dto.SchoolGradeFromDto;
 import com.sep.vox.domain.mapper.SchoolGradeDtoMapper;
 import com.sep.vox.domain.model.school.SchoolGrade;
@@ -11,7 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-public class ViewSchoolGradesUseCase implements IUseCase<ViewSchoolGradesQuery, PageResult<SchoolGradeFromDto>> {
+public class ViewSchoolGradesUseCase implements IUseCase<ViewSchoolGradesQuery, PageResult<SchoolGradeDto>> {
 
     private final SchoolGradeRepository schoolGradeRepository;
 
@@ -20,8 +21,8 @@ public class ViewSchoolGradesUseCase implements IUseCase<ViewSchoolGradesQuery, 
     }
 
     @Override
-    @Transactional(readOnly = true) // Tối ưu tốc độ lấy dữ liệu
-    public PageResult<SchoolGradeFromDto> execute(ViewSchoolGradesQuery query) {
+    @Transactional(readOnly = true)
+    public PageResult<SchoolGradeDto> execute(ViewSchoolGradesQuery query) {
 
         // 1. Gọi DB lấy danh sách phân trang (PageResult<SchoolGrade>)
         PageResult<SchoolGrade> pageResult = schoolGradeRepository.findAllBySchoolId(

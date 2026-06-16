@@ -1,0 +1,83 @@
+type ImportMappingEntry {
+    originalHeader: String!
+    systemField: String!
+}
+
+type ImportDataEntry {
+    key: String!
+    value: String
+}
+
+type ImportRowError {
+    field: String
+    message: String!
+}
+
+type ImportSession {
+    id: ID!
+    schoolId: ID!
+    type: String!
+    fileName: String!
+    originalHeaders: [String!]!
+    suggestedMapping: [ImportMappingEntry!]!
+    confirmedMapping: [ImportMappingEntry!]!
+    validRows: Int!
+    invalidRows: Int!
+    importedRows: Int!
+    skippedRows: Int!
+    totalRows: Int!
+    failureReason: String
+    status: String!
+    importedEntityId: ID
+    expiresAt: String
+    createdAt: String
+    updatedAt: String
+}
+
+type ImportSessionSummary {
+    id: ID!
+    schoolId: ID!
+    type: String!
+    fileName: String!
+    totalRows: Int!
+    validRows: Int!
+    invalidRows: Int!
+    importedRows: Int!
+    skippedRows: Int!
+    status: String!
+    expiresAt: String
+    createdAt: String
+    updatedAt: String
+}
+
+type ImportSessionPage {
+    content: [ImportSessionSummary!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+type ImportRow {
+    id: ID!
+    sessionId: ID!
+    rowNumber: Int!
+    rawData: [ImportDataEntry!]!
+    mappedData: [ImportDataEntry!]!
+    errors: [ImportRowError!]!
+    status: String!
+}
+
+type ImportRowPage {
+    content: [ImportRow!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+extend type Query {
+    importSession(id: ID!): ImportSession
+    importSessions(page: Int = 1, size: Int = 20, type: String, status: String): ImportSessionPage!
+    importRows(sessionId: ID!, page: Int = 1, size: Int = 20, status: String): ImportRowPage!
+}

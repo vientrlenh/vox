@@ -12,7 +12,7 @@ import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabas
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
-import com.sep.vox.config.TestContainerConfig;
+import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.domain.model.user.UserRole;
 import com.sep.vox.domain.repository.UserRoleRepository;
 import com.sep.vox.infrastructure.persistence.adapter.UserRoleRepositoryImpl;
@@ -20,11 +20,10 @@ import com.sep.vox.infrastructure.persistence.adapter.UserRoleRepositoryImpl;
 @DataJpaTest
 @ActiveProfiles("test")
 @Import({
-    TestContainerConfig.class,
     UserRoleRepositoryImpl.class
 })
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-class UserRoleRepositoryTests {
+class UserRoleRepositoryTests extends ContainerTestConfig {
 
     @Autowired
     private UserRoleRepository userRoleRepository;

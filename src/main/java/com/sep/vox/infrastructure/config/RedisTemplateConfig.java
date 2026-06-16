@@ -7,22 +7,22 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.GenericJacksonJsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
-import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 
 @Configuration
 public class RedisTemplateConfig {
     
     @Bean
-    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory, ObjectMapper objectMapper) {
+    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory, JsonMapper jsonMapper) {
         var template = new RedisTemplate<String, Object>();
         template.setConnectionFactory(redisConnectionFactory);
 
         template.setKeySerializer(new StringRedisSerializer());
         template.setHashKeySerializer(new StringRedisSerializer());
 
-        template.setValueSerializer(new GenericJacksonJsonRedisSerializer(objectMapper));
-        template.setHashValueSerializer(new GenericJacksonJsonRedisSerializer(objectMapper));
+        template.setValueSerializer(new GenericJacksonJsonRedisSerializer(jsonMapper));
+        template.setHashValueSerializer(new GenericJacksonJsonRedisSerializer(jsonMapper));
 
         template.afterPropertiesSet();
         return template;

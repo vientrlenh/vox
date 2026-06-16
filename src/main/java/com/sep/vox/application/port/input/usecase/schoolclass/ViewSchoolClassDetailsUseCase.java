@@ -12,10 +12,12 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.mapper.SchoolClassDtoMapper;
+import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
@@ -25,16 +27,19 @@ public class ViewSchoolClassDetailsUseCase implements IUseCase<ViewSchoolClassDe
     private final UserRepository userRepository;
     private final SchoolRepository schoolRepository;
     private final UserContextPort userContextPort;
+    private final SchoolUserRepository schoolUserRepository;
 
     public ViewSchoolClassDetailsUseCase(
             SchoolClassRepository schoolClassRepository,
             UserRepository userRepository,
             SchoolRepository schoolRepository,
-            UserContextPort userContextPort) {
+            UserContextPort userContextPort,
+            SchoolUserRepository schoolUserRepository) {
         this.schoolClassRepository = schoolClassRepository;
         this.userRepository = userRepository;
         this.schoolRepository = schoolRepository;
         this.userContextPort = userContextPort;
+        this.schoolUserRepository = schoolUserRepository;
     }
 
     @Override
@@ -54,24 +59,16 @@ public class ViewSchoolClassDetailsUseCase implements IUseCase<ViewSchoolClassDe
     }
 
     private User findCurrentUser(UUID currentUserId) {
-        var user = userRepository.findById(currentUserId)
+        var user = userRepository.findByIdAndStatus(currentUserId, UserStatus.ACTIVE)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng hiện tại"));
-        validateCurrentUserIsActive(user);
         return user;
     }
 
-    private void validateCurrentUserIsActive(User currentUser) {
-        if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new IllegalStateException("Người dùng hiện tại không hoạt động");
-        }
-    }
 
     private UUID getSchoolId(User currentUser) {
-        var schoolId = currentUser.getSchoolId();
-        if (schoolId == null) {
-            throw new IllegalStateException("Người dùng hiện tại không thuộc trường nào");
-        }
-        return schoolId;
+        return schoolUserRepository.findByUserId(currentUser.getId())
+            .map(SchoolUser::getSchoolId)
+            .orElseThrow(() -> new IllegalStateException("Người dùng hiện tại không thuộc trường nào"));
     }
 
     private void validateSchool(UUID schoolId) {

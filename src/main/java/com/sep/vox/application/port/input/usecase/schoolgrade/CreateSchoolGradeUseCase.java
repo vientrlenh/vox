@@ -10,10 +10,10 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.school.SchoolGrade;
 import com.sep.vox.domain.model.school.SchoolGradeStatus;
-import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
+import com.sep.vox.domain.repository.SchoolGradeLevelRepository; // Bổ sung
 import com.sep.vox.domain.repository.SchoolGradeRepository;
-import com.sep.vox.domain.repository.SchoolRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository; // Bổ sung
 import com.sep.vox.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,73 +21,86 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
+
 @Service
 public class CreateSchoolGradeUseCase implements IUseCase<CreateSchoolGradeCommand, UUID> {
 
     private final SchoolGradeRepository schoolGradeRepository;
-    private final SchoolRepository schoolRepository;
+    private final SchoolGradeLevelRepository schoolGradeLevelRepository;
     private final UserRepository userRepository;
+    private final SchoolUserRepository schoolUserRepository;
     private final UserContextPort userContextPort;
 
-    public CreateSchoolGradeUseCase(SchoolGradeRepository schoolGradeRepository, SchoolRepository schoolRepository, UserRepository userRepository, UserContextPort userContextPort) {
+    public CreateSchoolGradeUseCase(
+            SchoolGradeRepository schoolGradeRepository,
+            SchoolGradeLevelRepository schoolGradeLevelRepository,
+            UserRepository userRepository,
+            SchoolUserRepository schoolUserRepository,
+            UserContextPort userContextPort) {
         this.schoolGradeRepository = schoolGradeRepository;
-        this.schoolRepository = schoolRepository;
+        this.schoolGradeLevelRepository = schoolGradeLevelRepository;
         this.userRepository = userRepository;
+        this.schoolUserRepository = schoolUserRepository;
         this.userContextPort = userContextPort;
     }
 
     @Override
-    @Transactional // Giống hệt RegisterUseCase
+    @Transactional
     public UUID execute(CreateSchoolGradeCommand command) {
+        // 1. Kiểm tra ngày tháng
+        validateDates(command);
 
-        // 1. Kiểm tra logic ngày tháng (Ràng buộc DB)
-        if (!command.startDate().isBefore(command.endDate())) {
-            throw new IllegalArgumentException("Ngày bắt đầu (startDate) phải diễn ra trước ngày kết thúc (endDate).");
-        }
-
-        // 2. Validate User Context
+        // 2. Validate User & Security
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+        checkUserAccess(currentUserId, command.schoolId());
 
-        if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
-        }
+        // 3. Validate Khối lớp (Grade Level) thuộc về trường
+        var gradeLevel = schoolGradeLevelRepository.findById(command.schoolGradeLevelId())
+                .filter(gl -> gl.getSchoolId().equals(command.schoolId()))
+                .orElseThrow(() -> new NotFoundException("Khối lớp không tồn tại hoặc không thuộc trường này."));
 
-        if (currentUser.getSchoolId() != null && !currentUser.getSchoolId().equals(command.schoolId())) {
-            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền tạo năm học cho trường khác.");
-        }
-
-        // 3. Kiểm tra Trường học tồn tại
-        if (schoolRepository.findById(command.schoolId()).isEmpty()) {
-            throw new NotFoundException("Không tìm thấy trường học với ID đã cho.");
-        }
-
-        // 4. Kiểm tra mã Code Unique (Ràng buộc DB)
+        // 4. Kiểm tra trùng mã
         String normalizedCode = StringNormalization.normalizeCode(command.code());
-        if (schoolGradeRepository.existsBySchoolIdAndCode(command.schoolId(), normalizedCode)) {
-            throw new DuplicatedException("Mã năm học này đã tồn tại trong trường.");
+        if (schoolGradeRepository.existsBySchoolGradeLevelIdAndCode(command.schoolGradeLevelId(), normalizedCode)) {
+            throw new DuplicatedException("Mã năm học đã tồn tại trong Khối lớp này.");
         }
 
-        //
-        OffsetDateTime now = OffsetDateTime.now();
+        // 5. Lưu và trả về UUID
+        return saveNewGrade(command, normalizedCode, currentUserId);
+    }
 
+    private void validateDates(CreateSchoolGradeCommand command) {
+        if (!command.startDate().isBefore(command.endDate())) {
+            throw new IllegalArgumentException("Ngày bắt đầu phải trước ngày kết thúc.");
+        }
+    }
+
+    private void checkUserAccess(UUID userId, UUID targetSchoolId) {
+        if (!userRepository.existsByIdAndStatus(userId, UserStatus.ACTIVE)) {
+            throw new UnauthorizedException("Tài khoản không tồn tại hoặc đã bị khóa.");
+        }
+
+        // Dùng phương thức đã tối ưu để lấy schoolId
+        UUID userSchoolId = schoolUserRepository.findSchoolIdByUserId(userId)
+                .orElseThrow(() -> new ForbiddenException("Người dùng chưa được gán vào trường học nào."));
+
+        if (!userSchoolId.equals(targetSchoolId)) {
+            throw new ForbiddenException("Bạn không có quyền thao tác trên trường học này.");
+        }
+    }
+
+    private UUID saveNewGrade(CreateSchoolGradeCommand command, String code, UUID creatorId) {
+        OffsetDateTime now = OffsetDateTime.now();
         SchoolGrade newGrade = new SchoolGrade(
-                command.schoolId(),
-                normalizedCode,
+                command.schoolGradeLevelId(),
+                code,
                 StringNormalization.trimAndCollapseSpaces(command.name()),
                 command.description() != null ? StringNormalization.trimAndCollapseSpaces(command.description()) : null,
                 command.startDate(),
                 command.endDate(),
                 SchoolGradeStatus.INACTIVE,
-                now,
-                now,
-                currentUserId,
-                currentUserId
+                now, now, creatorId, creatorId
         );
-
-        SchoolGrade savedGrade = schoolGradeRepository.save(newGrade);
-
-        return savedGrade.getId();
+        return schoolGradeRepository.save(newGrade).getId();
     }
 }

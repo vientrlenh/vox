@@ -11,17 +11,19 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.DeleteSchoolClassCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.dto.SchoolClassDeleteResultDto;
+import com.sep.vox.application.response.input.schoolclass.DeleteSchoolClassResponse;
+import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassDependencyRepository;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
-public class DeleteSchoolClassUseCase implements IUseCase<DeleteSchoolClassCommand, SchoolClassDeleteResultDto> {
+public class DeleteSchoolClassUseCase implements IUseCase<DeleteSchoolClassCommand, DeleteSchoolClassResponse> {
 
     private static final String HARD_DELETE = "HARD";
     private static final String SOFT_DELETE = "SOFT";
@@ -31,26 +33,30 @@ public class DeleteSchoolClassUseCase implements IUseCase<DeleteSchoolClassComma
     private final SchoolRepository schoolRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
+    private final SchoolUserRepository schoolUserRepository;
 
     public DeleteSchoolClassUseCase(
             SchoolClassRepository schoolClassRepository,
             SchoolClassDependencyRepository schoolClassDependencyRepository,
             SchoolRepository schoolRepository,
             UserRepository userRepository,
-            UserContextPort userContextPort) {
+            UserContextPort userContextPort,
+            SchoolUserRepository schoolUserRepository) {
         this.schoolClassRepository = schoolClassRepository;
         this.schoolClassDependencyRepository = schoolClassDependencyRepository;
         this.schoolRepository = schoolRepository;
         this.userRepository = userRepository;
         this.userContextPort = userContextPort;
+        this.schoolUserRepository = schoolUserRepository;
     }
 
     @Override
     @Transactional
-    public SchoolClassDeleteResultDto execute(DeleteSchoolClassCommand input) {
+    public DeleteSchoolClassResponse execute(DeleteSchoolClassCommand input) {
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         var currentUser = findCurrentUser(currentUserId);
         var schoolId = getSchoolId(currentUser);
+        validateRequestedSchool(input.schoolId(), schoolId);
         validateSchool(schoolId);
 
         var schoolClass = schoolClassRepository.findById(input.id())
@@ -61,7 +67,7 @@ public class DeleteSchoolClassUseCase implements IUseCase<DeleteSchoolClassComma
 
         if (!schoolClassDependencyRepository.existsDependencyBySchoolClassId(input.id())) {
             schoolClassRepository.deleteById(input.id());
-            return new SchoolClassDeleteResultDto(input.id(), HARD_DELETE, null, null);
+            return new DeleteSchoolClassResponse(input.id(), HARD_DELETE, null, null);
         }
 
         var now = OffsetDateTime.now();
@@ -69,7 +75,7 @@ public class DeleteSchoolClassUseCase implements IUseCase<DeleteSchoolClassComma
         schoolClass.setUpdatedAt(now);
         schoolClass.setUpdatedBy(currentUserId);
         var saved = schoolClassRepository.save(schoolClass);
-        return new SchoolClassDeleteResultDto(
+        return new DeleteSchoolClassResponse(
             saved.getId(),
             SOFT_DELETE,
             saved.getStatus().name(),
@@ -91,11 +97,9 @@ public class DeleteSchoolClassUseCase implements IUseCase<DeleteSchoolClassComma
     }
 
     private UUID getSchoolId(User currentUser) {
-        var schoolId = currentUser.getSchoolId();
-        if (schoolId == null) {
-            throw new IllegalStateException("Người dùng hiện tại không thuộc trường nào");
-        }
-        return schoolId;
+        return schoolUserRepository.findByUserId(currentUser.getId())
+            .map(SchoolUser::getSchoolId)
+            .orElseThrow(() -> new IllegalStateException("Người dùng hiện tại không thuộc trường nào"));
     }
 
     private void validateSchool(UUID schoolId) {
@@ -103,6 +107,14 @@ public class DeleteSchoolClassUseCase implements IUseCase<DeleteSchoolClassComma
             .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
         if (!school.isActive()) {
             throw new IllegalStateException("Trường học không hoạt động");
+        }
+    }
+    private void validateRequestedSchool(UUID requestedSchoolId, UUID currentSchoolId) {
+        if (requestedSchoolId == null) {
+            throw new IllegalArgumentException("Trường học không được để trống");
+        }
+        if (!Objects.equals(requestedSchoolId, currentSchoolId)) {
+            throw new IllegalArgumentException("Trường học không khớp với người dùng hiện tại");
         }
     }
 }

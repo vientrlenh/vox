@@ -25,7 +25,6 @@ import com.sep.vox.application.port.input.usecase.schooluser.CreateSchoolUserUse
 import com.sep.vox.application.port.output.EventPublisherPort;
 import com.sep.vox.application.port.output.PasswordSetUpTokenPort;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.response.input.schooluser.CreateSchoolUserResponse;
 import com.sep.vox.application.response.output.GeneratedPasswordSetUpToken;
 import com.sep.vox.domain.model.user.Role;
 import com.sep.vox.domain.model.school.School;

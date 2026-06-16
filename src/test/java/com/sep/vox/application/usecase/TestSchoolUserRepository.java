@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
@@ -49,5 +50,23 @@ public class TestSchoolUserRepository implements SchoolUserRepository {
     public SchoolUser save(SchoolUser schoolUser) {
         remember(schoolUser.getUserId(), schoolUser.getSchoolId());
         return schoolUser;
+    }
+
+    @Override
+    public List<SchoolUser> findBySchoolIdIn(Collection<UUID> schoolIds, int page, int size) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'findBySchoolIdIn'");
+    }
+
+    @Override
+    public PageResult<SchoolUser> findBySchoolId(UUID schoolId, int page, int size) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'findBySchoolId'");
+    }
+
+    @Override
+    public Optional<SchoolUser> findBySchoolIdAndUserId(UUID schoolId, UUID userId) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'findBySchoolIdAndUserId'");
     }
 }

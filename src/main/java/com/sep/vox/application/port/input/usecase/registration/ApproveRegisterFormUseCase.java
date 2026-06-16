@@ -65,8 +65,6 @@ public class ApproveRegisterFormUseCase implements IUseCase<ApproveRegisterFormC
         this.eventPublisherPort = eventPublisherPort;
     }
 
-    private static final String PASSWORD_NOT_SET = "__PASSWORD_NOT_SET__";
-
     @Override
     @Transactional
     public Void execute(ApproveRegisterFormCommand input) {
@@ -146,8 +144,7 @@ public class ApproveRegisterFormUseCase implements IUseCase<ApproveRegisterFormC
 
     private User saveSchoolAdmin(ApproveRegisterFormCommand command, UUID createdUserId, UUID schoolId, OffsetDateTime now) {
         var schoolAdmin = User.createSchoolAdmin(
-            command.contactEmail(), 
-            PASSWORD_NOT_SET, 
+            command.contactEmail(),  
             command.contactPhone(), 
             command.contactFullName(), 
             command.dateOfBirth(), 

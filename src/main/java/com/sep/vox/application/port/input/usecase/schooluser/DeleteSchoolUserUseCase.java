@@ -5,7 +5,6 @@ import java.time.OffsetDateTime;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.UserStatusValidator;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.DeleteSchoolUserCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -34,7 +33,6 @@ public class DeleteSchoolUserUseCase implements IUseCase<DeleteSchoolUserCommand
 
         var caller = userRepository.findById(callerId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
-        UserStatusValidator.requireActive(caller);
         var callerSchoolUser = schoolUserRepository.findByUserId(callerId)
             .orElseThrow(() -> new IllegalArgumentException("Không có quyền thực hiện thao tác này"));
         if (!input.schoolId().equals(callerSchoolUser.getSchoolId())) {
@@ -43,7 +41,6 @@ public class DeleteSchoolUserUseCase implements IUseCase<DeleteSchoolUserCommand
 
         var targetUser = userRepository.findById(input.userId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
-        UserStatusValidator.requireActiveTarget(targetUser);
         var targetSchoolUser = schoolUserRepository.findByUserId(input.userId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
         if (!input.schoolId().equals(targetSchoolUser.getSchoolId())) {

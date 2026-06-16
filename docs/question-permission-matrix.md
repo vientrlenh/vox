@@ -111,15 +111,73 @@ GraphQL:
 
 ## Question Matrix
 
+### Visibility Precedence For View Flows
+
+Cho tat ca flow `view` cua `question`:
+
+- `question(id)`
+- `teacherQuestions(...)`
+- `teacherMyQuestions(...)`
+- `teacherReviewQueue(...)`
+- `schoolQuestions(...)`
+- `schoolReviewQueue(...)`
+- `adminQuestions(...)`
+- `adminReviewQueue(...)`
+- `teacherTopicQuestions(...)`
+- `schoolTopicQuestions(...)`
+- `adminTopicQuestions(...)`
+- `adminBankQuestions(...)`
+
+backend dang uu tien danh gia theo thu tu:
+
+1. `visibility`
+2. `status`
+3. `scope`
+
+Neu mot dong trong bang ben duoi dien dat ngan gon hon, thi section nay la rule uu tien cao hon cho phan `question view`.
+
+Rule hien tai:
+
+- `creator` duoc xem question cua chinh minh khi bank/topic/question khong `ARCHIVED`, bat ke `visibility` la `AUTHOR_ONLY`, `REVIEWER_ONLY` hay `BANK_VISIBLE`
+- `AUTHOR_ONLY`: chi `creator`
+- `REVIEWER_ONLY`:
+  - `creator`: `OK`
+  - `TEACHER_REVIEWER`: `OK` neu la reviewer hop le trong queue cung school, khong phai creator, question dang `SUBMITTED_FOR_REVIEW`
+  - `SCHOOL_ADMIN`: `OK` voi question cung school, bank/topic/question khong `ARCHIVED`
+  - `SYSTEM_ADMIN`: `NO` neu khong phai creator, khong co bypass rieng cho `REVIEWER_ONLY`
+- `BANK_VISIBLE`:
+  - `QUESTION_BANK`: phai `question = PUBLISHED`, `topic = PUBLISHED`, `bank = PUBLISHED`
+  - `CLASSROOM_ASSESSMENT`: khong mo ra cho teacher unrelated; chi creator, school admin cung school, system admin read-only
+  - `CENTRAL_EXAM_DRAFT`: teacher unrelated chi xem khi `PUBLISHED + BANK_VISIBLE + cung school`
+  - `CENTRAL_EXAM_PAPER`: teacher unrelated khong duoc xem; school admin cung school va system admin chi read-only
+
+Review queue hien tai:
+
+- `teacherReviewQueue(...)` chi lay question:
+  - `scope IN (QUESTION_BANK, CENTRAL_EXAM_DRAFT)`
+  - `status = SUBMITTED_FOR_REVIEW`
+  - `visibility = REVIEWER_ONLY`
+  - cung school
+  - khong phai creator
+  - bank/topic khong `ARCHIVED`
+- `schoolReviewQueue(...)` chi lay question:
+  - `status = SUBMITTED_FOR_REVIEW`
+  - `visibility = REVIEWER_ONLY`
+  - cung school
+  - bank/topic khong `ARCHIVED`
+- `adminReviewQueue(...)` khong bypass `REVIEWER_ONLY`; chi thay:
+  - question cua chinh system admin do chinh ho tao va dang `SUBMITTED_FOR_REVIEW`
+  - hoac system question `scope = QUESTION_BANK`, `visibility = BANK_VISIBLE`, dang `SUBMITTED_FOR_REVIEW`
+
 ### Scope = `QUESTION_BANK`
 
 | Role | View List | View Detail | Create | Update Content | Update Status |
 |---|---|---|---|---|---|
-| `SYSTEM_ADMIN` | `OK`: xem toan cuc qua `adminQuestions(...)`; xem queue qua `adminReviewQueue(...)`; xem theo topic qua `adminTopicQuestions(bankId, topicId, ...)` | `OK`: xem detail neu question khong `ARCHIVED` qua `question(id)` | `OK`: tao system question qua `POST /api/v1/questions/system` | `OK`: sua content/assets/evaluation-guide theo logic use case | `OK`: review/publish/archive qua `review-actions` |
-| `SCHOOL_ADMIN` | `OK`: xem danh sach truc tiep qua `schoolQuestions(page, size, scope, status, type, keyword)`; xem review queue school minh qua `schoolReviewQueue(...)`; xem question theo topic cua school minh qua `schoolTopicQuestions(...)`; xem question cua `SYSTEM` qua `schoolQuestions(...)` hoac `schoolTopicQuestions(...)` neu cau do `PUBLISHED + BANK_VISIBLE` | `OK`: xem question school minh neu bank/topic/question khong `ARCHIVED`; xem question `SYSTEM` neu `bank PUBLISHED + topic PUBLISHED + question PUBLISHED + visibility = BANK_VISIBLE`, qua `question(id)` | `OK`: tao school question qua `POST /api/v1/questions/school` | `OK`: sua school question cua school minh neu status/scope cho phep | `OK`: review school question |
-| `TEACHER_OWNER` | `OK`: xem cau cua minh qua `teacherMyQuestions(...)`; xem danh sach hien thi truc tiep qua `teacherQuestions(page, size, scope, status, type, keyword)`; trong `teacherTopicQuestions(...)` thay cau cua minh ke ca chua publish neu query vao duoc bank/topic hop le | `OK`: xem cau cua minh neu question/bank/topic khong `ARCHIVED`, qua `question(id)` | `OK`: tao school question trong school minh | `OK`: sua cau minh khi status cho phep, dien hinh `DRAFT`, `REVISION_REQUESTED`, `REJECTED` | `OK`: submit for review va cac review-action owner duoc phep; khong dong nghia tu approve cau minh |
-| `TEACHER_REVIEWER` | `OK`: xem queue review qua `teacherReviewQueue(...)` neu `SUBMITTED_FOR_REVIEW + REVIEWER_ONLY + khong phai minh tao + cung school`; ngoai ra co the thay trong `teacherQuestions(...)` va `teacherTopicQuestions(...)` neu query hop le | `OK`: xem detail neu cau dang o review queue hop le, qua `question(id)` | `NO`: reviewer khong co quyen tao theo vai reviewer | `NO`: reviewer khong sua content cau nguoi khac | `OK`: approve/reject/revision requested khi queue review hop le |
-| `TEACHER_UNRELATED` | `OK`: trong `teacherQuestions(...)` hoac `teacherTopicQuestions(...)`, chi thay cau cua nguoi khac neu `status = PUBLISHED` va `visibility = BANK_VISIBLE`, thuoc `SYSTEM` hoac school minh | `OK`: xem detail neu `question PUBLISHED + BANK_VISIBLE`, bank/topic `PUBLISHED`, va bank la `SYSTEM` hoac school minh, qua `question(id)` | `NO` | `NO` | `NO` |
+| `SYSTEM_ADMIN` | `OK`: xem question view theo `visibility` uu tien cao nhat; khong bypass `AUTHOR_ONLY/REVIEWER_ONLY`; co the xem toan cuc cac question `BANK_VISIBLE` hop le qua `adminQuestions(...)`, `adminTopicQuestions(...)`, `adminBankQuestions(...)` | `OK`: detail cung theo `visibility -> status -> scope`; `AUTHOR_ONLY/REVIEWER_ONLY` chi xem duoc neu chinh system admin la creator | `OK`: tao system question qua `POST /api/v1/questions/system` | `OK`: sua content/assets/evaluation-guide theo logic use case | `OK`: review/publish/archive qua `review-actions` |
+| `SCHOOL_ADMIN` | `OK`: xem danh sach question school minh neu khong phai `AUTHOR_ONLY`; question `SYSTEM` chi xem duoc khi `PUBLISHED + BANK_VISIBLE`; review queue chi lay `SUBMITTED_FOR_REVIEW + REVIEWER_ONLY` | `OK`: question school minh chi xem duoc neu phu hop `visibility`; `AUTHOR_ONLY` cua nguoi khac bi chan; `SYSTEM` van can `PUBLISHED + BANK_VISIBLE` | `NO`: khong tao school question | `NO`: khong sua question content/assets/evaluation-guide | `OK`: review school question |
+| `TEACHER_OWNER` | `OK`: xem cau cua minh bat ke `visibility` neu khong `ARCHIVED`; ngoai ra thay cau nguoi khac theo rule `BANK_VISIBLE`/`REVIEWER_ONLY` hop le | `OK`: xem cau cua minh neu question/bank/topic khong `ARCHIVED`, qua `question(id)` | `OK`: tao school question trong school minh | `OK`: sua cau minh khi status cho phep, dien hinh `DRAFT`, `REVISION_REQUESTED`, `REJECTED` | `OK`: submit for review va cac review-action owner duoc phep; khong dong nghia tu approve cau minh |
+| `TEACHER_REVIEWER` | `OK`: xem queue review qua `teacherReviewQueue(...)` neu `SUBMITTED_FOR_REVIEW + REVIEWER_ONLY + khong phai minh tao + cung school + scope hop le`; trong list thuong chi thay question theo cung rule `visibility` | `OK`: xem detail neu cau dang o review queue hop le, qua `question(id)` | `NO`: reviewer khong co quyen tao theo vai reviewer | `NO`: reviewer khong sua content cau nguoi khac | `OK`: approve/reject/revision requested khi queue review hop le |
+| `TEACHER_UNRELATED` | `OK`: chi thay cau cua nguoi khac neu `visibility = BANK_VISIBLE` va rule status/scope cho phep; khong thay `AUTHOR_ONLY`, khong thay `REVIEWER_ONLY` | `OK`: xem detail neu `BANK_VISIBLE` va phan `status/scope` cho phep | `NO` | `NO` | `NO` |
 | `STUDENT` | `NO`: khong co query cho student | `NO` | `NO` | `NO` | `NO` |
 
 ### Delete on `QUESTION_BANK`
@@ -127,7 +185,7 @@ GraphQL:
 `DELETE /api/v1/questions/{questionId}` dung cung nhom role voi update content:
 
 - `SYSTEM_ADMIN`: `OK`
-- `SCHOOL_ADMIN`: `OK` voi question school cua school minh khi permission update cho phep
+- `SCHOOL_ADMIN`: `NO`
 - `TEACHER_OWNER`: `OK` voi question cua minh khi permission update cho phep
 - `TEACHER_REVIEWER`: `NO`
 - `TEACHER_UNRELATED`: `NO`
@@ -152,7 +210,7 @@ Luu y:
 `DELETE /api/v1/questions/{questionId}/assets` dung cung nhom role voi update content:
 
 - `SYSTEM_ADMIN`: `OK`
-- `SCHOOL_ADMIN`: `OK` voi question school cua school minh khi permission update cho phep
+- `SCHOOL_ADMIN`: `NO`
 - `TEACHER_OWNER`: `OK` voi question cua minh khi permission update cho phep
 - `TEACHER_REVIEWER`: `NO`
 - `TEACHER_UNRELATED`: `NO`
@@ -169,7 +227,7 @@ Rule xoa asset hien tai:
 `DELETE /api/v1/questions/{questionId}/evaluation-guide` dung cung nhom role voi update content:
 
 - `SYSTEM_ADMIN`: `OK`
-- `SCHOOL_ADMIN`: `OK` voi question school cua school minh khi permission update cho phep
+- `SCHOOL_ADMIN`: `NO`
 - `TEACHER_OWNER`: `OK` voi question cua minh khi permission update cho phep
 - `TEACHER_REVIEWER`: `NO`
 - `TEACHER_UNRELATED`: `NO`
@@ -231,7 +289,7 @@ Rule xoa bank hien tai:
 | Role | View List | View Detail | Create | Update Content | Update Status |
 |---|---|---|---|---|---|
 | `SYSTEM_ADMIN` | `OK`: co the xuat hien trong `adminQuestions(...)` neu khong loai `scope = CENTRAL_EXAM_DRAFT` | `OK`: xem neu khong `ARCHIVED`, qua `question(id)` | `NO`: chua co create flow rieng | `NO`: khong phai flow chinh trong code hien tai | `NO`: chua co workflow tach rieng |
-| `SCHOOL_ADMIN` | `OK`: co the xuat hien trong `schoolQuestions(page, size, scope, status, type, keyword)` neu permission hop le | `OK`: xem neu cung school va question khong `ARCHIVED`, qua `question(id)` | `NO`: chua co endpoint rieng cho exam draft question | `OK`: co the la role quan ly cung school, nhung chua co endpoint chuyen biet | `OK`: neu team dung chung review-actions cho flow exam draft |
+| `SCHOOL_ADMIN` | `OK`: co the xuat hien trong `schoolQuestions(page, size, scope, status, type, keyword)` neu permission hop le | `OK`: xem neu cung school va question khong `ARCHIVED`, qua `question(id)` | `NO`: chua co endpoint rieng cho exam draft question | `NO`: school admin khong sua content/assets/guide cua question | `OK`: neu team dung chung review-actions cho flow exam draft |
 | `TEACHER_OWNER` | `OK`: co the xuat hien trong `teacherMyQuestions(...)` va `teacherQuestions(page, size, scope, status, type, keyword)` neu question do hop le theo rule | `OK`: xem neu la nguoi tao, qua `question(id)` | `NO`: chua co endpoint rieng cho exam draft question | `OK`: owner co the la nguoi sua draft exam question | `OK`: owner co the submit/publish theo flow exam draft neu team dung chung status |
 | `TEACHER_REVIEWER` | `OK`: co the xuat hien trong `teacherQuestions(...)` hoac `teacherTopicQuestions(...)` neu rule reviewer hop le | `OK`: neu `SUBMITTED_FOR_REVIEW + REVIEWER_ONLY + cung school + khong phai creator`, qua `question(id)` | `NO` | `NO` | `OK`: reviewer co the approve/reject/revision neu team dung chung review flow |
 | `TEACHER_UNRELATED` | `NO`, tru khi policy sau nay mo rong direct list cho exam draft publish | `OK rat hep`: chi khi `PUBLISHED + BANK_VISIBLE + cung school` theo permission hien tai | `NO` | `NO` | `NO` |
@@ -303,7 +361,7 @@ Rule xoa bank hien tai:
 
 `Question` update/delete khong chi phu thuoc role, ma con phu thuoc trang thai hien tai.
 
-Voi `TEACHER_OWNER` va `SCHOOL_ADMIN`, `update content`, `update assets`, `update evaluation-guide` chi di qua duoc khi:
+Voi `TEACHER_OWNER`, `update content`, `update assets`, `update evaluation-guide` chi di qua duoc khi:
 
 - `scope = QUESTION_BANK`
 - `locked = false`
@@ -313,7 +371,7 @@ Voi `TEACHER_OWNER` va `SCHOOL_ADMIN`, `update content`, `update assets`, `updat
   - `REVISION_REQUESTED`
   - `REJECTED`
 
-Voi `TEACHER_OWNER` va `SCHOOL_ADMIN`, `DELETE /api/v1/questions/{questionId}` chi goi duoc khi van thoa toan bo dieu kien `canEditContent` o tren.
+Voi `TEACHER_OWNER`, `DELETE /api/v1/questions/{questionId}` chi goi duoc khi van thoa toan bo dieu kien `canEditContent` o tren.
 
 Sau khi da goi duoc `DELETE`:
 
@@ -325,6 +383,13 @@ Voi `DELETE /api/v1/questions/{questionId}/assets` va `DELETE /api/v1/questions/
 - van phai thoa dieu kien `canEditContent`
 - dong thoi question phai dang `DRAFT`
 - neu question khong con o `DRAFT` thi tu choi xoa
+
+Voi `SCHOOL_ADMIN`:
+
+- `canEditContent` hien tai tra ve `false`
+- controller REST cua question/content/assets/evaluation-guide/delete da bo `SCHOOL_ADMIN` khoi `@PreAuthorize`
+- vi vay school admin khong di vao duoc cac flow `create`, `put`, `post assets`, `put assets`, `delete assets`, `post evaluation-guide`, `put evaluation-guide`, `delete evaluation-guide`, `delete question`
+- school admin chi con flow `PATCH /api/v1/questions/{questionId}/review-actions` o module question
 
 Voi `SYSTEM_ADMIN`:
 
@@ -395,22 +460,18 @@ Trong `scope = QUESTION_BANK`, `SCHOOL_ADMIN` thay duoc:
 
 `SCHOOL_ADMIN` duoc quyen `create` tren `question` khi:
 
-- tao school question qua `POST /api/v1/questions/school`
+- `NO`
 
 `SCHOOL_ADMIN` duoc quyen `update content` tren `question` khi:
 
-- question thuoc school minh
-- va status/scope hien tai van nam trong flow cho phep sua cua use case
-- dung:
-  - `PUT /api/v1/questions/{questionId}/content`
-  - `PUT /api/v1/questions/{questionId}/assets`
-  - `PUT /api/v1/questions/{questionId}/evaluation-guide`
+- `NO`
 
 `SCHOOL_ADMIN` duoc quyen `chuyen trang thai` tren `question` khi:
 
 - dung `PATCH /api/v1/questions/{questionId}/review-actions`
 - ap dung voi question thuoc school minh
 - co the thuc hien cac buoc review/publish/archive theo flow hien tai
+- day la quyen question-level con lai cua school admin trong module question
 
 ### TEACHER_OWNER
 

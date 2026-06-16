@@ -16,36 +16,36 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.question.CreateQuestionResponse;
 import com.sep.vox.domain.model.question.Question;
+import com.sep.vox.domain.model.question.QuestionBankOwnerType;
 import com.sep.vox.domain.model.question.QuestionScope;
 import com.sep.vox.domain.model.question.QuestionTopic;
 import com.sep.vox.domain.model.question.QuestionType;
 import com.sep.vox.domain.model.question.QuestionVisibility;
-import com.sep.vox.domain.model.school.SchoolUser;
 
 import com.sep.vox.domain.model.user.UserStatus;
 
+import com.sep.vox.domain.repository.QuestionBankRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.QuestionTopicRepository;
-import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
 public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateSystemQuestionBankQuestionCommand, CreateQuestionResponse> {
 
     private final UserRepository userRepository;
-    private final SchoolUserRepository schoolUserRepository;
+    private final QuestionBankRepository questionBankRepository;
     private final QuestionRepository questionRepository;
     private final QuestionTopicRepository questionTopicRepository;
     private final UserContextPort userContextPort;
 
     public CreateSystemQuestionBankQuestionUseCase(
             UserRepository userRepository,
-            SchoolUserRepository schoolUserRepository,
+            QuestionBankRepository questionBankRepository,
             QuestionRepository questionRepository,
             QuestionTopicRepository questionTopicRepository,
             UserContextPort userContextPort) {
         this.userRepository = userRepository;
-        this.schoolUserRepository = schoolUserRepository;
+        this.questionBankRepository = questionBankRepository;
         this.questionRepository = questionRepository;
         this.questionTopicRepository = questionTopicRepository;
         this.userContextPort = userContextPort;
@@ -59,12 +59,9 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         var currentUser = userRepository.findByIdAndStatus(currentUserId, UserStatus.ACTIVE)
             .orElseThrow(() -> new UnauthorizedException("Trang thai nguoi dung khong hop le"));
-        var schoolId = getSchoolId(currentUser.getId());
 
         var questionTopic = getQuestionTopic(command.questionTopicId());
-        if (!questionTopicRepository.isTopicBelongToSchool(questionTopic.getId(), schoolId)) {
-            throw new ForbiddenException("Quyen truy cap bi tu choi");
-        }
+        validateSystemTopic(questionTopic);
 
         validateResponseDurationRange(command);
 
@@ -117,15 +114,18 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
         return questionTopic;
     }
 
+    private void validateSystemTopic(QuestionTopic questionTopic) {
+        var bank = questionBankRepository.findById(questionTopic.getQuestionBankId())
+            .orElseThrow(() -> new NotFoundException("Khong tim thay ngan hang cau hoi"));
+
+        if (bank.getOwnerType() != QuestionBankOwnerType.SYSTEM) {
+            throw new ForbiddenException("Chi duoc tao cau hoi he thong trong ngan hang he thong");
+        }
+    }
+
     private void validateResponseDurationRange(CreateSystemQuestionBankQuestionCommand command) {
         if (command.minResponseSeconds() > command.maxResponseSeconds()) {
             throw new IllegalStateException("Thoi gian tra loi toi thieu khong duoc lon hon thoi gian tra loi toi da");
         }
-    }
-
-    private UUID getSchoolId(UUID userId) {
-        return schoolUserRepository.findByUserId(userId)
-            .map(SchoolUser::getSchoolId)
-            .orElseThrow(() -> new IllegalStateException("Nguoi dung hien tai khong thuoc truong nao"));
     }
 }

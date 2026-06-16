@@ -13,7 +13,6 @@ import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
-import com.sep.vox.infrastructure.persistence.entity.QuestionBankJpaEntity;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
@@ -43,11 +42,11 @@ public class JpaQuestionBankPermissionQuery implements QuestionBankPermissionQue
 
     private ResolvedUser resolveCurrentUser() {
         UUID userId = userContextPort.getCurrentAuthenticatedUserId();
-        var user = userRepository.findById(userId)
-            .orElseThrow(() -> new ForbiddenException("Không tìm thấy người dùng"));
+        userRepository.findById(userId)
+            .orElseThrow(() -> new ForbiddenException("Khong tim thay nguoi dung"));
         var roleInfos = userRoleQueryRepository.findByUserIdWithRoleInfo(userId);
         String role = resolveRole(roleInfos);
-        return new ResolvedUser(userId, role, getSchoolId(userId));
+        return new ResolvedUser(userId, role, resolveSchoolId(userId, role));
     }
 
     private String resolveRole(List<UserRoleInfo> roleInfos) {
@@ -63,7 +62,18 @@ public class JpaQuestionBankPermissionQuery implements QuestionBankPermissionQue
         if (roleInfos.stream().anyMatch(r -> "STUDENT".equals(r.roleCode()))) {
             return "STUDENT";
         }
-        throw new ForbiddenException("Người dùng không có vai trò hợp lệ");
+        throw new ForbiddenException("Nguoi dung khong co vai tro hop le");
+    }
+
+    private UUID resolveSchoolId(UUID userId, String role) {
+        if ("SCHOOL_ADMIN".equals(role)) {
+            return schoolUserRepository.findByUserId(userId)
+                .map(SchoolUser::getSchoolId)
+                .orElseThrow(() -> new ForbiddenException("Nguoi dung hien tai khong thuoc truong nao"));
+        }
+        return schoolUserRepository.findByUserId(userId)
+            .map(SchoolUser::getSchoolId)
+            .orElse(null);
     }
 
     @Override
@@ -71,7 +81,7 @@ public class JpaQuestionBankPermissionQuery implements QuestionBankPermissionQue
         var user = resolveCurrentUser();
 
         if ("SYSTEM_ADMIN".equals(user.role())) {
-            return existsBankWithStatus(bankId, "DRAFT", "PUBLISHED");
+            return existsSystemBankWithStatus(bankId, "DRAFT", "PUBLISHED");
         }
         if ("SCHOOL_ADMIN".equals(user.role())) {
             return isSchoolOwnerWithStatus(bankId, user.schoolId(), "DRAFT", "PUBLISHED");
@@ -84,7 +94,7 @@ public class JpaQuestionBankPermissionQuery implements QuestionBankPermissionQue
         var user = resolveCurrentUser();
 
         if ("SYSTEM_ADMIN".equals(user.role())) {
-            return existsBankWithStatus(bankId, "DRAFT");
+            return existsSystemBankWithStatus(bankId, "DRAFT");
         }
         if ("SCHOOL_ADMIN".equals(user.role())) {
             return isSchoolOwnerWithStatus(bankId, user.schoolId(), "DRAFT");
@@ -97,7 +107,7 @@ public class JpaQuestionBankPermissionQuery implements QuestionBankPermissionQue
         var user = resolveCurrentUser();
 
         if ("SYSTEM_ADMIN".equals(user.role())) {
-            return existsBankWithStatus(bankId, "DRAFT", "PUBLISHED");
+            return existsSystemBankWithStatus(bankId, "DRAFT", "PUBLISHED");
         }
         if ("SCHOOL_ADMIN".equals(user.role())) {
             return isSchoolOwnerWithStatus(bankId, user.schoolId(), "DRAFT", "PUBLISHED");
@@ -110,7 +120,7 @@ public class JpaQuestionBankPermissionQuery implements QuestionBankPermissionQue
         var user = resolveCurrentUser();
 
         if ("SYSTEM_ADMIN".equals(user.role())) {
-            return existsBankWithStatus(bankId, "ARCHIVED");
+            return existsSystemBankWithStatus(bankId, "ARCHIVED");
         }
         if ("SCHOOL_ADMIN".equals(user.role())) {
             return isSchoolOwnerWithStatus(bankId, user.schoolId(), "ARCHIVED");
@@ -118,16 +128,16 @@ public class JpaQuestionBankPermissionQuery implements QuestionBankPermissionQue
         return false;
     }
 
-    private boolean existsBankWithStatus(UUID bankId, String... statuses) {
+    private boolean existsSystemBankWithStatus(UUID bankId, String... statuses) {
         try {
-            var statusList = List.of(statuses);
             em.createQuery("""
                 SELECT 1 FROM QuestionBankJpaEntity qb
                 WHERE qb.id = :bankId
+                  AND qb.ownerType = 'SYSTEM'
                   AND qb.status IN :statuses
                 """)
                 .setParameter("bankId", bankId)
-                .setParameter("statuses", statusList)
+                .setParameter("statuses", List.of(statuses))
                 .getSingleResult();
             return true;
         } catch (NoResultException e) {
@@ -137,27 +147,21 @@ public class JpaQuestionBankPermissionQuery implements QuestionBankPermissionQue
 
     private boolean isSchoolOwnerWithStatus(UUID bankId, UUID schoolId, String... statuses) {
         try {
-            var statusList = List.of(statuses);
             em.createQuery("""
                 SELECT 1 FROM QuestionBankJpaEntity qb
                 WHERE qb.id = :bankId
-                  AND qb.ownerType = 'SCHOOL' AND qb.schoolId = :schoolId
+                  AND qb.ownerType = 'SCHOOL'
+                  AND qb.schoolId = :schoolId
                   AND qb.status IN :statuses
                 """)
                 .setParameter("bankId", bankId)
                 .setParameter("schoolId", schoolId)
-                .setParameter("statuses", statusList)
+                .setParameter("statuses", List.of(statuses))
                 .getSingleResult();
             return true;
         } catch (NoResultException e) {
             return false;
         }
-    }
-
-    private UUID getSchoolId(UUID userId) {
-        return schoolUserRepository.findByUserId(userId)
-            .map(SchoolUser::getSchoolId)
-            .orElseThrow(() -> new ForbiddenException("Nguoi dung hien tai khong thuoc truong nao"));
     }
 
     private record ResolvedUser(UUID userId, String role, UUID schoolId) {}

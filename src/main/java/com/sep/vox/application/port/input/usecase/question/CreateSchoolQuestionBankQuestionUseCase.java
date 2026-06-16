@@ -14,6 +14,7 @@ import com.sep.vox.application.mapper.question.CreateQuestionResponseMapper;
 import com.sep.vox.application.port.input.command.CreateSchoolQuestionBankQuestionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.input.question.CreateQuestionResponse;
 import com.sep.vox.domain.model.question.Question;
 import com.sep.vox.domain.model.question.QuestionScope;
@@ -38,6 +39,7 @@ public class CreateSchoolQuestionBankQuestionUseCase implements IUseCase<CreateS
     private final QuestionBankRepository questionBankRepository;
     private final UserContextPort userContextPort;
     private final SchoolUserRepository schoolUserRepository;
+    private final UserRoleQueryRepository userRoleQueryRepository;
 
     public CreateSchoolQuestionBankQuestionUseCase(
             UserRepository userRepository,
@@ -45,13 +47,15 @@ public class CreateSchoolQuestionBankQuestionUseCase implements IUseCase<CreateS
             QuestionTopicRepository questionTopicRepository,
             QuestionBankRepository questionBankRepository,
             UserContextPort userContextPort,
-            SchoolUserRepository schoolUserRepository) {
+            SchoolUserRepository schoolUserRepository,
+            UserRoleQueryRepository userRoleQueryRepository) {
         this.userRepository = userRepository;
         this.questionRepository = questionRepository;
         this.questionTopicRepository = questionTopicRepository;
         this.questionBankRepository = questionBankRepository;
         this.userContextPort = userContextPort;
         this.schoolUserRepository = schoolUserRepository;
+        this.userRoleQueryRepository = userRoleQueryRepository;
     }
 
     @Override
@@ -62,6 +66,7 @@ public class CreateSchoolQuestionBankQuestionUseCase implements IUseCase<CreateS
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         var currentUser = userRepository.findByIdAndStatus(currentUserId, UserStatus.ACTIVE)
             .orElseThrow(() -> new UnauthorizedException("Trang thai nguoi dung khong hop le"));
+        ensureTeacherRole(currentUserId);
 
         var schoolId = getSchoolId(currentUser.getId());
 
@@ -133,5 +138,13 @@ public class CreateSchoolQuestionBankQuestionUseCase implements IUseCase<CreateS
         return schoolUserRepository.findByUserId(userId)
             .map(SchoolUser::getSchoolId)
             .orElseThrow(() -> new IllegalStateException("Nguoi dung hien tai khong thuoc truong nao"));
+    }
+
+    private void ensureTeacherRole(UUID userId) {
+        var isTeacher = userRoleQueryRepository.findByUserIdWithRoleInfo(userId).stream()
+            .anyMatch(role -> "TEACHER".equals(role.roleCode()));
+        if (!isTeacher) {
+            throw new ForbiddenException("Chi giao vien moi duoc tao cau hoi cua truong");
+        }
     }
 }

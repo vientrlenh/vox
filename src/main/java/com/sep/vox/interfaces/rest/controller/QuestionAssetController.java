@@ -41,7 +41,7 @@ public class QuestionAssetController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN', 'SYSTEM_ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UpdateQuestionResponse>> create(
             @PathVariable UUID questionId,
             @Valid @RequestBody UpdateQuestionAssetsRequest request) {
@@ -52,7 +52,7 @@ public class QuestionAssetController {
     }
 
     @PutMapping
-    @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN', 'SYSTEM_ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UpdateQuestionResponse>> update(
             @PathVariable UUID questionId,
             @Valid @RequestBody UpdateQuestionAssetsRequest request) {
@@ -62,7 +62,7 @@ public class QuestionAssetController {
     }
 
     @DeleteMapping
-    @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN', 'SYSTEM_ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UpdateQuestionResponse>> delete(@PathVariable UUID questionId) {
         var data = deleteQuestionAssetsUseCase.execute(questionId);
         return ResponseEntity.ok(ApiResponse.success("Xoa tai san cau hoi thanh cong", data));

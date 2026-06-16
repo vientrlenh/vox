@@ -23,8 +23,8 @@ public interface QuestionReadQueryRepository {
     PageResult<QuestionDto> findSchoolReviewQueue(UUID schoolId, PageRequest page);
 
     // Admin - QuestionController
-    PageResult<QuestionDto> findAdminQuestions(Boolean includeArchived, String status, String keyword, PageRequest page);
-    PageResult<QuestionDto> findAdminReviewQueue(PageRequest page);
+    PageResult<QuestionDto> findAdminQuestions(UUID userId, Boolean includeArchived, String status, String keyword, PageRequest page);
+    PageResult<QuestionDto> findAdminReviewQueue(UUID userId, PageRequest page);
 
     // Teacher - QuestionTopicController
     PageResult<QuestionTopicDto> findTeacherBankTopics(UUID bankId, UUID userId, UUID schoolId, PageRequest page);
@@ -39,8 +39,8 @@ public interface QuestionReadQueryRepository {
     // Admin - QuestionTopicController
     PageResult<QuestionTopicDto> findAdminBankTopics(UUID bankId, Boolean includeArchived, PageRequest page);
     Optional<QuestionTopicDto> findAdminTopicDetail(UUID topicId);
-    PageResult<QuestionDto> findAdminTopicQuestions(UUID bankId, UUID topicId, Boolean includeArchived, String scope, String status, String type, String keyword, PageRequest page);
+    PageResult<QuestionDto> findAdminTopicQuestions(UUID bankId, UUID topicId, UUID userId, Boolean includeArchived, String scope, String status, String type, String keyword, PageRequest page);
 
     // Admin - QuestionBankController
-    PageResult<QuestionDto> findAdminBankQuestions(UUID bankId, Boolean includeArchived, String scope, String status, String type, String keyword, PageRequest page);
+    PageResult<QuestionDto> findAdminBankQuestions(UUID bankId, UUID userId, Boolean includeArchived, String scope, String status, String type, String keyword, PageRequest page);
 }

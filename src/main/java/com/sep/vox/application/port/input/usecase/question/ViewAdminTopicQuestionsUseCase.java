@@ -5,6 +5,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.port.input.query.ViewAdminTopicQuestionsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
+import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.QuestionReadQueryRepository;
 import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
@@ -14,9 +15,13 @@ import com.sep.vox.domain.dto.QuestionDto;
 public class ViewAdminTopicQuestionsUseCase implements IUseCase<ViewAdminTopicQuestionsQuery, PageResult<QuestionDto>> {
 
     private final QuestionReadQueryRepository questionReadQueryRepository;
+    private final UserContextPort userContextPort;
 
-    public ViewAdminTopicQuestionsUseCase(QuestionReadQueryRepository questionReadQueryRepository) {
+    public ViewAdminTopicQuestionsUseCase(
+            QuestionReadQueryRepository questionReadQueryRepository,
+            UserContextPort userContextPort) {
         this.questionReadQueryRepository = questionReadQueryRepository;
+        this.userContextPort = userContextPort;
     }
 
     @Override
@@ -25,6 +30,7 @@ public class ViewAdminTopicQuestionsUseCase implements IUseCase<ViewAdminTopicQu
         return questionReadQueryRepository.findAdminTopicQuestions(
             input.bankId(),
             input.topicId(),
+            userContextPort.getCurrentAuthenticatedUserId(),
             input.includeArchived(),
             input.scope(),
             input.status(),

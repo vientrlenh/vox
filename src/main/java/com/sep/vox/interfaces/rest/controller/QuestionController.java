@@ -68,7 +68,7 @@ public class QuestionController {
     }
 
     @PostMapping("/school")
-    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
+    @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<ApiResponse<CreateQuestionResponse>> createSchool(
             @Valid @RequestBody CreateSystemQuestionBankQuestionRequest request) {
         var command = CreateQuestionCommandMapper.fromSchoolRequest(request);
@@ -78,7 +78,7 @@ public class QuestionController {
     }
 
     @PutMapping("/{questionId}/content")
-    @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN', 'SYSTEM_ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UpdateQuestionResponse>> updateContent(
             @PathVariable UUID questionId,
             @Valid @RequestBody UpdateQuestionContentRequest request) {
@@ -88,7 +88,7 @@ public class QuestionController {
     }
 
     @DeleteMapping("/{questionId}")
-    @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN', 'SYSTEM_ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<DeleteQuestionResponse>> delete(
             @PathVariable UUID questionId) {
         var data = deleteQuestionUseCase.execute(DeleteQuestionCommandMapper.fromId(questionId));

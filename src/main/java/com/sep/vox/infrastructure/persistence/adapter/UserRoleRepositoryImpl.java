@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -53,9 +54,24 @@ public class UserRoleRepositoryImpl implements UserRoleRepository {
         return springDataUserRoleRepository.findByUserIdAndRoleId(userId, roleId)
             .map(UserRoleMapper::toDomain);
     }
+
     @Override
-    public int compareAndSetRoleId(UUID userRoleId, UUID expectedRoleId, UUID newRoleId) {
-        return springDataUserRoleRepository.compareAndSetRoleId(userRoleId, expectedRoleId, newRoleId);
+    public List<UserRole> findByUserIdIn(Collection<UUID> userIds) {
+        return springDataUserRoleRepository.findByUserIdIn(userIds)
+            .stream()
+            .map(UserRoleMapper::toDomain)
+            .toList();
     }
+
+    @Override
+    public List<UserRole> findByRoleIdIn(Collection<UUID> roleIds, int page, int size) {
+        var fromRow = (page - 1) * size + 1;
+        var toRow = page * size;
+        return springDataUserRoleRepository.findByRoleIdIn(roleIds, fromRow, toRow)
+            .stream()
+            .map(UserRoleMapper::toDomain)
+            .toList();
+    }
+
 
 }

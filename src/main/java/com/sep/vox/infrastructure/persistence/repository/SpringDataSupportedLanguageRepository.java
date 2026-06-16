@@ -13,4 +13,5 @@ public interface SpringDataSupportedLanguageRepository extends JpaRepository<Sup
     Optional<SupportedLanguageJpaEntity> findByCode(String code);
     List<SupportedLanguageJpaEntity> findByCodeIn(Collection<String> codes);
     boolean existsByIdAndIsActive(UUID id, boolean isActive);
+    List<SupportedLanguageJpaEntity> findByIdIn(Collection<UUID> ids);
 }

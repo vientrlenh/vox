@@ -14,10 +14,10 @@ public interface SpringDataImportRowRepository extends JpaRepository<ImportRowJp
     List<ImportRowJpaEntity> findBySessionIdOrderByRowNumber(UUID sessionId);
 
     @Query("""
-        select r
-        from ImportRowJpaEntity r
-        where r.sessionId = :sessionId
-          and (:status is null or r.status = :status)
+        SELECT r
+        FROM ImportRowJpaEntity r
+        WHERE r.sessionId = :sessionId
+          AND (:status IS NULL OR r.status = :status)
         """)
     Page<ImportRowJpaEntity> findBySessionIdWithFilters(UUID sessionId, String status, Pageable pageable);
 }

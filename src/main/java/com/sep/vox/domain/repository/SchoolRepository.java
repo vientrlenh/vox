@@ -17,4 +17,5 @@ public interface SchoolRepository {
     boolean existsById(UUID id);
     boolean existsByDomain(String domain);
     List<School> findByIdIn(Collection<UUID> ids, int page, int size);
+    List<School> findByIdIn(Collection<UUID> ids);
 }

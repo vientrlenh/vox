@@ -12,4 +12,5 @@ public interface SchoolGradeRepository {
     Optional<SchoolGrade> findBySchoolIdAndCode(UUID schoolId, String code);
     List<SchoolGrade> findBySchoolIdAndCodeIn(UUID schoolId, Collection<String> codes);
     SchoolGrade save(SchoolGrade grade);
+    List<SchoolGrade> findByIdIn(Collection<UUID> ids);
 }

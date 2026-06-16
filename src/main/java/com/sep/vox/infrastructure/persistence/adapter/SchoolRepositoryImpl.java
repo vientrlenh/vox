@@ -78,5 +78,14 @@ public class SchoolRepositoryImpl implements SchoolRepository {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'findByIdIn'");
     }
+
+    @Override
+    public List<School> findByIdIn(Collection<UUID> ids) {
+        return springDataSchoolRepository.findByIdIn(ids)
+            .stream()
+            .map(SchoolMapper::toDomain)
+            .toList();
+        
+    }
     
 }

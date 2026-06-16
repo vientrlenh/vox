@@ -4,4 +4,5 @@ import java.util.UUID;
 
 public interface UserContextPort {
     UUID getCurrentAuthenticatedUserId();
+    boolean isSystemAdmin();
 }

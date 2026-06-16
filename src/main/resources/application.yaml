@@ -2,6 +2,11 @@ spring:
   application:
     name: vox
 
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
+
   threads:
     virtual:
       enabled: true
@@ -13,20 +18,42 @@ spring:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+      acks: all # wait for all replicas
+      retries: 3 # retry on transient failure
+      batch-size: 16KB # 16KB default
+      buffer-memory: 32MB # 32MB producer buffer
+      compression-type: zstd # compression-ration=high, speed=fast, cpu-usage=moderate
       properties:
-        acks: all
-        client.id: ${KAFKA_CLIENT_ID:vox}
+        "[enable.idempotence]": true
     consumer:
+      group-id: ${KAFKA_GROUP_ID:vox}
+      enable-auto-commit: false
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-      properties:
-        spring.json.trusted.packages: "*"
-        spring.json.value.default.type: com.fasterxml.jackson.databind.JsonNode
+      value-deserializer: org.springframework.kafka.support.serializer.JacksonJsonDeserializer 
+      max-poll-records: 50 # max records per pools 
+      max-poll-interval: 10m # 10 min 
+      fetch-min-size: 1
+      fetch-max-wait: 500ms
       auto-offset-reset: earliest
-    listener:
-      ack-mode: manual_immediate
+      properties:
+        "[spring.json.trusted.packages]": "com.sep.vox"
+        "[session.timeout.ms]": 30000
+        "[heartbeat.interval.ms]": 10000
 
+    listener:
+      ack-mode: MANUAL_IMMEDIATE # commit right away
+      concurrency: 3 # 3 threads
+      poll-timeout: 3000ms
+      type: single
+    streams:
+      application-id: "vox"
+      auto-startup: true
+    properties: 
+      "[prop.shared]": "value"
+    admin: 
+      properties: 
+        "[prop.admin]": "value"
   data:
     redis:
       host: ${REDIS_HOST:localhost}
@@ -69,17 +96,17 @@ spring:
       ddl-auto: update
     show-sql: true
 
-  storage:
-    provider: ${STORAGE_PROVIDER:}
-    s3:
-      bucket: ${AWS_S3_BUCKET:}
-      region: ${AWS_REGION:ap-southeast-1}
-      endpoint: ${AWS_S3_ENDPOINT:}
-      access-key: ${AWS_ACCESS_KEY_ID:}
-      secret-key: ${AWS_SECRET_ACCESS_KEY:}
-      key-prefix: ${AWS_S3_KEY_PREFIX:}
-      public-base-url: ${AWS_S3_PUBLIC_BASE_URL:}
-      path-style-access-enabled: ${AWS_S3_PATH_STYLE:false}
+storage:
+  provider: ${STORAGE_PROVIDER:}
+  s3:
+    bucket: ${AWS_S3_BUCKET:}
+    region: ${AWS_REGION:ap-southeast-1}
+    endpoint: ${AWS_S3_ENDPOINT:}
+    access-key: ${AWS_ACCESS_KEY_ID:}
+    secret-key: ${AWS_SECRET_ACCESS_KEY:}
+    key-prefix: ${AWS_S3_KEY_PREFIX:}
+    public-base-url: ${AWS_S3_PUBLIC_BASE_URL:}
+    path-style-access-enabled: ${AWS_S3_PATH_STYLE:false}
 
 springdoc:
   swagger-ui:
@@ -105,22 +132,17 @@ server:
   forward-headers-strategy: framework
 
 app:
-  external-events:
-    topic-prefix: ${KAFKA_TOPIC_PREFIX:vox}
-    consumer-groups:
-      user-service:
-        group-id: ${KAFKA_USER_GROUP_ID:vox-user}
-        topics: ${KAFKA_CONSUMER_TOPIC_USER:user-events}
-      notification-service:
-        group-id: ${KAFKA_NOTIFICATION_GROUP_ID:vox-notification}
-        topics: ${KAFKA_CONSUMER_TOPIC_NOTIFICATION:notifications}
-      audit-service:
-        group-id: ${KAFKA_AUDIT_GROUP_ID:vox-audit}
-        topics: ${KAFKA_CONSUMER_TOPIC_AUDIT:audit-events}
-
   frontend:
     password-setup-url: ${PASSWORD_SETUP_URL}
     oauth2-success-url: ${OAUTH2_SUCCESS_URL}
+  external-event:
+    kafka:
+      consumer-groups:
+        user-service:
+          topic: 
+            user-registered: ${KAFKA_USER_TOPIC:user.registered.v1}
+          group-id: ${KAFKA_USER_GROUP_ID:vox-user}
+
 
 system-admin:
   email: ${SYS_ADMIN_EMAIL}

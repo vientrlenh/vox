@@ -30,6 +30,10 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     @Override
+    public Optional<User> findByIdForUpdate(UUID id) {
+        return springDataUserRepository.findByIdForUpdate(id)
+            .map(UserMapper::toDomain);
+    }
     public List<User> findByIdIn(Collection<UUID> ids) {
         if (ids == null || ids.isEmpty()) {
             return List.of();

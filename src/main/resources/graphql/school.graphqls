@@ -33,8 +33,7 @@ type School {
     createdAt: String
     updatedAt: String
     classes(page: Int = 1, size: Int = 10): [SchoolClass!]
-    schoolUsers(page: Int = 1, size: Int = 10): [SchoolUser!]
-    schoolUser(userId: ID!): SchoolUser
+    users(page: Int = 1, size: Int = 10): [SchoolUser!]
 }
 
 
@@ -153,8 +152,7 @@ type SchoolClassUser {
     isActive: Boolean!
     joinedAt: String
     leftAt: String
-    assignedBy: ID
-    user: User
+    users(page: Int! = 1, size: Int! = 10): [User!]
 }
 
 type SchoolClassUserPage {
@@ -209,6 +207,8 @@ extend type Query {
     schools(page: Int = 1, size: Int = 20): SchoolPage!
     school(id: ID!): School
     schoolClasses(page: Int = 1, size: Int = 20, search: String, status: String, languageId: ID, schoolGradeId: ID): SchoolClassPage!
+    schoolUsersBySchool(schoolId: ID!, page: Int! = 1, size: Int! = 20): SchoolUserPage!
+    schoolUser(schoolId: ID!, userId: ID!): SchoolUser
     schoolClass(id: ID!): SchoolClass
     schoolClassUsers(schoolClassId: ID!, page: Int = 1, size: Int = 20): SchoolClassUserPage!
 }

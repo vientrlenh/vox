@@ -6,7 +6,7 @@ import java.util.UUID;
 
 public record SchoolGradeDto(
     UUID id,
-    UUID schoolId,
+    UUID schoolGradeLevelId,
     String code,
     String name,
     String description,

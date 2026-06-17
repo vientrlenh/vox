@@ -6,10 +6,7 @@ import com.sep.vox.domain.valueobject.LanguageCode;
 
 public final class SupportedLanguageDtoMapper {
 
-    private SupportedLanguageDtoMapper() {
-    }
-
-    public static SupportedLanguageDto toDto(SupportedLanguage language) {
+    public static SupportedLanguageDto toSupportedLanguageDto(SupportedLanguage language) {
         return new SupportedLanguageDto(
             language.getId(),
             valueOf(language.getCode()),

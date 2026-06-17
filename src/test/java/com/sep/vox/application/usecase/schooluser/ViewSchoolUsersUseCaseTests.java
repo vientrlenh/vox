@@ -17,14 +17,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.UnauthorizedException;
-import com.sep.vox.application.port.input.command.ListSchoolUsersCommand;
-import com.sep.vox.application.port.input.usecase.schooluser.ListSchoolUsersUseCase;
+import com.sep.vox.application.port.input.query.ViewSchoolUsersBySchoolQuery;
+import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUsersBySchoolUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.SchoolUserInfo;
 import com.sep.vox.application.query.repository.SchoolUserQueryRepository;
 import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
-import com.sep.vox.domain.dto.SchoolUserDto;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.model.school.SchoolUser;
@@ -35,13 +34,13 @@ import com.sep.vox.domain.valueobject.Email;
 import com.sep.vox.domain.valueobject.FullName;
 import com.sep.vox.domain.valueobject.Phone;
 
-public class ListSchoolUsersUseCaseTests {
+public class ViewSchoolUsersUseCaseTests {
 
     private UserContextPort userContextPort;
     private UserRepository userRepository;
     private SchoolUserQueryRepository schoolUserQueryRepository;
     private SchoolUserRepository schoolUserRepository;
-    private ListSchoolUsersUseCase listSchoolUsersUseCase;
+    private ViewSchoolUsersBySchoolUseCase viewSchoolUsersBySchoolUseCase;
 
     private final UUID schoolId = UUID.randomUUID();
     private final UUID callerId = UUID.randomUUID();
@@ -51,7 +50,7 @@ public class ListSchoolUsersUseCaseTests {
         userContextPort = mock(UserContextPort.class);
         userRepository = mock(UserRepository.class);
         schoolUserRepository = mock(SchoolUserRepository.class);
-        listSchoolUsersUseCase = new ListSchoolUsersUseCase(
+        viewSchoolUsersBySchoolUseCase = new ViewSchoolUsersBySchoolUseCase(
             userContextPort,
             userRepository,
             schoolUserRepository
@@ -85,7 +84,7 @@ public class ListSchoolUsersUseCaseTests {
             new PageRequest(1, 20)
         )).thenReturn(page);
 
-        var result = listSchoolUsersUseCase.execute(new ListSchoolUsersCommand(schoolId, 1, 20));
+        var result = viewSchoolUsersBySchoolUseCase.execute(new ViewSchoolUsersBySchoolQuery(schoolId, 1, 20));
 
         assertThat(result).isNotNull();
         assertThat(result.content()).hasSize(1);
@@ -105,7 +104,7 @@ public class ListSchoolUsersUseCaseTests {
 
         assertThrows(
             IllegalArgumentException.class,
-            () -> listSchoolUsersUseCase.execute(new ListSchoolUsersCommand(schoolId, 1, 20))
+            () -> viewSchoolUsersBySchoolUseCase.execute(new ViewSchoolUsersBySchoolQuery(schoolId, 1, 20))
         );
 
         verifyNoInteractions(schoolUserQueryRepository);
@@ -119,7 +118,7 @@ public class ListSchoolUsersUseCaseTests {
 
         assertThrows(
             UnauthorizedException.class,
-            () -> listSchoolUsersUseCase.execute(new ListSchoolUsersCommand(schoolId, 1, 20))
+            () -> viewSchoolUsersBySchoolUseCase.execute(new ViewSchoolUsersBySchoolQuery(schoolId, 1, 20))
         );
 
         verifyNoInteractions(schoolUserQueryRepository);

@@ -113,4 +113,14 @@ public class SchoolRepositoryImpl implements SchoolRepository {
                 id, name, description, phone, email, domain, address, studentCount, now, updatedBy
         );
     }
+
+    @Override
+    public List<School> findByIdIn(Collection<UUID> ids) {
+        return springDataSchoolRepository.findByIdIn(ids)
+            .stream()
+            .map(SchoolMapper::toDomain)
+            .toList();
+
+    }
+
 }

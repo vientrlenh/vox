@@ -1,6 +1,8 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
 import java.time.OffsetDateTime;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -57,4 +59,5 @@ public interface SpringDataSchoolRepository extends JpaRepository<SchoolJpaEntit
             @Param("updatedAt") OffsetDateTime updatedAt,
             @Param("updatedBy") UUID updatedBy
     );
+    List<SchoolJpaEntity> findByIdIn(Collection<UUID> ids);
 }

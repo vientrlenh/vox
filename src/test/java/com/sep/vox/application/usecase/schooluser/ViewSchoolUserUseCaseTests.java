@@ -16,8 +16,8 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
-import com.sep.vox.application.port.input.command.ViewSchoolUserCommand;
-import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUserUseCase;
+import com.sep.vox.application.port.input.query.ViewSchoolUserDetailsQuery;
+import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUserDetailsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.UserRoleInfo;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
@@ -37,7 +37,7 @@ public class ViewSchoolUserUseCaseTests {
     private UserRepository userRepository;
     private UserRoleQueryRepository userRoleQueryRepository;
     private SchoolUserRepository schoolUserRepository;
-    private ViewSchoolUserUseCase viewSchoolUserUseCase;
+    private ViewSchoolUserDetailsUseCase viewSchoolUserUseCase;
 
     private final UUID schoolId = UUID.randomUUID();
     private final UUID callerId = UUID.randomUUID();
@@ -46,10 +46,9 @@ public class ViewSchoolUserUseCaseTests {
     void setUp() {
         userContextPort = mock(UserContextPort.class);
         userRepository = mock(UserRepository.class);
-        userRoleQueryRepository = mock(UserRoleQueryRepository.class);
         schoolUserRepository = mock(SchoolUserRepository.class);
-        viewSchoolUserUseCase = new ViewSchoolUserUseCase(
-            userContextPort, userRepository, userRoleQueryRepository, schoolUserRepository
+        viewSchoolUserUseCase = new ViewSchoolUserDetailsUseCase(
+            userContextPort, userRepository, schoolUserRepository
         );
     }
 
@@ -60,7 +59,7 @@ public class ViewSchoolUserUseCaseTests {
         var target = user(targetId, schoolId);
         var schoolUserId = UUID.randomUUID();
         var schoolUser = new SchoolUser(schoolUserId, schoolId, targetId, OffsetDateTime.now(), OffsetDateTime.now().plusYears(100));
-        var command = new ViewSchoolUserCommand(schoolId, targetId);
+        var command = new ViewSchoolUserDetailsQuery(schoolId, targetId);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
         when(userRepository.findById(callerId)).thenReturn(Optional.of(caller));
@@ -80,7 +79,7 @@ public class ViewSchoolUserUseCaseTests {
         var targetId = UUID.randomUUID();
         var caller = user(callerId, schoolId);
         var target = user(targetId, schoolId);
-        var command = new ViewSchoolUserCommand(schoolId, targetId);
+        var command = new ViewSchoolUserDetailsQuery(schoolId, targetId);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
         when(userRepository.findById(callerId)).thenReturn(Optional.of(caller));
@@ -95,7 +94,7 @@ public class ViewSchoolUserUseCaseTests {
     @Test
     void view_should_throw_when_caller_belongs_to_different_school() {
         var caller = user(callerId, UUID.randomUUID());
-        var command = new ViewSchoolUserCommand(schoolId, UUID.randomUUID());
+        var command = new ViewSchoolUserDetailsQuery(schoolId, UUID.randomUUID());
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
         when(userRepository.findById(callerId)).thenReturn(Optional.of(caller));
@@ -107,7 +106,7 @@ public class ViewSchoolUserUseCaseTests {
     void view_should_throw_when_target_user_not_found() {
         var targetId = UUID.randomUUID();
         var caller = user(callerId, schoolId);
-        var command = new ViewSchoolUserCommand(schoolId, targetId);
+        var command = new ViewSchoolUserDetailsQuery(schoolId, targetId);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
         when(userRepository.findById(callerId)).thenReturn(Optional.of(caller));
@@ -121,7 +120,7 @@ public class ViewSchoolUserUseCaseTests {
         var targetId = UUID.randomUUID();
         var caller = user(callerId, schoolId);
         var target = user(targetId, UUID.randomUUID());
-        var command = new ViewSchoolUserCommand(schoolId, targetId);
+        var command = new ViewSchoolUserDetailsQuery(schoolId, targetId);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
         when(userRepository.findById(callerId)).thenReturn(Optional.of(caller));
@@ -135,7 +134,7 @@ public class ViewSchoolUserUseCaseTests {
         var targetId = UUID.randomUUID();
         var caller = user(callerId, schoolId);
         var target = user(targetId, schoolId, UserStatus.INACTIVE);
-        var command = new ViewSchoolUserCommand(schoolId, targetId);
+        var command = new ViewSchoolUserDetailsQuery(schoolId, targetId);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
         when(userRepository.findById(callerId)).thenReturn(Optional.of(caller));

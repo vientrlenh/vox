@@ -17,12 +17,19 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "school_classes", indexes = {
     @Index(columnList = "school_id, code", name = "idx_school_class_code", unique = true),
-    @Index(columnList = "school_id, name", name = "idx_school_class_name")
+    @Index(columnList = "school_id, name", name = "idx_school_class_name"), 
+    @Index(columnList = "id, school_id, language_id", name = "idx_school_class_class_school_language", unique = true)
 })
 public class SchoolClassJpaEntity {
     @Id
     @Generated(event = EventType.INSERT)
-    @Column(name = "id", nullable = false, updatable = false, insertable = false, columnDefinition = "UUID DEFAULT uuidv7()")
+    @Column(
+        name = "id", 
+        nullable = false, 
+        updatable = false, 
+        insertable = false, 
+        columnDefinition = "UUID DEFAULT uuidv7()"
+    )
     private UUID id;
 
     @Column(name = "school_id", nullable = false, updatable = false)

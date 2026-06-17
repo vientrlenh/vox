@@ -108,4 +108,13 @@ public class SchoolGradeRepositoryImpl implements SchoolGradeRepository {
     public void deleteById(UUID schoolGradeId) {
         springDataSchoolGradeRepository.deleteById(schoolGradeId);
     }
+
+    @Override
+    public List<SchoolGrade> findByIdIn(Collection<UUID> ids) {
+        return springDataSchoolGradeRepository.findByIdIn(ids)
+            .stream()
+            .map(SchoolGradeMapper::toDomain)
+            .toList();
+    }
+
 }

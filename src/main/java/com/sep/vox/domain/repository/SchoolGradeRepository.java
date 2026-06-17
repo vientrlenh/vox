@@ -27,4 +27,5 @@ public interface SchoolGradeRepository {
     boolean existsBySchoolIdAndStatus(UUID schoolId, String status);
     int updateSchoolGradeAtomic(UUID id, String name, String description, LocalDate startDate, LocalDate endDate, OffsetDateTime now, UUID updatedBy);
     void deleteById(UUID schoolGradeId);
+    List<SchoolGrade> findByIdIn(Collection<UUID> ids);
 }

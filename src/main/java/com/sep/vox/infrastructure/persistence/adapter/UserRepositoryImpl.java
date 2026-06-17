@@ -5,8 +5,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
+import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.UserRepository;
@@ -116,6 +118,23 @@ public class UserRepositoryImpl implements UserRepository {
     @Override
     public boolean existsByPhone(String phone) {
         return springDataUserRepository.existsByPhone(phone);
+    }
+
+
+    @Override
+    public PageResult<User> findAll(int page, int size) {
+        var pageRequest = PageRequest.of(page - 1, size);
+        var pageable = springDataUserRepository.findAll(pageRequest);
+        return new PageResult<>(
+            pageable.getContent()
+                .stream()
+                .map(UserMapper::toDomain)
+                .toList(), 
+            page, 
+            size, 
+            pageable.getTotalElements(), 
+            pageable.getTotalPages()
+        );
     }
     
 }

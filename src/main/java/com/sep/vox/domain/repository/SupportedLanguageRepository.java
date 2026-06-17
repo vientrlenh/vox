@@ -15,4 +15,5 @@ public interface SupportedLanguageRepository {
     long count();
     boolean existsById(UUID id);
     boolean existsByIdAndIsActive(UUID id, boolean isActive);
+    List<SupportedLanguage> findByIdIn(Collection<UUID> ids);
 }

@@ -22,7 +22,7 @@ public class ViewSchoolGradeDetailsUseCase implements IUseCase<ViewSchoolGradeDe
     @Transactional(readOnly = true)
     public SchoolGradeDto execute(ViewSchoolGradeDetailsQuery input) {
        return schoolGradeRepository.findById(input.id())
-            .map(SchoolGradeDtoMapper::toDto)
+            .map(SchoolGradeDtoMapper::toSchoolGradeDto)
             .orElseThrow(() -> new RuntimeException("Không tìm thấy khối học"));
     }
 }

@@ -33,7 +33,7 @@ public class ViewSchoolGradesUseCase implements IUseCase<ViewSchoolGradesQuery, 
         // 2. Chuyển đổi sang DTO và trả về
         return new PageResult<>(
                 pageResult.content().stream()
-                        .map(SchoolGradeDtoMapper::toDto)
+                        .map(SchoolGradeDtoMapper::toSchoolGradeDto)
                         .toList(),
                 pageResult.page(),
                 pageResult.size(),

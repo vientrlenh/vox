@@ -44,4 +44,5 @@ public interface SpringDataSchoolUserRepository extends JpaRepository<SchoolUser
 
     Page<SchoolUserJpaEntity> findBySchoolId(UUID schoolId, Pageable pageable);
     Optional<SchoolUserJpaEntity> findBySchoolIdAndUserId(UUID schoolId, UUID userId);
+    boolean existsBySchoolIdAndUserId(UUID schoolId, UUID userId);
 }

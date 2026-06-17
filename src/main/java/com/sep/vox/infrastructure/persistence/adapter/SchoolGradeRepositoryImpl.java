@@ -57,4 +57,13 @@ public class SchoolGradeRepositoryImpl implements SchoolGradeRepository {
             .map(SchoolGradeMapper::toDomain)
             .toList();
     }
+
+    @Override
+    public List<SchoolGrade> findByIdIn(Collection<UUID> ids) {
+        return springDataSchoolGradeRepository.findByIdIn(ids)
+            .stream()
+            .map(SchoolGradeMapper::toDomain)
+            .toList();
+    }
+
 }

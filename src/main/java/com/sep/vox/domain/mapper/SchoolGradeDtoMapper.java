@@ -6,17 +6,10 @@ import com.sep.vox.domain.model.school.SchoolGradeStatus;
 
 public final class SchoolGradeDtoMapper {
 
-    private SchoolGradeDtoMapper() {
-    }
-
-    public static SchoolGradeDto toDto(SchoolGrade schoolGrade) {
-        return toDto(schoolGrade, null);
-    }
-
-    public static SchoolGradeDto toDto(SchoolGrade schoolGrade, java.util.UUID schoolId) {
+    public static SchoolGradeDto toSchoolGradeDto(SchoolGrade schoolGrade) {
         return new SchoolGradeDto(
             schoolGrade.getId(),
-            schoolId,
+            schoolGrade.getSchoolGradeLevelId(),
             schoolGrade.getCode(),
             schoolGrade.getName(),
             schoolGrade.getDescription(),

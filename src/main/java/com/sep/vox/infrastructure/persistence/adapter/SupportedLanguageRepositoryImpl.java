@@ -65,5 +65,13 @@ public class SupportedLanguageRepositoryImpl implements SupportedLanguageReposit
     public boolean existsByIdAndIsActive(UUID id, boolean isActive) {
         return springDataSupportedLanguageRepository.existsByIdAndIsActive(id, isActive);
     }
+
+    @Override
+    public List<SupportedLanguage> findByIdIn(Collection<UUID> ids) {
+        return springDataSupportedLanguageRepository.findByIdIn(ids)
+            .stream()
+            .map(SupportedLanguageMapper::toDomain)
+            .toList();
+    }
     
 }

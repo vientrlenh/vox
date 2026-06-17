@@ -14,4 +14,5 @@ public interface SchoolGradeRepository {
     SchoolGrade save(SchoolGrade grade);
 
     List<SchoolGrade> findAllById(List<UUID> gradeIds);
+    List<SchoolGrade> findByIdIn(Collection<UUID> ids);
 }

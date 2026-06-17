@@ -83,4 +83,14 @@ public class SchoolRepositoryImpl implements SchoolRepository {
     public boolean existsByIdAndIsActiveTrue(UUID schoolId) {
        return springDataSchoolRepository.existsByIdAndIsActiveTrue(schoolId);
     }
+
+    @Override
+    public List<School> findByIdIn(Collection<UUID> ids) {
+        return springDataSchoolRepository.findByIdIn(ids)
+            .stream()
+            .map(SchoolMapper::toDomain)
+            .toList();
+
+    }
+
 }

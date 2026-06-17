@@ -17,4 +17,5 @@ public interface SchoolUserRepository {
     PageResult<SchoolUser> findBySchoolId(UUID schoolId, int page, int size);
     Optional<SchoolUser> findBySchoolIdAndUserId(UUID schoolId, UUID userId);
     Optional<UUID> findSchoolIdByUserId( UUID userId);
+    boolean existsBySchoolIdAndUserId(UUID schoolId, UUID userId);
 }

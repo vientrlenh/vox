@@ -9,8 +9,45 @@ type User {
     avatarUrl: String
     createdAt: String
     updatedAt: String
+    roles: [Role!]
 }
 
+type UserPage {
+    content: [User!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+}
+
+type Role {
+    id: ID!
+    code: String!
+    name: String
+    createdAt: String
+    updatedAt: String
+    users(page: Int! = 1, size: Int! = 10): [User!]
+}
+
+type RolePage {
+    content: [Role!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+}
+
+type UserRole {
+    id: ID!
+    userId: ID!
+    roleId: ID!
+    createdAt: String
+    user: User
+    role: Role
+}
+
+
 extend type Query {
+    users(page: Int! = 1, size: Int! = 20): UserPage!
     user(id: ID!): User
+    roles(page: Int! = 1, size: Int! = 20): RolePage!
+    role(id: ID!): Role
 }

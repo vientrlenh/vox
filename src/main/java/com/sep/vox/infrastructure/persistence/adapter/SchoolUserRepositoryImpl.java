@@ -84,4 +84,10 @@ public class SchoolUserRepositoryImpl implements SchoolUserRepository {
         return springDataSchoolUserRepository.findSchoolIdByUserId(userId);
     }
 
+
+    @Override
+    public boolean existsBySchoolIdAndUserId(UUID schoolId, UUID userId) {
+        return springDataSchoolUserRepository.existsBySchoolIdAndUserId(schoolId, userId);
+    }
+
 }

@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
+import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 
@@ -23,4 +24,5 @@ public interface UserRepository {
     int changeUserPassword(String email, String passwordHash);
     boolean existsByIdAndStatus(UUID id, UserStatus status);
     boolean existsByPhone(String phone);
+    PageResult<User> findAll(int page, int size);
 }

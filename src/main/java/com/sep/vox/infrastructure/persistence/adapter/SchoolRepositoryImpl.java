@@ -87,5 +87,10 @@ public class SchoolRepositoryImpl implements SchoolRepository {
             .toList();
         
     }
+
+    @Override
+    public boolean existsByCode(String code) {
+        return springDataSchoolRepository.existsByCode(code);
+    }
     
 }

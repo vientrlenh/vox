@@ -140,9 +140,21 @@ public class RubricController {
             @Argument("page") Integer page,
             @Argument("size") Integer size
     ) {
-        // Xử lý default value nếu Client không truyền lên
-        int pageNumber = (page != null) ? page : 0;
+        // 1. Chặn ngay từ cửa nếu Frontend gửi data sai (page <= 0 hoặc size <= 0)
+        if (page != null && page <= 0) {
+            throw new IllegalArgumentException("Tham số 'page' không hợp lệ. Trang phải bắt đầu từ 1.");
+        }
+        if (size != null && size <= 0) {
+            throw new IllegalArgumentException("Tham số 'size' không hợp lệ. Số lượng phần tử phải lớn hơn 0.");
+        }
+
+        // 2. Gán giá trị mặc định nếu Frontend không truyền (Quy ước mặc định là trang 1)
+        int pageNumber = (page != null) ? page : 1;
         int pageSize = (size != null) ? size : 10;
+
+        // 3. Đẩy xuống UseCase
+        // LƯU Ý CỰC QUAN TRỌNG: Vì Spring Data JPA đếm page từ 0,
+        // nên ta phải lấy (pageNumber - 1) trước khi gọi DB.
 
         var query = new ViewSystemRubricsQuery(pageNumber, pageSize);
         return viewSystemRubricsUseCase.execute(query);
@@ -157,8 +169,14 @@ public class RubricController {
             @Argument("page") Integer page,
             @Argument("size") Integer size
     ) {
-        // Xử lý default value
-        int pageNumber = (page != null) ? page : 0;
+        if (page != null && page <= 0) {
+            throw new IllegalArgumentException("Tham số 'page' không hợp lệ. Trang phải bắt đầu từ 1.");
+        }
+        if (size != null && size <= 0) {
+            throw new IllegalArgumentException("Tham số 'size' không hợp lệ. Số lượng phần tử phải lớn hơn 0.");
+        }
+
+        int pageNumber = (page != null) ? page : 1;
         int pageSize = (size != null) ? size : 10;
 
         var query = new ViewSchoolRubricsQuery(schoolId, pageNumber, pageSize);
@@ -225,8 +243,14 @@ public class RubricController {
             @Argument("page") Integer page,
             @Argument("size") Integer size
     ) {
-        // Default values
-        int pageNumber = (page != null) ? page : 0;
+        if (page != null && page <= 0) {
+            throw new IllegalArgumentException("Tham số 'page' không hợp lệ. Trang phải bắt đầu từ 1.");
+        }
+        if (size != null && size <= 0) {
+            throw new IllegalArgumentException("Tham số 'size' không hợp lệ. Số lượng phần tử phải lớn hơn 0.");
+        }
+
+        int pageNumber = (page != null) ? page : 1;
         int pageSize = (size != null) ? size : 10;
 
         var query = new ViewSchoolRubricVersionsQuery(schoolId, rubricId, status, pageNumber, pageSize);
@@ -243,7 +267,14 @@ public class RubricController {
             @Argument("page") Integer page,
             @Argument("size") Integer size
     ) {
-        int pageNumber = (page != null) ? page : 0;
+        if (page != null && page <= 0) {
+            throw new IllegalArgumentException("Tham số 'page' không hợp lệ. Trang phải bắt đầu từ 1.");
+        }
+        if (size != null && size <= 0) {
+            throw new IllegalArgumentException("Tham số 'size' không hợp lệ. Số lượng phần tử phải lớn hơn 0.");
+        }
+
+        int pageNumber = (page != null) ? page : 1;
         int pageSize = (size != null) ? size : 10;
 
         var query = new ViewSystemRubricVersionsQuery(rubricId, status, pageNumber, pageSize);
@@ -305,7 +336,14 @@ public class RubricController {
             @Argument("page") Integer page,
             @Argument("size") Integer size
     ) {
-        int pageNumber = (page != null) ? page : 0;
+        if (page != null && page <= 0) {
+            throw new IllegalArgumentException("Tham số 'page' không hợp lệ. Trang phải bắt đầu từ 1.");
+        }
+        if (size != null && size <= 0) {
+            throw new IllegalArgumentException("Tham số 'size' không hợp lệ. Số lượng phần tử phải lớn hơn 0.");
+        }
+
+        int pageNumber = (page != null) ? page : 1;
         int pageSize = (size != null) ? size : 10;
 
         var query = new ViewSystemRubricCriteriaQuery(versionId, pageNumber, pageSize);
@@ -321,7 +359,14 @@ public class RubricController {
             @Argument("page") Integer page,
             @Argument("size") Integer size
     ) {
-        int pageNumber = (page != null) ? page : 0;
+        if (page != null && page <= 0) {
+            throw new IllegalArgumentException("Tham số 'page' không hợp lệ. Trang phải bắt đầu từ 1.");
+        }
+        if (size != null && size <= 0) {
+            throw new IllegalArgumentException("Tham số 'size' không hợp lệ. Số lượng phần tử phải lớn hơn 0.");
+        }
+
+        int pageNumber = (page != null) ? page : 1;
         int pageSize = (size != null) ? size : 10;
 
         var query = new ViewSchoolRubricCriteriaQuery(schoolId, versionId, pageNumber, pageSize);
@@ -383,7 +428,14 @@ public class RubricController {
             @Argument("page") Integer page,
             @Argument("size") Integer size
     ) {
-        int pageNumber = (page != null) ? page : 0;
+        if (page != null && page <= 0) {
+            throw new IllegalArgumentException("Tham số 'page' không hợp lệ. Trang phải bắt đầu từ 1.");
+        }
+        if (size != null && size <= 0) {
+            throw new IllegalArgumentException("Tham số 'size' không hợp lệ. Số lượng phần tử phải lớn hơn 0.");
+        }
+
+        int pageNumber = (page != null) ? page : 1;
         int pageSize = (size != null) ? size : 10;
 
         var query = new ViewSchoolRubricCriterionBandsQuery(schoolId, criterionId, pageNumber, pageSize);
@@ -398,7 +450,14 @@ public class RubricController {
             @Argument("page") Integer page,
             @Argument("size") Integer size
     ) {
-        int pageNumber = (page != null) ? page : 0;
+        if (page != null && page <= 0) {
+            throw new IllegalArgumentException("Tham số 'page' không hợp lệ. Trang phải bắt đầu từ 1.");
+        }
+        if (size != null && size <= 0) {
+            throw new IllegalArgumentException("Tham số 'size' không hợp lệ. Số lượng phần tử phải lớn hơn 0.");
+        }
+
+        int pageNumber = (page != null) ? page : 1;
         int pageSize = (size != null) ? size : 10;
 
         var query = new ViewSystemRubricCriterionBandsQuery(criterionId, pageNumber, pageSize);
@@ -454,11 +513,18 @@ public class RubricController {
     @QueryMapping(name = "viewSystemRubricResultBands")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<RubricResultBandDto> viewSystemRubricResultBands(
-            @Argument("versionId") java.util.UUID versionId,
+            @Argument("versionId") UUID versionId,
             @Argument("page") Integer page,
             @Argument("size") Integer size
     ) {
-        int pageNumber = (page != null) ? page : 0;
+        if (page != null && page <= 0) {
+            throw new IllegalArgumentException("Tham số 'page' không hợp lệ. Trang phải bắt đầu từ 1.");
+        }
+        if (size != null && size <= 0) {
+            throw new IllegalArgumentException("Tham số 'size' không hợp lệ. Số lượng phần tử phải lớn hơn 0.");
+        }
+
+        int pageNumber = (page != null) ? page : 1;
         int pageSize = (size != null) ? size : 10;
 
         var query = new ViewSystemRubricResultBandsQuery(versionId, pageNumber, pageSize);
@@ -469,12 +535,19 @@ public class RubricController {
     @QueryMapping(name = "viewSchoolRubricResultBands")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<RubricResultBandDto> viewSchoolRubricResultBands(
-            @Argument("schoolId") java.util.UUID schoolId,
-            @Argument("versionId") java.util.UUID versionId,
+            @Argument("schoolId") UUID schoolId,
+            @Argument("versionId") UUID versionId,
             @Argument("page") Integer page,
             @Argument("size") Integer size
     ) {
-        int pageNumber = (page != null) ? page : 0;
+        if (page != null && page <= 0) {
+            throw new IllegalArgumentException("Tham số 'page' không hợp lệ. Trang phải bắt đầu từ 1.");
+        }
+        if (size != null && size <= 0) {
+            throw new IllegalArgumentException("Tham số 'size' không hợp lệ. Số lượng phần tử phải lớn hơn 0.");
+        }
+
+        int pageNumber = (page != null) ? page : 1;
         int pageSize = (size != null) ? size : 10;
 
         var query = new ViewSchoolRubricResultBandsQuery(schoolId, versionId, pageNumber, pageSize);

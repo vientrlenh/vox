@@ -47,7 +47,7 @@ input UpdateRubricResultBandInput {
 # Bên Controller trả về cái gì thì bên đây cũng như thế
 # ViewRubricDetailsUseCase
 # nhận từ Argument - và nó sẽ được đưa vào ở extend schoolId: ID!, id: ID!
-type RubricDto {
+type Rubric {
     id: ID!
     code: String!
     name: String!
@@ -58,16 +58,16 @@ type RubricDto {
     currentVersionId: ID
 }
 #Page
-type RubricDtoPage {
+type RubricPage {
     page: Int!
     size: Int!
     totalElements: Int!
     totalPages: Int!
-    content: [RubricDto!]!
+    content: [Rubric!]!
 }
 #===================RUBRIC VERSION ==================================
 
-type RubricVersionDto {
+type RubricVersion {
     id: ID!
     rubricId: ID!
     version: Int!
@@ -81,8 +81,8 @@ type RubricVersionDto {
     scoringScaleMax: Float!
     totalScoreMethod: String!
 }
-type RubricVersionDtoPage {
-    content: [RubricVersionDto!]!
+type RubricVersionPage {
+    content: [RubricVersion!]!
     page: Int!
     size: Int!
     totalElements: Int!
@@ -90,7 +90,7 @@ type RubricVersionDtoPage {
 }
 
 #=====================================RUBRIC CRITERION===========================
-type RubricCriterionDto {
+type RubricCriterion {
     id: ID!
     rubricVersionId: ID!
     frameworkCriterionId: ID!
@@ -105,8 +105,8 @@ type RubricCriterionDto {
     isRequired: Boolean!
 }
 
-type RubricCriterionDtoPage {
-    content: [RubricCriterionDto!]!
+type RubricCriterionPage {
+    content: [RubricCriterion!]!
     page: Int!
     size: Int!
     totalElements: Int!
@@ -115,7 +115,7 @@ type RubricCriterionDtoPage {
 
 
 #=======================RUBRIC CRITERION BAND ====================
-type RubricCriterionBandDto {
+type RubricCriterionBand {
     id: ID!
     criterionId: ID!
     code: String!
@@ -126,8 +126,8 @@ type RubricCriterionBandDto {
     createdBy: ID
     updatedBy: ID
 }
-type RubricCriterionBandDtoPage {
-    content: [RubricCriterionBandDto!]!
+type RubricCriterionBandPage {
+    content: [RubricCriterionBand!]!
     page: Int!
     size: Int!
     totalElements: Int!
@@ -135,7 +135,7 @@ type RubricCriterionBandDtoPage {
 }
 
 #====================RUBRIC RESULT BAND =========================
-type RubricResultBandDto {
+type RubricResultBand {
     id: ID!
     rubricVersionId: ID!
     code: String!
@@ -150,8 +150,8 @@ type RubricResultBandDto {
     updatedBy: ID
 }
 
-type RubricResultBandDtoPage {
-    content: [RubricResultBandDto!]!
+type RubricResultBandPage {
+    content: [RubricResultBand!]!
     page: Int!
     size: Int!
     totalElements: Int!
@@ -183,32 +183,32 @@ extend type Mutation {
 
 extend type Query {
     # RUBRIC
-    viewSystemRubric(id: ID!): RubricDto
-    viewSchoolRubric(schoolId: ID!, id: ID!): RubricDto
-    viewSystemRubrics(page: Int = 0, size: Int = 10): RubricDtoPage!
-    viewSchoolRubrics(schoolId: ID!, page: Int = 0, size: Int = 10): RubricDtoPage!
+    viewSystemRubric(id: ID!): Rubric
+    viewSchoolRubric(schoolId: ID!, id: ID!): Rubric
+    viewSystemRubrics(page: Int = 0, size: Int = 10): RubricPage!
+    viewSchoolRubrics(schoolId: ID!, page: Int = 0, size: Int = 10): RubricPage!
 
     # RUBRIC VERSION
-    viewSchoolRubricVersion(schoolId: ID!, versionId: ID!): RubricVersionDto
-    viewSystemRubricVersion(versionId: ID!): RubricVersionDto
-    viewSchoolRubricVersions(schoolId: ID!, rubricId: ID!, status: String, page: Int = 0, size: Int = 10): RubricVersionDtoPage!
-    viewSystemRubricVersions(rubricId: ID!, status: String, page: Int = 0, size: Int = 10): RubricVersionDtoPage!
+    viewSchoolRubricVersion(schoolId: ID!, versionId: ID!): RubricVersion
+    viewSystemRubricVersion(versionId: ID!): RubricVersion
+    viewSchoolRubricVersions(schoolId: ID!, rubricId: ID!, status: String, page: Int = 0, size: Int = 10): RubricVersionPage!
+    viewSystemRubricVersions(rubricId: ID!, status: String, page: Int = 0, size: Int = 10): RubricVersionPage!
 
     # RUBRIC CRITERION
-    viewSystemRubricCriterion(criterionId: ID!): RubricCriterionDto
-    viewSchoolRubricCriterion(schoolId: ID!, criterionId: ID!): RubricCriterionDto
-    viewSystemRubricCriteria(versionId: ID!, page: Int = 0, size: Int = 10): RubricCriterionDtoPage!
-    viewSchoolRubricCriteria(schoolId: ID!, versionId: ID!, page: Int = 0, size: Int = 10): RubricCriterionDtoPage!
+    viewSystemRubricCriterion(criterionId: ID!): RubricCriterion
+    viewSchoolRubricCriterion(schoolId: ID!, criterionId: ID!): RubricCriterion
+    viewSystemRubricCriteria(versionId: ID!, page: Int = 0, size: Int = 10): RubricCriterionPage!
+    viewSchoolRubricCriteria(schoolId: ID!, versionId: ID!, page: Int = 0, size: Int = 10): RubricCriterionPage!
 
     # RUBRIC CRITERION BAND
-    viewSystemRubricCriterionBand(bandId: ID!): RubricCriterionBandDto
-    viewSchoolRubricCriterionBand(schoolId: ID!, bandId: ID!): RubricCriterionBandDto
-    viewSchoolRubricCriterionBands(schoolId: ID!, criterionId: ID!, page: Int = 0, size: Int = 10): RubricCriterionBandDtoPage!
-    viewSystemRubricCriterionBands(criterionId: ID!, page: Int = 0, size: Int = 10): RubricCriterionBandDtoPage!
+    viewSystemRubricCriterionBand(bandId: ID!): RubricCriterionBand
+    viewSchoolRubricCriterionBand(schoolId: ID!, bandId: ID!): RubricCriterionBand
+    viewSchoolRubricCriterionBands(schoolId: ID!, criterionId: ID!, page: Int = 0, size: Int = 10): RubricCriterionBandPage!
+    viewSystemRubricCriterionBands(criterionId: ID!, page: Int = 0, size: Int = 10): RubricCriterionBandPage!
 
     # RUBRIC CRITERION RESULT
-    viewSystemRubricResultBand(resultBandId: ID!): RubricResultBandDto
-    viewSchoolRubricResultBand(schoolId: ID!, resultBandId: ID!): RubricResultBandDto
-    viewSystemRubricResultBands(versionId: ID!, page: Int = 0, size: Int = 10): RubricResultBandDtoPage!
-    viewSchoolRubricResultBands(schoolId: ID!, versionId: ID!, page: Int = 0, size: Int = 10): RubricResultBandDtoPage!
+    viewSystemRubricResultBand(resultBandId: ID!): RubricResultBand
+    viewSchoolRubricResultBand(schoolId: ID!, resultBandId: ID!): RubricResultBand
+    viewSystemRubricResultBands(versionId: ID!, page: Int = 0, size: Int = 10): RubricResultBandPage!
+    viewSchoolRubricResultBands(schoolId: ID!, versionId: ID!, page: Int = 0, size: Int = 10): RubricResultBandPage!
 }

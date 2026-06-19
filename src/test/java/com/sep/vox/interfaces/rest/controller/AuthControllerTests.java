@@ -22,7 +22,9 @@ import com.sep.vox.application.port.input.usecase.auth.RefreshUseCase;
 import com.sep.vox.application.port.input.usecase.auth.ResetPasswordUseCase;
 import com.sep.vox.application.port.input.usecase.auth.SendResetPasswordOtpUseCase;
 import com.sep.vox.application.port.input.usecase.auth.SetUpPasswordUseCase;
+import com.sep.vox.application.port.input.usecase.registration.RegisterBySelfDeclaredUseCase;
 import com.sep.vox.application.port.input.usecase.registration.RegisterFromSchoolDirectoryUseCase;
+import com.sep.vox.application.port.input.usecase.registration.VerifyRegisterFormOtpUseCase;
 import com.sep.vox.application.response.input.auth.LoginResponse;
 import com.sep.vox.application.response.input.auth.RefreshResponse;
 import com.sep.vox.interfaces.rest.dto.request.ClientDeviceRequest;
@@ -44,7 +46,9 @@ public class AuthControllerTests {
         var refreshUseCase = mock(RefreshUseCase.class);
         var sendResetPasswordOtpUseCase = mock(SendResetPasswordOtpUseCase.class);
         var resetPasswordUseCase = mock(ResetPasswordUseCase.class);
-        var controller = new AuthController(loginUseCase, registerUseCase, setUpPasswordUseCase, refreshUseCase, sendResetPasswordOtpUseCase, resetPasswordUseCase);
+        var registerBySelfDeclaredUseCase = mock(RegisterBySelfDeclaredUseCase.class);
+        var verifyRegisterFormOtpUseCase = mock(VerifyRegisterFormOtpUseCase.class);
+        var controller = new AuthController(loginUseCase, registerUseCase, setUpPasswordUseCase, refreshUseCase, sendResetPasswordOtpUseCase, resetPasswordUseCase, registerBySelfDeclaredUseCase, verifyRegisterFormOtpUseCase);
         var request = new LoginRequest(
             "admin@example.com",
             "password",
@@ -93,7 +97,9 @@ public class AuthControllerTests {
         var refreshUseCase = mock(RefreshUseCase.class);
         var sendResetPasswordOtpUseCase = mock(SendResetPasswordOtpUseCase.class);
         var resetPasswordUseCase = mock(ResetPasswordUseCase.class);
-        var controller = new AuthController(loginUseCase, registerUseCase, setUpPasswordUseCase, refreshUseCase, sendResetPasswordOtpUseCase, resetPasswordUseCase);
+        var registerBySelfDeclaredUseCase = mock(RegisterBySelfDeclaredUseCase.class);
+        var verifyRegisterFormOtpUseCase = mock(VerifyRegisterFormOtpUseCase.class);
+        var controller = new AuthController(loginUseCase, registerUseCase, setUpPasswordUseCase, refreshUseCase, sendResetPasswordOtpUseCase, resetPasswordUseCase, registerBySelfDeclaredUseCase, verifyRegisterFormOtpUseCase);
         var request = new RefreshRequest("device-1");
         var expectedCommand = new RefreshCommand("old-refresh-token", request.deviceId());
         var refreshResponse = new RefreshResponse("access-token", "new-refresh-token");
@@ -123,7 +129,9 @@ public class AuthControllerTests {
         var refreshUseCase = mock(RefreshUseCase.class);
         var sendResetPasswordOtpUseCase = mock(SendResetPasswordOtpUseCase.class);
         var resetPasswordUseCase = mock(ResetPasswordUseCase.class);
-        var controller = new AuthController(loginUseCase, registerUseCase, setUpPasswordUseCase, refreshUseCase, sendResetPasswordOtpUseCase, resetPasswordUseCase);
+        var registerBySelfDeclaredUseCase = mock(RegisterBySelfDeclaredUseCase.class);
+        var verifyRegisterFormOtpUseCase = mock(VerifyRegisterFormOtpUseCase.class);
+        var controller = new AuthController(loginUseCase, registerUseCase, setUpPasswordUseCase, refreshUseCase, sendResetPasswordOtpUseCase, resetPasswordUseCase, registerBySelfDeclaredUseCase, verifyRegisterFormOtpUseCase);
         var request = new SendResetPasswordOtpRequest("admin@example.com");
         var expectedCommand = new SendResetPasswordOtpCommand(request.email());
 
@@ -144,7 +152,9 @@ public class AuthControllerTests {
         var refreshUseCase = mock(RefreshUseCase.class);
         var sendResetPasswordOtpUseCase = mock(SendResetPasswordOtpUseCase.class);
         var resetPasswordUseCase = mock(ResetPasswordUseCase.class);
-        var controller = new AuthController(loginUseCase, registerUseCase, setUpPasswordUseCase, refreshUseCase, sendResetPasswordOtpUseCase, resetPasswordUseCase);
+        var registerBySelfDeclaredUseCase = mock(RegisterBySelfDeclaredUseCase.class);
+        var verifyRegisterFormOtpUseCase = mock(VerifyRegisterFormOtpUseCase.class);
+        var controller = new AuthController(loginUseCase, registerUseCase, setUpPasswordUseCase, refreshUseCase, sendResetPasswordOtpUseCase, resetPasswordUseCase, registerBySelfDeclaredUseCase, verifyRegisterFormOtpUseCase);
         var request = new ResetPasswordRequest("admin@example.com", "new-password", "1234567");
         var expectedCommand = new ResetPasswordCommand(request.email(), request.password(), request.otp());
 

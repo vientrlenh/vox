@@ -20,4 +20,5 @@ public interface RegisterFormRepository {
     boolean existsBySchoolDirectoryIdAndStatusIn(UUID schoolDirectoryId, Collection<RegisterFormStatus> statuses);
     boolean existsByContactEmailAndStatus(String contactEmail, RegisterFormStatus status);
     boolean existsByContactPhoneAndStatus(String contactPhone, RegisterFormStatus status);
+    boolean existsBySchoolDomainAndStatusIn(String schoolDomain, Collection<RegisterFormStatus> statuses);
 }

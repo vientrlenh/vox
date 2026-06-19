@@ -18,7 +18,8 @@ public final class RegisterFromSchoolDirectoryCommandMapper {
             request.contactAddress(),
             request.postalCode(), 
             request.position(), 
-            request.studentCount()
+            request.studentCount(), 
+            request.documentUrls()
         );
     }
 }

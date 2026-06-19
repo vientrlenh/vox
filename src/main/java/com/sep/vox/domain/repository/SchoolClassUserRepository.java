@@ -15,4 +15,5 @@ public interface SchoolClassUserRepository {
     PageResult<SchoolClassUser> findBySchoolClassId(UUID schoolClassId, int page, int size);
     boolean existsBySchoolClassId(UUID schoolClassId);
     SchoolClassUser save(SchoolClassUser schoolClassUser);
+    List<SchoolClassUser> saveAll(Collection<SchoolClassUser> schoolClassUsers);
 }

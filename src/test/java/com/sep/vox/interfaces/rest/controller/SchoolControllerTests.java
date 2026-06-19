@@ -404,7 +404,7 @@ class SchoolControllerTests {
             "Email", "email",
             "Mã lớp", "classCode"
         ));
-        var expected = new AcceptSchoolClassUserImportResponse(importSessionId, 2L, 1L, 1L, 0L, "COMPLETED");
+        var expected = new AcceptSchoolClassUserImportResponse(importSessionId, 2L, 1L, 0L, 1L, 0L, "COMPLETED");
         var expectedCommand = new AcceptSchoolClassUserImportCommand(schoolId, importSessionId, request.confirmedMapping());
         when(acceptClassUserUseCase.execute(expectedCommand)).thenReturn(expected);
 

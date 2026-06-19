@@ -100,13 +100,13 @@ public class AcceptSchoolClassUserImportUseCase implements IUseCase<AcceptSchool
         importSessionRepository.save(session);
 
         var rows = importRowRepository.findBySessionIdOrderByRowNumber(session.getId());
-        var importedRows = processRows(rows, input.confirmedMapping(), schoolId, currentUserId, now);
-        var invalidRows = rows.size() - importedRows;
+        var result = processRows(rows, input.confirmedMapping(), schoolId, currentUserId, now);
+        var invalidRows = rows.size() - result.importedRows();
 
         importRowRepository.saveAll(rows);
-        session.setImportedRows(importedRows);
+        session.setImportedRows(result.importedRows());
         session.setInvalidRows(invalidRows);
-        session.setValidRows(importedRows);
+        session.setValidRows(result.importedRows());
         session.setSkippedRows(0L);
         session.setTotalRows(rows.size());
         session.setStatus(ImportSessionStatus.COMPLETED);
@@ -118,6 +118,7 @@ public class AcceptSchoolClassUserImportUseCase implements IUseCase<AcceptSchool
             savedSession.getId(),
             savedSession.getTotalRows(),
             savedSession.getImportedRows(),
+            result.updatedRows(),
             savedSession.getInvalidRows(),
             savedSession.getSkippedRows(),
             savedSession.getStatus().name()
@@ -201,8 +202,9 @@ public class AcceptSchoolClassUserImportUseCase implements IUseCase<AcceptSchool
         }
     }
 
-    private long processRows(List<ImportRow> rows, Map<String, String> confirmedMapping, UUID schoolId, UUID currentUserId, OffsetDateTime now) {
+    private ProcessResult processRows(List<ImportRow> rows, Map<String, String> confirmedMapping, UUID schoolId, UUID currentUserId, OffsetDateTime now) {
         var importedRows = 0L;
+        var updatedRows = 0L;
         var seenMemberships = new HashSet<String>();
         var rowContexts = new ArrayList<RowContext>();
         var emails = new HashSet<String>();
@@ -224,11 +226,13 @@ public class AcceptSchoolClassUserImportUseCase implements IUseCase<AcceptSchool
         var schoolUsersByUserId = findSchoolUsersByUserId(usersByEmail.values());
         var existingMembershipsByPair = findExistingMembershipsByPair(usersByEmail.values(), classesByCode.values());
 
+        var toSave = new ArrayList<SchoolClassUser>();
+
         for (var rowContext : rowContexts) {
             var row = rowContext.row();
             var normalized = rowContext.normalized();
             var validation = validateRow(normalized, schoolId, seenMemberships, usersByEmail, classesByCode,
-                schoolUsersByUserId, existingMembershipsByPair);
+                schoolUsersByUserId);
 
             if (!validation.errors().isEmpty()) {
                 row.setErrorsJson(jsonSerializationPort.toJson(validation.errors()));
@@ -236,20 +240,34 @@ public class AcceptSchoolClassUserImportUseCase implements IUseCase<AcceptSchool
                 continue;
             }
 
-            schoolClassUserRepository.save(new SchoolClassUser(
-                validation.user().getId(),
-                validation.schoolClass().getId(),
-                true,
-                now,
-                null,
-                currentUserId
-            ));
+            var key = membershipKey(validation.user().getId(), validation.schoolClass().getId());
+            var existing = existingMembershipsByPair.get(key);
+            if (existing != null) {
+                existing.activate();
+                existing.setAssignedBy(currentUserId);
+                toSave.add(existing);
+                updatedRows++;
+            } else {
+                toSave.add(new SchoolClassUser(
+                    validation.user().getId(),
+                    validation.schoolClass().getId(),
+                    true,
+                    now,
+                    null,
+                    currentUserId
+                ));
+            }
+
             row.setErrorsJson(null);
             row.setStatus(ImportRowStatus.IMPORTED);
             importedRows++;
         }
 
-        return importedRows;
+        if (!toSave.isEmpty()) {
+            schoolClassUserRepository.saveAll(toSave);
+        }
+
+        return new ProcessResult(importedRows, updatedRows);
     }
 
     private Map<String, User> findUsersByEmail(Set<String> emails) {
@@ -313,7 +331,7 @@ public class AcceptSchoolClassUserImportUseCase implements IUseCase<AcceptSchool
 
     private RowValidation validateRow(Map<String, String> mappedData, UUID schoolId, Set<String> seenMemberships,
             Map<String, User> usersByEmail, Map<String, SchoolClass> classesByCode,
-            Map<UUID, SchoolUser> schoolUsersByUserId, Map<String, SchoolClassUser> existingMembershipsByPair) {
+            Map<UUID, SchoolUser> schoolUsersByUserId) {
         var errors = new ArrayList<Map<String, String>>();
         addMissingError(errors, mappedData, "email", "Email không được để trống");
         addMissingError(errors, mappedData, "classCode", "Mã lớp không được để trống");
@@ -352,11 +370,6 @@ public class AcceptSchoolClassUserImportUseCase implements IUseCase<AcceptSchool
             }
         }
 
-        if (user != null && schoolClass != null
-                && existingMembershipsByPair.containsKey(membershipKey(user.getId(), schoolClass.getId()))) {
-            errors.add(error("email", "Người dùng đã thuộc lớp học"));
-        }
-
         return new RowValidation(user, schoolClass, errors);
     }
 
@@ -392,5 +405,8 @@ public class AcceptSchoolClassUserImportUseCase implements IUseCase<AcceptSchool
     }
 
     private record RowValidation(User user, SchoolClass schoolClass, List<Map<String, String>> errors) {
+    }
+
+    private record ProcessResult(long importedRows, long updatedRows) {
     }
 }

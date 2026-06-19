@@ -234,7 +234,7 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
         for (var rowContext : rowContexts) {
             var row = rowContext.row();
             var normalized = rowContext.normalized();
-            var errors = validateRow(normalized, seenCodes, Map.of(), languagesByCode, gradesByCode);
+            var errors = validateRow(normalized, seenCodes, languagesByCode, gradesByCode);
 
             if (!errors.isEmpty()) {
                 row.setErrorsJson(jsonSerializationPort.toJson(errors));
@@ -325,7 +325,7 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
     }
 
     private List<Map<String, String>> validateRow(Map<String, String> mappedData, Set<String> seenCodes,
-            Map<String, SchoolClass> existingClassesByCode, Map<String, SupportedLanguage> languagesByCode,
+            Map<String, SupportedLanguage> languagesByCode,
             Map<String, SchoolGrade> gradesByCode) {
         var errors = new ArrayList<Map<String, String>>();
         addMissingError(errors, mappedData, "code", "Mã lớp không được để trống");
@@ -334,12 +334,8 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
         addMissingError(errors, mappedData, "schoolGradeCode", "Mã khối không được để trống");
 
         var code = mappedData.get("code");
-        if (isPresent(code)) {
-            if (!seenCodes.add(code)) {
-                errors.add(error("code", "Mã lớp bị trùng trong file import"));
-            } else if (existingClassesByCode.containsKey(code)) {
-                errors.add(error("code", "Mã lớp đã tồn tại trong hệ thống"));
-            }
+        if (isPresent(code) && !seenCodes.add(code)) {
+            errors.add(error("code", "Mã lớp bị trùng trong file import"));
         }
 
         var languageCode = mappedData.get("languageCode");

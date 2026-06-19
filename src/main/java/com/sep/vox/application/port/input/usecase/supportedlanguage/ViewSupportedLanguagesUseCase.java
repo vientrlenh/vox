@@ -32,7 +32,7 @@ public class ViewSupportedLanguagesUseCase implements IUseCase<ViewSupportedLang
         );
         return new PageResult<>(
             result.content().stream()
-                .map(SupportedLanguageDtoMapper::toDto)
+                .map(SupportedLanguageDtoMapper::toSupportedLanguageDto)
                 .toList(),
             result.page(),
             result.size(),

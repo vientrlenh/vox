@@ -27,6 +27,6 @@ public class ViewSupportedLanguageDetailsUseCase implements IUseCase<ViewSupport
         if (input.activeOnly() && !language.isActive()) {
             throw new NotFoundException("Không tìm thấy ngôn ngữ");
         }
-        return SupportedLanguageDtoMapper.toDto(language);
+        return SupportedLanguageDtoMapper.toSupportedLanguageDto(language);
     }
 }

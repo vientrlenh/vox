@@ -19,38 +19,24 @@ import com.sep.vox.application.port.input.usecase.auth.SetUpPasswordUseCase;
 import com.sep.vox.application.port.input.usecase.auth.SendResetPasswordOtpUseCase;
 import com.sep.vox.application.port.input.usecase.auth.ResetPasswordUseCase;
 
-import com.sep.vox.application.port.input.usecase.auth.SendResetPasswordOtpUseCase;
-import com.sep.vox.application.port.input.usecase.auth.SetUpPasswordUseCase;
-import com.sep.vox.application.port.input.usecase.registration.RegisterUseCase;
+import com.sep.vox.application.port.input.usecase.registration.RegisterFromSchoolDirectoryUseCase;
 import com.sep.vox.application.response.input.auth.LoginResponse;
 import com.sep.vox.application.response.input.auth.RefreshResponse;
 import com.sep.vox.interfaces.rest.dto.request.LoginRequest;
-import com.sep.vox.interfaces.rest.dto.request.RegisterRequest;
-import com.sep.vox.interfaces.rest.dto.request.SetUpPasswordRequest;
 import com.sep.vox.interfaces.rest.dto.request.RefreshRequest;
-import com.sep.vox.interfaces.rest.dto.request.SendResetPasswordOtpRequest;
+import com.sep.vox.interfaces.rest.dto.request.RegisterFromSchoolDirectoryRequest;
 import com.sep.vox.interfaces.rest.dto.request.ResetPasswordRequest;
+import com.sep.vox.interfaces.rest.dto.request.SendResetPasswordOtpRequest;
+import com.sep.vox.interfaces.rest.dto.request.SetUpPasswordRequest;
 
 import com.sep.vox.interfaces.rest.mapper.LoginCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.RegisterCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.SetUpPasswordCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.RefreshCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.SendResetPasswordOtpCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.RegisterFromSchoolDirectoryCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.ResetPasswordCommandMapper;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import com.sep.vox.application.response.input.auth.LoginResponse;
-import com.sep.vox.application.response.input.auth.RefreshResponse;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
-import com.sep.vox.interfaces.rest.mapper.SendResetPasswordOtpCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.SetUpPasswordCommandMapper;
 import com.sep.vox.interfaces.shared.HttpCookieProvider;
 import com.sep.vox.interfaces.shared.IpAddressReceiver;
 
@@ -65,15 +51,15 @@ import jakarta.validation.Valid;
 public class AuthController {
     
     private final LoginUseCase loginUseCase;
-    private final RegisterUseCase registerUseCase;
+    private final RegisterFromSchoolDirectoryUseCase registerFromSchoolDirectoryUseCase;
     private final SetUpPasswordUseCase setUpPasswordUseCase;
     private final RefreshUseCase refreshUseCase;
     private final SendResetPasswordOtpUseCase sendResetPasswordOtpUseCase;
     private final ResetPasswordUseCase resetPasswordUseCase;
 
-    public AuthController(LoginUseCase loginUseCase, RegisterUseCase registerUseCase, SetUpPasswordUseCase setUpPasswordUseCase, RefreshUseCase refreshUseCase, SendResetPasswordOtpUseCase sendResetPasswordOtpUseCase, ResetPasswordUseCase resetPasswordUseCase) {
+    public AuthController(LoginUseCase loginUseCase, RegisterFromSchoolDirectoryUseCase registerFromSchoolDirectoryUseCase, SetUpPasswordUseCase setUpPasswordUseCase, RefreshUseCase refreshUseCase, SendResetPasswordOtpUseCase sendResetPasswordOtpUseCase, ResetPasswordUseCase resetPasswordUseCase) {
         this.loginUseCase = loginUseCase;
-        this.registerUseCase = registerUseCase;
+        this.registerFromSchoolDirectoryUseCase = registerFromSchoolDirectoryUseCase;
         this.setUpPasswordUseCase = setUpPasswordUseCase;
         this.refreshUseCase = refreshUseCase;
         this.sendResetPasswordOtpUseCase = sendResetPasswordOtpUseCase;
@@ -99,9 +85,9 @@ public class AuthController {
 
 
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<Object>> register(@Valid @RequestBody RegisterRequest request) {
-        var command = RegisterCommandMapper.fromRequest(request);
-        registerUseCase.execute(command);
+    public ResponseEntity<ApiResponse<Object>> register(@Valid @RequestBody RegisterFromSchoolDirectoryRequest request) {
+        var command = RegisterFromSchoolDirectoryCommandMapper.fromRequest(request);
+        registerFromSchoolDirectoryUseCase.execute(command);
         var response = ApiResponse.success("Đơn đăng ký đã được gửi thành công");
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }

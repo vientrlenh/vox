@@ -1,5 +1,7 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
+import java.util.UUID;
+
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -7,7 +9,10 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-public record RegisterRequest(
+public record RegisterFromSchoolDirectoryRequest(
+    @NotNull(message = "Danh mục trường không được để trống")
+    UUID schoolDirectoryId,
+
     @NotBlank(message = "Tên liên hệ không được để trống")
     @Size(max = 255, message = "Tên liên hệ không được vượt quá 255 ký tự")
     String contactFullName,
@@ -31,18 +36,6 @@ public record RegisterRequest(
     @NotBlank(message = "Địa chỉ liên hệ không được để trống")
     @Size(max = 512, message = "Địa chỉ liên hệ không được vượt quá 512 ký tự")
     String contactAddress,
-
-    @NotBlank(message = "Tên miền của trường không được để trống")
-    @Size(max = 100, message = "Tên miền của trường không được vượt quá 512 ký tự")
-    String schoolDomain,
-
-    @NotBlank(message = "Tên trường không được để trống")
-    @Size(max = 255, message = "Tên trường không được vượt quá 255 ký tự")
-    String schoolName,
-
-    @NotBlank(message = "Địa chỉ trường không được để trống")
-    @Size(max = 512, message = "Địa chỉ trường không được vượt quá 512 ký tự")
-    String schoolAddress,
 
     @NotBlank(message = "Mã bưu chính không được để trống")
     @Size(max = 10, message = "Mã bưu chính không được vượt quá 10 ký tự")

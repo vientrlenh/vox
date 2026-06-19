@@ -32,4 +32,5 @@ public interface SchoolRepository {
                            String email, String domain, String address, Integer studentCount,
                            OffsetDateTime now, UUID updatedBy);
     List<School> findByIdIn(Collection<UUID> ids);
+    boolean existsByCode(String code);
 }

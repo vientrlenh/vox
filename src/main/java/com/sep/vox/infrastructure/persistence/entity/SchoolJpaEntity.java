@@ -47,7 +47,7 @@ public class SchoolJpaEntity {
     @Column(name = "contact_email", length = 255, nullable = false)
     private String contactEmail;
 
-    @Column(name = "domain", length = 100, nullable = false)
+    @Column(name = "domain", length = 100)
     private String domain;
 
     @Column(name = "address", length = 512, nullable = false)

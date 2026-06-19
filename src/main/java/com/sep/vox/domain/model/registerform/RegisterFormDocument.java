@@ -1,6 +1,7 @@
 package com.sep.vox.domain.model.registerform;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 
 public class RegisterFormDocument {
@@ -56,5 +57,17 @@ public class RegisterFormDocument {
         this.createdAt = createdAt;
     }
 
-    
+    public static RegisterFormDocument create(UUID registerFormId, String url, OffsetDateTime now) {
+        return new RegisterFormDocument(registerFormId, url, now);
+    }
+
+    public static List<RegisterFormDocument> createMany(UUID registerFormId, List<String> urls, OffsetDateTime now) {
+        if (urls.size() > 10) {
+            throw new IllegalArgumentException("Chỉ có thể gửi tối đa 10 tài liệu cho một đơn đăng ký");
+        }
+        return urls.stream()
+            .map(url -> new RegisterFormDocument(
+                registerFormId, url, now
+            )).toList();
+    }
 }

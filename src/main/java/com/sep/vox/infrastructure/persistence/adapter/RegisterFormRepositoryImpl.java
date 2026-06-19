@@ -86,6 +86,14 @@ public class RegisterFormRepositoryImpl implements RegisterFormRepository {
     public boolean existsByContactPhoneAndStatus(String contactPhone, RegisterFormStatus status) {
         return springDataRegisterFormRepository.existsByContactPhoneAndStatus(contactPhone, status.name());
     }
+
+    @Override
+    public boolean existsBySchoolDomainAndStatusIn(String schoolDomain, Collection<RegisterFormStatus> statuses) {
+        return springDataRegisterFormRepository.existsBySchoolDomainAndStatusIn(schoolDomain, statuses.stream()
+            .map(RegisterFormStatus::name)
+            .toList()
+        );
+    }
     
     
 }

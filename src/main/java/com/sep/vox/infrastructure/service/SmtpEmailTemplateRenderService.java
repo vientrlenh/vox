@@ -20,6 +20,8 @@ public class SmtpEmailTemplateRenderService implements MailTemplatePort {
         "templates/email/reset-password-otp.html";
     private static final String SCHOOL_USER_PASSWORD_SETUP_TEMPLATE =
         "templates/email/school-user-password-setup.html";
+    private static final String REGISTER_VERIFICATION_OTP_TEMPLATE =
+        "templates/email/register-verification-otp.html";
 
     @Override
     public String renderPasswordSetUpEmail(String schoolAdminName, String schoolName, String passwordSetupUrl,
@@ -50,6 +52,13 @@ public class SmtpEmailTemplateRenderService implements MailTemplatePort {
     @Override
     public String renderResetPasswordOtpEmail(String otp, String expiresIn) {
         return loadTemplate(RESET_PASSWORD_OTP_TEMPLATE)
+            .replace("{{otp}}", escapeHtml(otp))
+            .replace("{{expiresIn}}", escapeHtml(expiresIn));
+    }
+
+    @Override
+    public String renderRegisterVerificationOtpEmail(String otp, String expiresIn) {
+        return loadTemplate(REGISTER_VERIFICATION_OTP_TEMPLATE)
             .replace("{{otp}}", escapeHtml(otp))
             .replace("{{expiresIn}}", escapeHtml(expiresIn));
     }

@@ -7,4 +7,7 @@ public interface CacheManagerPort {
     void save(String key, String value, Duration ttl);
     String get(String key);
     void delete(String key);
+
+    void save(String key, Object value, Duration ttl);
+    <T> T get(String key, Class<T> type);
 }

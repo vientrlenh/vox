@@ -331,7 +331,7 @@ class SchoolControllerTests {
     @Test
     void accept_import_user_should_return_ok() {
         var request = new AcceptSchoolUserImportRequest(Map.of("Email", "email", "Họ tên", "fullName"));
-        var expected = new AcceptSchoolUserImportResponse(importSessionId, 2L, 2L, 0L, 0L, "COMPLETED");
+        var expected = new AcceptSchoolUserImportResponse(importSessionId, 2L, 2L, 0L, 0L, 0L, "COMPLETED");
         when(acceptSchoolUserImportUseCase.execute(any(AcceptSchoolUserImportCommand.class))).thenReturn(expected);
 
         var response = controller.acceptImportSession(schoolId, importSessionId, request);

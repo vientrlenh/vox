@@ -12,6 +12,7 @@ import com.sep.vox.domain.dto.SupportedLanguageDto;
 import com.sep.vox.domain.mapper.SupportedLanguageDtoMapper;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;
 
+
 @Service
 public class ViewSupportedLanguagesUseCase implements IUseCase<ViewSupportedLanguagesQuery, PageResult<SupportedLanguageDto>> {
 
@@ -30,15 +31,7 @@ public class ViewSupportedLanguagesUseCase implements IUseCase<ViewSupportedLang
             input.isActive(),
             new PageRequest(input.page(), input.size())
         );
-        return new PageResult<>(
-            result.content().stream()
-                .map(SupportedLanguageDtoMapper::toSupportedLanguageDto)
-                .toList(),
-            result.page(),
-            result.size(),
-            result.totalElements(),
-            result.totalPages()
-        );
+        return SupportedLanguageDtoMapper.toDtoPage(result);
     }
 
     private void validatePage(ViewSupportedLanguagesQuery input) {

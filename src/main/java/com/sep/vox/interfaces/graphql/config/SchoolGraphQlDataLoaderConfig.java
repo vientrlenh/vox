@@ -134,7 +134,7 @@ public class SchoolGraphQlDataLoaderConfig {
             Mono.fromSupplier(() -> {
                 return supportedLanguageRepository.findByIdIn(languageIds)
                     .stream()
-                    .map(SupportedLanguageDtoMapper::toSupportedLanguageDto)
+                    .map(SupportedLanguageDtoMapper::toDto)
                     .collect(Collectors.toMap(SupportedLanguageDto::id, sl -> sl));
             })
         );

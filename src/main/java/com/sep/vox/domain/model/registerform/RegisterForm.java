@@ -288,7 +288,7 @@ public class RegisterForm {
     }
 
 
-    public static RegisterForm fromDirectory(
+    public static RegisterForm fromDirectoryWithDocuments(
         UUID schoolDirectoryId, 
         RegisterFormVerificationMethod verificationMethod, 
         String contactFullName, 
@@ -314,6 +314,39 @@ public class RegisterForm {
         form.postalCode = new PostalCode(postalCode);
         form.position = position;
         form.studentCount = new StudentCount(studentCount);
+        form.status = RegisterFormStatus.PENDING;
+        form.createdAt = now;
+        form.updatedAt = now;
+        return form;
+    }
+
+    public static RegisterForm fromDirectoryWithVerifiedOtp(
+        UUID schoolDirectoryId, 
+        RegisterFormVerificationMethod verificationMethod, 
+        String contactFullName, 
+        String identityNumber, 
+        String contactEmail, 
+        String contactPhone, 
+        LocalDate dateOfBirth, 
+        String contactAddress, 
+        String postalCode, 
+        String position, 
+        int studentCount, 
+        OffsetDateTime now
+    ) {
+        var form = new RegisterForm();
+        form.schoolDirectoryId = require(schoolDirectoryId);
+        form.verificationMethod = verificationMethod;
+        form.contactFullName = new FullName(contactFullName);
+        form.identityNumber = new IdentityNumber(identityNumber);
+        form.contactEmail = new Email(contactEmail);
+        form.contactPhone = new Phone(contactPhone);
+        form.dateOfBirth = new DateOfBirth(dateOfBirth);
+        form.contactAddress = contactAddress;
+        form.postalCode = new PostalCode(postalCode);
+        form.position = position;
+        form.studentCount = new StudentCount(studentCount);
+        form.status = RegisterFormStatus.AUTO_APPROVED;
         form.createdAt = now;
         form.updatedAt = now;
         return form;
@@ -352,6 +385,7 @@ public class RegisterForm {
         form.postalCode = new PostalCode(postalCode);
         form.position = position;
         form.studentCount = new StudentCount(studentCount);
+        form.status = RegisterFormStatus.PENDING;
         form.createdAt = now;
         form.updatedAt = now;
         return form;

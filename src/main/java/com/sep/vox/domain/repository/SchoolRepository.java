@@ -19,4 +19,5 @@ public interface SchoolRepository {
     List<School> findByIdIn(Collection<UUID> ids, int page, int size);
     boolean existsByIdAndIsActiveTrue(UUID schoolId);
     List<School> findByIdIn(Collection<UUID> ids);
+    boolean existsByCode(String code);
 }

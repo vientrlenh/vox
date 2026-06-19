@@ -58,4 +58,5 @@ public interface SpringDataSupportedLanguageRepository extends JpaRepository<Sup
         @Param("updatedAt") OffsetDateTime updatedAt,
         @Param("updatedBy") UUID updatedBy
     );
+    List<SupportedLanguageJpaEntity> findByIdIn(Collection<UUID> ids);
 }

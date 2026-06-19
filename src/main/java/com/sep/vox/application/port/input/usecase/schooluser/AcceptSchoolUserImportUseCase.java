@@ -37,7 +37,6 @@ import com.sep.vox.domain.model.passwordsetuptoken.PasswordSetUpToken;
 import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserRole;
-import com.sep.vox.application.common.UserStatusValidator;
 import com.sep.vox.domain.repository.ImportRowRepository;
 import com.sep.vox.domain.repository.ImportSessionRepository;
 import com.sep.vox.domain.repository.PasswordSetUpTokenRepository;
@@ -51,7 +50,7 @@ import com.sep.vox.domain.repository.UserRoleRepository;
 public class AcceptSchoolUserImportUseCase implements IUseCase<AcceptSchoolUserImportCommand, AcceptSchoolUserImportResponse> {
 
     private static final Set<String> REQUIRED_FIELDS = Set.of("email", "fullName", "roleCode", "phone", "dateOfBirth", "startDate", "endDate", "address");
-    private static final Set<String> SUPPORTED_FIELDS = Set.of("email", "fullName", "roleCode", "phone", "dateOfBirth", "startDate", "endDate", "address"); //"studentId");
+    private static final Set<String> SUPPORTED_FIELDS = Set.of("email", "fullName", "roleCode", "phone", "dateOfBirth", "startDate", "endDate", "address");
 
     private final ImportSessionRepository importSessionRepository;
     private final ImportRowRepository importRowRepository;
@@ -159,8 +158,8 @@ public class AcceptSchoolUserImportUseCase implements IUseCase<AcceptSchoolUserI
                     var ts = OffsetDateTime.now();
                     var dateOfBirth = parseDate(normalizedData.get("dateOfBirth"));
                     User user = "STUDENT".equals(roleCode)
-                        ? User.createStudent(normalizedData.get("email"), normalizedData.get("phone"), normalizedData.get("fullName"), dateOfBirth, normalizedData.get("address"), null, currentUserId, ts)
-                        : User.createTeacher(normalizedData.get("email"), normalizedData.get("phone"), normalizedData.get("fullName"), dateOfBirth, normalizedData.get("address"), null, currentUserId, ts);
+                        ? User.create(normalizedData.get("email"), normalizedData.get("phone"), normalizedData.get("fullName"), dateOfBirth, normalizedData.get("address"), null, currentUserId, ts)
+                        : User.create(normalizedData.get("email"), normalizedData.get("phone"), normalizedData.get("fullName"), dateOfBirth, normalizedData.get("address"), null, currentUserId, ts);
 
                     var savedUser = userRepository.save(user);
                     userRoleRepository.save(new UserRole(savedUser.getId(), role.getId(), ts));
@@ -230,7 +229,6 @@ public class AcceptSchoolUserImportUseCase implements IUseCase<AcceptSchoolUserI
     private User findCurrentUser(UUID currentUserId) {
         var user = userRepository.findById(currentUserId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng hiện tại"));
-        UserStatusValidator.requireActive(user);
         return user;
     }
 

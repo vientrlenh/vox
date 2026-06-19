@@ -119,4 +119,12 @@ public class SupportedLanguageRepositoryImpl implements SupportedLanguageReposit
         return "%" + search.toLowerCase() + "%";
     }
     
+    @Override
+    public List<SupportedLanguage> findByIdIn(Collection<UUID> ids) {
+        return springDataSupportedLanguageRepository.findByIdIn(ids)
+            .stream()
+            .map(SupportedLanguageMapper::toDomain)
+            .toList();
+    }
+    
 }

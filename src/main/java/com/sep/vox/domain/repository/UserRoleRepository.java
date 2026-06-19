@@ -1,5 +1,6 @@
 package com.sep.vox.domain.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -12,5 +13,7 @@ public interface UserRoleRepository {
     List<UserRole> findByUserId(UUID userId);
     UserRole save(UserRole userRole);
     boolean existsByRoleId(UUID roleId);
-    int compareAndSetRoleId(UUID userRoleId, UUID expectedRoleId, UUID newRoleId);
+
+    List<UserRole> findByUserIdIn(Collection<UUID> userIds);
+    List<UserRole> findByRoleIdIn(Collection<UUID> roleIds, int page, int size);
 }

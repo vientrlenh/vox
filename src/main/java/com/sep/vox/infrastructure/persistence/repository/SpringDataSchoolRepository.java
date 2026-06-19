@@ -1,5 +1,7 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -11,4 +13,6 @@ public interface SpringDataSchoolRepository extends JpaRepository<SchoolJpaEntit
     Optional<SchoolJpaEntity> findByCode(String code);
     Optional<SchoolJpaEntity> findByDomain(String domain);
     boolean existsByDomain(String domain);
+    List<SchoolJpaEntity> findByIdIn(Collection<UUID> ids);
+    boolean existsByCode(String code);
 }

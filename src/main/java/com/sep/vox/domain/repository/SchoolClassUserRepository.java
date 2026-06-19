@@ -5,13 +5,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.school.SchoolClassUser;
 
 public interface SchoolClassUserRepository {
     Optional<SchoolClassUser> findByUserIdAndSchoolClassId(UUID userId, UUID schoolClassId);
     List<SchoolClassUser> findByUserIdInAndSchoolClassIdIn(Collection<UUID> userIds, Collection<UUID> schoolClassIds);
     List<SchoolClassUser> findByUserId(UUID userId);
-    List<SchoolClassUser> findBySchoolClassId(UUID schoolClassId);
+    PageResult<SchoolClassUser> findBySchoolClassId(UUID schoolClassId, int page, int size);
     boolean existsBySchoolClassId(UUID schoolClassId);
     SchoolClassUser save(SchoolClassUser schoolClassUser);
 }

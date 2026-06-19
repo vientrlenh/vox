@@ -11,11 +11,11 @@ import com.sep.vox.infrastructure.persistence.entity.ImportSessionJpaEntity;
 
 public interface SpringDataImportSessionRepository extends JpaRepository<ImportSessionJpaEntity, UUID> {
     @Query("""
-        select s
-        from ImportSessionJpaEntity s
-        where s.schoolId = :schoolId
-          and (:type is null or s.type = :type)
-          and (:status is null or s.status = :status)
+        SELECT s
+        FROM ImportSessionJpaEntity s
+        WHERE s.schoolId = :schoolId
+          AND (:type IS NULL OR s.type = :type)
+          AND (:status IS NULL OR s.status = :status)
         """)
     Page<ImportSessionJpaEntity> findBySchoolIdWithFilters(UUID schoolId, String type, String status, Pageable pageable);
 }

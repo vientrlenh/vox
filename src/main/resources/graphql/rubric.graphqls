@@ -56,6 +56,7 @@ type Rubric {
     frameworkId: ID!
     ownerType: String!
     currentVersionId: ID
+    versions(page: Int = 1, size: Int = 10, status: String): RubricVersionPage!
 }
 #Page
 type RubricPage {
@@ -183,6 +184,10 @@ extend type Mutation {
 
 extend type Query {
     # RUBRIC
+    # đối với rubric version thì phải gọi thằng viewSchoolRubric -> rubric
+    # => nó đã check school rồi
+    # nếu là system admin muốn coi version => viewSystemRubric
+    # nếu là school admin => viewSchoolRubric
     viewSystemRubric(id: ID!): Rubric
     viewSchoolRubric(schoolId: ID!, id: ID!): Rubric
     viewSystemRubrics(page: Int = 0, size: Int = 10): RubricPage!

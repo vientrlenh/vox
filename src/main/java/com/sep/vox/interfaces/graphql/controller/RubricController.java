@@ -2,19 +2,24 @@ package com.sep.vox.interfaces.graphql.controller;
 
 
 import com.sep.vox.application.port.input.query.*;
+import com.sep.vox.application.port.input.query.key.RubricVersionsKey;
 import com.sep.vox.application.port.input.usecase.rubricschool.*;
 import com.sep.vox.application.port.input.usecase.rubricsystem.*;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.*;
 import com.sep.vox.interfaces.graphql.dto.request.*;
 import com.sep.vox.interfaces.graphql.mapper.*;
+import graphql.schema.DataFetchingEnvironment;
+import org.dataloader.DataLoader;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
+import org.springframework.graphql.data.method.annotation.SchemaMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 @Controller("graphqlRubricController")
 public class RubricController {
@@ -182,6 +187,28 @@ public class RubricController {
         var query = new ViewSchoolRubricsQuery(schoolId, pageNumber, pageSize);
         return viewSchoolRubricsUseCase.execute(query);
     }
+
+
+    //Lấy tất cẩ Rubric Version của trường
+    // Ko thể tách ra được do dùng chung 1 type bên scheme
+    // Xử lý Role
+    @SchemaMapping(typeName = "Rubric", field = "versions")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
+    public CompletableFuture<PageResult<RubricVersionDto>> getRubricVersions(
+            RubricDto rubric,
+            @Argument Integer page,
+            @Argument Integer size,
+            @Argument String status,
+            DataFetchingEnvironment env) {
+
+        int validPage = (page != null && page > 0) ? page - 1 : 0;
+        int validSize = (size != null && size > 0) ? size : 10;
+
+        // Bất kể là System hay School, tất cả đổ về 1 DataLoader duy nhất!
+        DataLoader<RubricVersionsKey, PageResult<RubricVersionDto>> loader = env.getDataLoader("rubricVersionsDataLoader");
+        return loader.load(new RubricVersionsKey(rubric.id(), status, validPage, validSize));
+    }
+
 
     //========================== RUBRIC VERSION ===============================================
     // Update Rubric Version của hệ thống

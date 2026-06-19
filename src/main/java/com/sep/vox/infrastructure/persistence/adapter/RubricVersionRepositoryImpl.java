@@ -45,7 +45,7 @@ public class RubricVersionRepositoryImpl implements RubricVersionRepository {
 
     @Override
     public boolean existsByRubricIdAndIdNot(UUID rubricId, UUID rubricVersionId) {
-       return springDataRubricVersionRepository.existsByRubricIdAndIdNot(rubricId, rubricVersionId);
+        return springDataRubricVersionRepository.existsByRubricIdAndIdNot(rubricId, rubricVersionId);
     }
 
     @Override
@@ -69,7 +69,7 @@ public class RubricVersionRepositoryImpl implements RubricVersionRepository {
     }
 
     @Override
-    public PageResult<RubricVersion> findAllByRubricIdAndStatus(UUID rubricId,String status, int page, int size) {
+    public PageResult<RubricVersion> findAllByRubricIdAndStatus(UUID rubricId, String status, int page, int size) {
         // Tối ưu: Mặc định sort theo version giảm dần (bản mới nhất nằm trên cùng)
         Pageable pageable = PageRequest.of(page, size, Sort.by("version").descending());
 
@@ -87,6 +87,14 @@ public class RubricVersionRepositoryImpl implements RubricVersionRepository {
                 entityPage.getTotalElements(),
                 entityPage.getTotalPages()
         );
+    }
+
+    @Override
+    public List<RubricVersion> findByRubricIdInAndStatus(List<UUID> rubricIds, String status) {
+        return springDataRubricVersionRepository.findByRubricIdInAndStatus(rubricIds, status)
+                .stream()
+                .map(RubricVersionMapper::toDomain)
+                .toList();
     }
 }
 

@@ -55,4 +55,11 @@ public interface SpringDataRubricVersionRepository extends JpaRepository<RubricV
             @Param("status") String status,
             Pageable pageable
     );
+
+    //Vì một Rubric thường chỉ có một vài Version (rất ít khi có đến hàng ngàn version), cách xịn nhất để đạt O(1) là: Dùng mệnh đề IN lấy toàn bộ Version của các Rubric đó lên bằng 1 câu SQL duy nhất, sau đó dùng Java cắt trang (Pagination trên RAM).
+    @Query("SELECT v FROM RubricVersionJpaEntity v WHERE v.rubricId IN :rubricIds AND (:status IS NULL OR v.status = :status)")
+    List<RubricVersionJpaEntity> findByRubricIdInAndStatus(
+            @Param("rubricIds") List<UUID> rubricIds,
+            @Param("status") String status
+    );
 }

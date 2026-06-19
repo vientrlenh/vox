@@ -23,4 +23,7 @@ public interface RubricVersionRepository {
                                    BigDecimal scoringScaleMax, String totalScoreMethod,
                                    OffsetDateTime updatedAt, UUID updatedBy);
 
-    PageResult<RubricVersion> findAllByRubricIdAndStatus(UUID rubricId, String status, int page, int size);}
+    PageResult<RubricVersion> findAllByRubricIdAndStatus(UUID rubricId, String status, int page, int size);
+
+    List<RubricVersion> findByRubricIdInAndStatus(List<UUID> rubricIds, String status);
+}

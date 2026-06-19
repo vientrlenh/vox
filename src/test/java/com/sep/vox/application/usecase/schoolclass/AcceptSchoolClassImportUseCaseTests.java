@@ -34,6 +34,7 @@ import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolGrade;
 import com.sep.vox.domain.model.school.SchoolGradeStatus;
+import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
@@ -46,6 +47,7 @@ import com.sep.vox.domain.repository.SupportedLanguageRepository;
 import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
+import com.sep.vox.domain.valueobject.ClassCode;
 import com.sep.vox.domain.valueobject.LanguageCode;
 
 class AcceptSchoolClassImportUseCaseTests {
@@ -122,6 +124,7 @@ class AcceptSchoolClassImportUseCaseTests {
         var response = useCase.execute(new AcceptSchoolClassImportCommand(schoolId, sessionId, mapping));
 
         assertThat(response.importedRows()).isEqualTo(1L);
+        assertThat(response.updatedRows()).isZero();
         assertThat(response.invalidRows()).isEqualTo(1L);
         assertThat(response.status()).isEqualTo("COMPLETED");
         verify(schoolClassRepository).save(any(SchoolClass.class));
@@ -138,6 +141,120 @@ class AcceptSchoolClassImportUseCaseTests {
         assertThat(rowsCaptor.getValue().get(0).getStatus()).isEqualTo(ImportRowStatus.IMPORTED);
         assertThat(rowsCaptor.getValue().get(1).getStatus()).isEqualTo(ImportRowStatus.INVALID);
         assertThat(rowsCaptor.getValue().get(1).getErrorsJson()).contains("code");
+    }
+
+    @Test
+    void execute_should_update_existing_class_when_code_exists_in_school() {
+        var userId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var existingClassId = UUID.randomUUID();
+        var oldLanguageId = UUID.randomUUID();
+        var newLanguageId = UUID.randomUUID();
+        var oldGradeId = UUID.randomUUID();
+        var newGradeId = UUID.randomUUID();
+        var createdAt = OffsetDateTime.now().minusDays(10);
+        var createdBy = UUID.randomUUID();
+        var session = previewedSession(sessionId, schoolId);
+        var row = row(sessionId, 1L, Map.of(
+            "MÃ£ lá»›p", "ENG-01",
+            "TÃªn lá»›p", "English Updated",
+            "NgÃ´n ngá»¯", "VI",
+            "Khá»‘i", "G11",
+            "MÃ´ táº£", "Updated description"
+        ), jsonSerializationPort);
+        var mapping = Map.of(
+            "MÃ£ lá»›p", "code",
+            "TÃªn lá»›p", "name",
+            "NgÃ´n ngá»¯", "languageCode",
+            "Khá»‘i", "schoolGradeCode",
+            "MÃ´ táº£", "description"
+        );
+        var existingClass = new SchoolClass(
+            existingClassId,
+            schoolId,
+            oldLanguageId,
+            oldGradeId,
+            new ClassCode("ENG-01"),
+            "English Old",
+            "Old description",
+            SchoolClassStatus.ACTIVE,
+            createdAt,
+            createdAt,
+            createdBy,
+            createdBy
+        );
+
+        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
+        var _user = activeUser(userId, schoolId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(_user));
+        when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
+        when(importSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
+        when(importSessionRepository.save(any(ImportSession.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(importRowRepository.findBySessionIdOrderByRowNumber(sessionId)).thenReturn(List.of(row));
+        when(supportedLanguageRepository.findByCodeIn(Set.of("VI"))).thenReturn(List.of(activeLanguage(newLanguageId, "VI")));
+        when(schoolGradeRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("G11"))).thenReturn(List.of(activeGrade(newGradeId, schoolId, "G11")));
+        when(schoolClassRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("ENG-01"))).thenReturn(List.of(existingClass));
+        when(schoolClassRepository.save(any(SchoolClass.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = useCase.execute(new AcceptSchoolClassImportCommand(schoolId, sessionId, mapping));
+
+        assertThat(response.importedRows()).isEqualTo(1L);
+        assertThat(response.updatedRows()).isEqualTo(1L);
+        assertThat(response.invalidRows()).isZero();
+        assertThat(row.getStatus()).isEqualTo(ImportRowStatus.IMPORTED);
+        assertThat(existingClass.getId()).isEqualTo(existingClassId);
+        assertThat(existingClass.getCode().value()).isEqualTo("ENG-01");
+        assertThat(existingClass.getCreatedAt()).isEqualTo(createdAt);
+        assertThat(existingClass.getCreatedBy()).isEqualTo(createdBy);
+        assertThat(existingClass.getStatus()).isEqualTo(SchoolClassStatus.ACTIVE);
+        assertThat(existingClass.getName()).isEqualTo("English Updated");
+        assertThat(existingClass.getDescription()).isEqualTo("Updated description");
+        assertThat(existingClass.getLanguageId()).isEqualTo(newLanguageId);
+        assertThat(existingClass.getSchoolGradeId()).isEqualTo(newGradeId);
+        assertThat(existingClass.getUpdatedBy()).isEqualTo(userId);
+        verify(schoolClassRepository).save(existingClass);
+    }
+
+    @Test
+    void execute_should_keep_duplicate_code_in_same_file_invalid() {
+        var userId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var languageId = UUID.randomUUID();
+        var gradeId = UUID.randomUUID();
+        var session = previewedSession(sessionId, schoolId);
+        var rows = List.of(
+            row(sessionId, 1L, Map.of("MÃ£ lá»›p", "ENG-01", "TÃªn lá»›p", "English 01", "NgÃ´n ngá»¯", "EN", "Khá»‘i", "G10"), jsonSerializationPort),
+            row(sessionId, 2L, Map.of("MÃ£ lá»›p", "ENG-01", "TÃªn lá»›p", "English Duplicate", "NgÃ´n ngá»¯", "EN", "Khá»‘i", "G10"), jsonSerializationPort)
+        );
+        var mapping = Map.of(
+            "MÃ£ lá»›p", "code",
+            "TÃªn lá»›p", "name",
+            "NgÃ´n ngá»¯", "languageCode",
+            "Khá»‘i", "schoolGradeCode"
+        );
+
+        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
+        var _user = activeUser(userId, schoolId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(_user));
+        when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
+        when(importSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
+        when(importSessionRepository.save(any(ImportSession.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(importRowRepository.findBySessionIdOrderByRowNumber(sessionId)).thenReturn(rows);
+        when(supportedLanguageRepository.findByCodeIn(Set.of("EN"))).thenReturn(List.of(activeLanguage(languageId, "EN")));
+        when(schoolGradeRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("G10"))).thenReturn(List.of(activeGrade(gradeId, schoolId, "G10")));
+        when(schoolClassRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("ENG-01"))).thenReturn(List.of());
+        when(schoolClassRepository.save(any(SchoolClass.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = useCase.execute(new AcceptSchoolClassImportCommand(schoolId, sessionId, mapping));
+
+        assertThat(response.importedRows()).isEqualTo(1L);
+        assertThat(response.updatedRows()).isZero();
+        assertThat(response.invalidRows()).isEqualTo(1L);
+        assertThat(rows.get(0).getStatus()).isEqualTo(ImportRowStatus.IMPORTED);
+        assertThat(rows.get(1).getStatus()).isEqualTo(ImportRowStatus.INVALID);
+        assertThat(rows.get(1).getErrorsJson()).contains("code");
     }
 
     @Test

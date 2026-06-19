@@ -104,13 +104,13 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
         importSessionRepository.save(session);
 
         var rows = importRowRepository.findBySessionIdOrderByRowNumber(session.getId());
-        var importedRows = processRows(rows, input.confirmedMapping(), schoolId, currentUserId, now);
-        var invalidRows = rows.size() - importedRows;
+        var result = processRows(rows, input.confirmedMapping(), schoolId, currentUserId, now);
+        var invalidRows = rows.size() - result.importedRows();
 
         importRowRepository.saveAll(rows);
-        session.setImportedRows(importedRows);
+        session.setImportedRows(result.importedRows());
         session.setInvalidRows(invalidRows);
-        session.setValidRows(importedRows);
+        session.setValidRows(result.importedRows());
         session.setSkippedRows(0L);
         session.setTotalRows(rows.size());
         session.setStatus(ImportSessionStatus.COMPLETED);
@@ -122,6 +122,7 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
             savedSession.getId(),
             savedSession.getTotalRows(),
             savedSession.getImportedRows(),
+            result.updatedRows(),
             savedSession.getInvalidRows(),
             savedSession.getSkippedRows(),
             savedSession.getStatus().name()
@@ -205,8 +206,9 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
         }
     }
 
-    private long processRows(List<ImportRow> rows, Map<String, String> confirmedMapping, UUID schoolId, UUID currentUserId, OffsetDateTime now) {
+    private ProcessResult processRows(List<ImportRow> rows, Map<String, String> confirmedMapping, UUID schoolId, UUID currentUserId, OffsetDateTime now) {
         var importedRows = 0L;
+        var updatedRows = 0L;
         var seenCodes = new HashSet<String>();
         var rowContexts = new ArrayList<RowContext>();
         var classCodes = new HashSet<String>();
@@ -232,7 +234,7 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
         for (var rowContext : rowContexts) {
             var row = rowContext.row();
             var normalized = rowContext.normalized();
-            var errors = validateRow(normalized, seenCodes, existingClassesByCode, languagesByCode, gradesByCode);
+            var errors = validateRow(normalized, seenCodes, Map.of(), languagesByCode, gradesByCode);
 
             if (!errors.isEmpty()) {
                 row.setErrorsJson(jsonSerializationPort.toJson(errors));
@@ -243,16 +245,27 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
             try {
                 var language = languagesByCode.get(normalized.get("languageCode"));
                 var schoolGrade = gradesByCode.get(normalized.get("schoolGradeCode"));
-                var schoolClass = SchoolClass.create(
-                    schoolId,
-                    language.getId(),
-                    schoolGrade.getId(),
-                    normalized.get("code"),
-                    normalized.get("name"),
-                    normalized.get("description"),
-                    currentUserId,
-                    now
-                );
+                var schoolClass = existingClassesByCode.get(normalized.get("code"));
+                if (schoolClass == null) {
+                    schoolClass = SchoolClass.create(
+                        schoolId,
+                        language.getId(),
+                        schoolGrade.getId(),
+                        normalized.get("code"),
+                        normalized.get("name"),
+                        normalized.get("description"),
+                        currentUserId,
+                        now
+                    );
+                } else {
+                    schoolClass.setName(normalized.get("name"));
+                    schoolClass.setDescription(normalized.get("description"));
+                    schoolClass.setLanguageId(language.getId());
+                    schoolClass.setSchoolGradeId(schoolGrade.getId());
+                    schoolClass.setUpdatedAt(now);
+                    schoolClass.setUpdatedBy(currentUserId);
+                    updatedRows++;
+                }
                 schoolClassRepository.save(schoolClass);
                 row.setErrorsJson(null);
                 row.setStatus(ImportRowStatus.IMPORTED);
@@ -263,7 +276,7 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
             }
         }
 
-        return importedRows;
+        return new ProcessResult(importedRows, updatedRows);
     }
 
     private Map<String, SchoolClass> findExistingClassesByCode(UUID schoolId, Set<String> codes) {
@@ -316,7 +329,7 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
             Map<String, SchoolGrade> gradesByCode) {
         var errors = new ArrayList<Map<String, String>>();
         addMissingError(errors, mappedData, "code", "Mã lớp không được để trống");
-        addMissingError(errors, mappedData, "name", "ên lớp không được để trống");
+        addMissingError(errors, mappedData, "name", "Tên lớp không được để trống");
         addMissingError(errors, mappedData, "languageCode", "Mã ngôn ngữ không được để trống");
         addMissingError(errors, mappedData, "schoolGradeCode", "Mã khối không được để trống");
 
@@ -373,5 +386,8 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
     }
 
     private record RowContext(ImportRow row, Map<String, String> normalized) {
+    }
+
+    private record ProcessResult(long importedRows, long updatedRows) {
     }
 }

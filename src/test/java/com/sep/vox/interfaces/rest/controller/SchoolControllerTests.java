@@ -268,7 +268,7 @@ class SchoolControllerTests {
             "Ngôn ngữ", "languageCode",
             "Khối", "schoolGradeCode"
         ));
-        var expected = new AcceptSchoolClassImportResponse(importSessionId, 2L, 1L, 1L, 0L, "COMPLETED");
+        var expected = new AcceptSchoolClassImportResponse(importSessionId, 2L, 1L, 0L, 1L, 0L, "COMPLETED");
         var expectedCommand = new AcceptSchoolClassImportCommand(schoolId, importSessionId, request.confirmedMapping());
         when(acceptUseCase.execute(expectedCommand)).thenReturn(expected);
 

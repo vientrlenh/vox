@@ -173,7 +173,7 @@ public class SchoolController {
             @Argument(name = "schoolClassId") UUID schoolClassId,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        if (page <= 0 || size <= 0) {
+        if (page == null || size == null || page <= 0 || size <= 0) {
             throw new IllegalArgumentException("Số trang hoặc kích cỡ trang yêu cầu không hợp lệ");
         }
         return viewSchoolClassUsersUseCase.execute(new ViewSchoolClassUsersQuery(schoolClassId, page, size));

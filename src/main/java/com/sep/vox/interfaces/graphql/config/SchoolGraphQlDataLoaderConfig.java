@@ -65,8 +65,11 @@ public class SchoolGraphQlDataLoaderConfig {
                         .map(SchoolClassesKey::schoolId)
                         .toList();
 
+                    var fromRow = (pageKey.page() - 1) * pageKey.size() + 1;
+                    var toRow = pageKey.page() * pageKey.size();
+
                     var schoolClasses = schoolClassRepository
-                        .findBySchoolIdIn(schoolIds, pageKey.page(), pageKey.size())
+                        .findBySchoolIdIn(schoolIds, fromRow, toRow)
                         .stream()
                         .map(SchoolClassDtoMapper::toDto)
                         .collect(Collectors.groupingBy(SchoolClassDto::schoolId));
@@ -98,7 +101,10 @@ public class SchoolGraphQlDataLoaderConfig {
                         .map(SchoolUsersKey::schoolId)
                         .toList();
 
-                    var usersBySchoolId = schoolUserRepository.findBySchoolIdIn(schoolIds, pageKey.page(), pageKey.size())
+                    var fromRow = (pageKey.page() - 1) * pageKey.size() + 1;
+                    var toRow = pageKey.page() * pageKey.size();
+
+                    var usersBySchoolId = schoolUserRepository.findBySchoolIdIn(schoolIds, fromRow, toRow)
                         .stream()
                         .map(SchoolUserDtoMapper::toSchoolUserDto)
                         .collect(Collectors.groupingBy(SchoolUserDto::schoolId));

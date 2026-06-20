@@ -205,7 +205,7 @@ public class AcceptSchoolClassUserImportUseCase implements IUseCase<AcceptSchool
     private ProcessResult processRows(List<ImportRow> rows, Map<String, String> confirmedMapping, UUID schoolId, UUID currentUserId, OffsetDateTime now) {
         var importedRows = 0L;
         var updatedRows = 0L;
-        var seenMemberships = new HashSet<String>();
+        var seenMemberships = new HashSet<MembershipKey>();
         var rowContexts = new ArrayList<RowContext>();
         var emails = new HashSet<String>();
         var classCodes = new HashSet<String>();
@@ -329,7 +329,7 @@ public class AcceptSchoolClassUserImportUseCase implements IUseCase<AcceptSchool
         return email == null ? null : email.strip().toLowerCase(Locale.ROOT);
     }
 
-    private RowValidation validateRow(Map<String, String> mappedData, UUID schoolId, Set<String> seenMemberships,
+    private RowValidation validateRow(Map<String, String> mappedData, UUID schoolId, Set<MembershipKey> seenMemberships,
             Map<String, User> usersByEmail, Map<String, SchoolClass> classesByCode,
             Map<UUID, SchoolUser> schoolUsersByUserId) {
         var errors = new ArrayList<Map<String, String>>();
@@ -338,7 +338,7 @@ public class AcceptSchoolClassUserImportUseCase implements IUseCase<AcceptSchool
 
         var email = mappedData.get("email");
         var classCode = mappedData.get("classCode");
-        if (isPresent(email) && isPresent(classCode) && !seenMemberships.add(membershipKey(email, classCode))) {
+        if (isPresent(email) && isPresent(classCode) && !seenMemberships.add(new MembershipKey(email, classCode))) {
             errors.add(error("email", "Người dùng và lớp học bị trùng trong file import"));
         }
 
@@ -389,10 +389,6 @@ public class AcceptSchoolClassUserImportUseCase implements IUseCase<AcceptSchool
         }
     }
 
-    private String membershipKey(String email, String classCode) {
-        return email + "|" + classCode;
-    }
-
     private String membershipKey(UUID userId, UUID schoolClassId) {
         return userId + "|" + schoolClassId;
     }
@@ -408,5 +404,8 @@ public class AcceptSchoolClassUserImportUseCase implements IUseCase<AcceptSchool
     }
 
     private record ProcessResult(long importedRows, long updatedRows) {
+    }
+
+    private record MembershipKey(String email, String classCode) {
     }
 }

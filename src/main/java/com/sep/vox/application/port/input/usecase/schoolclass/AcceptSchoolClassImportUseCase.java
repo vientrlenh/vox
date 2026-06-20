@@ -104,6 +104,7 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
         importSessionRepository.save(session);
 
         var rows = importRowRepository.findBySessionIdOrderByRowNumber(session.getId());
+        validateMappingKeys(rows, input.confirmedMapping());
         var result = processRows(rows, input.confirmedMapping(), schoolId, currentUserId, now);
         var invalidRows = rows.size() - result.importedRows();
 
@@ -203,6 +204,32 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
             .toList();
         if (!missingFields.isEmpty()) {
             throw new IllegalArgumentException("Mapping import thiếu trường bắt buộc: " + String.join(", ", missingFields));
+        }
+    }
+
+    /**
+     * Defense-in-depth: bảo đảm mọi key trong confirmedMapping là cột thực sự có trong file đã preview,
+     * và mọi value là trường hệ thống được hỗ trợ. Lưu ý: việc này KHÔNG ngăn admin hợp lệ tự chọn
+     * mapping sai (vd. hoán đổi code↔name) — đó là quyền của admin trong luồng preview → confirm → accept.
+     */
+    private void validateMappingKeys(List<ImportRow> rows, Map<String, String> confirmedMapping) {
+        if (rows.isEmpty()) {
+            return;
+        }
+        var validHeaders = jsonSerializationPort.toStringMap(rows.get(0).getRawDataJson()).keySet();
+        var invalidKeys = confirmedMapping.keySet().stream()
+            .filter(key -> !validHeaders.contains(key))
+            .toList();
+        if (!invalidKeys.isEmpty()) {
+            throw new IllegalArgumentException("Mapping chứa cột không tồn tại trong file: " + String.join(", ", invalidKeys));
+        }
+        var invalidValues = confirmedMapping.values().stream()
+            .filter(Objects::nonNull)
+            .map(String::strip)
+            .filter(value -> !value.isEmpty() && !SUPPORTED_FIELDS.contains(value))
+            .toList();
+        if (!invalidValues.isEmpty()) {
+            throw new IllegalArgumentException("Mapping chứa trường hệ thống không hợp lệ: " + String.join(", ", invalidValues));
         }
     }
 

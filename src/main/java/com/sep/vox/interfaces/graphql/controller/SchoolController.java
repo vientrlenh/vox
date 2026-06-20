@@ -87,7 +87,7 @@ public class SchoolController {
 
 
     @SchemaMapping(typeName = "School", field = "classes")
-    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public CompletableFuture<List<SchoolClassDto>> classes(SchoolDto school, @Argument(name = "page") Integer page, @Argument(name = "size") Integer size, DataFetchingEnvironment env) {
         if (page == null || size == null || page <= 0 || size <= 0) {
             throw new IllegalArgumentException("Số trang hoặc kích cỡ yêu cầu không hợp lệ");
@@ -98,7 +98,6 @@ public class SchoolController {
 
 
     @SchemaMapping(typeName = "School", field = "users")
-    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public CompletableFuture<List<SchoolUserDto>> schoolUsers(SchoolDto school, @Argument(name = "page") Integer page, @Argument(name = "size") Integer size, DataFetchingEnvironment env) {
         if (page == null || size == null || page <= 0 || size <= 0) {
             throw new IllegalArgumentException("Số trang hoặc kích cỡ yêu cầu không hợp lệ");

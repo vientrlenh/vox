@@ -4,7 +4,7 @@ public record FullName(String value) {
 
     public FullName {
         if (value != null && !isValidFullName(value)) {
-            throw new IllegalArgumentException("Dinh dang ho ten khong hop le");
+            throw new IllegalArgumentException("Định dạng tên đầy đủ không hợp lệ");
         }
     }
 

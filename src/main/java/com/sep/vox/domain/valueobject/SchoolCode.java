@@ -1,11 +1,13 @@
 package com.sep.vox.domain.valueobject;
 
+import java.util.regex.Pattern;
+
 public record SchoolCode(String value) {
 
-    private static final String UPPERCASE_CODE_PATTERN = "^[A-Z0-9_-]+$";
+    private static final Pattern UPPERCASE_CODE_PATTERN = Pattern.compile("^[A-Z0-9_-]+$");
 
     public SchoolCode {
-        if (value != null && !value.matches(UPPERCASE_CODE_PATTERN)) {
+        if (value != null && !UPPERCASE_CODE_PATTERN.matcher(value).matches()) {
             throw new IllegalArgumentException("Định dạng mã trường không hợp lệ");
         }
     }

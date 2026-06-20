@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import java.time.LocalDate;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -41,16 +40,7 @@ public class RegisterFormControllerTests {
         var expectedCommand = new ApproveRegisterFormCommand(
             id,
             request.schoolCode(),
-            request.schoolName(),
-            request.description(),
-            request.contactPhone(),
-            request.contactEmail(),
-            request.schoolDomain(),
-            request.schoolAddress(),
-            request.studentCount(),
-            request.contactFullName(),
-            LocalDate.of(2000, 5, 24),
-            request.contactAddress()
+            request.description()
         );
 
         var response = controller.approve(id, request);

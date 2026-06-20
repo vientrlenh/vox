@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.command;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 public record RegisterFromSchoolDirectoryCommand(
@@ -13,7 +14,8 @@ public record RegisterFromSchoolDirectoryCommand(
     String contactAddress,
     String postalCode,
     String position,
-    int studentCount
+    int studentCount, 
+    List<String> documentUrls
 ) {
     
 }

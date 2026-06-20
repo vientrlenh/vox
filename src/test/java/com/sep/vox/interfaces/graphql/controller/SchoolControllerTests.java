@@ -302,7 +302,8 @@ class SchoolControllerTests {
             UUID.randomUUID(),
             true,
             "2026-06-06T12:00:00Z",
-            "2026-06-06T12:00:00Z"
+            "2026-06-06T12:00:00Z",
+            UUID.randomUUID()
         );
         var expected = new UserDto(userId, "student@example.com", null, "Student", null, null, null, null, null, null);
         var env = mock(DataFetchingEnvironment.class);

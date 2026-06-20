@@ -13,33 +13,32 @@ import org.springframework.graphql.data.method.annotation.SchemaMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 
-import com.sep.vox.application.port.input.query.ViewSchoolUsersBySchoolQuery;
-import com.sep.vox.application.port.input.query.ViewSchoolUserDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolClassDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolClassUsersQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolClassesQuery;
+import com.sep.vox.application.port.input.query.ViewSchoolUserDetailsQuery;
+import com.sep.vox.application.port.input.query.ViewSchoolUsersBySchoolQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolsQuery;
 import com.sep.vox.application.port.input.query.key.SchoolClassesKey;
 import com.sep.vox.application.port.input.query.key.SchoolUsersKey;
 import com.sep.vox.application.port.input.usecase.school.ViewSchoolsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.UpdateSchoolClassUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassDetailsUseCase;
-import com.sep.vox.application.port.input.usecase.schoolclassuser.ViewSchoolClassUsersUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassesUseCase;
-import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUsersBySchoolUseCase;
+import com.sep.vox.application.port.input.usecase.schoolclassuser.ViewSchoolClassUsersUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.UpdateSchoolUserUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUserDetailsUseCase;
+import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUsersBySchoolUseCase;
 import com.sep.vox.application.response.input.schoolclass.UpdateSchoolClassResponse;
 import com.sep.vox.application.response.input.schooluser.UpdateSchoolUserResponse;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.dto.SchoolClassUserDto;
 import com.sep.vox.domain.dto.SchoolDto;
-import com.sep.vox.domain.dto.UserDto;
-
 import com.sep.vox.domain.dto.SchoolGradeDto;
 import com.sep.vox.domain.dto.SchoolUserDto;
 import com.sep.vox.domain.dto.SupportedLanguageDto;
+import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.interfaces.graphql.mapper.UpdateSchoolClassCommandMapper;
 import com.sep.vox.interfaces.graphql.mapper.UpdateSchoolUserCommandMapper;
 
@@ -88,7 +87,7 @@ public class SchoolController {
 
 
     @SchemaMapping(typeName = "School", field = "classes")
-    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public CompletableFuture<List<SchoolClassDto>> classes(SchoolDto school, @Argument(name = "page") Integer page, @Argument(name = "size") Integer size, DataFetchingEnvironment env) {
         if (page == null || size == null || page <= 0 || size <= 0) {
             throw new IllegalArgumentException("Số trang hoặc kích cỡ yêu cầu không hợp lệ");

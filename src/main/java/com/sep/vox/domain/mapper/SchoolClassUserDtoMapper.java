@@ -12,12 +12,13 @@ public final class SchoolClassUserDtoMapper {
 
     public static SchoolClassUserDto toSchoolClassUserDto(SchoolClassUser schoolClassUser) {
         return new SchoolClassUserDto(
-            schoolClassUser.getId(), 
-            schoolClassUser.getUserId(), 
-            schoolClassUser.getSchoolClassId(), 
-            schoolClassUser.isActive(), 
-            valueOf(schoolClassUser.getJoinedAt()), 
-            valueOf(schoolClassUser.getLeftAt())
+            schoolClassUser.getId(),
+            schoolClassUser.getUserId(),
+            schoolClassUser.getSchoolClassId(),
+            schoolClassUser.isActive(),
+            valueOf(schoolClassUser.getJoinedAt()),
+            valueOf(schoolClassUser.getLeftAt()),
+            schoolClassUser.getAssignedBy()
         );
     }
 

@@ -68,7 +68,8 @@ type SchoolClassUser {
     isActive: Boolean!
     joinedAt: String
     leftAt: String
-    users(page: Int! = 1, size: Int! = 10): [User!]
+    assignedBy: ID
+    user: User
 }
 
 type SchoolClassUserPage {

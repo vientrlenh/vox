@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.schooluser;
 
 import java.time.OffsetDateTime;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -90,7 +91,11 @@ public class UpdateSchoolUserUseCase implements IUseCase<UpdateSchoolUserCommand
 
         target.setUpdatedAt(now);
         target.setUpdatedBy(callerId);
-        userRepository.save(target);
+        try {
+            userRepository.saveAndFlush(target);
+        } catch (DataIntegrityViolationException e) {
+            throw new DuplicatedException("Số điện thoại đã tồn tại");
+        }
 
         return new UpdateSchoolUserResponse(target.getId());
     }

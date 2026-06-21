@@ -173,7 +173,7 @@ class SchoolControllerTests {
         var expected = new SchoolDto(schoolId, "SCH", "School", null, null, null, null, null, 0, true, null, null);
         var env = mock(DataFetchingEnvironment.class);
         var loader = mock(DataLoader.class);
-        when(env.<UUID, SchoolDto>getDataLoader("schoolById")).thenReturn(loader);
+        when(env.<UUID, SchoolDto>getDataLoader("schoolByClass")).thenReturn(loader);
         when(loader.load(schoolId)).thenReturn(CompletableFuture.completedFuture(expected));
 
         var result = controller.school(response, env).join();
@@ -230,7 +230,7 @@ class SchoolControllerTests {
         var expected = new SupportedLanguageDto(languageId, "EN", "English", null, true, null, null);
         var env = mock(DataFetchingEnvironment.class);
         var loader = mock(DataLoader.class);
-        when(env.<UUID, SupportedLanguageDto>getDataLoader("supportedLanguageById")).thenReturn(loader);
+        when(env.<UUID, SupportedLanguageDto>getDataLoader("supportedLanguageByClass")).thenReturn(loader);
         when(loader.load(languageId)).thenReturn(CompletableFuture.completedFuture(expected));
 
         var result = controller.language(response, env).join();
@@ -277,8 +277,8 @@ class SchoolControllerTests {
         updateSchoolUseCase, 
         classUsersUseCase);
 
-        assertThrows(IllegalStateException.class, () -> controller.schoolClassUsers(UUID.randomUUID(), 0, 20));
-        assertThrows(IllegalStateException.class, () -> controller.schoolClassUsers(UUID.randomUUID(), 1, 0));
+        assertThrows(IllegalArgumentException.class, () -> controller.schoolClassUsers(UUID.randomUUID(), 0, 20));
+        assertThrows(IllegalArgumentException.class, () -> controller.schoolClassUsers(UUID.randomUUID(), 1, 0));
     }
 
     @Test
@@ -308,7 +308,7 @@ class SchoolControllerTests {
         var expected = new UserDto(userId, "student@example.com", null, "Student", null, null, null, null, null, null);
         var env = mock(DataFetchingEnvironment.class);
         var loader = mock(DataLoader.class);
-        when(env.<UUID, UserDto>getDataLoader("userById")).thenReturn(loader);
+        when(env.<UUID, UserDto>getDataLoader("userBySchoolClassUser")).thenReturn(loader);
         when(loader.load(userId)).thenReturn(CompletableFuture.completedFuture(expected));
 
         var result = controller.user(response, env).join();

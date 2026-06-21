@@ -5,42 +5,34 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewSchoolUserDetailsQuery;
 import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUserDetailsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.dto.UserRoleInfo;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.school.SchoolUser;
-import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
-import com.sep.vox.domain.valueobject.DateOfBirth;
-import com.sep.vox.domain.valueobject.Email;
-import com.sep.vox.domain.valueobject.FullName;
-import com.sep.vox.domain.valueobject.Phone;
 
 public class ViewSchoolUserUseCaseTests {
 
     private UserContextPort userContextPort;
     private UserRepository userRepository;
-    private UserRoleQueryRepository userRoleQueryRepository;
     private SchoolUserRepository schoolUserRepository;
     private ViewSchoolUserDetailsUseCase viewSchoolUserUseCase;
 
     private final UUID schoolId = UUID.randomUUID();
     private final UUID callerId = UUID.randomUUID();
+    private final UUID targetId = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
@@ -53,112 +45,78 @@ public class ViewSchoolUserUseCaseTests {
     }
 
     @Test
-    void view_should_return_user_with_role_and_student_id() {
-        var targetId = UUID.randomUUID();
-        var caller = user(callerId, schoolId);
-        var target = user(targetId, schoolId);
+    void view_should_return_school_user_when_caller_authorized() {
         var schoolUserId = UUID.randomUUID();
-        var schoolUser = new SchoolUser(schoolUserId, schoolId, targetId, OffsetDateTime.now(), OffsetDateTime.now().plusYears(100));
-        var command = new ViewSchoolUserDetailsQuery(schoolId, targetId);
+        var schoolUser = schoolUser(schoolUserId, schoolId, targetId);
+        var query = new ViewSchoolUserDetailsQuery(schoolId, targetId);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
-        when(userRepository.findById(callerId)).thenReturn(Optional.of(caller));
-        when(userRepository.findById(targetId)).thenReturn(Optional.of(target));
-        when(userRoleQueryRepository.findByUserIdWithRoleInfo(targetId)).thenReturn(List.of(roleInfo("STUDENT")));
-        when(schoolUserRepository.findByUserId(targetId)).thenReturn(Optional.of(schoolUser));
+        when(userRepository.existsByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(true);
+        when(userContextPort.isSystemAdmin()).thenReturn(false);
+        when(schoolUserRepository.existsBySchoolIdAndUserId(callerId, schoolId)).thenReturn(true);
+        when(schoolUserRepository.findBySchoolIdAndUserId(schoolId, targetId)).thenReturn(Optional.of(schoolUser));
 
-        var result = viewSchoolUserUseCase.execute(command);
+        var result = viewSchoolUserUseCase.execute(query);
 
         assertThat(result).isNotNull();
         assertThat(result.id()).isEqualTo(schoolUserId);
+        assertThat(result.schoolId()).isEqualTo(schoolId);
         assertThat(result.userId()).isEqualTo(targetId);
     }
 
     @Test
-    void view_should_return_teacher_role() {
-        var targetId = UUID.randomUUID();
-        var caller = user(callerId, schoolId);
-        var target = user(targetId, schoolId);
-        var command = new ViewSchoolUserDetailsQuery(schoolId, targetId);
+    void view_should_return_school_user_for_system_admin() {
+        var schoolUserId = UUID.randomUUID();
+        var schoolUser = schoolUser(schoolUserId, schoolId, targetId);
+        var query = new ViewSchoolUserDetailsQuery(schoolId, targetId);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
-        when(userRepository.findById(callerId)).thenReturn(Optional.of(caller));
-        when(userRepository.findById(targetId)).thenReturn(Optional.of(target));
-        when(userRoleQueryRepository.findByUserIdWithRoleInfo(targetId)).thenReturn(List.of(roleInfo("TEACHER")));
+        when(userRepository.existsByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(true);
+        when(userContextPort.isSystemAdmin()).thenReturn(true);
+        when(schoolUserRepository.findBySchoolIdAndUserId(schoolId, targetId)).thenReturn(Optional.of(schoolUser));
 
-        var result = viewSchoolUserUseCase.execute(command);
+        var result = viewSchoolUserUseCase.execute(query);
 
-        assertThat(result).isNotNull();
+        assertThat(result.userId()).isEqualTo(targetId);
     }
 
     @Test
-    void view_should_throw_when_caller_belongs_to_different_school() {
-        var caller = user(callerId, UUID.randomUUID());
-        var command = new ViewSchoolUserDetailsQuery(schoolId, UUID.randomUUID());
+    void view_should_throw_when_caller_is_inactive() {
+        var query = new ViewSchoolUserDetailsQuery(schoolId, targetId);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
-        when(userRepository.findById(callerId)).thenReturn(Optional.of(caller));
+        when(userRepository.existsByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(false);
 
-        assertThrows(IllegalArgumentException.class, () -> viewSchoolUserUseCase.execute(command));
+        assertThrows(UnauthorizedException.class, () -> viewSchoolUserUseCase.execute(query));
     }
 
     @Test
-    void view_should_throw_when_target_user_not_found() {
-        var targetId = UUID.randomUUID();
-        var caller = user(callerId, schoolId);
-        var command = new ViewSchoolUserDetailsQuery(schoolId, targetId);
+    void view_should_throw_when_caller_not_in_school() {
+        var query = new ViewSchoolUserDetailsQuery(schoolId, targetId);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
-        when(userRepository.findById(callerId)).thenReturn(Optional.of(caller));
-        when(userRepository.findById(targetId)).thenReturn(Optional.empty());
+        when(userRepository.existsByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(true);
+        when(userContextPort.isSystemAdmin()).thenReturn(false);
+        when(schoolUserRepository.existsBySchoolIdAndUserId(callerId, schoolId)).thenReturn(false);
 
-        assertThrows(NotFoundException.class, () -> viewSchoolUserUseCase.execute(command));
+        assertThrows(ForbiddenException.class, () -> viewSchoolUserUseCase.execute(query));
     }
 
     @Test
-    void view_should_throw_when_target_user_belongs_to_different_school() {
-        var targetId = UUID.randomUUID();
-        var caller = user(callerId, schoolId);
-        var target = user(targetId, UUID.randomUUID());
-        var command = new ViewSchoolUserDetailsQuery(schoolId, targetId);
+    void view_should_throw_when_school_user_not_found() {
+        var query = new ViewSchoolUserDetailsQuery(schoolId, targetId);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
-        when(userRepository.findById(callerId)).thenReturn(Optional.of(caller));
-        when(userRepository.findById(targetId)).thenReturn(Optional.of(target));
+        when(userRepository.existsByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(true);
+        when(userContextPort.isSystemAdmin()).thenReturn(false);
+        when(schoolUserRepository.existsBySchoolIdAndUserId(callerId, schoolId)).thenReturn(true);
+        when(schoolUserRepository.findBySchoolIdAndUserId(schoolId, targetId)).thenReturn(Optional.empty());
 
-        assertThrows(NotFoundException.class, () -> viewSchoolUserUseCase.execute(command));
+        assertThrows(NotFoundException.class, () -> viewSchoolUserUseCase.execute(query));
     }
 
-    @Test
-    void view_should_throw_when_target_user_is_inactive() {
-        var targetId = UUID.randomUUID();
-        var caller = user(callerId, schoolId);
-        var target = user(targetId, schoolId, UserStatus.INACTIVE);
-        var command = new ViewSchoolUserDetailsQuery(schoolId, targetId);
-
-        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
-        when(userRepository.findById(callerId)).thenReturn(Optional.of(caller));
-        when(userRepository.findById(targetId)).thenReturn(Optional.of(target));
-
-        assertThrows(UnauthorizedException.class, () -> viewSchoolUserUseCase.execute(command));
-    }
-
-    private User user(UUID id, UUID userSchoolId) {
-        return user(id, userSchoolId, UserStatus.ACTIVE);
-    }
-
-    private User user(UUID id, UUID userSchoolId, UserStatus status) {
+    private SchoolUser schoolUser(UUID id, UUID userSchoolId, UUID userId) {
         var now = OffsetDateTime.now();
-        when(schoolUserRepository.findByUserId(id)).thenReturn(Optional.of(
-            new SchoolUser(UUID.randomUUID(), userSchoolId, id, now, now.plusYears(100))
-        ));
-        return new User(id, new Email("user@school.edu.vn"), "hash",
-            new Phone("0987654321"), new FullName("Nguyen Van A"), null,
-            new DateOfBirth(LocalDate.of(2000, 1, 1)), "123 Street", null,
-            status, now, now, id, id);
-    }
-
-    private UserRoleInfo roleInfo(String code) {
-        return new UserRoleInfo(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), OffsetDateTime.now(), code, code);
+        return new SchoolUser(id, userSchoolId, userId, now, now.plusYears(1));
     }
 }

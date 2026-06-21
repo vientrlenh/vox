@@ -18,7 +18,6 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.event.SchoolUserPasswordSetUpEmailRequestedEvent;
 import com.sep.vox.application.port.input.command.CreateSchoolUserCommand;
 import com.sep.vox.application.port.input.usecase.schooluser.CreateSchoolUserUseCase;
@@ -93,7 +92,7 @@ public class CreateSchoolUserUseCaseTests {
         );
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
-        when(userRepository.findById(callerId)).thenReturn(Optional.of(caller));
+        when(userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(Optional.of(caller));
         when(roleRepository.findByCode("STUDENT")).thenReturn(Optional.of(studentRole));
         when(userRepository.findByEmail("student@school.edu.vn")).thenReturn(Optional.empty());
         when(userRepository.findByPhone("0987654321")).thenReturn(Optional.empty());
@@ -117,7 +116,7 @@ public class CreateSchoolUserUseCaseTests {
         var schoolUser = new SchoolUser(schoolId, savedUser.getId(), OffsetDateTime.now(), OffsetDateTime.now().plusYears(100));
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
-        when(userRepository.findById(callerId)).thenReturn(Optional.of(caller));
+        when(userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(Optional.of(caller));
         when(roleRepository.findByCode("STUDENT")).thenReturn(Optional.of(studentRole));
         when(userRepository.findByEmail("student@school.edu.vn")).thenReturn(Optional.empty());
         when(userRepository.findByPhone("0987654321")).thenReturn(Optional.empty());
@@ -142,7 +141,7 @@ public class CreateSchoolUserUseCaseTests {
         );
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
-        when(userRepository.findById(callerId)).thenReturn(Optional.of(caller));
+        when(userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(Optional.of(caller));
         when(roleRepository.findByCode("TEACHER")).thenReturn(Optional.of(teacherRole));
         when(userRepository.findByEmail("teacher@school.edu.vn")).thenReturn(Optional.empty());
         when(userRepository.findByPhone("0987654322")).thenReturn(Optional.empty());
@@ -165,7 +164,7 @@ public class CreateSchoolUserUseCaseTests {
         );
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
-        when(userRepository.findById(callerId)).thenReturn(Optional.of(caller));
+        when(userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(Optional.of(caller));
         when(roleRepository.findByCode("SCHOOL_ADMIN")).thenReturn(Optional.empty());
 
         assertThrows(IllegalArgumentException.class, () -> createSchoolUserUseCase.execute(command));
@@ -181,7 +180,7 @@ public class CreateSchoolUserUseCaseTests {
         );
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
-        when(userRepository.findById(callerId)).thenReturn(Optional.of(caller));
+        when(userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(Optional.of(caller));
 
         assertThrows(IllegalArgumentException.class, () -> createSchoolUserUseCase.execute(command));
         verify(userRepository, never()).save(any(User.class));
@@ -196,7 +195,7 @@ public class CreateSchoolUserUseCaseTests {
         );
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
-        when(userRepository.findById(callerId)).thenReturn(Optional.of(caller));
+        when(userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(Optional.of(caller));
         when(roleRepository.findByCode("STUDENT")).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> createSchoolUserUseCase.execute(command));
@@ -205,16 +204,15 @@ public class CreateSchoolUserUseCaseTests {
 
     @Test
     void create_should_throw_when_caller_is_inactive() {
-        var caller = callerUser(callerId, schoolId, UserStatus.INACTIVE);
         var command = new CreateSchoolUserCommand(
             schoolId, "student@school.edu.vn", "0987654321",
             "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT", null, null
         );
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
-        when(userRepository.findById(callerId)).thenReturn(Optional.of(caller));
+        when(userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(Optional.empty());
 
-        assertThrows(UnauthorizedException.class, () -> createSchoolUserUseCase.execute(command));
+        assertThrows(NotFoundException.class, () -> createSchoolUserUseCase.execute(command));
         verify(userRepository, never()).save(any(User.class));
     }
 
@@ -228,7 +226,7 @@ public class CreateSchoolUserUseCaseTests {
         );
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
-        when(userRepository.findById(callerId)).thenReturn(Optional.of(caller));
+        when(userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(Optional.of(caller));
         when(roleRepository.findByCode("STUDENT")).thenReturn(Optional.of(studentRole));
         when(userRepository.findByEmail("student@school.edu.vn")).thenReturn(Optional.of(savedUser(schoolId)));
 
@@ -246,7 +244,7 @@ public class CreateSchoolUserUseCaseTests {
         );
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
-        when(userRepository.findById(callerId)).thenReturn(Optional.of(caller));
+        when(userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(Optional.of(caller));
         when(roleRepository.findByCode("STUDENT")).thenReturn(Optional.of(studentRole));
         when(userRepository.findByEmail("student@school.edu.vn")).thenReturn(Optional.empty());
         when(userRepository.findByPhone("0987654321")).thenReturn(Optional.of(savedUser(schoolId)));

@@ -17,8 +17,7 @@ import jakarta.persistence.Table;
 @Table(name = "questions", indexes = {
     @Index(columnList = "question_topic_id, code", name = "idx_questions_question_topic_code", unique = true),
     @Index(columnList = "type", name = "idx_questions_type"),
-    @Index(columnList = "scope", name = "idx_questions_scope"),
-    @Index(columnList = "visibility", name = "idx_questions_visibility"),
+    @Index(columnList = "sharing", name = "idx_questions_sharing"),
     @Index(columnList = "source_question_id", name = "idx_questions_source_question")
 }, check = {
     @CheckConstraint(
@@ -38,7 +37,10 @@ public class QuestionJpaEntity {
         columnDefinition = "UUID DEFAULT uuidv7()")
     private UUID id;
 
-    @Column(name = "question_topic_id", nullable = false, updatable = false)
+    @Column(name = "question_bank_id", nullable = false, updatable = false)
+    private UUID questionBankId;
+
+    @Column(name = "question_topic_id", updatable = false)
     private UUID questionTopicId;
 
     @Column(name = "code", nullable = false, length = 100)
@@ -88,21 +90,13 @@ public class QuestionJpaEntity {
     })
     private int maxResponseSeconds;
 
-    @Column(name = "scope", nullable = false, length = 50, check = {
+    @Column(name = "sharing", length = 100, check = {
         @CheckConstraint(
-            name = "chk_questions_question_scope_valid",
-            constraint = "scope IN ('QUESTION_BANK', 'CLASSROOM_ASSESSMENT', 'CENTRAL_EXAM_DRAFT', 'CENTRAL_EXAM_PAPER')"
+            name = "chk_questions_sharing_valid", 
+            constraint = "sharing IN ('PRIVATE', 'SCHOOL_SHARED')"
         )
     })
-    private String scope;
-
-    @Column(name = "visibility", nullable = false, length = 50, check = {
-        @CheckConstraint(
-            name = "chk_questions_question_visibility_valid",
-            constraint = "visibility IN ('BANK_VISIBLE', 'AUTHOR_ONLY', 'REVIEWER_ONLY', 'ASSESSMENT_ONLY', 'EXAM_PAPER_ONLY')"
-        )
-    })
-    private String visibility;
+    private String sharing;
 
     @Column(name = "source_question_id")
     private UUID sourceQuestionId;
@@ -132,12 +126,12 @@ public class QuestionJpaEntity {
 
     protected QuestionJpaEntity() {}
 
-    public QuestionJpaEntity(UUID id, UUID questionTopicId, String code, String instructionText, String questionText,
+    public QuestionJpaEntity(UUID id, UUID questionBankId, UUID questionTopicId, String code, String instructionText, String questionText,
             String promptText, String preparationText, String type, int preparationTimeSeconds,
-            int minResponseSeconds, int maxResponseSeconds, String scope,
-            String visibility, UUID sourceQuestionId, boolean locked, String status,
+            int minResponseSeconds, int maxResponseSeconds, String sharing, UUID sourceQuestionId, boolean locked, String status,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
+        this.questionBankId = questionBankId;
         this.questionTopicId = questionTopicId;
         this.code = code;
         this.instructionText = instructionText;
@@ -148,8 +142,7 @@ public class QuestionJpaEntity {
         this.preparationTimeSeconds = preparationTimeSeconds;
         this.minResponseSeconds = minResponseSeconds;
         this.maxResponseSeconds = maxResponseSeconds;
-        this.scope = scope;
-        this.visibility = visibility;
+        this.sharing = sharing;
         this.sourceQuestionId = sourceQuestionId;
         this.locked = locked;
         this.status = status;
@@ -247,22 +240,6 @@ public class QuestionJpaEntity {
         this.maxResponseSeconds = maxResponseSeconds;
     }
 
-    public String getScope() {
-        return scope;
-    }
-
-    public void setScope(String scope) {
-        this.scope = scope;
-    }
-
-    public String getVisibility() {
-        return visibility;
-    }
-
-    public void setVisibility(String visibility) {
-        this.visibility = visibility;
-    }
-
     public UUID getSourceQuestionId() {
         return sourceQuestionId;
     }
@@ -303,6 +280,14 @@ public class QuestionJpaEntity {
         this.updatedAt = updatedAt;
     }
 
+    public String getSharing() {
+        return sharing;
+    }
+
+    public void setSharing(String sharing) {
+        this.sharing = sharing;
+    }
+
     public UUID getCreatedBy() {
         return createdBy;
     }
@@ -317,6 +302,14 @@ public class QuestionJpaEntity {
 
     public void setUpdatedBy(UUID updatedBy) {
         this.updatedBy = updatedBy;
+    }
+
+    public UUID getQuestionBankId() {
+        return questionBankId;
+    }
+
+    public void setQuestionBankId(UUID questionBankId) {
+        this.questionBankId = questionBankId;
     }
 
     

@@ -11,7 +11,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.mapper.question.CreateQuestionResponseMapper;
 import com.sep.vox.application.port.input.command.CreateQuestionAssetCommand;
 import com.sep.vox.application.port.input.command.CreateSystemQuestionBankQuestionCommand;
@@ -22,10 +21,7 @@ import com.sep.vox.domain.model.question.Question;
 import com.sep.vox.domain.model.question.QuestionAsset;
 import com.sep.vox.domain.model.question.QuestionAssetType;
 import com.sep.vox.domain.model.question.QuestionEvaluationGuide;
-import com.sep.vox.domain.model.question.QuestionScope;
 import com.sep.vox.domain.model.question.QuestionTopic;
-import com.sep.vox.domain.model.question.QuestionType;
-import com.sep.vox.domain.model.question.QuestionVisibility;
 import com.sep.vox.domain.repository.QuestionAssetRepository;
 import com.sep.vox.domain.repository.QuestionEvaluationGuideRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
@@ -75,24 +71,7 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
         validateAssetOrders(command.assets());
 
         var now = OffsetDateTime.now();
-        var question = Question.create(
-            command.questionTopicId(), 
-            command.code(),
-            command.instructionText(),
-            command.questionText(),
-            command.promptText(),
-            command.preparationText(),
-            QuestionType.valueOf(command.type()),
-            command.preparationTimeSeconds(),
-            command.minResponseSeconds(),
-            command.maxResponseSeconds(),
-            QuestionScope.QUESTION_BANK,
-            QuestionVisibility.BANK_VISIBLE,
-            null,
-            false,
-            now,
-            currentUserId
-        );
+        var question = new Question();
 
         var saved = questionRepository.save(question);
         createEvaluationGuide(saved.getId(), command);

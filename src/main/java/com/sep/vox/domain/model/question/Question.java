@@ -5,6 +5,7 @@ import java.util.UUID;
 
 public class Question {
     private UUID id;
+    private UUID questionBankId;
     private UUID questionTopicId;
     private String code;
     private String instructionText;
@@ -15,8 +16,7 @@ public class Question {
     private int preparationTimeSeconds;
     private int minResponseSeconds;
     private int maxResponseSeconds;
-    private QuestionScope scope;
-    private QuestionVisibility visibility;
+    private QuestionSharing sharing;
     private UUID sourceQuestionId;
     private boolean locked;
     private QuestionStatus status;
@@ -27,12 +27,13 @@ public class Question {
 
     public Question() {}
 
-    public Question(UUID id, UUID questionTopicId, String code, String instructionText, String questionText, String promptText,
-            String preparationText, QuestionType type,
-            int preparationTimeSeconds, int minResponseSeconds, int maxResponseSeconds, QuestionScope scope,
-            QuestionVisibility visibility, UUID sourceQuestionId, boolean locked, QuestionStatus status,
-            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+    public Question(UUID id, UUID questionBankId, UUID questionTopicId, String code, String instructionText,
+            String questionText, String promptText, String preparationText, QuestionType type,
+            int preparationTimeSeconds, int minResponseSeconds, int maxResponseSeconds, QuestionSharing sharing,
+            UUID sourceQuestionId, boolean locked, QuestionStatus status, OffsetDateTime createdAt,
+            OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
+        this.questionBankId = questionBankId;
         this.questionTopicId = questionTopicId;
         this.code = code;
         this.instructionText = instructionText;
@@ -43,8 +44,7 @@ public class Question {
         this.preparationTimeSeconds = preparationTimeSeconds;
         this.minResponseSeconds = minResponseSeconds;
         this.maxResponseSeconds = maxResponseSeconds;
-        this.scope = scope;
-        this.visibility = visibility;
+        this.sharing = sharing;
         this.sourceQuestionId = sourceQuestionId;
         this.locked = locked;
         this.status = status;
@@ -54,11 +54,12 @@ public class Question {
         this.updatedBy = updatedBy;
     }
 
-    public Question(UUID questionTopicId, String code, String instructionText, String questionText, String promptText,
-            String preparationText, QuestionType type,
-            int preparationTimeSeconds, int minResponseSeconds, int maxResponseSeconds, QuestionScope scope,
-            QuestionVisibility visibility, UUID sourceQuestionId, boolean locked, QuestionStatus status,
-            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+    public Question(UUID questionBankId, UUID questionTopicId, String code, String instructionText, String questionText,
+            String promptText, String preparationText, QuestionType type, int preparationTimeSeconds,
+            int minResponseSeconds, int maxResponseSeconds, QuestionSharing sharing, UUID sourceQuestionId,
+            boolean locked, QuestionStatus status, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy,
+            UUID updatedBy) {
+        this.questionBankId = questionBankId;
         this.questionTopicId = questionTopicId;
         this.code = code;
         this.instructionText = instructionText;
@@ -69,8 +70,7 @@ public class Question {
         this.preparationTimeSeconds = preparationTimeSeconds;
         this.minResponseSeconds = minResponseSeconds;
         this.maxResponseSeconds = maxResponseSeconds;
-        this.scope = scope;
-        this.visibility = visibility;
+        this.sharing = sharing;
         this.sourceQuestionId = sourceQuestionId;
         this.locked = locked;
         this.status = status;
@@ -88,12 +88,28 @@ public class Question {
         this.id = id;
     }
 
+    public UUID getQuestionBankId() {
+        return questionBankId;
+    }
+
+    public void setQuestionBankId(UUID questionBankId) {
+        this.questionBankId = questionBankId;
+    }
+
     public UUID getQuestionTopicId() {
         return questionTopicId;
     }
 
     public void setQuestionTopicId(UUID questionTopicId) {
         this.questionTopicId = questionTopicId;
+    }
+
+    public String getCode() {
+        return code;
+    }
+
+    public void setCode(String code) {
+        this.code = code;
     }
 
     public String getInstructionText() {
@@ -160,20 +176,12 @@ public class Question {
         this.maxResponseSeconds = maxResponseSeconds;
     }
 
-    public QuestionScope getScope() {
-        return scope;
+    public QuestionSharing getSharing() {
+        return sharing;
     }
 
-    public void setScope(QuestionScope scope) {
-        this.scope = scope;
-    }
-
-    public QuestionVisibility getVisibility() {
-        return visibility;
-    }
-
-    public void setVisibility(QuestionVisibility visibility) {
-        this.visibility = visibility;
+    public void setSharing(QuestionSharing sharing) {
+        this.sharing = sharing;
     }
 
     public UUID getSourceQuestionId() {
@@ -232,38 +240,4 @@ public class Question {
         this.updatedBy = updatedBy;
     }
 
-    public String getCode() {
-        return code;
-    }
-
-    public void setCode(String code) {
-        this.code = code;
-    }
-
-    public static Question create(UUID questionTopicId, String code, String instructionText, String questionText, String promptText,
-        String preparationText, QuestionType type,
-        int preparationTimeSeconds, int minResponseSeconds, int maxResponseSeconds, QuestionScope scope,
-        QuestionVisibility visibility, UUID sourceQuestionId, boolean locked, OffsetDateTime now, UUID createdBy) {
-        return new Question(
-            questionTopicId,
-            code, 
-            instructionText, 
-            questionText, 
-            promptText, 
-            preparationText, 
-            type, 
-            preparationTimeSeconds, 
-            minResponseSeconds, 
-            maxResponseSeconds, 
-            scope,
-            visibility,
-            sourceQuestionId,
-            locked,
-            QuestionStatus.DRAFT, 
-            now, 
-            now, 
-            createdBy, 
-            createdBy
-        );
-    }
 }

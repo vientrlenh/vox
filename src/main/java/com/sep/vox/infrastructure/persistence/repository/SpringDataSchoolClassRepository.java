@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+
+import com.sep.vox.domain.model.school.SchoolClassStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -105,4 +107,8 @@ public interface SpringDataSchoolClassRepository extends JpaRepository<SchoolCla
         ORDER BY ranked.school_id, ranked.rn
     """, nativeQuery = true)
     List<SchoolClassJpaEntity> findBySchoolIdIn(@Param("schoolIds") Collection<UUID> schoolIds, @Param("fromRow") int fromRow, @Param("toRow") int toRow);
+
+    boolean existsBySchoolGradeId(UUID schoolGradeId);
+
+    boolean existsBySchoolIdAndStatus(UUID schoolId, String status);
 }

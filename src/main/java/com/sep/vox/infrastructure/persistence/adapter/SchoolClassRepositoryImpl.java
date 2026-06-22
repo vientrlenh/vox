@@ -152,5 +152,15 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
             .map(SchoolClassMapper::toDomain)
             .toList();
     }
-    
+
+    @Override
+    public boolean existsBySchoolGradeId(UUID schoolGradeId) {
+        return springDataSchoolClassRepository.existsBySchoolGradeId(schoolGradeId);
+    }
+
+    @Override
+    public boolean existsBySchoolIdAndStatus(UUID schoolId, String status) {
+        return springDataSchoolClassRepository.existsBySchoolIdAndStatus(schoolId, status);
+    }
+
 }

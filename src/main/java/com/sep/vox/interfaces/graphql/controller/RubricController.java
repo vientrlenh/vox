@@ -2,6 +2,7 @@ package com.sep.vox.interfaces.graphql.controller;
 
 
 import com.sep.vox.application.port.input.query.*;
+import com.sep.vox.application.port.input.query.key.RubricCriteriaKey;
 import com.sep.vox.application.port.input.query.key.RubricVersionsKey;
 import com.sep.vox.application.port.input.usecase.rubricschool.*;
 import com.sep.vox.application.port.input.usecase.rubricsystem.*;
@@ -306,6 +307,28 @@ public class RubricController {
 
         var query = new ViewSystemRubricVersionsQuery(rubricId, status, pageNumber, pageSize);
         return viewSystemRubricVersionsUseCase.execute(query);
+    }
+
+    // Lấy các tiêu chí(rubric criteria của rubric version
+    @SchemaMapping(typeName = "RubricVersion", field = "criteria")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
+    public CompletableFuture<PageResult<RubricCriterionDto>> getRubricCriteria(
+            RubricVersionDto version,
+            @Argument Integer page,
+            @Argument Integer size,
+            DataFetchingEnvironment env) {
+
+        // Validate & nắn từ 1-based về 0-based
+        int validPage = (page != null && page > 0) ? page - 1 : 0;
+        int validSize = (size != null && size > 0) ? size : 10;
+
+        // Gọi DataLoader O(1) của Criteria
+        DataLoader<RubricCriteriaKey, PageResult<RubricCriterionDto>> loader = env.getDataLoader("rubricCriteriaDataLoader");
+        if (loader == null) {
+            throw new IllegalStateException("Không tìm thấy DataLoader rubricCriteriaDataLoader.");
+        }
+
+        return loader.load(new RubricCriteriaKey(version.id(), validPage, validSize));
     }
 
     //========================== RUBRIC CRITERION =======================

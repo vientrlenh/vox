@@ -1,21 +1,22 @@
 package com.sep.vox.interfaces.graphql.config;
 
+import com.sep.vox.application.port.input.query.key.RubricCriteriaKey;
 import com.sep.vox.application.port.input.query.key.RubricVersionsKey;
 import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.dto.RubricCriterionDto;
 import com.sep.vox.domain.dto.RubricVersionDto;
+import com.sep.vox.domain.mapper.RubricCriterionDtoMapper;
 import com.sep.vox.domain.mapper.RubricVersionDtoMapper;
+import com.sep.vox.domain.model.rubric.RubricCriterion;
 import com.sep.vox.domain.model.rubric.RubricVersion;
+import com.sep.vox.domain.repository.RubricCriterionRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 import org.dataloader.BatchLoaderEnvironment;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.graphql.execution.BatchLoaderRegistry;
 import reactor.core.publisher.Mono;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Configuration
@@ -23,7 +24,8 @@ public class RubricGraphQlDataLoaderConfig {
 
     public RubricGraphQlDataLoaderConfig(
             BatchLoaderRegistry registry,
-            RubricVersionRepository rubricVersionRepository
+            RubricVersionRepository rubricVersionRepository,
+            RubricCriterionRepository rubricCriterionRepository
     ) {
         // School View Rubric Version
         registry.<RubricVersionsKey, PageResult<RubricVersionDto>>forName("rubricVersionsDataLoader")
@@ -70,6 +72,46 @@ public class RubricGraphQlDataLoaderConfig {
 
                                     result.put(key, new PageResult<>(pagedDtos, key.page(), key.size(), totalElements, totalPages));
                                 }
+                            }
+
+                            return result;
+                        })
+                );
+        // lấy criteria của rubric version
+        registry.<RubricCriteriaKey, PageResult<RubricCriterionDto>>forName("rubricCriteriaDataLoader")
+                .registerMappedBatchLoader((Set<RubricCriteriaKey> keys, BatchLoaderEnvironment env) ->
+                        Mono.fromSupplier(() -> {
+                            Map<RubricCriteriaKey, PageResult<RubricCriterionDto>> result = new HashMap<>();
+
+                            // 1. Gán kết quả rỗng mặc định
+                            keys.forEach(k -> result.put(k, new PageResult<>(List.of(), k.page(), k.size(), 0, 0)));
+
+                            // Lấy tất cả Version ID cần quét
+                            var versionIds = keys.stream().map(RubricCriteriaKey::versionId).distinct().toList();
+
+                            //  GỌI DATABASE ĐÚNG 1 LẦN DUY NHẤT (O(1))
+                            List<RubricCriterion> allCriteria = rubricCriterionRepository.findByRubricVersionIdIn(versionIds);
+
+                            // 2. Nhóm kết quả theo từng versionId
+                            Map<UUID, List<RubricCriterion>> criteriaByVersion = allCriteria.stream()
+                                    .collect(Collectors.groupingBy(RubricCriterion::getRubricVersionId));
+
+                            // 3. Phân trang trên RAM cho từng Key
+                            for (RubricCriteriaKey key : keys) {
+                                List<RubricCriterion> criteriaList = criteriaByVersion.getOrDefault(key.versionId(), List.of());
+
+                                int totalElements = criteriaList.size();
+                                int totalPages = (int) Math.ceil((double) totalElements / key.size());
+
+                                List<RubricCriterionDto> pagedDtos = criteriaList.stream()
+                                        // Sắp xếp tăng dần theo thuộc tính `order`
+                                        .sorted(Comparator.comparingInt(RubricCriterion::getOrder))
+                                        .skip((long) key.page() * key.size())
+                                        .limit(key.size())
+                                        .map(RubricCriterionDtoMapper::toDto) // Sửa theo tên class Mapper của bác
+                                        .toList();
+
+                                result.put(key, new PageResult<>(pagedDtos, key.page(), key.size(), totalElements, totalPages));
                             }
 
                             return result;

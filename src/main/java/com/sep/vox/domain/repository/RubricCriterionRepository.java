@@ -18,4 +18,6 @@ public interface RubricCriterionRepository {
 
     void updateCriterionAtomic(UUID id, String code, String name, String description, String examplesJson, BigDecimal weight, BigDecimal minScore, BigDecimal maxScore, Integer order, Boolean isRequired, OffsetDateTime updatedAt, UUID updatedBy);
     PageResult<RubricCriterion> findAllByRubricVersionId(UUID rubricVersionId, int page, int size);
+
+    List<RubricCriterion> findByRubricVersionIdIn(List<UUID> versionIds);
 }

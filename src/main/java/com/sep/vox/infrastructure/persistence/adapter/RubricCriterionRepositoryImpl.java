@@ -80,4 +80,12 @@ public class RubricCriterionRepositoryImpl implements RubricCriterionRepository 
                 entityPage.getTotalPages()
         );
     }
+
+    @Override
+    public List<RubricCriterion> findByRubricVersionIdIn(List<UUID> versionIds) {
+        return springDataRubricCriterionRepository.findByRubricVersionIdIn(versionIds)
+                .stream()
+                .map(RubricCriterionMapper::toDomain)
+                .toList();
+    }
 }

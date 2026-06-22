@@ -81,6 +81,7 @@ type RubricVersion {
     scoringScaleMin: Float!
     scoringScaleMax: Float!
     totalScoreMethod: String!
+    criteria(page: Int = 1, size: Int = 10): RubricCriterionPage!
 }
 type RubricVersionPage {
     content: [RubricVersion!]!
@@ -188,6 +189,7 @@ extend type Query {
     # => nó đã check school rồi
     # nếu là system admin muốn coi version => viewSystemRubric
     # nếu là school admin => viewSchoolRubric
+    # chỉ nhảy 2 thằng đầu
     viewSystemRubric(id: ID!): Rubric
     viewSchoolRubric(schoolId: ID!, id: ID!): Rubric
     viewSystemRubrics(page: Int = 0, size: Int = 10): RubricPage!

@@ -418,6 +418,22 @@ class SchoolControllerTests {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void school_user_user_field_should_load_related_user() {
+        var response = schoolUserDto(UUID.randomUUID(), schoolId, userId);
+        var expected = new UserDto(userId, "student@example.com", null, "Student", null, null, null, null, null, null);
+        var env = mock(DataFetchingEnvironment.class);
+        var loader = mock(DataLoader.class);
+        when(env.<UUID, UserDto>getDataLoader("userBySchoolUser")).thenReturn(loader);
+        when(loader.load(userId)).thenReturn(CompletableFuture.completedFuture(expected));
+
+        var result = controller.schoolUserUser(response, env).join();
+
+        assertThat(result).isEqualTo(expected);
+        verify(loader).load(userId);
+    }
+
+    @Test
     void school_users_by_school_field_should_reject_invalid_paging() {
         assertThatThrownBy(() -> controller.schoolUsersBySchool(schoolId, 0, 20))
             .isInstanceOf(IllegalStateException.class)

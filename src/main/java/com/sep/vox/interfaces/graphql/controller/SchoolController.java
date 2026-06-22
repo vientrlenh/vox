@@ -185,6 +185,13 @@ public class SchoolController {
         return loader.load(schoolClassUser.userId());
     }
 
+    @SchemaMapping(typeName = "SchoolUser", field = "user")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
+    public CompletableFuture<UserDto> schoolUserUser(SchoolUserDto schoolUser, DataFetchingEnvironment env) {
+        DataLoader<UUID, UserDto> loader = env.getDataLoader("userBySchoolUser");
+        return loader.load(schoolUser.userId());
+    }
+
     @MutationMapping(name = "updateSchoolClass")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public UpdateSchoolClassResponse updateSchoolClass(

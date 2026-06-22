@@ -53,7 +53,7 @@ public class ViewSchoolUserUseCaseTests {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
         when(userRepository.existsByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(true);
         when(userContextPort.isSystemAdmin()).thenReturn(false);
-        when(schoolUserRepository.existsBySchoolIdAndUserId(callerId, schoolId)).thenReturn(true);
+        when(schoolUserRepository.existsBySchoolIdAndUserId(schoolId, callerId)).thenReturn(true);
         when(schoolUserRepository.findBySchoolIdAndUserId(schoolId, targetId)).thenReturn(Optional.of(schoolUser));
 
         var result = viewSchoolUserUseCase.execute(query);
@@ -97,7 +97,7 @@ public class ViewSchoolUserUseCaseTests {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
         when(userRepository.existsByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(true);
         when(userContextPort.isSystemAdmin()).thenReturn(false);
-        when(schoolUserRepository.existsBySchoolIdAndUserId(callerId, schoolId)).thenReturn(false);
+        when(schoolUserRepository.existsBySchoolIdAndUserId(schoolId, callerId)).thenReturn(false);
 
         assertThrows(ForbiddenException.class, () -> viewSchoolUserUseCase.execute(query));
     }
@@ -109,7 +109,7 @@ public class ViewSchoolUserUseCaseTests {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
         when(userRepository.existsByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(true);
         when(userContextPort.isSystemAdmin()).thenReturn(false);
-        when(schoolUserRepository.existsBySchoolIdAndUserId(callerId, schoolId)).thenReturn(true);
+        when(schoolUserRepository.existsBySchoolIdAndUserId(schoolId, callerId)).thenReturn(true);
         when(schoolUserRepository.findBySchoolIdAndUserId(schoolId, targetId)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> viewSchoolUserUseCase.execute(query));

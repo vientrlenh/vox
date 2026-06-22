@@ -16,6 +16,7 @@ import com.sep.vox.application.port.input.query.key.UserRolesKey;
 import com.sep.vox.domain.dto.RoleDto;
 import com.sep.vox.domain.mapper.RoleDtoMapper;
 import com.sep.vox.domain.model.user.Role;
+import com.sep.vox.domain.model.user.SchoolRoleCodes;
 import com.sep.vox.domain.model.user.UserRole;
 import com.sep.vox.domain.repository.RoleRepository;
 import com.sep.vox.domain.repository.UserRoleRepository;
@@ -60,8 +61,32 @@ public class UserGraphQlDataLoaderConfig {
                             Collectors.toList())));
                 
                 keys.forEach(key -> result.put(key, rolesByUserId.getOrDefault(key.userId(), List.of())));
-                
 
+
+                return result;
+            })
+        );
+
+        registry.<UUID, List<RoleDto>>forName("schoolRolesByUser")
+        .registerMappedBatchLoader((Set<UUID> userIds, BatchLoaderEnvironment env) ->
+            Mono.fromSupplier(() -> {
+                Map<UUID, List<RoleDto>> result = new HashMap<>();
+                userIds.forEach(id -> result.put(id, List.of()));
+
+                var schoolRoles = roleRepository.findByCodeIn(SchoolRoleCodes.ALL)
+                    .stream()
+                    .collect(Collectors.toMap(Role::getId, RoleDtoMapper::toRoleDto));
+                if (schoolRoles.isEmpty()) {
+                    return result;
+                }
+
+                var rolesByUserId = userRoleRepository.findByUserIdIn(userIds).stream()
+                    .filter(ur -> schoolRoles.containsKey(ur.getRoleId()))
+                    .collect(Collectors.groupingBy(
+                        UserRole::getUserId,
+                        Collectors.mapping(ur -> schoolRoles.get(ur.getRoleId()), Collectors.toList())));
+
+                rolesByUserId.forEach(result::put);
                 return result;
             })
         );

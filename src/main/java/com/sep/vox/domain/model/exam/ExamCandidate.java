@@ -8,8 +8,7 @@ public class ExamCandidate {
     private UUID examId;
     private UUID studentId;
     private UUID assignedPaperId;
-    private OffsetDateTime startDate;
-    private OffsetDateTime endDate;
+    private UUID scheduleId;
     private ExamCandidateStatus status;
     private OffsetDateTime assignedAt;
     private OffsetDateTime updatedAt;

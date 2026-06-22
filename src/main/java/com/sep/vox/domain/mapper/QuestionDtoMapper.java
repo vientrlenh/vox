@@ -6,41 +6,41 @@ import java.util.List;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.QuestionDto;
 import com.sep.vox.domain.model.question.Question;
+import com.sep.vox.domain.model.question.QuestionSharing;
 
 public class QuestionDtoMapper {
 
-    public static QuestionDto toDto(Question domain) {
+    public static QuestionDto toQuestionDto(Question question) {
         return new QuestionDto(
-            domain.getId(),
-            domain.getQuestionTopicId(),
-            domain.getCode(),
-            domain.getInstructionText(),
-            domain.getQuestionText(),
-            domain.getPromptText(),
-            domain.getPreparationText(),
-            domain.getType().name(),
-            domain.getPreparationTimeSeconds(),
-            domain.getMinResponseSeconds(),
-            domain.getMaxResponseSeconds(),
-            domain.getScope().name(),
-            domain.getVisibility().name(),
-            domain.getSourceQuestionId(),
-            domain.isLocked(),
-            domain.getStatus().name(),
-            valueOf(domain.getCreatedAt()),
-            valueOf(domain.getUpdatedAt())
+            question.getId(),
+            question.getQuestionTopicId(),
+            question.getCode(),
+            question.getInstructionText(),
+            question.getQuestionText(),
+            question.getPromptText(),
+            question.getPreparationText(),
+            question.getType().name(),
+            question.getPreparationTimeSeconds(),
+            question.getMinResponseSeconds(),
+            question.getMaxResponseSeconds(),
+            valueOf(question.getSharing()),
+            question.getSourceQuestionId(),
+            question.isLocked(),
+            question.getStatus().name(),
+            valueOf(question.getCreatedAt()),
+            valueOf(question.getUpdatedAt())
         );
     }
 
-    public static List<QuestionDto> toDtoList(List<Question> list) {
+    public static List<QuestionDto> toQuestionDtoList(List<Question> list) {
         return list.stream()
-            .map(QuestionDtoMapper::toDto)
+            .map(QuestionDtoMapper::toQuestionDto)
             .toList();
     }
 
     public static PageResult<QuestionDto> toDtoPage(PageResult<Question> page) {
         return new PageResult<>(
-            toDtoList(page.content()),
+            toQuestionDtoList(page.content()),
             page.page(),
             page.size(),
             page.totalElements(),
@@ -50,5 +50,9 @@ public class QuestionDtoMapper {
 
     private static String valueOf(OffsetDateTime date) {
         return date == null ? null : date.toString();
+    }
+
+    private static String valueOf(QuestionSharing sharing) {
+        return sharing == null ? null : sharing.name();
     }
 }

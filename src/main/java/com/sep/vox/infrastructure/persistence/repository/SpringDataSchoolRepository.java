@@ -18,7 +18,6 @@ public interface SpringDataSchoolRepository extends JpaRepository<SchoolJpaEntit
 
     Optional<SchoolJpaEntity> findByDomain(String domain);
 
-    boolean existsByCode(String code);
     boolean existsByContactEmail(String contactEmail);
 
     boolean existsByContactPhone(String contactPhone);

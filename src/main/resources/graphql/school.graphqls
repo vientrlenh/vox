@@ -3,16 +3,29 @@ type School {
     code: String!
     name: String
     description: String
-    contactPhone: String 
+    contactPhone: String
     contactEmail: String
-    domain: String 
-    address: String 
-    studentCount: Int 
+    domain: String
+    address: String
+    studentCount: Int
     isActive: Boolean
-    createdAt: String 
+    createdAt: String
     updatedAt: String
     classes(page: Int = 1, size: Int = 10): [SchoolClass!]
     users(page: Int = 1, size: Int = 10): [SchoolUser!]
+}
+
+
+
+# Đổi tên cho đồng bộ với GraphQL (dùng Input thay vì Request)
+input UpdateSchoolInput {
+    name: String
+    description: String
+    contactPhone: String
+    contactEmail: String
+    domain: String
+    address: String
+    studentCount: Int
 }
 
 type SchoolPage {
@@ -22,6 +35,38 @@ type SchoolPage {
     totalElements: Int!
     totalPages: Int!
 }
+
+
+# ==================================================================
+# School Room
+# ==================================================================
+type SchoolRoom {
+    id: ID!
+    schoolId: ID!
+    code: String!
+    name: String!
+    description: String
+    isActive: Boolean!
+    createdAt: String
+    createdBy: String
+    updatedAt: String
+    updateBy: String
+}
+
+input UpdateSchoolRoomInput {
+    name: String
+    description: String
+}
+
+type SchoolRoomPageResult {
+    totalElements: Int!
+    totalPages: Int!
+    page: Int!
+    size: Int!
+    content: [SchoolRoom!]!
+}
+
+#==========SCHOOL CLASS=========
 
 
 type SchoolClass {
@@ -119,6 +164,8 @@ type SchoolUserPage {
 }
 
 extend type Query {
+    schoolRoom(id: ID!): SchoolRoom
+    schoolRooms(schoolId: ID!, page: Int, size: Int): SchoolRoomPageResult
     schools(page: Int = 1, size: Int = 20): SchoolPage!
     school(id: ID!): School
     schoolClasses(page: Int = 1, size: Int = 20, search: String, status: String, languageId: ID, schoolGradeId: ID): SchoolClassPage!
@@ -126,9 +173,31 @@ extend type Query {
     schoolUser(schoolId: ID!, userId: ID!): SchoolUser
     schoolClass(id: ID!): SchoolClass
     schoolClassUsers(schoolClassId: ID!, page: Int = 1, size: Int = 20): SchoolClassUserPage!
+    schoolGrades(schoolId: ID!, page: Int, size: Int): SchoolGradePageResult
+    schoolGrade(id: ID!): SchoolGrade
 }
 
 extend type Mutation {
     updateSchoolClass(id: ID!, input: UpdateSchoolClassInput!): UpdateSchoolClassResponse!
     updateSchoolUser(schoolId: ID!, userId: ID!, input: UpdateSchoolUserInput!): UpdateSchoolUserResponse!
+    updateSchoolGrade(id: ID!, input: UpdateSchoolGradeInput!): ID!
+    updateSchoolRoom(id: ID!, input: UpdateSchoolRoomInput!): ID!
+    updateSchool(id: ID!, input: UpdateSchoolInput!): ID!
+}
+
+#================ SCHOOL GRADE =============
+input UpdateSchoolGradeInput {
+
+    name: String
+    description: String
+    startDate: String
+    endDate: String
+}
+
+type SchoolGradePageResult {
+    totalElements: Int!
+    totalPages: Int!
+    currentPage: Int!
+    pageSize: Int!
+    content: [SchoolGrade!]!
 }

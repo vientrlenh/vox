@@ -81,4 +81,10 @@ public class TestSchoolUserRepository implements SchoolUserRepository {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'existsBySchoolIdAndUserId'");
     }
+
+    @Override
+    public Optional<UUID> findSchoolIdByUserId(UUID userId) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'findSchoolIdByUserId'");
+    }
 }

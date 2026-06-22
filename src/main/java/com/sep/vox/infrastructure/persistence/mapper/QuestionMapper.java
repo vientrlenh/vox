@@ -1,10 +1,9 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.question.Question;
-import com.sep.vox.domain.model.question.QuestionScope;
+import com.sep.vox.domain.model.question.QuestionSharing;
 import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.model.question.QuestionType;
-import com.sep.vox.domain.model.question.QuestionVisibility;
 import com.sep.vox.infrastructure.persistence.entity.QuestionJpaEntity;
 
 public final class QuestionMapper {
@@ -12,6 +11,7 @@ public final class QuestionMapper {
     public static Question toDomain(QuestionJpaEntity jpa) {
         return new Question(
             jpa.getId(),
+            jpa.getQuestionBankId(),
             jpa.getQuestionTopicId(),
             jpa.getCode(),
             jpa.getInstructionText(),
@@ -22,8 +22,7 @@ public final class QuestionMapper {
             jpa.getPreparationTimeSeconds(),
             jpa.getMinResponseSeconds(),
             jpa.getMaxResponseSeconds(),
-            QuestionScope.valueOf(jpa.getScope()),
-            QuestionVisibility.valueOf(jpa.getVisibility()),
+            sharingFromString(jpa.getSharing()),
             jpa.getSourceQuestionId(),
             jpa.isLocked(),
             QuestionStatus.valueOf(jpa.getStatus()),
@@ -36,7 +35,8 @@ public final class QuestionMapper {
 
     public static QuestionJpaEntity toJpa(Question question) {
         return new QuestionJpaEntity(
-            question.getId(),
+            question.getId(), 
+            question.getQuestionBankId(),
             question.getQuestionTopicId(), 
             question.getCode(),
             question.getInstructionText(),
@@ -47,8 +47,7 @@ public final class QuestionMapper {
             question.getPreparationTimeSeconds(),
             question.getMinResponseSeconds(),
             question.getMaxResponseSeconds(),
-            question.getScope().name(),
-            question.getVisibility().name(),
+            valueOf(question.getSharing()),
             question.getSourceQuestionId(),
             question.isLocked(),
             question.getStatus().name(),
@@ -57,5 +56,13 @@ public final class QuestionMapper {
             question.getCreatedBy(),
             question.getUpdatedBy()
         );
+    }
+
+    private static String valueOf(QuestionSharing sharing) {
+        return sharing == null ? null : sharing.name();
+    }
+
+    private static QuestionSharing sharingFromString(String sharing) {
+        return sharing == null ? null : QuestionSharing.valueOf(sharing);
     }
 }

@@ -24,4 +24,8 @@ public interface SchoolClassRepository {
             OffsetDateTime updatedAt, UUID updatedBy);
     void deleteById(UUID id);
     List<SchoolClass> findBySchoolIdIn(Collection<UUID> schoolIds, int page, int size);
+
+    boolean existsBySchoolGradeId(UUID schoolGradeId);
+
+    boolean existsBySchoolIdAndStatus(UUID schoolId, String status);
 }

@@ -14,6 +14,7 @@ spring:
     graphiql:
       enabled: true
 
+
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
@@ -30,9 +31,9 @@ spring:
       group-id: ${KAFKA_GROUP_ID:vox}
       enable-auto-commit: false
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JacksonJsonDeserializer 
-      max-poll-records: 50 # max records per pools 
-      max-poll-interval: 10m # 10 min 
+      value-deserializer: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
+      max-poll-records: 50 # max records per pools
+      max-poll-interval: 10m # 10 min
       fetch-min-size: 1
       fetch-max-wait: 500ms
       auto-offset-reset: earliest
@@ -49,10 +50,10 @@ spring:
     streams:
       application-id: "vox"
       auto-startup: true
-    properties: 
+    properties:
       "[prop.shared]": "value"
-    admin: 
-      properties: 
+    admin:
+      properties:
         "[prop.admin]": "value"
   data:
     redis:
@@ -125,6 +126,9 @@ logging:
     org:
       springframework:
         security: DEBUG
+        kafka: WARN
+      apache: 
+        kafka: WARN
 
 server:
   port: 8080
@@ -139,7 +143,7 @@ app:
     kafka:
       consumer-groups:
         user-service:
-          topic: 
+          topic:
             user-registered: ${KAFKA_USER_TOPIC:user.registered.v1}
           group-id: ${KAFKA_USER_GROUP_ID:vox-user}
 

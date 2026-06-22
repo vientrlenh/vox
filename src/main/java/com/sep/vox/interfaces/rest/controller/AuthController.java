@@ -15,10 +15,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.sep.vox.application.port.input.usecase.auth.LoginUseCase;
 import com.sep.vox.application.port.input.usecase.auth.RefreshUseCase;
+import com.sep.vox.application.port.input.usecase.auth.SetUpPasswordUseCase;
+import com.sep.vox.application.port.input.usecase.auth.SendResetPasswordOtpUseCase;
 import com.sep.vox.application.port.input.usecase.auth.ResetPasswordUseCase;
 import com.sep.vox.application.port.input.usecase.auth.SendResetPasswordOtpUseCase;
 import com.sep.vox.application.port.input.usecase.auth.SetUpPasswordUseCase;
 import com.sep.vox.application.port.input.usecase.registration.RegisterBySelfDeclaredUseCase;
+
 import com.sep.vox.application.port.input.usecase.registration.RegisterFromSchoolDirectoryUseCase;
 import com.sep.vox.application.port.input.usecase.registration.VerifyRegisterFormOtpUseCase;
 import com.sep.vox.application.response.input.auth.LoginResponse;
@@ -31,16 +34,21 @@ import com.sep.vox.interfaces.rest.dto.request.RegisterFromSchoolDirectoryReques
 import com.sep.vox.interfaces.rest.dto.request.ResetPasswordRequest;
 import com.sep.vox.interfaces.rest.dto.request.SendResetPasswordOtpRequest;
 import com.sep.vox.interfaces.rest.dto.request.SetUpPasswordRequest;
+
 import com.sep.vox.interfaces.rest.dto.request.VerifyRegisterFormOtpRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 import com.sep.vox.interfaces.rest.mapper.LoginCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.SetUpPasswordCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.RefreshCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.RegisterBySelfDeclaredCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.SendResetPasswordOtpCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.RegisterFromSchoolDirectoryCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.ResetPasswordCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.SendResetPasswordOtpCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.SetUpPasswordCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.VerifyRegisterFormOtpCommandMapper;
+
+import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 import com.sep.vox.interfaces.shared.HttpCookieProvider;
 import com.sep.vox.interfaces.shared.IpAddressReceiver;
 
@@ -156,10 +164,10 @@ public class AuthController {
 
     @GetMapping("/oauth2/google/start")
     public void startGoogleLogin(
-        @RequestParam(required = true) String deviceId, 
-        @RequestParam(required = true) String deviceName, 
-        @RequestParam(required = true) String platform, 
-        HttpServletRequest request, 
+        @RequestParam(required = true) String deviceId,
+        @RequestParam(required = true) String deviceName,
+        @RequestParam(required = true) String platform,
+        HttpServletRequest request,
         HttpServletResponse response
     ) throws IOException {
         var session = request.getSession();

@@ -8,7 +8,8 @@ public record SchoolClassUserDto(
     UUID schoolClassId,
     boolean isActive,
     String joinedAt,
-    String leftAt
+    String leftAt,
+    UUID assignedBy
 ) {
-    
+
 }

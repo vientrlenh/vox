@@ -105,19 +105,6 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
     }
 
     @Override
-    public List<SchoolClass> findBySchoolIdAndName(UUID schoolId, String name) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'findBySchoolIdAndName'");
-    }
-
-    @Override
-    public List<SchoolClass> findBySchoolIdAndLanguageIdAndTargetSchoolLevelVersionId(UUID schoolId, UUID languageId,
-            UUID levelId) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'findBySchoolIdAndLanguageIdAndTargetSchoolLevelVersionId'");
-    }
-
-    @Override
     public int updateMutableFields(UUID id, UUID schoolId, String name, boolean nameProvided,
             String description, boolean descriptionProvided, SchoolClassStatus status, boolean statusProvided,
             OffsetDateTime updatedAt, UUID updatedBy) {

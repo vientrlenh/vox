@@ -76,6 +76,13 @@ public class UserRepositoryImpl implements UserRepository {
         return UserMapper.toDomain(saved);
     }
 
+    @Override
+    public User saveAndFlush(User user) {
+        var entity = UserMapper.toJpa(user);
+        var saved = springDataUserRepository.saveAndFlush(entity);
+        return UserMapper.toDomain(saved);
+    }
+
 
     @Override
     public boolean existsByEmail(String email) {

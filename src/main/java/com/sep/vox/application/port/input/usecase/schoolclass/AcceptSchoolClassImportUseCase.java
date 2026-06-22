@@ -104,13 +104,14 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
         importSessionRepository.save(session);
 
         var rows = importRowRepository.findBySessionIdOrderByRowNumber(session.getId());
-        var importedRows = processRows(rows, input.confirmedMapping(), schoolId, currentUserId, now);
-        var invalidRows = rows.size() - importedRows;
+        validateMappingKeys(rows, input.confirmedMapping());
+        var result = processRows(rows, input.confirmedMapping(), schoolId, currentUserId, now);
+        var invalidRows = rows.size() - result.importedRows();
 
         importRowRepository.saveAll(rows);
-        session.setImportedRows(importedRows);
+        session.setImportedRows(result.importedRows());
         session.setInvalidRows(invalidRows);
-        session.setValidRows(importedRows);
+        session.setValidRows(result.importedRows());
         session.setSkippedRows(0L);
         session.setTotalRows(rows.size());
         session.setStatus(ImportSessionStatus.COMPLETED);
@@ -122,6 +123,7 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
             savedSession.getId(),
             savedSession.getTotalRows(),
             savedSession.getImportedRows(),
+            result.updatedRows(),
             savedSession.getInvalidRows(),
             savedSession.getSkippedRows(),
             savedSession.getStatus().name()
@@ -205,8 +207,35 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
         }
     }
 
-    private long processRows(List<ImportRow> rows, Map<String, String> confirmedMapping, UUID schoolId, UUID currentUserId, OffsetDateTime now) {
+    /**
+     * Defense-in-depth: bảo đảm mọi key trong confirmedMapping là cột thực sự có trong file đã preview,
+     * và mọi value là trường hệ thống được hỗ trợ. Lưu ý: việc này KHÔNG ngăn admin hợp lệ tự chọn
+     * mapping sai (vd. hoán đổi code↔name) — đó là quyền của admin trong luồng preview → confirm → accept.
+     */
+    private void validateMappingKeys(List<ImportRow> rows, Map<String, String> confirmedMapping) {
+        if (rows.isEmpty()) {
+            return;
+        }
+        var validHeaders = jsonSerializationPort.toStringMap(rows.get(0).getRawDataJson()).keySet();
+        var invalidKeys = confirmedMapping.keySet().stream()
+            .filter(key -> !validHeaders.contains(key))
+            .toList();
+        if (!invalidKeys.isEmpty()) {
+            throw new IllegalArgumentException("Mapping chứa cột không tồn tại trong file: " + String.join(", ", invalidKeys));
+        }
+        var invalidValues = confirmedMapping.values().stream()
+            .filter(Objects::nonNull)
+            .map(String::strip)
+            .filter(value -> !value.isEmpty() && !SUPPORTED_FIELDS.contains(value))
+            .toList();
+        if (!invalidValues.isEmpty()) {
+            throw new IllegalArgumentException("Mapping chứa trường hệ thống không hợp lệ: " + String.join(", ", invalidValues));
+        }
+    }
+
+    private ProcessResult processRows(List<ImportRow> rows, Map<String, String> confirmedMapping, UUID schoolId, UUID currentUserId, OffsetDateTime now) {
         var importedRows = 0L;
+        var updatedRows = 0L;
         var seenCodes = new HashSet<String>();
         var rowContexts = new ArrayList<RowContext>();
         var classCodes = new HashSet<String>();
@@ -232,7 +261,7 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
         for (var rowContext : rowContexts) {
             var row = rowContext.row();
             var normalized = rowContext.normalized();
-            var errors = validateRow(normalized, seenCodes, existingClassesByCode, languagesByCode, gradesByCode);
+            var errors = validateRow(normalized, seenCodes, languagesByCode, gradesByCode);
 
             if (!errors.isEmpty()) {
                 row.setErrorsJson(jsonSerializationPort.toJson(errors));
@@ -243,16 +272,27 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
             try {
                 var language = languagesByCode.get(normalized.get("languageCode"));
                 var schoolGrade = gradesByCode.get(normalized.get("schoolGradeCode"));
-                var schoolClass = SchoolClass.create(
-                    schoolId,
-                    language.getId(),
-                    schoolGrade.getId(),
-                    normalized.get("code"),
-                    normalized.get("name"),
-                    normalized.get("description"),
-                    currentUserId,
-                    now
-                );
+                var schoolClass = existingClassesByCode.get(normalized.get("code"));
+                if (schoolClass == null) {
+                    schoolClass = SchoolClass.create(
+                        schoolId,
+                        language.getId(),
+                        schoolGrade.getId(),
+                        normalized.get("code"),
+                        normalized.get("name"),
+                        normalized.get("description"),
+                        currentUserId,
+                        now
+                    );
+                } else {
+                    schoolClass.setName(normalized.get("name"));
+                    schoolClass.setDescription(normalized.get("description"));
+                    schoolClass.setLanguageId(language.getId());
+                    schoolClass.setSchoolGradeId(schoolGrade.getId());
+                    schoolClass.setUpdatedAt(now);
+                    schoolClass.setUpdatedBy(currentUserId);
+                    updatedRows++;
+                }
                 schoolClassRepository.save(schoolClass);
                 row.setErrorsJson(null);
                 row.setStatus(ImportRowStatus.IMPORTED);
@@ -263,7 +303,7 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
             }
         }
 
-        return importedRows;
+        return new ProcessResult(importedRows, updatedRows);
     }
 
     private Map<String, SchoolClass> findExistingClassesByCode(UUID schoolId, Set<String> codes) {
@@ -312,21 +352,17 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
     }
 
     private List<Map<String, String>> validateRow(Map<String, String> mappedData, Set<String> seenCodes,
-            Map<String, SchoolClass> existingClassesByCode, Map<String, SupportedLanguage> languagesByCode,
+            Map<String, SupportedLanguage> languagesByCode,
             Map<String, SchoolGrade> gradesByCode) {
         var errors = new ArrayList<Map<String, String>>();
         addMissingError(errors, mappedData, "code", "Mã lớp không được để trống");
-        addMissingError(errors, mappedData, "name", "ên lớp không được để trống");
+        addMissingError(errors, mappedData, "name", "Tên lớp không được để trống");
         addMissingError(errors, mappedData, "languageCode", "Mã ngôn ngữ không được để trống");
         addMissingError(errors, mappedData, "schoolGradeCode", "Mã khối không được để trống");
 
         var code = mappedData.get("code");
-        if (isPresent(code)) {
-            if (!seenCodes.add(code)) {
-                errors.add(error("code", "Mã lớp bị trùng trong file import"));
-            } else if (existingClassesByCode.containsKey(code)) {
-                errors.add(error("code", "Mã lớp đã tồn tại trong hệ thống"));
-            }
+        if (isPresent(code) && !seenCodes.add(code)) {
+            errors.add(error("code", "Mã lớp bị trùng trong file import"));
         }
 
         var languageCode = mappedData.get("languageCode");
@@ -373,5 +409,8 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
     }
 
     private record RowContext(ImportRow row, Map<String, String> normalized) {
+    }
+
+    private record ProcessResult(long importedRows, long updatedRows) {
     }
 }

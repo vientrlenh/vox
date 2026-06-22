@@ -1,0 +1,37 @@
+type SupportedLanguage {
+    id: ID!
+    code: String
+    name: String
+    description: String
+    isActive: Boolean!
+    createdAt: String
+    updatedAt: String
+}
+
+type SupportedLanguagePage {
+    content: [SupportedLanguage!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+type UpdateSupportedLanguageResponse {
+    supportedLanguageId: ID!
+}
+
+input UpdateSupportedLanguageInput {
+    code: String
+    name: String
+    description: String
+    isActive: Boolean
+}
+
+extend type Query {
+    supportedLanguages(page: Int! = 1, size: Int! = 20, search: String, isActive: Boolean): SupportedLanguagePage!
+    supportedLanguage(id: ID!): SupportedLanguage
+}
+
+extend type Mutation {
+    updateSupportedLanguage(id: ID!, input: UpdateSupportedLanguageInput!): UpdateSupportedLanguageResponse!
+}

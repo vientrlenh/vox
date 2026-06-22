@@ -7,8 +7,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import java.time.LocalDate;
-import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -16,23 +14,19 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewSchoolClassUsersQuery;
 import com.sep.vox.application.port.input.usecase.schoolclassuser.ViewSchoolClassUsersUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
-import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.valueobject.ClassCode;
-import com.sep.vox.domain.valueobject.DateOfBirth;
-import com.sep.vox.domain.valueobject.Email;
-import com.sep.vox.domain.valueobject.FullName;
-import com.sep.vox.domain.valueobject.Phone;
 
 class ViewSchoolClassUsersUseCaseTests {
 
@@ -68,7 +62,8 @@ class ViewSchoolClassUsersUseCaseTests {
         var classId = UUID.randomUUID();
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
-        when(userRepository.findById(currentUserId)).thenReturn(Optional.of(activeUser(currentUserId, schoolId, "admin@example.com")));
+        when(userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)).thenReturn(true);
+        TestSchoolUserRepository.remember(currentUserId, schoolId);
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(schoolClassRepository.findById(classId)).thenReturn(Optional.empty());
 
@@ -84,7 +79,8 @@ class ViewSchoolClassUsersUseCaseTests {
         var classId = UUID.randomUUID();
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
-        when(userRepository.findById(currentUserId)).thenReturn(Optional.of(activeUser(currentUserId, schoolId, "admin@example.com")));
+        when(userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)).thenReturn(true);
+        TestSchoolUserRepository.remember(currentUserId, schoolId);
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(schoolClassRepository.findById(classId)).thenReturn(Optional.of(activeSchoolClass(classId, UUID.randomUUID())));
 
@@ -98,9 +94,9 @@ class ViewSchoolClassUsersUseCaseTests {
         var currentUserId = UUID.randomUUID();
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
-        when(userRepository.findById(currentUserId)).thenReturn(Optional.of(user(currentUserId, UUID.randomUUID(), "admin@example.com", UserStatus.INACTIVE)));
+        when(userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)).thenReturn(false);
 
-        assertThrows(IllegalStateException.class,
+        assertThrows(UnauthorizedException.class,
             () -> useCase.execute(new ViewSchoolClassUsersQuery(UUID.randomUUID(), 1, 20)));
 
         verifyNoInteractions(schoolRepository, schoolClassRepository, schoolClassUserRepository);
@@ -111,7 +107,7 @@ class ViewSchoolClassUsersUseCaseTests {
         var currentUserId = UUID.randomUUID();
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
-        when(userRepository.findById(currentUserId)).thenReturn(Optional.of(activeUser(currentUserId, null, "admin@example.com")));
+        when(userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)).thenReturn(true);
 
         assertThrows(IllegalStateException.class,
             () -> useCase.execute(new ViewSchoolClassUsersQuery(UUID.randomUUID(), 1, 20)));
@@ -127,7 +123,8 @@ class ViewSchoolClassUsersUseCaseTests {
         school.setActive(false);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
-        when(userRepository.findById(currentUserId)).thenReturn(Optional.of(activeUser(currentUserId, schoolId, "admin@example.com")));
+        when(userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)).thenReturn(true);
+        TestSchoolUserRepository.remember(currentUserId, schoolId);
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(school));
 
         assertThrows(IllegalStateException.class,
@@ -136,31 +133,6 @@ class ViewSchoolClassUsersUseCaseTests {
         verifyNoInteractions(schoolClassRepository, schoolClassUserRepository);
     }
 
-
-    private static User activeUser(UUID id, UUID schoolId, String email) {
-        return user(id, schoolId, email, UserStatus.ACTIVE);
-    }
-
-    private static User user(UUID id, UUID schoolId, String email, UserStatus status) {
-        var now = OffsetDateTime.now();
-        TestSchoolUserRepository.remember(id, schoolId);
-        return new User(
-            id,
-            new Email(email),
-            "password-hash",
-            new Phone("0987654321"),
-            new FullName("Test User"),
-            null,
-            new DateOfBirth(LocalDate.of(2000, 1, 1)),
-            "Ho Chi Minh City",
-            null,
-            status,
-            now,
-            now,
-            null,
-            null
-        );
-    }
 
     private static School activeSchool(UUID id) {
         var school = new School();

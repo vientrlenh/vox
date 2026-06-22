@@ -74,6 +74,29 @@ public class SchoolUserRepositoryImpl implements SchoolUserRepository {
     }
 
     @Override
+    public PageResult<SchoolUser> findBySchoolId(UUID schoolId, String search, String roleCode, String status,
+            Collection<String> schoolRoleCodes, int page, int size) {
+        var searchPattern = (search == null || search.isBlank())
+            ? null
+            : "%" + search.strip().toLowerCase() + "%";
+        var roleFilter = (roleCode == null || roleCode.isBlank()) ? null : roleCode;
+        var statusFilter = (status == null || status.isBlank()) ? null : status;
+        var pageRequest = PageRequest.of(page - 1, size);
+        var pageable = springDataSchoolUserRepository.searchBySchoolId(
+            schoolId, searchPattern, roleFilter, statusFilter, schoolRoleCodes, pageRequest);
+        return new PageResult<>(
+            pageable.getContent()
+                .stream()
+                .map(SchoolUserMapper::toDomain)
+                .toList(),
+            page,
+            size,
+            pageable.getTotalElements(),
+            pageable.getTotalPages()
+        );
+    }
+
+    @Override
     public Optional<SchoolUser> findBySchoolIdAndUserId(UUID schoolId, UUID userId) {
         return springDataSchoolUserRepository.findBySchoolIdAndUserId(schoolId, userId)
             .map(SchoolUserMapper::toDomain);

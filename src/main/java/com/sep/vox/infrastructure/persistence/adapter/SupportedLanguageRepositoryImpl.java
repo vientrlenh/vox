@@ -1,12 +1,16 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
+import com.sep.vox.domain.common.PageRequest;
+import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;
 import com.sep.vox.infrastructure.persistence.mapper.SupportedLanguageMapper;
@@ -45,10 +49,52 @@ public class SupportedLanguageRepositoryImpl implements SupportedLanguageReposit
     }
 
     @Override
+    public PageResult<SupportedLanguage> findAll(String search, Boolean isActive, PageRequest pageRequest) {
+        var pageable = org.springframework.data.domain.PageRequest.of(
+            pageRequest.page() - 1,
+            pageRequest.size(),
+            Sort.by(Sort.Direction.DESC, "createdAt").and(Sort.by(Sort.Direction.ASC, "id"))
+        );
+        var page = springDataSupportedLanguageRepository.findAllWithSearchAndFilters(
+            toSearchPattern(search),
+            isActive,
+            pageable
+        );
+        return new PageResult<>(
+            page.getContent().stream()
+                .map(SupportedLanguageMapper::toDomain)
+                .toList(),
+            page.getNumber() + 1,
+            page.getSize(),
+            page.getTotalElements(),
+            page.getTotalPages()
+        );
+    }
+
+    @Override
     public SupportedLanguage save(SupportedLanguage supportedLanguage) {
         var entity = SupportedLanguageMapper.toJpa(supportedLanguage);
         var saved = springDataSupportedLanguageRepository.save(entity);
         return SupportedLanguageMapper.toDomain(saved);
+    }
+
+    @Override
+    public int updateMutableFields(UUID id, String code, boolean codeProvided, String name, boolean nameProvided,
+            String description, boolean descriptionProvided, Boolean isActive, boolean isActiveProvided,
+            OffsetDateTime updatedAt, UUID updatedBy) {
+        return springDataSupportedLanguageRepository.updateMutableFields(
+            id,
+            code,
+            codeProvided,
+            name,
+            nameProvided,
+            description,
+            descriptionProvided,
+            isActive,
+            isActiveProvided,
+            updatedAt,
+            updatedBy
+        );
     }
 
     @Override
@@ -66,6 +112,13 @@ public class SupportedLanguageRepositoryImpl implements SupportedLanguageReposit
         return springDataSupportedLanguageRepository.existsByIdAndIsActive(id, isActive);
     }
 
+    private static String toSearchPattern(String search) {
+        if (search == null || search.isBlank()) {
+            return null;
+        }
+        return "%" + search.toLowerCase() + "%";
+    }
+    
     @Override
     public List<SupportedLanguage> findByIdIn(Collection<UUID> ids) {
         return springDataSupportedLanguageRepository.findByIdIn(ids)

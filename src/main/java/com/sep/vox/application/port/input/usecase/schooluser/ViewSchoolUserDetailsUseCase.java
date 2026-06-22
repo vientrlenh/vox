@@ -40,7 +40,7 @@ public class ViewSchoolUserDetailsUseCase implements IUseCase<ViewSchoolUserDeta
             throw new UnauthorizedException("Trạng thái người dùng không hợp lệ");
         }
 
-        if (!userContextPort.isSystemAdmin() && !schoolUserRepository.existsBySchoolIdAndUserId(callerId, input.schoolId())) {
+        if (!userContextPort.isSystemAdmin() && !schoolUserRepository.existsBySchoolIdAndUserId(input.schoolId(), callerId)) {
             throw new ForbiddenException("Quyền truy cập không hợp lệ");
         }
 

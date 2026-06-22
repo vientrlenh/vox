@@ -36,6 +36,7 @@ public class FileProcessingService implements FileProcessingPort {
         validate(file, type);
 
         var extension = extensionOf(file.fileName());
+        validateMagicBytes(extension, file.content());
         var table = switch (extension) {
             case "xlsx", "xls" -> parseExcel(file.fileName(), file.content());
             case "csv" -> parseCsv(file.fileName(), file.content());
@@ -61,6 +62,37 @@ public class FileProcessingService implements FileProcessingPort {
         }
         if (file.content() == null || file.content().length == 0 || file.size() <= 0) {
             throw new IllegalArgumentException("File import không được để trống");
+        }
+    }
+
+    private void validateMagicBytes(String extension, byte[] content) {
+        if (content.length < 4) {
+            return; // để parser tự báo lỗi định dạng
+        }
+        var isZipMagic = content[0] == 0x50 && content[1] == 0x4B
+            && content[2] == 0x03 && content[3] == 0x04;
+        var isOle2Magic = content.length >= 8
+            && (content[0] & 0xFF) == 0xD0 && (content[1] & 0xFF) == 0xCF
+            && (content[2] & 0xFF) == 0x11 && (content[3] & 0xFF) == 0xE0;
+        switch (extension) {
+            case "xlsx" -> {
+                if (!isZipMagic) {
+                    throw new IllegalArgumentException("Nội dung file không đúng định dạng xlsx");
+                }
+            }
+            case "xls" -> {
+                if (!isOle2Magic) {
+                    throw new IllegalArgumentException("Nội dung file không đúng định dạng xls");
+                }
+            }
+            case "csv" -> {
+                if (isZipMagic || isOle2Magic) {
+                    throw new IllegalArgumentException("File CSV chứa nội dung nhị phân không hợp lệ");
+                }
+            }
+            default -> {
+                // định dạng khác sẽ bị từ chối ở bước switch parse
+            }
         }
     }
 

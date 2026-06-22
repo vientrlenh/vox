@@ -98,16 +98,6 @@ type SchoolGrade {
     updatedAt: String
 }
 
-type SupportedLanguage {
-    id: ID!
-    code: String
-    name: String
-    description: String
-    isActive: Boolean!
-    createdAt: String
-    updatedAt: String
-}
-
 type SchoolClassPage {
     content: [SchoolClass!]!
     page: Int!
@@ -123,7 +113,8 @@ type SchoolClassUser {
     isActive: Boolean!
     joinedAt: String
     leftAt: String
-    users(page: Int! = 1, size: Int! = 10): [User!]
+    assignedBy: ID
+    user: User
 }
 
 type SchoolClassUserPage {
@@ -178,7 +169,7 @@ extend type Query {
     schools(page: Int = 1, size: Int = 20): SchoolPage!
     school(id: ID!): School
     schoolClasses(page: Int = 1, size: Int = 20, search: String, status: String, languageId: ID, schoolGradeId: ID): SchoolClassPage!
-    schoolUsersBySchool(schoolId: ID!, page: Int! = 1, size: Int! = 20): SchoolUserPage!
+    schoolUsersBySchool(schoolId: ID!, page: Int! = 1, size: Int! = 20, search: String, role: String, status: String): SchoolUserPage!
     schoolUser(schoolId: ID!, userId: ID!): SchoolUser
     schoolClass(id: ID!): SchoolClass
     schoolClassUsers(schoolClassId: ID!, page: Int = 1, size: Int = 20): SchoolClassUserPage!

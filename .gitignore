@@ -39,3 +39,7 @@ out/
 
 ### .env file ###
 .env
+
+### AI agent coordination (Claude/Codex/Antigravity bridge) ###
+AI/
+CLAUDE.md

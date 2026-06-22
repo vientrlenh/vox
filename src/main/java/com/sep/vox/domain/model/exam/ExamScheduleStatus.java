@@ -5,5 +5,6 @@ public enum ExamScheduleStatus {
     PUBLISHED, 
     COMPLETED, 
     MOVED, 
+    CANCELLED,
     DELETED
 }

@@ -13,5 +13,5 @@ public class ExamItemScore {
     private BigDecimal itemScore;
     private String gradedByModel;
     private OffsetDateTime gradedAt;
-    private ExamScoreStatus status;
+    private ExamItemScoreStatus status;
 }

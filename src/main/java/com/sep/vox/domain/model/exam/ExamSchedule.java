@@ -6,6 +6,7 @@ import java.util.UUID;
 public class ExamSchedule {
     private UUID id;
     private UUID examId;
+    private UUID schoolRoomId;
     private OffsetDateTime startDate;
     private OffsetDateTime endDate;
     private ExamScheduleStatus status;

@@ -154,6 +154,17 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
     }
 
     @Override
+    public boolean existsBySchoolGradeId(UUID schoolGradeId) {
+        return springDataSchoolClassRepository.existsBySchoolGradeId(schoolGradeId);
+    }
+
+    @Override
+    public boolean existsBySchoolIdAndStatus(UUID schoolId, String status) {
+        return springDataSchoolClassRepository.existsBySchoolIdAndStatus(schoolId, status);
+    }
+
+
+    @Override
     public List<SchoolClass> findAllById(List<UUID> schoolIds) {
         return springDataSchoolClassRepository.findAllById(schoolIds)
                 .stream()

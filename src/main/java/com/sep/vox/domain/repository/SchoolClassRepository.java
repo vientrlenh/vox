@@ -28,4 +28,8 @@ public interface SchoolClassRepository {
     List<SchoolClass> findBySchoolIdIn(Collection<UUID> schoolIds, int page, int size);
 
     List<SchoolClass>findAllById(List<UUID> schoolIds);
+
+    boolean existsBySchoolGradeId(UUID schoolGradeId);
+
+    boolean existsBySchoolIdAndStatus(UUID schoolId, String status);
 }

@@ -21,6 +21,13 @@ public class GlobalExceptionResolver extends DataFetcherExceptionResolverAdapter
 
         ex.printStackTrace();
 
+//        Throwable rootCause = ex.getCause();
+//
+//        if (!(rootCause instanceof NotFoundException || rootCause instanceof ForbiddenException || rootCause instanceof UnauthorizedException || rootCause instanceof DuplicatedException || rootCause instanceof IllegalArgumentException || rootCause instanceof IllegalStateException)) {
+//            ex.printStackTrace();
+//        }
+
+
         if (ex instanceof NotFoundException) {
             return GraphQLError.newError()
                 .errorType(ErrorType.NOT_FOUND)
@@ -75,6 +82,7 @@ public class GlobalExceptionResolver extends DataFetcherExceptionResolverAdapter
                     .build();
         }
 
+        // ĐÃ THÊM: Xử lý ForbiddenException bạn ném ra từ UseCase
         if (ex instanceof ForbiddenException) {
             return GraphQLError.newError()
                     .errorType(ErrorType.FORBIDDEN)
@@ -83,6 +91,8 @@ public class GlobalExceptionResolver extends DataFetcherExceptionResolverAdapter
                     .location(env.getField().getSourceLocation())
                     .build();
         }
+
+
 
         return GraphQLError.newError()
             .errorType(ErrorType.INTERNAL_ERROR)

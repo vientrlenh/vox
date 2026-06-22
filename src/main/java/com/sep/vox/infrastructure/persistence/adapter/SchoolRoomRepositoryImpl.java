@@ -1,8 +1,15 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.infrastructure.persistence.entity.SchoolRoomJpaEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.school.SchoolRoom;
@@ -22,7 +29,7 @@ public class SchoolRoomRepositoryImpl implements SchoolRoomRepository {
     @Override
     public Optional<SchoolRoom> findById(UUID id) {
         return springDataSchoolRoomRepository.findById(id)
-            .map(SchoolRoomMapper::toDomain);
+                .map(SchoolRoomMapper::toDomain);
     }
 
     @Override
@@ -31,5 +38,39 @@ public class SchoolRoomRepositoryImpl implements SchoolRoomRepository {
         var saved = springDataSchoolRoomRepository.save(entity);
         return SchoolRoomMapper.toDomain(saved);
     }
-    
+
+    @Override
+    public boolean existsBySchoolIdAndCode(UUID schoolId, String code) {
+        return springDataSchoolRoomRepository.existsBySchoolIdAndCode(schoolId, code);
+    }
+
+
+    @Override
+    public PageResult<SchoolRoom> findAllBySchoolId(UUID schoolId, com.sep.vox.domain.common.PageRequest pageRequest) {
+        Pageable springPageable = PageRequest.of(pageRequest.page(), pageRequest.size());
+
+        Page<SchoolRoomJpaEntity> entityPage = springDataSchoolRoomRepository.findBySchoolId(schoolId, springPageable);
+
+        List<SchoolRoom> domainContent = entityPage.getContent().stream()
+                .map(SchoolRoomMapper::toDomain)
+                .toList();
+
+        return new PageResult<>(
+                domainContent,
+                entityPage.getNumber(),
+                entityPage.getSize(),
+                entityPage.getTotalElements(),
+                entityPage.getTotalPages()
+        );
+    }
+
+    @Override
+    public boolean existsBySchoolIdAndIsActive(UUID schoolId, boolean isActive) {
+        return springDataSchoolRoomRepository.existsBySchoolIdAndIsActive(schoolId, isActive);
+    }
+
+    @Override
+    public int updateSchoolRoomAtomic(UUID id, String name, String description, OffsetDateTime now, UUID updatedBy) {
+        return springDataSchoolRoomRepository.updateSchoolRoomAtomic(id, name, description, now, updatedBy);
+    }
 }

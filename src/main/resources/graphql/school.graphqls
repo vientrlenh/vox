@@ -1,18 +1,52 @@
+# ==================================================================
+# School
+# ==================================================================
+type SchoolResponse {
+    id: ID!
+    schoolCode: String!
+    name: String!
+    description: String
+    contactPhone: String!
+    contactEmail: String!
+    schoolDomain: String!
+    address: String!
+    studentCount: Int!
+    isActive: Boolean!
+    createdAt: String
+    createdBy: String
+    updatedAt: String
+    updateBy: String
+}
+
+
 type School {
     id: ID!
     code: String!
     name: String
     description: String
-    contactPhone: String 
+    contactPhone: String
     contactEmail: String
-    domain: String 
-    address: String 
-    studentCount: Int 
+    domain: String
+    address: String
+    studentCount: Int
     isActive: Boolean
-    createdAt: String 
+    createdAt: String
     updatedAt: String
     classes(page: Int = 1, size: Int = 10): [SchoolClass!]
     users(page: Int = 1, size: Int = 10): [SchoolUser!]
+}
+
+
+
+# Đổi tên cho đồng bộ với GraphQL (dùng Input thay vì Request)
+input UpdateSchoolInput {
+    name: String
+    description: String
+    contactPhone: String
+    contactEmail: String
+    domain: String
+    address: String
+    studentCount: Int
 }
 
 type SchoolPage {
@@ -22,6 +56,45 @@ type SchoolPage {
     totalElements: Int!
     totalPages: Int!
 }
+
+
+extend type Mutation {
+    updateSchoolRoom(id: ID!, input: UpdateSchoolRoomInput!): ID!
+    updateSchool(id: ID!, input: UpdateSchoolInput!): ID!
+}
+
+
+
+# ==================================================================
+# School Room
+# ==================================================================
+type SchoolRoomDto {
+    id: ID!
+    schoolId: ID!
+    code: String!
+    name: String!
+    description: String
+    isActive: Boolean!
+    createdAt: String
+    createdBy: String
+    updatedAt: String
+    updateBy: String
+}
+
+input UpdateSchoolRoomInput {
+    name: String
+    description: String
+}
+
+type SchoolRoomPageResult {
+    totalElements: Int!
+    totalPages: Int!
+    page: Int!
+    size: Int!
+    content: [SchoolRoomDto!]!
+}
+
+#==========SCHOOL CLASS=========
 
 
 type SchoolClass {
@@ -71,6 +144,7 @@ type SchoolClassPage {
     totalPages: Int!
 }
 
+#===============SCHOOL USER============
 type SchoolClassUser {
     id: ID!
     userId: ID!
@@ -128,6 +202,8 @@ type SchoolUserPage {
 }
 
 extend type Query {
+    schoolRoom(id: ID!): SchoolRoomDto
+    schoolRooms(schoolId: ID!, page: Int, size: Int): SchoolRoomPageResult
     schools(page: Int = 1, size: Int = 20): SchoolPage!
     school(id: ID!): School
     schoolClasses(page: Int = 1, size: Int = 20, search: String, status: String, languageId: ID, schoolGradeId: ID): SchoolClassPage!
@@ -140,4 +216,42 @@ extend type Query {
 extend type Mutation {
     updateSchoolClass(id: ID!, input: UpdateSchoolClassInput!): UpdateSchoolClassResponse!
     updateSchoolUser(schoolId: ID!, userId: ID!, input: UpdateSchoolUserInput!): UpdateSchoolUserResponse!
+}
+
+#================ SCHOOL GRADE =============
+input UpdateSchoolGradeInput {
+
+    name: String
+    description: String
+    startDate: String
+    endDate: String
+}
+
+extend type Mutation {
+    # Nhả về ID của Grade sau khi cập nhật thành công
+    updateSchoolGrade(id: ID!, input: UpdateSchoolGradeInput!): ID!
+}
+
+type SchoolGradeDto {
+    id: ID!
+    schoolId: ID!
+    code: String!
+    name: String!
+    description: String
+    startDate: String!
+    endDate: String!
+    status: String!
+}
+
+type SchoolGradePageResult {
+    totalElements: Int!
+    totalPages: Int!
+    currentPage: Int!
+    pageSize: Int!
+    content: [SchoolGradeDto!]!
+}
+
+extend type Query {
+    schoolGrades(schoolId: ID!, page: Int, size: Int): SchoolGradePageResult
+    schoolGrade(id: ID!): SchoolGradeDto
 }

@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -68,10 +69,35 @@ public class SchoolRepositoryImpl implements SchoolRepository {
         return springDataSchoolRepository.existsById(id);
     }
 
+
     @Override
     public boolean existsByDomain(String domain) {
         return springDataSchoolRepository.existsByDomain(domain);
     }
+
+
+
+    @Override
+    public boolean existsByDomainAndIdNot(String domain, UUID id) {
+        return springDataSchoolRepository.existsByDomainAndIdNot(domain, id);
+    }
+
+    @Override
+    public boolean existsByContactEmailAndIdNot(String email, UUID id) {
+        return springDataSchoolRepository.existsByContactEmailAndIdNot(email, id);
+    }
+
+    @Override
+    public boolean existsByContactPhoneAndIdNot(String phone, UUID id) {
+        return springDataSchoolRepository.existsByContactPhoneAndIdNot(phone, id);
+    }
+
+    @Override
+    public void deleteById(UUID id) {
+        springDataSchoolRepository.deleteById(id);
+    }
+
+
 
     @Override
     public List<School> findByIdIn(Collection<UUID> ids, int page, int size) {
@@ -82,6 +108,15 @@ public class SchoolRepositoryImpl implements SchoolRepository {
     @Override
     public boolean existsByIdAndIsActiveTrue(UUID schoolId) {
        return springDataSchoolRepository.existsByIdAndIsActiveTrue(schoolId);
+    }
+
+    @Override
+    public int updateSchoolAtomic(UUID id, String name, String description, String phone,
+                                  String email, String domain, String address, Integer studentCount,
+                                  OffsetDateTime now, UUID updatedBy) {
+        return springDataSchoolRepository.updateSchoolAtomic(
+                id, name, description, phone, email, domain, address, studentCount, now, updatedBy
+        );
     }
 
     @Override

@@ -109,11 +109,17 @@ public class SchoolController {
 
     @QueryMapping(name = "schoolUsersBySchool")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public PageResult<SchoolUserDto> schoolUsersBySchool(@Argument(name = "schoolId") UUID schoolId, @Argument(name = "page") Integer page, @Argument(name = "size") Integer size) {
+    public PageResult<SchoolUserDto> schoolUsersBySchool(
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size,
+            @Argument(name = "search") String search,
+            @Argument(name = "role") String role,
+            @Argument(name = "status") String status) {
         if (page == null || size == null || page <= 0 || size <= 0) {
             throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
         }
-        return viewSchoolUsersBySchoolUseCase.execute(new ViewSchoolUsersBySchoolQuery(schoolId, page, size));
+        return viewSchoolUsersBySchoolUseCase.execute(new ViewSchoolUsersBySchoolQuery(schoolId, page, size, search, role, status));
     }
 
     @QueryMapping(name = "schoolUser")

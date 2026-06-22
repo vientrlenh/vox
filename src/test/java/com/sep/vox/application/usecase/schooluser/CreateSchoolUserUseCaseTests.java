@@ -131,7 +131,7 @@ public class CreateSchoolUserUseCaseTests {
     }
 
     @Test
-    void create_teacher_should_not_save_school_user() {
+    void create_teacher_should_save_school_user() {
         var caller = callerUser(callerId, schoolId);
         var savedUser = savedUser(schoolId);
         var teacherRole = role("TEACHER");
@@ -150,7 +150,8 @@ public class CreateSchoolUserUseCaseTests {
         var result = createSchoolUserUseCase.execute(command);
 
         assertThat(result.id()).isEqualTo(savedUser.getId());
-        verify(schoolUserRepository, never()).save(any(SchoolUser.class));
+        // Giáo viên giờ cũng được gắn vào trường qua school_users (không có thời hạn)
+        verify(schoolUserRepository).save(any(SchoolUser.class));
         verify(eventPublisherPort).publish(any(SchoolUserPasswordSetUpEmailRequestedEvent.class));
     }
 

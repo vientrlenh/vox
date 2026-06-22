@@ -122,7 +122,7 @@ extend type Query {
     schools(page: Int = 1, size: Int = 20): SchoolPage!
     school(id: ID!): School
     schoolClasses(page: Int = 1, size: Int = 20, search: String, status: String, languageId: ID, schoolGradeId: ID): SchoolClassPage!
-    schoolUsersBySchool(schoolId: ID!, page: Int! = 1, size: Int! = 20): SchoolUserPage!
+    schoolUsersBySchool(schoolId: ID!, page: Int! = 1, size: Int! = 20, search: String, role: String, status: String): SchoolUserPage!
     schoolUser(schoolId: ID!, userId: ID!): SchoolUser
     schoolClass(id: ID!): SchoolClass
     schoolClassUsers(schoolClassId: ID!, page: Int = 1, size: Int = 20): SchoolClassUserPage!

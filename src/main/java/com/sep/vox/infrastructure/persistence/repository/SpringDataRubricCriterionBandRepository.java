@@ -2,6 +2,7 @@ package com.sep.vox.infrastructure.persistence.repository;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -41,4 +42,7 @@ public interface SpringDataRubricCriterionBandRepository extends JpaRepository<R
     );
 
     Page<RubricCriterionBandJpaEntity> findAllByCriterionId(UUID criterionId, Pageable pageable);
+
+    @Query("SELECT b FROM RubricCriterionBandJpaEntity b WHERE b.criterionId IN :criterionIds")
+    List<RubricCriterionBandJpaEntity> findByCriterionIdIn(@Param("criterionIds") List<UUID> criterionIds);
 }

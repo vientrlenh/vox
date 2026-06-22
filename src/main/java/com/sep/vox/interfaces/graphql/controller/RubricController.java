@@ -3,6 +3,8 @@ package com.sep.vox.interfaces.graphql.controller;
 
 import com.sep.vox.application.port.input.query.*;
 import com.sep.vox.application.port.input.query.key.RubricCriteriaKey;
+import com.sep.vox.application.port.input.query.key.RubricCriterionBandsKey;
+import com.sep.vox.application.port.input.query.key.RubricResultBandsKey;
 import com.sep.vox.application.port.input.query.key.RubricVersionsKey;
 import com.sep.vox.application.port.input.usecase.rubricschool.*;
 import com.sep.vox.application.port.input.usecase.rubricsystem.*;
@@ -309,7 +311,7 @@ public class RubricController {
         return viewSystemRubricVersionsUseCase.execute(query);
     }
 
-    // Lấy các tiêu chí(rubric criteria của rubric version
+    // Lấy các tiêu chí(rubric criterions của rubric version
     @SchemaMapping(typeName = "RubricVersion", field = "criteria")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public CompletableFuture<PageResult<RubricCriterionDto>> getRubricCriteria(
@@ -329,6 +331,27 @@ public class RubricController {
         }
 
         return loader.load(new RubricCriteriaKey(version.id(), validPage, validSize));
+    }
+
+
+    // Lấy Rubric ResultBand từ rubric version
+    @SchemaMapping(typeName = "RubricVersion", field = "resultBands")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
+    public CompletableFuture<PageResult<RubricResultBandDto>> getRubricResultBands(
+            RubricVersionDto version,
+            @Argument Integer page,
+            @Argument Integer size,
+            DataFetchingEnvironment env) {
+
+        int validPage = (page != null && page > 0) ? page - 1 : 0;
+        int validSize = (size != null && size > 0) ? size : 10;
+
+        DataLoader<RubricResultBandsKey, PageResult<RubricResultBandDto>> loader = env.getDataLoader("rubricResultBandsDataLoader");
+        if (loader == null) {
+            throw new IllegalStateException("Không tìm thấy DataLoader rubricResultBandsDataLoader.");
+        }
+
+        return loader.load(new RubricResultBandsKey(version.id(), validPage, validSize));
     }
 
     //========================== RUBRIC CRITERION =======================
@@ -423,6 +446,26 @@ public class RubricController {
         return viewSchoolRubricCriteriaUseCase.execute(query);
     }
 
+
+    // Lấy điểm đánh giá tiêu chí của rubric criterion
+    @SchemaMapping(typeName = "RubricCriterion", field = "bands")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
+    public CompletableFuture<PageResult<RubricCriterionBandDto>> getRubricCriterionBands(
+            RubricCriterionDto criterion,
+            @Argument Integer page,
+            @Argument Integer size,
+            DataFetchingEnvironment env) {
+
+        int validPage = (page != null && page > 0) ? page - 1 : 0;
+        int validSize = (size != null && size > 0) ? size : 10;
+
+        DataLoader<RubricCriterionBandsKey, PageResult<RubricCriterionBandDto>> loader = env.getDataLoader("rubricCriterionBandsDataLoader");
+        if (loader == null) {
+            throw new IllegalStateException("Không tìm thấy DataLoader rubricCriterionBandsDataLoader.");
+        }
+
+        return loader.load(new RubricCriterionBandsKey(criterion.id(), validPage, validSize));
+    }
 
     // ====================RUBRIC CRITERION BAND =====================
     //Update Rubric Criterion band cửa trường

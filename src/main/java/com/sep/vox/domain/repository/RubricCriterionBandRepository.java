@@ -18,4 +18,5 @@ public interface RubricCriterionBandRepository {
     void deleteById(UUID id);
     void updateBandAtomic(UUID id, String code, BigDecimal scoreMin, BigDecimal scoreMax, OffsetDateTime updatedAt, UUID updatedBy);
     PageResult<RubricCriterionBand> findAllByCriterionId(UUID criterionId, int page, int size);
+    List<RubricCriterionBand> findByCriterionIdIn(List<UUID> criterionIds);
 }

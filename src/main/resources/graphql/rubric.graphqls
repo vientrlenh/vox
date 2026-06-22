@@ -82,6 +82,7 @@ type RubricVersion {
     scoringScaleMax: Float!
     totalScoreMethod: String!
     criteria(page: Int = 1, size: Int = 10): RubricCriterionPage!
+    resultBands(page: Int = 1, size: Int = 10): RubricResultBandPage!
 }
 type RubricVersionPage {
     content: [RubricVersion!]!
@@ -105,6 +106,7 @@ type RubricCriterion {
     maxScore: Float!
     order: Int!
     isRequired: Boolean!
+    bands(page: Int = 1, size: Int = 10): RubricCriterionBandPage!
 }
 
 type RubricCriterionPage {

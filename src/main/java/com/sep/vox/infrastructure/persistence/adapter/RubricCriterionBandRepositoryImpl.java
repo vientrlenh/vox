@@ -64,7 +64,7 @@ public class RubricCriterionBandRepositoryImpl implements RubricCriterionBandRep
 
     @Override
     public void updateBandAtomic(UUID id, String code, BigDecimal scoreMin, BigDecimal scoreMax, OffsetDateTime updatedAt, UUID updatedBy) {
-        springDataRubricCriterionBandRepository.updateBandAtomic(id, code, scoreMin, scoreMax,updatedAt, updatedBy);
+        springDataRubricCriterionBandRepository.updateBandAtomic(id, code, scoreMin, scoreMax, updatedAt, updatedBy);
     }
 
     @Override
@@ -85,6 +85,15 @@ public class RubricCriterionBandRepositoryImpl implements RubricCriterionBandRep
                 entityPage.getTotalElements(),
                 entityPage.getTotalPages()
         );
+    }
+
+
+    @Override
+    public List<RubricCriterionBand> findByCriterionIdIn(List<UUID> criterionIds) {
+        return springDataRubricCriterionBandRepository.findByCriterionIdIn(criterionIds)
+                .stream()
+                .map(RubricCriterionBandMapper::toDomain)
+                .toList();
     }
 
 }

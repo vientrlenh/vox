@@ -2,6 +2,7 @@ package com.sep.vox.infrastructure.persistence.repository;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -16,6 +17,9 @@ import org.springframework.data.repository.query.Param;
 public interface SpringDataRubricResultBandRepository extends JpaRepository<RubricResultBandJpaEntity, UUID> {
 
     void deleteByRubricVersionId(UUID rubricVersionId);
+
+    @Query("SELECT r FROM RubricResultBandJpaEntity r WHERE r.rubricVersionId IN :versionIds")
+    List<RubricResultBandJpaEntity> findByRubricVersionIdIn(@Param("versionIds") List<UUID> versionIds);
 
     @Modifying
     @Query("""

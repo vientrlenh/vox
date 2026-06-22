@@ -120,7 +120,9 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
                 SchoolUser.create(savedUser.getId(), command.schoolId(), startDate, endDate)
             );
         } else {
-            var startDate = command.startDate().atStartOfDay(ZoneOffset.UTC).toOffsetDateTime();
+            var startDate = command.startDate() != null
+                ? command.startDate().atStartOfDay(ZoneOffset.UTC).toOffsetDateTime()
+                : now;
             schoolUserRepository.save(
                 SchoolUser.create(savedUser.getId(), command.schoolId(), startDate, null)
             );

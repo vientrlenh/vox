@@ -39,6 +39,7 @@ import com.sep.vox.domain.model.importfile.ImportType;
 import com.sep.vox.domain.model.passwordsetuptoken.PasswordSetUpToken;
 import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.Role;
+import com.sep.vox.domain.model.user.SchoolRoleCodes;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserRole;
 import com.sep.vox.domain.repository.ImportRowRepository;
@@ -231,6 +232,8 @@ public class AcceptSchoolUserImportUseCase
             var startOffset = parseDate(data.get("startDate")).atStartOfDay(ZoneOffset.UTC).toOffsetDateTime();
             var endOffset = parseDate(data.get("endDate")).atStartOfDay(ZoneOffset.UTC).toOffsetDateTime();
             schoolUserRepository.save(SchoolUser.create(savedUser.getId(), schoolId, startOffset, endOffset));
+        } else if (SchoolRoleCodes.TEACHER.equals(role.getCode().value())) {
+            schoolUserRepository.save(SchoolUser.create(savedUser.getId(), schoolId, ts, null));
         }
         var generatedToken = passwordSetUpTokenPort.generateToken();
         passwordSetUpTokenRepository.save(PasswordSetUpToken.create(savedUser.getId(), generatedToken.hashedToken()));
@@ -260,6 +263,8 @@ public class AcceptSchoolUserImportUseCase
             } else {
                 schoolUserRepository.save(SchoolUser.create(existing.getId(), schoolId, startOffset, endOffset));
             }
+        } else if (SchoolRoleCodes.TEACHER.equals(roleCode) && schoolUsersByUserId.get(existing.getId()) == null) {
+            schoolUserRepository.save(SchoolUser.create(existing.getId(), schoolId, ts, null));
         }
         return existing.getId();
     }
@@ -403,8 +408,12 @@ public class AcceptSchoolUserImportUseCase
         }
 
         var roleCode = data.get("roleCode");
-        if (isPresent(roleCode) && rolesByCode.get(roleCode) == null) {
-            errors.add(error("roleCode", "Không tìm thấy vai trò"));
+        if (isPresent(roleCode)) {
+            if (!SchoolRoleCodes.ALL.contains(roleCode)) {
+                errors.add(error("roleCode", "Vai trò không hợp lệ, chỉ chấp nhận STUDENT hoặc TEACHER"));
+            } else if (rolesByCode.get(roleCode) == null) {
+                errors.add(error("roleCode", "Không tìm thấy vai trò"));
+            }
         }
 
         validateDateField(errors, data, "dateOfBirth", "Ngày sinh không hợp lệ");

@@ -137,6 +137,35 @@ class AcceptSchoolUserImportUseCaseTests {
     }
 
     @Test
+    void execute_should_create_school_user_for_new_teacher() {
+        var currentUserId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var role = role("TEACHER");
+        var savedUser = user(UUID.randomUUID(), "teacher@example.com");
+
+        mockCurrentUserAndSchool(currentUserId, schoolId);
+        when(importSessionRepository.findById(sessionId)).thenReturn(Optional.of(session(sessionId, schoolId)));
+        when(importRowRepository.findBySessionIdOrderByRowNumber(sessionId))
+            .thenReturn(List.of(row(sessionId, 1L, teacherData("teacher@example.com"))));
+        when(userRepository.findByEmailIn(Set.of("teacher@example.com"))).thenReturn(List.of());
+        when(roleRepository.findByCodeIn(Set.of("TEACHER"))).thenReturn(List.of(role));
+        when(schoolUserRepository.findByUserIdIn(any())).thenReturn(List.of());
+        when(userRepository.save(any())).thenReturn(savedUser);
+        when(userRoleRepository.save(any(UserRole.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(schoolUserRepository.save(any(SchoolUser.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(passwordSetUpTokenPort.generateToken()).thenReturn(new GeneratedPasswordSetUpToken("rawToken", "hashedToken"));
+        when(passwordSetUpTokenRepository.save(any(PasswordSetUpToken.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        var response = useCase.execute(command(schoolId, sessionId));
+
+        assertThat(response.importedRows()).isEqualTo(1L);
+        // Giáo viên mới cũng được gắn vào trường qua school_users (không thời hạn)
+        verify(schoolUserRepository).save(any(SchoolUser.class));
+        verify(eventPublisherPort).publish(any());
+    }
+
+    @Test
     void execute_should_update_existing_user_profile_when_email_exists() {
         var currentUserId = UUID.randomUUID();
         var schoolId = UUID.randomUUID();
@@ -153,6 +182,7 @@ class AcceptSchoolUserImportUseCaseTests {
         when(roleRepository.findByCodeIn(Set.of("TEACHER"))).thenReturn(List.of(role));
         when(schoolUserRepository.findByUserIdIn(Set.of(existingUserId))).thenReturn(List.of());
         when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(schoolUserRepository.save(any(SchoolUser.class))).thenAnswer(inv -> inv.getArgument(0));
 
         var response = useCase.execute(command(schoolId, sessionId));
 
@@ -161,7 +191,8 @@ class AcceptSchoolUserImportUseCaseTests {
         assertThat(response.invalidRows()).isZero();
         verify(userRepository).save(existingUser);
         verify(eventPublisherPort, never()).publish(any());
-        verify(schoolUserRepository, never()).save(any(SchoolUser.class));
+        // Giáo viên chưa có trong trường giờ được gắn vào school_users (không thời hạn)
+        verify(schoolUserRepository).save(any(SchoolUser.class));
     }
 
     @Test
@@ -259,6 +290,40 @@ class AcceptSchoolUserImportUseCaseTests {
         assertThat(rows.get(0).getStatus()).isEqualTo(ImportRowStatus.IMPORTED);
         assertThat(rows.get(1).getStatus()).isEqualTo(ImportRowStatus.INVALID);
         assertThat(rows.get(1).getErrorsJson()).contains("trùng");
+    }
+
+    @Test
+    void execute_should_mark_invalid_when_role_not_allowed() {
+        var currentUserId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var systemAdminRole = role("SYSTEM_ADMIN");
+        // Role tồn tại trong DB nhưng KHÔNG thuộc {STUDENT, TEACHER} -> leo thang đặc quyền phải bị chặn
+        var data = Map.of(
+            "Email", "admin@example.com", "Họ tên", "Kẻ Gian", "Vai trò", "SYSTEM_ADMIN",
+            "Điện thoại", "0901234599", "Ngày sinh", "1990-01-01",
+            "Ngày bắt đầu", "2025-09-01", "Ngày kết thúc", "2026-06-30",
+            "Địa chỉ", "Hà Nội"
+        );
+        var rows = List.of(row(sessionId, 1L, data));
+
+        mockCurrentUserAndSchool(currentUserId, schoolId);
+        when(importSessionRepository.findById(sessionId)).thenReturn(Optional.of(session(sessionId, schoolId)));
+        when(importRowRepository.findBySessionIdOrderByRowNumber(sessionId)).thenReturn(rows);
+        when(userRepository.findByEmailIn(Set.of("admin@example.com"))).thenReturn(List.of());
+        when(roleRepository.findByCodeIn(Set.of("SYSTEM_ADMIN"))).thenReturn(List.of(systemAdminRole));
+        when(schoolUserRepository.findByUserIdIn(any())).thenReturn(List.of());
+
+        var response = useCase.execute(command(schoolId, sessionId));
+
+        assertThat(response.importedRows()).isZero();
+        assertThat(response.invalidRows()).isEqualTo(1L);
+        assertThat(rows.get(0).getStatus()).isEqualTo(ImportRowStatus.INVALID);
+        assertThat(rows.get(0).getErrorsJson()).contains("không hợp lệ");
+        verify(userRepository, never()).save(any());
+        verify(userRoleRepository, never()).save(any(UserRole.class));
+        verify(schoolUserRepository, never()).save(any(SchoolUser.class));
+        verify(eventPublisherPort, never()).publish(any());
     }
 
     @Test

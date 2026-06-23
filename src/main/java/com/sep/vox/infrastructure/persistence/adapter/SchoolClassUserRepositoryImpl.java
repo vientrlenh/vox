@@ -71,4 +71,18 @@ public class SchoolClassUserRepositoryImpl implements SchoolClassUserRepository 
         var saved = springDataSchoolClassUserRepository.save(entity);
         return SchoolClassUserMapper.toDomain(saved);
     }
+
+    @Override
+    public List<SchoolClassUser> saveAll(Collection<SchoolClassUser> schoolClassUsers) {
+        if (schoolClassUsers == null || schoolClassUsers.isEmpty()) {
+            return List.of();
+        }
+        var entities = schoolClassUsers.stream()
+            .map(SchoolClassUserMapper::toJpa)
+            .toList();
+        var saved = springDataSchoolClassUserRepository.saveAll(entities);
+        return saved.stream()
+            .map(SchoolClassUserMapper::toDomain)
+            .toList();
+    }
 }

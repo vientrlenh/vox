@@ -19,6 +19,7 @@ public interface UserRepository {
     Optional<User> findByEmailAndStatus(String email, UserStatus status);
     Optional<User> findByIdAndStatus(UUID id, UserStatus status);
     User save(User user);
+    User saveAndFlush(User user);
     boolean existsByEmail(String email);
     boolean existsByEmailAndStatus(String email, UserStatus status);
     int changeUserPassword(String email, String passwordHash);

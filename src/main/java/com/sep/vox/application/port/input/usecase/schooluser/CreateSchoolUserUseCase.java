@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.schooluser;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 import org.springframework.dao.DataIntegrityViolationException;
@@ -22,14 +23,12 @@ import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserRole;
 import com.sep.vox.domain.model.user.UserStatus;
-import com.sep.vox.domain.repository.RoleRepository;
 import com.sep.vox.domain.repository.PasswordSetUpTokenRepository;
+import com.sep.vox.domain.repository.RoleRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.repository.UserRoleRepository;
-
-import java.time.ZoneOffset;
 
 @Service
 public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand, CreateSchoolUserResponse> {
@@ -119,6 +118,13 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
             var endDate = command.endDate().atStartOfDay(ZoneOffset.UTC).toOffsetDateTime();
             schoolUserRepository.save(
                 SchoolUser.create(savedUser.getId(), command.schoolId(), startDate, endDate)
+            );
+        } else {
+            var startDate = command.startDate() != null
+                ? command.startDate().atStartOfDay(ZoneOffset.UTC).toOffsetDateTime()
+                : now;
+            schoolUserRepository.save(
+                SchoolUser.create(savedUser.getId(), command.schoolId(), startDate, null)
             );
         }
 

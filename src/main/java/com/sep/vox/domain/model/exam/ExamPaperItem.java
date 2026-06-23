@@ -1,11 +1,13 @@
 package com.sep.vox.domain.model.exam;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 public class ExamPaperItem {
     private UUID id;
     private UUID sectionId;
+    private UUID paperId;
     private UUID questionId;
     private int order;
-    private int weight;
+    private BigDecimal weight;
 }

@@ -49,8 +49,8 @@ public final class RegisterFormMapper {
         return new RegisterFormJpaEntity(
             registerForm.getId(), 
             registerForm.getSchoolDirectoryId(), 
-            registerForm.getSchoolName(), 
             valueOf(registerForm.getSchoolDomain()), 
+            registerForm.getSchoolName(), 
             registerForm.getSchoolDistrict(), 
             registerForm.getSchoolProvince(), 
             registerForm.getSchoolAddress(), 

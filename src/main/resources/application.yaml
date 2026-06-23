@@ -126,6 +126,9 @@ logging:
     org:
       springframework:
         security: DEBUG
+        kafka: WARN
+      apache: 
+        kafka: WARN
 
 server:
   port: 8080

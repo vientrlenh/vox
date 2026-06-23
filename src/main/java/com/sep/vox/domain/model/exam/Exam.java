@@ -13,7 +13,7 @@ public class Exam {
     private ExamStatus status;
     private OffsetDateTime openAt;
     private OffsetDateTime closeAt;
-    private UUID accessmentPolicyId;
+    private UUID assessmentPolicyId;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
     private UUID createdBy;

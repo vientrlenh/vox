@@ -49,4 +49,39 @@ public interface SpringDataSchoolUserRepository extends JpaRepository<SchoolUser
     Page<SchoolUserJpaEntity> findBySchoolId(UUID schoolId, Pageable pageable);
     Optional<SchoolUserJpaEntity> findBySchoolIdAndUserId(UUID schoolId, UUID userId);
     boolean existsBySchoolIdAndUserId(UUID schoolId, UUID userId);
+
+    @Query(value = """
+        SELECT su FROM SchoolUserJpaEntity su
+        JOIN UserJpaEntity u ON u.id = su.userId
+        WHERE su.schoolId = :schoolId
+            AND (:search IS NULL OR LOWER(u.fullName) LIKE :search OR LOWER(u.email) LIKE :search OR LOWER(u.phone) LIKE :search)
+            AND ((:status IS NULL AND u.status <> 'DISABLED') OR u.status = :status)
+            AND EXISTS (
+                SELECT 1 FROM UserRoleJpaEntity ur
+                JOIN RoleJpaEntity r ON r.id = ur.roleId
+                WHERE ur.userId = u.id
+                    AND r.code IN :schoolRoleCodes
+                    AND (:roleCode IS NULL OR r.code = :roleCode))
+        ORDER BY su.id DESC
+        """,
+        countQuery = """
+        SELECT COUNT(su) FROM SchoolUserJpaEntity su
+        JOIN UserJpaEntity u ON u.id = su.userId
+        WHERE su.schoolId = :schoolId
+            AND (:search IS NULL OR LOWER(u.fullName) LIKE :search OR LOWER(u.email) LIKE :search OR LOWER(u.phone) LIKE :search)
+            AND ((:status IS NULL AND u.status <> 'DISABLED') OR u.status = :status)
+            AND EXISTS (
+                SELECT 1 FROM UserRoleJpaEntity ur
+                JOIN RoleJpaEntity r ON r.id = ur.roleId
+                WHERE ur.userId = u.id
+                    AND r.code IN :schoolRoleCodes
+                    AND (:roleCode IS NULL OR r.code = :roleCode))
+        """)
+    Page<SchoolUserJpaEntity> searchBySchoolId(
+        @Param("schoolId") UUID schoolId,
+        @Param("search") String search,
+        @Param("roleCode") String roleCode,
+        @Param("status") String status,
+        @Param("schoolRoleCodes") Collection<String> schoolRoleCodes,
+        Pageable pageable);
 }

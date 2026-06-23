@@ -6,6 +6,7 @@ public record AcceptSchoolClassImportResponse(
     UUID importSessionId,
     long totalRows,
     long importedRows,
+    long updatedRows,
     long invalidRows,
     long skippedRows,
     String status

@@ -134,12 +134,20 @@ public class SchoolGraphQlDataLoaderConfig {
             Mono.fromSupplier(() -> {
                 return supportedLanguageRepository.findByIdIn(languageIds)
                     .stream()
-                    .map(SupportedLanguageDtoMapper::toSupportedLanguageDto)
+                    .map(SupportedLanguageDtoMapper::toDto)
                     .collect(Collectors.toMap(SupportedLanguageDto::id, sl -> sl));
             })
         );
 
         registry.<UUID, UserDto>forName("userBySchoolClassUser")
+        .registerMappedBatchLoader((Set<UUID> userIds, BatchLoaderEnvironment env) ->
+            Mono.fromSupplier(() -> userRepository.findByIdIn(userIds)
+                .stream()
+                .map(UserDtoMapper::toUserDto)
+                .collect(Collectors.toMap(UserDto::id, user -> user)))
+        );
+
+        registry.<UUID, UserDto>forName("userBySchoolUser")
         .registerMappedBatchLoader((Set<UUID> userIds, BatchLoaderEnvironment env) ->
             Mono.fromSupplier(() -> userRepository.findByIdIn(userIds)
                 .stream()

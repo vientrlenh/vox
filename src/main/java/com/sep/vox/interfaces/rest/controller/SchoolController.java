@@ -67,6 +67,10 @@ import com.sep.vox.interfaces.rest.mapper.AcceptSchoolClassUserImportCommandMapp
 import com.sep.vox.interfaces.rest.mapper.CreateSchoolClassUserCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.DeleteSchoolClassUserCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.UpdateSchoolClassUserStatusCommandMapper;
+import com.sep.vox.application.port.input.usecase.schooldirectory.AcceptSchoolDirectoryImportUseCase;
+import com.sep.vox.application.port.input.usecase.schooldirectory.PreviewSchoolDirectoryImportFromFileUseCase;
+import com.sep.vox.application.response.input.importfile.AcceptSchoolDirectoryImportResponse;
+import com.sep.vox.application.response.input.importfile.PreviewSchoolDirectoryImportResponse;
 @RestController
 @RequestMapping("/api/v1/schools")
 public class SchoolController {
@@ -92,8 +96,10 @@ public class SchoolController {
     private final DeleteSchoolGradeUseCase deleteSchoolGradeUseCase;
     private final CreateSchoolGradeLevelUseCase createSchoolGradeLevelUseCase;
     private final DeleteSchoolGradeLevelUseCase deleteSchoolGradeLevelUseCase;
+    private final PreviewSchoolDirectoryImportFromFileUseCase previewSchoolDirectoryImportFromFileUseCase;
+    private final AcceptSchoolDirectoryImportUseCase acceptSchoolDirectoryImportUseCase;
 
-    public SchoolController(CreateSchoolClassUseCase createSchoolClassUseCase, CreateSchoolClassUserUseCase createSchoolClassUserUseCase, DeleteSchoolClassUseCase deleteSchoolClassUseCase, DeleteSchoolClassUserUseCase deleteSchoolClassUserUseCase, UpdateSchoolClassUserStatusUseCase updateSchoolClassUserStatusUseCase, PreviewSchoolClassImportFromFileUseCase previewSchoolClassImportFromFileUseCase, AcceptSchoolClassImportUseCase acceptSchoolClassImportUseCase, CreateSchoolUserUseCase createSchoolUserUseCase, DeleteSchoolUserUseCase deleteSchoolUserUseCase, PreviewSchoolUserImportFromFileUseCase previewSchoolUserImportFromFileUseCase, AcceptSchoolUserImportUseCase acceptSchoolUserImportUseCase, PreviewSchoolClassUserImportFromFileUseCase previewSchoolClassUserImportFromFileUseCase, AcceptSchoolClassUserImportUseCase acceptSchoolClassUserImportUseCase, DeleteSchoolUseCase deleteSchoolUseCase, UpdateSchoolStatusUseCase updateSchoolStatusUseCase, AddSchoolRoomUseCase addSchoolRoomUseCase, DeleteSchoolRoomUseCase deleteSchoolRoomUseCase, CreateSchoolGradeUseCase createSchoolGradeUseCase, DeleteSchoolGradeUseCase deleteSchoolGradeUseCase, CreateSchoolGradeLevelUseCase createSchoolGradeLevelUseCase, DeleteSchoolGradeLevelUseCase deleteSchoolGradeLevelUseCase) {
+    public SchoolController(CreateSchoolClassUseCase createSchoolClassUseCase, CreateSchoolClassUserUseCase createSchoolClassUserUseCase, DeleteSchoolClassUseCase deleteSchoolClassUseCase, DeleteSchoolClassUserUseCase deleteSchoolClassUserUseCase, UpdateSchoolClassUserStatusUseCase updateSchoolClassUserStatusUseCase, PreviewSchoolClassImportFromFileUseCase previewSchoolClassImportFromFileUseCase, AcceptSchoolClassImportUseCase acceptSchoolClassImportUseCase, CreateSchoolUserUseCase createSchoolUserUseCase, DeleteSchoolUserUseCase deleteSchoolUserUseCase, PreviewSchoolUserImportFromFileUseCase previewSchoolUserImportFromFileUseCase, AcceptSchoolUserImportUseCase acceptSchoolUserImportUseCase, PreviewSchoolClassUserImportFromFileUseCase previewSchoolClassUserImportFromFileUseCase, AcceptSchoolClassUserImportUseCase acceptSchoolClassUserImportUseCase, DeleteSchoolUseCase deleteSchoolUseCase, UpdateSchoolStatusUseCase updateSchoolStatusUseCase, AddSchoolRoomUseCase addSchoolRoomUseCase, DeleteSchoolRoomUseCase deleteSchoolRoomUseCase, CreateSchoolGradeUseCase createSchoolGradeUseCase, DeleteSchoolGradeUseCase deleteSchoolGradeUseCase, CreateSchoolGradeLevelUseCase createSchoolGradeLevelUseCase, DeleteSchoolGradeLevelUseCase deleteSchoolGradeLevelUseCase, PreviewSchoolDirectoryImportFromFileUseCase previewSchoolDirectoryImportFromFileUseCase, AcceptSchoolDirectoryImportUseCase acceptSchoolDirectoryImportUseCase) {
         this.createSchoolClassUseCase = createSchoolClassUseCase;
         this.createSchoolClassUserUseCase = createSchoolClassUserUseCase;
         this.deleteSchoolClassUseCase = deleteSchoolClassUseCase;
@@ -115,6 +121,30 @@ public class SchoolController {
         this.deleteSchoolGradeUseCase = deleteSchoolGradeUseCase;
         this.createSchoolGradeLevelUseCase = createSchoolGradeLevelUseCase;
         this.deleteSchoolGradeLevelUseCase = deleteSchoolGradeLevelUseCase;
+        this.previewSchoolDirectoryImportFromFileUseCase = previewSchoolDirectoryImportFromFileUseCase;
+        this.acceptSchoolDirectoryImportUseCase = acceptSchoolDirectoryImportUseCase;
+    }
+
+    @PostMapping(value = "/directories/import/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public ResponseEntity<ApiResponse<PreviewSchoolDirectoryImportResponse>> previewSchoolDirectoryImport(
+            @RequestParam("file") MultipartFile file) throws IOException {
+        var uploadedFile = UploadedFile.upload(file.getOriginalFilename(), file.getContentType(), file.getSize(), file.getBytes());
+        var data = previewSchoolDirectoryImportFromFileUseCase.execute(
+                new PreviewSchoolDirectoryImportFromFileCommand(uploadedFile));
+        var response = ApiResponse.success("Preview import danh mục trường thành công", data);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/directories/import/{sessionId}/accept")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public ResponseEntity<ApiResponse<AcceptSchoolDirectoryImportResponse>> acceptSchoolDirectoryImport(
+            @PathVariable UUID sessionId,
+            @Valid @RequestBody AcceptSchoolDirectoryImportRequest request) {
+        var command = AcceptSchoolDirectoryImportCommandMapper.fromRequest(sessionId, request);
+        var data = acceptSchoolDirectoryImportUseCase.execute(command);
+        var response = ApiResponse.success("Import danh mục trường thành công", data);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/{schoolId}/classes")

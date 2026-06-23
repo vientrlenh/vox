@@ -1,5 +1,7 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -41,5 +43,15 @@ public class SchoolDirectoryRepositoryImpl implements SchoolDirectoryRepository 
     public boolean existsByCode(String code) {
         return springDataSchoolDirectoryRepository.existsByCode(code);
     }
-    
+
+    @Override
+    public List<SchoolDirectory> findByCodeIn(Collection<String> codes) {
+        if (codes == null || codes.isEmpty()) {
+            return List.of();
+        }
+        return springDataSchoolDirectoryRepository.findByCodeIn(codes).stream()
+            .map(SchoolDirectoryMapper::toDomain)
+            .toList();
+    }
+
 }

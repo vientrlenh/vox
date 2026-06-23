@@ -257,6 +257,15 @@ public class FileProcessingService implements FileProcessingPort {
                 "email", List.of("email", "mail", "email address", "địa chỉ email", "dia chi email"),
                 "classCode", List.of("classCode", "class code", "mã lớp", "ma lop", "lớp", "lop")
             );
+            case SCHOOL_DIRECTORY -> Map.of(
+                "code", List.of("code", "schoolCode", "school code", "mã trường", "ma truong", "mã định danh", "ma dinh danh"),
+                "name", List.of("name", "schoolName", "school name", "tên trường", "ten truong"),
+                "provinceCode", List.of("provinceCode", "province code", "mã tỉnh", "ma tinh"),
+                "provinceName", List.of("provinceName", "province", "province name", "tỉnh", "tinh", "tỉnh thành", "tinh thanh"),
+                "districtName", List.of("districtName", "district", "district name", "quận huyện", "quan huyen", "huyện", "huyen"),
+                "domain", List.of("domain", "tên miền", "ten mien", "email domain", "school domain"),
+                "address", List.of("address", "địa chỉ", "dia chi")
+            );
         };
     }
 

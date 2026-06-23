@@ -202,12 +202,48 @@ public class SchoolDirectory {
             districtName, 
             domain, 
             address, 
-            SchoolDirectoryOrigin.USER_SUBMITTED, 
-            false, 
-            now, 
-            now, 
-            createdBy, 
+            SchoolDirectoryOrigin.USER_SUBMITTED,
+            false,
+            now,
+            now,
+            createdBy,
             createdBy
         );
+    }
+
+    public static SchoolDirectory createByImport(String code, String name, String provinceCode, String provinceName, String districtName, String domain, String address, OffsetDateTime now, UUID createdBy) {
+        return new SchoolDirectory(
+            code,
+            name,
+            provinceCode,
+            provinceName,
+            districtName,
+            domain,
+            address,
+            SchoolDirectoryOrigin.OFFICIAL_IMPORT,
+            false,
+            now,
+            now,
+            createdBy,
+            createdBy
+        );
+    }
+
+
+    public void applyImportUpdate(String name, String provinceCode, String provinceName, String districtName, String domain, String address, UUID updatedBy, OffsetDateTime now) {
+        this.name = name;
+        this.provinceCode = provinceCode;
+        this.provinceName = provinceName;
+        this.districtName = districtName;
+        this.domain = domain;
+        this.address = address;
+        this.origin = SchoolDirectoryOrigin.OFFICIAL_IMPORT;
+        this.updatedAt = now;
+        this.updatedBy = updatedBy;
+    }
+
+
+    public boolean isCurated() {
+        return verified || origin == SchoolDirectoryOrigin.ADMIN_CREATED;
     }
 }

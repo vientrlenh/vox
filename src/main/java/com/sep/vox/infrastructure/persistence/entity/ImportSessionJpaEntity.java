@@ -30,7 +30,8 @@ public class ImportSessionJpaEntity {
     @Column(name = "id", nullable = false, updatable = false, insertable = false, columnDefinition = "UUID DEFAULT uuidv7()")
     private UUID id;
 
-    @Column(name = "school_id", nullable = false, updatable = false)
+    // nullable: system-level imports (e.g. SCHOOL_DIRECTORY) are not scoped to a school
+    @Column(name = "school_id", updatable = false)
     private UUID schoolId;
 
     @Column(name = "type", nullable = false, updatable = false, length = 30, check = {

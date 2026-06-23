@@ -36,5 +36,10 @@ public class SchoolDirectoryRepositoryImpl implements SchoolDirectoryRepository 
         var saved = springDataSchoolDirectoryRepository.save(entity);
         return SchoolDirectoryMapper.toDomain(saved);
     }
+
+    @Override
+    public boolean existsByCode(String code) {
+        return springDataSchoolDirectoryRepository.existsByCode(code);
+    }
     
 }

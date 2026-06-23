@@ -7,7 +7,6 @@ import java.util.UUID;
 import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.school.SchoolRoom;
-import com.sep.vox.infrastructure.persistence.entity.SchoolJpaEntity;
 
 public interface SchoolRoomRepository {
     Optional<SchoolRoom> findById(UUID id);

@@ -24,7 +24,6 @@ import com.sep.vox.domain.model.registerform.RegisterFormDocument;
 import com.sep.vox.domain.model.registerform.RegisterFormStatus;
 import com.sep.vox.domain.model.registerform.RegisterFormVerificationMethod;
 import com.sep.vox.domain.model.school.SchoolDirectory;
-import com.sep.vox.domain.model.school.SchoolDirectorySource;
 import com.sep.vox.domain.repository.RegisterFormDocumentRepository;
 import com.sep.vox.domain.repository.RegisterFormRepository;
 import com.sep.vox.domain.repository.SchoolDirectoryRepository;
@@ -123,15 +122,15 @@ public class RegisterFromSchoolDirectoryUseCase implements IUseCase<RegisterFrom
         );
     } 
 
-    private RegisterFormVerificationMethod getVerificationMethod(SchoolDirectory schoolDir, RegisterFromSchoolDirectoryCommand command) {
-        var verifiedDirSource = schoolDir.getSource() == SchoolDirectorySource.ADMIN_VERIFIED;
+    private RegisterFormVerificationMethod getVerificationMethod(SchoolDirectory directory, RegisterFromSchoolDirectoryCommand command) {
+        var verifiedDirOrigin = directory.isVerified();
 
         var email = command.contactEmail();
-        var dirDomain = schoolDir.getDomain();
+        var dirDomain = directory.getDomain();
         var emailDomain = email.substring(email.indexOf("@") + 1);
         var trustedEmailDomain = dirDomain != null && emailDomain.equalsIgnoreCase(dirDomain);
 
-         if (verifiedDirSource && trustedEmailDomain) {
+         if (verifiedDirOrigin && trustedEmailDomain) {
             return RegisterFormVerificationMethod.DOMAIN_OTP;
         }
         return RegisterFormVerificationMethod.DOCUMENT;

@@ -35,11 +35,11 @@ public class RegisterFormJpaEntity {
     @Column(name = "school_directory_id", updatable = false)
     private UUID schoolDirectoryId;
 
-    @Column(name = "school_domain", updatable = false, length = 100)
-    private String schoolDomain;
-
     @Column(name = "school_name", length = 255)
     private String schoolName;
+
+    @Column(name = "school_domain", updatable = false, length = 100)
+    private String schoolDomain;
 
     @Column(name = "school_district", length = 255)
     private String schoolDistrict;
@@ -111,7 +111,7 @@ public class RegisterFormJpaEntity {
     protected RegisterFormJpaEntity() {
     }
 
-    public RegisterFormJpaEntity(UUID id, UUID schoolDirectoryId, String schoolDomain, String schoolName,
+    public RegisterFormJpaEntity(UUID id, UUID schoolDirectoryId, String schoolName, String schoolDomain, 
             String schoolDistrict, String schoolProvince, String schoolAddress, String contactFullName,
             String identityNumber, String contactPhone, String contactEmail, LocalDate dateOfBirth,
             String contactAddress, String postalCode, String position, int studentCount, String verificationMethod,
@@ -119,8 +119,8 @@ public class RegisterFormJpaEntity {
             OffsetDateTime updatedAt, UUID reviewedBy) {
         this.id = id;
         this.schoolDirectoryId = schoolDirectoryId;
-        this.schoolDomain = schoolDomain;
         this.schoolName = schoolName;
+        this.schoolDomain = schoolDomain;
         this.schoolDistrict = schoolDistrict;
         this.schoolProvince = schoolProvince;
         this.schoolAddress = schoolAddress;

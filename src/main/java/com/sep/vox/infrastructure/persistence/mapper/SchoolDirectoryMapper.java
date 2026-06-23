@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.school.SchoolDirectory;
-import com.sep.vox.domain.model.school.SchoolDirectorySource;
+import com.sep.vox.domain.model.school.SchoolDirectoryOrigin;
 import com.sep.vox.infrastructure.persistence.entity.SchoolDirectoryJpaEntity;
 
 public final class SchoolDirectoryMapper {
@@ -17,7 +17,8 @@ public final class SchoolDirectoryMapper {
             jpa.getDistrictName(), 
             jpa.getDomain(), 
             jpa.getAddress(), 
-            sourceFromString(jpa.getSource()), 
+            sourceFromString(jpa.getOrigin()), 
+            jpa.isVerified(),
             jpa.getCreatedAt(), 
             jpa.getUpdatedAt(), 
             jpa.getCreatedBy(), 
@@ -35,7 +36,8 @@ public final class SchoolDirectoryMapper {
             sd.getDistrictName(), 
             sd.getDomain(), 
             sd.getAddress(), 
-            valueOf(sd.getSource()), 
+            valueOf(sd.getOrigin()), 
+            sd.isVerified(),
             sd.getCreatedAt(), 
             sd.getUpdatedAt(), 
             sd.getCreatedBy(), 
@@ -43,11 +45,11 @@ public final class SchoolDirectoryMapper {
         );
     }
 
-    private static SchoolDirectorySource sourceFromString(String source) {
-        return source == null ? null : SchoolDirectorySource.valueOf(source);
+    private static SchoolDirectoryOrigin sourceFromString(String origin) {
+        return origin == null ? null : SchoolDirectoryOrigin.valueOf(origin);
     }
 
-    private static String valueOf(SchoolDirectorySource source) {
-        return source == null ? null : source.name();
+    private static String valueOf(SchoolDirectoryOrigin origin) {
+        return origin == null ? null : origin.name();
     }
 }

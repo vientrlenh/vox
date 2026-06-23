@@ -12,7 +12,8 @@ public class SchoolDirectory {
     private String districtName;
     private String domain;
     private String address; 
-    private SchoolDirectorySource source;
+    private SchoolDirectoryOrigin origin;
+    private boolean verified;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
     private UUID createdBy;
@@ -21,7 +22,7 @@ public class SchoolDirectory {
     public SchoolDirectory() {}
 
     public SchoolDirectory(UUID id, String code, String name, String provinceCode, String provinceName,
-            String districtName, String domain, String address, SchoolDirectorySource source, OffsetDateTime createdAt,
+            String districtName, String domain, String address, SchoolDirectoryOrigin origin, boolean verified, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.code = code;
@@ -31,7 +32,8 @@ public class SchoolDirectory {
         this.districtName = districtName;
         this.domain = domain;
         this.address = address;
-        this.source = source;
+        this.origin = origin;
+        this.verified = verified;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
@@ -39,7 +41,7 @@ public class SchoolDirectory {
     }
 
     public SchoolDirectory(String code, String name, String provinceCode, String provinceName, String districtName,
-            String domain, String address, SchoolDirectorySource source, OffsetDateTime createdAt, OffsetDateTime updatedAt,
+            String domain, String address, SchoolDirectoryOrigin origin, boolean verified, OffsetDateTime createdAt, OffsetDateTime updatedAt,
             UUID createdBy, UUID updatedBy) {
         this.code = code;
         this.name = name;
@@ -48,7 +50,8 @@ public class SchoolDirectory {
         this.districtName = districtName;
         this.domain = domain;
         this.address = address;
-        this.source = source;
+        this.origin = origin;
+        this.verified = verified;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
@@ -119,12 +122,20 @@ public class SchoolDirectory {
         this.address = address;
     }
 
-    public SchoolDirectorySource getSource() {
-        return source;
+    public SchoolDirectoryOrigin getOrigin() {
+        return origin;
     }
 
-    public void setSource(SchoolDirectorySource source) {
-        this.source = source;
+    public void setOrigin(SchoolDirectoryOrigin origin) {
+        this.origin = origin;
+    }
+
+    public boolean isVerified() {
+        return verified;
+    }
+
+    public void setVerified(boolean verified) {
+        this.verified = verified;
     }
 
     public OffsetDateTime getCreatedAt() {
@@ -159,5 +170,44 @@ public class SchoolDirectory {
         this.updatedBy = updatedBy;
     } 
 
-    
+    public void verify(UUID updatedBy, OffsetDateTime now) {
+        this.verified = true;
+        this.updatedAt = now;
+        this.updatedBy = updatedBy;
+    }
+
+    public static SchoolDirectory createByAdmin(String code, String name, String provinceCode, String provinceName, String districtName, String domain, String address, OffsetDateTime now, UUID createdBy) {
+        return new SchoolDirectory(
+            code, 
+            name, 
+            provinceCode, 
+            provinceName, 
+            districtName, 
+            domain, 
+            address, 
+            SchoolDirectoryOrigin.ADMIN_CREATED, true, 
+            now, 
+            now, 
+            createdBy, 
+            createdBy
+        );
+    }
+
+    public static SchoolDirectory createByUserSubmitted(String code, String name, String provinceCode, String provinceName, String districtName, String domain, String address, OffsetDateTime now, UUID createdBy) {
+        return new SchoolDirectory(
+            code, 
+            name, 
+            provinceCode, 
+            provinceName, 
+            districtName, 
+            domain, 
+            address, 
+            SchoolDirectoryOrigin.USER_SUBMITTED, 
+            false, 
+            now, 
+            now, 
+            createdBy, 
+            createdBy
+        );
+    }
 }

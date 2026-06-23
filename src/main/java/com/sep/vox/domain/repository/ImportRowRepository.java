@@ -12,4 +12,5 @@ public interface ImportRowRepository {
     List<ImportRow> findBySessionIdOrderByRowNumber(UUID sessionId);
     PageResult<ImportRow> findBySessionId(UUID sessionId, ImportRowStatus status, PageRequest pageRequest);
     List<ImportRow> saveAll(List<ImportRow> rows);
+    List<ImportRow> findBySessionId(UUID sessionId);
 }

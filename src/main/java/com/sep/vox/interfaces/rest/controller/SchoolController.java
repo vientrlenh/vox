@@ -69,7 +69,6 @@ import com.sep.vox.interfaces.rest.mapper.DeleteSchoolClassUserCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.UpdateSchoolClassUserStatusCommandMapper;
 import com.sep.vox.application.port.input.usecase.schooldirectory.AcceptSchoolDirectoryImportUseCase;
 import com.sep.vox.application.port.input.usecase.schooldirectory.PreviewSchoolDirectoryImportFromFileUseCase;
-import com.sep.vox.application.response.input.importfile.AcceptSchoolDirectoryImportResponse;
 import com.sep.vox.application.response.input.importfile.PreviewSchoolDirectoryImportResponse;
 @RestController
 @RequestMapping("/api/v1/schools")
@@ -138,12 +137,12 @@ public class SchoolController {
 
     @PostMapping("/directories/import/{sessionId}/accept")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public ResponseEntity<ApiResponse<AcceptSchoolDirectoryImportResponse>> acceptSchoolDirectoryImport(
+    public ResponseEntity<ApiResponse<Object>> acceptSchoolDirectoryImport(
             @PathVariable UUID sessionId,
             @Valid @RequestBody AcceptSchoolDirectoryImportRequest request) {
         var command = AcceptSchoolDirectoryImportCommandMapper.fromRequest(sessionId, request);
-        var data = acceptSchoolDirectoryImportUseCase.execute(command);
-        var response = ApiResponse.success("Import danh mục trường thành công", data);
+        acceptSchoolDirectoryImportUseCase.execute(command);
+        var response = ApiResponse.success("Import danh mục trường thành công");
         return ResponseEntity.ok(response);
     }
 

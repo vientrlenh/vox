@@ -71,4 +71,12 @@ public class ImportRowRepositoryImpl implements ImportRowRepository {
     private static String valueOf(ImportRowStatus status) {
         return status == null ? null : status.name();
     }
+
+    @Override
+    public List<ImportRow> findBySessionId(UUID sessionId) {
+        var entities = springDataImportRowRepository.findBySessionId(sessionId);
+        return entities.stream()
+            .map(ImportRowMapper::toDomain)
+            .toList();
+    }
 }

@@ -30,14 +30,13 @@ public class ImportSessionJpaEntity {
     @Column(name = "id", nullable = false, updatable = false, insertable = false, columnDefinition = "UUID DEFAULT uuidv7()")
     private UUID id;
 
-    // nullable: system-level imports (e.g. SCHOOL_DIRECTORY) are not scoped to a school
     @Column(name = "school_id", updatable = false)
     private UUID schoolId;
 
     @Column(name = "type", nullable = false, updatable = false, length = 30, check = {
         @CheckConstraint(
             name = "chk_import_sessions_type_valid",
-            constraint = "type IN ('USER', 'SCHOOL_CLASS')"
+            constraint = "type IN ('USER', 'SCHOOL_CLASS', 'SCHOOL_CLASS_USER', 'SCHOOL_DIRECTORY')"
         )
     })
     private String type;
@@ -75,7 +74,7 @@ public class ImportSessionJpaEntity {
     @Column(name = "status", nullable = false, length = 30, check = {
         @CheckConstraint(
             name = "chk_import_sessions_status_valid",
-            constraint = "status IN ('PREVIEWED', 'VALIDATING', 'IMPORTING', 'COMPLETED', 'FAILED', 'EXPIRED', 'CANCELLED')"
+            constraint = "status IN ('PREVIEWED', 'VALIDATING', 'IMPORTING', 'QUEUED', 'COMPLETED', 'FAILED', 'EXPIRED', 'CANCELLED')"
         ),
     })
     private String status;
@@ -83,8 +82,20 @@ public class ImportSessionJpaEntity {
     @Column(name = "imported_entity_id")
     private UUID importedEntityId;
 
-    @Column(name = "expires_at", nullable = false)
+    @Column(name = "expires_at", nullable = false) 
     private OffsetDateTime expiresAt;
+
+    @Column(name = "claimed_at")
+    private OffsetDateTime claimedAt;
+
+    @Column(name = "claimed_by")
+    private UUID claimedBy; 
+
+    @Column(name = "lease_expires_at")
+    private OffsetDateTime leaseExpiresAt;
+
+    @Column(name = "attempts", nullable = false)
+    private int attempts;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
@@ -103,7 +114,8 @@ public class ImportSessionJpaEntity {
     public ImportSessionJpaEntity(UUID id, UUID schoolId, String type, String fileName, String originalHeadersJson,
             String suggestedMappingJson, String confirmedMappingJson, long validRows, long invalidRows,
             long importedRows, long skippedRows, long totalRows, String failureReason, String status,
-            UUID importedEntityId, OffsetDateTime expiresAt, OffsetDateTime createdAt, OffsetDateTime updatedAt,
+            UUID importedEntityId, OffsetDateTime expiresAt, OffsetDateTime claimedAt, UUID claimedBy,
+            OffsetDateTime leaseExpiresAt, int attempts, OffsetDateTime createdAt, OffsetDateTime updatedAt,
             UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.schoolId = schoolId;
@@ -121,32 +133,10 @@ public class ImportSessionJpaEntity {
         this.status = status;
         this.importedEntityId = importedEntityId;
         this.expiresAt = expiresAt;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public ImportSessionJpaEntity(UUID schoolId, String type, String fileName, String originalHeadersJson,
-            String suggestedMappingJson, String confirmedMappingJson, long validRows, long invalidRows,
-            long importedRows, long skippedRows, long totalRows, String failureReason, String status,
-            UUID importedEntityId, OffsetDateTime expiresAt, OffsetDateTime createdAt, OffsetDateTime updatedAt,
-            UUID createdBy, UUID updatedBy) {
-        this.schoolId = schoolId;
-        this.type = type;
-        this.fileName = fileName;
-        this.originalHeadersJson = originalHeadersJson;
-        this.suggestedMappingJson = suggestedMappingJson;
-        this.confirmedMappingJson = confirmedMappingJson;
-        this.validRows = validRows;
-        this.invalidRows = invalidRows;
-        this.importedRows = importedRows;
-        this.skippedRows = skippedRows;
-        this.totalRows = totalRows;
-        this.failureReason = failureReason;
-        this.status = status;
-        this.importedEntityId = importedEntityId;
-        this.expiresAt = expiresAt;
+        this.claimedAt = claimedAt;
+        this.claimedBy = claimedBy;
+        this.leaseExpiresAt = leaseExpiresAt;
+        this.attempts = attempts;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
@@ -311,5 +301,37 @@ public class ImportSessionJpaEntity {
 
     public void setUpdatedBy(UUID updatedBy) {
         this.updatedBy = updatedBy;
+    }
+
+    public OffsetDateTime getClaimedAt() {
+        return claimedAt;
+    }
+
+    public void setClaimedAt(OffsetDateTime claimedAt) {
+        this.claimedAt = claimedAt;
+    }
+
+    public UUID getClaimedBy() {
+        return claimedBy;
+    }
+
+    public void setClaimedBy(UUID claimedBy) {
+        this.claimedBy = claimedBy;
+    }
+
+    public OffsetDateTime getLeaseExpiresAt() {
+        return leaseExpiresAt;
+    }
+
+    public void setLeaseExpiresAt(OffsetDateTime leaseExpiresAt) {
+        this.leaseExpiresAt = leaseExpiresAt;
+    }
+
+    public int getAttempts() {
+        return attempts;
+    }
+
+    public void setAttempts(int attempts) {
+        this.attempts = attempts;
     }
 }

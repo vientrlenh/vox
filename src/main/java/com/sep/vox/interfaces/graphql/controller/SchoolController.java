@@ -83,7 +83,21 @@ public class SchoolController {
     private final ViewSchoolGradesUseCase viewSchoolGradesUseCase;
     private final ViewSchoolGradeDetailsUseCase viewSchoolGradeDetailsUseCase;
 
-    public SchoolController(ViewSchoolsUseCase viewSchoolsUseCase, ViewSchoolClassesUseCase viewSchoolClassesUseCase, ViewSchoolClassDetailsUseCase viewSchoolClassDetailsUseCase, ViewSchoolClassUsersUseCase viewSchoolClassUsersUseCase, UpdateSchoolClassUseCase updateSchoolClassUseCase, ViewSchoolUsersBySchoolUseCase viewSchoolUsersBySchoolUseCase, ViewSchoolUserDetailsUseCase viewSchoolUserDetailsUseCase, UpdateSchoolUserUseCase updateSchoolUserUseCase, SchoolRepository schoolRepository, UpdateSchoolUseCase updateSchoolUseCase, ViewSchoolRoomDetailsUseCase viewSchoolRoomDetailsUseCase, ViewSchoolRoomsUseCase viewSchoolRoomsUseCase, UpdateSchoolRoomUseCase updateSchoolRoomUseCase, UpdateSchoolGradeUseCase updateSchoolGradeUseCase, ViewSchoolGradesUseCase viewSchoolGradesUseCase, ViewSchoolGradeDetailsUseCase viewSchoolGradeDetailsUseCase) {
+    public SchoolController(ViewSchoolsUseCase viewSchoolsUseCase, 
+        ViewSchoolClassesUseCase viewSchoolClassesUseCase, 
+        ViewSchoolClassDetailsUseCase viewSchoolClassDetailsUseCase, 
+        ViewSchoolClassUsersUseCase viewSchoolClassUsersUseCase, 
+        UpdateSchoolClassUseCase updateSchoolClassUseCase, 
+        ViewSchoolUsersBySchoolUseCase viewSchoolUsersBySchoolUseCase, 
+        ViewSchoolUserDetailsUseCase viewSchoolUserDetailsUseCase, 
+        UpdateSchoolUserUseCase updateSchoolUserUseCase, 
+        UpdateSchoolUseCase updateSchoolUseCase, 
+        ViewSchoolRoomDetailsUseCase viewSchoolRoomDetailsUseCase, 
+        ViewSchoolRoomsUseCase viewSchoolRoomsUseCase, 
+        UpdateSchoolRoomUseCase updateSchoolRoomUseCase, 
+        UpdateSchoolGradeUseCase updateSchoolGradeUseCase, 
+        ViewSchoolGradesUseCase viewSchoolGradesUseCase, 
+        ViewSchoolGradeDetailsUseCase viewSchoolGradeDetailsUseCase) {
         this.viewSchoolsUseCase = viewSchoolsUseCase;
         this.viewSchoolClassesUseCase = viewSchoolClassesUseCase;
         this.viewSchoolClassDetailsUseCase = viewSchoolClassDetailsUseCase;

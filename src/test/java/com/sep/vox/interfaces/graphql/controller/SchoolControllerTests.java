@@ -47,12 +47,10 @@ import com.sep.vox.domain.dto.SchoolGradeDto;
 import com.sep.vox.domain.dto.SchoolUserDto;
 import com.sep.vox.domain.dto.SupportedLanguageDto;
 import com.sep.vox.domain.dto.UserDto;
-import com.sep.vox.domain.repository.SchoolRepository;
 
 import graphql.schema.DataFetchingEnvironment;
 
 class SchoolControllerTests {
-
     private ViewSchoolsUseCase viewSchoolsUseCase;
     private ViewSchoolClassesUseCase viewSchoolClassesUseCase;
     private ViewSchoolClassDetailsUseCase viewSchoolClassDetailsUseCase;
@@ -60,7 +58,14 @@ class SchoolControllerTests {
     private UpdateSchoolClassUseCase updateSchoolClassUseCase;
     private ViewSchoolUsersBySchoolUseCase viewSchoolUsersBySchoolUseCase;
     private ViewSchoolUserDetailsUseCase viewSchoolUserDetailsUseCase;
-    private UpdateSchoolUserUseCase updateSchoolUserUseCase;
+    private UpdateSchoolUserUseCase updateSchoolUserUseCase; 
+    private UpdateSchoolUseCase updateSchoolUseCase;
+    private ViewSchoolRoomDetailsUseCase viewSchoolRoomDetailsUseCase;
+    private ViewSchoolRoomsUseCase viewSchoolRoomsUseCase;
+    private UpdateSchoolRoomUseCase updateSchoolRoomUseCase;
+    private UpdateSchoolGradeUseCase updateSchoolGradeUseCase;
+    private ViewSchoolGradesUseCase viewSchoolGradesUseCase;
+    private ViewSchoolGradeDetailsUseCase viewSchoolGradeDetailsUseCase;
     private SchoolController controller;
 
     private final UUID schoolId = UUID.randomUUID();
@@ -76,6 +81,13 @@ class SchoolControllerTests {
         viewSchoolUsersBySchoolUseCase = mock(ViewSchoolUsersBySchoolUseCase.class);
         viewSchoolUserDetailsUseCase = mock(ViewSchoolUserDetailsUseCase.class);
         updateSchoolUserUseCase = mock(UpdateSchoolUserUseCase.class);
+        updateSchoolUseCase = mock(UpdateSchoolUseCase.class);
+        viewSchoolRoomDetailsUseCase = mock(ViewSchoolRoomDetailsUseCase.class);
+        viewSchoolRoomsUseCase = mock(ViewSchoolRoomsUseCase.class);
+        updateSchoolRoomUseCase = mock(UpdateSchoolRoomUseCase.class);
+        updateSchoolGradeUseCase = mock(UpdateSchoolGradeUseCase.class);
+        viewSchoolGradesUseCase = mock(ViewSchoolGradesUseCase.class);
+        viewSchoolGradeDetailsUseCase = mock(ViewSchoolGradeDetailsUseCase.class);
 
         controller = new SchoolController(
             viewSchoolsUseCase,
@@ -85,15 +97,14 @@ class SchoolControllerTests {
             updateSchoolClassUseCase,
             viewSchoolUsersBySchoolUseCase,
             viewSchoolUserDetailsUseCase,
-            updateSchoolUserUseCase,
-            mock(SchoolRepository.class),
-            mock(UpdateSchoolUseCase.class),
-            mock(ViewSchoolRoomDetailsUseCase.class),
-            mock(ViewSchoolRoomsUseCase.class),
-            mock(UpdateSchoolRoomUseCase.class),
-            mock(UpdateSchoolGradeUseCase.class),
-            mock(ViewSchoolGradesUseCase.class),
-            mock(ViewSchoolGradeDetailsUseCase.class)
+            updateSchoolUserUseCase, 
+            updateSchoolUseCase, 
+            viewSchoolRoomDetailsUseCase, 
+            viewSchoolRoomsUseCase, 
+            updateSchoolRoomUseCase, 
+            updateSchoolGradeUseCase, 
+            viewSchoolGradesUseCase, 
+            viewSchoolGradeDetailsUseCase
         );
     }
 

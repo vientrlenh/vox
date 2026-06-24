@@ -12,9 +12,7 @@ import org.springframework.data.repository.query.Param;
 import com.sep.vox.infrastructure.persistence.entity.FrameworkCriterionBandJpaEntity;
 
 public interface SpringDataFrameworkCriterionBandRepository extends JpaRepository<FrameworkCriterionBandJpaEntity, UUID> {
-    List<FrameworkCriterionBandJpaEntity> findByFrameworkCriterionId(UUID frameworkCriterionId);
     List<FrameworkCriterionBandJpaEntity> findByFrameworkCriterionIdIn(Collection<UUID> frameworkCriterionIds);
-    List<FrameworkCriterionBandJpaEntity> findByFrameworkResultBandId(UUID frameworkResultBandId);
 
     @Modifying
     @Query("DELETE FROM FrameworkCriterionBandJpaEntity b WHERE b.frameworkCriterionId IN :frameworkCriterionIds")

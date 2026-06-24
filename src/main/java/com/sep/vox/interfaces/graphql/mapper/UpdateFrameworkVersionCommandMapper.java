@@ -71,7 +71,7 @@ public final class UpdateFrameworkVersionCommandMapper {
             .map(s -> new FrameworkCriterionSignal(
                 s.code(),
                 s.description(),
-                parseImportance(s.importance()),
+                FrameworkCriterionSignalImportance.valueOf(s.importance()),
                 s.evidenceHint()))
             .toList());
     }
@@ -87,15 +87,6 @@ public final class UpdateFrameworkVersionCommandMapper {
             parseBigDecimal(r.scoreMax()),
             r.order()
         );
-    }
-
-    private static FrameworkCriterionSignalImportance parseImportance(String value) {
-        try {
-            return FrameworkCriterionSignalImportance.valueOf(value);
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Giá trị độ quan trọng không hợp lệ: " + value
-                + ". Các giá trị hợp lệ: HIGH, MEDIUM, LOW");
-        }
     }
 
     private static OffsetDateTime parseDateTime(String value) {

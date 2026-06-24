@@ -7,9 +7,7 @@ import java.util.UUID;
 import com.sep.vox.domain.model.framework.FrameworkCriterionBand;
 
 public interface FrameworkCriterionBandRepository {
-    List<FrameworkCriterionBand> findByFrameworkCriterionId(UUID frameworkCriterionId);
     List<FrameworkCriterionBand> findByFrameworkCriterionIdIn(Collection<UUID> frameworkCriterionIds);
-    List<FrameworkCriterionBand> findByFrameworkResultBandId(UUID frameworkResultBandId);
     FrameworkCriterionBand save(FrameworkCriterionBand band);
     List<FrameworkCriterionBand> saveAll(List<FrameworkCriterionBand> bands);
     void deleteByFrameworkCriterionIdIn(Collection<UUID> frameworkCriterionIds);

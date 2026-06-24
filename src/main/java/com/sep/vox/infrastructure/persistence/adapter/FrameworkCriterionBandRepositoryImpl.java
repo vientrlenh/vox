@@ -21,20 +21,8 @@ public class FrameworkCriterionBandRepositoryImpl implements FrameworkCriterionB
     }
 
     @Override
-    public List<FrameworkCriterionBand> findByFrameworkCriterionId(UUID frameworkCriterionId) {
-        return springDataFrameworkCriterionBandRepository.findByFrameworkCriterionId(frameworkCriterionId)
-            .stream().map(FrameworkCriterionBandMapper::toDomain).toList();
-    }
-
-    @Override
     public List<FrameworkCriterionBand> findByFrameworkCriterionIdIn(Collection<UUID> frameworkCriterionIds) {
         return springDataFrameworkCriterionBandRepository.findByFrameworkCriterionIdIn(frameworkCriterionIds)
-            .stream().map(FrameworkCriterionBandMapper::toDomain).toList();
-    }
-
-    @Override
-    public List<FrameworkCriterionBand> findByFrameworkResultBandId(UUID frameworkResultBandId) {
-        return springDataFrameworkCriterionBandRepository.findByFrameworkResultBandId(frameworkResultBandId)
             .stream().map(FrameworkCriterionBandMapper::toDomain).toList();
     }
 

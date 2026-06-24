@@ -27,7 +27,7 @@ type RegisterFormPage {
 
 type RegisterFormDocument {
     id: ID!
-    regsiterFormId: ID
+    registerFormId: ID
     url: String
     createdAt: String
 }

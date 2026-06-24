@@ -242,6 +242,27 @@ public class AssessmentPolicy {
         this.updatedBy = updatedBy;
     }
 
+    public boolean isPublished() {
+        return status == AssessmentPolicyStatus.PUBLISHED;
+    }
 
+    // có dùng được cho exam không
+    public boolean isSelectableAt(OffsetDateTime examOpenAt) {
+        return isPublished() && !effectiveFrom.isAfter(examOpenAt) && (effectiveTo == null || !effectiveTo.isBefore(examOpenAt));
+    }
+
+    // scope theo thứ tự ưu tiên (class -> grade -> grade level)
+    public boolean coversScope(UUID classId, UUID gradeId, UUID gradeLevelId) {
+        if (schoolClassId != null) return schoolClassId.equals(classId);
+        if (schoolGradeId != null) return schoolGradeId.equals(gradeId);
+        return schoolGradeLevelId != null && schoolGradeLevelId.equals(gradeLevelId);
+    }
+
+    // không sửa khi đã published
+    public void assertMutable() {
+        if (isPublished()) {
+            throw new IllegalStateException("Policy đã được xuất bản, hãy tạo version mới nếu cần sửa");
+        }
+    }
     
 }

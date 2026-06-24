@@ -1,8 +1,10 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
@@ -29,5 +31,14 @@ public class AssessmentPolicyRepositoryImpl implements AssessmentPolicyRepositor
         var entity = AssessmentPolicyMapper.toJpa(policy);
         var saved = springDataAssessmentPolicyRepository.save(entity);
         return AssessmentPolicyMapper.toDomain(saved);
+    }
+
+    @Override
+    public Optional<AssessmentPolicy> findActivePolicy(UUID schoolId, UUID languageId, UUID classId, UUID gradeId,
+            UUID gradeLevelId, OffsetDateTime atTime) {
+        return springDataAssessmentPolicyRepository.findCandidatePolicies(schoolId, languageId, classId, gradeId, gradeLevelId, atTime, PageRequest.ofSize(1))
+                .stream()
+                .findFirst()
+                .map(AssessmentPolicyMapper::toDomain);
     }
 }

@@ -20,7 +20,6 @@ import com.sep.vox.application.port.input.query.ViewImportSessionsQuery;
 import com.sep.vox.application.port.input.usecase.importfile.ViewImportSessionsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.support.FakeJsonSerializationPort;
-import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.importfile.ImportSessionStatus;
@@ -74,7 +73,8 @@ class ViewImportSessionsUseCaseTests {
             schoolId,
             ImportType.SCHOOL_CLASS,
             ImportSessionStatus.COMPLETED,
-            new PageRequest(1, 20)
+            1, 
+            20
         )).thenReturn(page);
 
         var response = useCase.execute(new ViewImportSessionsQuery(1, 20, "SCHOOL_CLASS", "COMPLETED"));
@@ -84,7 +84,8 @@ class ViewImportSessionsUseCaseTests {
             schoolId,
             ImportType.SCHOOL_CLASS,
             ImportSessionStatus.COMPLETED,
-            new PageRequest(1, 20)
+            1, 
+            20
         );
     }
 

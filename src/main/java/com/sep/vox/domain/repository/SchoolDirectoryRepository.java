@@ -13,4 +13,6 @@ public interface SchoolDirectoryRepository {
     boolean existsById(UUID id);
     SchoolDirectory save(SchoolDirectory sd);
     List<SchoolDirectory> findByCodeIn(Collection<String> codes);
+    List<SchoolDirectory> findAllByOrderByIdAsc(int limit);
+    List<SchoolDirectory> findByIdGreaterThanOrderByIdAsc(UUID cursor, int limit);
 }

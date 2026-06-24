@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.school.SchoolDirectory;
@@ -50,6 +51,24 @@ public class SchoolDirectoryRepositoryImpl implements SchoolDirectoryRepository 
             return List.of();
         }
         return springDataSchoolDirectoryRepository.findByCodeIn(codes).stream()
+            .map(SchoolDirectoryMapper::toDomain)
+            .toList();
+    }
+
+    @Override
+    public List<SchoolDirectory> findAllByOrderByIdAsc(int limit) {
+        var pageable = PageRequest.of(0, limit + 1);
+        var results = springDataSchoolDirectoryRepository.findAllByOrderByIdAsc(pageable).getContent();
+        return results.stream()
+            .map(SchoolDirectoryMapper::toDomain)
+            .toList();
+    }
+
+    @Override
+    public List<SchoolDirectory> findByIdGreaterThanOrderByIdAsc(UUID cursor, int limit) {
+        var pageable = PageRequest.of(0, limit + 1);
+        var results = springDataSchoolDirectoryRepository.findByIdGreaterThanOrderByIdAsc(cursor, pageable);
+        return results.stream()
             .map(SchoolDirectoryMapper::toDomain)
             .toList();
     }

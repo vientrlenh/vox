@@ -5,9 +5,9 @@ import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.registerform.RegisterForm;
 import com.sep.vox.domain.model.registerform.RegisterFormStatus;
@@ -38,16 +38,15 @@ public class RegisterFormRepositoryImpl implements RegisterFormRepository {
     }
 
     @Override
-    public PageResult<RegisterForm> findAll(PageRequest pageRequest) {
-        var actualPage = pageRequest.page() - 1;
-        var pageable = org.springframework.data.domain.PageRequest.of(actualPage, pageRequest.size());
+    public PageResult<RegisterForm> findAll(int pageNumber, int size) {
+        var pageable = PageRequest.of(pageNumber - 1, size);
         var page = springDataRegisterFormRepository.findAll(pageable);
         return new PageResult<>(
             page.getContent().stream()
                 .map(RegisterFormMapper::toDomain)
                 .toList(),
-            page.getNumber(),
-            page.getSize(),
+            pageNumber,
+            size,
             page.getTotalElements(),
             page.getTotalPages()
         );

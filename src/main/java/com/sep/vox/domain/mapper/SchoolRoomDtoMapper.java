@@ -3,7 +3,6 @@ package com.sep.vox.domain.mapper;
 import com.sep.vox.domain.dto.SchoolRoomFromDto;
 import com.sep.vox.domain.model.school.SchoolRoom;
 
-import java.util.List;
 
 public class SchoolRoomDtoMapper {
     public static SchoolRoomFromDto toDto(SchoolRoom room) {

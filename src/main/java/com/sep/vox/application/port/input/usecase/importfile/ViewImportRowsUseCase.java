@@ -13,7 +13,6 @@ import com.sep.vox.application.port.input.query.ViewImportRowsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.importfile.ImportRowResponse;
-import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.model.importfile.ImportSession;
@@ -76,7 +75,8 @@ public class ViewImportRowsUseCase implements IUseCase<ViewImportRowsQuery, Page
         var rows = importRowRepository.findBySessionId(
             session.getId(),
             status,
-            new PageRequest(input.page(), input.size())
+            input.page(), 
+            input.size()
         );
         return importRowResponseMapper.toResponsePage(rows);
     }

@@ -23,5 +23,5 @@ public interface RoleRepository {
 
     List<Role> findByCodeIn(Collection<String> codes);
 
-    PageResult<Role> findAll(int page, int size);
+    PageResult<Role> findAll(int pageNumber, int size);
 }

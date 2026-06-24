@@ -11,7 +11,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
 import com.sep.vox.application.port.input.service.ImportCommitService;
-import com.sep.vox.application.queue.ImportQueueService;
+import com.sep.vox.application.port.input.service.ImportQueueService;
 
 @Component
 public class ImportJobDispatcher {

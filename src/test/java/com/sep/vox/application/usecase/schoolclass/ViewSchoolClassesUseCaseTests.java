@@ -20,7 +20,6 @@ import org.junit.jupiter.api.Test;
 import com.sep.vox.application.port.input.query.ViewSchoolClassesQuery;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassesUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.model.school.SchoolClass;
@@ -87,7 +86,8 @@ class ViewSchoolClassesUseCaseTests {
             SchoolClassStatus.ACTIVE,
             languageId,
             gradeId,
-            new PageRequest(1, 20)
+            1, 
+            20
         )).thenReturn(page);
 
         var result = useCase.execute(new ViewSchoolClassesQuery(1, 20, "  English   01  ", "ACTIVE", languageId, gradeId));
@@ -102,7 +102,8 @@ class ViewSchoolClassesUseCaseTests {
             SchoolClassStatus.ACTIVE,
             languageId,
             gradeId,
-            new PageRequest(1, 20)
+            1, 
+            20
         );
     }
 

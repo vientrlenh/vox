@@ -1,4 +1,4 @@
-package com.sep.vox.application.queue;
+package com.sep.vox.application.port.input.service;
 
 import java.time.Duration;
 import java.time.OffsetDateTime;

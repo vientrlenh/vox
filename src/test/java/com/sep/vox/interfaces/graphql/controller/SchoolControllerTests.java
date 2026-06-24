@@ -29,6 +29,8 @@ import com.sep.vox.application.port.input.usecase.schoolclass.UpdateSchoolClassU
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassesUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclassuser.ViewSchoolClassUsersUseCase;
+import com.sep.vox.application.port.input.usecase.schooldirectory.ViewSchoolDirectoriesUseCase;
+import com.sep.vox.application.port.input.usecase.schooldirectory.ViewSchoolDirectoryDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolgrade.UpdateSchoolGradeUseCase;
 import com.sep.vox.application.port.input.usecase.schoolgrade.ViewSchoolGradeDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolgrade.ViewSchoolGradesUseCase;
@@ -66,6 +68,8 @@ class SchoolControllerTests {
     private UpdateSchoolGradeUseCase updateSchoolGradeUseCase;
     private ViewSchoolGradesUseCase viewSchoolGradesUseCase;
     private ViewSchoolGradeDetailsUseCase viewSchoolGradeDetailsUseCase;
+    private ViewSchoolDirectoriesUseCase viewSchoolDirectoriesUseCase;
+    private ViewSchoolDirectoryDetailsUseCase viewSchoolDirectoryDetailsUseCase;
     private SchoolController controller;
 
     private final UUID schoolId = UUID.randomUUID();
@@ -88,6 +92,8 @@ class SchoolControllerTests {
         updateSchoolGradeUseCase = mock(UpdateSchoolGradeUseCase.class);
         viewSchoolGradesUseCase = mock(ViewSchoolGradesUseCase.class);
         viewSchoolGradeDetailsUseCase = mock(ViewSchoolGradeDetailsUseCase.class);
+        viewSchoolDirectoriesUseCase = mock(ViewSchoolDirectoriesUseCase.class);
+        viewSchoolDirectoryDetailsUseCase = mock(ViewSchoolDirectoryDetailsUseCase.class);
 
         controller = new SchoolController(
             viewSchoolsUseCase,
@@ -104,7 +110,9 @@ class SchoolControllerTests {
             updateSchoolRoomUseCase, 
             updateSchoolGradeUseCase, 
             viewSchoolGradesUseCase, 
-            viewSchoolGradeDetailsUseCase
+            viewSchoolGradeDetailsUseCase, 
+            viewSchoolDirectoriesUseCase, 
+            viewSchoolDirectoryDetailsUseCase
         );
     }
 

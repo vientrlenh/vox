@@ -1,17 +1,19 @@
 package com.sep.vox.interfaces.graphql.controller;
 
-import java.math.BigDecimal;
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
+import org.dataloader.DataLoader;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
+import org.springframework.graphql.data.method.annotation.SchemaMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 
-import com.sep.vox.application.port.input.command.UpdateFrameworkVersionCommand;
+import graphql.schema.DataFetchingEnvironment;
+
 import com.sep.vox.application.port.input.query.ViewFrameworkDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewFrameworkVersionDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewFrameworkVersionsQuery;
@@ -22,8 +24,12 @@ import com.sep.vox.application.port.input.usecase.framework.ViewFrameworkVersion
 import com.sep.vox.application.port.input.usecase.framework.ViewFrameworkVersionsUseCase;
 import com.sep.vox.application.port.input.usecase.framework.ViewFrameworksUseCase;
 import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.dto.FrameworkCriterionDto;
 import com.sep.vox.domain.dto.FrameworkDto;
+import com.sep.vox.domain.dto.FrameworkResultBandDto;
 import com.sep.vox.domain.dto.FrameworkVersionDto;
+import com.sep.vox.interfaces.graphql.mapper.UpdateFrameworkVersionCommandMapper;
+import com.sep.vox.interfaces.graphql.mapper.UpdateFrameworkVersionInput;
 
 @Controller("graphqlFrameworkController")
 public class FrameworkController {
@@ -84,76 +90,25 @@ public class FrameworkController {
 
     @MutationMapping(name = "updateFrameworkVersion")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public UUID updateFrameworkVersion(@Argument(name = "input") UpdateFrameworkVersionInput input) {
-        var command = toCommand(input);
+    public UUID updateFrameworkVersion(
+            @Argument(name = "frameworkId") UUID frameworkId,
+            @Argument(name = "versionId") UUID versionId,
+            @Argument(name = "input") UpdateFrameworkVersionInput input) {
+        var command = UpdateFrameworkVersionCommandMapper.fromInput(frameworkId, versionId, input);
         return updateFrameworkVersionUseCase.execute(command);
     }
 
-    private UpdateFrameworkVersionCommand toCommand(UpdateFrameworkVersionInput input) {
-        List<UpdateFrameworkVersionCommand.CriterionInput> criteria = input.criteria() == null ? null
-            : input.criteria().stream()
-                .map(c -> new UpdateFrameworkVersionCommand.CriterionInput(
-                    c.code(), c.name(), c.description(),
-                    c.bands() == null ? null : c.bands().stream()
-                        .map(b -> new UpdateFrameworkVersionCommand.CriterionBandInput(
-                            b.resultBandCode(), b.descriptor(), b.positiveSignals(), b.negativeSignals()))
-                        .toList()))
-                .toList();
-
-        List<UpdateFrameworkVersionCommand.ResultBandInput> resultBands = input.resultBands() == null ? null
-            : input.resultBands().stream()
-                .map(r -> new UpdateFrameworkVersionCommand.ResultBandInput(
-                    r.code(), r.label(), r.description(),
-                    r.scoreMin() != null ? BigDecimal.valueOf(r.scoreMin()) : null,
-                    r.scoreMax() != null ? BigDecimal.valueOf(r.scoreMax()) : null,
-                    r.order()))
-                .toList();
-
-        return new UpdateFrameworkVersionCommand(
-            input.frameworkId(),
-            input.versionId(),
-            input.code(),
-            input.name(),
-            input.description(),
-            input.effectiveFrom() != null ? OffsetDateTime.parse(input.effectiveFrom()) : null,
-            input.effectiveTo() != null ? OffsetDateTime.parse(input.effectiveTo()) : null,
-            criteria,
-            resultBands
-        );
+    @SchemaMapping(typeName = "FrameworkVersion", field = "criteria")
+    public CompletableFuture<List<FrameworkCriterionDto>> criteria(
+            FrameworkVersionDto version, DataFetchingEnvironment env) {
+        DataLoader<UUID, List<FrameworkCriterionDto>> loader = env.getDataLoader("criteriaByFrameworkVersion");
+        return loader.load(version.id());
     }
-       // GraphQL input types (Spring GraphQL maps these from the schema input objects)
-    public record UpdateFrameworkVersionInput(
-        UUID frameworkId,
-        UUID versionId,
-        String code,
-        String name,
-        String description,
-        String effectiveFrom,
-        String effectiveTo,
-        List<CriterionInput> criteria,
-        List<ResultBandInput> resultBands
-    ) {}
 
-    public record CriterionInput(
-        String code,
-        String name,
-        String description,
-        List<CriterionBandInput> bands
-    ) {}
-
-    public record CriterionBandInput(
-        String resultBandCode,
-        String descriptor,
-        String positiveSignals,
-        String negativeSignals
-    ) {}
-
-    public record ResultBandInput(
-        String code,
-        String label,
-        String description,
-        Double scoreMin,
-        Double scoreMax,
-        int order
-    ) {}
+    @SchemaMapping(typeName = "FrameworkVersion", field = "resultBands")
+    public CompletableFuture<List<FrameworkResultBandDto>> resultBands(
+            FrameworkVersionDto version, DataFetchingEnvironment env) {
+        DataLoader<UUID, List<FrameworkResultBandDto>> loader = env.getDataLoader("resultBandsByFrameworkVersion");
+        return loader.load(version.id());
+    }
 }

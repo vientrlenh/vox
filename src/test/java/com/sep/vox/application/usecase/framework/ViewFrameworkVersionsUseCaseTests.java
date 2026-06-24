@@ -17,7 +17,6 @@ import org.junit.jupiter.api.Test;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.query.ViewFrameworkVersionsQuery;
 import com.sep.vox.application.port.input.usecase.framework.ViewFrameworkVersionsUseCase;
-import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.framework.Framework;
 import com.sep.vox.domain.model.framework.FrameworkVersion;
@@ -71,7 +70,7 @@ public class ViewFrameworkVersionsUseCaseTests {
         );
 
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
-        when(frameworkVersionRepository.findByFrameworkId(frameworkId, new PageRequest(1, 20)))
+        when(frameworkVersionRepository.findByFrameworkId(frameworkId, 1, 20))
             .thenReturn(pageResult);
 
         var result = useCase.execute(query);
@@ -105,7 +104,7 @@ public class ViewFrameworkVersionsUseCaseTests {
         var emptyPage = new PageResult<FrameworkVersion>(List.of(), 1, 20, 0, 0);
 
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
-        when(frameworkVersionRepository.findByFrameworkId(frameworkId, new PageRequest(1, 20)))
+        when(frameworkVersionRepository.findByFrameworkId(frameworkId, 1, 20))
             .thenReturn(emptyPage);
 
         var result = useCase.execute(query);
@@ -127,7 +126,7 @@ public class ViewFrameworkVersionsUseCaseTests {
         var pageResult = new PageResult<FrameworkVersion>(List.of(), 2, 10, 25, 3);
 
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
-        when(frameworkVersionRepository.findByFrameworkId(frameworkId, new PageRequest(2, 10)))
+        when(frameworkVersionRepository.findByFrameworkId(frameworkId, 2, 10))
             .thenReturn(pageResult);
 
         var result = useCase.execute(query);

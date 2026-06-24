@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -22,6 +23,12 @@ public class FrameworkCriterionRepositoryImpl implements FrameworkCriterionRepos
     @Override
     public List<FrameworkCriterion> findByFrameworkVersionId(UUID frameworkVersionId) {
         return springDataFrameworkCriterionRepository.findByFrameworkVersionId(frameworkVersionId)
+            .stream().map(FrameworkCriterionMapper::toDomain).toList();
+    }
+
+    @Override
+    public List<FrameworkCriterion> findByFrameworkVersionIdIn(Collection<UUID> frameworkVersionIds) {
+        return springDataFrameworkCriterionRepository.findByFrameworkVersionIdIn(frameworkVersionIds)
             .stream().map(FrameworkCriterionMapper::toDomain).toList();
     }
 

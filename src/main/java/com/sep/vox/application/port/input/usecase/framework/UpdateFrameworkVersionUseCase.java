@@ -94,7 +94,7 @@ public class UpdateFrameworkVersionUseCase implements IUseCase<UpdateFrameworkVe
         }
 
         if (input.criteria() != null) {
-            replaceCriteria(input.versionId(), input.criteria(), input.resultBands(), now, currentUserId);
+            replaceCriteria(input.versionId(), input.criteria(), now, currentUserId);
         }
 
         return input.versionId();
@@ -102,6 +102,9 @@ public class UpdateFrameworkVersionUseCase implements IUseCase<UpdateFrameworkVe
 
     private void replaceResultBands(UUID versionId, List<UpdateFrameworkVersionCommand.ResultBandInput> bandInputs,
             OffsetDateTime now, UUID userId) {
+        var codes = bandInputs.stream().map(b -> StringNormalization.normalizeCode(b.code())).toList();
+        if (codes.size() != codes.stream().distinct().count())
+            throw new IllegalArgumentException("Mã kết quả bị trùng lặp");
         frameworkResultBandRepository.deleteByFrameworkVersionId(versionId);
         var bands = bandInputs.stream()
             .map(b -> new FrameworkResultBand(
@@ -119,10 +122,11 @@ public class UpdateFrameworkVersionUseCase implements IUseCase<UpdateFrameworkVe
     }
 
     private void replaceCriteria(UUID versionId, List<UpdateFrameworkVersionCommand.CriterionInput> criterionInputs,
-            List<UpdateFrameworkVersionCommand.ResultBandInput> resultBandInputs, OffsetDateTime now, UUID userId) {
+            OffsetDateTime now, UUID userId) {
         var existingCriteria = frameworkCriterionRepository.findByFrameworkVersionId(versionId);
-        for (var c : existingCriteria) {
-            frameworkCriterionBandRepository.deleteByFrameworkCriterionId(c.getId());
+        if (!existingCriteria.isEmpty()) {
+            frameworkCriterionBandRepository.deleteByFrameworkCriterionIdIn(
+                existingCriteria.stream().map(c -> c.getId()).toList());
         }
         frameworkCriterionRepository.deleteByFrameworkVersionId(versionId);
 
@@ -130,32 +134,36 @@ public class UpdateFrameworkVersionUseCase implements IUseCase<UpdateFrameworkVe
         Map<String, UUID> resultBandCodeToId = savedResultBands.stream()
             .collect(Collectors.toMap(rb -> rb.getCode(), rb -> rb.getId()));
 
-        for (var criterionInput : criterionInputs) {
-            var criterion = new FrameworkCriterion(
+        var criteriaToSave = criterionInputs.stream()
+            .map(c -> new FrameworkCriterion(
                 versionId,
-                StringNormalization.normalizeCode(criterionInput.code()),
-                StringNormalization.trimAndCollapseSpaces(criterionInput.name()),
-                StringNormalization.trimAndCollapseSpaces(criterionInput.description()),
-                now, now, userId, userId);
-            var savedCriterion = frameworkCriterionRepository.save(criterion);
+                StringNormalization.normalizeCode(c.code()),
+                StringNormalization.trimAndCollapseSpaces(c.name()),
+                StringNormalization.trimAndCollapseSpaces(c.description()),
+                now, now, userId, userId))
+            .toList();
+        var savedCriteria = frameworkCriterionRepository.saveAll(criteriaToSave);
 
-            if (criterionInput.bands() != null && !criterionInput.bands().isEmpty()) {
-                List<FrameworkCriterionBand> criterionBands = new ArrayList<>();
-                for (var bandInput : criterionInput.bands()) {
-                    var resultBandId = resultBandCodeToId.get(bandInput.resultBandCode());
-                    if (resultBandId == null) continue;
-                    criterionBands.add(new FrameworkCriterionBand(
-                        savedCriterion.getId(),
-                        resultBandId,
-                        StringNormalization.trimAndCollapseSpaces(bandInput.descriptor()),
-                        StringNormalization.trimAndCollapseSpaces(bandInput.positiveSignals()),
-                        StringNormalization.trimAndCollapseSpaces(bandInput.negativeSignals()),
-                        now, now, userId, userId));
-                }
-                if (!criterionBands.isEmpty()) {
-                    frameworkCriterionBandRepository.saveAll(criterionBands);
-                }
+        List<FrameworkCriterionBand> allBands = new ArrayList<>();
+        for (int i = 0; i < savedCriteria.size(); i++) {
+            var savedCriterion = savedCriteria.get(i);
+            var bands = criterionInputs.get(i).bands();
+            if (bands == null || bands.isEmpty()) continue;
+            for (var bandInput : bands) {
+                var resultBandId = resultBandCodeToId.get(bandInput.resultBandCode());
+                if (resultBandId == null)
+                    throw new IllegalArgumentException("Không tìm thấy kết quả với mã: " + bandInput.resultBandCode());
+                allBands.add(new FrameworkCriterionBand(
+                    savedCriterion.getId(),
+                    resultBandId,
+                    StringNormalization.trimAndCollapseSpaces(bandInput.descriptor()),
+                    bandInput.positiveSignals(),
+                    bandInput.negativeSignals(),
+                    now, now, userId, userId));
             }
+        }
+        if (!allBands.isEmpty()) {
+            frameworkCriterionBandRepository.saveAll(allBands);
         }
     }
 }

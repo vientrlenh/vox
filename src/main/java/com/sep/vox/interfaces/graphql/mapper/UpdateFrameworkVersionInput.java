@@ -1,20 +1,13 @@
-package com.sep.vox.application.port.input.command;
+package com.sep.vox.interfaces.graphql.mapper;
 
-import java.math.BigDecimal;
-import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.UUID;
 
-import com.sep.vox.domain.valueobject.framework.FrameworkCriterionSignals;
-
-public record UpdateFrameworkVersionCommand(
-    UUID frameworkId,
-    UUID versionId,
+public record UpdateFrameworkVersionInput(
     String code,
     String name,
     String description,
-    OffsetDateTime effectiveFrom,
-    OffsetDateTime effectiveTo,
+    String effectiveFrom,
+    String effectiveTo,
     List<CriterionInput> criteria,
     List<ResultBandInput> resultBands
 ) {
@@ -28,16 +21,23 @@ public record UpdateFrameworkVersionCommand(
     public record CriterionBandInput(
         String resultBandCode,
         String descriptor,
-        FrameworkCriterionSignals positiveSignals,
-        FrameworkCriterionSignals negativeSignals
+        List<SignalInput> positiveSignals,
+        List<SignalInput> negativeSignals
+    ) {}
+
+    public record SignalInput(
+        String code,
+        String description,
+        String importance,
+        String evidenceHint
     ) {}
 
     public record ResultBandInput(
         String code,
         String label,
         String description,
-        BigDecimal scoreMin,
-        BigDecimal scoreMax,
+        Double scoreMin,
+        Double scoreMax,
         int order
     ) {}
 }

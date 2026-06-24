@@ -59,8 +59,9 @@ public class DeleteFrameworkVersionUseCase implements IUseCase<DeleteFrameworkVe
 
     private void deleteVersionAndChildren(java.util.UUID versionId) {
         var criteria = frameworkCriterionRepository.findByFrameworkVersionId(versionId);
-        for (var criterion : criteria) {
-            frameworkCriterionBandRepository.deleteByFrameworkCriterionId(criterion.getId());
+        if (!criteria.isEmpty()) {
+            frameworkCriterionBandRepository.deleteByFrameworkCriterionIdIn(
+                criteria.stream().map(c -> c.getId()).toList());
         }
         frameworkCriterionRepository.deleteByFrameworkVersionId(versionId);
         frameworkResultBandRepository.deleteByFrameworkVersionId(versionId);

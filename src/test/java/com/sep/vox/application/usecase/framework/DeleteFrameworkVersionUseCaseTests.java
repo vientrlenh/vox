@@ -81,8 +81,8 @@ public class DeleteFrameworkVersionUseCaseTests {
 
         useCase.execute(command);
 
-        verify(frameworkCriterionBandRepository).deleteByFrameworkCriterionId(criterion1.getId());
-        verify(frameworkCriterionBandRepository).deleteByFrameworkCriterionId(criterion2.getId());
+        verify(frameworkCriterionBandRepository).deleteByFrameworkCriterionIdIn(
+            List.of(criterion1.getId(), criterion2.getId()));
         verify(frameworkCriterionRepository).deleteByFrameworkVersionId(versionId);
         verify(frameworkResultBandRepository).deleteByFrameworkVersionId(versionId);
         verify(frameworkVersionRepository).deleteById(versionId);

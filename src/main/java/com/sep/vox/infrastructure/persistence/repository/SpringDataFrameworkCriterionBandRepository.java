@@ -17,6 +17,6 @@ public interface SpringDataFrameworkCriterionBandRepository extends JpaRepositor
     List<FrameworkCriterionBandJpaEntity> findByFrameworkResultBandId(UUID frameworkResultBandId);
 
     @Modifying
-    @Query("DELETE FROM FrameworkCriterionBandJpaEntity b WHERE b.frameworkCriterionId = :frameworkCriterionId")
-    void deleteByFrameworkCriterionId(@Param("frameworkCriterionId") UUID frameworkCriterionId);
+    @Query("DELETE FROM FrameworkCriterionBandJpaEntity b WHERE b.frameworkCriterionId IN :frameworkCriterionIds")
+    void deleteByFrameworkCriterionIdIn(@Param("frameworkCriterionIds") Collection<UUID> frameworkCriterionIds);
 }

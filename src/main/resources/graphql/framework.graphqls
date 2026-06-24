@@ -72,8 +72,6 @@ type FrameworkResultBand {
 }
 
 input UpdateFrameworkVersionInput {
-    frameworkId: ID!
-    versionId: ID!
     code: String!
     name: String!
     description: String
@@ -93,8 +91,15 @@ input CriterionInput {
 input CriterionBandInput {
     resultBandCode: String!
     descriptor: String
-    positiveSignals: String
-    negativeSignals: String
+    positiveSignals: [SignalInput!]
+    negativeSignals: [SignalInput!]
+}
+
+input SignalInput {
+    code: String!
+    description: String!
+    importance: String!
+    evidenceHint: String
 }
 
 input ResultBandInput {
@@ -114,5 +119,5 @@ extend type Query {
 }
 
 extend type Mutation {
-    updateFrameworkVersion(input: UpdateFrameworkVersionInput!): ID!
+    updateFrameworkVersion(frameworkId: ID!, versionId: ID!, input: UpdateFrameworkVersionInput!): ID!
 }

@@ -6,7 +6,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.query.ViewFrameworkVersionsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.FrameworkVersionDto;
 import com.sep.vox.domain.mapper.FrameworkVersionDtoMapper;
@@ -33,7 +32,7 @@ public class ViewFrameworkVersionsUseCase implements IUseCase<ViewFrameworkVersi
             .orElseThrow(() -> new NotFoundException("Không tìm thấy framework"));
 
         var result = frameworkVersionRepository.findByFrameworkId(
-            input.frameworkId(), new PageRequest(input.page(), input.size()));
+            input.frameworkId(), input.page(), input.size());
         return FrameworkVersionDtoMapper.toDtoPage(result);
     }
 }

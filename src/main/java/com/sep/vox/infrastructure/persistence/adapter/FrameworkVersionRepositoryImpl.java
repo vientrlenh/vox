@@ -34,8 +34,8 @@ public class FrameworkVersionRepositoryImpl implements FrameworkVersionRepositor
     }
 
     @Override
-    public PageResult<FrameworkVersion> findByFrameworkId(UUID frameworkId, com.sep.vox.domain.common.PageRequest pageRequest) {
-        var pageable = PageRequest.of(pageRequest.page() - 1, pageRequest.size());
+    public PageResult<FrameworkVersion> findByFrameworkId(UUID frameworkId, int pageNumber, int size) {
+        var pageable = PageRequest.of(pageNumber - 1, size);
         var page = springDataFrameworkVersionRepository.findByFrameworkId(frameworkId, pageable);
         return new PageResult<>(
             page.getContent().stream().map(FrameworkVersionMapper::toDomain).toList(),

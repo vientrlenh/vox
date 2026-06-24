@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -22,6 +23,12 @@ public class FrameworkResultBandRepositoryImpl implements FrameworkResultBandRep
     @Override
     public List<FrameworkResultBand> findByFrameworkVersionId(UUID frameworkVersionId) {
         return springDataFrameworkResultBandRepository.findByFrameworkVersionId(frameworkVersionId)
+            .stream().map(FrameworkResultBandMapper::toDomain).toList();
+    }
+
+    @Override
+    public List<FrameworkResultBand> findByFrameworkVersionIdIn(Collection<UUID> frameworkVersionIds) {
+        return springDataFrameworkResultBandRepository.findByFrameworkVersionIdIn(frameworkVersionIds)
             .stream().map(FrameworkResultBandMapper::toDomain).toList();
     }
 

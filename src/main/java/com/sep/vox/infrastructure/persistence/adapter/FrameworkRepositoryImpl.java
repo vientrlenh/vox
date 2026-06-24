@@ -32,8 +32,8 @@ public class FrameworkRepositoryImpl implements FrameworkRepository {
     }
 
     @Override
-    public PageResult<Framework> findAll(com.sep.vox.domain.common.PageRequest pageRequest) {
-        var pageable = PageRequest.of(pageRequest.page() - 1, pageRequest.size());
+    public PageResult<Framework> findAll(int pageNumber, int size) {
+        var pageable = PageRequest.of(pageNumber - 1, size);
         var page = springDataFrameworkRepository.findAll(pageable);
         return new PageResult<>(
             page.getContent().stream().map(FrameworkMapper::toDomain).toList(),

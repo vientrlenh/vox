@@ -15,7 +15,6 @@ import org.junit.jupiter.api.Test;
 import com.sep.vox.application.port.input.query.ViewFrameworksQuery;
 import com.sep.vox.application.port.input.usecase.framework.ViewFrameworksUseCase;
 import com.sep.vox.domain.common.PageResult;
-import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.model.framework.Framework;
 import com.sep.vox.domain.repository.FrameworkRepository;
 import com.sep.vox.domain.valueobject.FrameworkCode;
@@ -53,7 +52,7 @@ public class ViewFrameworksUseCaseTests {
             1
         );
 
-        when(frameworkRepository.findAll(new PageRequest(1, 10)))
+        when(frameworkRepository.findAll(1, 10))
             .thenReturn(pageResult);
 
         var result = useCase.execute(query);
@@ -62,7 +61,7 @@ public class ViewFrameworksUseCaseTests {
         assertThat(result.page()).isEqualTo(1);
         assertThat(result.size()).isEqualTo(10);
         assertThat(result.totalElements()).isEqualTo(2);
-        verify(frameworkRepository).findAll(new PageRequest(1, 10));
+        verify(frameworkRepository).findAll(1, 10);
     }
 
     @Test
@@ -70,7 +69,7 @@ public class ViewFrameworksUseCaseTests {
         var query = new ViewFrameworksQuery(1, 10);
         var emptyPage = new PageResult<Framework>(List.of(), 1, 10, 0, 0);
 
-        when(frameworkRepository.findAll(new PageRequest(1, 10)))
+        when(frameworkRepository.findAll(1, 10))
             .thenReturn(emptyPage);
 
         var result = useCase.execute(query);
@@ -96,11 +95,11 @@ public class ViewFrameworksUseCaseTests {
             1
         );
 
-        when(frameworkRepository.findAll(new PageRequest(2, 10)))
+        when(frameworkRepository.findAll(2, 10))
             .thenReturn(pageResult);
 
         useCase.execute(query);
 
-        verify(frameworkRepository).findAll(new PageRequest(2, 10));
+        verify(frameworkRepository).findAll(2, 10);
     }
 }

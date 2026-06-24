@@ -5,7 +5,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.port.input.query.ViewFrameworksQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.FrameworkDto;
 import com.sep.vox.domain.mapper.FrameworkDtoMapper;
@@ -23,7 +22,7 @@ public class ViewFrameworksUseCase implements IUseCase<ViewFrameworksQuery, Page
     @Override
     @Transactional(readOnly = true)
     public PageResult<FrameworkDto> execute(ViewFrameworksQuery input) {
-        var result = frameworkRepository.findAll(new PageRequest(input.page(), input.size()));
+        var result = frameworkRepository.findAll(input.page(), input.size());
         return FrameworkDtoMapper.toDtoPage(result);
     }
 }

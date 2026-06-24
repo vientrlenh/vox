@@ -17,40 +17,24 @@ import org.junit.jupiter.api.Test;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.query.ViewFrameworkVersionDetailsQuery;
 import com.sep.vox.application.port.input.usecase.framework.ViewFrameworkVersionDetailsUseCase;
-import com.sep.vox.domain.model.framework.FrameworkCriterion;
-import com.sep.vox.domain.model.framework.FrameworkResultBand;
 import com.sep.vox.domain.model.framework.FrameworkVersion;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
-import com.sep.vox.domain.repository.FrameworkCriterionBandRepository;
-import com.sep.vox.domain.repository.FrameworkCriterionRepository;
-import com.sep.vox.domain.repository.FrameworkResultBandRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
 
 public class ViewFrameworkVersionDetailsUseCaseTests {
 
     private FrameworkVersionRepository frameworkVersionRepository;
-    private FrameworkCriterionRepository frameworkCriterionRepository;
-    private FrameworkCriterionBandRepository frameworkCriterionBandRepository;
-    private FrameworkResultBandRepository frameworkResultBandRepository;
     private ViewFrameworkVersionDetailsUseCase useCase;
     private OffsetDateTime now = OffsetDateTime.now();
 
     @BeforeEach
     void setUp() {
         frameworkVersionRepository = mock(FrameworkVersionRepository.class);
-        frameworkCriterionRepository = mock(FrameworkCriterionRepository.class);
-        frameworkCriterionBandRepository = mock(FrameworkCriterionBandRepository.class);
-        frameworkResultBandRepository = mock(FrameworkResultBandRepository.class);
-        useCase = new ViewFrameworkVersionDetailsUseCase(
-            frameworkVersionRepository,
-            frameworkCriterionRepository,
-            frameworkCriterionBandRepository,
-            frameworkResultBandRepository
-        );
+        useCase = new ViewFrameworkVersionDetailsUseCase(frameworkVersionRepository);
     }
 
     @Test
-    void should_return_version_details_with_criteria_and_bands() {
+    void should_return_version_details() {
         var versionId = UUID.randomUUID();
         var frameworkId = UUID.randomUUID();
         var query = new ViewFrameworkVersionDetailsQuery(versionId);
@@ -65,33 +49,16 @@ public class ViewFrameworkVersionDetailsUseCaseTests {
         version.setEffectiveFrom(now);
         version.setEffectiveTo(now.plusDays(365));
 
-        var criterion = new FrameworkCriterion();
-        criterion.setId(UUID.randomUUID());
-        criterion.setFrameworkVersionId(versionId);
-        criterion.setCode("LISTENING");
-
-        var resultBand = new FrameworkResultBand();
-        resultBand.setId(UUID.randomUUID());
-        resultBand.setFrameworkVersionId(versionId);
-        resultBand.setCode("A1");
-
         when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.of(version));
-        when(frameworkCriterionRepository.findByFrameworkVersionId(versionId))
-            .thenReturn(List.of(criterion));
-        when(frameworkCriterionBandRepository.findByFrameworkCriterionIdIn(List.of(criterion.getId())))
-            .thenReturn(List.of());
-        when(frameworkResultBandRepository.findByFrameworkVersionId(versionId))
-            .thenReturn(List.of(resultBand));
 
         var result = useCase.execute(query);
 
         assertThat(result.id()).isEqualTo(versionId);
         assertThat(result.code()).isEqualTo("V1_0");
         assertThat(result.status()).isEqualTo(FrameworkVersionStatus.PUBLISHED.toString());
+        assertThat(result.criteria()).isEmpty();
+        assertThat(result.resultBands()).isEmpty();
         verify(frameworkVersionRepository).findById(versionId);
-        verify(frameworkCriterionRepository).findByFrameworkVersionId(versionId);
-        verify(frameworkCriterionBandRepository).findByFrameworkCriterionIdIn(List.of(criterion.getId()));
-        verify(frameworkResultBandRepository).findByFrameworkVersionId(versionId);
     }
 
     @Test
@@ -105,7 +72,7 @@ public class ViewFrameworkVersionDetailsUseCaseTests {
     }
 
     @Test
-    void should_return_empty_criteria_and_bands_when_none_exist() {
+    void should_return_shallow_dto_with_empty_nested_lists() {
         var versionId = UUID.randomUUID();
         var frameworkId = UUID.randomUUID();
         var query = new ViewFrameworkVersionDetailsQuery(versionId);
@@ -118,13 +85,11 @@ public class ViewFrameworkVersionDetailsUseCaseTests {
         version.setStatus(FrameworkVersionStatus.DRAFT);
 
         when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.of(version));
-        when(frameworkCriterionRepository.findByFrameworkVersionId(versionId))
-            .thenReturn(List.of());
-        when(frameworkResultBandRepository.findByFrameworkVersionId(versionId))
-            .thenReturn(List.of());
 
         var result = useCase.execute(query);
 
         assertThat(result.id()).isEqualTo(versionId);
+        assertThat(result.criteria()).isEqualTo(List.of());
+        assertThat(result.resultBands()).isEqualTo(List.of());
     }
 }

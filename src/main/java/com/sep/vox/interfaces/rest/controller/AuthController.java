@@ -18,8 +18,6 @@ import com.sep.vox.application.port.input.usecase.auth.RefreshUseCase;
 import com.sep.vox.application.port.input.usecase.auth.SetUpPasswordUseCase;
 import com.sep.vox.application.port.input.usecase.auth.SendResetPasswordOtpUseCase;
 import com.sep.vox.application.port.input.usecase.auth.ResetPasswordUseCase;
-import com.sep.vox.application.port.input.usecase.auth.SendResetPasswordOtpUseCase;
-import com.sep.vox.application.port.input.usecase.auth.SetUpPasswordUseCase;
 import com.sep.vox.application.port.input.usecase.registration.RegisterBySelfDeclaredUseCase;
 
 import com.sep.vox.application.port.input.usecase.registration.RegisterFromSchoolDirectoryUseCase;
@@ -44,11 +42,8 @@ import com.sep.vox.interfaces.rest.mapper.RegisterBySelfDeclaredCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.SendResetPasswordOtpCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.RegisterFromSchoolDirectoryCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.ResetPasswordCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.SendResetPasswordOtpCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.SetUpPasswordCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.VerifyRegisterFormOtpCommandMapper;
 
-import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 import com.sep.vox.interfaces.shared.HttpCookieProvider;
 import com.sep.vox.interfaces.shared.IpAddressReceiver;
 

@@ -20,6 +20,10 @@ public class ImportSession {
     private ImportSessionStatus status;
     private UUID importedEntityId;
     private OffsetDateTime expiresAt;
+    private OffsetDateTime claimedAt;
+    private UUID claimedBy;
+    private OffsetDateTime leaseExpiresAt;
+    private int attempts;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
     private UUID createdBy;
@@ -30,7 +34,8 @@ public class ImportSession {
     public ImportSession(UUID id, UUID schoolId, ImportType type, String fileName, String originalHeadersJson,
             String suggestedMappingJson, String confirmedMappingJson, long validRows, long invalidRows,
             long importedRows, long skippedRows, long totalRows, String failureReason, ImportSessionStatus status,
-            UUID importedEntityId, OffsetDateTime expiresAt, OffsetDateTime createdAt, OffsetDateTime updatedAt,
+            UUID importedEntityId, OffsetDateTime expiresAt, OffsetDateTime claimedAt, UUID claimedBy,
+            OffsetDateTime leaseExpiresAt, int attempts, OffsetDateTime createdAt, OffsetDateTime updatedAt,
             UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.schoolId = schoolId;
@@ -48,6 +53,10 @@ public class ImportSession {
         this.status = status;
         this.importedEntityId = importedEntityId;
         this.expiresAt = expiresAt;
+        this.claimedAt = claimedAt;
+        this.claimedBy = claimedBy;
+        this.leaseExpiresAt = leaseExpiresAt;
+        this.attempts = attempts;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
@@ -57,7 +66,8 @@ public class ImportSession {
     public ImportSession(UUID schoolId, ImportType type, String fileName, String originalHeadersJson,
             String suggestedMappingJson, String confirmedMappingJson, long validRows, long invalidRows,
             long importedRows, long skippedRows, long totalRows, String failureReason, ImportSessionStatus status,
-            UUID importedEntityId, OffsetDateTime expiresAt, OffsetDateTime createdAt, OffsetDateTime updatedAt,
+            UUID importedEntityId, OffsetDateTime expiresAt, OffsetDateTime claimedAt, UUID claimedBy,
+            OffsetDateTime leaseExpiresAt, int attempts, OffsetDateTime createdAt, OffsetDateTime updatedAt,
             UUID createdBy, UUID updatedBy) {
         this.schoolId = schoolId;
         this.type = type;
@@ -74,6 +84,10 @@ public class ImportSession {
         this.status = status;
         this.importedEntityId = importedEntityId;
         this.expiresAt = expiresAt;
+        this.claimedAt = claimedAt;
+        this.claimedBy = claimedBy;
+        this.leaseExpiresAt = leaseExpiresAt;
+        this.attempts = attempts;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
@@ -208,6 +222,38 @@ public class ImportSession {
         this.expiresAt = expiresAt;
     }
 
+    public OffsetDateTime getClaimedAt() {
+        return claimedAt;
+    }
+
+    public void setClaimedAt(OffsetDateTime claimedAt) {
+        this.claimedAt = claimedAt;
+    }
+
+    public UUID getClaimedBy() {
+        return claimedBy;
+    }
+
+    public void setClaimedBy(UUID claimedBy) {
+        this.claimedBy = claimedBy;
+    }
+
+    public OffsetDateTime getLeaseExpiresAt() {
+        return leaseExpiresAt;
+    }
+
+    public void setLeaseExpiresAt(OffsetDateTime leaseExpiresAt) {
+        this.leaseExpiresAt = leaseExpiresAt;
+    }
+
+    public int getAttempts() {
+        return attempts;
+    }
+
+    public void setAttempts(int attempts) {
+        this.attempts = attempts;
+    }
+
     public OffsetDateTime getCreatedAt() {
         return createdAt;
     }
@@ -239,6 +285,8 @@ public class ImportSession {
     public void setUpdatedBy(UUID updatedBy) {
         this.updatedBy = updatedBy;
     }
+
+    
 
     
 }

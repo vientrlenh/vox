@@ -14,7 +14,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
 import com.sep.vox.config.ContainerTestConfig;
-import com.sep.vox.domain.common.PageRequest;
+
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
@@ -118,7 +118,8 @@ class SchoolClassRepositoryTests extends ContainerTestConfig {
             SchoolClassStatus.ACTIVE,
             languageId,
             gradeId,
-            new PageRequest(1, 10)
+            1, 
+            10
         );
 
         assertThat(found.content()).hasSize(1);
@@ -139,7 +140,8 @@ class SchoolClassRepositoryTests extends ContainerTestConfig {
             null,
             null,
             null,
-            new PageRequest(1, 10)
+            1, 
+            10
         );
 
         assertThat(found.content()).hasSize(1);
@@ -160,7 +162,8 @@ class SchoolClassRepositoryTests extends ContainerTestConfig {
             null,
             null,
             null,
-            new PageRequest(1, 10)
+            1, 
+            10
         );
 
         assertThat(found.content()).hasSize(2);
@@ -182,7 +185,8 @@ class SchoolClassRepositoryTests extends ContainerTestConfig {
             null,
             null,
             null,
-            new PageRequest(1, 10)
+            1, 
+            10
         );
 
         assertThat(found.content()).hasSize(2);

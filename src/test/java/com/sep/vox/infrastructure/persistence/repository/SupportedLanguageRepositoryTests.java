@@ -13,7 +13,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
 import com.sep.vox.config.ContainerTestConfig;
-import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;
 import com.sep.vox.domain.valueobject.LanguageCode;
@@ -89,7 +88,7 @@ class SupportedLanguageRepositoryTests extends ContainerTestConfig {
         supportedLanguageRepository.save(newSupportedLanguage("PT", "Portuguese"));
         supportedLanguageRepository.save(newSupportedLanguage("NL", "Dutch"));
 
-        var result = supportedLanguageRepository.findAll("port", null, new PageRequest(1, 20));
+        var result = supportedLanguageRepository.findAll("port", null, 1, 20);
 
         assertThat(result.content())
             .extracting(language -> language.getCode().value())
@@ -102,8 +101,8 @@ class SupportedLanguageRepositoryTests extends ContainerTestConfig {
         supportedLanguageRepository.save(newSupportedLanguage("TR", "Turkish", true));
         supportedLanguageRepository.save(newSupportedLanguage("PL", "Polish", false));
 
-        var active = supportedLanguageRepository.findAll(null, true, new PageRequest(1, 20));
-        var inactive = supportedLanguageRepository.findAll(null, false, new PageRequest(1, 20));
+        var active = supportedLanguageRepository.findAll(null, true, 1, 20);
+        var inactive = supportedLanguageRepository.findAll(null, false, 1, 20);
 
         assertThat(active.content())
             .extracting(language -> language.getCode().value())
@@ -120,7 +119,7 @@ class SupportedLanguageRepositoryTests extends ContainerTestConfig {
         supportedLanguageRepository.save(newSupportedLanguage("SV", "Swedish", true, OffsetDateTime.parse("2026-06-01T10:00:00Z")));
         supportedLanguageRepository.save(newSupportedLanguage("DA", "Danish", true, OffsetDateTime.parse("2026-06-02T10:00:00Z")));
 
-        var result = supportedLanguageRepository.findAll(null, null, new PageRequest(1, 1));
+        var result = supportedLanguageRepository.findAll(null, null, 1, 1);
 
         assertThat(result.content()).hasSize(1);
         assertThat(result.content().get(0).getCode().value()).isEqualTo("DA");

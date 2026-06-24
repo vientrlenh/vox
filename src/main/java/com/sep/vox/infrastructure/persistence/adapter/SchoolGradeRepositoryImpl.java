@@ -8,8 +8,9 @@ import java.util.Optional;
 
 import java.util.UUID;
 
-import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
+
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.school.SchoolGrade;
@@ -69,27 +70,25 @@ public class SchoolGradeRepositoryImpl implements SchoolGradeRepository {
     }
 
     @Override
-    public PageResult<SchoolGrade> findAllBySchoolId(UUID schoolId, PageRequest pageRequest) {
+    public PageResult<SchoolGrade> findAllBySchoolId(UUID schoolId, int pageNumber, int size) {
 
         // 1. Lấy thông tin từ Domain PageRequest và đổi thành Spring Pageable
-        int actualPage = pageRequest.page() - 1; // Spring đếm trang từ 0
-        org.springframework.data.domain.Pageable springPageable =
-                org.springframework.data.domain.PageRequest.of(actualPage, pageRequest.size());
+        int actualPage = pageNumber - 1; // Spring đếm trang từ 0
+        var pageable = PageRequest.of(actualPage, size);
 
         // 2. Gọi DB (Nó sẽ trả về Page<SchoolGradeJpaEntity> của Spring)
-        org.springframework.data.domain.Page<com.sep.vox.infrastructure.persistence.entity.SchoolGradeJpaEntity> pageEntity =
-                springDataSchoolGradeRepository.findAllBySchoolId(schoolId, springPageable);
+        var page = springDataSchoolGradeRepository.findAllBySchoolId(schoolId, pageable);
 
         // 3. Đóng gói lại thành PageResult của Domain để trả về cho UseCase
         return new PageResult<>(
-                pageEntity.getContent().stream()
+                page.getContent().stream()
                         .map(SchoolGradeMapper::toDomain) // Map Entity sang Domain
                         .toList(),
 
-                pageEntity.getNumber() + 1, // Trả lại số trang đếm từ 1 cho Client
-                pageEntity.getSize(),
-                pageEntity.getTotalElements(),
-                pageEntity.getTotalPages()
+                pageNumber, // Trả lại số trang đếm từ 1 cho Client
+                size,
+                page.getTotalElements(),
+                page.getTotalPages()
         );
     }
 

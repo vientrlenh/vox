@@ -4,7 +4,7 @@ import com.sep.vox.application.port.input.query.ViewSchoolGradesQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolGradeDto;
-import com.sep.vox.domain.dto.SchoolGradeFromDto;
+
 import com.sep.vox.domain.mapper.SchoolGradeDtoMapper;
 import com.sep.vox.domain.model.school.SchoolGrade;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
@@ -27,7 +27,8 @@ public class ViewSchoolGradesUseCase implements IUseCase<ViewSchoolGradesQuery, 
         // 1. Gọi DB lấy danh sách phân trang (PageResult<SchoolGrade>)
         PageResult<SchoolGrade> pageResult = schoolGradeRepository.findAllBySchoolId(
                 query.schoolId(),
-                query.pageRequest()
+                query.page(), 
+                query.size()
         );
 
         // 2. Chuyển đổi sang DTO và trả về

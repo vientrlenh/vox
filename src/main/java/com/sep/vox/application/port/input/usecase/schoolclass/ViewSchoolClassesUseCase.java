@@ -10,7 +10,6 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.query.ViewSchoolClassesQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.mapper.SchoolClassDtoMapper;
@@ -59,7 +58,8 @@ public class ViewSchoolClassesUseCase implements IUseCase<ViewSchoolClassesQuery
             parseStatus(input.status()),
             input.languageId(),
             input.schoolGradeId(),
-            new PageRequest(input.page(), input.size())
+            input.page(), 
+            input.size()
         );
         return SchoolClassDtoMapper.toDtoPage(result);
     }

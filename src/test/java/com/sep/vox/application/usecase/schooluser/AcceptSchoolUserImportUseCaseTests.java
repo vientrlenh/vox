@@ -406,7 +406,7 @@ class AcceptSchoolUserImportUseCaseTests {
         return new ImportSession(
             id, schoolId, ImportType.USER, "users.csv", "[]", "{}", null,
             0L, 0L, 0L, 0L, 2L, null, ImportSessionStatus.PREVIEWED, null,
-            OffsetDateTime.now().plusDays(1), OffsetDateTime.now(), OffsetDateTime.now(),
+            OffsetDateTime.now().plusDays(1), null, null, null, 0, OffsetDateTime.now(), OffsetDateTime.now(),
             UUID.randomUUID(), UUID.randomUUID()
         );
     }

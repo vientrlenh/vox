@@ -26,7 +26,8 @@ public class ViewSchoolRoomsUseCase implements IUseCase<ViewSchoolRoomsQuery, Pa
         // Cần đảm bảo bạn đã tạo hàm findAllBySchoolId(schoolId, pageRequest) trong SchoolRoomRepository
         PageResult<SchoolRoom> pageResult = schoolRoomRepository.findAllBySchoolId(
                 query.schoolId(),
-                query.pageRequest()
+                query.page(), 
+                query.size()
         );
 
         return new PageResult<>(

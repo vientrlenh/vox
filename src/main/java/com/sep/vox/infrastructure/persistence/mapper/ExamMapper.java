@@ -1,0 +1,50 @@
+package com.sep.vox.infrastructure.persistence.mapper;
+
+import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamStatus;
+import com.sep.vox.infrastructure.persistence.entity.ExamJpaEntity;
+
+public final class ExamMapper {
+    
+    public static Exam toDomain(ExamJpaEntity jpa) {
+        return new Exam(
+            jpa.getId(), 
+            jpa.getCode(), 
+            jpa.getName(), 
+            jpa.getDescription(), 
+            jpa.getSchoolId(), 
+            jpa.getLanguageId(), 
+            statusFromString(jpa.getStatus()), 
+            jpa.getOpenAt(), 
+            jpa.getCloseAt(), 
+            jpa.getAssessmentPolicyId(), 
+            jpa.getCreatedAt(), 
+            jpa.getUpdatedAt(), 
+            jpa.getCreatedBy(), 
+            jpa.getUpdatedBy()
+        );
+    }
+
+    public static ExamJpaEntity toJpa(Exam exam) {
+        return new ExamJpaEntity(
+            exam.getId(), 
+            exam.getCode(), 
+            exam.getName(), 
+            exam.getDescription(), 
+            exam.getSchoolId(), 
+            exam.getLanguageId(), 
+            exam.getStatus().name(), 
+            exam.getOpenAt(), 
+            exam.getCloseAt(), 
+            exam.getAssessmentPolicyId(), 
+            exam.getCreatedAt(), 
+            exam.getUpdatedAt(), 
+            exam.getCreatedBy(), 
+            exam.getUpdatedBy()
+        );
+    }
+
+    private static ExamStatus statusFromString(String status) {
+        return status == null ? null : ExamStatus.valueOf(status);
+    }
+}

@@ -6,10 +6,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import com.sep.vox.domain.common.PageResult;
-import com.sep.vox.infrastructure.persistence.entity.SchoolRoomJpaEntity;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.school.SchoolRoom;
@@ -46,21 +43,21 @@ public class SchoolRoomRepositoryImpl implements SchoolRoomRepository {
 
 
     @Override
-    public PageResult<SchoolRoom> findAllBySchoolId(UUID schoolId, com.sep.vox.domain.common.PageRequest pageRequest) {
-        Pageable springPageable = PageRequest.of(pageRequest.page(), pageRequest.size());
+    public PageResult<SchoolRoom> findAllBySchoolId(UUID schoolId, int pageNumber, int size) {
+        var pageable = PageRequest.of(pageNumber - 1, size);
 
-        Page<SchoolRoomJpaEntity> entityPage = springDataSchoolRoomRepository.findBySchoolId(schoolId, springPageable);
+        var page = springDataSchoolRoomRepository.findBySchoolId(schoolId, pageable);
 
-        List<SchoolRoom> domainContent = entityPage.getContent().stream()
+        List<SchoolRoom> domainContent = page.getContent().stream()
                 .map(SchoolRoomMapper::toDomain)
                 .toList();
 
         return new PageResult<>(
                 domainContent,
-                entityPage.getNumber(),
-                entityPage.getSize(),
-                entityPage.getTotalElements(),
-                entityPage.getTotalPages()
+                pageNumber,
+                size,
+                page.getTotalElements(),
+                page.getTotalPages()
         );
     }
 

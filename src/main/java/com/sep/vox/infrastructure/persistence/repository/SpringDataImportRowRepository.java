@@ -20,4 +20,6 @@ public interface SpringDataImportRowRepository extends JpaRepository<ImportRowJp
           AND (:status IS NULL OR r.status = :status)
         """)
     Page<ImportRowJpaEntity> findBySessionIdWithFilters(UUID sessionId, String status, Pageable pageable);
+
+    List<ImportRowJpaEntity> findBySessionId(UUID sessionId);
 }

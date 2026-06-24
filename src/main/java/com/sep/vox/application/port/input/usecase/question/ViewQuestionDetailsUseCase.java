@@ -24,6 +24,6 @@ public class ViewQuestionDetailsUseCase implements IUseCase<ViewQuestionDetailsQ
     public QuestionDto execute(ViewQuestionDetailsQuery input) {
         var question = questionRepository.findById(input.id())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi"));
-        return QuestionDtoMapper.toDto(question);
+        return QuestionDtoMapper.toQuestionDto(question);
     }
 }

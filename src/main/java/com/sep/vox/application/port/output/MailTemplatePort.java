@@ -5,4 +5,5 @@ public interface MailTemplatePort {
     String renderSchoolUserPasswordSetUpEmail(String schoolUserName, String schoolName, String passwordSetupUrl, String expiresIn);
     String renderRejectRegisterFormEmail(String reason);
     String renderResetPasswordOtpEmail(String otp, String expiresIn);
+    String renderRegisterVerificationOtpEmail(String otp, String expiresIn);
 }

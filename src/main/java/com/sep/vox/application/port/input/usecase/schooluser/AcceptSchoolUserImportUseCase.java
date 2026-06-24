@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -11,6 +12,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -29,12 +31,15 @@ import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.port.output.PasswordSetUpTokenPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.importfile.AcceptSchoolUserImportResponse;
+import com.sep.vox.domain.model.importfile.ImportRow;
 import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
 import com.sep.vox.domain.model.passwordsetuptoken.PasswordSetUpToken;
 import com.sep.vox.domain.model.school.SchoolUser;
+import com.sep.vox.domain.model.user.Role;
+import com.sep.vox.domain.model.user.SchoolRoleCodes;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserRole;
 import com.sep.vox.domain.repository.ImportRowRepository;
@@ -45,12 +50,18 @@ import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.repository.UserRoleRepository;
+import com.sep.vox.domain.valueobject.DateOfBirth;
+import com.sep.vox.domain.valueobject.FullName;
+import com.sep.vox.domain.valueobject.Phone;
 
 @Service
-public class AcceptSchoolUserImportUseCase implements IUseCase<AcceptSchoolUserImportCommand, AcceptSchoolUserImportResponse> {
+public class AcceptSchoolUserImportUseCase
+        implements IUseCase<AcceptSchoolUserImportCommand, AcceptSchoolUserImportResponse> {
 
-    private static final Set<String> REQUIRED_FIELDS = Set.of("email", "fullName", "roleCode", "phone", "dateOfBirth", "startDate", "endDate", "address");
-    private static final Set<String> SUPPORTED_FIELDS = Set.of("email", "fullName", "roleCode", "phone", "dateOfBirth", "startDate", "endDate", "address");
+    private static final Set<String> REQUIRED_FIELDS = Set.of("email", "fullName", "roleCode", "phone", "dateOfBirth",
+            "startDate", "endDate", "address");
+    private static final Set<String> SUPPORTED_FIELDS = Set.of("email", "fullName", "roleCode", "phone", "dateOfBirth",
+            "startDate", "endDate", "address");
 
     private final ImportSessionRepository importSessionRepository;
     private final ImportRowRepository importRowRepository;
@@ -106,7 +117,7 @@ public class AcceptSchoolUserImportUseCase implements IUseCase<AcceptSchoolUserI
         var schoolId = getSchoolId(currentUser);
         validateRequestedSchool(input.schoolId(), schoolId);
         var school = schoolRepository.findById(schoolId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
         if (!school.isActive()) {
             throw new IllegalStateException("Trường học không hoạt động");
         }
@@ -122,84 +133,13 @@ public class AcceptSchoolUserImportUseCase implements IUseCase<AcceptSchoolUserI
         importSessionRepository.save(session);
 
         var rows = importRowRepository.findBySessionIdOrderByRowNumber(session.getId());
-        var seenEmails = new HashSet<String>();
-        // var seenStudentIds = new HashSet<String>();
-        var importedCount = 0L;
-        var invalidCount = 0L;
-
-        for (var row : rows) {
-            var rawData = jsonSerializationPort.toStringMap(row.getRawDataJson());
-            var mappedData = mapRawData(rawData, input.confirmedMapping());
-            var normalized = normalize(mappedData);
-            var errors = validateRow(normalized, schoolId, seenEmails); //, seenStudentIds);
-
-            row.setMappedDataJson(jsonSerializationPort.toJson(normalized));
-            if (!errors.isEmpty()) {
-                row.setErrorsJson(jsonSerializationPort.toJson(errors));
-                row.setStatus(ImportRowStatus.INVALID);
-                invalidCount++;
-                continue;
-            }
-
-            var roleCode = normalized.get("roleCode");
-            var role = roleRepository.findByCode(roleCode).orElse(null);
-            if (role == null) {
-                row.setErrorsJson(jsonSerializationPort.toJson(List.of(error("roleCode", "Không tìm thấy vai trò"))));
-                row.setStatus(ImportRowStatus.INVALID);
-                invalidCount++;
-                continue;
-            }
-
-            final var normalizedData = normalized;
-            final var schoolName = school.getName();
-            UUID createdId;
-            try {
-                createdId = transactionTemplate.execute(status -> {
-                    var ts = OffsetDateTime.now();
-                    var dateOfBirth = parseDate(normalizedData.get("dateOfBirth"));
-                    User user = "STUDENT".equals(roleCode)
-                        ? User.create(normalizedData.get("email"), normalizedData.get("phone"), normalizedData.get("fullName"), dateOfBirth, normalizedData.get("address"), null, currentUserId, ts)
-                        : User.create(normalizedData.get("email"), normalizedData.get("phone"), normalizedData.get("fullName"), dateOfBirth, normalizedData.get("address"), null, currentUserId, ts);
-
-                    var savedUser = userRepository.save(user);
-                    userRoleRepository.save(new UserRole(savedUser.getId(), role.getId(), ts));
-
-                    if ("STUDENT".equals(roleCode)) {
-                        var startOffset = parseDate(normalizedData.get("startDate")).atStartOfDay(ZoneOffset.UTC).toOffsetDateTime();
-                        var endOffset = parseDate(normalizedData.get("endDate")).atStartOfDay(ZoneOffset.UTC).toOffsetDateTime();
-                        schoolUserRepository.save(SchoolUser.create(savedUser.getId(), schoolId, startOffset, endOffset));
-                    }
-
-                    var generatedToken = passwordSetUpTokenPort.generateToken();
-                    passwordSetUpTokenRepository.save(PasswordSetUpToken.create(savedUser.getId(), generatedToken.hashedToken()));
-                    eventPublisherPort.publish(new SchoolUserPasswordSetUpEmailRequestedEvent(
-                        normalizedData.get("email"),
-                        normalizedData.get("fullName"),
-                        schoolName,
-                        savedUser.getId(),
-                        generatedToken.rawToken()
-                    ));
-                    return savedUser.getId();
-                });
-            } catch (DataIntegrityViolationException e) {
-                row.setErrorsJson(jsonSerializationPort.toJson(List.of(error("email", "Email hoặc số điện thoại đã tồn tại"))));
-                row.setStatus(ImportRowStatus.INVALID);
-                invalidCount++;
-                continue;
-            }
-
-            if (createdId != null) {
-                row.setErrorsJson(null);
-                row.setStatus(ImportRowStatus.IMPORTED);
-                importedCount++;
-            }
-        }
+        var result = processRows(rows, input.confirmedMapping(), schoolId, school.getName(), currentUserId);
+        var invalidRows = rows.size() - result.importedRows();
 
         importRowRepository.saveAll(rows);
-
-        session.setImportedRows(importedCount);
-        session.setInvalidRows(invalidCount);
-        session.setValidRows(importedCount);
+        session.setImportedRows(result.importedRows());
+        session.setInvalidRows(invalidRows);
+        session.setValidRows(result.importedRows());
         session.setSkippedRows(0L);
         session.setTotalRows(rows.size());
         session.setStatus(ImportSessionStatus.COMPLETED);
@@ -208,13 +148,148 @@ public class AcceptSchoolUserImportUseCase implements IUseCase<AcceptSchoolUserI
         var savedSession = importSessionRepository.save(session);
 
         return new AcceptSchoolUserImportResponse(
-            savedSession.getId(),
-            savedSession.getTotalRows(),
-            savedSession.getImportedRows(),
-            savedSession.getInvalidRows(),
-            savedSession.getSkippedRows(),
-            savedSession.getStatus().name()
-        );
+                savedSession.getId(),
+                savedSession.getTotalRows(),
+                savedSession.getImportedRows(),
+                result.updatedRows(),
+                savedSession.getInvalidRows(),
+                savedSession.getSkippedRows(),
+                savedSession.getStatus().name());
+    }
+
+    private ProcessResult processRows(List<ImportRow> rows, Map<String, String> confirmedMapping,
+            UUID schoolId, String schoolName, UUID currentUserId) {
+        var importedRows = 0L;
+        var updatedRows = 0L;
+        var seenEmails = new HashSet<String>();
+        var rowContexts = new ArrayList<RowContext>();
+        var emails = new HashSet<String>();
+        var roleCodes = new HashSet<String>();
+
+        for (var row : rows) {
+            var rawData = jsonSerializationPort.toStringMap(row.getRawDataJson());
+            var mappedData = mapRawData(rawData, confirmedMapping);
+            var normalized = normalize(mappedData);
+            row.setMappedDataJson(jsonSerializationPort.toJson(normalized));
+            rowContexts.add(new RowContext(row, normalized));
+            addIfPresent(emails, normalized.get("email"));
+            addIfPresent(roleCodes, normalized.get("roleCode"));
+        }
+
+        var existingUsersByEmail = findUsersByEmail(emails);
+        var rolesByCode = findRolesByCode(roleCodes);
+        var schoolUsersByUserId = findSchoolUsersByUserId(existingUsersByEmail.values(), schoolId);
+
+        for (var rowContext : rowContexts) {
+            var row = rowContext.row();
+            var normalized = rowContext.normalized();
+            var errors = validateRow(normalized, seenEmails, rolesByCode);
+
+            if (!errors.isEmpty()) {
+                row.setErrorsJson(jsonSerializationPort.toJson(errors));
+                row.setStatus(ImportRowStatus.INVALID);
+                continue;
+            }
+
+            var email = normalized.get("email");
+            var roleCode = normalized.get("roleCode");
+            var existingUser = existingUsersByEmail.get(email);
+            var role = rolesByCode.get(roleCode);
+
+            UUID resultId;
+            try {
+                if (existingUser != null) {
+                    resultId = transactionTemplate.execute(status ->
+                            updateUser(existingUser, normalized, schoolId, schoolUsersByUserId, roleCode, currentUserId));
+                    updatedRows++;
+                } else {
+                    resultId = transactionTemplate.execute(status ->
+                            createUser(normalized, role, schoolId, schoolName, currentUserId));
+                }
+            } catch (DataIntegrityViolationException e) {
+                row.setErrorsJson(jsonSerializationPort.toJson(List.of(error("email", "Email hoặc số điện thoại đã tồn tại"))));
+                row.setStatus(ImportRowStatus.INVALID);
+                continue;
+            }
+
+            if (resultId != null) {
+                row.setErrorsJson(null);
+                row.setStatus(ImportRowStatus.IMPORTED);
+                importedRows++;
+            }
+        }
+
+        return new ProcessResult(importedRows, updatedRows);
+    }
+
+    private UUID createUser(Map<String, String> data, Role role, UUID schoolId, String schoolName, UUID currentUserId) {
+        var ts = OffsetDateTime.now();
+        var user = User.create(data.get("email"), data.get("phone"), data.get("fullName"),
+                parseDate(data.get("dateOfBirth")), data.get("address"), null, currentUserId, ts);
+        var savedUser = userRepository.save(user);
+        userRoleRepository.save(new UserRole(savedUser.getId(), role.getId(), ts));
+        if ("STUDENT".equals(role.getCode().value())) {
+            var startOffset = parseDate(data.get("startDate")).atStartOfDay(ZoneOffset.UTC).toOffsetDateTime();
+            var endOffset = parseDate(data.get("endDate")).atStartOfDay(ZoneOffset.UTC).toOffsetDateTime();
+            schoolUserRepository.save(SchoolUser.create(savedUser.getId(), schoolId, startOffset, endOffset));
+        } else if (SchoolRoleCodes.TEACHER.equals(role.getCode().value())) {
+            schoolUserRepository.save(SchoolUser.create(savedUser.getId(), schoolId, ts, null));
+        }
+        var generatedToken = passwordSetUpTokenPort.generateToken();
+        passwordSetUpTokenRepository.save(PasswordSetUpToken.create(savedUser.getId(), generatedToken.hashedToken()));
+        eventPublisherPort.publish(new SchoolUserPasswordSetUpEmailRequestedEvent(
+                data.get("email"), data.get("fullName"), schoolName, savedUser.getId(), generatedToken.rawToken()));
+        return savedUser.getId();
+    }
+
+    private UUID updateUser(User existing, Map<String, String> data, UUID schoolId,
+            Map<UUID, SchoolUser> schoolUsersByUserId, String roleCode, UUID currentUserId) {
+        var ts = OffsetDateTime.now();
+        existing.setFullName(new FullName(data.get("fullName")));
+        existing.setPhone(new Phone(data.get("phone")));
+        existing.setDateOfBirth(new DateOfBirth(parseDate(data.get("dateOfBirth"))));
+        existing.setAddress(data.get("address"));
+        existing.setUpdatedAt(ts);
+        existing.setUpdatedBy(currentUserId);
+        userRepository.save(existing);
+        if ("STUDENT".equals(roleCode)) {
+            var startOffset = parseDate(data.get("startDate")).atStartOfDay(ZoneOffset.UTC).toOffsetDateTime();
+            var endOffset = parseDate(data.get("endDate")).atStartOfDay(ZoneOffset.UTC).toOffsetDateTime();
+            var schoolUser = schoolUsersByUserId.get(existing.getId());
+            if (schoolUser != null) {
+                schoolUser.setStartDate(startOffset);
+                schoolUser.setEndDate(endOffset);
+                schoolUserRepository.save(schoolUser);
+            } else {
+                schoolUserRepository.save(SchoolUser.create(existing.getId(), schoolId, startOffset, endOffset));
+            }
+        } else if (SchoolRoleCodes.TEACHER.equals(roleCode) && schoolUsersByUserId.get(existing.getId()) == null) {
+            schoolUserRepository.save(SchoolUser.create(existing.getId(), schoolId, ts, null));
+        }
+        return existing.getId();
+    }
+
+    private Map<String, User> findUsersByEmail(Set<String> emails) {
+        var map = new LinkedHashMap<String, User>();
+        userRepository.findByEmailIn(emails)
+                .forEach(user -> map.putIfAbsent(user.getEmail().value(), user));
+        return map;
+    }
+
+    private Map<String, Role> findRolesByCode(Set<String> codes) {
+        var map = new LinkedHashMap<String, Role>();
+        roleRepository.findByCodeIn(codes)
+                .forEach(role -> map.putIfAbsent(role.getCode().value(), role));
+        return map;
+    }
+
+    private Map<UUID, SchoolUser> findSchoolUsersByUserId(Collection<User> users, UUID schoolId) {
+        var userIds = users.stream().map(User::getId).collect(Collectors.toSet());
+        var map = new LinkedHashMap<UUID, SchoolUser>();
+        schoolUserRepository.findByUserIdIn(userIds).stream()
+                .filter(su -> Objects.equals(su.getSchoolId(), schoolId))
+                .forEach(su -> map.putIfAbsent(su.getUserId(), su));
+        return map;
     }
 
     private void validateCommand(AcceptSchoolUserImportCommand input) {
@@ -227,15 +302,14 @@ public class AcceptSchoolUserImportUseCase implements IUseCase<AcceptSchoolUserI
     }
 
     private User findCurrentUser(UUID currentUserId) {
-        var user = userRepository.findById(currentUserId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng hiện tại"));
-        return user;
+        return userRepository.findById(currentUserId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng hiện tại"));
     }
 
     private UUID getSchoolId(User currentUser) {
         return schoolUserRepository.findByUserId(currentUser.getId())
-            .map(SchoolUser::getSchoolId)
-            .orElseThrow(() -> new IllegalStateException("Người dùng hiện tại không thuộc trường nào"));
+                .map(SchoolUser::getSchoolId)
+                .orElseThrow(() -> new IllegalStateException("Người dùng hiện tại không thuộc trường nào"));
     }
 
     private void validateRequestedSchool(UUID requestedSchoolId, UUID currentSchoolId) {
@@ -249,7 +323,7 @@ public class AcceptSchoolUserImportUseCase implements IUseCase<AcceptSchoolUserI
 
     private ImportSession findSession(UUID importSessionId) {
         return importSessionRepository.findById(importSessionId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên import"));
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên import"));
     }
 
     private void validateSession(ImportSession session, UUID schoolId, OffsetDateTime now) {
@@ -272,14 +346,15 @@ public class AcceptSchoolUserImportUseCase implements IUseCase<AcceptSchoolUserI
     private void validateRequiredMapping(Map<String, String> confirmedMapping) {
         var mappedFields = new HashSet<String>();
         confirmedMapping.values().stream()
-            .filter(Objects::nonNull)
-            .map(String::strip)
-            .forEach(mappedFields::add);
+                .filter(Objects::nonNull)
+                .map(String::strip)
+                .forEach(mappedFields::add);
         var missingFields = REQUIRED_FIELDS.stream()
-            .filter(field -> !mappedFields.contains(field))
-            .toList();
+                .filter(field -> !mappedFields.contains(field))
+                .toList();
         if (!missingFields.isEmpty()) {
-            throw new IllegalArgumentException("Mapping import thiếu trường bắt buộc: " + String.join(", ", missingFields));
+            throw new IllegalArgumentException(
+                    "Mapping import thiếu trường bắt buộc: " + String.join(", ", missingFields));
         }
     }
 
@@ -307,11 +382,11 @@ public class AcceptSchoolUserImportUseCase implements IUseCase<AcceptSchoolUserI
         normalized.put("startDate", trimOrNull(mappedData.get("startDate")));
         normalized.put("endDate", trimOrNull(mappedData.get("endDate")));
         normalized.put("address", StringNormalization.trimAndCollapseSpaces(mappedData.get("address")));
-        //normalized.put("studentId", trimOrNull(mappedData.get("studentId")));
         return normalized;
     }
-//Set<String> seenStudentIds
-    private List<Map<String, String>> validateRow(Map<String, String> data, UUID schoolId, Set<String> seenEmails) {
+
+    private List<Map<String, String>> validateRow(Map<String, String> data, Set<String> seenEmails,
+            Map<String, Role> rolesByCode) {
         var errors = new ArrayList<Map<String, String>>();
 
         addMissingError(errors, data, "email", "Email không được để trống");
@@ -329,8 +404,15 @@ public class AcceptSchoolUserImportUseCase implements IUseCase<AcceptSchoolUserI
                 errors.add(error("email", "Email không hợp lệ"));
             } else if (!seenEmails.add(email)) {
                 errors.add(error("email", "Email bị trùng trong file import"));
-            } else if (userRepository.existsByEmail(email)) {
-                errors.add(error("email", "Email đã tồn tại trong hệ thống"));
+            }
+        }
+
+        var roleCode = data.get("roleCode");
+        if (isPresent(roleCode)) {
+            if (!SchoolRoleCodes.ALL.contains(roleCode)) {
+                errors.add(error("roleCode", "Vai trò không hợp lệ, chỉ chấp nhận STUDENT hoặc TEACHER"));
+            } else if (rolesByCode.get(roleCode) == null) {
+                errors.add(error("roleCode", "Không tìm thấy vai trò"));
             }
         }
 
@@ -338,24 +420,27 @@ public class AcceptSchoolUserImportUseCase implements IUseCase<AcceptSchoolUserI
         validateDateField(errors, data, "startDate", "Ngày bắt đầu không hợp lệ");
         validateDateField(errors, data, "endDate", "Ngày kết thúc không hợp lệ");
 
-        // var studentId = data.get("studentId");
-        // if (isPresent(studentId) && !seenStudentIds.add(studentId)) {
-        //     errors.add(error("studentId", "Mã học sinh bị trùng trong file import"));
-        // }
-
         return errors;
     }
 
-    private void validateDateField(List<Map<String, String>> errors, Map<String, String> data, String field, String message) {
+    private void validateDateField(List<Map<String, String>> errors, Map<String, String> data, String field,
+            String message) {
         var value = data.get(field);
         if (isPresent(value) && parseDate(value) == null) {
             errors.add(error(field, message));
         }
     }
 
-    private void addMissingError(List<Map<String, String>> errors, Map<String, String> data, String field, String message) {
+    private void addMissingError(List<Map<String, String>> errors, Map<String, String> data, String field,
+            String message) {
         if (!isPresent(data.get(field))) {
             errors.add(error(field, message));
+        }
+    }
+
+    private void addIfPresent(Set<String> values, String value) {
+        if (isPresent(value)) {
+            values.add(value);
         }
     }
 
@@ -381,4 +466,8 @@ public class AcceptSchoolUserImportUseCase implements IUseCase<AcceptSchoolUserI
     private Map<String, String> error(String field, String message) {
         return Map.of("field", field, "message", message);
     }
+
+    private record RowContext(ImportRow row, Map<String, String> normalized) {}
+
+    private record ProcessResult(long importedRows, long updatedRows) {}
 }

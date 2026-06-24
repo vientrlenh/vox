@@ -1,0 +1,83 @@
+package com.sep.vox.application.usecase.supportedlanguage;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.time.OffsetDateTime;
+import java.util.Optional;
+import java.util.UUID;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.port.input.query.ViewSupportedLanguageDetailsQuery;
+import com.sep.vox.application.port.input.usecase.supportedlanguage.ViewSupportedLanguageDetailsUseCase;
+import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
+import com.sep.vox.domain.repository.SupportedLanguageRepository;
+import com.sep.vox.domain.valueobject.LanguageCode;
+
+class ViewSupportedLanguageDetailsUseCaseTests {
+
+    private SupportedLanguageRepository supportedLanguageRepository;
+    private ViewSupportedLanguageDetailsUseCase useCase;
+
+    @BeforeEach
+    void setUp() {
+        supportedLanguageRepository = mock(SupportedLanguageRepository.class);
+        useCase = new ViewSupportedLanguageDetailsUseCase(supportedLanguageRepository);
+    }
+
+    @Test
+    void details_should_return_language_when_found() {
+        var id = UUID.randomUUID();
+        when(supportedLanguageRepository.findById(id)).thenReturn(Optional.of(language(id, true)));
+
+        var result = useCase.execute(new ViewSupportedLanguageDetailsQuery(id, false));
+
+        assertThat(result.id()).isEqualTo(id);
+        assertThat(result.code()).isEqualTo("EN");
+    }
+
+    @Test
+    void details_should_throw_when_language_not_found() {
+        var id = UUID.randomUUID();
+        when(supportedLanguageRepository.findById(id)).thenReturn(Optional.empty());
+
+        var exception = org.junit.jupiter.api.Assertions.assertThrows(
+            NotFoundException.class,
+            () -> useCase.execute(new ViewSupportedLanguageDetailsQuery(id, false))
+        );
+
+        assertThat(exception).hasMessage("Không tìm thấy ngôn ngữ");
+    }
+
+    @Test
+    void details_should_throw_when_active_only_and_language_is_inactive() {
+        var id = UUID.randomUUID();
+        when(supportedLanguageRepository.findById(id)).thenReturn(Optional.of(language(id, false)));
+
+        var exception = org.junit.jupiter.api.Assertions.assertThrows(
+            NotFoundException.class,
+            () -> useCase.execute(new ViewSupportedLanguageDetailsQuery(id, true))
+        );
+
+        assertThat(exception).hasMessage("Không tìm thấy ngôn ngữ");
+    }
+
+    private static SupportedLanguage language(UUID id, boolean active) {
+        var now = OffsetDateTime.now();
+        return new SupportedLanguage(
+            id,
+            new LanguageCode("EN"),
+            "English",
+            null,
+            active,
+            now,
+            now,
+            UUID.randomUUID(),
+            UUID.randomUUID()
+        );
+    }
+}

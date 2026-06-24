@@ -7,14 +7,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.mapper.schoolclassuser.SchoolClassUserResponseMapper;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewSchoolClassUsersQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.response.input.schoolclassuser.SchoolClassUserResponse;
 import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.dto.SchoolClassUserDto;
+import com.sep.vox.domain.mapper.SchoolClassUserDtoMapper;
 import com.sep.vox.domain.model.school.SchoolUser;
-import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
@@ -23,7 +23,7 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
-public class ViewSchoolClassUsersUseCase implements IUseCase<ViewSchoolClassUsersQuery, PageResult<SchoolClassUserResponse>> {
+public class ViewSchoolClassUsersUseCase implements IUseCase<ViewSchoolClassUsersQuery, PageResult<SchoolClassUserDto>> {
 
     private final SchoolClassUserRepository schoolClassUserRepository;
     private final SchoolClassRepository schoolClassRepository;
@@ -49,47 +49,22 @@ public class ViewSchoolClassUsersUseCase implements IUseCase<ViewSchoolClassUser
 
     @Override
     @Transactional(readOnly = true)
-    public PageResult<SchoolClassUserResponse> execute(ViewSchoolClassUsersQuery input) {
-        validateQuery(input);
+    public PageResult<SchoolClassUserDto> execute(ViewSchoolClassUsersQuery input) {
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentUser = findCurrentUser(currentUserId);
-        var schoolId = getSchoolId(currentUser);
+        if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
+            throw new UnauthorizedException("Trạng thái người dùng không hợp lệ");
+        }
+        var schoolId = getSchoolId(currentUserId);
         validateSchool(schoolId);
         validateSchoolClass(input.schoolClassId(), schoolId);
 
-        var memberships = schoolClassUserRepository.findBySchoolClassId(input.schoolClassId());
-        var totalElements = memberships.size();
-        var totalPages = totalElements == 0 ? 0 : (int) Math.ceil((double) totalElements / input.size());
-        var fromIndex = Math.min((input.page() - 1) * input.size(), totalElements);
-        var toIndex = Math.min(fromIndex + input.size(), totalElements);
-        var pageMemberships = memberships.subList(fromIndex, toIndex);
-        var content = pageMemberships.stream()
-            .map(SchoolClassUserResponseMapper::toResponse)
-            .toList();
+        var result = schoolClassUserRepository.findBySchoolClassId(input.schoolClassId(), input.page(), input.size());
 
-        return new PageResult<>(content, input.page(), input.size(), totalElements, totalPages);
+        return SchoolClassUserDtoMapper.toSchoolClassUserDtoPage(result);
     }
 
-    private void validateQuery(ViewSchoolClassUsersQuery input) {
-        if (input == null || input.schoolClassId() == null) {
-            throw new IllegalArgumentException("Lớp học không được để trống");
-        }
-        if (input.page() <= 0 || input.size() <= 0) {
-            throw new IllegalArgumentException("Số trang hoặc kích cỡ trang yêu cầu không hợp lệ");
-        }
-    }
-
-    private User findCurrentUser(UUID currentUserId) {
-        var user = userRepository.findById(currentUserId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng hiện tại"));
-        if (user.getStatus() != UserStatus.ACTIVE) {
-            throw new IllegalStateException("Người dùng hiện tại không hoạt động");
-        }
-        return user;
-    }
-
-    private UUID getSchoolId(User currentUser) {
-        return schoolUserRepository.findByUserId(currentUser.getId())
+    private UUID getSchoolId(UUID userId) {
+        return schoolUserRepository.findByUserId(userId)
             .map(SchoolUser::getSchoolId)
             .orElseThrow(() -> new IllegalStateException("Người dùng hiện tại không thuộc trường nào"));
     }

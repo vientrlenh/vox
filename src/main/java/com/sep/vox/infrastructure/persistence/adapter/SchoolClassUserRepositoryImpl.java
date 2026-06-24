@@ -5,8 +5,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
+import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.school.SchoolClassUser;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolClassUserMapper;
@@ -46,11 +48,16 @@ public class SchoolClassUserRepositoryImpl implements SchoolClassUserRepository 
     }
 
     @Override
-    public List<SchoolClassUser> findBySchoolClassId(UUID schoolClassId) {
-        return springDataSchoolClassUserRepository.findBySchoolClassId(schoolClassId)
-            .stream()
-            .map(SchoolClassUserMapper::toDomain)
-            .toList();
+    public PageResult<SchoolClassUser> findBySchoolClassId(UUID schoolClassId, int page, int size) {
+        var pageRequest = PageRequest.of(page - 1, size);
+        var pageable = springDataSchoolClassUserRepository.findBySchoolClassId(schoolClassId, pageRequest);
+        return new PageResult<>(
+            pageable.getContent().stream().map(SchoolClassUserMapper::toDomain).toList(), 
+            page, 
+            size, 
+            pageable.getTotalElements(), 
+            pageable.getTotalPages()
+        );
     }
 
     @Override
@@ -63,5 +70,19 @@ public class SchoolClassUserRepositoryImpl implements SchoolClassUserRepository 
         var entity = SchoolClassUserMapper.toJpa(schoolClassUser);
         var saved = springDataSchoolClassUserRepository.save(entity);
         return SchoolClassUserMapper.toDomain(saved);
+    }
+
+    @Override
+    public List<SchoolClassUser> saveAll(Collection<SchoolClassUser> schoolClassUsers) {
+        if (schoolClassUsers == null || schoolClassUsers.isEmpty()) {
+            return List.of();
+        }
+        var entities = schoolClassUsers.stream()
+            .map(SchoolClassUserMapper::toJpa)
+            .toList();
+        var saved = springDataSchoolClassUserRepository.saveAll(entities);
+        return saved.stream()
+            .map(SchoolClassUserMapper::toDomain)
+            .toList();
     }
 }

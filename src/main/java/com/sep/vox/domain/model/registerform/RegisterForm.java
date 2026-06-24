@@ -1,6 +1,8 @@
 package com.sep.vox.domain.model.registerform;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.Objects;
 import java.util.UUID;
 
 import com.sep.vox.domain.valueobject.DateOfBirth;
@@ -14,74 +16,115 @@ import com.sep.vox.domain.valueobject.StudentCount;
 
 public class RegisterForm {
     private UUID id;
+    private UUID schoolDirectoryId;
+    private String schoolName;
+    private SchoolDomain schoolDomain;
+    private String schoolDistrict;
+    private String schoolProvince;
+    private String schoolAddress;
     private FullName contactFullName;
     private IdentityNumber identityNumber;
     private Phone contactPhone;
     private Email contactEmail;
     private DateOfBirth dateOfBirth;
     private String contactAddress;
-    private SchoolDomain schoolDomain;
-    private String schoolName;
-    private String schoolAddress;
     private PostalCode postalCode;
     private String position;
     private StudentCount studentCount;
-    private String reason;
+    private RegisterFormVerificationMethod verificationMethod;
+    private OffsetDateTime verifiedAt;
+    private String rejectedReason;
     private RegisterFormStatus status;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
-    private UUID updatedBy;
+    private UUID reviewedBy;
 
     public RegisterForm() {
     }
 
-    public RegisterForm(UUID id, FullName contactFullName, IdentityNumber identityNumber, Phone contactPhone,
-            Email contactEmail, DateOfBirth dateOfBirth, String contactAddress, SchoolDomain schoolDomain, String schoolName,
-            String schoolAddress, PostalCode postalCode,
-            String position, StudentCount studentCount, String reason, RegisterFormStatus status, OffsetDateTime createdAt,
-            OffsetDateTime updatedAt, UUID updatedBy) {
+    public RegisterForm(UUID id, UUID schoolDirectoryId, String schoolName, SchoolDomain schoolDomain,
+            String schoolDistrict, String schoolProvince, String schoolAddress, FullName contactFullName,
+            IdentityNumber identityNumber, Phone contactPhone, Email contactEmail, DateOfBirth dateOfBirth,
+            String contactAddress, PostalCode postalCode, String position, StudentCount studentCount,
+            RegisterFormVerificationMethod verificationMethod, OffsetDateTime verifiedAt, String rejectedReason,
+            RegisterFormStatus status, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID reviewedBy) {
         this.id = id;
+        this.schoolDirectoryId = schoolDirectoryId;
+        this.schoolName = schoolName;
+        this.schoolDomain = schoolDomain;
+        this.schoolDistrict = schoolDistrict;
+        this.schoolProvince = schoolProvince;
+        this.schoolAddress = schoolAddress;
         this.contactFullName = contactFullName;
         this.identityNumber = identityNumber;
         this.contactPhone = contactPhone;
         this.contactEmail = contactEmail;
         this.dateOfBirth = dateOfBirth;
         this.contactAddress = contactAddress;
-        this.schoolDomain = schoolDomain;
-        this.schoolName = schoolName;
-        this.schoolAddress = schoolAddress;
         this.postalCode = postalCode;
         this.position = position;
         this.studentCount = studentCount;
-        this.reason = reason;
+        this.verificationMethod = verificationMethod;
+        this.verifiedAt = verifiedAt;
+        this.rejectedReason = rejectedReason;
         this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
-        this.updatedBy = updatedBy;
+        this.reviewedBy = reviewedBy;
     }
 
-    public RegisterForm(FullName contactFullName, IdentityNumber identityNumber, Phone contactPhone, Email contactEmail, DateOfBirth dateOfBirth,
-            String contactAddress,
-            SchoolDomain schoolDomain, String schoolName, String schoolAddress, PostalCode postalCode, String position,
-            StudentCount studentCount, String reason, RegisterFormStatus status, OffsetDateTime createdAt,
-            OffsetDateTime updatedAt, UUID updatedBy) {
+    public RegisterForm(UUID schoolDirectoryId, String schoolName, SchoolDomain schoolDomain,
+            String schoolDistrict, String schoolProvince, String schoolAddress, FullName contactFullName,
+            IdentityNumber identityNumber, Phone contactPhone, Email contactEmail, DateOfBirth dateOfBirth,
+            String contactAddress, PostalCode postalCode, String position, StudentCount studentCount,
+            RegisterFormVerificationMethod verificationMethod, OffsetDateTime verifiedAt, String rejectedReason,
+            RegisterFormStatus status, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID reviewedBy) {
+        this.schoolDirectoryId = schoolDirectoryId;
+        this.schoolName = schoolName;
+        this.schoolDomain = schoolDomain;
+        this.schoolDistrict = schoolDistrict;
+        this.schoolProvince = schoolProvince;
+        this.schoolAddress = schoolAddress;
         this.contactFullName = contactFullName;
         this.identityNumber = identityNumber;
         this.contactPhone = contactPhone;
         this.contactEmail = contactEmail;
         this.dateOfBirth = dateOfBirth;
         this.contactAddress = contactAddress;
-        this.schoolDomain = schoolDomain;
-        this.schoolName = schoolName;
-        this.schoolAddress = schoolAddress;
         this.postalCode = postalCode;
         this.position = position;
         this.studentCount = studentCount;
-        this.reason = reason;
+        this.verificationMethod = verificationMethod;
+        this.verifiedAt = verifiedAt;
+        this.rejectedReason = rejectedReason;
         this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
-        this.updatedBy = updatedBy;
+        this.reviewedBy = reviewedBy;
+    }
+
+    public UUID getId() {
+        return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
+    public UUID getSchoolDirectoryId() {
+        return schoolDirectoryId;
+    }
+
+    public void setSchoolDirectoryId(UUID schoolDirectoryId) {
+        this.schoolDirectoryId = schoolDirectoryId;
+    }
+
+    public String getSchoolName() {
+        return schoolName;
+    }
+
+    public void setSchoolName(String schoolName) {
+        this.schoolName = schoolName;
     }
 
     public SchoolDomain getSchoolDomain() {
@@ -92,20 +135,28 @@ public class RegisterForm {
         this.schoolDomain = schoolDomain;
     }
 
-    public StudentCount getStudentCount() {
-        return studentCount;
+    public String getSchoolDistrict() {
+        return schoolDistrict;
     }
 
-    public void setStudentCount(StudentCount studentCount) {
-        this.studentCount = studentCount;
+    public void setSchoolDistrict(String schoolDistrict) {
+        this.schoolDistrict = schoolDistrict;
     }
 
-    public UUID getId() {
-        return id;
+    public String getSchoolProvince() {
+        return schoolProvince;
     }
 
-    public void setId(UUID id) {
-        this.id = id;
+    public void setSchoolProvince(String schoolProvince) {
+        this.schoolProvince = schoolProvince;
+    }
+
+    public String getSchoolAddress() {
+        return schoolAddress;
+    }
+
+    public void setSchoolAddress(String schoolAddress) {
+        this.schoolAddress = schoolAddress;
     }
 
     public FullName getContactFullName() {
@@ -124,20 +175,36 @@ public class RegisterForm {
         this.identityNumber = identityNumber;
     }
 
-    public String getSchoolName() {
-        return schoolName;
+    public Phone getContactPhone() {
+        return contactPhone;
     }
 
-    public void setSchoolName(String schoolName) {
-        this.schoolName = schoolName;
+    public void setContactPhone(Phone contactPhone) {
+        this.contactPhone = contactPhone;
     }
 
-    public String getSchoolAddress() {
-        return schoolAddress;
+    public Email getContactEmail() {
+        return contactEmail;
     }
 
-    public void setSchoolAddress(String schoolAddress) {
-        this.schoolAddress = schoolAddress;
+    public void setContactEmail(Email contactEmail) {
+        this.contactEmail = contactEmail;
+    }
+
+    public DateOfBirth getDateOfBirth() {
+        return dateOfBirth;
+    }
+
+    public void setDateOfBirth(DateOfBirth dateOfBirth) {
+        this.dateOfBirth = dateOfBirth;
+    }
+
+    public String getContactAddress() {
+        return contactAddress;
+    }
+
+    public void setContactAddress(String contactAddress) {
+        this.contactAddress = contactAddress;
     }
 
     public PostalCode getPostalCode() {
@@ -154,6 +221,38 @@ public class RegisterForm {
 
     public void setPosition(String position) {
         this.position = position;
+    }
+
+    public StudentCount getStudentCount() {
+        return studentCount;
+    }
+
+    public void setStudentCount(StudentCount studentCount) {
+        this.studentCount = studentCount;
+    }
+
+    public RegisterFormVerificationMethod getVerificationMethod() {
+        return verificationMethod;
+    }
+
+    public void setVerificationMethod(RegisterFormVerificationMethod verificationMethod) {
+        this.verificationMethod = verificationMethod;
+    }
+
+    public OffsetDateTime getVerifiedAt() {
+        return verifiedAt;
+    }
+
+    public void setVerifiedAt(OffsetDateTime verifiedAt) {
+        this.verifiedAt = verifiedAt;
+    }
+
+    public String getRejectedReason() {
+        return rejectedReason;
+    }
+
+    public void setRejectedReason(String rejectedReason) {
+        this.rejectedReason = rejectedReason;
     }
 
     public RegisterFormStatus getStatus() {
@@ -180,71 +279,119 @@ public class RegisterForm {
         this.updatedAt = updatedAt;
     }
 
-    public Phone getContactPhone() {
-        return contactPhone;
+    public UUID getReviewedBy() {
+        return reviewedBy;
     }
 
-    public void setContactPhone(Phone contactPhone) {
-        this.contactPhone = contactPhone;
+    public void setReviewedBy(UUID reviewedBy) {
+        this.reviewedBy = reviewedBy;
     }
 
-    public Email getContactEmail() {
-        return contactEmail;
+
+    public static RegisterForm fromDirectoryWithDocuments(
+        UUID schoolDirectoryId, 
+        RegisterFormVerificationMethod verificationMethod, 
+        String contactFullName, 
+        String identityNumber, 
+        String contactEmail, 
+        String contactPhone, 
+        LocalDate dateOfBirth, 
+        String contactAddress, 
+        String postalCode, 
+        String position, 
+        int studentCount, 
+        OffsetDateTime now
+    ) {
+        var form = new RegisterForm();
+        form.schoolDirectoryId = require(schoolDirectoryId);
+        form.verificationMethod = verificationMethod;
+        form.contactFullName = new FullName(contactFullName);
+        form.identityNumber = new IdentityNumber(identityNumber);
+        form.contactEmail = new Email(contactEmail);
+        form.contactPhone = new Phone(contactPhone);
+        form.dateOfBirth = new DateOfBirth(dateOfBirth);
+        form.contactAddress = contactAddress;
+        form.postalCode = new PostalCode(postalCode);
+        form.position = position;
+        form.studentCount = new StudentCount(studentCount);
+        form.status = RegisterFormStatus.PENDING;
+        form.createdAt = now;
+        form.updatedAt = now;
+        return form;
     }
 
-    public void setContactEmail(Email contactEmail) {
-        this.contactEmail = contactEmail;
+    public static RegisterForm fromDirectoryWithVerifiedOtp(
+        UUID schoolDirectoryId, 
+        RegisterFormVerificationMethod verificationMethod, 
+        String contactFullName, 
+        String identityNumber, 
+        String contactEmail, 
+        String contactPhone, 
+        LocalDate dateOfBirth, 
+        String contactAddress, 
+        String postalCode, 
+        String position, 
+        int studentCount, 
+        OffsetDateTime now
+    ) {
+        var form = new RegisterForm();
+        form.schoolDirectoryId = require(schoolDirectoryId);
+        form.verificationMethod = verificationMethod;
+        form.contactFullName = new FullName(contactFullName);
+        form.identityNumber = new IdentityNumber(identityNumber);
+        form.contactEmail = new Email(contactEmail);
+        form.contactPhone = new Phone(contactPhone);
+        form.dateOfBirth = new DateOfBirth(dateOfBirth);
+        form.contactAddress = contactAddress;
+        form.postalCode = new PostalCode(postalCode);
+        form.position = position;
+        form.studentCount = new StudentCount(studentCount);
+        form.status = RegisterFormStatus.AUTO_APPROVED;
+        form.createdAt = now;
+        form.updatedAt = now;
+        return form;
     }
 
-    public String getReason() {
-        return reason;
+    public static RegisterForm selfDeclared(
+        String schoolName, 
+        String schoolDomain, 
+        String schoolAddress, 
+        String schoolProvince, 
+        String schoolDistrict, 
+        String contactFullName, 
+        String identityNumber, 
+        String contactEmail, 
+        String contactPhone, 
+        LocalDate dateOfBirth, 
+        String contactAddress, 
+        String postalCode, 
+        String position, 
+        int studentCount, 
+        OffsetDateTime now
+    ) {
+        var form = new RegisterForm();
+        form.verificationMethod = RegisterFormVerificationMethod.DOCUMENT;
+        form.schoolName = require(schoolName);
+        form.schoolDomain = new SchoolDomain(schoolDomain);
+        form.schoolAddress = require(schoolAddress);
+        form.schoolProvince = require(schoolProvince);
+        form.schoolDistrict = require(schoolDistrict);
+        form.contactFullName = new FullName(contactFullName);
+        form.identityNumber = new IdentityNumber(identityNumber);
+        form.contactEmail = new Email(contactEmail);
+        form.contactPhone = new Phone(contactPhone);
+        form.dateOfBirth = new DateOfBirth(dateOfBirth);
+        form.contactAddress = contactAddress;
+        form.postalCode = new PostalCode(postalCode);
+        form.position = position;
+        form.studentCount = new StudentCount(studentCount);
+        form.status = RegisterFormStatus.PENDING;
+        form.createdAt = now;
+        form.updatedAt = now;
+        return form;
     }
 
-    public void setReason(String reason) {
-        this.reason = reason;
+    private static <T> T require(T data) {
+        return Objects.requireNonNull(data);
     }
-
-    public UUID getUpdatedBy() {
-        return updatedBy;
-    }
-
-    public void setUpdatedBy(UUID updatedBy) {
-        this.updatedBy = updatedBy;
-    }
-
-    public String getContactAddress() {
-        return contactAddress;
-    }
-
-    public void setContactAddress(String contactAddress) {
-        this.contactAddress = contactAddress;
-    }
-
-    public DateOfBirth getDateOfBirth() {
-        return dateOfBirth;
-    }
-
-    public void setDateOfBirth(DateOfBirth dateOfBirth) {
-        this.dateOfBirth = dateOfBirth;
-    }
-
-    public void approve(UUID updatedBy) {
-        if (status != RegisterFormStatus.PENDING) {
-            throw new IllegalArgumentException("Đơn đăng ký đang không trạng thái chờ, không thể phê duyệt");
-        }
-        this.status = RegisterFormStatus.APPROVED;
-        this.updatedBy = updatedBy;
-        this.updatedAt = OffsetDateTime.now();
-    }
-
-    public void reject(UUID updatedBy, String reason) {
-        if (status != RegisterFormStatus.PENDING) {
-            throw new IllegalArgumentException("Đơn đăng ký đang không trong trạng thái chờ, không thể từ chối");
-        }
-        this.status = RegisterFormStatus.REJECTED;
-        this.reason = reason;
-        this.updatedBy = updatedBy;
-        this.updatedAt = OffsetDateTime.now();
-    }
-
 }

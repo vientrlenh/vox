@@ -4,9 +4,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.question.QuestionTopic;
 import com.sep.vox.domain.repository.QuestionTopicRepository;
@@ -43,15 +43,15 @@ public class QuestionTopicRepositoryImpl implements QuestionTopicRepository {
     }
 
     @Override
-    public PageResult<QuestionTopic> findByQuestionBankId(UUID questionBankId, PageRequest pageRequest) {
-        var pageable = org.springframework.data.domain.PageRequest.of(pageRequest.page() - 1, pageRequest.size());
+    public PageResult<QuestionTopic> findByQuestionBankId(UUID questionBankId, int pageNumber, int size) {
+        var pageable = PageRequest.of(pageNumber - 1, size);
         var page = springDataQuestionTopicRepository.findByQuestionBankId(questionBankId, pageable);
         return new PageResult<>(
             page.getContent().stream()
                 .map(QuestionTopicMapper::toDomain)
                 .toList(),
-            page.getNumber() + 1,
-            page.getSize(),
+            pageNumber,
+            size,
             page.getTotalElements(),
             page.getTotalPages()
         );

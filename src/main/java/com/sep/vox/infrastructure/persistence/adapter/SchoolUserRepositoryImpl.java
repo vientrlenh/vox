@@ -48,9 +48,9 @@ public class SchoolUserRepositoryImpl implements SchoolUserRepository {
     }
 
     @Override
-    public List<SchoolUser> findBySchoolIdIn(Collection<UUID> schoolIds, int page, int size) {
-        var fromRow = (page - 1) * size + 1;
-        var toRow = page * size;
+    public List<SchoolUser> findBySchoolIdIn(Collection<UUID> schoolIds, int pageNumber, int size) {
+        var fromRow = (pageNumber - 1) * size + 1;
+        var toRow = pageNumber * size;
         return springDataSchoolUserRepository.findBySchoolIdIn(schoolIds, fromRow, toRow)
             .stream()
             .map(SchoolUserMapper::toDomain)
@@ -58,17 +58,40 @@ public class SchoolUserRepositoryImpl implements SchoolUserRepository {
     }
 
     @Override
-    public PageResult<SchoolUser> findBySchoolId(UUID schoolId, int page, int size) {
+    public PageResult<SchoolUser> findBySchoolId(UUID schoolId, int pageNumber, int size) {
+        var pageable = PageRequest.of(pageNumber - 1, size);
+        var page = springDataSchoolUserRepository.findBySchoolId(schoolId, pageable);
+        return new PageResult<>(
+            page.getContent()
+                .stream()
+                .map(SchoolUserMapper::toDomain)
+                .toList(), 
+            pageNumber, 
+            size, 
+            page.getTotalElements(), 
+            page.getTotalPages()
+        );
+    }
+
+    @Override
+    public PageResult<SchoolUser> findBySchoolId(UUID schoolId, String search, String roleCode, String status,
+            Collection<String> schoolRoleCodes, int page, int size) {
+        var searchPattern = (search == null || search.isBlank())
+            ? null
+            : "%" + search.strip().toLowerCase() + "%";
+        var roleFilter = (roleCode == null || roleCode.isBlank()) ? null : roleCode;
+        var statusFilter = (status == null || status.isBlank()) ? null : status;
         var pageRequest = PageRequest.of(page - 1, size);
-        var pageable = springDataSchoolUserRepository.findBySchoolId(schoolId, pageRequest);
+        var pageable = springDataSchoolUserRepository.searchBySchoolId(
+            schoolId, searchPattern, roleFilter, statusFilter, schoolRoleCodes, pageRequest);
         return new PageResult<>(
             pageable.getContent()
                 .stream()
                 .map(SchoolUserMapper::toDomain)
-                .toList(), 
-            page, 
-            size, 
-            pageable.getTotalElements(), 
+                .toList(),
+            page,
+            size,
+            pageable.getTotalElements(),
             pageable.getTotalPages()
         );
     }
@@ -78,5 +101,16 @@ public class SchoolUserRepositoryImpl implements SchoolUserRepository {
         return springDataSchoolUserRepository.findBySchoolIdAndUserId(schoolId, userId)
             .map(SchoolUserMapper::toDomain);
     }
-    
+
+    @Override
+    public Optional<UUID> findSchoolIdByUserId(UUID userId) {
+        return springDataSchoolUserRepository.findSchoolIdByUserId(userId);
+    }
+
+
+    @Override
+    public boolean existsBySchoolIdAndUserId(UUID schoolId, UUID userId) {
+        return springDataSchoolUserRepository.existsBySchoolIdAndUserId(schoolId, userId);
+    }
+
 }

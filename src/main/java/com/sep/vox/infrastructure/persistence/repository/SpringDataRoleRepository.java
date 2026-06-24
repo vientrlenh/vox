@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -10,5 +11,10 @@ import com.sep.vox.infrastructure.persistence.entity.RoleJpaEntity;
 
 public interface SpringDataRoleRepository extends JpaRepository<RoleJpaEntity, UUID> {
     Optional<RoleJpaEntity> findByCode(String code);
+
     List<RoleJpaEntity> findByName(String name);
+
+    List<RoleJpaEntity> findByIdIn(Collection<UUID> ids);
+
+    List<RoleJpaEntity> findByCodeIn(Collection<String> codes);
 }

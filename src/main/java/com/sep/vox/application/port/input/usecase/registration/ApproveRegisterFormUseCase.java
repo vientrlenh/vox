@@ -7,62 +7,37 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.event.PasswordSetUpEmailRequestedEvent;
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.ApproveRegisterFormCommand;
+import com.sep.vox.application.port.input.command.ProvisionSchoolCommand;
+import com.sep.vox.application.port.input.service.ProvisionSchoolService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.EventPublisherPort;
-import com.sep.vox.application.port.output.PasswordSetUpTokenPort;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.model.passwordsetuptoken.PasswordSetUpToken;
-import com.sep.vox.domain.model.school.School;
-import com.sep.vox.domain.model.school.SchoolUser;
-import com.sep.vox.domain.model.user.User;
-import com.sep.vox.domain.model.user.UserRole;
-import com.sep.vox.domain.repository.PasswordSetUpTokenRepository;
+import com.sep.vox.domain.model.registerform.RegisterForm;
+import com.sep.vox.domain.model.school.SchoolDirectory;
 import com.sep.vox.domain.repository.RegisterFormRepository;
-import com.sep.vox.domain.repository.RoleRepository;
-import com.sep.vox.domain.repository.SchoolRepository;
-import com.sep.vox.domain.repository.SchoolUserRepository;
-import com.sep.vox.domain.repository.UserRepository;
-import com.sep.vox.domain.repository.UserRoleRepository;
+import com.sep.vox.domain.repository.SchoolDirectoryRepository;
+import com.sep.vox.domain.valueobject.SchoolDomain;
 
 @Service
 public class ApproveRegisterFormUseCase implements IUseCase<ApproveRegisterFormCommand, Void> {
 
-    private final UserRepository userRepository;
-    private final SchoolRepository schoolRepository;
-    private final SchoolUserRepository schoolUserRepository;
     private final RegisterFormRepository registerFormRepository;
-    private final RoleRepository roleRepository;
-    private final UserRoleRepository userRoleRepository;
-    private final PasswordSetUpTokenPort passwordSetUpTokenPort;
-    private final PasswordSetUpTokenRepository passwordSetUpTokenRepository;
     private final UserContextPort userContextPort;
-    private final EventPublisherPort eventPublisherPort;
+    private final ProvisionSchoolService provisionSchoolService;
+    private final SchoolDirectoryRepository schoolDirectoryRepository;
 
     public ApproveRegisterFormUseCase(
-            UserRepository userRepository,
-            SchoolRepository schoolRepository, 
-            SchoolUserRepository schoolUserRepository,
             RegisterFormRepository registerFormRepository,
-            RoleRepository roleRepository,
-            UserRoleRepository userRoleRepository,
-            PasswordSetUpTokenPort passwordSetUpTokenPort,
-            PasswordSetUpTokenRepository passwordSetUpTokenRepository,
             UserContextPort userContextPort, 
-            EventPublisherPort eventPublisherPort) {
-        this.userRepository = userRepository;
-        this.schoolRepository = schoolRepository;
-        this.schoolUserRepository = schoolUserRepository;
+            ProvisionSchoolService provisionSchoolService, 
+            SchoolDirectoryRepository schoolDirectoryRepository
+    ) {
         this.registerFormRepository = registerFormRepository;
-        this.roleRepository = roleRepository;
-        this.userRoleRepository = userRoleRepository;
-        this.passwordSetUpTokenPort = passwordSetUpTokenPort;
-        this.passwordSetUpTokenRepository = passwordSetUpTokenRepository;
         this.userContextPort = userContextPort;
-        this.eventPublisherPort = eventPublisherPort;
+        this.provisionSchoolService = provisionSchoolService;
+        this.schoolDirectoryRepository = schoolDirectoryRepository;
     }
 
     @Override
@@ -72,94 +47,77 @@ public class ApproveRegisterFormUseCase implements IUseCase<ApproveRegisterFormC
         var now = OffsetDateTime.now();
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
-        var schoolAdminRole = roleRepository.findByCode("SCHOOL_ADMIN")
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy vai trò quản trị nhà trường"));
+        var registerForm = registerFormRepository.findById(command.registerFormId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn đăng ký theo yêu cầu"));
         
         var updatedRows = registerFormRepository.updateApprovedRegisterForm(command.registerFormId(), currentUserId, now);
         if (updatedRows == 0) {
             throw new IllegalStateException("Đơn đăng ký không ở trạng thái chờ hoặc không tồn tại");
         }
 
-        if (userRepository.existsByPhone(command.contactPhone())) {
-            throw new DuplicatedException("Người dùng với số điện thoại này đã tồn tại");
-        }
+        var schoolDirectory = resolveSchoolDirectory(registerForm, command, currentUserId, now);
 
-        if (schoolRepository.existsByDomain(command.schoolDomain())) {
-            throw new DuplicatedException("Domain yêu cầu đã tồn tại trong hệ thống");
-        }
-        var savedSchool = saveSchool(command, currentUserId, now);
-        var savedSchoolAdmin = saveSchoolAdmin(command, currentUserId, savedSchool.getId(), now);
-        saveSchoolAdminUserRole(savedSchoolAdmin.getId(), schoolAdminRole.getId());
-
-        var schoolUser = SchoolUser.create(savedSchoolAdmin.getId(), savedSchool.getId(), now, null);
-        schoolUserRepository.save(schoolUser);
-
-        var passwordToken = passwordSetUpTokenPort.generateToken();
-        var passwordSetUpToken = PasswordSetUpToken.create(savedSchoolAdmin.getId(), passwordToken.hashedToken());
-        passwordSetUpTokenRepository.save(passwordSetUpToken);
-
-        eventPublisherPort.publish(new PasswordSetUpEmailRequestedEvent(
-            command.contactEmail(),
-            command.contactFullName(),
-            command.schoolName(),
-            savedSchoolAdmin.getId(),
-            passwordToken.rawToken()
-        ));
+        provisionSchoolService.provision(new ProvisionSchoolCommand(
+            schoolDirectory.getCode(),
+            schoolDirectory.getName(),
+            command.description(),
+            schoolDirectory.getDomain(),
+            schoolDirectory.getAddress(),
+            registerForm.getStudentCount().value(),
+            registerForm.getContactEmail().value(),
+            registerForm.getContactPhone().value(),
+            registerForm.getContactFullName().value(),
+            registerForm.getDateOfBirth().value(),
+            registerForm.getContactAddress(),
+            null,
+            currentUserId,
+            now)
+        );
 
         return null;
+    }
+
+    private SchoolDirectory resolveSchoolDirectory(RegisterForm registerForm, ApproveRegisterFormCommand command, UUID currentUserId, OffsetDateTime now) {
+        // Đơn từ danh mục: trường đã có entry sẵn -> dùng lại, xác minh nếu chưa
+        if (registerForm.getSchoolDirectoryId() != null) {
+            var directory = schoolDirectoryRepository.findById(registerForm.getSchoolDirectoryId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy danh mục trường theo yêu cầu"));
+            if (!directory.isVerified()) {
+                directory.verify(currentUserId, now);
+                schoolDirectoryRepository.save(directory);
+            }
+            return directory;
+        }
+
+        // Đơn tự khai: chưa có trong danh mục -> tạo entry USER_SUBMITTED rồi xác minh
+        if (schoolDirectoryRepository.existsByCode(command.schoolCode())) {
+            throw new DuplicatedException("Danh mục trường với mã yêu cầu đã tồn tại");
+        }
+        var directory = SchoolDirectory.createByUserSubmitted(
+            command.schoolCode(),
+            registerForm.getSchoolName(),
+            command.schoolProvinceCode(),
+            registerForm.getSchoolProvince(),
+            registerForm.getSchoolDistrict(),
+            valueOf(registerForm.getSchoolDomain()),
+            registerForm.getSchoolAddress(),
+            now,
+            currentUserId
+        );
+        directory.verify(currentUserId, now);
+        return schoolDirectoryRepository.save(directory);
     }
 
     private ApproveRegisterFormCommand normalize(ApproveRegisterFormCommand input) {
         return new ApproveRegisterFormCommand(
             input.registerFormId(),
             StringNormalization.normalizeCode(input.schoolCode()), 
-            StringNormalization.trimAndCollapseSpaces(input.schoolName()), 
             StringNormalization.trimAndCollapseSpaces(input.description()), 
-            StringNormalization.normalizePhone(input.contactPhone()), 
-            StringNormalization.normalizeEmail(input.contactEmail()), 
-            StringNormalization.normalizeDomain(input.schoolDomain()), 
-            StringNormalization.trimAndCollapseSpaces(input.schoolAddress()), 
-            input.studentCount(), 
-            StringNormalization.trimAndCollapseSpaces(input.contactFullName()), 
-            input.dateOfBirth(), 
-            StringNormalization.trimAndCollapseSpaces(input.contactAddress())
+            StringNormalization.trimAndCollapseSpaces(input.schoolProvinceCode())
         );
     }
 
-    private School saveSchool(ApproveRegisterFormCommand command, UUID createdUserId, OffsetDateTime now) {
-        var school = School.create(
-            command.schoolCode(), 
-            command.schoolName(), 
-            command.description(), 
-            command.contactPhone(), 
-            command.contactEmail(), 
-            command.schoolDomain(), 
-            command.schoolAddress(), 
-            command.studentCount(), 
-            createdUserId,
-            now
-        );
-        return schoolRepository.save(school);
+    private String valueOf(SchoolDomain domain) {
+        return domain == null ? null : domain.value();
     }
-
-    private User saveSchoolAdmin(ApproveRegisterFormCommand command, UUID createdUserId, UUID schoolId, OffsetDateTime now) {
-        var schoolAdmin = User.createSchoolAdmin(
-            command.contactEmail(),  
-            command.contactPhone(), 
-            command.contactFullName(), 
-            command.dateOfBirth(), 
-            command.contactAddress(), 
-            null,
-            createdUserId, 
-            now
-        );
-        return userRepository.save(schoolAdmin);
-    }
-
-    private void saveSchoolAdminUserRole(UUID schoolAdminId, UUID schoolAdminRoleId) {
-        var userRole = new UserRole(schoolAdminId, schoolAdminRoleId, OffsetDateTime.now());
-        userRoleRepository.save(userRole);
-    }
-
-    
 }

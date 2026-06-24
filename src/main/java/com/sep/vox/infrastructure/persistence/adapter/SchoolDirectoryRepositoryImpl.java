@@ -1,0 +1,92 @@
+package com.sep.vox.infrastructure.persistence.adapter;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import org.springframework.data.domain.PageRequest;
+import org.springframework.stereotype.Repository;
+
+import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.model.school.SchoolDirectory;
+import com.sep.vox.domain.repository.SchoolDirectoryRepository;
+import com.sep.vox.infrastructure.persistence.mapper.SchoolDirectoryMapper;
+import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolDirectoryRepository;
+
+@Repository
+public class SchoolDirectoryRepositoryImpl implements SchoolDirectoryRepository {
+
+    private final SpringDataSchoolDirectoryRepository springDataSchoolDirectoryRepository;
+
+    public SchoolDirectoryRepositoryImpl(SpringDataSchoolDirectoryRepository springDataSchoolDirectoryRepository) {
+        this.springDataSchoolDirectoryRepository = springDataSchoolDirectoryRepository;
+    }
+
+    @Override
+    public Optional<SchoolDirectory> findById(UUID id) {
+        return springDataSchoolDirectoryRepository.findById(id)
+            .map(SchoolDirectoryMapper::toDomain);
+    }
+
+    @Override
+    public boolean existsById(UUID id) {
+        return springDataSchoolDirectoryRepository.existsById(id);
+    }
+
+    @Override
+    public SchoolDirectory save(SchoolDirectory sd) {
+        var entity = SchoolDirectoryMapper.toJpa(sd);
+        var saved = springDataSchoolDirectoryRepository.save(entity);
+        return SchoolDirectoryMapper.toDomain(saved);
+    }
+
+    @Override
+    public boolean existsByCode(String code) {
+        return springDataSchoolDirectoryRepository.existsByCode(code);
+    }
+
+    @Override
+    public List<SchoolDirectory> findByCodeIn(Collection<String> codes) {
+        if (codes == null || codes.isEmpty()) {
+            return List.of();
+        }
+        return springDataSchoolDirectoryRepository.findByCodeIn(codes).stream()
+            .map(SchoolDirectoryMapper::toDomain)
+            .toList();
+    }
+
+    @Override
+    public List<SchoolDirectory> findAllByOrderByIdAsc(int limit) {
+        var pageable = PageRequest.of(0, limit + 1);
+        var results = springDataSchoolDirectoryRepository.findAllByOrderByIdAsc(pageable).getContent();
+        return results.stream()
+            .map(SchoolDirectoryMapper::toDomain)
+            .toList();
+    }
+
+    @Override
+    public List<SchoolDirectory> findByIdGreaterThanOrderByIdAsc(UUID cursor, int limit) {
+        var pageable = PageRequest.of(0, limit + 1);
+        var results = springDataSchoolDirectoryRepository.findByIdGreaterThanOrderByIdAsc(cursor, pageable);
+        return results.stream()
+            .map(SchoolDirectoryMapper::toDomain)
+            .toList();
+    }
+
+    @Override
+    public PageResult<SchoolDirectory> findAll(int pageNumber, int size) {
+        var pageable = PageRequest.of(pageNumber - 1, size);
+        var page = springDataSchoolDirectoryRepository.findAll(pageable);
+        return new PageResult<>(
+            page.stream()
+                .map(SchoolDirectoryMapper::toDomain)
+                .toList(), 
+            pageNumber, 
+            size, 
+            page.getTotalElements(), 
+            page.getTotalPages()
+        );
+    }
+
+}

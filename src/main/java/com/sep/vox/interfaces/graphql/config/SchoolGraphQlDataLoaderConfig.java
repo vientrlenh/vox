@@ -13,7 +13,6 @@ import org.springframework.graphql.execution.BatchLoaderRegistry;
 
 import com.sep.vox.application.port.input.query.key.SchoolClassesKey;
 import com.sep.vox.application.port.input.query.key.SchoolUsersKey;
-import com.sep.vox.application.port.input.query.key.SchoolClassGradeKey;
 import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.dto.SchoolDto;
 import com.sep.vox.domain.dto.SchoolGradeDto;
@@ -55,7 +54,8 @@ public class SchoolGraphQlDataLoaderConfig {
                 keys.forEach(key -> result.put(key, List.of()));
 
                 var keysByPage = keys.stream()
-                    .collect(Collectors.groupingBy(key -> new PageKey(key.page(), key.size())));
+                    .collect(Collectors.groupingBy(key -> new PageKey(key.page(), key.size()))
+                );
 
                 for (var entry : keysByPage.entrySet()) {
                     var pageKey = entry.getKey();
@@ -65,18 +65,16 @@ public class SchoolGraphQlDataLoaderConfig {
                         .map(SchoolClassesKey::schoolId)
                         .toList();
 
-                    var classesBySchoolId = schoolClassRepository
+                    var schoolClasses = schoolClassRepository
                         .findBySchoolIdIn(schoolIds, pageKey.page(), pageKey.size())
                         .stream()
                         .map(SchoolClassDtoMapper::toDto)
                         .collect(Collectors.groupingBy(SchoolClassDto::schoolId));
 
-                    for (var key : groupedKeys) {
-                        result.put(
-                            key,
-                            classesBySchoolId.getOrDefault(key.schoolId(), List.of())
-                        );
-                    }
+                    groupedKeys.forEach(key -> result.put(
+                        key,
+                        schoolClasses.getOrDefault(key.schoolId(), List.of())
+                    ));
                 }
 
                 return result;
@@ -86,7 +84,7 @@ public class SchoolGraphQlDataLoaderConfig {
         registry.<SchoolUsersKey, List<SchoolUserDto>>forName("schoolUsersBySchool")
         .registerMappedBatchLoader((Set<SchoolUsersKey> keys, BatchLoaderEnvironment env) -> 
             Mono.fromSupplier(() -> {
-                Map<SchoolUsersKey, List<SchoolUserDto>> result = new HashMap<SchoolUsersKey, List<SchoolUserDto>>();
+                Map<SchoolUsersKey, List<SchoolUserDto>> result = new HashMap<>();
 
                 keys.forEach(key -> result.put(key, List.of()));
 
@@ -105,54 +103,51 @@ public class SchoolGraphQlDataLoaderConfig {
                         .map(SchoolUserDtoMapper::toSchoolUserDto)
                         .collect(Collectors.groupingBy(SchoolUserDto::schoolId));
                     
-                    for (var key : groupedKeys) {
-                        result.put(
-                            key, 
-                            usersBySchoolId.getOrDefault(key.schoolId(), List.of())
-                        );
-                    }
+                    groupedKeys.forEach(key -> result.put(key, usersBySchoolId.getOrDefault(key.schoolId(), List.of())));
                 }
                 return result;
             })
         );
 
-        registry.<UUID, SchoolDto>forName("schoolById")
+        registry.<UUID, SchoolDto>forName("schoolByClass")
         .registerMappedBatchLoader((Set<UUID> schoolIds, BatchLoaderEnvironment env) ->
             Mono.fromSupplier(() -> {
-                Map<UUID, SchoolDto> result = new HashMap<>();
-                schoolIds.forEach(schoolId -> schoolRepository.findById(schoolId)
+                return schoolRepository.findByIdIn(schoolIds)
+                    .stream()
                     .map(SchoolDtoMapper::toSchoolDto)
-                    .ifPresent(school -> result.put(school.id(), school)));
-                return result;
+                    .collect(Collectors.toMap(SchoolDto::id, s -> s));
             })
         );
 
-        registry.<SchoolClassGradeKey, SchoolGradeDto>forName("schoolGradeByClass")
-        .registerMappedBatchLoader((Set<SchoolClassGradeKey> keys, BatchLoaderEnvironment env) ->
+        registry.<UUID, SchoolGradeDto>forName("schoolGradeByClass")
+        .registerMappedBatchLoader((Set<UUID> gradeIds, BatchLoaderEnvironment env) ->
             Mono.fromSupplier(() -> {
-                Map<SchoolClassGradeKey, SchoolGradeDto> result = new HashMap<>();
-                keys.forEach(key -> schoolGradeRepository.findById(key.schoolGradeId())
-                    .filter(grade -> schoolGradeRepository.findBySchoolIdAndCode(key.schoolId(), grade.getCode())
-                        .map(schoolGrade -> schoolGrade.getId().equals(grade.getId()))
-                        .orElse(false))
-                    .map(grade -> SchoolGradeDtoMapper.toDto(grade, key.schoolId()))
-                    .ifPresent(grade -> result.put(key, grade)));
-                return result;
+                return schoolGradeRepository.findByIdIn(gradeIds)
+                    .stream()
+                    .map(SchoolGradeDtoMapper::toSchoolGradeDto)
+                    .collect(Collectors.toMap(SchoolGradeDto::id, sg -> sg));
             })
         );
 
-        registry.<UUID, SupportedLanguageDto>forName("supportedLanguageById")
+        registry.<UUID, SupportedLanguageDto>forName("supportedLanguageByClass")
         .registerMappedBatchLoader((Set<UUID> languageIds, BatchLoaderEnvironment env) ->
             Mono.fromSupplier(() -> {
-                Map<UUID, SupportedLanguageDto> result = new HashMap<>();
-                languageIds.forEach(languageId -> supportedLanguageRepository.findById(languageId)
+                return supportedLanguageRepository.findByIdIn(languageIds)
+                    .stream()
                     .map(SupportedLanguageDtoMapper::toDto)
-                    .ifPresent(language -> result.put(language.id(), language)));
-                return result;
+                    .collect(Collectors.toMap(SupportedLanguageDto::id, sl -> sl));
             })
         );
 
-        registry.<UUID, UserDto>forName("userById")
+        registry.<UUID, UserDto>forName("userBySchoolClassUser")
+        .registerMappedBatchLoader((Set<UUID> userIds, BatchLoaderEnvironment env) ->
+            Mono.fromSupplier(() -> userRepository.findByIdIn(userIds)
+                .stream()
+                .map(UserDtoMapper::toUserDto)
+                .collect(Collectors.toMap(UserDto::id, user -> user)))
+        );
+
+        registry.<UUID, UserDto>forName("userBySchoolUser")
         .registerMappedBatchLoader((Set<UUID> userIds, BatchLoaderEnvironment env) ->
             Mono.fromSupplier(() -> userRepository.findByIdIn(userIds)
                 .stream()
@@ -161,6 +156,4 @@ public class SchoolGraphQlDataLoaderConfig {
         );
     }
 
-    private record PageKey(int page, int size) {
-    }
 }

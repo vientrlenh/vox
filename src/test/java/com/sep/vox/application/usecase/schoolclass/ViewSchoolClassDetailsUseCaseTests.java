@@ -65,7 +65,7 @@ class ViewSchoolClassDetailsUseCaseTests {
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         var _user = user(userId, schoolId, UserStatus.ACTIVE);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(_user));
+        when(userRepository.findByIdAndStatus(userId, UserStatus.ACTIVE)).thenReturn(Optional.of(_user));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(schoolClassRepository.findById(classId)).thenReturn(Optional.of(schoolClass));
 
@@ -88,7 +88,7 @@ class ViewSchoolClassDetailsUseCaseTests {
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         var _user1 = user(userId, schoolId, UserStatus.ACTIVE);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(_user1));
+        when(userRepository.findByIdAndStatus(userId, UserStatus.ACTIVE)).thenReturn(Optional.of(_user1));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(schoolClassRepository.findById(classId)).thenReturn(Optional.empty());
 
@@ -111,7 +111,7 @@ class ViewSchoolClassDetailsUseCaseTests {
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         var _user2 = user(userId, schoolId, UserStatus.ACTIVE);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(_user2));
+        when(userRepository.findByIdAndStatus(userId, UserStatus.ACTIVE)).thenReturn(Optional.of(_user2));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(schoolClassRepository.findById(classId)).thenReturn(Optional.of(schoolClass));
 
@@ -123,10 +123,9 @@ class ViewSchoolClassDetailsUseCaseTests {
         var userId = UUID.randomUUID();
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        var _u4 = user(userId, UUID.randomUUID(), UserStatus.INACTIVE);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(_u4));
+        when(userRepository.findByIdAndStatus(userId, UserStatus.ACTIVE)).thenReturn(Optional.empty());
 
-        assertThrows(IllegalStateException.class, () -> useCase.execute(new ViewSchoolClassDetailsQuery(UUID.randomUUID())));
+        assertThrows(NotFoundException.class, () -> useCase.execute(new ViewSchoolClassDetailsQuery(UUID.randomUUID())));
 
         verifyNoInteractions(schoolRepository, schoolClassRepository);
     }
@@ -137,7 +136,7 @@ class ViewSchoolClassDetailsUseCaseTests {
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         var _user3 = user(userId, null, UserStatus.ACTIVE);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(_user3));
+        when(userRepository.findByIdAndStatus(userId, UserStatus.ACTIVE)).thenReturn(Optional.of(_user3));
 
         assertThrows(IllegalStateException.class, () -> useCase.execute(new ViewSchoolClassDetailsQuery(UUID.randomUUID())));
 
@@ -153,7 +152,7 @@ class ViewSchoolClassDetailsUseCaseTests {
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         var _user4 = user(userId, schoolId, UserStatus.ACTIVE);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(_user4));
+        when(userRepository.findByIdAndStatus(userId, UserStatus.ACTIVE)).thenReturn(Optional.of(_user4));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(school));
 
         assertThrows(IllegalStateException.class, () -> useCase.execute(new ViewSchoolClassDetailsQuery(UUID.randomUUID())));

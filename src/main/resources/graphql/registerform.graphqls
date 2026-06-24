@@ -1,5 +1,5 @@
 type RegisterForm {
-    id: ID
+    id: ID!
     contactFullName: String
     identityNumber: String
     contactPhone: String
@@ -14,6 +14,7 @@ type RegisterForm {
     studentCount: Int
     reason: String
     status: String
+    documents: [RegisterFormDocument!]
 }
 
 type RegisterFormPage {
@@ -22,6 +23,13 @@ type RegisterFormPage {
     size: Int!
     totalElements: Int!
     totalPages: Int!
+}
+
+type RegisterFormDocument {
+    id: ID!
+    registerFormId: ID
+    url: String
+    createdAt: String
 }
 
 extend type Query {

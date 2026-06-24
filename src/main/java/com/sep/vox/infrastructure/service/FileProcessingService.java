@@ -36,6 +36,7 @@ public class FileProcessingService implements FileProcessingPort {
         validate(file, type);
 
         var extension = extensionOf(file.fileName());
+        validateMagicBytes(extension, file.content());
         var table = switch (extension) {
             case "xlsx", "xls" -> parseExcel(file.fileName(), file.content());
             case "csv" -> parseCsv(file.fileName(), file.content());
@@ -61,6 +62,37 @@ public class FileProcessingService implements FileProcessingPort {
         }
         if (file.content() == null || file.content().length == 0 || file.size() <= 0) {
             throw new IllegalArgumentException("File import không được để trống");
+        }
+    }
+
+    private void validateMagicBytes(String extension, byte[] content) {
+        if (content.length < 4) {
+            return; // để parser tự báo lỗi định dạng
+        }
+        var isZipMagic = content[0] == 0x50 && content[1] == 0x4B
+            && content[2] == 0x03 && content[3] == 0x04;
+        var isOle2Magic = content.length >= 8
+            && (content[0] & 0xFF) == 0xD0 && (content[1] & 0xFF) == 0xCF
+            && (content[2] & 0xFF) == 0x11 && (content[3] & 0xFF) == 0xE0;
+        switch (extension) {
+            case "xlsx" -> {
+                if (!isZipMagic) {
+                    throw new IllegalArgumentException("Nội dung file không đúng định dạng xlsx");
+                }
+            }
+            case "xls" -> {
+                if (!isOle2Magic) {
+                    throw new IllegalArgumentException("Nội dung file không đúng định dạng xls");
+                }
+            }
+            case "csv" -> {
+                if (isZipMagic || isOle2Magic) {
+                    throw new IllegalArgumentException("File CSV chứa nội dung nhị phân không hợp lệ");
+                }
+            }
+            default -> {
+                // định dạng khác sẽ bị từ chối ở bước switch parse
+            }
         }
     }
 
@@ -224,6 +256,15 @@ public class FileProcessingService implements FileProcessingPort {
             case SCHOOL_CLASS_USER -> Map.of(
                 "email", List.of("email", "mail", "email address", "địa chỉ email", "dia chi email"),
                 "classCode", List.of("classCode", "class code", "mã lớp", "ma lop", "lớp", "lop")
+            );
+            case SCHOOL_DIRECTORY -> Map.of(
+                "code", List.of("code", "schoolCode", "school code", "mã trường", "ma truong", "mã định danh", "ma dinh danh"),
+                "name", List.of("name", "schoolName", "school name", "tên trường", "ten truong"),
+                "provinceCode", List.of("provinceCode", "province code", "mã tỉnh", "ma tinh"),
+                "provinceName", List.of("provinceName", "province", "province name", "tỉnh", "tinh", "tỉnh thành", "tinh thanh"),
+                "districtName", List.of("districtName", "district", "district name", "quận huyện", "quan huyen", "huyện", "huyen"),
+                "domain", List.of("domain", "tên miền", "ten mien", "email domain", "school domain"),
+                "address", List.of("address", "địa chỉ", "dia chi")
             );
         };
     }

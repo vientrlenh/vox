@@ -3,17 +3,29 @@ type School {
     code: String!
     name: String
     description: String
-    contactPhone: String 
+    contactPhone: String
     contactEmail: String
-    domain: String 
-    address: String 
-    studentCount: Int 
+    domain: String
+    address: String
+    studentCount: Int
     isActive: Boolean
-    createdAt: String 
+    createdAt: String
     updatedAt: String
     classes(page: Int = 1, size: Int = 10): [SchoolClass!]
-    schoolUsers(page: Int = 1, size: Int = 10): [SchoolUser!]
-    schoolUser(userId: ID!): SchoolUser
+    users(page: Int = 1, size: Int = 10): [SchoolUser!]
+}
+
+
+
+# Đổi tên cho đồng bộ với GraphQL (dùng Input thay vì Request)
+input UpdateSchoolInput {
+    name: String
+    description: String
+    contactPhone: String
+    contactEmail: String
+    domain: String
+    address: String
+    studentCount: Int
 }
 
 type SchoolPage {
@@ -23,6 +35,38 @@ type SchoolPage {
     totalElements: Int!
     totalPages: Int!
 }
+
+
+# ==================================================================
+# School Room
+# ==================================================================
+type SchoolRoom {
+    id: ID!
+    schoolId: ID!
+    code: String!
+    name: String!
+    description: String
+    isActive: Boolean!
+    createdAt: String
+    createdBy: String
+    updatedAt: String
+    updateBy: String
+}
+
+input UpdateSchoolRoomInput {
+    name: String
+    description: String
+}
+
+type SchoolRoomPageResult {
+    totalElements: Int!
+    totalPages: Int!
+    page: Int!
+    size: Int!
+    content: [SchoolRoom!]!
+}
+
+#==========SCHOOL CLASS=========
 
 
 type SchoolClass {
@@ -50,16 +94,6 @@ type SchoolGrade {
     startDate: String
     endDate: String
     status: String
-    createdAt: String
-    updatedAt: String
-}
-
-type SupportedLanguage {
-    id: ID!
-    code: String
-    name: String
-    description: String
-    isActive: Boolean!
     createdAt: String
     updatedAt: String
 }
@@ -129,15 +163,76 @@ type SchoolUserPage {
     totalPages: Int!
 }
 
+input UpdateSchoolGradeInput {
+    name: String
+    description: String
+    startDate: String
+    endDate: String
+}
+
+type SchoolGradePage {
+    totalElements: Int!
+    totalPages: Int!
+    currentPage: Int!
+    pageSize: Int!
+    content: [SchoolGrade!]!
+}   
+
+
+type SchoolDirectory {
+    id: ID!
+    code: String
+    name: String 
+    provinceCode: String 
+    provinceName: String
+    districtName: String
+    domain: String
+    address: String
+    origin: String
+    verified: Boolean
+    createdAt: String
+    updatedAt: String
+}
+
+type SchoolDirectoryCursorPage {
+    content: [SchoolDirectory!]!
+    nextCursor: ID
+    hasNext: Boolean
+}
+
+type SchoolDirectoryPage {
+    content: [SchoolDirectory!]!
+    page: Int! 
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
 extend type Query {
+    schoolRoom(id: ID!): SchoolRoom
+    schoolRooms(schoolId: ID!, page: Int, size: Int): SchoolRoomPageResult
     schools(page: Int = 1, size: Int = 20): SchoolPage!
     school(id: ID!): School
     schoolClasses(page: Int = 1, size: Int = 20, search: String, status: String, languageId: ID, schoolGradeId: ID): SchoolClassPage!
+    schoolUsersBySchool(schoolId: ID!, page: Int! = 1, size: Int! = 20, search: String, role: String, status: String): SchoolUserPage!
+    schoolUser(schoolId: ID!, userId: ID!): SchoolUser
     schoolClass(id: ID!): SchoolClass
     schoolClassUsers(schoolClassId: ID!, page: Int = 1, size: Int = 20): SchoolClassUserPage!
+    schoolGrades(schoolId: ID!, page: Int, size: Int): SchoolGradePage
+    schoolGrade(id: ID!): SchoolGrade
+    schoolDirectoryCursorPage(cursor: ID, limit: Int! = 10): SchoolDirectoryCursorPage
+    schoolDirectoryPage(page: Int! = 1, size: Int! = 20): SchoolDirectoryPage
+    schoolDirectory(id: ID!): SchoolDirectory 
 }
 
 extend type Mutation {
     updateSchoolClass(id: ID!, input: UpdateSchoolClassInput!): UpdateSchoolClassResponse!
     updateSchoolUser(schoolId: ID!, userId: ID!, input: UpdateSchoolUserInput!): UpdateSchoolUserResponse!
+    updateSchoolGrade(id: ID!, input: UpdateSchoolGradeInput!): ID!
+    updateSchoolRoom(id: ID!, input: UpdateSchoolRoomInput!): ID!
+    updateSchool(id: ID!, input: UpdateSchoolInput!): ID!
 }
+
+#================ SCHOOL GRADE =============
+
+

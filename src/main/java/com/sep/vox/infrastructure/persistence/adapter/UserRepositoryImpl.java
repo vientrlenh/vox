@@ -5,8 +5,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
+import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.UserRepository;
@@ -74,6 +76,13 @@ public class UserRepositoryImpl implements UserRepository {
         return UserMapper.toDomain(saved);
     }
 
+    @Override
+    public User saveAndFlush(User user) {
+        var entity = UserMapper.toJpa(user);
+        var saved = springDataUserRepository.saveAndFlush(entity);
+        return UserMapper.toDomain(saved);
+    }
+
 
     @Override
     public boolean existsByEmail(String email) {
@@ -116,6 +125,23 @@ public class UserRepositoryImpl implements UserRepository {
     @Override
     public boolean existsByPhone(String phone) {
         return springDataUserRepository.existsByPhone(phone);
+    }
+
+
+    @Override
+    public PageResult<User> findAll(int pageNumber, int size) {
+        var pageable = PageRequest.of(pageNumber - 1, size);
+        var page = springDataUserRepository.findAll(pageable);
+        return new PageResult<>(
+            page.getContent()
+                .stream()
+                .map(UserMapper::toDomain)
+                .toList(), 
+            pageNumber, 
+            size, 
+            page.getTotalElements(), 
+            page.getTotalPages()
+        );
     }
     
 }

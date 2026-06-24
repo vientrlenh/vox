@@ -4,6 +4,7 @@ public enum ImportSessionStatus {
     PREVIEWED, 
     VALIDATING, 
     IMPORTING, 
+    QUEUED, 
     COMPLETED, 
     FAILED, 
     EXPIRED,

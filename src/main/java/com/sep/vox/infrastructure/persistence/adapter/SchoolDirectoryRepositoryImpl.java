@@ -8,6 +8,7 @@ import java.util.UUID;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
+import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.school.SchoolDirectory;
 import com.sep.vox.domain.repository.SchoolDirectoryRepository;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolDirectoryMapper;
@@ -71,6 +72,21 @@ public class SchoolDirectoryRepositoryImpl implements SchoolDirectoryRepository 
         return results.stream()
             .map(SchoolDirectoryMapper::toDomain)
             .toList();
+    }
+
+    @Override
+    public PageResult<SchoolDirectory> findAll(int pageNumber, int size) {
+        var pageable = PageRequest.of(pageNumber - 1, size);
+        var page = springDataSchoolDirectoryRepository.findAll(pageable);
+        return new PageResult<>(
+            page.stream()
+                .map(SchoolDirectoryMapper::toDomain)
+                .toList(), 
+            pageNumber, 
+            size, 
+            page.getTotalElements(), 
+            page.getTotalPages()
+        );
     }
 
 }

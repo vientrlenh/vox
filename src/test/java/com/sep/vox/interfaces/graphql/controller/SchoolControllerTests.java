@@ -29,8 +29,9 @@ import com.sep.vox.application.port.input.usecase.schoolclass.UpdateSchoolClassU
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassesUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclassuser.ViewSchoolClassUsersUseCase;
-import com.sep.vox.application.port.input.usecase.schooldirectory.ViewSchoolDirectoriesUseCase;
+import com.sep.vox.application.port.input.usecase.schooldirectory.ViewSchoolDirectoryCursorPageUseCase;
 import com.sep.vox.application.port.input.usecase.schooldirectory.ViewSchoolDirectoryDetailsUseCase;
+import com.sep.vox.application.port.input.usecase.schooldirectory.ViewSchoolDirectoryPageUseCase;
 import com.sep.vox.application.port.input.usecase.schoolgrade.UpdateSchoolGradeUseCase;
 import com.sep.vox.application.port.input.usecase.schoolgrade.ViewSchoolGradeDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolgrade.ViewSchoolGradesUseCase;
@@ -68,7 +69,8 @@ class SchoolControllerTests {
     private UpdateSchoolGradeUseCase updateSchoolGradeUseCase;
     private ViewSchoolGradesUseCase viewSchoolGradesUseCase;
     private ViewSchoolGradeDetailsUseCase viewSchoolGradeDetailsUseCase;
-    private ViewSchoolDirectoriesUseCase viewSchoolDirectoriesUseCase;
+    private ViewSchoolDirectoryCursorPageUseCase viewSchoolDirectoryCursorPageUseCase;
+    private ViewSchoolDirectoryPageUseCase viewSchoolDirectoryPageUseCase;
     private ViewSchoolDirectoryDetailsUseCase viewSchoolDirectoryDetailsUseCase;
     private SchoolController controller;
 
@@ -92,7 +94,8 @@ class SchoolControllerTests {
         updateSchoolGradeUseCase = mock(UpdateSchoolGradeUseCase.class);
         viewSchoolGradesUseCase = mock(ViewSchoolGradesUseCase.class);
         viewSchoolGradeDetailsUseCase = mock(ViewSchoolGradeDetailsUseCase.class);
-        viewSchoolDirectoriesUseCase = mock(ViewSchoolDirectoriesUseCase.class);
+        viewSchoolDirectoryCursorPageUseCase = mock(ViewSchoolDirectoryCursorPageUseCase.class);
+        viewSchoolDirectoryPageUseCase = mock(ViewSchoolDirectoryPageUseCase.class);
         viewSchoolDirectoryDetailsUseCase = mock(ViewSchoolDirectoryDetailsUseCase.class);
 
         controller = new SchoolController(
@@ -111,7 +114,8 @@ class SchoolControllerTests {
             updateSchoolGradeUseCase, 
             viewSchoolGradesUseCase, 
             viewSchoolGradeDetailsUseCase, 
-            viewSchoolDirectoriesUseCase, 
+            viewSchoolDirectoryCursorPageUseCase, 
+            viewSchoolDirectoryPageUseCase, 
             viewSchoolDirectoryDetailsUseCase
         );
     }

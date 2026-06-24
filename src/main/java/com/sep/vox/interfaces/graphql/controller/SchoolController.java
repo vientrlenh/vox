@@ -16,8 +16,9 @@ import org.springframework.stereotype.Controller;
 import com.sep.vox.application.port.input.query.ViewSchoolClassDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolClassUsersQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolClassesQuery;
-import com.sep.vox.application.port.input.query.ViewSchoolDirectoriesQuery;
+import com.sep.vox.application.port.input.query.ViewSchoolDirectoryCursorPageQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolDirectoryDetailsQuery;
+import com.sep.vox.application.port.input.query.ViewSchoolDirectoryPageQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolGradeDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolGradesQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolRoomDetailsQuery;
@@ -33,8 +34,9 @@ import com.sep.vox.application.port.input.usecase.schoolclass.UpdateSchoolClassU
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassesUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclassuser.ViewSchoolClassUsersUseCase;
-import com.sep.vox.application.port.input.usecase.schooldirectory.ViewSchoolDirectoriesUseCase;
+import com.sep.vox.application.port.input.usecase.schooldirectory.ViewSchoolDirectoryCursorPageUseCase;
 import com.sep.vox.application.port.input.usecase.schooldirectory.ViewSchoolDirectoryDetailsUseCase;
+import com.sep.vox.application.port.input.usecase.schooldirectory.ViewSchoolDirectoryPageUseCase;
 import com.sep.vox.application.port.input.usecase.schoolgrade.UpdateSchoolGradeUseCase;
 import com.sep.vox.application.port.input.usecase.schoolgrade.ViewSchoolGradeDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolgrade.ViewSchoolGradesUseCase;
@@ -86,7 +88,8 @@ public class SchoolController {
     private final UpdateSchoolGradeUseCase updateSchoolGradeUseCase;
     private final ViewSchoolGradesUseCase viewSchoolGradesUseCase;
     private final ViewSchoolGradeDetailsUseCase viewSchoolGradeDetailsUseCase;
-    private final ViewSchoolDirectoriesUseCase viewSchoolDirectoriesUseCase;
+    private final ViewSchoolDirectoryCursorPageUseCase viewSchoolDirectoryCursorPageUseCase;
+    private final ViewSchoolDirectoryPageUseCase viewSchoolDirectoryPageUseCase;
     private final ViewSchoolDirectoryDetailsUseCase viewSchoolDirectoryDetailsUseCase;
 
     public SchoolController(ViewSchoolsUseCase viewSchoolsUseCase, 
@@ -104,7 +107,8 @@ public class SchoolController {
         UpdateSchoolGradeUseCase updateSchoolGradeUseCase, 
         ViewSchoolGradesUseCase viewSchoolGradesUseCase, 
         ViewSchoolGradeDetailsUseCase viewSchoolGradeDetailsUseCase, 
-        ViewSchoolDirectoriesUseCase viewSchoolDirectoriesUseCase, 
+        ViewSchoolDirectoryCursorPageUseCase viewSchoolDirectoryCursorPageUseCase, 
+        ViewSchoolDirectoryPageUseCase viewSchoolDirectoryPageUseCase, 
         ViewSchoolDirectoryDetailsUseCase viewSchoolDirectoryDetailsUseCase
     ) {
         this.viewSchoolsUseCase = viewSchoolsUseCase;
@@ -122,7 +126,8 @@ public class SchoolController {
         this.updateSchoolGradeUseCase = updateSchoolGradeUseCase;
         this.viewSchoolGradesUseCase = viewSchoolGradesUseCase;
         this.viewSchoolGradeDetailsUseCase = viewSchoolGradeDetailsUseCase;
-        this.viewSchoolDirectoriesUseCase = viewSchoolDirectoriesUseCase;
+        this.viewSchoolDirectoryCursorPageUseCase = viewSchoolDirectoryCursorPageUseCase;
+        this.viewSchoolDirectoryPageUseCase = viewSchoolDirectoryPageUseCase;
         this.viewSchoolDirectoryDetailsUseCase = viewSchoolDirectoryDetailsUseCase;
     }
 
@@ -361,13 +366,22 @@ public class SchoolController {
         return viewSchoolGradesUseCase.execute(query);
     }
 
-    @QueryMapping(name = "schoolDirectories")
-    public CursorPage<SchoolDirectoryDto> schoolDirectories(@Argument(name = "cursor") UUID cursor, @Argument(name = "limit") Integer limit) {
+    @QueryMapping(name = "schoolDirectoryCursorPage")
+    public CursorPage<SchoolDirectoryDto> schoolDirectoryCursorPage(@Argument(name = "cursor") UUID cursor, @Argument(name = "limit") Integer limit) {
         if (limit == null || limit <= 0) {
             throw new IllegalArgumentException("Giới hạn số phần tử lấy lên không hợp lệ");
         }
-        var query = new ViewSchoolDirectoriesQuery(cursor, limit);
-        return viewSchoolDirectoriesUseCase.execute(query);
+        var query = new ViewSchoolDirectoryCursorPageQuery(cursor, limit);
+        return viewSchoolDirectoryCursorPageUseCase.execute(query);
+    }
+
+    @QueryMapping(name = "schoolDirectoryPage")
+    public PageResult<SchoolDirectoryDto> schoolDirectoryPage(@Argument(name = "page") Integer page, @Argument(name = "size") Integer size) {
+        if (page == null || size == null || page <= 0 || size <= 0) {
+            throw new IllegalArgumentException("Số trang hoặc kích thước yêu cầu không hợp lệ");
+        }
+        var query = new ViewSchoolDirectoryPageQuery(page, size);
+        return viewSchoolDirectoryPageUseCase.execute(query);
     }
 
     @QueryMapping(name = "schoolDirectory")

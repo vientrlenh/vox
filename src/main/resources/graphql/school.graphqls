@@ -200,6 +200,14 @@ type SchoolDirectoryCursorPage {
     hasNext: Boolean
 }
 
+type SchoolDirectoryPage {
+    content: [SchoolDirectory!]!
+    page: Int! 
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
 extend type Query {
     schoolRoom(id: ID!): SchoolRoom
     schoolRooms(schoolId: ID!, page: Int, size: Int): SchoolRoomPageResult
@@ -212,7 +220,8 @@ extend type Query {
     schoolClassUsers(schoolClassId: ID!, page: Int = 1, size: Int = 20): SchoolClassUserPage!
     schoolGrades(schoolId: ID!, page: Int, size: Int): SchoolGradePage
     schoolGrade(id: ID!): SchoolGrade
-    schoolDirectories(cursor: ID, limit: Int! = 10): SchoolDirectoryCursorPage
+    schoolDirectoryCursorPage(cursor: ID, limit: Int! = 10): SchoolDirectoryCursorPage
+    schoolDirectoryPage(page: Int! = 1, size: Int! = 20): SchoolDirectoryPage
     schoolDirectory(id: ID!): SchoolDirectory 
 }
 

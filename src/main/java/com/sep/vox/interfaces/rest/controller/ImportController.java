@@ -29,7 +29,7 @@ public class ImportController {
     @PostMapping("/{sessionId}/reject")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<RejectImportSessionResponse>> rejectImportSession(
-            @PathVariable UUID sessionId,
+            @PathVariable("sessionId") UUID sessionId,
             @RequestBody(required = false) RejectImportSessionRequest request) {
         var command = RejectImportSessionCommandMapper.fromRequest(sessionId, request);
         var data = rejectImportSessionUseCase.execute(command);

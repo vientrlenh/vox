@@ -6,7 +6,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.port.input.query.ViewSupportedLanguagesQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SupportedLanguageDto;
 import com.sep.vox.domain.mapper.SupportedLanguageDtoMapper;
@@ -29,7 +28,8 @@ public class ViewSupportedLanguagesUseCase implements IUseCase<ViewSupportedLang
         var result = supportedLanguageRepository.findAll(
             StringNormalization.trimAndCollapseSpaces(input.search()),
             input.isActive(),
-            new PageRequest(input.page(), input.size())
+            input.page(), 
+            input.size()
         );
         return SupportedLanguageDtoMapper.toDtoPage(result);
     }

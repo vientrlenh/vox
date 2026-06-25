@@ -116,8 +116,8 @@ public class CreateSchoolRubricUseCase implements IUseCase<CreateSchoolRubricCom
                 StringNormalization.trimAndCollapseSpaces(command.name()),
                 StringNormalization.trimAndCollapseSpaces(command.description()),
                 RubricOwnerType.SCHOOL,
-                command.schoolId(),
-                null
+                command.schoolId()
+
         ));
     }
 

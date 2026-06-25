@@ -6,7 +6,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 
-import com.sep.vox.domain.model.school.SchoolClassStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

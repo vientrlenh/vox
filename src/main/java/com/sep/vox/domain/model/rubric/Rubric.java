@@ -12,12 +12,11 @@ public class Rubric {
     private String description;
     private RubricOwnerType ownerType;
     private UUID schoolId;
-    private UUID currentVersionId;
 
     public Rubric() {}
 
     public Rubric(UUID id, UUID languageId, UUID frameworkId, String code, String name, String description,
-            RubricOwnerType ownerType, UUID schoolId, UUID currentVersionId) {
+            RubricOwnerType ownerType, UUID schoolId) {
         this.id = id;
         this.languageId = languageId;
         this.frameworkId = frameworkId;
@@ -26,11 +25,10 @@ public class Rubric {
         this.description = description;
         this.ownerType = ownerType;
         this.schoolId = schoolId;
-        this.currentVersionId = currentVersionId;
     }
 
     public Rubric(UUID languageId, UUID frameworkId, String code, String name, String description,
-            RubricOwnerType ownerType, UUID schoolId, UUID currentVersionId) {
+            RubricOwnerType ownerType, UUID schoolId) {
         this.languageId = languageId;
         this.frameworkId = frameworkId;
         this.code = code;
@@ -38,7 +36,6 @@ public class Rubric {
         this.description = description;
         this.ownerType = ownerType;
         this.schoolId = schoolId;
-        this.currentVersionId = currentVersionId;
     }
 
     public UUID getId() {
@@ -103,14 +100,6 @@ public class Rubric {
 
     public void setSchoolId(UUID schoolId) {
         this.schoolId = schoolId;
-    }
-
-    public UUID getCurrentVersionId() {
-        return currentVersionId;
-    }
-
-    public void setCurrentVersionId(UUID currentVersionId) {
-        this.currentVersionId = currentVersionId;
     }
 
     

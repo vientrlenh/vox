@@ -6,7 +6,6 @@ import java.util.UUID;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
-import com.sep.vox.domain.common.PageRequest;
 
 public interface RubricRepository {
     Optional<Rubric> findById(UUID id);
@@ -25,9 +24,9 @@ public interface RubricRepository {
 
     PageResult<Rubric> findAllByOwnerTypeAndSchoolId(RubricOwnerType ownerType, UUID schoolId, int page, int size);
 
-    PageResult<Rubric> searchSystemRubrics(String keyword, UUID frameworkId, UUID languageId, PageRequest pageRequest);
+    PageResult<Rubric> searchSystemRubrics(String keyword, UUID frameworkId, UUID languageId, int page, int size);
 
-    PageResult<Rubric> searchSchoolRubrics(UUID schoolId, String keyword, UUID frameworkId, UUID languageId, PageRequest pageRequest);
+    PageResult<Rubric> searchSchoolRubrics(UUID schoolId, String keyword, UUID frameworkId, UUID languageId, int page, int size);
 
 
 }

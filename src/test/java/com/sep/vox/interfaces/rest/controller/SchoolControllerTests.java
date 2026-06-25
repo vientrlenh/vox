@@ -60,6 +60,9 @@ import com.sep.vox.application.port.input.usecase.schoolclassuser.CreateSchoolCl
 import com.sep.vox.application.port.input.usecase.schoolclassuser.DeleteSchoolClassUserUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclassuser.PreviewSchoolClassUserImportFromFileUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclassuser.UpdateSchoolClassUserStatusUseCase;
+import com.sep.vox.application.port.input.usecase.schooldirectory.AcceptSchoolDirectoryImportUseCase;
+import com.sep.vox.application.port.input.usecase.schooldirectory.CreateSchoolDirectoryUseCase;
+import com.sep.vox.application.port.input.usecase.schooldirectory.PreviewSchoolDirectoryImportFromFileUseCase;
 import com.sep.vox.application.response.input.importfile.AcceptSchoolClassUserImportResponse;
 import com.sep.vox.application.response.input.importfile.PreviewSchoolClassUserImportResponse;
 import com.sep.vox.application.response.input.schoolclassuser.CreateSchoolClassUserResponse;
@@ -83,12 +86,25 @@ class SchoolControllerTests {
     private UpdateSchoolClassUserStatusUseCase updateSchoolClassUserStatusUseCase;
     private PreviewSchoolClassUserImportFromFileUseCase previewSchoolClassUserImportFromFileUseCase;
     private AcceptSchoolClassUserImportUseCase acceptSchoolClassUserImportUseCase;
+    private DeleteSchoolUseCase deleteSchoolUseCase;
+    private UpdateSchoolStatusUseCase updateSchoolStatusUseCase;
+    private AddSchoolRoomUseCase addSchoolRoomUseCase;
+    private DeleteSchoolRoomUseCase deleteSchoolRoomUseCase;
+    private CreateSchoolGradeUseCase createSchoolGradeUseCase;
+    private DeleteSchoolGradeUseCase deleteSchoolGradeUseCase;
+    private CreateSchoolGradeLevelUseCase createSchoolGradeLevelUseCase;
+    private DeleteSchoolGradeLevelUseCase deleteSchoolGradeLevelUseCase;
+    private PreviewSchoolDirectoryImportFromFileUseCase previewSchoolDirectoryImportFromFileUseCase;
+    private AcceptSchoolDirectoryImportUseCase acceptSchoolDirectoryImportUseCase;
+    private CreateSchoolDirectoryUseCase createSchoolDirectoryUseCase;
     private SchoolController controller;
 
     private final UUID schoolId = UUID.randomUUID();
     private final UUID schoolClassId = UUID.randomUUID();
     private final UUID userId = UUID.randomUUID();
     private final UUID importSessionId = UUID.randomUUID();
+    private final UUID languageId = UUID.randomUUID();
+    private final UUID gradeId = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
@@ -103,43 +119,48 @@ class SchoolControllerTests {
         createSchoolClassUserUseCase = mock(CreateSchoolClassUserUseCase.class);
         deleteSchoolClassUserUseCase = mock(DeleteSchoolClassUserUseCase.class);
         updateSchoolClassUserStatusUseCase = mock(UpdateSchoolClassUserStatusUseCase.class);
+        deleteSchoolUseCase = mock(DeleteSchoolUseCase.class);
+        updateSchoolStatusUseCase = mock(UpdateSchoolStatusUseCase.class);
+        addSchoolRoomUseCase = mock(AddSchoolRoomUseCase.class);
+        deleteSchoolRoomUseCase = mock(DeleteSchoolRoomUseCase.class);
+        createSchoolGradeUseCase = mock(CreateSchoolGradeUseCase.class);
+        deleteSchoolGradeUseCase = mock(DeleteSchoolGradeUseCase.class);
+        createSchoolGradeLevelUseCase = mock(CreateSchoolGradeLevelUseCase.class);
+        deleteSchoolGradeLevelUseCase = mock(DeleteSchoolGradeLevelUseCase.class);
+        previewSchoolDirectoryImportFromFileUseCase = mock(PreviewSchoolDirectoryImportFromFileUseCase.class);
+        acceptSchoolDirectoryImportUseCase = mock(AcceptSchoolDirectoryImportUseCase.class);
+        createSchoolDirectoryUseCase = mock(CreateSchoolDirectoryUseCase.class);
         
         controller = new SchoolController(
-            createSchoolClassUseCase, createSchoolClassUserUseCase,
-            deleteSchoolClassUseCase, deleteSchoolClassUserUseCase,
-            updateSchoolClassUserStatusUseCase,
-            previewSchoolClassImportFromFileUseCase, acceptSchoolClassImportUseCase,
-            createSchoolUserUseCase, deleteSchoolUserUseCase,
+            createSchoolClassUseCase, 
+            createSchoolClassUserUseCase,
+            deleteSchoolClassUseCase, 
+            deleteSchoolClassUserUseCase, 
+            updateSchoolClassUserStatusUseCase, 
+            previewSchoolClassImportFromFileUseCase, 
+            acceptSchoolClassImportUseCase,
+            createSchoolUserUseCase, 
+            deleteSchoolUserUseCase,
             previewSchoolUserImportFromFileUseCase,
             acceptSchoolUserImportUseCase,
-            previewSchoolClassUserImportFromFileUseCase, acceptSchoolClassUserImportUseCase,
-            mock(DeleteSchoolUseCase.class), mock(UpdateSchoolStatusUseCase.class),
-            mock(AddSchoolRoomUseCase.class), mock(DeleteSchoolRoomUseCase.class),
-            mock(CreateSchoolGradeUseCase.class), mock(DeleteSchoolGradeUseCase.class),
-            mock(CreateSchoolGradeLevelUseCase.class), mock(DeleteSchoolGradeLevelUseCase.class)
+            previewSchoolClassUserImportFromFileUseCase, 
+            acceptSchoolClassUserImportUseCase,
+            deleteSchoolUseCase, 
+            updateSchoolStatusUseCase, 
+            addSchoolRoomUseCase, 
+            deleteSchoolRoomUseCase, 
+            createSchoolGradeUseCase, 
+            deleteSchoolGradeUseCase, 
+            createSchoolGradeLevelUseCase, 
+            deleteSchoolGradeLevelUseCase, 
+            previewSchoolDirectoryImportFromFileUseCase, 
+            acceptSchoolDirectoryImportUseCase, 
+            createSchoolDirectoryUseCase
         );
     }
 
     @Test
-    void create_should_return_created_response() {
-        var createUseCase = mock(CreateSchoolClassUseCase.class);
-        var createClassUserUseCase = mock(CreateSchoolClassUserUseCase.class);
-        var deleteUseCase = mock(DeleteSchoolClassUseCase.class);
-        var previewUseCase = mock(PreviewSchoolClassImportFromFileUseCase.class);
-        var acceptUseCase = mock(AcceptSchoolClassImportUseCase.class);
-        var previewClassUserUseCase = mock(PreviewSchoolClassUserImportFromFileUseCase.class);
-        var acceptClassUserUseCase = mock(AcceptSchoolClassUserImportUseCase.class);
-        var controller = new SchoolController(createUseCase, createClassUserUseCase, deleteUseCase,
-            mock(DeleteSchoolClassUserUseCase.class), mock(UpdateSchoolClassUserStatusUseCase.class), previewUseCase,
-            acceptUseCase, mock(CreateSchoolUserUseCase.class), mock(DeleteSchoolUserUseCase.class),
-            mock(PreviewSchoolUserImportFromFileUseCase.class),
-            mock(AcceptSchoolUserImportUseCase.class), previewClassUserUseCase, acceptClassUserUseCase,
-            mock(DeleteSchoolUseCase.class), mock(UpdateSchoolStatusUseCase.class),
-            mock(AddSchoolRoomUseCase.class), mock(DeleteSchoolRoomUseCase.class),
-            mock(CreateSchoolGradeUseCase.class), mock(DeleteSchoolGradeUseCase.class),
-            mock(CreateSchoolGradeLevelUseCase.class), mock(DeleteSchoolGradeLevelUseCase.class));
-        var languageId = UUID.randomUUID();
-        var gradeId = UUID.randomUUID();
+    void create_school_class_should_return_created_response() {
         var request = new CreateSchoolClassRequest(
             languageId,
             gradeId,
@@ -155,34 +176,18 @@ class SchoolControllerTests {
             "English 01",
             "Starter class"
         );
-        when(createUseCase.execute(expectedCommand)).thenReturn(new CreateSchoolClassResponse(schoolClassId));
+        when(createSchoolClassUseCase.execute(expectedCommand)).thenReturn(new CreateSchoolClassResponse(schoolClassId));
 
         var response = controller.create(schoolId, request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().data()).isEqualTo(new CreateSchoolClassResponse(schoolClassId));
-        verify(createUseCase).execute(expectedCommand);
+        verify(createSchoolClassUseCase).execute(expectedCommand);
     }
 
     @Test
-    void createClassUser_should_return_created_response() {
-        var createUseCase = mock(CreateSchoolClassUseCase.class);
-        var createClassUserUseCase = mock(CreateSchoolClassUserUseCase.class);
-        var deleteUseCase = mock(DeleteSchoolClassUseCase.class);
-        var previewUseCase = mock(PreviewSchoolClassImportFromFileUseCase.class);
-        var acceptUseCase = mock(AcceptSchoolClassImportUseCase.class);
-        var previewClassUserUseCase = mock(PreviewSchoolClassUserImportFromFileUseCase.class);
-        var acceptClassUserUseCase = mock(AcceptSchoolClassUserImportUseCase.class);
-        var controller = new SchoolController(createUseCase, createClassUserUseCase, deleteUseCase,
-            mock(DeleteSchoolClassUserUseCase.class), mock(UpdateSchoolClassUserStatusUseCase.class), previewUseCase,
-            acceptUseCase, mock(CreateSchoolUserUseCase.class), mock(DeleteSchoolUserUseCase.class),
-            mock(PreviewSchoolUserImportFromFileUseCase.class),
-            mock(AcceptSchoolUserImportUseCase.class), previewClassUserUseCase, acceptClassUserUseCase,
-            mock(DeleteSchoolUseCase.class), mock(UpdateSchoolStatusUseCase.class),
-            mock(AddSchoolRoomUseCase.class), mock(DeleteSchoolRoomUseCase.class),
-            mock(CreateSchoolGradeUseCase.class), mock(DeleteSchoolGradeUseCase.class),
-            mock(CreateSchoolGradeLevelUseCase.class), mock(DeleteSchoolGradeLevelUseCase.class));
+    void create_class_user_should_return_created_response() {
         var schoolId = UUID.randomUUID();
         var classId = UUID.randomUUID();
         var userId = UUID.randomUUID();
@@ -190,34 +195,18 @@ class SchoolControllerTests {
         var request = new CreateSchoolClassUserRequest(userId);
         var expectedCommand = new CreateSchoolClassUserCommand(schoolId, classId, userId);
         var expected = new CreateSchoolClassUserResponse(schoolClassUserId);
-        when(createClassUserUseCase.execute(expectedCommand)).thenReturn(expected);
+        when(createSchoolClassUserUseCase.execute(any(CreateSchoolClassUserCommand.class))).thenReturn(expected);
 
         var response = controller.createClassUser(schoolId, classId, request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().data()).isEqualTo(expected);
-        verify(createClassUserUseCase).execute(expectedCommand);
+        verify(createSchoolClassUserUseCase).execute(expectedCommand);
     }
 
     @Test
-    void delete_should_return_ok_response() {
-        var createUseCase = mock(CreateSchoolClassUseCase.class);
-        var createClassUserUseCase = mock(CreateSchoolClassUserUseCase.class);
-        var deleteUseCase = mock(DeleteSchoolClassUseCase.class);
-        var previewUseCase = mock(PreviewSchoolClassImportFromFileUseCase.class);
-        var acceptUseCase = mock(AcceptSchoolClassImportUseCase.class);
-        var previewClassUserUseCase = mock(PreviewSchoolClassUserImportFromFileUseCase.class);
-        var acceptClassUserUseCase = mock(AcceptSchoolClassUserImportUseCase.class);
-        var controller = new SchoolController(createUseCase, createClassUserUseCase, deleteUseCase,
-            mock(DeleteSchoolClassUserUseCase.class), mock(UpdateSchoolClassUserStatusUseCase.class), previewUseCase,
-            acceptUseCase, mock(CreateSchoolUserUseCase.class), mock(DeleteSchoolUserUseCase.class),
-            mock(PreviewSchoolUserImportFromFileUseCase.class),
-            mock(AcceptSchoolUserImportUseCase.class), previewClassUserUseCase, acceptClassUserUseCase,
-            mock(DeleteSchoolUseCase.class), mock(UpdateSchoolStatusUseCase.class),
-            mock(AddSchoolRoomUseCase.class), mock(DeleteSchoolRoomUseCase.class),
-            mock(CreateSchoolGradeUseCase.class), mock(DeleteSchoolGradeUseCase.class),
-            mock(CreateSchoolGradeLevelUseCase.class), mock(DeleteSchoolGradeLevelUseCase.class));
+    void delete_school_class_should_return_ok_response() {
         var schoolId = UUID.randomUUID();
         var schoolClassId = UUID.randomUUID();
         var response = controller.delete(schoolId, schoolClassId);
@@ -226,29 +215,11 @@ class SchoolControllerTests {
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().message()).isEqualTo("Xóa lớp học thành công");
         assertThat(response.getBody().data()).isNull();
-        verify(deleteUseCase).execute(new DeleteSchoolClassCommand(schoolId, schoolClassId));
+        verify(deleteSchoolClassUseCase).execute(new DeleteSchoolClassCommand(schoolId, schoolClassId));
     }
 
     @Test
-    void createImportFileSession_should_return_preview_response() throws Exception {
-        var createUseCase = mock(CreateSchoolClassUseCase.class);
-        var createClassUserUseCase = mock(CreateSchoolClassUserUseCase.class);
-        var deleteUseCase = mock(DeleteSchoolClassUseCase.class);
-        var previewUseCase = mock(PreviewSchoolClassImportFromFileUseCase.class);
-        var acceptUseCase = mock(AcceptSchoolClassImportUseCase.class);
-        var previewClassUserUseCase = mock(PreviewSchoolClassUserImportFromFileUseCase.class);
-        var acceptClassUserUseCase = mock(AcceptSchoolClassUserImportUseCase.class);
-        var controller = new SchoolController(createUseCase, createClassUserUseCase, deleteUseCase,
-            mock(DeleteSchoolClassUserUseCase.class), mock(UpdateSchoolClassUserStatusUseCase.class), previewUseCase,
-            acceptUseCase, mock(CreateSchoolUserUseCase.class), mock(DeleteSchoolUserUseCase.class),
-            mock(PreviewSchoolUserImportFromFileUseCase.class),
-            mock(AcceptSchoolUserImportUseCase.class), previewClassUserUseCase, acceptClassUserUseCase,
-            mock(DeleteSchoolUseCase.class), mock(UpdateSchoolStatusUseCase.class),
-            mock(AddSchoolRoomUseCase.class), mock(DeleteSchoolRoomUseCase.class),
-            mock(CreateSchoolGradeUseCase.class), mock(DeleteSchoolGradeUseCase.class),
-            mock(CreateSchoolGradeLevelUseCase.class), mock(DeleteSchoolGradeLevelUseCase.class));
-        var schoolId = UUID.randomUUID();
-        var importSessionId = UUID.randomUUID();
+    void create_import_file_session_should_return_preview_response() throws Exception {
         var expected = new PreviewSchoolClassImportResponse(
             importSessionId,
             "classes.csv",
@@ -264,36 +235,18 @@ class SchoolControllerTests {
             "text/csv",
             "code,name\nENG-01,English 01\n".getBytes(StandardCharsets.UTF_8)
         );
-        when(previewUseCase.execute(any(PreviewSchoolClassImportFromFileCommand.class))).thenReturn(expected);
+        when(previewSchoolClassImportFromFileUseCase.execute(any(PreviewSchoolClassImportFromFileCommand.class))).thenReturn(expected);
 
         var response = controller.createImportFileSession(schoolId, file);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().data()).isEqualTo(expected);
-        verify(previewUseCase).execute(any(PreviewSchoolClassImportFromFileCommand.class));
+        verify(previewSchoolClassImportFromFileUseCase).execute(any(PreviewSchoolClassImportFromFileCommand.class));
     }
 
     @Test
-    void acceptImportSession_should_return_accept_response() {
-        var createUseCase = mock(CreateSchoolClassUseCase.class);
-        var createClassUserUseCase = mock(CreateSchoolClassUserUseCase.class);
-        var deleteUseCase = mock(DeleteSchoolClassUseCase.class);
-        var previewUseCase = mock(PreviewSchoolClassImportFromFileUseCase.class);
-        var acceptUseCase = mock(AcceptSchoolClassImportUseCase.class);
-        var previewClassUserUseCase = mock(PreviewSchoolClassUserImportFromFileUseCase.class);
-        var acceptClassUserUseCase = mock(AcceptSchoolClassUserImportUseCase.class);
-        var controller = new SchoolController(createUseCase, createClassUserUseCase, deleteUseCase,
-            mock(DeleteSchoolClassUserUseCase.class), mock(UpdateSchoolClassUserStatusUseCase.class), previewUseCase,
-            acceptUseCase, mock(CreateSchoolUserUseCase.class), mock(DeleteSchoolUserUseCase.class),
-            mock(PreviewSchoolUserImportFromFileUseCase.class),
-            mock(AcceptSchoolUserImportUseCase.class), previewClassUserUseCase, acceptClassUserUseCase,
-            mock(DeleteSchoolUseCase.class), mock(UpdateSchoolStatusUseCase.class),
-            mock(AddSchoolRoomUseCase.class), mock(DeleteSchoolRoomUseCase.class),
-            mock(CreateSchoolGradeUseCase.class), mock(DeleteSchoolGradeUseCase.class),
-            mock(CreateSchoolGradeLevelUseCase.class), mock(DeleteSchoolGradeLevelUseCase.class));
-        var schoolId = UUID.randomUUID();
-        var importSessionId = UUID.randomUUID();
+    void accept_school_class_import_session_should_return_accept_response() {
         var request = new AcceptSchoolClassImportRequest(Map.of(
             "Mã lớp", "code",
             "Tên lớp", "name",
@@ -302,14 +255,14 @@ class SchoolControllerTests {
         ));
         var expected = new AcceptSchoolClassImportResponse(importSessionId, 2L, 1L, 0L, 1L, 0L, "COMPLETED");
         var expectedCommand = new AcceptSchoolClassImportCommand(schoolId, importSessionId, request.confirmedMapping());
-        when(acceptUseCase.execute(expectedCommand)).thenReturn(expected);
+        when(acceptSchoolClassImportUseCase.execute(expectedCommand)).thenReturn(expected);
 
         var response = controller.acceptImportSession(schoolId, importSessionId, request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().data()).isEqualTo(expected);
-        verify(acceptUseCase).execute(expectedCommand);
+        verify(acceptSchoolClassImportUseCase).execute(expectedCommand);
     }
 
     @Test
@@ -331,7 +284,7 @@ class SchoolControllerTests {
     }
 
     @Test
-    void delete_user_should_return_no_content() {
+    void delete_school_user_should_return_no_content() {
         var response = controller.deleteUser(schoolId, userId);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
@@ -376,25 +329,7 @@ class SchoolControllerTests {
     }
 
     @Test
-    void createClassUserImportFileSession_should_return_preview_response() throws Exception {
-        var createUseCase = mock(CreateSchoolClassUseCase.class);
-        var createClassUserUseCase = mock(CreateSchoolClassUserUseCase.class);
-        var deleteUseCase = mock(DeleteSchoolClassUseCase.class);
-        var previewUseCase = mock(PreviewSchoolClassImportFromFileUseCase.class);
-        var acceptUseCase = mock(AcceptSchoolClassImportUseCase.class);
-        var previewClassUserUseCase = mock(PreviewSchoolClassUserImportFromFileUseCase.class);
-        var acceptClassUserUseCase = mock(AcceptSchoolClassUserImportUseCase.class);
-        var controller = new SchoolController(createUseCase, createClassUserUseCase, deleteUseCase,
-            mock(DeleteSchoolClassUserUseCase.class), mock(UpdateSchoolClassUserStatusUseCase.class), previewUseCase,
-            acceptUseCase, mock(CreateSchoolUserUseCase.class), mock(DeleteSchoolUserUseCase.class),
-            mock(PreviewSchoolUserImportFromFileUseCase.class),
-            mock(AcceptSchoolUserImportUseCase.class), previewClassUserUseCase, acceptClassUserUseCase,
-            mock(DeleteSchoolUseCase.class), mock(UpdateSchoolStatusUseCase.class),
-            mock(AddSchoolRoomUseCase.class), mock(DeleteSchoolRoomUseCase.class),
-            mock(CreateSchoolGradeUseCase.class), mock(DeleteSchoolGradeUseCase.class),
-            mock(CreateSchoolGradeLevelUseCase.class), mock(DeleteSchoolGradeLevelUseCase.class));
-        var schoolId = UUID.randomUUID();
-        var importSessionId = UUID.randomUUID();
+    void create_class_user_import_file_session_should_return_preview_response() throws Exception {
         var expected = new PreviewSchoolClassUserImportResponse(
             importSessionId,
             "class-users.csv",
@@ -410,119 +345,59 @@ class SchoolControllerTests {
             "text/csv",
             "email,classCode\nstudent@example.com,ENG-01\n".getBytes(StandardCharsets.UTF_8)
         );
-        when(previewClassUserUseCase.execute(any(PreviewSchoolClassUserImportFromFileCommand.class))).thenReturn(expected);
+        when(previewSchoolClassUserImportFromFileUseCase.execute(any(PreviewSchoolClassUserImportFromFileCommand.class))).thenReturn(expected);
 
         var response = controller.createClassUserImportFileSession(schoolId, file);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().data()).isEqualTo(expected);
-        verify(previewClassUserUseCase).execute(any(PreviewSchoolClassUserImportFromFileCommand.class));
+        verify(previewSchoolClassUserImportFromFileUseCase).execute(any(PreviewSchoolClassUserImportFromFileCommand.class));
     }
 
     @Test
-    void acceptClassUserImportSession_should_return_accept_response() {
-        var createUseCase = mock(CreateSchoolClassUseCase.class);
-        var createClassUserUseCase = mock(CreateSchoolClassUserUseCase.class);
-        var deleteUseCase = mock(DeleteSchoolClassUseCase.class);
-        var previewUseCase = mock(PreviewSchoolClassImportFromFileUseCase.class);
-        var acceptUseCase = mock(AcceptSchoolClassImportUseCase.class);
-        var previewClassUserUseCase = mock(PreviewSchoolClassUserImportFromFileUseCase.class);
-        var acceptClassUserUseCase = mock(AcceptSchoolClassUserImportUseCase.class);
-        var controller = new SchoolController(createUseCase, createClassUserUseCase, deleteUseCase,
-            mock(DeleteSchoolClassUserUseCase.class), mock(UpdateSchoolClassUserStatusUseCase.class), previewUseCase,
-            acceptUseCase, mock(CreateSchoolUserUseCase.class), mock(DeleteSchoolUserUseCase.class),
-            mock(PreviewSchoolUserImportFromFileUseCase.class),
-            mock(AcceptSchoolUserImportUseCase.class), previewClassUserUseCase, acceptClassUserUseCase,
-            mock(DeleteSchoolUseCase.class), mock(UpdateSchoolStatusUseCase.class),
-            mock(AddSchoolRoomUseCase.class), mock(DeleteSchoolRoomUseCase.class),
-            mock(CreateSchoolGradeUseCase.class), mock(DeleteSchoolGradeUseCase.class),
-            mock(CreateSchoolGradeLevelUseCase.class), mock(DeleteSchoolGradeLevelUseCase.class));
-        var schoolId = UUID.randomUUID();
-        var importSessionId = UUID.randomUUID();
+    void accept_class_user_import_session_should_return_accept_response() {
         var request = new AcceptSchoolClassUserImportRequest(Map.of(
             "Email", "email",
             "Mã lớp", "classCode"
         ));
         var expected = new AcceptSchoolClassUserImportResponse(importSessionId, 2L, 1L, 0L, 1L, 0L, "COMPLETED");
-        var expectedCommand = new AcceptSchoolClassUserImportCommand(schoolId, importSessionId, request.confirmedMapping());
-        when(acceptClassUserUseCase.execute(expectedCommand)).thenReturn(expected);
+        when(acceptSchoolClassUserImportUseCase.execute(any(AcceptSchoolClassUserImportCommand.class))).thenReturn(expected);
 
         var response = controller.acceptClassUserImportSession(schoolId, importSessionId, request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().data()).isEqualTo(expected);
-        verify(acceptClassUserUseCase).execute(expectedCommand);
+        verify(acceptSchoolClassUserImportUseCase).execute(any(AcceptSchoolClassUserImportCommand.class));
     }
 
     @Test
     void deleteClassUser_should_return_ok_response_without_success_field() {
-        var createUseCase = mock(CreateSchoolClassUseCase.class);
-        var createClassUserUseCase = mock(CreateSchoolClassUserUseCase.class);
-        var deleteUseCase = mock(DeleteSchoolClassUseCase.class);
-        var deleteClassUserUseCase = mock(DeleteSchoolClassUserUseCase.class);
-        var updateClassUserStatusUseCase = mock(UpdateSchoolClassUserStatusUseCase.class);
-        var previewUseCase = mock(PreviewSchoolClassImportFromFileUseCase.class);
-        var acceptUseCase = mock(AcceptSchoolClassImportUseCase.class);
-        var previewClassUserUseCase = mock(PreviewSchoolClassUserImportFromFileUseCase.class);
-        var acceptClassUserUseCase = mock(AcceptSchoolClassUserImportUseCase.class);
-        var controller = new SchoolController(createUseCase, createClassUserUseCase, deleteUseCase,
-            deleteClassUserUseCase, updateClassUserStatusUseCase, previewUseCase, acceptUseCase,
-            mock(CreateSchoolUserUseCase.class), mock(DeleteSchoolUserUseCase.class),
-            mock(PreviewSchoolUserImportFromFileUseCase.class),
-            mock(AcceptSchoolUserImportUseCase.class), previewClassUserUseCase, acceptClassUserUseCase,
-            mock(DeleteSchoolUseCase.class), mock(UpdateSchoolStatusUseCase.class),
-            mock(AddSchoolRoomUseCase.class), mock(DeleteSchoolRoomUseCase.class),
-            mock(CreateSchoolGradeUseCase.class), mock(DeleteSchoolGradeUseCase.class),
-            mock(CreateSchoolGradeLevelUseCase.class), mock(DeleteSchoolGradeLevelUseCase.class));
-        var schoolId = UUID.randomUUID();
-        var classId = UUID.randomUUID();
-        var userId = UUID.randomUUID();
-        var expectedCommand = new DeleteSchoolClassUserCommand(schoolId, classId, userId);
-        var response = controller.deleteClassUser(schoolId, classId, userId);
+        var expectedCommand = new DeleteSchoolClassUserCommand(schoolId, schoolClassId, userId);
+        var response = controller.deleteClassUser(schoolId, schoolClassId, userId);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().message()).isEqualTo("Xóa người dùng khỏi lớp học thành công");
         assertThat(response.getBody().data()).isNull();
-        verify(deleteClassUserUseCase).execute(expectedCommand);
+        verify(deleteSchoolClassUserUseCase).execute(expectedCommand);
     }
 
     @Test
-    void updateClassUserStatus_should_return_ok_response_without_success_field() {
-        var createUseCase = mock(CreateSchoolClassUseCase.class);
-        var createClassUserUseCase = mock(CreateSchoolClassUserUseCase.class);
-        var deleteUseCase = mock(DeleteSchoolClassUseCase.class);
-        var deleteClassUserUseCase = mock(DeleteSchoolClassUserUseCase.class);
-        var updateClassUserStatusUseCase = mock(UpdateSchoolClassUserStatusUseCase.class);
-        var previewUseCase = mock(PreviewSchoolClassImportFromFileUseCase.class);
-        var acceptUseCase = mock(AcceptSchoolClassImportUseCase.class);
-        var previewClassUserUseCase = mock(PreviewSchoolClassUserImportFromFileUseCase.class);
-        var acceptClassUserUseCase = mock(AcceptSchoolClassUserImportUseCase.class);
-        var controller = new SchoolController(createUseCase, createClassUserUseCase, deleteUseCase,
-            deleteClassUserUseCase, updateClassUserStatusUseCase, previewUseCase, acceptUseCase,
-            mock(CreateSchoolUserUseCase.class), mock(DeleteSchoolUserUseCase.class),
-            mock(PreviewSchoolUserImportFromFileUseCase.class),
-            mock(AcceptSchoolUserImportUseCase.class), previewClassUserUseCase, acceptClassUserUseCase,
-            mock(DeleteSchoolUseCase.class), mock(UpdateSchoolStatusUseCase.class),
-            mock(AddSchoolRoomUseCase.class), mock(DeleteSchoolRoomUseCase.class),
-            mock(CreateSchoolGradeUseCase.class), mock(DeleteSchoolGradeUseCase.class),
-            mock(CreateSchoolGradeLevelUseCase.class), mock(DeleteSchoolGradeLevelUseCase.class));
-        var schoolId = UUID.randomUUID();
-        var classId = UUID.randomUUID();
-        var userId = UUID.randomUUID();
+    void update_class_user_status_should_return_ok_response_without_success_field() {
         var request = new UpdateSchoolClassUserStatusRequest(true);
-        var expectedCommand = new UpdateSchoolClassUserStatusCommand(schoolId, classId, userId, true);
-        var expected = new UpdateSchoolClassUserStatusResponse(classId);
-        when(updateClassUserStatusUseCase.execute(expectedCommand)).thenReturn(expected);
+        var expected = new UpdateSchoolClassUserStatusResponse(schoolClassId);
 
-        var response = controller.updateClassUserStatus(schoolId, classId, userId, request);
+        when(updateSchoolClassUserStatusUseCase.execute(
+                any(UpdateSchoolClassUserStatusCommand.class))).thenReturn(expected);
+
+        var response = controller.updateClassUserStatus(schoolId, schoolClassId, userId, request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().message()).isEqualTo("Cập nhật trạng thái người dùng trong lớp học thành công");
         assertThat(response.getBody().data()).isEqualTo(expected);
-        verify(updateClassUserStatusUseCase).execute(expectedCommand);
+        verify(updateSchoolClassUserStatusUseCase).execute(any(UpdateSchoolClassUserStatusCommand.class));
     }
 }

@@ -6,7 +6,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.port.input.query.ViewQuestionsByTopicQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.QuestionDto;
 import com.sep.vox.domain.mapper.QuestionDtoMapper;
@@ -24,7 +23,7 @@ public class ViewQuestionsByTopicUseCase implements IUseCase<ViewQuestionsByTopi
     @Override
     @Transactional(readOnly = true)
     public PageResult<QuestionDto> execute(ViewQuestionsByTopicQuery input) {
-        var result = questionRepository.findByTopicId(input.topicId(), new PageRequest(input.page(), input.size()));
+        var result = questionRepository.findByTopicId(input.topicId(), input.page(), input.size());
         return QuestionDtoMapper.toDtoPage(result);
     }
 

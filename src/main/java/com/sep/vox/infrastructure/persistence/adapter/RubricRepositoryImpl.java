@@ -99,14 +99,18 @@ public class RubricRepositoryImpl implements RubricRepository {
     }
 
     @Override
-    public PageResult<Rubric> searchSystemRubrics(String keyword, UUID frameworkId, UUID languageId, com.sep.vox.domain.common.PageRequest pageRequest) {
-        Pageable springPageable = PageRequest.of(pageRequest.page(), pageRequest.size());
+    public PageResult<Rubric> searchSystemRubrics(String keyword, UUID frameworkId, UUID languageId, int page, int size) {
+        int actualPage = page - 1;
+        Pageable springPageable = PageRequest.of(actualPage, size);
 
-        Page<RubricJpaEntity> pageEntity = springDataRubricRepository.searchSystemRubrics(keyword, frameworkId, languageId, springPageable);
+        // 2. Gọi DB
+       Page<RubricJpaEntity> pageEntity =
+                springDataRubricRepository.searchSystemRubrics(keyword, frameworkId, languageId, springPageable);
 
+        //  3. Trả về PageResult chuẩn Domain (Cộng 1 để trả về số trang đếm từ 1 cho Client)
         return new PageResult<>(
                 pageEntity.getContent().stream().map(RubricMapper::toDomain).toList(),
-                pageEntity.getNumber(),
+                pageEntity.getNumber() + 1, // Trả lại số trang đếm từ 1
                 pageEntity.getSize(),
                 (int) pageEntity.getTotalElements(),
                 pageEntity.getTotalPages()
@@ -114,20 +118,18 @@ public class RubricRepositoryImpl implements RubricRepository {
     }
 
     @Override
-    public PageResult<Rubric> searchSchoolRubrics(
-            UUID schoolId, String keyword, UUID frameworkId, UUID languageId,
-            com.sep.vox.domain.common.PageRequest pageRequest) {
+    public PageResult<Rubric> searchSchoolRubrics(UUID schoolId, String keyword, UUID frameworkId, UUID languageId, int page, int size) {
+        int actualPage = page - 1;
+        Pageable springPageable = PageRequest.of(actualPage, size);
 
-        // Ép kiểu PageRequest của Domain sang Pageable của Spring Boot
-        Pageable springPageable = PageRequest.of(pageRequest.page(), pageRequest.size());
+        // 2. Gọi DB
+        Page<RubricJpaEntity> pageEntity =
+                springDataRubricRepository.searchSchoolRubrics(schoolId, keyword, frameworkId, languageId, springPageable);
 
-        // Gọi DB
-        Page<RubricJpaEntity> pageEntity = springDataRubricRepository.searchSchoolRubrics(schoolId, keyword, frameworkId, languageId, springPageable);
-
-        // Trả về PageResult chuẩn Domain
+        //  3. Trả về PageResult chuẩn Domain (Cộng 1 để trả về số trang đếm từ 1 cho Client)
         return new PageResult<>(
                 pageEntity.getContent().stream().map(RubricMapper::toDomain).toList(),
-                pageEntity.getNumber(),
+                pageEntity.getNumber() + 1, // Trả lại số trang đếm từ 1
                 pageEntity.getSize(),
                 (int) pageEntity.getTotalElements(),
                 pageEntity.getTotalPages()

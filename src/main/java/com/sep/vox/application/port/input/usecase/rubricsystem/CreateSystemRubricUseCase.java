@@ -97,7 +97,6 @@ public class CreateSystemRubricUseCase implements IUseCase<CreateSystemRubricCom
                 safeName,
                 safeDesc,
                 RubricOwnerType.SYSTEM,
-                null,
                 null
         );
 

@@ -15,5 +15,5 @@ public interface UserRoleRepository {
     boolean existsByRoleId(UUID roleId);
 
     List<UserRole> findByUserIdIn(Collection<UUID> userIds);
-    List<UserRole> findByRoleIdIn(Collection<UUID> roleIds, int page, int size);
+    List<UserRole> findByRoleIdIn(Collection<UUID> roleIds, int pageNumber, int size);
 }

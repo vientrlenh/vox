@@ -64,8 +64,9 @@ public class SearchSchoolRubricsUseCase implements IUseCase<SearchSchoolRubricsQ
                 query.keyword(),
                 query.frameworkId(),
                 query.languageId(),
-                query.pageRequest()
-        );
+                query.page(),
+                query.size()
+                );
 
         // 4. Map sang DTO và trả về
         return new PageResult<>(

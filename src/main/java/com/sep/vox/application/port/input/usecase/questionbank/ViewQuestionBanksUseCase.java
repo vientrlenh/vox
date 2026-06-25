@@ -5,7 +5,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.port.input.query.ViewQuestionBanksQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.QuestionBankDto;
 import com.sep.vox.domain.mapper.QuestionBankDtoMapper;
@@ -23,7 +22,7 @@ public class ViewQuestionBanksUseCase implements IUseCase<ViewQuestionBanksQuery
     @Override
     @Transactional(readOnly = true)
     public PageResult<QuestionBankDto> execute(ViewQuestionBanksQuery input) {
-        var result = questionBankRepository.findAll(new PageRequest(input.page(), input.size()));
+        var result = questionBankRepository.findAll(input.page(), input.size());
         return QuestionBankDtoMapper.toDtoPage(result);
     }
 }

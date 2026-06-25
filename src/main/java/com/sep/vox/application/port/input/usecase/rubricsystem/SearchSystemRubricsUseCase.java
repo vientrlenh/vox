@@ -28,7 +28,8 @@ public class SearchSystemRubricsUseCase implements IUseCase<SearchSystemRubricsQ
                 query.keyword(),
                 query.frameworkId(),
                 query.languageId(),
-                query.pageRequest()
+                query.page(),
+                query.size()
         );
 
         // 2. Chuyển đổi từ Domain Model (Rubric) sang DTO (RubricDto)

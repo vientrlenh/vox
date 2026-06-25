@@ -54,10 +54,13 @@ public class SchoolDirectoryJpaEntity {
     @Column(name = "source", nullable = false, length = 30, check = {
         @CheckConstraint(
             name = "chk_school_directories_source_valid", 
-            constraint = "source IN ('OFFICIAL_IMPORT', 'ADMIN_VERIFIED', 'SELF_DECLARED')"
+            constraint = "source IN ('OFFICIAL_IMPORT', 'ADMIN_CREATED', 'USER_SUBMITTED')"
         )
     })
-    private String source;
+    private String origin;
+
+    @Column(name = "verified", nullable = false)
+    private boolean verified;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
@@ -74,7 +77,7 @@ public class SchoolDirectoryJpaEntity {
     protected SchoolDirectoryJpaEntity() {}
 
     public SchoolDirectoryJpaEntity(UUID id, String code, String name, String provinceCode, String provinceName,
-            String districtName, String domain, String address, String source, OffsetDateTime createdAt,
+            String districtName, String domain, String address, String origin, boolean verified, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.code = code;
@@ -84,7 +87,8 @@ public class SchoolDirectoryJpaEntity {
         this.districtName = districtName;
         this.domain = domain;
         this.address = address;
-        this.source = source;
+        this.origin = origin;
+        this.verified = verified;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
@@ -155,12 +159,12 @@ public class SchoolDirectoryJpaEntity {
         this.address = address;
     }
 
-    public String getSource() {
-        return source;
+    public String getOrigin() {
+        return origin;
     }
 
-    public void setSource(String source) {
-        this.source = source;
+    public void setOrigin(String origin) {
+        this.origin = origin;
     }
 
     public OffsetDateTime getCreatedAt() {
@@ -193,6 +197,14 @@ public class SchoolDirectoryJpaEntity {
 
     public void setUpdatedBy(UUID updatedBy) {
         this.updatedBy = updatedBy;
+    }
+
+    public boolean isVerified() {
+        return verified;
+    }
+
+    public void setVerified(boolean verified) {
+        this.verified = verified;
     }
 
     

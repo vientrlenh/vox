@@ -50,5 +50,13 @@ public class RegisterFormDocumentRepositoryImpl implements RegisterFormDocumentR
         var saved = springDataRegisterFormDocumentRepository.saveAll(entities);
         return saved.stream().map(RegisterFormDocumentMapper::toDomain).toList();
     }
+
+    @Override
+    public List<RegisterFormDocument> findByRegisterFormIdIn(Collection<UUID> registerFormIds) {
+        var entities = springDataRegisterFormDocumentRepository.findByRegisterFormIdIn(registerFormIds);
+        return entities.stream()
+            .map(RegisterFormDocumentMapper::toDomain)
+            .toList();
+    }
     
 }

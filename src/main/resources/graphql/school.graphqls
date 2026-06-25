@@ -163,6 +163,51 @@ type SchoolUserPage {
     totalPages: Int!
 }
 
+input UpdateSchoolGradeInput {
+    name: String
+    description: String
+    startDate: String
+    endDate: String
+}
+
+type SchoolGradePage {
+    totalElements: Int!
+    totalPages: Int!
+    currentPage: Int!
+    pageSize: Int!
+    content: [SchoolGrade!]!
+}   
+
+
+type SchoolDirectory {
+    id: ID!
+    code: String
+    name: String 
+    provinceCode: String 
+    provinceName: String
+    districtName: String
+    domain: String
+    address: String
+    origin: String
+    verified: Boolean
+    createdAt: String
+    updatedAt: String
+}
+
+type SchoolDirectoryCursorPage {
+    content: [SchoolDirectory!]!
+    nextCursor: ID
+    hasNext: Boolean
+}
+
+type SchoolDirectoryPage {
+    content: [SchoolDirectory!]!
+    page: Int! 
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
 extend type Query {
     schoolRoom(id: ID!): SchoolRoom
     schoolRooms(schoolId: ID!, page: Int, size: Int): SchoolRoomPageResult
@@ -173,8 +218,11 @@ extend type Query {
     schoolUser(schoolId: ID!, userId: ID!): SchoolUser
     schoolClass(id: ID!): SchoolClass
     schoolClassUsers(schoolClassId: ID!, page: Int = 1, size: Int = 20): SchoolClassUserPage!
-    schoolGrades(schoolId: ID!, page: Int, size: Int): SchoolGradePageResult
+    schoolGrades(schoolId: ID!, page: Int, size: Int): SchoolGradePage
     schoolGrade(id: ID!): SchoolGrade
+    schoolDirectoryCursorPage(cursor: ID, limit: Int! = 10): SchoolDirectoryCursorPage
+    schoolDirectoryPage(page: Int! = 1, size: Int! = 20): SchoolDirectoryPage
+    schoolDirectory(id: ID!): SchoolDirectory 
 }
 
 extend type Mutation {
@@ -186,18 +234,5 @@ extend type Mutation {
 }
 
 #================ SCHOOL GRADE =============
-input UpdateSchoolGradeInput {
 
-    name: String
-    description: String
-    startDate: String
-    endDate: String
-}
 
-type SchoolGradePageResult {
-    totalElements: Int!
-    totalPages: Int!
-    currentPage: Int!
-    pageSize: Int!
-    content: [SchoolGrade!]!
-}

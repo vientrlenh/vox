@@ -48,7 +48,7 @@ public class SupportedLanguageController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable("id") UUID id) {
         deleteSupportedLanguageUseCase.execute(new DeleteSupportedLanguageCommand(id));
         var response = ApiResponse.<Void>success("Xóa ngôn ngữ thành công");
         return ResponseEntity.ok(response);

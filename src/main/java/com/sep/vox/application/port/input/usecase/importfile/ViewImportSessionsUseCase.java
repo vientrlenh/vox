@@ -12,7 +12,6 @@ import com.sep.vox.application.port.input.query.ViewImportSessionsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.importfile.ImportSessionSummaryResponse;
-import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
@@ -67,7 +66,8 @@ public class ViewImportSessionsUseCase implements IUseCase<ViewImportSessionsQue
             schoolId,
             type,
             status,
-            new PageRequest(input.page(), input.size())
+            input.page(), 
+            input.size()
         );
         return importSessionResponseMapper.toSummaryPage(result);
     }

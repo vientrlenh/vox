@@ -1,15 +1,16 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.SchoolClassJpaEntity;
 import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
@@ -47,17 +48,17 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
     }
 
     @Override
-    public PageResult<SchoolClass> findBySchoolId(UUID schoolId, PageRequest pageRequest) {
-        return findBySchoolId(schoolId, null, null, null, null, pageRequest);
+    public PageResult<SchoolClass> findBySchoolId(UUID schoolId, int pageNumber, int size) {
+        return findBySchoolId(schoolId, null, null, null, null, pageNumber, size);
     }
 
     @Override
     public PageResult<SchoolClass> findBySchoolId(UUID schoolId, String search, SchoolClassStatus status,
-            UUID languageId, UUID schoolGradeId, PageRequest pageRequest) {
-        var pageable = org.springframework.data.domain.PageRequest.of(
-            pageRequest.page() - 1,
-            pageRequest.size(),
-            Sort.by(Sort.Direction.DESC, "createdAt").and(Sort.by(Sort.Direction.ASC, "id"))
+            UUID languageId, UUID schoolGradeId, int pageNumber, int size) {
+        var pageable = PageRequest.of(
+            pageNumber - 1,
+            size,
+            Sort.by(Sort.Direction.DESC, SchoolClassJpaEntity::getCreatedAt).and(Sort.by(Sort.Direction.ASC, SchoolClassJpaEntity::getId))
         );
         var normalizedSearch = blankToNull(search);
         var page = normalizedSearch == null
@@ -80,8 +81,8 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
             page.getContent().stream()
                 .map(SchoolClassMapper::toDomain)
                 .toList(),
-            page.getNumber() + 1,
-            page.getSize(),
+            pageNumber,
+            size,
             page.getTotalElements(),
             page.getTotalPages()
         );

@@ -48,9 +48,9 @@ public class SchoolUserRepositoryImpl implements SchoolUserRepository {
     }
 
     @Override
-    public List<SchoolUser> findBySchoolIdIn(Collection<UUID> schoolIds, int page, int size) {
-        var fromRow = (page - 1) * size + 1;
-        var toRow = page * size;
+    public List<SchoolUser> findBySchoolIdIn(Collection<UUID> schoolIds, int pageNumber, int size) {
+        var fromRow = (pageNumber - 1) * size + 1;
+        var toRow = pageNumber * size;
         return springDataSchoolUserRepository.findBySchoolIdIn(schoolIds, fromRow, toRow)
             .stream()
             .map(SchoolUserMapper::toDomain)
@@ -58,18 +58,18 @@ public class SchoolUserRepositoryImpl implements SchoolUserRepository {
     }
 
     @Override
-    public PageResult<SchoolUser> findBySchoolId(UUID schoolId, int page, int size) {
-        var pageRequest = PageRequest.of(page - 1, size);
-        var pageable = springDataSchoolUserRepository.findBySchoolId(schoolId, pageRequest);
+    public PageResult<SchoolUser> findBySchoolId(UUID schoolId, int pageNumber, int size) {
+        var pageable = PageRequest.of(pageNumber - 1, size);
+        var page = springDataSchoolUserRepository.findBySchoolId(schoolId, pageable);
         return new PageResult<>(
-            pageable.getContent()
+            page.getContent()
                 .stream()
                 .map(SchoolUserMapper::toDomain)
                 .toList(), 
-            page, 
+            pageNumber, 
             size, 
-            pageable.getTotalElements(), 
-            pageable.getTotalPages()
+            page.getTotalElements(), 
+            page.getTotalPages()
         );
     }
 

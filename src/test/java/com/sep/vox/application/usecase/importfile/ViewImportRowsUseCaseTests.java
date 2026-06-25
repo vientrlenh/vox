@@ -23,7 +23,6 @@ import com.sep.vox.application.port.input.query.ViewImportRowsQuery;
 import com.sep.vox.application.port.input.usecase.importfile.ViewImportRowsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.support.FakeJsonSerializationPort;
-import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.importfile.ImportRow;
 import com.sep.vox.domain.model.importfile.ImportRowStatus;
@@ -84,7 +83,7 @@ class ViewImportRowsUseCaseTests {
         when(userRepository.findById(userId)).thenReturn(Optional.of(_user));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(importSessionRepository.findById(sessionId)).thenReturn(Optional.of(session(sessionId, schoolId)));
-        when(importRowRepository.findBySessionId(sessionId, ImportRowStatus.INVALID, new PageRequest(1, 20)))
+        when(importRowRepository.findBySessionId(sessionId, ImportRowStatus.INVALID, 1, 20))
             .thenReturn(page);
 
         var response = useCase.execute(new ViewImportRowsQuery(sessionId, 1, 20, "INVALID"));
@@ -93,7 +92,7 @@ class ViewImportRowsUseCaseTests {
         assertThat(response.content().get(0).rawData()).extracting("key").containsExactly("Mã lớp");
         assertThat(response.content().get(0).mappedData()).extracting("key").containsExactly("code");
         assertThat(response.content().get(0).errors()).extracting("field").containsExactly("code");
-        verify(importRowRepository).findBySessionId(sessionId, ImportRowStatus.INVALID, new PageRequest(1, 20));
+        verify(importRowRepository).findBySessionId(sessionId, ImportRowStatus.INVALID, 1, 20);
     }
 
     @Test
@@ -107,12 +106,12 @@ class ViewImportRowsUseCaseTests {
         when(userRepository.findById(userId)).thenReturn(Optional.of(_user1));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(importSessionRepository.findById(sessionId)).thenReturn(Optional.of(session(sessionId, schoolId)));
-        when(importRowRepository.findBySessionId(sessionId, null, new PageRequest(2, 10)))
+        when(importRowRepository.findBySessionId(sessionId, null, 2, 10))
             .thenReturn(new PageResult<>(List.of(), 2, 10, 0L, 0));
 
         useCase.execute(new ViewImportRowsQuery(sessionId, 2, 10, " "));
 
-        verify(importRowRepository).findBySessionId(sessionId, null, new PageRequest(2, 10));
+        verify(importRowRepository).findBySessionId(sessionId, null, 2, 10);
     }
 
     @Test
@@ -218,7 +217,11 @@ class ViewImportRowsUseCaseTests {
             null,
             ImportSessionStatus.PREVIEWED,
             null,
-            OffsetDateTime.now().plusDays(1),
+            OffsetDateTime.now().plusDays(1), 
+            null,
+            null, 
+            null, 
+            0, 
             OffsetDateTime.now(),
             OffsetDateTime.now(),
             UUID.randomUUID(),

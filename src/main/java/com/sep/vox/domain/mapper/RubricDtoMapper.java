@@ -20,7 +20,6 @@ public class RubricDtoMapper {
                 rubric.getLanguageId(),
                 rubric.getFrameworkId(),
                 rubric.getOwnerType() != null ? rubric.getOwnerType().name() : null,
-                rubric.getCurrentVersionId(),
                 rubric.getSchoolId()
         );
     }

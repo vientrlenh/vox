@@ -13,7 +13,7 @@ public interface SchoolRepository {
     Optional<School> findById(UUID id);
     Optional<School> findByCode(String code);
     Optional<School> findByDomain(String domain);
-    PageResult<School> findAll(int page, int size);
+    PageResult<School> findAll(int pageNumber, int size);
     School save(School school);
     boolean existsById(UUID id);
     boolean existsByDomain(String domain);
@@ -25,8 +25,8 @@ public interface SchoolRepository {
 
     void deleteById(UUID id);
 
-    List<School> findByIdIn(Collection<UUID> ids, int page, int size);
     boolean existsByIdAndIsActiveTrue(UUID schoolId);
+    List<School> findByIdIn(Collection<UUID> ids, int pageNumber, int size);
 
 
     int updateSchoolAtomic(UUID id, String name, String description, String phone,

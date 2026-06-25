@@ -11,7 +11,8 @@ public final class ApproveRegisterFormCommandMapper {
         return new ApproveRegisterFormCommand(
             registerFormId,
             request.schoolCode(), 
-            request.description() 
+            request.description(), 
+            request.provinceCode() 
         );
     }
 }

@@ -12,7 +12,7 @@ public interface SchoolClassUserRepository {
     Optional<SchoolClassUser> findByUserIdAndSchoolClassId(UUID userId, UUID schoolClassId);
     List<SchoolClassUser> findByUserIdInAndSchoolClassIdIn(Collection<UUID> userIds, Collection<UUID> schoolClassIds);
     List<SchoolClassUser> findByUserId(UUID userId);
-    PageResult<SchoolClassUser> findBySchoolClassId(UUID schoolClassId, int page, int size);
+    PageResult<SchoolClassUser> findBySchoolClassId(UUID schoolClassId, int pageNumber, int size);
     boolean existsBySchoolClassId(UUID schoolClassId);
     SchoolClassUser save(SchoolClassUser schoolClassUser);
     List<SchoolClassUser> saveAll(Collection<SchoolClassUser> schoolClassUsers);

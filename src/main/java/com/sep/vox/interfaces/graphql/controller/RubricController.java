@@ -8,7 +8,6 @@ import com.sep.vox.application.port.input.query.key.RubricResultBandsKey;
 import com.sep.vox.application.port.input.query.key.RubricVersionsKey;
 import com.sep.vox.application.port.input.usecase.rubricschool.*;
 import com.sep.vox.application.port.input.usecase.rubricsystem.*;
-import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.*;
 import com.sep.vox.interfaces.graphql.dto.request.*;
@@ -233,15 +232,16 @@ public class RubricController {
         // Tránh NullPointerException nếu Frontend không truyền filter
         var safeFilter = (filter != null) ? filter : new SearchRubricFilterDto(null, null, null);
 
-        // Tạo Query của Clean Architecture
+        // Tạo Query của Clean Architecture (Lưu ý tham số thứ 4 là PageRequest)
         var query = new SearchSystemRubricsQuery(
                 safeFilter.keyword(),
                 safeFilter.frameworkId(),
                 safeFilter.languageId(),
-                new PageRequest(validPage, validSize)
+                validPage,
+                validSize
         );
 
-        //Search Rubric theo code, name của trường
+        // SỬA COMMENT: Thực thi UseCase của hệ thống (chứ không phải của trường)
         return searchSystemRubricsUseCase.execute(query);
     }
 
@@ -268,7 +268,8 @@ public class RubricController {
                 safeFilter.keyword(),
                 safeFilter.frameworkId(),
                 safeFilter.languageId(),
-                new PageRequest(validPage, validSize)
+                validPage,
+                validSize
         );
 
         // 4. Gọi UseCase

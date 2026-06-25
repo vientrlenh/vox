@@ -3,9 +3,10 @@ package com.sep.vox.infrastructure.persistence.adapter;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.domain.common.PageRequest;
+
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.question.QuestionBank;
 import com.sep.vox.domain.repository.QuestionBankRepository;
@@ -35,15 +36,15 @@ public class QuestionBankRepositoryImpl implements QuestionBankRepository {
     }
 
     @Override
-    public PageResult<QuestionBank> findAll(PageRequest pageRequest) {
-        var pageable = org.springframework.data.domain.PageRequest.of(pageRequest.page() - 1, pageRequest.size());
+    public PageResult<QuestionBank> findAll(int pageNumber, int size) {
+        var pageable = PageRequest.of(pageNumber - 1, size);
         var page = springDataQuestionBankRepository.findAll(pageable);
         return new PageResult<>(
             page.getContent().stream()
                 .map(QuestionBankMapper::toDomain)
                 .toList(),
-            page.getNumber() + 1,
-            page.getSize(),
+            pageNumber,
+            size,
             page.getTotalElements(),
             page.getTotalPages()
         );

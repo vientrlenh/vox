@@ -129,18 +129,18 @@ public class UserRepositoryImpl implements UserRepository {
 
 
     @Override
-    public PageResult<User> findAll(int page, int size) {
-        var pageRequest = PageRequest.of(page - 1, size);
-        var pageable = springDataUserRepository.findAll(pageRequest);
+    public PageResult<User> findAll(int pageNumber, int size) {
+        var pageable = PageRequest.of(pageNumber - 1, size);
+        var page = springDataUserRepository.findAll(pageable);
         return new PageResult<>(
-            pageable.getContent()
+            page.getContent()
                 .stream()
                 .map(UserMapper::toDomain)
                 .toList(), 
-            page, 
+            pageNumber, 
             size, 
-            pageable.getTotalElements(), 
-            pageable.getTotalPages()
+            page.getTotalElements(), 
+            page.getTotalPages()
         );
     }
     

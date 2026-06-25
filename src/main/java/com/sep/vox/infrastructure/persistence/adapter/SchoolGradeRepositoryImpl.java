@@ -8,11 +8,12 @@ import java.util.Optional;
 
 import java.util.UUID;
 
-import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.infrastructure.persistence.entity.SchoolGradeJpaEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.school.SchoolGrade;
@@ -72,14 +73,13 @@ public class SchoolGradeRepositoryImpl implements SchoolGradeRepository {
     }
 
     @Override
-    public PageResult<SchoolGrade> findAllBySchoolId(UUID schoolId, PageRequest pageRequest) {
+    public PageResult<SchoolGrade> findAllBySchoolId(UUID schoolId, int page, int size) {
 
-        // 1. Lấy thông tin từ Domain PageRequest và đổi thành Spring Pageable
-        int actualPage = pageRequest.page() - 1; // Spring đếm trang từ 0
-        Pageable springPageable = org.springframework.data.domain.PageRequest.of(actualPage, pageRequest.size());
+        // 1. Chuyển đổi page, size của Domain thành Spring Pageable
+        int actualPage = page - 1; // Spring đếm trang từ 0
+        Pageable springPageable = PageRequest.of(actualPage, size);
 
-        // 2. Gọi DB (Nó sẽ trả về Page<SchoolGradeJpaEntity> của Spring)
-        Page<SchoolGradeJpaEntity> pageEntity =
+       Page<SchoolGradeJpaEntity> pageEntity =
                 springDataSchoolGradeRepository.findAllBySchoolId(schoolId, springPageable);
 
         // 3. Đóng gói lại thành PageResult của Domain để trả về cho UseCase

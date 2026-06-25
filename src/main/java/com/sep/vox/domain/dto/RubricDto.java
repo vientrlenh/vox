@@ -10,7 +10,6 @@ public record RubricDto(
         UUID languageId,
         UUID frameworkId,
         String ownerType,
-        UUID currentVersionId,
         UUID schoolId
 ) {
 }

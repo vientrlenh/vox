@@ -12,4 +12,5 @@ public interface RegisterFormDocumentRepository {
     RegisterFormDocument save(RegisterFormDocument document);
     List<RegisterFormDocument> findByRegisterFormId(UUID registerFormId);
     List<RegisterFormDocument> saveAll(Collection<RegisterFormDocument> documents);
+    List<RegisterFormDocument> findByRegisterFormIdIn(Collection<UUID> registerFormIds);
 }

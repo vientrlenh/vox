@@ -1,7 +1,8 @@
 package com.sep.vox.domain.model.exam;
 
-public enum ExamItemScoreStatus {
+public enum ExamItemEvaluationStatus {
     AUTO_GRADED, 
     UNDER_REVIEW, 
-    FINALIZED
+    FINALIZED, 
+    SUPERSEDED
 }

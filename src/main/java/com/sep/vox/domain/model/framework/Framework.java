@@ -11,7 +11,6 @@ public class Framework {
     private String name;
     private String description;
     private boolean isActive;
-    private UUID currentVersionId;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
     private UUID createdBy;
@@ -19,27 +18,24 @@ public class Framework {
 
     public Framework() {}
 
-    public Framework(UUID id, FrameworkCode code, String name, String description, boolean isActive,
-            UUID currentVersionId, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+    public Framework(UUID id, FrameworkCode code, String name, String description, boolean isActive, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.code = code;
         this.name = name;
         this.description = description;
         this.isActive = isActive;
-        this.currentVersionId = currentVersionId;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
         this.updatedBy = updatedBy;
     }
 
-    public Framework(FrameworkCode code, String name, String description, boolean isActive, UUID currentVersionId,
+    public Framework(FrameworkCode code, String name, String description, boolean isActive,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.code = code;
         this.name = name;
         this.description = description;
         this.isActive = isActive;
-        this.currentVersionId = currentVersionId;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
@@ -86,14 +82,6 @@ public class Framework {
         this.isActive = isActive;
     }
 
-    public UUID getCurrentVersionId() {
-        return currentVersionId;
-    }
-
-    public void setCurrentVersionId(UUID currentVersionId) {
-        this.currentVersionId = currentVersionId;
-    }
-
     public OffsetDateTime getCreatedAt() {
         return createdAt;
     }
@@ -125,7 +113,4 @@ public class Framework {
     public void setUpdatedBy(UUID updatedBy) {
         this.updatedBy = updatedBy;
     }
-
-    
-    
 }

@@ -1,4 +1,4 @@
-package com.sep.vox.application.response.input.importfile;
+package com.sep.vox.application.response.input.schooldirectory;
 
 import java.util.List;
 import java.util.Map;

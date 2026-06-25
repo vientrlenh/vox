@@ -118,6 +118,8 @@ class SchoolControllerTests {
         createSchoolClassUserUseCase = mock(CreateSchoolClassUserUseCase.class);
         deleteSchoolClassUserUseCase = mock(DeleteSchoolClassUserUseCase.class);
         updateSchoolClassUserStatusUseCase = mock(UpdateSchoolClassUserStatusUseCase.class);
+        previewSchoolClassUserImportFromFileUseCase = mock(PreviewSchoolClassUserImportFromFileUseCase.class);
+        acceptSchoolClassUserImportUseCase = mock(AcceptSchoolClassUserImportUseCase.class);
         deleteSchoolUseCase = mock(DeleteSchoolUseCase.class);
         updateSchoolStatusUseCase = mock(UpdateSchoolStatusUseCase.class);
         addSchoolRoomUseCase = mock(AddSchoolRoomUseCase.class);

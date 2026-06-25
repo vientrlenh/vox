@@ -46,7 +46,6 @@ import com.sep.vox.application.port.input.usecase.schoolgrade.DeleteSchoolGradeU
 import com.sep.vox.application.port.input.usecase.schoolgradelevel.CreateSchoolGradeLevelUseCase;
 import com.sep.vox.application.port.input.usecase.schoolgradelevel.DeleteSchoolGradeLevelUseCase;
 import com.sep.vox.application.response.input.importfile.AcceptSchoolClassImportResponse;
-import com.sep.vox.application.response.input.importfile.AcceptSchoolUserImportResponse;
 import com.sep.vox.application.response.input.importfile.PreviewSchoolClassImportResponse;
 import com.sep.vox.application.response.input.importfile.PreviewSchoolUserImportResponse;
 import com.sep.vox.application.response.input.schoolclass.CreateSchoolClassResponse;
@@ -316,15 +315,11 @@ class SchoolControllerTests {
     @Test
     void accept_import_user_should_return_ok() {
         var request = new AcceptSchoolUserImportRequest(Map.of("Email", "email", "Họ tên", "fullName"));
-        var expected = new AcceptSchoolUserImportResponse(importSessionId, 2L, 2L, 0L, 0L, 0L, "COMPLETED");
-        when(acceptSchoolUserImportUseCase.execute(any(AcceptSchoolUserImportCommand.class))).thenReturn(expected);
-
         var response = controller.acceptImportSession(schoolId, importSessionId, request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().message()).isEqualTo("Import người dùng thành công");
-        assertThat(response.getBody().data()).isEqualTo(expected);
+        assertThat(response.getBody().message()).isEqualTo("Yêu cầu import người dùng đã được tiếp nhận, đang xử lý");
         verify(acceptSchoolUserImportUseCase).execute(any(AcceptSchoolUserImportCommand.class));
     }
 

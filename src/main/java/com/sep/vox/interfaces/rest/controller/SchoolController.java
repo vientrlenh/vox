@@ -44,7 +44,6 @@ import com.sep.vox.application.port.input.usecase.schooluser.CreateSchoolUserUse
 import com.sep.vox.application.port.input.usecase.schooluser.DeleteSchoolUserUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.PreviewSchoolUserImportFromFileUseCase;
 import com.sep.vox.application.response.input.importfile.AcceptSchoolClassImportResponse;
-import com.sep.vox.application.response.input.importfile.AcceptSchoolUserImportResponse;
 import com.sep.vox.application.response.input.importfile.PreviewSchoolClassImportResponse;
 import com.sep.vox.application.response.input.importfile.PreviewSchoolUserImportResponse;
 import com.sep.vox.application.response.input.schoolclass.CreateSchoolClassResponse;
@@ -334,13 +333,13 @@ public class SchoolController {
 
     @PostMapping("/{schoolId}/users/import/{sessionId}/accept")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<AcceptSchoolUserImportResponse>> acceptImportSession(
+    public ResponseEntity<ApiResponse<Object>> acceptImportSession(
             @PathVariable("schoolId") UUID schoolId,
             @PathVariable("sessionId") UUID sessionId,
             @Valid @RequestBody AcceptSchoolUserImportRequest request) {
         var command = AcceptSchoolUserImportCommandMapper.fromRequest(schoolId, sessionId, request);
-        var data = acceptSchoolUserImportUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Import người dùng thành công", data));
+        acceptSchoolUserImportUseCase.execute(command);
+        return ResponseEntity.ok(ApiResponse.success("Yêu cầu import người dùng đã được tiếp nhận, đang xử lý"));
     }
 
     //Delete School

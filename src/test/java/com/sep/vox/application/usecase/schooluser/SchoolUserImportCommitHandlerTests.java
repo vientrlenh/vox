@@ -319,9 +319,45 @@ class SchoolUserImportCommitHandlerTests {
 
         assertThat(result.created()).isEqualTo(1L);
         assertThat(result.invalid()).isEqualTo(1L);
-        assertThat(rows.get(0).getStatus()).isEqualTo(ImportRowStatus.INVALID);
+        assertThat(rows.get(0).getStatus()).isEqualTo(ImportRowStatus.FAILED);
         assertThat(rows.get(1).getStatus()).isEqualTo(ImportRowStatus.IMPORTED);
         assertThat(rows.get(0).getErrorsJson()).contains("tồn tại");
+    }
+
+    @Test
+    void should_isolate_invalid_value_object_per_row() {
+        var schoolId = UUID.randomUUID();
+        var createdBy = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var role = role("STUDENT");
+        var savedUser = user(UUID.randomUUID(), "good@example.com");
+        var badPhoneData = Map.of(
+            "Email", "bad@example.com", "Họ tên", "Nguyễn Văn A", "Vai trò", "STUDENT",
+            "Điện thoại", "123", "Ngày sinh", "2000-01-01",
+            "Ngày bắt đầu", "2025-09-01", "Ngày kết thúc", "2026-06-30",
+            "Địa chỉ", "Hà Nội"
+        );
+        var rows = List.of(
+            row(sessionId, 1L, badPhoneData),
+            row(sessionId, 2L, studentData("good@example.com"))
+        );
+
+        mockSchool(schoolId);
+        when(userRepository.findByEmailIn(Set.of("bad@example.com", "good@example.com"))).thenReturn(List.of());
+        when(roleRepository.findByCodeIn(Set.of("STUDENT"))).thenReturn(List.of(role));
+        when(schoolUserRepository.findByUserIdIn(any())).thenReturn(List.of());
+        when(userRepository.save(any())).thenReturn(savedUser);
+        when(userRoleRepository.save(any(UserRole.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(schoolUserRepository.save(any(SchoolUser.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(passwordSetUpTokenPort.generateToken()).thenReturn(new GeneratedPasswordSetUpToken("raw", "hash"));
+        when(passwordSetUpTokenRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        ImportCommitResult result = handler.commit(session(sessionId, schoolId, createdBy), rows);
+
+        assertThat(result.created()).isEqualTo(1L);
+        assertThat(result.invalid()).isEqualTo(1L);
+        assertThat(rows.get(0).getStatus()).isEqualTo(ImportRowStatus.FAILED);
+        assertThat(rows.get(1).getStatus()).isEqualTo(ImportRowStatus.IMPORTED);
     }
 
     private void mockSchool(UUID schoolId) {

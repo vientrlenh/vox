@@ -145,17 +145,17 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
 
             try {
                 if (existingUser != null) {
-                    transactionTemplate.execute(status ->
+                    transactionTemplate.executeWithoutResult(status ->
                             updateUser(existingUser, normalized, schoolId, schoolUsersByUserId, roleCode, currentUserId));
                     updatedRows++;
                 } else {
-                    transactionTemplate.execute(status ->
+                    transactionTemplate.executeWithoutResult(status ->
                             createUser(normalized, role, schoolId, schoolName, currentUserId));
                     createdRows++;
                 }
-            } catch (DataIntegrityViolationException e) {
-                row.setErrorsJson(jsonSerializationPort.toJson(List.of(error("email", "Email hoặc số điện thoại đã tồn tại"))));
-                row.setStatus(ImportRowStatus.INVALID);
+            } catch (DataIntegrityViolationException | IllegalArgumentException e) {
+                row.setErrorsJson(jsonSerializationPort.toJson(List.of(error("email", "Email hoặc số điện thoại đã tồn tại hoặc dữ liệu không hợp lệ"))));
+                row.setStatus(ImportRowStatus.FAILED);
                 invalidRows++;
                 continue;
             }

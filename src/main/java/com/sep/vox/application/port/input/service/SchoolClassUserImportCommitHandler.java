@@ -155,7 +155,7 @@ public class SchoolClassUserImportCommitHandler implements ImportCommitHandler {
                 }
             } catch (DataIntegrityViolationException | IllegalArgumentException exception) {
                 row.setErrorsJson(jsonSerializationPort.toJson(List.of(error("email", "Thành viên lớp học đã tồn tại hoặc không hợp lệ"))));
-                row.setStatus(ImportRowStatus.INVALID);
+                row.setStatus(ImportRowStatus.FAILED);
                 invalidRows++;
                 continue;
             }

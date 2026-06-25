@@ -88,9 +88,7 @@ public class UpdateSchoolUseCase implements IUseCase<UpdateSchoolCommand, UUID> 
         String domain = null;
         if (command.domain() != null) {
             domain = StringNormalization.normalizeDomain(command.domain());
-            if (schoolRepository.existsByDomainAndIdNot(domain, command.id())) {
-                throw new DuplicatedException("Tên miền này đã được sử dụng.");
-            }
+
         }
 
         // 4. Thực thi Atomic Update

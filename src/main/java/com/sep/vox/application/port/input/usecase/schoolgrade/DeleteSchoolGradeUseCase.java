@@ -6,7 +6,6 @@ import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.DeleteSchoolGradeCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.response.SchoolGradeResponse.SchoolGradeResponse;
 import com.sep.vox.domain.model.school.SchoolGrade;
 import com.sep.vox.domain.model.school.SchoolGradeStatus;
 import com.sep.vox.domain.model.school.SchoolUser;
@@ -23,7 +22,7 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Service
-public class DeleteSchoolGradeUseCase implements IUseCase<DeleteSchoolGradeCommand, SchoolGradeResponse> {
+public class DeleteSchoolGradeUseCase implements IUseCase<DeleteSchoolGradeCommand, Void> {
 
     private final SchoolGradeRepository schoolGradeRepository;
     private final SchoolClassRepository schoolClassRepository;
@@ -50,7 +49,7 @@ public class DeleteSchoolGradeUseCase implements IUseCase<DeleteSchoolGradeComma
 
     @Override
     @Transactional
-    public SchoolGradeResponse execute(DeleteSchoolGradeCommand command) {
+    public Void execute(DeleteSchoolGradeCommand command) {
         // 1. Xác định User hiện tại
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
@@ -99,23 +98,6 @@ public class DeleteSchoolGradeUseCase implements IUseCase<DeleteSchoolGradeComma
         }
 
         // 6. Trả về kết quả
-        return toResponse(grade);
-    }
-
-    private SchoolGradeResponse toResponse(SchoolGrade grade) {
-        return new SchoolGradeResponse(
-                grade.getId(),
-                grade.getSchoolGradeLevelId(),
-                grade.getCode(),
-                grade.getName(),
-                grade.getDescription(),
-                grade.getStartDate(),
-                grade.getEndDate(),
-                grade.getStatus(),
-                grade.getCreatedAt(),
-                grade.getUpdatedAt(),
-                grade.getCreatedBy(),
-                grade.getUpdatedBy()
-        );
+        return null;
     }
 }

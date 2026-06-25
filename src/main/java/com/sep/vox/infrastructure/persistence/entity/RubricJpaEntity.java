@@ -16,8 +16,7 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "rubrics", indexes = {
     @Index(columnList = "owner_type, school_id, language_id, framework_id, code", name = "idx_rubrics_owner_scope_code", unique = true),
-    @Index(columnList = "language_id, framework_id", name = "idx_rubrics_language_framework"),
-    @Index(columnList = "current_version_id", name = "idx_rubrics_current_version")
+    @Index(columnList = "language_id, framework_id", name = "idx_rubrics_language_framework")
 }, check = {
     @CheckConstraint(
         name = "chk_rubrics_owner_school_valid",
@@ -58,15 +57,12 @@ public class RubricJpaEntity {
     @Column(name = "school_id")
     private UUID schoolId;
 
-    @Column(name = "current_version_id")
-    private UUID currentVersionId;
-
     protected RubricJpaEntity() {}
 
     
 
     public RubricJpaEntity(UUID id, UUID languageId, UUID frameworkId, String code, String name, String description, 
-            String ownerType, UUID schoolId, UUID currentVersionId) {
+            String ownerType, UUID schoolId) {
         this.id = id;
         this.code = code;
         this.name = name;
@@ -75,21 +71,6 @@ public class RubricJpaEntity {
         this.frameworkId = frameworkId;
         this.ownerType = ownerType;
         this.schoolId = schoolId;
-        this.currentVersionId = currentVersionId;
-    }
-
-
-
-    public RubricJpaEntity(UUID languageId, UUID frameworkId, String code, String name, String description, 
-            String ownerType, UUID schoolId, UUID currentVersionId) {
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.languageId = languageId;
-        this.frameworkId = frameworkId;
-        this.ownerType = ownerType;
-        this.schoolId = schoolId;
-        this.currentVersionId = currentVersionId;
     }
 
 
@@ -156,14 +137,6 @@ public class RubricJpaEntity {
 
     public void setSchoolId(UUID schoolId) {
         this.schoolId = schoolId;
-    }
-
-    public UUID getCurrentVersionId() {
-        return currentVersionId;
-    }
-
-    public void setCurrentVersionId(UUID currentVersionId) {
-        this.currentVersionId = currentVersionId;
     }
 
     

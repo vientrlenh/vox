@@ -191,7 +191,7 @@ class SchoolControllerTests {
         var request = new CreateSchoolClassUserRequest(userId);
         var expectedCommand = new CreateSchoolClassUserCommand(schoolId, classId, userId);
         var expected = new CreateSchoolClassUserResponse(schoolClassUserId);
-        when(createSchoolClassUserUseCase.execute(expectedCommand)).thenReturn(expected);
+        when(createSchoolClassUserUseCase.execute(any(CreateSchoolClassUserCommand.class))).thenReturn(expected);
 
         var response = controller.createClassUser(schoolId, classId, request);
 

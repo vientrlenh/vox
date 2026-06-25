@@ -13,7 +13,7 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.FileProcessingPort;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.response.input.importfile.PreviewSchoolDirectoryImportResponse;
+import com.sep.vox.application.response.input.schooldirectory.PreviewSchoolDirectoryImportResponse;
 import com.sep.vox.application.response.output.ParseImportFileResult;
 import com.sep.vox.domain.model.importfile.ImportRow;
 import com.sep.vox.domain.model.importfile.ImportRowStatus;

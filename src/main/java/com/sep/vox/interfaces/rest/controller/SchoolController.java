@@ -63,13 +63,15 @@ import com.sep.vox.application.response.input.importfile.AcceptSchoolClassUserIm
 import com.sep.vox.application.response.input.importfile.PreviewSchoolClassUserImportResponse;
 import com.sep.vox.application.response.input.schoolclassuser.CreateSchoolClassUserResponse;
 import com.sep.vox.application.response.input.schoolclassuser.UpdateSchoolClassUserStatusResponse;
+import com.sep.vox.application.response.input.schooldirectory.CreateSchoolDirectoryResponse;
+import com.sep.vox.application.response.input.schooldirectory.PreviewSchoolDirectoryImportResponse;
 import com.sep.vox.interfaces.rest.mapper.AcceptSchoolClassUserImportCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateSchoolClassUserCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.DeleteSchoolClassUserCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.UpdateSchoolClassUserStatusCommandMapper;
 import com.sep.vox.application.port.input.usecase.schooldirectory.AcceptSchoolDirectoryImportUseCase;
+import com.sep.vox.application.port.input.usecase.schooldirectory.CreateSchoolDirectoryUseCase;
 import com.sep.vox.application.port.input.usecase.schooldirectory.PreviewSchoolDirectoryImportFromFileUseCase;
-import com.sep.vox.application.response.input.importfile.PreviewSchoolDirectoryImportResponse;
 @RestController
 @RequestMapping("/api/v1/schools")
 public class SchoolController {
@@ -105,8 +107,11 @@ public class SchoolController {
 
     private final CreateSchoolGradeLevelUseCase createSchoolGradeLevelUseCase;
     private final DeleteSchoolGradeLevelUseCase deleteSchoolGradeLevelUseCase;
+
+
     private final PreviewSchoolDirectoryImportFromFileUseCase previewSchoolDirectoryImportFromFileUseCase;
     private final AcceptSchoolDirectoryImportUseCase acceptSchoolDirectoryImportUseCase;
+    private final CreateSchoolDirectoryUseCase createSchoolDirectoryUseCase;
 
     public SchoolController(CreateSchoolClassUseCase createSchoolClassUseCase, 
                         CreateSchoolClassUserUseCase createSchoolClassUserUseCase, 
@@ -127,7 +132,9 @@ public class SchoolController {
                         CreateSchoolGradeLevelUseCase createSchoolGradeLevelUseCase, 
                         DeleteSchoolGradeLevelUseCase deleteSchoolGradeLevelUseCase, 
                         PreviewSchoolDirectoryImportFromFileUseCase previewSchoolDirectoryImportFromFileUseCase, 
-                        AcceptSchoolDirectoryImportUseCase acceptSchoolDirectoryImportUseCase) {
+                        AcceptSchoolDirectoryImportUseCase acceptSchoolDirectoryImportUseCase, 
+                        CreateSchoolDirectoryUseCase createSchoolDirectoryUseCase
+                    ) {
         this.createSchoolClassUseCase = createSchoolClassUseCase;
         this.createSchoolClassUserUseCase = createSchoolClassUserUseCase;
         this.deleteSchoolClassUseCase = deleteSchoolClassUseCase;
@@ -151,6 +158,7 @@ public class SchoolController {
         this.deleteSchoolGradeLevelUseCase = deleteSchoolGradeLevelUseCase;
         this.previewSchoolDirectoryImportFromFileUseCase = previewSchoolDirectoryImportFromFileUseCase;
         this.acceptSchoolDirectoryImportUseCase = acceptSchoolDirectoryImportUseCase;
+        this.createSchoolDirectoryUseCase = createSchoolDirectoryUseCase;
     }
 
     @PostMapping(value = "/directories/import/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -173,6 +181,15 @@ public class SchoolController {
         acceptSchoolDirectoryImportUseCase.execute(command);
         var response = ApiResponse.success("Import danh mục trường thành công");
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/directories")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public ResponseEntity<ApiResponse<CreateSchoolDirectoryResponse>> createSchoolDirectory(@Valid @RequestBody CreateSchoolDirectoryRequest request) {
+        var command = CreateSchoolDirectoryCommandMapper.fromRequest(request);
+        var data = createSchoolDirectoryUseCase.execute(command);
+        var response = ApiResponse.success("Danh mục trường được tạo thành công", data);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping("/{schoolId}/classes")

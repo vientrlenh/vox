@@ -61,6 +61,7 @@ import com.sep.vox.application.port.input.usecase.schoolclassuser.DeleteSchoolCl
 import com.sep.vox.application.port.input.usecase.schoolclassuser.PreviewSchoolClassUserImportFromFileUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclassuser.UpdateSchoolClassUserStatusUseCase;
 import com.sep.vox.application.port.input.usecase.schooldirectory.AcceptSchoolDirectoryImportUseCase;
+import com.sep.vox.application.port.input.usecase.schooldirectory.CreateSchoolDirectoryUseCase;
 import com.sep.vox.application.port.input.usecase.schooldirectory.PreviewSchoolDirectoryImportFromFileUseCase;
 import com.sep.vox.application.response.input.importfile.AcceptSchoolClassUserImportResponse;
 import com.sep.vox.application.response.input.importfile.PreviewSchoolClassUserImportResponse;
@@ -95,6 +96,7 @@ class SchoolControllerTests {
     private DeleteSchoolGradeLevelUseCase deleteSchoolGradeLevelUseCase;
     private PreviewSchoolDirectoryImportFromFileUseCase previewSchoolDirectoryImportFromFileUseCase;
     private AcceptSchoolDirectoryImportUseCase acceptSchoolDirectoryImportUseCase;
+    private CreateSchoolDirectoryUseCase createSchoolDirectoryUseCase;
     private SchoolController controller;
 
     private final UUID schoolId = UUID.randomUUID();
@@ -127,6 +129,7 @@ class SchoolControllerTests {
         deleteSchoolGradeLevelUseCase = mock(DeleteSchoolGradeLevelUseCase.class);
         previewSchoolDirectoryImportFromFileUseCase = mock(PreviewSchoolDirectoryImportFromFileUseCase.class);
         acceptSchoolDirectoryImportUseCase = mock(AcceptSchoolDirectoryImportUseCase.class);
+        createSchoolDirectoryUseCase = mock(CreateSchoolDirectoryUseCase.class);
         
         controller = new SchoolController(
             createSchoolClassUseCase, 
@@ -151,7 +154,8 @@ class SchoolControllerTests {
             createSchoolGradeLevelUseCase, 
             deleteSchoolGradeLevelUseCase, 
             previewSchoolDirectoryImportFromFileUseCase, 
-            acceptSchoolDirectoryImportUseCase
+            acceptSchoolDirectoryImportUseCase, 
+            createSchoolDirectoryUseCase
         );
     }
 

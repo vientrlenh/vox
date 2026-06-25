@@ -40,11 +40,17 @@ public class UpdateFrameworkVersionStatusUseCase implements IUseCase<UpdateFrame
         }
 
         if (input.status() == FrameworkVersionStatus.PUBLISHED) {
+            if (version.getStatus() != FrameworkVersionStatus.DRAFT) {
+                throw new IllegalStateException("Chỉ có thể xuất bản phiên bản ở trạng thái DRAFT");
+            }
             validateNoConflictingPublished(input.frameworkId(), input.versionId(), version.getEffectiveFrom(), version.getEffectiveTo());
             frameworkVersionRepository.updateStatus(input.versionId(), FrameworkVersionStatus.PUBLISHED);
             frameworkRepository.updateCurrentVersionId(input.frameworkId(), input.versionId());
         } else if (input.status() == FrameworkVersionStatus.ARCHIVED) {
             frameworkVersionRepository.updateStatus(input.versionId(), FrameworkVersionStatus.ARCHIVED);
+            if (version.getStatus() == FrameworkVersionStatus.PUBLISHED) {
+                frameworkRepository.updateCurrentVersionId(input.frameworkId(), null);
+            }
         } else {
             throw new IllegalArgumentException("Trạng thái không hợp lệ để cập nhật");
         }

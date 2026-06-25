@@ -52,6 +52,9 @@ public class DeleteFrameworkVersionUseCase implements IUseCase<DeleteFrameworkVe
             deleteVersionAndChildren(input.versionId());
         } else {
             frameworkVersionRepository.updateStatus(input.versionId(), FrameworkVersionStatus.ARCHIVED);
+            if (version.getStatus() == FrameworkVersionStatus.PUBLISHED) {
+                frameworkRepository.updateCurrentVersionId(input.frameworkId(), null);
+            }
         }
 
         return null;

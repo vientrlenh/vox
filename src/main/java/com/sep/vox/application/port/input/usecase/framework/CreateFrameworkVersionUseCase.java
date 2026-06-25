@@ -38,6 +38,9 @@ public class CreateFrameworkVersionUseCase implements IUseCase<CreateFrameworkVe
     @Transactional
     public CreateFrameworkVersionResponse execute(CreateFrameworkVersionCommand input) {
         var command = normalize(input);
+        if (command.effectiveTo() != null && command.effectiveTo().isBefore(command.effectiveFrom())) {
+            throw new IllegalArgumentException("Ngày hết hiệu lực phải sau ngày hiệu lực");
+        }
         var now = OffsetDateTime.now();
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 

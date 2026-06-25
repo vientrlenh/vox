@@ -17,6 +17,7 @@ import com.sep.vox.infrastructure.persistence.entity.FrameworkVersionJpaEntity;
 import jakarta.persistence.LockModeType;
 
 public interface SpringDataFrameworkVersionRepository extends JpaRepository<FrameworkVersionJpaEntity, UUID> {
+    boolean existsByFrameworkId(UUID frameworkId);
     Page<FrameworkVersionJpaEntity> findByFrameworkId(UUID frameworkId, Pageable pageable);
     List<FrameworkVersionJpaEntity> findByFrameworkIdAndStatus(UUID frameworkId, String status);
     Optional<FrameworkVersionJpaEntity> findByFrameworkIdAndVersion(UUID frameworkId, int version);

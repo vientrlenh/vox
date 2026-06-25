@@ -55,4 +55,9 @@ public class FrameworkRepositoryImpl implements FrameworkRepository {
     public int updateCurrentVersionId(UUID id, UUID currentVersionId) {
         return springDataFrameworkRepository.updateCurrentVersionId(id, currentVersionId);
     }
+
+    @Override
+    public void deleteById(UUID id) {
+        springDataFrameworkRepository.deleteById(id);
+    }
 }

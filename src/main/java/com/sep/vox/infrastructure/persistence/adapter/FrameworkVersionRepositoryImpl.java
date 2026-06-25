@@ -76,4 +76,9 @@ public class FrameworkVersionRepositoryImpl implements FrameworkVersionRepositor
     public void deleteById(UUID id) {
         springDataFrameworkVersionRepository.deleteById(id);
     }
+
+    @Override
+    public boolean existsByFrameworkId(UUID frameworkId) {
+        return springDataFrameworkVersionRepository.existsByFrameworkId(frameworkId);
+    }
 }

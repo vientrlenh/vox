@@ -18,6 +18,8 @@ import com.sep.vox.application.port.input.query.ViewFrameworkDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewFrameworkVersionDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewFrameworkVersionsQuery;
 import com.sep.vox.application.port.input.query.ViewFrameworksQuery;
+import com.sep.vox.application.port.input.command.UpdateFrameworkActiveStatusCommand;
+import com.sep.vox.application.port.input.usecase.framework.UpdateFrameworkStatusUseCase;
 import com.sep.vox.application.port.input.usecase.framework.UpdateFrameworkVersionUseCase;
 import com.sep.vox.application.port.input.usecase.framework.ViewFrameworkDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.framework.ViewFrameworkVersionDetailsUseCase;
@@ -39,18 +41,21 @@ public class FrameworkController {
     private final ViewFrameworkVersionsUseCase viewFrameworkVersionsUseCase;
     private final ViewFrameworkVersionDetailsUseCase viewFrameworkVersionDetailsUseCase;
     private final UpdateFrameworkVersionUseCase updateFrameworkVersionUseCase;
+    private final UpdateFrameworkStatusUseCase updateFrameworkActiveStatusUseCase;
 
     public FrameworkController(
             ViewFrameworksUseCase viewFrameworksUseCase,
             ViewFrameworkDetailsUseCase viewFrameworkDetailsUseCase,
             ViewFrameworkVersionsUseCase viewFrameworkVersionsUseCase,
             ViewFrameworkVersionDetailsUseCase viewFrameworkVersionDetailsUseCase,
-            UpdateFrameworkVersionUseCase updateFrameworkVersionUseCase) {
+            UpdateFrameworkVersionUseCase updateFrameworkVersionUseCase,
+            UpdateFrameworkStatusUseCase updateFrameworkActiveStatusUseCase) {
         this.viewFrameworksUseCase = viewFrameworksUseCase;
         this.viewFrameworkDetailsUseCase = viewFrameworkDetailsUseCase;
         this.viewFrameworkVersionsUseCase = viewFrameworkVersionsUseCase;
         this.viewFrameworkVersionDetailsUseCase = viewFrameworkVersionDetailsUseCase;
         this.updateFrameworkVersionUseCase = updateFrameworkVersionUseCase;
+        this.updateFrameworkActiveStatusUseCase = updateFrameworkActiveStatusUseCase;
     }
 
     @QueryMapping(name = "frameworks")
@@ -96,6 +101,14 @@ public class FrameworkController {
             @Argument(name = "input") UpdateFrameworkVersionInput input) {
         var command = UpdateFrameworkVersionCommandMapper.fromInput(frameworkId, versionId, input);
         return updateFrameworkVersionUseCase.execute(command);
+    }
+
+    @MutationMapping(name = "updateFrameworkStatus")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public UUID updateFrameworkStatus(
+            @Argument(name = "id") UUID id,
+            @Argument(name = "isActive") boolean isActive) {
+        return updateFrameworkActiveStatusUseCase.execute(new UpdateFrameworkActiveStatusCommand(id, isActive));
     }
 
     @SchemaMapping(typeName = "FrameworkVersion", field = "criteria")

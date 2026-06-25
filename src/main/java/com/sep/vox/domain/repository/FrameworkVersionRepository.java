@@ -17,4 +17,5 @@ public interface FrameworkVersionRepository {
     FrameworkVersion save(FrameworkVersion version);
     int updateStatus(UUID id, FrameworkVersionStatus status);
     void deleteById(UUID id);
+    boolean existsByFrameworkId(UUID frameworkId);
 }

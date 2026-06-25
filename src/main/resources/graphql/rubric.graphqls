@@ -3,6 +3,12 @@ input UpdateRubricInput {
     description: String
 }
 
+input SearchRubricFilter {
+    keyword: String     # Tìm theo tên hoặc mã code
+    frameworkId: ID     # Lọc theo Khung năng lực
+    languageId: ID      # Lọc theo Ngôn ngữ
+}
+
 input UpdateRubricVersionInput {
     code: String
     name: String
@@ -85,11 +91,11 @@ type RubricVersion {
     resultBands(page: Int = 1, size: Int = 10): RubricResultBandPage!
 }
 type RubricVersionPage {
-    content: [RubricVersion!]!
     page: Int!
     size: Int!
     totalElements: Int!
     totalPages: Int!
+    content: [RubricVersion!]!
 }
 
 #=====================================RUBRIC CRITERION===========================
@@ -110,11 +116,12 @@ type RubricCriterion {
 }
 
 type RubricCriterionPage {
-    content: [RubricCriterion!]!
     page: Int!
     size: Int!
     totalElements: Int!
     totalPages: Int!
+    content: [RubricCriterion!]!
+
 }
 
 
@@ -131,11 +138,12 @@ type RubricCriterionBand {
     updatedBy: ID
 }
 type RubricCriterionBandPage {
-    content: [RubricCriterionBand!]!
     page: Int!
     size: Int!
     totalElements: Int!
     totalPages: Int!
+    content: [RubricCriterionBand!]!
+
 }
 
 #====================RUBRIC RESULT BAND =========================
@@ -155,11 +163,11 @@ type RubricResultBand {
 }
 
 type RubricResultBandPage {
-    content: [RubricResultBand!]!
     page: Int!
     size: Int!
     totalElements: Int!
     totalPages: Int!
+    content: [RubricResultBand!]!
 }
 
 
@@ -196,7 +204,11 @@ extend type Query {
     viewSchoolRubric(schoolId: ID!, id: ID!): Rubric
     viewSystemRubrics(page: Int = 0, size: Int = 10): RubricPage!
     viewSchoolRubrics(schoolId: ID!, page: Int = 0, size: Int = 10): RubricPage!
-
+    # Cổng tìm kiếm cho System Admin
+    searchSystemRubrics(filter: SearchRubricFilter, page: Int = 0, size: Int = 10): RubricPage!
+    # Cổng tìm kiếm cho School Admin (Bắt buộc phải truyền schoolId)
+    searchSchoolRubrics(schoolId: ID!, filter: SearchRubricFilter, page: Int = 0, size: Int = 10): RubricPage!
+    
     # RUBRIC VERSION
     viewSchoolRubricVersion(schoolId: ID!, versionId: ID!): RubricVersion
     viewSystemRubricVersion(versionId: ID!): RubricVersion

@@ -16,6 +16,7 @@ import com.sep.vox.domain.repository.RubricRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;
 import com.sep.vox.domain.repository.UserRepository;
+import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,7 +34,7 @@ public class CreateSystemRubricUseCase implements IUseCase<CreateSystemRubricCom
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
     private final SupportedLanguageRepository languageRepository;
-    private final FrameworkRepository frameworkRepository; // BỔ SUNG
+    private final FrameworkRepository frameworkRepository;
 
     public CreateSystemRubricUseCase(
             RubricRepository rubricRepository,
@@ -41,7 +42,7 @@ public class CreateSystemRubricUseCase implements IUseCase<CreateSystemRubricCom
             UserRepository userRepository,
             UserContextPort userContextPort,
             SupportedLanguageRepository languageRepository,
-            FrameworkRepository frameworkRepository) { // BỔ SUNG
+            FrameworkRepository frameworkRepository) {
         this.rubricRepository = rubricRepository;
         this.rubricVersionRepository = rubricVersionRepository;
         this.userRepository = userRepository;
@@ -67,7 +68,7 @@ public class CreateSystemRubricUseCase implements IUseCase<CreateSystemRubricCom
             throw new NotFoundException("Ngôn ngữ không tồn tại.");
         }
 
-        // BỔ SUNG: Kiểm tra Framework gốc
+        // Kiểm tra Framework gốc
         Framework framework = frameworkRepository.findById(command.frameworkId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy Khung tiêu chuẩn (Framework)."));
         if (!framework.isActive()) {
@@ -116,11 +117,9 @@ public class CreateSystemRubricUseCase implements IUseCase<CreateSystemRubricCom
             if (vCmd.scoringScaleMin().compareTo(vCmd.scoringScaleMax()) > 0) {
                 throw new IllegalArgumentException("Version " + vCmd.version() + ": Điểm sàn không được lớn hơn điểm trần.");
             }
+
             // Logic Effective From (Xử lý an toàn)
-            OffsetDateTime validFrom = vCmd.effectiveFrom() != null ? vCmd.effectiveFrom() : now;
-            if (vCmd.effectiveTo() != null && vCmd.effectiveTo().isBefore(validFrom)) {
-                throw new IllegalArgumentException("Version " + vCmd.version() + ": Ngày kết thúc không được trước ngày bắt đầu.");
-            }
+            OffsetDateTime validFrom = getOffsetDateTime(vCmd, now);
 
             return new RubricVersion(
                     savedRubric.getId(),
@@ -129,7 +128,7 @@ public class CreateSystemRubricUseCase implements IUseCase<CreateSystemRubricCom
                     safeName + " - Version " + vCmd.version(),
                     safeDesc,
                     RubricStatus.DRAFT, // Mặc định là DRAFT
-                    validFrom, // Đã bọc an toàn
+                    validFrom,
                     vCmd.effectiveTo(),
                     vCmd.scoringScaleMin(),
                     vCmd.scoringScaleMax(),
@@ -141,5 +140,20 @@ public class CreateSystemRubricUseCase implements IUseCase<CreateSystemRubricCom
         rubricVersionRepository.saveAll(versionsToSave);
 
         return savedRubric.getId();
+    }
+
+    private static @NonNull OffsetDateTime getOffsetDateTime(CreateSystemRubricCommand.RubricVersionItemCommand vCmd, OffsetDateTime now) {
+        OffsetDateTime validFrom = vCmd.effectiveFrom() != null ? vCmd.effectiveFrom() : now;
+
+        // CHỐT CHẶN: Chặn ngày trong quá khứ (so sánh phần Ngày của local, bỏ qua phần Giờ để không bị lỗi múi giờ)
+        if (validFrom.toLocalDate().isBefore(now.toLocalDate())) {
+            throw new IllegalArgumentException("Version " + vCmd.version() + ": Ngày bắt đầu áp dụng (Effective From) không được nằm trong quá khứ.");
+        }
+
+        // Validate Effective To
+        if (vCmd.effectiveTo() != null && vCmd.effectiveTo().isBefore(validFrom)) {
+            throw new IllegalArgumentException("Version " + vCmd.version() + ": Ngày kết thúc không được trước ngày bắt đầu.");
+        }
+        return validFrom;
     }
 }

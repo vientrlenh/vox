@@ -49,11 +49,15 @@ public class RubricResultBandRepositoryImpl implements RubricResultBandRepositor
     }
 
     @Override
-    public void saveAll(List<RubricResultBand> bands) {
+    public List<RubricResultBand> saveAll(List<RubricResultBand> bands) {
         var entities = bands.stream()
                 .map(RubricResultBandMapper::toJpa)
                 .toList();
-        springDataRubricResultBandRepository.saveAll(entities);
+        var savedEntities = springDataRubricResultBandRepository.saveAll(entities);
+
+        return savedEntities.stream()
+                .map(RubricResultBandMapper::toDomain)
+                .toList();
     }
 
     @Override

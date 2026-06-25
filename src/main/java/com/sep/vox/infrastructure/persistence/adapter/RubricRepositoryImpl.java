@@ -97,4 +97,40 @@ public class RubricRepositoryImpl implements RubricRepository {
                 entityPage.getTotalPages()
         );
     }
+
+    @Override
+    public PageResult<Rubric> searchSystemRubrics(String keyword, UUID frameworkId, UUID languageId, com.sep.vox.domain.common.PageRequest pageRequest) {
+        Pageable springPageable = PageRequest.of(pageRequest.page(), pageRequest.size());
+
+        Page<RubricJpaEntity> pageEntity = springDataRubricRepository.searchSystemRubrics(keyword, frameworkId, languageId, springPageable);
+
+        return new PageResult<>(
+                pageEntity.getContent().stream().map(RubricMapper::toDomain).toList(),
+                pageEntity.getNumber(),
+                pageEntity.getSize(),
+                (int) pageEntity.getTotalElements(),
+                pageEntity.getTotalPages()
+        );
+    }
+
+    @Override
+    public PageResult<Rubric> searchSchoolRubrics(
+            UUID schoolId, String keyword, UUID frameworkId, UUID languageId,
+            com.sep.vox.domain.common.PageRequest pageRequest) {
+
+        // Ép kiểu PageRequest của Domain sang Pageable của Spring Boot
+        Pageable springPageable = PageRequest.of(pageRequest.page(), pageRequest.size());
+
+        // Gọi DB
+        Page<RubricJpaEntity> pageEntity = springDataRubricRepository.searchSchoolRubrics(schoolId, keyword, frameworkId, languageId, springPageable);
+
+        // Trả về PageResult chuẩn Domain
+        return new PageResult<>(
+                pageEntity.getContent().stream().map(RubricMapper::toDomain).toList(),
+                pageEntity.getNumber(),
+                pageEntity.getSize(),
+                (int) pageEntity.getTotalElements(),
+                pageEntity.getTotalPages()
+        );
+    }
 }

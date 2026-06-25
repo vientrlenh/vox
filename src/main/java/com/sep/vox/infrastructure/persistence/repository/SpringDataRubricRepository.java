@@ -36,4 +36,28 @@ public interface SpringDataRubricRepository extends JpaRepository<RubricJpaEntit
     Page<RubricJpaEntity> findAllByOwnerType(String ownerType, Pageable pageable);
 
     Page<RubricJpaEntity> findAllByOwnerTypeAndSchoolId(String ownerType, UUID schoolId, Pageable pageable);
+
+
+    // 1. Search cho SYSTEM (Lọc cứng owner_type = 'SYSTEM')
+    @Query("SELECT r FROM RubricJpaEntity r WHERE r.ownerType = 'SYSTEM' " +
+            "AND (:keyword IS NULL OR LOWER(r.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(r.code) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+            "AND (:frameworkId IS NULL OR r.frameworkId = :frameworkId) " +
+            "AND (:languageId IS NULL OR r.languageId = :languageId)")
+    Page<RubricJpaEntity> searchSystemRubrics(
+            @Param("keyword") String keyword,
+            @Param("frameworkId") UUID frameworkId,
+            @Param("languageId") UUID languageId,
+            Pageable pageable);
+
+    // 2. Search cho SCHOOL (Lọc cứng theo school_id)
+    @Query("SELECT r FROM RubricJpaEntity r WHERE r.schoolId = :schoolId " +
+            "AND (:keyword IS NULL OR LOWER(r.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(r.code) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+            "AND (:frameworkId IS NULL OR r.frameworkId = :frameworkId) " +
+            "AND (:languageId IS NULL OR r.languageId = :languageId)")
+    Page<RubricJpaEntity> searchSchoolRubrics(
+            @Param("schoolId") UUID schoolId,
+            @Param("keyword") String keyword,
+            @Param("frameworkId") UUID frameworkId,
+            @Param("languageId") UUID languageId,
+            Pageable pageable);
 }

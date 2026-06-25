@@ -8,6 +8,7 @@ import com.sep.vox.application.port.input.query.key.RubricResultBandsKey;
 import com.sep.vox.application.port.input.query.key.RubricVersionsKey;
 import com.sep.vox.application.port.input.usecase.rubricschool.*;
 import com.sep.vox.application.port.input.usecase.rubricsystem.*;
+import com.sep.vox.domain.common.PageRequest;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.*;
 import com.sep.vox.interfaces.graphql.dto.request.*;
@@ -57,8 +58,10 @@ public class RubricController {
     private final ViewSchoolRubricResultBandDetailsUseCase viewSchoolRubricResultBandDetailsUseCase;
     private final ViewSystemRubricResultBandsUseCase viewSystemRubricResultBandsUseCase;
     private final ViewSchoolRubricResultBandsUseCase viewSchoolRubricResultBandsUseCase;
+    private final SearchSystemRubricsUseCase searchSystemRubricsUseCase;
+    private final SearchSchoolRubricsUseCase searchSchoolRubricsUseCase;
 
-    public RubricController(UpdateSystemRubricUseCase updateSystemRubricUseCase, UpdateSchoolRubricUseCase updateSchoolRubricUseCase, ViewSystemRubricDetailsUseCase viewSystemRubricDetailsUseCase, ViewSchoolRubricDetailsUseCase viewSchoolRubricDetailsUseCase, ViewSystemRubricsUseCase viewSystemRubricsUseCase, ViewSchoolRubricsUseCase viewSchoolRubricsUseCase, UpdateSystemRubricVersionUseCase updateSystemRubricVersionUseCase, UpdateSchoolRubricVersionUseCase updateSchoolRubricVersionUseCase, ViewSchoolRubricVersionDetailsUseCase viewSchoolRubricVersionDetailsUseCase, ViewSystemRubricVersionDetailsUseCase viewSystemRubricVersionDetailsUseCase, ViewSchoolRubricVersionsUseCase viewSchoolRubricVersionsUseCase, ViewSystemRubricVersionsUseCase viewSystemRubricVersionsUseCase, UpdateSystemRubricCriterionUseCase updateSystemRubricCriterionUseCase, UpdateSchoolRubricCriterionUseCase updateSchoolRubricCriterionUseCase, ViewSystemRubricCriterionDetailsUseCase viewSystemRubricCriterionDetailsUseCase, ViewSchoolRubricCriterionDetailsUseCase viewSchoolRubricCriterionDetailsUseCase, ViewSystemRubricCriteriaUseCase viewSystemRubricCriteriaUseCase, ViewSchoolRubricCriteriaUseCase viewSchoolRubricCriteriaUseCase, UpdateSchoolRubricCriterionBandUseCase updateSchoolRubricCriterionBandUseCase, UpdateSystemRubricCriterionBandUseCase updateSystemRubricCriterionBandUseCase, ViewSystemRubricCriterionBandDetailsUseCase viewSystemRubricCriterionBandDetailsUseCase, ViewSchoolRubricCriterionBandDetailsUseCase viewSchoolRubricCriterionBandDetailsUseCase, ViewSchoolRubricCriterionBandsUseCase viewSchoolRubricCriterionBandsUseCase, ViewSystemRubricCriterionBandsUseCase viewSystemRubricCriterionBandsUseCase, UpdateSystemRubricResultBandUseCase updateSystemRubricResultBandUseCase, UpdateSchoolRubricResultBandUseCase updateSchoolRubricResultBandUseCase, ViewSystemRubricResultBandDetailsUseCase viewSystemRubricResultBandDetailsUseCase, ViewSchoolRubricResultBandDetailsUseCase viewSchoolRubricResultBandDetailsUseCase, ViewSystemRubricResultBandsUseCase viewSystemRubricResultBandsUseCase, ViewSchoolRubricResultBandsUseCase viewSchoolRubricResultBandsUseCase) {
+    public RubricController(UpdateSystemRubricUseCase updateSystemRubricUseCase, UpdateSchoolRubricUseCase updateSchoolRubricUseCase, ViewSystemRubricDetailsUseCase viewSystemRubricDetailsUseCase, ViewSchoolRubricDetailsUseCase viewSchoolRubricDetailsUseCase, ViewSystemRubricsUseCase viewSystemRubricsUseCase, ViewSchoolRubricsUseCase viewSchoolRubricsUseCase, UpdateSystemRubricVersionUseCase updateSystemRubricVersionUseCase, UpdateSchoolRubricVersionUseCase updateSchoolRubricVersionUseCase, ViewSchoolRubricVersionDetailsUseCase viewSchoolRubricVersionDetailsUseCase, ViewSystemRubricVersionDetailsUseCase viewSystemRubricVersionDetailsUseCase, ViewSchoolRubricVersionsUseCase viewSchoolRubricVersionsUseCase, ViewSystemRubricVersionsUseCase viewSystemRubricVersionsUseCase, UpdateSystemRubricCriterionUseCase updateSystemRubricCriterionUseCase, UpdateSchoolRubricCriterionUseCase updateSchoolRubricCriterionUseCase, ViewSystemRubricCriterionDetailsUseCase viewSystemRubricCriterionDetailsUseCase, ViewSchoolRubricCriterionDetailsUseCase viewSchoolRubricCriterionDetailsUseCase, ViewSystemRubricCriteriaUseCase viewSystemRubricCriteriaUseCase, ViewSchoolRubricCriteriaUseCase viewSchoolRubricCriteriaUseCase, UpdateSchoolRubricCriterionBandUseCase updateSchoolRubricCriterionBandUseCase, UpdateSystemRubricCriterionBandUseCase updateSystemRubricCriterionBandUseCase, ViewSystemRubricCriterionBandDetailsUseCase viewSystemRubricCriterionBandDetailsUseCase, ViewSchoolRubricCriterionBandDetailsUseCase viewSchoolRubricCriterionBandDetailsUseCase, ViewSchoolRubricCriterionBandsUseCase viewSchoolRubricCriterionBandsUseCase, ViewSystemRubricCriterionBandsUseCase viewSystemRubricCriterionBandsUseCase, UpdateSystemRubricResultBandUseCase updateSystemRubricResultBandUseCase, UpdateSchoolRubricResultBandUseCase updateSchoolRubricResultBandUseCase, ViewSystemRubricResultBandDetailsUseCase viewSystemRubricResultBandDetailsUseCase, ViewSchoolRubricResultBandDetailsUseCase viewSchoolRubricResultBandDetailsUseCase, ViewSystemRubricResultBandsUseCase viewSystemRubricResultBandsUseCase, ViewSchoolRubricResultBandsUseCase viewSchoolRubricResultBandsUseCase, SearchSystemRubricsUseCase searchSystemRubricsUseCase, SearchSchoolRubricsUseCase searchSchoolRubricsUseCase) {
         this.updateSystemRubricUseCase = updateSystemRubricUseCase;
         this.updateSchoolRubricUseCase = updateSchoolRubricUseCase;
         this.viewSystemRubricDetailsUseCase = viewSystemRubricDetailsUseCase;
@@ -89,6 +92,8 @@ public class RubricController {
         this.viewSchoolRubricResultBandDetailsUseCase = viewSchoolRubricResultBandDetailsUseCase;
         this.viewSystemRubricResultBandsUseCase = viewSystemRubricResultBandsUseCase;
         this.viewSchoolRubricResultBandsUseCase = viewSchoolRubricResultBandsUseCase;
+        this.searchSystemRubricsUseCase = searchSystemRubricsUseCase;
+        this.searchSchoolRubricsUseCase = searchSchoolRubricsUseCase;
     }
 
 
@@ -212,6 +217,63 @@ public class RubricController {
         return loader.load(new RubricVersionsKey(rubric.id(), status, validPage, validSize));
     }
 
+
+    //Search Rubric theo code, name của hệ thống
+    @QueryMapping(name = "searchSystemRubrics")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public PageResult<RubricDto> searchSystemRubrics(
+            @Argument SearchRubricFilterDto filter,
+            @Argument Integer page,
+            @Argument Integer size) {
+
+        // Nắn tham số 1-based (Frontend) về 0-based (Backend)
+        int validPage = (page != null && page > 0) ? page - 1 : 0;
+        int validSize = (size != null && size > 0) ? size : 10;
+
+        // Tránh NullPointerException nếu Frontend không truyền filter
+        var safeFilter = (filter != null) ? filter : new SearchRubricFilterDto(null, null, null);
+
+        // Tạo Query của Clean Architecture
+        var query = new SearchSystemRubricsQuery(
+                safeFilter.keyword(),
+                safeFilter.frameworkId(),
+                safeFilter.languageId(),
+                new PageRequest(validPage, validSize)
+        );
+
+        //Search Rubric theo code, name của trường
+        return searchSystemRubricsUseCase.execute(query);
+    }
+
+
+    //Search Rubric theo code, name của trường
+    @QueryMapping(name = "searchSchoolRubrics")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public PageResult<RubricDto> searchSchoolRubrics(
+            @Argument UUID schoolId,
+            @Argument SearchRubricFilterDto filter,
+            @Argument Integer page,
+            @Argument Integer size) {
+
+        // 1. Nắn tham số 1-based về 0-based
+        int validPage = (page != null && page > 0) ? page - 1 : 0;
+        int validSize = (size != null && size > 0) ? size : 10;
+
+        // 2. Tránh NullPointer
+        var safeFilter = (filter != null) ? filter : new SearchRubricFilterDto(null, null, null);
+
+        // 3. Khởi tạo Query gọn gàng (Gộp inline PageRequest)
+        var query = new SearchSchoolRubricsQuery(
+                schoolId,
+                safeFilter.keyword(),
+                safeFilter.frameworkId(),
+                safeFilter.languageId(),
+                new PageRequest(validPage, validSize)
+        );
+
+        // 4. Gọi UseCase
+        return searchSchoolRubricsUseCase.execute(query);
+    }
 
     //========================== RUBRIC VERSION ===============================================
     // Update Rubric Version của hệ thống

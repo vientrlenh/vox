@@ -34,7 +34,7 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
     private final UserContextPort userContextPort;
     private final FrameworkResultBandRepository frameworkResultBandRepository;
     private final SchoolRepository schoolRepository;
-    private final SchoolUserRepository schoolUserRepository; // BỔ SUNG
+    private final SchoolUserRepository schoolUserRepository;
 
     public CreateSchoolRubricResultBandsUseCase(
             RubricResultBandRepository rubricResultBandRepository,
@@ -44,7 +44,7 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
             UserContextPort userContextPort,
             FrameworkResultBandRepository frameworkResultBandRepository,
             SchoolRepository schoolRepository,
-            SchoolUserRepository schoolUserRepository) { // BỔ SUNG
+            SchoolUserRepository schoolUserRepository) {
         this.rubricResultBandRepository = rubricResultBandRepository;
         this.rubricVersionRepository = rubricVersionRepository;
         this.rubricRepository = rubricRepository;
@@ -83,7 +83,7 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
                 .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
 
         // Xác thực quyền chỉnh sửa
-        if (!rubric.getSchoolId().equals(command.schoolId()) || !schoolUser.getSchoolId().equals(rubric.getSchoolId())) {
+        if (rubric.getSchoolId() == null || !rubric.getSchoolId().equals(command.schoolId()) || !schoolUser.getSchoolId().equals(rubric.getSchoolId())) {
             throw new ForbiddenException("BẢO MẬT: Bạn không có quyền chỉnh sửa Rubric của trường khác.");
         }
 
@@ -96,18 +96,22 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
 
         OffsetDateTime now = OffsetDateTime.now();
 
-        // 4.1 Lấy toàn bộ danh sách ID của FrameworkResultBand từ request
+        // 4.1 Lấy toàn bộ danh sách ID của FrameworkResultBand từ request (CHỐNG N+1)
         List<UUID> frameworkBandIds = command.resultBands().stream()
                 .map(CreateSchoolRubricResultBandsCommand.ResultBandItemCommand::frameworkResultBandId)
+                .filter(Objects::nonNull)
                 .distinct()
-                .collect(Collectors.toList());
+                .toList();
 
-        // 4.2 Gọi Database 1 LẦN DUY NHẤT để lấy tất cả Framework Bands cần thiết
-        List<FrameworkResultBand> existingFrameworkBands = frameworkResultBandRepository.findAllByIds(frameworkBandIds);
-
-        // 4.3 Biến List thành Map<ID, Đối_Tượng>
-        Map<UUID, FrameworkResultBand> frameworkBandMap = existingFrameworkBands.stream()
-                .collect(Collectors.toMap(FrameworkResultBand::getId, band -> band));
+        // 4.2 Gọi Database 1 LẦN DUY NHẤT
+        Map<UUID, FrameworkResultBand> frameworkBandMap;
+        if (!frameworkBandIds.isEmpty()) {
+            List<FrameworkResultBand> existingFrameworkBands = frameworkResultBandRepository.findAllByIds(frameworkBandIds);
+            frameworkBandMap = existingFrameworkBands.stream()
+                    .collect(Collectors.toMap(FrameworkResultBand::getId, band -> band));
+        } else {
+            frameworkBandMap = new HashMap<>();
+        }
 
         // Khởi tạo Set để chống trùng lặp dữ liệu nội bộ
         Set<String> uniqueCodes = new HashSet<>();
@@ -123,7 +127,7 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
             if (!uniqueCodes.add(safeCode)) {
                 throw new IllegalArgumentException("Dữ liệu gửi lên bị trùng lặp Mã thang điểm (Code): " + safeCode);
             }
-            if (!uniqueFrameworkIds.add(bCmd.frameworkResultBandId())) {
+            if (bCmd.frameworkResultBandId() != null && !uniqueFrameworkIds.add(bCmd.frameworkResultBandId())) {
                 throw new IllegalArgumentException("Dữ liệu gửi lên bị trùng lặp Framework Result Band cho thang điểm: " + safeName);
             }
 
@@ -143,26 +147,32 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
                 throw new IllegalArgumentException("Thang điểm '" + safeName + "': Điểm quy đổi tối thiểu không được lớn hơn tối đa.");
             }
 
+            // Để ID là null để đảm bảo JPA hiểu đây là record mới, chừa cho DB sinh UUID
             return new RubricResultBand(
+                    null,
                     command.versionId(),
-                    bCmd.frameworkResultBandId(),
                     safeCode,
                     safeName,
                     bCmd.description() != null ? StringNormalization.trimAndCollapseSpaces(bCmd.description()) : null,
                     bCmd.mappedScoreMin(),
                     bCmd.mappedScoreMax(),
                     bCmd.order(),
-                    now, now, currentUserId, currentUserId
+                    now,
+                    now,
+                    currentUserId,
+                    currentUserId
             );
-        }).collect(Collectors.toList());
+        }).toList();
 
         // 5. Lưu hàng loạt xuống Database
+        List<RubricResultBand> savedBands;
         try {
-            rubricResultBandRepository.saveAll(bandsToSave);
+            savedBands = rubricResultBandRepository.saveAll(bandsToSave);
         } catch (DataIntegrityViolationException e) {
             throw new IllegalStateException("Lỗi lưu dữ liệu: Mã thang điểm (Code) hoặc Framework Result Band đã tồn tại trong phiên bản Rubric này từ trước. Vui lòng kiểm tra lại.");
         }
 
-        return bandsToSave.stream().map(RubricResultBand::getId).collect(Collectors.toList());
+        // Bốc ID từ cái mảng savedBands (đã được DB gắn ID) chứ không phải mảng bandsToSave gốc
+        return savedBands.stream().map(RubricResultBand::getId).toList();
     }
 }

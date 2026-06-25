@@ -22,9 +22,6 @@ import com.sep.vox.application.port.input.usecase.schoolgrade.CreateSchoolGradeU
 import com.sep.vox.application.port.input.usecase.schoolgrade.DeleteSchoolGradeUseCase;
 import com.sep.vox.application.port.input.usecase.schoolroom.AddSchoolRoomUseCase;
 import com.sep.vox.application.port.input.usecase.schoolroom.DeleteSchoolRoomUseCase;
-import com.sep.vox.application.response.SchoolGradeResponse.SchoolGradeResponse;
-import com.sep.vox.application.response.SchoolResponse.SchoolResponse;
-import com.sep.vox.application.response.SchoolRoomResponse.SchoolRoomResponse;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 import com.sep.vox.interfaces.rest.mapper.*;
 import io.swagger.v3.oas.annotations.Operation;
@@ -361,7 +358,7 @@ public class SchoolController {
     @Operation(summary = "Thay đổi trạng thái hoạt động của trường học")
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public ResponseEntity<ApiResponse<SchoolResponse>> updateSchoolStatus(
+    public ResponseEntity<ApiResponse<UUID>> updateSchoolStatus(
             @PathVariable("id") UUID id,
             @RequestParam("isActive") boolean isActive
     ) {
@@ -401,7 +398,7 @@ public class SchoolController {
     @Operation(summary = "Xóa phòng học theo id ")
     @DeleteMapping("/{schoolId}/rooms/{roomId}")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<SchoolRoomResponse>> deleteSchoolRoom(
+    public ResponseEntity<ApiResponse<Void>> deleteSchoolRoom(
             @PathVariable("schoolId") UUID schoolId,
             @PathVariable("roomId") UUID roomId
     ) {
@@ -438,7 +435,7 @@ public class SchoolController {
     @Operation(summary = "Xóa khối theo id của trường ")
     @DeleteMapping("/{schoolId}/grades/{gradeId}")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<SchoolGradeResponse>> deleteSchoolGrade(
+    public ResponseEntity<ApiResponse<Void>> deleteSchoolGrade(
             @PathVariable("schoolId") UUID schoolId,
             @PathVariable("gradeId") UUID gradeId
     ) {

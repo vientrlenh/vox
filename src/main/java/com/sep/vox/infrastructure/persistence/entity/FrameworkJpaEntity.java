@@ -36,9 +36,6 @@ public class FrameworkJpaEntity {
     @Column(name = "is_active", nullable = false)
     private boolean isActive;
 
-    @Column(name = "current_version_id")
-    private UUID currentVersionId;
-
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 
@@ -53,15 +50,13 @@ public class FrameworkJpaEntity {
 
     protected FrameworkJpaEntity() {}
 
-    public FrameworkJpaEntity(UUID id, String code, String name, String description, boolean isActive,
-            UUID currentVersionId, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy,
+    public FrameworkJpaEntity(UUID id, String code, String name, String description, boolean isActive, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy,
             UUID updatedBy) {
         this.id = id;
         this.code = code;
         this.name = name;
         this.description = description;
         this.isActive = isActive;
-        this.currentVersionId = currentVersionId;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
@@ -106,14 +101,6 @@ public class FrameworkJpaEntity {
 
     public void setActive(boolean isActive) {
         this.isActive = isActive;
-    }
-
-    public UUID getCurrentVersionId() {
-        return currentVersionId;
-    }
-
-    public void setCurrentVersionId(UUID currentVersionId) {
-        this.currentVersionId = currentVersionId;
     }
 
     public OffsetDateTime getCreatedAt() {

@@ -2,6 +2,7 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '4.1.0'
 	id 'io.spring.dependency-management' version '1.1.7'
+	id 'com.google.protobuf' version '0.9.6'
 }
 
 group = 'com.sep'
@@ -36,6 +37,8 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-kafka'
 	implementation platform('software.amazon.awssdk:bom:2.32.18')
 	implementation 'software.amazon.awssdk:s3'
+	implementation 'org.springframework.boot:spring-boot-starter-grpc-client'
+	implementation 'org.springframework.boot:spring-boot-starter-grpc-server'
 	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.13.0'
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.13.0'
@@ -47,6 +50,8 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-testcontainers'
 	testImplementation 'org.testcontainers:postgresql:1.21.4'
 	testImplementation 'org.testcontainers:testcontainers-junit-jupiter:2.0.5'
+	testImplementation 'org.springframework.boot:spring-boot-starter-grpc-client-test'
+  	testImplementation 'org.springframework.boot:spring-boot-starter-grpc-server-test'
 	testCompileOnly 'org.projectlombok:lombok'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	testAnnotationProcessor 'org.projectlombok:lombok'

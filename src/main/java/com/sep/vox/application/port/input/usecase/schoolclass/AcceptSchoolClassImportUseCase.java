@@ -145,8 +145,8 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
     private void validateRequiredMapping(Map<String, String> confirmedMapping) {
         var mappedFields = new HashSet<String>();
         confirmedMapping.values().stream()
-            .filter(Objects::nonNull)
-            .map(String::strip)
+            .filter(value -> value != null)
+            .map(value -> value.strip())
             .forEach(mappedFields::add);
         var missingFields = REQUIRED_FIELDS.stream()
             .filter(field -> !mappedFields.contains(field))

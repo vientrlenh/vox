@@ -1,76 +1,50 @@
 package com.sep.vox.application.usecase.schoolclass;
 
-import com.sep.vox.application.usecase.TestSchoolUserRepository;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.OffsetDateTime;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 
 import com.sep.vox.application.port.input.command.AcceptSchoolClassImportCommand;
 import com.sep.vox.application.port.input.usecase.schoolclass.AcceptSchoolClassImportUseCase;
+import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.support.FakeJsonSerializationPort;
-import com.sep.vox.domain.model.importfile.ImportRow;
-import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
 import com.sep.vox.domain.model.school.School;
-import com.sep.vox.domain.model.school.SchoolClass;
-import com.sep.vox.domain.model.school.SchoolGrade;
-import com.sep.vox.domain.model.school.SchoolGradeStatus;
-import com.sep.vox.domain.model.school.SchoolClassStatus;
-import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
+import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
-import com.sep.vox.domain.repository.ImportRowRepository;
 import com.sep.vox.domain.repository.ImportSessionRepository;
-import com.sep.vox.domain.repository.SchoolClassRepository;
-import com.sep.vox.domain.repository.SchoolGradeRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
-import com.sep.vox.domain.repository.SupportedLanguageRepository;
-import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
-import com.sep.vox.domain.valueobject.ClassCode;
-import com.sep.vox.domain.valueobject.LanguageCode;
 
 class AcceptSchoolClassImportUseCaseTests {
 
     private ImportSessionRepository importSessionRepository;
-    private ImportRowRepository importRowRepository;
-    private SchoolClassRepository schoolClassRepository;
-    private SupportedLanguageRepository supportedLanguageRepository;
-    private SchoolGradeRepository schoolGradeRepository;
     private UserRepository userRepository;
     private SchoolRepository schoolRepository;
     private UserContextPort userContextPort;
-    private FakeJsonSerializationPort jsonSerializationPort;
+    private JsonSerializationPort jsonSerializationPort;
     private SchoolUserRepository schoolUserRepository;
     private AcceptSchoolClassImportUseCase useCase;
 
     @BeforeEach
     void setUp() {
         importSessionRepository = mock(ImportSessionRepository.class);
-        importRowRepository = mock(ImportRowRepository.class);
-        schoolClassRepository = mock(SchoolClassRepository.class);
-        supportedLanguageRepository = mock(SupportedLanguageRepository.class);
-        schoolGradeRepository = mock(SchoolGradeRepository.class);
         userRepository = mock(UserRepository.class);
         schoolRepository = mock(SchoolRepository.class);
         userContextPort = mock(UserContextPort.class);
@@ -78,10 +52,6 @@ class AcceptSchoolClassImportUseCaseTests {
         schoolUserRepository = mock(SchoolUserRepository.class);
         useCase = new AcceptSchoolClassImportUseCase(
             importSessionRepository,
-            importRowRepository,
-            schoolClassRepository,
-            supportedLanguageRepository,
-            schoolGradeRepository,
             userRepository,
             schoolRepository,
             userContextPort,
@@ -91,278 +61,192 @@ class AcceptSchoolClassImportUseCaseTests {
     }
 
     @Test
-    void execute_should_import_valid_rows_and_mark_invalid_rows() {
-        var userId = UUID.randomUUID();
+    void should_mark_session_as_queued_successfully() {
         var schoolId = UUID.randomUUID();
         var sessionId = UUID.randomUUID();
-        var languageId = UUID.randomUUID();
-        var gradeId = UUID.randomUUID();
-        var session = previewedSession(sessionId, schoolId);
-        var rows = List.of(
-            row(sessionId, 1L, Map.of("Mã lớp", "ENG-01", "Tên lớp", "English 01", "Ngôn ngữ", "EN", "Khối", "G10"), jsonSerializationPort),
-            row(sessionId, 2L, Map.of("Mã lớp", "", "Tên lớp", "Missing code", "Ngôn ngữ", "EN", "Khối", "G10"), jsonSerializationPort)
-        );
-        var mapping = Map.of(
-            "Mã lớp", "code",
-            "Tên lớp", "name",
-            "Ngôn ngữ", "languageCode",
-            "Khối", "schoolGradeCode"
-        );
+        var currentUserId = UUID.randomUUID();
 
-        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        var _user = activeUser(userId, schoolId);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(_user));
-        when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
-        when(importSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
-        when(importSessionRepository.save(any(ImportSession.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(importRowRepository.findBySessionIdOrderByRowNumber(sessionId)).thenReturn(rows);
-        when(supportedLanguageRepository.findByCodeIn(Set.of("EN"))).thenReturn(List.of(activeLanguage(languageId, "EN")));
-        when(schoolGradeRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("G10"))).thenReturn(List.of(activeGrade(gradeId, schoolId, "G10")));
-        when(schoolClassRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("ENG-01"))).thenReturn(List.of());
-        when(schoolClassRepository.save(any(SchoolClass.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        mockCurrentUserAndSchool(currentUserId, schoolId, true, true);
+        when(importSessionRepository.findById(sessionId)).thenReturn(Optional.of(session(sessionId, schoolId)));
+        when(importSessionRepository.markQueued(any(), any(), any(), any(), any())).thenReturn(1);
 
-        var response = useCase.execute(new AcceptSchoolClassImportCommand(schoolId, sessionId, mapping));
+        useCase.execute(command(schoolId, sessionId));
 
-        assertThat(response.importedRows()).isEqualTo(1L);
-        assertThat(response.updatedRows()).isZero();
-        assertThat(response.invalidRows()).isEqualTo(1L);
-        assertThat(response.status()).isEqualTo("COMPLETED");
-        verify(schoolClassRepository).save(any(SchoolClass.class));
-        verify(schoolClassRepository).findBySchoolIdAndCodeIn(schoolId, Set.of("ENG-01"));
-        verify(supportedLanguageRepository).findByCodeIn(Set.of("EN"));
-        verify(schoolGradeRepository).findBySchoolIdAndCodeIn(schoolId, Set.of("G10"));
-        verify(schoolClassRepository, never()).findBySchoolIdAndCode(any(), any());
-        verify(supportedLanguageRepository, never()).findByCode(any());
-        verify(schoolGradeRepository, never()).findBySchoolIdAndCode(any(), any());
-
-        @SuppressWarnings("unchecked")
-        ArgumentCaptor<List<ImportRow>> rowsCaptor = ArgumentCaptor.forClass(List.class);
-        verify(importRowRepository).saveAll(rowsCaptor.capture());
-        assertThat(rowsCaptor.getValue().get(0).getStatus()).isEqualTo(ImportRowStatus.IMPORTED);
-        assertThat(rowsCaptor.getValue().get(1).getStatus()).isEqualTo(ImportRowStatus.INVALID);
-        assertThat(rowsCaptor.getValue().get(1).getErrorsJson()).contains("code");
+        verify(importSessionRepository).markQueued(eq(sessionId), eq("SCHOOL_CLASS"), any(String.class), any(), any());
     }
 
     @Test
-    void execute_should_update_existing_class_when_code_exists_in_school() {
-        var userId = UUID.randomUUID();
+    void should_throw_when_session_not_found() {
         var schoolId = UUID.randomUUID();
         var sessionId = UUID.randomUUID();
-        var existingClassId = UUID.randomUUID();
-        var oldLanguageId = UUID.randomUUID();
-        var newLanguageId = UUID.randomUUID();
-        var oldGradeId = UUID.randomUUID();
-        var newGradeId = UUID.randomUUID();
-        var createdAt = OffsetDateTime.now().minusDays(10);
-        var createdBy = UUID.randomUUID();
-        var session = previewedSession(sessionId, schoolId);
-        var row = row(sessionId, 1L, Map.of(
-            "MÃ£ lá»›p", "ENG-01",
-            "TÃªn lá»›p", "English Updated",
-            "NgÃ´n ngá»¯", "VI",
-            "Khá»‘i", "G11",
-            "MÃ´ táº£", "Updated description"
-        ), jsonSerializationPort);
-        var mapping = Map.of(
-            "MÃ£ lá»›p", "code",
-            "TÃªn lá»›p", "name",
-            "NgÃ´n ngá»¯", "languageCode",
-            "Khá»‘i", "schoolGradeCode",
-            "MÃ´ táº£", "description"
-        );
-        var existingClass = new SchoolClass(
-            existingClassId,
-            schoolId,
-            oldLanguageId,
-            oldGradeId,
-            new ClassCode("ENG-01"),
-            "English Old",
-            "Old description",
-            SchoolClassStatus.ACTIVE,
-            createdAt,
-            createdAt,
-            createdBy,
-            createdBy
-        );
+        var currentUserId = UUID.randomUUID();
 
-        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        var _user = activeUser(userId, schoolId);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(_user));
-        when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
-        when(importSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
-        when(importSessionRepository.save(any(ImportSession.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(importRowRepository.findBySessionIdOrderByRowNumber(sessionId)).thenReturn(List.of(row));
-        when(supportedLanguageRepository.findByCodeIn(Set.of("VI"))).thenReturn(List.of(activeLanguage(newLanguageId, "VI")));
-        when(schoolGradeRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("G11"))).thenReturn(List.of(activeGrade(newGradeId, schoolId, "G11")));
-        when(schoolClassRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("ENG-01"))).thenReturn(List.of(existingClass));
-        when(schoolClassRepository.save(any(SchoolClass.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        mockCurrentUserAndSchool(currentUserId, schoolId, true, true);
+        when(importSessionRepository.findById(sessionId)).thenReturn(Optional.empty());
 
-        var response = useCase.execute(new AcceptSchoolClassImportCommand(schoolId, sessionId, mapping));
-
-        assertThat(response.importedRows()).isEqualTo(1L);
-        assertThat(response.updatedRows()).isEqualTo(1L);
-        assertThat(response.invalidRows()).isZero();
-        assertThat(row.getStatus()).isEqualTo(ImportRowStatus.IMPORTED);
-        assertThat(existingClass.getId()).isEqualTo(existingClassId);
-        assertThat(existingClass.getCode().value()).isEqualTo("ENG-01");
-        assertThat(existingClass.getCreatedAt()).isEqualTo(createdAt);
-        assertThat(existingClass.getCreatedBy()).isEqualTo(createdBy);
-        assertThat(existingClass.getStatus()).isEqualTo(SchoolClassStatus.ACTIVE);
-        assertThat(existingClass.getName()).isEqualTo("English Updated");
-        assertThat(existingClass.getDescription()).isEqualTo("Updated description");
-        assertThat(existingClass.getLanguageId()).isEqualTo(newLanguageId);
-        assertThat(existingClass.getSchoolGradeId()).isEqualTo(newGradeId);
-        assertThat(existingClass.getUpdatedBy()).isEqualTo(userId);
-        verify(schoolClassRepository).save(existingClass);
+        assertThatThrownBy(() -> useCase.execute(command(schoolId, sessionId)))
+                .hasMessageContaining("Không tìm thấy phiên import");
     }
 
     @Test
-    void execute_should_keep_duplicate_code_in_same_file_invalid() {
-        var userId = UUID.randomUUID();
+    void should_throw_when_session_type_is_not_school_class() {
         var schoolId = UUID.randomUUID();
         var sessionId = UUID.randomUUID();
-        var languageId = UUID.randomUUID();
-        var gradeId = UUID.randomUUID();
-        var session = previewedSession(sessionId, schoolId);
-        var rows = List.of(
-            row(sessionId, 1L, Map.of("MÃ£ lá»›p", "ENG-01", "TÃªn lá»›p", "English 01", "NgÃ´n ngá»¯", "EN", "Khá»‘i", "G10"), jsonSerializationPort),
-            row(sessionId, 2L, Map.of("MÃ£ lá»›p", "ENG-01", "TÃªn lá»›p", "English Duplicate", "NgÃ´n ngá»¯", "EN", "Khá»‘i", "G10"), jsonSerializationPort)
-        );
-        var mapping = Map.of(
-            "MÃ£ lá»›p", "code",
-            "TÃªn lá»›p", "name",
-            "NgÃ´n ngá»¯", "languageCode",
-            "Khá»‘i", "schoolGradeCode"
-        );
+        var currentUserId = UUID.randomUUID();
 
-        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        var _user = activeUser(userId, schoolId);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(_user));
-        when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
-        when(importSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
-        when(importSessionRepository.save(any(ImportSession.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(importRowRepository.findBySessionIdOrderByRowNumber(sessionId)).thenReturn(rows);
-        when(supportedLanguageRepository.findByCodeIn(Set.of("EN"))).thenReturn(List.of(activeLanguage(languageId, "EN")));
-        when(schoolGradeRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("G10"))).thenReturn(List.of(activeGrade(gradeId, schoolId, "G10")));
-        when(schoolClassRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("ENG-01"))).thenReturn(List.of());
-        when(schoolClassRepository.save(any(SchoolClass.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        mockCurrentUserAndSchool(currentUserId, schoolId, true, true);
+        when(importSessionRepository.findById(sessionId))
+            .thenReturn(Optional.of(sessionWithType(sessionId, schoolId, ImportType.USER)));
 
-        var response = useCase.execute(new AcceptSchoolClassImportCommand(schoolId, sessionId, mapping));
-
-        assertThat(response.importedRows()).isEqualTo(1L);
-        assertThat(response.updatedRows()).isZero();
-        assertThat(response.invalidRows()).isEqualTo(1L);
-        assertThat(rows.get(0).getStatus()).isEqualTo(ImportRowStatus.IMPORTED);
-        assertThat(rows.get(1).getStatus()).isEqualTo(ImportRowStatus.INVALID);
-        assertThat(rows.get(1).getErrorsJson()).contains("code");
+        assertThatThrownBy(() -> useCase.execute(command(schoolId, sessionId)))
+                .hasMessageContaining("không phải là import lớp học");
     }
 
     @Test
-    void execute_should_throw_when_required_mapping_is_missing() {
-        var userId = UUID.randomUUID();
+    void should_throw_when_session_belongs_to_different_school() {
         var schoolId = UUID.randomUUID();
+        var otherSchoolId = UUID.randomUUID();
         var sessionId = UUID.randomUUID();
-        var mapping = Map.of("Mã lớp", "code");
+        var currentUserId = UUID.randomUUID();
 
-        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        var _user1 = activeUser(userId, schoolId);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(_user1));
-        when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
-        when(importSessionRepository.findById(sessionId)).thenReturn(Optional.of(previewedSession(sessionId, schoolId)));
+        mockCurrentUserAndSchool(currentUserId, schoolId, true, true);
+        when(importSessionRepository.findById(sessionId))
+            .thenReturn(Optional.of(session(sessionId, otherSchoolId)));
 
-        assertThrows(IllegalArgumentException.class, () -> useCase.execute(new AcceptSchoolClassImportCommand(schoolId, sessionId, mapping)));
-
-        verify(importRowRepository, never()).findBySessionIdOrderByRowNumber(any());
-        verify(schoolClassRepository, never()).save(any());
+        assertThatThrownBy(() -> useCase.execute(command(schoolId, sessionId)))
+                .hasMessageContaining("không thuộc trường hiện tại");
     }
 
     @Test
-    void execute_should_throw_when_requested_school_differs_from_current_user_school() {
-        var userId = UUID.randomUUID();
+    void should_expire_and_throw_when_session_is_expired() {
         var schoolId = UUID.randomUUID();
         var sessionId = UUID.randomUUID();
-        var mapping = Map.of(
-            "MÃ£ lá»›p", "code",
-            "TÃªn lá»›p", "name",
-            "NgÃ´n ngá»¯", "languageCode",
-            "Khá»‘i", "schoolGradeCode"
-        );
+        var currentUserId = UUID.randomUUID();
 
-        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        var _user2 = activeUser(userId, schoolId);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(_user2));
+        mockCurrentUserAndSchool(currentUserId, schoolId, true, true);
+        when(importSessionRepository.findById(sessionId))
+            .thenReturn(Optional.of(expiredSession(sessionId, schoolId)));
+        when(importSessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        assertThrows(IllegalArgumentException.class,
-            () -> useCase.execute(new AcceptSchoolClassImportCommand(UUID.randomUUID(), sessionId, mapping)));
-
-        verify(importSessionRepository, never()).findById(any());
-        verify(importRowRepository, never()).findBySessionIdOrderByRowNumber(any());
+        assertThatThrownBy(() -> useCase.execute(command(schoolId, sessionId)))
+                .hasMessageContaining("đã hết hạn");
+        verify(importSessionRepository).save(any(ImportSession.class));
     }
 
-    private static ImportSession previewedSession(UUID id, UUID schoolId) {
-        return new ImportSession(
-            id,
-            schoolId,
-            ImportType.SCHOOL_CLASS,
-            "classes.csv",
-            "[]",
-            "{}",
-            null,
-            0L,
-            0L,
-            0L,
-            0L,
-            2L,
-            null,
-            ImportSessionStatus.PREVIEWED,
-            null,
-            OffsetDateTime.now().plusDays(1), 
-            null, 
-            null, 
-            null, 
-            0, 
-            OffsetDateTime.now(),
-            OffsetDateTime.now(),
-            UUID.randomUUID(),
-            UUID.randomUUID()
-        );
+    @Test
+    void should_throw_when_session_status_is_not_previewed() {
+        var schoolId = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var currentUserId = UUID.randomUUID();
+
+        mockCurrentUserAndSchool(currentUserId, schoolId, true, true);
+        when(importSessionRepository.findById(sessionId))
+            .thenReturn(Optional.of(sessionWithStatus(sessionId, schoolId, ImportSessionStatus.QUEUED)));
+
+        assertThatThrownBy(() -> useCase.execute(command(schoolId, sessionId)))
+                .hasMessageContaining("không ở trạng thái cho accept");
     }
 
-    private static ImportRow row(UUID sessionId, long rowNumber, Map<String, String> rawData, FakeJsonSerializationPort jsonSerializationPort) {
-        return new ImportRow(UUID.randomUUID(), sessionId, rowNumber, jsonSerializationPort.toJson(rawData), null, null, ImportRowStatus.PENDING);
+    @Test
+    void should_throw_when_required_mapping_fields_are_missing() {
+        var schoolId = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var currentUserId = UUID.randomUUID();
+        var incompleteMapping = Map.of("Mã lớp", "code");
+
+        mockCurrentUserAndSchool(currentUserId, schoolId, true, true);
+        when(importSessionRepository.findById(sessionId)).thenReturn(Optional.of(session(sessionId, schoolId)));
+
+        assertThatThrownBy(() -> useCase.execute(
+                new AcceptSchoolClassImportCommand(schoolId, sessionId, incompleteMapping)))
+                .hasMessageContaining("thiếu trường bắt buộc");
     }
 
-    private User activeUser(UUID id, UUID schoolId) {
+    @Test
+    void should_throw_when_school_is_not_active() {
+        var schoolId = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var currentUserId = UUID.randomUUID();
+
+        mockCurrentUserAndSchool(currentUserId, schoolId, true, false);
+
+        assertThatThrownBy(() -> useCase.execute(command(schoolId, sessionId)))
+                .hasMessageContaining("không hoạt động");
+    }
+
+    @Test
+    void should_throw_when_current_user_inactive() {
+        var schoolId = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var currentUserId = UUID.randomUUID();
+
+        mockCurrentUserAndSchool(currentUserId, schoolId, false, true);
+
+        assertThatThrownBy(() -> useCase.execute(command(schoolId, sessionId)))
+                .hasMessageContaining("Người dùng hiện tại không hoạt động");
+    }
+
+    @Test
+    void should_throw_when_mark_queued_returns_zero() {
+        var schoolId = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var currentUserId = UUID.randomUUID();
+
+        mockCurrentUserAndSchool(currentUserId, schoolId, true, true);
+        when(importSessionRepository.findById(sessionId)).thenReturn(Optional.of(session(sessionId, schoolId)));
+        when(importSessionRepository.markQueued(any(), any(), any(), any(), any())).thenReturn(0);
+
+        assertThatThrownBy(() -> useCase.execute(command(schoolId, sessionId)))
+                .hasMessageContaining("không ở trạng thái cho accept hoặc đã hết hạn");
+    }
+
+    private void mockCurrentUserAndSchool(UUID currentUserId, UUID schoolId, boolean userActive, boolean schoolActive) {
         var user = new User();
-        user.setId(id);
-        TestSchoolUserRepository.remember(id, schoolId);
-        user.setStatus(UserStatus.ACTIVE);
-        when(schoolUserRepository.findByUserId(id)).thenReturn(
-            schoolId != null ? Optional.of(new SchoolUser(schoolId, id, java.time.OffsetDateTime.now(), java.time.OffsetDateTime.now().plusYears(100))) : Optional.empty()
-        );
-        return user;
-    }
-
-    private static School activeSchool(UUID id) {
+        user.setId(currentUserId);
+        user.setStatus(userActive ? UserStatus.ACTIVE : UserStatus.INACTIVE);
+        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
+        when(userRepository.findById(currentUserId)).thenReturn(Optional.of(user));
+        when(schoolUserRepository.findByUserId(currentUserId))
+            .thenReturn(Optional.of(new SchoolUser(schoolId, currentUserId, OffsetDateTime.now(), null)));
         var school = new School();
-        school.setId(id);
-        school.setActive(true);
-        return school;
+        school.setId(schoolId);
+        school.setActive(schoolActive);
+        when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(school));
     }
 
-    private static SupportedLanguage activeLanguage(UUID id, String code) {
-        var language = new SupportedLanguage();
-        language.setId(id);
-        language.setCode(new LanguageCode(code));
-        language.setActive(true);
-        return language;
+    private static AcceptSchoolClassImportCommand command(UUID schoolId, UUID sessionId) {
+        return new AcceptSchoolClassImportCommand(schoolId, sessionId, mapping());
     }
 
-    private static SchoolGrade activeGrade(UUID id, UUID schoolId, String code) {
-        var grade = new SchoolGrade();
-        grade.setId(id);
-        grade.setCode(code);
-        grade.setStatus(SchoolGradeStatus.ACTIVE);
-        return grade;
+    private static Map<String, String> mapping() {
+        return Map.of(
+            "Mã lớp", "code", "Tên lớp", "name", "Ngôn ngữ", "languageCode", "Khối", "schoolGradeCode"
+        );
+    }
+
+    private static ImportSession session(UUID id, UUID schoolId) {
+        return buildSession(id, schoolId, ImportType.SCHOOL_CLASS, ImportSessionStatus.PREVIEWED, OffsetDateTime.now().plusDays(1));
+    }
+
+    private static ImportSession sessionWithType(UUID id, UUID schoolId, ImportType type) {
+        return buildSession(id, schoolId, type, ImportSessionStatus.PREVIEWED, OffsetDateTime.now().plusDays(1));
+    }
+
+    private static ImportSession sessionWithStatus(UUID id, UUID schoolId, ImportSessionStatus status) {
+        return buildSession(id, schoolId, ImportType.SCHOOL_CLASS, status, OffsetDateTime.now().plusDays(1));
+    }
+
+    private static ImportSession expiredSession(UUID id, UUID schoolId) {
+        return buildSession(id, schoolId, ImportType.SCHOOL_CLASS, ImportSessionStatus.PREVIEWED, OffsetDateTime.now().minusHours(1));
+    }
+
+    private static ImportSession buildSession(UUID id, UUID schoolId, ImportType type, ImportSessionStatus status, OffsetDateTime expiresAt) {
+        return new ImportSession(
+            id, schoolId, type, "classes.csv", "[]", "{}", null,
+            0L, 0L, 0L, 0L, 2L, null, status, null,
+            expiresAt, null, null, null, 0,
+            OffsetDateTime.now(), OffsetDateTime.now(),
+            UUID.randomUUID(), UUID.randomUUID()
+        );
     }
 }

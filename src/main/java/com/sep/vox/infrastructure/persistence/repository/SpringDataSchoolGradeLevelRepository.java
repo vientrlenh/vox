@@ -9,6 +9,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.OffsetDateTime;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -16,6 +18,7 @@ public interface SpringDataSchoolGradeLevelRepository extends JpaRepository<Scho
     Optional<SchoolGradeLevelJpaEntity> findBySchoolId(UUID schoolId);
     boolean existsBySchoolIdAndCode(UUID schoolId, String code);
     boolean existsBySchoolIdAndOrder(UUID schoolId, int order);
+    List<SchoolGradeLevelJpaEntity> findBySchoolIdAndCodeIn(UUID schoolId, Collection<String> codes);
 
     @Query("""
         SELECT sgl

@@ -36,15 +36,19 @@ import com.sep.vox.application.port.input.usecase.schoolclass.AcceptSchoolClassI
 import com.sep.vox.application.port.input.usecase.schoolclass.CreateSchoolClassUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.DeleteSchoolClassUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.PreviewSchoolClassImportFromFileUseCase;
+import com.sep.vox.application.port.input.usecase.schoolgradelevel.AcceptSchoolGradeLevelImportUseCase;
+import com.sep.vox.application.port.input.usecase.schoolgradelevel.PreviewSchoolGradeLevelImportFromFileUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.AcceptSchoolUserImportUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.CreateSchoolUserUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.DeleteSchoolUserUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.PreviewSchoolUserImportFromFileUseCase;
 import com.sep.vox.application.response.input.importfile.PreviewSchoolClassImportResponse;
 import com.sep.vox.application.response.input.importfile.PreviewSchoolUserImportResponse;
+import com.sep.vox.application.response.input.schoolgradelevel.PreviewSchoolGradeLevelImportResponse;
 import com.sep.vox.application.response.input.schoolclass.CreateSchoolClassResponse;
 import com.sep.vox.application.response.input.schooluser.CreateSchoolUserResponse;
 import com.sep.vox.interfaces.rest.mapper.AcceptSchoolClassImportCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.AcceptSchoolGradeLevelImportCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.AcceptSchoolUserImportCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateSchoolClassCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateSchoolUserCommandMapper;
@@ -101,6 +105,8 @@ public class SchoolController {
 
     private final CreateSchoolGradeLevelUseCase createSchoolGradeLevelUseCase;
     private final DeleteSchoolGradeLevelUseCase deleteSchoolGradeLevelUseCase;
+    private final PreviewSchoolGradeLevelImportFromFileUseCase previewSchoolGradeLevelImportFromFileUseCase;
+    private final AcceptSchoolGradeLevelImportUseCase acceptSchoolGradeLevelImportUseCase;
 
 
     private final PreviewSchoolDirectoryImportFromFileUseCase previewSchoolDirectoryImportFromFileUseCase;
@@ -123,9 +129,11 @@ public class SchoolController {
                         DeleteSchoolRoomUseCase deleteSchoolRoomUseCase, 
                         CreateSchoolGradeUseCase createSchoolGradeUseCase, 
                         DeleteSchoolGradeUseCase deleteSchoolGradeUseCase, 
-                        CreateSchoolGradeLevelUseCase createSchoolGradeLevelUseCase, 
-                        DeleteSchoolGradeLevelUseCase deleteSchoolGradeLevelUseCase, 
-                        PreviewSchoolDirectoryImportFromFileUseCase previewSchoolDirectoryImportFromFileUseCase, 
+                        CreateSchoolGradeLevelUseCase createSchoolGradeLevelUseCase,
+                        DeleteSchoolGradeLevelUseCase deleteSchoolGradeLevelUseCase,
+                        PreviewSchoolGradeLevelImportFromFileUseCase previewSchoolGradeLevelImportFromFileUseCase,
+                        AcceptSchoolGradeLevelImportUseCase acceptSchoolGradeLevelImportUseCase,
+                        PreviewSchoolDirectoryImportFromFileUseCase previewSchoolDirectoryImportFromFileUseCase,
                         AcceptSchoolDirectoryImportUseCase acceptSchoolDirectoryImportUseCase, 
                         CreateSchoolDirectoryUseCase createSchoolDirectoryUseCase
                     ) {
@@ -150,6 +158,8 @@ public class SchoolController {
         this.deleteSchoolGradeUseCase = deleteSchoolGradeUseCase;
         this.createSchoolGradeLevelUseCase = createSchoolGradeLevelUseCase;
         this.deleteSchoolGradeLevelUseCase = deleteSchoolGradeLevelUseCase;
+        this.previewSchoolGradeLevelImportFromFileUseCase = previewSchoolGradeLevelImportFromFileUseCase;
+        this.acceptSchoolGradeLevelImportUseCase = acceptSchoolGradeLevelImportUseCase;
         this.previewSchoolDirectoryImportFromFileUseCase = previewSchoolDirectoryImportFromFileUseCase;
         this.acceptSchoolDirectoryImportUseCase = acceptSchoolDirectoryImportUseCase;
         this.createSchoolDirectoryUseCase = createSchoolDirectoryUseCase;
@@ -257,6 +267,31 @@ public class SchoolController {
         var command = AcceptSchoolClassImportCommandMapper.fromRequest(schoolId, sessionId, request);
         acceptSchoolClassImportUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Yêu cầu import lớp học đã được tiếp nhận, đang xử lý"));
+    }
+
+    @PostMapping(
+            value = "/{schoolId}/grade-levels/import/preview",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public ResponseEntity<ApiResponse<PreviewSchoolGradeLevelImportResponse>> createGradeLevelImportFileSession(
+            @PathVariable("schoolId") UUID schoolId,
+            @RequestParam("file") MultipartFile file) throws IOException {
+        var uploadedFile = UploadedFile.upload(file.getOriginalFilename(), file.getContentType(), file.getSize(), file.getBytes());
+        var data = previewSchoolGradeLevelImportFromFileUseCase.execute(new PreviewSchoolGradeLevelImportFromFileCommand(schoolId, uploadedFile));
+        var response = ApiResponse.success("Preview import khối học thành công", data);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{schoolId}/grade-levels/import/{sessionId}/accept")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public ResponseEntity<ApiResponse<Object>> acceptGradeLevelImportSession(
+            @PathVariable("schoolId") UUID schoolId,
+            @PathVariable("sessionId") UUID sessionId,
+            @Valid @RequestBody AcceptSchoolGradeLevelImportRequest request) {
+        var command = AcceptSchoolGradeLevelImportCommandMapper.fromRequest(schoolId, sessionId, request);
+        acceptSchoolGradeLevelImportUseCase.execute(command);
+        return ResponseEntity.ok(ApiResponse.success("Yêu cầu import khối học đã được tiếp nhận, đang xử lý"));
     }
 
     @PostMapping(

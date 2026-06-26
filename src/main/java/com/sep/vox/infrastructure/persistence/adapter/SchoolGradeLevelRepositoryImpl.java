@@ -10,6 +10,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository; // Quan trọng: Phải có dòng này
 
 import java.time.OffsetDateTime;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -51,6 +53,17 @@ public class SchoolGradeLevelRepositoryImpl implements SchoolGradeLevelRepositor
             result.getTotalElements(),
             result.getTotalPages()
         );
+    }
+
+    @Override
+    public List<SchoolGradeLevel> findBySchoolIdAndCodeIn(UUID schoolId, Collection<String> codes) {
+        if (schoolId == null || codes == null || codes.isEmpty()) {
+            return List.of();
+        }
+        return schoolGradeLevelRepository.findBySchoolIdAndCodeIn(schoolId, codes)
+                .stream()
+                .map(SchoolGradeLevelMapper::toDomain)
+                .toList();
     }
 
     @Override

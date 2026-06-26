@@ -33,6 +33,8 @@ import com.sep.vox.application.port.input.usecase.schoolclass.AcceptSchoolClassI
 import com.sep.vox.application.port.input.usecase.schoolclass.CreateSchoolClassUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.DeleteSchoolClassUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.PreviewSchoolClassImportFromFileUseCase;
+import com.sep.vox.application.port.input.usecase.schoolgradelevel.AcceptSchoolGradeLevelImportUseCase;
+import com.sep.vox.application.port.input.usecase.schoolgradelevel.PreviewSchoolGradeLevelImportFromFileUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.AcceptSchoolUserImportUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.CreateSchoolUserUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.DeleteSchoolUserUseCase;
@@ -91,6 +93,8 @@ class SchoolControllerTests {
     private DeleteSchoolGradeUseCase deleteSchoolGradeUseCase;
     private CreateSchoolGradeLevelUseCase createSchoolGradeLevelUseCase;
     private DeleteSchoolGradeLevelUseCase deleteSchoolGradeLevelUseCase;
+    private PreviewSchoolGradeLevelImportFromFileUseCase previewSchoolGradeLevelImportFromFileUseCase;
+    private AcceptSchoolGradeLevelImportUseCase acceptSchoolGradeLevelImportUseCase;
     private PreviewSchoolDirectoryImportFromFileUseCase previewSchoolDirectoryImportFromFileUseCase;
     private AcceptSchoolDirectoryImportUseCase acceptSchoolDirectoryImportUseCase;
     private CreateSchoolDirectoryUseCase createSchoolDirectoryUseCase;
@@ -126,6 +130,8 @@ class SchoolControllerTests {
         deleteSchoolGradeUseCase = mock(DeleteSchoolGradeUseCase.class);
         createSchoolGradeLevelUseCase = mock(CreateSchoolGradeLevelUseCase.class);
         deleteSchoolGradeLevelUseCase = mock(DeleteSchoolGradeLevelUseCase.class);
+        previewSchoolGradeLevelImportFromFileUseCase = mock(PreviewSchoolGradeLevelImportFromFileUseCase.class);
+        acceptSchoolGradeLevelImportUseCase = mock(AcceptSchoolGradeLevelImportUseCase.class);
         previewSchoolDirectoryImportFromFileUseCase = mock(PreviewSchoolDirectoryImportFromFileUseCase.class);
         acceptSchoolDirectoryImportUseCase = mock(AcceptSchoolDirectoryImportUseCase.class);
         createSchoolDirectoryUseCase = mock(CreateSchoolDirectoryUseCase.class);
@@ -150,9 +156,11 @@ class SchoolControllerTests {
             deleteSchoolRoomUseCase, 
             createSchoolGradeUseCase, 
             deleteSchoolGradeUseCase, 
-            createSchoolGradeLevelUseCase, 
-            deleteSchoolGradeLevelUseCase, 
-            previewSchoolDirectoryImportFromFileUseCase, 
+            createSchoolGradeLevelUseCase,
+            deleteSchoolGradeLevelUseCase,
+            previewSchoolGradeLevelImportFromFileUseCase,
+            acceptSchoolGradeLevelImportUseCase,
+            previewSchoolDirectoryImportFromFileUseCase,
             acceptSchoolDirectoryImportUseCase, 
             createSchoolDirectoryUseCase
         );

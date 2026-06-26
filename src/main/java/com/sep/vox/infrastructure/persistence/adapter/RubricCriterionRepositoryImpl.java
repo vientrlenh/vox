@@ -88,4 +88,18 @@ public class RubricCriterionRepositoryImpl implements RubricCriterionRepository 
                 .map(RubricCriterionMapper::toDomain)
                 .toList();
     }
+
+    @Override
+    public PageResult<RubricCriterion> searchRubricCriteria(UUID versionId, String keyword, Boolean isRequired, int page, int size) {
+        var springPageable = PageRequest.of(page, size);
+        var pageEntity = springDataRubricCriterionRepository.searchRubricCriteria(versionId, keyword, isRequired, springPageable);
+
+        return new PageResult<>(
+                pageEntity.getContent().stream().map(RubricCriterionMapper::toDomain).toList(),
+                pageEntity.getNumber(),
+                pageEntity.getSize(),
+                (int) pageEntity.getTotalElements(),
+                pageEntity.getTotalPages()
+        );
+    }
 }

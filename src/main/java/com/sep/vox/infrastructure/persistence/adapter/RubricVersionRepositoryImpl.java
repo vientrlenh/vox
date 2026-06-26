@@ -96,6 +96,26 @@ public class RubricVersionRepositoryImpl implements RubricVersionRepository {
                 .map(RubricVersionMapper::toDomain)
                 .toList();
     }
+
+    @Override
+    public PageResult<RubricVersion> searchRubricVersions(UUID rubricId, String keyword, String status, int page, int size) {
+
+        Pageable springPageable = PageRequest.of(page, size);
+
+        // 1. Thực thi lấy dữ liệu từ Database
+        var pageEntity = springDataRubricVersionRepository.searchRubricVersions(rubricId, keyword, status, springPageable);
+
+        // 2. Map Entity về Domain và trả ra ngoài
+        return new PageResult<>(
+                pageEntity.getContent().stream()
+                        .map(RubricVersionMapper::toDomain) // Chuyển đổi sang Domain Model
+                        .toList(),
+                pageEntity.getNumber(),
+                pageEntity.getSize(),
+                (int) pageEntity.getTotalElements(),
+                pageEntity.getTotalPages()
+        );
+    }
 }
 
 

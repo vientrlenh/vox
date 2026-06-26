@@ -3,12 +3,6 @@ input UpdateRubricInput {
     description: String
 }
 
-input SearchRubricFilter {
-    keyword: String     # Tìm theo tên hoặc mã code
-    frameworkId: ID     # Lọc theo Khung năng lực
-    languageId: ID      # Lọc theo Ngôn ngữ
-}
-
 input UpdateRubricVersionInput {
     code: String
     name: String
@@ -46,6 +40,31 @@ input UpdateRubricResultBandInput {
     scoreMin: Float
     scoreMax: Float
     order: Int
+}
+
+
+input SearchRubricFilter {
+    keyword: String     # Tìm theo tên hoặc mã code
+    frameworkId: ID     # Lọc theo Khung năng lực
+    languageId: ID      # Lọc theo Ngôn ngữ
+}
+
+input SearchRubricVersionFilter {
+    keyword: String     # Tìm theo tên hoặc mã code của version
+    status: String      # Lọc theo trạng thái (DRAFT, PUBLISHED, ARCHIVED)
+}
+
+input SearchRubricCriterionFilter {
+    keyword: String     # Tìm theo tên (name) hoặc mã (code) của tiêu chí
+    isRequired: Boolean # Lọc theo tiêu chí bắt buộc hoặc không
+}
+
+input SearchRubricCriterionBandFilter {
+    keyword: String     # Tìm kiếm theo Mã mức điểm (code)
+}
+
+input SearchRubricResultBandFilter {
+    keyword: String     # Tìm theo Tên (name) hoặc Mã (code)
 }
 
 
@@ -188,7 +207,7 @@ extend type Mutation {
     updateSchoolRubricCriterionBand(schoolId: ID!, bandId: ID!, input: UpdateRubricCriterionBandInput!): ID!
     updateSystemRubricCriterionBand(bandId: ID!, input: UpdateRubricCriterionBandInput!): ID!
 
-    # RUBRIC CRITERION RESULT
+    # RUBRIC CRITERION RESULT BAND
     updateSystemRubricResultBand(resultBandId: ID!, input: UpdateRubricResultBandInput!): ID!
     updateSchoolRubricResultBand(schoolId: ID!, resultBandId: ID!, input: UpdateRubricResultBandInput!): ID!
 }
@@ -214,22 +233,35 @@ extend type Query {
     viewSystemRubricVersion(versionId: ID!): RubricVersion
     viewSchoolRubricVersions(schoolId: ID!, rubricId: ID!, status: String, page: Int = 0, size: Int = 10): RubricVersionPage!
     viewSystemRubricVersions(rubricId: ID!, status: String, page: Int = 0, size: Int = 10): RubricVersionPage!
+    searchSystemRubricVersions(rubricId: ID!, filter: SearchRubricVersionFilter, page: Int = 0, size: Int = 10): RubricVersionPage!
+    searchSchoolRubricVersions(schoolId: ID!, rubricId: ID!, filter: SearchRubricVersionFilter, page: Int = 0, size: Int = 10): RubricVersionPage!
+
 
     # RUBRIC CRITERION
     viewSystemRubricCriterion(criterionId: ID!): RubricCriterion
     viewSchoolRubricCriterion(schoolId: ID!, criterionId: ID!): RubricCriterion
     viewSystemRubricCriteria(versionId: ID!, page: Int = 0, size: Int = 10): RubricCriterionPage!
     viewSchoolRubricCriteria(schoolId: ID!, versionId: ID!, page: Int = 0, size: Int = 10): RubricCriterionPage!
+    searchSystemRubricCriteria(versionId: ID!, filter: SearchRubricCriterionFilter, page: Int = 0, size: Int = 10): RubricCriterionPage!
+    searchSchoolRubricCriteria(schoolId: ID!, versionId: ID!, filter: SearchRubricCriterionFilter, page: Int = 0, size: Int = 10): RubricCriterionPage!
+
 
     # RUBRIC CRITERION BAND
     viewSystemRubricCriterionBand(bandId: ID!): RubricCriterionBand
     viewSchoolRubricCriterionBand(schoolId: ID!, bandId: ID!): RubricCriterionBand
     viewSchoolRubricCriterionBands(schoolId: ID!, criterionId: ID!, page: Int = 0, size: Int = 10): RubricCriterionBandPage!
     viewSystemRubricCriterionBands(criterionId: ID!, page: Int = 0, size: Int = 10): RubricCriterionBandPage!
+    searchSystemRubricCriterionBands(criterionId: ID!, filter: SearchRubricCriterionBandFilter, page: Int = 0, size: Int = 10): RubricCriterionBandPage!
+    searchSchoolRubricCriterionBands(schoolId: ID!, criterionId: ID!, filter: SearchRubricCriterionBandFilter, page: Int = 0, size: Int = 10): RubricCriterionBandPage!
 
-    # RUBRIC CRITERION RESULT
+    # RUBRIC CRITERION RESULT BAND
     viewSystemRubricResultBand(resultBandId: ID!): RubricResultBand
     viewSchoolRubricResultBand(schoolId: ID!, resultBandId: ID!): RubricResultBand
     viewSystemRubricResultBands(versionId: ID!, page: Int = 0, size: Int = 10): RubricResultBandPage!
     viewSchoolRubricResultBands(schoolId: ID!, versionId: ID!, page: Int = 0, size: Int = 10): RubricResultBandPage!
+
+    # System Admin
+    searchSystemRubricResultBands(versionId: ID!, filter: SearchRubricResultBandFilter, page: Int = 0, size: Int = 10): RubricResultBandPage!
+    # School Admin
+    searchSchoolRubricResultBands(schoolId: ID!, versionId: ID!, filter: SearchRubricResultBandFilter, page: Int = 0, size: Int = 10): RubricResultBandPage!
 }

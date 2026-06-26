@@ -24,14 +24,14 @@ public interface SpringDataRubricCriterionBandRepository extends JpaRepository<R
 
     @Modifying
     @Query("""
-        UPDATE RubricCriterionBandJpaEntity b SET 
-        b.code = COALESCE(:code, b.code),
-        b.scoreMin = COALESCE(:scoreMin, b.scoreMin),
-        b.scoreMax = COALESCE(:scoreMax, b.scoreMax),
-        b.updatedAt = :updatedAt,
-        b.updatedBy = :updatedBy
-        WHERE b.id = :id
-        """)
+            UPDATE RubricCriterionBandJpaEntity b SET 
+            b.code = COALESCE(:code, b.code),
+            b.scoreMin = COALESCE(:scoreMin, b.scoreMin),
+            b.scoreMax = COALESCE(:scoreMax, b.scoreMax),
+            b.updatedAt = :updatedAt,
+            b.updatedBy = :updatedBy
+            WHERE b.id = :id
+            """)
     int updateBandAtomic(
             @Param("id") UUID id,
             @Param("code") String code,
@@ -45,4 +45,12 @@ public interface SpringDataRubricCriterionBandRepository extends JpaRepository<R
 
     @Query("SELECT b FROM RubricCriterionBandJpaEntity b WHERE b.criterionId IN :criterionIds")
     List<RubricCriterionBandJpaEntity> findByCriterionIdIn(@Param("criterionIds") List<UUID> criterionIds);
+
+    @Query("SELECT cb FROM RubricCriterionBandJpaEntity cb WHERE cb.criterionId = :criterionId " +
+            "AND (:keyword IS NULL OR LOWER(cb.code) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+            "ORDER BY cb.scoreMin ASC")
+    Page<RubricCriterionBandJpaEntity> searchRubricCriterionBands(
+            @Param("criterionId") UUID criterionId,
+            @Param("keyword") String keyword,
+            Pageable pageable);
 }

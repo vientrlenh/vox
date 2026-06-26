@@ -92,5 +92,20 @@ public class RubricResultBandRepositoryImpl implements RubricResultBandRepositor
                 .map(RubricResultBandMapper::toDomain)
                 .toList();
     }
+
+    @Override
+    public PageResult<RubricResultBand> searchRubricResultBands(UUID versionId, String keyword, int page, int size) {
+        var springPageable = PageRequest.of(page, size);
+        var pageEntity = springDataRubricResultBandRepository.searchRubricResultBands(versionId, keyword, springPageable);
+
+        return new PageResult<>(
+                pageEntity.getContent().stream().map(RubricResultBandMapper::toDomain).toList(),
+                pageEntity.getNumber(),
+                pageEntity.getSize(),
+                (int) pageEntity.getTotalElements(),
+                pageEntity.getTotalPages()
+        );
+    }
 }
+
 

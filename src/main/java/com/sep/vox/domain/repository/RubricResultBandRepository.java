@@ -18,4 +18,5 @@ public interface RubricResultBandRepository {
     void updateResultBandAtomic(UUID id, String code, String name, String description, BigDecimal scoreMin, BigDecimal scoreMax, Integer order, java.time.OffsetDateTime updatedAt, UUID updatedBy);
     PageResult<RubricResultBand> findAllByRubricVersionId(UUID rubricVersionId, int page, int size);
     List<RubricResultBand> findByRubricVersionIdIn(List<UUID> versionIds);
+    PageResult<RubricResultBand> searchRubricResultBands(UUID versionId, String keyword, int page, int size);
 }

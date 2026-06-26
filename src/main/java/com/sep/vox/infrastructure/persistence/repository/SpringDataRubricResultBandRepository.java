@@ -23,17 +23,17 @@ public interface SpringDataRubricResultBandRepository extends JpaRepository<Rubr
 
     @Modifying
     @Query("""
-        UPDATE RubricResultBandJpaEntity r SET 
-        r.code = COALESCE(:code, r.code),
-        r.name = COALESCE(:name, r.name),
-        r.description = COALESCE(:description, r.description),
-        r.scoreMin = COALESCE(:scoreMin, r.scoreMin),
-        r.scoreMax = COALESCE(:scoreMax, r.scoreMax),
-        r.order = COALESCE(:order, r.order),
-        r.updatedAt = :updatedAt,
-        r.updatedBy = :updatedBy
-        WHERE r.id = :id
-        """)
+            UPDATE RubricResultBandJpaEntity r SET 
+            r.code = COALESCE(:code, r.code),
+            r.name = COALESCE(:name, r.name),
+            r.description = COALESCE(:description, r.description),
+            r.scoreMin = COALESCE(:scoreMin, r.scoreMin),
+            r.scoreMax = COALESCE(:scoreMax, r.scoreMax),
+            r.order = COALESCE(:order, r.order),
+            r.updatedAt = :updatedAt,
+            r.updatedBy = :updatedBy
+            WHERE r.id = :id
+            """)
     int updateResultBandAtomic(
             @Param("id") UUID id,
             @Param("code") String code,
@@ -45,6 +45,16 @@ public interface SpringDataRubricResultBandRepository extends JpaRepository<Rubr
             @Param("updatedAt") OffsetDateTime updatedAt,
             @Param("updatedBy") UUID updatedBy
     );
+
     Page<RubricResultBandJpaEntity> findAllByRubricVersionId(UUID rubricVersionId, Pageable pageable);
+
+    @Query("SELECT r FROM RubricResultBandJpaEntity r WHERE r.rubricVersionId = :versionId " +
+            "AND (:keyword IS NULL OR LOWER(r.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(r.code) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+            "ORDER BY r.order ASC")
+    Page<RubricResultBandJpaEntity> searchRubricResultBands(
+            @Param("versionId") UUID versionId,
+            @Param("keyword") String keyword,
+            Pageable pageable);
+
 }
 

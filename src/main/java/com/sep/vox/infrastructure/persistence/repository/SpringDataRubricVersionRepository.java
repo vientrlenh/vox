@@ -62,4 +62,37 @@ public interface SpringDataRubricVersionRepository extends JpaRepository<RubricV
             @Param("rubricIds") List<UUID> rubricIds,
             @Param("status") String status
     );
+
+//    @Query(
+//            "SELECT v FROM RubricVersionJpaEntity v WHERE v.rubricId = :rubricId " +
+//                    "AND (:keyword IS NULL OR LOWER(v.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(v.code) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+//                    "AND (:status IS NULL OR v.status = :status) " +
+//                    "ORDER BY v.version DESC")
+//    Page<RubricVersionJpaEntity> searchSystemRubricVersions(
+//            @Param("rubricId") UUID rubricId,
+//            @Param("keyword") String keyword,
+//            @Param("status") String status,
+//            Pageable pageable);
+//
+//    @Query(
+//            "SELECT v FROM RubricVersionJpaEntity v WHERE v.rubricId = :rubricId " +
+//                    "AND (:keyword IS NULL OR LOWER(v.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(v.code) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+//                    "AND (:status IS NULL OR v.status = :status) " +
+//                    "ORDER BY v.version DESC")
+//    Page<RubricVersionJpaEntity> searchSchoolRubricVersions(
+//            @Param("rubricId") UUID rubricId,
+//            @Param("keyword") String keyword,
+//            @Param("status") String status,
+//            Pageable pageable);
+
+    @Query(
+            "SELECT v FROM RubricVersionJpaEntity v WHERE v.rubricId = :rubricId " +
+                    "AND (:keyword IS NULL OR LOWER(v.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(v.code) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+                    "AND (:status IS NULL OR v.status = :status) " +
+                    "ORDER BY v.version DESC")
+    Page<RubricVersionJpaEntity> searchRubricVersions(
+            @Param("rubricId") UUID rubricId,
+            @Param("keyword") String keyword,
+            @Param("status") String status,
+            Pageable pageable);
 }

@@ -96,4 +96,17 @@ public class RubricCriterionBandRepositoryImpl implements RubricCriterionBandRep
                 .toList();
     }
 
+    @Override
+    public PageResult<RubricCriterionBand> searchRubricCriterionBands(UUID criterionId, String keyword, int page, int size) {
+        var pageable = PageRequest.of(page, size);
+        var pageEntity = springDataRubricCriterionBandRepository.searchRubricCriterionBands(criterionId, keyword, pageable);
+
+        return new PageResult<>(
+                pageEntity.getContent().stream().map(RubricCriterionBandMapper::toDomain).toList(),
+                pageEntity.getNumber(),
+                pageEntity.getSize(),
+                (int) pageEntity.getTotalElements(),
+                pageEntity.getTotalPages()
+        );
+    }
 }

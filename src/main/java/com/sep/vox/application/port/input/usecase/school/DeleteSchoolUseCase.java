@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.school;
 
-import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.DeleteSchoolCommand;
@@ -9,7 +8,6 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.model.school.SchoolGradeStatus;
-import com.sep.vox.domain.model.school.SchoolRoom;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.*;

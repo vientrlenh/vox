@@ -1,6 +1,6 @@
 package com.sep.vox.interfaces.graphql.dto.request;
 
-public record SearchRubricCriterionFilterDto(
+public record SearchRubricCriterionFilterRequest(
         String keyword,
         Boolean isRequired
 ) {}

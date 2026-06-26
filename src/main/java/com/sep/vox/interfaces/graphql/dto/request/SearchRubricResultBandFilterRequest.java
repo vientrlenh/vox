@@ -1,5 +1,5 @@
 package com.sep.vox.interfaces.graphql.dto.request;
 
-public record SearchRubricCriterionBandFilterDto(
+public record SearchRubricResultBandFilterRequest(
         String keyword
 ) {}

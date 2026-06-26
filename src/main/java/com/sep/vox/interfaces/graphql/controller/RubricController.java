@@ -609,13 +609,13 @@ public class RubricController {
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<RubricCriterionDto> searchSystemRubricCriteria(
             @Argument UUID versionId,
-            @Argument SearchRubricCriterionFilterDto filter,
+            @Argument SearchRubricCriterionFilterRequest filter,
             @Argument Integer page,
             @Argument Integer size) {
 
         int validPage = (page != null && page > 0) ? page - 1 : 0;
         int validSize = (size != null && size > 0) ? size : 10;
-        var safeFilter = (filter != null) ? filter : new SearchRubricCriterionFilterDto(null, null);
+        var safeFilter = (filter != null) ? filter : new SearchRubricCriterionFilterRequest(null, null);
 
         var query = new SearchSystemRubricCriteriaQuery(
                 versionId, safeFilter.keyword(), safeFilter.isRequired(), validPage, validSize
@@ -630,13 +630,13 @@ public class RubricController {
     public PageResult<RubricCriterionDto> searchSchoolRubricCriteria(
             @Argument UUID schoolId,
             @Argument UUID versionId,
-            @Argument SearchRubricCriterionFilterDto filter,
+            @Argument SearchRubricCriterionFilterRequest filter,
             @Argument Integer page,
             @Argument Integer size) {
 
         int validPage = (page != null && page > 0) ? page - 1 : 0;
         int validSize = (size != null && size > 0) ? size : 10;
-        var safeFilter = (filter != null) ? filter : new SearchRubricCriterionFilterDto(null, null);
+        var safeFilter = (filter != null) ? filter : new SearchRubricCriterionFilterRequest(null, null);
 
         var query = new SearchSchoolRubricCriteriaQuery(
                 schoolId, versionId, safeFilter.keyword(), safeFilter.isRequired(), validPage, validSize
@@ -742,13 +742,13 @@ public class RubricController {
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<RubricCriterionBandDto> searchSystemRubricCriterionBands(
             @Argument UUID criterionId,
-            @Argument SearchRubricCriterionBandFilterDto filter,
+            @Argument SearchRubricCriterionBandFilterRequest filter,
             @Argument Integer page,
             @Argument Integer size) {
 
         int validPage = (page != null && page > 0) ? page - 1 : 0;
         int validSize = (size != null && size > 0) ? size : 10;
-        var safeFilter = (filter != null) ? filter : new SearchRubricCriterionBandFilterDto(null);
+        var safeFilter = (filter != null) ? filter : new SearchRubricCriterionBandFilterRequest(null);
 
         var query = new SearchSystemRubricCriterionBandsQuery(
                 criterionId, safeFilter.keyword(), validPage, validSize
@@ -763,13 +763,13 @@ public class RubricController {
     public PageResult<RubricCriterionBandDto> searchSchoolRubricCriterionBands(
             @Argument UUID schoolId,
             @Argument UUID criterionId,
-            @Argument SearchRubricCriterionBandFilterDto filter,
+            @Argument SearchRubricCriterionBandFilterRequest filter,
             @Argument Integer page,
             @Argument Integer size) {
 
         int validPage = (page != null && page > 0) ? page - 1 : 0;
         int validSize = (size != null && size > 0) ? size : 10;
-        var safeFilter = (filter != null) ? filter : new SearchRubricCriterionBandFilterDto(null);
+        var safeFilter = (filter != null) ? filter : new SearchRubricCriterionBandFilterRequest(null);
 
         var query = new SearchSchoolRubricCriterionBandsQuery(
                 schoolId, criterionId, safeFilter.keyword(), validPage, validSize
@@ -873,13 +873,13 @@ public class RubricController {
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<RubricResultBandDto> searchSystemRubricResultBands(
             @Argument UUID versionId,
-            @Argument SearchRubricResultBandFilterDto filter,
+            @Argument SearchRubricResultBandFilterRequest filter,
             @Argument Integer page,
             @Argument Integer size) {
 
         int validPage = (page != null && page > 0) ? page - 1 : 0;
         int validSize = (size != null && size > 0) ? size : 10;
-        var safeFilter = (filter != null) ? filter : new SearchRubricResultBandFilterDto(null);
+        var safeFilter = (filter != null) ? filter : new SearchRubricResultBandFilterRequest(null);
 
         var query = new SearchSystemRubricResultBandsQuery(versionId, safeFilter.keyword(), validPage, validSize);
         return searchSystemRubricResultBandsUseCase.execute(query);
@@ -891,13 +891,13 @@ public class RubricController {
     public PageResult<RubricResultBandDto> searchSchoolRubricResultBands(
             @Argument UUID schoolId,
             @Argument UUID versionId,
-            @Argument SearchRubricResultBandFilterDto filter,
+            @Argument SearchRubricResultBandFilterRequest filter,
             @Argument Integer page,
             @Argument Integer size) {
 
         int validPage = (page != null && page > 0) ? page - 1 : 0;
         int validSize = (size != null && size > 0) ? size : 10;
-        var safeFilter = (filter != null) ? filter : new SearchRubricResultBandFilterDto(null);
+        var safeFilter = (filter != null) ? filter : new SearchRubricResultBandFilterRequest(null);
 
         var query = new SearchSchoolRubricResultBandsQuery(schoolId, versionId, safeFilter.keyword(), validPage, validSize);
         return searchSchoolRubricResultBandsUseCase.execute(query);

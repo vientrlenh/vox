@@ -1,43 +1,74 @@
-package com.sep.vox.domain.model.exam;
+package com.sep.vox.infrastructure.persistence.entity;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-public class ExamResultAppeal {
-    private UUID id;
-    private UUID candidateResultId;
-    private UUID requestedBy;
-    private String reason;
-    private OffsetDateTime requestedAt;
-    private ExamAppealStatus status;
-    private BigDecimal scoreBefore;
-    private BigDecimal scoreAfter;
-    private UUID resolvedBy;
-    private OffsetDateTime resolvedAt;
-    private String notes;
+import org.hibernate.annotations.Generated;
+import org.hibernate.generator.EventType;
+
+import jakarta.persistence.CheckConstraint;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "exam_result_appeals")
+public class ExamResultAppealJpaEntity {
     
-    public ExamResultAppeal() {}
+    @Id
+    @Generated(event = EventType.INSERT)
+    @Column(
+        name = "id", 
+        nullable = false, 
+        updatable = false, 
+        insertable = false, 
+        columnDefinition = "UUID DEFAULT uuidv7()"
+    )
+    private UUID id;
 
-    public ExamResultAppeal(UUID id, UUID candidateResultId, UUID requestedBy, String reason,
-            OffsetDateTime requestedAt, ExamAppealStatus status, BigDecimal scoreBefore, BigDecimal scoreAfter,
-            UUID resolvedBy, OffsetDateTime resolvedAt, String notes) {
+    @Column(name = "candidate_result_id", nullable = false, updatable = false)
+    private UUID candidateResultId;
+
+    @Column(name = "requested_by", nullable = false, updatable = false)
+    private UUID requestedBy;
+
+    @Column(name = "reason", nullable = false, length = 512)
+    private String reason;
+
+    @Column(name = "requested_at", nullable = false, updatable = false)
+    private OffsetDateTime requestedAt;
+
+    @Column(name = "status", nullable = false, length = 20, check = {
+        @CheckConstraint(
+            name = "chk_exam_result_appeals_status_valid", 
+            constraint = "status IN ('PENDING', 'AUTO_REGRADING', 'RESOLVED_NO_CHANGE', 'RESOLVED_CHANGED', 'ESCALATED', 'HUMAN_RESOLVED', 'REJECTED')"
+        )
+    })
+    private String status;
+
+    @Column(name = "score_before", precision = 3, scale = 2)
+    private BigDecimal scoreBefore;
+
+    @Column(name = "score_after", precision = 3, scale = 2)
+    private BigDecimal scoreAfter;
+
+    @Column(name = "resolved_by")
+    private UUID resolvedBy;
+
+    @Column(name = "resolved_at")
+    private UUID resolvedAt;
+
+    @Column(name = "notes", length = 512)
+    private String notes;
+
+    protected ExamResultAppealJpaEntity() {}
+
+    public ExamResultAppealJpaEntity(UUID id, UUID candidateResultId, UUID requestedBy, String reason,
+            OffsetDateTime requestedAt, String status, BigDecimal scoreBefore,
+            BigDecimal scoreAfter, UUID resolvedBy, UUID resolvedAt, String notes) {
         this.id = id;
-        this.candidateResultId = candidateResultId;
-        this.requestedBy = requestedBy;
-        this.reason = reason;
-        this.requestedAt = requestedAt;
-        this.status = status;
-        this.scoreBefore = scoreBefore;
-        this.scoreAfter = scoreAfter;
-        this.resolvedBy = resolvedBy;
-        this.resolvedAt = resolvedAt;
-        this.notes = notes;
-    }
-
-    public ExamResultAppeal(UUID candidateResultId, UUID requestedBy, String reason, OffsetDateTime requestedAt,
-            ExamAppealStatus status, BigDecimal scoreBefore, BigDecimal scoreAfter, UUID resolvedBy,
-            OffsetDateTime resolvedAt, String notes) {
         this.candidateResultId = candidateResultId;
         this.requestedBy = requestedBy;
         this.reason = reason;
@@ -90,11 +121,11 @@ public class ExamResultAppeal {
         this.requestedAt = requestedAt;
     }
 
-    public ExamAppealStatus getStatus() {
+    public String getStatus() {
         return status;
     }
 
-    public void setStatus(ExamAppealStatus status) {
+    public void setStatus(String status) {
         this.status = status;
     }
 
@@ -122,11 +153,11 @@ public class ExamResultAppeal {
         this.resolvedBy = resolvedBy;
     }
 
-    public OffsetDateTime getResolvedAt() {
+    public UUID getResolvedAt() {
         return resolvedAt;
     }
 
-    public void setResolvedAt(OffsetDateTime resolvedAt) {
+    public void setResolvedAt(UUID resolvedAt) {
         this.resolvedAt = resolvedAt;
     }
 

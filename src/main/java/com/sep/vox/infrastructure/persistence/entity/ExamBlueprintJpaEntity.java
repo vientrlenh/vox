@@ -9,35 +9,42 @@ import org.hibernate.generator.EventType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "framework_result_bands", indexes = {
-    @Index(columnList = "framework_version_id, code", name = "idx_framework_result_bands_version_code", unique = true),
-    @Index(columnList = "framework_version_id, label", name = "idx_framework_result_bands_version_label", unique = true)
-})
-public class FrameworkResultBandJpaEntity {
-
+@Table(name = "exam_blueprints")
+public class ExamBlueprintJpaEntity {
     @Id
     @Generated(event = EventType.INSERT)
-    @Column(name = "id", nullable = false, updatable = false, insertable = false, columnDefinition = "UUID DEFAULT uuidv7()")
+    @Column(
+        name = "id", 
+        nullable = false, 
+        updatable = false, 
+        insertable = false, 
+        columnDefinition = "UUID DEFAULT uuidv7()"
+    )
     private UUID id;
 
-    @Column(name = "framework_version_id", nullable = false, updatable = false)
-    private UUID frameworkVersionId;
+    @Column(name = "school_id", updatable = false)
+    private UUID schoolId;
 
-    @Column(name = "code", nullable = false, length = 50)
+    @Column(name = "language_id", nullable = false, updatable = false)
+    private UUID languageId;
+
+    @Column(name = "school_grade_level_id", updatable = false)
+    private UUID schoolGradeLevelId;
+
+    @Column(name = "code", nullable = false, updatable = false, length = 100)
     private String code;
-
-    @Column(name = "label", nullable = false, length = 100)
-    private String label;
+    
+    @Column(name = "name", nullable = false, length = 255)
+    private String name;
 
     @Column(name = "description", length = 2048)
     private String description;
 
-    @Column(name = "result_band_order", nullable = false)
-    private int order;
+    @Column(name = "is_active", nullable = false)
+    private boolean isActive;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
@@ -49,19 +56,21 @@ public class FrameworkResultBandJpaEntity {
     private UUID createdBy;
 
     @Column(name = "updated_by")
-    private UUID updatedBy;
+    private UUID updatedBy; 
 
-    protected FrameworkResultBandJpaEntity() {}
+    protected ExamBlueprintJpaEntity() {}
 
-    public FrameworkResultBandJpaEntity(UUID id, UUID frameworkVersionId, String code, String label,
-            String description, int order,
-            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+    public ExamBlueprintJpaEntity(UUID id, UUID schoolId, UUID languageId, UUID schoolGradeLevelId, String code,
+            String name, String description, boolean isActive, OffsetDateTime createdAt, OffsetDateTime updatedAt,
+            UUID createdBy, UUID updatedBy) {
         this.id = id;
-        this.frameworkVersionId = frameworkVersionId;
+        this.schoolId = schoolId;
+        this.languageId = languageId;
+        this.schoolGradeLevelId = schoolGradeLevelId;
         this.code = code;
-        this.label = label;
+        this.name = name;
         this.description = description;
-        this.order = order;
+        this.isActive = isActive;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
@@ -76,12 +85,28 @@ public class FrameworkResultBandJpaEntity {
         this.id = id;
     }
 
-    public UUID getFrameworkVersionId() {
-        return frameworkVersionId;
+    public UUID getSchoolId() {
+        return schoolId;
     }
 
-    public void setFrameworkVersionId(UUID frameworkVersionId) {
-        this.frameworkVersionId = frameworkVersionId;
+    public void setSchoolId(UUID schoolId) {
+        this.schoolId = schoolId;
+    }
+
+    public UUID getLanguageId() {
+        return languageId;
+    }
+
+    public void setLanguageId(UUID languageId) {
+        this.languageId = languageId;
+    }
+
+    public UUID getSchoolGradeLevelId() {
+        return schoolGradeLevelId;
+    }
+
+    public void setSchoolGradeLevelId(UUID schoolGradeLevelId) {
+        this.schoolGradeLevelId = schoolGradeLevelId;
     }
 
     public String getCode() {
@@ -92,12 +117,12 @@ public class FrameworkResultBandJpaEntity {
         this.code = code;
     }
 
-    public String getLabel() {
-        return label;
+    public String getName() {
+        return name;
     }
 
-    public void setLabel(String label) {
-        this.label = label;
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getDescription() {
@@ -108,12 +133,12 @@ public class FrameworkResultBandJpaEntity {
         this.description = description;
     }
 
-    public int getOrder() {
-        return order;
+    public boolean isActive() {
+        return isActive;
     }
 
-    public void setOrder(int order) {
-        this.order = order;
+    public void setActive(boolean isActive) {
+        this.isActive = isActive;
     }
 
     public OffsetDateTime getCreatedAt() {

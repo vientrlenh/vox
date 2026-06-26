@@ -1,55 +1,84 @@
-package com.sep.vox.domain.model.exam;
+package com.sep.vox.infrastructure.persistence.entity;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-import com.sep.vox.domain.model.scoringrule.ScoringRuleActionType;
-import com.sep.vox.domain.model.scoringrule.ScoringRuleConditionType;
-import com.sep.vox.domain.model.scoringrule.ScoringRuleSeverity;
+import org.hibernate.annotations.Generated;
+import org.hibernate.generator.EventType;
 
-public class ExamItemRuleHit {
+import jakarta.persistence.CheckConstraint;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "exam_item_rule_hits")
+public class ExamItemRuleHitJpaEntity {
+
+    @Id
+    @Generated(event = EventType.INSERT)
+    @Column(
+        name = "id", 
+        nullable = false, 
+        updatable = false, 
+        insertable = false, 
+        columnDefinition = "UUID DEFAULT uuidv7()"
+    )
     private UUID id;
+
+    @Column(name = "evaluation_id", nullable = false, updatable = false)
     private UUID evaluationId;
+
+    @Column(name = "scoring_rule_id", nullable = false, updatable = false)
     private UUID scoringRuleId;
-    private String ruleCode; // snapshot của rule
-    private ScoringRuleConditionType conditionType;
-    private BigDecimal observedValue; // giá trị đạt được (ví dụ 0.7)
-    private BigDecimal threshold; // ngưỡng (ví dụ 0.5)
-    private ScoringRuleActionType actionType;
-    private String effectSummary; // ví dụ điểm từ 8.5 xuống 2.5
-    private ScoringRuleSeverity severity;
+
+    @Column(name = "rule_code", nullable = false, updatable = false, length = 255)
+    private String ruleCode;
+
+    @Column(name = "condition_type", nullable = false, updatable = false, columnDefinition = "TEXT")
+    private String conditionType;
+
+    @Column(name = "observed_value", nullable = false, updatable = false, precision = 3, scale = 2)
+    private BigDecimal observedValue;
+
+    @Column(name = "threshold", nullable = false, updatable = false, precision = 3, scale = 2)
+    private BigDecimal threshold;
+
+    @Column(name = "action_type", nullable = false, updatable = false, columnDefinition = "TEXT")
+    private String actionType;
+
+    @Column(name = "effect_summary", nullable = false, updatable = false, length = 512)
+    private String effectSummary;
+
+    @Column(name = "severity", nullable = false, updatable = false, length = 20, check = {
+        @CheckConstraint(
+            name = "chk_exam_item_rule_hits_severity_status", 
+            constraint = "severity IN ('INFO', 'WARNING', 'BLOCKING')"
+        )
+    })
+    private String severity;
+
+    @Column(name = "reason_code", nullable = false, updatable = false, length =255)
     private String reasonCode;
+
+    @Column(name = "applied_order", nullable = false, updatable = false)
     private int appliedOrder;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
-    private UUID createdBy;
 
-    public ExamItemRuleHit() {}
+    @Column(name = "created_by", updatable = false)
+    private UUID createdBy; 
 
-    public ExamItemRuleHit(UUID id, UUID evaluationId, UUID scoringRuleId, String ruleCode,
-            ScoringRuleConditionType conditionType, BigDecimal observedValue, BigDecimal threshold,
-            ScoringRuleActionType actionType, String effectSummary, ScoringRuleSeverity severity, String reasonCode,
-            int appliedOrder, OffsetDateTime createdAt, UUID createdBy) {
+    protected ExamItemRuleHitJpaEntity() {}
+
+    public ExamItemRuleHitJpaEntity(UUID id, UUID evaluationId, UUID scoringRuleId, String ruleCode,
+            String conditionType, BigDecimal observedValue, BigDecimal threshold, String actionType,
+            String effectSummary, String severity, String reasonCode, int appliedOrder, OffsetDateTime createdAt,
+            UUID createdBy) {
         this.id = id;
-        this.evaluationId = evaluationId;
-        this.scoringRuleId = scoringRuleId;
-        this.ruleCode = ruleCode;
-        this.conditionType = conditionType;
-        this.observedValue = observedValue;
-        this.threshold = threshold;
-        this.actionType = actionType;
-        this.effectSummary = effectSummary;
-        this.severity = severity;
-        this.reasonCode = reasonCode;
-        this.appliedOrder = appliedOrder;
-        this.createdAt = createdAt;
-        this.createdBy = createdBy;
-    }
-
-    public ExamItemRuleHit(UUID evaluationId, UUID scoringRuleId, String ruleCode,
-            ScoringRuleConditionType conditionType, BigDecimal observedValue, BigDecimal threshold,
-            ScoringRuleActionType actionType, String effectSummary, ScoringRuleSeverity severity, String reasonCode,
-            int appliedOrder, OffsetDateTime createdAt, UUID createdBy) {
         this.evaluationId = evaluationId;
         this.scoringRuleId = scoringRuleId;
         this.ruleCode = ruleCode;
@@ -97,11 +126,11 @@ public class ExamItemRuleHit {
         this.ruleCode = ruleCode;
     }
 
-    public ScoringRuleConditionType getConditionType() {
+    public String getConditionType() {
         return conditionType;
     }
 
-    public void setConditionType(ScoringRuleConditionType conditionType) {
+    public void setConditionType(String conditionType) {
         this.conditionType = conditionType;
     }
 
@@ -121,11 +150,11 @@ public class ExamItemRuleHit {
         this.threshold = threshold;
     }
 
-    public ScoringRuleActionType getActionType() {
+    public String getActionType() {
         return actionType;
     }
 
-    public void setActionType(ScoringRuleActionType actionType) {
+    public void setActionType(String actionType) {
         this.actionType = actionType;
     }
 
@@ -137,11 +166,11 @@ public class ExamItemRuleHit {
         this.effectSummary = effectSummary;
     }
 
-    public ScoringRuleSeverity getSeverity() {
+    public String getSeverity() {
         return severity;
     }
 
-    public void setSeverity(ScoringRuleSeverity severity) {
+    public void setSeverity(String severity) {
         this.severity = severity;
     }
 

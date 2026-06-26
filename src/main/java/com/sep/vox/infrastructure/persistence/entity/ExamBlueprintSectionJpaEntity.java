@@ -1,43 +1,68 @@
-package com.sep.vox.domain.model.exam;
+package com.sep.vox.infrastructure.persistence.entity;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-public class ExamBlueprintSection {
+import org.hibernate.annotations.Generated;
+import org.hibernate.generator.EventType;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "exam_blueprint_sections")
+public class ExamBlueprintSectionJpaEntity {
+
+    @Id
+    @Generated(event = EventType.INSERT)
+    @Column(
+        name = "id", 
+        nullable = false, 
+        updatable = false, 
+        insertable = false, 
+        columnDefinition = "UUID DEFAULT uuidv7()"
+    )
     private UUID id;
+
+    @Column(name = "blueprint_version_id", nullable = false, updatable = false)
     private UUID blueprintVersionId;
+
+    @Column(name = "order", nullable = false)
     private int order;
+
+    @Column(name = "title", nullable = false, length = 255)
     private String title;
+
+    @Column(name = "instruction", length = 512)
     private String instruction;
+
+    @Column(name = "section_time_limits_seconds")
     private Integer sectionTimeLimitSeconds;
+
+    @Column(name = "section_weight", nullable = false, precision = 3, scale = 2)
     private BigDecimal sectionWeight;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
+
+    @Column(name = "created_by", updatable = false)
     private UUID createdBy;
-    private UUID updatedBy;
 
-    public ExamBlueprintSection() {}
+    @Column(name = "updated_by")
+    private UUID updatedBy; 
 
-    public ExamBlueprintSection(UUID id, UUID blueprintVersionId, int order, String title, String instruction,
+    protected ExamBlueprintSectionJpaEntity() {}
+
+    public ExamBlueprintSectionJpaEntity(UUID id, UUID blueprintVersionId, int order, String title, String instruction,
             Integer sectionTimeLimitSeconds, BigDecimal sectionWeight, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
-        this.blueprintVersionId = blueprintVersionId;
-        this.order = order;
-        this.title = title;
-        this.instruction = instruction;
-        this.sectionTimeLimitSeconds = sectionTimeLimitSeconds;
-        this.sectionWeight = sectionWeight;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public ExamBlueprintSection(UUID blueprintVersionId, int order, String title, String instruction,
-            Integer sectionTimeLimitSeconds, BigDecimal sectionWeight, OffsetDateTime createdAt,
-            OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.blueprintVersionId = blueprintVersionId;
         this.order = order;
         this.title = title;

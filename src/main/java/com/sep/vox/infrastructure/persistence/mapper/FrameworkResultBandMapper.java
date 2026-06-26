@@ -1,7 +1,6 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.framework.FrameworkResultBand;
-import com.sep.vox.domain.model.framework.FrameworkResultBandStatus;
 import com.sep.vox.infrastructure.persistence.entity.FrameworkResultBandJpaEntity;
 
 public final class FrameworkResultBandMapper {
@@ -16,7 +15,6 @@ public final class FrameworkResultBandMapper {
             jpa.getLabel(),
             jpa.getDescription(),
             jpa.getOrder(), 
-            statusFromString(jpa.getStatus()),
             jpa.getCreatedAt(),
             jpa.getUpdatedAt(),
             jpa.getCreatedBy(),
@@ -32,7 +30,6 @@ public final class FrameworkResultBandMapper {
             band.getLabel(),
             band.getDescription(),
             band.getOrder(),
-            valueOf(band.getStatus()),
             band.getCreatedAt(),
             band.getUpdatedAt(),
             band.getCreatedBy(),
@@ -40,11 +37,4 @@ public final class FrameworkResultBandMapper {
         );
     }
 
-    private static FrameworkResultBandStatus statusFromString(String status) {
-        return status == null ? null : FrameworkResultBandStatus.valueOf(status);
-    }
-
-    private static String valueOf(FrameworkResultBandStatus status) {
-        return status == null ? null : status.name();
-    }
 }

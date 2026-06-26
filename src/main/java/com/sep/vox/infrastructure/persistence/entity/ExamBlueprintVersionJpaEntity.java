@@ -1,48 +1,83 @@
-package com.sep.vox.domain.model.exam;
+package com.sep.vox.infrastructure.persistence.entity;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-public class ExamBlueprintVersion {
+import org.hibernate.annotations.Generated;
+import org.hibernate.generator.EventType;
+
+import jakarta.persistence.CheckConstraint;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "exam_blueprint_versions")
+public class ExamBlueprintVersionJpaEntity {
+    @Id
+    @Generated(event = EventType.INSERT)
+    @Column(
+        name = "id", 
+        nullable = false, 
+        updatable = false, 
+        insertable = false, 
+        columnDefinition = "UUID DEFAULT uuidv7()"
+    )
     private UUID id;
+
+    @Column(name = "blue_print_id", nullable = false, updatable = false)
     private UUID blueprintId;
+
+    @Column(name = "version", nullable = false, updatable = false)
     private int version;
+
+    @Column(name = "code", nullable = false, updatable = false, length = 100)
     private String code;
+
+    @Column(name = "description", length = 2048)
     private String description;
-    private ExamBlueprintVersionStatus status;
+
+    @Column(name = "status", nullable = false, length = 20, check = {
+        @CheckConstraint(
+            name = "chk_exam_blueprint_versions_status_valid", 
+            constraint = "status IN ('DRAFT', 'PUBLISHED', 'ARCHIVED')"
+        )
+    })
+    private String status;
+
+    @Column(name = "total_time_limit_seconds", check = {
+        @CheckConstraint(
+            name = "chk_exam_blueprint_versions_total_time_limit_seconds_valid", 
+            constraint = "total_time_limit_seconds > 0"
+        )
+    })
     private Integer totalTimeLimitSeconds;
+
+    @Column(name = "effective_from", nullable = false)
     private OffsetDateTime effectiveFrom;
+
+    @Column(name = "effective_to")
     private OffsetDateTime effectiveTo;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
+
+    @Column(name = "created_by", updatable = false)
     private UUID createdBy;
-    private UUID updatedBy;
-    
-    public ExamBlueprintVersion() {}
 
-    public ExamBlueprintVersion(UUID id, UUID blueprintId, int version, String code, String description,
-            ExamBlueprintVersionStatus status, Integer totalTimeLimitSeconds, OffsetDateTime effectiveFrom,
-            OffsetDateTime effectiveTo, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy,
-            UUID updatedBy) {
+    @Column(name = "updated_by")
+    private UUID updatedBy; 
+
+    protected ExamBlueprintVersionJpaEntity() {}
+
+    public ExamBlueprintVersionJpaEntity(UUID id, UUID blueprintId, int version, String code, String description,
+            String status, Integer totalTimeLimitSeconds, OffsetDateTime effectiveFrom, OffsetDateTime effectiveTo,
+            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
-        this.blueprintId = blueprintId;
-        this.version = version;
-        this.code = code;
-        this.description = description;
-        this.status = status;
-        this.totalTimeLimitSeconds = totalTimeLimitSeconds;
-        this.effectiveFrom = effectiveFrom;
-        this.effectiveTo = effectiveTo;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public ExamBlueprintVersion(UUID blueprintId, int version, String code, String description,
-            ExamBlueprintVersionStatus status, Integer totalTimeLimitSeconds, OffsetDateTime effectiveFrom,
-            OffsetDateTime effectiveTo, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy,
-            UUID updatedBy) {
         this.blueprintId = blueprintId;
         this.version = version;
         this.code = code;
@@ -97,11 +132,11 @@ public class ExamBlueprintVersion {
         this.description = description;
     }
 
-    public ExamBlueprintVersionStatus getStatus() {
+    public String getStatus() {
         return status;
     }
 
-    public void setStatus(ExamBlueprintVersionStatus status) {
+    public void setStatus(String status) {
         this.status = status;
     }
 
@@ -159,7 +194,7 @@ public class ExamBlueprintVersion {
 
     public void setUpdatedBy(UUID updatedBy) {
         this.updatedBy = updatedBy;
-    }
+    } 
 
     
 }

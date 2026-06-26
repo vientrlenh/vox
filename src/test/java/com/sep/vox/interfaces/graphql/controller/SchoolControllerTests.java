@@ -34,6 +34,7 @@ import com.sep.vox.application.port.input.usecase.schooldirectory.ViewSchoolDire
 import com.sep.vox.application.port.input.usecase.schooldirectory.ViewSchoolDirectoryPageUseCase;
 import com.sep.vox.application.port.input.usecase.schoolgrade.UpdateSchoolGradeUseCase;
 import com.sep.vox.application.port.input.usecase.schoolgrade.ViewSchoolGradeDetailsUseCase;
+import com.sep.vox.application.port.input.usecase.schoolgradelevel.UpdateSchoolGradeLevelUseCase;
 import com.sep.vox.application.port.input.usecase.schoolgradelevel.ViewSchoolGradeLevelDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolgradelevel.ViewSchoolGradeLevelsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolgrade.ViewSchoolGradesUseCase;
@@ -73,6 +74,7 @@ class SchoolControllerTests {
     private ViewSchoolGradeDetailsUseCase viewSchoolGradeDetailsUseCase;
     private ViewSchoolGradeLevelsUseCase viewSchoolGradeLevelsUseCase;
     private ViewSchoolGradeLevelDetailsUseCase viewSchoolGradeLevelDetailsUseCase;
+    private UpdateSchoolGradeLevelUseCase updateSchoolGradeLevelUseCase;
     private ViewSchoolDirectoryCursorPageUseCase viewSchoolDirectoryCursorPageUseCase;
     private ViewSchoolDirectoryPageUseCase viewSchoolDirectoryPageUseCase;
     private ViewSchoolDirectoryDetailsUseCase viewSchoolDirectoryDetailsUseCase;
@@ -100,6 +102,7 @@ class SchoolControllerTests {
         viewSchoolGradeDetailsUseCase = mock(ViewSchoolGradeDetailsUseCase.class);
         viewSchoolGradeLevelsUseCase = mock(ViewSchoolGradeLevelsUseCase.class);
         viewSchoolGradeLevelDetailsUseCase = mock(ViewSchoolGradeLevelDetailsUseCase.class);
+        updateSchoolGradeLevelUseCase = mock(UpdateSchoolGradeLevelUseCase.class);
         viewSchoolDirectoryCursorPageUseCase = mock(ViewSchoolDirectoryCursorPageUseCase.class);
         viewSchoolDirectoryPageUseCase = mock(ViewSchoolDirectoryPageUseCase.class);
         viewSchoolDirectoryDetailsUseCase = mock(ViewSchoolDirectoryDetailsUseCase.class);
@@ -122,6 +125,7 @@ class SchoolControllerTests {
             viewSchoolGradeDetailsUseCase,
             viewSchoolGradeLevelsUseCase,
             viewSchoolGradeLevelDetailsUseCase,
+            updateSchoolGradeLevelUseCase,
             viewSchoolDirectoryCursorPageUseCase,
             viewSchoolDirectoryPageUseCase, 
             viewSchoolDirectoryDetailsUseCase

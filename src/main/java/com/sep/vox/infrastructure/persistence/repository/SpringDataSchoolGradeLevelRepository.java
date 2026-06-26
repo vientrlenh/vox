@@ -4,9 +4,11 @@ import com.sep.vox.infrastructure.persistence.entity.SchoolGradeLevelJpaEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -30,6 +32,25 @@ public interface SpringDataSchoolGradeLevelRepository extends JpaRepository<Scho
         @Param("searchPattern") String searchPattern,
         @Param("status") String status,
         Pageable pageable
+    );
+
+    @Modifying
+    @Query("""
+        UPDATE SchoolGradeLevelJpaEntity l SET
+        l.name = COALESCE(:name, l.name),
+        l.description = COALESCE(:description, l.description),
+        l.order = COALESCE(:order, l.order),
+        l.updatedAt = :updatedAt,
+        l.updatedBy = :updatedBy
+        WHERE l.id = :id
+        """)
+    int updateSchoolGradeLevelAtomic(
+        @Param("id") UUID id,
+        @Param("name") String name,
+        @Param("description") String description,
+        @Param("order") Integer order,
+        @Param("updatedAt") OffsetDateTime updatedAt,
+        @Param("updatedBy") UUID updatedBy
     );
 }
 

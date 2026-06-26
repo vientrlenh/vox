@@ -42,6 +42,7 @@ import com.sep.vox.application.port.input.usecase.schooldirectory.ViewSchoolDire
 import com.sep.vox.application.port.input.usecase.schoolgrade.UpdateSchoolGradeUseCase;
 import com.sep.vox.application.port.input.usecase.schoolgrade.ViewSchoolGradeDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolgrade.ViewSchoolGradesUseCase;
+import com.sep.vox.application.port.input.usecase.schoolgradelevel.UpdateSchoolGradeLevelUseCase;
 import com.sep.vox.application.port.input.usecase.schoolgradelevel.ViewSchoolGradeLevelDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolgradelevel.ViewSchoolGradeLevelsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolroom.UpdateSchoolRoomUseCase;
@@ -64,12 +65,14 @@ import com.sep.vox.domain.dto.SchoolRoomFromDto;
 import com.sep.vox.domain.dto.SchoolUserDto;
 import com.sep.vox.domain.dto.SupportedLanguageDto;
 import com.sep.vox.domain.dto.UserDto;
+import com.sep.vox.interfaces.graphql.dto.request.UpdateSchoolGradeLevelRequest;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateSchoolGradeRequest;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateSchoolRequest;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateSchoolRoomRequest;
 import com.sep.vox.interfaces.graphql.mapper.UpdateSchoolClassCommandMapper;
 import com.sep.vox.interfaces.graphql.mapper.UpdateSchoolCommandMapper;
 import com.sep.vox.interfaces.graphql.mapper.UpdateSchoolGradeCommandMapper;
+import com.sep.vox.interfaces.graphql.mapper.UpdateSchoolGradeLevelCommandMapper;
 import com.sep.vox.interfaces.graphql.mapper.UpdateSchoolRoomCommandMapper;
 import com.sep.vox.interfaces.graphql.mapper.UpdateSchoolUserCommandMapper;
 
@@ -95,6 +98,7 @@ public class SchoolController {
     private final ViewSchoolGradeDetailsUseCase viewSchoolGradeDetailsUseCase;
     private final ViewSchoolGradeLevelsUseCase viewSchoolGradeLevelsUseCase;
     private final ViewSchoolGradeLevelDetailsUseCase viewSchoolGradeLevelDetailsUseCase;
+    private final UpdateSchoolGradeLevelUseCase updateSchoolGradeLevelUseCase;
     private final ViewSchoolDirectoryCursorPageUseCase viewSchoolDirectoryCursorPageUseCase;
     private final ViewSchoolDirectoryPageUseCase viewSchoolDirectoryPageUseCase;
     private final ViewSchoolDirectoryDetailsUseCase viewSchoolDirectoryDetailsUseCase;
@@ -116,6 +120,7 @@ public class SchoolController {
         ViewSchoolGradeDetailsUseCase viewSchoolGradeDetailsUseCase,
         ViewSchoolGradeLevelsUseCase viewSchoolGradeLevelsUseCase,
         ViewSchoolGradeLevelDetailsUseCase viewSchoolGradeLevelDetailsUseCase,
+        UpdateSchoolGradeLevelUseCase updateSchoolGradeLevelUseCase,
         ViewSchoolDirectoryCursorPageUseCase viewSchoolDirectoryCursorPageUseCase,
         ViewSchoolDirectoryPageUseCase viewSchoolDirectoryPageUseCase, 
         ViewSchoolDirectoryDetailsUseCase viewSchoolDirectoryDetailsUseCase
@@ -137,6 +142,7 @@ public class SchoolController {
         this.viewSchoolGradeDetailsUseCase = viewSchoolGradeDetailsUseCase;
         this.viewSchoolGradeLevelsUseCase = viewSchoolGradeLevelsUseCase;
         this.viewSchoolGradeLevelDetailsUseCase = viewSchoolGradeLevelDetailsUseCase;
+        this.updateSchoolGradeLevelUseCase = updateSchoolGradeLevelUseCase;
         this.viewSchoolDirectoryCursorPageUseCase = viewSchoolDirectoryCursorPageUseCase;
         this.viewSchoolDirectoryPageUseCase = viewSchoolDirectoryPageUseCase;
         this.viewSchoolDirectoryDetailsUseCase = viewSchoolDirectoryDetailsUseCase;
@@ -400,6 +406,16 @@ public class SchoolController {
             @Argument(name = "gradeLevelId") UUID gradeLevelId) {
         var query = new ViewSchoolGradeLevelDetailsQuery(schoolId, gradeLevelId);
         return viewSchoolGradeLevelDetailsUseCase.execute(query);
+    }
+
+    @MutationMapping(name = "updateSchoolGradeLevel")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public UUID updateSchoolGradeLevel(
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "gradeLevelId") UUID gradeLevelId,
+            @Argument(name = "input") UpdateSchoolGradeLevelRequest request) {
+        var command = UpdateSchoolGradeLevelCommandMapper.fromRequest(schoolId, gradeLevelId, request);
+        return updateSchoolGradeLevelUseCase.execute(command);
     }
 
     @QueryMapping(name = "schoolDirectoryCursorPage")

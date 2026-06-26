@@ -9,6 +9,7 @@ import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolGradeLe
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository; // Quan trọng: Phải có dòng này
 
+import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -57,6 +58,12 @@ public class SchoolGradeLevelRepositoryImpl implements SchoolGradeLevelRepositor
         var entity = SchoolGradeLevelMapper.toJpa(gradeLevel);
         var savedEntity = schoolGradeLevelRepository.save(entity);
         return SchoolGradeLevelMapper.toDomain(savedEntity);
+    }
+
+    @Override
+    public int updateSchoolGradeLevelAtomic(UUID id, String name, String description, Integer order,
+            OffsetDateTime updatedAt, UUID updatedBy) {
+        return schoolGradeLevelRepository.updateSchoolGradeLevelAtomic(id, name, description, order, updatedAt, updatedBy);
     }
 
     @Override

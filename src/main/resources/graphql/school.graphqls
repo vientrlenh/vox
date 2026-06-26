@@ -198,6 +198,12 @@ type SchoolGradeLevelPage {
     totalPages: Int!
 }
 
+input UpdateSchoolGradeLevelInput {
+    name: String
+    description: String
+    order: Int
+}
+
 
 type SchoolDirectory {
     id: ID!
@@ -251,6 +257,7 @@ extend type Mutation {
     updateSchoolClass(id: ID!, input: UpdateSchoolClassInput!): UpdateSchoolClassResponse!
     updateSchoolUser(schoolId: ID!, userId: ID!, input: UpdateSchoolUserInput!): UpdateSchoolUserResponse!
     updateSchoolGrade(id: ID!, input: UpdateSchoolGradeInput!): ID!
+    updateSchoolGradeLevel(schoolId: ID!, gradeLevelId: ID!, input: UpdateSchoolGradeLevelInput!): ID!
     updateSchoolRoom(id: ID!, input: UpdateSchoolRoomInput!): ID!
     updateSchool(id: ID!, input: UpdateSchoolInput!): ID!
 }

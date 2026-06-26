@@ -1,11 +1,13 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
@@ -100,7 +102,47 @@ class SchoolGradeLevelRepositoryTests extends ContainerTestConfig {
             .containsExactly(1, 2);
     }
 
-    private void persist(UUID schoolId, String code, String name, int order, String status) {
+    @Test
+    void whenUpdateAtomic_thenChangesProvidedFieldsAndKeepsNullOnes() {
+        var schoolId = UUID.randomUUID();
+        var level = persist(schoolId, "K1", "Khối 1", 1, "ACTIVE");
+
+        var rows = schoolGradeLevelRepository.updateSchoolGradeLevelAtomic(
+            level.getId(), "Khối 1 mới", null, 9, OffsetDateTime.now(), UUID.randomUUID());
+        entityManager.clear(); // bulk update bỏ qua persistence context, cần clear để đọc lại từ DB
+
+        assertThat(rows).isEqualTo(1);
+        var reloaded = schoolGradeLevelRepository.findById(level.getId()).orElseThrow();
+        assertThat(reloaded.getName()).isEqualTo("Khối 1 mới");
+        assertThat(reloaded.getDescription()).isEqualTo("Repository test grade level"); // null param giữ nguyên
+        assertThat(reloaded.getOrder()).isEqualTo(9);
+    }
+
+    @Test
+    void whenUpdateAtomicWithWrongId_thenUpdatesZeroRows() {
+        var schoolId = UUID.randomUUID();
+        persist(schoolId, "K1", "Khối 1", 1, "ACTIVE");
+
+        var rows = schoolGradeLevelRepository.updateSchoolGradeLevelAtomic(
+            UUID.randomUUID(), "X", null, null, OffsetDateTime.now(), UUID.randomUUID());
+
+        assertThat(rows).isZero();
+    }
+
+    @Test
+    void whenUpdateAtomicToDuplicateOrder_thenThrowsDataIntegrityViolation() {
+        var schoolId = UUID.randomUUID();
+        persist(schoolId, "K1", "Khối 1", 1, "ACTIVE");
+        var second = persist(schoolId, "K2", "Khối 2", 2, "ACTIVE");
+
+        assertThatThrownBy(() -> {
+            schoolGradeLevelRepository.updateSchoolGradeLevelAtomic(
+                second.getId(), null, null, 1, OffsetDateTime.now(), UUID.randomUUID());
+            entityManager.flush();
+        }).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    private SchoolGradeLevelJpaEntity persist(UUID schoolId, String code, String name, int order, String status) {
         var now = OffsetDateTime.now();
         var entity = new SchoolGradeLevelJpaEntity(
             null, schoolId, code, name, "Repository test grade level", order, status,
@@ -109,5 +151,6 @@ class SchoolGradeLevelRepositoryTests extends ContainerTestConfig {
         entityManager.persist(entity);
         entityManager.flush();
         entityManager.refresh(entity);
+        return entity;
     }
 }

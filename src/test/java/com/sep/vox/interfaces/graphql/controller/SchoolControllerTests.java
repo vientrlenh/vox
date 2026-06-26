@@ -34,6 +34,8 @@ import com.sep.vox.application.port.input.usecase.schooldirectory.ViewSchoolDire
 import com.sep.vox.application.port.input.usecase.schooldirectory.ViewSchoolDirectoryPageUseCase;
 import com.sep.vox.application.port.input.usecase.schoolgrade.UpdateSchoolGradeUseCase;
 import com.sep.vox.application.port.input.usecase.schoolgrade.ViewSchoolGradeDetailsUseCase;
+import com.sep.vox.application.port.input.usecase.schoolgradelevel.ViewSchoolGradeLevelDetailsUseCase;
+import com.sep.vox.application.port.input.usecase.schoolgradelevel.ViewSchoolGradeLevelsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolgrade.ViewSchoolGradesUseCase;
 import com.sep.vox.application.port.input.usecase.schoolroom.UpdateSchoolRoomUseCase;
 import com.sep.vox.application.port.input.usecase.schoolroom.ViewSchoolRoomDetailsUseCase;
@@ -69,6 +71,8 @@ class SchoolControllerTests {
     private UpdateSchoolGradeUseCase updateSchoolGradeUseCase;
     private ViewSchoolGradesUseCase viewSchoolGradesUseCase;
     private ViewSchoolGradeDetailsUseCase viewSchoolGradeDetailsUseCase;
+    private ViewSchoolGradeLevelsUseCase viewSchoolGradeLevelsUseCase;
+    private ViewSchoolGradeLevelDetailsUseCase viewSchoolGradeLevelDetailsUseCase;
     private ViewSchoolDirectoryCursorPageUseCase viewSchoolDirectoryCursorPageUseCase;
     private ViewSchoolDirectoryPageUseCase viewSchoolDirectoryPageUseCase;
     private ViewSchoolDirectoryDetailsUseCase viewSchoolDirectoryDetailsUseCase;
@@ -94,6 +98,8 @@ class SchoolControllerTests {
         updateSchoolGradeUseCase = mock(UpdateSchoolGradeUseCase.class);
         viewSchoolGradesUseCase = mock(ViewSchoolGradesUseCase.class);
         viewSchoolGradeDetailsUseCase = mock(ViewSchoolGradeDetailsUseCase.class);
+        viewSchoolGradeLevelsUseCase = mock(ViewSchoolGradeLevelsUseCase.class);
+        viewSchoolGradeLevelDetailsUseCase = mock(ViewSchoolGradeLevelDetailsUseCase.class);
         viewSchoolDirectoryCursorPageUseCase = mock(ViewSchoolDirectoryCursorPageUseCase.class);
         viewSchoolDirectoryPageUseCase = mock(ViewSchoolDirectoryPageUseCase.class);
         viewSchoolDirectoryDetailsUseCase = mock(ViewSchoolDirectoryDetailsUseCase.class);
@@ -112,9 +118,11 @@ class SchoolControllerTests {
             viewSchoolRoomsUseCase, 
             updateSchoolRoomUseCase, 
             updateSchoolGradeUseCase, 
-            viewSchoolGradesUseCase, 
-            viewSchoolGradeDetailsUseCase, 
-            viewSchoolDirectoryCursorPageUseCase, 
+            viewSchoolGradesUseCase,
+            viewSchoolGradeDetailsUseCase,
+            viewSchoolGradeLevelsUseCase,
+            viewSchoolGradeLevelDetailsUseCase,
+            viewSchoolDirectoryCursorPageUseCase,
             viewSchoolDirectoryPageUseCase, 
             viewSchoolDirectoryDetailsUseCase
         );

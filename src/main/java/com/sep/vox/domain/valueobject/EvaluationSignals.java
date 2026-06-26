@@ -21,8 +21,8 @@ public record EvaluationSignals(
         if (wordCount < 0) {
             throw new IllegalArgumentException("Số từ không được dưới 0");
         }
-        if (taskRelevance == null || taskRelevance.compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException("Relevance của task không được dưới 0");
+        if (taskRelevance == null || taskRelevance.compareTo(BigDecimal.ZERO) < 0 || taskRelevance.compareTo(BigDecimal.ONE) > 0) {
+            throw new IllegalArgumentException("Relevance của task phải nằm trong khoảng 0 đến 1");
         }
         if (offTopicRatio == null || offTopicRatio.compareTo(BigDecimal.ZERO) < 0 || offTopicRatio.compareTo(BigDecimal.ONE) > 0) {
             throw new IllegalArgumentException("Ratio của off topic bắt buộc phải từ 0 đến 1");
@@ -35,6 +35,9 @@ public record EvaluationSignals(
         }
         if (aiConfidence == null || aiConfidence.compareTo(BigDecimal.ZERO) < 0 || aiConfidence.compareTo(BigDecimal.ONE) > 0) {
             throw new IllegalArgumentException("Confidence của AI bắt buộc phải từ 0 đến 1");
+        }
+        if (audioQuality == null || audioQuality.compareTo(BigDecimal.ZERO) < 0 || audioQuality.compareTo(BigDecimal.ONE) > 0) {
+            throw new IllegalArgumentException("Audio Quality bắt buộc phải từ 0 đến 1");
         }
         if (silenceRatio == null || silenceRatio.compareTo(BigDecimal.ZERO) < 0 || silenceRatio.compareTo(BigDecimal.ONE) > 0) {
             throw new IllegalArgumentException("Ratio của silence bắt buộc phải từ 0 đến 1");

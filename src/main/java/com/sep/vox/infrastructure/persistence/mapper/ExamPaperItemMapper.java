@@ -10,6 +10,7 @@ public final class ExamPaperItemMapper {
     public static ExamPaperItem toDomain(ExamPaperItemJpaEntity jpa) {
         return new ExamPaperItem(
             jpa.getId(),
+            jpa.getBlueprintSlotId(),
             jpa.getSectionId(),
             jpa.getPaperId(),
             jpa.getQuestionId(),
@@ -21,6 +22,7 @@ public final class ExamPaperItemMapper {
     public static ExamPaperItemJpaEntity toJpa(ExamPaperItem domain) {
         return new ExamPaperItemJpaEntity(
             domain.getId(),
+            domain.getBlueprintSlotId(),
             domain.getSectionId(),
             domain.getPaperId(),
             domain.getQuestionId(),

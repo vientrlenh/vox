@@ -5,6 +5,7 @@ import java.util.UUID;
 
 public class Exam {
     private UUID id;
+    private UUID blueprintId;
     private String code;
     private String name;
     private String description;
@@ -21,10 +22,11 @@ public class Exam {
 
     public Exam() {}
 
-    public Exam(UUID id, String code, String name, String description, UUID schoolId, UUID languageId,
+    public Exam(UUID id, UUID blueprintId, String code, String name, String description, UUID schoolId, UUID languageId,
             ExamStatus status, OffsetDateTime openAt, OffsetDateTime closeAt, UUID assessmentPolicyId,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
+        this.blueprintId = blueprintId;
         this.code = code;
         this.name = name;
         this.description = description;
@@ -40,9 +42,10 @@ public class Exam {
         this.updatedBy = updatedBy;
     }
 
-    public Exam(String code, String name, String description, UUID schoolId, UUID languageId, ExamStatus status,
+    public Exam(UUID blueprintId, String code, String name, String description, UUID schoolId, UUID languageId, ExamStatus status,
             OffsetDateTime openAt, OffsetDateTime closeAt, UUID assessmentPolicyId, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+        this.blueprintId = blueprintId;
         this.code = code;
         this.name = name;
         this.description = description;
@@ -168,6 +171,14 @@ public class Exam {
 
     public void setUpdatedBy(UUID updatedBy) {
         this.updatedBy = updatedBy;
+    }
+
+    public UUID getBlueprintId() {
+        return blueprintId;
+    }
+
+    public void setBlueprintId(UUID blueprintId) {
+        this.blueprintId = blueprintId;
     }
 
     

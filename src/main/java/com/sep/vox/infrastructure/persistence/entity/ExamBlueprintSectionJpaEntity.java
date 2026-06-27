@@ -30,7 +30,7 @@ public class ExamBlueprintSectionJpaEntity {
     @Column(name = "blueprint_version_id", nullable = false, updatable = false)
     private UUID blueprintVersionId;
 
-    @Column(name = "order", nullable = false)
+    @Column(name = "section_order", nullable = false)
     private int order;
 
     @Column(name = "title", nullable = false, length = 255)

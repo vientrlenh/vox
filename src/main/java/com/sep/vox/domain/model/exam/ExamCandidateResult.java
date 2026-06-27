@@ -14,6 +14,7 @@ public class ExamCandidateResult {
     private UUID rubricVersionId;
     private UUID frameworkVersionId;
     private UUID targetFrameworkBandId;
+    private UUID rubricResultBandId;
     private BigDecimal totalScore;
     private ExamCandidateResultStatus status;
     private OffsetDateTime releasedAt;
@@ -26,7 +27,7 @@ public class ExamCandidateResult {
     public ExamCandidateResult() {}
 
     public ExamCandidateResult(UUID id, UUID examId, UUID candidateId, UUID sessionId, UUID assessmentPolicyId,
-            int policyVersion, UUID rubricVersionId, UUID frameworkVersionId, UUID targetFrameworkBandId,
+            int policyVersion, UUID rubricVersionId, UUID frameworkVersionId, UUID targetFrameworkBandId, UUID rubricResultBandId, 
             BigDecimal totalScore, ExamCandidateResultStatus status, OffsetDateTime releasedAt,
             OffsetDateTime finalizedAt, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy,
             UUID updatedBy) {
@@ -39,6 +40,7 @@ public class ExamCandidateResult {
         this.rubricVersionId = rubricVersionId;
         this.frameworkVersionId = frameworkVersionId;
         this.targetFrameworkBandId = targetFrameworkBandId;
+        this.rubricResultBandId = rubricResultBandId;
         this.totalScore = totalScore;
         this.status = status;
         this.releasedAt = releasedAt;
@@ -50,7 +52,7 @@ public class ExamCandidateResult {
     }
 
     public ExamCandidateResult(UUID examId, UUID candidateId, UUID sessionId, UUID assessmentPolicyId,
-            int policyVersion, UUID rubricVersionId, UUID frameworkVersionId, UUID targetFrameworkBandId,
+            int policyVersion, UUID rubricVersionId, UUID frameworkVersionId, UUID targetFrameworkBandId, UUID rubricResultBandId, 
             BigDecimal totalScore, ExamCandidateResultStatus status, OffsetDateTime releasedAt,
             OffsetDateTime finalizedAt, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy,
             UUID updatedBy) {
@@ -62,6 +64,7 @@ public class ExamCandidateResult {
         this.rubricVersionId = rubricVersionId;
         this.frameworkVersionId = frameworkVersionId;
         this.targetFrameworkBandId = targetFrameworkBandId;
+        this.rubricResultBandId = rubricResultBandId;
         this.totalScore = totalScore;
         this.status = status;
         this.releasedAt = releasedAt;
@@ -206,6 +209,14 @@ public class ExamCandidateResult {
 
     public void setUpdatedBy(UUID updatedBy) {
         this.updatedBy = updatedBy;
+    }
+
+    public UUID getRubricResultBandId() {
+        return rubricResultBandId;
+    }
+
+    public void setRubricResultBandId(UUID rubricResultBandId) {
+        this.rubricResultBandId = rubricResultBandId;
     }
 
     

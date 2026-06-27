@@ -1,6 +1,7 @@
 package com.sep.vox.domain.model.exam;
 
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import com.sep.vox.domain.valueobject.EvaluationSignals;
@@ -22,13 +23,14 @@ public class ExamItemEvaluation {
     private boolean requiresRetake;
     private EvaluationSignals signals;
     private ExamItemEvaluationStatus status; 
+    private OffsetDateTime evaluatedAt;
 
     public ExamItemEvaluation() {}
 
     public ExamItemEvaluation(UUID id, UUID responseId, UUID paperItemId, ExamEvaluationEngineType engineType,
             String gradedByModel, Integer sampleCount, UUID reviewerId, BigDecimal rawItemScore, BigDecimal itemScore,
             BigDecimal overallConfidence, boolean requiresHumanReview, String reviewReasonCode, boolean markedInvalid,
-            boolean requiresRetake, EvaluationSignals signals, ExamItemEvaluationStatus status) {
+            boolean requiresRetake, EvaluationSignals signals, ExamItemEvaluationStatus status, OffsetDateTime evaluatedAt) {
         this.id = id;
         this.responseId = responseId;
         this.paperItemId = paperItemId;
@@ -45,12 +47,13 @@ public class ExamItemEvaluation {
         this.requiresRetake = requiresRetake;
         this.signals = signals;
         this.status = status;
+        this.evaluatedAt = evaluatedAt;
     }
 
     public ExamItemEvaluation(UUID responseId, UUID paperItemId, ExamEvaluationEngineType engineType,
             String gradedByModel, Integer sampleCount, UUID reviewerId, BigDecimal rawItemScore, BigDecimal itemScore,
             BigDecimal overallConfidence, boolean requiresHumanReview, String reviewReasonCode, boolean markedInvalid,
-            boolean requiresRetake, EvaluationSignals signals, ExamItemEvaluationStatus status) {
+            boolean requiresRetake, EvaluationSignals signals, ExamItemEvaluationStatus status, OffsetDateTime evaluatedAt) {
         this.responseId = responseId;
         this.paperItemId = paperItemId;
         this.engineType = engineType;
@@ -66,6 +69,7 @@ public class ExamItemEvaluation {
         this.requiresRetake = requiresRetake;
         this.signals = signals;
         this.status = status;
+        this.evaluatedAt = evaluatedAt;
     }
 
     public UUID getId() {
@@ -194,6 +198,14 @@ public class ExamItemEvaluation {
 
     public void setStatus(ExamItemEvaluationStatus status) {
         this.status = status;
+    }
+
+    public OffsetDateTime getEvaluatedAt() {
+        return evaluatedAt;
+    }
+
+    public void setEvaluatedAt(OffsetDateTime evaluatedAt) {
+        this.evaluatedAt = evaluatedAt;
     }
 
     

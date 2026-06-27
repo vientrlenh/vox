@@ -52,7 +52,10 @@ public class ExamCandidateResultJpaEntity {
     @Column(name = "target_framework_band_id", nullable = false, updatable = false)
     private UUID targetFrameworkBandId;
 
-    @Column(name = "total_score", nullable = false, updatable = false, precision = 3, scale = 2)
+    @Column(name = "rubric_result_band_id", nullable = false, updatable = false)
+    private UUID rubricResultBandId;
+
+    @Column(name = "total_score", nullable = false, updatable = false, precision = 5, scale = 2)
     private BigDecimal totalScore;
 
     @Column(name = "status", nullable = false, length = 20, check = {
@@ -84,7 +87,7 @@ public class ExamCandidateResultJpaEntity {
     protected ExamCandidateResultJpaEntity() {}
 
     public ExamCandidateResultJpaEntity(UUID id, UUID examId, UUID candidateId, UUID sessionId, UUID assessmentPolicyId,
-        int policyVersion, UUID rubricVersionId, UUID frameworkVersionId, UUID targetFrameworkBandId, BigDecimal totalScore, String status,
+        int policyVersion, UUID rubricVersionId, UUID frameworkVersionId, UUID targetFrameworkBandId, UUID rubricResultBandId, BigDecimal totalScore, String status,
         OffsetDateTime releasedAt, OffsetDateTime finalizedAt, OffsetDateTime createdAt, OffsetDateTime updatedAt,
         UUID createdBy, UUID updatedBy) {
         this.id = id;
@@ -96,6 +99,7 @@ public class ExamCandidateResultJpaEntity {
         this.rubricVersionId = rubricVersionId;
         this.frameworkVersionId = frameworkVersionId;
         this.targetFrameworkBandId = targetFrameworkBandId;
+        this.rubricResultBandId = rubricResultBandId;
         this.totalScore = totalScore;
         this.status = status;
         this.releasedAt = releasedAt;
@@ -240,6 +244,14 @@ public class ExamCandidateResultJpaEntity {
 
     public void setTotalScore(BigDecimal totalScore) {
         this.totalScore = totalScore;
+    }
+
+    public UUID getRubricResultBandId() {
+        return rubricResultBandId;
+    }
+
+    public void setRubricResultBandId(UUID rubricResultBandId) {
+        this.rubricResultBandId = rubricResultBandId;
     }
 
     

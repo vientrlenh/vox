@@ -1,30 +1,50 @@
-package com.sep.vox.domain.model.exam;
+package com.sep.vox.infrastructure.persistence.entity;
 
 import java.math.BigDecimal;
 import java.util.UUID;
 
-public class ExamItemCriterionScore {
+import org.hibernate.annotations.Generated;
+import org.hibernate.generator.EventType;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "exam_item_criterion_scores")
+public class ExamItemCriterionScoreJpaEntity {
+    @Id
+    @Generated(event = EventType.INSERT)
+    @Column(
+        name = "id", 
+        nullable = false, 
+        updatable = false, 
+        insertable = false, 
+        columnDefinition = "UUID DEFAULT uuidv7()"
+    )
     private UUID id;
+
+    @Column(name = "evaluation_id", nullable = false, updatable = false)
     private UUID evaluationId;
+
+    @Column(name = "rubric_criterion_id", nullable = false, updatable = false)
     private UUID rubricCriterionId;
+
+    @Column(name = "raw_score", nullable = false, updatable = false, precision = 5, scale = 2)
     private BigDecimal rawScore;
+
+    @Column(name = "final_score", nullable = false, updatable = false, precision = 5, scale = 2)
     private BigDecimal finalScore;
-    private String rationale;
 
-    public ExamItemCriterionScore() {}
+    @Column(name = "rationale", length = 512, updatable = false)
+    private String rationale; 
 
-    public ExamItemCriterionScore(UUID id, UUID evaluationId, UUID rubricCriterionId, BigDecimal rawScore,
+    protected ExamItemCriterionScoreJpaEntity() {}
+
+    public ExamItemCriterionScoreJpaEntity(UUID id, UUID evaluationId, UUID rubricCriterionId, BigDecimal rawScore,
             BigDecimal finalScore, String rationale) {
         this.id = id;
-        this.evaluationId = evaluationId;
-        this.rubricCriterionId = rubricCriterionId;
-        this.rawScore = rawScore;
-        this.finalScore = finalScore;
-        this.rationale = rationale;
-    }
-
-    public ExamItemCriterionScore(UUID evaluationId, UUID rubricCriterionId, BigDecimal rawScore, BigDecimal finalScore,
-            String rationale) {
         this.evaluationId = evaluationId;
         this.rubricCriterionId = rubricCriterionId;
         this.rawScore = rawScore;

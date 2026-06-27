@@ -13,8 +13,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "exams")
-public class ExamJpaEntity {
+@Table(name = "exam_blueprint_versions")
+public class ExamBlueprintVersionJpaEntity {
     @Id
     @Generated(event = EventType.INSERT)
     @Column(
@@ -26,40 +26,39 @@ public class ExamJpaEntity {
     )
     private UUID id;
 
-    @Column(name = "blueprint_id", updatable = false)
+    @Column(name = "blue_print_id", nullable = false, updatable = false)
     private UUID blueprintId;
-    
+
+    @Column(name = "version", nullable = false, updatable = false)
+    private int version;
+
     @Column(name = "code", nullable = false, updatable = false, length = 100)
     private String code;
-    
-    @Column(name = "name", nullable = false, length = 255)
-    private String name;
-    
+
     @Column(name = "description", length = 2048)
     private String description;
 
-    @Column(name = "school_id")
-    private UUID schoolId;
-
-    @Column(name = "language_id", nullable = false, updatable = false)
-    private UUID languageId;
-
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
-            name = "chk_exams_status_valid", 
-            constraint = "status IN ('DRAFT', 'SCHEDULED', 'IN_PROGRESS', 'CLOSED', 'RESULTS_PUBLISHED', 'CANCELLED')"
+            name = "chk_exam_blueprint_versions_status_valid", 
+            constraint = "status IN ('DRAFT', 'PUBLISHED', 'ARCHIVED')"
         )
     })
     private String status;
 
-    @Column(name = "open_at", nullable = false)
-    private OffsetDateTime openAt;
+    @Column(name = "total_time_limit_seconds", check = {
+        @CheckConstraint(
+            name = "chk_exam_blueprint_versions_total_time_limit_seconds_valid", 
+            constraint = "total_time_limit_seconds > 0"
+        )
+    })
+    private Integer totalTimeLimitSeconds;
 
-    @Column(name = "close_at", nullable = false)
-    private OffsetDateTime closeAt;
+    @Column(name = "effective_from", nullable = false)
+    private OffsetDateTime effectiveFrom;
 
-    @Column(name = "assessment_policy_id", nullable = false)
-    private UUID assessmentPolicyId;
+    @Column(name = "effective_to")
+    private OffsetDateTime effectiveTo;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
@@ -71,24 +70,22 @@ public class ExamJpaEntity {
     private UUID createdBy;
 
     @Column(name = "updated_by")
-    private UUID updatedBy;
+    private UUID updatedBy; 
 
-    protected ExamJpaEntity() {}
+    protected ExamBlueprintVersionJpaEntity() {}
 
-    public ExamJpaEntity(UUID id, UUID blueprintId, String code, String name, String description, UUID schoolId, UUID languageId,
-            String status, OffsetDateTime openAt, OffsetDateTime closeAt, UUID assessmentPolicyId,
+    public ExamBlueprintVersionJpaEntity(UUID id, UUID blueprintId, int version, String code, String description,
+            String status, Integer totalTimeLimitSeconds, OffsetDateTime effectiveFrom, OffsetDateTime effectiveTo,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.blueprintId = blueprintId;
+        this.version = version;
         this.code = code;
-        this.name = name;
         this.description = description;
-        this.schoolId = schoolId;
-        this.languageId = languageId;
         this.status = status;
-        this.openAt = openAt;
-        this.closeAt = closeAt;
-        this.assessmentPolicyId = assessmentPolicyId;
+        this.totalTimeLimitSeconds = totalTimeLimitSeconds;
+        this.effectiveFrom = effectiveFrom;
+        this.effectiveTo = effectiveTo;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
@@ -103,20 +100,28 @@ public class ExamJpaEntity {
         this.id = id;
     }
 
+    public UUID getBlueprintId() {
+        return blueprintId;
+    }
+
+    public void setBlueprintId(UUID blueprintId) {
+        this.blueprintId = blueprintId;
+    }
+
+    public int getVersion() {
+        return version;
+    }
+
+    public void setVersion(int version) {
+        this.version = version;
+    }
+
     public String getCode() {
         return code;
     }
 
     public void setCode(String code) {
         this.code = code;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public String getDescription() {
@@ -127,22 +132,6 @@ public class ExamJpaEntity {
         this.description = description;
     }
 
-    public UUID getSchoolId() {
-        return schoolId;
-    }
-
-    public void setSchoolId(UUID schoolId) {
-        this.schoolId = schoolId;
-    }
-
-    public UUID getLanguageId() {
-        return languageId;
-    }
-
-    public void setLanguageId(UUID languageId) {
-        this.languageId = languageId;
-    }
-
     public String getStatus() {
         return status;
     }
@@ -151,28 +140,28 @@ public class ExamJpaEntity {
         this.status = status;
     }
 
-    public OffsetDateTime getOpenAt() {
-        return openAt;
+    public Integer getTotalTimeLimitSeconds() {
+        return totalTimeLimitSeconds;
     }
 
-    public void setOpenAt(OffsetDateTime openAt) {
-        this.openAt = openAt;
+    public void setTotalTimeLimitSeconds(Integer totalTimeLimitSeconds) {
+        this.totalTimeLimitSeconds = totalTimeLimitSeconds;
     }
 
-    public OffsetDateTime getCloseAt() {
-        return closeAt;
+    public OffsetDateTime getEffectiveFrom() {
+        return effectiveFrom;
     }
 
-    public void setCloseAt(OffsetDateTime closeAt) {
-        this.closeAt = closeAt;
+    public void setEffectiveFrom(OffsetDateTime effectiveFrom) {
+        this.effectiveFrom = effectiveFrom;
     }
 
-    public UUID getAssessmentPolicyId() {
-        return assessmentPolicyId;
+    public OffsetDateTime getEffectiveTo() {
+        return effectiveTo;
     }
 
-    public void setAssessmentPolicyId(UUID assessmentPolicyId) {
-        this.assessmentPolicyId = assessmentPolicyId;
+    public void setEffectiveTo(OffsetDateTime effectiveTo) {
+        this.effectiveTo = effectiveTo;
     }
 
     public OffsetDateTime getCreatedAt() {
@@ -205,15 +194,7 @@ public class ExamJpaEntity {
 
     public void setUpdatedBy(UUID updatedBy) {
         this.updatedBy = updatedBy;
-    }
-
-    public UUID getBlueprintId() {
-        return blueprintId;
-    }
-
-    public void setBlueprintId(UUID blueprintId) {
-        this.blueprintId = blueprintId;
-    }
+    } 
 
     
 }

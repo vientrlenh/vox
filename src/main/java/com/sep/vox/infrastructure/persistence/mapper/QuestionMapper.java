@@ -1,6 +1,7 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.question.Question;
+import com.sep.vox.domain.model.question.QuestionConfidentiality;
 import com.sep.vox.domain.model.question.QuestionSharing;
 import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.model.question.QuestionType;
@@ -25,6 +26,8 @@ public final class QuestionMapper {
             sharingFromString(jpa.getSharing()),
             jpa.getSourceQuestionId(),
             jpa.isLocked(),
+            QuestionConfidentiality.valueOf(jpa.getConfidentiality()), 
+            jpa.getSecurePoolId(),
             QuestionStatus.valueOf(jpa.getStatus()),
             jpa.getCreatedAt(),
             jpa.getUpdatedAt(),
@@ -50,6 +53,8 @@ public final class QuestionMapper {
             valueOf(question.getSharing()),
             question.getSourceQuestionId(),
             question.isLocked(),
+            question.getConfidentiality().name(), 
+            question.getSecurePoolId(),
             question.getStatus().name(),
             question.getCreatedAt(),
             question.getUpdatedAt(),
@@ -65,4 +70,6 @@ public final class QuestionMapper {
     private static QuestionSharing sharingFromString(String sharing) {
         return sharing == null ? null : QuestionSharing.valueOf(sharing);
     }
+
+    
 }

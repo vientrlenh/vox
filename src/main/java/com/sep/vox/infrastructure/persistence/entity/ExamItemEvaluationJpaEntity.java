@@ -1,59 +1,97 @@
-package com.sep.vox.domain.model.exam;
+package com.sep.vox.infrastructure.persistence.entity;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-import com.sep.vox.domain.valueobject.EvaluationSignals;
+import org.hibernate.annotations.Generated;
+import org.hibernate.generator.EventType;
 
-public class ExamItemEvaluation {
+import jakarta.persistence.CheckConstraint;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "exam_item_evaluations")
+public class ExamItemEvaluationJpaEntity {
+    @Id
+    @Generated(event = EventType.INSERT)
+    @Column(
+        name = "id", 
+        nullable = false, 
+        updatable = false, 
+        insertable = false, 
+        columnDefinition = "UUID DEFAULT uuidv7()"
+    )
     private UUID id;
+
+    @Column(name = "response_id", nullable = false, updatable = false)
     private UUID responseId;
+
+    @Column(name = "paper_item_id", nullable = false, updatable = false)
     private UUID paperItemId;
-    private ExamEvaluationEngineType engineType;
-    private String gradedByModel; // tên model chấm
-    private Integer sampleCount; // số mẫu nếu loại chấm là ensemble
-    private UUID reviewerId; // người chấm (human)
-    private BigDecimal rawItemScore; // điểm trước khi áp dụng rule
-    private BigDecimal itemScore; // điểm sau khi áp dụng rule
-    private BigDecimal overallConfidence; // độ tự tin của điểm AI
-    private boolean requiresHumanReview; // tự đẩy cho người chấm nếu độ tự tin thấp
+
+    @Column(name = "engine_type", nullable = false, updatable = false, check = {
+        @CheckConstraint(
+            name = "chk_exam_item_evaluations_engine_type_valid", 
+            constraint = "engine_type IN ('AI_SINGLE', 'AI_ENSEMBLE', 'HUMAN')"
+        )
+    })
+    private String engineType;
+
+    @Column(name = "graded_by_model", nullable = false, updatable = false, length = 100)
+    private String gradedByModel;
+
+    @Column(name = "sample_count", updatable = false)
+    private Integer sampleCount;
+
+    @Column(name = "reviewer_id", updatable = false)
+    private UUID reviewerId;
+
+    @Column(name = "raw_item_score", nullable = false, precision = 5, scale = 2)
+    private BigDecimal rawItemScore;
+
+    @Column(name = "item_score", nullable = false, precision = 5, scale = 2)
+    private BigDecimal itemScore;
+
+    @Column(name = "overall_confidence", updatable = false, precision = 3, scale = 2)
+    private BigDecimal overallConfidence;
+
+    @Column(name = "requires_human_review", nullable = false, updatable = false)
+    private boolean requiresHumanReview;
+
+    @Column(name = "review_reason_code", updatable = false, length = 512)
     private String reviewReasonCode;
+
+    @Column(name = "marked_invalid", nullable = false, updatable = false)
     private boolean markedInvalid;
+
+    @Column(name = "requires_retake", nullable = false, updatable = false)
     private boolean requiresRetake;
-    private EvaluationSignals signals;
-    private ExamItemEvaluationStatus status; 
+
+    @Column(name = "signals", columnDefinition = "TEXT")
+    private String signals;
+
+    @Column(name = "status", nullable = false, length = 20, check = {
+        @CheckConstraint(
+            name = "chk_exam_item_evaluations_status_valid", 
+            constraint = "status IN ('AUTO_GRADED', 'UNDER_REVIEW', 'FINALIZED', 'SUPERSEDED')"
+        )
+    })
+    private String status;
+
+    @Column(name = "evaluated_at", nullable = false, updatable = false)
     private OffsetDateTime evaluatedAt;
 
-    public ExamItemEvaluation() {}
+    protected ExamItemEvaluationJpaEntity() {}
 
-    public ExamItemEvaluation(UUID id, UUID responseId, UUID paperItemId, ExamEvaluationEngineType engineType,
+    public ExamItemEvaluationJpaEntity(UUID id, UUID responseId, UUID paperItemId, String engineType,
             String gradedByModel, Integer sampleCount, UUID reviewerId, BigDecimal rawItemScore, BigDecimal itemScore,
             BigDecimal overallConfidence, boolean requiresHumanReview, String reviewReasonCode, boolean markedInvalid,
-            boolean requiresRetake, EvaluationSignals signals, ExamItemEvaluationStatus status, OffsetDateTime evaluatedAt) {
+            boolean requiresRetake, String signals, String status, OffsetDateTime evaluatedAt) {
         this.id = id;
-        this.responseId = responseId;
-        this.paperItemId = paperItemId;
-        this.engineType = engineType;
-        this.gradedByModel = gradedByModel;
-        this.sampleCount = sampleCount;
-        this.reviewerId = reviewerId;
-        this.rawItemScore = rawItemScore;
-        this.itemScore = itemScore;
-        this.overallConfidence = overallConfidence;
-        this.requiresHumanReview = requiresHumanReview;
-        this.reviewReasonCode = reviewReasonCode;
-        this.markedInvalid = markedInvalid;
-        this.requiresRetake = requiresRetake;
-        this.signals = signals;
-        this.status = status;
-        this.evaluatedAt = evaluatedAt;
-    }
-
-    public ExamItemEvaluation(UUID responseId, UUID paperItemId, ExamEvaluationEngineType engineType,
-            String gradedByModel, Integer sampleCount, UUID reviewerId, BigDecimal rawItemScore, BigDecimal itemScore,
-            BigDecimal overallConfidence, boolean requiresHumanReview, String reviewReasonCode, boolean markedInvalid,
-            boolean requiresRetake, EvaluationSignals signals, ExamItemEvaluationStatus status, OffsetDateTime evaluatedAt) {
         this.responseId = responseId;
         this.paperItemId = paperItemId;
         this.engineType = engineType;
@@ -96,11 +134,11 @@ public class ExamItemEvaluation {
         this.paperItemId = paperItemId;
     }
 
-    public ExamEvaluationEngineType getEngineType() {
+    public String getEngineType() {
         return engineType;
     }
 
-    public void setEngineType(ExamEvaluationEngineType engineType) {
+    public void setEngineType(String engineType) {
         this.engineType = engineType;
     }
 
@@ -184,19 +222,19 @@ public class ExamItemEvaluation {
         this.requiresRetake = requiresRetake;
     }
 
-    public EvaluationSignals getSignals() {
+    public String getSignals() {
         return signals;
     }
 
-    public void setSignals(EvaluationSignals signals) {
+    public void setSignals(String signals) {
         this.signals = signals;
     }
 
-    public ExamItemEvaluationStatus getStatus() {
+    public String getStatus() {
         return status;
     }
 
-    public void setStatus(ExamItemEvaluationStatus status) {
+    public void setStatus(String status) {
         this.status = status;
     }
 
@@ -208,5 +246,6 @@ public class ExamItemEvaluation {
         this.evaluatedAt = evaluatedAt;
     }
 
+    
     
 }

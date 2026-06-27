@@ -35,6 +35,9 @@ public class FrameworkCriterionJpaEntity {
     @Column(name = "description", length = 2048)
     private String description;
 
+    @Column(name = "criteria_order", nullable = false)
+    private int order;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 
@@ -50,34 +53,97 @@ public class FrameworkCriterionJpaEntity {
     protected FrameworkCriterionJpaEntity() {}
 
     public FrameworkCriterionJpaEntity(UUID id, UUID frameworkVersionId, String code, String name,
-            String description, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            String description, int order, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.frameworkVersionId = frameworkVersionId;
         this.code = code;
         this.name = name;
         this.description = description;
+        this.order = order;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
         this.updatedBy = updatedBy;
     }
 
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-    public UUID getFrameworkVersionId() { return frameworkVersionId; }
-    public void setFrameworkVersionId(UUID frameworkVersionId) { this.frameworkVersionId = frameworkVersionId; }
-    public String getCode() { return code; }
-    public void setCode(String code) { this.code = code; }
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
-    public OffsetDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(OffsetDateTime createdAt) { this.createdAt = createdAt; }
-    public OffsetDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(OffsetDateTime updatedAt) { this.updatedAt = updatedAt; }
-    public UUID getCreatedBy() { return createdBy; }
-    public void setCreatedBy(UUID createdBy) { this.createdBy = createdBy; }
-    public UUID getUpdatedBy() { return updatedBy; }
-    public void setUpdatedBy(UUID updatedBy) { this.updatedBy = updatedBy; }
+    public UUID getId() { 
+        return id; 
+    }
+
+    public void setId(UUID id) {
+        this.id = id; 
+    }
+
+    public UUID getFrameworkVersionId() {
+        return frameworkVersionId; 
+    }
+    
+    public void setFrameworkVersionId(UUID frameworkVersionId) { 
+        this.frameworkVersionId = frameworkVersionId; 
+    }
+
+    public String getCode() {
+        return code; 
+    }
+
+    public void setCode(String code) { 
+        this.code = code; 
+    }
+
+    public String getName() { 
+        return name; 
+    }
+
+    public void setName(String name) { 
+        this.name = name; 
+    }
+
+    public String getDescription() { 
+        return description; 
+    }
+
+    public void setDescription(String description) { 
+        this.description = description; 
+    }
+
+    public OffsetDateTime getCreatedAt() { 
+        return createdAt; 
+    }
+
+    public void setCreatedAt(OffsetDateTime createdAt) { 
+        this.createdAt = createdAt; 
+    }
+
+    public OffsetDateTime getUpdatedAt() { 
+        return updatedAt; 
+    }
+
+    public void setUpdatedAt(OffsetDateTime updatedAt) { 
+        this.updatedAt = updatedAt; 
+    }
+
+    public UUID getCreatedBy() { 
+        return createdBy; 
+    }
+
+    public void setCreatedBy(UUID createdBy) { 
+        this.createdBy = createdBy; 
+    }
+
+    public UUID getUpdatedBy() { 
+        return updatedBy; 
+    }
+
+    public void setUpdatedBy(UUID updatedBy) { 
+        this.updatedBy = updatedBy; 
+    }
+
+    public int getOrder() {
+        return order;
+    }
+
+    public void setOrder(int order) {
+        this.order = order;
+    }
+    
 }

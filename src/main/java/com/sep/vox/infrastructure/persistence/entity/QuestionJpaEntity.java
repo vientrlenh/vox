@@ -104,6 +104,17 @@ public class QuestionJpaEntity {
     @Column(name = "locked", nullable = false)
     private boolean locked;
 
+    @Column(name = "confidentiality", nullable = false, length = 20, check = {
+        @CheckConstraint(
+            name = "chk_questions_confidentiality_valid", 
+            constraint = "confidentiality IN ('OPEN', 'EXAM_RESTRICTED', 'RELEASED')"
+        )
+    })
+    private String confidentiality;
+
+    @Column(name = "secure_pool_id", unique = true)
+    private UUID securePoolId;
+
     @Column(name = "status", nullable = false, check = {
         @CheckConstraint(
             name = "chk_status_valid", 
@@ -128,7 +139,7 @@ public class QuestionJpaEntity {
 
     public QuestionJpaEntity(UUID id, UUID questionBankId, UUID questionTopicId, String code, String instructionText, String questionText,
             String promptText, String preparationText, String type, int preparationTimeSeconds,
-            int minResponseSeconds, int maxResponseSeconds, String sharing, UUID sourceQuestionId, boolean locked, String status,
+            int minResponseSeconds, int maxResponseSeconds, String sharing, UUID sourceQuestionId, boolean locked, String confidentiality, UUID securePoolId, String status,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.questionBankId = questionBankId;
@@ -145,6 +156,8 @@ public class QuestionJpaEntity {
         this.sharing = sharing;
         this.sourceQuestionId = sourceQuestionId;
         this.locked = locked;
+        this.confidentiality = confidentiality;
+
         this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -310,6 +323,22 @@ public class QuestionJpaEntity {
 
     public void setQuestionBankId(UUID questionBankId) {
         this.questionBankId = questionBankId;
+    }
+
+    public String getConfidentiality() {
+        return confidentiality;
+    }
+
+    public void setConfidentiality(String confidentiality) {
+        this.confidentiality = confidentiality;
+    }
+
+    public UUID getSecurePoolId() {
+        return securePoolId;
+    }
+
+    public void setSecurePoolId(UUID securePoolId) {
+        this.securePoolId = securePoolId;
     }
 
     

@@ -4,12 +4,6 @@ enum FrameworkVersionStatus {
     ARCHIVED 
 }
 
-enum FrameworkResultBandStatus { 
-    DRAFT 
-    PUBLISHED 
-    ARCHIVED 
-}
-
 enum SignalImportance { 
     HIGH 
     MEDIUM 
@@ -22,7 +16,6 @@ type Framework {
     name: String!
     description: String
     isActive: Boolean!
-    currentVersionId: ID
     createdAt: String
     updatedAt: String
 }
@@ -83,10 +76,7 @@ type FrameworkResultBand {
     code: String!
     label: String!
     description: String
-    scoreMin: Float
-    scoreMax: Float
     order: Int!
-    status: FrameworkResultBandStatus!
 }
 
 input UpdateFrameworkVersionInput {
@@ -103,6 +93,7 @@ input CriterionInput {
     code: String!
     name: String!
     description: String
+    order: Int!
     bands: [CriterionBandInput!]
 }
 
@@ -124,8 +115,6 @@ input ResultBandInput {
     code: String!
     label: String!
     description: String
-    scoreMin: Float
-    scoreMax: Float
     order: Int!
 }
 

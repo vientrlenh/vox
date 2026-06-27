@@ -62,7 +62,7 @@ public class DeleteFrameworkVersionUseCaseTests {
 
         var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
-            true, null, now, now, null, null
+            true, now, now, null, null
         );
         var version = new FrameworkVersion();
         version.setId(versionId);
@@ -75,7 +75,7 @@ public class DeleteFrameworkVersionUseCaseTests {
         criterion2.setId(UUID.randomUUID());
 
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
-        when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.of(version));
+        when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.of(version));
         when(frameworkCriterionRepository.findByFrameworkVersionId(versionId))
             .thenReturn(List.of(criterion1, criterion2));
 
@@ -94,7 +94,7 @@ public class DeleteFrameworkVersionUseCaseTests {
 
         var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
-            true, null, now, now, null, null
+            true, now, now, null, null
         );
         var version = new FrameworkVersion();
         version.setId(versionId);
@@ -102,7 +102,7 @@ public class DeleteFrameworkVersionUseCaseTests {
         version.setStatus(FrameworkVersionStatus.PUBLISHED);
 
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
-        when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.of(version));
+        when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.of(version));
 
         useCase.execute(command);
 
@@ -115,7 +115,7 @@ public class DeleteFrameworkVersionUseCaseTests {
 
         var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
-            true, null, now, now, null, null
+            true, now, now, null, null
         );
         var version = new FrameworkVersion();
         version.setId(versionId);
@@ -123,7 +123,7 @@ public class DeleteFrameworkVersionUseCaseTests {
         version.setStatus(FrameworkVersionStatus.ARCHIVED);
 
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
-        when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.of(version));
+        when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.of(version));
 
         useCase.execute(command);
 
@@ -145,11 +145,11 @@ public class DeleteFrameworkVersionUseCaseTests {
 
         var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
-            true, null, now, now, null, null
+            true, now, now, null, null
         );
 
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
-        when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.empty());
+        when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> useCase.execute(command));
     }
@@ -161,14 +161,14 @@ public class DeleteFrameworkVersionUseCaseTests {
 
         var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
-            true, null, now, now, null, null
+            true, now, now, null, null
         );
         var version = new FrameworkVersion();
         version.setId(versionId);
         version.setFrameworkId(otherFrameworkId);
 
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
-        when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.of(version));
+        when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.of(version));
 
         assertThrows(IllegalArgumentException.class, () -> useCase.execute(command));
     }

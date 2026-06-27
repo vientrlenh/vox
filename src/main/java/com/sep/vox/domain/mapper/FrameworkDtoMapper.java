@@ -17,7 +17,6 @@ public final class FrameworkDtoMapper {
             framework.getName(),
             framework.getDescription(),
             framework.isActive(),
-            framework.getCurrentVersionId(),
             valueOf(framework.getCreatedAt()),
             valueOf(framework.getUpdatedAt())
         );

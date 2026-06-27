@@ -37,11 +37,11 @@ public class ViewFrameworksUseCaseTests {
 
         var fw1 = new Framework(
             UUID.randomUUID(), new FrameworkCode("CEFR"), "CEFR Framework", "Description 1",
-            true, UUID.randomUUID(), now, now, null, null
+            true, now, now, null, null
         );
         var fw2 = new Framework(
             UUID.randomUUID(), new FrameworkCode("TOEIC"), "TOEIC Framework", "Description 2",
-            true, UUID.randomUUID(), now, now, null, null
+            true, now, now, null, null
         );
 
         var pageResult = new PageResult<>(
@@ -84,7 +84,7 @@ public class ViewFrameworksUseCaseTests {
 
         var fw1 = new Framework(
             UUID.randomUUID(), new FrameworkCode("CEFR"), "CEFR", "Description",
-            true, null, now, now, null, null
+            true, now, now, null, null
         );
 
         var pageResult = new PageResult<>(

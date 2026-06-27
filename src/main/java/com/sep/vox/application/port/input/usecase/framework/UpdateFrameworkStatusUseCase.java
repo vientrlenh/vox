@@ -33,10 +33,6 @@ public class UpdateFrameworkStatusUseCase implements IUseCase<UpdateFrameworkAct
         framework.setUpdatedAt(OffsetDateTime.now());
         framework.setUpdatedBy(userContextPort.getCurrentAuthenticatedUserId());
 
-        if (!input.isActive() && framework.getCurrentVersionId() != null) {
-            frameworkRepository.updateCurrentVersionId(input.frameworkId(), null);
-        }
-
         return frameworkRepository.save(framework).getId();
     }
 }

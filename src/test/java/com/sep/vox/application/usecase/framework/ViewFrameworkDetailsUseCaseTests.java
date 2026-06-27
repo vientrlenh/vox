@@ -39,7 +39,7 @@ public class ViewFrameworkDetailsUseCaseTests {
 
         var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "CEFR Framework", "European Framework",
-            true, UUID.randomUUID(), now, now, null, null
+            true, now, now, null, null
         );
 
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
@@ -65,12 +65,11 @@ public class ViewFrameworkDetailsUseCaseTests {
     @Test
     void should_return_dto_with_all_fields() {
         var frameworkId = UUID.randomUUID();
-        var currentVersionId = UUID.randomUUID();
         var query = new ViewFrameworkDetailsQuery(frameworkId);
 
         var framework = new Framework(
             frameworkId, new FrameworkCode("TOEIC"), "TOEIC Framework", "TOEIC Test",
-            false, currentVersionId, now, now, null, null
+            false, now, now, null, null
         );
 
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
@@ -80,6 +79,5 @@ public class ViewFrameworkDetailsUseCaseTests {
         assertThat(result.code()).isEqualTo("TOEIC");
         assertThat(result.description()).isEqualTo("TOEIC Test");
         assertThat(result.isActive()).isFalse();
-        assertThat(result.currentVersionId()).isEqualTo(currentVersionId);
     }
 }

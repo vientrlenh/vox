@@ -52,7 +52,7 @@ public class CreateFrameworkVersionUseCaseTests {
 
         var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "Test Framework", "Description",
-            true, null, now, now, null, null
+            true, now, now, null, null
         );
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
         when(frameworkVersionRepository.findByFrameworkIdAndVersion(frameworkId, 1))
@@ -92,7 +92,7 @@ public class CreateFrameworkVersionUseCaseTests {
 
         var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "Test Framework", "Description",
-            true, null, now, now, null, null
+            true, now, now, null, null
         );
         var existingVersion = new FrameworkVersion();
         existingVersion.setId(UUID.randomUUID());

@@ -18,7 +18,6 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.framework.FrameworkCriterion;
 import com.sep.vox.domain.model.framework.FrameworkCriterionBand;
 import com.sep.vox.domain.model.framework.FrameworkResultBand;
-import com.sep.vox.domain.model.framework.FrameworkResultBandStatus;
 import com.sep.vox.domain.model.framework.FrameworkVersion;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
 import com.sep.vox.domain.repository.FrameworkCriterionBandRepository;
@@ -109,8 +108,6 @@ public class UpdateFrameworkVersionUseCase implements IUseCase<UpdateFrameworkVe
         var codes = bandInputs.stream().map(b -> StringNormalization.normalizeCode(b.code())).toList();
         if (codes.size() != codes.stream().distinct().count())
             throw new IllegalArgumentException("Mã kết quả bị trùng lặp");
-        if (bandInputs.stream().anyMatch(b -> b.scoreMin().compareTo(b.scoreMax()) > 0))
-            throw new IllegalArgumentException("scoreMin phải nhỏ hơn hoặc bằng scoreMax");
         frameworkResultBandRepository.deleteByFrameworkVersionId(versionId);
         var bands = bandInputs.stream()
             .map(b -> new FrameworkResultBand(
@@ -118,10 +115,7 @@ public class UpdateFrameworkVersionUseCase implements IUseCase<UpdateFrameworkVe
                 StringNormalization.normalizeCode(b.code()),
                 StringNormalization.trimAndCollapseSpaces(b.label()),
                 StringNormalization.trimAndCollapseSpaces(b.description()),
-                b.scoreMin(),
-                b.scoreMax(),
                 b.order(),
-                FrameworkResultBandStatus.DRAFT,
                 now, now, userId, userId))
             .toList();
         frameworkResultBandRepository.saveAll(bands);
@@ -129,16 +123,19 @@ public class UpdateFrameworkVersionUseCase implements IUseCase<UpdateFrameworkVe
 
     private void replaceCriteria(UUID versionId, List<UpdateFrameworkVersionCommand.CriterionInput> criterionInputs,
             OffsetDateTime now, UUID userId) {
+        var codes = criterionInputs.stream().map(c -> StringNormalization.normalizeCode(c.code())).toList();
+        if (codes.size() != codes.stream().distinct().count())
+            throw new IllegalArgumentException("Mã tiêu chí bị trùng lặp");
         var existingCriteria = frameworkCriterionRepository.findByFrameworkVersionId(versionId);
         if (!existingCriteria.isEmpty()) {
             frameworkCriterionBandRepository.deleteByFrameworkCriterionIdIn(
-                existingCriteria.stream().map(c -> c.getId()).toList());
+                existingCriteria.stream().map(FrameworkCriterion::getId).toList());
         }
         frameworkCriterionRepository.deleteByFrameworkVersionId(versionId);
 
         var savedResultBands = frameworkResultBandRepository.findByFrameworkVersionId(versionId);
         Map<String, UUID> resultBandCodeToId = savedResultBands.stream()
-            .collect(Collectors.toMap(rb -> rb.getCode(), rb -> rb.getId()));
+            .collect(Collectors.toMap(FrameworkResultBand::getCode, FrameworkResultBand::getId));
 
         var criteriaToSave = criterionInputs.stream()
             .map(c -> new FrameworkCriterion(
@@ -146,6 +143,7 @@ public class UpdateFrameworkVersionUseCase implements IUseCase<UpdateFrameworkVe
                 StringNormalization.normalizeCode(c.code()),
                 StringNormalization.trimAndCollapseSpaces(c.name()),
                 StringNormalization.trimAndCollapseSpaces(c.description()),
+                c.order(),
                 now, now, userId, userId))
             .toList();
         var savedCriteria = frameworkCriterionRepository.saveAll(criteriaToSave);
@@ -157,6 +155,8 @@ public class UpdateFrameworkVersionUseCase implements IUseCase<UpdateFrameworkVe
             var bands = criterionInput.bands();
             if (bands == null || bands.isEmpty()) continue;
             var savedId = criterionCodeToId.get(StringNormalization.normalizeCode(criterionInput.code()));
+            if (savedId == null)
+                throw new IllegalArgumentException("Không tìm thấy tiêu chí với mã: " + criterionInput.code());
             for (var bandInput : bands) {
                 var resultBandId = resultBandCodeToId.get(StringNormalization.normalizeCode(bandInput.resultBandCode()));
                 if (resultBandId == null)

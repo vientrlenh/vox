@@ -46,7 +46,7 @@ public class ViewFrameworkVersionsUseCaseTests {
 
         var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "CEFR", "Description",
-            true, null, now, now, null, null
+            true, now, now, null, null
         );
 
         var version1 = new FrameworkVersion();
@@ -98,7 +98,7 @@ public class ViewFrameworkVersionsUseCaseTests {
 
         var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "CEFR", "Description",
-            true, null, now, now, null, null
+            true, now, now, null, null
         );
 
         var emptyPage = new PageResult<FrameworkVersion>(List.of(), 1, 20, 0, 0);
@@ -120,7 +120,7 @@ public class ViewFrameworkVersionsUseCaseTests {
 
         var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "CEFR", "Description",
-            true, null, now, now, null, null
+            true, now, now, null, null
         );
 
         var pageResult = new PageResult<FrameworkVersion>(List.of(), 2, 10, 25, 3);

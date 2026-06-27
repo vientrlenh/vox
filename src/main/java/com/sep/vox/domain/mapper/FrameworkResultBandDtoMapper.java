@@ -12,10 +12,7 @@ public final class FrameworkResultBandDtoMapper {
             band.getCode(),
             band.getLabel(),
             band.getDescription(),
-            band.getScoreMin(),
-            band.getScoreMax(),
-            band.getOrder(),
-            band.getStatus().name()
+            band.getOrder()
         );
     }
 }

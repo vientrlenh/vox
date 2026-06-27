@@ -38,7 +38,7 @@ public class CreateFrameworkUseCase implements IUseCase<CreateFrameworkCommand, 
 
         var now = OffsetDateTime.now();
         var userId = userContextPort.getCurrentAuthenticatedUserId();
-        var framework = new Framework(new FrameworkCode(code), name, description, true, null, now, now, userId, userId);
+        var framework = new Framework(new FrameworkCode(code), name, description, true, now, now, userId, userId);
         return frameworkRepository.save(framework).getId();
     }
 }

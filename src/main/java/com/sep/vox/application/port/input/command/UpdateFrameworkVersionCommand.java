@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.command;
 
-import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -22,6 +21,7 @@ public record UpdateFrameworkVersionCommand(
         String code,
         String name,
         String description,
+        int order,
         List<CriterionBandInput> bands
     ) {}
 
@@ -36,8 +36,6 @@ public record UpdateFrameworkVersionCommand(
         String code,
         String label,
         String description,
-        BigDecimal scoreMin,
-        BigDecimal scoreMax,
         int order
     ) {}
 }

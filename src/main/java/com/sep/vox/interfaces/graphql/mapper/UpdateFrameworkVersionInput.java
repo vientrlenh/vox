@@ -15,6 +15,7 @@ public record UpdateFrameworkVersionInput(
         String code,
         String name,
         String description,
+        int order,
         List<CriterionBandInput> bands
     ) {}
 
@@ -36,8 +37,6 @@ public record UpdateFrameworkVersionInput(
         String code,
         String label,
         String description,
-        Double scoreMin,
-        Double scoreMax,
         int order
     ) {}
 }

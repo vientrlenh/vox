@@ -6,7 +6,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -75,7 +74,7 @@ public class UpdateFrameworkVersionUseCaseTests {
 
         var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
-            true, null, now, now, null, null
+            true, now, now, null, null
         );
         var version = new FrameworkVersion();
         version.setId(versionId);
@@ -116,7 +115,7 @@ public class UpdateFrameworkVersionUseCaseTests {
 
         var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
-            true, null, now, now, null, null
+            true, now, now, null, null
         );
 
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
@@ -135,7 +134,7 @@ public class UpdateFrameworkVersionUseCaseTests {
 
         var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
-            true, null, now, now, null, null
+            true, now, now, null, null
         );
         var version = new FrameworkVersion();
         version.setId(versionId);
@@ -156,7 +155,7 @@ public class UpdateFrameworkVersionUseCaseTests {
 
         var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
-            true, null, now, now, null, null
+            true, now, now, null, null
         );
         var version = new FrameworkVersion();
         version.setId(versionId);
@@ -171,7 +170,7 @@ public class UpdateFrameworkVersionUseCaseTests {
 
     @Test
     void should_replace_result_bands_atomically() {
-        var newBandInput = new ResultBandInput("A1", "Beginner", "Level A1", BigDecimal.ZERO, BigDecimal.TEN, 1);
+        var newBandInput = new ResultBandInput("A1", "Beginner", "Level A1", 1);
         var command = new UpdateFrameworkVersionCommand(
             frameworkId, versionId, "V2_0", "Version 2.0", "Updated",
             now, now.plusDays(365),
@@ -181,7 +180,7 @@ public class UpdateFrameworkVersionUseCaseTests {
 
         var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
-            true, null, now, now, null, null
+            true, now, now, null, null
         );
         var version = new FrameworkVersion();
         version.setId(versionId);

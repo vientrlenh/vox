@@ -11,6 +11,5 @@ public interface FrameworkRepository {
     Optional<Framework> findByCode(String code);
     PageResult<Framework> findAll(int pageNumber, int size);
     Framework save(Framework framework);
-    int updateCurrentVersionId(UUID id, UUID currentVersionId);
     void deleteById(UUID id);
 }

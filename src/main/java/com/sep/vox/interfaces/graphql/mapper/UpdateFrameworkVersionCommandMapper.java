@@ -1,6 +1,5 @@
 package com.sep.vox.interfaces.graphql.mapper;
 
-import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -52,6 +51,7 @@ public final class UpdateFrameworkVersionCommandMapper {
             c.code(),
             c.name(),
             c.description(),
+            c.order(),
             bands
         );
     }
@@ -77,23 +77,15 @@ public final class UpdateFrameworkVersionCommandMapper {
     }
 
     private static UpdateFrameworkVersionCommand.ResultBandInput toResultBandInput(UpdateFrameworkVersionInput.ResultBandInput r) {
-        if (r.scoreMin() != null && r.scoreMax() != null && r.scoreMin() > r.scoreMax())
-            throw new IllegalArgumentException("Điểm tối thiểu không được lớn hơn điểm tối đa của kết quả: " + r.code());
         return new UpdateFrameworkVersionCommand.ResultBandInput(
             r.code(),
             r.label(),
             r.description(),
-            parseBigDecimal(r.scoreMin()),
-            parseBigDecimal(r.scoreMax()),
             r.order()
         );
     }
 
     private static OffsetDateTime parseDateTime(String value) {
         return value == null ? null : OffsetDateTime.parse(value);
-    }
-
-    private static BigDecimal parseBigDecimal(Double value) {
-        return value == null ? null : BigDecimal.valueOf(value);
     }
 }

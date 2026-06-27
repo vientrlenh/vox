@@ -8,7 +8,6 @@ public record FrameworkDto(
     String name,
     String description,
     boolean isActive,
-    UUID currentVersionId,
     String createdAt,
     String updatedAt
 ) {

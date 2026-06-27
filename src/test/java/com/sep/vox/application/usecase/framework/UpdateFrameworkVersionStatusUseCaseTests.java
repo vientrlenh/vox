@@ -48,7 +48,7 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
 
         var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
-            true, null, now, now, null, null
+            true, now, now, null, null
         );
         var version = new FrameworkVersion();
         version.setId(versionId);
@@ -65,7 +65,6 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
         useCase.execute(command);
 
         verify(frameworkVersionRepository).updateStatus(versionId, FrameworkVersionStatus.PUBLISHED);
-        verify(frameworkRepository).updateCurrentVersionId(frameworkId, versionId);
     }
 
     @Test
@@ -76,7 +75,7 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
 
         var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
-            true, null, now, now, null, null
+            true, now, now, null, null
         );
         var version = new FrameworkVersion();
         version.setId(versionId);
@@ -110,7 +109,7 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
 
         var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
-            true, null, now, now, null, null
+            true, now, now, null, null
         );
 
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
@@ -128,7 +127,7 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
 
         var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
-            true, null, now, now, null, null
+            true, now, now, null, null
         );
         var version = new FrameworkVersion();
         version.setId(versionId);
@@ -148,7 +147,7 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
 
         var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
-            true, null, now, now, null, null
+            true, now, now, null, null
         );
         var version = new FrameworkVersion();
         version.setId(versionId);
@@ -180,7 +179,7 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
 
         var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
-            true, null, now, now, null, null
+            true, now, now, null, null
         );
         var version = new FrameworkVersion();
         version.setId(versionId);

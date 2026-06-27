@@ -45,8 +45,6 @@ import com.sep.vox.application.port.input.usecase.schoolgrade.CreateSchoolGradeU
 import com.sep.vox.application.port.input.usecase.schoolgrade.DeleteSchoolGradeUseCase;
 import com.sep.vox.application.port.input.usecase.schoolgradelevel.CreateSchoolGradeLevelUseCase;
 import com.sep.vox.application.port.input.usecase.schoolgradelevel.DeleteSchoolGradeLevelUseCase;
-import com.sep.vox.application.response.input.importfile.AcceptSchoolClassImportResponse;
-import com.sep.vox.application.response.input.importfile.AcceptSchoolUserImportResponse;
 import com.sep.vox.application.response.input.importfile.PreviewSchoolClassImportResponse;
 import com.sep.vox.application.response.input.importfile.PreviewSchoolUserImportResponse;
 import com.sep.vox.application.response.input.schoolclass.CreateSchoolClassResponse;
@@ -61,8 +59,8 @@ import com.sep.vox.application.port.input.usecase.schoolclassuser.DeleteSchoolCl
 import com.sep.vox.application.port.input.usecase.schoolclassuser.PreviewSchoolClassUserImportFromFileUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclassuser.UpdateSchoolClassUserStatusUseCase;
 import com.sep.vox.application.port.input.usecase.schooldirectory.AcceptSchoolDirectoryImportUseCase;
+import com.sep.vox.application.port.input.usecase.schooldirectory.CreateSchoolDirectoryUseCase;
 import com.sep.vox.application.port.input.usecase.schooldirectory.PreviewSchoolDirectoryImportFromFileUseCase;
-import com.sep.vox.application.response.input.importfile.AcceptSchoolClassUserImportResponse;
 import com.sep.vox.application.response.input.importfile.PreviewSchoolClassUserImportResponse;
 import com.sep.vox.application.response.input.schoolclassuser.CreateSchoolClassUserResponse;
 import com.sep.vox.application.response.input.schoolclassuser.UpdateSchoolClassUserStatusResponse;
@@ -95,6 +93,7 @@ class SchoolControllerTests {
     private DeleteSchoolGradeLevelUseCase deleteSchoolGradeLevelUseCase;
     private PreviewSchoolDirectoryImportFromFileUseCase previewSchoolDirectoryImportFromFileUseCase;
     private AcceptSchoolDirectoryImportUseCase acceptSchoolDirectoryImportUseCase;
+    private CreateSchoolDirectoryUseCase createSchoolDirectoryUseCase;
     private SchoolController controller;
 
     private final UUID schoolId = UUID.randomUUID();
@@ -117,6 +116,8 @@ class SchoolControllerTests {
         createSchoolClassUserUseCase = mock(CreateSchoolClassUserUseCase.class);
         deleteSchoolClassUserUseCase = mock(DeleteSchoolClassUserUseCase.class);
         updateSchoolClassUserStatusUseCase = mock(UpdateSchoolClassUserStatusUseCase.class);
+        previewSchoolClassUserImportFromFileUseCase = mock(PreviewSchoolClassUserImportFromFileUseCase.class);
+        acceptSchoolClassUserImportUseCase = mock(AcceptSchoolClassUserImportUseCase.class);
         deleteSchoolUseCase = mock(DeleteSchoolUseCase.class);
         updateSchoolStatusUseCase = mock(UpdateSchoolStatusUseCase.class);
         addSchoolRoomUseCase = mock(AddSchoolRoomUseCase.class);
@@ -127,6 +128,7 @@ class SchoolControllerTests {
         deleteSchoolGradeLevelUseCase = mock(DeleteSchoolGradeLevelUseCase.class);
         previewSchoolDirectoryImportFromFileUseCase = mock(PreviewSchoolDirectoryImportFromFileUseCase.class);
         acceptSchoolDirectoryImportUseCase = mock(AcceptSchoolDirectoryImportUseCase.class);
+        createSchoolDirectoryUseCase = mock(CreateSchoolDirectoryUseCase.class);
         
         controller = new SchoolController(
             createSchoolClassUseCase, 
@@ -151,7 +153,8 @@ class SchoolControllerTests {
             createSchoolGradeLevelUseCase, 
             deleteSchoolGradeLevelUseCase, 
             previewSchoolDirectoryImportFromFileUseCase, 
-            acceptSchoolDirectoryImportUseCase
+            acceptSchoolDirectoryImportUseCase, 
+            createSchoolDirectoryUseCase
         );
     }
 
@@ -191,7 +194,7 @@ class SchoolControllerTests {
         var request = new CreateSchoolClassUserRequest(userId);
         var expectedCommand = new CreateSchoolClassUserCommand(schoolId, classId, userId);
         var expected = new CreateSchoolClassUserResponse(schoolClassUserId);
-        when(createSchoolClassUserUseCase.execute(expectedCommand)).thenReturn(expected);
+        when(createSchoolClassUserUseCase.execute(any(CreateSchoolClassUserCommand.class))).thenReturn(expected);
 
         var response = controller.createClassUser(schoolId, classId, request);
 
@@ -242,22 +245,20 @@ class SchoolControllerTests {
     }
 
     @Test
-    void accept_school_class_import_session_should_return_accept_response() {
+    void accept_school_class_import_session_should_return_ok() {
         var request = new AcceptSchoolClassImportRequest(Map.of(
             "Mã lớp", "code",
             "Tên lớp", "name",
             "Ngôn ngữ", "languageCode",
             "Khối", "schoolGradeCode"
         ));
-        var expected = new AcceptSchoolClassImportResponse(importSessionId, 2L, 1L, 0L, 1L, 0L, "COMPLETED");
         var expectedCommand = new AcceptSchoolClassImportCommand(schoolId, importSessionId, request.confirmedMapping());
-        when(acceptSchoolClassImportUseCase.execute(expectedCommand)).thenReturn(expected);
 
         var response = controller.acceptImportSession(schoolId, importSessionId, request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().data()).isEqualTo(expected);
+        assertThat(response.getBody().message()).isEqualTo("Yêu cầu import lớp học đã được tiếp nhận, đang xử lý");
         verify(acceptSchoolClassImportUseCase).execute(expectedCommand);
     }
 
@@ -312,15 +313,11 @@ class SchoolControllerTests {
     @Test
     void accept_import_user_should_return_ok() {
         var request = new AcceptSchoolUserImportRequest(Map.of("Email", "email", "Họ tên", "fullName"));
-        var expected = new AcceptSchoolUserImportResponse(importSessionId, 2L, 2L, 0L, 0L, 0L, "COMPLETED");
-        when(acceptSchoolUserImportUseCase.execute(any(AcceptSchoolUserImportCommand.class))).thenReturn(expected);
-
         var response = controller.acceptImportSession(schoolId, importSessionId, request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().message()).isEqualTo("Import người dùng thành công");
-        assertThat(response.getBody().data()).isEqualTo(expected);
+        assertThat(response.getBody().message()).isEqualTo("Yêu cầu import người dùng đã được tiếp nhận, đang xử lý");
         verify(acceptSchoolUserImportUseCase).execute(any(AcceptSchoolUserImportCommand.class));
     }
 
@@ -352,19 +349,17 @@ class SchoolControllerTests {
     }
 
     @Test
-    void accept_class_user_import_session_should_return_accept_response() {
+    void accept_class_user_import_session_should_return_ok() {
         var request = new AcceptSchoolClassUserImportRequest(Map.of(
             "Email", "email",
             "Mã lớp", "classCode"
         ));
-        var expected = new AcceptSchoolClassUserImportResponse(importSessionId, 2L, 1L, 0L, 1L, 0L, "COMPLETED");
-        when(acceptSchoolClassUserImportUseCase.execute(any(AcceptSchoolClassUserImportCommand.class))).thenReturn(expected);
 
         var response = controller.acceptClassUserImportSession(schoolId, importSessionId, request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().data()).isEqualTo(expected);
+        assertThat(response.getBody().message()).isEqualTo("Yêu cầu import người dùng vào lớp học đã được tiếp nhận, đang xử lý");
         verify(acceptSchoolClassUserImportUseCase).execute(any(AcceptSchoolClassUserImportCommand.class));
     }
 

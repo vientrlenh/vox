@@ -9,6 +9,7 @@ public final class ExamMapper {
     public static Exam toDomain(ExamJpaEntity jpa) {
         return new Exam(
             jpa.getId(), 
+            jpa.getBlueprintId(),
             jpa.getCode(), 
             jpa.getName(), 
             jpa.getDescription(), 
@@ -28,6 +29,7 @@ public final class ExamMapper {
     public static ExamJpaEntity toJpa(Exam exam) {
         return new ExamJpaEntity(
             exam.getId(), 
+            exam.getBlueprintId(),
             exam.getCode(), 
             exam.getName(), 
             exam.getDescription(), 

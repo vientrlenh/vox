@@ -17,8 +17,7 @@ public final class RubricMapper {
             jpa.getName(),
             jpa.getDescription(),
             fromOwnerType(jpa.getOwnerType()),
-            jpa.getSchoolId(),
-            jpa.getCurrentVersionId()
+            jpa.getSchoolId()
         );
     }
 
@@ -31,8 +30,7 @@ public final class RubricMapper {
             rubric.getName(),
             rubric.getDescription(),
             valueOf(rubric.getOwnerType()),
-            rubric.getSchoolId(),
-            rubric.getCurrentVersionId()
+            rubric.getSchoolId()
         );
     }
 

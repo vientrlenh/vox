@@ -23,7 +23,7 @@ public interface SpringDataAssessmentPolicyRepository extends JpaRepository<Asse
             AND (
                 p.schoolClassId = :classId 
                 OR (p.schoolClassId IS NULL AND p.schoolGradeId = :gradeId) 
-                OR (p.schoolClassId IS NULL AND p.schoolGradeIdIS IS NULL AND p.schoolGradeLevelId = :gradeLevelId)
+                OR (p.schoolClassId IS NULL AND p.schoolGradeId IS NULL AND p.schoolGradeLevelId = :gradeLevelId)
             )    
         ORDER BY 
             CASE 

@@ -20,6 +20,8 @@ public class Question {
     private UUID sourceQuestionId;
     private boolean locked;
     private QuestionStatus status;
+    private QuestionConfidentiality confidentiality;
+    private UUID securePoolId;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
     private UUID createdBy;
@@ -30,7 +32,7 @@ public class Question {
     public Question(UUID id, UUID questionBankId, UUID questionTopicId, String code, String instructionText,
             String questionText, String promptText, String preparationText, QuestionType type,
             int preparationTimeSeconds, int minResponseSeconds, int maxResponseSeconds, QuestionSharing sharing,
-            UUID sourceQuestionId, boolean locked, QuestionStatus status, OffsetDateTime createdAt,
+            UUID sourceQuestionId, boolean locked, QuestionConfidentiality confidentiality, UUID securePoolId, QuestionStatus status, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.questionBankId = questionBankId;
@@ -47,6 +49,8 @@ public class Question {
         this.sharing = sharing;
         this.sourceQuestionId = sourceQuestionId;
         this.locked = locked;
+        this.confidentiality = confidentiality;
+        this.securePoolId = securePoolId;
         this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -57,7 +61,7 @@ public class Question {
     public Question(UUID questionBankId, UUID questionTopicId, String code, String instructionText, String questionText,
             String promptText, String preparationText, QuestionType type, int preparationTimeSeconds,
             int minResponseSeconds, int maxResponseSeconds, QuestionSharing sharing, UUID sourceQuestionId,
-            boolean locked, QuestionStatus status, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy,
+            boolean locked, QuestionConfidentiality confidentiality, UUID securePoolId,  QuestionStatus status, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy,
             UUID updatedBy) {
         this.questionBankId = questionBankId;
         this.questionTopicId = questionTopicId;
@@ -73,6 +77,8 @@ public class Question {
         this.sharing = sharing;
         this.sourceQuestionId = sourceQuestionId;
         this.locked = locked;
+        this.confidentiality = confidentiality;
+        this.securePoolId = securePoolId;
         this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -238,6 +244,22 @@ public class Question {
 
     public void setUpdatedBy(UUID updatedBy) {
         this.updatedBy = updatedBy;
+    }
+
+    public QuestionConfidentiality getConfidentiality() {
+        return confidentiality;
+    }
+
+    public void setConfidentiality(QuestionConfidentiality confidentiality) {
+        this.confidentiality = confidentiality;
+    }
+
+    public UUID getSecurePoolId() {
+        return securePoolId;
+    }
+
+    public void setSecurePoolId(UUID securePoolId) {
+        this.securePoolId = securePoolId;
     }
 
 }

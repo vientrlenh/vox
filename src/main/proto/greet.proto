@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+option java_package = "com.sep.vox.grpc.proto";
+option java_multiple_files = true;
+
+service Greeter {
+    rpc Greet(GreetRequest) returns (GreetReply) {}
+    rpc StreamGreet(GreetRequest) returns (stream GreetReply) {}
+}
+
+message GreetRequest {
+    string name = 1;
+}
+
+message GreetReply {
+    string message = 1;
+}

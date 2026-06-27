@@ -1,13 +1,11 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
-import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
 import org.hibernate.generator.EventType;
 
-import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -18,11 +16,6 @@ import jakarta.persistence.Table;
 @Table(name = "framework_result_bands", indexes = {
     @Index(columnList = "framework_version_id, code", name = "idx_framework_result_bands_version_code", unique = true),
     @Index(columnList = "framework_version_id, label", name = "idx_framework_result_bands_version_label", unique = true)
-}, check = {
-    @CheckConstraint(
-        name = "chk_framework_result_bands_score_range_valid",
-        constraint = "score_min IS NULL OR score_max IS NULL OR score_min <= score_max"
-    )
 })
 public class FrameworkResultBandJpaEntity {
 
@@ -43,22 +36,8 @@ public class FrameworkResultBandJpaEntity {
     @Column(name = "description", length = 2048)
     private String description;
 
-    @Column(name = "score_min", precision = 6, scale = 2)
-    private BigDecimal scoreMin;
-
-    @Column(name = "score_max", precision = 6, scale = 2)
-    private BigDecimal scoreMax;
-
     @Column(name = "result_band_order", nullable = false)
     private int order;
-
-    @Column(name = "status", nullable = false, check = {
-        @CheckConstraint(
-            name = "chk_framework_result_bands_status_valid",
-            constraint = "status IN ('DRAFT', 'PUBLISHED', 'ARCHIVED')"
-        )
-    })
-    private String status;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
@@ -75,17 +54,14 @@ public class FrameworkResultBandJpaEntity {
     protected FrameworkResultBandJpaEntity() {}
 
     public FrameworkResultBandJpaEntity(UUID id, UUID frameworkVersionId, String code, String label,
-            String description, BigDecimal scoreMin, BigDecimal scoreMax, int order, String status, 
+            String description, int order,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.frameworkVersionId = frameworkVersionId;
         this.code = code;
         this.label = label;
         this.description = description;
-        this.scoreMin = scoreMin;
-        this.scoreMax = scoreMax;
         this.order = order;
-        this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
@@ -132,36 +108,12 @@ public class FrameworkResultBandJpaEntity {
         this.description = description;
     }
 
-    public BigDecimal getScoreMin() {
-        return scoreMin;
-    }
-
-    public void setScoreMin(BigDecimal scoreMin) {
-        this.scoreMin = scoreMin;
-    }
-
-    public BigDecimal getScoreMax() {
-        return scoreMax;
-    }
-
-    public void setScoreMax(BigDecimal scoreMax) {
-        this.scoreMax = scoreMax;
-    }
-
     public int getOrder() {
         return order;
     }
 
     public void setOrder(int order) {
         this.order = order;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
     }
 
     public OffsetDateTime getCreatedAt() {

@@ -6,7 +6,6 @@ import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.UpdateSchoolStatusCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.response.SchoolResponse.SchoolResponse;
 import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.UserStatus;
@@ -21,7 +20,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
-public class UpdateSchoolStatusUseCase implements IUseCase<UpdateSchoolStatusCommand, SchoolResponse> {
+public class UpdateSchoolStatusUseCase implements IUseCase<UpdateSchoolStatusCommand, UUID> {
 
     private final SchoolRepository schoolRepository;
     private final UserRepository userRepository;
@@ -41,7 +40,7 @@ public class UpdateSchoolStatusUseCase implements IUseCase<UpdateSchoolStatusCom
 
     @Override
     @Transactional
-    public SchoolResponse execute(UpdateSchoolStatusCommand command) {
+    public UUID execute(UpdateSchoolStatusCommand command) {
         // 1. Kiểm tra trường học có tồn tại không
         School school = schoolRepository.findById(command.id())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học với ID đã cho."));
@@ -77,21 +76,6 @@ public class UpdateSchoolStatusUseCase implements IUseCase<UpdateSchoolStatusCom
         School updatedSchool = schoolRepository.save(school);
 
         // 6. Map sang Response
-        return new SchoolResponse(
-                updatedSchool.getId(),
-                updatedSchool.getCode().value(),
-                updatedSchool.getName(),
-                updatedSchool.getDescription(),
-                updatedSchool.getContactPhone().value(),
-                updatedSchool.getContactEmail().value(),
-                updatedSchool.getDomain().value(),
-                updatedSchool.getAddress(),
-                updatedSchool.getStudentCount().value(),
-                updatedSchool.isActive(),
-                updatedSchool.getCreatedAt(),
-                updatedSchool.getCreatedBy(),
-                updatedSchool.getUpdatedAt(),
-                updatedSchool.getUpdatedBy()
-        );
+        return updatedSchool.getId();
     }
 }

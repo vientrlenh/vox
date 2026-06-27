@@ -9,6 +9,7 @@ public class FrameworkCriterion {
     private String code;
     private String name;
     private String description;
+    private int order;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
     private UUID createdBy;
@@ -16,25 +17,27 @@ public class FrameworkCriterion {
 
     public FrameworkCriterion() {}
 
-    public FrameworkCriterion(UUID id, UUID frameworkVersionId, String code, String name, String description,
+    public FrameworkCriterion(UUID id, UUID frameworkVersionId, String code, String name, String description, int order, 
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.frameworkVersionId = frameworkVersionId;
         this.code = code;
         this.name = name;
-        this.description = description;
+        this.description = description; 
+        this.order = order;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
         this.updatedBy = updatedBy;
     }
 
-    public FrameworkCriterion(UUID frameworkVersionId, String code, String name, String description,
+    public FrameworkCriterion(UUID frameworkVersionId, String code, String name, String description, int order, 
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.frameworkVersionId = frameworkVersionId;
         this.code = code;
         this.name = name;
-        this.description = description;
+        this.description = description; 
+        this.order = order;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
@@ -111,6 +114,14 @@ public class FrameworkCriterion {
 
     public void setUpdatedBy(UUID updatedBy) {
         this.updatedBy = updatedBy;
+    }
+
+    public int getOrder() {
+        return order;
+    }
+
+    public void setOrder(int order) {
+        this.order = order;
     }
 
     

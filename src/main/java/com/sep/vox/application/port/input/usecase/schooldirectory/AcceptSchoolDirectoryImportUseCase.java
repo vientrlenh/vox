@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.AcceptSchoolDirectoryImportCommand;
@@ -41,6 +42,7 @@ public class AcceptSchoolDirectoryImportUseCase
     }
 
     @Override
+    @Transactional
     public Void execute(AcceptSchoolDirectoryImportCommand input) {
         validateCommand(input);
 

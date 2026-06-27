@@ -1,4 +1,4 @@
-package com.sep.vox.infrastructure.config;
+package com.sep.vox.interfaces.rest.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

@@ -8,7 +8,6 @@ import com.sep.vox.application.port.input.command.CreateSchoolRubricResultBandsC
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.framework.FrameworkResultBand;
-import com.sep.vox.domain.model.framework.FrameworkResultBandStatus;
 import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricResultBand;
 import com.sep.vox.domain.model.rubric.RubricStatus;
@@ -138,9 +137,6 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
                 throw new NotFoundException("Không tìm thấy Framework Result Band với ID: " + bCmd.frameworkResultBandId());
             }
 
-            if (frameworkBand.getStatus() != FrameworkResultBandStatus.PUBLISHED) {
-                throw new IllegalStateException("Framework Result Band (Mã: " + frameworkBand.getCode() + ") chưa được PUBLISHED, không thể sử dụng.");
-            }
 
             // Validate logic điểm
             if (bCmd.mappedScoreMin().compareTo(bCmd.mappedScoreMax()) > 0) {

@@ -16,6 +16,9 @@ import org.springframework.data.repository.query.Param;
 
 public interface SpringDataRubricResultBandRepository extends JpaRepository<RubricResultBandJpaEntity, UUID> {
 
+
+    List<RubricResultBandJpaEntity>findByRubricVersionId(UUID rubricVersionId);
+
     void deleteByRubricVersionId(UUID rubricVersionId);
 
     @Query("SELECT r FROM RubricResultBandJpaEntity r WHERE r.rubricVersionId IN :versionIds")

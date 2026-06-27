@@ -17,6 +17,7 @@ import org.springframework.data.repository.query.Param;
 public interface SpringDataRubricCriterionBandRepository extends JpaRepository<RubricCriterionBandJpaEntity, UUID> {
     void deleteByCriterionId(UUID criterionId);
 
+    List<RubricCriterionBandJpaEntity>findByCriterionId(UUID criterionId);
 
     @Modifying
     @Query("DELETE FROM RubricCriterionBandJpaEntity b WHERE b.criterionId IN (SELECT c.id FROM RubricCriterionJpaEntity c WHERE c.rubricVersionId = :rubricVersionId)")

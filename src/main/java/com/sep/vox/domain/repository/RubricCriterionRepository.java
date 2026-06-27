@@ -22,4 +22,6 @@ public interface RubricCriterionRepository {
     List<RubricCriterion> findByRubricVersionIdIn(List<UUID> versionIds);
 
     PageResult<RubricCriterion> searchRubricCriteria(UUID versionId, String keyword, Boolean isRequired, int page, int size);
+
+    List<RubricCriterion> findByRubricVersionId(UUID rubricVersionId);
 }

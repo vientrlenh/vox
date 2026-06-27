@@ -12,15 +12,6 @@ public record CreateSystemRubricCommand(
         String name,
         String description,
         UUID languageId,
-        UUID frameworkId,
-        List<RubricVersionItemCommand> versions
+        UUID frameworkId
 ) {
-        public record RubricVersionItemCommand(
-                Integer version,
-                BigDecimal scoringScaleMin,
-                BigDecimal scoringScaleMax,
-                RubricTotalScoreMethod totalScoreMethod,
-                OffsetDateTime effectiveFrom,
-                OffsetDateTime effectiveTo
-        ) {}
 }

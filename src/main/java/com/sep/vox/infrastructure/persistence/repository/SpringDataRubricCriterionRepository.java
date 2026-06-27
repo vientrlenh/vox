@@ -63,4 +63,6 @@ public interface SpringDataRubricCriterionRepository extends JpaRepository<Rubri
             @Param("keyword") String keyword,
             @Param("isRequired") Boolean isRequired,
             Pageable pageable);
+
+    List<RubricCriterionJpaEntity> findByRubricVersionId(UUID rubricVersionId);
 }

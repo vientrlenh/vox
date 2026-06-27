@@ -32,4 +32,12 @@ public class FrameworkCriterionRepositoryImpl implements FrameworkCriterionRepos
                 .map(FrameworkCriterionMapper::toDomain)
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public List<FrameworkCriterion> findByFrameworkVersionId(UUID frameworkId) {
+        return springDataFrameworkCriterionRepository.findByFrameworkVersionId(frameworkId)
+                .stream()
+                .map(FrameworkCriterionMapper::toDomain)
+                .toList();
+    }
 }

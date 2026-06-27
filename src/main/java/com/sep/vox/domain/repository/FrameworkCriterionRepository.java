@@ -6,4 +6,8 @@ import java.util.List;
 import java.util.UUID;
 
 public interface FrameworkCriterionRepository {
-    List<FrameworkCriterion> findAllByIds(List<UUID> ids);}
+    List<FrameworkCriterion> findAllByIds(List<UUID> ids);
+
+    List<FrameworkCriterion> findByFrameworkVersionId(UUID frameworkId);
+
+}

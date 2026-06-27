@@ -106,6 +106,14 @@ public class RubricResultBandRepositoryImpl implements RubricResultBandRepositor
                 pageEntity.getTotalPages()
         );
     }
+
+    @Override
+    public List<RubricResultBand> findByRubricVersionId(UUID rubricVersionId) {
+        return springDataRubricResultBandRepository.findByRubricVersionId(rubricVersionId)
+                .stream()
+                .map(RubricResultBandMapper::toDomain)
+                .toList();
+    }
 }
 
 

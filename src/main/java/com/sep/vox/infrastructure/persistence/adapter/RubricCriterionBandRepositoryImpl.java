@@ -109,4 +109,12 @@ public class RubricCriterionBandRepositoryImpl implements RubricCriterionBandRep
                 pageEntity.getTotalPages()
         );
     }
+
+    @Override
+    public List<RubricCriterionBand> findByCriterionId(UUID criterionId) {
+        return springDataRubricCriterionBandRepository.findByCriterionId(criterionId)
+                .stream()
+                .map(RubricCriterionBandMapper::toDomain)
+                .toList();
+    }
 }

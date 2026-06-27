@@ -20,4 +20,5 @@ public interface RubricCriterionBandRepository {
     PageResult<RubricCriterionBand> findAllByCriterionId(UUID criterionId, int page, int size);
     List<RubricCriterionBand> findByCriterionIdIn(List<UUID> criterionIds);
     PageResult<RubricCriterionBand> searchRubricCriterionBands(UUID criterionId, String keyword, int page, int size);
+    List<RubricCriterionBand> findByCriterionId(UUID criterionId);
 }

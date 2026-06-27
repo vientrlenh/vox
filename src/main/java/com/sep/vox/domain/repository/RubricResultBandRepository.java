@@ -19,4 +19,5 @@ public interface RubricResultBandRepository {
     PageResult<RubricResultBand> findAllByRubricVersionId(UUID rubricVersionId, int page, int size);
     List<RubricResultBand> findByRubricVersionIdIn(List<UUID> versionIds);
     PageResult<RubricResultBand> searchRubricResultBands(UUID versionId, String keyword, int page, int size);
+    List<RubricResultBand>findByRubricVersionId(UUID rubricVersionId);
 }

@@ -102,4 +102,13 @@ public class RubricCriterionRepositoryImpl implements RubricCriterionRepository 
                 pageEntity.getTotalPages()
         );
     }
+
+    // Ném thêm override này vào trong class RubricCriterionRepositoryImpl
+    @Override
+    public List<RubricCriterion> findByRubricVersionId(UUID rubricVersionId) {
+        return springDataRubricCriterionRepository.findByRubricVersionId(rubricVersionId)
+                .stream()
+                .map(RubricCriterionMapper::toDomain)
+                .toList();
+    }
 }

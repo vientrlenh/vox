@@ -58,6 +58,7 @@ type FrameworkCriterion {
     code: String!
     name: String!
     description: String
+    order: Int!
     bands: [FrameworkCriterionBand!]!
 }
 

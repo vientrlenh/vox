@@ -44,4 +44,9 @@ public class FrameworkCriterionBandRepositoryImpl implements FrameworkCriterionB
     public void deleteByFrameworkCriterionIdIn(Collection<UUID> frameworkCriterionIds) {
         springDataFrameworkCriterionBandRepository.deleteByFrameworkCriterionIdIn(frameworkCriterionIds);
     }
+
+    @Override
+    public void deleteByFrameworkVersionId(UUID frameworkVersionId) {
+        springDataFrameworkCriterionBandRepository.deleteByFrameworkVersionId(frameworkVersionId);
+    }
 }

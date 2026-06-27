@@ -4,7 +4,6 @@ import java.util.UUID;
 
 public record UpdateFrameworkCommand(
     UUID frameworkId,
-    String code,
     String name,
     String description
 ) {

@@ -11,4 +11,5 @@ public interface FrameworkCriterionBandRepository {
     FrameworkCriterionBand save(FrameworkCriterionBand band);
     List<FrameworkCriterionBand> saveAll(List<FrameworkCriterionBand> bands);
     void deleteByFrameworkCriterionIdIn(Collection<UUID> frameworkCriterionIds);
+    void deleteByFrameworkVersionId(UUID frameworkVersionId);
 }

@@ -108,6 +108,7 @@ public class UpdateFrameworkVersionUseCase implements IUseCase<UpdateFrameworkVe
         var codes = bandInputs.stream().map(b -> StringNormalization.normalizeCode(b.code())).toList();
         if (codes.size() != codes.stream().distinct().count())
             throw new IllegalArgumentException("Mã kết quả bị trùng lặp");
+        frameworkCriterionBandRepository.deleteByFrameworkVersionId(versionId);
         frameworkResultBandRepository.deleteByFrameworkVersionId(versionId);
         var bands = bandInputs.stream()
             .map(b -> new FrameworkResultBand(

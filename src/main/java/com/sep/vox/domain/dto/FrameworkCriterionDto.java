@@ -9,6 +9,7 @@ public record FrameworkCriterionDto(
     String code,
     String name,
     String description,
+    int order,
     List<FrameworkCriterionBandDto> bands
 ) {
 }

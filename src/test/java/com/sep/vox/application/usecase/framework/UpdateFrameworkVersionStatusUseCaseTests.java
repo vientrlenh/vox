@@ -172,6 +172,27 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
     }
 
     @Test
+    void should_throw_when_archiving_draft_version() {
+        var command = new UpdateFrameworkVersionStatusCommand(
+            frameworkId, versionId, FrameworkVersionStatus.ARCHIVED
+        );
+
+        var framework = new Framework(
+            frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
+            true, now, now, null, null
+        );
+        var version = new FrameworkVersion();
+        version.setId(versionId);
+        version.setFrameworkId(frameworkId);
+        version.setStatus(FrameworkVersionStatus.DRAFT);
+
+        when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
+        when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.of(version));
+
+        assertThrows(IllegalStateException.class, () -> useCase.execute(command));
+    }
+
+    @Test
     void should_allow_publish_when_date_ranges_do_not_overlap() {
         var command = new UpdateFrameworkVersionStatusCommand(
             frameworkId, versionId, FrameworkVersionStatus.PUBLISHED

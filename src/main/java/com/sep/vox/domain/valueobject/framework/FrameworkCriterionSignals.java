@@ -7,7 +7,8 @@ public record FrameworkCriterionSignals(
     List<FrameworkCriterionSignal> values
 ) {
     public FrameworkCriterionSignals {
-        if (values != null && values.stream().anyMatch(Objects::isNull)) {
+        if (values == null) values = List.of();
+        if (values.stream().anyMatch(Objects::isNull)) {
             throw new IllegalArgumentException("Các dấu hiệu không được chứa phần tử trống");
         }
         values = List.copyOf(values);

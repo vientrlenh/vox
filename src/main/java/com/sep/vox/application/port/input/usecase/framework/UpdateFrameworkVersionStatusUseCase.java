@@ -46,6 +46,9 @@ public class UpdateFrameworkVersionStatusUseCase implements IUseCase<UpdateFrame
             validateNoConflictingPublished(input.frameworkId(), input.versionId(), version.getEffectiveFrom(), version.getEffectiveTo());
             frameworkVersionRepository.updateStatus(input.versionId(), FrameworkVersionStatus.PUBLISHED);
         } else if (input.status() == FrameworkVersionStatus.ARCHIVED) {
+            if (version.getStatus() != FrameworkVersionStatus.PUBLISHED) {
+                throw new IllegalStateException("Chỉ có thể lưu trữ phiên bản ở trạng thái PUBLISHED");
+            }
             frameworkVersionRepository.updateStatus(input.versionId(), FrameworkVersionStatus.ARCHIVED);
         } else {
             throw new IllegalArgumentException("Trạng thái không hợp lệ để cập nhật");

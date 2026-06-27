@@ -30,6 +30,7 @@ public final class FrameworkCriterionDtoMapper {
             criterion.getCode(),
             criterion.getName(),
             criterion.getDescription(),
+            criterion.getOrder(),
             bandDtos
         );
     }

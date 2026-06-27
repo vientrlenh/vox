@@ -20,6 +20,9 @@ import com.sep.vox.application.port.input.usecase.school.DeleteSchoolUseCase;
 import com.sep.vox.application.port.input.usecase.school.UpdateSchoolStatusUseCase;
 import com.sep.vox.application.port.input.usecase.schoolgrade.CreateSchoolGradeUseCase;
 import com.sep.vox.application.port.input.usecase.schoolgrade.DeleteSchoolGradeUseCase;
+import com.sep.vox.application.port.input.usecase.schoolgrade.PreviewSchoolGradeImportFromFileUseCase;
+import com.sep.vox.application.port.input.usecase.schoolgrade.AcceptSchoolGradeImportUseCase;
+import com.sep.vox.application.response.input.schoolgrade.PreviewSchoolGradeImportResponse;
 import com.sep.vox.application.port.input.usecase.schoolroom.AddSchoolRoomUseCase;
 import com.sep.vox.application.port.input.usecase.schoolroom.DeleteSchoolRoomUseCase;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
@@ -101,6 +104,8 @@ public class SchoolController {
     
     private final CreateSchoolGradeUseCase createSchoolGradeUseCase;
     private final DeleteSchoolGradeUseCase deleteSchoolGradeUseCase;
+    private final PreviewSchoolGradeImportFromFileUseCase previewSchoolGradeImportFromFileUseCase;
+    private final AcceptSchoolGradeImportUseCase acceptSchoolGradeImportUseCase;
 
 
     private final CreateSchoolGradeLevelUseCase createSchoolGradeLevelUseCase;
@@ -127,8 +132,10 @@ public class SchoolController {
                         UpdateSchoolStatusUseCase updateSchoolStatusUseCase, 
                         AddSchoolRoomUseCase addSchoolRoomUseCase, 
                         DeleteSchoolRoomUseCase deleteSchoolRoomUseCase, 
-                        CreateSchoolGradeUseCase createSchoolGradeUseCase, 
-                        DeleteSchoolGradeUseCase deleteSchoolGradeUseCase, 
+                        CreateSchoolGradeUseCase createSchoolGradeUseCase,
+                        DeleteSchoolGradeUseCase deleteSchoolGradeUseCase,
+                        PreviewSchoolGradeImportFromFileUseCase previewSchoolGradeImportFromFileUseCase,
+                        AcceptSchoolGradeImportUseCase acceptSchoolGradeImportUseCase,
                         CreateSchoolGradeLevelUseCase createSchoolGradeLevelUseCase,
                         DeleteSchoolGradeLevelUseCase deleteSchoolGradeLevelUseCase,
                         PreviewSchoolGradeLevelImportFromFileUseCase previewSchoolGradeLevelImportFromFileUseCase,
@@ -156,6 +163,8 @@ public class SchoolController {
         this.deleteSchoolRoomUseCase = deleteSchoolRoomUseCase;
         this.createSchoolGradeUseCase = createSchoolGradeUseCase;
         this.deleteSchoolGradeUseCase = deleteSchoolGradeUseCase;
+        this.previewSchoolGradeImportFromFileUseCase = previewSchoolGradeImportFromFileUseCase;
+        this.acceptSchoolGradeImportUseCase = acceptSchoolGradeImportUseCase;
         this.createSchoolGradeLevelUseCase = createSchoolGradeLevelUseCase;
         this.deleteSchoolGradeLevelUseCase = deleteSchoolGradeLevelUseCase;
         this.previewSchoolGradeLevelImportFromFileUseCase = previewSchoolGradeLevelImportFromFileUseCase;
@@ -292,6 +301,31 @@ public class SchoolController {
         var command = AcceptSchoolGradeLevelImportCommandMapper.fromRequest(schoolId, sessionId, request);
         acceptSchoolGradeLevelImportUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Yêu cầu import khối học đã được tiếp nhận, đang xử lý"));
+    }
+
+    @PostMapping(
+            value = "/{schoolId}/grades/import/preview",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public ResponseEntity<ApiResponse<PreviewSchoolGradeImportResponse>> createGradeImportFileSession(
+            @PathVariable("schoolId") UUID schoolId,
+            @RequestParam("file") MultipartFile file) throws IOException {
+        var uploadedFile = UploadedFile.upload(file.getOriginalFilename(), file.getContentType(), file.getSize(), file.getBytes());
+        var data = previewSchoolGradeImportFromFileUseCase.execute(new PreviewSchoolGradeImportFromFileCommand(schoolId, uploadedFile));
+        var response = ApiResponse.success("Preview import năm học thành công", data);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{schoolId}/grades/import/{sessionId}/accept")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public ResponseEntity<ApiResponse<Object>> acceptGradeImportSession(
+            @PathVariable("schoolId") UUID schoolId,
+            @PathVariable("sessionId") UUID sessionId,
+            @Valid @RequestBody AcceptSchoolGradeImportRequest request) {
+        var command = AcceptSchoolGradeImportCommandMapper.fromRequest(schoolId, sessionId, request);
+        acceptSchoolGradeImportUseCase.execute(command);
+        return ResponseEntity.ok(ApiResponse.success("Yêu cầu import năm học đã được tiếp nhận, đang xử lý"));
     }
 
     @PostMapping(

@@ -43,6 +43,8 @@ public interface SpringDataSchoolGradeRepository extends JpaRepository<SchoolGra
 
     boolean existsBySchoolGradeLevelIdAndCode(UUID schoolGradeLevelId, String code);
 
+    Optional<SchoolGradeJpaEntity> findBySchoolGradeLevelIdAndCode(UUID schoolGradeLevelId, String code);
+
     @Query("SELECT g FROM SchoolGradeJpaEntity g WHERE g.schoolGradeLevelId IN (SELECT l.id FROM SchoolGradeLevelJpaEntity l WHERE l.schoolId = :schoolId)")
     Page<SchoolGradeJpaEntity> findAllBySchoolId(@Param("schoolId") UUID schoolId, Pageable pageable);
 

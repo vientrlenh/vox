@@ -54,6 +54,12 @@ public class SchoolGradeRepositoryImpl implements SchoolGradeRepository {
     }
 
     @Override
+    public Optional<SchoolGrade> findBySchoolGradeLevelIdAndCode(UUID schoolGradeLevelId, String code) {
+        return springDataSchoolGradeRepository.findBySchoolGradeLevelIdAndCode(schoolGradeLevelId, code)
+                .map(SchoolGradeMapper::toDomain);
+    }
+
+    @Override
     public List<SchoolGrade> findBySchoolIdAndCodeIn(UUID schoolId, Collection<String> codes) {
         if (schoolId == null || codes == null || codes.isEmpty()) {
             return List.of();

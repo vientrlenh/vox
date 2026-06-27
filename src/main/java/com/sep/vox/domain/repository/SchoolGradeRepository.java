@@ -17,6 +17,7 @@ public interface SchoolGradeRepository {
 
     // Đổi chữ SchoolId thành SchoolGradeLevelId
     boolean existsBySchoolGradeLevelIdAndCode(UUID schoolGradeLevelId, String code);
+    Optional<SchoolGrade> findBySchoolGradeLevelIdAndCode(UUID schoolGradeLevelId, String code);
     List<SchoolGrade> findBySchoolIdAndCodeIn(UUID schoolId, Collection<String> codes);
 
     boolean existsBySchoolGradeLevelId(UUID schoolGradeLevelId);

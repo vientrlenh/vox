@@ -20,6 +20,7 @@ import com.sep.vox.domain.model.framework.Framework;
 import com.sep.vox.domain.model.framework.FrameworkCriterion;
 import com.sep.vox.domain.model.framework.FrameworkVersion;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
+import com.sep.vox.domain.repository.AssessmentPolicyRepository;
 import com.sep.vox.domain.repository.FrameworkCriterionBandRepository;
 import com.sep.vox.domain.repository.FrameworkCriterionRepository;
 import com.sep.vox.domain.repository.FrameworkRepository;
@@ -34,6 +35,7 @@ public class DeleteFrameworkVersionUseCaseTests {
     private FrameworkCriterionRepository frameworkCriterionRepository;
     private FrameworkCriterionBandRepository frameworkCriterionBandRepository;
     private FrameworkResultBandRepository frameworkResultBandRepository;
+    private AssessmentPolicyRepository assessmentPolicyRepository;
     private DeleteFrameworkVersionUseCase useCase;
 
     private UUID frameworkId = UUID.randomUUID();
@@ -47,12 +49,14 @@ public class DeleteFrameworkVersionUseCaseTests {
         frameworkCriterionRepository = mock(FrameworkCriterionRepository.class);
         frameworkCriterionBandRepository = mock(FrameworkCriterionBandRepository.class);
         frameworkResultBandRepository = mock(FrameworkResultBandRepository.class);
+        assessmentPolicyRepository = mock(AssessmentPolicyRepository.class);
         useCase = new DeleteFrameworkVersionUseCase(
             frameworkRepository,
             frameworkVersionRepository,
             frameworkCriterionRepository,
             frameworkCriterionBandRepository,
-            frameworkResultBandRepository
+            frameworkResultBandRepository,
+            assessmentPolicyRepository
         );
     }
 

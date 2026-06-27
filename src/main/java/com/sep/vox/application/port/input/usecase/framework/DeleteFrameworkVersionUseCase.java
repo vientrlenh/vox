@@ -7,6 +7,7 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.DeleteFrameworkVersionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
+import com.sep.vox.domain.repository.AssessmentPolicyRepository;
 import com.sep.vox.domain.repository.FrameworkCriterionBandRepository;
 import com.sep.vox.domain.repository.FrameworkCriterionRepository;
 import com.sep.vox.domain.repository.FrameworkRepository;
@@ -21,18 +22,21 @@ public class DeleteFrameworkVersionUseCase implements IUseCase<DeleteFrameworkVe
     private final FrameworkCriterionRepository frameworkCriterionRepository;
     private final FrameworkCriterionBandRepository frameworkCriterionBandRepository;
     private final FrameworkResultBandRepository frameworkResultBandRepository;
+    private final AssessmentPolicyRepository assessmentPolicyRepository;
 
     public DeleteFrameworkVersionUseCase(
             FrameworkRepository frameworkRepository,
             FrameworkVersionRepository frameworkVersionRepository,
             FrameworkCriterionRepository frameworkCriterionRepository,
             FrameworkCriterionBandRepository frameworkCriterionBandRepository,
-            FrameworkResultBandRepository frameworkResultBandRepository) {
+            FrameworkResultBandRepository frameworkResultBandRepository,
+            AssessmentPolicyRepository assessmentPolicyRepository) {
         this.frameworkRepository = frameworkRepository;
         this.frameworkVersionRepository = frameworkVersionRepository;
         this.frameworkCriterionRepository = frameworkCriterionRepository;
         this.frameworkCriterionBandRepository = frameworkCriterionBandRepository;
         this.frameworkResultBandRepository = frameworkResultBandRepository;
+        this.assessmentPolicyRepository = assessmentPolicyRepository;
     }
 
     @Override
@@ -51,6 +55,9 @@ public class DeleteFrameworkVersionUseCase implements IUseCase<DeleteFrameworkVe
         if (version.getStatus() == FrameworkVersionStatus.DRAFT) {
             deleteVersionAndChildren(input.versionId());
         } else {
+            if (assessmentPolicyRepository.existsByFrameworkVersionId(input.versionId())) {
+                throw new IllegalStateException("Không thể lưu trữ phiên bản framework đang được sử dụng trong policy");
+            }
             frameworkVersionRepository.updateStatus(input.versionId(), FrameworkVersionStatus.ARCHIVED);
         }
 

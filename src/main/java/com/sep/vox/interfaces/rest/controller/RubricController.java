@@ -4,7 +4,6 @@ package com.sep.vox.interfaces.rest.controller;
 import com.sep.vox.application.port.input.usecase.rubricschool.*;
 
 import com.sep.vox.application.port.input.usecase.rubricsystem.*;
-import com.sep.vox.application.port.input.usecase.rubricsystem.PreviewSchoolRubricCriterionImportFromFileUseCase;
 import com.sep.vox.application.response.input.importfile.*;
 import com.sep.vox.domain.model.rubric.RubricStatus;
 import com.sep.vox.interfaces.rest.dto.request.*;

@@ -22,7 +22,7 @@ public class ViewFrameworksUseCase implements IUseCase<ViewFrameworksQuery, Page
     @Override
     @Transactional(readOnly = true)
     public PageResult<FrameworkDto> execute(ViewFrameworksQuery input) {
-        var result = frameworkRepository.findAll(input.page(), input.size());
+        var result = frameworkRepository.findAll(input.page(), input.size(), input.search(), input.isActive());
         return FrameworkDtoMapper.toDtoPage(result);
     }
 }

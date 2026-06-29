@@ -24,6 +24,11 @@ public class FrameworkResultBandRepositoryImpl implements FrameworkResultBandRep
     }
 
     @Override
+    public boolean existsByFrameworkVersionId(UUID frameworkVersionId) {
+        return springDataFrameworkResultBandRepository.existsByFrameworkVersionId(frameworkVersionId);
+    }
+
+    @Override
     public List<FrameworkResultBand> findByFrameworkVersionId(UUID frameworkVersionId) {
         return springDataFrameworkResultBandRepository.findByFrameworkVersionId(frameworkVersionId)
                 .stream().map(FrameworkResultBandMapper::toDomain).toList();

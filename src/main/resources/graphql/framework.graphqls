@@ -120,7 +120,7 @@ input ResultBandInput {
 }
 
 extend type Query {
-    frameworks(page: Int = 1, size: Int = 20): FrameworkPage!
+    frameworks(page: Int = 1, size: Int = 20, search: String, isActive: Boolean): FrameworkPage!
     framework(id: ID!): Framework
     frameworkVersions(frameworkId: ID!, page: Int = 1, size: Int = 20): FrameworkVersionPage!
     frameworkVersion(id: ID!): FrameworkVersion
@@ -128,5 +128,6 @@ extend type Query {
 
 extend type Mutation {
     updateFrameworkVersion(frameworkId: ID!, versionId: ID!, input: UpdateFrameworkVersionInput!): ID!
-    updateFrameworkStatus(id: ID!, isActive: Boolean!): ID!
+    activateFramework(id: ID!): ID!
+    deactivateFramework(id: ID!): ID!
 }

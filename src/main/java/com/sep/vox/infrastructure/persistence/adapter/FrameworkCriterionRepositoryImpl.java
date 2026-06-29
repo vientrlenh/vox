@@ -10,10 +10,7 @@ import com.sep.vox.domain.model.framework.FrameworkCriterion;
 import com.sep.vox.domain.repository.FrameworkCriterionRepository;
 import com.sep.vox.infrastructure.persistence.mapper.FrameworkCriterionMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataFrameworkCriterionRepository;
-import org.springframework.stereotype.Repository;
 
-import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Repository
@@ -38,6 +35,11 @@ public class FrameworkCriterionRepositoryImpl implements FrameworkCriterionRepos
                 .stream()
                 .map(FrameworkCriterionMapper::toDomain)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public boolean existsByFrameworkVersionId(UUID frameworkVersionId) {
+        return springDataFrameworkCriterionRepository.existsByFrameworkVersionId(frameworkVersionId);
     }
 
     @Override

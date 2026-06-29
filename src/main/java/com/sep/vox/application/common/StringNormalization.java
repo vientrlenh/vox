@@ -56,4 +56,13 @@ public final class StringNormalization {
         return input.strip().toUpperCase(Locale.ROOT);
     }
 
+    public static String buildLikePattern(String input) {
+        if (input == null || input.isBlank()) return null;
+        String normalized = normalizeSearchText(input);
+        return "%" + normalized.toLowerCase(Locale.ROOT)
+            .replace("!", "!!")
+            .replace("%", "!%")
+            .replace("_", "!_") + "%";
+    }
+
 }

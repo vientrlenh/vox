@@ -13,6 +13,7 @@ import org.springframework.data.repository.query.Param;
 
 
 public interface SpringDataFrameworkResultBandRepository extends JpaRepository<FrameworkResultBandJpaEntity, UUID> {
+    boolean existsByFrameworkVersionId(UUID frameworkVersionId);
     List<FrameworkResultBandJpaEntity> findByFrameworkVersionId(UUID frameworkVersionId);
     List<FrameworkResultBandJpaEntity> findByFrameworkVersionIdIn(Collection<UUID> frameworkVersionIds);
 

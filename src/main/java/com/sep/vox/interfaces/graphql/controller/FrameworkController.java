@@ -62,11 +62,13 @@ public class FrameworkController {
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<FrameworkDto> frameworks(
             @Argument(name = "page") int page,
-            @Argument(name = "size") int size) {
-        if (page <= 0 || size <= 0) {
+            @Argument(name = "size") int size,
+            @Argument(name = "search") String search,
+            @Argument(name = "isActive") Boolean isActive) {
+        if (page <= 0 || size <= 0 || size > 200) {
             throw new IllegalArgumentException("Số trang hoặc kích thước trang không hợp lệ");
         }
-        return viewFrameworksUseCase.execute(new ViewFrameworksQuery(page, size));
+        return viewFrameworksUseCase.execute(new ViewFrameworksQuery(page, size, search, isActive));
     }
 
     @QueryMapping(name = "framework")
@@ -81,7 +83,7 @@ public class FrameworkController {
             @Argument(name = "frameworkId") UUID frameworkId,
             @Argument(name = "page") int page,
             @Argument(name = "size") int size) {
-        if (page <= 0 || size <= 0) {
+        if (page <= 0 || size <= 0 || size > 200) {
             throw new IllegalArgumentException("Số trang hoặc kích thước trang không hợp lệ");
         }
         return viewFrameworkVersionsUseCase.execute(new ViewFrameworkVersionsQuery(frameworkId, page, size));
@@ -103,12 +105,16 @@ public class FrameworkController {
         return updateFrameworkVersionUseCase.execute(command);
     }
 
-    @MutationMapping(name = "updateFrameworkStatus")
+    @MutationMapping(name = "activateFramework")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public UUID updateFrameworkStatus(
-            @Argument(name = "id") UUID id,
-            @Argument(name = "isActive") boolean isActive) {
-        return updateFrameworkActiveStatusUseCase.execute(new UpdateFrameworkActiveStatusCommand(id, isActive));
+    public UUID activateFramework(@Argument(name = "id") UUID id) {
+        return updateFrameworkActiveStatusUseCase.execute(new UpdateFrameworkActiveStatusCommand(id, true));
+    }
+
+    @MutationMapping(name = "deactivateFramework")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public UUID deactivateFramework(@Argument(name = "id") UUID id) {
+        return updateFrameworkActiveStatusUseCase.execute(new UpdateFrameworkActiveStatusCommand(id, false));
     }
 
     @SchemaMapping(typeName = "FrameworkVersion", field = "criteria")

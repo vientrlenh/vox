@@ -63,44 +63,30 @@ public class UpdateFrameworkVersionUseCase implements IUseCase<UpdateFrameworkVe
         var version = frameworkVersionRepository.findByIdForUpdate(input.versionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản framework"));
 
-        if (!version.getFrameworkId().equals(input.frameworkId())) {
-            throw new IllegalArgumentException("Phiên bản không thuộc framework này");
-        }
+        checkValidRequest(input, version);
 
-        if (version.getStatus() != FrameworkVersionStatus.DRAFT) {
-            throw new IllegalStateException("Chỉ có thể cập nhật phiên bản ở trạng thái DRAFT");
-        }
-
-        if (input.effectiveTo() != null && input.effectiveTo().isBefore(input.effectiveFrom())) {
-            throw new IllegalArgumentException("Ngày hết hiệu lực phải sau ngày hiệu lực");
-        }
-
-        var updated = new FrameworkVersion(
-            version.getId(),
-            version.getFrameworkId(),
+        frameworkVersionRepository.save(new FrameworkVersion(
+            version.getId(), version.getFrameworkId(),
             StringNormalization.normalizeCode(input.code()),
             StringNormalization.trimAndCollapseSpaces(input.name()),
             StringNormalization.trimAndCollapseSpaces(input.description()),
-            version.getVersion(),
-            input.effectiveFrom(),
-            input.effectiveTo(),
-            version.getStatus(),
-            version.getCreatedAt(),
-            now,
-            version.getCreatedBy(),
-            currentUserId
-        );
-        frameworkVersionRepository.save(updated);
+            version.getVersion(), input.effectiveFrom(), input.effectiveTo(),
+            version.getStatus(), version.getCreatedAt(), now,
+            version.getCreatedBy(), currentUserId));
 
-        if (input.resultBands() != null) {
-            replaceResultBands(input.versionId(), input.resultBands(), now, currentUserId);
-        }
-
-        if (input.criteria() != null) {
-            replaceCriteria(input.versionId(), input.criteria(), now, currentUserId);
-        }
+        if (input.resultBands() != null) replaceResultBands(input.versionId(), input.resultBands(), now, currentUserId);
+        if (input.criteria() != null)    replaceCriteria(input.versionId(), input.criteria(), now, currentUserId);
 
         return input.versionId();
+    }
+
+    private void checkValidRequest(UpdateFrameworkVersionCommand input, FrameworkVersion version) {
+        if (!version.getFrameworkId().equals(input.frameworkId()))
+            throw new IllegalArgumentException("Phiên bản không thuộc framework này");
+        if (version.getStatus() != FrameworkVersionStatus.DRAFT)
+            throw new IllegalStateException("Chỉ có thể cập nhật phiên bản ở trạng thái DRAFT");
+        if (input.effectiveTo() != null && input.effectiveTo().isBefore(input.effectiveFrom()))
+            throw new IllegalArgumentException("Ngày hết hiệu lực phải sau ngày hiệu lực");
     }
 
     private void replaceResultBands(UUID versionId, List<UpdateFrameworkVersionCommand.ResultBandInput> bandInputs,

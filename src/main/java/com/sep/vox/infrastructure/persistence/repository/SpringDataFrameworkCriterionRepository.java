@@ -1,17 +1,19 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
+import com.sep.vox.infrastructure.persistence.entity.FrameworkCriterionJpaEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
-import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sep.vox.infrastructure.persistence.entity.FrameworkCriterionJpaEntity;
 
 public interface SpringDataFrameworkCriterionRepository extends JpaRepository<FrameworkCriterionJpaEntity, UUID> {
+
     List<FrameworkCriterionJpaEntity> findByFrameworkVersionId(UUID frameworkVersionId);
     List<FrameworkCriterionJpaEntity> findByFrameworkVersionIdIn(Collection<UUID> frameworkVersionIds);
 

@@ -9,6 +9,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.infrastructure.persistence.entity.SchoolGradeJpaEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
@@ -70,25 +73,25 @@ public class SchoolGradeRepositoryImpl implements SchoolGradeRepository {
     }
 
     @Override
-    public PageResult<SchoolGrade> findAllBySchoolId(UUID schoolId, int pageNumber, int size) {
+    public PageResult<SchoolGrade> findAllBySchoolId(UUID schoolId, int page, int size) {
 
-        // 1. Lấy thông tin từ Domain PageRequest và đổi thành Spring Pageable
-        int actualPage = pageNumber - 1; // Spring đếm trang từ 0
-        var pageable = PageRequest.of(actualPage, size);
+        // 1. Chuyển đổi page, size của Domain thành Spring Pageable
+        int actualPage = page - 1; // Spring đếm trang từ 0
+        Pageable springPageable = PageRequest.of(actualPage, size);
 
-        // 2. Gọi DB (Nó sẽ trả về Page<SchoolGradeJpaEntity> của Spring)
-        var page = springDataSchoolGradeRepository.findAllBySchoolId(schoolId, pageable);
+       Page<SchoolGradeJpaEntity> pageEntity =
+                springDataSchoolGradeRepository.findAllBySchoolId(schoolId, springPageable);
 
         // 3. Đóng gói lại thành PageResult của Domain để trả về cho UseCase
         return new PageResult<>(
-                page.getContent().stream()
+                pageEntity.getContent().stream()
                         .map(SchoolGradeMapper::toDomain) // Map Entity sang Domain
                         .toList(),
 
-                pageNumber, // Trả lại số trang đếm từ 1 cho Client
-                size,
-                page.getTotalElements(),
-                page.getTotalPages()
+                pageEntity.getNumber() + 1, // Trả lại số trang đếm từ 1 cho Client
+                pageEntity.getSize(),
+                pageEntity.getTotalElements(),
+                pageEntity.getTotalPages()
         );
     }
 
@@ -106,6 +109,13 @@ public class SchoolGradeRepositoryImpl implements SchoolGradeRepository {
     @Override
     public void deleteById(UUID schoolGradeId) {
         springDataSchoolGradeRepository.deleteById(schoolGradeId);
+    }
+
+    @Override
+    public List<SchoolGrade> findAllById(List<UUID> gradeIds) {
+       return springDataSchoolGradeRepository.findAllById(gradeIds).stream()
+            .map(SchoolGradeMapper::toDomain)
+            .toList();
     }
 
     @Override

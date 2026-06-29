@@ -18,6 +18,9 @@ public class GlobalExceptionResolver extends DataFetcherExceptionResolverAdapter
     
     @Override
     protected GraphQLError resolveToSingleError(Throwable ex, DataFetchingEnvironment env) {
+
+        ex.printStackTrace();
+
 //        Throwable rootCause = ex.getCause();
 //
 //        if (!(rootCause instanceof NotFoundException || rootCause instanceof ForbiddenException || rootCause instanceof UnauthorizedException || rootCause instanceof DuplicatedException || rootCause instanceof IllegalArgumentException || rootCause instanceof IllegalStateException)) {
@@ -88,6 +91,8 @@ public class GlobalExceptionResolver extends DataFetcherExceptionResolverAdapter
                     .location(env.getField().getSourceLocation())
                     .build();
         }
+
+
 
         return GraphQLError.newError()
             .errorType(ErrorType.INTERNAL_ERROR)

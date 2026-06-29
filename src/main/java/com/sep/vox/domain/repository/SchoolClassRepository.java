@@ -25,6 +25,8 @@ public interface SchoolClassRepository {
     void deleteById(UUID id);
     List<SchoolClass> findBySchoolIdIn(Collection<UUID> schoolIds, int pageNumber, int size);
 
+    List<SchoolClass>findAllById(List<UUID> schoolIds);
+
     boolean existsBySchoolGradeId(UUID schoolGradeId);
 
     boolean existsBySchoolIdAndStatus(UUID schoolId, String status);

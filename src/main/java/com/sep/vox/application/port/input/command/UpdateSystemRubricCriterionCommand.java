@@ -1,0 +1,17 @@
+package com.sep.vox.application.port.input.command;
+
+import java.math.BigDecimal;
+import java.util.UUID;
+
+public record UpdateSystemRubricCriterionCommand(
+        UUID criterionId,
+        String code,
+        String name,
+        String description,
+        String examplesJson,
+        BigDecimal weight,
+        BigDecimal minScore,
+        BigDecimal maxScore,
+        Integer order,
+        Boolean isRequired
+) {}

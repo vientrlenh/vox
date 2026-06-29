@@ -11,6 +11,9 @@ import com.sep.vox.domain.repository.FrameworkResultBandRepository;
 import com.sep.vox.infrastructure.persistence.mapper.FrameworkResultBandMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataFrameworkResultBandRepository;
 
+import java.util.Optional;
+
+
 @Repository
 public class FrameworkResultBandRepositoryImpl implements FrameworkResultBandRepository {
 
@@ -23,13 +26,28 @@ public class FrameworkResultBandRepositoryImpl implements FrameworkResultBandRep
     @Override
     public List<FrameworkResultBand> findByFrameworkVersionId(UUID frameworkVersionId) {
         return springDataFrameworkResultBandRepository.findByFrameworkVersionId(frameworkVersionId)
-            .stream().map(FrameworkResultBandMapper::toDomain).toList();
+                .stream().map(FrameworkResultBandMapper::toDomain).toList();
+    }
+
+    @Override
+    public Optional<FrameworkResultBand> findById(UUID id) {
+        return springDataFrameworkResultBandRepository.findById(id)
+                .map(FrameworkResultBandMapper::toDomain);
     }
 
     @Override
     public List<FrameworkResultBand> findByFrameworkVersionIdIn(Collection<UUID> frameworkVersionIds) {
         return springDataFrameworkResultBandRepository.findByFrameworkVersionIdIn(frameworkVersionIds)
-            .stream().map(FrameworkResultBandMapper::toDomain).toList();
+                .stream().map(FrameworkResultBandMapper::toDomain).toList();
+    }
+
+
+    @Override
+    public List<FrameworkResultBand> findAllByIds(List<UUID> ids) {
+        return springDataFrameworkResultBandRepository.findAllById(ids)
+                .stream()
+                .map(FrameworkResultBandMapper::toDomain)
+                .toList();
     }
 
     @Override
@@ -43,7 +61,7 @@ public class FrameworkResultBandRepositoryImpl implements FrameworkResultBandRep
     public List<FrameworkResultBand> saveAll(List<FrameworkResultBand> bands) {
         var entities = bands.stream().map(FrameworkResultBandMapper::toJpa).toList();
         return springDataFrameworkResultBandRepository.saveAll(entities)
-            .stream().map(FrameworkResultBandMapper::toDomain).toList();
+                .stream().map(FrameworkResultBandMapper::toDomain).toList();
     }
 
     @Override

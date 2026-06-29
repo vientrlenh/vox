@@ -1,0 +1,174 @@
+package com.sep.vox.application.port.input.usecase.rubricschool;
+
+import com.sep.vox.application.common.StringNormalization;
+import com.sep.vox.application.exception.ForbiddenException;
+import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
+import com.sep.vox.application.port.input.command.CreateSchoolRubricResultBandsCommand;
+import com.sep.vox.application.port.input.usecase.IUseCase;
+import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.domain.model.framework.FrameworkResultBand;
+import com.sep.vox.domain.model.rubric.Rubric;
+import com.sep.vox.domain.model.rubric.RubricResultBand;
+import com.sep.vox.domain.model.rubric.RubricStatus;
+import com.sep.vox.domain.model.rubric.RubricVersion;
+import com.sep.vox.domain.model.user.User;
+import com.sep.vox.domain.model.user.UserStatus;
+import com.sep.vox.domain.repository.*;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.OffsetDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
+
+@Service
+public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateSchoolRubricResultBandsCommand, List<UUID>> {
+
+    private final RubricResultBandRepository rubricResultBandRepository;
+    private final RubricVersionRepository rubricVersionRepository;
+    private final RubricRepository rubricRepository;
+    private final UserRepository userRepository;
+    private final UserContextPort userContextPort;
+    private final FrameworkResultBandRepository frameworkResultBandRepository;
+    private final SchoolRepository schoolRepository;
+    private final SchoolUserRepository schoolUserRepository;
+
+    public CreateSchoolRubricResultBandsUseCase(
+            RubricResultBandRepository rubricResultBandRepository,
+            RubricVersionRepository rubricVersionRepository,
+            RubricRepository rubricRepository,
+            UserRepository userRepository,
+            UserContextPort userContextPort,
+            FrameworkResultBandRepository frameworkResultBandRepository,
+            SchoolRepository schoolRepository,
+            SchoolUserRepository schoolUserRepository) {
+        this.rubricResultBandRepository = rubricResultBandRepository;
+        this.rubricVersionRepository = rubricVersionRepository;
+        this.rubricRepository = rubricRepository;
+        this.userRepository = userRepository;
+        this.userContextPort = userContextPort;
+        this.frameworkResultBandRepository = frameworkResultBandRepository;
+        this.schoolRepository = schoolRepository;
+        this.schoolUserRepository = schoolUserRepository;
+    }
+
+    @Override
+    @Transactional
+    public List<UUID> execute(CreateSchoolRubricResultBandsCommand command) {
+        // 1. Xác thực người dùng
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        User currentUser = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+
+        if (currentUser.getStatus() != UserStatus.ACTIVE) {
+            throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
+        }
+
+        // 2 & 3. Validate Version và quyền School
+        RubricVersion version = rubricVersionRepository.findById(command.versionId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản Rubric."));
+
+        if (version.getStatus() != RubricStatus.DRAFT) {
+            throw new IllegalStateException("Chỉ được thêm Thang điểm kết quả khi Rubric đang ở trạng thái DRAFT.");
+        }
+
+        Rubric rubric = rubricRepository.findById(version.getRubricId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc."));
+
+        // Lấy thông tin liên kết trường học của User hiện tại
+        var schoolUser = schoolUserRepository.findByUserId(currentUserId)
+                .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
+
+        // Xác thực quyền chỉnh sửa
+        if (rubric.getSchoolId() == null || !rubric.getSchoolId().equals(command.schoolId()) || !schoolUser.getSchoolId().equals(rubric.getSchoolId())) {
+            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền chỉnh sửa Rubric của trường khác.");
+        }
+
+        // Kiểm tra xem trường học có đang hoạt động không
+        var school = schoolRepository.findById(command.schoolId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học."));
+        if (!school.isActive()) {
+            throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");
+        }
+
+        OffsetDateTime now = OffsetDateTime.now();
+
+        // 4.1 Lấy toàn bộ danh sách ID của FrameworkResultBand từ request (CHỐNG N+1)
+        List<UUID> frameworkBandIds = command.resultBands().stream()
+                .map(CreateSchoolRubricResultBandsCommand.ResultBandItemCommand::frameworkResultBandId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        // 4.2 Gọi Database 1 LẦN DUY NHẤT
+        Map<UUID, FrameworkResultBand> frameworkBandMap;
+        if (!frameworkBandIds.isEmpty()) {
+            List<FrameworkResultBand> existingFrameworkBands = frameworkResultBandRepository.findAllByIds(frameworkBandIds);
+            frameworkBandMap = existingFrameworkBands.stream()
+                    .collect(Collectors.toMap(FrameworkResultBand::getId, band -> band));
+        } else {
+            frameworkBandMap = new HashMap<>();
+        }
+
+        // Khởi tạo Set để chống trùng lặp dữ liệu nội bộ
+        Set<String> uniqueCodes = new HashSet<>();
+        Set<UUID> uniqueFrameworkIds = new HashSet<>();
+
+        // 4.4 Lặp qua danh sách từ Command và xử lý logic
+        List<RubricResultBand> bandsToSave = command.resultBands().stream().map(bCmd -> {
+
+            String safeCode = StringNormalization.trimAndCollapseSpaces(bCmd.code());
+            String safeName = StringNormalization.trimAndCollapseSpaces(bCmd.name());
+
+            // Check trùng lặp Mã (Code) và FrameworkBandId
+            if (!uniqueCodes.add(safeCode)) {
+                throw new IllegalArgumentException("Dữ liệu gửi lên bị trùng lặp Mã thang điểm (Code): " + safeCode);
+            }
+            if (bCmd.frameworkResultBandId() != null && !uniqueFrameworkIds.add(bCmd.frameworkResultBandId())) {
+                throw new IllegalArgumentException("Dữ liệu gửi lên bị trùng lặp Framework Result Band cho thang điểm: " + safeName);
+            }
+
+            // Tra cứu từ trong RAM (Map) thay vì gọi xuống Database
+            FrameworkResultBand frameworkBand = frameworkBandMap.get(bCmd.frameworkResultBandId());
+
+            if (frameworkBand == null) {
+                throw new NotFoundException("Không tìm thấy Framework Result Band với ID: " + bCmd.frameworkResultBandId());
+            }
+
+
+            // Validate logic điểm
+            if (bCmd.mappedScoreMin().compareTo(bCmd.mappedScoreMax()) > 0) {
+                throw new IllegalArgumentException("Thang điểm '" + safeName + "': Điểm quy đổi tối thiểu không được lớn hơn tối đa.");
+            }
+
+            // Để ID là null để đảm bảo JPA hiểu đây là record mới, chừa cho DB sinh UUID
+            return new RubricResultBand(
+                    null,
+                    command.versionId(),
+                    safeCode,
+                    safeName,
+                    bCmd.description() != null ? StringNormalization.trimAndCollapseSpaces(bCmd.description()) : null,
+                    bCmd.mappedScoreMin(),
+                    bCmd.mappedScoreMax(),
+                    bCmd.order(),
+                    now,
+                    now,
+                    currentUserId,
+                    currentUserId
+            );
+        }).toList();
+
+        // 5. Lưu hàng loạt xuống Database
+        List<RubricResultBand> savedBands;
+        try {
+            savedBands = rubricResultBandRepository.saveAll(bandsToSave);
+        } catch (DataIntegrityViolationException e) {
+            throw new IllegalStateException("Lỗi lưu dữ liệu: Mã thang điểm (Code) hoặc Framework Result Band đã tồn tại trong phiên bản Rubric này từ trước. Vui lòng kiểm tra lại.");
+        }
+
+        // Bốc ID từ cái mảng savedBands (đã được DB gắn ID) chứ không phải mảng bandsToSave gốc
+        return savedBands.stream().map(RubricResultBand::getId).toList();
+    }
+}

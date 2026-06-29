@@ -5,14 +5,12 @@ import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-
 import java.util.UUID;
-
-import com.sep.vox.domain.common.PageResult;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
+import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.school.SchoolGrade;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolGradeMapper;
@@ -104,6 +102,13 @@ public class SchoolGradeRepositoryImpl implements SchoolGradeRepository {
     @Override
     public void deleteById(UUID schoolGradeId) {
         springDataSchoolGradeRepository.deleteById(schoolGradeId);
+    }
+
+    @Override
+    public List<SchoolGrade> findAllById(List<UUID> gradeIds) {
+       return springDataSchoolGradeRepository.findAllById(gradeIds).stream()
+            .map(SchoolGradeMapper::toDomain)
+            .toList();
     }
 
     @Override

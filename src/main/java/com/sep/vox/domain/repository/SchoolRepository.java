@@ -25,6 +25,7 @@ public interface SchoolRepository {
 
     void deleteById(UUID id);
 
+    boolean existsByIdAndIsActiveTrue(UUID schoolId);
     List<School> findByIdIn(Collection<UUID> ids, int pageNumber, int size);
 
 

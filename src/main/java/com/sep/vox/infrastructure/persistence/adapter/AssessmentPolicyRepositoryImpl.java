@@ -41,4 +41,9 @@ public class AssessmentPolicyRepositoryImpl implements AssessmentPolicyRepositor
                 .findFirst()
                 .map(AssessmentPolicyMapper::toDomain);
     }
+
+    @Override
+    public boolean existsByFrameworkVersionId(UUID frameworkVersionId) {
+        return springDataAssessmentPolicyRepository.existsByFrameworkVersionId(frameworkVersionId);
+    }
 }

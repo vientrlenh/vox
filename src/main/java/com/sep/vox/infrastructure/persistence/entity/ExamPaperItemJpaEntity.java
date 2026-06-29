@@ -25,6 +25,9 @@ public class ExamPaperItemJpaEntity {
     )
     private UUID id;
 
+    @Column(name = "blueprint_slot_id", updatable = false)
+    private UUID blueprintSlotId;
+
     @Column(name = "section_id", updatable = false)
     private UUID sectionId;
 
@@ -42,9 +45,10 @@ public class ExamPaperItemJpaEntity {
 
     protected ExamPaperItemJpaEntity() {}
 
-    public ExamPaperItemJpaEntity(UUID id, UUID sectionId, UUID paperId, UUID questionId, int order,
+    public ExamPaperItemJpaEntity(UUID id, UUID blueprintSlotId, UUID sectionId, UUID paperId, UUID questionId, int order,
             BigDecimal weight) {
         this.id = id;
+        this.blueprintSlotId = blueprintSlotId;
         this.sectionId = sectionId;
         this.paperId = paperId;
         this.questionId = questionId;
@@ -98,6 +102,14 @@ public class ExamPaperItemJpaEntity {
 
     public void setWeight(BigDecimal weight) {
         this.weight = weight;
+    }
+
+    public UUID getBlueprintSlotId() {
+        return blueprintSlotId;
+    }
+
+    public void setBlueprintSlotId(UUID blueprintSlotId) {
+        this.blueprintSlotId = blueprintSlotId;
     }
 
     

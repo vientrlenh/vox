@@ -19,9 +19,10 @@ public interface SpringDataSchoolUserRepository extends JpaRepository<SchoolUser
     Optional<SchoolUserJpaEntity> findByUserId(UUID userId);
     List<SchoolUserJpaEntity> findByUserIdIn(Collection<UUID> userIds);
 
-
     @Query("SELECT su.schoolId FROM SchoolUserJpaEntity su WHERE su.userId = :userId")
     Optional<UUID> findSchoolIdByUserId(@Param("userId") UUID userId);
+
+
 
     @Query(value = """
         SELECT 

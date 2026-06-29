@@ -6,7 +6,6 @@ import java.util.UUID;
 import org.hibernate.annotations.Generated;
 import org.hibernate.generator.EventType;
 
-import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -40,14 +39,6 @@ public class FrameworkResultBandJpaEntity {
     @Column(name = "result_band_order", nullable = false)
     private int order;
 
-    @Column(name = "status", nullable = false, check = {
-        @CheckConstraint(
-            name = "chk_framework_result_bands_status_valid",
-            constraint = "status IN ('DRAFT', 'PUBLISHED', 'ARCHIVED')"
-        )
-    })
-    private String status;
-
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 
@@ -63,7 +54,7 @@ public class FrameworkResultBandJpaEntity {
     protected FrameworkResultBandJpaEntity() {}
 
     public FrameworkResultBandJpaEntity(UUID id, UUID frameworkVersionId, String code, String label,
-            String description, int order, String status, 
+            String description, int order,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.frameworkVersionId = frameworkVersionId;
@@ -71,7 +62,6 @@ public class FrameworkResultBandJpaEntity {
         this.label = label;
         this.description = description;
         this.order = order;
-        this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
@@ -124,14 +114,6 @@ public class FrameworkResultBandJpaEntity {
 
     public void setOrder(int order) {
         this.order = order;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
     }
 
     public OffsetDateTime getCreatedAt() {

@@ -10,7 +10,6 @@ public class FrameworkResultBand {
     private String label;
     private String description;
     private int order;
-    private FrameworkResultBandStatus status;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
     private UUID createdBy;
@@ -18,28 +17,27 @@ public class FrameworkResultBand {
 
     public FrameworkResultBand() {}
 
-    public FrameworkResultBand(UUID id, UUID frameworkVersionId, String code, String label, String description, int order, FrameworkResultBandStatus status, OffsetDateTime createdAt,
+    public FrameworkResultBand(UUID id, UUID frameworkVersionId, String code, String label, String description, int order, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.frameworkVersionId = frameworkVersionId;
         this.code = code;
         this.label = label;
+        this.description = description;
         this.order = order;
-        this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
         this.updatedBy = updatedBy;
     }
 
-    public FrameworkResultBand(UUID frameworkVersionId, String code, String label, String description, int order, FrameworkResultBandStatus status, OffsetDateTime createdAt,
+    public FrameworkResultBand(UUID frameworkVersionId, String code, String label, String description, int order, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.frameworkVersionId = frameworkVersionId;
         this.code = code;
         this.label = label;
         this.description = description;
         this.order = order;
-        this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
@@ -98,15 +96,6 @@ public class FrameworkResultBand {
         this.order = order;
     }
 
-    public FrameworkResultBandStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(FrameworkResultBandStatus status) {
-        this.status = status;
-    }
-
- 
     public void setCreatedAt(OffsetDateTime createdAt) {
         this.createdAt = createdAt;
     }

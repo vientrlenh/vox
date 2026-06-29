@@ -25,6 +25,9 @@ public class ExamJpaEntity {
         columnDefinition = "UUID DEFAULT uuidv7()"
     )
     private UUID id;
+
+    @Column(name = "blueprint_id", updatable = false)
+    private UUID blueprintId;
     
     @Column(name = "code", nullable = false, updatable = false, length = 100)
     private String code;
@@ -72,10 +75,11 @@ public class ExamJpaEntity {
 
     protected ExamJpaEntity() {}
 
-    public ExamJpaEntity(UUID id, String code, String name, String description, UUID schoolId, UUID languageId,
+    public ExamJpaEntity(UUID id, UUID blueprintId, String code, String name, String description, UUID schoolId, UUID languageId,
             String status, OffsetDateTime openAt, OffsetDateTime closeAt, UUID assessmentPolicyId,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
+        this.blueprintId = blueprintId;
         this.code = code;
         this.name = name;
         this.description = description;
@@ -201,6 +205,14 @@ public class ExamJpaEntity {
 
     public void setUpdatedBy(UUID updatedBy) {
         this.updatedBy = updatedBy;
+    }
+
+    public UUID getBlueprintId() {
+        return blueprintId;
+    }
+
+    public void setBlueprintId(UUID blueprintId) {
+        this.blueprintId = blueprintId;
     }
 
     

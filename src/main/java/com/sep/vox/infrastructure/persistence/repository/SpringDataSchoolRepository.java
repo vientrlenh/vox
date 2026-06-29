@@ -18,6 +18,8 @@ public interface SpringDataSchoolRepository extends JpaRepository<SchoolJpaEntit
 
     Optional<SchoolJpaEntity> findByDomain(String domain);
 
+    boolean existsByCode(String code);
+
     boolean existsByContactEmail(String contactEmail);
 
     boolean existsByContactPhone(String contactPhone);
@@ -28,6 +30,7 @@ public interface SpringDataSchoolRepository extends JpaRepository<SchoolJpaEntit
 
     boolean existsByCodeAndIdNot(String normalizedCode, UUID id);
     boolean existsByDomain(String domain);
+    boolean existsByIdAndIsActiveTrue(UUID schoolId);
 
     //COALESCE sẽ đóng vai trò hoạt động như sau : nhập name nếu ma null -> s.name
     //            s.name = COALESCE(:name, s.name, 'Vit'),
@@ -59,5 +62,4 @@ public interface SpringDataSchoolRepository extends JpaRepository<SchoolJpaEntit
             @Param("updatedBy") UUID updatedBy
     );
     List<SchoolJpaEntity> findByIdIn(Collection<UUID> ids);
-    boolean existsByCode(String code);
 }

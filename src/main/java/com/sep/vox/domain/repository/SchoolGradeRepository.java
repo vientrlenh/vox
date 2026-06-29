@@ -15,6 +15,8 @@ public interface SchoolGradeRepository {
     Optional<SchoolGrade> findBySchoolIdAndCode(UUID schoolId, String code);
     SchoolGrade save(SchoolGrade grade);
 
+    List<SchoolGrade> findAllById(List<UUID> gradeIds);
+
     // Đổi chữ SchoolId thành SchoolGradeLevelId
     boolean existsBySchoolGradeLevelIdAndCode(UUID schoolGradeLevelId, String code);
     Optional<SchoolGrade> findBySchoolGradeLevelIdAndCode(UUID schoolGradeLevelId, String code);

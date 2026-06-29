@@ -5,6 +5,7 @@ import java.util.UUID;
 
 public class ExamPaperItem {
     private UUID id;
+    private UUID blueprintSlotId;
     private UUID sectionId;
     private UUID paperId;
     private UUID questionId;
@@ -13,8 +14,9 @@ public class ExamPaperItem {
 
     public ExamPaperItem() {}
 
-    public ExamPaperItem(UUID id, UUID sectionId, UUID paperId, UUID questionId, int order, BigDecimal weight) {
+    public ExamPaperItem(UUID id, UUID blueprintSlotId, UUID sectionId, UUID paperId, UUID questionId, int order, BigDecimal weight) {
         this.id = id;
+        this.blueprintSlotId = blueprintSlotId;
         this.sectionId = sectionId;
         this.paperId = paperId;
         this.questionId = questionId;
@@ -22,7 +24,8 @@ public class ExamPaperItem {
         this.weight = weight;
     }
 
-    public ExamPaperItem(UUID sectionId, UUID paperId, UUID questionId, int order, BigDecimal weight) {
+    public ExamPaperItem(UUID blueprintSlotId, UUID sectionId, UUID paperId, UUID questionId, int order, BigDecimal weight) {
+        this.blueprintSlotId = blueprintSlotId;
         this.sectionId = sectionId;
         this.paperId = paperId;
         this.questionId = questionId;
@@ -76,6 +79,14 @@ public class ExamPaperItem {
 
     public void setWeight(BigDecimal weight) {
         this.weight = weight;
+    }
+
+    public UUID getBlueprintSlotId() {
+        return blueprintSlotId;
+    }
+
+    public void setBlueprintSlotId(UUID blueprintSlotId) {
+        this.blueprintSlotId = blueprintSlotId;
     }
 
     

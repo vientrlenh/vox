@@ -64,9 +64,9 @@ public class ViewSchoolClassUsersUseCase implements IUseCase<ViewSchoolClassUser
     }
 
     private UUID getSchoolId(UUID userId) {
-        return schoolUserRepository.findByUserId(userId)
-            .map(SchoolUser::getSchoolId)
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(userId)
             .orElseThrow(() -> new IllegalStateException("Người dùng hiện tại không thuộc trường nào"));
+        return schoolUser.getSchoolId();
     }
 
     private void validateSchool(UUID schoolId) {

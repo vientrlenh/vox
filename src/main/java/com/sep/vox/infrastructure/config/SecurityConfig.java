@@ -10,8 +10,6 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -79,16 +77,15 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain configure(HttpSecurity http) {
         http
-            .csrf(AbstractHttpConfigurer::disable)
-            .formLogin(AbstractHttpConfigurer::disable)
-            .httpBasic(AbstractHttpConfigurer::disable)
+            .csrf(csrf -> csrf.disable())
+            .formLogin(fl -> fl.disable())
+            .httpBasic(hb -> hb.disable())
             .cors(cors -> cors
                 .configurationSource(corsConfigurationSource()))
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
             .headers(headers -> headers
-                .frameOptions(HeadersConfigurer
-                    .FrameOptionsConfig::sameOrigin)
+                .frameOptions(frame -> frame.sameOrigin())
                 .xssProtection(xss -> xss
                     .headerValue(HeaderValue.ENABLED_MODE_BLOCK))
                 .httpStrictTransportSecurity(hsts -> hsts

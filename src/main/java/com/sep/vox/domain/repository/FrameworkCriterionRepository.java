@@ -6,8 +6,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
-import com.sep.vox.domain.model.framework.FrameworkCriterion;
-
 public interface FrameworkCriterionRepository {
     List<FrameworkCriterion> findAllByIds(List<UUID> ids);
     List<FrameworkCriterion> findByFrameworkVersionId(UUID frameworkVersionId);

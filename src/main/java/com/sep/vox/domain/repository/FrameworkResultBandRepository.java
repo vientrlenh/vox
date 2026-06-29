@@ -7,8 +7,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import com.sep.vox.domain.model.framework.FrameworkResultBand;
-
 public interface FrameworkResultBandRepository {
     Optional<FrameworkResultBand> findById(UUID id);
 

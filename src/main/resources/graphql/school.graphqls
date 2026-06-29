@@ -171,11 +171,11 @@ input UpdateSchoolGradeInput {
 }
 
 type SchoolGradePage {
+    content: [SchoolGrade!]!
+    page: Int!
+    size: Int!
     totalElements: Int!
     totalPages: Int!
-    currentPage: Int!
-    pageSize: Int!
-    content: [SchoolGrade!]!
 }
 
 type SchoolGradeLevel {

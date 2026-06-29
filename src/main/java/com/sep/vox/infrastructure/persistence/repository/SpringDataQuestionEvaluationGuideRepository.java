@@ -9,4 +9,5 @@ import com.sep.vox.infrastructure.persistence.entity.QuestionEvaluationGuideJpaE
 
 public interface SpringDataQuestionEvaluationGuideRepository extends JpaRepository<QuestionEvaluationGuideJpaEntity, UUID> {
     Optional<QuestionEvaluationGuideJpaEntity> findByQuestionId(UUID questionId);
+    void deleteByQuestionId(UUID questionId);
 }

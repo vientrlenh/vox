@@ -50,4 +50,9 @@ public class QuestionCollaboratorRepositoryImpl implements QuestionCollaboratorR
     public void deleteById(UUID id) {
         springDataQuestionCollaboratorRepository.deleteById(id);
     }
+
+    @Override
+    public void deleteByQuestionId(UUID questionId) {
+        springDataQuestionCollaboratorRepository.deleteByQuestionId(questionId);
+    }
 }

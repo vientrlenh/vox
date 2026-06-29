@@ -13,15 +13,13 @@ import com.sep.vox.domain.model.question.QuestionType;
 public interface QuestionRepository {
     Question save(Question question);
     Optional<Question> findById(UUID id);
-    List<Question> findByTopicId(UUID topicId);
-    PageResult<Question> findByTopicId(UUID topicId, int pageNumber, int size);
-    PageResult<Question> findAll(int pageNumber, int size);
     PageResult<Question> findAccessible(
         UUID currentUserId,
         UUID currentSchoolId,
         boolean systemAdmin,
         boolean schoolAdmin,
         UUID questionBankId,
+        UUID questionTopicId,
         String topicName,
         QuestionStatus status,
         QuestionType type,
@@ -41,4 +39,9 @@ public interface QuestionRepository {
     boolean existsUsedInExam(UUID id);
     boolean existsById(UUID id);
     void deleteById(UUID id);
+    List<Question> findBySecurePoolId(UUID securePoolId);
+    List<Question> findByQuestionBankId(UUID questionBankId);
+    List<Question> findByQuestionTopicId(UUID questionTopicId);
+    boolean existsPublishedAndUsedByQuestionBankId(UUID questionBankId);
+    boolean existsPublishedAndUsedByQuestionTopicId(UUID questionTopicId);
 }

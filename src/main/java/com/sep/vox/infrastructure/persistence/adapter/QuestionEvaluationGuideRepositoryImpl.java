@@ -31,4 +31,9 @@ public class QuestionEvaluationGuideRepositoryImpl implements QuestionEvaluation
         return springDataQuestionEvaluationGuideRepository.findByQuestionId(questionId)
             .map(QuestionEvaluationGuideMapper::toDomain);
     }
+
+    @Override
+    public void deleteByQuestionId(UUID questionId) {
+        springDataQuestionEvaluationGuideRepository.deleteByQuestionId(questionId);
+    }
 }

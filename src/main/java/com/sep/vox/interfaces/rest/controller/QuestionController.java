@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.sep.vox.application.port.input.command.DeleteQuestionAssetCommand;
 import com.sep.vox.application.port.input.command.DeleteQuestionCollaboratorCommand;
 import com.sep.vox.application.port.input.command.DeleteQuestionCommand;
+import com.sep.vox.application.port.input.usecase.question.BulkUpdateQuestionStatusUseCase;
 import com.sep.vox.application.port.input.usecase.question.CreateQuestionAssetUseCase;
 import com.sep.vox.application.port.input.usecase.question.CreateQuestionCollaboratorUseCase;
 import com.sep.vox.application.port.input.usecase.question.CreateSystemQuestionBankQuestionUseCase;
@@ -28,6 +29,7 @@ import com.sep.vox.application.port.input.usecase.question.UpdateQuestionStatusU
 import com.sep.vox.application.port.input.usecase.question.UpdateQuestionUseCase;
 import com.sep.vox.application.port.input.usecase.question.UpdateQuestionCollaboratorUseCase;
 import com.sep.vox.application.port.input.usecase.question.UpsertQuestionEvaluationGuideUseCase;
+import com.sep.vox.application.response.input.question.BulkUpdateQuestionStatusResponse;
 import com.sep.vox.application.response.input.question.CreateQuestionResponse;
 import com.sep.vox.application.response.input.question.DeleteQuestionResponse;
 import com.sep.vox.application.response.input.question.UpdateQuestionResponse;
@@ -35,6 +37,7 @@ import com.sep.vox.domain.dto.QuestionAssetDto;
 import com.sep.vox.domain.dto.QuestionCollaboratorDto;
 import com.sep.vox.domain.dto.QuestionDto;
 import com.sep.vox.domain.dto.QuestionEvaluationGuideDto;
+import com.sep.vox.interfaces.rest.dto.request.BulkUpdateQuestionStatusRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateQuestionAssetRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateQuestionCollaboratorRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateQuestionRequest;
@@ -44,6 +47,7 @@ import com.sep.vox.interfaces.rest.dto.request.UpdateQuestionRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateQuestionCollaboratorRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateQuestionStatusRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
+import com.sep.vox.interfaces.rest.mapper.BulkUpdateQuestionStatusCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateQuestionAssetCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateQuestionCollaboratorCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateQuestionCommandMapper;
@@ -70,6 +74,7 @@ public class QuestionController {
     private final UpdateQuestionAssetUseCase updateQuestionAssetUseCase;
     private final DeleteQuestionAssetUseCase deleteQuestionAssetUseCase;
     private final UpsertQuestionEvaluationGuideUseCase upsertQuestionEvaluationGuideUseCase;
+    private final BulkUpdateQuestionStatusUseCase bulkUpdateQuestionStatusUseCase;
 
     public QuestionController(
             CreateSystemQuestionBankQuestionUseCase createQuestionUseCase,
@@ -82,7 +87,8 @@ public class QuestionController {
             CreateQuestionAssetUseCase createQuestionAssetUseCase,
             UpdateQuestionAssetUseCase updateQuestionAssetUseCase,
             DeleteQuestionAssetUseCase deleteQuestionAssetUseCase,
-            UpsertQuestionEvaluationGuideUseCase upsertQuestionEvaluationGuideUseCase) {
+            UpsertQuestionEvaluationGuideUseCase upsertQuestionEvaluationGuideUseCase,
+            BulkUpdateQuestionStatusUseCase bulkUpdateQuestionStatusUseCase) {
         this.createQuestionUseCase = createQuestionUseCase;
         this.updateQuestionUseCase = updateQuestionUseCase;
         this.updateQuestionStatusUseCase = updateQuestionStatusUseCase;
@@ -94,6 +100,7 @@ public class QuestionController {
         this.updateQuestionAssetUseCase = updateQuestionAssetUseCase;
         this.deleteQuestionAssetUseCase = deleteQuestionAssetUseCase;
         this.upsertQuestionEvaluationGuideUseCase = upsertQuestionEvaluationGuideUseCase;
+        this.bulkUpdateQuestionStatusUseCase = bulkUpdateQuestionStatusUseCase;
     }
 
     @PostMapping
@@ -125,6 +132,16 @@ public class QuestionController {
         var command = UpdateQuestionStatusCommandMapper.fromRequest(id, request);
         var data = updateQuestionStatusUseCase.execute(command);
         var response = ApiResponse.success("Cập nhật trạng thái câu hỏi thành công", data);
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/status/bulk")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER')")
+    public ResponseEntity<ApiResponse<BulkUpdateQuestionStatusResponse>> bulkUpdateStatus(
+            @Valid @RequestBody BulkUpdateQuestionStatusRequest request) {
+        var command = BulkUpdateQuestionStatusCommandMapper.fromRequest(request);
+        var data = bulkUpdateQuestionStatusUseCase.execute(command);
+        var response = ApiResponse.success("Cập nhật trạng thái hàng loạt thành công", data);
         return ResponseEntity.ok(response);
     }
 

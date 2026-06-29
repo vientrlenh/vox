@@ -1,13 +1,20 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import java.util.Optional;
 import java.util.UUID;
+import java.util.Optional;
 
+import org.springframework.data.domain.PageRequest;
+import org.springframework.stereotype.Repository;
+
+import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamKind;
+import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.infrastructure.persistence.mapper.ExamMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataExamRepository;
 
+@Repository
 public class ExamRepositoryImpl implements ExamRepository {
 
     private final SpringDataExamRepository springDataExamRepository;
@@ -28,5 +35,45 @@ public class ExamRepositoryImpl implements ExamRepository {
         var saved = springDataExamRepository.save(entity);
         return ExamMapper.toDomain(saved);
     }
-    
+
+    @Override
+    public PageResult<Exam> findAccessible(UUID currentUserId, UUID currentSchoolId, boolean systemAdmin,
+            boolean schoolAdmin, UUID schoolId, UUID schoolClassId, ExamKind kind, ExamStatus status, String keyword,
+            int page, int size) {
+        var pageable = PageRequest.of(page, size);
+        var result = springDataExamRepository.findAccessible(
+            currentUserId,
+            currentSchoolId,
+            systemAdmin,
+            schoolAdmin,
+            schoolId,
+            schoolClassId,
+            kind == null ? null : kind.name(),
+            status == null ? null : status.name(),
+            keyword,
+            pageable
+        );
+        return new PageResult<>(
+            result.getContent().stream().map(ExamMapper::toDomain).toList(),
+            page,
+            size,
+            result.getTotalElements(),
+            result.getTotalPages()
+        );
+    }
+
+    @Override
+    public boolean existsByBlueprintId(UUID blueprintId) {
+        return springDataExamRepository.existsByBlueprintId(blueprintId);
+    }
+
+    @Override
+    public boolean existsSubmittedSessionByExamId(UUID examId) {
+        return springDataExamRepository.existsSubmittedSessionByExamId(examId);
+    }
+
+    @Override
+    public void deleteById(UUID id) {
+        springDataExamRepository.deleteById(id);
+    }
 }

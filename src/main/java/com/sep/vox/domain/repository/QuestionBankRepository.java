@@ -25,4 +25,5 @@ public interface QuestionBankRepository {
         int size
     );
     boolean existsById(UUID id);
+    void deleteById(UUID id);
 }

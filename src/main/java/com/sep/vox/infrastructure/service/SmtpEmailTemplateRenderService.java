@@ -22,6 +22,8 @@ public class SmtpEmailTemplateRenderService implements MailTemplatePort {
         "templates/email/school-user-password-setup.html";
     private static final String REGISTER_VERIFICATION_OTP_TEMPLATE =
         "templates/email/register-verification-otp.html";
+    private static final String EXAM_BLUEPRINT_READY_TEMPLATE =
+        "templates/email/exam-blueprint-ready.html";
 
     @Override
     public String renderPasswordSetUpEmail(String schoolAdminName, String schoolName, String passwordSetupUrl,
@@ -61,6 +63,13 @@ public class SmtpEmailTemplateRenderService implements MailTemplatePort {
         return loadTemplate(REGISTER_VERIFICATION_OTP_TEMPLATE)
             .replace("{{otp}}", escapeHtml(otp))
             .replace("{{expiresIn}}", escapeHtml(expiresIn));
+    }
+
+    @Override
+    public String renderExamBlueprintReadyEmail(String blueprintName, String blueprintCode) {
+        return loadTemplate(EXAM_BLUEPRINT_READY_TEMPLATE)
+            .replace("{{blueprintName}}", escapeHtml(blueprintName))
+            .replace("{{blueprintCode}}", escapeHtml(blueprintCode));
     }
 
     private String loadTemplate(String path) {

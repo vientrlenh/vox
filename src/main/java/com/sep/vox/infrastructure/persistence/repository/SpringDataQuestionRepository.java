@@ -13,8 +13,9 @@ import org.springframework.data.repository.query.Param;
 import com.sep.vox.infrastructure.persistence.entity.QuestionJpaEntity;
 
 public interface SpringDataQuestionRepository extends JpaRepository<QuestionJpaEntity, UUID> {
-    List<QuestionJpaEntity> findByQuestionTopicId(UUID topicId);
-    Page<QuestionJpaEntity> findByQuestionTopicId(UUID topicId, Pageable pageable);
+    List<QuestionJpaEntity> findBySecurePoolId(UUID securePoolId);
+    List<QuestionJpaEntity> findByQuestionBankId(UUID questionBankId);
+    List<QuestionJpaEntity> findByQuestionTopicId(UUID questionTopicId);
 
     @Query("""
         SELECT q
@@ -22,6 +23,7 @@ public interface SpringDataQuestionRepository extends JpaRepository<QuestionJpaE
         JOIN QuestionTopicJpaEntity qt ON qt.id = q.questionTopicId
         JOIN QuestionBankJpaEntity qb ON qb.id = q.questionBankId
         WHERE (:questionBankId IS NULL OR q.questionBankId = :questionBankId)
+          AND (:questionTopicId IS NULL OR q.questionTopicId = :questionTopicId)
           AND (:topicName IS NULL OR LOWER(qt.name) LIKE LOWER(CONCAT('%', :topicName, '%')))
           AND (:status IS NULL OR q.status = :status)
           AND (:type IS NULL OR q.type = :type)
@@ -104,6 +106,7 @@ public interface SpringDataQuestionRepository extends JpaRepository<QuestionJpaE
         @Param("systemAdmin") boolean systemAdmin,
         @Param("schoolAdmin") boolean schoolAdmin,
         @Param("questionBankId") UUID questionBankId,
+        @Param("questionTopicId") UUID questionTopicId,
         @Param("topicName") String topicName,
         @Param("status") String status,
         @Param("type") String type,
@@ -185,4 +188,22 @@ public interface SpringDataQuestionRepository extends JpaRepository<QuestionJpaE
         WHERE epi.questionId = :questionId
     """)
     boolean existsUsedInExam(@Param("questionId") UUID questionId);
+
+    @Query("""
+        SELECT CASE WHEN COUNT(q) > 0 THEN true ELSE false END
+        FROM QuestionJpaEntity q
+        WHERE q.questionBankId = :questionBankId
+          AND q.status = 'PUBLISHED'
+          AND EXISTS (SELECT 1 FROM ExamPaperItemJpaEntity epi WHERE epi.questionId = q.id)
+    """)
+    boolean existsPublishedAndUsedByQuestionBankId(@Param("questionBankId") UUID questionBankId);
+
+    @Query("""
+        SELECT CASE WHEN COUNT(q) > 0 THEN true ELSE false END
+        FROM QuestionJpaEntity q
+        WHERE q.questionTopicId = :questionTopicId
+          AND q.status = 'PUBLISHED'
+          AND EXISTS (SELECT 1 FROM ExamPaperItemJpaEntity epi WHERE epi.questionId = q.id)
+    """)
+    boolean existsPublishedAndUsedByQuestionTopicId(@Param("questionTopicId") UUID questionTopicId);
 }

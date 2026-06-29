@@ -51,6 +51,7 @@ public class ViewQuestionsUseCase implements IUseCase<ViewQuestionsQuery, PageRe
             systemAdmin,
             schoolAdmin,
             input.questionBankId(),
+            input.questionTopicId(),
             input.topicName(),
             input.status(),
             input.type(),

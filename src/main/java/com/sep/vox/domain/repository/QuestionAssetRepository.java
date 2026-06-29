@@ -12,4 +12,5 @@ public interface QuestionAssetRepository {
     List<QuestionAsset> findByQuestionId(UUID questionId);
     Optional<QuestionAsset> findById(UUID id);
     void deleteById(UUID id);
+    void deleteByQuestionId(UUID questionId);
 }

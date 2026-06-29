@@ -25,4 +25,5 @@ public interface QuestionTopicRepository {
     );
     boolean existsById(UUID id);
     boolean isTopicBelongToSchool(UUID id, UUID schoolId);
+    void deleteById(UUID id);
 }

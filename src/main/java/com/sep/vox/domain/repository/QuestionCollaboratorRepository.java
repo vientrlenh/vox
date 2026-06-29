@@ -12,4 +12,5 @@ public interface QuestionCollaboratorRepository {
     Optional<QuestionCollaborator> findByQuestionIdAndUserId(UUID questionId, UUID userId);
     List<QuestionCollaborator> findByQuestionId(UUID questionId);
     void deleteById(UUID id);
+    void deleteByQuestionId(UUID questionId);
 }

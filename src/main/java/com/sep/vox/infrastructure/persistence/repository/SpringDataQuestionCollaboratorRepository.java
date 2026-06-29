@@ -11,4 +11,5 @@ import com.sep.vox.infrastructure.persistence.entity.QuestionCollaboratorJpaEnti
 public interface SpringDataQuestionCollaboratorRepository extends JpaRepository<QuestionCollaboratorJpaEntity, UUID> {
     Optional<QuestionCollaboratorJpaEntity> findByQuestionIdAndUserId(UUID questionId, UUID userId);
     List<QuestionCollaboratorJpaEntity> findByQuestionId(UUID questionId);
+    void deleteByQuestionId(UUID questionId);
 }

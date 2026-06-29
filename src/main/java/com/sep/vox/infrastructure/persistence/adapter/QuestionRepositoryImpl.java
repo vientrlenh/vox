@@ -39,43 +39,6 @@ public class QuestionRepositoryImpl implements QuestionRepository {
     }
 
     @Override
-    public List<Question> findByTopicId(UUID topicId) {
-        return springDataQuestionRepository.findByQuestionTopicId(topicId).stream()
-            .map(QuestionMapper::toDomain)
-            .toList();
-    }
-
-    @Override
-    public PageResult<Question> findByTopicId(UUID topicId, int pageNumber, int size) {
-        var pageable = PageRequest.of(pageNumber, size);
-        var page = springDataQuestionRepository.findByQuestionTopicId(topicId, pageable);
-        return new PageResult<>(
-            page.getContent().stream()
-                .map(QuestionMapper::toDomain)
-                .toList(),
-            pageNumber,
-            size,
-            page.getTotalElements(),
-            page.getTotalPages()
-        );
-    }
-
-    @Override
-    public PageResult<Question> findAll(int pageNumber, int size) {
-        var pageable = PageRequest.of(pageNumber, size);
-        var page = springDataQuestionRepository.findAll(pageable);
-        return new PageResult<>(
-            page.getContent().stream()
-                .map(QuestionMapper::toDomain)
-                .toList(),
-            pageNumber,
-            size,
-            page.getTotalElements(),
-            page.getTotalPages()
-        );
-    }
-
-    @Override
     public boolean existsById(UUID id) {
         return springDataQuestionRepository.existsById(id);
     }
@@ -91,9 +54,40 @@ public class QuestionRepositoryImpl implements QuestionRepository {
     }
 
     @Override
+    public List<Question> findBySecurePoolId(UUID securePoolId) {
+        return springDataQuestionRepository.findBySecurePoolId(securePoolId).stream()
+            .map(QuestionMapper::toDomain)
+            .toList();
+    }
+
+    @Override
+    public List<Question> findByQuestionBankId(UUID questionBankId) {
+        return springDataQuestionRepository.findByQuestionBankId(questionBankId).stream()
+            .map(QuestionMapper::toDomain)
+            .toList();
+    }
+
+    @Override
+    public List<Question> findByQuestionTopicId(UUID questionTopicId) {
+        return springDataQuestionRepository.findByQuestionTopicId(questionTopicId).stream()
+            .map(QuestionMapper::toDomain)
+            .toList();
+    }
+
+    @Override
+    public boolean existsPublishedAndUsedByQuestionBankId(UUID questionBankId) {
+        return springDataQuestionRepository.existsPublishedAndUsedByQuestionBankId(questionBankId);
+    }
+
+    @Override
+    public boolean existsPublishedAndUsedByQuestionTopicId(UUID questionTopicId) {
+        return springDataQuestionRepository.existsPublishedAndUsedByQuestionTopicId(questionTopicId);
+    }
+
+    @Override
     public PageResult<Question> findAccessible(UUID currentUserId, UUID currentSchoolId, boolean systemAdmin,
-            boolean schoolAdmin, UUID questionBankId, String topicName, QuestionStatus status, QuestionType type,
-            QuestionSharing sharing, String scope, String keyword, int pageNumber, int size) {
+            boolean schoolAdmin, UUID questionBankId, UUID questionTopicId, String topicName, QuestionStatus status,
+            QuestionType type, QuestionSharing sharing, String scope, String keyword, int pageNumber, int size) {
         var pageable = PageRequest.of(pageNumber, size);
         var page = springDataQuestionRepository.findAccessible(
             currentUserId,
@@ -101,12 +95,13 @@ public class QuestionRepositoryImpl implements QuestionRepository {
             systemAdmin,
             schoolAdmin,
             questionBankId,
+            questionTopicId,
             topicName,
             status == null ? null : status.name(),
             type == null ? null : type.name(),
             sharing == null ? null : sharing.name(),
-            keyword,
             scope,
+            keyword,
             pageable
         );
         return new PageResult<>(

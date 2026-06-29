@@ -26,7 +26,6 @@ import com.sep.vox.domain.dto.QuestionTopicDto;
 import com.sep.vox.domain.mapper.QuestionAssetDtoMapper;
 import com.sep.vox.domain.mapper.QuestionCollaboratorDtoMapper;
 import com.sep.vox.domain.mapper.QuestionEvaluationGuideDtoMapper;
-import com.sep.vox.domain.model.question.QuestionDifficulty;
 import com.sep.vox.domain.model.question.QuestionSharing;
 import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.model.question.QuestionType;
@@ -65,11 +64,11 @@ public class QuestionController {
     @QueryMapping(name = "questions")
     public PageResult<QuestionDto> questions(
             @Argument UUID questionBankId,
+            @Argument UUID questionTopicId,
             @Argument String topicName,
             @Argument QuestionStatus status,
             @Argument QuestionType type,
             @Argument QuestionSharing sharing,
-            @Argument QuestionDifficulty difficulty,
             @Argument String scope,
             @Argument String keyword,
             @Argument(name = "page") int page,
@@ -77,11 +76,11 @@ public class QuestionController {
         validatePage(page, size);
         var query = new ViewQuestionsQuery(
             questionBankId,
+            questionTopicId,
             topicName,
             status,
             type,
             sharing,
-            difficulty,
             scope,
             keyword,
             page,

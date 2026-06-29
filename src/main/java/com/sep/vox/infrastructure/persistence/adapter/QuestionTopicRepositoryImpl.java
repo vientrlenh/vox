@@ -69,6 +69,11 @@ public class QuestionTopicRepositoryImpl implements QuestionTopicRepository {
     }
 
     @Override
+    public void deleteById(UUID id) {
+        springDataQuestionTopicRepository.deleteById(id);
+    }
+
+    @Override
     public PageResult<QuestionTopic> findAccessible(UUID currentSchoolId, boolean systemAdmin, boolean schoolAdmin,
             UUID questionBankId, QuestionTopicStatus status, String keyword, int pageNumber, int size) {
         var pageable = PageRequest.of(pageNumber, size);

@@ -69,6 +69,14 @@ enum QuestionScope {
     ALL
 }
 
+type QuestionBankGrade {
+    id: ID!
+    questionBankId: ID!
+    schoolGradeId: ID!
+    attachedAt: String
+    attachedBy: ID
+}
+
 type QuestionBank {
     id: ID!
     languageId: ID!
@@ -82,6 +90,7 @@ type QuestionBank {
     updatedAt: String
     createdBy: ID
     updatedBy: ID
+    grades: [QuestionBankGrade!]!
 }
 
 type QuestionBankPage {
@@ -207,11 +216,11 @@ extend type Query {
 
     questions(
         questionBankId: ID,
+        questionTopicId: ID,
         topicName: String,
         status: QuestionStatus,
         type: QuestionType,
         sharing: QuestionSharing,
-        difficulty: QuestionDifficulty,
         scope: QuestionScope = ALL,
         keyword: String,
         page: Int = 0,

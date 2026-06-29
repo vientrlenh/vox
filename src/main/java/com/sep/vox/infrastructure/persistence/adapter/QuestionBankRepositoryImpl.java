@@ -58,6 +58,11 @@ public class QuestionBankRepositoryImpl implements QuestionBankRepository {
     }
 
     @Override
+    public void deleteById(UUID id) {
+        springDataQuestionBankRepository.deleteById(id);
+    }
+
+    @Override
     public PageResult<QuestionBank> findAccessible(UUID currentSchoolId, boolean systemAdmin, boolean schoolAdmin,
             QuestionBankOwnerType ownerType, QuestionBankStatus status, UUID languageId, UUID schoolId, String keyword,
             int pageNumber, int size) {

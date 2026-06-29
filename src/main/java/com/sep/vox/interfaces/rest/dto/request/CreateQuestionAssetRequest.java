@@ -23,6 +23,7 @@ public record CreateQuestionAssetRequest(
     )
     String type,
 
+    @NotBlank(message = "URL tài nguyên không được để trống")
     @Size(max = 4096, message = "URL tài nguyên không được vượt quá 4096 ký tự")
     String url,
 

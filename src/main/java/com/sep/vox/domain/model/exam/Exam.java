@@ -11,6 +11,7 @@ public class Exam {
     private String description;
     private UUID schoolId;
     private UUID languageId;
+    private ExamKind kind;
     private ExamStatus status;
     private OffsetDateTime openAt;
     private OffsetDateTime closeAt;
@@ -23,7 +24,7 @@ public class Exam {
     public Exam() {}
 
     public Exam(UUID id, UUID blueprintId, String code, String name, String description, UUID schoolId, UUID languageId,
-            ExamStatus status, OffsetDateTime openAt, OffsetDateTime closeAt, UUID assessmentPolicyId,
+            ExamKind kind, ExamStatus status, OffsetDateTime openAt, OffsetDateTime closeAt, UUID assessmentPolicyId,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.blueprintId = blueprintId;
@@ -32,6 +33,7 @@ public class Exam {
         this.description = description;
         this.schoolId = schoolId;
         this.languageId = languageId;
+        this.kind = kind;
         this.status = status;
         this.openAt = openAt;
         this.closeAt = closeAt;
@@ -42,7 +44,7 @@ public class Exam {
         this.updatedBy = updatedBy;
     }
 
-    public Exam(UUID blueprintId, String code, String name, String description, UUID schoolId, UUID languageId, ExamStatus status,
+    public Exam(UUID blueprintId, String code, String name, String description, UUID schoolId, UUID languageId, ExamKind kind, ExamStatus status,
             OffsetDateTime openAt, OffsetDateTime closeAt, UUID assessmentPolicyId, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.blueprintId = blueprintId;
@@ -51,6 +53,7 @@ public class Exam {
         this.description = description;
         this.schoolId = schoolId;
         this.languageId = languageId;
+        this.kind = kind;
         this.status = status;
         this.openAt = openAt;
         this.closeAt = closeAt;
@@ -107,6 +110,14 @@ public class Exam {
 
     public void setLanguageId(UUID languageId) {
         this.languageId = languageId;
+    }
+
+    public ExamKind getKind() {
+        return kind;
+    }
+
+    public void setKind(ExamKind kind) {
+        this.kind = kind;
     }
 
     public ExamStatus getStatus() {

@@ -1,0 +1,10 @@
+stateDiagram-v2
+    [*] --> ASSIGNED : gán thí sinh vào ca thi
+    ASSIGNED --> COMPLETED : hoàn thành bài thi
+    ASSIGNED --> ABSENT : vắng thi
+    ASSIGNED --> EXEMPTED : được miễn / hoãn thi
+    ASSIGNED --> CANCELLED : huỷ tư cách dự thi
+    COMPLETED --> [*]
+    ABSENT --> [*]
+    EXEMPTED --> [*]
+    CANCELLED --> [*]

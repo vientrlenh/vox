@@ -1,0 +1,10 @@
+stateDiagram-v2
+    [*] --> PENDING : nộp đơn đăng ký
+    PENDING --> AUTO_APPROVED : hệ thống tự duyệt
+    PENDING --> APPROVED : admin duyệt
+    PENDING --> REJECTED : admin từ chối
+    PENDING --> EXPIRED : quá hạn xử lý
+    AUTO_APPROVED --> [*]
+    APPROVED --> [*]
+    REJECTED --> [*]
+    EXPIRED --> [*]

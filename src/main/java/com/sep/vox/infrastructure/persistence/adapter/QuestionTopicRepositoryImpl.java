@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.question.QuestionTopic;
+import com.sep.vox.domain.model.question.QuestionTopicStatus;
 import com.sep.vox.domain.repository.QuestionTopicRepository;
 import com.sep.vox.infrastructure.persistence.mapper.QuestionTopicMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataQuestionTopicRepository;
@@ -44,7 +45,7 @@ public class QuestionTopicRepositoryImpl implements QuestionTopicRepository {
 
     @Override
     public PageResult<QuestionTopic> findByQuestionBankId(UUID questionBankId, int pageNumber, int size) {
-        var pageable = PageRequest.of(pageNumber - 1, size);
+        var pageable = PageRequest.of(pageNumber, size);
         var page = springDataQuestionTopicRepository.findByQuestionBankId(questionBankId, pageable);
         return new PageResult<>(
             page.getContent().stream()
@@ -65,5 +66,29 @@ public class QuestionTopicRepositoryImpl implements QuestionTopicRepository {
     @Override
     public boolean isTopicBelongToSchool(UUID id, UUID schoolId) {
         return springDataQuestionTopicRepository.isTopicBelongToSchool(id, schoolId);
+    }
+
+    @Override
+    public PageResult<QuestionTopic> findAccessible(UUID currentSchoolId, boolean systemAdmin, boolean schoolAdmin,
+            UUID questionBankId, QuestionTopicStatus status, String keyword, int pageNumber, int size) {
+        var pageable = PageRequest.of(pageNumber, size);
+        var page = springDataQuestionTopicRepository.findAccessible(
+            currentSchoolId,
+            systemAdmin,
+            schoolAdmin,
+            questionBankId,
+            status == null ? null : status.name(),
+            keyword,
+            pageable
+        );
+        return new PageResult<>(
+            page.getContent().stream()
+                .map(QuestionTopicMapper::toDomain)
+                .toList(),
+            pageNumber,
+            size,
+            page.getTotalElements(),
+            page.getTotalPages()
+        );
     }
 }

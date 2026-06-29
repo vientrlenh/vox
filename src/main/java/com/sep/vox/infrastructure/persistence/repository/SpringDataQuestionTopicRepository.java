@@ -26,4 +26,32 @@ public interface SpringDataQuestionTopicRepository extends JpaRepository<Questio
             AND s.id = :schoolId
     """)
     boolean isTopicBelongToSchool(@Param("questionTopicId") UUID questionTopicId, @Param("schoolId") UUID schoolId);
+
+    @Query("""
+        SELECT qt
+        FROM QuestionTopicJpaEntity qt
+        JOIN QuestionBankJpaEntity qb ON qb.id = qt.questionBankId
+        WHERE (:questionBankId IS NULL OR qt.questionBankId = :questionBankId)
+          AND (:status IS NULL OR qt.status = :status)
+          AND (
+                :keyword IS NULL
+                OR LOWER(qt.code) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                OR LOWER(qt.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
+              )
+          AND (
+                :systemAdmin = true
+                OR (:schoolAdmin = true AND qb.schoolId = :currentSchoolId)
+                OR (:schoolAdmin = false AND qb.schoolId = :currentSchoolId AND qb.status = 'PUBLISHED' AND qt.status = 'PUBLISHED')
+              )
+        ORDER BY qt.updatedAt DESC
+    """)
+    Page<QuestionTopicJpaEntity> findAccessible(
+        @Param("currentSchoolId") UUID currentSchoolId,
+        @Param("systemAdmin") boolean systemAdmin,
+        @Param("schoolAdmin") boolean schoolAdmin,
+        @Param("questionBankId") UUID questionBankId,
+        @Param("status") String status,
+        @Param("keyword") String keyword,
+        Pageable pageable
+    );
 }

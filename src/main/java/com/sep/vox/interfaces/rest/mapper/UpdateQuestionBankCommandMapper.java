@@ -10,9 +10,8 @@ public final class UpdateQuestionBankCommandMapper {
     public static UpdateQuestionBankCommand fromRequest(UUID id, UpdateQuestionBankRequest request) {
         return new UpdateQuestionBankCommand(
             id,
-            request.bankName(),
-            request.description(),
-            request.isActive()
+            request.name(),
+            request.description()
         );
     }
 }

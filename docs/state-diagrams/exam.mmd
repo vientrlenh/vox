@@ -1,0 +1,10 @@
+stateDiagram-v2
+    [*] --> DRAFT : tạo kỳ thi
+    DRAFT --> SCHEDULED : lên lịch thi
+    SCHEDULED --> IN_PROGRESS : đến giờ, mở ca thi
+    IN_PROGRESS --> CLOSED : hết thời gian thi
+    CLOSED --> RESULTS_PUBLISHED : công bố kết quả
+    DRAFT --> CANCELLED : huỷ kỳ thi
+    SCHEDULED --> CANCELLED : huỷ kỳ thi
+    RESULTS_PUBLISHED --> [*]
+    CANCELLED --> [*]

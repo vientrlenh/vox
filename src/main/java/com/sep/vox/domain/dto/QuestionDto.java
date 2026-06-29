@@ -4,6 +4,7 @@ import java.util.UUID;
 
 public record QuestionDto(
     UUID id,
+    UUID questionBankId,
     UUID questionTopicId,
     String code,
     String instructionText,
@@ -18,7 +19,11 @@ public record QuestionDto(
     UUID sourceQuestionId,
     boolean locked,
     String status,
+    String confidentiality,
+    UUID securePoolId,
     String createdAt,
-    String updatedAt
+    String updatedAt,
+    UUID createdBy,
+    UUID updatedBy
 ) {
 }

@@ -1,0 +1,82 @@
+%% Cấu trúc đầy đủ của domain Rubric (không chỉ riêng state của RubricVersion)
+classDiagram
+    class Rubric {
+        UUID id
+        UUID frameworkId
+        UUID languageId
+        UUID schoolId
+        String code
+        String name
+        String description
+        RubricOwnerType ownerType
+    }
+
+    class RubricVersion {
+        UUID id
+        UUID rubricId
+        int version
+        RubricStatus status
+        BigDecimal scoringScaleMin
+        BigDecimal scoringScaleMax
+        RubricTotalScoreMethod totalScoreMethod
+        OffsetDateTime effectiveFrom
+        OffsetDateTime effectiveTo
+    }
+
+    class RubricCriterion {
+        UUID id
+        UUID rubricVersionId
+        UUID frameworkCriterionId
+        String code
+        String name
+        BigDecimal weight
+        BigDecimal minScore
+        BigDecimal maxScore
+        int order
+        boolean isRequired
+    }
+
+    class RubricCriterionBand {
+        UUID id
+        UUID criterionId
+        String code
+        BigDecimal scoreMin
+        BigDecimal scoreMax
+    }
+
+    class RubricResultBand {
+        UUID id
+        UUID rubricVersionId
+        String code
+        String name
+        BigDecimal scoreMin
+        BigDecimal scoreMax
+        int order
+    }
+
+    class RubricOwnerType {
+        <<enumeration>>
+        SYSTEM
+        SCHOOL
+    }
+
+    class RubricStatus {
+        <<enumeration>>
+        DRAFT
+        PUBLISHED
+        ARCHIVED
+    }
+
+    class RubricTotalScoreMethod {
+        <<enumeration>>
+        WEIGHTED_AVERAGE
+        SUM
+    }
+
+    Rubric "1" --> "*" RubricVersion : có nhiều phiên bản
+    Rubric --> RubricOwnerType : ownerType
+    RubricVersion --> RubricStatus : status
+    RubricVersion --> RubricTotalScoreMethod : totalScoreMethod
+    RubricVersion "1" --> "*" RubricCriterion : gồm các tiêu chí chấm
+    RubricVersion "1" --> "*" RubricResultBand : khung điểm tổng (band cuối)
+    RubricCriterion "1" --> "*" RubricCriterionBand : chia khung điểm theo tiêu chí

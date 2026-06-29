@@ -1,0 +1,7 @@
+stateDiagram-v2
+    [*] --> DRAFT : tạo đề thi
+    DRAFT --> IN_REVIEW : gửi duyệt đề
+    IN_REVIEW --> DRAFT : yêu cầu chỉnh sửa lại
+    IN_REVIEW --> APPROVED : duyệt đề đạt
+    APPROVED --> LOCKED : khoá đề khi đến giờ thi
+    LOCKED --> [*]

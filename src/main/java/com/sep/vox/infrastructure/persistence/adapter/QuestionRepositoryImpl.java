@@ -9,6 +9,9 @@ import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.question.Question;
+import com.sep.vox.domain.model.question.QuestionSharing;
+import com.sep.vox.domain.model.question.QuestionStatus;
+import com.sep.vox.domain.model.question.QuestionType;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.infrastructure.persistence.mapper.QuestionMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataQuestionRepository;
@@ -44,7 +47,7 @@ public class QuestionRepositoryImpl implements QuestionRepository {
 
     @Override
     public PageResult<Question> findByTopicId(UUID topicId, int pageNumber, int size) {
-        var pageable = PageRequest.of(pageNumber - 1, size);
+        var pageable = PageRequest.of(pageNumber, size);
         var page = springDataQuestionRepository.findByQuestionTopicId(topicId, pageable);
         return new PageResult<>(
             page.getContent().stream()
@@ -59,7 +62,7 @@ public class QuestionRepositoryImpl implements QuestionRepository {
 
     @Override
     public PageResult<Question> findAll(int pageNumber, int size) {
-        var pageable = PageRequest.of(pageNumber - 1, size);
+        var pageable = PageRequest.of(pageNumber, size);
         var page = springDataQuestionRepository.findAll(pageable);
         return new PageResult<>(
             page.getContent().stream()
@@ -75,5 +78,57 @@ public class QuestionRepositoryImpl implements QuestionRepository {
     @Override
     public boolean existsById(UUID id) {
         return springDataQuestionRepository.existsById(id);
+    }
+
+    @Override
+    public void deleteById(UUID id) {
+        springDataQuestionRepository.deleteById(id);
+    }
+
+    @Override
+    public boolean existsUsedInExam(UUID id) {
+        return springDataQuestionRepository.existsUsedInExam(id);
+    }
+
+    @Override
+    public PageResult<Question> findAccessible(UUID currentUserId, UUID currentSchoolId, boolean systemAdmin,
+            boolean schoolAdmin, UUID questionBankId, String topicName, QuestionStatus status, QuestionType type,
+            QuestionSharing sharing, String scope, String keyword, int pageNumber, int size) {
+        var pageable = PageRequest.of(pageNumber, size);
+        var page = springDataQuestionRepository.findAccessible(
+            currentUserId,
+            currentSchoolId,
+            systemAdmin,
+            schoolAdmin,
+            questionBankId,
+            topicName,
+            status == null ? null : status.name(),
+            type == null ? null : type.name(),
+            sharing == null ? null : sharing.name(),
+            keyword,
+            scope,
+            pageable
+        );
+        return new PageResult<>(
+            page.getContent().stream()
+                .map(QuestionMapper::toDomain)
+                .toList(),
+            pageNumber,
+            size,
+            page.getTotalElements(),
+            page.getTotalPages()
+        );
+    }
+
+    @Override
+    public Optional<Question> findAccessibleById(UUID id, UUID currentUserId, UUID currentSchoolId, boolean systemAdmin,
+            boolean schoolAdmin) {
+        return springDataQuestionRepository.findAccessibleById(
+            id,
+            currentUserId,
+            currentSchoolId,
+            systemAdmin,
+            schoolAdmin
+        ).map(QuestionMapper::toDomain);
     }
 }

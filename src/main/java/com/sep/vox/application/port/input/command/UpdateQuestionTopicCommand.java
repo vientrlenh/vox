@@ -4,8 +4,7 @@ import java.util.UUID;
 
 public record UpdateQuestionTopicCommand(
     UUID id,
-    UUID bankId,
-    String topicName,
+    String name,
     String description
 ) {
 }

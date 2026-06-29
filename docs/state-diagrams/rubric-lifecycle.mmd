@@ -1,0 +1,9 @@
+%% State suy luận ở cấp Rubric tổng (không có field này trong code — suy ra từ tập hợp các RubricVersion con)
+stateDiagram-v2
+    [*] --> NO_VERSION : tạo Rubric mới (chưa soạn version nào)
+    NO_VERSION --> HAS_DRAFT : soạn version đầu tiên (DRAFT)
+    HAS_DRAFT --> ACTIVE : publish version đầu tiên
+    ACTIVE --> UPDATING : soạn version mới (DRAFT) để cập nhật, version cũ vẫn PUBLISHED
+    UPDATING --> ACTIVE : publish version mới (version cũ tự ARCHIVED) hoặc hủy bản nháp
+    ACTIVE --> RETIRED : archive version đang dùng, không có version mới thay thế
+    RETIRED --> [*]

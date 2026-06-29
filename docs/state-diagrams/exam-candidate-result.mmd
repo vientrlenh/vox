@@ -1,0 +1,12 @@
+stateDiagram-v2
+    [*] --> PENDING_REVIEW : có câu cần người chấm review
+    PENDING_REVIEW --> RELEASED : công bố kết quả
+    RELEASED --> FINAL : hết hạn khiếu nại, chốt kết quả
+    RELEASED --> APPEALED : thí sinh khiếu nại
+    APPEALED --> RE_GRADING : chấm lại theo khiếu nại
+    RE_GRADING --> FINAL : kết quả chấm lại được chốt
+    RE_GRADING --> INVALID : kết quả bị huỷ
+    RE_GRADING --> RETAKE_REQUIRED : yêu cầu thi lại
+    FINAL --> [*]
+    INVALID --> [*]
+    RETAKE_REQUIRED --> [*]

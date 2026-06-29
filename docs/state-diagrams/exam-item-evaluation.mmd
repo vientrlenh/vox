@@ -1,0 +1,8 @@
+stateDiagram-v2
+    [*] --> AUTO_GRADED : AI chấm câu trả lời
+    AUTO_GRADED --> FINALIZED : không cần review, chốt điểm
+    AUTO_GRADED --> UNDER_REVIEW : đưa vào hàng chờ người chấm
+    UNDER_REVIEW --> FINALIZED : người chấm xác nhận / sửa điểm
+    FINALIZED --> SUPERSEDED : có lượt chấm lại thay thế (khiếu nại)
+    FINALIZED --> [*]
+    SUPERSEDED --> [*]

@@ -1,5 +1,8 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.util.Optional;
+import java.util.UUID;
+
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.question.QuestionEvaluationGuide;
@@ -21,5 +24,11 @@ public class QuestionEvaluationGuideRepositoryImpl implements QuestionEvaluation
         var entity = QuestionEvaluationGuideMapper.toJpa(questionEvaluationGuide);
         var saved = springDataQuestionEvaluationGuideRepository.save(entity);
         return QuestionEvaluationGuideMapper.toDomain(saved);
+    }
+
+    @Override
+    public Optional<QuestionEvaluationGuide> findByQuestionId(UUID questionId) {
+        return springDataQuestionEvaluationGuideRepository.findByQuestionId(questionId)
+            .map(QuestionEvaluationGuideMapper::toDomain);
     }
 }

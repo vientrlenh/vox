@@ -371,14 +371,14 @@ public class SchoolController {
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<SchoolGradeDto> schoolGrades(
             @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "schoolGradeLevelId") UUID schoolGradeLevelId,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
 
-        // Validate tham số phân trang
         int pageNumber = (page != null && page > 0) ? page : 1;
         int pageSize = (size != null && size > 0) ? size : 10;
 
-        var query = new ViewSchoolGradesQuery(schoolId, pageNumber, pageSize);
+        var query = new ViewSchoolGradesQuery(schoolId, schoolGradeLevelId, pageNumber, pageSize);
 
         return viewSchoolGradesUseCase.execute(query);
     }

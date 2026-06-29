@@ -45,8 +45,18 @@ public interface SpringDataSchoolGradeRepository extends JpaRepository<SchoolGra
 
     Optional<SchoolGradeJpaEntity> findBySchoolGradeLevelIdAndCode(UUID schoolGradeLevelId, String code);
 
-    @Query("SELECT g FROM SchoolGradeJpaEntity g WHERE g.schoolGradeLevelId IN (SELECT l.id FROM SchoolGradeLevelJpaEntity l WHERE l.schoolId = :schoolId)")
-    Page<SchoolGradeJpaEntity> findAllBySchoolId(@Param("schoolId") UUID schoolId, Pageable pageable);
+    @Query("""
+        SELECT g FROM SchoolGradeJpaEntity g
+        JOIN SchoolGradeLevelJpaEntity l ON l.id = g.schoolGradeLevelId
+        WHERE l.schoolId = :schoolId
+            AND (:gradeLevelId IS NULL OR g.schoolGradeLevelId = :gradeLevelId)
+        ORDER BY g.startDate DESC
+        """)
+    Page<SchoolGradeJpaEntity> findAllBySchoolId(
+        @Param("schoolId") UUID schoolId,
+        @Param("gradeLevelId") UUID gradeLevelId,
+        Pageable pageable
+    );
 
 
     @Modifying

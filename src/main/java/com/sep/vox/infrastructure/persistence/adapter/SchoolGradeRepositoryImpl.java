@@ -76,22 +76,14 @@ public class SchoolGradeRepositoryImpl implements SchoolGradeRepository {
     }
 
     @Override
-    public PageResult<SchoolGrade> findAllBySchoolId(UUID schoolId, int pageNumber, int size) {
-
-        // 1. Lấy thông tin từ Domain PageRequest và đổi thành Spring Pageable
-        int actualPage = pageNumber - 1; // Spring đếm trang từ 0
-        var pageable = PageRequest.of(actualPage, size);
-
-        // 2. Gọi DB (Nó sẽ trả về Page<SchoolGradeJpaEntity> của Spring)
-        var page = springDataSchoolGradeRepository.findAllBySchoolId(schoolId, pageable);
-
-        // 3. Đóng gói lại thành PageResult của Domain để trả về cho UseCase
+    public PageResult<SchoolGrade> findAllBySchoolId(UUID schoolId, UUID schoolGradeLevelId, int pageNumber, int size) {
+        var pageable = PageRequest.of(pageNumber - 1, size);
+        var page = springDataSchoolGradeRepository.findAllBySchoolId(schoolId, schoolGradeLevelId, pageable);
         return new PageResult<>(
                 page.getContent().stream()
-                        .map(SchoolGradeMapper::toDomain) // Map Entity sang Domain
+                        .map(SchoolGradeMapper::toDomain)
                         .toList(),
-
-                pageNumber, // Trả lại số trang đếm từ 1 cho Client
+                pageNumber,
                 size,
                 page.getTotalElements(),
                 page.getTotalPages()

@@ -244,7 +244,7 @@ extend type Query {
     schoolUser(schoolId: ID!, userId: ID!): SchoolUser
     schoolClass(id: ID!): SchoolClass
     schoolClassUsers(schoolClassId: ID!, page: Int = 1, size: Int = 20): SchoolClassUserPage!
-    schoolGrades(schoolId: ID!, page: Int, size: Int): SchoolGradePage
+    schoolGrades(schoolId: ID!, schoolGradeLevelId: ID, page: Int, size: Int): SchoolGradePage
     schoolGrade(id: ID!): SchoolGrade
     schoolGradeLevels(schoolId: ID!, page: Int! = 1, size: Int! = 20, search: String, status: String): SchoolGradeLevelPage!
     schoolGradeLevel(schoolId: ID!, gradeLevelId: ID!): SchoolGradeLevel

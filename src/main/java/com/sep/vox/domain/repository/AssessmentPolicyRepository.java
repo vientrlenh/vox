@@ -10,4 +10,5 @@ public interface AssessmentPolicyRepository {
     Optional<AssessmentPolicy> findById(UUID id);
     AssessmentPolicy save(AssessmentPolicy policy);
     Optional<AssessmentPolicy> findActivePolicy(UUID schoolId, UUID languageId, UUID classId, UUID gradeId, UUID gradeLevelId, OffsetDateTime atTime);
+    boolean existsByFrameworkVersionId(UUID frameworkVersionId);
 }

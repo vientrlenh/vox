@@ -1,5 +1,12 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.util.Optional;
+import java.util.UUID;
+
+import org.springframework.data.domain.PageRequest;
+import org.springframework.stereotype.Repository;
+
+import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.framework.Framework;
 import com.sep.vox.domain.model.question.QuestionBank;
 import com.sep.vox.domain.model.rubric.RubricVersion;
@@ -25,5 +32,35 @@ public class FrameworkRepositoryImpl implements FrameworkRepository {
     public Optional<Framework> findById(UUID id) {
         return springDataFrameworkRepository.findById(id)
                 .map(FrameworkMapper ::toDomain);
+    }
+
+    @Override
+    public Optional<Framework> findByCode(String code) {
+        return springDataFrameworkRepository.findByCode(code).map(FrameworkMapper::toDomain);
+    }
+
+    @Override
+    public PageResult<Framework> findAll(int pageNumber, int size) {
+        var pageable = PageRequest.of(pageNumber - 1, size);
+        var page = springDataFrameworkRepository.findAll(pageable);
+        return new PageResult<>(
+            page.getContent().stream().map(FrameworkMapper::toDomain).toList(),
+            page.getNumber() + 1,
+            page.getSize(),
+            page.getTotalElements(),
+            page.getTotalPages()
+        );
+    }
+
+    @Override
+    public Framework save(Framework framework) {
+        var entity = FrameworkMapper.toJpa(framework);
+        var saved = springDataFrameworkRepository.save(entity);
+        return FrameworkMapper.toDomain(saved);
+    }
+
+    @Override
+    public void deleteById(UUID id) {
+        springDataFrameworkRepository.deleteById(id);
     }
 }

@@ -1,0 +1,132 @@
+enum FrameworkVersionStatus { 
+    DRAFT 
+    PUBLISHED 
+    ARCHIVED 
+}
+
+enum SignalImportance { 
+    HIGH 
+    MEDIUM 
+    LOW 
+}
+
+type Framework {
+    id: ID!
+    code: String!
+    name: String!
+    description: String
+    isActive: Boolean!
+    createdAt: String
+    updatedAt: String
+}
+
+type FrameworkPage {
+    content: [Framework!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+type FrameworkVersion {
+    id: ID!
+    frameworkId: ID!
+    code: String!
+    name: String!
+    description: String
+    version: Int!
+    effectiveFrom: String!
+    effectiveTo: String
+    status: FrameworkVersionStatus!
+    createdAt: String
+    updatedAt: String
+    criteria: [FrameworkCriterion!]!
+    resultBands: [FrameworkResultBand!]!
+}
+
+type FrameworkVersionPage {
+    content: [FrameworkVersion!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+type FrameworkCriterion {
+    id: ID!
+    frameworkVersionId: ID!
+    code: String!
+    name: String!
+    description: String
+    order: Int!
+    bands: [FrameworkCriterionBand!]!
+}
+
+type FrameworkCriterionBand {
+    id: ID!
+    frameworkCriterionId: ID!
+    frameworkResultBandId: ID!
+    descriptor: String
+    positiveSignals: String
+    negativeSignals: String
+}
+
+type FrameworkResultBand {
+    id: ID!
+    frameworkVersionId: ID!
+    code: String!
+    label: String!
+    description: String
+    order: Int!
+}
+
+input UpdateFrameworkVersionInput {
+    code: String!
+    name: String!
+    description: String
+    effectiveFrom: String!
+    effectiveTo: String
+    criteria: [CriterionInput!]
+    resultBands: [ResultBandInput!]
+}
+
+input CriterionInput {
+    code: String!
+    name: String!
+    description: String
+    order: Int!
+    bands: [CriterionBandInput!]
+}
+
+input CriterionBandInput {
+    resultBandCode: String!
+    descriptor: String
+    positiveSignals: [SignalInput!]
+    negativeSignals: [SignalInput!]
+}
+
+input SignalInput {
+    code: String!
+    description: String!
+    importance: SignalImportance!
+    evidenceHint: String
+}
+
+input ResultBandInput {
+    code: String!
+    label: String!
+    description: String
+    order: Int!
+}
+
+extend type Query {
+    frameworks(page: Int = 1, size: Int = 20): FrameworkPage!
+    framework(id: ID!): Framework
+    frameworkVersions(frameworkId: ID!, page: Int = 1, size: Int = 20): FrameworkVersionPage!
+    frameworkVersion(id: ID!): FrameworkVersion
+}
+
+extend type Mutation {
+    updateFrameworkVersion(frameworkId: ID!, versionId: ID!, input: UpdateFrameworkVersionInput!): ID!
+    updateFrameworkStatus(id: ID!, isActive: Boolean!): ID!
+}

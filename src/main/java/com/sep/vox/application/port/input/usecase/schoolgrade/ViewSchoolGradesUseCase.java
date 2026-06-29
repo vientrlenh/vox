@@ -27,7 +27,8 @@ public class ViewSchoolGradesUseCase implements IUseCase<ViewSchoolGradesQuery, 
         // 1. Gọi DB lấy danh sách phân trang (PageResult<SchoolGrade>)
         PageResult<SchoolGrade> pageResult = schoolGradeRepository.findAllBySchoolId(
                 query.schoolId(),
-                query.page(), 
+                query.schoolGradeLevelId(),
+                query.page(),
                 query.size()
         );
 

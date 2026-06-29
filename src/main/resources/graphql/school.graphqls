@@ -171,12 +171,38 @@ input UpdateSchoolGradeInput {
 }
 
 type SchoolGradePage {
+    content: [SchoolGrade!]!
+    page: Int!
+    size: Int!
     totalElements: Int!
     totalPages: Int!
-    currentPage: Int!
-    pageSize: Int!
-    content: [SchoolGrade!]!
-}   
+}
+
+type SchoolGradeLevel {
+    id: ID!
+    schoolId: ID!
+    code: String!
+    name: String!
+    description: String
+    order: Int!
+    status: String!
+    createdAt: String
+    updatedAt: String
+}
+
+type SchoolGradeLevelPage {
+    content: [SchoolGradeLevel!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+input UpdateSchoolGradeLevelInput {
+    name: String
+    description: String
+    order: Int
+}
 
 
 type SchoolDirectory {
@@ -218,8 +244,10 @@ extend type Query {
     schoolUser(schoolId: ID!, userId: ID!): SchoolUser
     schoolClass(id: ID!): SchoolClass
     schoolClassUsers(schoolClassId: ID!, page: Int = 1, size: Int = 20): SchoolClassUserPage!
-    schoolGrades(schoolId: ID!, page: Int, size: Int): SchoolGradePage
+    schoolGrades(schoolId: ID!, schoolGradeLevelId: ID, page: Int, size: Int): SchoolGradePage
     schoolGrade(id: ID!): SchoolGrade
+    schoolGradeLevels(schoolId: ID!, page: Int! = 1, size: Int! = 20, search: String, status: String): SchoolGradeLevelPage!
+    schoolGradeLevel(schoolId: ID!, gradeLevelId: ID!): SchoolGradeLevel
     schoolDirectoryCursorPage(cursor: ID, limit: Int! = 10): SchoolDirectoryCursorPage
     schoolDirectoryPage(page: Int! = 1, size: Int! = 20): SchoolDirectoryPage
     schoolDirectory(id: ID!): SchoolDirectory 
@@ -229,6 +257,7 @@ extend type Mutation {
     updateSchoolClass(id: ID!, input: UpdateSchoolClassInput!): UpdateSchoolClassResponse!
     updateSchoolUser(schoolId: ID!, userId: ID!, input: UpdateSchoolUserInput!): UpdateSchoolUserResponse!
     updateSchoolGrade(id: ID!, input: UpdateSchoolGradeInput!): ID!
+    updateSchoolGradeLevel(schoolId: ID!, gradeLevelId: ID!, input: UpdateSchoolGradeLevelInput!): ID!
     updateSchoolRoom(id: ID!, input: UpdateSchoolRoomInput!): ID!
     updateSchool(id: ID!, input: UpdateSchoolInput!): ID!
 }

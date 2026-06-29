@@ -17,6 +17,7 @@ import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.model.school.SchoolClassUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
+import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
@@ -111,9 +112,9 @@ public class UpdateSchoolClassUserStatusUseCase implements IUseCase<UpdateSchool
     }
 
     private UUID getSchoolId(User currentUser) {
-        return schoolUserRepository.findByUserId(currentUser.getId())
-            .map(su -> su.getSchoolId())
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUser.getId())
             .orElseThrow(() -> new IllegalStateException("Người dùng hiện tại không thuộc trường nào"));
+        return schoolUser.getSchoolId();
     }
 
     private void validateRequestedSchool(UUID requestedSchoolId, UUID currentSchoolId) {
@@ -148,9 +149,8 @@ public class UpdateSchoolClassUserStatusUseCase implements IUseCase<UpdateSchool
         if (targetUser.getStatus() != UserStatus.ACTIVE) {
             throw new IllegalStateException("Người dùng không hoạt động");
         }
-        if (!Objects.equals(schoolUserRepository.findByUserId(targetUser.getId())
-            .map(su -> su.getSchoolId())
-            .orElse(null), schoolId)) {
+        SchoolUser targetSchoolUser = schoolUserRepository.findByUserId(targetUser.getId()).orElse(null);
+        if (!Objects.equals(targetSchoolUser != null ? targetSchoolUser.getSchoolId() : null, schoolId)) {
             throw new IllegalArgumentException("Người dùng không thuộc trường hiện tại");
         }
     }

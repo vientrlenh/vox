@@ -9,7 +9,6 @@ import java.util.UUID;
 
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.school.SchoolGrade;
-import org.springframework.data.domain.PageRequest;
 
 public interface SchoolGradeRepository {
     Optional<SchoolGrade> findById(UUID id);
@@ -20,11 +19,12 @@ public interface SchoolGradeRepository {
 
     // Đổi chữ SchoolId thành SchoolGradeLevelId
     boolean existsBySchoolGradeLevelIdAndCode(UUID schoolGradeLevelId, String code);
+    Optional<SchoolGrade> findBySchoolGradeLevelIdAndCode(UUID schoolGradeLevelId, String code);
     List<SchoolGrade> findBySchoolIdAndCodeIn(UUID schoolId, Collection<String> codes);
 
     boolean existsBySchoolGradeLevelId(UUID schoolGradeLevelId);
 
-    PageResult<SchoolGrade> findAllBySchoolId(UUID schoolId, int page, int size);
+    PageResult<SchoolGrade> findAllBySchoolId(UUID schoolId, UUID schoolGradeLevelId, int pageNumber, int size);
 
     boolean existsBySchoolIdAndStatus(UUID schoolId, String status);
     int updateSchoolGradeAtomic(UUID id, String name, String description, LocalDate startDate, LocalDate endDate, OffsetDateTime now, UUID updatedBy);

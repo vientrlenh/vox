@@ -12,7 +12,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -229,11 +228,14 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
     }
 
     private Map<UUID, SchoolUser> findSchoolUsersByUserId(Collection<User> users, UUID schoolId) {
-        var userIds = users.stream().map(User::getId).collect(Collectors.toSet());
+        var userIds = new HashSet<UUID>();
+        users.forEach(user -> userIds.add(user.getId()));
         var map = new LinkedHashMap<UUID, SchoolUser>();
-        schoolUserRepository.findByUserIdIn(userIds).stream()
-                .filter(su -> Objects.equals(su.getSchoolId(), schoolId))
-                .forEach(su -> map.putIfAbsent(su.getUserId(), su));
+        schoolUserRepository.findByUserIdIn(userIds).forEach(su -> {
+            if (Objects.equals(su.getSchoolId(), schoolId)) {
+                map.putIfAbsent(su.getUserId(), su);
+            }
+        });
         return map;
     }
 

@@ -44,6 +44,23 @@ public class QuestionRepositoryImpl implements QuestionRepository {
     }
 
     @Override
+    public boolean existsByQuestionBankIdAndCode(UUID questionBankId, String code) {
+        return springDataQuestionRepository.existsByQuestionBankIdAndCode(questionBankId, code);
+    }
+
+    @Override
+    public boolean existsByQuestionBankIdAndQuestionTopicIdAndQuestionText(
+            UUID questionBankId,
+            UUID questionTopicId,
+            String questionText) {
+        return springDataQuestionRepository.existsByQuestionBankIdAndQuestionTopicIdAndQuestionText(
+            questionBankId,
+            questionTopicId,
+            questionText
+        );
+    }
+
+    @Override
     public void deleteById(UUID id) {
         springDataQuestionRepository.deleteById(id);
     }

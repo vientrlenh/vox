@@ -71,11 +71,11 @@ public class UpdateQuestionUseCase implements IUseCase<UpdateQuestionCommand, Up
         var usedInExam = questionRepository.existsUsedInExam(question.getId());
         var immutable = question.getStatus() == QuestionStatus.PUBLISHED || question.isLocked() || usedInExam;
         if (!systemAdminOnSystemBank
-                && owner
+                && (owner || editorCollaborator)
                 && !immutable
                 && question.getStatus() != QuestionStatus.DRAFT
                 && question.getStatus() != QuestionStatus.REVISION_REQUESTED) {
-            throw new ForbiddenException("Chỉ được sửa câu hỏi của mình khi ở trạng thái DRAFT hoặc REVISION_REQUESTED");
+            throw new ForbiddenException("Chỉ được sửa câu hỏi khi ở trạng thái DRAFT hoặc REVISION_REQUESTED");
         }
 
         var target = question;

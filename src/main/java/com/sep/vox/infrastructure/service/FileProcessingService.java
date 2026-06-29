@@ -266,6 +266,24 @@ public class FileProcessingService implements FileProcessingPort {
                 "domain", List.of("domain", "tên miền", "ten mien", "email domain", "school domain"),
                 "address", List.of("address", "địa chỉ", "dia chi")
             );
+            case QUESTION -> Map.ofEntries(
+                Map.entry("code", List.of("code", "question code", "mã câu hỏi", "ma cau hoi")),
+                Map.entry("type", List.of("type", "question type", "loại câu hỏi", "loai cau hoi")),
+                Map.entry("questionText", List.of("questionText", "question text", "content", "nội dung câu hỏi", "noi dung cau hoi")),
+                Map.entry("instructionText", List.of("instructionText", "instruction", "hướng dẫn", "huong dan")),
+                Map.entry("promptText", List.of("promptText", "prompt", "gợi ý", "goi y")),
+                Map.entry("preparationText", List.of("preparationText", "preparation text", "văn bản chuẩn bị", "van ban chuan bi")),
+                Map.entry("preparationTimeSeconds", List.of("preparationTimeSeconds", "prep time", "thời gian chuẩn bị", "thoi gian chuan bi")),
+                Map.entry("minResponseSeconds", List.of("minResponseSeconds", "min response", "thời gian trả lời tối thiểu", "thoi gian tra loi toi thieu")),
+                Map.entry("maxResponseSeconds", List.of("maxResponseSeconds", "max response", "thời gian trả lời tối đa", "thoi gian tra loi toi da")),
+                Map.entry("sharing", List.of("sharing", "chia sẻ", "chia se")),
+                Map.entry("evaluationExpectedContent", List.of("expectedContent", "expected content", "nội dung mong đợi", "noi dung mong doi")),
+                Map.entry("evaluationKeyPoints", List.of("keyPoints", "key points", "ý chính", "y chinh")),
+                Map.entry("evaluationAcceptableResponses", List.of("acceptableResponses", "acceptable responses", "câu trả lời chấp nhận", "cau tra loi chap nhan")),
+                Map.entry("evaluationOffTopicExamples", List.of("offTopicExamples", "off topic examples", "ví dụ lạc đề", "vi du lac de")),
+                Map.entry("evaluationScoringHints", List.of("scoringHints", "scoring hints", "gợi ý chấm điểm", "goi y cham diem")),
+                Map.entry("evaluationCommonMistakes", List.of("commonMistakes", "common mistakes", "lỗi thường gặp", "loi thuong gap"))
+            );
         };
     }
 

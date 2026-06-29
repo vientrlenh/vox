@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Pattern;
 public record UpdateQuestionStatusRequest(
     @NotBlank(message = "Action là bắt buộc")
     @Pattern(
-        regexp = "SUBMIT|APPROVE|REJECT|REQUEST_REVISION|PUBLISH|ARCHIVE|LOCK|UNLOCK",
+        regexp = "SUBMIT|APPROVE|REJECT|REQUEST_REVISION|PUBLISH|ARCHIVE|REOPEN|LOCK|UNLOCK",
         message = "Action không hợp lệ"
     )
     String action,

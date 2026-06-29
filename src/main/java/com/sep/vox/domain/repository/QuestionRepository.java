@@ -38,6 +38,12 @@ public interface QuestionRepository {
     );
     boolean existsUsedInExam(UUID id);
     boolean existsById(UUID id);
+    boolean existsByQuestionBankIdAndCode(UUID questionBankId, String code);
+    boolean existsByQuestionBankIdAndQuestionTopicIdAndQuestionText(
+        UUID questionBankId,
+        UUID questionTopicId,
+        String questionText
+    );
     void deleteById(UUID id);
     List<Question> findBySecurePoolId(UUID securePoolId);
     List<Question> findByQuestionBankId(UUID questionBankId);

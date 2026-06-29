@@ -4,5 +4,6 @@ public enum ImportType {
     USER, 
     SCHOOL_CLASS,
     SCHOOL_CLASS_USER, 
-    SCHOOL_DIRECTORY
+    SCHOOL_DIRECTORY,
+    QUESTION
 }

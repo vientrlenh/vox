@@ -105,12 +105,18 @@ public class UpdateQuestionStatusUseCase implements IUseCase<UpdateQuestionStatu
             }
             case "PUBLISH" -> {
                 validateAdminPermission(systemAdminOnSystemBank, schoolAdminOnSchoolBank);
-                requireStatus(question.getStatus(), QuestionStatus.APPROVED);
+                requireStatusIn(question.getStatus(), QuestionStatus.APPROVED, QuestionStatus.ARCHIVED);
                 question.setStatus(QuestionStatus.PUBLISHED);
             }
             case "ARCHIVE" -> {
                 validateAdminPermission(systemAdminOnSystemBank, schoolAdminOnSchoolBank);
+                requireStatus(question.getStatus(), QuestionStatus.PUBLISHED);
                 question.setStatus(QuestionStatus.ARCHIVED);
+            }
+            case "REOPEN" -> {
+                validateAdminPermission(systemAdminOnSystemBank, schoolAdminOnSchoolBank);
+                requireStatus(question.getStatus(), QuestionStatus.ARCHIVED);
+                question.setStatus(QuestionStatus.DRAFT);
             }
             case "LOCK" -> {
                 validateAdminPermission(systemAdminOnSystemBank, schoolAdminOnSchoolBank);
@@ -159,6 +165,15 @@ public class UpdateQuestionStatusUseCase implements IUseCase<UpdateQuestionStatu
         if (actual != expected) {
             throw new IllegalStateException("Trạng thái câu hỏi hiện tại không hợp lệ cho action này");
         }
+    }
+
+    private void requireStatusIn(QuestionStatus actual, QuestionStatus... expected) {
+        for (var status : expected) {
+            if (actual == status) {
+                return;
+            }
+        }
+        throw new IllegalStateException("Trạng thái câu hỏi hiện tại không hợp lệ cho action này");
     }
 
     private void requireNote(String note, String action) {

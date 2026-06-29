@@ -16,6 +16,12 @@ public interface SpringDataQuestionRepository extends JpaRepository<QuestionJpaE
     List<QuestionJpaEntity> findBySecurePoolId(UUID securePoolId);
     List<QuestionJpaEntity> findByQuestionBankId(UUID questionBankId);
     List<QuestionJpaEntity> findByQuestionTopicId(UUID questionTopicId);
+    boolean existsByQuestionBankIdAndCode(UUID questionBankId, String code);
+    boolean existsByQuestionBankIdAndQuestionTopicIdAndQuestionText(
+        UUID questionBankId,
+        UUID questionTopicId,
+        String questionText
+    );
 
     @Query("""
         SELECT q

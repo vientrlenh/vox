@@ -14,7 +14,6 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolClassUserDto;
 import com.sep.vox.domain.mapper.SchoolClassUserDtoMapper;
-import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
@@ -65,7 +64,7 @@ public class ViewSchoolClassUsersUseCase implements IUseCase<ViewSchoolClassUser
 
     private UUID getSchoolId(UUID userId) {
         return schoolUserRepository.findByUserId(userId)
-            .map(SchoolUser::getSchoolId)
+            .map(su -> su.getSchoolId())
             .orElseThrow(() -> new IllegalStateException("Người dùng hiện tại không thuộc trường nào"));
     }
 

@@ -16,7 +16,6 @@ import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.domain.dto.FrameworkCriterionDto;
 import com.sep.vox.domain.dto.FrameworkResultBandDto;
 import com.sep.vox.domain.mapper.FrameworkResultBandDtoMapper;
-import com.sep.vox.domain.model.framework.FrameworkCriterion;
 import com.sep.vox.domain.model.framework.FrameworkCriterionBand;
 import com.sep.vox.domain.repository.FrameworkCriterionBandRepository;
 import com.sep.vox.domain.repository.FrameworkCriterionRepository;
@@ -42,17 +41,17 @@ public class FrameworkGraphQlDataLoaderConfig {
 
                 var criteria = frameworkCriterionRepository.findByFrameworkVersionIdIn(versionIds);
 
-                var criterionIds = criteria.stream().map(FrameworkCriterion::getId).toList();
+                var criterionIds = criteria.stream().map(c -> c.getId()).toList();
                 var allBands = criterionIds.isEmpty()
                     ? List.<FrameworkCriterionBand>of()
                     : frameworkCriterionBandRepository.findByFrameworkCriterionIdIn(criterionIds);
 
                 var bandsByCriterionId = allBands.stream()
-                    .collect(Collectors.groupingBy(FrameworkCriterionBand::getFrameworkCriterionId));
+                    .collect(Collectors.groupingBy(b -> b.getFrameworkCriterionId()));
 
                 var criteriaByVersionId = criteria.stream()
                     .map(c -> FrameworkCriterionDtoMapper.toDto(c, bandsByCriterionId.getOrDefault(c.getId(), List.of()), jsonSerializationPort))
-                    .collect(Collectors.groupingBy(FrameworkCriterionDto::frameworkVersionId));
+                    .collect(Collectors.groupingBy(b -> b.frameworkVersionId()));
 
                 result.putAll(criteriaByVersionId);
                 return result;
@@ -68,7 +67,7 @@ public class FrameworkGraphQlDataLoaderConfig {
                 var bandsByVersionId = frameworkResultBandRepository.findByFrameworkVersionIdIn(versionIds)
                     .stream()
                     .map(FrameworkResultBandDtoMapper::toDto)
-                    .collect(Collectors.groupingBy(FrameworkResultBandDto::frameworkVersionId));
+                    .collect(Collectors.groupingBy(b -> b.frameworkVersionId()));
 
                 result.putAll(bandsByVersionId);
                 return result;

@@ -12,7 +12,6 @@ import com.sep.vox.application.port.input.command.UpdateSchoolClassCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.schoolclass.UpdateSchoolClassResponse;
-import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
@@ -143,7 +142,7 @@ public class UpdateSchoolClassUseCase implements IUseCase<UpdateSchoolClassComma
 
     private UUID getSchoolId(User currentUser) {
         return schoolUserRepository.findByUserId(currentUser.getId())
-            .map(SchoolUser::getSchoolId)
+            .map(su -> su.getSchoolId())
             .orElseThrow(() -> new IllegalStateException("Người dùng hiện tại không thuộc trường nào"));
     }
 

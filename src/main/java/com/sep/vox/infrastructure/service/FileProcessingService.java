@@ -193,7 +193,7 @@ public class FileProcessingService implements FileProcessingPort {
     }
 
     private void validateHeaders(List<String> headers) {
-        if (headers.isEmpty() || headers.stream().allMatch(String::isBlank)) {
+        if (headers.isEmpty() || headers.stream().allMatch(h -> h.isBlank())) {
             throw new IllegalArgumentException("File import thiếu header");
         }
     }

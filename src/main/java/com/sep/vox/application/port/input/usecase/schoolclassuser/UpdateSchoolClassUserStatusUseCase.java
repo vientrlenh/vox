@@ -12,7 +12,6 @@ import com.sep.vox.application.port.input.command.UpdateSchoolClassUserStatusCom
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.schoolclassuser.UpdateSchoolClassUserStatusResponse;
-import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.model.school.SchoolClassUser;
@@ -113,7 +112,7 @@ public class UpdateSchoolClassUserStatusUseCase implements IUseCase<UpdateSchool
 
     private UUID getSchoolId(User currentUser) {
         return schoolUserRepository.findByUserId(currentUser.getId())
-            .map(SchoolUser::getSchoolId)
+            .map(su -> su.getSchoolId())
             .orElseThrow(() -> new IllegalStateException("Người dùng hiện tại không thuộc trường nào"));
     }
 
@@ -150,7 +149,7 @@ public class UpdateSchoolClassUserStatusUseCase implements IUseCase<UpdateSchool
             throw new IllegalStateException("Người dùng không hoạt động");
         }
         if (!Objects.equals(schoolUserRepository.findByUserId(targetUser.getId())
-            .map(SchoolUser::getSchoolId)
+            .map(su -> su.getSchoolId())
             .orElse(null), schoolId)) {
             throw new IllegalArgumentException("Người dùng không thuộc trường hiện tại");
         }

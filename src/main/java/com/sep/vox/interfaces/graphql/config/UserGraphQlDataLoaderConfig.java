@@ -15,9 +15,7 @@ import org.springframework.graphql.execution.BatchLoaderRegistry;
 import com.sep.vox.application.port.input.query.key.UserRolesKey;
 import com.sep.vox.domain.dto.RoleDto;
 import com.sep.vox.domain.mapper.RoleDtoMapper;
-import com.sep.vox.domain.model.user.Role;
 import com.sep.vox.domain.model.user.SchoolRoleCodes;
-import com.sep.vox.domain.model.user.UserRole;
 import com.sep.vox.domain.repository.RoleRepository;
 import com.sep.vox.domain.repository.UserRoleRepository;
 
@@ -40,22 +38,22 @@ public class UserGraphQlDataLoaderConfig {
                 keys.forEach(key -> result.put(key, List.of()));
 
                 List<UUID> userIds = keys.stream()
-                    .map(UserRolesKey::userId)
+                    .map(k -> k.userId())
                     .toList();
 
                 var userRoles = userRoleRepository.findByUserIdIn(userIds);
-                var roleIds = userRoles.stream().map(UserRole::getRoleId).distinct().toList();
+                var roleIds = userRoles.stream().map(ur -> ur.getRoleId()).distinct().toList();
                 if (roleIds.isEmpty()) {
                     return result;
                 }
                 var roles = roleRepository.findByIdIn(roleIds)
                     .stream()
-                    .collect(Collectors.toMap(Role::getId, r -> r));
+                    .collect(Collectors.toMap(r -> r.getId(), r -> r));
                 
                 var rolesByUserId = userRoles.stream()
                     .filter(ur -> roles.containsKey(ur.getRoleId()))
                     .collect(Collectors.groupingBy(
-                        UserRole::getUserId, 
+                        ur -> ur.getUserId(), 
                         Collectors.mapping(
                             ur -> RoleDtoMapper.toRoleDto(roles.get(ur.getRoleId())), 
                             Collectors.toList())));
@@ -75,7 +73,7 @@ public class UserGraphQlDataLoaderConfig {
 
                 var schoolRoles = roleRepository.findByCodeIn(SchoolRoleCodes.ALL)
                     .stream()
-                    .collect(Collectors.toMap(Role::getId, RoleDtoMapper::toRoleDto));
+                    .collect(Collectors.toMap(r -> r.getId(), RoleDtoMapper::toRoleDto));
                 if (schoolRoles.isEmpty()) {
                     return result;
                 }
@@ -83,7 +81,7 @@ public class UserGraphQlDataLoaderConfig {
                 var rolesByUserId = userRoleRepository.findByUserIdIn(userIds).stream()
                     .filter(ur -> schoolRoles.containsKey(ur.getRoleId()))
                     .collect(Collectors.groupingBy(
-                        UserRole::getUserId,
+                        ur -> ur.getUserId(),
                         Collectors.mapping(ur -> schoolRoles.get(ur.getRoleId()), Collectors.toList())));
 
                 rolesByUserId.forEach(result::put);

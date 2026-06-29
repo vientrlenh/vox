@@ -14,8 +14,6 @@ import org.springframework.graphql.execution.BatchLoaderRegistry;
 import com.sep.vox.application.port.input.query.key.RoleUsersKey;
 import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.domain.mapper.UserDtoMapper;
-import com.sep.vox.domain.model.user.User;
-import com.sep.vox.domain.model.user.UserRole;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.repository.UserRoleRepository;
 
@@ -45,24 +43,24 @@ public class RoleGraphQlDataLoaderConfig {
                     var groupedKeys = entry.getValue();
 
                     var roleIds = groupedKeys.stream()
-                        .map(RoleUsersKey::roleId)
+                        .map(k -> k.roleId())
                         .toList();
 
                     var roleUsers = userRoleRepository.findByRoleIdIn(roleIds, pageKey.page(), pageKey.size());
                     
                     var userIds = roleUsers.stream()
-                        .map(UserRole::getUserId)
+                        .map(ur -> ur.getUserId())
                         .distinct()
                         .toList();
                     
                     var users = userRepository.findByIdIn(userIds)
                         .stream()
-                        .collect(Collectors.toMap(User::getId, u -> u));
+                        .collect(Collectors.toMap(u -> u.getId(), u -> u));
 
                     var usersByRoleId = roleUsers.stream()
                         .filter(ru -> users.containsKey(ru.getUserId()))
                         .collect(Collectors.groupingBy(
-                            UserRole::getRoleId, 
+                            ur -> ur.getRoleId(), 
                             Collectors.mapping(
                                 ru -> UserDtoMapper.toUserDto(users.get(ru.getUserId())), 
                                 Collectors.toList())

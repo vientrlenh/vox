@@ -18,7 +18,6 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
-import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.ImportSessionRepository;
@@ -99,7 +98,7 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
 
     private UUID getSchoolId(User currentUser) {
         return schoolUserRepository.findByUserId(currentUser.getId())
-            .map(SchoolUser::getSchoolId)
+            .map(su -> su.getSchoolId())
             .orElseThrow(() -> new IllegalStateException("Người dùng hiện tại không thuộc trường nào"));
     }
 
@@ -146,7 +145,7 @@ public class AcceptSchoolClassImportUseCase implements IUseCase<AcceptSchoolClas
         var mappedFields = new HashSet<String>();
         confirmedMapping.values().stream()
             .filter(Objects::nonNull)
-            .map(String::strip)
+            .map(v -> v.strip())
             .forEach(mappedFields::add);
         var missingFields = REQUIRED_FIELDS.stream()
             .filter(field -> !mappedFields.contains(field))

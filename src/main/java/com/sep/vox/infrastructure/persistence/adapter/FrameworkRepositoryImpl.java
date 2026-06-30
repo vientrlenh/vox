@@ -44,8 +44,8 @@ public class FrameworkRepositoryImpl implements FrameworkRepository {
         var pageable = PageRequest.of(pageNumber - 1, size);
         String pattern = StringNormalization.buildLikePattern(search);
         var page = isActive != null
-            ? springDataFrameworkRepository.findAllWithFilter(pattern, isActive, pageable)
-            : springDataFrameworkRepository.findAllWithFilter(pattern, pageable);
+            ? springDataFrameworkRepository.findAllBySearchAndIsActive(pattern, isActive, pageable)
+            : springDataFrameworkRepository.findAllBySearch(pattern, pageable);
         return new PageResult<>(
             page.getContent().stream().map(FrameworkMapper::toDomain).toList(),
             page.getNumber() + 1,

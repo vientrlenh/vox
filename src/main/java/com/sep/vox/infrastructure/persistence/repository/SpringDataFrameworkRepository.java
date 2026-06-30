@@ -22,10 +22,10 @@ public interface SpringDataFrameworkRepository extends JpaRepository<FrameworkJp
 
     @Query("SELECT f FROM FrameworkJpaEntity f WHERE " +
            "(:search IS NULL OR LOWER(f.name) LIKE :search ESCAPE '!' OR LOWER(f.code) LIKE :search ESCAPE '!')")
-    Page<FrameworkJpaEntity> findAllWithFilter(@Param("search") String search, Pageable pageable);
+    Page<FrameworkJpaEntity> findAllBySearch(@Param("search") String search, Pageable pageable);
 
     @Query("SELECT f FROM FrameworkJpaEntity f WHERE " +
            "(:search IS NULL OR LOWER(f.name) LIKE :search ESCAPE '!' OR LOWER(f.code) LIKE :search ESCAPE '!') " +
            "AND f.isActive = :isActive")
-    Page<FrameworkJpaEntity> findAllWithFilter(@Param("search") String search, @Param("isActive") boolean isActive, Pageable pageable);
+    Page<FrameworkJpaEntity> findAllBySearchAndIsActive(@Param("search") String search, @Param("isActive") boolean isActive, Pageable pageable);
 }

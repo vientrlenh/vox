@@ -14,6 +14,7 @@ import org.springframework.stereotype.Controller;
 import com.sep.vox.application.port.input.query.ViewUserDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewUsersQuery;
 import com.sep.vox.application.port.input.query.key.UserRolesKey;
+import com.sep.vox.application.port.input.usecase.user.ViewProfileUseCase;
 import com.sep.vox.application.port.input.usecase.user.ViewUserDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.user.ViewUsersUseCase;
 import com.sep.vox.domain.common.PageResult;
@@ -27,10 +28,12 @@ public class UserController {
     
     private final ViewUserDetailsUseCase viewUserDetailsUseCase;
     private final ViewUsersUseCase viewUsersUseCase;
+    private final ViewProfileUseCase viewProfileUseCase;
 
-    public UserController(ViewUserDetailsUseCase viewUserDetailsUseCase, ViewUsersUseCase viewUsersUseCase) {
+    public UserController(ViewUserDetailsUseCase viewUserDetailsUseCase, ViewUsersUseCase viewUsersUseCase, ViewProfileUseCase viewProfileUseCase) {
         this.viewUserDetailsUseCase = viewUserDetailsUseCase;
         this.viewUsersUseCase = viewUsersUseCase;
+        this.viewProfileUseCase = viewProfileUseCase;
     }
 
     @QueryMapping(name = "user")
@@ -48,6 +51,12 @@ public class UserController {
         }
         var query = new ViewUsersQuery(page, size);
         return viewUsersUseCase.execute(query);
+    }
+
+    @QueryMapping(name = "profile")
+    @PreAuthorize("isAuthenticated()")
+    public UserDto profile() {
+        return viewProfileUseCase.execute(null);
     }
 
     @SchemaMapping(typeName = "User", field = "roles")

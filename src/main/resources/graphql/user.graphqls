@@ -51,4 +51,5 @@ extend type Query {
     user(id: ID!): User
     roles(page: Int! = 1, size: Int! = 20): RolePage!
     role(id: ID!): Role
+    profile: User
 }

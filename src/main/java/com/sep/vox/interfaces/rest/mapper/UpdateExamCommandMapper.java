@@ -17,8 +17,7 @@ public final class UpdateExamCommandMapper {
             request.description(),
             request.openAt(),
             request.closeAt(),
-            request.assessmentPolicyId(),
-            request.blueprintId()
+            request.assessmentPolicyId()
         );
     }
 }

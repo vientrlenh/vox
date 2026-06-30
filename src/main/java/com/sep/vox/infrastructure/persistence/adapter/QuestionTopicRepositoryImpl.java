@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
+import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.question.QuestionTopic;
 import com.sep.vox.domain.model.question.QuestionTopicStatus;
@@ -83,7 +84,7 @@ public class QuestionTopicRepositoryImpl implements QuestionTopicRepository {
             schoolAdmin,
             questionBankId,
             status == null ? null : status.name(),
-            keyword,
+            StringNormalization.toLikePattern(keyword),
             pageable
         );
         return new PageResult<>(

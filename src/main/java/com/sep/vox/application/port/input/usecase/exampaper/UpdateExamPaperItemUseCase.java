@@ -17,6 +17,7 @@ import com.sep.vox.domain.model.exam.ExamBlueprintSlotType;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamPaperStatus;
 import com.sep.vox.domain.model.exam.ExamSecurePoolReleaseMode;
+import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.repository.ExamBlueprintSlotRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamPaperItemRepository;
@@ -86,6 +87,9 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
             .orElse(null);
         var question = questionRepository.findAccessibleById(input.questionId(), currentUserId, currentSchoolId, false, false)
             .orElseThrow(() -> new ForbiddenException("Không có quyền dùng câu hỏi này"));
+        if (question.getStatus() != QuestionStatus.PUBLISHED) {
+            throw new IllegalStateException("Chỉ được gán câu hỏi đã PUBLISHED vào đề thi");
+        }
 
         item.setQuestionId(question.getId());
         var savedItem = examPaperItemRepository.save(item);

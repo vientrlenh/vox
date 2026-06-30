@@ -7,11 +7,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
+import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.mapper.importfile.ImportRowResponseMapper;
 import com.sep.vox.application.port.input.query.ViewImportRowsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.input.importfile.ImportRowResponse;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.importfile.ImportRowStatus;
@@ -35,6 +37,7 @@ public class ViewImportRowsUseCase implements IUseCase<ViewImportRowsQuery, Page
     private final UserContextPort userContextPort;
     private final ImportRowResponseMapper importRowResponseMapper;
     private final SchoolUserRepository schoolUserRepository;
+    private final UserRoleQueryRepository userRoleQueryRepository;
 
     public ViewImportRowsUseCase(
             ImportSessionRepository importSessionRepository,
@@ -43,7 +46,8 @@ public class ViewImportRowsUseCase implements IUseCase<ViewImportRowsQuery, Page
             SchoolRepository schoolRepository,
             UserContextPort userContextPort,
             ImportRowResponseMapper importRowResponseMapper,
-            SchoolUserRepository schoolUserRepository) {
+            SchoolUserRepository schoolUserRepository,
+            UserRoleQueryRepository userRoleQueryRepository) {
         this.importSessionRepository = importSessionRepository;
         this.importRowRepository = importRowRepository;
         this.userRepository = userRepository;
@@ -51,6 +55,7 @@ public class ViewImportRowsUseCase implements IUseCase<ViewImportRowsQuery, Page
         this.userContextPort = userContextPort;
         this.importRowResponseMapper = importRowResponseMapper;
         this.schoolUserRepository = schoolUserRepository;
+        this.userRoleQueryRepository = userRoleQueryRepository;
     }
 
     @Override
@@ -66,11 +71,17 @@ public class ViewImportRowsUseCase implements IUseCase<ViewImportRowsQuery, Page
 
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         var currentUser = findCurrentUser(currentUserId);
-        var schoolId = getSchoolId(currentUser);
-        validateSchool(schoolId);
-
         var session = findSession(input.sessionId());
-        validateSessionBelongsToSchool(session, schoolId);
+
+        var isSchoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
+        if (isSchoolAdmin) {
+            var schoolId = getSchoolId(currentUser);
+            validateSchool(schoolId);
+            validateSessionBelongsToSchool(session, schoolId);
+        } else if (!Objects.equals(session.getCreatedBy(), currentUserId)) {
+            throw new ForbiddenException("Phiên import không thuộc về bạn");
+        }
 
         var rows = importRowRepository.findBySessionId(
             session.getId(),

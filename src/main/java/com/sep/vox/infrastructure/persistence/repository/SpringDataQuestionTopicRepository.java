@@ -34,13 +34,14 @@ public interface SpringDataQuestionTopicRepository extends JpaRepository<Questio
         WHERE (:questionBankId IS NULL OR qt.questionBankId = :questionBankId)
           AND (:status IS NULL OR qt.status = :status)
           AND (
-                :keyword IS NULL
-                OR LOWER(qt.code) LIKE LOWER(CONCAT('%', :keyword, '%'))
-                OR LOWER(qt.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                :keywordPattern IS NULL
+                OR LOWER(qt.code) LIKE :keywordPattern
+                OR LOWER(qt.name) LIKE :keywordPattern
               )
           AND (
                 :systemAdmin = true
                 OR (:schoolAdmin = true AND qb.schoolId = :currentSchoolId)
+                OR (qb.ownerType = 'SYSTEM' AND qb.status = 'PUBLISHED' AND qt.status = 'PUBLISHED')
                 OR (:schoolAdmin = false AND qb.schoolId = :currentSchoolId AND qb.status = 'PUBLISHED' AND qt.status = 'PUBLISHED')
               )
         ORDER BY qt.updatedAt DESC
@@ -51,7 +52,7 @@ public interface SpringDataQuestionTopicRepository extends JpaRepository<Questio
         @Param("schoolAdmin") boolean schoolAdmin,
         @Param("questionBankId") UUID questionBankId,
         @Param("status") String status,
-        @Param("keyword") String keyword,
+        @Param("keywordPattern") String keywordPattern,
         Pageable pageable
     );
 }

@@ -35,7 +35,7 @@ public class ImportController {
     }
 
     @QueryMapping(name = "importSession")
-    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER', 'SYSTEM_ADMIN')")
     public ImportSessionDetailsResponse importSession(@Argument(name = "id") UUID id) {
         return viewImportSessionUseCase.execute(new ViewImportSessionQuery(id));
     }
@@ -51,7 +51,7 @@ public class ImportController {
     }
 
     @QueryMapping(name = "importRows")
-    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER', 'SYSTEM_ADMIN')")
     public PageResult<ImportRowResponse> importRows(
             @Argument(name = "sessionId") UUID sessionId,
             @Argument(name = "page") int page,

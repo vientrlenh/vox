@@ -26,6 +26,7 @@ import com.sep.vox.domain.model.exam.ExamPaperItem;
 import com.sep.vox.domain.model.exam.ExamPaperSection;
 import com.sep.vox.domain.model.exam.ExamPaperStatus;
 import com.sep.vox.domain.model.exam.ExamSecurePoolReleaseMode;
+import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.repository.ExamBlueprintSectionRepository;
 import com.sep.vox.domain.repository.ExamBlueprintSlotRepository;
 import com.sep.vox.domain.repository.ExamBlueprintVersionRepository;
@@ -34,6 +35,7 @@ import com.sep.vox.domain.repository.ExamPaperItemRepository;
 import com.sep.vox.domain.repository.ExamPaperRepository;
 import com.sep.vox.domain.repository.ExamPaperSectionRepository;
 import com.sep.vox.domain.repository.ExamRepository;
+import com.sep.vox.domain.repository.QuestionRepository;
 
 @Service
 public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, ExamPaperDto> {
@@ -46,6 +48,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
     private final ExamPaperRepository examPaperRepository;
     private final ExamPaperSectionRepository examPaperSectionRepository;
     private final ExamPaperItemRepository examPaperItemRepository;
+    private final QuestionRepository questionRepository;
     private final ExamQuestionSecureLockService examQuestionSecureLockService;
     private final UserContextPort userContextPort;
 
@@ -58,6 +61,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
             ExamPaperRepository examPaperRepository,
             ExamPaperSectionRepository examPaperSectionRepository,
             ExamPaperItemRepository examPaperItemRepository,
+            QuestionRepository questionRepository,
             ExamQuestionSecureLockService examQuestionSecureLockService,
             UserContextPort userContextPort) {
         this.examRepository = examRepository;
@@ -68,6 +72,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
         this.examPaperRepository = examPaperRepository;
         this.examPaperSectionRepository = examPaperSectionRepository;
         this.examPaperItemRepository = examPaperItemRepository;
+        this.questionRepository = questionRepository;
         this.examQuestionSecureLockService = examQuestionSecureLockService;
         this.userContextPort = userContextPort;
     }
@@ -133,6 +138,14 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
 
             for (var slot : slots) {
                 var questionId = slot.getSlotType() == ExamBlueprintSlotType.FIXED ? slot.getFixedQuestionId() : null;
+                if (questionId != null) {
+                    var fixedQuestion = questionRepository.findById(questionId)
+                        .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi cố định trong slot"));
+                    if (fixedQuestion.getStatus() != QuestionStatus.PUBLISHED) {
+                        throw new IllegalStateException(
+                            "Câu hỏi " + fixedQuestion.getCode() + " trong khuôn chưa PUBLISHED, không thể sinh đề thi");
+                    }
+                }
                 examPaperItemRepository.save(new ExamPaperItem(
                     slot.getId(),
                     savedSection.getId(),

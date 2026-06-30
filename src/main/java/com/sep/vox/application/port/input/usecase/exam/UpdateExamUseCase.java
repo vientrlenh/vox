@@ -16,7 +16,6 @@ import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.domain.mapper.ExamDtoMapper;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
-import com.sep.vox.domain.repository.ExamBlueprintRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -25,7 +24,6 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
 
     private final ExamRepository examRepository;
-    private final ExamBlueprintRepository examBlueprintRepository;
     private final ExamMemberRepository examMemberRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
@@ -33,13 +31,11 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
 
     public UpdateExamUseCase(
             ExamRepository examRepository,
-            ExamBlueprintRepository examBlueprintRepository,
             ExamMemberRepository examMemberRepository,
             SchoolUserRepository schoolUserRepository,
             UserRoleQueryRepository userRoleQueryRepository,
             UserContextPort userContextPort) {
         this.examRepository = examRepository;
-        this.examBlueprintRepository = examBlueprintRepository;
         this.examMemberRepository = examMemberRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
@@ -62,13 +58,6 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
 
         authorizeMutation(exam.getId(), exam.getSchoolId(), exam.getKind(), currentUserId, currentSchoolId, schoolAdmin);
 
-        if (command.blueprintId() != null) {
-            var blueprint = examBlueprintRepository.findById(command.blueprintId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy blueprint đề thi"));
-            if (!exam.getSchoolId().equals(blueprint.getSchoolId())) {
-                throw new IllegalStateException("Blueprint không thuộc cùng trường với bài kiểm tra");
-            }
-        }
         validateOpenClose(command.openAt(), command.closeAt());
 
         if (command.name() != null) {
@@ -86,9 +75,6 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
         if (command.assessmentPolicyId() != null) {
             exam.setAssessmentPolicyId(command.assessmentPolicyId());
         }
-        if (command.blueprintId() != null) {
-            exam.setBlueprintId(command.blueprintId());
-        }
         exam.setUpdatedAt(OffsetDateTime.now());
         exam.setUpdatedBy(currentUserId);
         return ExamDtoMapper.toDto(examRepository.save(exam));
@@ -101,8 +87,7 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
             StringNormalization.trimAndCollapseSpaces(input.description()),
             input.openAt(),
             input.closeAt(),
-            input.assessmentPolicyId(),
-            input.blueprintId()
+            input.assessmentPolicyId()
         );
     }
 

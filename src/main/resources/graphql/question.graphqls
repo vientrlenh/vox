@@ -75,6 +75,7 @@ type QuestionBankGrade {
     schoolGradeId: ID!
     attachedAt: String
     attachedBy: ID
+    schoolGrade: SchoolGrade
 }
 
 type QuestionBank {
@@ -153,6 +154,7 @@ type QuestionCollaborator {
     questionId: ID!
     permission: QuestionCollaboratorPermission!
     assignedAt: String
+    user: User
 }
 
 type Question {
@@ -199,6 +201,7 @@ extend type Query {
         status: QuestionBankStatus,
         languageId: ID,
         schoolId: ID,
+        schoolGradeId: ID,
         keyword: String,
         page: Int = 0,
         size: Int = 20

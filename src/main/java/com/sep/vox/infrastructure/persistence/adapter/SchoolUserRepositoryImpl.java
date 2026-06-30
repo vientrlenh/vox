@@ -74,7 +74,7 @@ public class SchoolUserRepositoryImpl implements SchoolUserRepository {
     }
 
     @Override
-    public PageResult<SchoolUser> findBySchoolId(UUID schoolId, String search, String roleCode, String status,
+    public PageResult<SchoolUser> findBySchoolId(UUID schoolId, UUID excludeUserId, String search, String roleCode, String status,
             Collection<String> schoolRoleCodes, int page, int size) {
         var searchPattern = (search == null || search.isBlank())
             ? null
@@ -83,7 +83,7 @@ public class SchoolUserRepositoryImpl implements SchoolUserRepository {
         var statusFilter = (status == null || status.isBlank()) ? null : status;
         var pageRequest = PageRequest.of(page - 1, size);
         var pageable = springDataSchoolUserRepository.searchBySchoolId(
-            schoolId, searchPattern, roleFilter, statusFilter, schoolRoleCodes, pageRequest);
+            schoolId, excludeUserId, searchPattern, roleFilter, statusFilter, schoolRoleCodes, pageRequest);
         return new PageResult<>(
             pageable.getContent()
                 .stream()

@@ -7,6 +7,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
 
+import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.question.QuestionBank;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
@@ -64,8 +65,8 @@ public class QuestionBankRepositoryImpl implements QuestionBankRepository {
 
     @Override
     public PageResult<QuestionBank> findAccessible(UUID currentSchoolId, boolean systemAdmin, boolean schoolAdmin,
-            QuestionBankOwnerType ownerType, QuestionBankStatus status, UUID languageId, UUID schoolId, String keyword,
-            int pageNumber, int size) {
+            QuestionBankOwnerType ownerType, QuestionBankStatus status, UUID languageId, UUID schoolId,
+            UUID schoolGradeId, String keyword, int pageNumber, int size) {
         var pageable = PageRequest.of(pageNumber, size);
         var page = springDataQuestionBankRepository.findAccessible(
             currentSchoolId,
@@ -75,7 +76,8 @@ public class QuestionBankRepositoryImpl implements QuestionBankRepository {
             status == null ? null : status.name(),
             languageId,
             schoolId,
-            keyword,
+            schoolGradeId,
+            StringNormalization.toLikePattern(keyword),
             pageable
         );
         return new PageResult<>(

@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
+import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamKind;
@@ -50,7 +51,7 @@ public class ExamRepositoryImpl implements ExamRepository {
             schoolClassId,
             kind == null ? null : kind.name(),
             status == null ? null : status.name(),
-            keyword,
+            StringNormalization.toLikePattern(keyword),
             pageable
         );
         return new PageResult<>(

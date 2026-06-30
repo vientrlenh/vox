@@ -129,6 +129,16 @@ public class SchoolGraphQlDataLoaderConfig {
             })
         );
 
+        registry.<UUID, SchoolGradeDto>forName("schoolGradeById")
+        .registerMappedBatchLoader((Set<UUID> gradeIds, BatchLoaderEnvironment env) ->
+            Mono.fromSupplier(() -> {
+                return schoolGradeRepository.findByIdIn(gradeIds)
+                    .stream()
+                    .map(SchoolGradeDtoMapper::toSchoolGradeDto)
+                    .collect(Collectors.toMap(SchoolGradeDto::id, sg -> sg));
+            })
+        );
+
         registry.<UUID, SupportedLanguageDto>forName("supportedLanguageByClass")
         .registerMappedBatchLoader((Set<UUID> languageIds, BatchLoaderEnvironment env) ->
             Mono.fromSupplier(() -> {

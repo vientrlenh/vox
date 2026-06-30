@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.util.CellRangeAddressList;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 
@@ -54,6 +55,10 @@ public class QuestionSpreadsheetService {
         "Gợi ý chấm điểm",
         "Lỗi thường gặp"
     );
+
+    private static final int TYPE_COLUMN_INDEX = 1;
+    private static final int SHARING_COLUMN_INDEX = 9;
+    private static final int VALIDATION_LAST_ROW = 1000;
 
     private final QuestionRepository questionRepository;
     private final QuestionEvaluationGuideRepository questionEvaluationGuideRepository;
@@ -225,6 +230,8 @@ public class QuestionSpreadsheetService {
                 "Look for relevance and reasoning.",
                 "No opinion stated."
             ));
+            addListValidation(sheet, TYPE_COLUMN_INDEX, Arrays.stream(QuestionType.values()).map(Enum::name).toArray(String[]::new));
+            addListValidation(sheet, SHARING_COLUMN_INDEX, Arrays.stream(QuestionSharing.values()).map(Enum::name).toArray(String[]::new));
             autoSize(sheet, IMPORT_HEADERS.size());
             return toBytes(workbook);
         } catch (IOException exception) {
@@ -263,6 +270,15 @@ public class QuestionSpreadsheetService {
         for (var index = 0; index < values.size(); index++) {
             row.createCell(index).setCellValue(values.get(index) == null ? "" : values.get(index));
         }
+    }
+
+    private void addListValidation(Sheet sheet, int columnIndex, String[] values) {
+        var helper = sheet.getDataValidationHelper();
+        var addressList = new CellRangeAddressList(1, VALIDATION_LAST_ROW, columnIndex, columnIndex);
+        var constraint = helper.createExplicitListConstraint(values);
+        var validation = helper.createValidation(constraint, addressList);
+        validation.setShowErrorBox(true);
+        sheet.addValidationData(validation);
     }
 
     private void autoSize(Sheet sheet, int columnCount) {

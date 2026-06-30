@@ -8,7 +8,6 @@ public record UpdateExamCommand(
     String description,
     String openAt,
     String closeAt,
-    UUID assessmentPolicyId,
-    UUID blueprintId
+    UUID assessmentPolicyId
 ) {
 }

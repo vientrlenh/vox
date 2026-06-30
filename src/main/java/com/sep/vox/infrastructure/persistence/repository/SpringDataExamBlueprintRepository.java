@@ -19,9 +19,9 @@ public interface SpringDataExamBlueprintRepository extends JpaRepository<ExamBlu
           AND (:isActive IS NULL OR b.isActive = :isActive)
           AND (:languageId IS NULL OR b.languageId = :languageId)
           AND (
-                :keyword IS NULL
-                OR LOWER(b.code) LIKE LOWER(CONCAT('%', :keyword, '%'))
-                OR LOWER(b.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                :keywordPattern IS NULL
+                OR LOWER(b.code) LIKE :keywordPattern
+                OR LOWER(b.name) LIKE :keywordPattern
               )
           AND (
                 :systemAdmin = true
@@ -44,7 +44,7 @@ public interface SpringDataExamBlueprintRepository extends JpaRepository<ExamBlu
         @Param("schoolId") UUID schoolId,
         @Param("isActive") Boolean isActive,
         @Param("languageId") UUID languageId,
-        @Param("keyword") String keyword,
+        @Param("keywordPattern") String keywordPattern,
         Pageable pageable
     );
 

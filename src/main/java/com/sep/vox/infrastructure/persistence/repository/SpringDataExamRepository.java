@@ -30,9 +30,9 @@ public interface SpringDataExamRepository extends JpaRepository<ExamJpaEntity, U
           AND (:kind IS NULL OR e.kind = :kind)
           AND (:status IS NULL OR e.status = :status)
           AND (
-                :keyword IS NULL
-                OR LOWER(e.code) LIKE LOWER(CONCAT('%', :keyword, '%'))
-                OR LOWER(e.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                :keywordPattern IS NULL
+                OR LOWER(e.code) LIKE :keywordPattern
+                OR LOWER(e.name) LIKE :keywordPattern
               )
           AND (
                 :systemAdmin = true
@@ -55,7 +55,7 @@ public interface SpringDataExamRepository extends JpaRepository<ExamJpaEntity, U
         @Param("schoolClassId") UUID schoolClassId,
         @Param("kind") String kind,
         @Param("status") String status,
-        @Param("keyword") String keyword,
+        @Param("keywordPattern") String keywordPattern,
         Pageable pageable
     );
 

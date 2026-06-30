@@ -60,6 +60,7 @@ type ExamMember {
     role: ExamMemberRole!
     grantedAt: String
     grantedBy: ID
+    user: User
 }
 
 type ExamSecurePool {

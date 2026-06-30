@@ -20,6 +20,7 @@ public interface QuestionBankRepository {
         QuestionBankStatus status,
         UUID languageId,
         UUID schoolId,
+        UUID schoolGradeId,
         String keyword,
         int pageNumber,
         int size

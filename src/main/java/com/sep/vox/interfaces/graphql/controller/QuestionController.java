@@ -2,11 +2,15 @@ package com.sep.vox.interfaces.graphql.controller;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
+import org.dataloader.DataLoader;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.graphql.data.method.annotation.SchemaMapping;
 import org.springframework.stereotype.Controller;
+
+import graphql.schema.DataFetchingEnvironment;
 
 import com.sep.vox.application.port.input.query.ViewQuestionBankDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewQuestionDetailsQuery;
@@ -23,6 +27,7 @@ import com.sep.vox.domain.dto.QuestionCollaboratorDto;
 import com.sep.vox.domain.dto.QuestionDto;
 import com.sep.vox.domain.dto.QuestionEvaluationGuideDto;
 import com.sep.vox.domain.dto.QuestionTopicDto;
+import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.domain.mapper.QuestionAssetDtoMapper;
 import com.sep.vox.domain.mapper.QuestionCollaboratorDtoMapper;
 import com.sep.vox.domain.mapper.QuestionEvaluationGuideDtoMapper;
@@ -124,6 +129,12 @@ public class QuestionController {
     @SchemaMapping(typeName = "Question", field = "collaborators")
     public List<QuestionCollaboratorDto> collaborators(QuestionDto source) {
         return QuestionCollaboratorDtoMapper.toDtoList(questionCollaboratorRepository.findByQuestionId(source.id()));
+    }
+
+    @SchemaMapping(typeName = "QuestionCollaborator", field = "user")
+    public CompletableFuture<UserDto> collaboratorUser(QuestionCollaboratorDto source, DataFetchingEnvironment env) {
+        DataLoader<UUID, UserDto> loader = env.getDataLoader("userById");
+        return loader.load(source.userId());
     }
 
     private void validatePage(int page, int size) {

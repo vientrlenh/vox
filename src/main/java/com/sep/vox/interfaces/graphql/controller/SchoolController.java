@@ -45,7 +45,7 @@ import com.sep.vox.application.port.input.usecase.schoolroom.ViewSchoolRoomDetai
 import com.sep.vox.application.port.input.usecase.schoolroom.ViewSchoolRoomsUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.UpdateSchoolUserUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUserDetailsUseCase;
-import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUsersBySchoolUseCase;
+import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUsersForRequesterUseCase;
 import com.sep.vox.application.response.input.schoolclass.UpdateSchoolClassResponse;
 import com.sep.vox.application.response.input.schooluser.UpdateSchoolUserResponse;
 import com.sep.vox.domain.common.CursorPage;
@@ -78,7 +78,7 @@ public class SchoolController {
     private final ViewSchoolClassDetailsUseCase viewSchoolClassDetailsUseCase;
     private final ViewSchoolClassUsersUseCase viewSchoolClassUsersUseCase;
     private final UpdateSchoolClassUseCase updateSchoolClassUseCase;
-    private final ViewSchoolUsersBySchoolUseCase viewSchoolUsersBySchoolUseCase;
+    private final ViewSchoolUsersForRequesterUseCase viewSchoolUsersForRequesterUseCase;
     private final ViewSchoolUserDetailsUseCase viewSchoolUserDetailsUseCase;
     private final UpdateSchoolUserUseCase updateSchoolUserUseCase;
     private final UpdateSchoolUseCase updateSchoolUseCase;
@@ -97,8 +97,8 @@ public class SchoolController {
         ViewSchoolClassDetailsUseCase viewSchoolClassDetailsUseCase, 
         ViewSchoolClassUsersUseCase viewSchoolClassUsersUseCase, 
         UpdateSchoolClassUseCase updateSchoolClassUseCase, 
-        ViewSchoolUsersBySchoolUseCase viewSchoolUsersBySchoolUseCase, 
-        ViewSchoolUserDetailsUseCase viewSchoolUserDetailsUseCase, 
+        ViewSchoolUsersForRequesterUseCase viewSchoolUsersForRequesterUseCase,
+        ViewSchoolUserDetailsUseCase viewSchoolUserDetailsUseCase,
         UpdateSchoolUserUseCase updateSchoolUserUseCase, 
         UpdateSchoolUseCase updateSchoolUseCase, 
         ViewSchoolRoomDetailsUseCase viewSchoolRoomDetailsUseCase, 
@@ -116,7 +116,7 @@ public class SchoolController {
         this.viewSchoolClassDetailsUseCase = viewSchoolClassDetailsUseCase;
         this.viewSchoolClassUsersUseCase = viewSchoolClassUsersUseCase;
         this.updateSchoolClassUseCase = updateSchoolClassUseCase;
-        this.viewSchoolUsersBySchoolUseCase = viewSchoolUsersBySchoolUseCase;
+        this.viewSchoolUsersForRequesterUseCase = viewSchoolUsersForRequesterUseCase;
         this.viewSchoolUserDetailsUseCase = viewSchoolUserDetailsUseCase;
         this.updateSchoolUserUseCase = updateSchoolUserUseCase;
         this.updateSchoolUseCase = updateSchoolUseCase;
@@ -165,7 +165,7 @@ public class SchoolController {
 
 
     @QueryMapping(name = "schoolUsersBySchool")
-    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public PageResult<SchoolUserDto> schoolUsersBySchool(
             @Argument(name = "schoolId") UUID schoolId,
             @Argument(name = "page") Integer page,
@@ -176,7 +176,7 @@ public class SchoolController {
         if (page == null || size == null || page <= 0 || size <= 0) {
             throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
         }
-        return viewSchoolUsersBySchoolUseCase.execute(new ViewSchoolUsersBySchoolQuery(schoolId, page, size, search, role, status));
+        return viewSchoolUsersForRequesterUseCase.execute(new ViewSchoolUsersBySchoolQuery(schoolId, page, size, search, role, status));
     }
 
     @QueryMapping(name = "schoolUser")
@@ -249,7 +249,7 @@ public class SchoolController {
     }
 
     @SchemaMapping(typeName = "SchoolUser", field = "user")
-    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER')")
     public CompletableFuture<UserDto> schoolUserUser(SchoolUserDto schoolUser, DataFetchingEnvironment env) {
         DataLoader<UUID, UserDto> loader = env.getDataLoader("userBySchoolUser");
         return loader.load(schoolUser.userId());

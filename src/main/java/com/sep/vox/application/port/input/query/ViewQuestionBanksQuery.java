@@ -10,6 +10,7 @@ public record ViewQuestionBanksQuery(
     QuestionBankStatus status,
     UUID languageId,
     UUID schoolId,
+    UUID schoolGradeId,
     String keyword,
     int page,
     int size

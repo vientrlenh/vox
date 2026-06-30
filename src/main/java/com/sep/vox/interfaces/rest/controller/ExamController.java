@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.sep.vox.application.port.input.command.DeleteExamCommand;
 import com.sep.vox.application.port.input.command.DeleteExamMemberCommand;
+import com.sep.vox.application.port.input.usecase.exam.AttachExamBlueprintUseCase;
 import com.sep.vox.application.port.input.usecase.exam.CreateExamMemberUseCase;
 import com.sep.vox.application.port.input.usecase.exam.CreateExamUseCase;
 import com.sep.vox.application.port.input.usecase.exam.DeleteExamMemberUseCase;
@@ -28,6 +29,7 @@ import com.sep.vox.application.response.input.exam.DeleteExamResponse;
 import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.domain.dto.ExamMemberDto;
 import com.sep.vox.domain.dto.ExamSecurePoolDto;
+import com.sep.vox.interfaces.rest.dto.request.AttachExamBlueprintRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateExamMemberRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateExamRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateExamMemberRequest;
@@ -35,6 +37,7 @@ import com.sep.vox.interfaces.rest.dto.request.UpdateExamRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateExamSecurePoolStatusRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateExamStatusRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
+import com.sep.vox.interfaces.rest.mapper.AttachExamBlueprintCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateExamCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateExamMemberCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.UpdateExamCommandMapper;
@@ -56,6 +59,7 @@ public class ExamController {
     private final UpdateExamMemberUseCase updateExamMemberUseCase;
     private final DeleteExamMemberUseCase deleteExamMemberUseCase;
     private final UpdateExamSecurePoolStatusUseCase updateExamSecurePoolStatusUseCase;
+    private final AttachExamBlueprintUseCase attachExamBlueprintUseCase;
 
     public ExamController(
             CreateExamUseCase createExamUseCase,
@@ -65,7 +69,8 @@ public class ExamController {
             CreateExamMemberUseCase createExamMemberUseCase,
             UpdateExamMemberUseCase updateExamMemberUseCase,
             DeleteExamMemberUseCase deleteExamMemberUseCase,
-            UpdateExamSecurePoolStatusUseCase updateExamSecurePoolStatusUseCase) {
+            UpdateExamSecurePoolStatusUseCase updateExamSecurePoolStatusUseCase,
+            AttachExamBlueprintUseCase attachExamBlueprintUseCase) {
         this.createExamUseCase = createExamUseCase;
         this.updateExamUseCase = updateExamUseCase;
         this.updateExamStatusUseCase = updateExamStatusUseCase;
@@ -74,6 +79,7 @@ public class ExamController {
         this.updateExamMemberUseCase = updateExamMemberUseCase;
         this.deleteExamMemberUseCase = deleteExamMemberUseCase;
         this.updateExamSecurePoolStatusUseCase = updateExamSecurePoolStatusUseCase;
+        this.attachExamBlueprintUseCase = attachExamBlueprintUseCase;
     }
 
     @PostMapping
@@ -91,6 +97,15 @@ public class ExamController {
             @Valid @RequestBody UpdateExamRequest request) {
         var data = updateExamUseCase.execute(UpdateExamCommandMapper.fromRequest(id, request));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật bài kiểm tra thành công", data));
+    }
+
+    @PatchMapping("/{id}/blueprint")
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
+    public ResponseEntity<ApiResponse<ExamDto>> attachBlueprint(
+            @PathVariable UUID id,
+            @Valid @RequestBody AttachExamBlueprintRequest request) {
+        var data = attachExamBlueprintUseCase.execute(AttachExamBlueprintCommandMapper.fromRequest(id, request));
+        return ResponseEntity.ok(ApiResponse.success("Gắn blueprint vào bài kiểm tra thành công", data));
     }
 
     @PatchMapping("/{id}/status")

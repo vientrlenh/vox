@@ -53,6 +53,7 @@ public class ViewQuestionBanksUseCase implements IUseCase<ViewQuestionBanksQuery
             input.status(),
             input.languageId(),
             input.schoolId(),
+            input.schoolGradeId(),
             input.keyword(),
             input.page(),
             input.size()

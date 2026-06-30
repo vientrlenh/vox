@@ -2,11 +2,15 @@ package com.sep.vox.interfaces.graphql.controller;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
+import org.dataloader.DataLoader;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.graphql.data.method.annotation.SchemaMapping;
 import org.springframework.stereotype.Controller;
+
+import graphql.schema.DataFetchingEnvironment;
 
 import com.sep.vox.application.port.input.query.ViewExamDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewExamsQuery;
@@ -22,6 +26,7 @@ import com.sep.vox.domain.dto.ExamPaperItemDto;
 import com.sep.vox.domain.dto.ExamPaperSectionDto;
 import com.sep.vox.domain.dto.ExamSecurePoolDto;
 import com.sep.vox.domain.dto.QuestionDto;
+import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.domain.mapper.ExamMemberDtoMapper;
 import com.sep.vox.domain.mapper.ExamPaperDtoMapper;
 import com.sep.vox.domain.mapper.ExamPaperItemDtoMapper;
@@ -121,6 +126,12 @@ public class ExamController {
     @SchemaMapping(typeName = "Exam", field = "members")
     public List<ExamMemberDto> members(ExamDto source) {
         return ExamMemberDtoMapper.toDtoList(examMemberRepository.findByExamId(source.id()));
+    }
+
+    @SchemaMapping(typeName = "ExamMember", field = "user")
+    public CompletableFuture<UserDto> examMemberUser(ExamMemberDto source, DataFetchingEnvironment env) {
+        DataLoader<UUID, UserDto> loader = env.getDataLoader("userById");
+        return loader.load(source.userId());
     }
 
     @SchemaMapping(typeName = "Exam", field = "papers")

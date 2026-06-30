@@ -30,7 +30,7 @@ public interface SpringDataQuestionRepository extends JpaRepository<QuestionJpaE
         JOIN QuestionBankJpaEntity qb ON qb.id = q.questionBankId
         WHERE (:questionBankId IS NULL OR q.questionBankId = :questionBankId)
           AND (:questionTopicId IS NULL OR q.questionTopicId = :questionTopicId)
-          AND (:topicName IS NULL OR LOWER(qt.name) LIKE LOWER(CONCAT('%', :topicName, '%')))
+          AND (:topicNamePattern IS NULL OR LOWER(qt.name) LIKE :topicNamePattern)
           AND (:status IS NULL OR q.status = :status)
           AND (:type IS NULL OR q.type = :type)
           AND (:sharing IS NULL OR q.sharing = :sharing)
@@ -49,12 +49,12 @@ public interface SpringDataQuestionRepository extends JpaRepository<QuestionJpaE
                 )
               )
           AND (
-                :keyword IS NULL
-                OR LOWER(q.code) LIKE LOWER(CONCAT('%', :keyword, '%'))
-                OR LOWER(q.questionText) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                :keywordPattern IS NULL
+                OR LOWER(q.code) LIKE :keywordPattern
+                OR LOWER(q.questionText) LIKE :keywordPattern
               )
           AND (
-                :systemAdmin = true
+                (:systemAdmin = true AND qb.ownerType = 'SYSTEM')
                 OR (
                     q.confidentiality = 'EXAM_RESTRICTED'
                     AND EXISTS (
@@ -70,6 +70,21 @@ public interface SpringDataQuestionRepository extends JpaRepository<QuestionJpaE
                     q.confidentiality <> 'EXAM_RESTRICTED'
                     AND (
                         (
+                            :systemAdmin = true
+                            AND qb.ownerType = 'SCHOOL'
+                            AND qb.status = 'PUBLISHED'
+                            AND qt.status = 'PUBLISHED'
+                            AND q.status = 'PUBLISHED'
+                            AND q.sharing = 'SCHOOL_SHARED'
+                        )
+                        OR (
+                            qb.ownerType = 'SYSTEM'
+                            AND qb.status = 'PUBLISHED'
+                            AND qt.status = 'PUBLISHED'
+                            AND q.status = 'PUBLISHED'
+                            AND q.sharing = 'SCHOOL_SHARED'
+                        )
+                        OR (
                             :schoolAdmin = true
                             AND (
                                 qb.schoolId = :currentSchoolId
@@ -113,12 +128,12 @@ public interface SpringDataQuestionRepository extends JpaRepository<QuestionJpaE
         @Param("schoolAdmin") boolean schoolAdmin,
         @Param("questionBankId") UUID questionBankId,
         @Param("questionTopicId") UUID questionTopicId,
-        @Param("topicName") String topicName,
+        @Param("topicNamePattern") String topicNamePattern,
         @Param("status") String status,
         @Param("type") String type,
         @Param("sharing") String sharing,
         @Param("scope") String scope,
-        @Param("keyword") String keyword,
+        @Param("keywordPattern") String keywordPattern,
         Pageable pageable
     );
 
@@ -129,7 +144,7 @@ public interface SpringDataQuestionRepository extends JpaRepository<QuestionJpaE
         JOIN QuestionBankJpaEntity qb ON qb.id = q.questionBankId
         WHERE q.id = :id
           AND (
-                :systemAdmin = true
+                (:systemAdmin = true AND qb.ownerType = 'SYSTEM')
                 OR (
                     q.confidentiality = 'EXAM_RESTRICTED'
                     AND EXISTS (
@@ -145,6 +160,21 @@ public interface SpringDataQuestionRepository extends JpaRepository<QuestionJpaE
                     q.confidentiality <> 'EXAM_RESTRICTED'
                     AND (
                         (
+                            :systemAdmin = true
+                            AND qb.ownerType = 'SCHOOL'
+                            AND qb.status = 'PUBLISHED'
+                            AND qt.status = 'PUBLISHED'
+                            AND q.status = 'PUBLISHED'
+                            AND q.sharing = 'SCHOOL_SHARED'
+                        )
+                        OR (
+                            qb.ownerType = 'SYSTEM'
+                            AND qb.status = 'PUBLISHED'
+                            AND qt.status = 'PUBLISHED'
+                            AND q.status = 'PUBLISHED'
+                            AND q.sharing = 'SCHOOL_SHARED'
+                        )
+                        OR (
                             :schoolAdmin = true
                             AND (
                                 qb.schoolId = :currentSchoolId

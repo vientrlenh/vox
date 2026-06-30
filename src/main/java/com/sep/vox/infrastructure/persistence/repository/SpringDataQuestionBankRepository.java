@@ -19,14 +19,21 @@ public interface SpringDataQuestionBankRepository extends JpaRepository<Question
           AND (:languageId IS NULL OR qb.languageId = :languageId)
           AND (:schoolId IS NULL OR qb.schoolId = :schoolId)
           AND (
-                :keyword IS NULL
-                OR LOWER(qb.code) LIKE LOWER(CONCAT('%', :keyword, '%'))
-                OR LOWER(qb.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                :schoolGradeId IS NULL
+                OR EXISTS (
+                    SELECT 1 FROM QuestionBankGradeJpaEntity qbg
+                    WHERE qbg.questionBankId = qb.id AND qbg.schoolGradeId = :schoolGradeId
+                )
+              )
+          AND (
+                :keywordPattern IS NULL
+                OR LOWER(qb.code) LIKE :keywordPattern
+                OR LOWER(qb.name) LIKE :keywordPattern
               )
           AND (
                 :systemAdmin = true
                 OR (:schoolAdmin = true AND qb.schoolId = :currentSchoolId)
-                OR (:schoolAdmin = true AND qb.ownerType = 'SYSTEM' AND qb.status = 'PUBLISHED')
+                OR (qb.ownerType = 'SYSTEM' AND qb.status = 'PUBLISHED')
                 OR (:schoolAdmin = false AND qb.schoolId = :currentSchoolId AND qb.status = 'PUBLISHED')
               )
         ORDER BY qb.updatedAt DESC
@@ -39,7 +46,8 @@ public interface SpringDataQuestionBankRepository extends JpaRepository<Question
         @Param("status") String status,
         @Param("languageId") UUID languageId,
         @Param("schoolId") UUID schoolId,
-        @Param("keyword") String keyword,
+        @Param("schoolGradeId") UUID schoolGradeId,
+        @Param("keywordPattern") String keywordPattern,
         Pageable pageable
     );
 }

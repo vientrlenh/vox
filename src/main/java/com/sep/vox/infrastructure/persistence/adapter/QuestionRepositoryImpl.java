@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
+import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.question.Question;
 import com.sep.vox.domain.model.question.QuestionSharing;
@@ -113,12 +114,12 @@ public class QuestionRepositoryImpl implements QuestionRepository {
             schoolAdmin,
             questionBankId,
             questionTopicId,
-            topicName,
+            StringNormalization.toLikePattern(topicName),
             status == null ? null : status.name(),
             type == null ? null : type.name(),
             sharing == null ? null : sharing.name(),
             scope,
-            keyword,
+            StringNormalization.toLikePattern(keyword),
             pageable
         );
         return new PageResult<>(

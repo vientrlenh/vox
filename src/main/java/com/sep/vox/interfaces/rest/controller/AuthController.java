@@ -159,9 +159,9 @@ public class AuthController {
 
     @GetMapping("/oauth2/google/start")
     public void startGoogleLogin(
-        @RequestParam(required = true) String deviceId,
-        @RequestParam(required = true) String deviceName,
-        @RequestParam(required = true) String platform,
+        @RequestParam(name = "deviceId", required = true) String deviceId,
+        @RequestParam(name = "deviceName", required = true) String deviceName,
+        @RequestParam(name = "platform", required = true) String platform,
         HttpServletRequest request,
         HttpServletResponse response
     ) throws IOException {

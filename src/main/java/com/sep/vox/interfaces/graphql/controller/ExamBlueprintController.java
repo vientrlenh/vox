@@ -70,12 +70,13 @@ public class ExamBlueprintController {
             @Argument UUID schoolId,
             @Argument Boolean isActive,
             @Argument UUID languageId,
+            @Argument String examKind,
             @Argument String keyword,
             @Argument(name = "page") int page,
             @Argument(name = "size") int size) {
         validatePage(page, size);
         return viewExamBlueprintsUseCase.execute(
-            new ViewExamBlueprintsQuery(schoolId, isActive, languageId, keyword, page, size)
+            new ViewExamBlueprintsQuery(schoolId, isActive, languageId, examKind, keyword, page, size)
         );
     }
 

@@ -64,6 +64,12 @@ public class ExamRepositoryImpl implements ExamRepository {
     }
 
     @Override
+    public Optional<Exam> findByBlueprintId(UUID blueprintId) {
+        return springDataExamRepository.findByBlueprintId(blueprintId)
+            .map(ExamMapper::toDomain);
+    }
+
+    @Override
     public boolean existsByBlueprintId(UUID blueprintId) {
         return springDataExamRepository.existsByBlueprintId(blueprintId);
     }

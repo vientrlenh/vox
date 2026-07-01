@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.sep.vox.application.port.input.command.DeleteExamBlueprintCommand;
 import com.sep.vox.application.port.input.command.DeleteExamBlueprintSectionCommand;
 import com.sep.vox.application.port.input.command.DeleteExamBlueprintSlotCommand;
+import com.sep.vox.application.port.input.command.UpdateExamBlueprintActiveStatusCommand;
 import com.sep.vox.application.port.input.usecase.examblueprint.CreateExamBlueprintSectionUseCase;
 import com.sep.vox.application.port.input.usecase.examblueprint.CreateExamBlueprintSlotUseCase;
 import com.sep.vox.application.port.input.usecase.examblueprint.CreateExamBlueprintUseCase;
@@ -24,6 +25,7 @@ import com.sep.vox.application.port.input.usecase.examblueprint.CreateExamBluepr
 import com.sep.vox.application.port.input.usecase.examblueprint.DeleteExamBlueprintSectionUseCase;
 import com.sep.vox.application.port.input.usecase.examblueprint.DeleteExamBlueprintSlotUseCase;
 import com.sep.vox.application.port.input.usecase.examblueprint.DeleteExamBlueprintUseCase;
+import com.sep.vox.application.port.input.usecase.examblueprint.UpdateExamBlueprintActiveStatusUseCase;
 import com.sep.vox.application.port.input.usecase.examblueprint.UpdateExamBlueprintSectionUseCase;
 import com.sep.vox.application.port.input.usecase.examblueprint.UpdateExamBlueprintSlotUseCase;
 import com.sep.vox.application.port.input.usecase.examblueprint.UpdateExamBlueprintUseCase;
@@ -37,6 +39,7 @@ import com.sep.vox.interfaces.rest.dto.request.CreateExamBlueprintRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateExamBlueprintSectionItemRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateExamBlueprintSlotItemRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateExamBlueprintVersionRequest;
+import com.sep.vox.interfaces.rest.dto.request.UpdateExamBlueprintActiveStatusRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateExamBlueprintRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateExamBlueprintSectionRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateExamBlueprintSlotRequest;
@@ -61,6 +64,7 @@ public class ExamBlueprintController {
 
     private final CreateExamBlueprintUseCase createExamBlueprintUseCase;
     private final UpdateExamBlueprintUseCase updateExamBlueprintUseCase;
+    private final UpdateExamBlueprintActiveStatusUseCase updateExamBlueprintActiveStatusUseCase;
     private final DeleteExamBlueprintUseCase deleteExamBlueprintUseCase;
     private final CreateExamBlueprintVersionUseCase createExamBlueprintVersionUseCase;
     private final UpdateExamBlueprintVersionUseCase updateExamBlueprintVersionUseCase;
@@ -75,6 +79,7 @@ public class ExamBlueprintController {
     public ExamBlueprintController(
             CreateExamBlueprintUseCase createExamBlueprintUseCase,
             UpdateExamBlueprintUseCase updateExamBlueprintUseCase,
+            UpdateExamBlueprintActiveStatusUseCase updateExamBlueprintActiveStatusUseCase,
             DeleteExamBlueprintUseCase deleteExamBlueprintUseCase,
             CreateExamBlueprintVersionUseCase createExamBlueprintVersionUseCase,
             UpdateExamBlueprintVersionUseCase updateExamBlueprintVersionUseCase,
@@ -87,6 +92,7 @@ public class ExamBlueprintController {
             DeleteExamBlueprintSlotUseCase deleteExamBlueprintSlotUseCase) {
         this.createExamBlueprintUseCase = createExamBlueprintUseCase;
         this.updateExamBlueprintUseCase = updateExamBlueprintUseCase;
+        this.updateExamBlueprintActiveStatusUseCase = updateExamBlueprintActiveStatusUseCase;
         this.deleteExamBlueprintUseCase = deleteExamBlueprintUseCase;
         this.createExamBlueprintVersionUseCase = createExamBlueprintVersionUseCase;
         this.updateExamBlueprintVersionUseCase = updateExamBlueprintVersionUseCase;
@@ -114,6 +120,17 @@ public class ExamBlueprintController {
             @Valid @RequestBody UpdateExamBlueprintRequest request) {
         var data = updateExamBlueprintUseCase.execute(UpdateExamBlueprintCommandMapper.fromRequest(id, request));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật blueprint đề thi thành công", data));
+    }
+
+    @PatchMapping("/exam-blueprints/{id}/active")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<ApiResponse<ExamBlueprintDto>> updateActiveStatus(
+            @PathVariable UUID id,
+            @RequestBody UpdateExamBlueprintActiveStatusRequest request) {
+        var data = updateExamBlueprintActiveStatusUseCase.execute(
+            new UpdateExamBlueprintActiveStatusCommand(id, request.isActive())
+        );
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái kích hoạt blueprint thành công", data));
     }
 
     @DeleteMapping("/exam-blueprints/{id}")

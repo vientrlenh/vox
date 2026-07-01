@@ -240,6 +240,7 @@ extend type Query {
         schoolId: ID,
         isActive: Boolean,
         languageId: ID,
+        examKind: String,
         keyword: String,
         page: Int = 0,
         size: Int = 20

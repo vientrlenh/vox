@@ -36,7 +36,7 @@ public class ExamBlueprintRepositoryImpl implements ExamBlueprintRepository {
 
     @Override
     public PageResult<ExamBlueprint> findAccessible(UUID currentUserId, UUID currentSchoolId, boolean systemAdmin,
-            boolean schoolAdmin, UUID schoolId, Boolean isActive, UUID languageId, String keyword, int page, int size) {
+            boolean schoolAdmin, UUID schoolId, Boolean isActive, UUID languageId, String examKind, String keyword, int page, int size) {
         var pageable = PageRequest.of(page, size);
         var result = springDataExamBlueprintRepository.findAccessible(
             currentUserId,
@@ -46,6 +46,7 @@ public class ExamBlueprintRepositoryImpl implements ExamBlueprintRepository {
             schoolId,
             isActive,
             languageId,
+            examKind,
             StringNormalization.toLikePattern(keyword),
             pageable
         );

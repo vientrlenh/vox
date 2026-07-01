@@ -15,9 +15,7 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.ExamBlueprintDto;
 import com.sep.vox.domain.mapper.ExamBlueprintDtoMapper;
 import com.sep.vox.domain.model.exam.ExamBlueprint;
-import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.repository.ExamBlueprintRepository;
-import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.SchoolGradeLevelRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
@@ -25,19 +23,16 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 public class CreateExamBlueprintUseCase implements IUseCase<CreateExamBlueprintCommand, ExamBlueprintDto> {
 
     private final ExamBlueprintRepository examBlueprintRepository;
-    private final ExamMemberRepository examMemberRepository;
     private final SchoolGradeLevelRepository schoolGradeLevelRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserContextPort userContextPort;
 
     public CreateExamBlueprintUseCase(
             ExamBlueprintRepository examBlueprintRepository,
-            ExamMemberRepository examMemberRepository,
             SchoolGradeLevelRepository schoolGradeLevelRepository,
             SchoolUserRepository schoolUserRepository,
             UserContextPort userContextPort) {
         this.examBlueprintRepository = examBlueprintRepository;
-        this.examMemberRepository = examMemberRepository;
         this.schoolGradeLevelRepository = schoolGradeLevelRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.userContextPort = userContextPort;
@@ -58,9 +53,6 @@ public class CreateExamBlueprintUseCase implements IUseCase<CreateExamBlueprintC
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
 
-        if (!examMemberRepository.existsByUserIdAndRoleAndSchoolId(currentUserId, ExamMemberRole.AUTHOR, currentSchoolId)) {
-            throw new ForbiddenException("Chỉ AUTHOR của ít nhất một exam trong trường mới được tạo blueprint");
-        }
         if (command.schoolGradeLevelId() != null) {
             var gradeLevel = schoolGradeLevelRepository.findById(command.schoolGradeLevelId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy khối lớp"));

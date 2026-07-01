@@ -56,6 +56,7 @@ public class ViewExamBlueprintsUseCase implements IUseCase<ViewExamBlueprintsQue
             input.schoolId(),
             input.isActive(),
             input.languageId(),
+            input.examKind(),
             input.keyword(),
             input.page(),
             input.size()

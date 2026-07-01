@@ -24,6 +24,7 @@ public interface ExamRepository {
         int page,
         int size
     );
+    Optional<Exam> findByBlueprintId(UUID blueprintId);
     boolean existsByBlueprintId(UUID blueprintId);
     boolean existsSubmittedSessionByExamId(UUID examId);
     void deleteById(UUID id);

@@ -17,12 +17,14 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.ExamBlueprintVersionDto;
 import com.sep.vox.domain.mapper.ExamBlueprintVersionDtoMapper;
+import com.sep.vox.domain.model.exam.ExamBlueprint;
 import com.sep.vox.domain.model.exam.ExamBlueprintVersion;
 import com.sep.vox.domain.model.exam.ExamBlueprintVersionStatus;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.repository.ExamBlueprintRepository;
 import com.sep.vox.domain.repository.ExamBlueprintVersionRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
+import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
@@ -31,6 +33,7 @@ public class UpdateExamBlueprintVersionStatusUseCase
 
     private final ExamBlueprintVersionRepository examBlueprintVersionRepository;
     private final ExamBlueprintRepository examBlueprintRepository;
+    private final ExamRepository examRepository;
     private final ExamMemberRepository examMemberRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
@@ -40,6 +43,7 @@ public class UpdateExamBlueprintVersionStatusUseCase
     public UpdateExamBlueprintVersionStatusUseCase(
             ExamBlueprintVersionRepository examBlueprintVersionRepository,
             ExamBlueprintRepository examBlueprintRepository,
+            ExamRepository examRepository,
             ExamMemberRepository examMemberRepository,
             SchoolUserRepository schoolUserRepository,
             UserRoleQueryRepository userRoleQueryRepository,
@@ -47,6 +51,7 @@ public class UpdateExamBlueprintVersionStatusUseCase
             EventPublisherPort eventPublisherPort) {
         this.examBlueprintVersionRepository = examBlueprintVersionRepository;
         this.examBlueprintRepository = examBlueprintRepository;
+        this.examRepository = examRepository;
         this.examMemberRepository = examMemberRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
@@ -75,7 +80,7 @@ public class UpdateExamBlueprintVersionStatusUseCase
         if (!blueprint.getSchoolId().equals(currentSchoolId)) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
-        requireChairOrAdminOverride(version, blueprint.getSchoolId(), currentUserId);
+        requireApprover(version, blueprint, currentUserId);
 
         switch (command.action()) {
             case "PUBLISH" -> {
@@ -108,32 +113,17 @@ public class UpdateExamBlueprintVersionStatusUseCase
         return ExamBlueprintVersionDtoMapper.toDto(saved);
     }
 
-    private void requireChairOrAdminOverride(ExamBlueprintVersion version, UUID schoolId, UUID currentUserId) {
-        if (examMemberRepository.existsByUserIdAndRoleAndSchoolId(currentUserId, ExamMemberRole.CHAIR, schoolId)) {
-            requireNotAuthor(version, currentUserId);
-            return;
+    private void requireApprover(ExamBlueprintVersion version, ExamBlueprint blueprint, UUID currentUserId) {
+        var exam = examRepository.findByBlueprintId(blueprint.getId())
+            .orElseThrow(() -> new ForbiddenException("Blueprint chưa được gắn vào kỳ thi, không thể duyệt version"));
+        var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+            .anyMatch(roleInfo -> "SCHOOL_ADMIN".equals(roleInfo.roleCode()));
+        var isChair = examMemberRepository.existsByExamIdAndUserIdAndRole(exam.getId(), currentUserId, ExamMemberRole.CHAIR);
+        if (!isChair && !schoolAdmin) {
+            throw new ForbiddenException("Chỉ CHAIR của kỳ thi hoặc quản trị trường mới được duyệt version blueprint");
         }
-        if (isSchoolAdminOverrideAllowed(version, schoolId, currentUserId)) {
-            return;
-        }
-        throw new ForbiddenException("Quyền truy cập bị từ chối");
-    }
-
-    private void requireNotAuthor(ExamBlueprintVersion version, UUID currentUserId) {
         if (currentUserId.equals(version.getCreatedBy())) {
             throw new ForbiddenException("Người tạo version không được tự duyệt version của chính mình");
         }
-    }
-
-    private boolean isSchoolAdminOverrideAllowed(ExamBlueprintVersion version, UUID schoolId, UUID currentUserId) {
-        if (currentUserId.equals(version.getCreatedBy())) {
-            return false;
-        }
-        var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-            .anyMatch(roleInfo -> "SCHOOL_ADMIN".equals(roleInfo.roleCode()));
-        if (!schoolAdmin) {
-            return false;
-        }
-        return !examMemberRepository.existsByRoleAndSchoolIdExcludingUserId(ExamMemberRole.CHAIR, schoolId, version.getCreatedBy());
     }
 }

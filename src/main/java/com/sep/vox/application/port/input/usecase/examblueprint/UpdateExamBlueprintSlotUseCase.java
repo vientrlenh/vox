@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.examblueprint;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,17 +14,21 @@ import com.sep.vox.application.port.input.command.CreateQuestionSelectionSpecCom
 import com.sep.vox.application.port.input.command.UpdateExamBlueprintSlotCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.ExamBlueprintSlotDto;
 import com.sep.vox.domain.mapper.ExamBlueprintSlotDtoMapper;
+import com.sep.vox.domain.model.exam.ExamBlueprint;
 import com.sep.vox.domain.model.exam.ExamBlueprintSlotType;
 import com.sep.vox.domain.model.exam.ExamBlueprintVersionStatus;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.question.QuestionDifficulty;
+import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.model.question.QuestionType;
 import com.sep.vox.domain.repository.ExamBlueprintRepository;
 import com.sep.vox.domain.repository.ExamBlueprintSlotRepository;
 import com.sep.vox.domain.repository.ExamBlueprintVersionRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
+import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.valueobject.QuestionSelectionSpec;
@@ -34,25 +39,31 @@ public class UpdateExamBlueprintSlotUseCase implements IUseCase<UpdateExamBluepr
     private final ExamBlueprintSlotRepository examBlueprintSlotRepository;
     private final ExamBlueprintVersionRepository examBlueprintVersionRepository;
     private final ExamBlueprintRepository examBlueprintRepository;
-    private final ExamMemberRepository examMemberRepository;
     private final QuestionRepository questionRepository;
+    private final ExamRepository examRepository;
+    private final ExamMemberRepository examMemberRepository;
     private final SchoolUserRepository schoolUserRepository;
+    private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
 
     public UpdateExamBlueprintSlotUseCase(
             ExamBlueprintSlotRepository examBlueprintSlotRepository,
             ExamBlueprintVersionRepository examBlueprintVersionRepository,
             ExamBlueprintRepository examBlueprintRepository,
-            ExamMemberRepository examMemberRepository,
             QuestionRepository questionRepository,
+            ExamRepository examRepository,
+            ExamMemberRepository examMemberRepository,
             SchoolUserRepository schoolUserRepository,
+            UserRoleQueryRepository userRoleQueryRepository,
             UserContextPort userContextPort) {
         this.examBlueprintSlotRepository = examBlueprintSlotRepository;
         this.examBlueprintVersionRepository = examBlueprintVersionRepository;
         this.examBlueprintRepository = examBlueprintRepository;
-        this.examMemberRepository = examMemberRepository;
         this.questionRepository = questionRepository;
+        this.examRepository = examRepository;
+        this.examMemberRepository = examMemberRepository;
         this.schoolUserRepository = schoolUserRepository;
+        this.userRoleQueryRepository = userRoleQueryRepository;
         this.userContextPort = userContextPort;
     }
 
@@ -71,7 +82,7 @@ public class UpdateExamBlueprintSlotUseCase implements IUseCase<UpdateExamBluepr
             .orElseThrow(() -> new NotFoundException("Không tìm thấy version blueprint"));
         var blueprint = examBlueprintRepository.findById(version.getBlueprintId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy blueprint đề thi"));
-        authorizeAuthor(currentUserId, currentSchoolId, blueprint.getSchoolId());
+        authorizeEditor(blueprint, currentUserId, currentSchoolId);
 
         if (version.getStatus() != ExamBlueprintVersionStatus.DRAFT) {
             throw new IllegalStateException("Chỉ được sửa slot khi version đang DRAFT");
@@ -107,8 +118,10 @@ public class UpdateExamBlueprintSlotUseCase implements IUseCase<UpdateExamBluepr
             if (command.selectionSpec() != null) {
                 throw new IllegalStateException("Slot FIXED không được có selectionSpec");
             }
-            if (!questionRepository.existsById(command.fixedQuestionId())) {
-                throw new NotFoundException("Không tìm thấy câu hỏi fixed cho slot");
+            var question = questionRepository.findById(command.fixedQuestionId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi fixed cho slot"));
+            if (question.getStatus() != QuestionStatus.PUBLISHED) {
+                throw new IllegalStateException("Câu hỏi fixed cho slot phải ở trạng thái PUBLISHED");
             }
             return;
         }
@@ -120,10 +133,22 @@ public class UpdateExamBlueprintSlotUseCase implements IUseCase<UpdateExamBluepr
         }
     }
 
-    private void authorizeAuthor(java.util.UUID currentUserId, java.util.UUID currentSchoolId, java.util.UUID schoolId) {
-        if (!schoolId.equals(currentSchoolId)
-                || !examMemberRepository.existsByUserIdAndRoleAndSchoolId(currentUserId, ExamMemberRole.AUTHOR, schoolId)) {
+    private void authorizeEditor(ExamBlueprint blueprint, UUID currentUserId, UUID currentSchoolId) {
+        if (!blueprint.getSchoolId().equals(currentSchoolId)) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
+        }
+        var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
+        if (schoolAdmin) return;
+        var exam = examRepository.findByBlueprintId(blueprint.getId()).orElse(null);
+        if (exam != null) {
+            if (!examMemberRepository.existsByExamIdAndUserIdAndRole(exam.getId(), currentUserId, ExamMemberRole.AUTHOR)) {
+                throw new ForbiddenException("Quyền truy cập bị từ chối");
+            }
+        } else {
+            if (!blueprint.getCreatedBy().equals(currentUserId)) {
+                throw new ForbiddenException("Quyền truy cập bị từ chối");
+            }
         }
     }
 

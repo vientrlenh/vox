@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -59,6 +60,7 @@ public interface SpringDataExamRepository extends JpaRepository<ExamJpaEntity, U
         Pageable pageable
     );
 
+    Optional<com.sep.vox.infrastructure.persistence.entity.ExamJpaEntity> findByBlueprintId(UUID blueprintId);
     boolean existsByBlueprintId(UUID blueprintId);
 
     @Query("""

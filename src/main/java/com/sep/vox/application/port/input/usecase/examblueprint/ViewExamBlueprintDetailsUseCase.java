@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.examblueprint;
 
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,15 +13,17 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.ExamBlueprintDto;
 import com.sep.vox.domain.mapper.ExamBlueprintDtoMapper;
-import com.sep.vox.domain.model.exam.ExamMemberRole;
+import com.sep.vox.domain.model.exam.ExamBlueprint;
 import com.sep.vox.domain.repository.ExamBlueprintRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
+import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
 public class ViewExamBlueprintDetailsUseCase implements IUseCase<ViewExamBlueprintDetailsQuery, ExamBlueprintDto> {
 
     private final ExamBlueprintRepository examBlueprintRepository;
+    private final ExamRepository examRepository;
     private final ExamMemberRepository examMemberRepository;
     private final UserContextPort userContextPort;
     private final SchoolUserRepository schoolUserRepository;
@@ -27,11 +31,13 @@ public class ViewExamBlueprintDetailsUseCase implements IUseCase<ViewExamBluepri
 
     public ViewExamBlueprintDetailsUseCase(
             ExamBlueprintRepository examBlueprintRepository,
+            ExamRepository examRepository,
             ExamMemberRepository examMemberRepository,
             UserContextPort userContextPort,
             SchoolUserRepository schoolUserRepository,
             UserRoleQueryRepository userRoleQueryRepository) {
         this.examBlueprintRepository = examBlueprintRepository;
+        this.examRepository = examRepository;
         this.examMemberRepository = examMemberRepository;
         this.userContextPort = userContextPort;
         this.schoolUserRepository = schoolUserRepository;
@@ -51,25 +57,33 @@ public class ViewExamBlueprintDetailsUseCase implements IUseCase<ViewExamBluepri
 
         var blueprint = examBlueprintRepository.findById(input.id())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy blueprint đề thi"));
-        if (!hasAccess(blueprint.getSchoolId(), currentUserId, currentSchoolId, schoolAdmin)) {
+        if (!hasAccess(blueprint, currentUserId, currentSchoolId, schoolAdmin)) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
         return ExamBlueprintDtoMapper.toDto(blueprint);
     }
 
     private boolean hasAccess(
-            java.util.UUID blueprintSchoolId,
-            java.util.UUID currentUserId,
-            java.util.UUID currentSchoolId,
+            ExamBlueprint blueprint,
+            UUID currentUserId,
+            UUID currentSchoolId,
             boolean schoolAdmin) {
         if (userContextPort.isSystemAdmin()) {
             return true;
         }
-        if (schoolAdmin && currentSchoolId != null && currentSchoolId.equals(blueprintSchoolId)) {
+        if (currentSchoolId == null || !blueprint.getSchoolId().equals(currentSchoolId)) {
+            return false;
+        }
+        if (schoolAdmin) {
             return true;
         }
-        return examMemberRepository.existsByUserIdAndRoleAndSchoolId(currentUserId, ExamMemberRole.CHAIR, blueprintSchoolId)
-            || examMemberRepository.existsByUserIdAndRoleAndSchoolId(currentUserId, ExamMemberRole.AUTHOR, blueprintSchoolId)
-            || examMemberRepository.existsByUserIdAndRoleAndSchoolId(currentUserId, ExamMemberRole.REVIEWER, blueprintSchoolId);
+        if (blueprint.getCreatedBy().equals(currentUserId)) {
+            return true;
+        }
+        var exam = examRepository.findByBlueprintId(blueprint.getId()).orElse(null);
+        if (exam != null) {
+            return examMemberRepository.findByExamIdAndUserId(exam.getId(), currentUserId).isPresent();
+        }
+        return false;
     }
 }

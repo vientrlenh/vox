@@ -19,7 +19,6 @@ import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUsersBySc
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.school.SchoolUser;
-import com.sep.vox.domain.model.user.SchoolRoleCodes;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
@@ -55,9 +54,28 @@ public class ViewSchoolUsersUseCaseTests {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
         when(userRepository.existsByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(true);
         when(schoolUserRepository.existsBySchoolIdAndUserId(schoolId, callerId)).thenReturn(true);
-        when(schoolUserRepository.findBySchoolId(schoolId, null, null, null, SchoolRoleCodes.ALL, 1, 20)).thenReturn(page);
+        when(schoolUserRepository.findBySchoolId(schoolId, null, null, null, 1, 20)).thenReturn(page);
 
         var result = viewSchoolUsersBySchoolUseCase.execute(new ViewSchoolUsersBySchoolQuery(schoolId, 1, 20, null, null, null));
+
+        assertThat(result).isNotNull();
+        assertThat(result.content()).hasSize(1);
+        assertThat(result.content().get(0).userId()).isEqualTo(userId);
+    }
+
+    @Test
+    void list_should_filter_by_role_id() {
+        var roleId = UUID.randomUUID();
+        var userId = UUID.randomUUID();
+        var schoolUser = schoolUser(UUID.randomUUID(), schoolId, userId);
+        var page = new PageResult<>(List.of(schoolUser), 1, 20, 1, 1);
+
+        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
+        when(userRepository.existsByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(true);
+        when(schoolUserRepository.existsBySchoolIdAndUserId(schoolId, callerId)).thenReturn(true);
+        when(schoolUserRepository.findBySchoolId(schoolId, null, roleId, null, 1, 20)).thenReturn(page);
+
+        var result = viewSchoolUsersBySchoolUseCase.execute(new ViewSchoolUsersBySchoolQuery(schoolId, 1, 20, null, roleId, null));
 
         assertThat(result).isNotNull();
         assertThat(result.content()).hasSize(1);

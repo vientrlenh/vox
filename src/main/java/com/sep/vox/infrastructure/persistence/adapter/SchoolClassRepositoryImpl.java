@@ -90,6 +90,25 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
     }
 
     @Override
+    public PageResult<SchoolClass> findByUserId(UUID schoolId, UUID userId, int pageNumber, int size) {
+        var pageable = PageRequest.of(
+            pageNumber - 1,
+            size,
+            Sort.by(Sort.Direction.DESC, SchoolClassJpaEntity::getCreatedAt).and(Sort.by(Sort.Direction.ASC, SchoolClassJpaEntity::getId))
+        );
+        var page = springDataSchoolClassRepository.findByUserId(schoolId, userId, pageable);
+        return new PageResult<>(
+            page.getContent().stream()
+                .map(SchoolClassMapper::toDomain)
+                .toList(),
+            pageNumber,
+            size,
+            page.getTotalElements(),
+            page.getTotalPages()
+        );
+    }
+
+    @Override
     public Optional<SchoolClass> findBySchoolIdAndCode(UUID schoolId, String code) {
         return springDataSchoolClassRepository.findBySchoolIdAndCode(schoolId, code)
             .map(SchoolClassMapper::toDomain);

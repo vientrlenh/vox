@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import com.sep.vox.application.port.input.command.UpdateSchoolClassCommand;
 import com.sep.vox.application.port.input.query.ViewSchoolClassDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolClassUsersQuery;
+import com.sep.vox.application.port.input.query.ViewSchoolClassesByUserQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolClassesQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolUserDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolUsersBySchoolQuery;
@@ -27,6 +28,7 @@ import com.sep.vox.application.port.input.usecase.school.UpdateSchoolUseCase;
 import com.sep.vox.application.port.input.usecase.school.ViewSchoolsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.UpdateSchoolClassUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassDetailsUseCase;
+import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassesByUserUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassesUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclassuser.ViewSchoolClassUsersUseCase;
 import com.sep.vox.application.port.input.usecase.schooldirectory.ViewSchoolDirectoryCursorPageUseCase;
@@ -59,6 +61,7 @@ import graphql.schema.DataFetchingEnvironment;
 class SchoolControllerTests {
     private ViewSchoolsUseCase viewSchoolsUseCase;
     private ViewSchoolClassesUseCase viewSchoolClassesUseCase;
+    private ViewSchoolClassesByUserUseCase viewSchoolClassesByUserUseCase;
     private ViewSchoolClassDetailsUseCase viewSchoolClassDetailsUseCase;
     private ViewSchoolClassUsersUseCase viewSchoolClassUsersUseCase;
     private UpdateSchoolClassUseCase updateSchoolClassUseCase;
@@ -87,6 +90,7 @@ class SchoolControllerTests {
     void setUp() {
         viewSchoolsUseCase = mock(ViewSchoolsUseCase.class);
         viewSchoolClassesUseCase = mock(ViewSchoolClassesUseCase.class);
+        viewSchoolClassesByUserUseCase = mock(ViewSchoolClassesByUserUseCase.class);
         viewSchoolClassDetailsUseCase = mock(ViewSchoolClassDetailsUseCase.class);
         viewSchoolClassUsersUseCase = mock(ViewSchoolClassUsersUseCase.class);
         updateSchoolClassUseCase = mock(UpdateSchoolClassUseCase.class);
@@ -110,6 +114,7 @@ class SchoolControllerTests {
         controller = new SchoolController(
             viewSchoolsUseCase,
             viewSchoolClassesUseCase,
+            viewSchoolClassesByUserUseCase,
             viewSchoolClassDetailsUseCase,
             viewSchoolClassUsersUseCase,
             updateSchoolClassUseCase,
@@ -244,6 +249,24 @@ class SchoolControllerTests {
     void school_class_users_should_throw_when_page_or_size_invalid() {
         assertThrows(IllegalArgumentException.class, () -> controller.schoolClassUsers(UUID.randomUUID(), 0, 20));
         assertThrows(IllegalArgumentException.class, () -> controller.schoolClassUsers(UUID.randomUUID(), 1, 0));
+    }
+
+    @Test
+    void school_classes_by_user_should_return_page_result() {
+        var expected = new PageResult<SchoolClassDto>(List.of(), 1, 20, 0, 0);
+        var query = new ViewSchoolClassesByUserQuery(schoolId, userId, 1, 20);
+        when(viewSchoolClassesByUserUseCase.execute(query)).thenReturn(expected);
+
+        var result = controller.schoolClassesByUser(schoolId, userId, 1, 20);
+
+        assertThat(result).isEqualTo(expected);
+        verify(viewSchoolClassesByUserUseCase).execute(query);
+    }
+
+    @Test
+    void school_classes_by_user_should_throw_when_page_or_size_invalid() {
+        assertThrows(IllegalArgumentException.class, () -> controller.schoolClassesByUser(schoolId, userId, 0, 20));
+        assertThrows(IllegalArgumentException.class, () -> controller.schoolClassesByUser(schoolId, userId, 1, 0));
     }
 
     // @Test

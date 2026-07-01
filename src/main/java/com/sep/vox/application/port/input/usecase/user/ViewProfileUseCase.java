@@ -3,7 +3,6 @@ package com.sep.vox.application.port.input.usecase.user;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.UserDto;

@@ -22,6 +22,8 @@ import com.sep.vox.application.port.input.query.ViewSchoolClassDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolClassUsersQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolClassesByUserQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolClassesQuery;
+import com.sep.vox.application.port.input.query.ViewSchoolStudentsBySchoolQuery;
+import com.sep.vox.application.port.input.query.ViewSchoolTeachersBySchoolQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolUserDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolUsersBySchoolQuery;
 import com.sep.vox.application.port.input.usecase.school.UpdateSchoolUseCase;
@@ -44,6 +46,8 @@ import com.sep.vox.application.port.input.usecase.schoolroom.UpdateSchoolRoomUse
 import com.sep.vox.application.port.input.usecase.schoolroom.ViewSchoolRoomDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolroom.ViewSchoolRoomsUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.UpdateSchoolUserUseCase;
+import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolStudentsBySchoolUseCase;
+import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolTeachersBySchoolUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUserDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUsersBySchoolUseCase;
 import com.sep.vox.application.response.input.schoolclass.UpdateSchoolClassResponse;
@@ -66,6 +70,8 @@ class SchoolControllerTests {
     private ViewSchoolClassUsersUseCase viewSchoolClassUsersUseCase;
     private UpdateSchoolClassUseCase updateSchoolClassUseCase;
     private ViewSchoolUsersBySchoolUseCase viewSchoolUsersBySchoolUseCase;
+    private ViewSchoolStudentsBySchoolUseCase viewSchoolStudentsBySchoolUseCase;
+    private ViewSchoolTeachersBySchoolUseCase viewSchoolTeachersBySchoolUseCase;
     private ViewSchoolUserDetailsUseCase viewSchoolUserDetailsUseCase;
     private UpdateSchoolUserUseCase updateSchoolUserUseCase; 
     private UpdateSchoolUseCase updateSchoolUseCase;
@@ -95,6 +101,8 @@ class SchoolControllerTests {
         viewSchoolClassUsersUseCase = mock(ViewSchoolClassUsersUseCase.class);
         updateSchoolClassUseCase = mock(UpdateSchoolClassUseCase.class);
         viewSchoolUsersBySchoolUseCase = mock(ViewSchoolUsersBySchoolUseCase.class);
+        viewSchoolStudentsBySchoolUseCase = mock(ViewSchoolStudentsBySchoolUseCase.class);
+        viewSchoolTeachersBySchoolUseCase = mock(ViewSchoolTeachersBySchoolUseCase.class);
         viewSchoolUserDetailsUseCase = mock(ViewSchoolUserDetailsUseCase.class);
         updateSchoolUserUseCase = mock(UpdateSchoolUserUseCase.class);
         updateSchoolUseCase = mock(UpdateSchoolUseCase.class);
@@ -119,6 +127,8 @@ class SchoolControllerTests {
             viewSchoolClassUsersUseCase,
             updateSchoolClassUseCase,
             viewSchoolUsersBySchoolUseCase,
+            viewSchoolStudentsBySchoolUseCase,
+            viewSchoolTeachersBySchoolUseCase,
             viewSchoolUserDetailsUseCase,
             updateSchoolUserUseCase, 
             updateSchoolUseCase, 
@@ -348,6 +358,44 @@ class SchoolControllerTests {
         assertThat(result).isEqualTo(page);
         assertThat(result.content()).containsExactly(response);
         verify(viewSchoolUsersBySchoolUseCase).execute(new ViewSchoolUsersBySchoolQuery(schoolId, 1, 20, null, null, null));
+    }
+
+    @Test
+    void school_students_by_school_should_return_page_from_use_case() {
+        var response = schoolUserDto(UUID.randomUUID(), schoolId, userId);
+        var page = new PageResult<>(List.of(response), 1, 20, 1, 1);
+        when(viewSchoolStudentsBySchoolUseCase.execute(new ViewSchoolStudentsBySchoolQuery(schoolId, 1, 20, null, null))).thenReturn(page);
+
+        var result = controller.schoolStudentsBySchool(schoolId, 1, 20, null, null);
+
+        assertThat(result).isEqualTo(page);
+        verify(viewSchoolStudentsBySchoolUseCase).execute(new ViewSchoolStudentsBySchoolQuery(schoolId, 1, 20, null, null));
+    }
+
+    @Test
+    void school_students_by_school_should_reject_invalid_paging() {
+        assertThatThrownBy(() -> controller.schoolStudentsBySchool(schoolId, 0, 20, null, null))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessage("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
+    }
+
+    @Test
+    void school_teachers_by_school_should_return_page_from_use_case() {
+        var response = schoolUserDto(UUID.randomUUID(), schoolId, userId);
+        var page = new PageResult<>(List.of(response), 1, 20, 1, 1);
+        when(viewSchoolTeachersBySchoolUseCase.execute(new ViewSchoolTeachersBySchoolQuery(schoolId, 1, 20, null, null))).thenReturn(page);
+
+        var result = controller.schoolTeachersBySchool(schoolId, 1, 20, null, null);
+
+        assertThat(result).isEqualTo(page);
+        verify(viewSchoolTeachersBySchoolUseCase).execute(new ViewSchoolTeachersBySchoolQuery(schoolId, 1, 20, null, null));
+    }
+
+    @Test
+    void school_teachers_by_school_should_reject_invalid_paging() {
+        assertThatThrownBy(() -> controller.schoolTeachersBySchool(schoolId, 0, 20, null, null))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessage("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
     }
 
     @Test

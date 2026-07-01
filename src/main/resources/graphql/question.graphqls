@@ -229,5 +229,17 @@ extend type Query {
         page: Int = 0,
         size: Int = 20
     ): QuestionPage!
+    questionsForExamPaper(
+        questionBankId: ID,
+        questionTopicId: ID,
+        topicName: String,
+        status: QuestionStatus,
+        type: QuestionType,
+        sharing: QuestionSharing,
+        scope: QuestionScope = ALL,
+        keyword: String,
+        page: Int = 0,
+        size: Int = 20
+    ): QuestionPage!
     question(id: ID!): Question
 }

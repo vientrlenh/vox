@@ -5,6 +5,7 @@ import java.util.UUID;
 public record ExamDto(
     UUID id,
     UUID blueprintId,
+    UUID blueprintVersionId,
     String code,
     String name,
     String description,

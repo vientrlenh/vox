@@ -26,8 +26,11 @@ public class ExamJpaEntity {
     )
     private UUID id;
 
-    @Column(name = "blueprint_id", updatable = false)
+    @Column(name = "blueprint_id")
     private UUID blueprintId;
+
+    @Column(name = "blueprint_version_id")
+    private UUID blueprintVersionId;
     
     @Column(name = "code", nullable = false, updatable = false, length = 100)
     private String code;
@@ -83,11 +86,12 @@ public class ExamJpaEntity {
 
     protected ExamJpaEntity() {}
 
-    public ExamJpaEntity(UUID id, UUID blueprintId, String code, String name, String description, UUID schoolId, UUID languageId,
+    public ExamJpaEntity(UUID id, UUID blueprintId, UUID blueprintVersionId, String code, String name, String description, UUID schoolId, UUID languageId,
             String kind, String status, OffsetDateTime openAt, OffsetDateTime closeAt, UUID assessmentPolicyId,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.blueprintId = blueprintId;
+        this.blueprintVersionId = blueprintVersionId;
         this.code = code;
         this.name = name;
         this.description = description;
@@ -232,5 +236,11 @@ public class ExamJpaEntity {
         this.blueprintId = blueprintId;
     }
 
-    
+    public UUID getBlueprintVersionId() {
+        return blueprintVersionId;
+    }
+
+    public void setBlueprintVersionId(UUID blueprintVersionId) {
+        this.blueprintVersionId = blueprintVersionId;
+    }
 }

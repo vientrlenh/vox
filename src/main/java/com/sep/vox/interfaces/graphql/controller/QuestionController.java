@@ -17,6 +17,7 @@ import com.sep.vox.application.port.input.query.ViewQuestionDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewQuestionTopicDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewQuestionsQuery;
 import com.sep.vox.application.port.input.usecase.question.ViewQuestionDetailsUseCase;
+import com.sep.vox.application.port.input.usecase.question.ViewQuestionsForExamPaperUseCase;
 import com.sep.vox.application.port.input.usecase.question.ViewQuestionsUseCase;
 import com.sep.vox.application.port.input.usecase.questionbank.ViewQuestionBankDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.questiontopic.ViewQuestionTopicDetailsUseCase;
@@ -42,6 +43,7 @@ import com.sep.vox.domain.repository.QuestionEvaluationGuideRepository;
 public class QuestionController {
 
     private final ViewQuestionsUseCase viewQuestionsUseCase;
+    private final ViewQuestionsForExamPaperUseCase viewQuestionsForExamPaperUseCase;
     private final ViewQuestionDetailsUseCase viewQuestionDetailsUseCase;
     private final ViewQuestionBankDetailsUseCase viewQuestionBankDetailsUseCase;
     private final ViewQuestionTopicDetailsUseCase viewQuestionTopicDetailsUseCase;
@@ -51,6 +53,7 @@ public class QuestionController {
 
     public QuestionController(
             ViewQuestionsUseCase viewQuestionsUseCase,
+            ViewQuestionsForExamPaperUseCase viewQuestionsForExamPaperUseCase,
             ViewQuestionDetailsUseCase viewQuestionDetailsUseCase,
             ViewQuestionBankDetailsUseCase viewQuestionBankDetailsUseCase,
             ViewQuestionTopicDetailsUseCase viewQuestionTopicDetailsUseCase,
@@ -58,6 +61,7 @@ public class QuestionController {
             QuestionEvaluationGuideRepository questionEvaluationGuideRepository,
             QuestionCollaboratorRepository questionCollaboratorRepository) {
         this.viewQuestionsUseCase = viewQuestionsUseCase;
+        this.viewQuestionsForExamPaperUseCase = viewQuestionsForExamPaperUseCase;
         this.viewQuestionDetailsUseCase = viewQuestionDetailsUseCase;
         this.viewQuestionBankDetailsUseCase = viewQuestionBankDetailsUseCase;
         this.viewQuestionTopicDetailsUseCase = viewQuestionTopicDetailsUseCase;
@@ -92,6 +96,34 @@ public class QuestionController {
             size
         );
         return viewQuestionsUseCase.execute(query);
+    }
+
+    @QueryMapping(name = "questionsForExamPaper")
+    public PageResult<QuestionDto> questionsForExamPaper(
+            @Argument UUID questionBankId,
+            @Argument UUID questionTopicId,
+            @Argument String topicName,
+            @Argument QuestionStatus status,
+            @Argument QuestionType type,
+            @Argument QuestionSharing sharing,
+            @Argument String scope,
+            @Argument String keyword,
+            @Argument(name = "page") int page,
+            @Argument(name = "size") int size) {
+        validatePage(page, size);
+        var query = new ViewQuestionsQuery(
+            questionBankId,
+            questionTopicId,
+            topicName,
+            status,
+            type,
+            sharing,
+            scope,
+            keyword,
+            page,
+            size
+        );
+        return viewQuestionsForExamPaperUseCase.execute(query);
     }
 
     @QueryMapping(name = "question")

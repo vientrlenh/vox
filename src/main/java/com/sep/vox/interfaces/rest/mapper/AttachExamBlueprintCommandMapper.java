@@ -11,6 +11,6 @@ public final class AttachExamBlueprintCommandMapper {
     }
 
     public static AttachExamBlueprintCommand fromRequest(UUID examId, AttachExamBlueprintRequest request) {
-        return new AttachExamBlueprintCommand(examId, request.blueprintId());
+        return new AttachExamBlueprintCommand(examId, request.blueprintId(), request.blueprintVersionId());
     }
 }

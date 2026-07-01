@@ -14,7 +14,6 @@ import com.sep.vox.application.port.input.command.UpdateExamBlueprintVersionStat
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.EventPublisherPort;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.ExamBlueprintVersionDto;
 import com.sep.vox.domain.mapper.ExamBlueprintVersionDtoMapper;
 import com.sep.vox.domain.model.exam.ExamBlueprint;
@@ -36,7 +35,6 @@ public class UpdateExamBlueprintVersionStatusUseCase
     private final ExamRepository examRepository;
     private final ExamMemberRepository examMemberRepository;
     private final SchoolUserRepository schoolUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
     private final EventPublisherPort eventPublisherPort;
 
@@ -46,7 +44,6 @@ public class UpdateExamBlueprintVersionStatusUseCase
             ExamRepository examRepository,
             ExamMemberRepository examMemberRepository,
             SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
             UserContextPort userContextPort,
             EventPublisherPort eventPublisherPort) {
         this.examBlueprintVersionRepository = examBlueprintVersionRepository;
@@ -54,7 +51,6 @@ public class UpdateExamBlueprintVersionStatusUseCase
         this.examRepository = examRepository;
         this.examMemberRepository = examMemberRepository;
         this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
         this.userContextPort = userContextPort;
         this.eventPublisherPort = eventPublisherPort;
     }
@@ -70,32 +66,32 @@ public class UpdateExamBlueprintVersionStatusUseCase
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
-            .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
+            .orElseThrow(() -> new ForbiddenException("Quyen truy cap bi tu choi"));
 
         var version = examBlueprintVersionRepository.findById(command.versionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy version blueprint"));
+            .orElseThrow(() -> new NotFoundException("Khong tim thay version blueprint"));
         var blueprint = examBlueprintRepository.findById(version.getBlueprintId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy blueprint đề thi"));
+            .orElseThrow(() -> new NotFoundException("Khong tim thay blueprint de thi"));
 
         if (!blueprint.getSchoolId().equals(currentSchoolId)) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Quyen truy cap bi tu choi");
         }
-        requireApprover(version, blueprint, currentUserId);
+        requireStatusActor(version, blueprint, currentUserId);
 
         switch (command.action()) {
             case "PUBLISH" -> {
                 if (version.getStatus() != ExamBlueprintVersionStatus.DRAFT) {
-                    throw new IllegalStateException("Chỉ được publish version ở trạng thái DRAFT");
+                    throw new IllegalStateException("Chi duoc publish version o trang thai DRAFT");
                 }
                 version.setStatus(ExamBlueprintVersionStatus.PUBLISHED);
             }
             case "ARCHIVE" -> {
                 if (version.getStatus() != ExamBlueprintVersionStatus.PUBLISHED) {
-                    throw new IllegalStateException("Chỉ được archive version ở trạng thái PUBLISHED");
+                    throw new IllegalStateException("Chi duoc archive version o trang thai PUBLISHED");
                 }
                 version.setStatus(ExamBlueprintVersionStatus.ARCHIVED);
             }
-            default -> throw new IllegalStateException("Action không hợp lệ");
+            default -> throw new IllegalStateException("Action khong hop le");
         }
 
         version.setUpdatedAt(OffsetDateTime.now());
@@ -113,17 +109,16 @@ public class UpdateExamBlueprintVersionStatusUseCase
         return ExamBlueprintVersionDtoMapper.toDto(saved);
     }
 
-    private void requireApprover(ExamBlueprintVersion version, ExamBlueprint blueprint, UUID currentUserId) {
+    private void requireStatusActor(ExamBlueprintVersion version, ExamBlueprint blueprint, UUID currentUserId) {
         var exam = examRepository.findByBlueprintId(blueprint.getId())
-            .orElseThrow(() -> new ForbiddenException("Blueprint chưa được gắn vào kỳ thi, không thể duyệt version"));
-        var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-            .anyMatch(roleInfo -> "SCHOOL_ADMIN".equals(roleInfo.roleCode()));
+            .orElseThrow(() -> new ForbiddenException("Blueprint chua duoc gan vao ky thi, khong the doi trang thai version"));
         var isChair = examMemberRepository.existsByExamIdAndUserIdAndRole(exam.getId(), currentUserId, ExamMemberRole.CHAIR);
-        if (!isChair && !schoolAdmin) {
-            throw new ForbiddenException("Chỉ CHAIR của kỳ thi hoặc quản trị trường mới được duyệt version blueprint");
+        var isReviewer = examMemberRepository.existsByExamIdAndUserIdAndRole(exam.getId(), currentUserId, ExamMemberRole.REVIEWER);
+        if (!isChair && !isReviewer) {
+            throw new ForbiddenException("Chi CHAIR hoac REVIEWER cua ky thi moi duoc doi trang thai version blueprint");
         }
         if (currentUserId.equals(version.getCreatedBy())) {
-            throw new ForbiddenException("Người tạo version không được tự duyệt version của chính mình");
+            throw new ForbiddenException("Nguoi tao version khong duoc tu doi trang thai version cua chinh minh");
         }
     }
 }

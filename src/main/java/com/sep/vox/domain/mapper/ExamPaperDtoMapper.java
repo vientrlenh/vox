@@ -15,6 +15,7 @@ public final class ExamPaperDtoMapper {
         return new ExamPaperDto(
             domain.getId(),
             domain.getExamId(),
+            domain.getBlueprintVersionId(),
             domain.getCode(),
             domain.getVariant(),
             domain.getStatus().name(),

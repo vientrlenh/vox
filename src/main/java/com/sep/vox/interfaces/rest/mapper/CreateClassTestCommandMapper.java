@@ -15,7 +15,9 @@ public final class CreateClassTestCommandMapper {
             request.description(),
             request.openAt(),
             request.closeAt(),
-            request.questionIds()
+            request.questionIds(),
+            request.existingBlueprintId(),
+            request.existingBlueprintVersionId()
         );
     }
 }

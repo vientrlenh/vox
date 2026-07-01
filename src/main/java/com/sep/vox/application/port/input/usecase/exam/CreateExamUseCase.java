@@ -72,6 +72,7 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
         var now = OffsetDateTime.now();
         var exam = new Exam(
             command.blueprintId(),
+            null,
             examCodeOf(command.code()),
             command.name(),
             command.description(),

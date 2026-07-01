@@ -16,6 +16,7 @@ public final class ExamDtoMapper {
         return new ExamDto(
             domain.getId(),
             domain.getBlueprintId(),
+            domain.getBlueprintVersionId(),
             domain.getCode(),
             domain.getName(),
             domain.getDescription(),

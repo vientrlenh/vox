@@ -101,6 +101,7 @@ type ExamPaperSection {
 type ExamPaper {
     id: ID!
     examId: ID!
+    blueprintVersionId: ID
     code: String!
     variant: Int!
     status: ExamPaperStatus!
@@ -114,6 +115,7 @@ type ExamPaper {
 type Exam {
     id: ID!
     blueprintId: ID
+    blueprintVersionId: ID
     code: String!
     name: String!
     description: String

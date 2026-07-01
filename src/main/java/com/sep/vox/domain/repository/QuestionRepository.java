@@ -29,6 +29,22 @@ public interface QuestionRepository {
         int pageNumber,
         int size
     );
+    PageResult<Question> findAccessibleForExamPaper(
+        UUID currentUserId,
+        UUID currentSchoolId,
+        boolean systemAdmin,
+        boolean schoolAdmin,
+        UUID questionBankId,
+        UUID questionTopicId,
+        String topicName,
+        QuestionStatus status,
+        QuestionType type,
+        QuestionSharing sharing,
+        String scope,
+        String keyword,
+        int pageNumber,
+        int size
+    );
     Optional<Question> findAccessibleById(
         UUID id,
         UUID currentUserId,

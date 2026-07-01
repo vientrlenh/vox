@@ -134,6 +134,37 @@ public class QuestionRepositoryImpl implements QuestionRepository {
     }
 
     @Override
+    public PageResult<Question> findAccessibleForExamPaper(UUID currentUserId, UUID currentSchoolId, boolean systemAdmin,
+            boolean schoolAdmin, UUID questionBankId, UUID questionTopicId, String topicName, QuestionStatus status,
+            QuestionType type, QuestionSharing sharing, String scope, String keyword, int pageNumber, int size) {
+        var pageable = PageRequest.of(pageNumber, size);
+        var page = springDataQuestionRepository.findAccessibleForExamPaper(
+            currentUserId,
+            currentSchoolId,
+            systemAdmin,
+            schoolAdmin,
+            questionBankId,
+            questionTopicId,
+            StringNormalization.toLikePattern(topicName),
+            status == null ? null : status.name(),
+            type == null ? null : type.name(),
+            sharing == null ? null : sharing.name(),
+            scope,
+            StringNormalization.toLikePattern(keyword),
+            pageable
+        );
+        return new PageResult<>(
+            page.getContent().stream()
+                .map(QuestionMapper::toDomain)
+                .toList(),
+            pageNumber,
+            size,
+            page.getTotalElements(),
+            page.getTotalPages()
+        );
+    }
+
+    @Override
     public Optional<Question> findAccessibleById(UUID id, UUID currentUserId, UUID currentSchoolId, boolean systemAdmin,
             boolean schoolAdmin) {
         return springDataQuestionRepository.findAccessibleById(

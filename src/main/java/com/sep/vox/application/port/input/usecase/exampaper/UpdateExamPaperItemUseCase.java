@@ -17,11 +17,14 @@ import com.sep.vox.domain.model.exam.ExamBlueprintSlotType;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamPaperStatus;
 import com.sep.vox.domain.model.exam.ExamSecurePoolReleaseMode;
+import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
+import com.sep.vox.domain.model.question.QuestionSharing;
 import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.repository.ExamBlueprintSlotRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamPaperItemRepository;
 import com.sep.vox.domain.repository.ExamPaperRepository;
+import com.sep.vox.domain.repository.QuestionCollaboratorRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
@@ -33,6 +36,7 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
     private final ExamBlueprintSlotRepository examBlueprintSlotRepository;
     private final ExamMemberRepository examMemberRepository;
     private final QuestionRepository questionRepository;
+    private final QuestionCollaboratorRepository questionCollaboratorRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final ExamQuestionSecureLockService examQuestionSecureLockService;
     private final UserContextPort userContextPort;
@@ -43,6 +47,7 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
             ExamBlueprintSlotRepository examBlueprintSlotRepository,
             ExamMemberRepository examMemberRepository,
             QuestionRepository questionRepository,
+            QuestionCollaboratorRepository questionCollaboratorRepository,
             SchoolUserRepository schoolUserRepository,
             ExamQuestionSecureLockService examQuestionSecureLockService,
             UserContextPort userContextPort) {
@@ -51,6 +56,7 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
         this.examBlueprintSlotRepository = examBlueprintSlotRepository;
         this.examMemberRepository = examMemberRepository;
         this.questionRepository = questionRepository;
+        this.questionCollaboratorRepository = questionCollaboratorRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.examQuestionSecureLockService = examQuestionSecureLockService;
         this.userContextPort = userContextPort;
@@ -89,6 +95,15 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
             .orElseThrow(() -> new ForbiddenException("Không có quyền dùng câu hỏi này"));
         if (question.getStatus() != QuestionStatus.PUBLISHED) {
             throw new IllegalStateException("Chỉ được gán câu hỏi đã PUBLISHED vào đề thi");
+        }
+
+        boolean isOwner = currentUserId.equals(question.getCreatedBy());
+        boolean isSchoolShared = question.getSharing() == QuestionSharing.SCHOOL_SHARED;
+        if (!isOwner && !isSchoolShared) {
+            var collaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId);
+            if (collaborator.isEmpty() || collaborator.get().getPermission() == QuestionCollaboratorPermission.READ_ONLY) {
+                throw new ForbiddenException("Quyền READ_ONLY không được phép gán câu hỏi vào đề thi");
+            }
         }
 
         item.setQuestionId(question.getId());

@@ -17,6 +17,7 @@ import com.sep.vox.domain.mapper.QuestionCollaboratorDtoMapper;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
 import com.sep.vox.domain.model.question.QuestionCollaborator;
 import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
+import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.repository.QuestionBankRepository;
 import com.sep.vox.domain.repository.QuestionCollaboratorRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
@@ -60,6 +61,11 @@ public class CreateQuestionCollaboratorUseCase implements IUseCase<CreateQuestio
 
         validateOwner(question.getCreatedBy(), currentUserId);
         validateSchoolQuestion(bank.getOwnerType());
+
+        if (question.getStatus() == QuestionStatus.ARCHIVED) {
+            throw new IllegalStateException("Không thể thêm collaborator vào câu hỏi đã ARCHIVED");
+        }
+
 
         if (currentUserId.equals(command.userId())) {
             throw new IllegalStateException("Không thể thêm chính mình làm collaborator");

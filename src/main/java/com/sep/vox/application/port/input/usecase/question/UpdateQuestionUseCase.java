@@ -68,56 +68,55 @@ public class UpdateQuestionUseCase implements IUseCase<UpdateQuestionCommand, Up
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
-        var usedInExam = questionRepository.existsUsedInExam(question.getId());
-        var immutable = question.getStatus() == QuestionStatus.PUBLISHED || question.isLocked() || usedInExam;
-        if (!systemAdminOnSystemBank
-                && (owner || editorCollaborator)
-                && !immutable
-                && question.getStatus() != QuestionStatus.DRAFT
-                && question.getStatus() != QuestionStatus.REVISION_REQUESTED) {
-            throw new ForbiddenException("Chỉ được sửa câu hỏi khi ở trạng thái DRAFT hoặc REVISION_REQUESTED");
-        }
-
-        var target = question;
-        var clonedAsNew = false;
-        if (immutable) {
-            target = questionCloneService.cloneAsDraftWithDetails(question, currentUserId);
-            clonedAsNew = true;
-        }
-
-        applyUpdates(target, command, currentUserId);
-        var saved = questionRepository.save(target);
-        return UpdateQuestionResponseMapper.toResponse(saved, clonedAsNew);
-    }
-
-    private void applyUpdates(Question question, UpdateQuestionCommand command, UUID currentUserId) {
-        if (command.instructionText() != null) {
-            question.setInstructionText(command.instructionText());
-        }
-        if (command.questionText() != null) {
-            question.setQuestionText(command.questionText());
-        }
-        if (command.promptText() != null) {
-            question.setPromptText(command.promptText());
-        }
-        if (command.preparationText() != null) {
-            question.setPreparationText(command.preparationText());
-        }
-        if (command.questionType() != null) {
-            question.setType(QuestionType.valueOf(command.questionType()));
-        }
-        if (command.preparationTimeSeconds() != null) {
-            question.setPreparationTimeSeconds(command.preparationTimeSeconds());
-        }
-        if (command.minResponseSeconds() != null) {
-            question.setMinResponseSeconds(command.minResponseSeconds());
-        }
-        if (command.maxResponseSeconds() != null) {
-            question.setMaxResponseSeconds(command.maxResponseSeconds());
-        }
+        // sharing là cài đặt riêng tư, không phải nội dung — được chỉnh bất kỳ lúc nào
         if (command.sharing() != null) {
             question.setSharing(QuestionSharing.valueOf(command.sharing()));
         }
+
+        var hasContentUpdate = command.instructionText() != null || command.questionText() != null
+                || command.promptText() != null || command.preparationText() != null
+                || command.questionType() != null || command.preparationTimeSeconds() != null
+                || command.minResponseSeconds() != null || command.maxResponseSeconds() != null;
+
+        var target = question;
+        var clonedAsNew = false;
+        if (hasContentUpdate) {
+            var usedInExam = questionRepository.existsUsedInExam(question.getId());
+            var immutable = question.getStatus() == QuestionStatus.PUBLISHED || question.isLocked() || usedInExam;
+            if (!systemAdminOnSystemBank
+                    && (owner || editorCollaborator)
+                    && !immutable
+                    && question.getStatus() != QuestionStatus.DRAFT
+                    && question.getStatus() != QuestionStatus.REVISION_REQUESTED) {
+                throw new ForbiddenException("Chỉ được sửa câu hỏi khi ở trạng thái DRAFT hoặc REVISION_REQUESTED");
+            }
+            if (immutable) {
+                target = questionCloneService.cloneAsDraftWithDetails(question, currentUserId);
+                clonedAsNew = true;
+            }
+            applyContentUpdates(target, command, currentUserId);
+        }
+
+        question.setUpdatedAt(OffsetDateTime.now());
+        question.setUpdatedBy(currentUserId);
+        questionRepository.save(question);
+
+        if (clonedAsNew) {
+            var savedClone = questionRepository.save(target);
+            return UpdateQuestionResponseMapper.toResponse(savedClone, true);
+        }
+        return UpdateQuestionResponseMapper.toResponse(question, false);
+    }
+
+    private void applyContentUpdates(Question question, UpdateQuestionCommand command, UUID currentUserId) {
+        if (command.instructionText() != null) question.setInstructionText(command.instructionText());
+        if (command.questionText() != null) question.setQuestionText(command.questionText());
+        if (command.promptText() != null) question.setPromptText(command.promptText());
+        if (command.preparationText() != null) question.setPreparationText(command.preparationText());
+        if (command.questionType() != null) question.setType(QuestionType.valueOf(command.questionType()));
+        if (command.preparationTimeSeconds() != null) question.setPreparationTimeSeconds(command.preparationTimeSeconds());
+        if (command.minResponseSeconds() != null) question.setMinResponseSeconds(command.minResponseSeconds());
+        if (command.maxResponseSeconds() != null) question.setMaxResponseSeconds(command.maxResponseSeconds());
         if (question.getMinResponseSeconds() > question.getMaxResponseSeconds()) {
             throw new IllegalStateException("Thời gian trả lời tối thiểu không được lớn hơn thời gian trả lời tối đa");
         }

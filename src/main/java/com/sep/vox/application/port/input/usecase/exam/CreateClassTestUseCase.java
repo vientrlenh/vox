@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.exam;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -48,6 +49,9 @@ import com.sep.vox.domain.repository.ExamPaperRepository;
 import com.sep.vox.domain.repository.ExamPaperSectionRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
+import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
+import com.sep.vox.domain.model.question.QuestionSharing;
+import com.sep.vox.domain.repository.QuestionCollaboratorRepository;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
@@ -61,6 +65,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
     private final SchoolClassUserRepository schoolClassUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final QuestionRepository questionRepository;
+    private final QuestionCollaboratorRepository questionCollaboratorRepository;
     private final ExamBlueprintRepository examBlueprintRepository;
     private final ExamBlueprintVersionRepository examBlueprintVersionRepository;
     private final ExamBlueprintSectionRepository examBlueprintSectionRepository;
@@ -79,6 +84,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             SchoolClassUserRepository schoolClassUserRepository,
             UserRoleQueryRepository userRoleQueryRepository,
             QuestionRepository questionRepository,
+            QuestionCollaboratorRepository questionCollaboratorRepository,
             ExamBlueprintRepository examBlueprintRepository,
             ExamBlueprintVersionRepository examBlueprintVersionRepository,
             ExamBlueprintSectionRepository examBlueprintSectionRepository,
@@ -95,6 +101,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         this.schoolClassUserRepository = schoolClassUserRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
         this.questionRepository = questionRepository;
+        this.questionCollaboratorRepository = questionCollaboratorRepository;
         this.examBlueprintRepository = examBlueprintRepository;
         this.examBlueprintVersionRepository = examBlueprintVersionRepository;
         this.examBlueprintSectionRepository = examBlueprintSectionRepository;
@@ -117,45 +124,100 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
 
         if (userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
                 .noneMatch(role -> "TEACHER".equals(role.roleCode()))) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Quyen truy cap bi tu choi");
         }
 
         var schoolClass = schoolClassRepository.findById(command.schoolClassId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy lớp học"));
+            .orElseThrow(() -> new NotFoundException("Khong tim thay lop hoc"));
 
         var membership = schoolClassUserRepository.findByUserIdAndSchoolClassId(currentUserId, schoolClass.getId())
-            .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
+            .orElseThrow(() -> new ForbiddenException("Quyen truy cap bi tu choi"));
         if (!membership.isActive()) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Quyen truy cap bi tu choi");
         }
 
-        if (command.questionIds().isEmpty()) {
-            throw new IllegalStateException("Bài kiểm tra trên lớp phải có ít nhất 1 câu hỏi");
+        validateInputMode(command);
+        validateOpenClose(command.openAt(), command.closeAt());
+
+        var now = OffsetDateTime.now();
+        if (command.existingBlueprintId() != null && command.existingBlueprintVersionId() != null) {
+            return executeWithExistingBlueprint(command, schoolClass, currentUserId, now);
         }
+        return executeWithNewBlueprint(command, schoolClass, currentUserId, now);
+    }
+
+    private CreateClassTestResponse executeWithNewBlueprint(
+            CreateClassTestCommand command,
+            SchoolClass schoolClass,
+            UUID currentUserId,
+            OffsetDateTime now) {
         List<Question> questions = new ArrayList<>();
         for (var questionId : command.questionIds()) {
             var question = questionRepository
                 .findAccessibleById(questionId, currentUserId, schoolClass.getSchoolId(), false, false)
-                .orElseThrow(() -> new ForbiddenException("Không có quyền dùng câu hỏi " + questionId));
+                .orElseThrow(() -> new ForbiddenException("Khong co quyen dung cau hoi " + questionId));
+            validateCanUseQuestion(question, currentUserId);
+            validateQuestionUnlocked(question);
             questions.add(question);
         }
-
-        var now = OffsetDateTime.now();
 
         var blueprint = createBlueprint(schoolClass.getSchoolId(), schoolClass.getLanguageId(), command.name(), currentUserId, now);
         var version = createVersion(blueprint, now, currentUserId);
         var section = createSection(version, command.name(), now, currentUserId);
         var slots = createSlots(section, version, questions, now, currentUserId);
 
-        var exam = createExam(blueprint, schoolClass, command, currentUserId, now);
-        var paper = createPaper(exam, now, currentUserId);
+        var exam = createExam(blueprint, version, schoolClass, command, currentUserId, now);
+        var paper = createPaper(exam, version.getId(), now, currentUserId);
         var paperSection = createPaperSection(paper, section, now, currentUserId);
         createPaperItems(paperSection, slots, exam.getId(), currentUserId);
 
         examMemberRepository.save(new ExamMember(exam.getId(), currentUserId, ExamMemberRole.CHAIR, now, currentUserId));
-
         var candidateCount = assignCandidates(exam, paper, schoolClass.getId(), currentUserId, now);
+        return new CreateClassTestResponse(ExamDtoMapper.toDto(exam), paper.getId(), candidateCount);
+    }
 
+    private CreateClassTestResponse executeWithExistingBlueprint(
+            CreateClassTestCommand command,
+            SchoolClass schoolClass,
+            UUID currentUserId,
+            OffsetDateTime now) {
+        var blueprint = examBlueprintRepository.findById(command.existingBlueprintId())
+            .orElseThrow(() -> new NotFoundException("Khong tim thay blueprint"));
+        if (!blueprint.getSchoolId().equals(schoolClass.getSchoolId())) {
+            throw new IllegalStateException("Blueprint khong thuoc truong cua giao vien");
+        }
+
+        var version = examBlueprintVersionRepository.findById(command.existingBlueprintVersionId())
+            .orElseThrow(() -> new NotFoundException("Khong tim thay version blueprint"));
+        if (!version.getBlueprintId().equals(blueprint.getId())) {
+            throw new IllegalStateException("Version khong thuoc blueprint da chon");
+        }
+        if (version.getStatus() != ExamBlueprintVersionStatus.PUBLISHED) {
+            throw new IllegalStateException("Chi duoc dung version da PUBLISHED");
+        }
+
+        var sections = examBlueprintSectionRepository.findByBlueprintVersionId(version.getId()).stream()
+            .sorted(Comparator.comparingInt(ExamBlueprintSection::getOrder))
+            .toList();
+        if (sections.isEmpty()) {
+            throw new IllegalStateException("Blueprint version khong co section nao");
+        }
+
+        var exam = createExam(blueprint, version, schoolClass, command, currentUserId, now);
+        var paper = createPaper(exam, version.getId(), now, currentUserId);
+
+        for (var section : sections) {
+            var slots = examBlueprintSlotRepository.findBySectionId(section.getId()).stream()
+                .sorted(Comparator.comparingInt(ExamBlueprintSlot::getOrder))
+                .toList();
+            validateReusableSlots(slots);
+
+            var paperSection = createPaperSection(paper, section, now, currentUserId);
+            createPaperItems(paperSection, slots, exam.getId(), currentUserId);
+        }
+
+        examMemberRepository.save(new ExamMember(exam.getId(), currentUserId, ExamMemberRole.CHAIR, now, currentUserId));
+        var candidateCount = assignCandidates(exam, paper, schoolClass.getId(), currentUserId, now);
         return new CreateClassTestResponse(ExamDtoMapper.toDto(exam), paper.getId(), candidateCount);
     }
 
@@ -166,8 +228,25 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             StringNormalization.trimAndCollapseSpaces(input.description()),
             input.openAt(),
             input.closeAt(),
-            input.questionIds() == null ? List.of() : input.questionIds()
+            input.questionIds() == null ? List.of() : input.questionIds(),
+            input.existingBlueprintId(),
+            input.existingBlueprintVersionId()
         );
+    }
+
+    private void validateInputMode(CreateClassTestCommand command) {
+        boolean hasQuestions = !command.questionIds().isEmpty();
+        boolean hasExistingBlueprint = command.existingBlueprintId() != null || command.existingBlueprintVersionId() != null;
+
+        if (!hasQuestions && !hasExistingBlueprint) {
+            throw new IllegalStateException("Phai cung cap questionIds hoac existing blueprint");
+        }
+        if (hasQuestions && hasExistingBlueprint) {
+            throw new IllegalStateException("Chi duoc chon mot cach tao bai kiem tra");
+        }
+        if (!hasQuestions && (command.existingBlueprintId() == null || command.existingBlueprintVersionId() == null)) {
+            throw new IllegalStateException("Phai cung cap day du existingBlueprintId va existingBlueprintVersionId");
+        }
     }
 
     private ExamBlueprint createBlueprint(UUID schoolId, UUID languageId, String name, UUID currentUserId, OffsetDateTime now) {
@@ -249,6 +328,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
 
     private Exam createExam(
             ExamBlueprint blueprint,
+            ExamBlueprintVersion version,
             SchoolClass schoolClass,
             CreateClassTestCommand command,
             UUID currentUserId,
@@ -259,6 +339,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         var status = openAt != null ? ExamStatus.SCHEDULED : ExamStatus.IN_PROGRESS;
         return examRepository.save(new Exam(
             blueprint.getId(),
+            version.getId(),
             code,
             command.name(),
             command.description(),
@@ -276,9 +357,10 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         ));
     }
 
-    private ExamPaper createPaper(Exam exam, OffsetDateTime now, UUID currentUserId) {
+    private ExamPaper createPaper(Exam exam, UUID blueprintVersionId, OffsetDateTime now, UUID currentUserId) {
         return examPaperRepository.save(new ExamPaper(
             exam.getId(),
+            blueprintVersionId,
             exam.getCode() + "-P1",
             1,
             ExamPaperStatus.LOCKED,
@@ -326,6 +408,37 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         }
     }
 
+    private void validateReusableSlots(List<ExamBlueprintSlot> slots) {
+        for (var slot : slots) {
+            if (slot.getSlotType() == ExamBlueprintSlotType.SELECTION) {
+                throw new IllegalStateException("Blueprint co slot SELECTION, khong dung truc tiep cho class test");
+            }
+            if (slot.getFixedQuestionId() == null) {
+                throw new IllegalStateException("Slot FIXED phai co fixedQuestionId");
+            }
+            var question = questionRepository.findById(slot.getFixedQuestionId())
+                .orElseThrow(() -> new NotFoundException("Khong tim thay cau hoi co dinh trong blueprint"));
+            validateQuestionUnlocked(question);
+        }
+    }
+
+    private void validateCanUseQuestion(Question question, UUID currentUserId) {
+        boolean isOwner = currentUserId.equals(question.getCreatedBy());
+        boolean isSchoolShared = question.getSharing() == QuestionSharing.SCHOOL_SHARED;
+        if (!isOwner && !isSchoolShared) {
+            var collaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId);
+            if (collaborator.isEmpty() || collaborator.get().getPermission() == QuestionCollaboratorPermission.READ_ONLY) {
+                throw new ForbiddenException("Quyền READ_ONLY không được phép dùng câu hỏi trong bài kiểm tra");
+            }
+        }
+    }
+
+    private void validateQuestionUnlocked(Question question) {
+        if (question.isLocked()) {
+            throw new IllegalStateException("Cau hoi " + question.getCode() + " dang bi khoa boi ky thi khac");
+        }
+    }
+
     private int assignCandidates(Exam exam, ExamPaper paper, UUID schoolClassId, UUID currentUserId, OffsetDateTime now) {
         var roster = schoolClassUserRepository.findBySchoolClassId(schoolClassId, 0, MAX_CLASS_ROSTER_SIZE).content();
         var candidates = new ArrayList<ExamCandidate>();
@@ -351,6 +464,15 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             ));
         }
         return examCandidateRepository.saveAll(candidates).size();
+    }
+
+    private void validateOpenClose(String openAt, String closeAt) {
+        if (openAt == null || closeAt == null) {
+            return;
+        }
+        if (!OffsetDateTime.parse(openAt).isBefore(OffsetDateTime.parse(closeAt))) {
+            throw new IllegalStateException("Thoi gian mo bai phai nho hon thoi gian dong bai");
+        }
     }
 
     private OffsetDateTime parseDateTime(String value) {

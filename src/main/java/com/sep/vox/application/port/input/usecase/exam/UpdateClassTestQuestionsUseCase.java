@@ -13,6 +13,8 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateClassTestQuestionsCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
+import com.sep.vox.domain.model.question.QuestionSharing;
 import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.domain.mapper.ExamDtoMapper;
 import com.sep.vox.domain.model.exam.ExamBlueprintSlot;
@@ -30,6 +32,7 @@ import com.sep.vox.domain.repository.ExamPaperRepository;
 import com.sep.vox.domain.repository.ExamPaperSectionRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
+import com.sep.vox.domain.repository.QuestionCollaboratorRepository;
 import com.sep.vox.domain.repository.ExamBlueprintSectionRepository;
 
 @Service
@@ -44,6 +47,7 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
     private final ExamPaperSectionRepository examPaperSectionRepository;
     private final ExamPaperItemRepository examPaperItemRepository;
     private final QuestionRepository questionRepository;
+    private final QuestionCollaboratorRepository questionCollaboratorRepository;
     private final ExamQuestionSecureLockService examQuestionSecureLockService;
     private final UserContextPort userContextPort;
 
@@ -57,6 +61,7 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
             ExamPaperSectionRepository examPaperSectionRepository,
             ExamPaperItemRepository examPaperItemRepository,
             QuestionRepository questionRepository,
+            QuestionCollaboratorRepository questionCollaboratorRepository,
             ExamQuestionSecureLockService examQuestionSecureLockService,
             UserContextPort userContextPort) {
         this.examRepository = examRepository;
@@ -68,6 +73,7 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
         this.examPaperSectionRepository = examPaperSectionRepository;
         this.examPaperItemRepository = examPaperItemRepository;
         this.questionRepository = questionRepository;
+        this.questionCollaboratorRepository = questionCollaboratorRepository;
         this.examQuestionSecureLockService = examQuestionSecureLockService;
         this.userContextPort = userContextPort;
     }
@@ -97,8 +103,16 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
 
         List<UUID> questionIds = input.questionIds();
         for (var questionId : questionIds) {
-            questionRepository.findAccessibleById(questionId, currentUserId, exam.getSchoolId(), false, false)
+            var question = questionRepository.findAccessibleById(questionId, currentUserId, exam.getSchoolId(), false, false)
                 .orElseThrow(() -> new ForbiddenException("Không có quyền dùng câu hỏi " + questionId));
+            boolean isOwner = currentUserId.equals(question.getCreatedBy());
+            boolean isSchoolShared = question.getSharing() == QuestionSharing.SCHOOL_SHARED;
+            if (!isOwner && !isSchoolShared) {
+                var collaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId);
+                if (collaborator.isEmpty() || collaborator.get().getPermission() == QuestionCollaboratorPermission.READ_ONLY) {
+                    throw new ForbiddenException("Quyền READ_ONLY không được phép dùng câu hỏi trong bài kiểm tra");
+                }
+            }
         }
 
         var version = examBlueprintVersionRepository.findByBlueprintId(exam.getBlueprintId()).stream()

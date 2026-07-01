@@ -190,7 +190,7 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
             if (systemField != null) {
                 systemField = systemField.strip();
             }
-            if (SUPPORTED_FIELDS.contains(systemField)) {
+            if (systemField != null && SUPPORTED_FIELDS.contains(systemField)) {
                 mappedData.put(systemField, value);
             }
         });

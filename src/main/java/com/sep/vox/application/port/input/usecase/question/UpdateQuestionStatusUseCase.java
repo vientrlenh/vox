@@ -104,8 +104,14 @@ public class UpdateQuestionStatusUseCase implements IUseCase<UpdateQuestionStatu
                 question.setStatus(QuestionStatus.REVISION_REQUESTED);
             }
             case "PUBLISH" -> {
-                validateAdminPermission(systemAdminOnSystemBank, schoolAdminOnSchoolBank);
-                requireStatusIn(question.getStatus(), QuestionStatus.APPROVED, QuestionStatus.ARCHIVED);
+                if (question.getStatus() == QuestionStatus.ARCHIVED) {
+                    validateAdminPermission(systemAdminOnSystemBank, schoolAdminOnSchoolBank);
+                } else {
+                    requireStatus(question.getStatus(), QuestionStatus.APPROVED);
+                    if (!owner && !editorCollaborator && !systemAdminOnSystemBank && !schoolAdminOnSchoolBank) {
+                        throw new ForbiddenException("Quyền truy cập bị từ chối");
+                    }
+                }
                 question.setStatus(QuestionStatus.PUBLISHED);
             }
             case "ARCHIVE" -> {

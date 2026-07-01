@@ -11,6 +11,7 @@ public final class ExamMapper {
         return new Exam(
             jpa.getId(), 
             jpa.getBlueprintId(),
+            jpa.getBlueprintVersionId(),
             jpa.getCode(), 
             jpa.getName(), 
             jpa.getDescription(), 
@@ -32,6 +33,7 @@ public final class ExamMapper {
         return new ExamJpaEntity(
             exam.getId(), 
             exam.getBlueprintId(),
+            exam.getBlueprintVersionId(),
             exam.getCode(), 
             exam.getName(), 
             exam.getDescription(), 

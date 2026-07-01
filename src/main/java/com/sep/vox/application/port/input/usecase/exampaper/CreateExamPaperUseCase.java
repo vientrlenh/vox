@@ -3,7 +3,6 @@ package com.sep.vox.application.port.input.usecase.exampaper;
 import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.List;
-import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,7 +17,6 @@ import com.sep.vox.domain.dto.ExamPaperDto;
 import com.sep.vox.domain.mapper.ExamPaperDtoMapper;
 import com.sep.vox.domain.model.exam.ExamBlueprintSection;
 import com.sep.vox.domain.model.exam.ExamBlueprintSlotType;
-import com.sep.vox.domain.model.exam.ExamBlueprintVersionStatus;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamPaper;
@@ -82,28 +80,29 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
     public ExamPaperDto execute(CreateExamPaperCommand input) {
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         var exam = examRepository.findById(input.examId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new NotFoundException("Khong tim thay bai kiem tra"));
 
         if (exam.getKind() != ExamKind.CENTRALIZED) {
-            throw new ForbiddenException("Bài kiểm tra trên lớp không tạo đề qua endpoint này");
+            throw new ForbiddenException("Bai kiem tra tren lop khong tao de qua endpoint nay");
         }
         if (!examMemberRepository.existsByExamIdAndUserIdAndRole(exam.getId(), currentUserId, ExamMemberRole.AUTHOR)) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Quyen truy cap bi tu choi");
         }
         if (exam.getBlueprintId() == null) {
-            throw new IllegalStateException("Bài kiểm tra chưa gắn blueprint");
+            throw new IllegalStateException("Bai kiem tra chua gan blueprint");
+        }
+        if (exam.getBlueprintVersionId() == null) {
+            throw new IllegalStateException("CHAIR chua chot version blueprint cho ky thi nay");
         }
 
-        var version = examBlueprintVersionRepository
-            .findByBlueprintIdAndStatus(exam.getBlueprintId(), ExamBlueprintVersionStatus.PUBLISHED)
-            .stream()
-            .max(Comparator.comparingInt(v -> v.getVersion()))
-            .orElseThrow(() -> new IllegalStateException("Blueprint chưa có version nào được publish"));
+        var version = examBlueprintVersionRepository.findById(exam.getBlueprintVersionId())
+            .orElseThrow(() -> new NotFoundException("Khong tim thay version blueprint da chot"));
 
         var now = OffsetDateTime.now();
         var variant = examPaperRepository.nextVariant(exam.getId());
         var paper = examPaperRepository.save(new ExamPaper(
             exam.getId(),
+            exam.getBlueprintVersionId(),
             exam.getCode() + "-P" + variant,
             variant,
             ExamPaperStatus.DRAFT,
@@ -116,7 +115,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
         List<ExamBlueprintSection> sections = examBlueprintSectionRepository
             .findByBlueprintVersionId(version.getId())
             .stream()
-            .sorted(Comparator.comparingInt(s -> s.getOrder()))
+            .sorted(Comparator.comparingInt(ExamBlueprintSection::getOrder))
             .toList();
 
         for (var section : sections) {
@@ -133,17 +132,17 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
             ));
 
             var slots = examBlueprintSlotRepository.findBySectionId(section.getId()).stream()
-                .sorted(Comparator.comparingInt(s -> s.getOrder()))
+                .sorted(Comparator.comparingInt(slot -> slot.getOrder()))
                 .toList();
 
             for (var slot : slots) {
                 var questionId = slot.getSlotType() == ExamBlueprintSlotType.FIXED ? slot.getFixedQuestionId() : null;
                 if (questionId != null) {
                     var fixedQuestion = questionRepository.findById(questionId)
-                        .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi cố định trong slot"));
+                        .orElseThrow(() -> new NotFoundException("Khong tim thay cau hoi co dinh trong slot"));
                     if (fixedQuestion.getStatus() != QuestionStatus.PUBLISHED) {
                         throw new IllegalStateException(
-                            "Câu hỏi " + fixedQuestion.getCode() + " trong khuôn chưa PUBLISHED, không thể sinh đề thi");
+                            "Cau hoi " + fixedQuestion.getCode() + " trong khung chua PUBLISHED, khong the sinh de thi");
                     }
                 }
                 examPaperItemRepository.save(new ExamPaperItem(

@@ -1,10 +1,13 @@
 package com.sep.vox.domain.model.importfile;
 
 public enum ImportType {
-    USER, 
+    USER,
     SCHOOL_CLASS,
-    SCHOOL_CLASS_USER, 
+    QUESTION,
+    SCHOOL_CLASS_USER,
     SCHOOL_DIRECTORY,
+    SCHOOL_GRADE_LEVEL,
+    SCHOOL_GRADE,
     RUBRIC_VERSION,
     RUBRIC_CRITERION,
     RUBRIC_CRITERION_BAND,

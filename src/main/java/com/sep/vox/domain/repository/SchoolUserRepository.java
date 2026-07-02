@@ -15,8 +15,10 @@ public interface SchoolUserRepository {
     SchoolUser save(SchoolUser schoolUser);
     List<SchoolUser> findBySchoolIdIn(Collection<UUID> schoolIds, int pageNumber, int size);
     PageResult<SchoolUser> findBySchoolId(UUID schoolId, int pageNumber, int size);
-    PageResult<SchoolUser> findBySchoolId(UUID schoolId, String search, String roleCode, String status,
-        Collection<String> schoolRoleCodes, int pageNumber, int size);
+    PageResult<SchoolUser> findBySchoolId(UUID schoolId, String search, UUID roleId, String status,
+        int pageNumber, int size);
+    PageResult<SchoolUser> searchBySchoolId(UUID schoolId, UUID excludeUserId, String search, UUID roleId,
+        String status, int pageNumber, int size);
     Optional<SchoolUser> findBySchoolIdAndUserId(UUID schoolId, UUID userId);
     Optional<UUID> findSchoolIdByUserId( UUID userId);
     boolean existsBySchoolIdAndUserId(UUID schoolId, UUID userId);

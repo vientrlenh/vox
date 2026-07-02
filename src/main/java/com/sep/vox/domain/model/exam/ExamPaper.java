@@ -6,6 +6,7 @@ import java.util.UUID;
 public class ExamPaper {
     private UUID id;
     private UUID examId;
+    private UUID blueprintVersionId;
     private String code;
     private int variant;
     private ExamPaperStatus status;
@@ -16,10 +17,11 @@ public class ExamPaper {
 
     public ExamPaper() {}
 
-    public ExamPaper(UUID id, UUID examId, String code, int variant, ExamPaperStatus status, OffsetDateTime createdAt,
+    public ExamPaper(UUID id, UUID examId, UUID blueprintVersionId, String code, int variant, ExamPaperStatus status, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.examId = examId;
+        this.blueprintVersionId = blueprintVersionId;
         this.code = code;
         this.variant = variant;
         this.status = status;
@@ -29,9 +31,10 @@ public class ExamPaper {
         this.updatedBy = updatedBy;
     }
 
-    public ExamPaper(UUID examId, String code, int variant, ExamPaperStatus status, OffsetDateTime createdAt,
+    public ExamPaper(UUID examId, UUID blueprintVersionId, String code, int variant, ExamPaperStatus status, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.examId = examId;
+        this.blueprintVersionId = blueprintVersionId;
         this.code = code;
         this.variant = variant;
         this.status = status;
@@ -55,6 +58,14 @@ public class ExamPaper {
 
     public void setExamId(UUID examId) {
         this.examId = examId;
+    }
+
+    public UUID getBlueprintVersionId() {
+        return blueprintVersionId;
+    }
+
+    public void setBlueprintVersionId(UUID blueprintVersionId) {
+        this.blueprintVersionId = blueprintVersionId;
     }
 
     public String getCode() {

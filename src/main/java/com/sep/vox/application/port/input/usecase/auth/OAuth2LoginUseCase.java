@@ -17,7 +17,6 @@ import com.sep.vox.application.port.output.SessionTokenManagerPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.input.auth.LoginResponse;
 import com.sep.vox.application.response.output.GeneratedSessionToken;
-import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.devicesession.DeviceSession;
 import com.sep.vox.domain.model.devicesession.SessionPlatform;
 import com.sep.vox.domain.model.refreshtoken.RefreshToken;
@@ -52,10 +51,6 @@ public class OAuth2LoginUseCase implements IUseCase<OAuth2LoginCommand, LoginRes
     @Override
     @Transactional
     public LoginResponse execute(OAuth2LoginCommand input) {
-        if (input.emailVerified() == null || !input.emailVerified().booleanValue()) {
-            throw new UnauthorizedException("Người dùng chưa được xác thực để đăng nhập");
-        }
-
         var user = userRepository.findByEmailAndStatus(input.email(), UserStatus.ACTIVE)
             .orElseThrow(() -> new UnauthorizedException("Người dùng hiện chưa tồn tại. Vui lòng gửi đơn đăng ký hoặc liên hệ bên nhà trường để được hỗ trợ"));
 
@@ -63,7 +58,7 @@ public class OAuth2LoginUseCase implements IUseCase<OAuth2LoginCommand, LoginRes
         var userRoles = getUserRoles(user.getId());
         var deviceSession = createDeviceSession(user.getId(), input);
         var schoolId = schoolUserRepository.findByUserId(user.getId())
-            .map(SchoolUser::getSchoolId)
+            .map(su -> su.getSchoolId())
             .orElse(null);
         var accessToken = authTokenPort.generateJwtToken(user.getId().toString(), schoolId, user.getEmail().value(), userRoles);
         var sessionToken = sessionTokenManagerPort.generateToken();

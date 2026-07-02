@@ -13,6 +13,7 @@ public class QuestionDtoMapper {
     public static QuestionDto toQuestionDto(Question question) {
         return new QuestionDto(
             question.getId(),
+            question.getQuestionBankId(),
             question.getQuestionTopicId(),
             question.getCode(),
             question.getInstructionText(),
@@ -27,8 +28,12 @@ public class QuestionDtoMapper {
             question.getSourceQuestionId(),
             question.isLocked(),
             question.getStatus().name(),
+            question.getConfidentiality().name(),
+            question.getSecurePoolId(),
             valueOf(question.getCreatedAt()),
-            valueOf(question.getUpdatedAt())
+            valueOf(question.getUpdatedAt()),
+            question.getCreatedBy(),
+            question.getUpdatedBy()
         );
     }
 

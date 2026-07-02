@@ -5,17 +5,12 @@ import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-
 import java.util.UUID;
-
-import com.sep.vox.domain.common.PageResult;
-import com.sep.vox.infrastructure.persistence.entity.SchoolGradeJpaEntity;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
+import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.school.SchoolGrade;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolGradeMapper;
@@ -57,6 +52,12 @@ public class SchoolGradeRepositoryImpl implements SchoolGradeRepository {
     }
 
     @Override
+    public Optional<SchoolGrade> findBySchoolGradeLevelIdAndCode(UUID schoolGradeLevelId, String code) {
+        return springDataSchoolGradeRepository.findBySchoolGradeLevelIdAndCode(schoolGradeLevelId, code)
+                .map(SchoolGradeMapper::toDomain);
+    }
+
+    @Override
     public List<SchoolGrade> findBySchoolIdAndCodeIn(UUID schoolId, Collection<String> codes) {
         if (schoolId == null || codes == null || codes.isEmpty()) {
             return List.of();
@@ -73,25 +74,17 @@ public class SchoolGradeRepositoryImpl implements SchoolGradeRepository {
     }
 
     @Override
-    public PageResult<SchoolGrade> findAllBySchoolId(UUID schoolId, int page, int size) {
-
-        // 1. Chuyển đổi page, size của Domain thành Spring Pageable
-        int actualPage = page - 1; // Spring đếm trang từ 0
-        Pageable springPageable = PageRequest.of(actualPage, size);
-
-       Page<SchoolGradeJpaEntity> pageEntity =
-                springDataSchoolGradeRepository.findAllBySchoolId(schoolId, springPageable);
-
-        // 3. Đóng gói lại thành PageResult của Domain để trả về cho UseCase
+    public PageResult<SchoolGrade> findAllBySchoolId(UUID schoolId, UUID schoolGradeLevelId, int pageNumber, int size) {
+        var pageable = PageRequest.of(pageNumber - 1, size);
+        var page = springDataSchoolGradeRepository.findAllBySchoolId(schoolId, schoolGradeLevelId, pageable);
         return new PageResult<>(
-                pageEntity.getContent().stream()
-                        .map(SchoolGradeMapper::toDomain) // Map Entity sang Domain
+                page.getContent().stream()
+                        .map(SchoolGradeMapper::toDomain)
                         .toList(),
-
-                pageEntity.getNumber() + 1, // Trả lại số trang đếm từ 1 cho Client
-                pageEntity.getSize(),
-                pageEntity.getTotalElements(),
-                pageEntity.getTotalPages()
+                pageNumber,
+                size,
+                page.getTotalElements(),
+                page.getTotalPages()
         );
     }
 

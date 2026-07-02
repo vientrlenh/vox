@@ -13,16 +13,26 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.mapper.question.CreateQuestionResponseMapper;
 import com.sep.vox.application.port.input.command.CreateQuestionAssetCommand;
+import com.sep.vox.application.port.input.command.CreateQuestionEvaluationGuideCommand;
 import com.sep.vox.application.port.input.command.CreateSystemQuestionBankQuestionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.input.question.CreateQuestionResponse;
+import com.sep.vox.domain.mapper.QuestionAssetDtoMapper;
+import com.sep.vox.domain.mapper.QuestionEvaluationGuideDtoMapper;
 import com.sep.vox.domain.model.question.Question;
 import com.sep.vox.domain.model.question.QuestionAsset;
 import com.sep.vox.domain.model.question.QuestionAssetType;
+import com.sep.vox.domain.model.question.QuestionBankOwnerType;
+import com.sep.vox.domain.model.question.QuestionConfidentiality;
 import com.sep.vox.domain.model.question.QuestionEvaluationGuide;
-import com.sep.vox.domain.model.question.QuestionTopic;
+import com.sep.vox.domain.model.question.QuestionSharing;
+import com.sep.vox.domain.model.question.QuestionStatus;
+import com.sep.vox.domain.model.question.QuestionTopicStatus;
+import com.sep.vox.domain.model.question.QuestionType;
 import com.sep.vox.domain.repository.QuestionAssetRepository;
+import com.sep.vox.domain.repository.QuestionBankRepository;
 import com.sep.vox.domain.repository.QuestionEvaluationGuideRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.QuestionTopicRepository;
@@ -36,7 +46,9 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
     private final QuestionAssetRepository questionAssetRepository;
     private final QuestionEvaluationGuideRepository questionEvaluationGuideRepository;
     private final QuestionTopicRepository questionTopicRepository;
+    private final QuestionBankRepository questionBankRepository;
     private final UserContextPort userContextPort;
+    private final UserRoleQueryRepository userRoleQueryRepository;
 
     public CreateSystemQuestionBankQuestionUseCase(
             SchoolUserRepository schoolUserRepository,
@@ -44,13 +56,17 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
             QuestionAssetRepository questionAssetRepository,
             QuestionEvaluationGuideRepository questionEvaluationGuideRepository,
             QuestionTopicRepository questionTopicRepository,
-            UserContextPort userContextPort) {
+            QuestionBankRepository questionBankRepository,
+            UserContextPort userContextPort,
+            UserRoleQueryRepository userRoleQueryRepository) {
         this.schoolUserRepository = schoolUserRepository;
         this.questionRepository = questionRepository;
         this.questionAssetRepository = questionAssetRepository;
         this.questionEvaluationGuideRepository = questionEvaluationGuideRepository;
         this.questionTopicRepository = questionTopicRepository;
+        this.questionBankRepository = questionBankRepository;
         this.userContextPort = userContextPort;
+        this.userRoleQueryRepository = userRoleQueryRepository;
     }
 
     @Override
@@ -59,11 +75,29 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
         var command = normalize(input);
 
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var schoolUser = schoolUserRepository.findByUserId(currentUserId)
-            .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
+        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+            .map(schoolUser -> schoolUser.getSchoolId())
+            .orElse(null);
+        var teacher = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+            .anyMatch(role -> "TEACHER".equals(role.roleCode()));
 
-        var questionTopic = getQuestionTopic(command.questionTopicId());
-        if (!questionTopicRepository.isTopicBelongToSchool(questionTopic.getId(), schoolUser.getSchoolId())) {
+        var questionBank = questionBankRepository.findById(command.questionBankId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+        var questionTopic = questionTopicRepository.findById(command.questionTopicId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy chủ đề câu hỏi"));
+
+        if (!questionTopic.getQuestionBankId().equals(questionBank.getId())) {
+            throw new IllegalStateException("Chủ đề không thuộc ngân hàng câu hỏi đã chọn");
+        }
+        if (questionTopic.getStatus() != QuestionTopicStatus.PUBLISHED) {
+            throw new IllegalStateException("Chỉ được tạo câu hỏi trong chủ đề đã PUBLISHED");
+        }
+
+        if (questionBank.getOwnerType() == QuestionBankOwnerType.SYSTEM) {
+            if (!userContextPort.isSystemAdmin()) {
+                throw new ForbiddenException("Quyền truy cập bị từ chối");
+            }
+        } else if (!teacher || currentSchoolId == null || !currentSchoolId.equals(questionBank.getSchoolId())) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
@@ -71,36 +105,60 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
         validateAssetOrders(command.assets());
 
         var now = OffsetDateTime.now();
-        var question = new Question();
+        var sharing = command.sharing() == null ? QuestionSharing.PRIVATE : QuestionSharing.valueOf(command.sharing());
+        var question = new Question(
+            command.questionBankId(),
+            command.questionTopicId(),
+            questionCodeOf(command),
+            command.instructionText(),
+            command.questionText(),
+            command.promptText(),
+            command.preparationText(),
+            QuestionType.valueOf(command.type()),
+            command.preparationTimeSeconds(),
+            command.minResponseSeconds(),
+            command.maxResponseSeconds(),
+            sharing,
+            null,
+            false,
+            QuestionConfidentiality.OPEN,
+            null,
+            QuestionStatus.DRAFT,
+            now,
+            now,
+            currentUserId,
+            currentUserId
+        );
 
-        var saved = questionRepository.save(question);
-        createEvaluationGuide(saved.getId(), command);
-        createAssets(saved.getId(), command.assets());
+        var savedQuestion = questionRepository.save(question);
+        var savedAssets = createAssets(savedQuestion.getId(), command.assets());
+        var savedEvaluationGuide = createEvaluationGuide(savedQuestion.getId(), command.evaluationGuide());
 
-        return CreateQuestionResponseMapper.toResponse(saved.getId());
+        return CreateQuestionResponseMapper.toResponse(
+            savedQuestion,
+            QuestionAssetDtoMapper.toDtoList(savedAssets),
+            savedEvaluationGuide == null ? null : QuestionEvaluationGuideDtoMapper.toDto(savedEvaluationGuide)
+        );
     }
 
     private CreateSystemQuestionBankQuestionCommand normalize(CreateSystemQuestionBankQuestionCommand input) {
         return new CreateSystemQuestionBankQuestionCommand(
+            input.questionBankId(),
             input.questionTopicId(),
             StringNormalization.normalizeCode(input.code()),
             StringNormalization.trimAndCollapseSpaces(input.instructionText()),
             StringNormalization.trimAndCollapseSpaces(input.questionText()),
             StringNormalization.trimAndCollapseSpaces(input.promptText()),
             StringNormalization.trimAndCollapseSpaces(input.preparationText()),
-            StringNormalization.trimAndCollapseSpaces(input.expectedContent()),
-            StringNormalization.trimAndCollapseSpaces(input.keyPoints()),
-            StringNormalization.trimAndCollapseSpaces(input.acceptableResponses()),
-            StringNormalization.trimAndCollapseSpaces(input.offTopicExamples()),
-            StringNormalization.trimAndCollapseSpaces(input.scoringHints()),
-            StringNormalization.trimAndCollapseSpaces(input.commonMistakes()),
             StringNormalization.trimAndCollapseSpaces(input.type()),
             input.preparationTimeSeconds(),
             input.minResponseSeconds(),
             input.maxResponseSeconds(),
+            input.sharing() == null ? null : StringNormalization.normalizeCode(input.sharing()),
             assetsOf(input).stream()
                 .map(this::normalizeAsset)
-                .toList()
+                .toList(),
+            normalizeEvaluationGuide(input.evaluationGuide())
         );
     }
 
@@ -121,16 +179,20 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
         );
     }
 
-    private QuestionTopic getQuestionTopic(UUID questionTopicId) {
-        var questionTopic = questionTopicRepository.findById(questionTopicId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy chủ đề câu hỏi với ID này"));
-
-        if (!questionTopic.isActive()) {
-            throw new IllegalStateException("Chủ đề câu hỏi yêu cầu hiện không hoạt động");
+    private CreateQuestionEvaluationGuideCommand normalizeEvaluationGuide(CreateQuestionEvaluationGuideCommand input) {
+        if (input == null) {
+            return null;
         }
-        return questionTopic;
-    }
 
+        return new CreateQuestionEvaluationGuideCommand(
+            StringNormalization.trimAndCollapseSpaces(input.expectedContent()),
+            StringNormalization.trimAndCollapseSpaces(input.keyPoints()),
+            StringNormalization.trimAndCollapseSpaces(input.acceptableResponses()),
+            StringNormalization.trimAndCollapseSpaces(input.offTopicExamples()),
+            StringNormalization.trimAndCollapseSpaces(input.scoringHints()),
+            StringNormalization.trimAndCollapseSpaces(input.commonMistakes())
+        );
+    }
 
     private void validateResponseDurationRange(CreateSystemQuestionBankQuestionCommand command) {
         if (command.minResponseSeconds() > command.maxResponseSeconds()) {
@@ -147,10 +209,9 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
         }
     }
 
-
-    private void createEvaluationGuide(UUID questionId, CreateSystemQuestionBankQuestionCommand command) {
+    private QuestionEvaluationGuide createEvaluationGuide(UUID questionId, CreateQuestionEvaluationGuideCommand command) {
         if (!hasEvaluationGuide(command)) {
-            return;
+            return null;
         }
 
         var evaluationGuide = new QuestionEvaluationGuide(
@@ -162,21 +223,22 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
             command.scoringHints(),
             command.commonMistakes()
         );
-        questionEvaluationGuideRepository.save(evaluationGuide);
+        return questionEvaluationGuideRepository.save(evaluationGuide);
     }
 
-    private boolean hasEvaluationGuide(CreateSystemQuestionBankQuestionCommand command) {
-        return command.expectedContent() != null
+    private boolean hasEvaluationGuide(CreateQuestionEvaluationGuideCommand command) {
+        return command != null
+            && (command.expectedContent() != null
             || command.keyPoints() != null
             || command.acceptableResponses() != null
             || command.offTopicExamples() != null
             || command.scoringHints() != null
-            || command.commonMistakes() != null;
+            || command.commonMistakes() != null);
     }
 
-    private void createAssets(UUID questionId, List<CreateQuestionAssetCommand> assetCommands) {
+    private List<QuestionAsset> createAssets(UUID questionId, List<CreateQuestionAssetCommand> assetCommands) {
         if (assetCommands.isEmpty()) {
-            return;
+            return List.of();
         }
 
         var assets = assetCommands.stream()
@@ -192,6 +254,13 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
                 asset.order()
             ))
             .toList();
-        questionAssetRepository.saveAll(assets);
+        return questionAssetRepository.saveAll(assets);
+    }
+
+    private String questionCodeOf(CreateSystemQuestionBankQuestionCommand command) {
+        if (command.code() != null && !command.code().isBlank()) {
+            return command.code();
+        }
+        return "Q-" + UUID.randomUUID().toString().replace("-", "").toUpperCase();
     }
 }

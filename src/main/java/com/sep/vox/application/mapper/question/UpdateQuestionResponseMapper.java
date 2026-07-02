@@ -1,12 +1,18 @@
 package com.sep.vox.application.mapper.question;
 
-import java.util.UUID;
-
 import com.sep.vox.application.response.input.question.UpdateQuestionResponse;
+import com.sep.vox.domain.mapper.QuestionDtoMapper;
+import com.sep.vox.domain.model.question.Question;
 
 public final class UpdateQuestionResponseMapper {
-    
-    public static UpdateQuestionResponse toResponse(UUID questionId) {
-        return new UpdateQuestionResponse(questionId);
+
+    private UpdateQuestionResponseMapper() {
+    }
+
+    public static UpdateQuestionResponse toResponse(Question question, boolean clonedAsNew) {
+        return new UpdateQuestionResponse(
+            QuestionDtoMapper.toQuestionDto(question),
+            clonedAsNew
+        );
     }
 }

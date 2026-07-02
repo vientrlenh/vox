@@ -7,8 +7,11 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
 
+import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.question.QuestionBank;
+import com.sep.vox.domain.model.question.QuestionBankOwnerType;
+import com.sep.vox.domain.model.question.QuestionBankStatus;
 import com.sep.vox.domain.repository.QuestionBankRepository;
 import com.sep.vox.infrastructure.persistence.mapper.QuestionBankMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataQuestionBankRepository;
@@ -37,7 +40,7 @@ public class QuestionBankRepositoryImpl implements QuestionBankRepository {
 
     @Override
     public PageResult<QuestionBank> findAll(int pageNumber, int size) {
-        var pageable = PageRequest.of(pageNumber - 1, size);
+        var pageable = PageRequest.of(pageNumber, size);
         var page = springDataQuestionBankRepository.findAll(pageable);
         return new PageResult<>(
             page.getContent().stream()
@@ -53,5 +56,38 @@ public class QuestionBankRepositoryImpl implements QuestionBankRepository {
     @Override
     public boolean existsById(UUID id) {
         return springDataQuestionBankRepository.existsById(id);
+    }
+
+    @Override
+    public void deleteById(UUID id) {
+        springDataQuestionBankRepository.deleteById(id);
+    }
+
+    @Override
+    public PageResult<QuestionBank> findAccessible(UUID currentSchoolId, boolean systemAdmin, boolean schoolAdmin,
+            QuestionBankOwnerType ownerType, QuestionBankStatus status, UUID languageId, UUID schoolId,
+            UUID schoolGradeId, String keyword, int pageNumber, int size) {
+        var pageable = PageRequest.of(pageNumber, size);
+        var page = springDataQuestionBankRepository.findAccessible(
+            currentSchoolId,
+            systemAdmin,
+            schoolAdmin,
+            ownerType == null ? null : ownerType.name(),
+            status == null ? null : status.name(),
+            languageId,
+            schoolId,
+            schoolGradeId,
+            StringNormalization.toLikePattern(keyword),
+            pageable
+        );
+        return new PageResult<>(
+            page.getContent().stream()
+                .map(QuestionBankMapper::toDomain)
+                .toList(),
+            pageNumber,
+            size,
+            page.getTotalElements(),
+            page.getTotalPages()
+        );
     }
 }

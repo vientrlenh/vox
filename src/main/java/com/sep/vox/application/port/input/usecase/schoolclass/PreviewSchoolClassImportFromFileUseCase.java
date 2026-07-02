@@ -21,6 +21,7 @@ import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
+import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.ImportRowRepository;
@@ -102,9 +103,9 @@ public class PreviewSchoolClassImportFromFileUseCase implements IUseCase<Preview
     }
 
     private UUID getSchoolId(User currentUser) {
-        return schoolUserRepository.findByUserId(currentUser.getId())
-            .map(su -> su.getSchoolId())
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUser.getId())
             .orElseThrow(() -> new IllegalStateException("Người dùng hiện tại không thuộc trường nào"));
+        return schoolUser.getSchoolId();
     }
 
     private void validateSchool(UUID schoolId) {

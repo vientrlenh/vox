@@ -1,27 +1,101 @@
 package com.sep.vox.interfaces.rest.controller;
 
 
-import com.sep.vox.application.port.input.usecase.rubricschool.*;
+import java.util.List;
+import java.util.UUID;
 
-import com.sep.vox.application.port.input.usecase.rubricsystem.*;
-import com.sep.vox.application.response.input.importfile.*;
-import com.sep.vox.domain.model.rubric.RubricStatus;
-import com.sep.vox.interfaces.rest.dto.request.*;
-import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
-import com.sep.vox.interfaces.rest.mapper.*;
-
-
-import io.swagger.v3.oas.annotations.Operation;
-import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.sep.vox.application.port.input.usecase.rubricschool.AcceptSchoolRubricCriterionBandImportUseCase;
+import com.sep.vox.application.port.input.usecase.rubricschool.AcceptSchoolRubricCriterionImportUseCase;
+import com.sep.vox.application.port.input.usecase.rubricschool.AcceptSchoolRubricResultBandImportUseCase;
+import com.sep.vox.application.port.input.usecase.rubricschool.AcceptSchoolRubricVersionImportUseCase;
+import com.sep.vox.application.port.input.usecase.rubricschool.AddSchoolRubricVersionsUseCase;
+import com.sep.vox.application.port.input.usecase.rubricschool.ChangeSchoolRubricVersionStatusUseCase;
+import com.sep.vox.application.port.input.usecase.rubricschool.CreateSchoolRubricCriterionBandsUseCase;
+import com.sep.vox.application.port.input.usecase.rubricschool.CreateSchoolRubricCriterionUseCase;
+import com.sep.vox.application.port.input.usecase.rubricschool.CreateSchoolRubricResultBandsUseCase;
+import com.sep.vox.application.port.input.usecase.rubricschool.CreateSchoolRubricUseCase;
+import com.sep.vox.application.port.input.usecase.rubricschool.DeleteSchoolRubricCriterionBandUseCase;
+import com.sep.vox.application.port.input.usecase.rubricschool.DeleteSchoolRubricCriterionUseCase;
+import com.sep.vox.application.port.input.usecase.rubricschool.DeleteSchoolRubricResultBandUseCase;
+import com.sep.vox.application.port.input.usecase.rubricschool.DeleteSchoolRubricVersionUseCase;
+import com.sep.vox.application.port.input.usecase.rubricschool.PreviewSchoolRubricCriterionBandImportFromFileUseCase;
+import com.sep.vox.application.port.input.usecase.rubricschool.PreviewSchoolRubricCriterionImportFromFileUseCase;
+import com.sep.vox.application.port.input.usecase.rubricschool.PreviewSchoolRubricResultBandImportFromFileUseCase;
+import com.sep.vox.application.port.input.usecase.rubricschool.PreviewSchoolRubricVersionImportFromFileUseCase;
+import com.sep.vox.application.port.input.usecase.rubricsystem.AcceptSystemRubricCriterionBandImportUseCase;
+import com.sep.vox.application.port.input.usecase.rubricsystem.AcceptSystemRubricCriterionImportUseCase;
+import com.sep.vox.application.port.input.usecase.rubricsystem.AcceptSystemRubricResultBandImportUseCase;
+import com.sep.vox.application.port.input.usecase.rubricsystem.AcceptSystemRubricVersionImportUseCase;
+import com.sep.vox.application.port.input.usecase.rubricsystem.AddSystemRubricVersionsUseCase;
+import com.sep.vox.application.port.input.usecase.rubricsystem.ChangeSystemRubricVersionStatusUseCase;
+import com.sep.vox.application.port.input.usecase.rubricsystem.CreateSystemRubricCriteriaUseCase;
+import com.sep.vox.application.port.input.usecase.rubricsystem.CreateSystemRubricCriterionBandsUseCase;
+import com.sep.vox.application.port.input.usecase.rubricsystem.CreateSystemRubricResultBandsUseCase;
+import com.sep.vox.application.port.input.usecase.rubricsystem.CreateSystemRubricUseCase;
+import com.sep.vox.application.port.input.usecase.rubricsystem.DeleteSystemRubricCriterionBandUseCase;
+import com.sep.vox.application.port.input.usecase.rubricsystem.DeleteSystemRubricCriterionUseCase;
+import com.sep.vox.application.port.input.usecase.rubricsystem.DeleteSystemRubricResultBandUseCase;
+import com.sep.vox.application.port.input.usecase.rubricsystem.DeleteSystemRubricUseCase;
+import com.sep.vox.application.port.input.usecase.rubricsystem.DeleteSystemRubricVersionUseCase;
+import com.sep.vox.application.port.input.usecase.rubricsystem.PreviewSystemRubricCriterionBandImportFromFileUseCase;
+import com.sep.vox.application.port.input.usecase.rubricsystem.PreviewSystemRubricCriterionImportFromFileUseCase;
+import com.sep.vox.application.port.input.usecase.rubricsystem.PreviewSystemRubricResultBandImportFromFileUseCase;
+import com.sep.vox.application.port.input.usecase.rubricsystem.PreviewSystemRubricVersionImportFromFileUseCase;
+import com.sep.vox.application.response.input.importfile.AcceptRubricCriterionBandImportResponse;
+import com.sep.vox.application.response.input.importfile.AcceptRubricCriterionImportResponse;
+import com.sep.vox.application.response.input.importfile.AcceptRubricResultBandImportResponse;
+import com.sep.vox.application.response.input.importfile.AcceptRubricVersionImportResponse;
+import com.sep.vox.application.response.input.importfile.PreviewRubricCriterionBandImportResponse;
+import com.sep.vox.application.response.input.importfile.PreviewRubricCriterionImportResponse;
+import com.sep.vox.application.response.input.importfile.PreviewRubricResultBandImportResponse;
+import com.sep.vox.application.response.input.importfile.PreviewRubricVersionImportResponse;
+import com.sep.vox.domain.model.rubric.RubricStatus;
+import com.sep.vox.interfaces.rest.dto.request.AcceptImportRequest;
+import com.sep.vox.interfaces.rest.dto.request.AddRubricVersionsRequest;
+import com.sep.vox.interfaces.rest.dto.request.CreateSchoolRubricCriteriaRequest;
+import com.sep.vox.interfaces.rest.dto.request.CreateSchoolRubricCriterionBandsRequest;
+import com.sep.vox.interfaces.rest.dto.request.CreateSchoolRubricRequest;
+import com.sep.vox.interfaces.rest.dto.request.CreateSchoolRubricResultBandsRequest;
+import com.sep.vox.interfaces.rest.dto.request.CreateSystemRubricCriteriaRequest;
+import com.sep.vox.interfaces.rest.dto.request.CreateSystemRubricCriterionBandsRequest;
+import com.sep.vox.interfaces.rest.dto.request.CreateSystemRubricRequest;
+import com.sep.vox.interfaces.rest.dto.request.CreateSystemRubricResultBandsRequest;
+import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
+import com.sep.vox.interfaces.rest.mapper.AcceptRubricCriterionBandImportCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.AcceptRubricCriterionImportCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.AcceptRubricResultBandImportCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.AcceptRubricVersionImportCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.AddRubricVersionsCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.ChangeRubricVersionStatusCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.CreateRubricCriterionBandsCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.CreateSchoolRubricCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.CreateSchoolRubricCriteriaCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.CreateSchoolRubricResultBandsCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.CreateSystemRubricCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.CreateSystemRubricCriteriaCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.CreateSystemRubricResultBandsCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.DeleteSchoolRubricCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.DeleteSystemRubricCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.PreviewRubricCriterionBandImportCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.PreviewRubricCriterionImportCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.PreviewRubricResultBandImportCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.PreviewRubricVersionImportFromFileCommandMapper;
 
-import java.util.List;
-import java.util.UUID;
+import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/rubrics")

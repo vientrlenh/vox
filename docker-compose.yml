@@ -16,7 +16,7 @@ services:
       kafka:
         condition: service_started
     ports:
-      - '${APP_PORT}:8080'
+      - '${APP_PORT}:8081'
     environment:
       DB_URL: postgres:5432
       REDIS_HOST: redis

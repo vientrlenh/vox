@@ -257,6 +257,20 @@ public class FileProcessingService implements FileProcessingPort {
                     "email", List.of("email", "mail", "email address", "địa chỉ email", "dia chi email"),
                     "classCode", List.of("classCode", "class code", "mã lớp", "ma lop", "lớp", "lop")
             );
+            case SCHOOL_GRADE_LEVEL -> Map.of(
+                "code", List.of("code", "gradeLevelCode", "grade level code", "mã khối", "ma khoi"),
+                "name", List.of("name", "gradeLevelName", "grade level name", "tên khối", "ten khoi"),
+                "order", List.of("order", "gradeLevelOrder", "thứ tự", "thu tu", "stt"),
+                "description", List.of("description", "note", "notes", "ghi chú", "ghi chu", "mô tả", "mo ta")
+            );
+            case SCHOOL_GRADE -> Map.of(
+                "schoolGradeLevelCode", List.of("schoolGradeLevelCode", "gradeLevelCode", "grade level code", "mã khối", "ma khoi", "khối", "khoi"),
+                "code", List.of("code", "gradeCode", "schoolGradeCode", "grade code", "mã năm học", "ma nam hoc", "mã", "ma"),
+                "name", List.of("name", "gradeName", "grade name", "tên năm học", "ten nam hoc", "tên", "ten"),
+                "description", List.of("description", "note", "notes", "ghi chú", "ghi chu", "mô tả", "mo ta"),
+                "startDate", List.of("startDate", "start date", "ngày bắt đầu", "ngay bat dau"),
+                "endDate", List.of("endDate", "end date", "ngày kết thúc", "ngay ket thuc")
+            );
             case SCHOOL_DIRECTORY -> Map.of(
                     "code", List.of("code", "schoolCode", "school code", "mã trường", "ma truong", "mã định danh", "ma dinh danh"),
                     "name", List.of("name", "schoolName", "school name", "tên trường", "ten truong"),
@@ -301,6 +315,24 @@ public class FileProcessingService implements FileProcessingPort {
                     "scoreMin", List.of("scoreMin", "điểm tối thiểu", "diem toi thieu", "điểm sàn"),
                     "scoreMax", List.of("scoreMax", "điểm tối đa", "diem toi da", "điểm trần"),
                     "order", List.of("order", "thứ tự", "thu tu")
+            );
+            case QUESTION -> Map.ofEntries(
+                Map.entry("code", List.of("code", "question code", "mã câu hỏi", "ma cau hoi")),
+                Map.entry("type", List.of("type", "question type", "loại câu hỏi", "loai cau hoi")),
+                Map.entry("questionText", List.of("questionText", "question text", "content", "nội dung câu hỏi", "noi dung cau hoi")),
+                Map.entry("instructionText", List.of("instructionText", "instruction", "hướng dẫn", "huong dan")),
+                Map.entry("promptText", List.of("promptText", "prompt", "gợi ý", "goi y")),
+                Map.entry("preparationText", List.of("preparationText", "preparation text", "văn bản chuẩn bị", "van ban chuan bi")),
+                Map.entry("preparationTimeSeconds", List.of("preparationTimeSeconds", "prep time", "thời gian chuẩn bị", "thoi gian chuan bi")),
+                Map.entry("minResponseSeconds", List.of("minResponseSeconds", "min response", "thời gian trả lời tối thiểu", "thoi gian tra loi toi thieu")),
+                Map.entry("maxResponseSeconds", List.of("maxResponseSeconds", "max response", "thời gian trả lời tối đa", "thoi gian tra loi toi da")),
+                Map.entry("sharing", List.of("sharing", "chia sẻ", "chia se")),
+                Map.entry("evaluationExpectedContent", List.of("expectedContent", "expected content", "nội dung mong đợi", "noi dung mong doi")),
+                Map.entry("evaluationKeyPoints", List.of("keyPoints", "key points", "ý chính", "y chinh")),
+                Map.entry("evaluationAcceptableResponses", List.of("acceptableResponses", "acceptable responses", "câu trả lời chấp nhận", "cau tra loi chap nhan")),
+                Map.entry("evaluationOffTopicExamples", List.of("offTopicExamples", "off topic examples", "ví dụ lạc đề", "vi du lac de")),
+                Map.entry("evaluationScoringHints", List.of("scoringHints", "scoring hints", "gợi ý chấm điểm", "goi y cham diem")),
+                Map.entry("evaluationCommonMistakes", List.of("commonMistakes", "common mistakes", "lỗi thường gặp", "loi thuong gap"))
             );
         };
     }

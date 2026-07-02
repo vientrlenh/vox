@@ -36,7 +36,7 @@ import com.sep.vox.domain.valueobject.Phone;
  * Idempotent: bỏ qua nếu trường mẫu đã tồn tại. Để reseed: xóa trường mẫu (hoặc drop schema) rồi chạy lại.
  */
 @Component
-@Order(value = 3)
+@Order(value = 4)
 public class SampleSchoolDataInitializer implements ApplicationRunner {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SampleSchoolDataInitializer.class);

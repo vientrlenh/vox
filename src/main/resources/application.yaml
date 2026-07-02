@@ -98,6 +98,7 @@ spring:
             scope:
               - profile
               - email
+              - openid
 
   datasource:
     url: jdbc:postgresql://${DB_URL}/${DB_NAME}
@@ -142,18 +143,22 @@ logging:
       springframework:
         security: DEBUG
         kafka: WARN
+        core: 
+          annotation: 
+            MergedAnnotation: ERROR
       apache: 
         kafka: WARN
 
+
 server:
-  port: 8080
+  port: 8081
   shutdown: graceful
   forward-headers-strategy: framework
 
 app:
   frontend:
     password-setup-url: ${PASSWORD_SETUP_URL}
-    oauth2-success-url: ${OAUTH2_SUCCESS_URL}
+    oauth2-url: ${OAUTH2_URL}
   external-event:
     kafka:
       consumer-groups:
@@ -161,7 +166,6 @@ app:
           topic:
             user-registered: ${KAFKA_USER_TOPIC:user.registered.v1}
           group-id: ${KAFKA_USER_GROUP_ID:vox-user}
-
 
 system-admin:
   email: ${SYS_ADMIN_EMAIL}

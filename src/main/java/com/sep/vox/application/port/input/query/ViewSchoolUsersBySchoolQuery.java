@@ -7,7 +7,7 @@ public record ViewSchoolUsersBySchoolQuery(
     int page,
     int size,
     String search,
-    String role,
+    UUID roleId,
     String status
 ) {
 

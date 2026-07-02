@@ -16,6 +16,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionStatus;
@@ -226,6 +227,43 @@ class SchoolUserImportCommitHandlerTests {
         assertThat(result.updated()).isEqualTo(1L);
         verify(schoolUserRepository).save(any(SchoolUser.class));
         verify(eventPublisherPort, never()).publish(any());
+    }
+
+    @Test
+    void should_create_new_school_user_when_student_belongs_to_another_school() {
+        var schoolId = UUID.randomUUID();
+        var otherSchoolId = UUID.randomUUID();
+        var createdBy = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var existingUserId = UUID.randomUUID();
+        var existingUser = user(existingUserId, "student@example.com");
+        var role = role("STUDENT");
+        var otherSchoolUser = new SchoolUser(
+            UUID.randomUUID(), otherSchoolId, existingUserId,
+            OffsetDateTime.parse("2024-09-01T00:00:00Z"),
+            OffsetDateTime.parse("2025-06-30T00:00:00Z")
+        );
+        var rows = List.of(row(sessionId, 1L, studentData("student@example.com")));
+
+        mockSchool(schoolId);
+        when(userRepository.findByEmailIn(Set.of("student@example.com"))).thenReturn(List.of(existingUser));
+        when(roleRepository.findByCodeIn(Set.of("STUDENT"))).thenReturn(List.of(role));
+        when(schoolUserRepository.findByUserIdIn(Set.of(existingUserId))).thenReturn(List.of(otherSchoolUser));
+        when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(schoolUserRepository.save(any(SchoolUser.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        ImportCommitResult result = handler.commit(session(sessionId, schoolId, createdBy), rows);
+
+        assertThat(result.created()).isZero();
+        assertThat(result.updated()).isEqualTo(1L);
+        // The other school's membership must be filtered out: a fresh SchoolUser is created
+        // for the current school instead of mutating the unrelated one.
+        var savedSchoolUser = ArgumentCaptor.forClass(SchoolUser.class);
+        verify(schoolUserRepository).save(savedSchoolUser.capture());
+        assertThat(savedSchoolUser.getValue().getSchoolId()).isEqualTo(schoolId);
+        assertThat(savedSchoolUser.getValue()).isNotSameAs(otherSchoolUser);
+        assertThat(otherSchoolUser.getStartDate()).isEqualTo(OffsetDateTime.parse("2024-09-01T00:00:00Z"));
+        assertThat(otherSchoolUser.getEndDate()).isEqualTo(OffsetDateTime.parse("2025-06-30T00:00:00Z"));
     }
 
     @Test

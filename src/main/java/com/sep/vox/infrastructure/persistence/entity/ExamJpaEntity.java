@@ -26,8 +26,11 @@ public class ExamJpaEntity {
     )
     private UUID id;
 
-    @Column(name = "blueprint_id", updatable = false)
+    @Column(name = "blueprint_id")
     private UUID blueprintId;
+
+    @Column(name = "blueprint_version_id")
+    private UUID blueprintVersionId;
     
     @Column(name = "code", nullable = false, updatable = false, length = 100)
     private String code;
@@ -44,6 +47,14 @@ public class ExamJpaEntity {
     @Column(name = "language_id", nullable = false, updatable = false)
     private UUID languageId;
 
+    @Column(name = "kind", nullable = false, length = 20, check = {
+        @CheckConstraint(
+            name = "chk_exams_kind_valid",
+            constraint = "kind IN ('CENTRALIZED', 'CLASS_TEST')"
+        )
+    })
+    private String kind;
+
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
             name = "chk_exams_status_valid", 
@@ -52,13 +63,13 @@ public class ExamJpaEntity {
     })
     private String status;
 
-    @Column(name = "open_at", nullable = false)
+    @Column(name = "open_at")
     private OffsetDateTime openAt;
 
-    @Column(name = "close_at", nullable = false)
+    @Column(name = "close_at")
     private OffsetDateTime closeAt;
 
-    @Column(name = "assessment_policy_id", nullable = false)
+    @Column(name = "assessment_policy_id")
     private UUID assessmentPolicyId;
 
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -75,16 +86,18 @@ public class ExamJpaEntity {
 
     protected ExamJpaEntity() {}
 
-    public ExamJpaEntity(UUID id, UUID blueprintId, String code, String name, String description, UUID schoolId, UUID languageId,
-            String status, OffsetDateTime openAt, OffsetDateTime closeAt, UUID assessmentPolicyId,
+    public ExamJpaEntity(UUID id, UUID blueprintId, UUID blueprintVersionId, String code, String name, String description, UUID schoolId, UUID languageId,
+            String kind, String status, OffsetDateTime openAt, OffsetDateTime closeAt, UUID assessmentPolicyId,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.blueprintId = blueprintId;
+        this.blueprintVersionId = blueprintVersionId;
         this.code = code;
         this.name = name;
         this.description = description;
         this.schoolId = schoolId;
         this.languageId = languageId;
+        this.kind = kind;
         this.status = status;
         this.openAt = openAt;
         this.closeAt = closeAt;
@@ -151,6 +164,14 @@ public class ExamJpaEntity {
         this.status = status;
     }
 
+    public String getKind() {
+        return kind;
+    }
+
+    public void setKind(String kind) {
+        this.kind = kind;
+    }
+
     public OffsetDateTime getOpenAt() {
         return openAt;
     }
@@ -215,5 +236,11 @@ public class ExamJpaEntity {
         this.blueprintId = blueprintId;
     }
 
-    
+    public UUID getBlueprintVersionId() {
+        return blueprintVersionId;
+    }
+
+    public void setBlueprintVersionId(UUID blueprintVersionId) {
+        this.blueprintVersionId = blueprintVersionId;
+    }
 }

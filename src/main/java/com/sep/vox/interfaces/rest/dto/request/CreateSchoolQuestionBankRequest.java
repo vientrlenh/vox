@@ -10,9 +10,6 @@ public record CreateSchoolQuestionBankRequest(
     @NotNull(message = "ID ngôn ngữ không được để trống")
     UUID languageId, 
 
-    @NotNull(message = "ID trường không được để trống")
-    UUID schoolId, 
-
     @NotBlank(message = "Mã ngân hàng câu hỏi không được để trống")
     @Size(max = 100, message = "Mã ngân hàng câu hỏi không được vượt quá 100 ký tự")
     String code, 

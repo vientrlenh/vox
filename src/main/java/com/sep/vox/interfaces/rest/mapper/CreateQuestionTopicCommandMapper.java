@@ -7,8 +7,9 @@ public final class CreateQuestionTopicCommandMapper {
 
     public static CreateQuestionTopicCommand fromRequest(CreateQuestionTopicRequest request) {
         return new CreateQuestionTopicCommand(
-            request.bankId(),
-            request.topicName(),
+            request.questionBankId(),
+            request.code(),
+            request.name(),
             request.description()
         );
     }

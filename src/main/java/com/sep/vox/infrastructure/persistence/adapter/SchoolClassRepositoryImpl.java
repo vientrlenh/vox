@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.core.TypedPropertyPath;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
@@ -77,6 +78,25 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
                 schoolGradeId,
                 pageable
             );
+        return new PageResult<>(
+            page.getContent().stream()
+                .map(SchoolClassMapper::toDomain)
+                .toList(),
+            pageNumber,
+            size,
+            page.getTotalElements(),
+            page.getTotalPages()
+        );
+    }
+
+    @Override
+    public PageResult<SchoolClass> findByUserId(UUID schoolId, UUID userId, SchoolClassStatus status, int pageNumber, int size) {
+        var pageable = PageRequest.of(
+            pageNumber - 1,
+            size,
+            Sort.by(Sort.Direction.DESC, SchoolClassJpaEntity::getCreatedAt).and(Sort.by(Sort.Direction.ASC, SchoolClassJpaEntity::getId))
+        );
+        var page = springDataSchoolClassRepository.findByUserId(schoolId, userId, valueOf(status), pageable);
         return new PageResult<>(
             page.getContent().stream()
                 .map(SchoolClassMapper::toDomain)

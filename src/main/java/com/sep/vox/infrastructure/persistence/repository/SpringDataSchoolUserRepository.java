@@ -54,34 +54,32 @@ public interface SpringDataSchoolUserRepository extends JpaRepository<SchoolUser
         SELECT su FROM SchoolUserJpaEntity su
         JOIN UserJpaEntity u ON u.id = su.userId
         WHERE su.schoolId = :schoolId
+            AND (:excludeUserId IS NULL OR su.userId <> :excludeUserId)
             AND (:search IS NULL OR LOWER(u.fullName) LIKE :search OR LOWER(u.email) LIKE :search OR LOWER(u.phone) LIKE :search)
             AND ((:status IS NULL AND u.status <> 'DISABLED') OR u.status = :status)
-            AND EXISTS (
+            AND (:roleId IS NULL OR EXISTS (
                 SELECT 1 FROM UserRoleJpaEntity ur
-                JOIN RoleJpaEntity r ON r.id = ur.roleId
                 WHERE ur.userId = u.id
-                    AND r.code IN :schoolRoleCodes
-                    AND (:roleCode IS NULL OR r.code = :roleCode))
+                    AND ur.roleId = :roleId))
         ORDER BY su.id DESC
         """,
         countQuery = """
         SELECT COUNT(su) FROM SchoolUserJpaEntity su
         JOIN UserJpaEntity u ON u.id = su.userId
         WHERE su.schoolId = :schoolId
+            AND (:excludeUserId IS NULL OR su.userId <> :excludeUserId)
             AND (:search IS NULL OR LOWER(u.fullName) LIKE :search OR LOWER(u.email) LIKE :search OR LOWER(u.phone) LIKE :search)
             AND ((:status IS NULL AND u.status <> 'DISABLED') OR u.status = :status)
-            AND EXISTS (
+            AND (:roleId IS NULL OR EXISTS (
                 SELECT 1 FROM UserRoleJpaEntity ur
-                JOIN RoleJpaEntity r ON r.id = ur.roleId
                 WHERE ur.userId = u.id
-                    AND r.code IN :schoolRoleCodes
-                    AND (:roleCode IS NULL OR r.code = :roleCode))
+                    AND ur.roleId = :roleId))
         """)
     Page<SchoolUserJpaEntity> searchBySchoolId(
         @Param("schoolId") UUID schoolId,
+        @Param("excludeUserId") UUID excludeUserId,
         @Param("search") String search,
-        @Param("roleCode") String roleCode,
+        @Param("roleId") UUID roleId,
         @Param("status") String status,
-        @Param("schoolRoleCodes") Collection<String> schoolRoleCodes,
         Pageable pageable);
 }

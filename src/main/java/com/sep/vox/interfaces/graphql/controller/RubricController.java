@@ -117,8 +117,8 @@ public class RubricController {
     @MutationMapping(name = "updateSystemRubric")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public UUID updateSystemRubric(
-            @Argument UUID id,
-            @Argument UpdateRubricInput input
+            @Argument(name = "id") UUID id,
+            @Argument(name = "input") UpdateRubricInput input
     ) {
         var command = UpdateRubricGraphQLMapper.fromSystemInput(id, input);
 
@@ -130,11 +130,10 @@ public class RubricController {
     @MutationMapping(name = "updateSchoolRubric")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public UUID updateSchoolRubric(
-            @Argument UUID schoolId,
-            @Argument UUID id,
-            @Argument UpdateRubricInput input
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "id") UUID id,
+            @Argument(name = "input") UpdateRubricInput input
     ) {
-        // Map và Execute
         var command = UpdateRubricGraphQLMapper.fromSchoolInput(schoolId, id, input);
         return updateSchoolRubricUseCase.execute(command);
     }
@@ -143,7 +142,7 @@ public class RubricController {
     //View Rubric của hệ thống
     @QueryMapping(name = "viewSystemRubric")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public RubricDto viewSystemRubricById(@Argument("id") UUID id) {
+    public RubricDto viewSystemRubricById(@Argument(name = "id") UUID id) {
         var query = new ViewSystemRubricDetailsQuery(id);
         return viewSystemRubricDetailsUseCase.execute(query);
     }
@@ -153,8 +152,8 @@ public class RubricController {
     @QueryMapping(name = "viewSchoolRubric")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public RubricDto viewSchoolRubricById(
-            @Argument("schoolId") UUID schoolId,
-            @Argument("id") UUID id
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "id") UUID id
     ) {
         var query = new ViewSchoolRubricDetailsQuery(schoolId, id);
         return viewSchoolRubricDetailsUseCase.execute(query);
@@ -165,8 +164,8 @@ public class RubricController {
     @QueryMapping(name = "viewSystemRubrics")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<RubricDto> viewSystemRubrics(
-            @Argument("page") Integer page,
-            @Argument("size") Integer size
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size
     ) {
         // 1. Chặn ngay từ cửa nếu Frontend gửi data sai (page <= 0 hoặc size <= 0)
         if (page != null && page <= 0) {
@@ -193,9 +192,9 @@ public class RubricController {
     @QueryMapping(name = "viewSchoolRubrics")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<RubricDto> viewSchoolRubrics(
-            @Argument("schoolId") UUID schoolId,
-            @Argument("page") Integer page,
-            @Argument("size") Integer size
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size
     ) {
         if (page != null && page <= 0) {
             throw new IllegalArgumentException("Tham số 'page' không hợp lệ. Trang phải bắt đầu từ 1.");
@@ -219,15 +218,14 @@ public class RubricController {
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public CompletableFuture<PageResult<RubricVersionDto>> getRubricVersions(
             RubricDto rubric,
-            @Argument Integer page,
-            @Argument Integer size,
-            @Argument String status,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size,
+            @Argument(name = "status") String status,
             DataFetchingEnvironment env) {
 
         int validPage = (page != null && page > 0) ? page - 1 : 0;
         int validSize = (size != null && size > 0) ? size : 10;
 
-        // Bất kể là System hay School, tất cả đổ về 1 DataLoader duy nhất!
         DataLoader<RubricVersionsKey, PageResult<RubricVersionDto>> loader = env.getDataLoader("rubricVersionsDataLoader");
         return loader.load(new RubricVersionsKey(rubric.id(), status, validPage, validSize));
     }
@@ -237,9 +235,9 @@ public class RubricController {
     @QueryMapping(name = "searchSystemRubrics")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<RubricDto> searchSystemRubrics(
-            @Argument SearchRubricFilterRequest filter,
-            @Argument Integer page,
-            @Argument Integer size) {
+            @Argument(name = "filter") SearchRubricFilterRequest filter,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
 
         // Nắn tham số 1-based (Frontend) về 0-based (Backend)
         int validPage = (page != null && page > 0) ? page - 1 : 0;
@@ -266,10 +264,10 @@ public class RubricController {
     @QueryMapping(name = "searchSchoolRubrics")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<RubricDto> searchSchoolRubrics(
-            @Argument UUID schoolId,
-            @Argument SearchRubricFilterRequest filter,
-            @Argument Integer page,
-            @Argument Integer size) {
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "filter") SearchRubricFilterRequest filter,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
 
         // 1. Nắn tham số 1-based về 0-based
         int validPage = (page != null && page > 0) ? page - 1 : 0;
@@ -287,8 +285,6 @@ public class RubricController {
                 validPage,
                 validSize
         );
-
-        // 4. Gọi UseCase
         return searchSchoolRubricsUseCase.execute(query);
     }
 
@@ -297,8 +293,8 @@ public class RubricController {
     @MutationMapping(name = "updateSystemRubricVersion")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public UUID updateSystemRubricVersion(
-            @Argument("versionId") UUID versionId,
-            @Argument("input") UpdateRubricVersionInput input
+            @Argument(name = "versionId") UUID versionId,
+            @Argument(name = "input") UpdateRubricVersionInput input
     ) {
         // Sử dụng Mapper chuẩn men
         var command = UpdateRubricVersionGraphQLMapper.fromSystemInput(versionId, input);
@@ -311,9 +307,9 @@ public class RubricController {
     @MutationMapping(name = "updateSchoolRubricVersion")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public UUID updateSchoolRubricVersion(
-            @Argument("schoolId") UUID schoolId,
-            @Argument("versionId") UUID versionId,
-            @Argument("input") UpdateRubricVersionInput input
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "versionId") UUID versionId,
+            @Argument(name = "input") UpdateRubricVersionInput input
     ) {
         var command = UpdateRubricVersionGraphQLMapper.fromSchoolInput(schoolId, versionId, input);
 
@@ -324,8 +320,8 @@ public class RubricController {
     @QueryMapping(name = "viewSchoolRubricVersion")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public RubricVersionDto viewSchoolRubricVersion(
-            @Argument("schoolId") UUID schoolId,
-            @Argument("versionId") UUID versionId
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "versionId") UUID versionId
     ) {
         var query = new ViewSchoolRubricVersionDetailsQuery(schoolId, versionId);
         return viewSchoolRubricVersionDetailsUseCase.execute(query);
@@ -335,7 +331,7 @@ public class RubricController {
     @QueryMapping(name = "viewSystemRubricVersion")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public RubricVersionDto viewSystemRubricVersion(
-            @Argument("versionId") UUID versionId
+            @Argument(name = "versionId") UUID versionId
     ) {
         var query = new ViewSystemRubricVersionDetailsQuery(versionId);
         return viewSystemRubricVersionDetailsUseCase.execute(query);
@@ -346,11 +342,11 @@ public class RubricController {
     @QueryMapping(name = "viewSchoolRubricVersions")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<RubricVersionDto> viewSchoolRubricVersions(
-            @Argument("schoolId") UUID schoolId,
-            @Argument("rubricId") UUID rubricId,
-            @Argument("status") String status,
-            @Argument("page") Integer page,
-            @Argument("size") Integer size
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "rubricId") UUID rubricId,
+            @Argument(name = "status") String status,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size
     ) {
         if (page != null && page <= 0) {
             throw new IllegalArgumentException("Tham số 'page' không hợp lệ. Trang phải bắt đầu từ 1.");
@@ -371,10 +367,10 @@ public class RubricController {
     @QueryMapping(name = "viewSystemRubricVersions")
     @PreAuthorize("isAuthenticated()")
     public PageResult<RubricVersionDto> viewSystemRubricVersions(
-            @Argument("rubricId") UUID rubricId,
-            @Argument("status") String status,
-            @Argument("page") Integer page,
-            @Argument("size") Integer size
+            @Argument(name = "rubricId") UUID rubricId,
+            @Argument(name = "status") String status,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size
     ) {
         if (page != null && page <= 0) {
             throw new IllegalArgumentException("Tham số 'page' không hợp lệ. Trang phải bắt đầu từ 1.");
@@ -395,15 +391,14 @@ public class RubricController {
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public CompletableFuture<PageResult<RubricCriterionDto>> getRubricCriteria(
             RubricVersionDto version,
-            @Argument Integer page,
-            @Argument Integer size,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size,
             DataFetchingEnvironment env) {
 
         // Validate & nắn từ 1-based về 0-based
         int validPage = (page != null && page > 0) ? page - 1 : 0;
         int validSize = (size != null && size > 0) ? size : 10;
 
-        // Gọi DataLoader O(1) của Criteria
         DataLoader<RubricCriteriaKey, PageResult<RubricCriterionDto>> loader = env.getDataLoader("rubricCriteriaDataLoader");
         if (loader == null) {
             throw new IllegalStateException("Không tìm thấy DataLoader rubricCriteriaDataLoader.");
@@ -418,8 +413,8 @@ public class RubricController {
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public CompletableFuture<PageResult<RubricResultBandDto>> getRubricResultBands(
             RubricVersionDto version,
-            @Argument Integer page,
-            @Argument Integer size,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size,
             DataFetchingEnvironment env) {
 
         int validPage = (page != null && page > 0) ? page - 1 : 0;
@@ -438,10 +433,10 @@ public class RubricController {
     @QueryMapping(name = "searchSystemRubricVersions")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<RubricVersionDto> searchSystemRubricVersions(
-            @Argument UUID rubricId,
-            @Argument SearchRubricVersionFilterRequest filter,
-            @Argument Integer page,
-            @Argument Integer size) {
+            @Argument(name = "rubricId") UUID rubricId,
+            @Argument(name = "filter") SearchRubricVersionFilterRequest filter,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
 
         // 1. Chuẩn hóa phân trang: Chuyển 1-based từ client về 0-based của Spring Data
         int validPage = (page != null && page > 0) ? page - 1 : 0;
@@ -465,11 +460,11 @@ public class RubricController {
     @QueryMapping(name = "searchSchoolRubricVersions")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<RubricVersionDto> searchSchoolRubricVersions(
-            @Argument UUID schoolId,
-            @Argument UUID rubricId,
-            @Argument SearchRubricVersionFilterRequest filter,
-            @Argument Integer page,
-            @Argument Integer size) {
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "rubricId") UUID rubricId,
+            @Argument(name = "filter") SearchRubricVersionFilterRequest filter,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
 
         // Chuẩn hóa phân trang về 0-based
         int validPage = (page != null && page > 0) ? page - 1 : 0;
@@ -497,8 +492,8 @@ public class RubricController {
     @MutationMapping(name = "updateSystemRubricCriterion")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public UUID updateSystemRubricCriterion(
-            @Argument("criterionId") UUID criterionId,
-            @Argument("input") UpdateRubricCriterionInput input
+            @Argument(name = "criterionId") UUID criterionId,
+            @Argument(name = "input") UpdateRubricCriterionInput input
     ) {
         var command = RubricCriterionGraphQLMapper.fromSystemInput(criterionId, input);
         return updateSystemRubricCriterionUseCase.execute(command);
@@ -508,9 +503,9 @@ public class RubricController {
     @MutationMapping(name = "updateSchoolRubricCriterion")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public UUID updateSchoolRubricCriterion(
-            @Argument("schoolId") UUID schoolId,
-            @Argument("criterionId") UUID criterionId,
-            @Argument("input") UpdateRubricCriterionInput input
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "criterionId") UUID criterionId,
+            @Argument(name = "input") UpdateRubricCriterionInput input
     ) {
         var command = RubricCriterionGraphQLMapper.fromSchoolInput(schoolId, criterionId, input);
         return updateSchoolRubricCriterionUseCase.execute(command);
@@ -520,7 +515,7 @@ public class RubricController {
     @QueryMapping(name = "viewSystemRubricCriterion")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public RubricCriterionDto viewSystemRubricCriterion(
-            @Argument("criterionId") UUID criterionId
+            @Argument(name = "criterionId") UUID criterionId
     ) {
         var query = new ViewSystemRubricCriterionDetailsQuery(criterionId);
         return viewSystemRubricCriterionDetailsUseCase.execute(query);
@@ -530,8 +525,8 @@ public class RubricController {
     @QueryMapping(name = "viewSchoolRubricCriterion")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public RubricCriterionDto viewSchoolRubricCriterion(
-            @Argument("schoolId") UUID schoolId,
-            @Argument("criterionId") UUID criterionId
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "criterionId") UUID criterionId
     ) {
         var query = new ViewSchoolRubricCriterionDetailsQuery(schoolId, criterionId);
         return viewSchoolRubricCriterionDetailsUseCase.execute(query);
@@ -542,9 +537,9 @@ public class RubricController {
     @QueryMapping(name = "viewSystemRubricCriteria")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<RubricCriterionDto> viewSystemRubricCriteria(
-            @Argument("versionId") UUID versionId,
-            @Argument("page") Integer page,
-            @Argument("size") Integer size
+            @Argument(name = "versionId") UUID versionId,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size
     ) {
         if (page != null && page <= 0) {
             throw new IllegalArgumentException("Tham số 'page' không hợp lệ. Trang phải bắt đầu từ 1.");
@@ -564,10 +559,10 @@ public class RubricController {
     @QueryMapping(name = "viewSchoolRubricCriteria")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<RubricCriterionDto> viewSchoolRubricCriteria(
-            @Argument("schoolId") java.util.UUID schoolId,
-            @Argument("versionId") java.util.UUID versionId,
-            @Argument("page") Integer page,
-            @Argument("size") Integer size
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "versionId") UUID versionId,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size
     ) {
         if (page != null && page <= 0) {
             throw new IllegalArgumentException("Tham số 'page' không hợp lệ. Trang phải bắt đầu từ 1.");
@@ -589,8 +584,8 @@ public class RubricController {
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public CompletableFuture<PageResult<RubricCriterionBandDto>> getRubricCriterionBands(
             RubricCriterionDto criterion,
-            @Argument Integer page,
-            @Argument Integer size,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size,
             DataFetchingEnvironment env) {
 
         int validPage = (page != null && page > 0) ? page - 1 : 0;
@@ -608,10 +603,10 @@ public class RubricController {
     @QueryMapping(name = "searchSystemRubricCriteria")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<RubricCriterionDto> searchSystemRubricCriteria(
-            @Argument UUID versionId,
-            @Argument SearchRubricCriterionFilterRequest filter,
-            @Argument Integer page,
-            @Argument Integer size) {
+            @Argument(name = "versionId") UUID versionId,
+            @Argument(name = "filter") SearchRubricCriterionFilterRequest filter,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
 
         int validPage = (page != null && page > 0) ? page - 1 : 0;
         int validSize = (size != null && size > 0) ? size : 10;
@@ -628,11 +623,11 @@ public class RubricController {
     @QueryMapping(name = "searchSchoolRubricCriteria")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<RubricCriterionDto> searchSchoolRubricCriteria(
-            @Argument UUID schoolId,
-            @Argument UUID versionId,
-            @Argument SearchRubricCriterionFilterRequest filter,
-            @Argument Integer page,
-            @Argument Integer size) {
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "versionId") UUID versionId,
+            @Argument(name = "filter") SearchRubricCriterionFilterRequest filter,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
 
         int validPage = (page != null && page > 0) ? page - 1 : 0;
         int validSize = (size != null && size > 0) ? size : 10;
@@ -651,9 +646,9 @@ public class RubricController {
     @MutationMapping(name = "updateSchoolRubricCriterionBand")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public UUID updateSchoolRubricCriterionBand(
-            @Argument("schoolId") UUID schoolId,
-            @Argument("bandId") UUID bandId,
-            @Argument("input") UpdateRubricCriterionBandInput input
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "bandId") UUID bandId,
+            @Argument(name = "input") UpdateRubricCriterionBandInput input
     ) {
         var command = RubricCriterionBandGraphQLMapper.fromSchoolInput(schoolId, bandId, input);
         return updateSchoolRubricCriterionBandUseCase.execute(command);
@@ -663,8 +658,8 @@ public class RubricController {
     @MutationMapping(name = "updateSystemRubricCriterionBand")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public UUID updateSystemRubricCriterionBand(
-            @Argument("bandId") UUID bandId,
-            @Argument("input") UpdateRubricCriterionBandInput input
+            @Argument(name = "bandId") UUID bandId,
+            @Argument(name = "input") UpdateRubricCriterionBandInput input
     ) {
         var command = RubricCriterionBandGraphQLMapper.fromSystemInput(bandId, input);
         return updateSystemRubricCriterionBandUseCase.execute(command);
@@ -674,7 +669,7 @@ public class RubricController {
     @QueryMapping(name = "viewSystemRubricCriterionBand")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public RubricCriterionBandDto viewSystemRubricCriterionBand(
-            @Argument("bandId") UUID bandId
+            @Argument(name = "bandId") UUID bandId
     ) {
         var query = new ViewSystemRubricCriterionBandDetailsQuery(bandId);
         return viewSystemRubricCriterionBandDetailsUseCase.execute(query);
@@ -684,8 +679,8 @@ public class RubricController {
     @QueryMapping(name = "viewSchoolRubricCriterionBand")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public RubricCriterionBandDto viewSchoolRubricCriterionBand(
-            @Argument("schoolId") UUID schoolId,
-            @Argument("bandId") UUID bandId
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "bandId") UUID bandId
     ) {
         var query = new ViewSchoolRubricCriterionBandDetailsQuery(schoolId, bandId);
         return viewSchoolRubricCriterionBandDetailsUseCase.execute(query);
@@ -695,10 +690,10 @@ public class RubricController {
     @QueryMapping(name = "viewSchoolRubricCriterionBands")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<RubricCriterionBandDto> viewSchoolRubricCriterionBands(
-            @Argument("schoolId") java.util.UUID schoolId,
-            @Argument("criterionId") java.util.UUID criterionId,
-            @Argument("page") Integer page,
-            @Argument("size") Integer size
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "criterionId") UUID criterionId,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size
     ) {
         if (page != null && page <= 0) {
             throw new IllegalArgumentException("Tham số 'page' không hợp lệ. Trang phải bắt đầu từ 1.");
@@ -718,9 +713,9 @@ public class RubricController {
     @QueryMapping(name = "viewSystemRubricCriterionBands")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<RubricCriterionBandDto> viewSystemRubricCriterionBands(
-            @Argument("criterionId") java.util.UUID criterionId,
-            @Argument("page") Integer page,
-            @Argument("size") Integer size
+            @Argument(name = "criterionId") UUID criterionId,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size
     ) {
         if (page != null && page <= 0) {
             throw new IllegalArgumentException("Tham số 'page' không hợp lệ. Trang phải bắt đầu từ 1.");
@@ -741,10 +736,10 @@ public class RubricController {
     @QueryMapping(name = "searchSystemRubricCriterionBands")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<RubricCriterionBandDto> searchSystemRubricCriterionBands(
-            @Argument UUID criterionId,
-            @Argument SearchRubricCriterionBandFilterRequest filter,
-            @Argument Integer page,
-            @Argument Integer size) {
+            @Argument(name = "criterionId") UUID criterionId,
+            @Argument(name = "filter") SearchRubricCriterionBandFilterRequest filter,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
 
         int validPage = (page != null && page > 0) ? page - 1 : 0;
         int validSize = (size != null && size > 0) ? size : 10;
@@ -761,11 +756,11 @@ public class RubricController {
     @QueryMapping(name = "searchSchoolRubricCriterionBands")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<RubricCriterionBandDto> searchSchoolRubricCriterionBands(
-            @Argument UUID schoolId,
-            @Argument UUID criterionId,
-            @Argument SearchRubricCriterionBandFilterRequest filter,
-            @Argument Integer page,
-            @Argument Integer size) {
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "criterionId") UUID criterionId,
+            @Argument(name = "filter") SearchRubricCriterionBandFilterRequest filter,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
 
         int validPage = (page != null && page > 0) ? page - 1 : 0;
         int validSize = (size != null && size > 0) ? size : 10;
@@ -783,8 +778,8 @@ public class RubricController {
     @MutationMapping(name = "updateSystemRubricResultBand")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public UUID updateSystemRubricResultBand(
-            @Argument("resultBandId") UUID resultBandId,
-            @Argument("input") UpdateRubricResultBandInput input
+            @Argument(name = "resultBandId") UUID resultBandId,
+            @Argument(name = "input") UpdateRubricResultBandInput input
     ) {
         var command = RubricResultBandGraphQLMapper.fromSystemInput(resultBandId, input);
         return updateSystemRubricResultBandUseCase.execute(command);
@@ -794,9 +789,9 @@ public class RubricController {
     @MutationMapping(name = "updateSchoolRubricResultBand")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public UUID updateSchoolRubricResultBand(
-            @Argument("schoolId") UUID schoolId,
-            @Argument("resultBandId") UUID resultBandId,
-            @Argument("input") UpdateRubricResultBandInput input
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "resultBandId") UUID resultBandId,
+            @Argument(name = "input") UpdateRubricResultBandInput input
     ) {
         var command = RubricResultBandGraphQLMapper.fromSchoolInput(schoolId, resultBandId, input);
         return updateSchoolRubricResultBandUseCase.execute(command);
@@ -806,7 +801,7 @@ public class RubricController {
     @QueryMapping(name = "viewSystemRubricResultBand")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public RubricResultBandDto viewSystemRubricResultBand(
-            @Argument("resultBandId") UUID resultBandId
+            @Argument(name = "resultBandId") UUID resultBandId
     ) {
         var query = new ViewSystemRubricResultBandDetailsQuery(resultBandId);
         return viewSystemRubricResultBandDetailsUseCase.execute(query);
@@ -816,8 +811,8 @@ public class RubricController {
     @QueryMapping(name = "viewSchoolRubricResultBand")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public RubricResultBandDto viewSchoolRubricResultBand(
-            @Argument("schoolId") UUID schoolId,
-            @Argument("resultBandId") UUID resultBandId
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "resultBandId") UUID resultBandId
     ) {
         var query = new ViewSchoolRubricResultBandDetailsQuery(schoolId, resultBandId);
         return viewSchoolRubricResultBandDetailsUseCase.execute(query);
@@ -827,9 +822,9 @@ public class RubricController {
     @QueryMapping(name = "viewSystemRubricResultBands")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<RubricResultBandDto> viewSystemRubricResultBands(
-            @Argument("versionId") UUID versionId,
-            @Argument("page") Integer page,
-            @Argument("size") Integer size
+            @Argument(name = "versionId") UUID versionId,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size
     ) {
         if (page != null && page <= 0) {
             throw new IllegalArgumentException("Tham số 'page' không hợp lệ. Trang phải bắt đầu từ 1.");
@@ -849,10 +844,10 @@ public class RubricController {
     @QueryMapping(name = "viewSchoolRubricResultBands")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<RubricResultBandDto> viewSchoolRubricResultBands(
-            @Argument("schoolId") UUID schoolId,
-            @Argument("versionId") UUID versionId,
-            @Argument("page") Integer page,
-            @Argument("size") Integer size
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "versionId") UUID versionId,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size
     ) {
         if (page != null && page <= 0) {
             throw new IllegalArgumentException("Tham số 'page' không hợp lệ. Trang phải bắt đầu từ 1.");
@@ -872,10 +867,10 @@ public class RubricController {
     @QueryMapping(name = "searchSystemRubricResultBands")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<RubricResultBandDto> searchSystemRubricResultBands(
-            @Argument UUID versionId,
-            @Argument SearchRubricResultBandFilterRequest filter,
-            @Argument Integer page,
-            @Argument Integer size) {
+            @Argument(name = "versionId") UUID versionId,
+            @Argument(name = "filter") SearchRubricResultBandFilterRequest filter,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
 
         int validPage = (page != null && page > 0) ? page - 1 : 0;
         int validSize = (size != null && size > 0) ? size : 10;
@@ -889,11 +884,11 @@ public class RubricController {
     @QueryMapping(name = "searchSchoolRubricResultBands")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<RubricResultBandDto> searchSchoolRubricResultBands(
-            @Argument UUID schoolId,
-            @Argument UUID versionId,
-            @Argument SearchRubricResultBandFilterRequest filter,
-            @Argument Integer page,
-            @Argument Integer size) {
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "versionId") UUID versionId,
+            @Argument(name = "filter") SearchRubricResultBandFilterRequest filter,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
 
         int validPage = (page != null && page > 0) ? page - 1 : 0;
         int validSize = (size != null && size > 0) ? size : 10;

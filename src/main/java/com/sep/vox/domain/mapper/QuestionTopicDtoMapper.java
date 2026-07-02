@@ -18,7 +18,9 @@ public class QuestionTopicDtoMapper {
             domain.getDescription(),
             domain.getStatus().name(),
             valueOf(domain.getCreatedAt()),
-            valueOf(domain.getUpdatedAt())
+            valueOf(domain.getUpdatedAt()),
+            domain.getCreatedBy(),
+            domain.getUpdatedBy()
         );
     }
 

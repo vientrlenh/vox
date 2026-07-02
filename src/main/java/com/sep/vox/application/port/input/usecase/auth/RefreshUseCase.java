@@ -18,7 +18,6 @@ import com.sep.vox.application.port.output.SessionTokenManagerPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.input.auth.RefreshResponse;
 import com.sep.vox.application.response.output.GeneratedSessionToken;
-import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.devicesession.DeviceSession;
 import com.sep.vox.domain.model.refreshtoken.RefreshToken;
 import com.sep.vox.domain.repository.DeviceSessionRepository;
@@ -72,7 +71,7 @@ public class RefreshUseCase implements IUseCase<RefreshCommand, RefreshResponse>
         var user = userRepository.findById(deviceSession.getUserId())
             .orElseThrow(() -> new UnauthorizedException("Token yêu cầu không hợp lệ"));
         var schoolId = schoolUserRepository.findByUserId(user.getId())
-            .map(SchoolUser::getSchoolId)
+            .map(su -> su.getSchoolId())
             .orElse(null);
         var accessToken = authTokenPort.generateJwtToken(user.getId().toString(), schoolId, user.getEmail().value(), getUserRoles(user.getId()));
         return RefreshResponseMapper.toResponse(accessToken, newRefreshToken.rawToken());

@@ -14,12 +14,16 @@ public class QuestionBankDtoMapper {
         return new QuestionBankDto(
             domain.getId(),
             domain.getLanguageId(),
+            domain.getSchoolId(),
             domain.getCode(),
             domain.getName(),
             domain.getDescription(),
+            domain.getOwnerType().name(),
             domain.getStatus().name(),
             valueOf(domain.getCreatedAt()),
-            valueOf(domain.getUpdatedAt())
+            valueOf(domain.getUpdatedAt()),
+            domain.getCreatedBy(),
+            domain.getUpdatedBy()
         );
     }
 

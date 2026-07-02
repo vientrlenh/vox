@@ -7,7 +7,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 import com.sep.vox.domain.common.PageResult;
-import com.sep.vox.infrastructure.persistence.mapper.RubricCriterionMapper;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;

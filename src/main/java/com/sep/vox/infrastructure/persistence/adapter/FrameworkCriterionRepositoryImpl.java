@@ -10,7 +10,6 @@ import com.sep.vox.domain.model.framework.FrameworkCriterion;
 import com.sep.vox.domain.repository.FrameworkCriterionRepository;
 import com.sep.vox.infrastructure.persistence.mapper.FrameworkCriterionMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataFrameworkCriterionRepository;
-
 import java.util.stream.Collectors;
 
 @Repository

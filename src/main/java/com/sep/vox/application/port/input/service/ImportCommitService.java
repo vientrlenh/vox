@@ -6,6 +6,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.NotFoundException;
@@ -16,6 +18,8 @@ import com.sep.vox.domain.repository.ImportSessionRepository;
 
 @Service
 public class ImportCommitService {
+
+    private static final Logger log = LoggerFactory.getLogger(ImportCommitService.class);
 
     private final Map<ImportType, ImportCommitHandler> handlers;
     private final ImportSessionRepository importSessionRepository;
@@ -44,8 +48,11 @@ public class ImportCommitService {
             session.setTotalRows(rows.size());
             session.setStatus(ImportSessionStatus.COMPLETED);
         } catch (Exception e) {
+            log.error("Loi khi xu ly phien import {} (type={})", sessionId, session.getType(), e);
             session.setStatus(ImportSessionStatus.FAILED);
-            session.setFailureReason(e.getMessage());
+            session.setFailureReason(
+                e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()
+            );
         }
         session.setUpdatedAt(OffsetDateTime.now());
         importSessionRepository.save(session);

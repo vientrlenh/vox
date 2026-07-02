@@ -57,14 +57,14 @@ public class RubricGraphQlDataLoaderConfig {
                                 var groupedKeys = entry.getValue();
 
                                 // Lấy tất cả Rubric ID
-                                var rubricIds = groupedKeys.stream().map(RubricVersionsKey::rubricId).distinct().toList();
+                                var rubricIds = groupedKeys.stream().map(k -> k.rubricId()).distinct().toList();
 
                                 //  GỌI DATABASE ĐÚNG 1 LẦN DUY NHẤT (O(1))
                                 List<RubricVersion> allVersions = rubricVersionRepository.findByRubricIdInAndStatus(rubricIds, status);
 
                                 // Nhóm kết quả trả về theo từng rubricId
                                 Map<UUID, List<RubricVersion>> versionsByRubric = allVersions.stream()
-                                        .collect(Collectors.groupingBy(RubricVersion::getRubricId));
+                                        .collect(Collectors.groupingBy(v -> v.getRubricId()));
 
                                 // 3. Phân trang bằng Java (In-memory Pagination)
                                 for (RubricVersionsKey key : groupedKeys) {
@@ -99,14 +99,14 @@ public class RubricGraphQlDataLoaderConfig {
                             keys.forEach(k -> result.put(k, new PageResult<>(List.of(), k.page(), k.size(), 0, 0)));
 
                             // Lấy tất cả Version ID cần quét
-                            var versionIds = keys.stream().map(RubricCriteriaKey::versionId).distinct().toList();
+                            var versionIds = keys.stream().map(k -> k.versionId()).distinct().toList();
 
                             //  GỌI DATABASE ĐÚNG 1 LẦN DUY NHẤT (O(1))
                             List<RubricCriterion> allCriteria = rubricCriterionRepository.findByRubricVersionIdIn(versionIds);
 
                             // 2. Nhóm kết quả theo từng versionId
                             Map<UUID, List<RubricCriterion>> criteriaByVersion = allCriteria.stream()
-                                    .collect(Collectors.groupingBy(RubricCriterion::getRubricVersionId));
+                                    .collect(Collectors.groupingBy(c -> c.getRubricVersionId()));
 
                             // 3. Phân trang trên RAM cho từng Key
                             for (RubricCriteriaKey key : keys) {
@@ -117,7 +117,7 @@ public class RubricGraphQlDataLoaderConfig {
 
                                 List<RubricCriterionDto> pagedDtos = criteriaList.stream()
                                         // Sắp xếp tăng dần theo thuộc tính `order`
-                                        .sorted(Comparator.comparingInt(RubricCriterion::getOrder))
+                                        .sorted(Comparator.comparingInt(c -> c.getOrder()))
                                         .skip((long) key.page() * key.size())
                                         .limit(key.size())
                                         .map(RubricCriterionDtoMapper::toDto) // Sửa theo tên class Mapper của bác
@@ -139,14 +139,14 @@ public class RubricGraphQlDataLoaderConfig {
                             keys.forEach(k -> result.put(k, new PageResult<>(List.of(), k.page(), k.size(), 0, 0)));
 
                             // Lấy tất cả Criterion ID cần quét
-                            var criterionIds = keys.stream().map(RubricCriterionBandsKey::criterionId).distinct().toList();
+                            var criterionIds = keys.stream().map(k -> k.criterionId()).distinct().toList();
 
                             //  GỌI DATABASE ĐÚNG 1 LẦN DUY NHẤT (O(1))
                             List<RubricCriterionBand> allBands = rubricCriterionBandRepository.findByCriterionIdIn(criterionIds);
 
                             // 2. Nhóm kết quả theo từng criterionId
                             Map<UUID, List<RubricCriterionBand>> bandsByCriterion = allBands.stream()
-                                    .collect(Collectors.groupingBy(RubricCriterionBand::getCriterionId));
+                                    .collect(Collectors.groupingBy(cb -> cb.getCriterionId()));
 
                             // 3. Phân trang trên RAM
                             for (RubricCriterionBandsKey key : keys) {
@@ -176,13 +176,13 @@ public class RubricGraphQlDataLoaderConfig {
 
                             keys.forEach(k -> result.put(k, new PageResult<>(List.of(), k.page(), k.size(), 0, 0)));
 
-                            var versionIds = keys.stream().map(RubricResultBandsKey::versionId).distinct().toList();
+                            var versionIds = keys.stream().map(k -> k.versionId()).distinct().toList();
 
 
                             List<RubricResultBand> allResultBands = rubricResultBandRepository.findByRubricVersionIdIn(versionIds);
 
                             Map<UUID, List<RubricResultBand>> resultBandsByVersion = allResultBands.stream()
-                                    .collect(Collectors.groupingBy(RubricResultBand::getRubricVersionId));
+                                    .collect(Collectors.groupingBy(b -> b.getRubricVersionId()));
 
                             for (RubricResultBandsKey key : keys) {
                                 List<RubricResultBand> bandList = resultBandsByVersion.getOrDefault(key.versionId(), List.of());

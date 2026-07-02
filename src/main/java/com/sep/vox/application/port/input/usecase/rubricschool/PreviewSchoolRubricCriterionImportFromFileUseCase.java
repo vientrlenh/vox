@@ -1,9 +1,17 @@
 package com.sep.vox.application.port.input.usecase.rubricschool;
 
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.IntStream; // Sử dụng Command dùng chung của bác
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
-import com.sep.vox.application.port.input.command.PreviewRubricCriterionImportCommand; // Sử dụng Command dùng chung của bác
+import com.sep.vox.application.port.input.command.PreviewRubricCriterionImportCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.FileProcessingPort;
 import com.sep.vox.application.port.output.JsonSerializationPort;
@@ -17,14 +25,12 @@ import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
 import com.sep.vox.domain.model.user.UserStatus;
-import com.sep.vox.domain.repository.*;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.IntStream;
+import com.sep.vox.domain.repository.ImportRowRepository;
+import com.sep.vox.domain.repository.ImportSessionRepository;
+import com.sep.vox.domain.repository.RubricRepository;
+import com.sep.vox.domain.repository.RubricVersionRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository;
+import com.sep.vox.domain.repository.UserRepository;
 
 @Service
 public class PreviewSchoolRubricCriterionImportFromFileUseCase implements IUseCase<PreviewRubricCriterionImportCommand, PreviewRubricCriterionImportResponse> {

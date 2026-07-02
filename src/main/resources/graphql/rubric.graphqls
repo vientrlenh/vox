@@ -80,8 +80,9 @@ type Rubric {
     languageId: ID!
     frameworkId: ID!
     ownerType: String!
-    currentVersionId: ID
     versions(page: Int = 1, size: Int = 10, status: String): RubricVersionPage!
+    language: SupportedLanguage
+    framework: Framework
 }
 #Page
 type RubricPage {

@@ -45,11 +45,11 @@ public class FileProcessingService implements FileProcessingPort {
 
         var suggestedMapping = suggestMapping(table.headers(), type);
         return new ParseImportFileResult(
-            table.headers(),
-            suggestedMapping,
-            table.rows(),
-            table.sampleRows(),
-            table.totalRows()
+                table.headers(),
+                suggestedMapping,
+                table.rows(),
+                table.sampleRows(),
+                table.totalRows()
         );
     }
 
@@ -70,10 +70,10 @@ public class FileProcessingService implements FileProcessingPort {
             return; // để parser tự báo lỗi định dạng
         }
         var isZipMagic = content[0] == 0x50 && content[1] == 0x4B
-            && content[2] == 0x03 && content[3] == 0x04;
+                && content[2] == 0x03 && content[3] == 0x04;
         var isOle2Magic = content.length >= 8
-            && (content[0] & 0xFF) == 0xD0 && (content[1] & 0xFF) == 0xCF
-            && (content[2] & 0xFF) == 0x11 && (content[3] & 0xFF) == 0xE0;
+                && (content[0] & 0xFF) == 0xD0 && (content[1] & 0xFF) == 0xCF
+                && (content[2] & 0xFF) == 0x11 && (content[3] & 0xFF) == 0xE0;
         switch (extension) {
             case "xlsx" -> {
                 if (!isZipMagic) {
@@ -158,12 +158,12 @@ public class FileProcessingService implements FileProcessingPort {
     private ParsedImportTable parseCsv(String fileName, byte[] content) {
         var csvContent = removeUtf8Bom(new String(content, StandardCharsets.UTF_8));
         var format = CSVFormat.DEFAULT.builder()
-            .setHeader()
-            .setSkipHeaderRecord(true)
-            .setIgnoreEmptyLines(false)
-            .get();
+                .setHeader()
+                .setSkipHeaderRecord(true)
+                .setIgnoreEmptyLines(false)
+                .get();
         try (
-            var parser = format.parse(new StringReader(csvContent));
+                var parser = format.parse(new StringReader(csvContent));
         ) {
             var headers = new ArrayList<String>(parser.getHeaderMap().keySet());
             validateHeaders(headers);
@@ -193,7 +193,7 @@ public class FileProcessingService implements FileProcessingPort {
     }
 
     private void validateHeaders(List<String> headers) {
-        if (headers.isEmpty() || headers.stream().allMatch(String::isBlank)) {
+        if (headers.isEmpty() || headers.stream().allMatch(h -> h.isBlank())) {
             throw new IllegalArgumentException("File import thiếu header");
         }
     }
@@ -234,37 +234,87 @@ public class FileProcessingService implements FileProcessingPort {
     private Map<String, List<String>> aliasesBySystemField(ImportType type) {
         return switch (type) {
             case SCHOOL_CLASS -> Map.of(
-                "languageCode", List.of("languageCode", "language", "language code", "ngôn ngữ", "ngon ngu", "mã ngôn ngữ", "ma ngon ngu"),
-                "schoolGradeCode", List.of("schoolGradeCode", "grade", "grade code", "khối", "khoi", "mã khối", "ma khoi"),
-                "targetSchoolLevelCode", List.of("targetSchoolLevelCode", "level", "level code", "trình độ", "trinh do", "mã trình độ", "ma trinh do"),
-                "targetSchoolLevelVersion", List.of("targetSchoolLevelVersion", "version", "level version", "phiên bản", "phien ban"),
-                "code", List.of("code", "classCode", "class code", "mã lớp", "ma lop"),
-                "name", List.of("name", "className", "class name", "tên lớp", "ten lop"),
-                "description", List.of("description", "note", "notes", "ghi chú", "ghi chu", "mô tả", "mo ta")
+                    "languageCode", List.of("languageCode", "language", "language code", "ngôn ngữ", "ngon ngu", "mã ngôn ngữ", "ma ngon ngu"),
+                    "schoolGradeCode", List.of("schoolGradeCode", "grade", "grade code", "khối", "khoi", "mã khối", "ma khoi"),
+                    "targetSchoolLevelCode", List.of("targetSchoolLevelCode", "level", "level code", "trình độ", "trinh do", "mã trình độ", "ma trinh do"),
+                    "targetSchoolLevelVersion", List.of("targetSchoolLevelVersion", "version", "level version", "phiên bản", "phien ban"),
+                    "code", List.of("code", "classCode", "class code", "mã lớp", "ma lop"),
+                    "name", List.of("name", "className", "class name", "tên lớp", "ten lop"),
+                    "description", List.of("description", "note", "notes", "ghi chú", "ghi chu", "mô tả", "mo ta")
             );
             case USER -> Map.of(
-                "roleCode", List.of("roleCode", "role", "userRole", "role code", "vai trò", "vai tro", "mã vai trò", "ma vai tro"),
-                "fullName", List.of("fullName", "full name", "name", "họ tên", "ho ten", "họ và tên", "ho va ten"),
-                "email", List.of("email", "mail", "email address", "địa chỉ email", "dia chi email"),
-                "phone", List.of("phone", "phoneNumber", "phone number", "số điện thoại", "so dien thoai", "sdt"),
-                "studentId", List.of("studentId", "student code", "student id", "mã học sinh", "ma hoc sinh"),
-                "dateOfBirth", List.of("dateOfBirth", "date of birth", "birthday", "dob", "ngày sinh", "ngay sinh"),
-                "startDate", List.of("startDate", "start date", "ngày bắt đầu", "ngay bat dau"),
-                "endDate", List.of("endDate", "end date", "ngày kết thúc", "ngay ket thuc"),
-                "address", List.of("address", "địa chỉ", "dia chi")
+                    "roleCode", List.of("roleCode", "role", "userRole", "role code", "vai trò", "vai tro", "mã vai trò", "ma vai tro"),
+                    "fullName", List.of("fullName", "full name", "name", "họ tên", "ho ten", "họ và tên", "ho va ten"),
+                    "email", List.of("email", "mail", "email address", "địa chỉ email", "dia chi email"),
+                    "phone", List.of("phone", "phoneNumber", "phone number", "số điện thoại", "so dien thoai", "sdt"),
+                    "studentId", List.of("studentId", "student code", "student id", "mã học sinh", "ma hoc sinh"),
+                    "dateOfBirth", List.of("dateOfBirth", "date of birth", "birthday", "dob", "ngày sinh", "ngay sinh"),
+                    "startDate", List.of("startDate", "start date", "ngày bắt đầu", "ngay bat dau"),
+                    "endDate", List.of("endDate", "end date", "ngày kết thúc", "ngay ket thuc"),
+                    "address", List.of("address", "địa chỉ", "dia chi")
             );
             case SCHOOL_CLASS_USER -> Map.of(
-                "email", List.of("email", "mail", "email address", "địa chỉ email", "dia chi email"),
-                "classCode", List.of("classCode", "class code", "mã lớp", "ma lop", "lớp", "lop")
+                    "email", List.of("email", "mail", "email address", "địa chỉ email", "dia chi email"),
+                    "classCode", List.of("classCode", "class code", "mã lớp", "ma lop", "lớp", "lop")
+            );
+            case SCHOOL_GRADE_LEVEL -> Map.of(
+                "code", List.of("code", "gradeLevelCode", "grade level code", "mã khối", "ma khoi"),
+                "name", List.of("name", "gradeLevelName", "grade level name", "tên khối", "ten khoi"),
+                "order", List.of("order", "gradeLevelOrder", "thứ tự", "thu tu", "stt"),
+                "description", List.of("description", "note", "notes", "ghi chú", "ghi chu", "mô tả", "mo ta")
+            );
+            case SCHOOL_GRADE -> Map.of(
+                "schoolGradeLevelCode", List.of("schoolGradeLevelCode", "gradeLevelCode", "grade level code", "mã khối", "ma khoi", "khối", "khoi"),
+                "code", List.of("code", "gradeCode", "schoolGradeCode", "grade code", "mã năm học", "ma nam hoc", "mã", "ma"),
+                "name", List.of("name", "gradeName", "grade name", "tên năm học", "ten nam hoc", "tên", "ten"),
+                "description", List.of("description", "note", "notes", "ghi chú", "ghi chu", "mô tả", "mo ta"),
+                "startDate", List.of("startDate", "start date", "ngày bắt đầu", "ngay bat dau"),
+                "endDate", List.of("endDate", "end date", "ngày kết thúc", "ngay ket thuc")
             );
             case SCHOOL_DIRECTORY -> Map.of(
-                "code", List.of("code", "schoolCode", "school code", "mã trường", "ma truong", "mã định danh", "ma dinh danh"),
-                "name", List.of("name", "schoolName", "school name", "tên trường", "ten truong"),
-                "provinceCode", List.of("provinceCode", "province code", "mã tỉnh", "ma tinh"),
-                "provinceName", List.of("provinceName", "province", "province name", "tỉnh", "tinh", "tỉnh thành", "tinh thanh"),
-                "districtName", List.of("districtName", "district", "district name", "quận huyện", "quan huyen", "huyện", "huyen"),
-                "domain", List.of("domain", "tên miền", "ten mien", "email domain", "school domain"),
-                "address", List.of("address", "địa chỉ", "dia chi")
+                    "code", List.of("code", "schoolCode", "school code", "mã trường", "ma truong", "mã định danh", "ma dinh danh"),
+                    "name", List.of("name", "schoolName", "school name", "tên trường", "ten truong"),
+                    "provinceCode", List.of("provinceCode", "province code", "mã tỉnh", "ma tinh"),
+                    "provinceName", List.of("provinceName", "province", "province name", "tỉnh", "tinh", "tỉnh thành", "tinh thanh"),
+                    "districtName", List.of("districtName", "district", "district name", "quận huyện", "quan huyen", "huyện", "huyen"),
+                    "domain", List.of("domain", "tên miền", "ten mien", "email domain", "school domain"),
+                    "address", List.of("address", "địa chỉ", "dia chi")
+            );
+            case RUBRIC_VERSION -> Map.of(
+                    "version", List.of("version", "version number", "phiên bản", "phien ban", "số version"),
+                    "scoringScaleMin", List.of("scoringScaleMin", "min score", "điểm sàn", "diem san", "điểm tối thiểu"),
+                    "scoringScaleMax", List.of("scoringScaleMax", "max score", "điểm trần", "diem tran", "điểm tối đa"),
+                    "totalScoreMethod", List.of("totalScoreMethod", "method", "phương pháp", "cách tính điểm", "phương pháp tính điểm tổng"),
+                    "effectiveFrom", List.of("effectiveFrom", "from date", "ngày bắt đầu", "ngày áp dụng", "ngay bat dau"),
+                    "effectiveTo", List.of("effectiveTo", "to date", "ngày kết thúc", "ngày hết hạn", "ngay ket thuc")
+            );
+
+            case RUBRIC_CRITERION -> Map.of(
+                    "code", List.of("code", "mã tiêu chí", "ma tieu chi", "criterion code", "mã"),
+                    "name", List.of("name", "tên tiêu chí", "ten tieu chi", "criterion name", "tên"),
+                    "description", List.of("description", "mô tả", "mo ta", "ghi chú"),
+                    "frameworkCriterionCode", List.of("frameworkCriterionCode", "framework code", "mã khung tiêu chuẩn", "mã khung", "ma khung"),
+                    "weight", List.of("weight", "trọng số", "trong so", "tỉ lệ"),
+                    "examples", List.of("examples", "ví dụ", "vi du", "mẫu", "mẫu tiêu chí"),
+                    "minScore", List.of("minScore", "min score", "điểm sàn", "diem san", "điểm tối thiểu"),
+                    "maxScore", List.of("maxScore", "max score", "điểm trần", "diem tran", "điểm tối đa"),
+                    "isRequired", List.of("isRequired", "bắt buộc", "bat buoc", "required"),
+                    "order", List.of("order", "thứ tự", "thu tu", "số thứ tự")
+            );
+
+            case RUBRIC_CRITERION_BAND -> Map.of(
+                    "code", List.of("code", "mã mức độ", "ma muc do", "band code", "mã tiêu chí"),
+                    "scoreMin", List.of("scoreMin", "score min", "điểm tối thiểu", "diem toi thieu", "điểm thấp nhất", "min"),
+                    "scoreMax", List.of("scoreMax", "score max", "điểm tối đa", "diem toi da", "điểm cao nhất", "max")
+            );
+
+            case RUBRIC_RESULT_BAND -> Map.of(
+                    "code", List.of("code", "mã xếp loại", "ma xep loai", "mã kết quả", "ma ket qua"),
+                    "name", List.of("name", "tên xếp loại", "ten xep loai", "tên kết quả", "ten ket qua"),
+                    "description", List.of("description", "mô tả", "mo ta", "ghi chú"),
+                    "scoreMin", List.of("scoreMin", "điểm tối thiểu", "diem toi thieu", "điểm sàn"),
+                    "scoreMax", List.of("scoreMax", "điểm tối đa", "diem toi da", "điểm trần"),
+                    "order", List.of("order", "thứ tự", "thu tu")
             );
             case QUESTION -> Map.ofEntries(
                 Map.entry("code", List.of("code", "question code", "mã câu hỏi", "ma cau hoi")),
@@ -293,8 +343,8 @@ public class FileProcessingService implements FileProcessingPort {
         }
         var withoutDiacritics = DIACRITICS.matcher(Normalizer.normalize(header, Normalizer.Form.NFD)).replaceAll("");
         return NON_ALPHANUMERIC.matcher(withoutDiacritics.toLowerCase(Locale.ROOT).strip())
-            .replaceAll(" ")
-            .strip();
+                .replaceAll(" ")
+                .strip();
     }
 
     private String removeUtf8Bom(String content) {
@@ -305,9 +355,10 @@ public class FileProcessingService implements FileProcessingPort {
     }
 
     private record ParsedImportTable(
-        List<String> headers,
-        List<Map<String, String>> rows,
-        List<Map<String, String>> sampleRows,
-        long totalRows
-    ) {}
+            List<String> headers,
+            List<Map<String, String>> rows,
+            List<Map<String, String>> sampleRows,
+            long totalRows
+    ) {
+    }
 }

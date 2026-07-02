@@ -15,13 +15,16 @@ public interface SchoolGradeRepository {
     Optional<SchoolGrade> findBySchoolIdAndCode(UUID schoolId, String code);
     SchoolGrade save(SchoolGrade grade);
 
+    List<SchoolGrade> findAllById(List<UUID> gradeIds);
+
     // Đổi chữ SchoolId thành SchoolGradeLevelId
     boolean existsBySchoolGradeLevelIdAndCode(UUID schoolGradeLevelId, String code);
+    Optional<SchoolGrade> findBySchoolGradeLevelIdAndCode(UUID schoolGradeLevelId, String code);
     List<SchoolGrade> findBySchoolIdAndCodeIn(UUID schoolId, Collection<String> codes);
 
     boolean existsBySchoolGradeLevelId(UUID schoolGradeLevelId);
 
-    PageResult<SchoolGrade> findAllBySchoolId(UUID schoolId, int pageNumber, int size);
+    PageResult<SchoolGrade> findAllBySchoolId(UUID schoolId, UUID schoolGradeLevelId, int pageNumber, int size);
 
     boolean existsBySchoolIdAndStatus(UUID schoolId, String status);
     int updateSchoolGradeAtomic(UUID id, String name, String description, LocalDate startDate, LocalDate endDate, OffsetDateTime now, UUID updatedBy);

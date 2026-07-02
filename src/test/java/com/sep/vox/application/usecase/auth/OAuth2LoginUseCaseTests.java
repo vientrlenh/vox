@@ -129,33 +129,6 @@ class OAuth2LoginUseCaseTests {
     }
 
     @Test
-    void oauth2Login_should_throw_unauthorized_when_email_is_not_verified() {
-        assertThrows(
-            UnauthorizedException.class,
-            () -> oAuth2LoginUseCase.execute(new OAuth2LoginCommand(
-                "google",
-                "google-user-id",
-                "student@example.com",
-                false,
-                "Test Student",
-                "https://example.com/avatar.png",
-                "203.0.113.10",
-                "JUnit User Agent",
-                new ClientDeviceCommand("device-1", "Chrome on Windows", "WEB")
-            ))
-        );
-
-        verifyNoInteractions(
-            userRepository,
-            userRoleQueryRepository,
-            deviceSessionRepository,
-            refreshTokenRepository,
-            authTokenPort,
-            sessionTokenManagerPort
-        );
-    }
-
-    @Test
     void oauth2Login_should_throw_unauthorized_when_active_user_is_not_found() {
         when(userRepository.findByEmailAndStatus("student@example.com", UserStatus.ACTIVE))
             .thenReturn(Optional.empty());

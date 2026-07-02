@@ -62,14 +62,14 @@ public class SchoolGraphQlDataLoaderConfig {
                     var groupedKeys = entry.getValue();
 
                     var schoolIds = groupedKeys.stream()
-                        .map(SchoolClassesKey::schoolId)
+                        .map(k -> k.schoolId())
                         .toList();
 
                     var schoolClasses = schoolClassRepository
                         .findBySchoolIdIn(schoolIds, pageKey.page(), pageKey.size())
                         .stream()
                         .map(SchoolClassDtoMapper::toDto)
-                        .collect(Collectors.groupingBy(SchoolClassDto::schoolId));
+                        .collect(Collectors.groupingBy(c -> c.schoolId()));
 
                     groupedKeys.forEach(key -> result.put(
                         key,
@@ -95,13 +95,13 @@ public class SchoolGraphQlDataLoaderConfig {
                     var groupedKeys = entry.getValue();
 
                     var schoolIds = groupedKeys.stream()
-                        .map(SchoolUsersKey::schoolId)
+                        .map(k -> k.schoolId())
                         .toList();
 
                     var usersBySchoolId = schoolUserRepository.findBySchoolIdIn(schoolIds, pageKey.page(), pageKey.size())
                         .stream()
                         .map(SchoolUserDtoMapper::toSchoolUserDto)
-                        .collect(Collectors.groupingBy(SchoolUserDto::schoolId));
+                        .collect(Collectors.groupingBy(u -> u.schoolId()));
                     
                     groupedKeys.forEach(key -> result.put(key, usersBySchoolId.getOrDefault(key.schoolId(), List.of())));
                 }
@@ -115,7 +115,7 @@ public class SchoolGraphQlDataLoaderConfig {
                 return schoolRepository.findByIdIn(schoolIds)
                     .stream()
                     .map(SchoolDtoMapper::toSchoolDto)
-                    .collect(Collectors.toMap(SchoolDto::id, s -> s));
+                    .collect(Collectors.toMap(s -> s.id(), s -> s));
             })
         );
 
@@ -125,7 +125,7 @@ public class SchoolGraphQlDataLoaderConfig {
                 return schoolGradeRepository.findByIdIn(gradeIds)
                     .stream()
                     .map(SchoolGradeDtoMapper::toSchoolGradeDto)
-                    .collect(Collectors.toMap(SchoolGradeDto::id, sg -> sg));
+                    .collect(Collectors.toMap(sg -> sg.id(), sg -> sg));
             })
         );
 
@@ -145,7 +145,7 @@ public class SchoolGraphQlDataLoaderConfig {
                 return supportedLanguageRepository.findByIdIn(languageIds)
                     .stream()
                     .map(SupportedLanguageDtoMapper::toDto)
-                    .collect(Collectors.toMap(SupportedLanguageDto::id, sl -> sl));
+                    .collect(Collectors.toMap(sl -> sl.id(), sl -> sl));
             })
         );
 
@@ -154,7 +154,7 @@ public class SchoolGraphQlDataLoaderConfig {
             Mono.fromSupplier(() -> userRepository.findByIdIn(userIds)
                 .stream()
                 .map(UserDtoMapper::toUserDto)
-                .collect(Collectors.toMap(UserDto::id, user -> user)))
+                .collect(Collectors.toMap(u -> u.id(), user -> user)))
         );
 
         registry.<UUID, UserDto>forName("userBySchoolUser")
@@ -162,7 +162,7 @@ public class SchoolGraphQlDataLoaderConfig {
             Mono.fromSupplier(() -> userRepository.findByIdIn(userIds)
                 .stream()
                 .map(UserDtoMapper::toUserDto)
-                .collect(Collectors.toMap(UserDto::id, user -> user)))
+                .collect(Collectors.toMap(u -> u.id(),  user -> user)))
         );
     }
 

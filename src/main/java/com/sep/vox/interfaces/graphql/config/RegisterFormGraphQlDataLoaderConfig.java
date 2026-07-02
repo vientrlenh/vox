@@ -30,7 +30,7 @@ public class RegisterFormGraphQlDataLoaderConfig {
             var documentsByRegisterFormId = registerFormDocumentRepository.findByRegisterFormIdIn(ids)
                 .stream()
                 .map(RegisterFormDocumentDtoMapper::toRegisterFormDocumentDto)
-                .collect(Collectors.groupingBy(RegisterFormDocumentDto::registerFormId));
+                .collect(Collectors.groupingBy(d -> d.registerFormId()));
 
             ids.forEach(id -> result.put(id, documentsByRegisterFormId.getOrDefault(id, List.of())));
             return result;

@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.core.TypedPropertyPath;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
@@ -89,6 +90,25 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
     }
 
     @Override
+    public PageResult<SchoolClass> findByUserId(UUID schoolId, UUID userId, SchoolClassStatus status, int pageNumber, int size) {
+        var pageable = PageRequest.of(
+            pageNumber - 1,
+            size,
+            Sort.by(Sort.Direction.DESC, SchoolClassJpaEntity::getCreatedAt).and(Sort.by(Sort.Direction.ASC, SchoolClassJpaEntity::getId))
+        );
+        var page = springDataSchoolClassRepository.findByUserId(schoolId, userId, valueOf(status), pageable);
+        return new PageResult<>(
+            page.getContent().stream()
+                .map(SchoolClassMapper::toDomain)
+                .toList(),
+            pageNumber,
+            size,
+            page.getTotalElements(),
+            page.getTotalPages()
+        );
+    }
+
+    @Override
     public Optional<SchoolClass> findBySchoolIdAndCode(UUID schoolId, String code) {
         return springDataSchoolClassRepository.findBySchoolIdAndCode(schoolId, code)
             .map(SchoolClassMapper::toDomain);
@@ -149,6 +169,15 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
     @Override
     public boolean existsBySchoolIdAndStatus(UUID schoolId, String status) {
         return springDataSchoolClassRepository.existsBySchoolIdAndStatus(schoolId, status);
+    }
+
+
+    @Override
+    public List<SchoolClass> findAllById(List<UUID> schoolIds) {
+        return springDataSchoolClassRepository.findAllById(schoolIds)
+                .stream()
+                .map(SchoolClassMapper::toDomain)
+                .toList();
     }
 
 }

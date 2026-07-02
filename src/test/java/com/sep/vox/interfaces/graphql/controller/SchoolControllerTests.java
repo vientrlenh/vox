@@ -20,13 +20,17 @@ import org.junit.jupiter.api.Test;
 import com.sep.vox.application.port.input.command.UpdateSchoolClassCommand;
 import com.sep.vox.application.port.input.query.ViewSchoolClassDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolClassUsersQuery;
+import com.sep.vox.application.port.input.query.ViewSchoolClassesByUserQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolClassesQuery;
+import com.sep.vox.application.port.input.query.ViewSchoolStudentsBySchoolQuery;
+import com.sep.vox.application.port.input.query.ViewSchoolTeachersBySchoolQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolUserDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolUsersBySchoolQuery;
 import com.sep.vox.application.port.input.usecase.school.UpdateSchoolUseCase;
 import com.sep.vox.application.port.input.usecase.school.ViewSchoolsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.UpdateSchoolClassUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassDetailsUseCase;
+import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassesByUserUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassesUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclassuser.ViewSchoolClassUsersUseCase;
 import com.sep.vox.application.port.input.usecase.schooldirectory.ViewSchoolDirectoryCursorPageUseCase;
@@ -34,11 +38,16 @@ import com.sep.vox.application.port.input.usecase.schooldirectory.ViewSchoolDire
 import com.sep.vox.application.port.input.usecase.schooldirectory.ViewSchoolDirectoryPageUseCase;
 import com.sep.vox.application.port.input.usecase.schoolgrade.UpdateSchoolGradeUseCase;
 import com.sep.vox.application.port.input.usecase.schoolgrade.ViewSchoolGradeDetailsUseCase;
+import com.sep.vox.application.port.input.usecase.schoolgradelevel.UpdateSchoolGradeLevelUseCase;
+import com.sep.vox.application.port.input.usecase.schoolgradelevel.ViewSchoolGradeLevelDetailsUseCase;
+import com.sep.vox.application.port.input.usecase.schoolgradelevel.ViewSchoolGradeLevelsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolgrade.ViewSchoolGradesUseCase;
 import com.sep.vox.application.port.input.usecase.schoolroom.UpdateSchoolRoomUseCase;
 import com.sep.vox.application.port.input.usecase.schoolroom.ViewSchoolRoomDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolroom.ViewSchoolRoomsUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.UpdateSchoolUserUseCase;
+import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolStudentsBySchoolUseCase;
+import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolTeachersBySchoolUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUserDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUsersBySchoolUseCase;
 import com.sep.vox.application.response.input.schoolclass.UpdateSchoolClassResponse;
@@ -56,10 +65,13 @@ import graphql.schema.DataFetchingEnvironment;
 class SchoolControllerTests {
     private ViewSchoolsUseCase viewSchoolsUseCase;
     private ViewSchoolClassesUseCase viewSchoolClassesUseCase;
+    private ViewSchoolClassesByUserUseCase viewSchoolClassesByUserUseCase;
     private ViewSchoolClassDetailsUseCase viewSchoolClassDetailsUseCase;
     private ViewSchoolClassUsersUseCase viewSchoolClassUsersUseCase;
     private UpdateSchoolClassUseCase updateSchoolClassUseCase;
     private ViewSchoolUsersBySchoolUseCase viewSchoolUsersBySchoolUseCase;
+    private ViewSchoolStudentsBySchoolUseCase viewSchoolStudentsBySchoolUseCase;
+    private ViewSchoolTeachersBySchoolUseCase viewSchoolTeachersBySchoolUseCase;
     private ViewSchoolUserDetailsUseCase viewSchoolUserDetailsUseCase;
     private UpdateSchoolUserUseCase updateSchoolUserUseCase; 
     private UpdateSchoolUseCase updateSchoolUseCase;
@@ -69,6 +81,9 @@ class SchoolControllerTests {
     private UpdateSchoolGradeUseCase updateSchoolGradeUseCase;
     private ViewSchoolGradesUseCase viewSchoolGradesUseCase;
     private ViewSchoolGradeDetailsUseCase viewSchoolGradeDetailsUseCase;
+    private ViewSchoolGradeLevelsUseCase viewSchoolGradeLevelsUseCase;
+    private ViewSchoolGradeLevelDetailsUseCase viewSchoolGradeLevelDetailsUseCase;
+    private UpdateSchoolGradeLevelUseCase updateSchoolGradeLevelUseCase;
     private ViewSchoolDirectoryCursorPageUseCase viewSchoolDirectoryCursorPageUseCase;
     private ViewSchoolDirectoryPageUseCase viewSchoolDirectoryPageUseCase;
     private ViewSchoolDirectoryDetailsUseCase viewSchoolDirectoryDetailsUseCase;
@@ -81,10 +96,13 @@ class SchoolControllerTests {
     void setUp() {
         viewSchoolsUseCase = mock(ViewSchoolsUseCase.class);
         viewSchoolClassesUseCase = mock(ViewSchoolClassesUseCase.class);
+        viewSchoolClassesByUserUseCase = mock(ViewSchoolClassesByUserUseCase.class);
         viewSchoolClassDetailsUseCase = mock(ViewSchoolClassDetailsUseCase.class);
         viewSchoolClassUsersUseCase = mock(ViewSchoolClassUsersUseCase.class);
         updateSchoolClassUseCase = mock(UpdateSchoolClassUseCase.class);
         viewSchoolUsersBySchoolUseCase = mock(ViewSchoolUsersBySchoolUseCase.class);
+        viewSchoolStudentsBySchoolUseCase = mock(ViewSchoolStudentsBySchoolUseCase.class);
+        viewSchoolTeachersBySchoolUseCase = mock(ViewSchoolTeachersBySchoolUseCase.class);
         viewSchoolUserDetailsUseCase = mock(ViewSchoolUserDetailsUseCase.class);
         updateSchoolUserUseCase = mock(UpdateSchoolUserUseCase.class);
         updateSchoolUseCase = mock(UpdateSchoolUseCase.class);
@@ -94,6 +112,9 @@ class SchoolControllerTests {
         updateSchoolGradeUseCase = mock(UpdateSchoolGradeUseCase.class);
         viewSchoolGradesUseCase = mock(ViewSchoolGradesUseCase.class);
         viewSchoolGradeDetailsUseCase = mock(ViewSchoolGradeDetailsUseCase.class);
+        viewSchoolGradeLevelsUseCase = mock(ViewSchoolGradeLevelsUseCase.class);
+        viewSchoolGradeLevelDetailsUseCase = mock(ViewSchoolGradeLevelDetailsUseCase.class);
+        updateSchoolGradeLevelUseCase = mock(UpdateSchoolGradeLevelUseCase.class);
         viewSchoolDirectoryCursorPageUseCase = mock(ViewSchoolDirectoryCursorPageUseCase.class);
         viewSchoolDirectoryPageUseCase = mock(ViewSchoolDirectoryPageUseCase.class);
         viewSchoolDirectoryDetailsUseCase = mock(ViewSchoolDirectoryDetailsUseCase.class);
@@ -101,10 +122,13 @@ class SchoolControllerTests {
         controller = new SchoolController(
             viewSchoolsUseCase,
             viewSchoolClassesUseCase,
+            viewSchoolClassesByUserUseCase,
             viewSchoolClassDetailsUseCase,
             viewSchoolClassUsersUseCase,
             updateSchoolClassUseCase,
             viewSchoolUsersBySchoolUseCase,
+            viewSchoolStudentsBySchoolUseCase,
+            viewSchoolTeachersBySchoolUseCase,
             viewSchoolUserDetailsUseCase,
             updateSchoolUserUseCase, 
             updateSchoolUseCase, 
@@ -112,9 +136,12 @@ class SchoolControllerTests {
             viewSchoolRoomsUseCase, 
             updateSchoolRoomUseCase, 
             updateSchoolGradeUseCase, 
-            viewSchoolGradesUseCase, 
-            viewSchoolGradeDetailsUseCase, 
-            viewSchoolDirectoryCursorPageUseCase, 
+            viewSchoolGradesUseCase,
+            viewSchoolGradeDetailsUseCase,
+            viewSchoolGradeLevelsUseCase,
+            viewSchoolGradeLevelDetailsUseCase,
+            updateSchoolGradeLevelUseCase,
+            viewSchoolDirectoryCursorPageUseCase,
             viewSchoolDirectoryPageUseCase, 
             viewSchoolDirectoryDetailsUseCase
         );
@@ -234,6 +261,24 @@ class SchoolControllerTests {
         assertThrows(IllegalArgumentException.class, () -> controller.schoolClassUsers(UUID.randomUUID(), 1, 0));
     }
 
+    @Test
+    void school_classes_by_user_should_return_page_result() {
+        var expected = new PageResult<SchoolClassDto>(List.of(), 1, 20, 0, 0);
+        var query = new ViewSchoolClassesByUserQuery(schoolId, userId, null, 1, 20);
+        when(viewSchoolClassesByUserUseCase.execute(query)).thenReturn(expected);
+
+        var result = controller.schoolClassesByUser(schoolId, userId, null, 1, 20);
+
+        assertThat(result).isEqualTo(expected);
+        verify(viewSchoolClassesByUserUseCase).execute(query);
+    }
+
+    @Test
+    void school_classes_by_user_should_throw_when_page_or_size_invalid() {
+        assertThrows(IllegalArgumentException.class, () -> controller.schoolClassesByUser(schoolId, userId, null, 0, 20));
+        assertThrows(IllegalArgumentException.class, () -> controller.schoolClassesByUser(schoolId, userId, null, 1, 0));
+    }
+
     // @Test
     // @SuppressWarnings("unchecked")
     // void school_class_user_user_field_should_load_related_user() {
@@ -313,6 +358,44 @@ class SchoolControllerTests {
         assertThat(result).isEqualTo(page);
         assertThat(result.content()).containsExactly(response);
         verify(viewSchoolUsersBySchoolUseCase).execute(new ViewSchoolUsersBySchoolQuery(schoolId, 1, 20, null, null, null));
+    }
+
+    @Test
+    void school_students_by_school_should_return_page_from_use_case() {
+        var response = schoolUserDto(UUID.randomUUID(), schoolId, userId);
+        var page = new PageResult<>(List.of(response), 1, 20, 1, 1);
+        when(viewSchoolStudentsBySchoolUseCase.execute(new ViewSchoolStudentsBySchoolQuery(schoolId, 1, 20, null, null))).thenReturn(page);
+
+        var result = controller.schoolStudentsBySchool(schoolId, 1, 20, null, null);
+
+        assertThat(result).isEqualTo(page);
+        verify(viewSchoolStudentsBySchoolUseCase).execute(new ViewSchoolStudentsBySchoolQuery(schoolId, 1, 20, null, null));
+    }
+
+    @Test
+    void school_students_by_school_should_reject_invalid_paging() {
+        assertThatThrownBy(() -> controller.schoolStudentsBySchool(schoolId, 0, 20, null, null))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessage("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
+    }
+
+    @Test
+    void school_teachers_by_school_should_return_page_from_use_case() {
+        var response = schoolUserDto(UUID.randomUUID(), schoolId, userId);
+        var page = new PageResult<>(List.of(response), 1, 20, 1, 1);
+        when(viewSchoolTeachersBySchoolUseCase.execute(new ViewSchoolTeachersBySchoolQuery(schoolId, 1, 20, null, null))).thenReturn(page);
+
+        var result = controller.schoolTeachersBySchool(schoolId, 1, 20, null, null);
+
+        assertThat(result).isEqualTo(page);
+        verify(viewSchoolTeachersBySchoolUseCase).execute(new ViewSchoolTeachersBySchoolQuery(schoolId, 1, 20, null, null));
+    }
+
+    @Test
+    void school_teachers_by_school_should_reject_invalid_paging() {
+        assertThatThrownBy(() -> controller.schoolTeachersBySchool(schoolId, 0, 20, null, null))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessage("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
     }
 
     @Test

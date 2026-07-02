@@ -15,14 +15,19 @@ import org.springframework.stereotype.Controller;
 
 import com.sep.vox.application.port.input.query.ViewSchoolClassDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolClassUsersQuery;
+import com.sep.vox.application.port.input.query.ViewSchoolClassesByUserQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolClassesQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolDirectoryCursorPageQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolDirectoryDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolDirectoryPageQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolGradeDetailsQuery;
+import com.sep.vox.application.port.input.query.ViewSchoolGradeLevelDetailsQuery;
+import com.sep.vox.application.port.input.query.ViewSchoolGradeLevelsQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolGradesQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolRoomDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolRoomsQuery;
+import com.sep.vox.application.port.input.query.ViewSchoolStudentsBySchoolQuery;
+import com.sep.vox.application.port.input.query.ViewSchoolTeachersBySchoolQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolUserDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolUsersBySchoolQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolsQuery;
@@ -32,6 +37,7 @@ import com.sep.vox.application.port.input.usecase.school.UpdateSchoolUseCase;
 import com.sep.vox.application.port.input.usecase.school.ViewSchoolsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.UpdateSchoolClassUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassDetailsUseCase;
+import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassesByUserUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassesUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclassuser.ViewSchoolClassUsersUseCase;
 import com.sep.vox.application.port.input.usecase.schooldirectory.ViewSchoolDirectoryCursorPageUseCase;
@@ -40,11 +46,17 @@ import com.sep.vox.application.port.input.usecase.schooldirectory.ViewSchoolDire
 import com.sep.vox.application.port.input.usecase.schoolgrade.UpdateSchoolGradeUseCase;
 import com.sep.vox.application.port.input.usecase.schoolgrade.ViewSchoolGradeDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolgrade.ViewSchoolGradesUseCase;
+import com.sep.vox.application.port.input.usecase.schoolgradelevel.UpdateSchoolGradeLevelUseCase;
+import com.sep.vox.application.port.input.usecase.schoolgradelevel.ViewSchoolGradeLevelDetailsUseCase;
+import com.sep.vox.application.port.input.usecase.schoolgradelevel.ViewSchoolGradeLevelsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolroom.UpdateSchoolRoomUseCase;
 import com.sep.vox.application.port.input.usecase.schoolroom.ViewSchoolRoomDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolroom.ViewSchoolRoomsUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.UpdateSchoolUserUseCase;
+import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolStudentsBySchoolUseCase;
+import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolTeachersBySchoolUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUserDetailsUseCase;
+import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUsersBySchoolUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUsersForRequesterUseCase;
 import com.sep.vox.application.response.input.schoolclass.UpdateSchoolClassResponse;
 import com.sep.vox.application.response.input.schooluser.UpdateSchoolUserResponse;
@@ -55,16 +67,19 @@ import com.sep.vox.domain.dto.SchoolClassUserDto;
 import com.sep.vox.domain.dto.SchoolDirectoryDto;
 import com.sep.vox.domain.dto.SchoolDto;
 import com.sep.vox.domain.dto.SchoolGradeDto;
+import com.sep.vox.domain.dto.SchoolGradeLevelDto;
 import com.sep.vox.domain.dto.SchoolRoomFromDto;
 import com.sep.vox.domain.dto.SchoolUserDto;
 import com.sep.vox.domain.dto.SupportedLanguageDto;
 import com.sep.vox.domain.dto.UserDto;
+import com.sep.vox.interfaces.graphql.dto.request.UpdateSchoolGradeLevelRequest;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateSchoolGradeRequest;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateSchoolRequest;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateSchoolRoomRequest;
 import com.sep.vox.interfaces.graphql.mapper.UpdateSchoolClassCommandMapper;
 import com.sep.vox.interfaces.graphql.mapper.UpdateSchoolCommandMapper;
 import com.sep.vox.interfaces.graphql.mapper.UpdateSchoolGradeCommandMapper;
+import com.sep.vox.interfaces.graphql.mapper.UpdateSchoolGradeLevelCommandMapper;
 import com.sep.vox.interfaces.graphql.mapper.UpdateSchoolRoomCommandMapper;
 import com.sep.vox.interfaces.graphql.mapper.UpdateSchoolUserCommandMapper;
 
@@ -75,10 +90,14 @@ public class SchoolController {
 
     private final ViewSchoolsUseCase viewSchoolsUseCase;
     private final ViewSchoolClassesUseCase viewSchoolClassesUseCase;
+    private final ViewSchoolClassesByUserUseCase viewSchoolClassesByUserUseCase;
     private final ViewSchoolClassDetailsUseCase viewSchoolClassDetailsUseCase;
     private final ViewSchoolClassUsersUseCase viewSchoolClassUsersUseCase;
     private final UpdateSchoolClassUseCase updateSchoolClassUseCase;
+    private final ViewSchoolUsersBySchoolUseCase viewSchoolUsersBySchoolUseCase;
     private final ViewSchoolUsersForRequesterUseCase viewSchoolUsersForRequesterUseCase;
+    private final ViewSchoolStudentsBySchoolUseCase viewSchoolStudentsBySchoolUseCase;
+    private final ViewSchoolTeachersBySchoolUseCase viewSchoolTeachersBySchoolUseCase;
     private final ViewSchoolUserDetailsUseCase viewSchoolUserDetailsUseCase;
     private final UpdateSchoolUserUseCase updateSchoolUserUseCase;
     private final UpdateSchoolUseCase updateSchoolUseCase;
@@ -88,35 +107,49 @@ public class SchoolController {
     private final UpdateSchoolGradeUseCase updateSchoolGradeUseCase;
     private final ViewSchoolGradesUseCase viewSchoolGradesUseCase;
     private final ViewSchoolGradeDetailsUseCase viewSchoolGradeDetailsUseCase;
+    private final ViewSchoolGradeLevelsUseCase viewSchoolGradeLevelsUseCase;
+    private final ViewSchoolGradeLevelDetailsUseCase viewSchoolGradeLevelDetailsUseCase;
+    private final UpdateSchoolGradeLevelUseCase updateSchoolGradeLevelUseCase;
     private final ViewSchoolDirectoryCursorPageUseCase viewSchoolDirectoryCursorPageUseCase;
     private final ViewSchoolDirectoryPageUseCase viewSchoolDirectoryPageUseCase;
     private final ViewSchoolDirectoryDetailsUseCase viewSchoolDirectoryDetailsUseCase;
 
-    public SchoolController(ViewSchoolsUseCase viewSchoolsUseCase, 
-        ViewSchoolClassesUseCase viewSchoolClassesUseCase, 
-        ViewSchoolClassDetailsUseCase viewSchoolClassDetailsUseCase, 
-        ViewSchoolClassUsersUseCase viewSchoolClassUsersUseCase, 
-        UpdateSchoolClassUseCase updateSchoolClassUseCase, 
-        ViewSchoolUsersForRequesterUseCase viewSchoolUsersForRequesterUseCase,
-        ViewSchoolUserDetailsUseCase viewSchoolUserDetailsUseCase,
-        UpdateSchoolUserUseCase updateSchoolUserUseCase, 
-        UpdateSchoolUseCase updateSchoolUseCase, 
-        ViewSchoolRoomDetailsUseCase viewSchoolRoomDetailsUseCase, 
-        ViewSchoolRoomsUseCase viewSchoolRoomsUseCase, 
-        UpdateSchoolRoomUseCase updateSchoolRoomUseCase, 
-        UpdateSchoolGradeUseCase updateSchoolGradeUseCase, 
-        ViewSchoolGradesUseCase viewSchoolGradesUseCase, 
-        ViewSchoolGradeDetailsUseCase viewSchoolGradeDetailsUseCase, 
-        ViewSchoolDirectoryCursorPageUseCase viewSchoolDirectoryCursorPageUseCase, 
-        ViewSchoolDirectoryPageUseCase viewSchoolDirectoryPageUseCase, 
-        ViewSchoolDirectoryDetailsUseCase viewSchoolDirectoryDetailsUseCase
+    public SchoolController(ViewSchoolsUseCase viewSchoolsUseCase,
+                            ViewSchoolClassesUseCase viewSchoolClassesUseCase,
+                            ViewSchoolClassesByUserUseCase viewSchoolClassesByUserUseCase,
+                            ViewSchoolClassDetailsUseCase viewSchoolClassDetailsUseCase,
+                            ViewSchoolClassUsersUseCase viewSchoolClassUsersUseCase,
+                            UpdateSchoolClassUseCase updateSchoolClassUseCase,
+                            ViewSchoolUsersBySchoolUseCase viewSchoolUsersBySchoolUseCase,
+                            ViewSchoolUsersForRequesterUseCase viewSchoolUsersForRequesterUseCase,
+                            ViewSchoolStudentsBySchoolUseCase viewSchoolStudentsBySchoolUseCase,
+                            ViewSchoolTeachersBySchoolUseCase viewSchoolTeachersBySchoolUseCase,
+                            ViewSchoolUserDetailsUseCase viewSchoolUserDetailsUseCase,
+                            UpdateSchoolUserUseCase updateSchoolUserUseCase,
+                            UpdateSchoolUseCase updateSchoolUseCase,
+                            ViewSchoolRoomDetailsUseCase viewSchoolRoomDetailsUseCase,
+                            ViewSchoolRoomsUseCase viewSchoolRoomsUseCase,
+                            UpdateSchoolRoomUseCase updateSchoolRoomUseCase,
+                            UpdateSchoolGradeUseCase updateSchoolGradeUseCase,
+                            ViewSchoolGradesUseCase viewSchoolGradesUseCase,
+                            ViewSchoolGradeDetailsUseCase viewSchoolGradeDetailsUseCase,
+                            ViewSchoolGradeLevelsUseCase viewSchoolGradeLevelsUseCase,
+                            ViewSchoolGradeLevelDetailsUseCase viewSchoolGradeLevelDetailsUseCase,
+                            UpdateSchoolGradeLevelUseCase updateSchoolGradeLevelUseCase,
+                            ViewSchoolDirectoryCursorPageUseCase viewSchoolDirectoryCursorPageUseCase,
+                            ViewSchoolDirectoryPageUseCase viewSchoolDirectoryPageUseCase,
+                            ViewSchoolDirectoryDetailsUseCase viewSchoolDirectoryDetailsUseCase
     ) {
         this.viewSchoolsUseCase = viewSchoolsUseCase;
         this.viewSchoolClassesUseCase = viewSchoolClassesUseCase;
+        this.viewSchoolClassesByUserUseCase = viewSchoolClassesByUserUseCase;
         this.viewSchoolClassDetailsUseCase = viewSchoolClassDetailsUseCase;
         this.viewSchoolClassUsersUseCase = viewSchoolClassUsersUseCase;
         this.updateSchoolClassUseCase = updateSchoolClassUseCase;
+        this.viewSchoolUsersBySchoolUseCase = viewSchoolUsersBySchoolUseCase;
         this.viewSchoolUsersForRequesterUseCase = viewSchoolUsersForRequesterUseCase;
+        this.viewSchoolStudentsBySchoolUseCase = viewSchoolStudentsBySchoolUseCase;
+        this.viewSchoolTeachersBySchoolUseCase = viewSchoolTeachersBySchoolUseCase;
         this.viewSchoolUserDetailsUseCase = viewSchoolUserDetailsUseCase;
         this.updateSchoolUserUseCase = updateSchoolUserUseCase;
         this.updateSchoolUseCase = updateSchoolUseCase;
@@ -126,6 +159,9 @@ public class SchoolController {
         this.updateSchoolGradeUseCase = updateSchoolGradeUseCase;
         this.viewSchoolGradesUseCase = viewSchoolGradesUseCase;
         this.viewSchoolGradeDetailsUseCase = viewSchoolGradeDetailsUseCase;
+        this.viewSchoolGradeLevelsUseCase = viewSchoolGradeLevelsUseCase;
+        this.viewSchoolGradeLevelDetailsUseCase = viewSchoolGradeLevelDetailsUseCase;
+        this.updateSchoolGradeLevelUseCase = updateSchoolGradeLevelUseCase;
         this.viewSchoolDirectoryCursorPageUseCase = viewSchoolDirectoryCursorPageUseCase;
         this.viewSchoolDirectoryPageUseCase = viewSchoolDirectoryPageUseCase;
         this.viewSchoolDirectoryDetailsUseCase = viewSchoolDirectoryDetailsUseCase;
@@ -165,18 +201,61 @@ public class SchoolController {
 
 
     @QueryMapping(name = "schoolUsersBySchool")
-    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<SchoolUserDto> schoolUsersBySchool(
             @Argument(name = "schoolId") UUID schoolId,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size,
             @Argument(name = "search") String search,
-            @Argument(name = "role") String role,
+            @Argument(name = "roleId") UUID roleId,
             @Argument(name = "status") String status) {
         if (page == null || size == null || page <= 0 || size <= 0) {
             throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
         }
-        return viewSchoolUsersForRequesterUseCase.execute(new ViewSchoolUsersBySchoolQuery(schoolId, page, size, search, role, status));
+        return viewSchoolUsersBySchoolUseCase.execute(new ViewSchoolUsersBySchoolQuery(schoolId, page, size, search, roleId, status));
+    }
+
+    @QueryMapping(name = "schoolUsersForRequester")
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
+    public PageResult<SchoolUserDto> schoolUsersForRequester(
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size,
+            @Argument(name = "search") String search,
+            @Argument(name = "roleId") UUID roleId,
+            @Argument(name = "status") String status) {
+        if (page == null || size == null || page <= 0 || size <= 0) {
+            throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
+        }
+        return viewSchoolUsersForRequesterUseCase.execute(new ViewSchoolUsersBySchoolQuery(schoolId, page, size, search, roleId, status));
+    }
+
+    @QueryMapping(name = "schoolStudentsBySchool")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public PageResult<SchoolUserDto> schoolStudentsBySchool(
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size,
+            @Argument(name = "search") String search,
+            @Argument(name = "status") String status) {
+        if (page == null || size == null || page <= 0 || size <= 0) {
+            throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
+        }
+        return viewSchoolStudentsBySchoolUseCase.execute(new ViewSchoolStudentsBySchoolQuery(schoolId, page, size, search, status));
+    }
+
+    @QueryMapping(name = "schoolTeachersBySchool")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public PageResult<SchoolUserDto> schoolTeachersBySchool(
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size,
+            @Argument(name = "search") String search,
+            @Argument(name = "status") String status) {
+        if (page == null || size == null || page <= 0 || size <= 0) {
+            throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
+        }
+        return viewSchoolTeachersBySchoolUseCase.execute(new ViewSchoolTeachersBySchoolQuery(schoolId, page, size, search, status));
     }
 
     @QueryMapping(name = "schoolUser")
@@ -241,6 +320,20 @@ public class SchoolController {
         return viewSchoolClassUsersUseCase.execute(new ViewSchoolClassUsersQuery(schoolClassId, page, size));
     }
 
+    @QueryMapping(name = "schoolClassesByUser")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public PageResult<SchoolClassDto> schoolClassesByUser(
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "userId") UUID userId,
+            @Argument(name = "status") String status,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
+        if (page == null || size == null || page <= 0 || size <= 0) {
+            throw new IllegalArgumentException("Số trang hoặc kích cỡ trang yêu cầu không hợp lệ");
+        }
+        return viewSchoolClassesByUserUseCase.execute(new ViewSchoolClassesByUserQuery(schoolId, userId, status, page, size));
+    }
+
     @SchemaMapping(typeName = "SchoolClassUser", field = "user")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public CompletableFuture<UserDto> user(SchoolClassUserDto schoolClassUser, DataFetchingEnvironment env) {
@@ -249,7 +342,7 @@ public class SchoolController {
     }
 
     @SchemaMapping(typeName = "SchoolUser", field = "user")
-    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER')")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public CompletableFuture<UserDto> schoolUserUser(SchoolUserDto schoolUser, DataFetchingEnvironment env) {
         DataLoader<UUID, UserDto> loader = env.getDataLoader("userBySchoolUser");
         return loader.load(schoolUser.userId());
@@ -354,16 +447,51 @@ public class SchoolController {
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<SchoolGradeDto> schoolGrades(
             @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "schoolGradeLevelId") UUID schoolGradeLevelId,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
 
-        // Validate tham số phân trang
         int pageNumber = (page != null && page > 0) ? page : 1;
         int pageSize = (size != null && size > 0) ? size : 10;
 
-        var query = new ViewSchoolGradesQuery(schoolId, pageNumber, pageSize);
+        var query = new ViewSchoolGradesQuery(schoolId, schoolGradeLevelId, pageNumber, pageSize);
 
         return viewSchoolGradesUseCase.execute(query);
+    }
+
+    //========================SCHOOL GRADE LEVEL =======================
+    @QueryMapping(name = "schoolGradeLevels")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public PageResult<SchoolGradeLevelDto> schoolGradeLevels(
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size,
+            @Argument(name = "search") String search,
+            @Argument(name = "status") String status) {
+        if (page == null || size == null || page <= 0 || size <= 0) {
+            throw new IllegalStateException("Số trang hoặc kích cỡ trang yêu cầu không hợp lệ");
+        }
+        var query = new ViewSchoolGradeLevelsQuery(schoolId, page, size, search, status);
+        return viewSchoolGradeLevelsUseCase.execute(query);
+    }
+
+    @QueryMapping(name = "schoolGradeLevel")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public SchoolGradeLevelDto schoolGradeLevel(
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "gradeLevelId") UUID gradeLevelId) {
+        var query = new ViewSchoolGradeLevelDetailsQuery(schoolId, gradeLevelId);
+        return viewSchoolGradeLevelDetailsUseCase.execute(query);
+    }
+
+    @MutationMapping(name = "updateSchoolGradeLevel")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public UUID updateSchoolGradeLevel(
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "gradeLevelId") UUID gradeLevelId,
+            @Argument(name = "input") UpdateSchoolGradeLevelRequest request) {
+        var command = UpdateSchoolGradeLevelCommandMapper.fromRequest(schoolId, gradeLevelId, request);
+        return updateSchoolGradeLevelUseCase.execute(command);
     }
 
     @QueryMapping(name = "schoolDirectoryCursorPage")

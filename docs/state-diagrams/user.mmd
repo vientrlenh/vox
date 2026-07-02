@@ -1,8 +1,0 @@
-stateDiagram-v2
-    [*] --> ACTIVE : tạo tài khoản
-    ACTIVE --> INACTIVE : vô hiệu hoá tạm thời
-    INACTIVE --> ACTIVE : kích hoạt lại
-    ACTIVE --> LOCKED : khoá (sai mật khẩu nhiều lần / admin khoá)
-    LOCKED --> ACTIVE : mở khoá
-    ACTIVE --> DISABLED : vô hiệu hoá vĩnh viễn
-    DISABLED --> [*]

@@ -16,6 +16,7 @@ public interface SchoolClassRepository {
     PageResult<SchoolClass> findBySchoolId(UUID schoolId, int pageNumber, int size);
     PageResult<SchoolClass> findBySchoolId(UUID schoolId, String search, SchoolClassStatus status,
             UUID languageId, UUID schoolGradeId, int pageNumber, int size);
+    PageResult<SchoolClass> findByUserId(UUID schoolId, UUID userId, SchoolClassStatus status, int pageNumber, int size);
     Optional<SchoolClass> findBySchoolIdAndCode(UUID schoolId, String code);
     List<SchoolClass> findBySchoolIdAndCodeIn(UUID schoolId, Collection<String> codes);
     SchoolClass save(SchoolClass schoolClass);
@@ -24,6 +25,8 @@ public interface SchoolClassRepository {
             OffsetDateTime updatedAt, UUID updatedBy);
     void deleteById(UUID id);
     List<SchoolClass> findBySchoolIdIn(Collection<UUID> schoolIds, int pageNumber, int size);
+
+    List<SchoolClass>findAllById(List<UUID> schoolIds);
 
     boolean existsBySchoolGradeId(UUID schoolGradeId);
 

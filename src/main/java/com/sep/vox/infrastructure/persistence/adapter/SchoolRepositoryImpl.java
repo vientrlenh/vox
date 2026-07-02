@@ -106,6 +106,11 @@ public class SchoolRepositoryImpl implements SchoolRepository {
     }
 
     @Override
+    public boolean existsByIdAndIsActiveTrue(UUID schoolId) {
+       return springDataSchoolRepository.existsByIdAndIsActiveTrue(schoolId);
+    }
+
+    @Override
     public int updateSchoolAtomic(UUID id, String name, String description, String phone,
                                   String email, String domain, String address, Integer studentCount,
                                   OffsetDateTime now, UUID updatedBy) {

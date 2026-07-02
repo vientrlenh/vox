@@ -24,14 +24,14 @@ public class SecureTokenProvider {
     public String generateToken(int length) {
         return SECURE_RANDOM.ints(length, 0, ALPHA_NUMERIC.length())
             .mapToObj(ALPHA_NUMERIC::charAt)
-            .map(Object::toString)
+            .map(o -> o.toString())
             .collect(Collectors.joining());
     }
 
     public String generateDigits(int length) {
         return SECURE_RANDOM.ints(length, 0, DIGITS.length())
             .mapToObj(DIGITS::charAt)
-            .map(Object::toString)
+            .map(o -> o.toString())
             .collect(Collectors.joining());
     }
 

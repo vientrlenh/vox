@@ -43,4 +43,5 @@ public class SecurityContextProvider implements UserContextPort {
         }
         return userDetails;
     }
+
 }

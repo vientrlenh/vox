@@ -5,19 +5,20 @@ import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.header.writers.XXssProtectionHeaderWriter.HeaderValue;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -25,6 +26,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import com.sep.vox.application.port.output.PasswordEncoderPort;
 import com.sep.vox.infrastructure.filter.JwtAuthenticationFilter;
 import com.sep.vox.infrastructure.security.Argon2PasswordEncodeProvider;
+import com.sep.vox.infrastructure.security.CustomOidcUserService;
+import com.sep.vox.infrastructure.security.OAuth2AuthenticationFailureHandler;
 import com.sep.vox.infrastructure.security.OAuth2AuthenticationSuccessHandler;
 
 @Configuration
@@ -34,10 +37,14 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
+    private final OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler;
+    private final CustomOidcUserService customOidcUserService;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler) {
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler, OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler, CustomOidcUserService customOidcUserService) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.oAuth2AuthenticationSuccessHandler = oAuth2AuthenticationSuccessHandler;
+        this.oAuth2AuthenticationFailureHandler = oAuth2AuthenticationFailureHandler;
+        this.customOidcUserService = customOidcUserService;
     }
     
     private static final long HSTS_MAX_AGE_IN_SECONDS = 31536000;
@@ -79,16 +86,15 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain configure(HttpSecurity http) {
         http
-            .csrf(AbstractHttpConfigurer::disable)
-            .formLogin(AbstractHttpConfigurer::disable)
-            .httpBasic(AbstractHttpConfigurer::disable)
+            .csrf(csrf -> csrf.disable())
+            .formLogin(fl -> fl.disable())
+            .httpBasic(hb -> hb.disable())
             .cors(cors -> cors
                 .configurationSource(corsConfigurationSource()))
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
             .headers(headers -> headers
-                .frameOptions(HeadersConfigurer
-                    .FrameOptionsConfig::sameOrigin)
+                .frameOptions(frame -> frame.sameOrigin())
                 .xssProtection(xss -> xss
                     .headerValue(HeaderValue.ENABLED_MODE_BLOCK))
                 .httpStrictTransportSecurity(hsts -> hsts
@@ -101,8 +107,16 @@ public class SecurityConfig {
                 .permitAll()
                 .anyRequest()
                 .authenticated())
+            .exceptionHandling(ex -> ex
+                .defaultAuthenticationEntryPointFor(
+                    new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),
+                    PathPatternRequestMatcher.withDefaults().matcher("/api/**")
+                )
+            )
             .oauth2Login(oauth2 -> oauth2
+                .userInfoEndpoint(u -> u.oidcUserService(customOidcUserService))
                 .successHandler(oAuth2AuthenticationSuccessHandler)
+                .failureHandler(oAuth2AuthenticationFailureHandler)
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();

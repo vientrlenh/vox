@@ -1,6 +1,7 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -73,12 +74,23 @@ public class ExamItemEvaluationJpaEntity {
     @Column(name = "signals", columnDefinition = "TEXT")
     private String signals;
 
+    @Column(name = "status", nullable = false, length = 20, check = {
+        @CheckConstraint(
+            name = "chk_exam_item_evaluations_status_valid", 
+            constraint = "status IN ('AUTO_GRADED', 'UNDER_REVIEW', 'FINALIZED', 'SUPERSEDED')"
+        )
+    })
+    private String status;
+
+    @Column(name = "evaluated_at", nullable = false, updatable = false)
+    private OffsetDateTime evaluatedAt;
+
     protected ExamItemEvaluationJpaEntity() {}
 
     public ExamItemEvaluationJpaEntity(UUID id, UUID responseId, UUID paperItemId, String engineType,
             String gradedByModel, Integer sampleCount, UUID reviewerId, BigDecimal rawItemScore, BigDecimal itemScore,
             BigDecimal overallConfidence, boolean requiresHumanReview, String reviewReasonCode, boolean markedInvalid,
-            boolean requiresRetake, String signals) {
+            boolean requiresRetake, String signals, String status, OffsetDateTime evaluatedAt) {
         this.id = id;
         this.responseId = responseId;
         this.paperItemId = paperItemId;
@@ -94,6 +106,8 @@ public class ExamItemEvaluationJpaEntity {
         this.markedInvalid = markedInvalid;
         this.requiresRetake = requiresRetake;
         this.signals = signals;
+        this.status = status;
+        this.evaluatedAt = evaluatedAt;
     }
 
     public UUID getId() {
@@ -214,6 +228,22 @@ public class ExamItemEvaluationJpaEntity {
 
     public void setSignals(String signals) {
         this.signals = signals;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public OffsetDateTime getEvaluatedAt() {
+        return evaluatedAt;
+    }
+
+    public void setEvaluatedAt(OffsetDateTime evaluatedAt) {
+        this.evaluatedAt = evaluatedAt;
     }
 
     

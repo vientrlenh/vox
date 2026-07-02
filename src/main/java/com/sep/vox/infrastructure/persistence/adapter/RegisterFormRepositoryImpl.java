@@ -71,7 +71,7 @@ public class RegisterFormRepositoryImpl implements RegisterFormRepository {
     @Override
     public boolean existsBySchoolDirectoryIdAndStatusIn(UUID schoolDirectoryId, Collection<RegisterFormStatus> statuses) {
         return springDataRegisterFormRepository.existsBySchoolDirectoryIdAndStatusIn(schoolDirectoryId, statuses.stream()
-            .map(RegisterFormStatus::name)
+            .map(s -> s.name())
             .toList()
         );
     }
@@ -89,7 +89,7 @@ public class RegisterFormRepositoryImpl implements RegisterFormRepository {
     @Override
     public boolean existsBySchoolDomainAndStatusIn(String schoolDomain, Collection<RegisterFormStatus> statuses) {
         return springDataRegisterFormRepository.existsBySchoolDomainAndStatusIn(schoolDomain, statuses.stream()
-            .map(RegisterFormStatus::name)
+            .map(s -> s.name())
             .toList()
         );
     }

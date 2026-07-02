@@ -87,9 +87,8 @@ public class SchoolClassUserImportCommitHandler implements ImportCommitHandler {
             throw new IllegalArgumentException("Mapping chứa cột không tồn tại trong file: " + String.join(", ", invalidKeys));
         }
         var invalidValues = confirmedMapping.values().stream()
-            .filter(Objects::nonNull)
-            .map(String::strip)
-            .filter(value -> !value.isEmpty() && !SUPPORTED_FIELDS.contains(value))
+            .map(value -> value == null ? null : value.strip())
+            .filter(value -> value != null && !value.isEmpty() && !SUPPORTED_FIELDS.contains(value))
             .toList();
         if (!invalidValues.isEmpty()) {
             throw new IllegalArgumentException("Mapping chứa trường hệ thống không hợp lệ: " + String.join(", ", invalidValues));

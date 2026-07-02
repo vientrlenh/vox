@@ -88,9 +88,9 @@ public class ViewImportSessionUseCase implements IUseCase<ViewImportSessionQuery
     }
 
     private UUID getSchoolId(User currentUser) {
-        return schoolUserRepository.findByUserId(currentUser.getId())
-            .map(SchoolUser::getSchoolId)
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUser.getId())
             .orElseThrow(() -> new IllegalStateException("Người dùng hiện tại không thuộc trường nào"));
+        return schoolUser.getSchoolId();
     }
 
     private void validateSchool(UUID schoolId) {

@@ -13,10 +13,11 @@ import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolUserDto;
 import com.sep.vox.domain.mapper.SchoolUserDtoMapper;
-import com.sep.vox.domain.model.user.SchoolRoleCodes;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
+
+import java.util.UUID;
 
 /**
  * Phục vụ query `schoolUsersBySchool` cho cả SCHOOL_ADMIN lẫn TEACHER (picker tìm đồng nghiệp ở Question
@@ -56,39 +57,38 @@ public class ViewSchoolUsersForRequesterUseCase implements IUseCase<ViewSchoolUs
             throw new ForbiddenException("Quyền truy cập không hợp lệ");
         }
 
-        var isSchoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(callerId).stream()
+        var callerRoles = userRoleQueryRepository.findByUserIdWithRoleInfo(callerId);
+        var isSchoolAdmin = callerRoles.stream()
             .anyMatch(r -> "SYSTEM_ADMIN".equals(r.roleCode()) || "SCHOOL_ADMIN".equals(r.roleCode()));
 
-        var role = isSchoolAdmin ? validateRole(input.role()) : "TEACHER";
-        var status = validateStatus(input.status());
-        // TEACHER dùng query này như picker tìm đồng nghiệp (chia sẻ câu hỏi / gán thành viên exam) nên không
-        // cần thấy chính mình trong kết quả; SCHOOL_ADMIN/SYSTEM_ADMIN vẫn xem được danh sách đầy đủ như cũ.
-        var excludeUserId = isSchoolAdmin ? null : callerId;
+        // Admin: filter by whatever role the caller passes (null = all); sees everyone.
+        // TEACHER: force filter to TEACHER role UUID, exclude self from results.
+        UUID roleId;
+        UUID excludeUserId;
+        if (isSchoolAdmin) {
+            roleId = input.roleId();
+            excludeUserId = null;
+        } else {
+            roleId = callerRoles.stream()
+                .filter(r -> "TEACHER".equals(r.roleCode()))
+                .map(r -> r.roleId())
+                .findFirst().orElse(null);
+            excludeUserId = callerId;
+        }
 
-        var schoolUsersPage = schoolUserRepository.findBySchoolId(
+        var status = validateStatus(input.status());
+
+        var schoolUsersPage = schoolUserRepository.searchBySchoolId(
             input.schoolId(),
             excludeUserId,
             StringNormalization.trimAndCollapseSpaces(input.search()),
-            role,
+            roleId,
             status,
-            SchoolRoleCodes.ALL,
             input.page(),
             input.size()
         );
 
         return SchoolUserDtoMapper.toSchoolUserPageDto(schoolUsersPage);
-    }
-
-    private String validateRole(String role) {
-        var normalized = StringNormalization.trimAndCollapseSpaces(role);
-        if (normalized == null) {
-            return null;
-        }
-        var upper = normalized.toUpperCase();
-        if (!SchoolRoleCodes.ALL.contains(upper)) {
-            throw new IllegalArgumentException("Vai trò không hợp lệ, chỉ chấp nhận STUDENT hoặc TEACHER");
-        }
-        return upper;
     }
 
     private String validateStatus(String status) {

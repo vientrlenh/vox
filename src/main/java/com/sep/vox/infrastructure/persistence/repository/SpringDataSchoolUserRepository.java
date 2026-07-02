@@ -19,9 +19,10 @@ public interface SpringDataSchoolUserRepository extends JpaRepository<SchoolUser
     Optional<SchoolUserJpaEntity> findByUserId(UUID userId);
     List<SchoolUserJpaEntity> findByUserIdIn(Collection<UUID> userIds);
 
-
     @Query("SELECT su.schoolId FROM SchoolUserJpaEntity su WHERE su.userId = :userId")
     Optional<UUID> findSchoolIdByUserId(@Param("userId") UUID userId);
+
+
 
     @Query(value = """
         SELECT 
@@ -56,12 +57,10 @@ public interface SpringDataSchoolUserRepository extends JpaRepository<SchoolUser
             AND (:excludeUserId IS NULL OR su.userId <> :excludeUserId)
             AND (:search IS NULL OR LOWER(u.fullName) LIKE :search OR LOWER(u.email) LIKE :search OR LOWER(u.phone) LIKE :search)
             AND ((:status IS NULL AND u.status <> 'DISABLED') OR u.status = :status)
-            AND EXISTS (
+            AND (:roleId IS NULL OR EXISTS (
                 SELECT 1 FROM UserRoleJpaEntity ur
-                JOIN RoleJpaEntity r ON r.id = ur.roleId
                 WHERE ur.userId = u.id
-                    AND r.code IN :schoolRoleCodes
-                    AND (:roleCode IS NULL OR r.code = :roleCode))
+                    AND ur.roleId = :roleId))
         ORDER BY su.id DESC
         """,
         countQuery = """
@@ -71,19 +70,16 @@ public interface SpringDataSchoolUserRepository extends JpaRepository<SchoolUser
             AND (:excludeUserId IS NULL OR su.userId <> :excludeUserId)
             AND (:search IS NULL OR LOWER(u.fullName) LIKE :search OR LOWER(u.email) LIKE :search OR LOWER(u.phone) LIKE :search)
             AND ((:status IS NULL AND u.status <> 'DISABLED') OR u.status = :status)
-            AND EXISTS (
+            AND (:roleId IS NULL OR EXISTS (
                 SELECT 1 FROM UserRoleJpaEntity ur
-                JOIN RoleJpaEntity r ON r.id = ur.roleId
                 WHERE ur.userId = u.id
-                    AND r.code IN :schoolRoleCodes
-                    AND (:roleCode IS NULL OR r.code = :roleCode))
+                    AND ur.roleId = :roleId))
         """)
     Page<SchoolUserJpaEntity> searchBySchoolId(
         @Param("schoolId") UUID schoolId,
         @Param("excludeUserId") UUID excludeUserId,
         @Param("search") String search,
-        @Param("roleCode") String roleCode,
+        @Param("roleId") UUID roleId,
         @Param("status") String status,
-        @Param("schoolRoleCodes") Collection<String> schoolRoleCodes,
         Pageable pageable);
 }

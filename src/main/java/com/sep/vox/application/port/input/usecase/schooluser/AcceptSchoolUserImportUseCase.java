@@ -99,9 +99,9 @@ public class AcceptSchoolUserImportUseCase
     }
 
     private UUID getSchoolId(User currentUser) {
-        return schoolUserRepository.findByUserId(currentUser.getId())
-                .map(SchoolUser::getSchoolId)
-                .orElseThrow(() -> new IllegalStateException("Người dùng hiện tại không thuộc trường nào"));
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUser.getId())
+            .orElseThrow(() -> new IllegalStateException("Người dùng hiện tại không thuộc trường nào"));
+        return schoolUser.getSchoolId();
     }
 
     private void validateRequestedSchool(UUID requestedSchoolId, UUID currentSchoolId) {
@@ -138,8 +138,8 @@ public class AcceptSchoolUserImportUseCase
     private void validateRequiredMapping(Map<String, String> confirmedMapping) {
         var mappedFields = new HashSet<String>();
         confirmedMapping.values().stream()
-                .filter(Objects::nonNull)
-                .map(String::strip)
+                .filter(value -> value != null)
+                .map(value -> value.strip())
                 .forEach(mappedFields::add);
         var missingFields = REQUIRED_FIELDS.stream()
                 .filter(field -> !mappedFields.contains(field))

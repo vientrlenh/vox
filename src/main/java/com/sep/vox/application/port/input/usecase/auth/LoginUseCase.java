@@ -20,7 +20,6 @@ import com.sep.vox.application.port.output.SessionTokenManagerPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.input.auth.LoginResponse;
 import com.sep.vox.application.response.output.GeneratedSessionToken;
-import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.devicesession.DeviceSession;
 import com.sep.vox.domain.model.devicesession.SessionPlatform;
 import com.sep.vox.domain.model.refreshtoken.RefreshToken;
@@ -73,7 +72,7 @@ public class LoginUseCase implements IUseCase<LoginCommand, LoginResponse> {
         
         var deviceSession = createDeviceSession(userId, command);
         var schoolId = schoolUserRepository.findByUserId(user.getId())
-            .map(SchoolUser::getSchoolId)
+            .map(su -> su.getSchoolId())
             .orElse(null);
         var accessToken = authTokenPort.generateJwtToken(user.getId().toString(), schoolId, user.getEmail().value(), userRoles);
         var sessionToken = sessionTokenManagerPort.generateToken();

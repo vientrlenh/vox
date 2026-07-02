@@ -264,10 +264,10 @@ class SchoolControllerTests {
     @Test
     void school_classes_by_user_should_return_page_result() {
         var expected = new PageResult<SchoolClassDto>(List.of(), 1, 20, 0, 0);
-        var query = new ViewSchoolClassesByUserQuery(schoolId, userId, 1, 20);
+        var query = new ViewSchoolClassesByUserQuery(schoolId, userId, null, 1, 20);
         when(viewSchoolClassesByUserUseCase.execute(query)).thenReturn(expected);
 
-        var result = controller.schoolClassesByUser(schoolId, userId, 1, 20);
+        var result = controller.schoolClassesByUser(schoolId, userId, null, 1, 20);
 
         assertThat(result).isEqualTo(expected);
         verify(viewSchoolClassesByUserUseCase).execute(query);
@@ -275,8 +275,8 @@ class SchoolControllerTests {
 
     @Test
     void school_classes_by_user_should_throw_when_page_or_size_invalid() {
-        assertThrows(IllegalArgumentException.class, () -> controller.schoolClassesByUser(schoolId, userId, 0, 20));
-        assertThrows(IllegalArgumentException.class, () -> controller.schoolClassesByUser(schoolId, userId, 1, 0));
+        assertThrows(IllegalArgumentException.class, () -> controller.schoolClassesByUser(schoolId, userId, null, 0, 20));
+        assertThrows(IllegalArgumentException.class, () -> controller.schoolClassesByUser(schoolId, userId, null, 1, 0));
     }
 
     // @Test

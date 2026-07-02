@@ -60,7 +60,7 @@ public class UserController {
     }
 
     @SchemaMapping(typeName = "User", field = "roles")
-    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public CompletableFuture<List<RoleDto>> userRoles(UserDto user, DataFetchingEnvironment env) {
         DataLoader<UserRolesKey, List<RoleDto>> loader = env.getDataLoader("rolesByUser");
         return loader.load(new UserRolesKey(user.id()));

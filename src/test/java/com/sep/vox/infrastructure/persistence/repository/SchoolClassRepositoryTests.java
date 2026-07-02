@@ -354,7 +354,7 @@ class SchoolClassRepositoryTests extends ContainerTestConfig {
         schoolClassUserRepository.save(new SchoolClassUser(UUID.randomUUID(), otherUserClass.getId(), true, now, null, UUID.randomUUID()));
         schoolClassUserRepository.save(new SchoolClassUser(userId, otherSchoolClass.getId(), true, now, null, UUID.randomUUID()));
 
-        var found = schoolClassRepository.findByUserId(schoolId, userId, 1, 20);
+        var found = schoolClassRepository.findByUserId(schoolId, userId, null, 1, 20);
 
         assertThat(found.content())
             .extracting(SchoolClass::getId)

@@ -60,9 +60,9 @@ class ViewSchoolClassesByUserUseCaseTests {
         when(userRepository.existsByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(true);
         when(schoolUserRepository.existsBySchoolIdAndUserId(schoolId, callerId)).thenReturn(true);
         when(schoolUserRepository.existsBySchoolIdAndUserId(schoolId, targetUserId)).thenReturn(true);
-        when(schoolClassRepository.findByUserId(schoolId, targetUserId, 1, 20)).thenReturn(page);
+        when(schoolClassRepository.findByUserId(schoolId, targetUserId, null, 1, 20)).thenReturn(page);
 
-        var result = useCase.execute(new ViewSchoolClassesByUserQuery(schoolId, targetUserId, 1, 20));
+        var result = useCase.execute(new ViewSchoolClassesByUserQuery(schoolId, targetUserId, null, 1, 20));
 
         assertThat(result).isNotNull();
         assertThat(result.content()).hasSize(1);
@@ -76,7 +76,7 @@ class ViewSchoolClassesByUserUseCaseTests {
 
         assertThrows(
             UnauthorizedException.class,
-            () -> useCase.execute(new ViewSchoolClassesByUserQuery(schoolId, targetUserId, 1, 20))
+            () -> useCase.execute(new ViewSchoolClassesByUserQuery(schoolId, targetUserId, null, 1, 20))
         );
     }
 
@@ -88,7 +88,7 @@ class ViewSchoolClassesByUserUseCaseTests {
 
         assertThrows(
             ForbiddenException.class,
-            () -> useCase.execute(new ViewSchoolClassesByUserQuery(schoolId, targetUserId, 1, 20))
+            () -> useCase.execute(new ViewSchoolClassesByUserQuery(schoolId, targetUserId, null, 1, 20))
         );
     }
 
@@ -101,7 +101,7 @@ class ViewSchoolClassesByUserUseCaseTests {
 
         assertThrows(
             NotFoundException.class,
-            () -> useCase.execute(new ViewSchoolClassesByUserQuery(schoolId, targetUserId, 1, 20))
+            () -> useCase.execute(new ViewSchoolClassesByUserQuery(schoolId, targetUserId, null, 1, 20))
         );
     }
 

@@ -25,10 +25,12 @@ public interface SpringDataSchoolClassRepository extends JpaRepository<SchoolCla
         JOIN SchoolClassUserJpaEntity scu ON scu.schoolClassId = sc.id
         WHERE sc.schoolId = :schoolId
             AND scu.userId = :userId
+            AND (:status IS NULL OR sc.status = :status)
         """)
     Page<SchoolClassJpaEntity> findByUserId(
         @Param("schoolId") UUID schoolId,
         @Param("userId") UUID userId,
+        @Param("status") String status,
         Pageable pageable);
 
     @Query("""

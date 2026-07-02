@@ -5,6 +5,7 @@ import java.util.UUID;
 public record ViewSchoolClassesByUserQuery(
     UUID schoolId,
     UUID userId,
+    String status,
     int page,
     int size
 ) {

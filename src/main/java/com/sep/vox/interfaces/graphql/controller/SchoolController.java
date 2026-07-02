@@ -306,12 +306,13 @@ public class SchoolController {
     public PageResult<SchoolClassDto> schoolClassesByUser(
             @Argument(name = "schoolId") UUID schoolId,
             @Argument(name = "userId") UUID userId,
+            @Argument(name = "status") String status,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
         if (page == null || size == null || page <= 0 || size <= 0) {
             throw new IllegalArgumentException("Số trang hoặc kích cỡ trang yêu cầu không hợp lệ");
         }
-        return viewSchoolClassesByUserUseCase.execute(new ViewSchoolClassesByUserQuery(schoolId, userId, page, size));
+        return viewSchoolClassesByUserUseCase.execute(new ViewSchoolClassesByUserQuery(schoolId, userId, status, page, size));
     }
 
     @SchemaMapping(typeName = "SchoolClassUser", field = "user")

@@ -90,13 +90,13 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
     }
 
     @Override
-    public PageResult<SchoolClass> findByUserId(UUID schoolId, UUID userId, int pageNumber, int size) {
+    public PageResult<SchoolClass> findByUserId(UUID schoolId, UUID userId, SchoolClassStatus status, int pageNumber, int size) {
         var pageable = PageRequest.of(
             pageNumber - 1,
             size,
             Sort.by(Sort.Direction.DESC, SchoolClassJpaEntity::getCreatedAt).and(Sort.by(Sort.Direction.ASC, SchoolClassJpaEntity::getId))
         );
-        var page = springDataSchoolClassRepository.findByUserId(schoolId, userId, pageable);
+        var page = springDataSchoolClassRepository.findByUserId(schoolId, userId, valueOf(status), pageable);
         return new PageResult<>(
             page.getContent().stream()
                 .map(SchoolClassMapper::toDomain)

@@ -38,15 +38,11 @@ public class CreateSchoolQuestionBankUseCase implements IUseCase<CreateSchoolQue
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         var schoolUser = schoolUserRepository.findByUserId(currentUserId)
             .orElseThrow(() -> new ForbiddenException("Quyền truy cập không hợp lệ"));
-        
-        if (!schoolUser.getSchoolId().equals(command.schoolId())) {
-            throw new ForbiddenException("Quyền truy cập không hợp lệ");
-        }
 
         var now = OffsetDateTime.now();
         var questionBank = QuestionBank.create(
             command.languageId(), 
-            command.schoolId(), 
+            schoolUser.getSchoolId(), 
             command.code(), 
             command.name(), 
             command.description(), 

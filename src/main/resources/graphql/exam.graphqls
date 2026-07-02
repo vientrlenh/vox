@@ -1,0 +1,252 @@
+enum ExamKind {
+    CENTRALIZED
+    CLASS_TEST
+}
+
+enum ExamStatus {
+    DRAFT
+    SCHEDULED
+    IN_PROGRESS
+    CLOSED
+    RESULTS_PUBLISHED
+    CANCELLED
+}
+
+enum ExamMemberRole {
+    CHAIR
+    AUTHOR
+    REVIEWER
+}
+
+enum ExamBlueprintVersionStatus {
+    DRAFT
+    PUBLISHED
+    ARCHIVED
+}
+
+enum ExamBlueprintSlotType {
+    FIXED
+    SELECTION
+}
+
+enum ExamPaperStatus {
+    DRAFT
+    IN_REVIEW
+    APPROVED
+    LOCKED
+}
+
+enum ExamSecurePoolStatus {
+    SEALED
+    RELEASED
+}
+
+enum ExamSecurePoolReleaseMode {
+    MANUAL
+    AUTO_AFTER_CLOSE
+}
+
+type QuestionSelectionSpec {
+    questionType: QuestionType
+    difficulty: QuestionDifficulty
+    targetBandLevel: String
+    skillCode: String
+    topicId: ID
+}
+
+type ExamMember {
+    id: ID!
+    userId: ID!
+    role: ExamMemberRole!
+    grantedAt: String
+    grantedBy: ID
+    user: User
+}
+
+type ExamSecurePool {
+    id: ID!
+    examId: ID!
+    status: ExamSecurePoolStatus!
+    releaseMode: ExamSecurePoolReleaseMode!
+    embargoUntil: String
+    releasedAt: String
+    releasedBy: ID
+}
+
+type ExamPaperItem {
+    id: ID!
+    blueprintSlotId: ID
+    sectionId: ID!
+    paperId: ID!
+    questionId: ID
+    order: Int!
+    weight: Float
+    question: Question
+}
+
+type ExamPaperSection {
+    id: ID!
+    paperId: ID!
+    order: Int!
+    title: String
+    instruction: String
+    sectionTimeLimitSeconds: Int
+    createdAt: String
+    updatedAt: String
+    createdBy: ID
+    updatedBy: ID
+    items: [ExamPaperItem!]!
+}
+
+type ExamPaper {
+    id: ID!
+    examId: ID!
+    blueprintVersionId: ID
+    code: String!
+    variant: Int!
+    status: ExamPaperStatus!
+    createdAt: String
+    updatedAt: String
+    createdBy: ID
+    updatedBy: ID
+    sections: [ExamPaperSection!]!
+}
+
+type Exam {
+    id: ID!
+    blueprintId: ID
+    blueprintVersionId: ID
+    code: String!
+    name: String!
+    description: String
+    schoolId: ID!
+    languageId: ID!
+    kind: ExamKind!
+    status: ExamStatus!
+    openAt: String
+    closeAt: String
+    assessmentPolicyId: ID
+    createdAt: String
+    updatedAt: String
+    createdBy: ID
+    updatedBy: ID
+    members: [ExamMember!]!
+    papers(status: ExamPaperStatus): [ExamPaper!]!
+    securePool: ExamSecurePool
+    schoolClassId: ID
+}
+
+type ExamPage {
+    content: [Exam!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+type ExamBlueprintSlot {
+    id: ID!
+    sectionId: ID
+    blueprintVersionId: ID!
+    order: Int!
+    weight: Float
+    prepTimeSecondsOverride: Int
+    responseTimeSecondsOverride: Int
+    slotType: ExamBlueprintSlotType!
+    fixedQuestionId: ID
+    selectionSpec: QuestionSelectionSpec
+    createdAt: String
+    updatedAt: String
+    createdBy: ID
+    updatedBy: ID
+    fixedQuestion: Question
+}
+
+type ExamBlueprintSection {
+    id: ID!
+    blueprintVersionId: ID!
+    order: Int!
+    title: String!
+    instruction: String
+    sectionTimeLimitSeconds: Int
+    sectionWeight: Float
+    createdAt: String
+    updatedAt: String
+    createdBy: ID
+    updatedBy: ID
+    slots: [ExamBlueprintSlot!]!
+}
+
+type ExamBlueprintVersion {
+    id: ID!
+    blueprintId: ID!
+    version: Int!
+    code: String!
+    description: String
+    status: ExamBlueprintVersionStatus!
+    totalTimeLimitSeconds: Int
+    effectiveFrom: String
+    effectiveTo: String
+    createdAt: String
+    updatedAt: String
+    createdBy: ID
+    updatedBy: ID
+    sections: [ExamBlueprintSection!]!
+}
+
+type ExamBlueprint {
+    id: ID!
+    schoolId: ID!
+    languageId: ID!
+    schoolGradeLevelId: ID
+    code: String!
+    name: String!
+    description: String
+    isActive: Boolean!
+    createdAt: String
+    updatedAt: String
+    createdBy: ID
+    updatedBy: ID
+    versions(status: ExamBlueprintVersionStatus): [ExamBlueprintVersion!]!
+}
+
+type ExamBlueprintPage {
+    content: [ExamBlueprint!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+extend type Query {
+    exams(
+        kind: ExamKind,
+        status: ExamStatus,
+        schoolId: ID,
+        keyword: String,
+        page: Int = 0,
+        size: Int = 20
+    ): ExamPage!
+
+    exam(id: ID!): Exam
+
+    classTests(
+        status: ExamStatus,
+        schoolClassId: ID,
+        keyword: String,
+        page: Int = 0,
+        size: Int = 20
+    ): ExamPage!
+
+    examBlueprints(
+        schoolId: ID,
+        isActive: Boolean,
+        languageId: ID,
+        examKind: String,
+        keyword: String,
+        page: Int = 0,
+        size: Int = 20
+    ): ExamBlueprintPage!
+
+    examBlueprint(id: ID!): ExamBlueprint
+}

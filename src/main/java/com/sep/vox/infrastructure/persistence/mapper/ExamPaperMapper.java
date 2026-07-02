@@ -12,6 +12,7 @@ public final class ExamPaperMapper {
         return new ExamPaper(
             jpa.getId(),
             jpa.getExamId(),
+            jpa.getBlueprintVersionId(),
             jpa.getCode(),
             jpa.getVariant(),
             statusFromString(jpa.getStatus()),
@@ -26,6 +27,7 @@ public final class ExamPaperMapper {
         return new ExamPaperJpaEntity(
             domain.getId(),
             domain.getExamId(),
+            domain.getBlueprintVersionId(),
             domain.getCode(),
             domain.getVariant(),
             domain.getStatus().name(),

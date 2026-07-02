@@ -10,8 +10,7 @@ public final class UpdateQuestionTopicCommandMapper {
     public static UpdateQuestionTopicCommand fromRequest(UUID id, UpdateQuestionTopicRequest request) {
         return new UpdateQuestionTopicCommand(
             id,
-            request.bankId(),
-            request.topicName(),
+            request.name(),
             request.description()
         );
     }

@@ -10,6 +10,8 @@ public record QuestionTopicDto(
     String description,
     String status, 
     String createdAt,
-    String updatedAt
+    String updatedAt,
+    UUID createdBy,
+    UUID updatedBy
 ) {
 }

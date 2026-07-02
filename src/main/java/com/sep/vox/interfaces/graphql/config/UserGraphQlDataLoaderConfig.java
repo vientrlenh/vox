@@ -8,26 +8,38 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import com.sep.vox.domain.mapper.UserDtoMapper;
 import org.dataloader.BatchLoaderEnvironment;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.graphql.execution.BatchLoaderRegistry;
 
 import com.sep.vox.application.port.input.query.key.UserRolesKey;
 import com.sep.vox.domain.dto.RoleDto;
+import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.domain.mapper.RoleDtoMapper;
 import com.sep.vox.domain.repository.RoleRepository;
+import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.repository.UserRoleRepository;
 
 import reactor.core.publisher.Mono;
 
 @Configuration
 public class UserGraphQlDataLoaderConfig {
-    
+
     public UserGraphQlDataLoaderConfig(
-        BatchLoaderRegistry registry, 
-        UserRoleRepository userRoleRepository, 
-        RoleRepository roleRepository
+        BatchLoaderRegistry registry,
+        UserRoleRepository userRoleRepository,
+        RoleRepository roleRepository,
+        UserRepository userRepository
     ) {
+
+        registry.<UUID, UserDto>forName("userById")
+        .registerMappedBatchLoader((Set<UUID> userIds, BatchLoaderEnvironment env) ->
+            Mono.fromSupplier(() -> userRepository.findByIdIn(userIds)
+                .stream()
+                .map(UserDtoMapper::toUserDto)
+                .collect(Collectors.toMap(UserDto::id, user -> user)))
+        );
 
         registry.<UserRolesKey, List<RoleDto>>forName("rolesByUser")
         .registerMappedBatchLoader((Set<UserRolesKey> keys, BatchLoaderEnvironment env) ->

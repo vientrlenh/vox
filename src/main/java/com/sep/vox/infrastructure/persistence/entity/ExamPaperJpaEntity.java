@@ -29,6 +29,9 @@ public class ExamPaperJpaEntity {
     @Column(name = "exam_id", nullable = false, updatable = false)
     private UUID examId;
 
+    @Column(name = "blueprint_version_id")
+    private UUID blueprintVersionId;
+
     @Column(name = "code", nullable = false, updatable = false, length = 100)
     private String code;
 
@@ -57,10 +60,11 @@ public class ExamPaperJpaEntity {
 
     protected ExamPaperJpaEntity() {}
 
-    public ExamPaperJpaEntity(UUID id, UUID examId, String code, int variant, String status, OffsetDateTime createdAt,
+    public ExamPaperJpaEntity(UUID id, UUID examId, UUID blueprintVersionId, String code, int variant, String status, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.examId = examId;
+        this.blueprintVersionId = blueprintVersionId;
         this.code = code;
         this.variant = variant;
         this.status = status;
@@ -84,6 +88,14 @@ public class ExamPaperJpaEntity {
 
     public void setExamId(UUID examId) {
         this.examId = examId;
+    }
+
+    public UUID getBlueprintVersionId() {
+        return blueprintVersionId;
+    }
+
+    public void setBlueprintVersionId(UUID blueprintVersionId) {
+        this.blueprintVersionId = blueprintVersionId;
     }
 
     public String getCode() {
@@ -141,6 +153,4 @@ public class ExamPaperJpaEntity {
     public void setUpdatedBy(UUID updatedBy) {
         this.updatedBy = updatedBy;
     }
-
-    
 }

@@ -12,6 +12,9 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record CreateSystemQuestionBankQuestionRequest(
+    @NotNull(message = "ID ngân hàng không được để trống")
+    UUID questionBankId,
+
     @NotNull(message = "ID chủ đề không được để trống")
     UUID questionTopicId,
 
@@ -27,9 +30,6 @@ public record CreateSystemQuestionBankQuestionRequest(
     String promptText,
 
     String preparationText,
-
-    @NotNull(message = "ID của phiên bản cấp độ tiêu chuẩn không được để trống")
-    UUID standardLevelVersionId,
 
     String expectedContent,
 
@@ -61,6 +61,12 @@ public record CreateSystemQuestionBankQuestionRequest(
     @NotNull(message = "Thoi gian tra loi toi da khong duoc de trong")
     @Min(value = 0, message = "Thoi gian tra loi toi da phai lon hon hoac bang 0")
     Integer maxResponseSeconds,
+
+    @Pattern(
+        regexp = "PRIVATE|SCHOOL_SHARED",
+        message = "Chế độ chia sẻ không hợp lệ"
+    )
+    String sharing,
 
     @Valid
     List<CreateQuestionAssetRequest> assets

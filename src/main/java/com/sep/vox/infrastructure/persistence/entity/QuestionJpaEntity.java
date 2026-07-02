@@ -112,7 +112,7 @@ public class QuestionJpaEntity {
     })
     private String confidentiality;
 
-    @Column(name = "secure_pool_id", unique = true)
+    @Column(name = "secure_pool_id")
     private UUID securePoolId;
 
     @Column(name = "status", nullable = false, check = {

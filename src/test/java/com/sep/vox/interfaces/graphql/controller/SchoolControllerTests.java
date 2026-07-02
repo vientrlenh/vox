@@ -30,6 +30,7 @@ import com.sep.vox.application.port.input.usecase.school.UpdateSchoolUseCase;
 import com.sep.vox.application.port.input.usecase.school.ViewSchoolsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.UpdateSchoolClassUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassDetailsUseCase;
+import com.sep.vox.application.port.input.usecase.schoolclass.ViewMySchoolClassesUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassesByUserUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassesUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclassuser.ViewSchoolClassUsersUseCase;
@@ -50,6 +51,7 @@ import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolStudentsB
 import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolTeachersBySchoolUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUserDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUsersBySchoolUseCase;
+import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUsersForRequesterUseCase;
 import com.sep.vox.application.response.input.schoolclass.UpdateSchoolClassResponse;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolClassDto;
@@ -66,10 +68,12 @@ class SchoolControllerTests {
     private ViewSchoolsUseCase viewSchoolsUseCase;
     private ViewSchoolClassesUseCase viewSchoolClassesUseCase;
     private ViewSchoolClassesByUserUseCase viewSchoolClassesByUserUseCase;
+    private ViewMySchoolClassesUseCase viewMySchoolClassesUseCase;
     private ViewSchoolClassDetailsUseCase viewSchoolClassDetailsUseCase;
     private ViewSchoolClassUsersUseCase viewSchoolClassUsersUseCase;
     private UpdateSchoolClassUseCase updateSchoolClassUseCase;
     private ViewSchoolUsersBySchoolUseCase viewSchoolUsersBySchoolUseCase;
+    private ViewSchoolUsersForRequesterUseCase viewSchoolUsersForRequesterUseCase;
     private ViewSchoolStudentsBySchoolUseCase viewSchoolStudentsBySchoolUseCase;
     private ViewSchoolTeachersBySchoolUseCase viewSchoolTeachersBySchoolUseCase;
     private ViewSchoolUserDetailsUseCase viewSchoolUserDetailsUseCase;
@@ -97,10 +101,12 @@ class SchoolControllerTests {
         viewSchoolsUseCase = mock(ViewSchoolsUseCase.class);
         viewSchoolClassesUseCase = mock(ViewSchoolClassesUseCase.class);
         viewSchoolClassesByUserUseCase = mock(ViewSchoolClassesByUserUseCase.class);
+        viewMySchoolClassesUseCase = mock(ViewMySchoolClassesUseCase.class);
         viewSchoolClassDetailsUseCase = mock(ViewSchoolClassDetailsUseCase.class);
         viewSchoolClassUsersUseCase = mock(ViewSchoolClassUsersUseCase.class);
         updateSchoolClassUseCase = mock(UpdateSchoolClassUseCase.class);
         viewSchoolUsersBySchoolUseCase = mock(ViewSchoolUsersBySchoolUseCase.class);
+        viewSchoolUsersForRequesterUseCase = mock(ViewSchoolUsersForRequesterUseCase.class);
         viewSchoolStudentsBySchoolUseCase = mock(ViewSchoolStudentsBySchoolUseCase.class);
         viewSchoolTeachersBySchoolUseCase = mock(ViewSchoolTeachersBySchoolUseCase.class);
         viewSchoolUserDetailsUseCase = mock(ViewSchoolUserDetailsUseCase.class);
@@ -123,10 +129,12 @@ class SchoolControllerTests {
             viewSchoolsUseCase,
             viewSchoolClassesUseCase,
             viewSchoolClassesByUserUseCase,
+            viewMySchoolClassesUseCase,
             viewSchoolClassDetailsUseCase,
             viewSchoolClassUsersUseCase,
             updateSchoolClassUseCase,
             viewSchoolUsersBySchoolUseCase,
+            viewSchoolUsersForRequesterUseCase,
             viewSchoolStudentsBySchoolUseCase,
             viewSchoolTeachersBySchoolUseCase,
             viewSchoolUserDetailsUseCase,

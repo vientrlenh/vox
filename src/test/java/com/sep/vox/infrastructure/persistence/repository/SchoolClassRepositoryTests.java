@@ -17,20 +17,27 @@ import com.sep.vox.config.ContainerTestConfig;
 
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
+import com.sep.vox.domain.model.school.SchoolClassUser;
 import com.sep.vox.domain.repository.SchoolClassRepository;
+import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.domain.valueobject.ClassCode;
 import com.sep.vox.infrastructure.persistence.adapter.SchoolClassRepositoryImpl;
+import com.sep.vox.infrastructure.persistence.adapter.SchoolClassUserRepositoryImpl;
 
 @DataJpaTest
 @ActiveProfiles("test")
 @Import({
-    SchoolClassRepositoryImpl.class
+    SchoolClassRepositoryImpl.class,
+    SchoolClassUserRepositoryImpl.class
 })
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class SchoolClassRepositoryTests extends ContainerTestConfig {
 
     @Autowired
     private SchoolClassRepository schoolClassRepository;
+
+    @Autowired
+    private SchoolClassUserRepository schoolClassUserRepository;
 
     @Test
     void whenSave_thenReturnsPersistedSchoolClass() {
@@ -329,6 +336,30 @@ class SchoolClassRepositoryTests extends ContainerTestConfig {
         assertThat(found.get().getName()).isEqualTo("English Old");
         assertThat(found.get().getStatus()).isEqualTo(SchoolClassStatus.ACTIVE);
         assertThat(found.get().getSchoolId()).isEqualTo(schoolId);
+    }
+
+    @Test
+    void whenFindByUserId_thenReturnsClassesUserBelongsToIncludingLeftOnes() {
+        var schoolId = UUID.randomUUID();
+        var otherSchoolId = UUID.randomUUID();
+        var userId = UUID.randomUUID();
+        var activeClass = schoolClassRepository.save(newSchoolClass(schoolId, "ENG-CU-01", "English CU 01"));
+        var leftClass = schoolClassRepository.save(newSchoolClass(schoolId, "MATH-CU-01", "Math CU 01"));
+        var otherUserClass = schoolClassRepository.save(newSchoolClass(schoolId, "SCI-CU-01", "Science CU 01"));
+        var otherSchoolClass = schoolClassRepository.save(newSchoolClass(otherSchoolId, "ENG-CU-02", "Other School CU"));
+        var now = OffsetDateTime.now();
+
+        schoolClassUserRepository.save(new SchoolClassUser(userId, activeClass.getId(), true, now, null, UUID.randomUUID()));
+        schoolClassUserRepository.save(new SchoolClassUser(userId, leftClass.getId(), false, now, now.plusDays(1), UUID.randomUUID()));
+        schoolClassUserRepository.save(new SchoolClassUser(UUID.randomUUID(), otherUserClass.getId(), true, now, null, UUID.randomUUID()));
+        schoolClassUserRepository.save(new SchoolClassUser(userId, otherSchoolClass.getId(), true, now, null, UUID.randomUUID()));
+
+        var found = schoolClassRepository.findByUserId(schoolId, userId, null, 1, 20);
+
+        assertThat(found.content())
+            .extracting(SchoolClass::getId)
+            .containsExactlyInAnyOrder(activeClass.getId(), leftClass.getId());
+        assertThat(found.totalElements()).isEqualTo(2);
     }
 
     private static SchoolClass newSchoolClass(UUID schoolId, String code, String name) {

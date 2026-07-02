@@ -2,13 +2,12 @@ package com.sep.vox.application.port.input.query;
 
 import java.util.UUID;
 
-public record ViewSchoolUsersBySchoolQuery(
+public record ViewSchoolClassesByUserQuery(
     UUID schoolId,
+    UUID userId,
+    String status,
     int page,
-    int size,
-    String search,
-    UUID roleId,
-    String status
+    int size
 ) {
 
 }

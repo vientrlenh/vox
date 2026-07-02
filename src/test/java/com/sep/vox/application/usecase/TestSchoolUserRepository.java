@@ -65,8 +65,8 @@ public class TestSchoolUserRepository implements SchoolUserRepository {
     }
 
     @Override
-    public PageResult<SchoolUser> findBySchoolId(UUID schoolId, String search, String roleCode, String status,
-            Collection<String> schoolRoleCodes, int page, int size) {
+    public PageResult<SchoolUser> findBySchoolId(UUID schoolId, String search, UUID roleId, String status,
+            int page, int size) {
         throw new UnsupportedOperationException("Unimplemented method 'findBySchoolId'");
     }
 

@@ -38,6 +38,7 @@ import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
+import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 
 class ViewImportRowsUseCaseTests {
 
@@ -48,6 +49,7 @@ class ViewImportRowsUseCaseTests {
     private UserContextPort userContextPort;
     private FakeJsonSerializationPort jsonSerializationPort;
     private SchoolUserRepository schoolUserRepository;
+    private UserRoleQueryRepository userRoleQueryRepository;
     private ViewImportRowsUseCase useCase;
 
     @BeforeEach
@@ -59,6 +61,7 @@ class ViewImportRowsUseCaseTests {
         userContextPort = mock(UserContextPort.class);
         jsonSerializationPort = new FakeJsonSerializationPort();
         schoolUserRepository = mock(SchoolUserRepository.class);
+        userRoleQueryRepository = mock(UserRoleQueryRepository.class);
         useCase = new ViewImportRowsUseCase(
             importSessionRepository,
             importRowRepository,
@@ -66,7 +69,8 @@ class ViewImportRowsUseCaseTests {
             schoolRepository,
             userContextPort,
             new ImportRowResponseMapper(jsonSerializationPort),
-            schoolUserRepository
+            schoolUserRepository,
+            userRoleQueryRepository
         );
     }
 

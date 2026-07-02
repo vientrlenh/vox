@@ -13,6 +13,7 @@ import org.springframework.graphql.data.method.annotation.SchemaMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 
+import com.sep.vox.application.port.input.query.ViewMySchoolClassesQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolClassDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolClassUsersQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolClassesByUserQuery;
@@ -37,6 +38,7 @@ import com.sep.vox.application.port.input.usecase.school.UpdateSchoolUseCase;
 import com.sep.vox.application.port.input.usecase.school.ViewSchoolsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.UpdateSchoolClassUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassDetailsUseCase;
+import com.sep.vox.application.port.input.usecase.schoolclass.ViewMySchoolClassesUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassesByUserUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassesUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclassuser.ViewSchoolClassUsersUseCase;
@@ -91,6 +93,7 @@ public class SchoolController {
     private final ViewSchoolsUseCase viewSchoolsUseCase;
     private final ViewSchoolClassesUseCase viewSchoolClassesUseCase;
     private final ViewSchoolClassesByUserUseCase viewSchoolClassesByUserUseCase;
+    private final ViewMySchoolClassesUseCase viewMySchoolClassesUseCase;
     private final ViewSchoolClassDetailsUseCase viewSchoolClassDetailsUseCase;
     private final ViewSchoolClassUsersUseCase viewSchoolClassUsersUseCase;
     private final UpdateSchoolClassUseCase updateSchoolClassUseCase;
@@ -117,6 +120,7 @@ public class SchoolController {
     public SchoolController(ViewSchoolsUseCase viewSchoolsUseCase,
                             ViewSchoolClassesUseCase viewSchoolClassesUseCase,
                             ViewSchoolClassesByUserUseCase viewSchoolClassesByUserUseCase,
+                            ViewMySchoolClassesUseCase viewMySchoolClassesUseCase,
                             ViewSchoolClassDetailsUseCase viewSchoolClassDetailsUseCase,
                             ViewSchoolClassUsersUseCase viewSchoolClassUsersUseCase,
                             UpdateSchoolClassUseCase updateSchoolClassUseCase,
@@ -143,6 +147,7 @@ public class SchoolController {
         this.viewSchoolsUseCase = viewSchoolsUseCase;
         this.viewSchoolClassesUseCase = viewSchoolClassesUseCase;
         this.viewSchoolClassesByUserUseCase = viewSchoolClassesByUserUseCase;
+        this.viewMySchoolClassesUseCase = viewMySchoolClassesUseCase;
         this.viewSchoolClassDetailsUseCase = viewSchoolClassDetailsUseCase;
         this.viewSchoolClassUsersUseCase = viewSchoolClassUsersUseCase;
         this.updateSchoolClassUseCase = updateSchoolClassUseCase;
@@ -332,6 +337,19 @@ public class SchoolController {
             throw new IllegalArgumentException("Số trang hoặc kích cỡ trang yêu cầu không hợp lệ");
         }
         return viewSchoolClassesByUserUseCase.execute(new ViewSchoolClassesByUserQuery(schoolId, userId, status, page, size));
+    }
+
+    @QueryMapping(name = "mySchoolClasses")
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
+    public PageResult<SchoolClassDto> mySchoolClasses(
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "status") String status,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
+        if (page == null || size == null || page <= 0 || size <= 0) {
+            throw new IllegalArgumentException("Số trang hoặc kích cỡ trang yêu cầu không hợp lệ");
+        }
+        return viewMySchoolClassesUseCase.execute(new ViewMySchoolClassesQuery(schoolId, status, page, size));
     }
 
     @SchemaMapping(typeName = "SchoolClassUser", field = "user")

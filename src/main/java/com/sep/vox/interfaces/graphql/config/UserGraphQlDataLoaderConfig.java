@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import com.sep.vox.domain.mapper.UserDtoMapper;
 import org.dataloader.BatchLoaderEnvironment;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.graphql.execution.BatchLoaderRegistry;
@@ -16,7 +17,6 @@ import com.sep.vox.application.port.input.query.key.UserRolesKey;
 import com.sep.vox.domain.dto.RoleDto;
 import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.domain.mapper.RoleDtoMapper;
-import com.sep.vox.domain.mapper.UserDtoMapper;
 import com.sep.vox.domain.repository.RoleRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.repository.UserRoleRepository;

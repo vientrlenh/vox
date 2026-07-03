@@ -67,8 +67,19 @@ type FrameworkCriterionBand {
     frameworkCriterionId: ID!
     frameworkResultBandId: ID!
     descriptor: String
-    positiveSignals: String
-    negativeSignals: String
+    positiveSignals: FrameworkCriterionSignals
+    negativeSignals: FrameworkCriterionSignals
+}
+
+type FrameworkCriterionSignals {
+    values: [Signal!]!
+}
+
+type Signal {
+    code: String!
+    description: String!
+    importance: SignalImportance!
+    evidenceHint: String
 }
 
 type FrameworkResultBand {

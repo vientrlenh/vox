@@ -47,6 +47,16 @@ public interface SpringDataQuestionRepository extends JpaRepository<QuestionJpaE
                           AND qc.userId = :currentUserId
                     )
                 )
+                OR (
+                    :scope = 'REVIEWING'
+                    AND EXISTS (
+                        SELECT 1
+                        FROM QuestionCollaboratorJpaEntity qc
+                        WHERE qc.questionId = q.id
+                          AND qc.userId = :currentUserId
+                          AND qc.permission = 'CAN_EDIT'
+                    )
+                )
               )
           AND (
                 :keywordPattern IS NULL

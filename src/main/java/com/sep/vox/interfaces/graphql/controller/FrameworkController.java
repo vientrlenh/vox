@@ -18,8 +18,9 @@ import com.sep.vox.application.port.input.query.ViewFrameworkDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewFrameworkVersionDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewFrameworkVersionsQuery;
 import com.sep.vox.application.port.input.query.ViewFrameworksQuery;
-import com.sep.vox.application.port.input.command.UpdateFrameworkActiveStatusCommand;
-import com.sep.vox.application.port.input.usecase.framework.UpdateFrameworkStatusUseCase;
+import com.sep.vox.application.port.input.usecase.framework.UpdateFrameworkCriterionBandUseCase;
+import com.sep.vox.application.port.input.usecase.framework.UpdateFrameworkCriterionUseCase;
+import com.sep.vox.application.port.input.usecase.framework.UpdateFrameworkResultBandUseCase;
 import com.sep.vox.application.port.input.usecase.framework.UpdateFrameworkVersionUseCase;
 import com.sep.vox.application.port.input.usecase.framework.ViewFrameworkDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.framework.ViewFrameworkVersionDetailsUseCase;
@@ -30,6 +31,12 @@ import com.sep.vox.domain.dto.FrameworkCriterionDto;
 import com.sep.vox.domain.dto.FrameworkDto;
 import com.sep.vox.domain.dto.FrameworkResultBandDto;
 import com.sep.vox.domain.dto.FrameworkVersionDto;
+import com.sep.vox.interfaces.graphql.mapper.UpdateFrameworkCriterionBandCommandMapper;
+import com.sep.vox.interfaces.graphql.mapper.UpdateFrameworkCriterionBandInput;
+import com.sep.vox.interfaces.graphql.mapper.UpdateFrameworkCriterionCommandMapper;
+import com.sep.vox.interfaces.graphql.mapper.UpdateFrameworkCriterionInput;
+import com.sep.vox.interfaces.graphql.mapper.UpdateFrameworkResultBandCommandMapper;
+import com.sep.vox.interfaces.graphql.mapper.UpdateFrameworkResultBandInput;
 import com.sep.vox.interfaces.graphql.mapper.UpdateFrameworkVersionCommandMapper;
 import com.sep.vox.interfaces.graphql.mapper.UpdateFrameworkVersionInput;
 
@@ -41,7 +48,9 @@ public class FrameworkController {
     private final ViewFrameworkVersionsUseCase viewFrameworkVersionsUseCase;
     private final ViewFrameworkVersionDetailsUseCase viewFrameworkVersionDetailsUseCase;
     private final UpdateFrameworkVersionUseCase updateFrameworkVersionUseCase;
-    private final UpdateFrameworkStatusUseCase updateFrameworkActiveStatusUseCase;
+    private final UpdateFrameworkCriterionUseCase updateFrameworkCriterionUseCase;
+    private final UpdateFrameworkCriterionBandUseCase updateFrameworkCriterionBandUseCase;
+    private final UpdateFrameworkResultBandUseCase updateFrameworkResultBandUseCase;
 
     public FrameworkController(
             ViewFrameworksUseCase viewFrameworksUseCase,
@@ -49,13 +58,17 @@ public class FrameworkController {
             ViewFrameworkVersionsUseCase viewFrameworkVersionsUseCase,
             ViewFrameworkVersionDetailsUseCase viewFrameworkVersionDetailsUseCase,
             UpdateFrameworkVersionUseCase updateFrameworkVersionUseCase,
-            UpdateFrameworkStatusUseCase updateFrameworkActiveStatusUseCase) {
+            UpdateFrameworkCriterionUseCase updateFrameworkCriterionUseCase,
+            UpdateFrameworkCriterionBandUseCase updateFrameworkCriterionBandUseCase,
+            UpdateFrameworkResultBandUseCase updateFrameworkResultBandUseCase) {
         this.viewFrameworksUseCase = viewFrameworksUseCase;
         this.viewFrameworkDetailsUseCase = viewFrameworkDetailsUseCase;
         this.viewFrameworkVersionsUseCase = viewFrameworkVersionsUseCase;
         this.viewFrameworkVersionDetailsUseCase = viewFrameworkVersionDetailsUseCase;
         this.updateFrameworkVersionUseCase = updateFrameworkVersionUseCase;
-        this.updateFrameworkActiveStatusUseCase = updateFrameworkActiveStatusUseCase;
+        this.updateFrameworkCriterionUseCase = updateFrameworkCriterionUseCase;
+        this.updateFrameworkCriterionBandUseCase = updateFrameworkCriterionBandUseCase;
+        this.updateFrameworkResultBandUseCase = updateFrameworkResultBandUseCase;
     }
 
     @QueryMapping(name = "frameworks")
@@ -105,16 +118,39 @@ public class FrameworkController {
         return updateFrameworkVersionUseCase.execute(command);
     }
 
-    @MutationMapping(name = "activateFramework")
+    @MutationMapping(name = "updateFrameworkCriterion")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public UUID activateFramework(@Argument(name = "id") UUID id) {
-        return updateFrameworkActiveStatusUseCase.execute(new UpdateFrameworkActiveStatusCommand(id, true));
+    public UUID updateFrameworkCriterion(
+            @Argument(name = "frameworkId") UUID frameworkId,
+            @Argument(name = "versionId") UUID versionId,
+            @Argument(name = "criterionId") UUID criterionId,
+            @Argument(name = "input") UpdateFrameworkCriterionInput input) {
+        var command = UpdateFrameworkCriterionCommandMapper.fromInput(frameworkId, versionId, criterionId, input);
+        return updateFrameworkCriterionUseCase.execute(command);
     }
 
-    @MutationMapping(name = "deactivateFramework")
+    @MutationMapping(name = "updateFrameworkCriterionBand")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public UUID deactivateFramework(@Argument(name = "id") UUID id) {
-        return updateFrameworkActiveStatusUseCase.execute(new UpdateFrameworkActiveStatusCommand(id, false));
+    public UUID updateFrameworkCriterionBand(
+            @Argument(name = "frameworkId") UUID frameworkId,
+            @Argument(name = "versionId") UUID versionId,
+            @Argument(name = "criterionId") UUID criterionId,
+            @Argument(name = "bandId") UUID bandId,
+            @Argument(name = "input") UpdateFrameworkCriterionBandInput input) {
+        var command = UpdateFrameworkCriterionBandCommandMapper.fromInput(
+                frameworkId, versionId, criterionId, bandId, input);
+        return updateFrameworkCriterionBandUseCase.execute(command);
+    }
+
+    @MutationMapping(name = "updateFrameworkResultBand")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public UUID updateFrameworkResultBand(
+            @Argument(name = "frameworkId") UUID frameworkId,
+            @Argument(name = "versionId") UUID versionId,
+            @Argument(name = "bandId") UUID bandId,
+            @Argument(name = "input") UpdateFrameworkResultBandInput input) {
+        var command = UpdateFrameworkResultBandCommandMapper.fromInput(frameworkId, versionId, bandId, input);
+        return updateFrameworkResultBandUseCase.execute(command);
     }
 
     @SchemaMapping(typeName = "FrameworkVersion", field = "criteria")

@@ -97,20 +97,16 @@ input UpdateFrameworkVersionInput {
     description: String
     effectiveFrom: String!
     effectiveTo: String
-    criteria: [CriterionInput!]
-    resultBands: [ResultBandInput!]
 }
 
-input CriterionInput {
+input UpdateFrameworkCriterionInput {
     code: String!
     name: String!
     description: String
     order: Int!
-    bands: [CriterionBandInput!]
 }
 
-input CriterionBandInput {
-    resultBandCode: String!
+input UpdateFrameworkCriterionBandInput {
     descriptor: String
     positiveSignals: [SignalInput!]
     negativeSignals: [SignalInput!]
@@ -123,7 +119,7 @@ input SignalInput {
     evidenceHint: String
 }
 
-input ResultBandInput {
+input UpdateFrameworkResultBandInput {
     code: String!
     label: String!
     description: String
@@ -139,6 +135,7 @@ extend type Query {
 
 extend type Mutation {
     updateFrameworkVersion(frameworkId: ID!, versionId: ID!, input: UpdateFrameworkVersionInput!): ID!
-    activateFramework(id: ID!): ID!
-    deactivateFramework(id: ID!): ID!
+    updateFrameworkCriterion(frameworkId: ID!, versionId: ID!, criterionId: ID!, input: UpdateFrameworkCriterionInput!): ID!
+    updateFrameworkCriterionBand(frameworkId: ID!, versionId: ID!, criterionId: ID!, bandId: ID!, input: UpdateFrameworkCriterionBandInput!): ID!
+    updateFrameworkResultBand(frameworkId: ID!, versionId: ID!, bandId: ID!, input: UpdateFrameworkResultBandInput!): ID!
 }

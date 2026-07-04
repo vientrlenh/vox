@@ -73,4 +73,9 @@ public class FrameworkResultBandRepositoryImpl implements FrameworkResultBandRep
     public void deleteByFrameworkVersionId(UUID frameworkVersionId) {
         springDataFrameworkResultBandRepository.deleteByFrameworkVersionId(frameworkVersionId);
     }
+
+    @Override
+    public void deleteById(UUID id) {
+        springDataFrameworkResultBandRepository.deleteById(id);
+    }
 }

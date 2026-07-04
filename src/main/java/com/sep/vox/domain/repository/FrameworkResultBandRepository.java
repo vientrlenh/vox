@@ -17,4 +17,5 @@ public interface FrameworkResultBandRepository {
     FrameworkResultBand save(FrameworkResultBand band);
     List<FrameworkResultBand> saveAll(List<FrameworkResultBand> bands);
     void deleteByFrameworkVersionId(UUID frameworkVersionId);
+    void deleteById(UUID id);
 }

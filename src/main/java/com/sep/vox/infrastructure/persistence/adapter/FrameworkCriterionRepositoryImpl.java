@@ -2,6 +2,7 @@ package com.sep.vox.infrastructure.persistence.adapter;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
@@ -42,6 +43,11 @@ public class FrameworkCriterionRepositoryImpl implements FrameworkCriterionRepos
     }
 
     @Override
+    public Optional<FrameworkCriterion> findById(UUID id) {
+        return springDataFrameworkCriterionRepository.findById(id).map(FrameworkCriterionMapper::toDomain);
+    }
+
+    @Override
     public List<FrameworkCriterion> findByFrameworkVersionId(UUID frameworkVersionId) {
         return springDataFrameworkCriterionRepository.findByFrameworkVersionId(frameworkVersionId)
                 .stream()
@@ -74,5 +80,10 @@ public class FrameworkCriterionRepositoryImpl implements FrameworkCriterionRepos
     @Override
     public void deleteByFrameworkVersionId(UUID frameworkVersionId) {
         springDataFrameworkCriterionRepository.deleteByFrameworkVersionId(frameworkVersionId);
+    }
+
+    @Override
+    public void deleteById(UUID id) {
+        springDataFrameworkCriterionRepository.deleteById(id);
     }
 }

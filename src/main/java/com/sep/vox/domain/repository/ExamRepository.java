@@ -1,5 +1,6 @@
 package com.sep.vox.domain.repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -24,8 +25,9 @@ public interface ExamRepository {
         int page,
         int size
     );
-    Optional<Exam> findByBlueprintId(UUID blueprintId);
+    List<Exam> findAllByBlueprintId(UUID blueprintId);
     boolean existsByBlueprintId(UUID blueprintId);
+    boolean existsByBlueprintIdAndKindAndStatusNot(UUID blueprintId, ExamKind kind, ExamStatus status);
     boolean existsSubmittedSessionByExamId(UUID examId);
     void deleteById(UUID id);
 }

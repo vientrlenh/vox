@@ -65,6 +65,16 @@ public class ExamBlueprintRepositoryImpl implements ExamBlueprintRepository {
     }
 
     @Override
+    public boolean canEditBlueprint(UUID blueprintId, UUID userId, UUID schoolId) {
+        return springDataExamBlueprintRepository.canEditBlueprint(blueprintId, userId, schoolId);
+    }
+
+    @Override
+    public boolean canChangeVersionStatus(UUID blueprintId, UUID userId, UUID schoolId) {
+        return springDataExamBlueprintRepository.canChangeVersionStatus(blueprintId, userId, schoolId);
+    }
+
+    @Override
     public void deleteById(UUID id) {
         springDataExamBlueprintRepository.deleteById(id);
     }

@@ -116,6 +116,8 @@ type Exam {
     id: ID!
     blueprintId: ID
     blueprintVersionId: ID
+    blueprint: ExamBlueprint
+    blueprintVersion: ExamBlueprintVersion
     code: String!
     name: String!
     description: String
@@ -134,6 +136,17 @@ type Exam {
     papers(status: ExamPaperStatus): [ExamPaper!]!
     securePool: ExamSecurePool
     schoolClassId: ID
+    candidateCount: Int!
+}
+
+type ExamStatusCounts {
+    total: Int!
+    draft: Int!
+    scheduled: Int!
+    inProgress: Int!
+    closed: Int!
+    resultsPublished: Int!
+    cancelled: Int!
 }
 
 type ExamPage {
@@ -192,6 +205,9 @@ type ExamBlueprintVersion {
     createdBy: ID
     updatedBy: ID
     sections: [ExamBlueprintSection!]!
+    sectionCount: Int!
+    slotCount: Int!
+    weightSum: Float!
 }
 
 type ExamBlueprint {
@@ -208,6 +224,9 @@ type ExamBlueprint {
     createdBy: ID
     updatedBy: ID
     versions(status: ExamBlueprintVersionStatus): [ExamBlueprintVersion!]!
+    versionCount: Int!
+    currentVersion: ExamBlueprintVersion
+    sectionCount: Int!
 }
 
 type ExamBlueprintPage {
@@ -229,6 +248,8 @@ extend type Query {
     ): ExamPage!
 
     exam(id: ID!): Exam
+
+    examStatusCounts(schoolId: ID, kind: ExamKind): ExamStatusCounts!
 
     classTests(
         status: ExamStatus,

@@ -22,6 +22,7 @@ import com.sep.vox.application.port.input.usecase.exampaper.UpdateExamPaperItemU
 import com.sep.vox.application.port.input.usecase.exampaper.UpdateExamPaperStatusUseCase;
 import com.sep.vox.domain.dto.ExamPaperDto;
 import com.sep.vox.domain.dto.ExamPaperItemDto;
+import com.sep.vox.interfaces.rest.dto.request.CreateExamPaperRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateExamPaperItemRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateExamPaperStatusRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
@@ -52,8 +53,12 @@ public class ExamPaperController {
 
     @PostMapping("/exams/{examId}/papers")
     @PreAuthorize("hasRole('TEACHER')")
-    public ResponseEntity<ApiResponse<ExamPaperDto>> create(@PathVariable UUID examId) {
-        var data = createExamPaperUseCase.execute(new CreateExamPaperCommand(examId));
+    public ResponseEntity<ApiResponse<ExamPaperDto>> create(
+            @PathVariable UUID examId,
+            @RequestBody(required = false) CreateExamPaperRequest request) {
+        var source = request == null ? null : request.source();
+        var copyFromPaperId = request == null ? null : request.copyFromPaperId();
+        var data = createExamPaperUseCase.execute(new CreateExamPaperCommand(examId, source, copyFromPaperId));
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Tạo đề thi thành công", data));
     }

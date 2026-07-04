@@ -80,10 +80,8 @@ public class ViewExamBlueprintDetailsUseCase implements IUseCase<ViewExamBluepri
         if (blueprint.getCreatedBy().equals(currentUserId)) {
             return true;
         }
-        var exam = examRepository.findByBlueprintId(blueprint.getId()).orElse(null);
-        if (exam != null) {
-            return examMemberRepository.findByExamIdAndUserId(exam.getId(), currentUserId).isPresent();
-        }
-        return false;
+        var exams = examRepository.findAllByBlueprintId(blueprint.getId());
+        return exams.stream()
+            .anyMatch(exam -> examMemberRepository.findByExamIdAndUserId(exam.getId(), currentUserId).isPresent());
     }
 }

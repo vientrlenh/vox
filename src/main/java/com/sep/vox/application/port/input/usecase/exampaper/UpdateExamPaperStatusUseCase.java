@@ -82,6 +82,10 @@ public class UpdateExamPaperStatusUseCase implements IUseCase<UpdateExamPaperSta
                 requireChairOrAdminOverride(paper, exam.getSchoolId(), currentUserId);
                 requireTransition(paper, ExamPaperStatus.APPROVED, ExamPaperStatus.LOCKED);
             }
+            case "REOPEN" -> {
+                requireChairOrAdminOverride(paper, exam.getSchoolId(), currentUserId);
+                requireTransition(paper, ExamPaperStatus.LOCKED, ExamPaperStatus.DRAFT);
+            }
             default -> throw new IllegalStateException("Action không hợp lệ");
         }
 

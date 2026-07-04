@@ -10,4 +10,5 @@ public interface ExamCandidateRepository {
     ExamCandidate save(ExamCandidate candidate);
     List<ExamCandidate> saveAll(Collection<ExamCandidate> candidates);
     List<ExamCandidate> findByExamId(UUID examId);
+    long countByExamId(UUID examId);
 }

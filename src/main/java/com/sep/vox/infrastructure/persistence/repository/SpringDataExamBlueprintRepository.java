@@ -63,4 +63,61 @@ public interface SpringDataExamBlueprintRepository extends JpaRepository<ExamBlu
         WHERE e.blueprintId = :blueprintId
     """)
     boolean existsUsedByExam(@Param("blueprintId") UUID blueprintId);
+
+    @Query("""
+        SELECT CASE WHEN (
+            b.schoolId = :schoolId
+            AND (
+                EXISTS (
+                    SELECT 1 FROM UserRoleJpaEntity ur
+                    JOIN RoleJpaEntity r ON r.id = ur.roleId
+                    WHERE ur.userId = :userId AND r.code = 'SCHOOL_ADMIN'
+                )
+                OR EXISTS (
+                    SELECT 1 FROM ExamJpaEntity e
+                    JOIN ExamMemberJpaEntity em ON em.examId = e.id
+                    WHERE e.blueprintId = b.id AND em.userId = :userId AND em.role = 'AUTHOR'
+                )
+                OR (
+                    NOT EXISTS (SELECT 1 FROM ExamJpaEntity e2 WHERE e2.blueprintId = b.id)
+                    AND b.createdBy = :userId
+                )
+            )
+        ) THEN true ELSE false END
+        FROM ExamBlueprintJpaEntity b
+        WHERE b.id = :blueprintId
+    """)
+    boolean canEditBlueprint(
+        @Param("blueprintId") UUID blueprintId,
+        @Param("userId") UUID userId,
+        @Param("schoolId") UUID schoolId
+    );
+
+    @Query("""
+        SELECT CASE WHEN (
+            b.schoolId = :schoolId
+            AND (
+                (
+                    NOT EXISTS (SELECT 1 FROM ExamJpaEntity e0 WHERE e0.blueprintId = b.id)
+                    AND EXISTS (
+                        SELECT 1 FROM UserRoleJpaEntity ur
+                        JOIN RoleJpaEntity r ON r.id = ur.roleId
+                        WHERE ur.userId = :userId AND r.code = 'SCHOOL_ADMIN'
+                    )
+                )
+                OR EXISTS (
+                    SELECT 1 FROM ExamJpaEntity e
+                    JOIN ExamMemberJpaEntity em ON em.examId = e.id
+                    WHERE e.blueprintId = b.id AND em.userId = :userId AND em.role IN ('CHAIR', 'REVIEWER')
+                )
+            )
+        ) THEN true ELSE false END
+        FROM ExamBlueprintJpaEntity b
+        WHERE b.id = :blueprintId
+    """)
+    boolean canChangeVersionStatus(
+        @Param("blueprintId") UUID blueprintId,
+        @Param("userId") UUID userId,
+        @Param("schoolId") UUID schoolId
+    );
 }

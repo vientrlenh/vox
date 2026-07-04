@@ -13,17 +13,12 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateExamBlueprintSectionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.ExamBlueprintSectionDto;
 import com.sep.vox.domain.mapper.ExamBlueprintSectionDtoMapper;
-import com.sep.vox.domain.model.exam.ExamBlueprint;
 import com.sep.vox.domain.model.exam.ExamBlueprintVersionStatus;
-import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.repository.ExamBlueprintRepository;
 import com.sep.vox.domain.repository.ExamBlueprintSectionRepository;
 import com.sep.vox.domain.repository.ExamBlueprintVersionRepository;
-import com.sep.vox.domain.repository.ExamMemberRepository;
-import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
@@ -32,28 +27,19 @@ public class UpdateExamBlueprintSectionUseCase implements IUseCase<UpdateExamBlu
     private final ExamBlueprintSectionRepository examBlueprintSectionRepository;
     private final ExamBlueprintVersionRepository examBlueprintVersionRepository;
     private final ExamBlueprintRepository examBlueprintRepository;
-    private final ExamRepository examRepository;
-    private final ExamMemberRepository examMemberRepository;
     private final SchoolUserRepository schoolUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
 
     public UpdateExamBlueprintSectionUseCase(
             ExamBlueprintSectionRepository examBlueprintSectionRepository,
             ExamBlueprintVersionRepository examBlueprintVersionRepository,
             ExamBlueprintRepository examBlueprintRepository,
-            ExamRepository examRepository,
-            ExamMemberRepository examMemberRepository,
             SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
             UserContextPort userContextPort) {
         this.examBlueprintSectionRepository = examBlueprintSectionRepository;
         this.examBlueprintVersionRepository = examBlueprintVersionRepository;
         this.examBlueprintRepository = examBlueprintRepository;
-        this.examRepository = examRepository;
-        this.examMemberRepository = examMemberRepository;
         this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
         this.userContextPort = userContextPort;
     }
 
@@ -72,7 +58,9 @@ public class UpdateExamBlueprintSectionUseCase implements IUseCase<UpdateExamBlu
             .orElseThrow(() -> new NotFoundException("Không tìm thấy version blueprint"));
         var blueprint = examBlueprintRepository.findById(version.getBlueprintId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy blueprint đề thi"));
-        authorizeEditor(blueprint, currentUserId, currentSchoolId);
+        if (!examBlueprintRepository.canEditBlueprint(blueprint.getId(), currentUserId, currentSchoolId)) {
+            throw new ForbiddenException("Quyền truy cập bị từ chối");
+        }
 
         if (version.getStatus() != ExamBlueprintVersionStatus.DRAFT) {
             throw new IllegalStateException("Chỉ được sửa section khi version đang DRAFT");
@@ -94,25 +82,6 @@ public class UpdateExamBlueprintSectionUseCase implements IUseCase<UpdateExamBlu
         section.setUpdatedBy(currentUserId);
 
         return ExamBlueprintSectionDtoMapper.toDto(examBlueprintSectionRepository.save(section));
-    }
-
-    private void authorizeEditor(ExamBlueprint blueprint, UUID currentUserId, UUID currentSchoolId) {
-        if (!blueprint.getSchoolId().equals(currentSchoolId)) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
-        }
-        var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
-        if (schoolAdmin) return;
-        var exam = examRepository.findByBlueprintId(blueprint.getId()).orElse(null);
-        if (exam != null) {
-            if (!examMemberRepository.existsByExamIdAndUserIdAndRole(exam.getId(), currentUserId, ExamMemberRole.AUTHOR)) {
-                throw new ForbiddenException("Quyền truy cập bị từ chối");
-            }
-        } else {
-            if (!blueprint.getCreatedBy().equals(currentUserId)) {
-                throw new ForbiddenException("Quyền truy cập bị từ chối");
-            }
-        }
     }
 
     private UpdateExamBlueprintSectionCommand normalize(UpdateExamBlueprintSectionCommand input) {

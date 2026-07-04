@@ -17,10 +17,8 @@ import com.sep.vox.application.port.input.command.CreateExamBlueprintVersionComm
 import com.sep.vox.application.port.input.command.CreateQuestionSelectionSpecCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.ExamBlueprintVersionDto;
 import com.sep.vox.domain.mapper.ExamBlueprintVersionDtoMapper;
-import com.sep.vox.domain.model.exam.ExamBlueprint;
 import com.sep.vox.domain.model.exam.ExamBlueprintSection;
 import com.sep.vox.domain.model.exam.ExamBlueprintSlot;
 import com.sep.vox.domain.model.exam.ExamBlueprintSlotType;
@@ -29,13 +27,10 @@ import com.sep.vox.domain.model.exam.ExamBlueprintVersionStatus;
 import com.sep.vox.domain.model.question.QuestionDifficulty;
 import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.model.question.QuestionType;
-import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.repository.ExamBlueprintRepository;
 import com.sep.vox.domain.repository.ExamBlueprintSectionRepository;
 import com.sep.vox.domain.repository.ExamBlueprintSlotRepository;
 import com.sep.vox.domain.repository.ExamBlueprintVersionRepository;
-import com.sep.vox.domain.repository.ExamMemberRepository;
-import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.valueobject.QuestionSelectionSpec;
@@ -48,10 +43,7 @@ public class CreateExamBlueprintVersionUseCase implements IUseCase<CreateExamBlu
     private final ExamBlueprintSectionRepository examBlueprintSectionRepository;
     private final ExamBlueprintSlotRepository examBlueprintSlotRepository;
     private final QuestionRepository questionRepository;
-    private final ExamRepository examRepository;
-    private final ExamMemberRepository examMemberRepository;
     private final SchoolUserRepository schoolUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
 
     public CreateExamBlueprintVersionUseCase(
@@ -60,20 +52,14 @@ public class CreateExamBlueprintVersionUseCase implements IUseCase<CreateExamBlu
             ExamBlueprintSectionRepository examBlueprintSectionRepository,
             ExamBlueprintSlotRepository examBlueprintSlotRepository,
             QuestionRepository questionRepository,
-            ExamRepository examRepository,
-            ExamMemberRepository examMemberRepository,
             SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
             UserContextPort userContextPort) {
         this.examBlueprintRepository = examBlueprintRepository;
         this.examBlueprintVersionRepository = examBlueprintVersionRepository;
         this.examBlueprintSectionRepository = examBlueprintSectionRepository;
         this.examBlueprintSlotRepository = examBlueprintSlotRepository;
         this.questionRepository = questionRepository;
-        this.examRepository = examRepository;
-        this.examMemberRepository = examMemberRepository;
         this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
         this.userContextPort = userContextPort;
     }
 
@@ -88,7 +74,9 @@ public class CreateExamBlueprintVersionUseCase implements IUseCase<CreateExamBlu
 
         var blueprint = examBlueprintRepository.findById(command.blueprintId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy blueprint đề thi"));
-        authorizeEditor(blueprint, currentUserId, currentSchoolId);
+        if (!examBlueprintRepository.canEditBlueprint(blueprint.getId(), currentUserId, currentSchoolId)) {
+            throw new ForbiddenException("Quyền truy cập bị từ chối");
+        }
 
         validateSections(command);
 
@@ -195,25 +183,6 @@ public class CreateExamBlueprintVersionUseCase implements IUseCase<CreateExamBlu
             StringNormalization.trimAndCollapseSpaces(input.skillCode()),
             input.topicId()
         );
-    }
-
-    private void authorizeEditor(ExamBlueprint blueprint, UUID currentUserId, UUID currentSchoolId) {
-        if (!blueprint.getSchoolId().equals(currentSchoolId)) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
-        }
-        var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
-        if (schoolAdmin) return;
-        var exam = examRepository.findByBlueprintId(blueprint.getId()).orElse(null);
-        if (exam != null) {
-            if (!examMemberRepository.existsByExamIdAndUserIdAndRole(exam.getId(), currentUserId, ExamMemberRole.AUTHOR)) {
-                throw new ForbiddenException("Quyền truy cập bị từ chối");
-            }
-        } else {
-            if (!blueprint.getCreatedBy().equals(currentUserId)) {
-                throw new ForbiddenException("Quyền truy cập bị từ chối");
-            }
-        }
     }
 
     private void validateSections(CreateExamBlueprintVersionCommand command) {

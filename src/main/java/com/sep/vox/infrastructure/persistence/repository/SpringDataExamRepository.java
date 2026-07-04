@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
-import java.util.Optional;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -60,8 +60,21 @@ public interface SpringDataExamRepository extends JpaRepository<ExamJpaEntity, U
         Pageable pageable
     );
 
-    Optional<com.sep.vox.infrastructure.persistence.entity.ExamJpaEntity> findByBlueprintId(UUID blueprintId);
+    List<com.sep.vox.infrastructure.persistence.entity.ExamJpaEntity> findAllByBlueprintId(UUID blueprintId);
     boolean existsByBlueprintId(UUID blueprintId);
+
+    @Query("""
+        SELECT CASE WHEN COUNT(e) > 0 THEN true ELSE false END
+        FROM ExamJpaEntity e
+        WHERE e.blueprintId = :blueprintId
+          AND e.kind = :kind
+          AND e.status <> :status
+    """)
+    boolean existsByBlueprintIdAndKindAndStatusNot(
+        @Param("blueprintId") UUID blueprintId,
+        @Param("kind") String kind,
+        @Param("status") String status
+    );
 
     @Query("""
         SELECT CASE WHEN COUNT(s) > 0 THEN true ELSE false END

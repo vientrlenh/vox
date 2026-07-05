@@ -15,6 +15,7 @@ import org.springframework.data.repository.query.Param;
 public interface SpringDataFrameworkCriterionRepository extends JpaRepository<FrameworkCriterionJpaEntity, UUID> {
 
     boolean existsByFrameworkVersionId(UUID frameworkVersionId);
+    boolean existsByFrameworkVersionIdAndCodeAndIdNot(UUID frameworkVersionId, String code, UUID id);
     List<FrameworkCriterionJpaEntity> findByFrameworkVersionId(UUID frameworkVersionId);
     List<FrameworkCriterionJpaEntity> findByFrameworkVersionIdIn(Collection<UUID> frameworkVersionIds);
 

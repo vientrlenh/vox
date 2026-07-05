@@ -20,7 +20,6 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.framework.FrameworkCriterion;
 import com.sep.vox.domain.model.framework.FrameworkCriterionBand;
-import com.sep.vox.domain.model.framework.FrameworkResultBand;
 import com.sep.vox.domain.model.framework.FrameworkVersion;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
 import com.sep.vox.domain.repository.FrameworkCriterionBandRepository;
@@ -67,14 +66,13 @@ public class CreateFrameworkCriterionBandsUseCase
         FrameworkVersion version = frameworkVersionRepository.findById(command.versionId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản khung năng lực"));
 
-        FrameworkCriterion criterion = frameworkCriterionRepository.findAllByIds(List.of(command.criterionId()))
-                .stream().findFirst()
+        FrameworkCriterion criterion = frameworkCriterionRepository.findById(command.criterionId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy tiêu chí"));
 
-        checkValidRequest(command, version, criterion);
-
         Map<String, UUID> resultBandCodeToId = frameworkResultBandRepository.findByFrameworkVersionId(command.versionId())
-                .stream().collect(Collectors.toMap(FrameworkResultBand::getCode, FrameworkResultBand::getId));
+                .stream().collect(Collectors.toMap(frb -> frb.getCode(), frb -> frb.getId()));
+
+        checkValidRequest(command, version, criterion, resultBandCodeToId);
 
         List<FrameworkCriterionBand> bandsToSave = new ArrayList<>();
         for (var bandCmd : command.bands()) {
@@ -95,10 +93,10 @@ public class CreateFrameworkCriterionBandsUseCase
             throw new IllegalStateException("Mức đánh giá đã tồn tại cho tiêu chí và kết quả này", e);
         }
 
-        return bandsToSave.stream().map(FrameworkCriterionBand::getId).collect(Collectors.toList());
+        return bandsToSave.stream().map(fcb -> fcb.getId()).collect(Collectors.toList());
     }
 
-    private void checkValidRequest(CreateFrameworkCriterionBandsCommand command, FrameworkVersion version, FrameworkCriterion criterion) {
+    private void checkValidRequest(CreateFrameworkCriterionBandsCommand command, FrameworkVersion version, FrameworkCriterion criterion, Map<String, UUID> resultBandCodeToId) {
         if (!version.getFrameworkId().equals(command.frameworkId())) {
             throw new IllegalArgumentException("Phiên bản không thuộc khung năng lực này");
         }
@@ -108,9 +106,6 @@ public class CreateFrameworkCriterionBandsUseCase
         if (!criterion.getFrameworkVersionId().equals(command.versionId())) {
             throw new IllegalArgumentException("Tiêu chí không thuộc phiên bản này");
         }
-
-        Map<String, UUID> resultBandCodeToId = frameworkResultBandRepository.findByFrameworkVersionId(command.versionId())
-                .stream().collect(Collectors.toMap(FrameworkResultBand::getCode, FrameworkResultBand::getId));
 
         Set<String> uniqueCodes = new HashSet<>();
         for (var bandCmd : command.bands()) {

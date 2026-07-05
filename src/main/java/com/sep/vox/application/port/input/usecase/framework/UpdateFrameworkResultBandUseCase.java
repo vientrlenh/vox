@@ -1,7 +1,6 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
 import java.time.OffsetDateTime;
-import java.util.List;
 import java.util.UUID;
 
 import org.springframework.dao.DataIntegrityViolationException;
@@ -89,18 +88,13 @@ public class UpdateFrameworkResultBandUseCase
         String safeCode = StringNormalization.normalizeCode(command.code());
         String safeLabel = StringNormalization.trimAndCollapseSpaces(command.label());
 
-        List<FrameworkResultBand> existingBands = frameworkResultBandRepository
-            .findByFrameworkVersionId(command.versionId());
-        for (FrameworkResultBand other : existingBands) {
-            if (other.getId().equals(band.getId())) {
-                continue;
-            }
-            if (StringNormalization.normalizeCode(other.getCode()).equals(safeCode)) {
-                throw new IllegalArgumentException("Mã kết quả đã tồn tại: " + safeCode);
-            }
-            if (StringNormalization.trimAndCollapseSpaces(other.getLabel()).equals(safeLabel)) {
-                throw new IllegalArgumentException("Nhãn kết quả đã tồn tại: " + safeLabel);
-            }
+        if (frameworkResultBandRepository.existsByFrameworkVersionIdAndCodeAndIdNot(
+                command.versionId(), safeCode, band.getId())) {
+            throw new IllegalArgumentException("Mã kết quả đã tồn tại: " + safeCode);
+        }
+        if (frameworkResultBandRepository.existsByFrameworkVersionIdAndLabelAndIdNot(
+                command.versionId(), safeLabel, band.getId())) {
+            throw new IllegalArgumentException("Nhãn kết quả đã tồn tại: " + safeLabel);
         }
     }
 }

@@ -9,6 +9,8 @@ import java.util.UUID;
 
 public interface FrameworkResultBandRepository {
     boolean existsByFrameworkVersionId(UUID frameworkVersionId);
+    boolean existsByFrameworkVersionIdAndCodeAndIdNot(UUID frameworkVersionId, String code, UUID id);
+    boolean existsByFrameworkVersionIdAndLabelAndIdNot(UUID frameworkVersionId, String label, UUID id);
     Optional<FrameworkResultBand> findById(UUID id);
 
     List<FrameworkResultBand> findAllByIds(List<UUID> ids);

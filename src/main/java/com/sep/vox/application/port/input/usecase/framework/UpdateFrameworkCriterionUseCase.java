@@ -1,7 +1,6 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
 import java.time.OffsetDateTime;
-import java.util.List;
 import java.util.UUID;
 
 import org.springframework.dao.DataIntegrityViolationException;
@@ -86,14 +85,9 @@ public class UpdateFrameworkCriterionUseCase
         }
 
         String safeCode = StringNormalization.normalizeCode(command.code());
-        List<FrameworkCriterion> siblings = frameworkCriterionRepository.findByFrameworkVersionId(command.versionId());
-        for (FrameworkCriterion other : siblings) {
-            if (other.getId().equals(criterion.getId())) {
-                continue;
-            }
-            if (StringNormalization.normalizeCode(other.getCode()).equals(safeCode)) {
-                throw new IllegalArgumentException("Mã tiêu chí đã tồn tại: " + safeCode);
-            }
+        if (frameworkCriterionRepository.existsByFrameworkVersionIdAndCodeAndIdNot(
+                command.versionId(), safeCode, criterion.getId())) {
+            throw new IllegalArgumentException("Mã tiêu chí đã tồn tại: " + safeCode);
         }
     }
 }

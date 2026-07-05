@@ -1,7 +1,6 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
 import java.time.OffsetDateTime;
-import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -56,8 +55,7 @@ public class UpdateFrameworkCriterionBandUseCase
         FrameworkVersion version = frameworkVersionRepository.findById(command.versionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản khung năng lực"));
 
-        FrameworkCriterion criterion = frameworkCriterionRepository.findAllByIds(List.of(command.criterionId()))
-            .stream().findFirst()
+        FrameworkCriterion criterion = frameworkCriterionRepository.findById(command.criterionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy tiêu chí"));
 
         FrameworkCriterionBand band = frameworkCriterionBandRepository.findById(command.bandId())

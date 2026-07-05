@@ -69,7 +69,7 @@ public class CreateFrameworkCriterionBandsUseCaseTests {
         when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.of(version));
 
         var criterion = new FrameworkCriterion(criterionId, versionId, "C1", "Criterion 1", "Desc", 1, now, now, userId, userId);
-        when(frameworkCriterionRepository.findAllByIds(List.of(criterionId))).thenReturn(List.of(criterion));
+        when(frameworkCriterionRepository.findById(criterionId)).thenReturn(Optional.of(criterion));
 
         var resultBand = new FrameworkResultBand(UUID.randomUUID(), versionId, "RB1", "Label", "Desc", 1, now, now, userId, userId);
         when(frameworkResultBandRepository.findByFrameworkVersionId(versionId)).thenReturn(List.of(resultBand));
@@ -118,7 +118,7 @@ public class CreateFrameworkCriterionBandsUseCaseTests {
     @Test
     void should_throw_when_criterion_belongs_to_different_version() {
         var otherCriterion = new FrameworkCriterion(criterionId, UUID.randomUUID(), "C1", "Criterion 1", "Desc", 1, now, now, userId, userId);
-        when(frameworkCriterionRepository.findAllByIds(List.of(criterionId))).thenReturn(List.of(otherCriterion));
+        when(frameworkCriterionRepository.findById(criterionId)).thenReturn(Optional.of(otherCriterion));
         var command = new CreateFrameworkCriterionBandsCommand(frameworkId, versionId, criterionId, List.of(bandItem("rb1")));
 
         assertThrows(IllegalArgumentException.class, () -> useCase.execute(command));

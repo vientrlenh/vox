@@ -40,4 +40,10 @@ public class ExamCandidateRepositoryImpl implements ExamCandidateRepository {
             .map(ExamCandidateMapper::toDomain)
             .toList();
     }
+
+    @Override
+    public boolean existsByScheduleIdAndStudentId(UUID scheduleId, UUID studentId) {
+        return springDataExamCandidateRepository.existsByScheduleIdAndStudentId(scheduleId, studentId);
+    }
 }
+

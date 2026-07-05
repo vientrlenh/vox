@@ -10,4 +10,6 @@ public interface ExamCandidateRepository {
     ExamCandidate save(ExamCandidate candidate);
     List<ExamCandidate> saveAll(Collection<ExamCandidate> candidates);
     List<ExamCandidate> findByExamId(UUID examId);
+    boolean existsByScheduleIdAndStudentId(UUID scheduleId, UUID studentId);
 }
+

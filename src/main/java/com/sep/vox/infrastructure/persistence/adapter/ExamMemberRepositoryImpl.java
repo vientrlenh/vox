@@ -71,3 +71,4 @@ public class ExamMemberRepositoryImpl implements ExamMemberRepository {
         springDataExamMemberRepository.deleteById(id);
     }
 }
+

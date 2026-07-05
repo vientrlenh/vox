@@ -36,7 +36,6 @@ import com.sep.vox.domain.mapper.QuestionDtoMapper;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamPaperStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
-import com.sep.vox.domain.model.school.SchoolClassUser;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamPaperItemRepository;
@@ -95,10 +94,10 @@ public class ExamController {
 
     @QueryMapping(name = "exams")
     public PageResult<ExamDto> exams(
-            @Argument ExamKind kind,
-            @Argument ExamStatus status,
-            @Argument UUID schoolId,
-            @Argument String keyword,
+            @Argument(name = "kind") ExamKind kind,
+            @Argument(name = "status") ExamStatus status,
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "keyword") String keyword,
             @Argument(name = "page") int page,
             @Argument(name = "size") int size) {
         validatePage(page, size);
@@ -107,9 +106,9 @@ public class ExamController {
 
     @QueryMapping(name = "classTests")
     public PageResult<ExamDto> classTests(
-            @Argument ExamStatus status,
-            @Argument UUID schoolClassId,
-            @Argument String keyword,
+            @Argument(name = "status") ExamStatus status,
+            @Argument(name = "schoolClassId") UUID schoolClassId,
+            @Argument(name = "keyword") String keyword,
             @Argument(name = "page") int page,
             @Argument(name = "size") int size) {
         validatePage(page, size);
@@ -135,7 +134,7 @@ public class ExamController {
     }
 
     @SchemaMapping(typeName = "Exam", field = "papers")
-    public List<ExamPaperDto> papers(ExamDto source, @Argument ExamPaperStatus status) {
+    public List<ExamPaperDto> papers(ExamDto source, @Argument(name = "status") ExamPaperStatus status) {
         if (status == null) {
             return ExamPaperDtoMapper.toDtoList(examPaperRepository.findByExamId(source.id()));
         }
@@ -164,9 +163,9 @@ public class ExamController {
         return examCandidateRepository.findByExamId(source.id()).stream()
             .findFirst()
             .flatMap(candidate -> schoolClassUserRepository.findByUserId(candidate.getStudentId()).stream()
-                .filter(SchoolClassUser::isActive)
+                .filter(scu -> scu.isActive())
                 .findFirst())
-            .map(SchoolClassUser::getSchoolClassId)
+            .map(scu -> scu.getSchoolClassId())
             .orElse(null);
     }
 

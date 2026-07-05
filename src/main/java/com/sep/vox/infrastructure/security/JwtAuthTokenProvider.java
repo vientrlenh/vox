@@ -23,7 +23,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 
 @Component
-public class JwtTokenProvider implements AuthTokenPort {
+public class JwtAuthTokenProvider implements AuthTokenPort {
 
     @Value("${jwt.secret}")
     private String secret;
@@ -32,7 +32,7 @@ public class JwtTokenProvider implements AuthTokenPort {
     private long expirationMs;
 
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(JwtTokenProvider.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(JwtAuthTokenProvider.class);
 
     @Override
     public String generateJwtToken(String userId, @Nullable UUID schoolId, String email, List<String> roles) {

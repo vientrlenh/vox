@@ -31,4 +31,9 @@ public class ExamPaperSectionRepositoryImpl implements ExamPaperSectionRepositor
             .map(ExamPaperSectionMapper::toDomain)
             .toList();
     }
+
+    @Override
+    public void deleteById(UUID id) {
+        springDataExamPaperSectionRepository.deleteById(id);
+    }
 }

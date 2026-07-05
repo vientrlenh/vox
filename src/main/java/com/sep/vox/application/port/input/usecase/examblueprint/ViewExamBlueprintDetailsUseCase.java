@@ -15,30 +15,22 @@ import com.sep.vox.domain.dto.ExamBlueprintDto;
 import com.sep.vox.domain.mapper.ExamBlueprintDtoMapper;
 import com.sep.vox.domain.model.exam.ExamBlueprint;
 import com.sep.vox.domain.repository.ExamBlueprintRepository;
-import com.sep.vox.domain.repository.ExamMemberRepository;
-import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
 public class ViewExamBlueprintDetailsUseCase implements IUseCase<ViewExamBlueprintDetailsQuery, ExamBlueprintDto> {
 
     private final ExamBlueprintRepository examBlueprintRepository;
-    private final ExamRepository examRepository;
-    private final ExamMemberRepository examMemberRepository;
     private final UserContextPort userContextPort;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
 
     public ViewExamBlueprintDetailsUseCase(
             ExamBlueprintRepository examBlueprintRepository,
-            ExamRepository examRepository,
-            ExamMemberRepository examMemberRepository,
             UserContextPort userContextPort,
             SchoolUserRepository schoolUserRepository,
             UserRoleQueryRepository userRoleQueryRepository) {
         this.examBlueprintRepository = examBlueprintRepository;
-        this.examRepository = examRepository;
-        this.examMemberRepository = examMemberRepository;
         this.userContextPort = userContextPort;
         this.schoolUserRepository = schoolUserRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
@@ -77,11 +69,6 @@ public class ViewExamBlueprintDetailsUseCase implements IUseCase<ViewExamBluepri
         if (schoolAdmin) {
             return true;
         }
-        if (blueprint.getCreatedBy().equals(currentUserId)) {
-            return true;
-        }
-        var exams = examRepository.findAllByBlueprintId(blueprint.getId());
-        return exams.stream()
-            .anyMatch(exam -> examMemberRepository.findByExamIdAndUserId(exam.getId(), currentUserId).isPresent());
+        return examBlueprintRepository.canViewBlueprint(blueprint.getId(), currentUserId, currentSchoolId);
     }
 }

@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.port.input.command.ClassTestSectionCommand;
 import com.sep.vox.application.port.input.command.CreateClassTestCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -151,25 +152,28 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             SchoolClass schoolClass,
             UUID currentUserId,
             OffsetDateTime now) {
-        List<Question> questions = new ArrayList<>();
-        for (var questionId : command.questionIds()) {
-            var question = questionRepository
-                .findAccessibleById(questionId, currentUserId, schoolClass.getSchoolId(), false, false)
-                .orElseThrow(() -> new ForbiddenException("Khong co quyen dung cau hoi " + questionId));
-            validateCanUseQuestion(question, currentUserId);
-            validateQuestionUnlocked(question);
-            questions.add(question);
-        }
-
         var blueprint = createBlueprint(schoolClass.getSchoolId(), schoolClass.getLanguageId(), command.name(), currentUserId, now);
         var version = createVersion(blueprint, now, currentUserId);
-        var section = createSection(version, command.name(), now, currentUserId);
-        var slots = createSlots(section, version, questions, now, currentUserId);
-
         var exam = createExam(blueprint, version, schoolClass, command, currentUserId, now);
         var paper = createPaper(exam, version.getId(), now, currentUserId);
-        var paperSection = createPaperSection(paper, section, now, currentUserId);
-        createPaperItems(paperSection, slots, exam.getId(), currentUserId);
+
+        for (int i = 0; i < command.sections().size(); i++) {
+            var sectionCommand = command.sections().get(i);
+            List<Question> questions = new ArrayList<>();
+            for (var questionId : sectionCommand.questionIds()) {
+                var question = questionRepository
+                    .findAccessibleById(questionId, currentUserId, schoolClass.getSchoolId(), false, false)
+                    .orElseThrow(() -> new ForbiddenException("Khong co quyen dung cau hoi " + questionId));
+                validateCanUseQuestion(question, currentUserId);
+                validateQuestionUnlocked(question);
+                questions.add(question);
+            }
+
+            var section = createSection(version, sectionCommand.title(), i + 1, now, currentUserId);
+            var slots = createSlots(section, version, questions, now, currentUserId);
+            var paperSection = createPaperSection(paper, section, now, currentUserId);
+            createPaperItems(paperSection, slots, exam.getId(), currentUserId);
+        }
 
         examMemberRepository.save(new ExamMember(exam.getId(), currentUserId, ExamMemberRole.CHAIR, now, currentUserId));
         var candidateCount = assignCandidates(exam, paper, schoolClass.getId(), currentUserId, now);
@@ -228,24 +232,36 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             StringNormalization.trimAndCollapseSpaces(input.description()),
             input.openAt(),
             input.closeAt(),
-            input.questionIds() == null ? List.of() : input.questionIds(),
+            input.sections() == null ? List.of() : input.sections().stream()
+                .map(section -> new ClassTestSectionCommand(
+                    StringNormalization.trimAndCollapseSpaces(section.title()),
+                    section.questionIds() == null ? List.of() : section.questionIds()
+                ))
+                .toList(),
             input.existingBlueprintId(),
             input.existingBlueprintVersionId()
         );
     }
 
     private void validateInputMode(CreateClassTestCommand command) {
-        boolean hasQuestions = !command.questionIds().isEmpty();
+        boolean hasQuestions = !command.sections().isEmpty();
         boolean hasExistingBlueprint = command.existingBlueprintId() != null || command.existingBlueprintVersionId() != null;
 
         if (!hasQuestions && !hasExistingBlueprint) {
-            throw new IllegalStateException("Phai cung cap questionIds hoac existing blueprint");
+            throw new IllegalStateException("Phai cung cap sections hoac existing blueprint");
         }
         if (hasQuestions && hasExistingBlueprint) {
             throw new IllegalStateException("Chi duoc chon mot cach tao bai kiem tra");
         }
         if (!hasQuestions && (command.existingBlueprintId() == null || command.existingBlueprintVersionId() == null)) {
             throw new IllegalStateException("Phai cung cap day du existingBlueprintId va existingBlueprintVersionId");
+        }
+        if (hasQuestions) {
+            for (var section : command.sections()) {
+                if (section.questionIds() == null || section.questionIds().isEmpty()) {
+                    throw new IllegalStateException("Moi section phai co it nhat 1 cau hoi");
+                }
+            }
         }
     }
 
@@ -283,10 +299,10 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         ));
     }
 
-    private ExamBlueprintSection createSection(ExamBlueprintVersion version, String name, OffsetDateTime now, UUID currentUserId) {
+    private ExamBlueprintSection createSection(ExamBlueprintVersion version, String name, int order, OffsetDateTime now, UUID currentUserId) {
         return examBlueprintSectionRepository.save(new ExamBlueprintSection(
             version.getId(),
-            1,
+            order,
             name,
             null,
             null,

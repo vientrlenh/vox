@@ -3,8 +3,10 @@ package com.sep.vox.application.port.input.command;
 import java.util.List;
 import java.util.UUID;
 
-public record UpdateClassTestQuestionsCommand(
+public record UpdateClassTestSectionCommand(
     UUID examId,
-    List<ClassTestSectionCommand> sections
+    UUID sectionId,
+    String title,
+    List<UUID> questionIds
 ) {
 }

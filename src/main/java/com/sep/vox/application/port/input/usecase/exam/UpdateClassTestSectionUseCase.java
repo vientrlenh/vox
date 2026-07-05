@@ -10,25 +10,23 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.port.input.command.ClassTestSectionCommand;
-import com.sep.vox.application.port.input.command.UpdateClassTestQuestionsCommand;
+import com.sep.vox.application.port.input.command.UpdateClassTestSectionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
-import com.sep.vox.domain.model.question.QuestionSharing;
 import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.domain.mapper.ExamDtoMapper;
 import com.sep.vox.domain.model.exam.ExamBlueprintSection;
 import com.sep.vox.domain.model.exam.ExamBlueprintSlot;
 import com.sep.vox.domain.model.exam.ExamBlueprintSlotType;
-import com.sep.vox.domain.model.exam.ExamBlueprintVersion;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
-import com.sep.vox.domain.model.exam.ExamPaper;
 import com.sep.vox.domain.model.exam.ExamPaperItem;
 import com.sep.vox.domain.model.exam.ExamPaperSection;
 import com.sep.vox.domain.model.exam.ExamSecurePoolReleaseMode;
 import com.sep.vox.domain.model.exam.ExamStatus;
+import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
+import com.sep.vox.domain.model.question.QuestionSharing;
+import com.sep.vox.domain.repository.ExamBlueprintSectionRepository;
 import com.sep.vox.domain.repository.ExamBlueprintSlotRepository;
 import com.sep.vox.domain.repository.ExamBlueprintVersionRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
@@ -36,12 +34,11 @@ import com.sep.vox.domain.repository.ExamPaperItemRepository;
 import com.sep.vox.domain.repository.ExamPaperRepository;
 import com.sep.vox.domain.repository.ExamPaperSectionRepository;
 import com.sep.vox.domain.repository.ExamRepository;
-import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.QuestionCollaboratorRepository;
-import com.sep.vox.domain.repository.ExamBlueprintSectionRepository;
+import com.sep.vox.domain.repository.QuestionRepository;
 
 @Service
-public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTestQuestionsCommand, ExamDto> {
+public class UpdateClassTestSectionUseCase implements IUseCase<UpdateClassTestSectionCommand, ExamDto> {
 
     private final ExamRepository examRepository;
     private final ExamMemberRepository examMemberRepository;
@@ -56,7 +53,7 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
     private final ExamQuestionSecureLockService examQuestionSecureLockService;
     private final UserContextPort userContextPort;
 
-    public UpdateClassTestQuestionsUseCase(
+    public UpdateClassTestSectionUseCase(
             ExamRepository examRepository,
             ExamMemberRepository examMemberRepository,
             ExamBlueprintVersionRepository examBlueprintVersionRepository,
@@ -85,7 +82,7 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
 
     @Override
     @Transactional
-    public ExamDto execute(UpdateClassTestQuestionsCommand input) {
+    public ExamDto execute(UpdateClassTestSectionCommand input) {
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         var exam = examRepository.findById(input.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
@@ -102,17 +99,42 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
         if (examRepository.existsSubmittedSessionByExamId(exam.getId())) {
             throw new IllegalStateException("Không thể sửa câu hỏi khi đã có học sinh nộp bài");
         }
-        if (input.sections() == null || input.sections().isEmpty()) {
-            throw new IllegalStateException("Bài kiểm tra trên lớp phải có ít nhất 1 section");
-        }
-        for (var section : input.sections()) {
-            if (section.questionIds() == null || section.questionIds().isEmpty()) {
-                throw new IllegalStateException("Mỗi section phải có ít nhất 1 câu hỏi");
-            }
+
+        var section = examBlueprintSectionRepository.findById(input.sectionId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy section"));
+        var version = examBlueprintVersionRepository.findById(section.getBlueprintVersionId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy version blueprint"));
+        if (!version.getBlueprintId().equals(exam.getBlueprintId())) {
+            throw new IllegalStateException("Section không thuộc bài kiểm tra này");
         }
 
-        for (var section : input.sections()) {
-            for (var questionId : section.questionIds()) {
+        var paper = examPaperRepository.findByExamId(exam.getId()).stream()
+            .findFirst()
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy đề thi"));
+        var paperSection = examPaperSectionRepository.findByPaperId(paper.getId()).stream()
+            .filter(candidate -> candidate.getOrder() == section.getOrder())
+            .findFirst()
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy section đề thi tương ứng"));
+
+        var now = OffsetDateTime.now();
+
+        if (input.title() != null) {
+            section.setTitle(input.title());
+            section.setUpdatedAt(now);
+            section.setUpdatedBy(currentUserId);
+            examBlueprintSectionRepository.save(section);
+
+            paperSection.setTitle(input.title());
+            paperSection.setUpdatedAt(now);
+            paperSection.setUpdatedBy(currentUserId);
+            examPaperSectionRepository.save(paperSection);
+        }
+
+        if (input.questionIds() != null) {
+            if (input.questionIds().isEmpty()) {
+                throw new IllegalStateException("Section phải có ít nhất 1 câu hỏi");
+            }
+            for (var questionId : input.questionIds()) {
                 var question = questionRepository.findAccessibleById(questionId, currentUserId, exam.getSchoolId(), false, false)
                     .orElseThrow(() -> new ForbiddenException("Không có quyền dùng câu hỏi " + questionId));
                 boolean isOwner = currentUserId.equals(question.getCreatedBy());
@@ -124,42 +146,7 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
                     }
                 }
             }
-        }
-
-        var version = examBlueprintVersionRepository.findByBlueprintId(exam.getBlueprintId()).stream()
-            .findFirst()
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy version blueprint"));
-        var existingSections = examBlueprintSectionRepository.findByBlueprintVersionId(version.getId()).stream()
-            .sorted((a, b) -> Integer.compare(a.getOrder(), b.getOrder()))
-            .toList();
-
-        var paper = examPaperRepository.findByExamId(exam.getId()).stream()
-            .findFirst()
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy đề thi"));
-        var existingPaperSections = examPaperSectionRepository.findByPaperId(paper.getId()).stream()
-            .sorted((a, b) -> Integer.compare(a.getOrder(), b.getOrder()))
-            .toList();
-
-        var now = OffsetDateTime.now();
-        var commonCount = Math.min(existingSections.size(), input.sections().size());
-
-        for (int i = 0; i < commonCount; i++) {
-            updateSectionQuestions(
-                existingSections.get(i),
-                existingPaperSections.get(i),
-                input.sections().get(i).questionIds(),
-                exam.getId(),
-                currentUserId,
-                now
-            );
-        }
-
-        for (int i = input.sections().size(); i < existingSections.size(); i++) {
-            deleteSection(existingSections.get(i), existingPaperSections.get(i));
-        }
-
-        for (int i = existingSections.size(); i < input.sections().size(); i++) {
-            createNewSection(version, paper, input.sections().get(i), i + 1, exam.getId(), currentUserId, now);
+            updateSectionQuestions(section, paperSection, input.questionIds(), exam.getId(), currentUserId, now);
         }
 
         exam.setUpdatedAt(now);
@@ -229,82 +216,6 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
                 slot.getId(),
                 paperSection.getId(),
                 paperSection.getPaperId(),
-                questionId,
-                slot.getOrder(),
-                BigDecimal.ONE
-            ));
-            examQuestionSecureLockService.lockQuestionForExam(
-                questionId, examId, ExamSecurePoolReleaseMode.AUTO_AFTER_CLOSE, currentUserId
-            );
-        }
-    }
-
-    private void deleteSection(ExamBlueprintSection section, ExamPaperSection paperSection) {
-        for (var item : examPaperItemRepository.findBySectionId(paperSection.getId())) {
-            examPaperItemRepository.deleteById(item.getId());
-        }
-        examPaperSectionRepository.deleteById(paperSection.getId());
-
-        for (var slot : examBlueprintSlotRepository.findBySectionId(section.getId())) {
-            examBlueprintSlotRepository.deleteById(slot.getId());
-        }
-        examBlueprintSectionRepository.deleteById(section.getId());
-    }
-
-    private void createNewSection(
-            ExamBlueprintVersion version,
-            ExamPaper paper,
-            ClassTestSectionCommand sectionCommand,
-            int order,
-            UUID examId,
-            UUID currentUserId,
-            OffsetDateTime now) {
-        var section = examBlueprintSectionRepository.save(new ExamBlueprintSection(
-            version.getId(),
-            order,
-            sectionCommand.title(),
-            null,
-            null,
-            BigDecimal.ONE,
-            now,
-            now,
-            currentUserId,
-            currentUserId
-        ));
-        var paperSection = examPaperSectionRepository.save(new ExamPaperSection(
-            paper.getId(),
-            order,
-            sectionCommand.title(),
-            null,
-            null,
-            now,
-            now,
-            currentUserId,
-            currentUserId
-        ));
-
-        var questionIds = sectionCommand.questionIds();
-        for (int i = 0; i < questionIds.size(); i++) {
-            var questionId = questionIds.get(i);
-            var slot = examBlueprintSlotRepository.save(new ExamBlueprintSlot(
-                section.getId(),
-                version.getId(),
-                i + 1,
-                BigDecimal.ONE,
-                null,
-                null,
-                ExamBlueprintSlotType.FIXED,
-                questionId,
-                null,
-                now,
-                now,
-                currentUserId,
-                currentUserId
-            ));
-            examPaperItemRepository.save(new ExamPaperItem(
-                slot.getId(),
-                paperSection.getId(),
-                paper.getId(),
                 questionId,
                 slot.getOrder(),
                 BigDecimal.ONE

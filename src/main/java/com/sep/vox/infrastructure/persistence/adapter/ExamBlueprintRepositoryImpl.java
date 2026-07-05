@@ -75,6 +75,11 @@ public class ExamBlueprintRepositoryImpl implements ExamBlueprintRepository {
     }
 
     @Override
+    public boolean canViewBlueprint(UUID blueprintId, UUID userId, UUID schoolId) {
+        return springDataExamBlueprintRepository.canViewBlueprint(blueprintId, userId, schoolId);
+    }
+
+    @Override
     public void deleteById(UUID id) {
         springDataExamBlueprintRepository.deleteById(id);
     }

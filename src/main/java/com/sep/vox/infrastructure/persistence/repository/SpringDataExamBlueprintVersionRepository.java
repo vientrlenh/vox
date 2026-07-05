@@ -20,4 +20,12 @@ public interface SpringDataExamBlueprintVersionRepository extends JpaRepository<
         WHERE v.blueprintId = :blueprintId
     """)
     int nextVersionNumber(@Param("blueprintId") UUID blueprintId);
+
+    @Query("""
+        SELECT CASE WHEN (
+            EXISTS (SELECT 1 FROM ExamJpaEntity e WHERE e.blueprintVersionId = :versionId)
+            OR EXISTS (SELECT 1 FROM ExamPaperJpaEntity p WHERE p.blueprintVersionId = :versionId)
+        ) THEN true ELSE false END
+    """)
+    boolean existsUsedByVersion(@Param("versionId") UUID versionId);
 }

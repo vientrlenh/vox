@@ -9,7 +9,7 @@ public record CreateClassTestCommand(
     String description,
     String openAt,
     String closeAt,
-    List<UUID> questionIds,
+    List<ClassTestSectionCommand> sections,
     UUID existingBlueprintId,
     UUID existingBlueprintVersionId
 ) {

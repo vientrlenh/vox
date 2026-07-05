@@ -3,6 +3,7 @@ package com.sep.vox.interfaces.rest.dto.request;
 import java.util.List;
 import java.util.UUID;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -16,7 +17,10 @@ public record CreateClassTestRequest(
     String description,
     String openAt,
     String closeAt,
-    List<UUID> questionIds,
+
+    @Valid
+    List<ClassTestSectionRequest> sections,
+
     UUID existingBlueprintId,
     UUID existingBlueprintVersionId
 ) {

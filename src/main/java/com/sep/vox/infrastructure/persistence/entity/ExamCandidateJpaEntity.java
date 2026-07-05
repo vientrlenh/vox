@@ -32,8 +32,8 @@ public class ExamCandidateJpaEntity {
     @Column(name = "student_id", nullable = false, updatable = false)
     private UUID studentId;
 
-    @Column(name = "assigned_paper_id", nullable = false, updatable = false)
-    private UUID assignedPaperId; 
+    @Column(name = "assigned_paper_id")
+    private UUID assignedPaperId;
 
     @Column(name = "schedule_id")
     private UUID scheduleId;

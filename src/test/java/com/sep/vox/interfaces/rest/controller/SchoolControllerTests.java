@@ -91,6 +91,8 @@ class SchoolControllerTests {
     private UpdateSchoolStatusUseCase updateSchoolStatusUseCase;
     private AddSchoolRoomUseCase addSchoolRoomUseCase;
     private DeleteSchoolRoomUseCase deleteSchoolRoomUseCase;
+    private com.sep.vox.application.port.input.usecase.schoolroom.ViewSchoolRoomsUseCase viewSchoolRoomsUseCase;
+    private com.sep.vox.application.port.input.usecase.schoolroom.UpdateSchoolRoomUseCase updateSchoolRoomUseCase;
     private CreateSchoolGradeUseCase createSchoolGradeUseCase;
     private DeleteSchoolGradeUseCase deleteSchoolGradeUseCase;
     private PreviewSchoolGradeImportFromFileUseCase previewSchoolGradeImportFromFileUseCase;
@@ -130,6 +132,8 @@ class SchoolControllerTests {
         updateSchoolStatusUseCase = mock(UpdateSchoolStatusUseCase.class);
         addSchoolRoomUseCase = mock(AddSchoolRoomUseCase.class);
         deleteSchoolRoomUseCase = mock(DeleteSchoolRoomUseCase.class);
+        viewSchoolRoomsUseCase = mock(com.sep.vox.application.port.input.usecase.schoolroom.ViewSchoolRoomsUseCase.class);
+        updateSchoolRoomUseCase = mock(com.sep.vox.application.port.input.usecase.schoolroom.UpdateSchoolRoomUseCase.class);
         createSchoolGradeUseCase = mock(CreateSchoolGradeUseCase.class);
         deleteSchoolGradeUseCase = mock(DeleteSchoolGradeUseCase.class);
         previewSchoolGradeImportFromFileUseCase = mock(PreviewSchoolGradeImportFromFileUseCase.class);
@@ -158,8 +162,10 @@ class SchoolControllerTests {
             acceptSchoolClassUserImportUseCase,
             deleteSchoolUseCase, 
             updateSchoolStatusUseCase, 
-            addSchoolRoomUseCase, 
-            deleteSchoolRoomUseCase, 
+            addSchoolRoomUseCase,
+            deleteSchoolRoomUseCase,
+            viewSchoolRoomsUseCase,
+            updateSchoolRoomUseCase,
             createSchoolGradeUseCase,
             deleteSchoolGradeUseCase,
             previewSchoolGradeImportFromFileUseCase,

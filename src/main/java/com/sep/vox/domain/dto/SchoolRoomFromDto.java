@@ -9,6 +9,7 @@ public record SchoolRoomFromDto(
         String code,
         String name,
         String description,
+        Integer capacity,
         boolean isActive,
         OffsetDateTime createdAt,
         UUID createdBy,

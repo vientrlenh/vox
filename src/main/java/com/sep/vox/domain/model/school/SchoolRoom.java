@@ -9,6 +9,7 @@ public class SchoolRoom {
     private String code;
     private String name;
     private String description;
+    private Integer capacity;
     private boolean isActive;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
@@ -17,13 +18,14 @@ public class SchoolRoom {
 
     public SchoolRoom() {}
 
-    public SchoolRoom(UUID id, UUID schoolId, String code, String name, String description, boolean isActive, OffsetDateTime createdAt,
+    public SchoolRoom(UUID id, UUID schoolId, String code, String name, String description, Integer capacity, boolean isActive, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.schoolId = schoolId;
         this.code = code;
         this.name = name;
         this.description = description;
+        this.capacity = capacity;
         this.isActive = isActive;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -31,12 +33,13 @@ public class SchoolRoom {
         this.updatedBy = updatedBy;
     }
 
-    public SchoolRoom(UUID schoolId, String code, String name, String description, boolean isActive, OffsetDateTime createdAt,
+    public SchoolRoom(UUID schoolId, String code, String name, String description, Integer capacity, boolean isActive, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.schoolId = schoolId;
         this.code = code;
         this.name = name;
         this.description = description;
+        this.capacity = capacity;
         this.isActive = isActive;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -82,6 +85,14 @@ public class SchoolRoom {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public Integer getCapacity() {
+        return capacity;
+    }
+
+    public void setCapacity(Integer capacity) {
+        this.capacity = capacity;
     }
 
     public OffsetDateTime getCreatedAt() {

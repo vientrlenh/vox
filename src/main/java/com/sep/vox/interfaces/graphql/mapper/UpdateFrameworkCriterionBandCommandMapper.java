@@ -7,6 +7,8 @@ import com.sep.vox.application.port.input.command.UpdateFrameworkCriterionBandCo
 import com.sep.vox.domain.valueobject.framework.FrameworkCriterionSignal;
 import com.sep.vox.domain.valueobject.framework.FrameworkCriterionSignalImportance;
 import com.sep.vox.domain.valueobject.framework.FrameworkCriterionSignals;
+import com.sep.vox.interfaces.graphql.dto.request.SignalInput;
+import com.sep.vox.interfaces.graphql.dto.request.UpdateFrameworkCriterionBandInput;
 
 public final class UpdateFrameworkCriterionBandCommandMapper {
 

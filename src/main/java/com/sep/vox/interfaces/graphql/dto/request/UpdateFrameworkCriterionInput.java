@@ -1,4 +1,4 @@
-package com.sep.vox.interfaces.graphql.mapper;
+package com.sep.vox.interfaces.graphql.dto.request;
 
 public record UpdateFrameworkCriterionInput(
     String code,

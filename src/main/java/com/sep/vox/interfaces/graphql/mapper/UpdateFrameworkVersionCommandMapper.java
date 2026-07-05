@@ -4,6 +4,7 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import com.sep.vox.application.port.input.command.UpdateFrameworkVersionCommand;
+import com.sep.vox.interfaces.graphql.dto.request.UpdateFrameworkVersionInput;
 
 public final class UpdateFrameworkVersionCommandMapper {
 

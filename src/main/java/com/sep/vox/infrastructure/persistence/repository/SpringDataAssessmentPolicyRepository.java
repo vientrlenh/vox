@@ -4,6 +4,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -13,6 +14,14 @@ import com.sep.vox.infrastructure.persistence.entity.AssessmentPolicyJpaEntity;
 
 public interface SpringDataAssessmentPolicyRepository extends JpaRepository<AssessmentPolicyJpaEntity, UUID> {
     boolean existsByFrameworkVersionId(UUID frameworkVersionId);
+
+    boolean existsByRubricVersionIdAndStatus(UUID rubricVersionId, String status);
+
+    @Query("SELECT p FROM AssessmentPolicyJpaEntity p WHERE p.schoolId IS NULL AND (:status IS NULL OR p.status = :status) AND (:languageId IS NULL OR p.languageId = :languageId)")
+    Page<AssessmentPolicyJpaEntity> findBySchoolIdIsNullAndStatus(@Param("status") String status, @Param("languageId") UUID languageId, Pageable pageable);
+
+    @Query("SELECT p FROM AssessmentPolicyJpaEntity p WHERE p.schoolId = :schoolId AND (:status IS NULL OR p.status = :status) AND (:languageId IS NULL OR p.languageId = :languageId)")
+    Page<AssessmentPolicyJpaEntity> findBySchoolIdAndStatus(@Param("schoolId") UUID schoolId, @Param("status") String status, @Param("languageId") UUID languageId, Pageable pageable);
 
 
     @Query("""
@@ -43,5 +52,52 @@ public interface SpringDataAssessmentPolicyRepository extends JpaRepository<Asse
         @Param("gradeLevelId") UUID gradeLevelId, 
         @Param("atTime") OffsetDateTime atTime, 
         Pageable pageable
+    );
+
+    @Query("""
+        SELECT COUNT(p) > 0 FROM AssessmentPolicyJpaEntity p
+        WHERE (:schoolId IS NULL OR p.schoolId = :schoolId)
+            AND (:schoolId IS NOT NULL OR p.schoolId IS NULL)
+            AND p.languageId = :languageId
+            AND p.frameworkVersionId = :frameworkVersionId
+            AND (:schoolGradeLevelId IS NULL OR p.schoolGradeLevelId = :schoolGradeLevelId)
+            AND (:schoolGradeLevelId IS NOT NULL OR p.schoolGradeLevelId IS NULL)
+            AND (:schoolGradeId IS NULL OR p.schoolGradeId = :schoolGradeId)
+            AND (:schoolGradeId IS NOT NULL OR p.schoolGradeId IS NULL)
+            AND (:schoolClassId IS NULL OR p.schoolClassId = :schoolClassId)
+            AND (:schoolClassId IS NOT NULL OR p.schoolClassId IS NULL)
+            AND p.rubricVersionId = :rubricVersionId
+            AND p.status IN ('DRAFT', 'PUBLISHED')
+    """)
+    boolean existsActiveForScope(
+        @Param("schoolId") UUID schoolId,
+        @Param("languageId") UUID languageId,
+        @Param("frameworkVersionId") UUID frameworkVersionId,
+        @Param("schoolGradeLevelId") UUID schoolGradeLevelId,
+        @Param("schoolGradeId") UUID schoolGradeId,
+        @Param("schoolClassId") UUID schoolClassId,
+        @Param("rubricVersionId") UUID rubricVersionId
+    );
+
+    @Query("""
+        SELECT COALESCE(MAX(p.version), 0) FROM AssessmentPolicyJpaEntity p
+        WHERE (:schoolId IS NULL OR p.schoolId = :schoolId)
+            AND (:schoolId IS NOT NULL OR p.schoolId IS NULL)
+            AND p.languageId = :languageId
+            AND p.frameworkVersionId = :frameworkVersionId
+            AND (:schoolGradeLevelId IS NULL OR p.schoolGradeLevelId = :schoolGradeLevelId)
+            AND (:schoolGradeLevelId IS NOT NULL OR p.schoolGradeLevelId IS NULL)
+            AND (:schoolGradeId IS NULL OR p.schoolGradeId = :schoolGradeId)
+            AND (:schoolGradeId IS NOT NULL OR p.schoolGradeId IS NULL)
+            AND (:schoolClassId IS NULL OR p.schoolClassId = :schoolClassId)
+            AND (:schoolClassId IS NOT NULL OR p.schoolClassId IS NULL)
+    """)
+    int findMaxVersionForScope(
+        @Param("schoolId") UUID schoolId,
+        @Param("languageId") UUID languageId,
+        @Param("frameworkVersionId") UUID frameworkVersionId,
+        @Param("schoolGradeLevelId") UUID schoolGradeLevelId,
+        @Param("schoolGradeId") UUID schoolGradeId,
+        @Param("schoolClassId") UUID schoolClassId
     );
 }

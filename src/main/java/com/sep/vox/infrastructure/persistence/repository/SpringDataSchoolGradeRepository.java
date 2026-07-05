@@ -30,6 +30,16 @@ public interface SpringDataSchoolGradeRepository extends JpaRepository<SchoolGra
     @Query("""
         SELECT sg
         FROM SchoolGradeJpaEntity sg
+        JOIN SchoolGradeLevelJpaEntity sgl
+            ON sgl.id = sg.schoolGradeLevelId
+        WHERE sgl.schoolId = :schoolId
+            AND sg.name = :name
+        """)
+    Optional<SchoolGradeJpaEntity> findBySchoolIdAndName(@Param("schoolId") UUID schoolId, @Param("name") String name);
+
+    @Query("""
+        SELECT sg
+        FROM SchoolGradeJpaEntity sg
         JOIN SchoolGradeLevelJpaEntity sgl 
             ON sgl.id = sg.schoolGradeLevelId
         WHERE sgl.schoolId = :schoolId 

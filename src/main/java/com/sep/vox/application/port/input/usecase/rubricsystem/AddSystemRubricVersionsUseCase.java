@@ -96,7 +96,9 @@ public class AddSystemRubricVersionsUseCase implements IUseCase<AddSystemRubricV
             }
 
             String safeCode = rubric.getCode() + "_V" + vCmd.version();
-            String safeName = rubric.getName() + " - Version " + vCmd.version();
+            String safeName = (vCmd.name() != null && !vCmd.name().isBlank())
+                    ? vCmd.name().trim()
+                    : rubric.getName() + " - Version " + vCmd.version();
 
             return new RubricVersion(
                     command.rubricId(), vCmd.version(), safeCode, safeName, rubric.getDescription(),

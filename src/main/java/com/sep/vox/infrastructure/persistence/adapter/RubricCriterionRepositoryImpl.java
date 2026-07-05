@@ -12,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
+import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.domain.model.rubric.RubricCriterion;
 import com.sep.vox.domain.repository.RubricCriterionRepository;
 import com.sep.vox.infrastructure.persistence.mapper.RubricCriterionMapper;
@@ -92,7 +93,8 @@ public class RubricCriterionRepositoryImpl implements RubricCriterionRepository 
     @Override
     public PageResult<RubricCriterion> searchRubricCriteria(UUID versionId, String keyword, Boolean isRequired, int page, int size) {
         var springPageable = PageRequest.of(page, size);
-        var pageEntity = springDataRubricCriterionRepository.searchRubricCriteria(versionId, keyword, isRequired, springPageable);
+        var pageEntity = springDataRubricCriterionRepository.searchRubricCriteria(
+                versionId, StringNormalization.toLikePattern(keyword), isRequired, springPageable);
 
         return new PageResult<>(
                 pageEntity.getContent().stream().map(RubricCriterionMapper::toDomain).toList(),

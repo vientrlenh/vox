@@ -5,7 +5,6 @@ import java.util.UUID;
 
 public record UpdateSystemRubricCriterionBandCommand(
         UUID bandId,
-        String code,
         BigDecimal scoreMin,
         BigDecimal scoreMax
 ) {}

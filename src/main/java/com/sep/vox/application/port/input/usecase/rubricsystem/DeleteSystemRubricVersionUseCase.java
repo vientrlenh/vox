@@ -63,7 +63,8 @@ public class DeleteSystemRubricVersionUseCase implements IUseCase<DeleteSystemRu
         } else if (version.getStatus() == RubricStatus.PUBLISHED) {
             version.setStatus(RubricStatus.ARCHIVED);
             OffsetDateTime now = OffsetDateTime.now();
-            version.setEffectiveTo(now);
+            // Không cho effectiveTo lùi về trước effectiveFrom nếu version chưa tới ngày hiệu lực
+            version.setEffectiveTo(now.isBefore(version.getEffectiveFrom()) ? version.getEffectiveFrom() : now);
             version.setUpdatedAt(now);
             version.setUpdatedBy(currentUserId);
             rubricVersionRepository.save(version);

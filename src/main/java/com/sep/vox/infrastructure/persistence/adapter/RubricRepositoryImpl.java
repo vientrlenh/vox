@@ -100,8 +100,7 @@ public class RubricRepositoryImpl implements RubricRepository {
 
     @Override
     public PageResult<Rubric> searchSystemRubrics(String keyword, UUID frameworkId, UUID languageId, int page, int size) {
-        int actualPage = page - 1;
-        Pageable springPageable = PageRequest.of(actualPage, size);
+        Pageable springPageable = PageRequest.of(page, size);
 
         // 2. Gọi DB
        Page<RubricJpaEntity> pageEntity =
@@ -119,8 +118,7 @@ public class RubricRepositoryImpl implements RubricRepository {
 
     @Override
     public PageResult<Rubric> searchSchoolRubrics(UUID schoolId, String keyword, UUID frameworkId, UUID languageId, int page, int size) {
-        int actualPage = page - 1;
-        Pageable springPageable = PageRequest.of(actualPage, size);
+        Pageable springPageable = PageRequest.of(page, size);
 
         // 2. Gọi DB
         Page<RubricJpaEntity> pageEntity =

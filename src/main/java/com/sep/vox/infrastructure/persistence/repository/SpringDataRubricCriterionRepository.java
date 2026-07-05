@@ -55,12 +55,12 @@ public interface SpringDataRubricCriterionRepository extends JpaRepository<Rubri
     List<RubricCriterionJpaEntity> findByRubricVersionIdIn(@Param("versionIds") List<UUID> versionIds);
 
     @Query("SELECT c FROM RubricCriterionJpaEntity c WHERE c.rubricVersionId = :versionId " +
-            "AND (:keyword IS NULL OR LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(c.code) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+            "AND (:keywordPattern IS NULL OR LOWER(c.name) LIKE :keywordPattern OR LOWER(c.code) LIKE :keywordPattern) " +
             "AND (:isRequired IS NULL OR c.isRequired = :isRequired) " +
             "ORDER BY c.order ASC")
     Page<RubricCriterionJpaEntity> searchRubricCriteria(
             @Param("versionId") UUID versionId,
-            @Param("keyword") String keyword,
+            @Param("keywordPattern") String keywordPattern,
             @Param("isRequired") Boolean isRequired,
             Pageable pageable);
 

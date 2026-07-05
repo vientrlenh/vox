@@ -11,7 +11,6 @@ public class RubricCriterionBandGraphQLMapper {
         return new UpdateSchoolRubricCriterionBandCommand(
                 schoolId,
                 bandId,
-                input.code(),
                 input.scoreMin(),
                 input.scoreMax()
         );
@@ -20,7 +19,6 @@ public class RubricCriterionBandGraphQLMapper {
     public static UpdateSystemRubricCriterionBandCommand fromSystemInput(UUID bandId, UpdateRubricCriterionBandInput input) {
         return new UpdateSystemRubricCriterionBandCommand(
                 bandId,
-                input.code(),
                 input.scoreMin(),
                 input.scoreMax()
         );

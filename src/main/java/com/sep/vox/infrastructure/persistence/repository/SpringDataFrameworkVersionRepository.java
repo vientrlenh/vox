@@ -18,6 +18,8 @@ import jakarta.persistence.LockModeType;
 
 public interface SpringDataFrameworkVersionRepository extends JpaRepository<FrameworkVersionJpaEntity, UUID> {
     boolean existsByFrameworkId(UUID frameworkId);
+    Optional<FrameworkVersionJpaEntity> findByCode(String code);
+    Optional<FrameworkVersionJpaEntity> findByName(String name);
     Page<FrameworkVersionJpaEntity> findByFrameworkId(UUID frameworkId, Pageable pageable);
     List<FrameworkVersionJpaEntity> findByFrameworkIdAndStatus(UUID frameworkId, String status);
     Optional<FrameworkVersionJpaEntity> findByFrameworkIdAndVersion(UUID frameworkId, int version);

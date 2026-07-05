@@ -5,7 +5,6 @@ import java.util.UUID;
 
 public record UpdateSystemRubricResultBandCommand(
         UUID resultBandId,
-        String code,
         String name,
         String description,
         BigDecimal scoreMin,

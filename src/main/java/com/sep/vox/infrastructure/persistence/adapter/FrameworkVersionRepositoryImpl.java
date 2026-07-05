@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -26,6 +27,27 @@ public class FrameworkVersionRepositoryImpl implements FrameworkVersionRepositor
     @Override
     public Optional<FrameworkVersion> findById(UUID id) {
         return springDataFrameworkVersionRepository.findById(id).map(FrameworkVersionMapper::toDomain);
+    }
+
+    @Override
+    public Optional<FrameworkVersion> findByCode(String code) {
+        return springDataFrameworkVersionRepository.findByCode(code).map(FrameworkVersionMapper::toDomain);
+    }
+
+    @Override
+    public Optional<FrameworkVersion> findByName(String name) {
+        return springDataFrameworkVersionRepository.findByName(name).map(FrameworkVersionMapper::toDomain);
+    }
+
+    @Override
+    public List<FrameworkVersion> findByIdIn(Collection<UUID> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        return springDataFrameworkVersionRepository.findAllById(ids)
+                .stream()
+                .map(FrameworkVersionMapper::toDomain)
+                .toList();
     }
 
     @Override

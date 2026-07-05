@@ -95,8 +95,7 @@ public class UpdateSchoolRubricCriterionUseCase implements IUseCase<UpdateSchool
             throw new ForbiddenException("Hành động bị từ chối: Tiêu chí này không thuộc về trường học của bạn.");
         }
 
-        // 6. Chuẩn hóa & Validate Data
-        String safeCode = (command.code() != null && !command.code().isBlank()) ? StringNormalization.trimAndCollapseSpaces(command.code()) : null;
+        // 6. Chuẩn hóa & Validate Data (Code không được phép sửa sau khi tạo, luôn giữ nguyên)
         String safeName = (command.name() != null && !command.name().isBlank()) ? StringNormalization.trimAndCollapseSpaces(command.name()) : null;
         String safeDesc = (command.description() != null && !command.description().isBlank()) ? StringNormalization.trimAndCollapseSpaces(command.description()) : null;
 
@@ -135,7 +134,7 @@ public class UpdateSchoolRubricCriterionUseCase implements IUseCase<UpdateSchool
         try {
             rubricCriterionRepository.updateCriterionAtomic(
                     command.criterionId(),
-                    safeCode,
+                    null,
                     safeName,
                     safeDesc,
                     command.examplesJson(),
@@ -148,7 +147,7 @@ public class UpdateSchoolRubricCriterionUseCase implements IUseCase<UpdateSchool
                     currentUserId
             );
         } catch (DataIntegrityViolationException e) {
-            throw new IllegalArgumentException("Mã Tiêu chí (Code) này đã tồn tại trong Phiên bản Rubric hiện tại.");
+            throw new IllegalArgumentException("Không thể cập nhật Tiêu chí do dữ liệu bị trùng hoặc không hợp lệ.");
         }
 
         return command.criterionId();

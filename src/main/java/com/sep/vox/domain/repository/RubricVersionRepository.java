@@ -2,6 +2,7 @@ package com.sep.vox.domain.repository;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -11,6 +12,10 @@ import com.sep.vox.domain.model.rubric.RubricVersion;
 
 public interface RubricVersionRepository {
     Optional<RubricVersion> findById(UUID id);
+    Optional<RubricVersion> findByCode(String code);
+    Optional<RubricVersion> findByName(String name);
+
+    List<RubricVersion> findByIdIn(Collection<UUID> ids);
 
     RubricVersion save(RubricVersion rubricVersion);
 
@@ -33,4 +38,6 @@ public interface RubricVersionRepository {
 
 
     PageResult<RubricVersion> searchRubricVersions(UUID rubricId, String keyword, String status, int page, int size);
+
+    int archiveExpiredPublishedVersions(OffsetDateTime now);
 }

@@ -84,6 +84,8 @@ public class RubricVersionImportCommitHandler implements ImportCommitHandler {
 
             try {
                 String versionStr = mappedData.get("version");
+                String nameStr = mappedData.get("name");
+                String descriptionStr = mappedData.get("description");
                 String minStr = mappedData.get("scoringScaleMin");
                 String maxStr = mappedData.get("scoringScaleMax");
                 String methodStr = mappedData.get("totalScoreMethod");
@@ -160,6 +162,12 @@ public class RubricVersionImportCommitHandler implements ImportCommitHandler {
 
                     if (targetVersion != null) {
                         // UPDATE (Đã tồn tại Version này -> Cập nhật thông tin mới)
+                        if (nameStr != null && !nameStr.isBlank()) {
+                            targetVersion.setName(nameStr.trim());
+                        }
+                        if (descriptionStr != null && !descriptionStr.isBlank()) {
+                            targetVersion.setDescription(descriptionStr.trim());
+                        }
                         targetVersion.setScoringScaleMin(minScore);
                         targetVersion.setScoringScaleMax(maxScore);
                         targetVersion.setTotalScoreMethod(method);
@@ -172,10 +180,15 @@ public class RubricVersionImportCommitHandler implements ImportCommitHandler {
                     } else {
                         // INSERT (Tạo Version mới hoàn toàn)
                         String safeCode = rubric.getCode() + "_V" + versionNum;
-                        String safeName = rubric.getName() + " - Version " + versionNum;
+                        String safeName = (nameStr != null && !nameStr.isBlank())
+                                ? nameStr.trim()
+                                : rubric.getName() + " - Version " + versionNum;
+                        String safeDescription = (descriptionStr != null && !descriptionStr.isBlank())
+                                ? descriptionStr.trim()
+                                : rubric.getDescription();
 
                         targetVersion = new RubricVersion(
-                                rubricId, versionNum, safeCode, safeName, rubric.getDescription(),
+                                rubricId, versionNum, safeCode, safeName, safeDescription,
                                 RubricStatus.DRAFT, effectiveFrom, effectiveTo, minScore, maxScore,
                                 method, now, now, session.getCreatedBy(), session.getCreatedBy()
                         );

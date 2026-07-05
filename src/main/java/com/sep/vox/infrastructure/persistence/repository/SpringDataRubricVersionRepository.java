@@ -3,6 +3,7 @@ package com.sep.vox.infrastructure.persistence.repository;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -16,6 +17,8 @@ import org.springframework.data.repository.query.Param;
 
 public interface SpringDataRubricVersionRepository extends JpaRepository<RubricVersionJpaEntity, UUID> {
     boolean existsByRubricIdAndIdNot(UUID rubricId, UUID id);
+    Optional<RubricVersionJpaEntity> findByCode(String code);
+    Optional<RubricVersionJpaEntity> findByName(String name);
 
     List<RubricVersionJpaEntity> findByRubricId(UUID rubricId);
 
@@ -63,36 +66,21 @@ public interface SpringDataRubricVersionRepository extends JpaRepository<RubricV
             @Param("status") String status
     );
 
-//    @Query(
-//            "SELECT v FROM RubricVersionJpaEntity v WHERE v.rubricId = :rubricId " +
-//                    "AND (:keyword IS NULL OR LOWER(v.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(v.code) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
-//                    "AND (:status IS NULL OR v.status = :status) " +
-//                    "ORDER BY v.version DESC")
-//    Page<RubricVersionJpaEntity> searchSystemRubricVersions(
-//            @Param("rubricId") UUID rubricId,
-//            @Param("keyword") String keyword,
-//            @Param("status") String status,
-//            Pageable pageable);
-//
-//    @Query(
-//            "SELECT v FROM RubricVersionJpaEntity v WHERE v.rubricId = :rubricId " +
-//                    "AND (:keyword IS NULL OR LOWER(v.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(v.code) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
-//                    "AND (:status IS NULL OR v.status = :status) " +
-//                    "ORDER BY v.version DESC")
-//    Page<RubricVersionJpaEntity> searchSchoolRubricVersions(
-//            @Param("rubricId") UUID rubricId,
-//            @Param("keyword") String keyword,
-//            @Param("status") String status,
-//            Pageable pageable);
+
 
     @Query(
             "SELECT v FROM RubricVersionJpaEntity v WHERE v.rubricId = :rubricId " +
-                    "AND (:keyword IS NULL OR LOWER(v.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(v.code) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+                    "AND (:keywordPattern IS NULL OR LOWER(v.name) LIKE :keywordPattern OR LOWER(v.code) LIKE :keywordPattern) " +
                     "AND (:status IS NULL OR v.status = :status) " +
                     "ORDER BY v.version DESC")
     Page<RubricVersionJpaEntity> searchRubricVersions(
             @Param("rubricId") UUID rubricId,
-            @Param("keyword") String keyword,
+            @Param("keywordPattern") String keywordPattern,
             @Param("status") String status,
             Pageable pageable);
+
+    @Modifying
+    @Query("UPDATE RubricVersionJpaEntity v SET v.status = 'ARCHIVED', v.updatedAt = :now " +
+            "WHERE v.status = 'PUBLISHED' AND v.effectiveTo IS NOT NULL AND v.effectiveTo < :now")
+    int archiveExpiredPublished(@Param("now") OffsetDateTime now);
 }

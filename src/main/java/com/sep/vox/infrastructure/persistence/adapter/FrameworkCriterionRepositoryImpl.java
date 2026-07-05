@@ -70,4 +70,12 @@ public class FrameworkCriterionRepositoryImpl implements FrameworkCriterionRepos
     public void deleteByFrameworkVersionId(UUID frameworkVersionId) {
         springDataFrameworkCriterionRepository.deleteByFrameworkVersionId(frameworkVersionId);
     }
+
+    @Override
+    public List<FrameworkCriterion> findByFrameworkId(UUID frameworkId) {
+        var entities = springDataFrameworkCriterionRepository.findByFrameworkId(frameworkId);
+        return entities.stream()
+                .map(FrameworkCriterionMapper::toDomain)
+                .toList();
+    }
 }

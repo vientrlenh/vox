@@ -17,13 +17,13 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Component
-public class SystemRubricCriterionBandImportCommitHandler implements ImportCommitHandler {
+public class RubricCriterionBandImportCommitHandler implements ImportCommitHandler {
 
     private final RubricCriterionBandRepository rubricCriterionBandRepository;
     private final RubricCriterionRepository rubricCriterionRepository;
     private final JsonSerializationPort jsonSerializationPort;
 
-    public SystemRubricCriterionBandImportCommitHandler(
+    public RubricCriterionBandImportCommitHandler(
             RubricCriterionBandRepository rubricCriterionBandRepository,
             RubricCriterionRepository rubricCriterionRepository,
             JsonSerializationPort jsonSerializationPort) {

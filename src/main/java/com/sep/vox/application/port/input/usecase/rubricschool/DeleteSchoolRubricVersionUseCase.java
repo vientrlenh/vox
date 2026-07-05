@@ -104,7 +104,8 @@ public class DeleteSchoolRubricVersionUseCase implements IUseCase<DeleteSchoolRu
             version.setStatus(RubricStatus.ARCHIVED);
 
             OffsetDateTime now = OffsetDateTime.now();
-            version.setEffectiveTo(now);
+            // Không cho effectiveTo lùi về trước effectiveFrom nếu version chưa tới ngày hiệu lực
+            version.setEffectiveTo(now.isBefore(version.getEffectiveFrom()) ? version.getEffectiveFrom() : now);
             version.setUpdatedAt(now);
             version.setUpdatedBy(currentUserId);
 

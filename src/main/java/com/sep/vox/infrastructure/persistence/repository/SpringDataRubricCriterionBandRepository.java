@@ -48,10 +48,10 @@ public interface SpringDataRubricCriterionBandRepository extends JpaRepository<R
     List<RubricCriterionBandJpaEntity> findByCriterionIdIn(@Param("criterionIds") List<UUID> criterionIds);
 
     @Query("SELECT cb FROM RubricCriterionBandJpaEntity cb WHERE cb.criterionId = :criterionId " +
-            "AND (:keyword IS NULL OR LOWER(cb.code) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+            "AND (:keywordPattern IS NULL OR LOWER(cb.code) LIKE :keywordPattern) " +
             "ORDER BY cb.scoreMin ASC")
     Page<RubricCriterionBandJpaEntity> searchRubricCriterionBands(
             @Param("criterionId") UUID criterionId,
-            @Param("keyword") String keyword,
+            @Param("keywordPattern") String keywordPattern,
             Pageable pageable);
 }

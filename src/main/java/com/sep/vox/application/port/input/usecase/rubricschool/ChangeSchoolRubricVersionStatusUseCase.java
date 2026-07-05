@@ -24,6 +24,7 @@ public class ChangeSchoolRubricVersionStatusUseCase implements IUseCase<ChangeSc
     private final RubricVersionRepository rubricVersionRepository;
     private final RubricRepository rubricRepository;
     private final FrameworkRepository frameworkRepository;
+    private final AssessmentPolicyRepository assessmentPolicyRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
     private final SchoolUserRepository schoolUserRepository; // Dùng Repo mới
@@ -32,12 +33,14 @@ public class ChangeSchoolRubricVersionStatusUseCase implements IUseCase<ChangeSc
             RubricVersionRepository rubricVersionRepository,
             RubricRepository rubricRepository,
             FrameworkRepository frameworkRepository,
+            AssessmentPolicyRepository assessmentPolicyRepository,
             UserRepository userRepository,
             UserContextPort userContextPort,
             SchoolUserRepository schoolUserRepository) {
         this.rubricVersionRepository = rubricVersionRepository;
         this.rubricRepository = rubricRepository;
         this.frameworkRepository = frameworkRepository;
+        this.assessmentPolicyRepository = assessmentPolicyRepository;
         this.userRepository = userRepository;
         this.userContextPort = userContextPort;
         this.schoolUserRepository = schoolUserRepository;
@@ -87,6 +90,11 @@ public class ChangeSchoolRubricVersionStatusUseCase implements IUseCase<ChangeSc
                     .orElseThrow(() -> new NotFoundException("Không tìm thấy Khung tiêu chuẩn (Framework) liên kết."));
             if (!framework.isActive()) {
                 throw new IllegalStateException("Không thể ban hành Rubric này vì Khung tiêu chuẩn (Framework) gốc đang bị vô hiệu hóa.");
+            }
+
+            // KIỂM TRA ASSESSMENT POLICY LIÊN KẾT ĐÃ ĐƯỢC PUBLISHED HAY CHƯA
+            if (!assessmentPolicyRepository.existsPublishedByRubricVersionId(version.getId())) {
+                throw new IllegalStateException("Không thể ban hành Rubric này vì chưa có Assessment Policy nào liên kết đang ở trạng thái PUBLISHED.");
             }
 
         } else if (command.status() == RubricStatus.DRAFT) {

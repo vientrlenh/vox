@@ -13,7 +13,7 @@ public class AddRubricVersionsCommandMapper {
     public static AddSystemRubricVersionsCommand fromSystemRequest(UUID rubricId, AddRubricVersionsRequest request) {
         var items = request.versions().stream()
                 .map(v -> new AddSystemRubricVersionsCommand.RubricVersionItemCommand(
-                        v.version(), v.scoringScaleMin(), v.scoringScaleMax(), v.totalScoreMethod(),
+                        v.version(), v.name(), v.scoringScaleMin(), v.scoringScaleMax(), v.totalScoreMethod(),
                         DateMapper.toOffsetDateTime(v.effectiveFrom()), DateMapper.toOffsetDateTime(v.effectiveTo())
                 )).toList();
         return new AddSystemRubricVersionsCommand(rubricId, items);
@@ -23,7 +23,7 @@ public class AddRubricVersionsCommandMapper {
     public static AddSchoolRubricVersionsCommand fromSchoolRequest(UUID schoolId, UUID rubricId, AddRubricVersionsRequest request) {
         var items = request.versions().stream()
                 .map(v -> new AddSchoolRubricVersionsCommand.RubricVersionItemCommand(
-                        v.version(), v.scoringScaleMin(), v.scoringScaleMax(), v.totalScoreMethod(),
+                        v.version(), v.name(), v.scoringScaleMin(), v.scoringScaleMax(), v.totalScoreMethod(),
                         DateMapper.toOffsetDateTime(v.effectiveFrom()), DateMapper.toOffsetDateTime(v.effectiveTo())
                 )).toList();
         return new AddSchoolRubricVersionsCommand(schoolId, rubricId, items);

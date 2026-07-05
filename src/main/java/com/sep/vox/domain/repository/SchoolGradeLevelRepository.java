@@ -12,10 +12,12 @@ import java.util.UUID;
 
 public interface SchoolGradeLevelRepository {
     Optional<SchoolGradeLevel> findById(UUID id);
-    Optional<SchoolGradeLevel> findBySchoolIdAndCode(UUID schoolId);
+    Optional<SchoolGradeLevel> findBySchoolIdAndCode(UUID schoolId, String code);
+    Optional<SchoolGradeLevel> findBySchoolIdAndName(UUID schoolId, String name);
     PageResult<SchoolGradeLevel> findBySchoolId(UUID schoolId, String search, SchoolGradeLevelStatus status,
             int page, int size);
     List<SchoolGradeLevel> findBySchoolIdAndCodeIn(UUID schoolId, Collection<String> codes);
+    List<SchoolGradeLevel> findByIdIn(Collection<UUID> ids);
     SchoolGradeLevel save(SchoolGradeLevel gradeLevel);
     int updateSchoolGradeLevelAtomic(UUID id, String name, String description, Integer order,
             OffsetDateTime updatedAt, UUID updatedBy);

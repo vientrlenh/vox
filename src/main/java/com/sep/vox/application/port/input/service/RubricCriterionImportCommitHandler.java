@@ -3,6 +3,8 @@ package com.sep.vox.application.port.input.service;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.domain.model.framework.FrameworkCriterion;
+import com.sep.vox.domain.model.framework.FrameworkVersion;
+import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
 import com.sep.vox.domain.model.importfile.ImportRow;
 import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.model.importfile.ImportSession;
@@ -26,18 +28,20 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
     private final RubricRepository rubricRepository;
     private final FrameworkCriterionRepository frameworkCriterionRepository;
     private final JsonSerializationPort jsonSerializationPort;
+    private final FrameworkVersionRepository frameworkVersionRepository;
 
     public RubricCriterionImportCommitHandler(
             RubricCriterionRepository rubricCriterionRepository,
             RubricVersionRepository rubricVersionRepository,
             RubricRepository rubricRepository,
             FrameworkCriterionRepository frameworkCriterionRepository,
-            JsonSerializationPort jsonSerializationPort) {
+            JsonSerializationPort jsonSerializationPort, FrameworkVersionRepository frameworkVersionRepository) {
         this.rubricCriterionRepository = rubricCriterionRepository;
         this.rubricVersionRepository = rubricVersionRepository;
         this.rubricRepository = rubricRepository;
         this.frameworkCriterionRepository = frameworkCriterionRepository;
         this.jsonSerializationPort = jsonSerializationPort;
+        this.frameworkVersionRepository = frameworkVersionRepository;
     }
 
     @Override
@@ -59,11 +63,26 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
         } else if (session.getSuggestedMappingJson() != null && !session.getSuggestedMappingJson().isBlank()) {
             mapping = jsonSerializationPort.toStringMap(session.getSuggestedMappingJson());
         }
+        // 1. Lấy ra Phiên bản Khung năng lực đang PUBLISHED
+        List<FrameworkVersion> activeVersions = frameworkVersionRepository.findByFrameworkIdAndStatus(
+                rubric.getFrameworkId(),
+                FrameworkVersionStatus.PUBLISHED
+        );
 
-        List<FrameworkCriterion> fwCriterions = frameworkCriterionRepository.findByFrameworkVersionId(rubric.getFrameworkId());
+        var activeFwVersion = activeVersions.stream().findFirst()
+                .orElseThrow(() -> new IllegalStateException("Không tìm thấy phiên bản Khung tiêu chuẩn nào đang hoạt động cho Framework này."));
+
+        // 2. SỬA CHỖ NÀY: Phải lấy theo ID của Phiên bản (Version ID), chứ không lấy theo Framework ID nữa!
+        List<FrameworkCriterion> fwCriterions = frameworkCriterionRepository.findByFrameworkVersionId(activeFwVersion.getId());
+
+        //  3. TỐI ƯU THÊM BỌC GIÁP: Thêm (existing, newValue) -> existing để đề phòng
+        // dưới Database vô tình có 2 mã trùng nhau thì nó lấy thằng đầu tiên, không bị sập (Crash) toàn bộ luồng ngầm
         Map<String, UUID> fwCodeToIdMap = fwCriterions.stream()
-                .collect(Collectors.toMap(fc -> fc.getCode().toLowerCase().trim(), FrameworkCriterion::getId));
-
+                .collect(Collectors.toMap(
+                        fc -> fc.getCode().toLowerCase().trim(),
+                        FrameworkCriterion::getId,
+                        (existingValue, newValue) -> existingValue // Giáp chống sập Duplicate Key
+                ));
         List<RubricCriterion> existingCriterions = rubricCriterionRepository.findByRubricVersionId(versionId);
 
         Map<String, RubricCriterion> existingCodeMap = existingCriterions.stream()
@@ -131,7 +150,7 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
                 RubricCriterionExamples examplesObj = null;
                 if (errors.isEmpty() && examplesStr != null && !examplesStr.isBlank()) {
                     try {
-                        List<String> rawExamples = Arrays.stream(examplesStr.split("[,;]"))
+                        List<String> rawExamples = Arrays.stream(examplesStr.split(";"))
                                 .map(String::trim)
                                 .filter(s -> !s.isBlank())
                                 .toList();

@@ -66,10 +66,7 @@ public class CreateSystemRubricUseCase implements IUseCase<CreateSystemRubricCom
             throw new IllegalStateException("Không thể sử dụng Khung tiêu chuẩn (Framework) này vì nó đang bị vô hiệu hóa.");
         }
 
-        boolean isSystemRubricExisted = rubricRepository.existsByOwnerTypeAndLanguageId(RubricOwnerType.SYSTEM.toString(), command.languageId());
-        if (isSystemRubricExisted) {
-            throw new IllegalStateException("Hệ thống đã có một bộ Rubric cho ngôn ngữ này. Chỉ được phép tồn tại duy nhất 1 bộ Rubric hệ thống cho mỗi ngôn ngữ.");
-        }
+
 
         // ĐÃ XÓA TOÀN BỘ LOGIC RÀNG BUỘC VÀ TẠO RUBRIC VERSION Ở ĐÂY
 

@@ -250,7 +250,7 @@ public class RubricController {
     }
 
     // Tạo Rubric của trường
-    @Operation(summary = "Tạo mới một bộ tiêu chí (Rubric) cho trường học")
+    @Operation(summary = "Tạo mới một bộ tiêu chí (Rubric) cho trường học UI")
     @PostMapping("/schools/{schoolId}/rubrics")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> createSchoolRubric(
@@ -451,7 +451,7 @@ public class RubricController {
 
     // Xác nhận tiêu chí và add rubric criteria và rubric version
     @Operation(summary = "Xác nhận và nhập dữ liệu Tiêu chí (Rubric Criterion) vào DB (Bước 2: Accept)")
-    @PostMapping("/schools/{schoolId}/import-sessions/{sessionId}/accept")
+    @PostMapping("/schools/{schoolId}/rubric-versions/import-sessions/{sessionId}/accept")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<AcceptRubricCriterionImportResponse> acceptSchoolRubricCriterionImport(
             @PathVariable UUID schoolId,
@@ -606,7 +606,7 @@ public class RubricController {
     }
 
 
-    // Xóa 1 Rubric Resust band khổi rubric version
+    // Xóa 1 Rubric Result band khổi rubric version
     @Operation(summary = "Xóa một Thang điểm khỏi phiên bản Rubric Hệ thống")
     @DeleteMapping("/system/rubric-versions/{versionId}/result-bands/{resultBandId}")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")

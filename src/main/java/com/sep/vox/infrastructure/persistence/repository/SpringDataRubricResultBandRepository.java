@@ -52,11 +52,11 @@ public interface SpringDataRubricResultBandRepository extends JpaRepository<Rubr
     Page<RubricResultBandJpaEntity> findAllByRubricVersionId(UUID rubricVersionId, Pageable pageable);
 
     @Query("SELECT r FROM RubricResultBandJpaEntity r WHERE r.rubricVersionId = :versionId " +
-            "AND (:keyword IS NULL OR LOWER(r.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(r.code) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+            "AND (:keywordPattern IS NULL OR LOWER(r.name) LIKE :keywordPattern OR LOWER(r.code) LIKE :keywordPattern) " +
             "ORDER BY r.order ASC")
     Page<RubricResultBandJpaEntity> searchRubricResultBands(
             @Param("versionId") UUID versionId,
-            @Param("keyword") String keyword,
+            @Param("keywordPattern") String keywordPattern,
             Pageable pageable);
 
 }

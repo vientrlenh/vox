@@ -13,6 +13,10 @@ public final class ExamDtoMapper {
     }
 
     public static ExamDto toDto(Exam domain) {
+        return toDto(domain, null);
+    }
+
+    public static ExamDto toDto(Exam domain, Boolean papersLocked) {
         return new ExamDto(
             domain.getId(),
             domain.getBlueprintId(),
@@ -23,10 +27,12 @@ public final class ExamDtoMapper {
             domain.getSchoolId(),
             domain.getLanguageId(),
             domain.getKind().name(),
+            domain.getDeliveryMode() == null ? null : domain.getDeliveryMode().name(),
             domain.getStatus().name(),
             valueOf(domain.getOpenAt()),
             valueOf(domain.getCloseAt()),
             domain.getAssessmentPolicyId(),
+            papersLocked,
             valueOf(domain.getCreatedAt()),
             valueOf(domain.getUpdatedAt()),
             domain.getCreatedBy(),

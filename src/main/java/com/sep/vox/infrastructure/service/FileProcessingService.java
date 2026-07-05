@@ -271,6 +271,13 @@ public class FileProcessingService implements FileProcessingPort {
                 "startDate", List.of("startDate", "start date", "ngày bắt đầu", "ngay bat dau"),
                 "endDate", List.of("endDate", "end date", "ngày kết thúc", "ngay ket thuc")
             );
+            case SCHOOL_ROOM -> Map.of(
+                "code", List.of("code", "roomCode", "room code", "mã phòng", "ma phong", "mã"),
+                "name", List.of("name", "roomName", "room name", "tên phòng", "ten phong", "tên"),
+                "capacity", List.of("capacity", "sức chứa", "suc chua", "số chỗ", "so cho", "sĩ số", "si so"),
+                "description", List.of("description", "note", "notes", "ghi chú", "ghi chu", "mô tả", "mo ta")
+            );
+
             case SCHOOL_DIRECTORY -> Map.of(
                     "code", List.of("code", "schoolCode", "school code", "mã trường", "ma truong", "mã định danh", "ma dinh danh"),
                     "name", List.of("name", "schoolName", "school name", "tên trường", "ten truong"),

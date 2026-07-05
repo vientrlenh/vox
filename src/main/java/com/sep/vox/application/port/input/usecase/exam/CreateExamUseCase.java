@@ -16,6 +16,7 @@ import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.domain.mapper.ExamDtoMapper;
 import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamDeliveryMode;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.repository.ExamBlueprintRepository;
@@ -79,6 +80,7 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
             currentSchoolId,
             command.languageId(),
             ExamKind.CENTRALIZED,
+            ExamDeliveryMode.LAB,
             ExamStatus.DRAFT,
             parseDateTime(command.openAt()),
             parseDateTime(command.closeAt()),

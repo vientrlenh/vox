@@ -22,6 +22,7 @@ import com.sep.vox.application.port.input.usecase.exam.CreateExamUseCase;
 import com.sep.vox.application.port.input.usecase.exam.DeleteExamMemberUseCase;
 import com.sep.vox.application.port.input.usecase.exam.DeleteExamUseCase;
 import com.sep.vox.application.port.input.usecase.exam.UpdateExamMemberUseCase;
+import com.sep.vox.application.port.input.usecase.exam.UpdateExamDeliveryModeUseCase;
 import com.sep.vox.application.port.input.usecase.exam.UpdateExamSecurePoolStatusUseCase;
 import com.sep.vox.application.port.input.usecase.exam.UpdateExamStatusUseCase;
 import com.sep.vox.application.port.input.usecase.exam.UpdateExamUseCase;
@@ -32,6 +33,7 @@ import com.sep.vox.domain.dto.ExamSecurePoolDto;
 import com.sep.vox.interfaces.rest.dto.request.AttachExamBlueprintRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateExamMemberRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateExamRequest;
+import com.sep.vox.interfaces.rest.dto.request.UpdateExamDeliveryModeRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateExamMemberRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateExamRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateExamSecurePoolStatusRequest;
@@ -41,6 +43,7 @@ import com.sep.vox.interfaces.rest.mapper.AttachExamBlueprintCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateExamCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateExamMemberCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.UpdateExamCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.UpdateExamDeliveryModeCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.UpdateExamMemberCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.UpdateExamSecurePoolStatusCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.UpdateExamStatusCommandMapper;
@@ -60,6 +63,7 @@ public class ExamController {
     private final DeleteExamMemberUseCase deleteExamMemberUseCase;
     private final UpdateExamSecurePoolStatusUseCase updateExamSecurePoolStatusUseCase;
     private final AttachExamBlueprintUseCase attachExamBlueprintUseCase;
+    private final UpdateExamDeliveryModeUseCase updateExamDeliveryModeUseCase;
 
     public ExamController(
             CreateExamUseCase createExamUseCase,
@@ -70,7 +74,8 @@ public class ExamController {
             UpdateExamMemberUseCase updateExamMemberUseCase,
             DeleteExamMemberUseCase deleteExamMemberUseCase,
             UpdateExamSecurePoolStatusUseCase updateExamSecurePoolStatusUseCase,
-            AttachExamBlueprintUseCase attachExamBlueprintUseCase) {
+            AttachExamBlueprintUseCase attachExamBlueprintUseCase,
+            UpdateExamDeliveryModeUseCase updateExamDeliveryModeUseCase) {
         this.createExamUseCase = createExamUseCase;
         this.updateExamUseCase = updateExamUseCase;
         this.updateExamStatusUseCase = updateExamStatusUseCase;
@@ -80,6 +85,7 @@ public class ExamController {
         this.deleteExamMemberUseCase = deleteExamMemberUseCase;
         this.updateExamSecurePoolStatusUseCase = updateExamSecurePoolStatusUseCase;
         this.attachExamBlueprintUseCase = attachExamBlueprintUseCase;
+        this.updateExamDeliveryModeUseCase = updateExamDeliveryModeUseCase;
     }
 
     @PostMapping
@@ -115,6 +121,15 @@ public class ExamController {
             @Valid @RequestBody UpdateExamStatusRequest request) {
         var data = updateExamStatusUseCase.execute(UpdateExamStatusCommandMapper.fromRequest(id, request));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái bài kiểm tra thành công", data));
+    }
+
+    @PatchMapping("/{id}/delivery-mode")
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
+    public ResponseEntity<ApiResponse<ExamDto>> updateDeliveryMode(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateExamDeliveryModeRequest request) {
+        var data = updateExamDeliveryModeUseCase.execute(UpdateExamDeliveryModeCommandMapper.fromRequest(id, request));
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật hình thức làm bài thành công", data));
     }
 
     @DeleteMapping("/{id}")

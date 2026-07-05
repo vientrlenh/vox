@@ -41,6 +41,16 @@ public class SchoolRoomRepositoryImpl implements SchoolRoomRepository {
         return springDataSchoolRoomRepository.existsBySchoolIdAndCode(schoolId, code);
     }
 
+    @Override
+    public List<SchoolRoom> findBySchoolIdAndCodeIn(UUID schoolId, java.util.Collection<String> codes) {
+        if (codes == null || codes.isEmpty()) {
+            return List.of();
+        }
+        return springDataSchoolRoomRepository.findBySchoolIdAndCodeIn(schoolId, codes).stream()
+                .map(SchoolRoomMapper::toDomain)
+                .toList();
+    }
+
 
     @Override
     public PageResult<SchoolRoom> findAllBySchoolId(UUID schoolId, int pageNumber, int size) {

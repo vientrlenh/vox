@@ -12,7 +12,9 @@ import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.domain.mapper.ExamDtoMapper;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
+import com.sep.vox.domain.model.exam.ExamPaperStatus;
 import com.sep.vox.domain.repository.ExamMemberRepository;
+import com.sep.vox.domain.repository.ExamPaperRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
@@ -21,6 +23,7 @@ public class ViewExamDetailsUseCase implements IUseCase<ViewExamDetailsQuery, Ex
 
     private final ExamRepository examRepository;
     private final ExamMemberRepository examMemberRepository;
+    private final ExamPaperRepository examPaperRepository;
     private final UserContextPort userContextPort;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
@@ -28,11 +31,13 @@ public class ViewExamDetailsUseCase implements IUseCase<ViewExamDetailsQuery, Ex
     public ViewExamDetailsUseCase(
             ExamRepository examRepository,
             ExamMemberRepository examMemberRepository,
+            ExamPaperRepository examPaperRepository,
             UserContextPort userContextPort,
             SchoolUserRepository schoolUserRepository,
             UserRoleQueryRepository userRoleQueryRepository) {
         this.examRepository = examRepository;
         this.examMemberRepository = examMemberRepository;
+        this.examPaperRepository = examPaperRepository;
         this.userContextPort = userContextPort;
         this.schoolUserRepository = schoolUserRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
@@ -56,7 +61,13 @@ public class ViewExamDetailsUseCase implements IUseCase<ViewExamDetailsQuery, Ex
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
-        return ExamDtoMapper.toDto(exam);
+        return ExamDtoMapper.toDto(exam, papersLocked(exam.getId()));
+    }
+
+    private boolean papersLocked(java.util.UUID examId) {
+        var papers = examPaperRepository.findByExamId(examId);
+        return !papers.isEmpty()
+            && papers.stream().allMatch(paper -> paper.getStatus() == ExamPaperStatus.LOCKED);
     }
 
     private boolean hasAccess(

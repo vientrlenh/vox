@@ -2,6 +2,8 @@ package com.sep.vox.infrastructure.persistence.repository;
 
 
 import java.time.OffsetDateTime;
+import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -20,6 +22,8 @@ public interface SpringDataSchoolRoomRepository extends JpaRepository<SchoolRoom
     boolean existsBySchoolIdAndIsActive(UUID schoolId, boolean isActive);
 
     Page<SchoolRoomJpaEntity> findBySchoolId(UUID schoolId, Pageable pageable);
+
+    List<SchoolRoomJpaEntity> findBySchoolIdAndCodeIn(UUID schoolId, Collection<String> codes);
 
 
     @Modifying

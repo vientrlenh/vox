@@ -13,6 +13,7 @@ public class Exam {
     private UUID schoolId;
     private UUID languageId;
     private ExamKind kind;
+    private ExamDeliveryMode deliveryMode;
     private ExamStatus status;
     private OffsetDateTime openAt;
     private OffsetDateTime closeAt;
@@ -25,7 +26,7 @@ public class Exam {
     public Exam() {}
 
     public Exam(UUID id, UUID blueprintId, UUID blueprintVersionId, String code, String name, String description, UUID schoolId, UUID languageId,
-            ExamKind kind, ExamStatus status, OffsetDateTime openAt, OffsetDateTime closeAt, UUID assessmentPolicyId,
+            ExamKind kind, ExamDeliveryMode deliveryMode, ExamStatus status, OffsetDateTime openAt, OffsetDateTime closeAt, UUID assessmentPolicyId,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.blueprintId = blueprintId;
@@ -36,6 +37,7 @@ public class Exam {
         this.schoolId = schoolId;
         this.languageId = languageId;
         this.kind = kind;
+        this.deliveryMode = deliveryMode;
         this.status = status;
         this.openAt = openAt;
         this.closeAt = closeAt;
@@ -46,8 +48,8 @@ public class Exam {
         this.updatedBy = updatedBy;
     }
 
-    public Exam(UUID blueprintId, UUID blueprintVersionId, String code, String name, String description, UUID schoolId, UUID languageId, ExamKind kind, ExamStatus status,
-            OffsetDateTime openAt, OffsetDateTime closeAt, UUID assessmentPolicyId, OffsetDateTime createdAt,
+    public Exam(UUID blueprintId, UUID blueprintVersionId, String code, String name, String description, UUID schoolId, UUID languageId, ExamKind kind,
+            ExamDeliveryMode deliveryMode, ExamStatus status, OffsetDateTime openAt, OffsetDateTime closeAt, UUID assessmentPolicyId, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.blueprintId = blueprintId;
         this.blueprintVersionId = blueprintVersionId;
@@ -57,6 +59,7 @@ public class Exam {
         this.schoolId = schoolId;
         this.languageId = languageId;
         this.kind = kind;
+        this.deliveryMode = deliveryMode;
         this.status = status;
         this.openAt = openAt;
         this.closeAt = closeAt;
@@ -121,6 +124,14 @@ public class Exam {
 
     public void setKind(ExamKind kind) {
         this.kind = kind;
+    }
+
+    public ExamDeliveryMode getDeliveryMode() {
+        return deliveryMode;
+    }
+
+    public void setDeliveryMode(ExamDeliveryMode deliveryMode) {
+        this.deliveryMode = deliveryMode;
     }
 
     public ExamStatus getStatus() {

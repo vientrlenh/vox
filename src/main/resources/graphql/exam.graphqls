@@ -3,6 +3,11 @@ enum ExamKind {
     CLASS_TEST
 }
 
+enum ExamDeliveryMode {
+    STUDENT_DEVICE
+    LAB
+}
+
 enum ExamStatus {
     DRAFT
     SCHEDULED
@@ -122,10 +127,12 @@ type Exam {
     schoolId: ID!
     languageId: ID!
     kind: ExamKind!
+    deliveryMode: ExamDeliveryMode
     status: ExamStatus!
     openAt: String
     closeAt: String
     assessmentPolicyId: ID
+    papersLocked: Boolean
     createdAt: String
     updatedAt: String
     createdBy: ID

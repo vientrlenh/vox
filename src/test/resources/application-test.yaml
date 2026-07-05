@@ -17,6 +17,8 @@ spring:
         password: test-password
 jwt:
     secret: test-access-secret-oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
+    stream: 
+        secret: testsecretoooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
 
 system-admin:
   email: sysadmin@example.com

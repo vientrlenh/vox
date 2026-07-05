@@ -64,7 +64,7 @@ public class AddSchoolRubricVersionsUseCase implements IUseCase<AddSchoolRubricV
         }
 
         Set<Integer> existingVersions = rubricVersionRepository.findByRubricId(command.rubricId()).stream()
-                .map(RubricVersion::getVersion)
+                .map(rv -> rv.getVersion())
                 .collect(Collectors.toSet());
 
         Set<Integer> incomingVersions = new HashSet<>();

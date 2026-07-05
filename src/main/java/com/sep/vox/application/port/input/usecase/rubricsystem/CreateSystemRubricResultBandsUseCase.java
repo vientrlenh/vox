@@ -80,7 +80,7 @@ public class CreateSystemRubricResultBandsUseCase implements IUseCase<CreateSyst
 
         // CHỐNG N+1 (PHA SELECT): Gom tất cả ID lại và truy vấn DB 1 lần duy nhất
         List<UUID> frameworkBandIds = command.resultBands().stream()
-                .map(CreateSystemRubricResultBandsCommand.ResultBandItemCommand::frameworkResultBandId)
+                .map(c -> c.frameworkResultBandId())
                 .filter(Objects::nonNull)
                 .distinct()
                 .toList();
@@ -91,7 +91,7 @@ public class CreateSystemRubricResultBandsUseCase implements IUseCase<CreateSyst
 
             // Xây dựng HashMap trên RAM để tra cứu nhanh O(1) ở vòng lặp bên dưới
             frameworkBandMap = existingFrameworkBands.stream()
-                    .collect(Collectors.toMap(FrameworkResultBand::getId, band -> band));
+                    .collect(Collectors.toMap(b -> b.getId(), band -> band));
         } else {
             frameworkBandMap = new HashMap<>();
         }
@@ -153,6 +153,6 @@ public class CreateSystemRubricResultBandsUseCase implements IUseCase<CreateSyst
         }
 
         // 5. Trích xuất ID từ List trả về và gửi cho Client
-        return savedBands.stream().map(RubricResultBand::getId).toList();
+        return savedBands.stream().map(b -> b.getId()).toList();
     }
 }

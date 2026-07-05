@@ -31,14 +31,14 @@ import com.sep.vox.domain.dto.FrameworkCriterionDto;
 import com.sep.vox.domain.dto.FrameworkDto;
 import com.sep.vox.domain.dto.FrameworkResultBandDto;
 import com.sep.vox.domain.dto.FrameworkVersionDto;
+import com.sep.vox.interfaces.graphql.dto.request.UpdateFrameworkCriterionBandInput;
+import com.sep.vox.interfaces.graphql.dto.request.UpdateFrameworkCriterionInput;
+import com.sep.vox.interfaces.graphql.dto.request.UpdateFrameworkResultBandInput;
+import com.sep.vox.interfaces.graphql.dto.request.UpdateFrameworkVersionInput;
 import com.sep.vox.interfaces.graphql.mapper.UpdateFrameworkCriterionBandCommandMapper;
-import com.sep.vox.interfaces.graphql.mapper.UpdateFrameworkCriterionBandInput;
 import com.sep.vox.interfaces.graphql.mapper.UpdateFrameworkCriterionCommandMapper;
-import com.sep.vox.interfaces.graphql.mapper.UpdateFrameworkCriterionInput;
 import com.sep.vox.interfaces.graphql.mapper.UpdateFrameworkResultBandCommandMapper;
-import com.sep.vox.interfaces.graphql.mapper.UpdateFrameworkResultBandInput;
 import com.sep.vox.interfaces.graphql.mapper.UpdateFrameworkVersionCommandMapper;
-import com.sep.vox.interfaces.graphql.mapper.UpdateFrameworkVersionInput;
 
 @Controller("graphqlFrameworkController")
 public class FrameworkController {
@@ -72,7 +72,7 @@ public class FrameworkController {
     }
 
     @QueryMapping(name = "frameworks")
-    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public PageResult<FrameworkDto> frameworks(
             @Argument(name = "page") int page,
             @Argument(name = "size") int size,
@@ -85,13 +85,13 @@ public class FrameworkController {
     }
 
     @QueryMapping(name = "framework")
-    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public FrameworkDto framework(@Argument(name = "id") UUID id) {
         return viewFrameworkDetailsUseCase.execute(new ViewFrameworkDetailsQuery(id));
     }
 
     @QueryMapping(name = "frameworkVersions")
-    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public PageResult<FrameworkVersionDto> frameworkVersions(
             @Argument(name = "frameworkId") UUID frameworkId,
             @Argument(name = "page") int page,

@@ -1,3 +1,20 @@
+enum QuestionBankOwnerType {
+    SYSTEM
+    SCHOOL
+}
+
+enum QuestionBankStatus {
+    DRAFT
+    PUBLISHED
+    ARCHIVED
+}
+
+enum QuestionTopicStatus {
+    DRAFT
+    PUBLISHED
+    ARCHIVED
+}
+
 enum QuestionType {
     READ_ALOUD
     SHORT_ANSWER
@@ -6,15 +23,75 @@ enum QuestionType {
     DESCRIPTION
 }
 
+enum QuestionSharing {
+    PRIVATE
+    SCHOOL_SHARED
+}
+
+enum QuestionStatus {
+    DRAFT
+    SUBMITTED_FOR_REVIEW
+    REVISION_REQUESTED
+    APPROVED
+    REJECTED
+    PUBLISHED
+    ARCHIVED
+}
+
+enum QuestionConfidentiality {
+    OPEN
+    EXAM_RESTRICTED
+    RELEASED
+}
+
+enum QuestionAssetType {
+    AUDIO
+    IMAGE
+    VIDEO
+    TEXT_PASSAGE
+}
+
+enum QuestionCollaboratorPermission {
+    READ_ONLY
+    CAN_USE
+    CAN_EDIT
+}
+
+enum QuestionDifficulty {
+    EASY
+    MEDIUM
+    HARD
+}
+
+enum QuestionScope {
+    MINE
+    COLLABORATING
+    ALL
+}
+
+type QuestionBankGrade {
+    id: ID!
+    questionBankId: ID!
+    schoolGradeId: ID!
+    attachedAt: String
+    attachedBy: ID
+    schoolGrade: SchoolGrade
+}
+
 type QuestionBank {
     id: ID!
-    bankName: String!
+    languageId: ID!
+    schoolId: ID
+    code: String!
+    name: String!
     description: String
-    isActive: Boolean!
-    createdAt: String!
-    updatedAt: String!
+    ownerType: QuestionBankOwnerType!
+    status: QuestionBankStatus!
+    createdAt: String
+    updatedAt: String
     createdBy: ID
     updatedBy: ID
+    grades: [QuestionBankGrade!]!
 }
 
 type QuestionBankPage {
@@ -27,10 +104,16 @@ type QuestionBankPage {
 
 type QuestionTopic {
     id: ID!
-    bankId: ID!
-    topicName: String!
+    questionBankId: ID!
+    code: String!
+    name: String!
     description: String
-    bank: QuestionBank
+    status: QuestionTopicStatus!
+    createdAt: String
+    updatedAt: String
+    createdBy: ID
+    updatedBy: ID
+    bank: QuestionBank!
 }
 
 type QuestionTopicPage {
@@ -41,20 +124,67 @@ type QuestionTopicPage {
     totalPages: Int!
 }
 
+type QuestionAsset {
+    id: ID!
+    questionId: ID!
+    title: String
+    durationSeconds: Int
+    altText: String
+    type: QuestionAssetType!
+    url: String!
+    transcript: String
+    description: String
+    order: Int!
+}
+
+type QuestionEvaluationGuide {
+    id: ID!
+    questionId: ID!
+    expectedContent: String
+    keyPoints: String
+    acceptableResponses: String
+    offTopicExamples: String
+    scoringHints: String
+    commonMistakes: String
+}
+
+type QuestionCollaborator {
+    id: ID!
+    userId: ID!
+    questionId: ID!
+    permission: QuestionCollaboratorPermission!
+    assignedAt: String
+    user: User
+}
+
 type Question {
     id: ID!
-    topicId: ID!
+    questionBankId: ID!
+    questionTopicId: ID!
+    code: String!
+    instructionText: String
     questionText: String!
-    audioUrl: String
-    standardLevelId: ID!
-    standardLevelCode: String
-    frameworkCode: String
-    frameworkName: String
-    questionType: QuestionType!
-    durationSeconds: Int!
-    isActive: Boolean!
-    createdAt: String!
-    topic: QuestionTopic
+    promptText: String
+    preparationText: String
+    type: QuestionType!
+    preparationTimeSeconds: Int!
+    minResponseSeconds: Int!
+    maxResponseSeconds: Int!
+    sharing: QuestionSharing
+    sourceQuestionId: ID
+    locked: Boolean!
+    status: QuestionStatus!
+    confidentiality: QuestionConfidentiality!
+    securePoolId: ID
+    createdAt: String
+    updatedAt: String
+    createdBy: ID
+    updatedBy: ID
+    topic: QuestionTopic!
+    bank: QuestionBank!
+    assets: [QuestionAsset!]!
+    evaluationGuide: QuestionEvaluationGuide
+    collaborators: [QuestionCollaborator!]!
 }
 
 type QuestionPage {
@@ -66,13 +196,50 @@ type QuestionPage {
 }
 
 extend type Query {
-    questionBanks(page: Int = 0, size: Int = 20): QuestionBankPage!
+    questionBanks(
+        ownerType: QuestionBankOwnerType,
+        status: QuestionBankStatus,
+        languageId: ID,
+        schoolId: ID,
+        schoolGradeId: ID,
+        keyword: String,
+        page: Int = 0,
+        size: Int = 20
+    ): QuestionBankPage!
     questionBank(id: ID!): QuestionBank
 
-    questionTopics(bankId: ID!, page: Int = 0, size: Int = 20): QuestionTopicPage!
+    questionTopics(
+        questionBankId: ID,
+        status: QuestionTopicStatus,
+        keyword: String,
+        page: Int = 0,
+        size: Int = 20
+    ): QuestionTopicPage!
     questionTopic(id: ID!): QuestionTopic
 
-    questions(page: Int = 0, size: Int = 20): QuestionPage!
-    questionsByTopic(topicId: ID!, page: Int = 0, size: Int = 20): QuestionPage!
+    questions(
+        questionBankId: ID,
+        questionTopicId: ID,
+        topicName: String,
+        status: QuestionStatus,
+        type: QuestionType,
+        sharing: QuestionSharing,
+        scope: QuestionScope = ALL,
+        keyword: String,
+        page: Int = 0,
+        size: Int = 20
+    ): QuestionPage!
+    questionsForExamPaper(
+        questionBankId: ID,
+        questionTopicId: ID,
+        topicName: String,
+        status: QuestionStatus,
+        type: QuestionType,
+        sharing: QuestionSharing,
+        scope: QuestionScope = ALL,
+        keyword: String,
+        page: Int = 0,
+        size: Int = 20
+    ): QuestionPage!
     question(id: ID!): Question
 }

@@ -10,13 +10,15 @@ public final class UpdateQuestionCommandMapper {
     public static UpdateQuestionCommand fromRequest(UUID id, UpdateQuestionRequest request) {
         return new UpdateQuestionCommand(
             id,
-            request.topicId(),
+            request.instructionText(),
             request.questionText(),
-            request.audioUrl(),
-            request.standardLevelId(),
-            request.questionType(),
-            request.durationSeconds(),
-            request.isActive()
+            request.promptText(),
+            request.preparationText(),
+            request.type(),
+            request.preparationTimeSeconds(),
+            request.minResponseSeconds(),
+            request.maxResponseSeconds(),
+            request.sharing()
         );
     }
 }

@@ -3,31 +3,33 @@ package com.sep.vox.interfaces.rest.mapper;
 import java.util.List;
 
 import com.sep.vox.application.port.input.command.CreateQuestionAssetCommand;
+import com.sep.vox.application.port.input.command.CreateQuestionEvaluationGuideCommand;
 import com.sep.vox.application.port.input.command.CreateSystemQuestionBankQuestionCommand;
 import com.sep.vox.interfaces.rest.dto.request.CreateQuestionAssetRequest;
-import com.sep.vox.interfaces.rest.dto.request.CreateSystemQuestionBankQuestionRequest;
+import com.sep.vox.interfaces.rest.dto.request.CreateQuestionRequest;
+import com.sep.vox.interfaces.rest.dto.request.QuestionEvaluationGuideRequest;
 
 public final class CreateQuestionCommandMapper {
 
-    public static CreateSystemQuestionBankQuestionCommand fromQuestionBankRequest(CreateSystemQuestionBankQuestionRequest request) {
+    private CreateQuestionCommandMapper() {
+    }
+
+    public static CreateSystemQuestionBankQuestionCommand fromRequest(CreateQuestionRequest request) {
         return new CreateSystemQuestionBankQuestionCommand(
+            request.questionBankId(),
             request.questionTopicId(),
-            request.code(),
+            null,
             request.instructionText(),
             request.questionText(),
             request.promptText(),
             request.preparationText(),
-            request.expectedContent(),
-            request.keyPoints(),
-            request.acceptableResponses(),
-            request.offTopicExamples(),
-            request.scoringHints(),
-            request.commonMistakes(),
             request.type(),
             request.preparationTimeSeconds(),
             request.minResponseSeconds(),
             request.maxResponseSeconds(),
-            toAssetCommands(request.assets())
+            request.sharing(),
+            toAssetCommands(request.assets()),
+            toEvaluationGuideCommand(request.evaluationGuide())
         );
     }
 
@@ -51,6 +53,21 @@ public final class CreateQuestionCommandMapper {
             request.transcript(),
             request.description(),
             request.order()
+        );
+    }
+
+    private static CreateQuestionEvaluationGuideCommand toEvaluationGuideCommand(QuestionEvaluationGuideRequest request) {
+        if (request == null) {
+            return null;
+        }
+
+        return new CreateQuestionEvaluationGuideCommand(
+            request.expectedContent(),
+            request.keyPoints(),
+            request.acceptableResponses(),
+            request.offTopicExamples(),
+            request.scoringHints(),
+            request.commonMistakes()
         );
     }
 }

@@ -1,69 +1,177 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
+import org.dataloader.DataLoader;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.graphql.data.method.annotation.SchemaMapping;
 import org.springframework.stereotype.Controller;
 
+import graphql.schema.DataFetchingEnvironment;
+
+import com.sep.vox.application.port.input.query.ViewQuestionBankDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewQuestionDetailsQuery;
-import com.sep.vox.application.port.input.query.ViewQuestionsByTopicQuery;
+import com.sep.vox.application.port.input.query.ViewQuestionTopicDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewQuestionsQuery;
 import com.sep.vox.application.port.input.usecase.question.ViewQuestionDetailsUseCase;
-import com.sep.vox.application.port.input.usecase.question.ViewQuestionsByTopicUseCase;
+import com.sep.vox.application.port.input.usecase.question.ViewQuestionsForExamPaperUseCase;
 import com.sep.vox.application.port.input.usecase.question.ViewQuestionsUseCase;
+import com.sep.vox.application.port.input.usecase.questionbank.ViewQuestionBankDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.questiontopic.ViewQuestionTopicDetailsUseCase;
 import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.dto.QuestionAssetDto;
+import com.sep.vox.domain.dto.QuestionBankDto;
+import com.sep.vox.domain.dto.QuestionCollaboratorDto;
 import com.sep.vox.domain.dto.QuestionDto;
+import com.sep.vox.domain.dto.QuestionEvaluationGuideDto;
+import com.sep.vox.domain.dto.QuestionTopicDto;
+import com.sep.vox.domain.dto.UserDto;
+import com.sep.vox.domain.mapper.QuestionAssetDtoMapper;
+import com.sep.vox.domain.mapper.QuestionCollaboratorDtoMapper;
+import com.sep.vox.domain.mapper.QuestionEvaluationGuideDtoMapper;
+import com.sep.vox.domain.model.question.QuestionSharing;
+import com.sep.vox.domain.model.question.QuestionStatus;
+import com.sep.vox.domain.model.question.QuestionType;
+import com.sep.vox.domain.repository.QuestionAssetRepository;
+import com.sep.vox.domain.repository.QuestionCollaboratorRepository;
+import com.sep.vox.domain.repository.QuestionEvaluationGuideRepository;
 
 @Controller("graphqlQuestionController")
 public class QuestionController {
 
     private final ViewQuestionsUseCase viewQuestionsUseCase;
+    private final ViewQuestionsForExamPaperUseCase viewQuestionsForExamPaperUseCase;
     private final ViewQuestionDetailsUseCase viewQuestionDetailsUseCase;
-    private final ViewQuestionsByTopicUseCase viewQuestionsByTopicUseCase;
+    private final ViewQuestionBankDetailsUseCase viewQuestionBankDetailsUseCase;
     private final ViewQuestionTopicDetailsUseCase viewQuestionTopicDetailsUseCase;
+    private final QuestionAssetRepository questionAssetRepository;
+    private final QuestionEvaluationGuideRepository questionEvaluationGuideRepository;
+    private final QuestionCollaboratorRepository questionCollaboratorRepository;
 
     public QuestionController(
             ViewQuestionsUseCase viewQuestionsUseCase,
+            ViewQuestionsForExamPaperUseCase viewQuestionsForExamPaperUseCase,
             ViewQuestionDetailsUseCase viewQuestionDetailsUseCase,
-            ViewQuestionsByTopicUseCase viewQuestionsByTopicUseCase,
-            ViewQuestionTopicDetailsUseCase viewQuestionTopicDetailsUseCase) {
+            ViewQuestionBankDetailsUseCase viewQuestionBankDetailsUseCase,
+            ViewQuestionTopicDetailsUseCase viewQuestionTopicDetailsUseCase,
+            QuestionAssetRepository questionAssetRepository,
+            QuestionEvaluationGuideRepository questionEvaluationGuideRepository,
+            QuestionCollaboratorRepository questionCollaboratorRepository) {
         this.viewQuestionsUseCase = viewQuestionsUseCase;
+        this.viewQuestionsForExamPaperUseCase = viewQuestionsForExamPaperUseCase;
         this.viewQuestionDetailsUseCase = viewQuestionDetailsUseCase;
-        this.viewQuestionsByTopicUseCase = viewQuestionsByTopicUseCase;
+        this.viewQuestionBankDetailsUseCase = viewQuestionBankDetailsUseCase;
         this.viewQuestionTopicDetailsUseCase = viewQuestionTopicDetailsUseCase;
+        this.questionAssetRepository = questionAssetRepository;
+        this.questionEvaluationGuideRepository = questionEvaluationGuideRepository;
+        this.questionCollaboratorRepository = questionCollaboratorRepository;
     }
 
     @QueryMapping(name = "questions")
-    @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
-    public PageResult<QuestionDto> questions(@Argument(name = "page") int page, @Argument(name = "size") int size) {
-        if (page <= 0 || size <= 0) {
-            throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
-        }
-        var query = new ViewQuestionsQuery(page, size);
+    public PageResult<QuestionDto> questions(
+            @Argument(name = "questionBankId") UUID questionBankId,
+            @Argument(name = "questionTopicId") UUID questionTopicId,
+            @Argument(name = "topicName") String topicName,
+            @Argument(name = "status") QuestionStatus status,
+            @Argument(name = "type") QuestionType type,
+            @Argument(name = "sharing") QuestionSharing sharing,
+            @Argument(name = "scope") String scope,
+            @Argument(name = "keyword") String keyword,
+            @Argument(name = "page") int page,
+            @Argument(name = "size") int size) {
+        validatePage(page, size);
+        var query = new ViewQuestionsQuery(
+            questionBankId,
+            questionTopicId,
+            topicName,
+            status,
+            type,
+            sharing,
+            scope,
+            keyword,
+            page,
+            size
+        );
         return viewQuestionsUseCase.execute(query);
     }
 
-    @QueryMapping(name = "questionsByTopic")
-    @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
-    public PageResult<QuestionDto> questionsByTopic(
-            @Argument(name = "topicId") UUID topicId,
+    @QueryMapping(name = "questionsForExamPaper")
+    public PageResult<QuestionDto> questionsForExamPaper(
+            @Argument(name = "questionBankId") UUID questionBankId,
+            @Argument(name = "questionTopicId") UUID questionTopicId,
+            @Argument(name = "topicName") String topicName,
+            @Argument(name = "status") QuestionStatus status,
+            @Argument(name = "type") QuestionType type,
+            @Argument(name = "sharing") QuestionSharing sharing,
+            @Argument(name = "scope") String scope,
+            @Argument(name = "keyword") String keyword,
             @Argument(name = "page") int page,
             @Argument(name = "size") int size) {
-        if (page <= 0 || size <= 0) {
-            throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
-        }
-        var query = new ViewQuestionsByTopicQuery(topicId, page, size);
-        return viewQuestionsByTopicUseCase.execute(query);
+        validatePage(page, size);
+        var query = new ViewQuestionsQuery(
+            questionBankId,
+            questionTopicId,
+            topicName,
+            status,
+            type,
+            sharing,
+            scope,
+            keyword,
+            page,
+            size
+        );
+        return viewQuestionsForExamPaperUseCase.execute(query);
     }
 
     @QueryMapping(name = "question")
-    @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
     public QuestionDto question(@Argument(name = "id") UUID id) {
-        var query = new ViewQuestionDetailsQuery(id);
-        return viewQuestionDetailsUseCase.execute(query);
+        return viewQuestionDetailsUseCase.execute(new ViewQuestionDetailsQuery(id));
     }
 
+    @SchemaMapping(typeName = "Question", field = "bank")
+    public QuestionBankDto bank(QuestionDto source) {
+        return viewQuestionBankDetailsUseCase.execute(new ViewQuestionBankDetailsQuery(source.questionBankId()));
+    }
+
+    @SchemaMapping(typeName = "Question", field = "topic")
+    public QuestionTopicDto topic(QuestionDto source) {
+        return viewQuestionTopicDetailsUseCase.execute(new ViewQuestionTopicDetailsQuery(source.questionTopicId()));
+    }
+
+    @SchemaMapping(typeName = "QuestionTopic", field = "bank")
+    public QuestionBankDto topicBank(QuestionTopicDto source) {
+        return viewQuestionBankDetailsUseCase.execute(new ViewQuestionBankDetailsQuery(source.questionBankId()));
+    }
+
+    @SchemaMapping(typeName = "Question", field = "assets")
+    public List<QuestionAssetDto> assets(QuestionDto source) {
+        return QuestionAssetDtoMapper.toDtoList(questionAssetRepository.findByQuestionId(source.id()));
+    }
+
+    @SchemaMapping(typeName = "Question", field = "evaluationGuide")
+    public QuestionEvaluationGuideDto evaluationGuide(QuestionDto source) {
+        return questionEvaluationGuideRepository.findByQuestionId(source.id())
+            .map(QuestionEvaluationGuideDtoMapper::toDto)
+            .orElse(null);
+    }
+
+    @SchemaMapping(typeName = "Question", field = "collaborators")
+    public List<QuestionCollaboratorDto> collaborators(QuestionDto source) {
+        return QuestionCollaboratorDtoMapper.toDtoList(questionCollaboratorRepository.findByQuestionId(source.id()));
+    }
+
+    @SchemaMapping(typeName = "QuestionCollaborator", field = "user")
+    public CompletableFuture<UserDto> collaboratorUser(QuestionCollaboratorDto source, DataFetchingEnvironment env) {
+        DataLoader<UUID, UserDto> loader = env.getDataLoader("userById");
+        return loader.load(source.userId());
+    }
+
+    private void validatePage(int page, int size) {
+        if (page < 0 || size <= 0) {
+            throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
+        }
+    }
 }

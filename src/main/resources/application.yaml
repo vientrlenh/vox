@@ -169,7 +169,6 @@ app:
             user-registered: ${KAFKA_USER_TOPIC:user.registered.v1}
           group-id: ${KAFKA_USER_GROUP_ID:vox-user}
 
-
 system-admin:
   email: ${SYS_ADMIN_EMAIL}
   password: ${SYS_ADMIN_PASSWORD}

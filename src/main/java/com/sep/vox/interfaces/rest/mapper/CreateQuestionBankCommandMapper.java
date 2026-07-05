@@ -18,10 +18,10 @@ public final class CreateQuestionBankCommandMapper {
 
     public static CreateSchoolQuestionBankCommand fromSchoolRequest(CreateSchoolQuestionBankRequest request) {
         return new CreateSchoolQuestionBankCommand(
-            request.languageId(), 
-            request.schoolId(), 
-            request.code(), 
-            request.name(), 
+            request.languageId(),
+            null,
+            request.code(),
+            request.name(),
             request.description()
         );
     }

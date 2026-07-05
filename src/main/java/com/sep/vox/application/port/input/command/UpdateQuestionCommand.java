@@ -4,12 +4,14 @@ import java.util.UUID;
 
 public record UpdateQuestionCommand(
     UUID id,
-    UUID topicId,
+    String instructionText,
     String questionText,
-    String audioUrl,
-    UUID standardLevelId,
+    String promptText,
+    String preparationText,
     String questionType,
-    int durationSeconds,
-    boolean isActive
+    Integer preparationTimeSeconds,
+    Integer minResponseSeconds,
+    Integer maxResponseSeconds,
+    String sharing
 ) {
 }

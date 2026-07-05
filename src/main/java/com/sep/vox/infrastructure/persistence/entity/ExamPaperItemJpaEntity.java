@@ -34,7 +34,7 @@ public class ExamPaperItemJpaEntity {
     @Column(name = "paper_id", updatable = false)
     private UUID paperId; 
     
-    @Column(name = "question_id", nullable = false)
+    @Column(name = "question_id")
     private UUID questionId;
 
     @Column(name = "item_order", nullable = false)

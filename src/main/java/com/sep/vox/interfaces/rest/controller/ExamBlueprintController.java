@@ -151,7 +151,7 @@ public class ExamBlueprintController {
     }
 
     @PostMapping("/exam-blueprints/{id}/versions")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<ExamBlueprintVersionDto>> createVersion(
             @PathVariable UUID id,
             @Valid @RequestBody CreateExamBlueprintVersionRequest request) {
@@ -161,7 +161,7 @@ public class ExamBlueprintController {
     }
 
     @PostMapping("/exam-blueprint-versions/{id}/duplicate")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<ExamBlueprintVersionDto>> duplicateVersion(@PathVariable UUID id) {
         var data = duplicateExamBlueprintVersionUseCase.execute(new DuplicateExamBlueprintVersionCommand(id));
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -169,7 +169,7 @@ public class ExamBlueprintController {
     }
 
     @PutMapping("/exam-blueprint-versions/{id}")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<ExamBlueprintVersionDto>> updateVersion(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateExamBlueprintVersionRequest request) {

@@ -107,7 +107,7 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
             .orElse(null);
         var question = questionRepository.findAccessibleById(input.questionId(), currentUserId, currentSchoolId, false, false)
             .orElseThrow(() -> new ForbiddenException("Không có quyền dùng câu hỏi này"));
-        if (question.getStatus() != QuestionStatus.PUBLISHED) {
+        if (exam.getKind() == ExamKind.CENTRALIZED && question.getStatus() != QuestionStatus.PUBLISHED) {
             throw new IllegalStateException("Chỉ được gán câu hỏi đã PUBLISHED vào đề thi");
         }
 

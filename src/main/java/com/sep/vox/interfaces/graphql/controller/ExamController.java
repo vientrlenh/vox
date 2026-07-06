@@ -168,7 +168,7 @@ public class ExamController {
 
     @SchemaMapping(typeName = "Exam", field = "blueprint")
     public ExamBlueprintDto blueprint(ExamDto source) {
-        if (source.blueprintId() == null) {
+        if (source.blueprintId() == null || !canViewExamBlueprintData(source)) {
             return null;
         }
         return examBlueprintRepository.findById(source.blueprintId())
@@ -178,7 +178,7 @@ public class ExamController {
 
     @SchemaMapping(typeName = "Exam", field = "blueprintVersion")
     public ExamBlueprintVersionDto blueprintVersion(ExamDto source) {
-        if (source.blueprintVersionId() == null) {
+        if (source.blueprintVersionId() == null || !canViewExamBlueprintData(source)) {
             return null;
         }
         return examBlueprintVersionRepository.findById(source.blueprintVersionId())
@@ -257,6 +257,26 @@ public class ExamController {
         return questionRepository.findAccessibleById(questionId, currentUserId, currentSchoolId, systemAdmin, schoolAdmin)
             .map(QuestionDtoMapper::toQuestionDto)
             .orElse(null);
+    }
+
+    private boolean canViewExamBlueprintData(ExamDto source) {
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        if (userContextPort.isSystemAdmin()) {
+            return true;
+        }
+
+        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+            .map(schoolUser -> schoolUser.getSchoolId())
+            .orElse(null);
+        if (currentSchoolId != null && currentSchoolId.equals(source.schoolId())) {
+            var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+                .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
+            if (schoolAdmin) {
+                return true;
+            }
+        }
+
+        return examMemberRepository.findByExamIdAndUserId(source.id(), currentUserId).isPresent();
     }
 
     private void validatePage(int page, int size) {

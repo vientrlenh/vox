@@ -21,12 +21,15 @@ import com.sep.vox.domain.dto.ExamBlueprintVersionDto;
 import com.sep.vox.domain.mapper.ExamBlueprintVersionDtoMapper;
 import com.sep.vox.domain.model.exam.ExamBlueprint;
 import com.sep.vox.domain.model.exam.ExamBlueprintSlot;
+import com.sep.vox.domain.model.exam.ExamBlueprintSlotType;
 import com.sep.vox.domain.model.exam.ExamBlueprintVersion;
 import com.sep.vox.domain.model.exam.ExamBlueprintVersionStatus;
+import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.repository.ExamBlueprintRepository;
 import com.sep.vox.domain.repository.ExamBlueprintSectionRepository;
 import com.sep.vox.domain.repository.ExamBlueprintSlotRepository;
 import com.sep.vox.domain.repository.ExamBlueprintVersionRepository;
+import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
@@ -37,6 +40,7 @@ public class UpdateExamBlueprintVersionStatusUseCase
     private final ExamBlueprintRepository examBlueprintRepository;
     private final ExamBlueprintSectionRepository examBlueprintSectionRepository;
     private final ExamBlueprintSlotRepository examBlueprintSlotRepository;
+    private final QuestionRepository questionRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserContextPort userContextPort;
     private final EventPublisherPort eventPublisherPort;
@@ -46,6 +50,7 @@ public class UpdateExamBlueprintVersionStatusUseCase
             ExamBlueprintRepository examBlueprintRepository,
             ExamBlueprintSectionRepository examBlueprintSectionRepository,
             ExamBlueprintSlotRepository examBlueprintSlotRepository,
+            QuestionRepository questionRepository,
             SchoolUserRepository schoolUserRepository,
             UserContextPort userContextPort,
             EventPublisherPort eventPublisherPort) {
@@ -53,6 +58,7 @@ public class UpdateExamBlueprintVersionStatusUseCase
         this.examBlueprintRepository = examBlueprintRepository;
         this.examBlueprintSectionRepository = examBlueprintSectionRepository;
         this.examBlueprintSlotRepository = examBlueprintSlotRepository;
+        this.questionRepository = questionRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.userContextPort = userContextPort;
         this.eventPublisherPort = eventPublisherPort;
@@ -134,7 +140,19 @@ public class UpdateExamBlueprintVersionStatusUseCase
             throw new IllegalStateException("Tổng trọng số section phải bằng 1.00 trước khi publish");
         }
 
-        var slotsBySectionId = examBlueprintSlotRepository.findByBlueprintVersionId(version.getId()).stream()
+        var allSlots = examBlueprintSlotRepository.findByBlueprintVersionId(version.getId());
+        allSlots.stream()
+            .filter(slot -> slot.getSlotType() == ExamBlueprintSlotType.FIXED)
+            .forEach(slot -> {
+                var question = slot.getFixedQuestionId() == null
+                    ? null
+                    : questionRepository.findById(slot.getFixedQuestionId()).orElse(null);
+                if (question == null || question.getStatus() != QuestionStatus.PUBLISHED) {
+                    throw new IllegalStateException("Câu hỏi fixed cho slot phải ở trạng thái PUBLISHED");
+                }
+            });
+
+        var slotsBySectionId = allSlots.stream()
             .collect(Collectors.groupingBy(ExamBlueprintSlot::getSectionId));
         for (var section : sections) {
             var slots = slotsBySectionId.getOrDefault(section.getId(), List.of());

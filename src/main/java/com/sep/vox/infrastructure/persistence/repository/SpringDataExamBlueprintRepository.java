@@ -32,26 +32,7 @@ public interface SpringDataExamBlueprintRepository extends JpaRepository<ExamBlu
               )
           AND (
                 :systemAdmin = true
-                OR (:schoolAdmin = true AND b.schoolId = :currentSchoolId)
-                OR b.createdBy = :currentUserId
-                OR EXISTS (
-                    SELECT 1 FROM ExamJpaEntity e
-                    JOIN ExamMemberJpaEntity em ON em.examId = e.id
-                    WHERE e.blueprintId = b.id
-                      AND em.userId = :currentUserId
-                      AND e.schoolId = b.schoolId
-                )
-                OR (
-                    EXISTS (
-                        SELECT 1 FROM ExamBlueprintVersionJpaEntity v
-                        WHERE v.blueprintId = b.id AND v.status = 'PUBLISHED'
-                    )
-                    AND NOT EXISTS (
-                        SELECT 1 FROM ExamJpaEntity e2
-                        WHERE e2.blueprintId = b.id
-                          AND e2.status IN ('DRAFT', 'SCHEDULED', 'IN_PROGRESS')
-                    )
-                )
+                OR b.schoolId = :currentSchoolId
               )
         ORDER BY b.updatedAt DESC
     """)
@@ -135,25 +116,6 @@ public interface SpringDataExamBlueprintRepository extends JpaRepository<ExamBlu
     @Query("""
         SELECT CASE WHEN (
             b.schoolId = :schoolId
-            AND (
-                b.createdBy = :userId
-                OR EXISTS (
-                    SELECT 1 FROM ExamJpaEntity e
-                    JOIN ExamMemberJpaEntity em ON em.examId = e.id
-                    WHERE e.blueprintId = b.id AND em.userId = :userId
-                )
-                OR (
-                    EXISTS (
-                        SELECT 1 FROM ExamBlueprintVersionJpaEntity v
-                        WHERE v.blueprintId = b.id AND v.status = 'PUBLISHED'
-                    )
-                    AND NOT EXISTS (
-                        SELECT 1 FROM ExamJpaEntity e2
-                        WHERE e2.blueprintId = b.id
-                          AND e2.status IN ('DRAFT', 'SCHEDULED', 'IN_PROGRESS')
-                    )
-                )
-            )
         ) THEN true ELSE false END
         FROM ExamBlueprintJpaEntity b
         WHERE b.id = :blueprintId

@@ -1,7 +1,5 @@
 package com.sep.vox.application.port.input.usecase.examblueprint;
 
-import java.util.UUID;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -10,7 +8,6 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.query.ViewExamBlueprintDetailsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.ExamBlueprintDto;
 import com.sep.vox.domain.mapper.ExamBlueprintDtoMapper;
 import com.sep.vox.domain.model.exam.ExamBlueprint;
@@ -23,17 +20,14 @@ public class ViewExamBlueprintDetailsUseCase implements IUseCase<ViewExamBluepri
     private final ExamBlueprintRepository examBlueprintRepository;
     private final UserContextPort userContextPort;
     private final SchoolUserRepository schoolUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
 
     public ViewExamBlueprintDetailsUseCase(
             ExamBlueprintRepository examBlueprintRepository,
             UserContextPort userContextPort,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository) {
+            SchoolUserRepository schoolUserRepository) {
         this.examBlueprintRepository = examBlueprintRepository;
         this.userContextPort = userContextPort;
         this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
     }
 
     @Override
@@ -43,32 +37,19 @@ public class ViewExamBlueprintDetailsUseCase implements IUseCase<ViewExamBluepri
         var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var schoolAdmin = !userContextPort.isSystemAdmin()
-            && userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-                .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
 
         var blueprint = examBlueprintRepository.findById(input.id())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy blueprint đề thi"));
-        if (!hasAccess(blueprint, currentUserId, currentSchoolId, schoolAdmin)) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            .orElseThrow(() -> new NotFoundException("KhÃ´ng tÃ¬m tháº¥y blueprint Ä‘á» thi"));
+        if (!hasAccess(blueprint, currentSchoolId)) {
+            throw new ForbiddenException("Quyá»n truy cáº­p bá»‹ tá»« chá»‘i");
         }
         return ExamBlueprintDtoMapper.toDto(blueprint);
     }
 
-    private boolean hasAccess(
-            ExamBlueprint blueprint,
-            UUID currentUserId,
-            UUID currentSchoolId,
-            boolean schoolAdmin) {
+    private boolean hasAccess(ExamBlueprint blueprint, java.util.UUID currentSchoolId) {
         if (userContextPort.isSystemAdmin()) {
             return true;
         }
-        if (currentSchoolId == null || !blueprint.getSchoolId().equals(currentSchoolId)) {
-            return false;
-        }
-        if (schoolAdmin) {
-            return true;
-        }
-        return examBlueprintRepository.canViewBlueprint(blueprint.getId(), currentUserId, currentSchoolId);
+        return currentSchoolId != null && blueprint.getSchoolId().equals(currentSchoolId);
     }
 }

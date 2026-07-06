@@ -186,6 +186,7 @@ type Question {
     assets: [QuestionAsset!]!
     evaluationGuide: QuestionEvaluationGuide
     collaborators: [QuestionCollaborator!]!
+    usableInExam: Boolean!
 }
 
 type QuestionPage {

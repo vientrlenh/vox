@@ -2,7 +2,7 @@ package com.sep.vox.application.port.input.usecase.examcandidate;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.UUID;
 
@@ -90,29 +90,29 @@ public class ImportExamCandidatesFromGradeUseCase
         var classes = schoolClassRepository.findBySchoolId(
             exam.getSchoolId(), null, null, null, grade.getId(), 1, MAX_CLASSES).content();
 
-        var seen = new HashSet<UUID>();
-        var newCandidates = new ArrayList<ExamCandidate>();
+        var activeUserIds = new LinkedHashSet<UUID>();
         for (var schoolClass : classes) {
             var roster = schoolClassUserRepository.findBySchoolClassId(
                 schoolClass.getId(), 0, MAX_CLASS_ROSTER_SIZE).content();
             for (var classUser : roster) {
-                if (!classUser.isActive()) {
-                    continue;
+                if (classUser.isActive()) {
+                    activeUserIds.add(classUser.getUserId());
                 }
-                var studentId = classUser.getUserId();
-                if (!seen.add(studentId)) {
-                    continue;
-                }
-                var isStudent = userRoleQueryRepository.findByUserIdWithRoleInfo(studentId).stream()
-                    .anyMatch(role -> SchoolRoleCodes.STUDENT.equals(role.roleCode()));
-                if (!isStudent) {
-                    continue;
-                }
-                if (examCandidateRepository.existsByExamIdAndStudentId(exam.getId(), studentId)) {
-                    continue;
-                }
-                newCandidates.add(ExamCandidate.createFresh(exam.getId(), studentId, currentUserId, now));
             }
+        }
+
+        var studentIds = userRoleQueryRepository.findUserIdsByRoleCode(activeUserIds, SchoolRoleCodes.STUDENT);
+        var existingStudentIds = examCandidateRepository.findStudentIdsByExamId(exam.getId());
+
+        var newCandidates = new ArrayList<ExamCandidate>();
+        for (var userId : activeUserIds) {
+            if (!studentIds.contains(userId)) {
+                continue;
+            }
+            if (existingStudentIds.contains(userId)) {
+                continue;
+            }
+            newCandidates.add(ExamCandidate.createFresh(exam.getId(), userId, currentUserId, now));
         }
 
         if (newCandidates.isEmpty()) {

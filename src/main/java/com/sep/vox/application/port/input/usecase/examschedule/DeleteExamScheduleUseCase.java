@@ -6,7 +6,6 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.ConflictException;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.DeleteExamScheduleCommand;
@@ -63,7 +62,7 @@ public class DeleteExamScheduleUseCase implements IUseCase<DeleteExamScheduleCom
         var currentUserId = authorize(exam);
 
         if (examCandidateRepository.countByScheduleId(schedule.getId()) > 0) {
-            throw new ConflictException("Không thể xoá ca thi đang có thí sinh");
+            throw new IllegalStateException("Không thể xoá ca thi đang có thí sinh");
         }
 
         schedule.setStatus(ExamScheduleStatus.DELETED);

@@ -6,7 +6,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.ConflictException;
+import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreateExamScheduleCommand;
@@ -74,7 +74,7 @@ public class CreateExamScheduleUseCase implements IUseCase<CreateExamScheduleCom
         }
 
         if (examScheduleRepository.existsOverlapping(input.schoolRoomId(), input.startDate(), input.endDate(), null)) {
-            throw new ConflictException("Phòng học đã có ca thi khác trong khoảng thời gian này");
+            throw new DuplicatedException("Phòng học đã có ca thi khác trong khoảng thời gian này");
         }
 
         var schedule = ExamSchedule.createFresh(

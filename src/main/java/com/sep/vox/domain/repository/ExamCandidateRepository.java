@@ -3,6 +3,7 @@ package com.sep.vox.domain.repository;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import com.sep.vox.domain.model.exam.ExamCandidate;
@@ -15,6 +16,7 @@ public interface ExamCandidateRepository {
 
     Optional<ExamCandidate> findById(UUID id);
     boolean existsByExamIdAndStudentId(UUID examId, UUID studentId);
+    Set<UUID> findStudentIdsByExamId(UUID examId);
     List<ExamCandidate> findByExamIdAndScheduleIdIsNullOrderByAssignedAtAsc(UUID examId);
     List<ExamCandidate> findByIdInAndExamId(Collection<UUID> ids, UUID examId);
     long countByScheduleId(UUID scheduleId);

@@ -2,6 +2,7 @@ package com.sep.vox.application.usecase.examcandidate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -9,6 +10,7 @@ import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -17,7 +19,6 @@ import org.junit.jupiter.api.Test;
 import com.sep.vox.application.port.input.command.ImportExamCandidatesFromClassCommand;
 import com.sep.vox.application.port.input.usecase.examcandidate.ImportExamCandidatesFromClassUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.dto.UserRoleInfo;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.exam.Exam;
@@ -25,6 +26,7 @@ import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassUser;
+import com.sep.vox.domain.model.user.SchoolRoleCodes;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
@@ -75,11 +77,6 @@ class ImportExamCandidatesFromClassUseCaseTests {
             .thenReturn(true);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam()));
         when(schoolClassRepository.findById(classId)).thenReturn(Optional.of(schoolClass()));
-
-        when(userRoleQueryRepository.findByUserIdWithRoleInfo(activeStudent)).thenReturn(List.of(studentRole(activeStudent)));
-        when(userRoleQueryRepository.findByUserIdWithRoleInfo(existingStudent)).thenReturn(List.of(studentRole(existingStudent)));
-        when(userRoleQueryRepository.findByUserIdWithRoleInfo(inactiveStudent)).thenReturn(List.of(studentRole(inactiveStudent)));
-        when(userRoleQueryRepository.findByUserIdWithRoleInfo(teacherUser)).thenReturn(List.of());
     }
 
     @Test
@@ -90,10 +87,9 @@ class ImportExamCandidatesFromClassUseCaseTests {
             classUser(inactiveStudent, false),
             classUser(teacherUser, true)
         ), 0, 1000, 4, 1));
-        when(examCandidateRepository.existsByExamIdAndStudentId(examId, activeStudent)).thenReturn(false);
-        when(examCandidateRepository.existsByExamIdAndStudentId(examId, existingStudent)).thenReturn(true);
-        when(examCandidateRepository.existsByExamIdAndStudentId(examId, inactiveStudent)).thenReturn(false);
-        when(examCandidateRepository.existsByExamIdAndStudentId(examId, teacherUser)).thenReturn(false);
+        when(userRoleQueryRepository.findUserIdsByRoleCode(anyCollection(), eq(SchoolRoleCodes.STUDENT)))
+            .thenReturn(Set.of(activeStudent, existingStudent, inactiveStudent));
+        when(examCandidateRepository.findStudentIdsByExamId(examId)).thenReturn(Set.of(existingStudent));
         when(examCandidateRepository.saveAll(anyCollection())).thenAnswer(inv -> {
             Collection<ExamCandidate> arg = inv.getArgument(0);
             return arg.stream().peek(c -> c.setId(UUID.randomUUID())).toList();
@@ -110,7 +106,9 @@ class ImportExamCandidatesFromClassUseCaseTests {
         when(schoolClassUserRepository.findBySchoolClassId(classId, 0, 1000)).thenReturn(new PageResult<>(List.of(
             classUser(existingStudent, true)
         ), 0, 1000, 1, 1));
-        when(examCandidateRepository.existsByExamIdAndStudentId(examId, existingStudent)).thenReturn(true);
+        when(userRoleQueryRepository.findUserIdsByRoleCode(anyCollection(), eq(SchoolRoleCodes.STUDENT)))
+            .thenReturn(Set.of(existingStudent));
+        when(examCandidateRepository.findStudentIdsByExamId(examId)).thenReturn(Set.of(existingStudent));
 
         var result = useCase.execute(new ImportExamCandidatesFromClassCommand(examId, classId));
 
@@ -119,11 +117,6 @@ class ImportExamCandidatesFromClassUseCaseTests {
 
     private SchoolClassUser classUser(UUID studentId, boolean active) {
         return new SchoolClassUser(UUID.randomUUID(), studentId, classId, active, OffsetDateTime.now(), null, userId);
-    }
-
-    private UserRoleInfo studentRole(UUID studentId) {
-        return new UserRoleInfo(UUID.randomUUID(), studentId, UUID.randomUUID(), OffsetDateTime.now(),
-            "STUDENT", "Student");
     }
 
     private SchoolClass schoolClass() {

@@ -11,7 +11,6 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.ConflictException;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.AssignExamPapersCommand;
@@ -71,7 +70,7 @@ public class AssignExamPapersUseCase implements IUseCase<AssignExamPapersCommand
         // Toàn bộ mã đề của kỳ thi phải đã khoá (LOCKED) mới được phân đề.
         var papers = examPaperRepository.findByExamId(exam.getId());
         if (papers.isEmpty() || papers.stream().anyMatch(paper -> paper.getStatus() != ExamPaperStatus.LOCKED)) {
-            throw new ConflictException("Tất cả mã đề của kỳ thi phải được khoá trước khi phân đề");
+            throw new IllegalStateException("Tất cả mã đề của kỳ thi phải được khoá trước khi phân đề");
         }
         var lockedPaperIds = papers.stream()
             .map(paper -> paper.getId())
@@ -86,10 +85,10 @@ public class AssignExamPapersUseCase implements IUseCase<AssignExamPapersCommand
         // Validate all-or-nothing: mọi cặp phải hợp lệ trước khi ghi bất kỳ thứ gì.
         for (var assignment : input.assignments()) {
             if (!candidatesById.containsKey(assignment.candidateId())) {
-                throw new ConflictException("Thí sinh không thuộc kỳ thi này");
+                throw new IllegalStateException("Thí sinh không thuộc kỳ thi này");
             }
             if (assignment.paperId() == null || !lockedPaperIds.contains(assignment.paperId())) {
-                throw new ConflictException("Mã đề không hợp lệ hoặc chưa được khoá");
+                throw new IllegalStateException("Mã đề không hợp lệ hoặc chưa được khoá");
             }
         }
 

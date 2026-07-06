@@ -6,7 +6,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.ConflictException;
+import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateExamScheduleCommand;
@@ -60,7 +60,7 @@ public class UpdateExamScheduleUseCase implements IUseCase<UpdateExamScheduleCom
         var currentUserId = authorize(exam);
 
         if (!schedule.isModifiable()) {
-            throw new ConflictException("Chỉ có thể sửa ca thi khi đang ở trạng thái nháp");
+            throw new IllegalStateException("Chỉ có thể sửa ca thi khi đang ở trạng thái nháp");
         }
 
         // Giá trị hiệu dụng: dùng giá trị mới nếu được cung cấp, ngược lại giữ giá trị hiện tại.
@@ -81,7 +81,7 @@ public class UpdateExamScheduleUseCase implements IUseCase<UpdateExamScheduleCom
         }
 
         if (examScheduleRepository.existsOverlapping(effectiveRoomId, effectiveStart, effectiveEnd, schedule.getId())) {
-            throw new ConflictException("Phòng học đã có ca thi khác trong khoảng thời gian này");
+            throw new DuplicatedException("Phòng học đã có ca thi khác trong khoảng thời gian này");
         }
 
         int updated = examScheduleRepository.updateAtomic(
@@ -92,7 +92,7 @@ public class UpdateExamScheduleUseCase implements IUseCase<UpdateExamScheduleCom
             OffsetDateTime.now(),
             currentUserId);
         if (updated == 0) {
-            throw new ConflictException("Không thể cập nhật ca thi (đã bị thay đổi trạng thái)");
+            throw new IllegalStateException("Không thể cập nhật ca thi (đã bị thay đổi trạng thái)");
         }
         return schedule.getId();
     }

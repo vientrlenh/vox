@@ -23,6 +23,7 @@ import com.sep.vox.domain.model.user.SchoolRoleCodes;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
+import com.sep.vox.domain.model.school.SchoolClassUser;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -77,20 +78,25 @@ public class ImportExamCandidatesFromClassUseCase
         var now = OffsetDateTime.now();
         var roster = schoolClassUserRepository.findBySchoolClassId(
             schoolClass.getId(), 0, MAX_CLASS_ROSTER_SIZE).content();
+
+        var activeUserIds = roster.stream()
+            .filter(SchoolClassUser::isActive)
+            .map(SchoolClassUser::getUserId)
+            .distinct()
+            .toList();
+
+        var studentIds = userRoleQueryRepository.findUserIdsByRoleCode(activeUserIds, SchoolRoleCodes.STUDENT);
+        var existingStudentIds = examCandidateRepository.findStudentIdsByExamId(exam.getId());
+
         var newCandidates = new ArrayList<ExamCandidate>();
-        for (var classUser : roster) {
-            if (!classUser.isActive()) {
+        for (var userId : activeUserIds) {
+            if (!studentIds.contains(userId)) {
                 continue;
             }
-            var isStudent = userRoleQueryRepository.findByUserIdWithRoleInfo(classUser.getUserId()).stream()
-                .anyMatch(role -> SchoolRoleCodes.STUDENT.equals(role.roleCode()));
-            if (!isStudent) {
+            if (existingStudentIds.contains(userId)) {
                 continue;
             }
-            if (examCandidateRepository.existsByExamIdAndStudentId(exam.getId(), classUser.getUserId())) {
-                continue;
-            }
-            newCandidates.add(ExamCandidate.createFresh(exam.getId(), classUser.getUserId(), currentUserId, now));
+            newCandidates.add(ExamCandidate.createFresh(exam.getId(), userId, currentUserId, now));
         }
 
         if (newCandidates.isEmpty()) {

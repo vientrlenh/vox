@@ -16,7 +16,6 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.exception.ConflictException;
 import com.sep.vox.application.port.input.command.DeleteExamScheduleCommand;
 import com.sep.vox.application.port.input.usecase.examschedule.DeleteExamScheduleUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -74,7 +73,7 @@ class DeleteExamScheduleUseCaseTests {
         when(examCandidateRepository.countByScheduleId(scheduleId)).thenReturn(3L);
 
         assertThatThrownBy(() -> useCase.execute(new DeleteExamScheduleCommand(examId, scheduleId)))
-            .isInstanceOf(ConflictException.class);
+            .isInstanceOf(IllegalStateException.class);
         verify(examScheduleRepository, never()).save(any());
     }
 

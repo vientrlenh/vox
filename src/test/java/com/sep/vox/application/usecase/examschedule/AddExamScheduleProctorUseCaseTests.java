@@ -16,7 +16,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.exception.ConflictException;
+import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.port.input.command.AddExamScheduleProctorCommand;
 import com.sep.vox.application.port.input.usecase.examschedule.AddExamScheduleProctorUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -117,7 +117,7 @@ class AddExamScheduleProctorUseCaseTests {
         when(examScheduleProctorRepository.existsByScheduleIdAndTeacherId(scheduleId, teacherId)).thenReturn(true);
 
         assertThatThrownBy(() -> useCase.execute(new AddExamScheduleProctorCommand(examId, scheduleId, teacherId)))
-            .isInstanceOf(ConflictException.class);
+            .isInstanceOf(DuplicatedException.class);
         verify(examScheduleProctorRepository, never()).save(any());
     }
 

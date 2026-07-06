@@ -7,7 +7,6 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.ConflictException;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.AssignExamCandidateScheduleCommand;
@@ -89,7 +88,7 @@ public class AssignExamCandidateScheduleUseCase
             throw new NotFoundException("Không tìm thấy ca thi");
         }
         if (!ASSIGNABLE_STATUSES.contains(schedule.getStatus())) {
-            throw new ConflictException("Chỉ có thể xếp thí sinh vào ca ở trạng thái nháp hoặc đã công bố");
+            throw new IllegalStateException("Chỉ có thể xếp thí sinh vào ca ở trạng thái nháp hoặc đã công bố");
         }
 
         candidate.assignToSchedule(schedule.getId(), now, currentUserId);

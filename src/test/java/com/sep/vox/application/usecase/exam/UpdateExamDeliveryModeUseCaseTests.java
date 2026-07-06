@@ -15,7 +15,6 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.exception.ConflictException;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.command.UpdateExamDeliveryModeCommand;
 import com.sep.vox.application.port.input.usecase.exam.UpdateExamDeliveryModeUseCase;
@@ -95,7 +94,7 @@ class UpdateExamDeliveryModeUseCaseTests {
             .thenReturn(true);
 
         assertThatThrownBy(() -> useCase.execute(new UpdateExamDeliveryModeCommand(examId, "LAB")))
-            .isInstanceOf(ConflictException.class);
+            .isInstanceOf(IllegalStateException.class);
         verify(examRepository, never()).save(exam);
     }
 
@@ -107,7 +106,7 @@ class UpdateExamDeliveryModeUseCaseTests {
             .thenReturn(true);
 
         assertThatThrownBy(() -> useCase.execute(new UpdateExamDeliveryModeCommand(examId, "STUDENT_DEVICE")))
-            .isInstanceOf(ConflictException.class);
+            .isInstanceOf(IllegalStateException.class);
         verify(examRepository, never()).save(exam);
     }
 

@@ -1,14 +1,16 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.application.exception.ConflictException;
+import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.infrastructure.persistence.mapper.ExamCandidateMapper;
@@ -29,7 +31,7 @@ public class ExamCandidateRepositoryImpl implements ExamCandidateRepository {
             var saved = springDataExamCandidateRepository.save(ExamCandidateMapper.toJpa(candidate));
             return ExamCandidateMapper.toDomain(saved);
         } catch (DataIntegrityViolationException e) {
-            throw new ConflictException("Thí sinh đã tồn tại trong kỳ thi này");
+            throw new DuplicatedException("Thí sinh đã tồn tại trong kỳ thi này");
         }
     }
 
@@ -41,7 +43,7 @@ public class ExamCandidateRepositoryImpl implements ExamCandidateRepository {
                 .map(ExamCandidateMapper::toDomain)
                 .toList();
         } catch (DataIntegrityViolationException e) {
-            throw new ConflictException("Thí sinh đã tồn tại trong kỳ thi này");
+            throw new DuplicatedException("Thí sinh đã tồn tại trong kỳ thi này");
         }
     }
 
@@ -65,6 +67,11 @@ public class ExamCandidateRepositoryImpl implements ExamCandidateRepository {
     @Override
     public boolean existsByExamIdAndStudentId(UUID examId, UUID studentId) {
         return springDataExamCandidateRepository.existsByExamIdAndStudentId(examId, studentId);
+    }
+
+    @Override
+    public Set<UUID> findStudentIdsByExamId(UUID examId) {
+        return new HashSet<>(springDataExamCandidateRepository.findStudentIdsByExamId(examId));
     }
 
     @Override

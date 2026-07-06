@@ -16,7 +16,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.exception.ConflictException;
+import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.port.input.command.AddExamCandidateCommand;
 import com.sep.vox.application.port.input.usecase.examcandidate.AddExamCandidateUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -112,7 +112,7 @@ class AddExamCandidateUseCaseTests {
         when(examCandidateRepository.existsByExamIdAndStudentId(examId, studentId)).thenReturn(true);
 
         assertThatThrownBy(() -> useCase.execute(new AddExamCandidateCommand(examId, studentId)))
-            .isInstanceOf(ConflictException.class);
+            .isInstanceOf(DuplicatedException.class);
         verify(examCandidateRepository, never()).save(any());
     }
 

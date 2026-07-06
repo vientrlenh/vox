@@ -6,7 +6,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.ConflictException;
+import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.AddExamCandidateCommand;
@@ -67,7 +67,7 @@ public class AddExamCandidateUseCase implements IUseCase<AddExamCandidateCommand
         }
 
         if (examCandidateRepository.existsByExamIdAndStudentId(exam.getId(), input.studentId())) {
-            throw new ConflictException("Thí sinh đã tồn tại trong kỳ thi này");
+            throw new DuplicatedException("Thí sinh đã tồn tại trong kỳ thi này");
         }
 
         var candidate = ExamCandidate.createFresh(exam.getId(), input.studentId(), currentUserId,

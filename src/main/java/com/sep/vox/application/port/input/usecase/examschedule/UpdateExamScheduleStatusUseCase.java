@@ -6,7 +6,6 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.ConflictException;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateExamScheduleStatusCommand;
@@ -81,17 +80,17 @@ public class UpdateExamScheduleStatusUseCase implements IUseCase<UpdateExamSched
 
     private void publish(ExamSchedule schedule) {
         if (schedule.getStatus() != ExamScheduleStatus.DRAFT) {
-            throw new ConflictException("Chỉ có thể công bố ca thi ở trạng thái nháp");
+            throw new IllegalStateException("Chỉ có thể công bố ca thi ở trạng thái nháp");
         }
         if (examScheduleProctorRepository.countByScheduleId(schedule.getId()) < 1) {
-            throw new ConflictException("Cần ít nhất 1 giám thị trước khi công bố ca thi");
+            throw new IllegalStateException("Cần ít nhất 1 giám thị trước khi công bố ca thi");
         }
         schedule.setStatus(ExamScheduleStatus.PUBLISHED);
     }
 
     private void move(ExamSchedule schedule, UUID targetScheduleId) {
         if (schedule.getStatus() != ExamScheduleStatus.DRAFT && schedule.getStatus() != ExamScheduleStatus.PUBLISHED) {
-            throw new ConflictException("Chỉ có thể chuyển ca thi ở trạng thái nháp hoặc đã công bố");
+            throw new IllegalStateException("Chỉ có thể chuyển ca thi ở trạng thái nháp hoặc đã công bố");
         }
         if (targetScheduleId == null) {
             throw new IllegalArgumentException("Ca thi đích là bắt buộc khi chuyển");
@@ -99,10 +98,10 @@ public class UpdateExamScheduleStatusUseCase implements IUseCase<UpdateExamSched
         var target = examScheduleRepository.findById(targetScheduleId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ca thi đích"));
         if (!target.getExamId().equals(schedule.getExamId())) {
-            throw new ConflictException("Ca thi đích không thuộc cùng bài kiểm tra");
+            throw new IllegalStateException("Ca thi đích không thuộc cùng bài kiểm tra");
         }
         if (target.getStatus() != ExamScheduleStatus.DRAFT && target.getStatus() != ExamScheduleStatus.PUBLISHED) {
-            throw new ConflictException("Ca thi đích không ở trạng thái hợp lệ");
+            throw new IllegalStateException("Ca thi đích không ở trạng thái hợp lệ");
         }
         schedule.setStatus(ExamScheduleStatus.MOVED);
         schedule.setMovedToScheduleId(targetScheduleId);
@@ -110,14 +109,14 @@ public class UpdateExamScheduleStatusUseCase implements IUseCase<UpdateExamSched
 
     private void complete(ExamSchedule schedule) {
         if (schedule.getStatus() != ExamScheduleStatus.PUBLISHED) {
-            throw new ConflictException("Chỉ có thể hoàn thành ca thi đã công bố");
+            throw new IllegalStateException("Chỉ có thể hoàn thành ca thi đã công bố");
         }
         schedule.setStatus(ExamScheduleStatus.COMPLETED);
     }
 
     private void cancel(ExamSchedule schedule) {
         if (schedule.getStatus() != ExamScheduleStatus.DRAFT && schedule.getStatus() != ExamScheduleStatus.PUBLISHED) {
-            throw new ConflictException("Chỉ có thể huỷ ca thi ở trạng thái nháp hoặc đã công bố");
+            throw new IllegalStateException("Chỉ có thể huỷ ca thi ở trạng thái nháp hoặc đã công bố");
         }
         schedule.setStatus(ExamScheduleStatus.CANCELLED);
     }

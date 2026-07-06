@@ -6,7 +6,6 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.ConflictException;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateExamDeliveryModeCommand;
@@ -69,10 +68,10 @@ public class UpdateExamDeliveryModeUseCase implements IUseCase<UpdateExamDeliver
         authorize(exam, currentUserId, currentSchoolId, schoolAdmin);
 
         if (exam.getKind() != ExamKind.CLASS_TEST) {
-            throw new ConflictException("Hình thức làm bài chỉ áp dụng cho bài kiểm tra trên lớp");
+            throw new IllegalStateException("Hình thức làm bài chỉ áp dụng cho bài kiểm tra trên lớp");
         }
         if (exam.getStatus() != ExamStatus.DRAFT && exam.getStatus() != ExamStatus.SCHEDULED) {
-            throw new ConflictException("Không thể đổi hình thức làm bài khi bài kiểm tra đã bắt đầu hoặc kết thúc");
+            throw new IllegalStateException("Không thể đổi hình thức làm bài khi bài kiểm tra đã bắt đầu hoặc kết thúc");
         }
 
         exam.setDeliveryMode(deliveryMode);

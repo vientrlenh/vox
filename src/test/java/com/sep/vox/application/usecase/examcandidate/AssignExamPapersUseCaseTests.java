@@ -16,7 +16,6 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.exception.ConflictException;
 import com.sep.vox.application.port.input.command.AssignExamPapersCommand;
 import com.sep.vox.application.port.input.command.ExamPaperAssignmentItem;
 import com.sep.vox.application.port.input.usecase.examcandidate.AssignExamPapersUseCase;
@@ -100,7 +99,7 @@ class AssignExamPapersUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new AssignExamPapersCommand(examId, List.of(
             new ExamPaperAssignmentItem(candidate1, paper1)))))
-            .isInstanceOf(ConflictException.class);
+            .isInstanceOf(IllegalStateException.class);
         verify(examCandidateRepository, never()).saveAll(anyCollection());
     }
 
@@ -112,7 +111,7 @@ class AssignExamPapersUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new AssignExamPapersCommand(examId, List.of(
             new ExamPaperAssignmentItem(candidate1, paper1)))))
-            .isInstanceOf(ConflictException.class);
+            .isInstanceOf(IllegalStateException.class);
         verify(examCandidateRepository, never()).saveAll(anyCollection());
     }
 
@@ -124,7 +123,7 @@ class AssignExamPapersUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new AssignExamPapersCommand(examId, List.of(
             new ExamPaperAssignmentItem(candidate1, UUID.randomUUID())))))
-            .isInstanceOf(ConflictException.class);
+            .isInstanceOf(IllegalStateException.class);
         verify(examCandidateRepository, never()).saveAll(anyCollection());
     }
 

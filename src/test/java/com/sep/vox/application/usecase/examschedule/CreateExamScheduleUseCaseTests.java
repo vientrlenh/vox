@@ -17,7 +17,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.exception.ConflictException;
+import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.command.CreateExamScheduleCommand;
 import com.sep.vox.application.port.input.usecase.examschedule.CreateExamScheduleUseCase;
@@ -111,7 +111,7 @@ class CreateExamScheduleUseCaseTests {
         when(examScheduleRepository.existsOverlapping(eq(roomId), eq(start), eq(end), eq(null))).thenReturn(true);
 
         assertThatThrownBy(() -> useCase.execute(new CreateExamScheduleCommand(examId, roomId, start, end)))
-            .isInstanceOf(ConflictException.class);
+            .isInstanceOf(DuplicatedException.class);
         verify(examScheduleRepository, never()).save(any());
     }
 

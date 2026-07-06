@@ -16,7 +16,6 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.exception.ConflictException;
 import com.sep.vox.application.port.input.command.AssignExamCandidateScheduleCommand;
 import com.sep.vox.application.port.input.usecase.examcandidate.AssignExamCandidateScheduleUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -90,7 +89,7 @@ class AssignExamCandidateScheduleUseCaseTests {
         when(examScheduleRepository.findByIdForUpdate(scheduleId)).thenReturn(Optional.of(schedule(ExamScheduleStatus.COMPLETED)));
 
         assertThatThrownBy(() -> useCase.execute(new AssignExamCandidateScheduleCommand(examId, candidateId, scheduleId)))
-            .isInstanceOf(ConflictException.class);
+            .isInstanceOf(IllegalStateException.class);
         verify(examCandidateRepository, never()).save(any());
     }
 

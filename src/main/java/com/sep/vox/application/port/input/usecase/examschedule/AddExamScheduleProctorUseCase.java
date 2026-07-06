@@ -5,7 +5,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.ConflictException;
+import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.AddExamScheduleProctorCommand;
@@ -75,7 +75,7 @@ public class AddExamScheduleProctorUseCase implements IUseCase<AddExamSchedulePr
         }
 
         if (examScheduleProctorRepository.existsByScheduleIdAndTeacherId(schedule.getId(), input.teacherId())) {
-            throw new ConflictException("Giám thị đã được phân công cho ca này");
+            throw new DuplicatedException("Giám thị đã được phân công cho ca này");
         }
 
         var proctor = new ExamScheduleProctor(schedule.getId(), input.teacherId());

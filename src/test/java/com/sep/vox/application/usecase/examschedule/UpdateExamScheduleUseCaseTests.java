@@ -17,7 +17,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.exception.ConflictException;
+import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.port.input.command.UpdateExamScheduleCommand;
 import com.sep.vox.application.port.input.usecase.examschedule.UpdateExamScheduleUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -92,7 +92,7 @@ class UpdateExamScheduleUseCaseTests {
         when(examScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule(ExamScheduleStatus.PUBLISHED)));
 
         assertThatThrownBy(() -> useCase.execute(new UpdateExamScheduleCommand(scheduleId, null, newStart, newEnd)))
-            .isInstanceOf(ConflictException.class);
+            .isInstanceOf(IllegalStateException.class);
         verify(examScheduleRepository, never()).updateAtomic(any(), any(), any(), any(), any(), any());
     }
 
@@ -102,7 +102,7 @@ class UpdateExamScheduleUseCaseTests {
         when(examScheduleRepository.existsOverlapping(roomId, newStart, newEnd, scheduleId)).thenReturn(true);
 
         assertThatThrownBy(() -> useCase.execute(new UpdateExamScheduleCommand(scheduleId, null, newStart, newEnd)))
-            .isInstanceOf(ConflictException.class);
+            .isInstanceOf(DuplicatedException.class);
         verify(examScheduleRepository, never()).updateAtomic(any(), any(), any(), any(), any(), any());
     }
 
@@ -114,7 +114,7 @@ class UpdateExamScheduleUseCaseTests {
             .thenReturn(0);
 
         assertThatThrownBy(() -> useCase.execute(new UpdateExamScheduleCommand(scheduleId, null, newStart, newEnd)))
-            .isInstanceOf(ConflictException.class);
+            .isInstanceOf(IllegalStateException.class);
     }
 
     private Exam exam() {

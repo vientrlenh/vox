@@ -124,6 +124,9 @@ extend type Query {
     framework(id: ID!): Framework
     frameworkVersions(frameworkId: ID!, page: Int = 1, size: Int = 20): FrameworkVersionPage!
     frameworkVersion(id: ID!): FrameworkVersion
+    schoolFrameworks(page: Int = 1, size: Int = 20): FrameworkPage!
+    schoolFrameworkVersions(frameworkId: ID!, page: Int = 1, size: Int = 20): FrameworkVersionPage!
+    schoolFrameworkVersion(id: ID!): FrameworkVersion
 }
 
 extend type Mutation {

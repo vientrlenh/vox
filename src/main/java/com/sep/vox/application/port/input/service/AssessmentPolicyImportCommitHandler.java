@@ -70,6 +70,12 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
     private record ScopeKey(UUID schoolId, UUID languageId, UUID frameworkVersionId,
                             UUID schoolGradeLevelId, UUID schoolGradeId, UUID schoolClassId, UUID rubricVersionId) {}
 
+    // Không gồm rubricVersionId: dùng để phát số "version" kế tiếp, vì DB chỉ unique theo scope+version
+    // (không phân biệt Rubric Version), nên các Policy khác Rubric Version nhưng cùng scope này vẫn phải chiếm
+    // các số version khác nhau.
+    private record VersionScopeKey(UUID schoolId, UUID languageId, UUID frameworkVersionId,
+                            UUID schoolGradeLevelId, UUID schoolGradeId, UUID schoolClassId) {}
+
     // Đúng 1 trong 3 phạm vi được điền: Lớp, Khối năm học, hoặc Khối
     private record ScopeIds(UUID schoolClassId, UUID schoolGradeId, UUID schoolGradeLevelId) {
         static final ScopeIds EMPTY = new ScopeIds(null, null, null);
@@ -95,7 +101,7 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
         OffsetDateTime now = OffsetDateTime.now();
 
         Set<ScopeKey> scopesClaimedInFile = new HashSet<>();
-        Map<ScopeKey, Integer> nextVersionByScope = new HashMap<>();
+        Map<VersionScopeKey, Integer> nextVersionByScope = new HashMap<>();
 
         for (ImportRow row : rows) {
             if (row.getStatus() != ImportRowStatus.PENDING) continue;
@@ -159,11 +165,13 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
                     continue;
                 }
 
-                int nextVersion = nextVersionByScope.computeIfAbsent(scopeKey, key ->
+                VersionScopeKey versionScopeKey = new VersionScopeKey(schoolId, languageId, frameworkVersionId,
+                        scopeIds.schoolGradeLevelId(), scopeIds.schoolGradeId(), scopeIds.schoolClassId());
+                int nextVersion = nextVersionByScope.computeIfAbsent(versionScopeKey, key ->
                         assessmentPolicyRepository.findMaxVersionForScope(
                                 key.schoolId(), key.languageId(), key.frameworkVersionId(),
                                 key.schoolGradeLevelId(), key.schoolGradeId(), key.schoolClassId()) + 1);
-                nextVersionByScope.put(scopeKey, nextVersion + 1);
+                nextVersionByScope.put(versionScopeKey, nextVersion + 1);
 
                 AssessmentPolicy newPolicy = new AssessmentPolicy(
                         schoolId, scopeIds.schoolGradeLevelId(), scopeIds.schoolGradeId(), scopeIds.schoolClassId(),

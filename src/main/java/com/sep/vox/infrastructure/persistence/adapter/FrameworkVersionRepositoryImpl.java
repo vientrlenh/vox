@@ -76,6 +76,19 @@ public class FrameworkVersionRepositoryImpl implements FrameworkVersionRepositor
     }
 
     @Override
+    public PageResult<FrameworkVersion> findByFrameworkIdAndStatus(UUID frameworkId, FrameworkVersionStatus status, int pageNumber, int size) {
+        var pageable = PageRequest.of(pageNumber - 1, size);
+        var page = springDataFrameworkVersionRepository.findByFrameworkIdAndStatus(frameworkId, status.name(), pageable);
+        return new PageResult<>(
+            page.getContent().stream().map(FrameworkVersionMapper::toDomain).toList(),
+            page.getNumber() + 1,
+            page.getSize(),
+            page.getTotalElements(),
+            page.getTotalPages()
+        );
+    }
+
+    @Override
     public Optional<FrameworkVersion> findByFrameworkIdAndVersion(UUID frameworkId, int version) {
         return springDataFrameworkVersionRepository
             .findByFrameworkIdAndVersion(frameworkId, version)

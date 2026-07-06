@@ -81,28 +81,28 @@ public class AssessmentPolicyController {
         this.publishSchoolAssessmentPolicyUseCase = publishSchoolAssessmentPolicyUseCase;
     }
 
-    // Tạo mới Assessment Policy áp dụng toàn hệ thống (System Admin)
-    @Operation(summary = "Tạo mới Assessment Policy cho hệ thống (áp dụng toàn hệ thống, trạng thái khởi tạo DRAFT)")
+    // Tạo mới Assessment Policy áp dụng toàn hệ thống (System Admin) - có thể gửi 1 lúc nhiều Policy
+    @Operation(summary = "Tạo mới một hoặc nhiều Assessment Policy cho hệ thống (áp dụng toàn hệ thống, trạng thái khởi tạo DRAFT)")
     @PostMapping("/system")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<List<UUID>>> createSystemAssessmentPolicy(
-            @Valid @RequestBody CreateSystemAssessmentPolicyRequest request
+            @Valid @RequestBody List<@Valid CreateSystemAssessmentPolicyRequest> requests
     ) {
-        var command = CreateAssessmentPolicyCommandMapper.fromSystemRequest(request);
-        List<UUID> policyIds = createSystemAssessmentPolicyUseCase.execute(command);
+        var commands = CreateAssessmentPolicyCommandMapper.fromSystemRequests(requests);
+        List<UUID> policyIds = createSystemAssessmentPolicyUseCase.execute(commands);
         return ResponseEntity.ok(ApiResponse.success("Tạo Assessment Policy hệ thống thành công", policyIds));
     }
 
-    // Tạo mới Assessment Policy cho một trường học (School Admin)
-    @Operation(summary = "Tạo mới Assessment Policy cho Trường học (trạng thái khởi tạo DRAFT)")
+    // Tạo mới Assessment Policy cho một trường học (School Admin) - có thể gửi 1 lúc nhiều Policy
+    @Operation(summary = "Tạo mới một hoặc nhiều Assessment Policy cho Trường học (trạng thái khởi tạo DRAFT)")
     @PostMapping("/schools/{schoolId}")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<List<UUID>>> createSchoolAssessmentPolicy(
             @PathVariable UUID schoolId,
-            @Valid @RequestBody CreateSchoolAssessmentPolicyRequest request
+            @Valid @RequestBody List<@Valid CreateSchoolAssessmentPolicyRequest> requests
     ) {
-        var command = CreateAssessmentPolicyCommandMapper.fromSchoolRequest(schoolId, request);
-        List<UUID> policyIds = createSchoolAssessmentPolicyUseCase.execute(command);
+        var commands = CreateAssessmentPolicyCommandMapper.fromSchoolRequests(schoolId, requests);
+        List<UUID> policyIds = createSchoolAssessmentPolicyUseCase.execute(commands);
         return ResponseEntity.ok(ApiResponse.success("Tạo Assessment Policy cho trường học thành công", policyIds));
     }
 

@@ -13,6 +13,7 @@ public interface FrameworkRepository {
     Optional<Framework> findById(UUID id);
     Optional<Framework> findByCode(String code);
     PageResult<Framework> findAll(int pageNumber, int size);
+    PageResult<Framework> findAllActive(int pageNumber, int size);
     Framework save(Framework framework);
     void deleteById(UUID id);
     List<Framework> findByIdIn(Collection<UUID> ids);

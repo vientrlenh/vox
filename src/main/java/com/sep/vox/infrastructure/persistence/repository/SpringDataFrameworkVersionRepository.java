@@ -22,6 +22,7 @@ public interface SpringDataFrameworkVersionRepository extends JpaRepository<Fram
     Optional<FrameworkVersionJpaEntity> findByName(String name);
     Page<FrameworkVersionJpaEntity> findByFrameworkId(UUID frameworkId, Pageable pageable);
     List<FrameworkVersionJpaEntity> findByFrameworkIdAndStatus(UUID frameworkId, String status);
+    Page<FrameworkVersionJpaEntity> findByFrameworkIdAndStatus(UUID frameworkId, String status, Pageable pageable);
     Optional<FrameworkVersionJpaEntity> findByFrameworkIdAndVersion(UUID frameworkId, int version);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)

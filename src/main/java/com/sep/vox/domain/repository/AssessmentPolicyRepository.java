@@ -31,5 +31,8 @@ public interface AssessmentPolicyRepository {
     // Kiểm tra đã tồn tại Assessment Policy nào liên kết với Rubric Version này đang ở trạng thái PUBLISHED hay chưa
     boolean existsPublishedByRubricVersionId(UUID rubricVersionId);
 
+    // Kiểm tra còn Assessment Policy nào liên kết với Rubric Version này CHƯA ở trạng thái PUBLISHED hay không
+    boolean existsNotPublishedByRubricVersionId(UUID rubricVersionId);
+
     void deleteById(UUID id);
 }

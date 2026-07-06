@@ -48,6 +48,19 @@ public class FrameworkRepositoryImpl implements FrameworkRepository {
     }
 
     @Override
+    public PageResult<Framework> findAllActive(int pageNumber, int size) {
+        var pageable = PageRequest.of(pageNumber - 1, size);
+        var page = springDataFrameworkRepository.findAllActive(pageable);
+        return new PageResult<>(
+                page.getContent().stream().map(FrameworkMapper::toDomain).toList(),
+                page.getNumber() + 1,
+                page.getSize(),
+                page.getTotalElements(),
+                page.getTotalPages()
+        );
+    }
+
+    @Override
     public Framework save(Framework framework) {
         var entity = FrameworkMapper.toJpa(framework);
         var saved = springDataFrameworkRepository.save(entity);

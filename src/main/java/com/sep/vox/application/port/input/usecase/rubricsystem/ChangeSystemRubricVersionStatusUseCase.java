@@ -87,6 +87,11 @@ public class ChangeSystemRubricVersionStatusUseCase implements IUseCase<ChangeSy
                 throw new IllegalStateException("Không thể ban hành Rubric này vì chưa có Assessment Policy nào liên kết đang ở trạng thái PUBLISHED.");
             }
 
+            // BẮT BUỘC TẤT CẢ ASSESSMENT POLICY LIÊN KẾT PHẢI ĐANG Ở TRẠNG THÁI PUBLISHED
+            if (assessmentPolicyRepository.existsNotPublishedByRubricVersionId(version.getId())) {
+                throw new IllegalStateException("Không thể ban hành Rubric này vì vẫn còn Assessment Policy liên kết chưa ở trạng thái PUBLISHED.");
+            }
+
             // ĐÃ BỎ LỆNH SAVE RUBRIC DƯ THỪA Ở ĐÂY VÌ MODEL KHÔNG CÒN CURRENTVERSIONID
 
         } else if (command.status() == RubricStatus.ARCHIVED) {

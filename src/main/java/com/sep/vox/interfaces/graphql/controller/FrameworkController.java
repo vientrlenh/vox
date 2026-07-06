@@ -21,10 +21,13 @@ import com.sep.vox.application.port.input.query.ViewFrameworksQuery;
 import com.sep.vox.application.port.input.command.UpdateFrameworkActiveStatusCommand;
 import com.sep.vox.application.port.input.usecase.framework.UpdateFrameworkStatusUseCase;
 import com.sep.vox.application.port.input.usecase.framework.UpdateFrameworkVersionUseCase;
+import com.sep.vox.application.port.input.usecase.framework.ViewActiveFrameworksUseCase;
 import com.sep.vox.application.port.input.usecase.framework.ViewFrameworkDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.framework.ViewFrameworkVersionDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.framework.ViewFrameworkVersionsUseCase;
 import com.sep.vox.application.port.input.usecase.framework.ViewFrameworksUseCase;
+import com.sep.vox.application.port.input.usecase.framework.ViewPublishedFrameworkVersionDetailsUseCase;
+import com.sep.vox.application.port.input.usecase.framework.ViewPublishedFrameworkVersionsUseCase;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.FrameworkCriterionDto;
 import com.sep.vox.domain.dto.FrameworkDto;
@@ -42,6 +45,9 @@ public class FrameworkController {
     private final ViewFrameworkVersionDetailsUseCase viewFrameworkVersionDetailsUseCase;
     private final UpdateFrameworkVersionUseCase updateFrameworkVersionUseCase;
     private final UpdateFrameworkStatusUseCase updateFrameworkActiveStatusUseCase;
+    private final ViewActiveFrameworksUseCase viewActiveFrameworksUseCase;
+    private final ViewPublishedFrameworkVersionsUseCase viewPublishedFrameworkVersionsUseCase;
+    private final ViewPublishedFrameworkVersionDetailsUseCase viewPublishedFrameworkVersionDetailsUseCase;
 
     public FrameworkController(
             ViewFrameworksUseCase viewFrameworksUseCase,
@@ -49,13 +55,19 @@ public class FrameworkController {
             ViewFrameworkVersionsUseCase viewFrameworkVersionsUseCase,
             ViewFrameworkVersionDetailsUseCase viewFrameworkVersionDetailsUseCase,
             UpdateFrameworkVersionUseCase updateFrameworkVersionUseCase,
-            UpdateFrameworkStatusUseCase updateFrameworkActiveStatusUseCase) {
+            UpdateFrameworkStatusUseCase updateFrameworkActiveStatusUseCase,
+            ViewActiveFrameworksUseCase viewActiveFrameworksUseCase,
+            ViewPublishedFrameworkVersionsUseCase viewPublishedFrameworkVersionsUseCase,
+            ViewPublishedFrameworkVersionDetailsUseCase viewPublishedFrameworkVersionDetailsUseCase) {
         this.viewFrameworksUseCase = viewFrameworksUseCase;
         this.viewFrameworkDetailsUseCase = viewFrameworkDetailsUseCase;
         this.viewFrameworkVersionsUseCase = viewFrameworkVersionsUseCase;
         this.viewFrameworkVersionDetailsUseCase = viewFrameworkVersionDetailsUseCase;
         this.updateFrameworkVersionUseCase = updateFrameworkVersionUseCase;
         this.updateFrameworkActiveStatusUseCase = updateFrameworkActiveStatusUseCase;
+        this.viewActiveFrameworksUseCase = viewActiveFrameworksUseCase;
+        this.viewPublishedFrameworkVersionsUseCase = viewPublishedFrameworkVersionsUseCase;
+        this.viewPublishedFrameworkVersionDetailsUseCase = viewPublishedFrameworkVersionDetailsUseCase;
     }
 
     @QueryMapping(name = "frameworks")
@@ -91,6 +103,35 @@ public class FrameworkController {
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public FrameworkVersionDto frameworkVersion(@Argument(name = "id") UUID id) {
         return viewFrameworkVersionDetailsUseCase.execute(new ViewFrameworkVersionDetailsQuery(id));
+    }
+
+    @QueryMapping(name = "schoolFrameworks")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public PageResult<FrameworkDto> schoolFrameworks(
+            @Argument(name = "page") int page,
+            @Argument(name = "size") int size) {
+        if (page <= 0 || size <= 0) {
+            throw new IllegalArgumentException("Số trang hoặc kích thước trang không hợp lệ");
+        }
+        return viewActiveFrameworksUseCase.execute(new ViewFrameworksQuery(page, size));
+    }
+
+    @QueryMapping(name = "schoolFrameworkVersions")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public PageResult<FrameworkVersionDto> schoolFrameworkVersions(
+            @Argument(name = "frameworkId") UUID frameworkId,
+            @Argument(name = "page") int page,
+            @Argument(name = "size") int size) {
+        if (page <= 0 || size <= 0) {
+            throw new IllegalArgumentException("Số trang hoặc kích thước trang không hợp lệ");
+        }
+        return viewPublishedFrameworkVersionsUseCase.execute(new ViewFrameworkVersionsQuery(frameworkId, page, size));
+    }
+
+    @QueryMapping(name = "schoolFrameworkVersion")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public FrameworkVersionDto schoolFrameworkVersion(@Argument(name = "id") UUID id) {
+        return viewPublishedFrameworkVersionDetailsUseCase.execute(new ViewFrameworkVersionDetailsQuery(id));
     }
 
     @MutationMapping(name = "updateFrameworkVersion")

@@ -17,6 +17,7 @@ public interface FrameworkVersionRepository {
     Optional<FrameworkVersion> findByIdForUpdate(UUID id);
     PageResult<FrameworkVersion> findByFrameworkId(UUID frameworkId, int pageNumber, int size);
     List<FrameworkVersion> findByFrameworkIdAndStatus(UUID frameworkId, FrameworkVersionStatus status);
+    PageResult<FrameworkVersion> findByFrameworkIdAndStatus(UUID frameworkId, FrameworkVersionStatus status, int pageNumber, int size);
     Optional<FrameworkVersion> findByFrameworkIdAndVersion(UUID frameworkId, int version);
     FrameworkVersion save(FrameworkVersion version);
     int updateStatus(UUID id, FrameworkVersionStatus status);

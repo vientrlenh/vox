@@ -102,6 +102,11 @@ public class AssessmentPolicyRepositoryImpl implements AssessmentPolicyRepositor
     }
 
     @Override
+    public boolean existsNotPublishedByRubricVersionId(UUID rubricVersionId) {
+        return springDataAssessmentPolicyRepository.existsByRubricVersionIdAndStatusNot(rubricVersionId, "PUBLISHED");
+    }
+
+    @Override
     public void deleteById(UUID id) {
         springDataAssessmentPolicyRepository.deleteById(id);
     }

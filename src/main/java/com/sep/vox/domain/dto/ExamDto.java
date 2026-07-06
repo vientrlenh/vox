@@ -17,6 +17,7 @@ public record ExamDto(
     String openAt,
     String closeAt,
     UUID assessmentPolicyId,
+    Boolean papersLocked,
     String createdAt,
     String updatedAt,
     UUID createdBy,

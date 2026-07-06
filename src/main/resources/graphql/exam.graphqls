@@ -151,6 +151,7 @@ type Exam {
     openAt: String
     closeAt: String
     assessmentPolicyId: ID
+    papersLocked: Boolean
     createdAt: String
     updatedAt: String
     createdBy: ID

@@ -80,7 +80,7 @@ public class UpdateExamDeliveryModeUseCase implements IUseCase<UpdateExamDeliver
         exam.setUpdatedBy(currentUserId);
 
         var saved = examRepository.save(exam);
-        return ExamDtoMapper.toDto(saved);
+        return ExamDtoMapper.toDto(saved, papersLocked(saved.getId()));
     }
 
     private ExamDeliveryMode parseDeliveryMode(String value) {

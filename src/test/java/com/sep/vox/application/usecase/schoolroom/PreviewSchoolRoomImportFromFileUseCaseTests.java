@@ -79,12 +79,12 @@ class PreviewSchoolRoomImportFromFileUseCaseTests {
         var userId = UUID.randomUUID();
         var schoolId = UUID.randomUUID();
         var sessionId = UUID.randomUUID();
-        var file = UploadedFile.upload("rooms.csv", "text/csv", 20, "code,name,capacity\nP101,Phòng 101,30\n".getBytes(StandardCharsets.UTF_8));
+        var file = UploadedFile.upload("rooms.csv", "text/csv", 20, "code,name\nP101,Phòng 101\n".getBytes(StandardCharsets.UTF_8));
         var parsed = new ParseImportFileResult(
-            List.of("code", "name", "capacity"),
-            Map.of("code", "code", "name", "name", "capacity", "capacity"),
-            List.of(Map.of("code", "P101", "name", "Phòng 101", "capacity", "30")),
-            List.of(Map.of("code", "P101", "name", "Phòng 101", "capacity", "30")),
+            List.of("code", "name"),
+            Map.of("code", "code", "name", "name"),
+            List.of(Map.of("code", "P101", "name", "Phòng 101")),
+            List.of(Map.of("code", "P101", "name", "Phòng 101")),
             1L
         );
 

@@ -12,8 +12,7 @@ public class UpdateSchoolRoomCommandMapper {
         return new UpdateSchoolRoomCommand(
                 id,
                 request.name(),
-                request.description(),
-                request.capacity()
+                request.description()
         );
     }
 }

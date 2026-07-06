@@ -11,8 +11,7 @@ public class AddSchoolRoomCommandMapper {
                 schoolId,
                 request.code(),
                 request.name(),
-                request.description(),
-                request.capacity()
+                request.description()
         );
     }
 }

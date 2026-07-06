@@ -3,7 +3,6 @@ package com.sep.vox.application.usecase.schoolroom;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -56,8 +55,8 @@ class SchoolRoomImportCommitHandlerTests {
         var createdBy = UUID.randomUUID();
         var sessionId = UUID.randomUUID();
         var rows = List.of(
-            row(sessionId, 1L, data("P101", "Phòng 101", "30")),
-            row(sessionId, 2L, data("", "Thiếu mã", "20"))
+            row(sessionId, 1L, data("P101", "Phòng 101")),
+            row(sessionId, 2L, data("", "Thiếu mã"))
         );
 
         when(schoolRoomRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("P101"))).thenReturn(List.of());
@@ -79,7 +78,7 @@ class SchoolRoomImportCommitHandlerTests {
         var schoolId = UUID.randomUUID();
         var createdBy = UUID.randomUUID();
         var sessionId = UUID.randomUUID();
-        var rows = List.of(row(sessionId, 1L, data("P101", "Phòng 101", "30")));
+        var rows = List.of(row(sessionId, 1L, data("P101", "Phòng 101")));
 
         when(schoolRoomRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("P101"))).thenReturn(List.of());
         var captor = org.mockito.ArgumentCaptor.forClass(SchoolRoom.class);
@@ -89,7 +88,7 @@ class SchoolRoomImportCommitHandlerTests {
 
         verify(schoolRoomRepository).save(captor.capture());
         assertThat(captor.getValue().isActive()).isFalse();
-        assertThat(captor.getValue().getCapacity()).isEqualTo(30);
+        assertThat(captor.getValue().getName()).isEqualTo("Phòng 101");
     }
 
     @Test
@@ -99,10 +98,10 @@ class SchoolRoomImportCommitHandlerTests {
         var sessionId = UUID.randomUUID();
         var createdAt = OffsetDateTime.now().minusDays(5);
         var existing = new SchoolRoom(
-            UUID.randomUUID(), schoolId, "P101", "Phòng cũ", "Mô tả cũ", 20, true,
+            UUID.randomUUID(), schoolId, "P101", "Phòng cũ", "Mô tả cũ", true,
             createdAt, createdAt, createdBy, createdBy
         );
-        var rows = List.of(row(sessionId, 1L, dataWithDescription("P101", "Phòng mới", "45", "Mô tả mới")));
+        var rows = List.of(row(sessionId, 1L, dataWithDescription("P101", "Phòng mới", "Mô tả mới")));
 
         when(schoolRoomRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("P101"))).thenReturn(List.of(existing));
         when(schoolRoomRepository.save(any(SchoolRoom.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -115,7 +114,6 @@ class SchoolRoomImportCommitHandlerTests {
         assertThat(rows.get(0).getStatus()).isEqualTo(ImportRowStatus.IMPORTED);
         assertThat(existing.getName()).isEqualTo("Phòng mới");
         assertThat(existing.getDescription()).isEqualTo("Mô tả mới");
-        assertThat(existing.getCapacity()).isEqualTo(45);
         assertThat(existing.getCreatedAt()).isEqualTo(createdAt);
         assertThat(existing.getUpdatedBy()).isEqualTo(createdBy);
         verify(schoolRoomRepository).save(existing);
@@ -127,8 +125,8 @@ class SchoolRoomImportCommitHandlerTests {
         var createdBy = UUID.randomUUID();
         var sessionId = UUID.randomUUID();
         var rows = List.of(
-            row(sessionId, 1L, data("P101", "Phòng 101", "30")),
-            row(sessionId, 2L, data("P101", "Phòng trùng", "20"))
+            row(sessionId, 1L, data("P101", "Phòng 101")),
+            row(sessionId, 2L, data("P101", "Phòng trùng"))
         );
 
         when(schoolRoomRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("P101"))).thenReturn(List.of());
@@ -143,32 +141,11 @@ class SchoolRoomImportCommitHandlerTests {
     }
 
     @Test
-    void should_mark_invalid_when_capacity_not_positive_integer() {
-        var schoolId = UUID.randomUUID();
-        var createdBy = UUID.randomUUID();
-        var sessionId = UUID.randomUUID();
-        var rows = List.of(
-            row(sessionId, 1L, data("P101", "Phòng 101", "abc")),
-            row(sessionId, 2L, data("P102", "Phòng 102", "0"))
-        );
-
-        when(schoolRoomRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("P101", "P102"))).thenReturn(List.of());
-
-        ImportCommitResult result = handler.commit(session(sessionId, schoolId, createdBy), rows);
-
-        assertThat(result.created()).isZero();
-        assertThat(result.invalid()).isEqualTo(2L);
-        assertThat(rows.get(0).getErrorsJson()).contains("capacity");
-        assertThat(rows.get(1).getErrorsJson()).contains("capacity");
-        verify(schoolRoomRepository, never()).save(any());
-    }
-
-    @Test
     void should_mark_failed_when_unique_constraint_violated() {
         var schoolId = UUID.randomUUID();
         var createdBy = UUID.randomUUID();
         var sessionId = UUID.randomUUID();
-        var rows = List.of(row(sessionId, 1L, data("P101", "Phòng 101", "30")));
+        var rows = List.of(row(sessionId, 1L, data("P101", "Phòng 101")));
 
         when(schoolRoomRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("P101"))).thenReturn(List.of());
         when(schoolRoomRepository.save(any(SchoolRoom.class)))
@@ -206,18 +183,18 @@ class SchoolRoomImportCommitHandlerTests {
     }
 
     private static Map<String, String> mapping() {
-        return Map.of("Mã phòng", "code", "Tên phòng", "name", "Sức chứa", "capacity");
+        return Map.of("Mã phòng", "code", "Tên phòng", "name");
     }
 
     private static Map<String, String> mappingWithDescription() {
-        return Map.of("Mã phòng", "code", "Tên phòng", "name", "Sức chứa", "capacity", "Mô tả", "description");
+        return Map.of("Mã phòng", "code", "Tên phòng", "name", "Mô tả", "description");
     }
 
-    private static Map<String, String> data(String code, String name, String capacity) {
-        return Map.of("Mã phòng", code, "Tên phòng", name, "Sức chứa", capacity);
+    private static Map<String, String> data(String code, String name) {
+        return Map.of("Mã phòng", code, "Tên phòng", name);
     }
 
-    private static Map<String, String> dataWithDescription(String code, String name, String capacity, String description) {
-        return Map.of("Mã phòng", code, "Tên phòng", name, "Sức chứa", capacity, "Mô tả", description);
+    private static Map<String, String> dataWithDescription(String code, String name, String description) {
+        return Map.of("Mã phòng", code, "Tên phòng", name, "Mô tả", description);
     }
 }

@@ -28,7 +28,6 @@ import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
-import com.sep.vox.domain.repository.SchoolRoomRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
@@ -41,7 +40,6 @@ public class AutoFillExamCandidatesUseCase
     private final ExamRepository examRepository;
     private final ExamCandidateRepository examCandidateRepository;
     private final ExamScheduleRepository examScheduleRepository;
-    private final SchoolRoomRepository schoolRoomRepository;
     private final ExamMemberRepository examMemberRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
@@ -51,7 +49,6 @@ public class AutoFillExamCandidatesUseCase
             ExamRepository examRepository,
             ExamCandidateRepository examCandidateRepository,
             ExamScheduleRepository examScheduleRepository,
-            SchoolRoomRepository schoolRoomRepository,
             ExamMemberRepository examMemberRepository,
             SchoolUserRepository schoolUserRepository,
             UserRoleQueryRepository userRoleQueryRepository,
@@ -59,7 +56,6 @@ public class AutoFillExamCandidatesUseCase
         this.examRepository = examRepository;
         this.examCandidateRepository = examCandidateRepository;
         this.examScheduleRepository = examScheduleRepository;
-        this.schoolRoomRepository = schoolRoomRepository;
         this.examMemberRepository = examMemberRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
@@ -85,57 +81,33 @@ public class AutoFillExamCandidatesUseCase
                 .thenComparing(ExamSchedule::getId))
             .toList();
 
-        // BƯỚC 1 — Khoá TRƯỚC toàn bộ ca mục tiêu và tính sẵn sức chứa còn trống, CHƯA đụng candidate.
-        var slots = new ArrayList<CapacitySlot>();
+        // BƯỚC 1 — Khoá TRƯỚC toàn bộ ca mục tiêu theo thứ tự ổn định, CHƯA đụng candidate.
+        var lockedScheduleIds = new ArrayList<UUID>();
         for (var schedule : targetSchedules) {
             var locked = examScheduleRepository.findByIdForUpdate(schedule.getId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy ca thi"));
-            var room = schoolRoomRepository.findById(locked.getSchoolRoomId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy phòng học"));
-            long remaining;
-            if (room.getCapacity() == null) {
-                remaining = Long.MAX_VALUE;
-            } else {
-                remaining = room.getCapacity() - examCandidateRepository.countByScheduleId(locked.getId());
-            }
-            if (remaining > 0) {
-                slots.add(new CapacitySlot(locked.getId(), remaining));
-            }
+            lockedScheduleIds.add(locked.getId());
+        }
+        if (lockedScheduleIds.isEmpty()) {
+            return List.of();
         }
 
-        // BƯỚC 2 — Chỉ sau khi đã giữ hết lock ca mới lấy candidate chưa gán và rải tuần tự.
+        // BƯỚC 2 — Chỉ sau khi đã giữ hết lock ca mới lấy candidate chưa gán và rải đều (round-robin).
         var now = OffsetDateTime.now();
         var unassigned = examCandidateRepository
             .findByExamIdAndScheduleIdIsNullOrderByAssignedAtAsc(exam.getId());
-        var assigned = new ArrayList<ExamCandidate>();
-        int slotIndex = 0;
-        for (var candidate : unassigned) {
-            while (slotIndex < slots.size() && slots.get(slotIndex).remaining <= 0) {
-                slotIndex++;
-            }
-            if (slotIndex >= slots.size()) {
-                break;
-            }
-            var slot = slots.get(slotIndex);
-            candidate.assignToSchedule(slot.scheduleId, now, currentUserId);
-            slot.remaining--;
-            assigned.add(candidate);
-        }
-
-        if (assigned.isEmpty()) {
+        if (unassigned.isEmpty()) {
             return List.of();
         }
-        return ExamCandidateDtoMapper.toDtoList(examCandidateRepository.saveAll(assigned));
-    }
 
-    private static final class CapacitySlot {
-        private final UUID scheduleId;
-        private long remaining;
-
-        private CapacitySlot(UUID scheduleId, long remaining) {
-            this.scheduleId = scheduleId;
-            this.remaining = remaining;
+        var assigned = new ArrayList<ExamCandidate>();
+        int i = 0;
+        for (var candidate : unassigned) {
+            candidate.assignToSchedule(lockedScheduleIds.get(i % lockedScheduleIds.size()), now, currentUserId);
+            assigned.add(candidate);
+            i++;
         }
+        return ExamCandidateDtoMapper.toDtoList(examCandidateRepository.saveAll(assigned));
     }
 
     private UUID authorize(Exam exam) {

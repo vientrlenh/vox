@@ -14,7 +14,6 @@ public class SchoolRoomDtoMapper {
                 room.getCode(),
                 room.getName(),
                 room.getDescription(),
-                room.getCapacity(),
                 room.isActive(),
                 room.getCreatedAt(),
                 room.getCreatedBy(),

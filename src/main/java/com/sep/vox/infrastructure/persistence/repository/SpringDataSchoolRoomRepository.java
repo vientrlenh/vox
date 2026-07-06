@@ -33,7 +33,6 @@ public interface SpringDataSchoolRoomRepository extends JpaRepository<SchoolRoom
             UPDATE SchoolRoomJpaEntity r SET
             r.name = COALESCE(:name, r.name),
             r.description = COALESCE(:description, r.description),
-            r.capacity = COALESCE(:capacity, r.capacity),
             r.updatedAt = :updatedAt,
             r.updatedBy = :updatedBy
             WHERE r.id = :id
@@ -42,7 +41,6 @@ public interface SpringDataSchoolRoomRepository extends JpaRepository<SchoolRoom
             @Param("id") UUID id,
             @Param("name") String name,
             @Param("description") String description,
-            @Param("capacity") Integer capacity,
             @Param("updatedAt") OffsetDateTime updatedAt,
             @Param("updatedBy") UUID updatedBy
     );

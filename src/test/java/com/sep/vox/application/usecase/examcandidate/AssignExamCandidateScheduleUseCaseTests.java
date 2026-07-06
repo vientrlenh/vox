@@ -27,12 +27,10 @@ import com.sep.vox.domain.model.exam.ExamCandidateStatus;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamSchedule;
 import com.sep.vox.domain.model.exam.ExamScheduleStatus;
-import com.sep.vox.domain.model.school.SchoolRoom;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
-import com.sep.vox.domain.repository.SchoolRoomRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 class AssignExamCandidateScheduleUseCaseTests {
@@ -40,7 +38,6 @@ class AssignExamCandidateScheduleUseCaseTests {
     private ExamRepository examRepository;
     private ExamCandidateRepository examCandidateRepository;
     private ExamScheduleRepository examScheduleRepository;
-    private SchoolRoomRepository schoolRoomRepository;
     private ExamMemberRepository examMemberRepository;
     private SchoolUserRepository schoolUserRepository;
     private UserRoleQueryRepository userRoleQueryRepository;
@@ -59,13 +56,12 @@ class AssignExamCandidateScheduleUseCaseTests {
         examRepository = mock(ExamRepository.class);
         examCandidateRepository = mock(ExamCandidateRepository.class);
         examScheduleRepository = mock(ExamScheduleRepository.class);
-        schoolRoomRepository = mock(SchoolRoomRepository.class);
         examMemberRepository = mock(ExamMemberRepository.class);
         schoolUserRepository = mock(SchoolUserRepository.class);
         userRoleQueryRepository = mock(UserRoleQueryRepository.class);
         userContextPort = mock(UserContextPort.class);
         useCase = new AssignExamCandidateScheduleUseCase(
-            examRepository, examCandidateRepository, examScheduleRepository, schoolRoomRepository,
+            examRepository, examCandidateRepository, examScheduleRepository,
             examMemberRepository, schoolUserRepository, userRoleQueryRepository, userContextPort);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
@@ -78,28 +74,14 @@ class AssignExamCandidateScheduleUseCaseTests {
     }
 
     @Test
-    void should_assign_candidate_to_schedule_when_capacity_available() {
+    void should_assign_candidate_to_schedule() {
         when(examCandidateRepository.findById(candidateId)).thenReturn(Optional.of(candidate(null)));
         when(examScheduleRepository.findByIdForUpdate(scheduleId)).thenReturn(Optional.of(schedule(ExamScheduleStatus.DRAFT)));
-        when(schoolRoomRepository.findById(roomId)).thenReturn(Optional.of(room(30)));
-        when(examCandidateRepository.countByScheduleId(scheduleId)).thenReturn(5L);
 
         var result = useCase.execute(new AssignExamCandidateScheduleCommand(examId, candidateId, scheduleId));
 
         assertThat(result.scheduleId()).isEqualTo(scheduleId);
         verify(examCandidateRepository).save(any(ExamCandidate.class));
-    }
-
-    @Test
-    void should_reject_when_schedule_is_full() {
-        when(examCandidateRepository.findById(candidateId)).thenReturn(Optional.of(candidate(null)));
-        when(examScheduleRepository.findByIdForUpdate(scheduleId)).thenReturn(Optional.of(schedule(ExamScheduleStatus.PUBLISHED)));
-        when(schoolRoomRepository.findById(roomId)).thenReturn(Optional.of(room(5)));
-        when(examCandidateRepository.countByScheduleId(scheduleId)).thenReturn(5L);
-
-        assertThatThrownBy(() -> useCase.execute(new AssignExamCandidateScheduleCommand(examId, candidateId, scheduleId)))
-            .isInstanceOf(ConflictException.class);
-        verify(examCandidateRepository, never()).save(any());
     }
 
     @Test
@@ -124,7 +106,7 @@ class AssignExamCandidateScheduleUseCaseTests {
     }
 
     @Test
-    void should_short_circuit_when_reassigning_to_same_full_schedule() {
+    void should_short_circuit_when_reassigning_to_same_schedule() {
         when(examCandidateRepository.findById(candidateId)).thenReturn(Optional.of(candidate(scheduleId)));
 
         var result = useCase.execute(new AssignExamCandidateScheduleCommand(examId, candidateId, scheduleId));
@@ -152,14 +134,6 @@ class AssignExamCandidateScheduleUseCaseTests {
         s.setSchoolRoomId(roomId);
         s.setStatus(status);
         return s;
-    }
-
-    private SchoolRoom room(Integer capacity) {
-        var room = new SchoolRoom();
-        room.setId(roomId);
-        room.setSchoolId(schoolId);
-        room.setCapacity(capacity);
-        return room;
     }
 
     private Exam exam() {

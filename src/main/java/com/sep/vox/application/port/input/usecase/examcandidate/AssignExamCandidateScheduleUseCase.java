@@ -18,13 +18,11 @@ import com.sep.vox.domain.dto.ExamCandidateDto;
 import com.sep.vox.domain.mapper.ExamCandidateDtoMapper;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
-import com.sep.vox.domain.model.exam.ExamSchedule;
 import com.sep.vox.domain.model.exam.ExamScheduleStatus;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
-import com.sep.vox.domain.repository.SchoolRoomRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
@@ -37,7 +35,6 @@ public class AssignExamCandidateScheduleUseCase
     private final ExamRepository examRepository;
     private final ExamCandidateRepository examCandidateRepository;
     private final ExamScheduleRepository examScheduleRepository;
-    private final SchoolRoomRepository schoolRoomRepository;
     private final ExamMemberRepository examMemberRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
@@ -47,7 +44,6 @@ public class AssignExamCandidateScheduleUseCase
             ExamRepository examRepository,
             ExamCandidateRepository examCandidateRepository,
             ExamScheduleRepository examScheduleRepository,
-            SchoolRoomRepository schoolRoomRepository,
             ExamMemberRepository examMemberRepository,
             SchoolUserRepository schoolUserRepository,
             UserRoleQueryRepository userRoleQueryRepository,
@@ -55,7 +51,6 @@ public class AssignExamCandidateScheduleUseCase
         this.examRepository = examRepository;
         this.examCandidateRepository = examCandidateRepository;
         this.examScheduleRepository = examScheduleRepository;
-        this.schoolRoomRepository = schoolRoomRepository;
         this.examMemberRepository = examMemberRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
@@ -97,23 +92,8 @@ public class AssignExamCandidateScheduleUseCase
             throw new ConflictException("Chỉ có thể xếp thí sinh vào ca ở trạng thái nháp hoặc đã công bố");
         }
 
-        ensureCapacityAvailable(schedule);
-
         candidate.assignToSchedule(schedule.getId(), now, currentUserId);
         return ExamCandidateDtoMapper.toDto(examCandidateRepository.save(candidate));
-    }
-
-    private void ensureCapacityAvailable(ExamSchedule schedule) {
-        var room = schoolRoomRepository.findById(schedule.getSchoolRoomId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phòng học"));
-        var capacity = room.getCapacity();
-        if (capacity == null) {
-            return;
-        }
-        var occupied = examCandidateRepository.countByScheduleId(schedule.getId());
-        if (occupied >= capacity) {
-            throw new ConflictException("Ca thi đã đầy");
-        }
     }
 
     private UUID authorize(Exam exam) {

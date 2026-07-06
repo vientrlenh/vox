@@ -67,17 +67,12 @@ public class UpdateSchoolRoomUseCase implements IUseCase<UpdateSchoolRoomCommand
         String safeName = (command.name() != null) ? StringNormalization.trimAndCollapseSpaces(command.name()) : null;
         String safeDesc = (command.description() != null) ? StringNormalization.trimAndCollapseSpaces(command.description()) : null;
 
-        if (command.capacity() != null && command.capacity() < 1) {
-            throw new IllegalArgumentException("Sức chứa phòng phải lớn hơn hoặc bằng 1.");
-        }
-
         // 4. Thực thi Atomic Update
         // Hàm Atomic Update ở Repository của bạn đã dùng COALESCE, nên ta cứ truyền thẳng chuỗi đã chuẩn hóa xuống.
         int updatedRows = schoolRoomRepository.updateSchoolRoomAtomic(
                 command.id(),
                 safeName,
                 safeDesc,
-                command.capacity(),
                 OffsetDateTime.now(),
                 currentUserId
         );

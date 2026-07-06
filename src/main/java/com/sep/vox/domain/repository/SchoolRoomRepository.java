@@ -20,5 +20,5 @@ public interface SchoolRoomRepository {
     PageResult<SchoolRoom> findAllBySchoolId(UUID schoolId, int pageNumber, int size);
 
     boolean existsBySchoolIdAndIsActive(UUID schoolId, boolean isActive);
-    int updateSchoolRoomAtomic(UUID id, String name, String description, Integer capacity, OffsetDateTime now, UUID updatedBy);
+    int updateSchoolRoomAtomic(UUID id, String name, String description, OffsetDateTime now, UUID updatedBy);
 }

@@ -274,7 +274,6 @@ public class FileProcessingService implements FileProcessingPort {
             case SCHOOL_ROOM -> Map.of(
                 "code", List.of("code", "roomCode", "room code", "mã phòng", "ma phong", "mã"),
                 "name", List.of("name", "roomName", "room name", "tên phòng", "ten phong", "tên"),
-                "capacity", List.of("capacity", "sức chứa", "suc chua", "số chỗ", "so cho", "sĩ số", "si so"),
                 "description", List.of("description", "note", "notes", "ghi chú", "ghi chu", "mô tả", "mo ta")
             );
 

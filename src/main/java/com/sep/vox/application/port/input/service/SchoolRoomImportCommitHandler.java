@@ -26,7 +26,7 @@ import com.sep.vox.domain.repository.SchoolRoomRepository;
 @Service
 public class SchoolRoomImportCommitHandler implements ImportCommitHandler {
 
-    private static final Set<String> SUPPORTED_FIELDS = Set.of("code", "name", "capacity", "description");
+    private static final Set<String> SUPPORTED_FIELDS = Set.of("code", "name", "description");
 
     private final SchoolRoomRepository schoolRoomRepository;
     private final JsonSerializationPort jsonSerializationPort;
@@ -107,17 +107,16 @@ public class SchoolRoomImportCommitHandler implements ImportCommitHandler {
                 continue;
             }
 
-            var capacity = Integer.parseInt(normalized.get("capacity"));
             var existing = existingByCode.get(normalized.get("code"));
 
             try {
                 if (existing != null) {
                     transactionTemplate.executeWithoutResult(status ->
-                            updateRoom(existing, normalized, capacity, currentUserId));
+                            updateRoom(existing, normalized, currentUserId));
                     updatedRows++;
                 } else {
                     transactionTemplate.executeWithoutResult(status ->
-                            createRoom(normalized, capacity, schoolId, currentUserId));
+                            createRoom(normalized, schoolId, currentUserId));
                     createdRows++;
                 }
             } catch (DataIntegrityViolationException | IllegalArgumentException exception) {
@@ -134,14 +133,13 @@ public class SchoolRoomImportCommitHandler implements ImportCommitHandler {
         return new ImportCommitResult(createdRows, updatedRows, 0L, invalidRows);
     }
 
-    private void createRoom(Map<String, String> data, int capacity, UUID schoolId, UUID currentUserId) {
+    private void createRoom(Map<String, String> data, UUID schoolId, UUID currentUserId) {
         var now = OffsetDateTime.now();
         schoolRoomRepository.save(new SchoolRoom(
                 schoolId,
                 data.get("code"),
                 data.get("name"),
                 data.get("description"),
-                capacity,
                 false,
                 now,
                 now,
@@ -149,11 +147,10 @@ public class SchoolRoomImportCommitHandler implements ImportCommitHandler {
                 currentUserId));
     }
 
-    private void updateRoom(SchoolRoom existing, Map<String, String> data, int capacity, UUID currentUserId) {
+    private void updateRoom(SchoolRoom existing, Map<String, String> data, UUID currentUserId) {
         var now = OffsetDateTime.now();
         existing.setName(data.get("name"));
         existing.setDescription(data.get("description"));
-        existing.setCapacity(capacity);
         existing.setUpdatedAt(now);
         existing.setUpdatedBy(currentUserId);
         schoolRoomRepository.save(existing);
@@ -184,7 +181,6 @@ public class SchoolRoomImportCommitHandler implements ImportCommitHandler {
         var normalized = new LinkedHashMap<String, String>();
         normalized.put("code", StringNormalization.normalizeCode(mappedData.get("code")));
         normalized.put("name", StringNormalization.trimAndCollapseSpaces(mappedData.get("name")));
-        normalized.put("capacity", trimToNull(mappedData.get("capacity")));
         normalized.put("description", StringNormalization.trimAndCollapseSpaces(mappedData.get("description")));
         return normalized;
     }
@@ -194,27 +190,13 @@ public class SchoolRoomImportCommitHandler implements ImportCommitHandler {
 
         addMissingError(errors, data, "code", "Mã phòng không được để trống");
         addMissingError(errors, data, "name", "Tên phòng không được để trống");
-        addMissingError(errors, data, "capacity", "Sức chứa phòng không được để trống");
 
         var code = data.get("code");
         if (isPresent(code) && !seenCodes.add(code)) {
             errors.add(error("code", "Mã phòng bị trùng trong file import"));
         }
 
-        var capacity = data.get("capacity");
-        if (isPresent(capacity) && !isPositiveInteger(capacity)) {
-            errors.add(error("capacity", "Sức chứa phòng phải là số nguyên lớn hơn 0"));
-        }
-
         return errors;
-    }
-
-    private boolean isPositiveInteger(String value) {
-        try {
-            return Integer.parseInt(value) > 0;
-        } catch (NumberFormatException e) {
-            return false;
-        }
     }
 
     private void addMissingError(List<Map<String, String>> errors, Map<String, String> data, String field, String message) {
@@ -231,14 +213,6 @@ public class SchoolRoomImportCommitHandler implements ImportCommitHandler {
 
     private boolean isPresent(String value) {
         return value != null && !value.isBlank();
-    }
-
-    private String trimToNull(String value) {
-        if (value == null) {
-            return null;
-        }
-        var stripped = value.strip();
-        return stripped.isEmpty() ? null : stripped;
     }
 
     private Map<String, String> error(String field, String message) {

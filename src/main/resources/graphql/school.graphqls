@@ -46,7 +46,6 @@ type SchoolRoom {
     code: String!
     name: String!
     description: String
-    capacity: Int
     isActive: Boolean!
     createdAt: String
     createdBy: String
@@ -57,7 +56,6 @@ type SchoolRoom {
 input UpdateSchoolRoomInput {
     name: String
     description: String
-    capacity: Int
 }
 
 type SchoolRoomPageResult {

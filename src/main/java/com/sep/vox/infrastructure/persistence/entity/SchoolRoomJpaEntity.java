@@ -41,9 +41,6 @@ public class SchoolRoomJpaEntity {
     @Column(name = "description", length = 2048)
     private String description;
 
-    @Column(name = "capacity")
-    private Integer capacity;
-
     @Column(name = "is_active", nullable = false)
     private boolean isActive;
 
@@ -61,14 +58,13 @@ public class SchoolRoomJpaEntity {
 
     protected SchoolRoomJpaEntity() {}
 
-    public SchoolRoomJpaEntity(UUID id, UUID schoolId, String code, String name, String description, Integer capacity,
+    public SchoolRoomJpaEntity(UUID id, UUID schoolId, String code, String name, String description,
             boolean isActive, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.schoolId = schoolId;
         this.code = code;
         this.name = name;
         this.description = description;
-        this.capacity = capacity;
         this.isActive = isActive;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -76,13 +72,12 @@ public class SchoolRoomJpaEntity {
         this.updatedBy = updatedBy;
     }
 
-    public SchoolRoomJpaEntity(UUID schoolId, String code, String name, String description, Integer capacity,
+    public SchoolRoomJpaEntity(UUID schoolId, String code, String name, String description,
             boolean isActive, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.schoolId = schoolId;
         this.code = code;
         this.name = name;
         this.description = description;
-        this.capacity = capacity;
         this.isActive = isActive;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -128,14 +123,6 @@ public class SchoolRoomJpaEntity {
 
     public void setDescription(String description) {
         this.description = description;
-    }
-
-    public Integer getCapacity() {
-        return capacity;
-    }
-
-    public void setCapacity(Integer capacity) {
-        this.capacity = capacity;
     }
 
     public boolean isActive() {

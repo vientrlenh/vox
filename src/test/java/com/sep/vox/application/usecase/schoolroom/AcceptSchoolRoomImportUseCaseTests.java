@@ -112,7 +112,7 @@ class AcceptSchoolRoomImportUseCaseTests {
     }
 
     private Map<String, String> validMapping() {
-        return Map.of("Mã phòng", "code", "Tên phòng", "name", "Sức chứa", "capacity");
+        return Map.of("Mã phòng", "code", "Tên phòng", "name");
     }
 
     private ImportSession previewedSession() {

@@ -28,12 +28,10 @@ import com.sep.vox.domain.model.exam.ExamCandidateStatus;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamSchedule;
 import com.sep.vox.domain.model.exam.ExamScheduleStatus;
-import com.sep.vox.domain.model.school.SchoolRoom;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
-import com.sep.vox.domain.repository.SchoolRoomRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 class AutoFillExamCandidatesUseCaseTests {
@@ -41,7 +39,6 @@ class AutoFillExamCandidatesUseCaseTests {
     private ExamRepository examRepository;
     private ExamCandidateRepository examCandidateRepository;
     private ExamScheduleRepository examScheduleRepository;
-    private SchoolRoomRepository schoolRoomRepository;
     private ExamMemberRepository examMemberRepository;
     private SchoolUserRepository schoolUserRepository;
     private UserRoleQueryRepository userRoleQueryRepository;
@@ -62,13 +59,12 @@ class AutoFillExamCandidatesUseCaseTests {
         examRepository = mock(ExamRepository.class);
         examCandidateRepository = mock(ExamCandidateRepository.class);
         examScheduleRepository = mock(ExamScheduleRepository.class);
-        schoolRoomRepository = mock(SchoolRoomRepository.class);
         examMemberRepository = mock(ExamMemberRepository.class);
         schoolUserRepository = mock(SchoolUserRepository.class);
         userRoleQueryRepository = mock(UserRoleQueryRepository.class);
         userContextPort = mock(UserContextPort.class);
         useCase = new AutoFillExamCandidatesUseCase(
-            examRepository, examCandidateRepository, examScheduleRepository, schoolRoomRepository,
+            examRepository, examCandidateRepository, examScheduleRepository,
             examMemberRepository, schoolUserRepository, userRoleQueryRepository, userContextPort);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
@@ -84,7 +80,7 @@ class AutoFillExamCandidatesUseCaseTests {
     }
 
     @Test
-    void should_fill_candidates_by_capacity_and_order() {
+    void should_distribute_candidates_round_robin_in_schedule_order() {
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(
             schedule(schedule2, room2, ExamScheduleStatus.PUBLISHED, OffsetDateTime.parse("2026-01-02T09:00:00Z")),
             schedule(schedule1, room1, ExamScheduleStatus.DRAFT, OffsetDateTime.parse("2026-01-01T09:00:00Z"))
@@ -93,10 +89,6 @@ class AutoFillExamCandidatesUseCaseTests {
             schedule(schedule1, room1, ExamScheduleStatus.DRAFT, OffsetDateTime.parse("2026-01-01T09:00:00Z"))));
         when(examScheduleRepository.findByIdForUpdate(schedule2)).thenReturn(Optional.of(
             schedule(schedule2, room2, ExamScheduleStatus.PUBLISHED, OffsetDateTime.parse("2026-01-02T09:00:00Z"))));
-        when(schoolRoomRepository.findById(room1)).thenReturn(Optional.of(room(room1, 1)));
-        when(schoolRoomRepository.findById(room2)).thenReturn(Optional.of(room(room2, 5)));
-        when(examCandidateRepository.countByScheduleId(schedule1)).thenReturn(0L);
-        when(examCandidateRepository.countByScheduleId(schedule2)).thenReturn(0L);
         var c1 = candidate();
         var c2 = candidate();
         var c3 = candidate();
@@ -105,11 +97,12 @@ class AutoFillExamCandidatesUseCaseTests {
 
         var result = useCase.execute(new AutoFillExamCandidatesCommand(examId, null));
 
-        // room1 capacity 1 -> gets c1; room2 capacity 5 -> gets c2, c3
+        // Ca xếp theo (startDate, id): schedule1 trước, schedule2 sau.
+        // Chia đều round-robin: c1 -> schedule1, c2 -> schedule2, c3 -> schedule1.
         assertThat(result).hasSize(3);
         assertThat(c1.getScheduleId()).isEqualTo(schedule1);
         assertThat(c2.getScheduleId()).isEqualTo(schedule2);
-        assertThat(c3.getScheduleId()).isEqualTo(schedule2);
+        assertThat(c3.getScheduleId()).isEqualTo(schedule1);
     }
 
     @Test
@@ -122,8 +115,6 @@ class AutoFillExamCandidatesUseCaseTests {
             schedule(schedule1, room1, ExamScheduleStatus.DRAFT, OffsetDateTime.parse("2026-01-01T09:00:00Z"))));
         when(examScheduleRepository.findByIdForUpdate(schedule2)).thenReturn(Optional.of(
             schedule(schedule2, room2, ExamScheduleStatus.DRAFT, OffsetDateTime.parse("2026-01-02T09:00:00Z"))));
-        when(schoolRoomRepository.findById(room1)).thenReturn(Optional.of(room(room1, 5)));
-        when(schoolRoomRepository.findById(room2)).thenReturn(Optional.of(room(room2, 5)));
         when(examCandidateRepository.findByExamIdAndScheduleIdIsNullOrderByAssignedAtAsc(examId))
             .thenReturn(List.of(candidate()));
 
@@ -145,8 +136,6 @@ class AutoFillExamCandidatesUseCaseTests {
         ));
         when(examScheduleRepository.findByIdForUpdate(schedule2)).thenReturn(Optional.of(
             schedule(schedule2, room2, ExamScheduleStatus.DRAFT, OffsetDateTime.parse("2026-01-02T09:00:00Z"))));
-        when(schoolRoomRepository.findById(room2)).thenReturn(Optional.of(room(room2, 5)));
-        when(examCandidateRepository.countByScheduleId(schedule2)).thenReturn(0L);
         var c1 = candidate();
         when(examCandidateRepository.findByExamIdAndScheduleIdIsNullOrderByAssignedAtAsc(examId))
             .thenReturn(List.of(c1));
@@ -159,20 +148,31 @@ class AutoFillExamCandidatesUseCaseTests {
     }
 
     @Test
-    void should_return_empty_when_no_capacity() {
+    void should_return_empty_when_no_unassigned_candidates() {
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(
             schedule(schedule1, room1, ExamScheduleStatus.DRAFT, OffsetDateTime.parse("2026-01-01T09:00:00Z"))
         ));
         when(examScheduleRepository.findByIdForUpdate(schedule1)).thenReturn(Optional.of(
             schedule(schedule1, room1, ExamScheduleStatus.DRAFT, OffsetDateTime.parse("2026-01-01T09:00:00Z"))));
-        when(schoolRoomRepository.findById(room1)).thenReturn(Optional.of(room(room1, 2)));
-        when(examCandidateRepository.countByScheduleId(schedule1)).thenReturn(2L);
         when(examCandidateRepository.findByExamIdAndScheduleIdIsNullOrderByAssignedAtAsc(examId))
-            .thenReturn(List.of(candidate()));
+            .thenReturn(List.of());
 
         var result = useCase.execute(new AutoFillExamCandidatesCommand(examId, null));
 
         assertThat(result).isEmpty();
+        verify(examCandidateRepository, never()).saveAll(anyCollection());
+    }
+
+    @Test
+    void should_return_empty_when_no_target_schedules() {
+        when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(
+            schedule(schedule1, room1, ExamScheduleStatus.COMPLETED, OffsetDateTime.parse("2026-01-01T09:00:00Z"))
+        ));
+
+        var result = useCase.execute(new AutoFillExamCandidatesCommand(examId, null));
+
+        assertThat(result).isEmpty();
+        verify(examScheduleRepository, never()).findByIdForUpdate(schedule1);
         verify(examCandidateRepository, never()).saveAll(anyCollection());
     }
 
@@ -194,14 +194,6 @@ class AutoFillExamCandidatesUseCaseTests {
         s.setStatus(status);
         s.setStartDate(start);
         return s;
-    }
-
-    private SchoolRoom room(UUID id, Integer capacity) {
-        var room = new SchoolRoom();
-        room.setId(id);
-        room.setSchoolId(schoolId);
-        room.setCapacity(capacity);
-        return room;
     }
 
     private Exam exam() {

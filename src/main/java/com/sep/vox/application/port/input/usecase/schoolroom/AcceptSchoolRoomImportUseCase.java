@@ -29,7 +29,7 @@ import com.sep.vox.domain.repository.UserRepository;
 @Service
 public class AcceptSchoolRoomImportUseCase implements IUseCase<AcceptSchoolRoomImportCommand, Void> {
 
-    private static final Set<String> REQUIRED_FIELDS = Set.of("code", "name", "capacity");
+    private static final Set<String> REQUIRED_FIELDS = Set.of("code", "name");
     private static final String SCHOOL_ROOM_TYPE = "SCHOOL_ROOM";
 
     private final ImportSessionRepository importSessionRepository;

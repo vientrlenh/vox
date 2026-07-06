@@ -64,7 +64,7 @@ public class RubricCriterionBandImportCommitHandler implements ImportCommitHandl
         for (ImportRow row : rows) {
             if (row.getStatus() != ImportRowStatus.PENDING) continue;
 
-            List<String> errors = new ArrayList<>();
+            List<Map<String, String>> errors = new ArrayList<>();
             Map<String, String> rawData = jsonSerializationPort.toStringMap(row.getRawDataJson());
 
             Map<String, String> mappedData = new HashMap<>();
@@ -78,13 +78,13 @@ public class RubricCriterionBandImportCommitHandler implements ImportCommitHandl
                 String minStr = mappedData.get("scoreMin");
                 String maxStr = mappedData.get("scoreMax");
 
-                if (codeStr == null || codeStr.isBlank()) errors.add("Thiếu Mã mức độ (Code).");
-                if (minStr == null || minStr.isBlank()) errors.add("Thiếu Điểm tối thiểu (Score Min).");
-                if (maxStr == null || maxStr.isBlank()) errors.add("Thiếu Điểm tối đa (Score Max).");
+                if (codeStr == null || codeStr.isBlank()) errors.add(error("code", "Thiếu Mã mức độ (Code)."));
+                if (minStr == null || minStr.isBlank()) errors.add(error("scoreMin", "Thiếu Điểm tối thiểu (Score Min)."));
+                if (maxStr == null || maxStr.isBlank()) errors.add(error("scoreMax", "Thiếu Điểm tối đa (Score Max)."));
 
                 String safeCode = codeStr != null ? codeStr.trim() : "";
                 if (errors.isEmpty() && !codesInFile.add(safeCode.toLowerCase())) {
-                    errors.add("Bị trùng Mã mức độ '" + safeCode + "' ngay trong file Excel.");
+                    errors.add(error("code", "Bị trùng Mã mức độ '" + safeCode + "' ngay trong file Excel."));
                 }
 
                 BigDecimal scoreMin = null;
@@ -94,15 +94,15 @@ public class RubricCriterionBandImportCommitHandler implements ImportCommitHandl
                         scoreMin = new BigDecimal(minStr.trim());
                         scoreMax = new BigDecimal(maxStr.trim());
 
-                        if (scoreMin.compareTo(BigDecimal.ZERO) < 0) errors.add("Điểm số không được âm.");
-                        if (scoreMin.compareTo(scoreMax) > 0) errors.add("Điểm tối thiểu không được lớn hơn tối đa.");
+                        if (scoreMin.compareTo(BigDecimal.ZERO) < 0) errors.add(error("scoreMin", "Điểm số không được âm."));
+                        if (scoreMin.compareTo(scoreMax) > 0) errors.add(error("scoreMin", "Điểm tối thiểu không được lớn hơn tối đa."));
 
                         if (scoreMin.compareTo(criterion.getMinScore()) < 0 || scoreMax.compareTo(criterion.getMaxScore()) > 0) {
-                            errors.add("Khoảng điểm của Band vượt quá giới hạn khoảng điểm của Tiêu chí gốc ("
-                                    + criterion.getMinScore() + " - " + criterion.getMaxScore() + ").");
+                            errors.add(error("scoreMin", "Khoảng điểm của Band vượt quá giới hạn khoảng điểm của Tiêu chí gốc ("
+                                    + criterion.getMinScore() + " - " + criterion.getMaxScore() + ")."));
                         }
                     } catch (NumberFormatException e) {
-                        errors.add("Điểm số không hợp lệ.");
+                        errors.add(error("general", "Điểm số không hợp lệ."));
                     }
                 }
 
@@ -132,7 +132,7 @@ public class RubricCriterionBandImportCommitHandler implements ImportCommitHandl
                     importedCount++;
                 }
             } catch (Exception ex) {
-                errors.add("Lỗi xử lý luồng ngầm: " + ex.getMessage());
+                errors.add(error("general", "Lỗi xử lý luồng ngầm: " + ex.getMessage()));
                 row.setStatus(ImportRowStatus.INVALID);
                 row.setErrorsJson(jsonSerializationPort.toJson(errors));
                 invalidCount++;
@@ -142,5 +142,9 @@ public class RubricCriterionBandImportCommitHandler implements ImportCommitHandl
         if (!bandsToSave.isEmpty()) rubricCriterionBandRepository.saveAll(bandsToSave);
 
         return new ImportCommitResult(importedCount, 0, 0, invalidCount);
+    }
+
+    private static Map<String, String> error(String field, String message) {
+        return Map.of("field", field, "message", message);
     }
 }

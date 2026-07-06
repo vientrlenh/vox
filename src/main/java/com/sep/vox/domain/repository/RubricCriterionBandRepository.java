@@ -21,4 +21,6 @@ public interface RubricCriterionBandRepository {
     List<RubricCriterionBand> findByCriterionIdIn(List<UUID> criterionIds);
     PageResult<RubricCriterionBand> searchRubricCriterionBands(UUID criterionId, String keyword, int page, int size);
     List<RubricCriterionBand> findByCriterionId(UUID criterionId);
+
+    Optional<RubricCriterionBand> findByCriterionIdAndCode(UUID criterionId, String code);
 }

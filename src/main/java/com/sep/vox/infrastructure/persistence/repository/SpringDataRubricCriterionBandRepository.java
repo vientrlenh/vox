@@ -3,6 +3,7 @@ package com.sep.vox.infrastructure.persistence.repository;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -18,6 +19,8 @@ public interface SpringDataRubricCriterionBandRepository extends JpaRepository<R
     void deleteByCriterionId(UUID criterionId);
 
     List<RubricCriterionBandJpaEntity>findByCriterionId(UUID criterionId);
+
+    Optional<RubricCriterionBandJpaEntity> findByCriterionIdAndCode(UUID criterionId, String code);
 
     @Modifying
     @Query("DELETE FROM RubricCriterionBandJpaEntity b WHERE b.criterionId IN (SELECT c.id FROM RubricCriterionJpaEntity c WHERE c.rubricVersionId = :rubricVersionId)")

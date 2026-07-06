@@ -60,7 +60,7 @@ public class RubricResultBandImportCommitHandler implements ImportCommitHandler 
 
         for (ImportRow row : rows) {
             if (row.getStatus() != ImportRowStatus.PENDING) continue;
-            List<String> errors = new ArrayList<>();
+            List<Map<String, String>> errors = new ArrayList<>();
             Map<String, String> rawData = jsonSerializationPort.toStringMap(row.getRawDataJson());
 
             Map<String, String> mappedData = new HashMap<>();
@@ -77,15 +77,15 @@ public class RubricResultBandImportCommitHandler implements ImportCommitHandler 
                 String maxStr = mappedData.get("scoreMax");
                 String orderStr = mappedData.get("order");
 
-                if (codeStr == null || codeStr.isBlank()) errors.add("Thiếu Mã xếp loại (Code).");
-                if (nameStr == null || nameStr.isBlank()) errors.add("Thiếu Tên xếp loại.");
-                if (minStr == null || minStr.isBlank()) errors.add("Thiếu Điểm tối thiểu.");
-                if (maxStr == null || maxStr.isBlank()) errors.add("Thiếu Điểm tối đa.");
-                if (orderStr == null || orderStr.isBlank()) errors.add("Thiếu Thứ tự.");
+                if (codeStr == null || codeStr.isBlank()) errors.add(error("code", "Thiếu Mã xếp loại (Code)."));
+                if (nameStr == null || nameStr.isBlank()) errors.add(error("name", "Thiếu Tên xếp loại."));
+                if (minStr == null || minStr.isBlank()) errors.add(error("scoreMin", "Thiếu Điểm tối thiểu."));
+                if (maxStr == null || maxStr.isBlank()) errors.add(error("scoreMax", "Thiếu Điểm tối đa."));
+                if (orderStr == null || orderStr.isBlank()) errors.add(error("order", "Thiếu Thứ tự."));
 
                 String safeCode = codeStr != null ? codeStr.trim() : "";
                 if (errors.isEmpty() && !codesInFile.add(safeCode.toLowerCase())) {
-                    errors.add("Bị trùng Mã xếp loại '" + safeCode + "' ngay trong file Excel.");
+                    errors.add(error("code", "Bị trùng Mã xếp loại '" + safeCode + "' ngay trong file Excel."));
                 }
 
                 BigDecimal scoreMin = null; BigDecimal scoreMax = null; int order = 0;
@@ -95,22 +95,22 @@ public class RubricResultBandImportCommitHandler implements ImportCommitHandler 
                         scoreMax = new BigDecimal(maxStr.trim());
                         order = Integer.parseInt(orderStr.trim());
 
-                        if (scoreMin.compareTo(BigDecimal.ZERO) < 0) errors.add("Điểm số không được âm.");
-                        if (scoreMin.compareTo(scoreMax) > 0) errors.add("Điểm tối thiểu không được lớn hơn tối đa.");
-                        if (order <= 0) errors.add("Thứ tự phải lớn hơn 0.");
+                        if (scoreMin.compareTo(BigDecimal.ZERO) < 0) errors.add(error("scoreMin", "Điểm số không được âm."));
+                        if (scoreMin.compareTo(scoreMax) > 0) errors.add(error("scoreMin", "Điểm tối thiểu không được lớn hơn tối đa."));
+                        if (order <= 0) errors.add(error("order", "Thứ tự phải lớn hơn 0."));
 
-                        if (!ordersInFile.add(order)) errors.add("Bị trùng thứ tự " + order + " trong file Excel.");
+                        if (!ordersInFile.add(order)) errors.add(error("order", "Bị trùng thứ tự " + order + " trong file Excel."));
 
                         // Kiểm tra khoảng điểm có vượt rào của Version không
                         if (version.getScoringScaleMin() != null && scoreMin.compareTo(version.getScoringScaleMin()) < 0) {
-                            errors.add("Điểm tối thiểu nhỏ hơn điểm sàn của phiên bản (" + version.getScoringScaleMin() + ").");
+                            errors.add(error("scoreMin", "Điểm tối thiểu nhỏ hơn điểm sàn của phiên bản (" + version.getScoringScaleMin() + ")."));
                         }
                         if (version.getScoringScaleMax() != null && scoreMax.compareTo(version.getScoringScaleMax()) > 0) {
-                            errors.add("Điểm tối đa vượt quá điểm trần của phiên bản (" + version.getScoringScaleMax() + ").");
+                            errors.add(error("scoreMax", "Điểm tối đa vượt quá điểm trần của phiên bản (" + version.getScoringScaleMax() + ")."));
                         }
 
                     } catch (NumberFormatException e) {
-                        errors.add("Điểm số hoặc thứ tự không đúng định dạng số.");
+                        errors.add(error("general", "Điểm số hoặc thứ tự không đúng định dạng số."));
                     }
                 }
 
@@ -144,7 +144,7 @@ public class RubricResultBandImportCommitHandler implements ImportCommitHandler 
                     importedCount++;
                 }
             } catch (Exception ex) {
-                errors.add("Lỗi hệ thống: " + ex.getMessage());
+                errors.add(error("general", "Lỗi hệ thống: " + ex.getMessage()));
                 row.setStatus(ImportRowStatus.INVALID);
                 row.setErrorsJson(jsonSerializationPort.toJson(errors));
                 invalidCount++;
@@ -154,5 +154,9 @@ public class RubricResultBandImportCommitHandler implements ImportCommitHandler 
         if (!bandsToSave.isEmpty()) rubricResultBandRepository.saveAll(bandsToSave);
 
         return new ImportCommitResult(importedCount, 0, 0, invalidCount);
+    }
+
+    private static Map<String, String> error(String field, String message) {
+        return Map.of("field", field, "message", message);
     }
 }

@@ -3,6 +3,7 @@ package com.sep.vox.infrastructure.persistence.repository;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -65,4 +66,6 @@ public interface SpringDataRubricCriterionRepository extends JpaRepository<Rubri
             Pageable pageable);
 
     List<RubricCriterionJpaEntity> findByRubricVersionId(UUID rubricVersionId);
+
+    Optional<RubricCriterionJpaEntity> findByRubricVersionIdAndCode(UUID rubricVersionId, String code);
 }

@@ -1,0 +1,109 @@
+package com.sep.vox.application.port.input.usecase.scoringrule;
+
+import java.time.OffsetDateTime;
+import java.util.UUID;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.sep.vox.application.exception.ForbiddenException;
+import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
+import com.sep.vox.application.port.input.command.UpdateScoringRuleCommand;
+import com.sep.vox.application.port.input.service.ScoringRuleCriterionValidator;
+import com.sep.vox.application.port.input.usecase.IUseCase;
+import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.domain.mapper.ScoringRuleParamsMapper;
+import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
+import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStatus;
+import com.sep.vox.domain.model.scoringrule.ScoringRule;
+import com.sep.vox.domain.model.user.UserStatus;
+import com.sep.vox.domain.repository.AssessmentPolicyRepository;
+import com.sep.vox.domain.repository.ScoringRuleRepository;
+import com.sep.vox.domain.repository.UserRepository;
+
+@Service
+public class UpdateSystemScoringRuleUseCase implements IUseCase<UpdateScoringRuleCommand, UUID> {
+
+    private final ScoringRuleRepository scoringRuleRepository;
+    private final AssessmentPolicyRepository assessmentPolicyRepository;
+    private final UserRepository userRepository;
+    private final UserContextPort userContextPort;
+    private final ScoringRuleCriterionValidator scoringRuleCriterionValidator;
+
+    public UpdateSystemScoringRuleUseCase(
+            ScoringRuleRepository scoringRuleRepository,
+            AssessmentPolicyRepository assessmentPolicyRepository,
+            UserRepository userRepository,
+            UserContextPort userContextPort,
+            ScoringRuleCriterionValidator scoringRuleCriterionValidator) {
+        this.scoringRuleRepository = scoringRuleRepository;
+        this.assessmentPolicyRepository = assessmentPolicyRepository;
+        this.userRepository = userRepository;
+        this.userContextPort = userContextPort;
+        this.scoringRuleCriterionValidator = scoringRuleCriterionValidator;
+    }
+
+    @Override
+    @Transactional
+    public UUID execute(UpdateScoringRuleCommand command) {
+        // 1. Kiểm tra tài khoản System Admin
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        var currentUser = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+        if (currentUser.getStatus() != UserStatus.ACTIVE) {
+            throw new UnauthorizedException("Tài khoản đã bị khóa.");
+        }
+
+        // 2. Kiểm tra Scoring Rule tồn tại
+        ScoringRule rule = scoringRuleRepository.findById(command.ruleId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy Scoring Rule."));
+
+        // 3. BẢO MẬT: policyId trên path phải khớp với policyId thật sự của rule
+        // (tránh trường hợp Client cố tình gửi nhầm/gửi giả policyId khác trên URL để sửa rule của Policy khác)
+        if (!rule.getPolicyId().equals(command.policyId())) {
+            throw new ForbiddenException("BẢO MẬT: Scoring Rule này không thuộc Assessment Policy đã chỉ định.");
+        }
+
+        // 4. Kiểm tra Assessment Policy tồn tại và thuộc phạm vi toàn hệ thống
+        AssessmentPolicy policy = assessmentPolicyRepository.findById(rule.getPolicyId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy Assessment Policy."));
+        if (policy.getSchoolId() != null) {
+            throw new ForbiddenException("Không thể can thiệp vào Assessment Policy của trường học.");
+        }
+
+        // 5. Chỉ được sửa Scoring Rule khi Policy còn DRAFT (lý do giống hệt khi tạo mới:
+        // tránh thay đổi luật chấm điểm ngầm dưới 1 Policy đã PUBLISHED đang chấm bài thi thật)
+        if (policy.getStatus() != AssessmentPolicyStatus.DRAFT) {
+            throw new IllegalStateException("Chỉ được sửa Scoring Rule khi Assessment Policy đang ở trạng thái DRAFT.");
+        }
+
+        // 6. Validate priority
+        if (command.priority() <= 0) {
+            throw new IllegalArgumentException("Độ ưu tiên (priority) phải lớn hơn 0.");
+        }
+
+        // 7. Convert Map JSON thô -> Value Object cụ thể theo conditionType/actionType MỚI (có thể đổi loại khác)
+        var conditionParams = ScoringRuleParamsMapper.toConditionParams(command.conditionType(), command.conditionParams());
+        var actionParams = ScoringRuleParamsMapper.toActionParams(command.actionType(), command.actionParams());
+
+        // 7b. Kiểm tra criterionCode/bandCode (nếu có) có thực sự tồn tại trong Rubric Version của Policy
+        scoringRuleCriterionValidator.validate(policy.getRubricVersionId(), conditionParams, actionParams);
+
+        // 8. Cập nhật các field được phép sửa (code và policyId là bất biến, không đụng tới)
+        rule.setName(command.name().strip());
+        rule.setDescription(command.description());
+        rule.setConditionType(command.conditionType());
+        rule.setConditionParams(conditionParams);
+        rule.setActionType(command.actionType());
+        rule.setActionParams(actionParams);
+        rule.setPriority(command.priority());
+        rule.setSeverity(command.severity());
+        rule.setStopProcessing(command.stopProcessing());
+        rule.setActive(command.isActive());
+        rule.setUpdatedAt(OffsetDateTime.now());
+        rule.setUpdatedBy(currentUserId);
+
+        return scoringRuleRepository.save(rule).getId();
+    }
+}

@@ -231,8 +231,7 @@ public class RubricController {
         // 1. Map dữ liệu
         var command = AcceptRubricVersionImportCommandMapper.fromSystemRequest(sessionId, request);
         var response = acceptSystemRubricVersionImportUseCase.execute(command);
-        String msg = response.invalidRows() > 0 ? "Import hoàn tất nhưng có một số dòng bị lỗi." : "Import Version thành công 100%.";
-        return ResponseEntity.ok(ApiResponse.success(msg, response));
+        return ResponseEntity.ok(ApiResponse.success("Đã đưa yêu cầu Import Phiên bản hệ thống vào hàng đợi ngầm xử lý.", response));
     }
 
 
@@ -431,8 +430,7 @@ public class RubricController {
 
         var response = acceptSystemRubricCriterionImportUseCase.execute(command);
 
-        String msg = response.invalidRows() > 0 ? "Import hoàn tất nhưng có một số dòng bị lỗi." : "Import Tiêu chí thành công 100%.";
-        return ResponseEntity.ok(ApiResponse.success(msg, response));
+        return ResponseEntity.ok(ApiResponse.success("Đã đưa yêu cầu Import Tiêu chí hệ thống vào hàng đợi ngầm xử lý.", response));
     }
 
     // Review Rubric Criteria version của trường

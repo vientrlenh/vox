@@ -118,4 +118,10 @@ public class RubricCriterionBandRepositoryImpl implements RubricCriterionBandRep
                 .map(RubricCriterionBandMapper::toDomain)
                 .toList();
     }
+
+    @Override
+    public Optional<RubricCriterionBand> findByCriterionIdAndCode(UUID criterionId, String code) {
+        return springDataRubricCriterionBandRepository.findByCriterionIdAndCode(criterionId, code)
+                .map(RubricCriterionBandMapper::toDomain);
+    }
 }

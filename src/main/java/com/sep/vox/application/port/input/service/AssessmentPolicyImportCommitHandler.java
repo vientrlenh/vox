@@ -106,7 +106,7 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
         for (ImportRow row : rows) {
             if (row.getStatus() != ImportRowStatus.PENDING) continue;
 
-            List<String> errors = new ArrayList<>();
+            List<Map<String, String>> errors = new ArrayList<>();
             Map<String, String> rawData = jsonSerializationPort.toStringMap(row.getRawDataJson());
             Map<String, String> mappedData = applyMapping(mapping, rawData);
 
@@ -151,10 +151,10 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
                     scopeKey = new ScopeKey(schoolId, languageId, frameworkVersionId,
                             scopeIds.schoolGradeLevelId(), scopeIds.schoolGradeId(), scopeIds.schoolClassId(), rubricVersionId);
                     if (!scopesClaimedInFile.add(scopeKey)) {
-                        errors.add("Bị trùng phạm vi áp dụng ngay trong file Excel.");
+                        errors.add(error("scope", "Bị trùng phạm vi áp dụng ngay trong file Excel."));
                     } else if (assessmentPolicyRepository.existsActiveForScope(schoolId, languageId, frameworkVersionId,
                             scopeIds.schoolGradeLevelId(), scopeIds.schoolGradeId(), scopeIds.schoolClassId(), rubricVersionId)) {
-                        errors.add("Đã tồn tại một Quy chế (DRAFT/PUBLISHED) khác cho cùng phạm vi này. Vui lòng lưu trữ (ARCHIVE) bản cũ.");
+                        errors.add(error("scope", "Đã tồn tại một Quy chế (DRAFT/PUBLISHED) khác cho cùng phạm vi này. Vui lòng lưu trữ (ARCHIVE) bản cũ."));
                     }
                 }
 
@@ -185,7 +185,7 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
                 row.setMappedDataJson(jsonSerializationPort.toJson(mappedData));
                 importedCount++;
             } catch (Exception ex) {
-                errors.add("Lỗi xử lý luồng ngầm: " + ex.getMessage());
+                errors.add(error("general", "Lỗi xử lý luồng ngầm: " + ex.getMessage()));
                 row.setStatus(ImportRowStatus.INVALID);
                 row.setErrorsJson(jsonSerializationPort.toJson(errors));
                 invalidCount++;
@@ -220,67 +220,67 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
         return mappedData;
     }
 
-    private static void validateRequiredFields(Map<String, String> mappedData, List<String> errors) {
-        requireField(mappedData.get("frameworkVersion"), "Thiếu Phiên bản Khung năng lực.", errors);
-        requireField(mappedData.get("rubricVersion"), "Thiếu Phiên bản Rubric.", errors);
-        requireField(mappedData.get("language"), "Thiếu Ngôn ngữ.", errors);
-        requireField(mappedData.get("targetFrameworkBand"), "Thiếu Band mục tiêu.", errors);
-        requireField(mappedData.get("minimumFrameworkBand"), "Thiếu Band tối thiểu.", errors);
-        requireField(mappedData.get("effectiveFrom"), "Thiếu Ngày bắt đầu.", errors);
+    private static void validateRequiredFields(Map<String, String> mappedData, List<Map<String, String>> errors) {
+        requireField(mappedData.get("frameworkVersion"), "frameworkVersion", "Thiếu Phiên bản Khung năng lực.", errors);
+        requireField(mappedData.get("rubricVersion"), "rubricVersion", "Thiếu Phiên bản Rubric.", errors);
+        requireField(mappedData.get("language"), "language", "Thiếu Ngôn ngữ.", errors);
+        requireField(mappedData.get("targetFrameworkBand"), "targetFrameworkBand", "Thiếu Band mục tiêu.", errors);
+        requireField(mappedData.get("minimumFrameworkBand"), "minimumFrameworkBand", "Thiếu Band tối thiểu.", errors);
+        requireField(mappedData.get("effectiveFrom"), "effectiveFrom", "Thiếu Ngày bắt đầu.", errors);
     }
 
-    private static void requireField(String value, String errorMessage, List<String> errors) {
-        if (value == null || value.isBlank()) errors.add(errorMessage);
+    private static void requireField(String value, String field, String errorMessage, List<Map<String, String>> errors) {
+        if (value == null || value.isBlank()) errors.add(error(field, errorMessage));
     }
 
     // Dual Lookup: cho phép người dùng điền mã HOẶC tên trong file Excel
-    private UUID resolveLanguage(String languageInput, List<String> errors) {
+    private UUID resolveLanguage(String languageInput, List<Map<String, String>> errors) {
         String cleanInput = languageInput.trim();
         var language = languageRepository.findByCode(cleanInput).or(() -> languageRepository.findByName(cleanInput));
         if (language.isEmpty()) {
-            errors.add("Ngôn ngữ '" + cleanInput + "' không tồn tại trên hệ thống.");
+            errors.add(error("language", "Ngôn ngữ '" + cleanInput + "' không tồn tại trên hệ thống."));
             return null;
         }
         return language.get().getId();
     }
 
-    private FrameworkVersion resolveFrameworkVersion(String fwVersionInput, List<String> errors) {
+    private FrameworkVersion resolveFrameworkVersion(String fwVersionInput, List<Map<String, String>> errors) {
         String cleanInput = fwVersionInput.trim();
         var fwOpt = frameworkVersionRepository.findByCode(cleanInput).or(() -> frameworkVersionRepository.findByName(cleanInput));
         if (fwOpt.isEmpty()) {
-            errors.add("Không tìm thấy Phiên bản Khung: '" + cleanInput + "'");
+            errors.add(error("frameworkVersion", "Không tìm thấy Phiên bản Khung: '" + cleanInput + "'"));
             return null;
         }
         FrameworkVersion frameworkVersion = fwOpt.get();
         if (frameworkVersion.getStatus() != FrameworkVersionStatus.PUBLISHED) {
-            errors.add("Phiên bản Khung này chưa được PUBLISHED.");
+            errors.add(error("frameworkVersion", "Phiên bản Khung này chưa được PUBLISHED."));
             return null;
         }
         return frameworkVersion;
     }
 
     private UUID resolveRubricVersion(String rubricVersionInput, FrameworkVersion frameworkVersion, UUID schoolId,
-            boolean isSchoolScoped, List<String> errors) {
+            boolean isSchoolScoped, List<Map<String, String>> errors) {
         String cleanInput = rubricVersionInput.trim();
         var rubricOpt = rubricVersionRepository.findByCode(cleanInput).or(() -> rubricVersionRepository.findByName(cleanInput));
         if (rubricOpt.isEmpty()) {
-            errors.add("Không tìm thấy Phiên bản Rubric: '" + cleanInput + "'");
+            errors.add(error("rubricVersion", "Không tìm thấy Phiên bản Rubric: '" + cleanInput + "'"));
             return null;
         }
 
         RubricVersion rubricVersion = rubricOpt.get();
         if (rubricVersion.getStatus() == RubricStatus.PUBLISHED) {
-            errors.add("Phiên bản Rubric này đã được PUBLISHED, không thể tạo Assessment Policy mới cho phiên bản này.");
+            errors.add(error("rubricVersion", "Phiên bản Rubric này đã được PUBLISHED, không thể tạo Assessment Policy mới cho phiên bản này."));
             return null;
         }
         Rubric rubric = rubricRepository.findById(rubricVersion.getRubricId()).orElse(null);
         if (rubric == null) {
-            errors.add("Không tìm thấy Rubric gốc.");
+            errors.add(error("rubricVersion", "Không tìm thấy Rubric gốc."));
         } else if (isSchoolScoped) {
             if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || !schoolId.equals(rubric.getSchoolId())) {
-                errors.add("Rubric Version không thuộc quyền quản lý của trường bạn.");
+                errors.add(error("rubricVersion", "Rubric Version không thuộc quyền quản lý của trường bạn."));
             } else if (!rubric.getFrameworkId().equals(frameworkVersion.getFrameworkId())) {
-                errors.add("Rubric và Khung năng lực không khớp nhau.");
+                errors.add(error("rubricVersion", "Rubric và Khung năng lực không khớp nhau."));
             }
         }
         return rubricVersion.getId();
@@ -288,14 +288,14 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
 
     // Phải điền đúng 1 trong 3: Lớp, Khối năm học (schoolGrade), hoặc Khối (schoolGradeLevel)
     private ScopeIds resolveScope(UUID schoolId, String classInput, String gradeInput, String gradeLevelInput,
-            List<String> errors) {
+            List<Map<String, String>> errors) {
         boolean hasClass = classInput != null && !classInput.isBlank();
         boolean hasGrade = gradeInput != null && !gradeInput.isBlank();
         boolean hasGradeLevel = gradeLevelInput != null && !gradeLevelInput.isBlank();
         int scopeCount = (hasClass ? 1 : 0) + (hasGrade ? 1 : 0) + (hasGradeLevel ? 1 : 0);
 
         if (scopeCount != 1) {
-            errors.add("Phải điền ĐÚNG 1 phạm vi áp dụng: Lớp, Khối năm học, HOẶC Khối.");
+            errors.add(error("scope", "Phải điền ĐÚNG 1 phạm vi áp dụng: Lớp, Khối năm học, HOẶC Khối."));
             return ScopeIds.EMPTY;
         }
 
@@ -304,7 +304,7 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
             var classOpt = schoolClassRepository.findBySchoolIdAndCode(schoolId, cleanInput)
                     .or(() -> schoolClassRepository.findBySchoolIdAndName(schoolId, cleanInput));
             if (classOpt.isEmpty()) {
-                errors.add("Không tìm thấy Lớp '" + cleanInput + "'.");
+                errors.add(error("schoolClass", "Không tìm thấy Lớp '" + cleanInput + "'."));
                 return ScopeIds.EMPTY;
             }
             return new ScopeIds(classOpt.get().getId(), null, null);
@@ -315,7 +315,7 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
             var gradeOpt = schoolGradeRepository.findBySchoolIdAndCode(schoolId, cleanInput)
                     .or(() -> schoolGradeRepository.findBySchoolIdAndName(schoolId, cleanInput));
             if (gradeOpt.isEmpty()) {
-                errors.add("Không tìm thấy Khối năm học '" + cleanInput + "'.");
+                errors.add(error("schoolGrade", "Không tìm thấy Khối năm học '" + cleanInput + "'."));
                 return ScopeIds.EMPTY;
             }
             return new ScopeIds(null, gradeOpt.get().getId(), null);
@@ -325,14 +325,14 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
         var levelOpt = schoolGradeLevelRepository.findBySchoolIdAndCode(schoolId, cleanInput)
                 .or(() -> schoolGradeLevelRepository.findBySchoolIdAndName(schoolId, cleanInput));
         if (levelOpt.isEmpty()) {
-            errors.add("Không tìm thấy Khối '" + cleanInput + "'.");
+            errors.add(error("schoolGradeLevel", "Không tìm thấy Khối '" + cleanInput + "'."));
             return ScopeIds.EMPTY;
         }
         return new ScopeIds(null, null, levelOpt.get().getId());
     }
 
     private BandIds resolveBands(UUID frameworkVersionId, String targetBandInput, String minimumBandInput,
-            List<String> errors) {
+            List<Map<String, String>> errors) {
         String cleanTarget = targetBandInput.trim();
         var targetBandOpt = frameworkResultBandRepository.findByVersionIdAndCode(frameworkVersionId, cleanTarget)
                 .or(() -> frameworkResultBandRepository.findByVersionIdAndName(frameworkVersionId, cleanTarget));
@@ -341,12 +341,12 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
         var minBandOpt = frameworkResultBandRepository.findByVersionIdAndCode(frameworkVersionId, cleanMin)
                 .or(() -> frameworkResultBandRepository.findByVersionIdAndName(frameworkVersionId, cleanMin));
 
-        if (targetBandOpt.isEmpty()) errors.add("Band mục tiêu '" + cleanTarget + "' không tồn tại trong Khung này.");
-        if (minBandOpt.isEmpty()) errors.add("Band tối thiểu '" + cleanMin + "' không tồn tại trong Khung này.");
+        if (targetBandOpt.isEmpty()) errors.add(error("targetFrameworkBand", "Band mục tiêu '" + cleanTarget + "' không tồn tại trong Khung này."));
+        if (minBandOpt.isEmpty()) errors.add(error("minimumFrameworkBand", "Band tối thiểu '" + cleanMin + "' không tồn tại trong Khung này."));
 
         if (targetBandOpt.isPresent() && minBandOpt.isPresent()
                 && minBandOpt.get().getOrder() > targetBandOpt.get().getOrder()) {
-            errors.add("Band tối thiểu không được cao hơn Band mục tiêu.");
+            errors.add(error("minimumFrameworkBand", "Band tối thiểu không được cao hơn Band mục tiêu."));
         }
 
         return new BandIds(
@@ -354,41 +354,45 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
                 minBandOpt.map(FrameworkResultBand::getId).orElse(null));
     }
 
-    private static BigDecimal parsePassingScore(String passingScoreStr, List<String> errors) {
+    private static BigDecimal parsePassingScore(String passingScoreStr, List<Map<String, String>> errors) {
         if (passingScoreStr == null || passingScoreStr.isBlank()) return null;
         try {
             BigDecimal passingScore = new BigDecimal(passingScoreStr.trim());
-            if (passingScore.compareTo(BigDecimal.ZERO) < 0) errors.add("Điểm đạt không được âm.");
+            if (passingScore.compareTo(BigDecimal.ZERO) < 0) errors.add(error("passingScore", "Điểm đạt không được âm."));
             return passingScore;
         } catch (NumberFormatException e) {
-            errors.add("Điểm đạt phải là số hợp lệ.");
+            errors.add(error("passingScore", "Điểm đạt phải là số hợp lệ."));
             return null;
         }
     }
 
-    private static AssessmentPolicyStrictness parseStrictness(String strictnessStr, List<String> errors) {
+    private static AssessmentPolicyStrictness parseStrictness(String strictnessStr, List<Map<String, String>> errors) {
         if (strictnessStr == null || strictnessStr.isBlank()) return AssessmentPolicyStrictness.STANDARD;
         try {
             return AssessmentPolicyStrictness.valueOf(strictnessStr.trim().toUpperCase());
         } catch (Exception e) {
-            errors.add("Mức độ nghiêm ngặt chỉ nhận LENIENT, STANDARD hoặc STRICT.");
+            errors.add(error("strictness", "Mức độ nghiêm ngặt chỉ nhận LENIENT, STANDARD hoặc STRICT."));
             return AssessmentPolicyStrictness.STANDARD;
         }
     }
 
-    private static EffectivePeriod parseEffectivePeriod(String effectiveFromStr, String effectiveToStr, List<String> errors) {
+    private static EffectivePeriod parseEffectivePeriod(String effectiveFromStr, String effectiveToStr, List<Map<String, String>> errors) {
         try {
             OffsetDateTime effectiveFrom = DateMapper.toOffsetDateTime(effectiveFromStr.trim());
             OffsetDateTime effectiveTo = (effectiveToStr != null && !effectiveToStr.isBlank())
                     ? DateMapper.toOffsetDateTime(effectiveToStr.trim())
                     : null;
             if (effectiveTo != null && effectiveTo.isBefore(effectiveFrom)) {
-                errors.add("Ngày kết thúc không được trước ngày bắt đầu.");
+                errors.add(error("effectiveTo", "Ngày kết thúc không được trước ngày bắt đầu."));
             }
             return new EffectivePeriod(effectiveFrom, effectiveTo);
         } catch (Exception e) {
-            errors.add("Định dạng ngày không hợp lệ.");
+            errors.add(error("effectiveFrom", "Định dạng ngày không hợp lệ."));
             return EffectivePeriod.EMPTY;
         }
+    }
+
+    private static Map<String, String> error(String field, String message) {
+        return Map.of("field", field, "message", message);
     }
 }

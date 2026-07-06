@@ -103,7 +103,7 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
         for (ImportRow row : rows) {
             if (row.getStatus() != ImportRowStatus.PENDING) continue;
 
-            List<String> errors = new ArrayList<>();
+            List<Map<String, String>> errors = new ArrayList<>();
             Map<String, String> rawData = jsonSerializationPort.toStringMap(row.getRawDataJson());
 
             Map<String, String> mappedData = new HashMap<>();
@@ -124,18 +124,18 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
                 String reqStr = mappedData.get("isRequired");
                 String orderStr = mappedData.get("order");
 
-                if (codeStr == null || codeStr.isBlank()) errors.add("Thiếu Mã tiêu chí.");
-                if (nameStr == null || nameStr.isBlank()) errors.add("Thiếu Tên tiêu chí.");
-                if (fwCodeStr == null || fwCodeStr.isBlank()) errors.add("Thiếu Mã Khung tiêu chuẩn tham chiếu.");
-                if (weightStr == null || weightStr.isBlank()) errors.add("Thiếu Trọng số.");
-                if (minStr == null || minStr.isBlank()) errors.add("Thiếu Điểm sàn.");
-                if (maxStr == null || maxStr.isBlank()) errors.add("Thiếu Điểm trần.");
-                if (orderStr == null || orderStr.isBlank()) errors.add("Thiếu Thứ tự.");
+                if (codeStr == null || codeStr.isBlank()) errors.add(error("code", "Thiếu Mã tiêu chí."));
+                if (nameStr == null || nameStr.isBlank()) errors.add(error("name", "Thiếu Tên tiêu chí."));
+                if (fwCodeStr == null || fwCodeStr.isBlank()) errors.add(error("frameworkCriterionCode", "Thiếu Mã Khung tiêu chuẩn tham chiếu."));
+                if (weightStr == null || weightStr.isBlank()) errors.add(error("weight", "Thiếu Trọng số."));
+                if (minStr == null || minStr.isBlank()) errors.add(error("minScore", "Thiếu Điểm sàn."));
+                if (maxStr == null || maxStr.isBlank()) errors.add(error("maxScore", "Thiếu Điểm trần."));
+                if (orderStr == null || orderStr.isBlank()) errors.add(error("order", "Thiếu Thứ tự."));
 
                 String safeCode = codeStr != null ? codeStr.trim() : "";
                 if (errors.isEmpty()) {
                     if (!codesInFile.add(safeCode.toLowerCase())) {
-                        errors.add("Bị trùng Mã tiêu chí '" + safeCode + "' ngay trong file Excel.");
+                        errors.add(error("code", "Bị trùng Mã tiêu chí '" + safeCode + "' ngay trong file Excel."));
                     }
                 }
 
@@ -143,7 +143,7 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
                 if (errors.isEmpty()) {
                     fwCriterionId = fwCodeToIdMap.get(fwCodeStr.trim().toLowerCase());
                     if (fwCriterionId == null)
-                        errors.add("Mã Khung tiêu chuẩn '" + fwCodeStr + "' không tồn tại trong Framework gốc.");
+                        errors.add(error("frameworkCriterionCode", "Mã Khung tiêu chuẩn '" + fwCodeStr + "' không tồn tại trong Framework gốc."));
                 }
 
                 //  FIX LỖI THIẾU PARAMETER Ở ĐÂY
@@ -166,7 +166,7 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
                             examplesObj = new RubricCriterionExamples(exampleList);
                         }
                     } catch (Exception e) {
-                        errors.add("Dữ liệu ví dụ không hợp lệ (Hãy phân cách các ví dụ bằng dấu ;). Lỗi: " + e.getMessage());
+                        errors.add(error("examples", "Dữ liệu ví dụ không hợp lệ (Hãy phân cách các ví dụ bằng dấu ;). Lỗi: " + e.getMessage()));
                     }
                 }
 
@@ -177,17 +177,17 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
                 if (errors.isEmpty()) {
                     try {
                         weight = new BigDecimal(weightStr.trim());
-                        if (weight.compareTo(BigDecimal.ZERO) < 0) errors.add("Trọng số không được âm.");
+                        if (weight.compareTo(BigDecimal.ZERO) < 0) errors.add(error("weight", "Trọng số không được âm."));
 
                         minScore = new BigDecimal(minStr.trim());
                         maxScore = new BigDecimal(maxStr.trim());
-                        if (minScore.compareTo(maxScore) > 0) errors.add("Điểm sàn không được lớn hơn điểm trần.");
+                        if (minScore.compareTo(maxScore) > 0) errors.add(error("minScore", "Điểm sàn không được lớn hơn điểm trần."));
 
                         order = Integer.parseInt(orderStr.trim());
-                        if (order <= 0) errors.add("Thứ tự phải lớn hơn 0.");
+                        if (order <= 0) errors.add(error("order", "Thứ tự phải lớn hơn 0."));
 
                         if (!ordersInFile.add(order)) {
-                            errors.add("Bị trùng Thứ tự " + order + " ngay trong file Excel.");
+                            errors.add(error("order", "Bị trùng Thứ tự " + order + " ngay trong file Excel."));
                         }
 
                         if (reqStr != null && !reqStr.isBlank()) {
@@ -195,7 +195,7 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
                             isRequired = r.equals("true") || r.equals("yes") || r.equals("1") || r.equals("có") || r.equals("co");
                         }
                     } catch (NumberFormatException e) {
-                        errors.add("Dữ liệu Trọng số/Điểm/Thứ tự không đúng định dạng số.");
+                        errors.add(error("general", "Dữ liệu Trọng số/Điểm/Thứ tự không đúng định dạng số."));
                     }
                 }
 
@@ -234,7 +234,7 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
                     importedCount++;
                 }
             } catch (Exception ex) {
-                errors.add("Lỗi xử lý luồng ngầm: " + ex.getMessage());
+                errors.add(error("general", "Lỗi xử lý luồng ngầm: " + ex.getMessage()));
                 row.setStatus(ImportRowStatus.INVALID);
                 row.setErrorsJson(jsonSerializationPort.toJson(errors));
                 invalidCount++;
@@ -244,5 +244,9 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
         if (!criterionsToSave.isEmpty()) rubricCriterionRepository.saveAll(criterionsToSave);
 
         return new ImportCommitResult(importedCount, 0, 0, invalidCount);
+    }
+
+    private static Map<String, String> error(String field, String message) {
+        return Map.of("field", field, "message", message);
     }
 }

@@ -40,4 +40,9 @@ public class ExamCandidateRepositoryImpl implements ExamCandidateRepository {
             .map(ExamCandidateMapper::toDomain)
             .toList();
     }
+
+    @Override
+    public long countByScheduleId(UUID scheduleId) {
+        return springDataExamCandidateRepository.countByScheduleId(scheduleId);
+    }
 }

@@ -25,6 +25,8 @@ public interface SpringDataSchoolRoomRepository extends JpaRepository<SchoolRoom
 
     List<SchoolRoomJpaEntity> findBySchoolIdAndCodeIn(UUID schoolId, Collection<String> codes);
 
+    List<SchoolRoomJpaEntity> findByIdIn(Collection<UUID> ids);
+
 
     @Modifying
     @Query("""

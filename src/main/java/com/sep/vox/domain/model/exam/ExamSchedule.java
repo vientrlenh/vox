@@ -49,6 +49,22 @@ public class ExamSchedule {
         this.updatedBy = updatedBy;
     }
 
+    /**
+     * Tạo mới một ca thi ở trạng thái DRAFT (id do DB sinh).
+     */
+    public static ExamSchedule createFresh(UUID examId, UUID schoolRoomId, OffsetDateTime startDate,
+            OffsetDateTime endDate, UUID createdBy, OffsetDateTime now) {
+        return new ExamSchedule(examId, schoolRoomId, startDate, endDate,
+                ExamScheduleStatus.DRAFT, null, now, now, createdBy, createdBy);
+    }
+
+    /**
+     * Ca thi chỉ được phép sửa (đổi phòng/giờ) khi còn ở trạng thái DRAFT.
+     */
+    public boolean isModifiable() {
+        return this.status == ExamScheduleStatus.DRAFT;
+    }
+
     public UUID getId() {
         return this.id;
     }

@@ -41,6 +41,15 @@ enum ExamPaperStatus {
     LOCKED
 }
 
+enum ExamScheduleStatus {
+    DRAFT
+    PUBLISHED
+    COMPLETED
+    MOVED
+    CANCELLED
+    DELETED
+}
+
 enum ExamSecurePoolStatus {
     SEALED
     RELEASED
@@ -141,6 +150,33 @@ type Exam {
     papers(status: ExamPaperStatus): [ExamPaper!]!
     securePool: ExamSecurePool
     schoolClassId: ID
+}
+
+type ExamScheduleProctor {
+    id: ID!
+    scheduleId: ID!
+    teacherId: ID!
+    teacher: User
+}
+
+type ExamSchedule {
+    id: ID!
+    examId: ID!
+    schoolRoomId: ID!
+    startDate: String
+    endDate: String
+    status: ExamScheduleStatus!
+    movedToScheduleId: ID
+    room: SchoolRoom
+    proctors: [ExamScheduleProctor!]!
+    candidateCount: Int!
+    requiredProctorCount: Int!
+}
+
+input UpdateExamScheduleInput {
+    schoolRoomId: ID
+    startDate: String
+    endDate: String
 }
 
 type ExamPage {
@@ -256,4 +292,10 @@ extend type Query {
     ): ExamBlueprintPage!
 
     examBlueprint(id: ID!): ExamBlueprint
+
+    examSchedules(examId: ID!): [ExamSchedule!]!
+}
+
+extend type Mutation {
+    updateExamSchedule(id: ID!, input: UpdateExamScheduleInput!): ID!
 }

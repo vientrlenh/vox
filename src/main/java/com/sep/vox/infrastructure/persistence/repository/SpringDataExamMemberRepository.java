@@ -57,3 +57,4 @@ public interface SpringDataExamMemberRepository extends JpaRepository<ExamMember
         @Param("excludeUserId") UUID excludeUserId
     );
 }
+

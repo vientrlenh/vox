@@ -18,3 +18,4 @@ public interface ExamMemberRepository {
     boolean existsByRoleAndSchoolIdExcludingUserId(ExamMemberRole role, UUID schoolId, UUID excludeUserId);
     void deleteById(UUID id);
 }
+

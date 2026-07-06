@@ -11,7 +11,6 @@ public interface ExamScheduleRepository {
     Optional<ExamSchedule> findById(UUID id);
 
     /**
-     * Tìm ca thi và khoá bi quan (PESSIMISTIC_WRITE) để kiểm soát sức chứa an toàn khi có tương tranh
      * (gán thí sinh thủ công / auto-fill). Dùng trong cùng một transaction.
      */
     Optional<ExamSchedule> findByIdForUpdate(UUID id);
@@ -39,4 +38,5 @@ public interface ExamScheduleRepository {
      */
     int updateAtomic(UUID id, UUID schoolRoomId, OffsetDateTime start, OffsetDateTime end,
             OffsetDateTime now, UUID updatedBy);
+    List<ExamSchedule> findByExamIdAndInSchedule(UUID examId, OffsetDateTime now);
 }

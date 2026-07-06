@@ -94,7 +94,7 @@ public class AcceptSchoolDirectoryImportUseCase
         var mappedFields = new HashSet<String>();
         confirmedMapping.values().stream()
                 .filter(Objects::nonNull)
-                .map(String::strip)
+                .map(f -> f.strip())
                 .forEach(mappedFields::add);
         var missingFields = REQUIRED_FIELDS.stream()
                 .filter(field -> !mappedFields.contains(field))

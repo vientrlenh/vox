@@ -84,4 +84,10 @@ public class ExamCandidateRepositoryImpl implements ExamCandidateRepository {
     public long countByScheduleId(UUID scheduleId) {
         return springDataExamCandidateRepository.countByScheduleId(scheduleId);
     }
+
+    @Override
+    public boolean existsByScheduleIdAndStudentId(UUID scheduleId, UUID studentId) {
+        return springDataExamCandidateRepository.existsByScheduleIdAndStudentId(scheduleId, studentId);
+    }
 }
+

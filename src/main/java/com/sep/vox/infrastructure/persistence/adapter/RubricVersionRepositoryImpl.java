@@ -140,11 +140,6 @@ public class RubricVersionRepositoryImpl implements RubricVersionRepository {
                 pageEntity.getTotalPages()
         );
     }
-
-    @Override
-    public int archiveExpiredPublishedVersions(OffsetDateTime now) {
-        return springDataRubricVersionRepository.archiveExpiredPublished(now);
-    }
 }
 
 

@@ -38,6 +38,4 @@ public interface RubricVersionRepository {
 
 
     PageResult<RubricVersion> searchRubricVersions(UUID rubricId, String keyword, String status, int page, int size);
-
-    int archiveExpiredPublishedVersions(OffsetDateTime now);
 }

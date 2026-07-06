@@ -78,9 +78,4 @@ public interface SpringDataRubricVersionRepository extends JpaRepository<RubricV
             @Param("keywordPattern") String keywordPattern,
             @Param("status") String status,
             Pageable pageable);
-
-    @Modifying
-    @Query("UPDATE RubricVersionJpaEntity v SET v.status = 'ARCHIVED', v.updatedAt = :now " +
-            "WHERE v.status = 'PUBLISHED' AND v.effectiveTo IS NOT NULL AND v.effectiveTo < :now")
-    int archiveExpiredPublished(@Param("now") OffsetDateTime now);
 }

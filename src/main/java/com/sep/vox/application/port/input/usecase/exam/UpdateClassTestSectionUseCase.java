@@ -1,7 +1,9 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -16,9 +18,6 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.domain.mapper.ExamDtoMapper;
 import com.sep.vox.domain.model.exam.Exam;
-import com.sep.vox.domain.model.exam.ExamBlueprintSection;
-import com.sep.vox.domain.model.exam.ExamBlueprintSlot;
-import com.sep.vox.domain.model.exam.ExamBlueprintSlotType;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamPaperItem;
@@ -27,12 +26,8 @@ import com.sep.vox.domain.model.exam.ExamSecurePoolReleaseMode;
 import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
 import com.sep.vox.domain.model.question.QuestionSharing;
-import com.sep.vox.domain.repository.ExamBlueprintSectionRepository;
-import com.sep.vox.domain.repository.ExamBlueprintSlotRepository;
-import com.sep.vox.domain.repository.ExamBlueprintVersionRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamPaperItemRepository;
-import com.sep.vox.domain.repository.ExamPaperRepository;
 import com.sep.vox.domain.repository.ExamPaperSectionRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.QuestionCollaboratorRepository;
@@ -43,10 +38,6 @@ public class UpdateClassTestSectionUseCase implements IUseCase<UpdateClassTestSe
 
     private final ExamRepository examRepository;
     private final ExamMemberRepository examMemberRepository;
-    private final ExamBlueprintVersionRepository examBlueprintVersionRepository;
-    private final ExamBlueprintSectionRepository examBlueprintSectionRepository;
-    private final ExamBlueprintSlotRepository examBlueprintSlotRepository;
-    private final ExamPaperRepository examPaperRepository;
     private final ExamPaperSectionRepository examPaperSectionRepository;
     private final ExamPaperItemRepository examPaperItemRepository;
     private final QuestionRepository questionRepository;
@@ -57,10 +48,6 @@ public class UpdateClassTestSectionUseCase implements IUseCase<UpdateClassTestSe
     public UpdateClassTestSectionUseCase(
             ExamRepository examRepository,
             ExamMemberRepository examMemberRepository,
-            ExamBlueprintVersionRepository examBlueprintVersionRepository,
-            ExamBlueprintSectionRepository examBlueprintSectionRepository,
-            ExamBlueprintSlotRepository examBlueprintSlotRepository,
-            ExamPaperRepository examPaperRepository,
             ExamPaperSectionRepository examPaperSectionRepository,
             ExamPaperItemRepository examPaperItemRepository,
             QuestionRepository questionRepository,
@@ -69,10 +56,6 @@ public class UpdateClassTestSectionUseCase implements IUseCase<UpdateClassTestSe
             UserContextPort userContextPort) {
         this.examRepository = examRepository;
         this.examMemberRepository = examMemberRepository;
-        this.examBlueprintVersionRepository = examBlueprintVersionRepository;
-        this.examBlueprintSectionRepository = examBlueprintSectionRepository;
-        this.examBlueprintSlotRepository = examBlueprintSlotRepository;
-        this.examPaperRepository = examPaperRepository;
         this.examPaperSectionRepository = examPaperSectionRepository;
         this.examPaperItemRepository = examPaperItemRepository;
         this.questionRepository = questionRepository;
@@ -94,38 +77,20 @@ public class UpdateClassTestSectionUseCase implements IUseCase<UpdateClassTestSe
         if (!examMemberRepository.existsByExamIdAndUserIdAndRole(exam.getId(), currentUserId, ExamMemberRole.CHAIR)) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
-        if (exam.getStatus() != ExamStatus.SCHEDULED && exam.getStatus() != ExamStatus.IN_PROGRESS) {
-            throw new IllegalStateException("Chỉ được sửa câu hỏi khi bài kiểm tra chưa đóng/hủy");
+        if (exam.getStatus() != ExamStatus.SCHEDULED) {
+            throw new IllegalStateException("Chỉ được sửa khi bài kiểm tra chưa mở cho học sinh làm bài (đang ở trạng thái đã lên lịch)");
         }
         if (examRepository.existsSubmittedSessionByExamId(exam.getId())) {
             throw new IllegalStateException("Không thể sửa câu hỏi khi đã có học sinh nộp bài");
         }
-        requirePrivateBlueprint(exam);
+        requireNoAttachedBlueprint(exam);
 
-        var section = examBlueprintSectionRepository.findById(input.sectionId())
+        var paperSection = examPaperSectionRepository.findById(input.sectionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy section"));
-        var version = examBlueprintVersionRepository.findById(section.getBlueprintVersionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy version blueprint"));
-        if (!version.getBlueprintId().equals(exam.getBlueprintId())) {
-            throw new IllegalStateException("Section không thuộc bài kiểm tra này");
-        }
-
-        var paper = examPaperRepository.findByExamId(exam.getId()).stream()
-            .findFirst()
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy đề thi"));
-        var paperSection = examPaperSectionRepository.findByPaperId(paper.getId()).stream()
-            .filter(candidate -> candidate.getOrder() == section.getOrder())
-            .findFirst()
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy section đề thi tương ứng"));
 
         var now = OffsetDateTime.now();
 
         if (input.title() != null) {
-            section.setTitle(input.title());
-            section.setUpdatedAt(now);
-            section.setUpdatedBy(currentUserId);
-            examBlueprintSectionRepository.save(section);
-
             paperSection.setTitle(input.title());
             paperSection.setUpdatedAt(now);
             paperSection.setUpdatedBy(currentUserId);
@@ -133,11 +98,6 @@ public class UpdateClassTestSectionUseCase implements IUseCase<UpdateClassTestSe
         }
 
         if (input.instruction() != null) {
-            section.setInstruction(input.instruction());
-            section.setUpdatedAt(now);
-            section.setUpdatedBy(currentUserId);
-            examBlueprintSectionRepository.save(section);
-
             paperSection.setInstruction(input.instruction());
             paperSection.setUpdatedAt(now);
             paperSection.setUpdatedBy(currentUserId);
@@ -160,7 +120,7 @@ public class UpdateClassTestSectionUseCase implements IUseCase<UpdateClassTestSe
                     }
                 }
             }
-            updateSectionQuestions(section, paperSection, input.questionIds(), exam.getId(), currentUserId, now);
+            updateSectionQuestions(paperSection, input.questionIds(), exam.getId(), currentUserId, now);
         }
 
         exam.setUpdatedAt(now);
@@ -169,83 +129,55 @@ public class UpdateClassTestSectionUseCase implements IUseCase<UpdateClassTestSe
         return ExamDtoMapper.toDto(saved);
     }
 
-    private void requirePrivateBlueprint(Exam exam) {
-        boolean sharedWithOtherExam = examRepository.findAllByBlueprintId(exam.getBlueprintId()).stream()
-            .anyMatch(other -> !other.getId().equals(exam.getId()));
-        if (sharedWithOtherExam) {
+    private void requireNoAttachedBlueprint(Exam exam) {
+        if (exam.getBlueprintId() != null) {
             throw new IllegalStateException(
-                "Blueprint đang được dùng chung cho kỳ thi/bài kiểm tra khác, không thể sửa câu hỏi trực tiếp ở đây");
+                "Bài đang dùng blueprint dùng chung, không thể sửa câu hỏi trực tiếp — dùng \"Đổi blueprint khác\" ở tab Blueprint để thay đổi cấu trúc");
         }
     }
 
     private void updateSectionQuestions(
-            ExamBlueprintSection section,
             ExamPaperSection paperSection,
             List<UUID> questionIds,
             UUID examId,
             UUID currentUserId,
             OffsetDateTime now) {
-        var slots = examBlueprintSlotRepository.findBySectionId(section.getId()).stream()
+        var existingItems = examPaperItemRepository.findBySectionId(paperSection.getId()).stream()
             .sorted((a, b) -> Integer.compare(a.getOrder(), b.getOrder()))
             .toList();
-        var items = examPaperItemRepository.findBySectionId(paperSection.getId()).stream()
-            .sorted((a, b) -> Integer.compare(a.getOrder(), b.getOrder()))
-            .toList();
-
-        var commonCount = Math.min(slots.size(), questionIds.size());
-
-        for (int i = 0; i < commonCount; i++) {
-            var slot = slots.get(i);
-            var item = items.get(i);
-            var newQuestionId = questionIds.get(i);
-            if (!newQuestionId.equals(slot.getFixedQuestionId())) {
-                slot.setFixedQuestionId(newQuestionId);
-                slot.setUpdatedAt(now);
-                slot.setUpdatedBy(currentUserId);
-                examBlueprintSlotRepository.save(slot);
-
-                item.setQuestionId(newQuestionId);
-                examPaperItemRepository.save(item);
-
-                examQuestionSecureLockService.lockQuestionForExam(
-                    newQuestionId, examId, ExamSecurePoolReleaseMode.AUTO_AFTER_CLOSE, currentUserId
-                );
-            }
+        for (var item : existingItems) {
+            examPaperItemRepository.deleteById(item.getId());
         }
 
-        for (int i = questionIds.size(); i < slots.size(); i++) {
-            examPaperItemRepository.deleteById(items.get(i).getId());
-            examBlueprintSlotRepository.deleteById(slots.get(i).getId());
-        }
-
-        for (int i = slots.size(); i < questionIds.size(); i++) {
+        var weights = distributeEqualWeights(questionIds.size());
+        for (int i = 0; i < questionIds.size(); i++) {
             var questionId = questionIds.get(i);
-            var slot = examBlueprintSlotRepository.save(new ExamBlueprintSlot(
-                section.getId(),
-                section.getBlueprintVersionId(),
-                i + 1,
-                BigDecimal.ONE,
-                null,
-                null,
-                ExamBlueprintSlotType.FIXED,
-                questionId,
-                null,
-                now,
-                now,
-                currentUserId,
-                currentUserId
-            ));
             examPaperItemRepository.save(new ExamPaperItem(
-                slot.getId(),
+                null,
                 paperSection.getId(),
                 paperSection.getPaperId(),
                 questionId,
-                slot.getOrder(),
-                BigDecimal.ONE
+                i + 1,
+                weights.get(i)
             ));
             examQuestionSecureLockService.lockQuestionForExam(
                 questionId, examId, ExamSecurePoolReleaseMode.AUTO_AFTER_CLOSE, currentUserId
             );
         }
+        paperSection.setUpdatedAt(now);
+        paperSection.setUpdatedBy(currentUserId);
+        examPaperSectionRepository.save(paperSection);
+    }
+
+    private List<BigDecimal> distributeEqualWeights(int count) {
+        var weights = new ArrayList<BigDecimal>();
+        var perItem = BigDecimal.ONE.divide(BigDecimal.valueOf(count), 2, RoundingMode.DOWN);
+        var runningSum = BigDecimal.ZERO;
+        for (int i = 0; i < count - 1; i++) {
+            weights.add(perItem);
+            runningSum = runningSum.add(perItem);
+        }
+        weights.add(BigDecimal.ONE.subtract(runningSum));
+        return weights;
     }
 }

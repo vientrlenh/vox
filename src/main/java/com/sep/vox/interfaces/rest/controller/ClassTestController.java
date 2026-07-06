@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.sep.vox.application.port.input.command.DeleteClassTestSectionCommand;
 import com.sep.vox.application.port.input.command.DeleteExamCommand;
+import com.sep.vox.application.port.input.usecase.exam.ChangeClassTestBlueprintUseCase;
 import com.sep.vox.application.port.input.usecase.exam.CreateClassTestSectionUseCase;
 import com.sep.vox.application.port.input.usecase.exam.CreateClassTestUseCase;
 import com.sep.vox.application.port.input.usecase.exam.DeleteClassTestSectionUseCase;
@@ -27,6 +28,7 @@ import com.sep.vox.application.port.input.usecase.exam.UpdateExamUseCase;
 import com.sep.vox.application.response.input.exam.CreateClassTestResponse;
 import com.sep.vox.application.response.input.exam.DeleteExamResponse;
 import com.sep.vox.domain.dto.ExamDto;
+import com.sep.vox.interfaces.rest.dto.request.ChangeClassTestBlueprintRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateClassTestRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateClassTestSectionRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateClassTestQuestionsRequest;
@@ -34,6 +36,7 @@ import com.sep.vox.interfaces.rest.dto.request.UpdateClassTestSectionRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateExamRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateExamStatusRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
+import com.sep.vox.interfaces.rest.mapper.ChangeClassTestBlueprintCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateClassTestCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateClassTestSectionCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.UpdateClassTestQuestionsCommandMapper;
@@ -55,6 +58,7 @@ public class ClassTestController {
     private final CreateClassTestSectionUseCase createClassTestSectionUseCase;
     private final UpdateClassTestSectionUseCase updateClassTestSectionUseCase;
     private final DeleteClassTestSectionUseCase deleteClassTestSectionUseCase;
+    private final ChangeClassTestBlueprintUseCase changeClassTestBlueprintUseCase;
 
     public ClassTestController(
             CreateClassTestUseCase createClassTestUseCase,
@@ -64,7 +68,8 @@ public class ClassTestController {
             UpdateClassTestQuestionsUseCase updateClassTestQuestionsUseCase,
             CreateClassTestSectionUseCase createClassTestSectionUseCase,
             UpdateClassTestSectionUseCase updateClassTestSectionUseCase,
-            DeleteClassTestSectionUseCase deleteClassTestSectionUseCase) {
+            DeleteClassTestSectionUseCase deleteClassTestSectionUseCase,
+            ChangeClassTestBlueprintUseCase changeClassTestBlueprintUseCase) {
         this.createClassTestUseCase = createClassTestUseCase;
         this.updateExamUseCase = updateExamUseCase;
         this.updateExamStatusUseCase = updateExamStatusUseCase;
@@ -73,6 +78,7 @@ public class ClassTestController {
         this.createClassTestSectionUseCase = createClassTestSectionUseCase;
         this.updateClassTestSectionUseCase = updateClassTestSectionUseCase;
         this.deleteClassTestSectionUseCase = deleteClassTestSectionUseCase;
+        this.changeClassTestBlueprintUseCase = changeClassTestBlueprintUseCase;
     }
 
     @PostMapping
@@ -146,5 +152,14 @@ public class ClassTestController {
             @PathVariable UUID sectionId) {
         var data = deleteClassTestSectionUseCase.execute(new DeleteClassTestSectionCommand(examId, sectionId));
         return ResponseEntity.ok(ApiResponse.success("Xóa section thành công", data));
+    }
+
+    @PatchMapping("/{examId}/blueprint")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<ApiResponse<ExamDto>> changeBlueprint(
+            @PathVariable UUID examId,
+            @RequestBody ChangeClassTestBlueprintRequest request) {
+        var data = changeClassTestBlueprintUseCase.execute(ChangeClassTestBlueprintCommandMapper.fromRequest(examId, request));
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật blueprint cho bài kiểm tra trên lớp thành công", data));
     }
 }

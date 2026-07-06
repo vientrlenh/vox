@@ -16,9 +16,6 @@ import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamStatus;
-import com.sep.vox.domain.repository.ExamBlueprintSectionRepository;
-import com.sep.vox.domain.repository.ExamBlueprintSlotRepository;
-import com.sep.vox.domain.repository.ExamBlueprintVersionRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamPaperItemRepository;
 import com.sep.vox.domain.repository.ExamPaperRepository;
@@ -30,9 +27,6 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
 
     private final ExamRepository examRepository;
     private final ExamMemberRepository examMemberRepository;
-    private final ExamBlueprintVersionRepository examBlueprintVersionRepository;
-    private final ExamBlueprintSectionRepository examBlueprintSectionRepository;
-    private final ExamBlueprintSlotRepository examBlueprintSlotRepository;
     private final ExamPaperRepository examPaperRepository;
     private final ExamPaperSectionRepository examPaperSectionRepository;
     private final ExamPaperItemRepository examPaperItemRepository;
@@ -41,18 +35,12 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
     public DeleteClassTestSectionUseCase(
             ExamRepository examRepository,
             ExamMemberRepository examMemberRepository,
-            ExamBlueprintVersionRepository examBlueprintVersionRepository,
-            ExamBlueprintSectionRepository examBlueprintSectionRepository,
-            ExamBlueprintSlotRepository examBlueprintSlotRepository,
             ExamPaperRepository examPaperRepository,
             ExamPaperSectionRepository examPaperSectionRepository,
             ExamPaperItemRepository examPaperItemRepository,
             UserContextPort userContextPort) {
         this.examRepository = examRepository;
         this.examMemberRepository = examMemberRepository;
-        this.examBlueprintVersionRepository = examBlueprintVersionRepository;
-        this.examBlueprintSectionRepository = examBlueprintSectionRepository;
-        this.examBlueprintSlotRepository = examBlueprintSlotRepository;
         this.examPaperRepository = examPaperRepository;
         this.examPaperSectionRepository = examPaperSectionRepository;
         this.examPaperItemRepository = examPaperItemRepository;
@@ -72,28 +60,13 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
         if (!examMemberRepository.existsByExamIdAndUserIdAndRole(exam.getId(), currentUserId, ExamMemberRole.CHAIR)) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
-        if (exam.getStatus() != ExamStatus.SCHEDULED && exam.getStatus() != ExamStatus.IN_PROGRESS) {
-            throw new IllegalStateException("Chỉ được sửa câu hỏi khi bài kiểm tra chưa đóng/hủy");
+        if (exam.getStatus() != ExamStatus.SCHEDULED) {
+            throw new IllegalStateException("Chỉ được sửa khi bài kiểm tra chưa mở cho học sinh làm bài (đang ở trạng thái đã lên lịch)");
         }
         if (examRepository.existsSubmittedSessionByExamId(exam.getId())) {
             throw new IllegalStateException("Không thể sửa câu hỏi khi đã có học sinh nộp bài");
         }
-        requirePrivateBlueprint(exam);
-
-        var section = examBlueprintSectionRepository.findById(input.sectionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy section"));
-        var version = examBlueprintVersionRepository.findById(section.getBlueprintVersionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy version blueprint"));
-        if (!version.getBlueprintId().equals(exam.getBlueprintId())) {
-            throw new IllegalStateException("Section không thuộc bài kiểm tra này");
-        }
-
-        var allSections = examBlueprintSectionRepository.findByBlueprintVersionId(version.getId()).stream()
-            .sorted((a, b) -> Integer.compare(a.getOrder(), b.getOrder()))
-            .toList();
-        if (allSections.size() <= 1) {
-            throw new IllegalStateException("Bài kiểm tra trên lớp phải có ít nhất 1 section");
-        }
+        requireNoAttachedBlueprint(exam);
 
         var paper = examPaperRepository.findByExamId(exam.getId()).stream()
             .findFirst()
@@ -101,34 +74,20 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
         var allPaperSections = examPaperSectionRepository.findByPaperId(paper.getId()).stream()
             .sorted((a, b) -> Integer.compare(a.getOrder(), b.getOrder()))
             .toList();
+        if (allPaperSections.size() <= 1) {
+            throw new IllegalStateException("Bài kiểm tra trên lớp phải có ít nhất 1 section");
+        }
         var paperSection = allPaperSections.stream()
-            .filter(candidate -> candidate.getOrder() == section.getOrder())
+            .filter(candidate -> candidate.getId().equals(input.sectionId()))
             .findFirst()
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy section đề thi tương ứng"));
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy section"));
 
         for (var item : examPaperItemRepository.findBySectionId(paperSection.getId())) {
             examPaperItemRepository.deleteById(item.getId());
         }
         examPaperSectionRepository.deleteById(paperSection.getId());
 
-        for (var slot : examBlueprintSlotRepository.findBySectionId(section.getId())) {
-            examBlueprintSlotRepository.deleteById(slot.getId());
-        }
-        examBlueprintSectionRepository.deleteById(section.getId());
-
         var now = OffsetDateTime.now();
-        var remainingSections = allSections.stream().filter(item -> !item.getId().equals(section.getId())).toList();
-        for (int i = 0; i < remainingSections.size(); i++) {
-            var remaining = remainingSections.get(i);
-            var newOrder = i + 1;
-            if (remaining.getOrder() != newOrder) {
-                remaining.setOrder(newOrder);
-                remaining.setUpdatedAt(now);
-                remaining.setUpdatedBy(currentUserId);
-                examBlueprintSectionRepository.save(remaining);
-            }
-        }
-
         var remainingPaperSections = allPaperSections.stream().filter(item -> !item.getId().equals(paperSection.getId())).toList();
         for (int i = 0; i < remainingPaperSections.size(); i++) {
             var remaining = remainingPaperSections.get(i);
@@ -147,12 +106,10 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
         return ExamDtoMapper.toDto(saved);
     }
 
-    private void requirePrivateBlueprint(Exam exam) {
-        boolean sharedWithOtherExam = examRepository.findAllByBlueprintId(exam.getBlueprintId()).stream()
-            .anyMatch(other -> !other.getId().equals(exam.getId()));
-        if (sharedWithOtherExam) {
+    private void requireNoAttachedBlueprint(Exam exam) {
+        if (exam.getBlueprintId() != null) {
             throw new IllegalStateException(
-                "Blueprint đang được dùng chung cho kỳ thi/bài kiểm tra khác, không thể sửa câu hỏi trực tiếp ở đây");
+                "Bài đang dùng blueprint dùng chung, không thể sửa câu hỏi trực tiếp — dùng \"Đổi blueprint khác\" ở tab Blueprint để thay đổi cấu trúc");
         }
     }
 }

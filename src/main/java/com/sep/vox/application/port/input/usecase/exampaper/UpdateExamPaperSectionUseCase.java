@@ -12,25 +12,31 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.ExamPaperSectionDto;
 import com.sep.vox.domain.mapper.ExamPaperSectionDtoMapper;
+import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamPaperStatus;
+import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamPaperRepository;
 import com.sep.vox.domain.repository.ExamPaperSectionRepository;
+import com.sep.vox.domain.repository.ExamRepository;
 
 @Service
 public class UpdateExamPaperSectionUseCase implements IUseCase<UpdateExamPaperSectionCommand, ExamPaperSectionDto> {
 
+    private final ExamRepository examRepository;
     private final ExamPaperRepository examPaperRepository;
     private final ExamPaperSectionRepository examPaperSectionRepository;
     private final ExamMemberRepository examMemberRepository;
     private final UserContextPort userContextPort;
 
     public UpdateExamPaperSectionUseCase(
+            ExamRepository examRepository,
             ExamPaperRepository examPaperRepository,
             ExamPaperSectionRepository examPaperSectionRepository,
             ExamMemberRepository examMemberRepository,
             UserContextPort userContextPort) {
+        this.examRepository = examRepository;
         this.examPaperRepository = examPaperRepository;
         this.examPaperSectionRepository = examPaperSectionRepository;
         this.examMemberRepository = examMemberRepository;
@@ -48,10 +54,16 @@ public class UpdateExamPaperSectionUseCase implements IUseCase<UpdateExamPaperSe
         }
         var paper = examPaperRepository.findById(input.paperId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy đề thi"));
-        if (paper.getStatus() == ExamPaperStatus.LOCKED) {
+        var exam = examRepository.findById(paper.getExamId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+        if (exam.getKind() == ExamKind.CENTRALIZED && paper.getStatus() == ExamPaperStatus.LOCKED) {
             throw new IllegalStateException("Đề thi đã bị khoá, không thể sửa");
         }
-        if (!examMemberRepository.existsByExamIdAndUserIdAndRole(paper.getExamId(), currentUserId, ExamMemberRole.AUTHOR)) {
+        if (exam.getStatus() == ExamStatus.IN_PROGRESS) {
+            throw new IllegalStateException("Không thể sửa khi bài kiểm tra đang diễn ra");
+        }
+        var requiredRole = exam.getKind() == ExamKind.CLASS_TEST ? ExamMemberRole.CHAIR : ExamMemberRole.AUTHOR;
+        if (!examMemberRepository.existsByExamIdAndUserIdAndRole(paper.getExamId(), currentUserId, requiredRole)) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 

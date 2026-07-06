@@ -59,6 +59,20 @@ public class ExamQuestionSecureLockService {
     }
 
     @Transactional
+    public void unlockQuestion(UUID questionId, UUID currentUserId) {
+        var question = questionRepository.findById(questionId).orElse(null);
+        if (question == null || !question.isLocked()) {
+            return;
+        }
+        question.setLocked(false);
+        question.setConfidentiality(QuestionConfidentiality.RELEASED);
+        question.setSecurePoolId(null);
+        question.setUpdatedAt(OffsetDateTime.now());
+        question.setUpdatedBy(currentUserId);
+        questionRepository.save(question);
+    }
+
+    @Transactional
     public void releaseIfAutoAfterClose(UUID examId) {
         var pool = examSecurePoolRepository.findByExamId(examId).orElse(null);
         if (pool == null

@@ -155,12 +155,11 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             SchoolClass schoolClass,
             UUID currentUserId,
             OffsetDateTime now) {
-        var blueprint = createBlueprint(schoolClass.getSchoolId(), schoolClass.getLanguageId(), command.name(), currentUserId, now);
-        var version = createVersion(blueprint, now, currentUserId);
-        var exam = createExam(blueprint, version, schoolClass, command, currentUserId, now);
-        var paper = createPaper(exam, version.getId(), now, currentUserId);
+        // Chế độ "câu hỏi trực tiếp": không tạo blueprint ẩn nào — thao tác thẳng trên ExamPaperSection/ExamPaperItem
+        // để bài trên lớp thực sự tự do, không phụ thuộc lớp blueprint khi không dùng blueprint dùng chung.
+        var exam = createExam(null, null, schoolClass, command, currentUserId, now);
+        var paper = createPaper(exam, null, now, currentUserId);
 
-        var sectionWeights = distributeEqualWeights(command.sections().size());
         for (int i = 0; i < command.sections().size(); i++) {
             var sectionCommand = command.sections().get(i);
             List<Question> questions = new ArrayList<>();
@@ -169,14 +168,22 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
                     .findAccessibleById(questionId, currentUserId, schoolClass.getSchoolId(), false, false)
                     .orElseThrow(() -> new ForbiddenException("Khong co quyen dung cau hoi " + questionId));
                 validateCanUseQuestion(question, currentUserId);
-                validateQuestionUnlocked(question);
+                validateQuestionUnlocked(question, currentUserId);
                 questions.add(question);
             }
 
-            var section = createSection(version, sectionCommand.title(), sectionCommand.instruction(), i + 1, sectionWeights.get(i), now, currentUserId);
-            var slots = createSlots(section, version, questions, now, currentUserId);
-            var paperSection = createPaperSection(paper, section, now, currentUserId);
-            createPaperItems(paperSection, slots, exam.getId(), currentUserId);
+            var paperSection = examPaperSectionRepository.save(new ExamPaperSection(
+                paper.getId(),
+                i + 1,
+                sectionCommand.title(),
+                sectionCommand.instruction(),
+                null,
+                now,
+                now,
+                currentUserId,
+                currentUserId
+            ));
+            createPaperItemsDirect(paperSection, questions, exam.getId(), currentUserId);
         }
 
         examMemberRepository.save(new ExamMember(exam.getId(), currentUserId, ExamMemberRole.CHAIR, now, currentUserId));
@@ -215,14 +222,14 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             .collect(Collectors.groupingBy(ExamBlueprintSlot::getSectionId));
         validateVersionWeights(sections, slotsBySectionId);
 
-        var exam = createExam(blueprint, version, schoolClass, command, currentUserId, now);
+        var exam = createExam(blueprint.getId(), version.getId(), schoolClass, command, currentUserId, now);
         var paper = createPaper(exam, version.getId(), now, currentUserId);
 
         for (var section : sections) {
             var slots = slotsBySectionId.getOrDefault(section.getId(), List.of()).stream()
                 .sorted(Comparator.comparingInt(ExamBlueprintSlot::getOrder))
                 .toList();
-            validateReusableSlots(slots);
+            validateReusableSlots(slots, currentUserId);
 
             var paperSection = createPaperSection(paper, section, now, currentUserId);
             createPaperItems(paperSection, slots, exam.getId(), currentUserId);
@@ -266,90 +273,42 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             throw new IllegalStateException("Phai cung cap day du existingBlueprintId va existingBlueprintVersionId");
         }
         if (hasQuestions) {
+            var seenQuestionIds = new java.util.HashSet<UUID>();
             for (var section : command.sections()) {
                 if (section.questionIds() == null || section.questionIds().isEmpty()) {
                     throw new IllegalStateException("Moi section phai co it nhat 1 cau hoi");
+                }
+                for (var questionId : section.questionIds()) {
+                    if (!seenQuestionIds.add(questionId)) {
+                        throw new IllegalStateException("Mot cau hoi khong the xuat hien nhieu lan trong cung 1 bai kiem tra");
+                    }
                 }
             }
         }
     }
 
-    private ExamBlueprint createBlueprint(UUID schoolId, UUID languageId, String name, UUID currentUserId, OffsetDateTime now) {
-        var code = "CT-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase();
-        return examBlueprintRepository.save(new ExamBlueprint(
-            schoolId,
-            languageId,
-            null,
-            code,
-            "Class test blueprint - " + name,
-            null,
-            true,
-            now,
-            now,
-            currentUserId,
-            currentUserId
-        ));
-    }
-
-    private ExamBlueprintVersion createVersion(ExamBlueprint blueprint, OffsetDateTime now, UUID currentUserId) {
-        return examBlueprintVersionRepository.save(new ExamBlueprintVersion(
-            blueprint.getId(),
-            1,
-            blueprint.getCode() + "-V1",
-            null,
-            ExamBlueprintVersionStatus.PUBLISHED,
-            null,
-            now,
-            null,
-            now,
-            now,
-            currentUserId,
-            currentUserId
-        ));
-    }
-
-    private ExamBlueprintSection createSection(ExamBlueprintVersion version, String name, String instruction, int order, BigDecimal sectionWeight, OffsetDateTime now, UUID currentUserId) {
-        return examBlueprintSectionRepository.save(new ExamBlueprintSection(
-            version.getId(),
-            order,
-            name,
-            instruction,
-            null,
-            sectionWeight,
-            now,
-            now,
-            currentUserId,
-            currentUserId
-        ));
-    }
-
-    private List<ExamBlueprintSlot> createSlots(
-            ExamBlueprintSection section,
-            ExamBlueprintVersion version,
+    private void createPaperItemsDirect(
+            ExamPaperSection paperSection,
             List<Question> questions,
-            OffsetDateTime now,
+            UUID examId,
             UUID currentUserId) {
-        var slots = new ArrayList<ExamBlueprintSlot>();
-        var slotWeights = distributeEqualWeights(questions.size());
+        var weights = distributeEqualWeights(questions.size());
         for (int i = 0; i < questions.size(); i++) {
-            var slot = examBlueprintSlotRepository.save(new ExamBlueprintSlot(
-                section.getId(),
-                version.getId(),
-                i + 1,
-                slotWeights.get(i),
+            examPaperItemRepository.save(new ExamPaperItem(
                 null,
-                null,
-                ExamBlueprintSlotType.FIXED,
+                paperSection.getId(),
+                paperSection.getPaperId(),
                 questions.get(i).getId(),
-                null,
-                now,
-                now,
-                currentUserId,
-                currentUserId
+                i + 1,
+                weights.get(i)
             ));
-            slots.add(slot);
+            examQuestionSecureLockService.lockQuestionForExam(
+                questions.get(i).getId(),
+                examId,
+                ExamSecurePoolReleaseMode.AUTO_AFTER_CLOSE,
+                currentUserId
+            );
         }
-        return slots;
     }
 
     private List<BigDecimal> distributeEqualWeights(int count) {
@@ -365,8 +324,8 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
     }
 
     private Exam createExam(
-            ExamBlueprint blueprint,
-            ExamBlueprintVersion version,
+            UUID blueprintId,
+            UUID blueprintVersionId,
             SchoolClass schoolClass,
             CreateClassTestCommand command,
             UUID currentUserId,
@@ -376,8 +335,8 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         var closeAt = parseDateTime(command.closeAt());
         var status = openAt != null ? ExamStatus.SCHEDULED : ExamStatus.IN_PROGRESS;
         return examRepository.save(new Exam(
-            blueprint.getId(),
-            version.getId(),
+            blueprintId,
+            blueprintVersionId,
             code,
             command.name(),
             command.description(),
@@ -429,20 +388,23 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             UUID examId,
             UUID currentUserId) {
         for (var slot : slots) {
+            var questionId = slot.getSlotType() == ExamBlueprintSlotType.FIXED ? slot.getFixedQuestionId() : null;
             examPaperItemRepository.save(new ExamPaperItem(
                 slot.getId(),
                 paperSection.getId(),
                 paperSection.getPaperId(),
-                slot.getFixedQuestionId(),
+                questionId,
                 slot.getOrder(),
                 slot.getWeight()
             ));
-            examQuestionSecureLockService.lockQuestionForExam(
-                slot.getFixedQuestionId(),
-                examId,
-                ExamSecurePoolReleaseMode.AUTO_AFTER_CLOSE,
-                currentUserId
-            );
+            if (questionId != null) {
+                examQuestionSecureLockService.lockQuestionForExam(
+                    questionId,
+                    examId,
+                    ExamSecurePoolReleaseMode.AUTO_AFTER_CLOSE,
+                    currentUserId
+                );
+            }
         }
     }
 
@@ -468,17 +430,17 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         }
     }
 
-    private void validateReusableSlots(List<ExamBlueprintSlot> slots) {
+    private void validateReusableSlots(List<ExamBlueprintSlot> slots, UUID currentUserId) {
         for (var slot : slots) {
             if (slot.getSlotType() == ExamBlueprintSlotType.SELECTION) {
-                throw new IllegalStateException("Blueprint co slot SELECTION, khong dung truc tiep cho class test");
+                continue;
             }
             if (slot.getFixedQuestionId() == null) {
                 throw new IllegalStateException("Slot FIXED phai co fixedQuestionId");
             }
             var question = questionRepository.findById(slot.getFixedQuestionId())
                 .orElseThrow(() -> new NotFoundException("Khong tim thay cau hoi co dinh trong blueprint"));
-            validateQuestionUnlocked(question);
+            validateQuestionUnlocked(question, currentUserId);
         }
     }
 
@@ -493,8 +455,9 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         }
     }
 
-    private void validateQuestionUnlocked(Question question) {
-        if (question.isLocked()) {
+    private void validateQuestionUnlocked(Question question, UUID currentUserId) {
+        boolean isOwner = currentUserId.equals(question.getCreatedBy());
+        if (question.isLocked() && !isOwner) {
             throw new IllegalStateException("Cau hoi " + question.getCode() + " dang bi khoa boi ky thi khac");
         }
     }

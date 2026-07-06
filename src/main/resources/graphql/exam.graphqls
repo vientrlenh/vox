@@ -197,6 +197,9 @@ type ExamCandidate {
     assignedAt: String
     updatedAt: String
     student: User
+    assignedPaper: ExamPaper
+    schedule: ExamSchedule
+    exam: Exam
 }
 
 type ExamPage {
@@ -313,7 +316,7 @@ extend type Query {
 
     examBlueprint(id: ID!): ExamBlueprint
 
-    examSchedules(examId: ID!): [ExamSchedule!]!
+    examSchedules(examId: ID, status: ExamScheduleStatus, startDate: String, endDate: String): [ExamSchedule!]!
 
     examCandidates(examId: ID!, scheduleId: ID, status: ExamCandidateStatus): [ExamCandidate!]!
 }

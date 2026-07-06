@@ -1,5 +1,7 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -21,6 +23,7 @@ import com.sep.vox.domain.dto.ExamScheduleProctorDto;
 import com.sep.vox.domain.dto.SchoolRoomFromDto;
 import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.domain.mapper.ExamScheduleProctorDtoMapper;
+import com.sep.vox.domain.model.exam.ExamScheduleStatus;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamScheduleProctorRepository;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateExamScheduleInput;
@@ -46,8 +49,24 @@ public class ExamScheduleController {
     }
 
     @QueryMapping(name = "examSchedules")
-    public List<ExamScheduleDto> examSchedules(@Argument(name = "examId") UUID examId) {
-        return viewExamSchedulesUseCase.execute(new ViewExamSchedulesQuery(examId));
+    public List<ExamScheduleDto> examSchedules(
+            @Argument(name = "examId") UUID examId,
+            @Argument(name = "status") ExamScheduleStatus status,
+            @Argument(name = "startDate") String startDate,
+            @Argument(name = "endDate") String endDate) {
+        return viewExamSchedulesUseCase.execute(
+            new ViewExamSchedulesQuery(examId, status, parseOffset(startDate), parseOffset(endDate)));
+    }
+
+    private static OffsetDateTime parseOffset(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return OffsetDateTime.parse(value);
+        } catch (DateTimeParseException ex) {
+            throw new IllegalArgumentException("Định dạng thời gian không hợp lệ");
+        }
     }
 
     @SchemaMapping(typeName = "ExamSchedule", field = "room")

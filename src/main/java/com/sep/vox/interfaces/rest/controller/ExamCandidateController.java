@@ -18,6 +18,7 @@ import com.sep.vox.application.port.input.usecase.examcandidate.AssignExamCandid
 import com.sep.vox.application.port.input.usecase.examcandidate.AssignExamPapersUseCase;
 import com.sep.vox.application.port.input.usecase.examcandidate.AutoFillExamCandidatesUseCase;
 import com.sep.vox.application.port.input.usecase.examcandidate.ImportExamCandidatesFromClassUseCase;
+import com.sep.vox.application.port.input.usecase.examcandidate.ImportExamCandidatesFromGradeUseCase;
 import com.sep.vox.application.response.input.examcandidate.AssignExamPapersResponse;
 import com.sep.vox.domain.dto.ExamCandidateDto;
 import com.sep.vox.interfaces.rest.dto.request.AddExamCandidateRequest;
@@ -25,12 +26,14 @@ import com.sep.vox.interfaces.rest.dto.request.AssignExamCandidateScheduleReques
 import com.sep.vox.interfaces.rest.dto.request.AssignExamPapersRequest;
 import com.sep.vox.interfaces.rest.dto.request.AutoFillExamCandidatesRequest;
 import com.sep.vox.interfaces.rest.dto.request.ImportExamCandidatesFromClassRequest;
+import com.sep.vox.interfaces.rest.dto.request.ImportExamCandidatesFromGradeRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 import com.sep.vox.interfaces.rest.mapper.AddExamCandidateCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.AssignExamCandidateScheduleCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.AssignExamPapersCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.AutoFillExamCandidatesCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.ImportExamCandidatesFromClassCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.ImportExamCandidatesFromGradeCommandMapper;
 
 import jakarta.validation.Valid;
 
@@ -40,6 +43,7 @@ public class ExamCandidateController {
 
     private final AddExamCandidateUseCase addExamCandidateUseCase;
     private final ImportExamCandidatesFromClassUseCase importExamCandidatesFromClassUseCase;
+    private final ImportExamCandidatesFromGradeUseCase importExamCandidatesFromGradeUseCase;
     private final AssignExamCandidateScheduleUseCase assignExamCandidateScheduleUseCase;
     private final AutoFillExamCandidatesUseCase autoFillExamCandidatesUseCase;
     private final AssignExamPapersUseCase assignExamPapersUseCase;
@@ -47,11 +51,13 @@ public class ExamCandidateController {
     public ExamCandidateController(
             AddExamCandidateUseCase addExamCandidateUseCase,
             ImportExamCandidatesFromClassUseCase importExamCandidatesFromClassUseCase,
+            ImportExamCandidatesFromGradeUseCase importExamCandidatesFromGradeUseCase,
             AssignExamCandidateScheduleUseCase assignExamCandidateScheduleUseCase,
             AutoFillExamCandidatesUseCase autoFillExamCandidatesUseCase,
             AssignExamPapersUseCase assignExamPapersUseCase) {
         this.addExamCandidateUseCase = addExamCandidateUseCase;
         this.importExamCandidatesFromClassUseCase = importExamCandidatesFromClassUseCase;
+        this.importExamCandidatesFromGradeUseCase = importExamCandidatesFromGradeUseCase;
         this.assignExamCandidateScheduleUseCase = assignExamCandidateScheduleUseCase;
         this.autoFillExamCandidatesUseCase = autoFillExamCandidatesUseCase;
         this.assignExamPapersUseCase = assignExamPapersUseCase;
@@ -76,6 +82,17 @@ public class ExamCandidateController {
             ImportExamCandidatesFromClassCommandMapper.fromRequest(examId, request));
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Nhập thí sinh theo lớp thành công", data));
+    }
+
+    @PostMapping("/import-grade")
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
+    public ResponseEntity<ApiResponse<List<ExamCandidateDto>>> importGrade(
+            @PathVariable UUID examId,
+            @Valid @RequestBody ImportExamCandidatesFromGradeRequest request) {
+        var data = importExamCandidatesFromGradeUseCase.execute(
+            ImportExamCandidatesFromGradeCommandMapper.fromRequest(examId, request));
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .body(ApiResponse.success("Nhập thí sinh theo khối thành công", data));
     }
 
     @PutMapping("/{candidateId}/schedule")

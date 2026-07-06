@@ -17,6 +17,9 @@ import org.junit.jupiter.api.Test;
 import com.sep.vox.application.port.input.query.ViewExamCandidatesQuery;
 import com.sep.vox.application.port.input.usecase.examcandidate.ViewExamCandidatesUseCase;
 import com.sep.vox.domain.dto.ExamCandidateDto;
+import com.sep.vox.domain.dto.ExamDto;
+import com.sep.vox.domain.dto.ExamPaperDto;
+import com.sep.vox.domain.dto.ExamScheduleDto;
 import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.domain.model.exam.ExamCandidateStatus;
 
@@ -66,5 +69,82 @@ class ExamCandidateControllerTests {
 
         assertThat(result.join()).isSameAs(user);
         verify(loader).load(studentId);
+    }
+
+    @Test
+    void should_return_null_assigned_paper_when_not_assigned() {
+        var dto = new ExamCandidateDto(UUID.randomUUID(), examId, studentId, null, scheduleId,
+            "ASSIGNED", null, null);
+        DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
+
+        var result = controller.assignedPaper(dto, env);
+
+        assertThat(result.join()).isNull();
+        verify(env, org.mockito.Mockito.never()).getDataLoader(any());
+    }
+
+    @Test
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    void should_resolve_assigned_paper_via_data_loader() {
+        var paperId = UUID.randomUUID();
+        var dto = new ExamCandidateDto(UUID.randomUUID(), examId, studentId, paperId, scheduleId,
+            "ASSIGNED", null, null);
+        var paper = new ExamPaperDto(paperId, examId, null, "P1", 1, "LOCKED", null, null, null, null);
+        DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
+        DataLoader loader = mock(DataLoader.class);
+        when(env.<UUID, ExamPaperDto>getDataLoader("examPaperById")).thenReturn(loader);
+        when(loader.load(paperId)).thenReturn(CompletableFuture.completedFuture(paper));
+
+        var result = controller.assignedPaper(dto, env);
+
+        assertThat(result.join()).isSameAs(paper);
+        verify(loader).load(paperId);
+    }
+
+    @Test
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    void should_resolve_schedule_via_data_loader() {
+        var dto = new ExamCandidateDto(UUID.randomUUID(), examId, studentId, null, scheduleId,
+            "ASSIGNED", null, null);
+        var schedule = new ExamScheduleDto(scheduleId, examId, UUID.randomUUID(), null, null, "DRAFT", null);
+        DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
+        DataLoader loader = mock(DataLoader.class);
+        when(env.<UUID, ExamScheduleDto>getDataLoader("examScheduleById")).thenReturn(loader);
+        when(loader.load(scheduleId)).thenReturn(CompletableFuture.completedFuture(schedule));
+
+        var result = controller.schedule(dto, env);
+
+        assertThat(result.join()).isSameAs(schedule);
+        verify(loader).load(scheduleId);
+    }
+
+    @Test
+    void should_return_null_schedule_when_not_assigned() {
+        var dto = new ExamCandidateDto(UUID.randomUUID(), examId, studentId, null, null,
+            "ASSIGNED", null, null);
+        DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
+
+        var result = controller.schedule(dto, env);
+
+        assertThat(result.join()).isNull();
+        verify(env, org.mockito.Mockito.never()).getDataLoader(any());
+    }
+
+    @Test
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    void should_resolve_exam_via_data_loader() {
+        var dto = new ExamCandidateDto(UUID.randomUUID(), examId, studentId, null, scheduleId,
+            "ASSIGNED", null, null);
+        var exam = new ExamDto(examId, null, null, "E1", "Exam", null, UUID.randomUUID(), UUID.randomUUID(),
+            "CENTRALIZED", "LAB", "DRAFT", null, null, null, null, null, null, null, null);
+        DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
+        DataLoader loader = mock(DataLoader.class);
+        when(env.<UUID, ExamDto>getDataLoader("examById")).thenReturn(loader);
+        when(loader.load(examId)).thenReturn(CompletableFuture.completedFuture(exam));
+
+        var result = controller.exam(dto, env);
+
+        assertThat(result.join()).isSameAs(exam);
+        verify(loader).load(examId);
     }
 }

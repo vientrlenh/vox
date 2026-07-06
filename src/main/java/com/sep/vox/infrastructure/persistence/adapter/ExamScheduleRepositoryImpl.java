@@ -42,6 +42,23 @@ public class ExamScheduleRepositoryImpl implements ExamScheduleRepository {
     }
 
     @Override
+    public List<ExamSchedule> findBySchoolId(UUID schoolId) {
+        return springDataExamScheduleRepository.findBySchoolId(schoolId).stream()
+            .map(ExamScheduleMapper::toDomain)
+            .toList();
+    }
+
+    @Override
+    public List<ExamSchedule> findByIdIn(java.util.Collection<UUID> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        return springDataExamScheduleRepository.findByIdIn(ids).stream()
+            .map(ExamScheduleMapper::toDomain)
+            .toList();
+    }
+
+    @Override
     public ExamSchedule save(ExamSchedule schedule) {
         var saved = springDataExamScheduleRepository.save(ExamScheduleMapper.toJpa(schedule));
         return ExamScheduleMapper.toDomain(saved);

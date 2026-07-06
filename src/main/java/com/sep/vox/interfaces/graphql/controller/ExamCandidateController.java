@@ -15,6 +15,9 @@ import graphql.schema.DataFetchingEnvironment;
 import com.sep.vox.application.port.input.query.ViewExamCandidatesQuery;
 import com.sep.vox.application.port.input.usecase.examcandidate.ViewExamCandidatesUseCase;
 import com.sep.vox.domain.dto.ExamCandidateDto;
+import com.sep.vox.domain.dto.ExamDto;
+import com.sep.vox.domain.dto.ExamPaperDto;
+import com.sep.vox.domain.dto.ExamScheduleDto;
 import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.domain.model.exam.ExamCandidateStatus;
 
@@ -39,5 +42,29 @@ public class ExamCandidateController {
     public CompletableFuture<UserDto> student(ExamCandidateDto source, DataFetchingEnvironment env) {
         DataLoader<UUID, UserDto> loader = env.getDataLoader("userById");
         return loader.load(source.studentId());
+    }
+
+    @SchemaMapping(typeName = "ExamCandidate", field = "assignedPaper")
+    public CompletableFuture<ExamPaperDto> assignedPaper(ExamCandidateDto source, DataFetchingEnvironment env) {
+        if (source.assignedPaperId() == null) {
+            return CompletableFuture.completedFuture(null);
+        }
+        DataLoader<UUID, ExamPaperDto> loader = env.getDataLoader("examPaperById");
+        return loader.load(source.assignedPaperId());
+    }
+
+    @SchemaMapping(typeName = "ExamCandidate", field = "schedule")
+    public CompletableFuture<ExamScheduleDto> schedule(ExamCandidateDto source, DataFetchingEnvironment env) {
+        if (source.scheduleId() == null) {
+            return CompletableFuture.completedFuture(null);
+        }
+        DataLoader<UUID, ExamScheduleDto> loader = env.getDataLoader("examScheduleById");
+        return loader.load(source.scheduleId());
+    }
+
+    @SchemaMapping(typeName = "ExamCandidate", field = "exam")
+    public CompletableFuture<ExamDto> exam(ExamCandidateDto source, DataFetchingEnvironment env) {
+        DataLoader<UUID, ExamDto> loader = env.getDataLoader("examById");
+        return loader.load(source.examId());
     }
 }

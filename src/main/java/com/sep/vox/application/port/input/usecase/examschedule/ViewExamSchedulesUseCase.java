@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.examschedule;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +16,7 @@ import com.sep.vox.domain.dto.ExamScheduleDto;
 import com.sep.vox.domain.mapper.ExamScheduleDtoMapper;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
+import com.sep.vox.domain.model.exam.ExamSchedule;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
@@ -48,10 +50,42 @@ public class ViewExamSchedulesUseCase implements IUseCase<ViewExamSchedulesQuery
     @Override
     @Transactional(readOnly = true)
     public List<ExamScheduleDto> execute(ViewExamSchedulesQuery input) {
-        var exam = examRepository.findById(input.examId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
-        authorize(exam);
-        return ExamScheduleDtoMapper.toDtoList(examScheduleRepository.findByExamId(exam.getId()));
+        List<ExamSchedule> schedules;
+        if (input.examId() != null) {
+            var exam = examRepository.findById(input.examId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+            authorize(exam);
+            schedules = examScheduleRepository.findByExamId(exam.getId());
+        } else {
+            schedules = examScheduleRepository.findBySchoolId(authorizeSchoolWide());
+        }
+
+        var filtered = schedules.stream()
+            .filter(schedule -> input.status() == null
+                || input.status() == schedule.getStatus())
+            .filter(schedule -> input.startDate() == null
+                || (schedule.getStartDate() != null && !schedule.getStartDate().isBefore(input.startDate())))
+            .filter(schedule -> input.endDate() == null
+                || (schedule.getStartDate() != null && !schedule.getStartDate().isAfter(input.endDate())))
+            .toList();
+        return ExamScheduleDtoMapper.toDtoList(filtered);
+    }
+
+    /**
+     * Nhánh liệt kê ca thi toàn trường (khi không truyền examId): chỉ SCHOOL_ADMIN của một trường
+     * được phép; trả về schoolId để giới hạn kết quả theo đúng trường của người dùng.
+     */
+    private UUID authorizeSchoolWide() {
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+            .map(schoolUser -> schoolUser.getSchoolId())
+            .orElse(null);
+        var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
+        if (schoolAdmin && currentSchoolId != null) {
+            return currentSchoolId;
+        }
+        throw new ForbiddenException("Quyền truy cập bị từ chối");
     }
 
     private void authorize(Exam exam) {

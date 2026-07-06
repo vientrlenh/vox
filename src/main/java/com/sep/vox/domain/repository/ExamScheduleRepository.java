@@ -19,6 +19,12 @@ public interface ExamScheduleRepository {
     /** Danh sách ca thi của một bài kiểm tra (đã loại các ca DELETED). */
     List<ExamSchedule> findByExamId(UUID examId);
 
+    /** Danh sách ca thi của toàn trường (đã loại các ca DELETED). */
+    List<ExamSchedule> findBySchoolId(UUID schoolId);
+
+    /** Tìm nhiều ca thi theo id (dùng cho DataLoader batch). */
+    List<ExamSchedule> findByIdIn(java.util.Collection<UUID> ids);
+
     ExamSchedule save(ExamSchedule schedule);
 
     /**

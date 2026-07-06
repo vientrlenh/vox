@@ -29,6 +29,12 @@ public class ExamScheduleRepositoryImpl implements ExamScheduleRepository {
     }
 
     @Override
+    public Optional<ExamSchedule> findByIdForUpdate(UUID id) {
+        return springDataExamScheduleRepository.findByIdForUpdate(id)
+            .map(ExamScheduleMapper::toDomain);
+    }
+
+    @Override
     public List<ExamSchedule> findByExamId(UUID examId) {
         return springDataExamScheduleRepository.findByExamIdAndStatusNot(examId, ExamScheduleStatus.DELETED.name()).stream()
             .map(ExamScheduleMapper::toDomain)

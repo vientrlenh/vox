@@ -50,6 +50,14 @@ enum ExamScheduleStatus {
     DELETED
 }
 
+enum ExamCandidateStatus {
+    ASSIGNED
+    ABSENT
+    COMPLETED
+    EXEMPTED
+    CANCELLED
+}
+
 enum ExamSecurePoolStatus {
     SEALED
     RELEASED
@@ -179,6 +187,18 @@ input UpdateExamScheduleInput {
     endDate: String
 }
 
+type ExamCandidate {
+    id: ID!
+    examId: ID!
+    studentId: ID!
+    assignedPaperId: ID
+    scheduleId: ID
+    status: ExamCandidateStatus!
+    assignedAt: String
+    updatedAt: String
+    student: User
+}
+
 type ExamPage {
     content: [Exam!]!
     page: Int!
@@ -294,6 +314,8 @@ extend type Query {
     examBlueprint(id: ID!): ExamBlueprint
 
     examSchedules(examId: ID!): [ExamSchedule!]!
+
+    examCandidates(examId: ID!, scheduleId: ID, status: ExamCandidateStatus): [ExamCandidate!]!
 }
 
 extend type Mutation {

@@ -10,6 +10,12 @@ import com.sep.vox.domain.model.exam.ExamSchedule;
 public interface ExamScheduleRepository {
     Optional<ExamSchedule> findById(UUID id);
 
+    /**
+     * Tìm ca thi và khoá bi quan (PESSIMISTIC_WRITE) để kiểm soát sức chứa an toàn khi có tương tranh
+     * (gán thí sinh thủ công / auto-fill). Dùng trong cùng một transaction.
+     */
+    Optional<ExamSchedule> findByIdForUpdate(UUID id);
+
     /** Danh sách ca thi của một bài kiểm tra (đã loại các ca DELETED). */
     List<ExamSchedule> findByExamId(UUID examId);
 

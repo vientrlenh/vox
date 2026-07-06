@@ -92,7 +92,7 @@ public class SecurityConfig {
             .cors(cors -> cors
                 .configurationSource(corsConfigurationSource()))
             .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .headers(headers -> headers
                 .frameOptions(frame -> frame.sameOrigin())
                 .xssProtection(xss -> xss

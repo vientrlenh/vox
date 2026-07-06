@@ -32,6 +32,7 @@ import com.sep.vox.domain.model.exam.ExamBlueprintVersion;
 import com.sep.vox.domain.model.exam.ExamBlueprintVersionStatus;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamCandidateStatus;
+import com.sep.vox.domain.model.exam.ExamDeliveryMode;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMember;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
@@ -343,6 +344,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             schoolClass.getSchoolId(),
             schoolClass.getLanguageId(),
             ExamKind.CLASS_TEST,
+            ExamDeliveryMode.STUDENT_DEVICE,
             status,
             openAt,
             closeAt,

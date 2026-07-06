@@ -3,6 +3,11 @@ enum ExamKind {
     CLASS_TEST
 }
 
+enum ExamDeliveryMode {
+    STUDENT_DEVICE
+    LAB
+}
+
 enum ExamStatus {
     DRAFT
     SCHEDULED
@@ -34,6 +39,23 @@ enum ExamPaperStatus {
     IN_REVIEW
     APPROVED
     LOCKED
+}
+
+enum ExamScheduleStatus {
+    DRAFT
+    PUBLISHED
+    COMPLETED
+    MOVED
+    CANCELLED
+    DELETED
+}
+
+enum ExamCandidateStatus {
+    ASSIGNED
+    ABSENT
+    COMPLETED
+    EXEMPTED
+    CANCELLED
 }
 
 enum ExamSecurePoolStatus {
@@ -124,6 +146,7 @@ type Exam {
     schoolId: ID!
     languageId: ID!
     kind: ExamKind!
+    deliveryMode: ExamDeliveryMode
     status: ExamStatus!
     openAt: String
     closeAt: String
@@ -237,6 +260,47 @@ type ExamBlueprintPage {
     totalPages: Int!
 }
 
+type ExamScheduleProctor {
+    id: ID!
+    scheduleId: ID!
+    teacher: User
+}
+
+type ExamSchedule {
+    id: ID!
+    examId: ID!
+    schoolRoomId: ID
+    room: SchoolRoom
+    startDate: String
+    endDate: String
+    status: ExamScheduleStatus!
+    movedToScheduleId: ID
+    proctors: [ExamScheduleProctor!]!
+    candidateCount: Int!
+    requiredProctorCount: Int!
+}
+
+type ExamCandidate {
+    id: ID!
+    examId: ID!
+    studentId: ID!
+    assignedPaperId: ID
+    scheduleId: ID
+    status: ExamCandidateStatus!
+    assignedAt: String
+    updatedAt: String
+    student: User
+    assignedPaper: ExamPaper
+    schedule: ExamSchedule
+    exam: Exam
+}
+
+input UpdateExamScheduleInput {
+    schoolRoomId: ID
+    startDate: String
+    endDate: String
+}
+
 extend type Query {
     exams(
         kind: ExamKind,
@@ -274,4 +338,12 @@ extend type Query {
     ): ExamBlueprintPage!
 
     examBlueprint(id: ID!): ExamBlueprint
+
+    examSchedules(examId: ID, status: ExamScheduleStatus, startDate: String, endDate: String): [ExamSchedule!]!
+
+    examCandidates(examId: ID!, scheduleId: ID, status: ExamCandidateStatus): [ExamCandidate!]!
+}
+
+extend type Mutation {
+    updateExamSchedule(id: ID!, input: UpdateExamScheduleInput!): ID!
 }

@@ -6,5 +6,6 @@ public record AddSchoolRoomCommand(
         UUID schoolId,
         String code,
         String name,
-        String description
+        String description,
+        Integer capacity
 ) { }

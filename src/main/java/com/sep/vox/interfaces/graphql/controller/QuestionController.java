@@ -77,14 +77,14 @@ public class QuestionController {
 
     @QueryMapping(name = "questions")
     public PageResult<QuestionDto> questions(
-            @Argument UUID questionBankId,
-            @Argument UUID questionTopicId,
-            @Argument String topicName,
-            @Argument QuestionStatus status,
-            @Argument QuestionType type,
-            @Argument QuestionSharing sharing,
-            @Argument String scope,
-            @Argument String keyword,
+            @Argument(name = "questionBankId") UUID questionBankId,
+            @Argument(name = "questionTopicId") UUID questionTopicId,
+            @Argument(name = "topicName") String topicName,
+            @Argument(name = "status") QuestionStatus status,
+            @Argument(name = "type") QuestionType type,
+            @Argument(name = "sharing") QuestionSharing sharing,
+            @Argument(name = "scope") String scope,
+            @Argument(name = "keyword") String keyword,
             @Argument(name = "page") int page,
             @Argument(name = "size") int size) {
         validatePage(page, size);
@@ -105,14 +105,14 @@ public class QuestionController {
 
     @QueryMapping(name = "questionsForExamPaper")
     public PageResult<QuestionDto> questionsForExamPaper(
-            @Argument UUID questionBankId,
-            @Argument UUID questionTopicId,
-            @Argument String topicName,
-            @Argument QuestionStatus status,
-            @Argument QuestionType type,
-            @Argument QuestionSharing sharing,
-            @Argument String scope,
-            @Argument String keyword,
+            @Argument(name = "questionBankId") UUID questionBankId,
+            @Argument(name = "questionTopicId") UUID questionTopicId,
+            @Argument(name = "topicName") String topicName,
+            @Argument(name = "status") QuestionStatus status,
+            @Argument(name = "type") QuestionType type,
+            @Argument(name = "sharing") QuestionSharing sharing,
+            @Argument(name = "scope") String scope,
+            @Argument(name = "keyword") String keyword,
             @Argument(name = "page") int page,
             @Argument(name = "size") int size) {
         validatePage(page, size);

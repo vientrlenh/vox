@@ -57,6 +57,10 @@ public class AddSchoolRoomUseCase implements IUseCase<AddSchoolRoomCommand, UUID
             throw new DuplicatedException("Mã phòng học đã tồn tại trong trường.");
         }
 
+        if (command.capacity() == null || command.capacity() < 1) {
+            throw new IllegalArgumentException("Sức chứa phòng phải lớn hơn hoặc bằng 1.");
+        }
+
         // 4. Lưu dữ liệu
         SchoolRoom savedRoom = saveRoom(command, safeCode, currentUserId);
 
@@ -85,6 +89,7 @@ public class AddSchoolRoomUseCase implements IUseCase<AddSchoolRoomCommand, UUID
                 code,
                 StringNormalization.trimAndCollapseSpaces(command.name()),
                 StringNormalization.trimAndCollapseSpaces(command.description()),
+                command.capacity(),
                 false, now, now, creatorId, creatorId
         );
         return schoolRoomRepository.save(newRoom);

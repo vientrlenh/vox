@@ -23,6 +23,7 @@ public final class ExamDtoMapper {
             domain.getSchoolId(),
             domain.getLanguageId(),
             domain.getKind().name(),
+            domain.getDeliveryMode() == null ? null : domain.getDeliveryMode().name(),
             domain.getStatus().name(),
             valueOf(domain.getOpenAt()),
             valueOf(domain.getCloseAt()),

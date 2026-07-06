@@ -14,6 +14,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import com.sep.vox.application.exception.ConflictException;
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
@@ -27,6 +28,7 @@ public class GlobalExceptionHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     private static final String DUPLICATED_ERROR = "DUPLICATED";
+    private static final String CONFLICT_ERROR = "CONFLICT";
     private static final String NOT_FOUND_ERROR = "NOT_FOUND";
     private static final String ILLEGAL_ARGUMENT_ERROR = "ILLEGAL_ARGUMENT";
     private static final String INVALID_STATE_ERROR = "INVALID_STATE";
@@ -43,6 +45,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DuplicatedException.class)
     public ResponseEntity<ErrorResponse> handleDuplicate(DuplicatedException e) {
         var error = new ErrorResponse(DUPLICATED_ERROR, e.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<ErrorResponse> handleConflict(ConflictException e) {
+        var error = new ErrorResponse(CONFLICT_ERROR, e.getMessage());
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 

@@ -12,6 +12,7 @@ public record ExamDto(
     UUID schoolId,
     UUID languageId,
     String kind,
+    String deliveryMode,
     String status,
     String openAt,
     String closeAt,

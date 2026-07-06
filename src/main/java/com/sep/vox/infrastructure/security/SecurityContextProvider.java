@@ -20,6 +20,13 @@ public class SecurityContextProvider implements UserContextPort {
     }
 
     @Override
+    public UUID getCurrentSchoolId() {
+        var authentication = getAuthentication();
+        var userDetails = getUserDetails(authentication);
+        return userDetails.getSchoolId();
+    }
+
+    @Override
     public boolean isSystemAdmin() {
         var authentication = getAuthentication();
         var userDetails = getUserDetails(authentication);

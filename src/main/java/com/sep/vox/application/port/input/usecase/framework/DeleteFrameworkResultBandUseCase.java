@@ -1,7 +1,5 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
-import java.util.UUID;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,7 +10,6 @@ import com.sep.vox.domain.model.framework.FrameworkResultBand;
 import com.sep.vox.domain.model.framework.FrameworkVersion;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
 import com.sep.vox.domain.repository.FrameworkCriterionBandRepository;
-import com.sep.vox.domain.repository.FrameworkRepository;
 import com.sep.vox.domain.repository.FrameworkResultBandRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
 
@@ -20,17 +17,14 @@ import com.sep.vox.domain.repository.FrameworkVersionRepository;
 public class DeleteFrameworkResultBandUseCase
         implements IUseCase<DeleteFrameworkResultBandCommand, Void> {
 
-    private final FrameworkRepository frameworkRepository;
     private final FrameworkVersionRepository frameworkVersionRepository;
     private final FrameworkResultBandRepository frameworkResultBandRepository;
     private final FrameworkCriterionBandRepository frameworkCriterionBandRepository;
 
     public DeleteFrameworkResultBandUseCase(
-            FrameworkRepository frameworkRepository,
             FrameworkVersionRepository frameworkVersionRepository,
             FrameworkResultBandRepository frameworkResultBandRepository,
             FrameworkCriterionBandRepository frameworkCriterionBandRepository) {
-        this.frameworkRepository = frameworkRepository;
         this.frameworkVersionRepository = frameworkVersionRepository;
         this.frameworkResultBandRepository = frameworkResultBandRepository;
         this.frameworkCriterionBandRepository = frameworkCriterionBandRepository;
@@ -39,19 +33,23 @@ public class DeleteFrameworkResultBandUseCase
     @Override
     @Transactional
     public Void execute(DeleteFrameworkResultBandCommand command) {
-        frameworkRepository.findById(command.frameworkId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy khung năng lực"));
-
-        FrameworkVersion version = frameworkVersionRepository.findById(command.versionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản framework"));
-
-        FrameworkResultBand band = frameworkResultBandRepository.findById(command.bandId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy mức kết quả"));
+        FrameworkVersion version = getVersion(command);
+        FrameworkResultBand band = getBand(command);
 
         checkValidRequest(command, version, band);
 
         frameworkResultBandRepository.deleteById(command.bandId());
         return null;
+    }
+
+    private FrameworkVersion getVersion(DeleteFrameworkResultBandCommand command) {
+        return frameworkVersionRepository.findFrameworkVersionById(command.versionId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản khung năng lực"));
+    }
+
+    private FrameworkResultBand getBand(DeleteFrameworkResultBandCommand command) {
+        return frameworkResultBandRepository.findById(command.bandId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy mức kết quả"));
     }
 
     private void checkValidRequest(DeleteFrameworkResultBandCommand command, FrameworkVersion version, FrameworkResultBand band) {

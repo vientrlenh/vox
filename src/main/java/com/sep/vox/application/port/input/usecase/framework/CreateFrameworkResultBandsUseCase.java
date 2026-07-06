@@ -20,7 +20,6 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.framework.FrameworkResultBand;
 import com.sep.vox.domain.model.framework.FrameworkVersion;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
-import com.sep.vox.domain.repository.FrameworkRepository;
 import com.sep.vox.domain.repository.FrameworkResultBandRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
 
@@ -28,17 +27,14 @@ import com.sep.vox.domain.repository.FrameworkVersionRepository;
 public class CreateFrameworkResultBandsUseCase
         implements IUseCase<CreateFrameworkResultBandsCommand, List<UUID>> {
 
-    private final FrameworkRepository frameworkRepository;
     private final FrameworkVersionRepository frameworkVersionRepository;
     private final FrameworkResultBandRepository frameworkResultBandRepository;
     private final UserContextPort userContextPort;
 
     public CreateFrameworkResultBandsUseCase(
-            FrameworkRepository frameworkRepository,
             FrameworkVersionRepository frameworkVersionRepository,
             FrameworkResultBandRepository frameworkResultBandRepository,
             UserContextPort userContextPort) {
-        this.frameworkRepository = frameworkRepository;
         this.frameworkVersionRepository = frameworkVersionRepository;
         this.frameworkResultBandRepository = frameworkResultBandRepository;
         this.userContextPort = userContextPort;
@@ -50,13 +46,8 @@ public class CreateFrameworkResultBandsUseCase
         UUID userId = userContextPort.getCurrentAuthenticatedUserId();
         OffsetDateTime now = OffsetDateTime.now();
 
-        frameworkRepository.findById(command.frameworkId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy khung năng lực"));
-
-        FrameworkVersion version = frameworkVersionRepository.findById(command.versionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản khung năng lực"));
-
-        checkValidRequest(command, version);
+        FrameworkVersion version = getVersion(command);
+        validateRequest(command, version);
 
         List<FrameworkResultBand> bandsToSave = new ArrayList<>();
         for (var bandCmd : command.bands()) {
@@ -72,29 +63,24 @@ public class CreateFrameworkResultBandsUseCase
         }
 
         try {
-            frameworkResultBandRepository.saveAll(bandsToSave);
+            List<FrameworkResultBand> savedBands = frameworkResultBandRepository.saveAll(bandsToSave);
+            return savedBands.stream().map(frb -> frb.getId()).collect(Collectors.toList());
         } catch (DataIntegrityViolationException e) {
             throw new IllegalStateException("Mã hoặc nhãn kết quả đã tồn tại cho phiên bản này", e);
         }
-
-        return bandsToSave.stream().map(FrameworkResultBand::getId).collect(Collectors.toList());
     }
 
-    private void checkValidRequest(CreateFrameworkResultBandsCommand command, FrameworkVersion version) {
+    private FrameworkVersion getVersion(CreateFrameworkResultBandsCommand command) {
+        return frameworkVersionRepository.findFrameworkVersionById(command.versionId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản khung năng lực"));
+    }
+
+    private void validateRequest(CreateFrameworkResultBandsCommand command, FrameworkVersion version) {
         if (!version.getFrameworkId().equals(command.frameworkId()))
             throw new IllegalArgumentException("Phiên bản không thuộc khung năng lực này");
 
         if (version.getStatus() != FrameworkVersionStatus.DRAFT)
             throw new IllegalStateException("Chỉ có thể thêm mức kết quả khi phiên bản đang ở trạng thái DRAFT");
-
-        List<FrameworkResultBand> existingBands = frameworkResultBandRepository
-            .findByFrameworkVersionId(command.versionId());
-        Set<String> existingCodes = existingBands.stream()
-            .map(b -> StringNormalization.normalizeCode(b.getCode()))
-            .collect(Collectors.toSet());
-        Set<String> existingLabels = existingBands.stream()
-            .map(b -> StringNormalization.trimAndCollapseSpaces(b.getLabel()))
-            .collect(Collectors.toSet());
 
         Set<String> requestCodes = new HashSet<>();
         Set<String> requestLabels = new HashSet<>();
@@ -108,12 +94,12 @@ public class CreateFrameworkResultBandsUseCase
             if (!requestLabels.add(safeLabel)) {
                 throw new IllegalArgumentException("Dữ liệu gửi lên bị trùng lặp nhãn kết quả: " + safeLabel);
             }
-            if (existingCodes.contains(safeCode)) {
-                throw new IllegalArgumentException("Mã kết quả đã tồn tại: " + safeCode);
-            }
-            if (existingLabels.contains(safeLabel)) {
-                throw new IllegalArgumentException("Nhãn kết quả đã tồn tại: " + safeLabel);
-            }
         }
+
+        if (frameworkResultBandRepository.existsByFrameworkVersionIdAndCodeIn(command.versionId(), requestCodes))
+            throw new IllegalStateException("Mã kết quả đã tồn tại");
+
+        if (frameworkResultBandRepository.existsByFrameworkVersionIdAndLabelIn(command.versionId(), requestLabels))
+            throw new IllegalStateException("Nhãn kết quả đã tồn tại");
     }
 }

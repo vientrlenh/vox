@@ -34,15 +34,19 @@ public class CreateFrameworkUseCase implements IUseCase<CreateFrameworkCommand, 
         var code = StringNormalization.normalizeCode(input.code());
         var name = StringNormalization.trimAndCollapseSpaces(input.name());
         var description = StringNormalization.trimAndCollapseSpaces(input.description());
-
-        frameworkRepository.findByCode(code)
-            .ifPresent(f -> { throw new DuplicatedException("Mã framework đã tồn tại"); });
-
         var now = OffsetDateTime.now();
         var userId = userContextPort.getCurrentAuthenticatedUserId();
-        var framework = new Framework(new FrameworkCode(code), name, description, input.isActive(), now, now, userId, userId);
+
+        var framework = new Framework(
+            new FrameworkCode(code), 
+            name, 
+            description, 
+            input.isActive(), 
+            now, now, 
+            userId, userId);
+        
         try {
-            return frameworkRepository.save(framework).getId();
+            return frameworkRepository.saveFramework(framework).getId();
         } catch (DataIntegrityViolationException e) {
             throw new DuplicatedException("Mã framework đã tồn tại");
         }

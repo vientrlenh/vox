@@ -52,7 +52,7 @@ public class ViewFrameworksUseCaseTests {
             1
         );
 
-        when(frameworkRepository.findAll(1, 10, null, null))
+        when(frameworkRepository.findAllFrameworks(1, 10, null, null))
             .thenReturn(pageResult);
 
         var result = useCase.execute(query);
@@ -61,7 +61,7 @@ public class ViewFrameworksUseCaseTests {
         assertThat(result.page()).isEqualTo(1);
         assertThat(result.size()).isEqualTo(10);
         assertThat(result.totalElements()).isEqualTo(2);
-        verify(frameworkRepository).findAll(1, 10, null, null);
+        verify(frameworkRepository).findAllFrameworks(1, 10, null, null);
     }
 
     @Test
@@ -69,7 +69,7 @@ public class ViewFrameworksUseCaseTests {
         var query = new ViewFrameworksQuery(1, 10, null, null);
         var emptyPage = new PageResult<Framework>(List.of(), 1, 10, 0, 0);
 
-        when(frameworkRepository.findAll(1, 10, null, null))
+        when(frameworkRepository.findAllFrameworks(1, 10, null, null))
             .thenReturn(emptyPage);
 
         var result = useCase.execute(query);
@@ -95,11 +95,11 @@ public class ViewFrameworksUseCaseTests {
             1
         );
 
-        when(frameworkRepository.findAll(2, 10, null, null))
+        when(frameworkRepository.findAllFrameworks(2, 10, null, null))
             .thenReturn(pageResult);
 
         useCase.execute(query);
 
-        verify(frameworkRepository).findAll(2, 10, null, null);
+        verify(frameworkRepository).findAllFrameworks(2, 10, null, null);
     }
 }

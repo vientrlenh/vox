@@ -42,14 +42,14 @@ public class ViewFrameworkDetailsUseCaseTests {
             true, now, now, null, null
         );
 
-        when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
+        when(frameworkRepository.findFrameworkById(frameworkId)).thenReturn(Optional.of(framework));
 
         var result = useCase.execute(query);
 
         assertThat(result.id()).isEqualTo(frameworkId);
         assertThat(result.name()).isEqualTo("CEFR Framework");
         assertThat(result.isActive()).isTrue();
-        verify(frameworkRepository).findById(frameworkId);
+        verify(frameworkRepository).findFrameworkById(frameworkId);
     }
 
     @Test
@@ -57,7 +57,7 @@ public class ViewFrameworkDetailsUseCaseTests {
         var frameworkId = UUID.randomUUID();
         var query = new ViewFrameworkDetailsQuery(frameworkId);
 
-        when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.empty());
+        when(frameworkRepository.findFrameworkById(frameworkId)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> useCase.execute(query));
     }
@@ -72,7 +72,7 @@ public class ViewFrameworkDetailsUseCaseTests {
             false, now, now, null, null
         );
 
-        when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
+        when(frameworkRepository.findFrameworkById(frameworkId)).thenReturn(Optional.of(framework));
 
         var result = useCase.execute(query);
 

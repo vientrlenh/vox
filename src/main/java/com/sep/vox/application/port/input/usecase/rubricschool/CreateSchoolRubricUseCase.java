@@ -75,7 +75,7 @@ public class CreateSchoolRubricUseCase implements IUseCase<CreateSchoolRubricCom
             throw new NotFoundException("Ngôn ngữ chỉ định không tồn tại trên hệ thống.");
         }
 
-        Framework framework = frameworkRepository.findById(command.frameworkId())
+        Framework framework = frameworkRepository.findFrameworkById(command.frameworkId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy Khung tiêu chuẩn (Framework)."));
         if (!framework.isActive()) {
             throw new IllegalStateException("Khung tiêu chuẩn (Framework) này đã bị vô hiệu hóa.");

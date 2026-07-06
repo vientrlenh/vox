@@ -11,7 +11,6 @@ import org.dataloader.BatchLoaderEnvironment;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.graphql.execution.BatchLoaderRegistry;
 
-import com.sep.vox.application.mapper.framework.FrameworkCriterionDtoMapper;
 import com.sep.vox.domain.dto.FrameworkCriterionDto;
 import com.sep.vox.domain.dto.FrameworkResultBandDto;
 import com.sep.vox.domain.mapper.FrameworkResultBandDtoMapper;
@@ -48,7 +47,7 @@ public class FrameworkGraphQlDataLoaderConfig {
                     .collect(Collectors.groupingBy(b -> b.getFrameworkCriterionId()));
 
                 var criteriaByVersionId = criteria.stream()
-                    .map(c -> FrameworkCriterionDtoMapper.toDto(c, bandsByCriterionId.getOrDefault(c.getId(), List.of())))
+                    .map(c -> FrameworkCriterionDto.of(c, bandsByCriterionId.getOrDefault(c.getId(), List.of())))
                     .collect(Collectors.groupingBy(b -> b.frameworkVersionId()));
 
                 result.putAll(criteriaByVersionId);

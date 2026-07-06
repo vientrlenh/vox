@@ -13,24 +13,20 @@ import com.sep.vox.domain.model.framework.FrameworkVersion;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
 import com.sep.vox.domain.repository.FrameworkCriterionBandRepository;
 import com.sep.vox.domain.repository.FrameworkCriterionRepository;
-import com.sep.vox.domain.repository.FrameworkRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
 
 @Service
 public class DeleteFrameworkCriterionBandUseCase
         implements IUseCase<DeleteFrameworkCriterionBandCommand, Void> {
 
-    private final FrameworkRepository frameworkRepository;
     private final FrameworkVersionRepository frameworkVersionRepository;
     private final FrameworkCriterionRepository frameworkCriterionRepository;
     private final FrameworkCriterionBandRepository frameworkCriterionBandRepository;
 
     public DeleteFrameworkCriterionBandUseCase(
-            FrameworkRepository frameworkRepository,
             FrameworkVersionRepository frameworkVersionRepository,
             FrameworkCriterionRepository frameworkCriterionRepository,
             FrameworkCriterionBandRepository frameworkCriterionBandRepository) {
-        this.frameworkRepository = frameworkRepository;
         this.frameworkVersionRepository = frameworkVersionRepository;
         this.frameworkCriterionRepository = frameworkCriterionRepository;
         this.frameworkCriterionBandRepository = frameworkCriterionBandRepository;
@@ -39,22 +35,28 @@ public class DeleteFrameworkCriterionBandUseCase
     @Override
     @Transactional
     public Void execute(DeleteFrameworkCriterionBandCommand command) {
-        frameworkRepository.findById(command.frameworkId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy khung năng lực"));
-
-        FrameworkVersion version = frameworkVersionRepository.findById(command.versionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản framework"));
-
-        FrameworkCriterion criterion = frameworkCriterionRepository.findById(command.criterionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy tiêu chí"));
-
-        FrameworkCriterionBand band = frameworkCriterionBandRepository.findById(command.bandId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy mức đánh giá"));
+        FrameworkVersion version = getVersion(command);
+        FrameworkCriterion criterion = getCriterion(command);
+        FrameworkCriterionBand band = getBand(command);
 
         checkValidRequest(command, version, criterion, band);
-
         frameworkCriterionBandRepository.deleteById(command.bandId());
         return null;
+    }
+
+    private FrameworkVersion getVersion(DeleteFrameworkCriterionBandCommand command) {
+        return frameworkVersionRepository.findFrameworkVersionById(command.versionId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản khung năng lực"));
+    }
+
+    private FrameworkCriterion getCriterion(DeleteFrameworkCriterionBandCommand command) {
+        return frameworkCriterionRepository.findById(command.criterionId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy tiêu chí"));
+    }
+
+    private FrameworkCriterionBand getBand(DeleteFrameworkCriterionBandCommand command) {
+        return frameworkCriterionBandRepository.findById(command.bandId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy mức đánh giá"));
     }
 
     private void checkValidRequest(DeleteFrameworkCriterionBandCommand command, FrameworkVersion version,

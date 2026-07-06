@@ -10,6 +10,7 @@ import java.util.UUID;
 public interface FrameworkCriterionRepository {
     boolean existsByFrameworkVersionId(UUID frameworkVersionId);
     boolean existsByFrameworkVersionIdAndCodeAndIdNot(UUID frameworkVersionId, String code, UUID id);
+    boolean existsByFrameworkVersionIdAndCodeIn(UUID frameworkVersionId, Collection<String> codes);
     Optional<FrameworkCriterion> findById(UUID id);
     List<FrameworkCriterion> findAllByIds(List<UUID> ids);
     List<FrameworkCriterion> findByFrameworkVersionId(UUID frameworkVersionId);

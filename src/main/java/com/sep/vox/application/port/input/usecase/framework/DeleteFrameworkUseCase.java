@@ -23,14 +23,14 @@ public class DeleteFrameworkUseCase implements IUseCase<DeleteFrameworkCommand, 
     @Override
     @Transactional
     public Void execute(DeleteFrameworkCommand input) {
-        frameworkRepository.findById(input.frameworkId())
+        frameworkRepository.findFrameworkById(input.frameworkId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy framework"));
 
         if (frameworkVersionRepository.existsByFrameworkId(input.frameworkId())) {
             throw new IllegalStateException("Không thể xóa framework đang có phiên bản");
         }
 
-        frameworkRepository.deleteById(input.frameworkId());
+        frameworkRepository.deleteFrameworkById(input.frameworkId());
         return null;
     }
 }

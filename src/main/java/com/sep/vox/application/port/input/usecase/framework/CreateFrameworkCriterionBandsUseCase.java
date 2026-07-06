@@ -1,8 +1,6 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -20,11 +18,11 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.framework.FrameworkCriterion;
 import com.sep.vox.domain.model.framework.FrameworkCriterionBand;
+import com.sep.vox.domain.model.framework.FrameworkResultBand;
 import com.sep.vox.domain.model.framework.FrameworkVersion;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
 import com.sep.vox.domain.repository.FrameworkCriterionBandRepository;
 import com.sep.vox.domain.repository.FrameworkCriterionRepository;
-import com.sep.vox.domain.repository.FrameworkRepository;
 import com.sep.vox.domain.repository.FrameworkResultBandRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
 
@@ -32,7 +30,6 @@ import com.sep.vox.domain.repository.FrameworkVersionRepository;
 public class CreateFrameworkCriterionBandsUseCase
         implements IUseCase<CreateFrameworkCriterionBandsCommand, List<UUID>> {
 
-    private final FrameworkRepository frameworkRepository;
     private final FrameworkVersionRepository frameworkVersionRepository;
     private final FrameworkCriterionRepository frameworkCriterionRepository;
     private final FrameworkCriterionBandRepository frameworkCriterionBandRepository;
@@ -40,13 +37,11 @@ public class CreateFrameworkCriterionBandsUseCase
     private final UserContextPort userContextPort;
 
     public CreateFrameworkCriterionBandsUseCase(
-            FrameworkRepository frameworkRepository,
             FrameworkVersionRepository frameworkVersionRepository,
             FrameworkCriterionRepository frameworkCriterionRepository,
             FrameworkCriterionBandRepository frameworkCriterionBandRepository,
             FrameworkResultBandRepository frameworkResultBandRepository,
             UserContextPort userContextPort) {
-        this.frameworkRepository = frameworkRepository;
         this.frameworkVersionRepository = frameworkVersionRepository;
         this.frameworkCriterionRepository = frameworkCriterionRepository;
         this.frameworkCriterionBandRepository = frameworkCriterionBandRepository;
@@ -60,62 +55,65 @@ public class CreateFrameworkCriterionBandsUseCase
         UUID userId = userContextPort.getCurrentAuthenticatedUserId();
         OffsetDateTime now = OffsetDateTime.now();
 
-        frameworkRepository.findById(command.frameworkId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy khung năng lực"));
+        FrameworkVersion version = getVersion(command);
+        FrameworkCriterion criterion = getCriterion(command);
 
-        FrameworkVersion version = frameworkVersionRepository.findById(command.versionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản khung năng lực"));
+        Set<String> requestedCodes = command.bands().stream()
+                .map(b -> StringNormalization.normalizeCode(b.resultBandCode()))
+                .collect(Collectors.toSet());
 
-        FrameworkCriterion criterion = frameworkCriterionRepository.findById(command.criterionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy tiêu chí"));
+        if (requestedCodes.size() != command.bands().size())
+            throw new IllegalArgumentException("Dữ liệu gửi lên bị trùng lặp mã kết quả");
 
-        Map<String, UUID> resultBandCodeToId = frameworkResultBandRepository.findByFrameworkVersionId(command.versionId())
-                .stream().collect(Collectors.toMap(frb -> frb.getCode(), frb -> frb.getId()));
+        List<FrameworkResultBand> existingBands = frameworkResultBandRepository.findByFrameworkVersionIdAndCodeIn(command.versionId(), requestedCodes);
+
+        if (existingBands.size() != requestedCodes.size())
+            throw new IllegalArgumentException("Một hoặc nhiều mã kết quả không tồn tại trong phiên bản này");
+
+        Map<String, UUID> resultBandCodeToId = existingBands.stream()
+                        .collect(Collectors.toMap(frb -> frb.getCode(), frb -> frb.getId()));
 
         checkValidRequest(command, version, criterion, resultBandCodeToId);
 
-        List<FrameworkCriterionBand> bandsToSave = new ArrayList<>();
-        for (var bandCmd : command.bands()) {
+        List<FrameworkCriterionBand> bandsToCreate = command.bands().stream().map(bandCmd -> {
             String safeCode = StringNormalization.normalizeCode(bandCmd.resultBandCode());
-            UUID resultBandId = resultBandCodeToId.get(safeCode);
-            bandsToSave.add(new FrameworkCriterionBand(
+            return new FrameworkCriterionBand(
                     command.criterionId(),
-                    resultBandId,
+                    resultBandCodeToId.get(safeCode),
                     StringNormalization.trimAndCollapseSpaces(bandCmd.descriptor()),
                     bandCmd.positiveSignals(),
                     bandCmd.negativeSignals(),
-                    now, now, userId, userId));
-        }
+                    now, now, userId, userId);
+            }).collect(Collectors.toList());
 
         try {
-            frameworkCriterionBandRepository.saveAll(bandsToSave);
+            return frameworkCriterionBandRepository.saveAll(bandsToCreate)
+                    .stream()
+                    .map(fcb -> fcb.getId())
+                    .collect(Collectors.toList());
         } catch (DataIntegrityViolationException e) {
-            throw new IllegalStateException("Mức đánh giá đã tồn tại cho tiêu chí và kết quả này", e);
+            throw new IllegalStateException("Mã kết quả đã được gán mức đánh giá cho tiêu chí này", e);
         }
+    }
 
-        return bandsToSave.stream().map(fcb -> fcb.getId()).collect(Collectors.toList());
+    private FrameworkVersion getVersion(CreateFrameworkCriterionBandsCommand command) {
+        return frameworkVersionRepository.findFrameworkVersionById(command.versionId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản khung năng lực"));
+    }
+
+    private FrameworkCriterion getCriterion(CreateFrameworkCriterionBandsCommand command) {
+        return frameworkCriterionRepository.findById(command.criterionId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy tiêu chí"));
     }
 
     private void checkValidRequest(CreateFrameworkCriterionBandsCommand command, FrameworkVersion version, FrameworkCriterion criterion, Map<String, UUID> resultBandCodeToId) {
-        if (!version.getFrameworkId().equals(command.frameworkId())) {
+        if (!version.getFrameworkId().equals(command.frameworkId()))
             throw new IllegalArgumentException("Phiên bản không thuộc khung năng lực này");
-        }
-        if (version.getStatus() != FrameworkVersionStatus.DRAFT) {
-            throw new IllegalStateException("Chỉ có thể thêm mức đánh giá khi phiên bản đang ở trạng thái DRAFT");
-        }
-        if (!criterion.getFrameworkVersionId().equals(command.versionId())) {
-            throw new IllegalArgumentException("Tiêu chí không thuộc phiên bản này");
-        }
 
-        Set<String> uniqueCodes = new HashSet<>();
-        for (var bandCmd : command.bands()) {
-            String safeCode = StringNormalization.normalizeCode(bandCmd.resultBandCode());
-            if (!uniqueCodes.add(safeCode)) {
-                throw new IllegalArgumentException("Dữ liệu gửi lên bị trùng lặp mã kết quả: " + safeCode);
-            }
-            if (!resultBandCodeToId.containsKey(safeCode)) {
-                throw new IllegalArgumentException("Không tìm thấy kết quả với mã: " + safeCode);
-            }
-        }
+        if (version.getStatus() != FrameworkVersionStatus.DRAFT)
+            throw new IllegalStateException("Chỉ có thể thêm mức đánh giá khi phiên bản đang ở trạng thái DRAFT");
+        
+        if (!criterion.getFrameworkVersionId().equals(command.versionId()))
+            throw new IllegalArgumentException("Tiêu chí không thuộc phiên bản này");
     }
 }

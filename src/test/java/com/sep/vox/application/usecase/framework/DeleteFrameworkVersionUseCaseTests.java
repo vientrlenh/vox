@@ -51,7 +51,6 @@ public class DeleteFrameworkVersionUseCaseTests {
         frameworkResultBandRepository = mock(FrameworkResultBandRepository.class);
         assessmentPolicyRepository = mock(AssessmentPolicyRepository.class);
         useCase = new DeleteFrameworkVersionUseCase(
-            frameworkRepository,
             frameworkVersionRepository,
             frameworkCriterionRepository,
             frameworkCriterionBandRepository,
@@ -78,8 +77,8 @@ public class DeleteFrameworkVersionUseCaseTests {
         var criterion2 = new FrameworkCriterion();
         criterion2.setId(UUID.randomUUID());
 
-        when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
-        when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.of(version));
+        when(frameworkRepository.findFrameworkById(frameworkId)).thenReturn(Optional.of(framework));
+        when(frameworkVersionRepository.findFrameworkVersionByIdForUpdate(versionId)).thenReturn(Optional.of(version));
         when(frameworkCriterionRepository.findByFrameworkVersionId(versionId))
             .thenReturn(List.of(criterion1, criterion2));
 
@@ -89,7 +88,7 @@ public class DeleteFrameworkVersionUseCaseTests {
             List.of(criterion1.getId(), criterion2.getId()));
         verify(frameworkCriterionRepository).deleteByFrameworkVersionId(versionId);
         verify(frameworkResultBandRepository).deleteByFrameworkVersionId(versionId);
-        verify(frameworkVersionRepository).deleteById(versionId);
+        verify(frameworkVersionRepository).deleteFrameworkVersionById(versionId);
     }
 
     @Test
@@ -105,12 +104,12 @@ public class DeleteFrameworkVersionUseCaseTests {
         version.setFrameworkId(frameworkId);
         version.setStatus(FrameworkVersionStatus.PUBLISHED);
 
-        when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
-        when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.of(version));
+        when(frameworkRepository.findFrameworkById(frameworkId)).thenReturn(Optional.of(framework));
+        when(frameworkVersionRepository.findFrameworkVersionByIdForUpdate(versionId)).thenReturn(Optional.of(version));
 
         useCase.execute(command);
 
-        verify(frameworkVersionRepository).updateStatus(versionId, FrameworkVersionStatus.ARCHIVED);
+        verify(frameworkVersionRepository).updateFrameworkVersionStatus(versionId, FrameworkVersionStatus.ARCHIVED);
     }
 
     @Test
@@ -126,19 +125,19 @@ public class DeleteFrameworkVersionUseCaseTests {
         version.setFrameworkId(frameworkId);
         version.setStatus(FrameworkVersionStatus.ARCHIVED);
 
-        when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
-        when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.of(version));
+        when(frameworkRepository.findFrameworkById(frameworkId)).thenReturn(Optional.of(framework));
+        when(frameworkVersionRepository.findFrameworkVersionByIdForUpdate(versionId)).thenReturn(Optional.of(version));
 
         useCase.execute(command);
 
-        verify(frameworkVersionRepository).updateStatus(versionId, FrameworkVersionStatus.ARCHIVED);
+        verify(frameworkVersionRepository).updateFrameworkVersionStatus(versionId, FrameworkVersionStatus.ARCHIVED);
     }
 
     @Test
     void should_throw_not_found_when_framework_missing() {
         var command = new DeleteFrameworkVersionCommand(frameworkId, versionId);
 
-        when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.empty());
+        when(frameworkRepository.findFrameworkById(frameworkId)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> useCase.execute(command));
     }
@@ -152,8 +151,8 @@ public class DeleteFrameworkVersionUseCaseTests {
             true, now, now, null, null
         );
 
-        when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
-        when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.empty());
+        when(frameworkRepository.findFrameworkById(frameworkId)).thenReturn(Optional.of(framework));
+        when(frameworkVersionRepository.findFrameworkVersionByIdForUpdate(versionId)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> useCase.execute(command));
     }
@@ -171,8 +170,8 @@ public class DeleteFrameworkVersionUseCaseTests {
         version.setId(versionId);
         version.setFrameworkId(otherFrameworkId);
 
-        when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
-        when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.of(version));
+        when(frameworkRepository.findFrameworkById(frameworkId)).thenReturn(Optional.of(framework));
+        when(frameworkVersionRepository.findFrameworkVersionByIdForUpdate(versionId)).thenReturn(Optional.of(version));
 
         assertThrows(IllegalArgumentException.class, () -> useCase.execute(command));
     }

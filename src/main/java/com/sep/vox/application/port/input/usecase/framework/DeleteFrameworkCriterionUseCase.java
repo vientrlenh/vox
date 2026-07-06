@@ -1,7 +1,6 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
 import java.util.List;
-import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,24 +13,20 @@ import com.sep.vox.domain.model.framework.FrameworkVersion;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
 import com.sep.vox.domain.repository.FrameworkCriterionBandRepository;
 import com.sep.vox.domain.repository.FrameworkCriterionRepository;
-import com.sep.vox.domain.repository.FrameworkRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
 
 @Service
 public class DeleteFrameworkCriterionUseCase
         implements IUseCase<DeleteFrameworkCriterionCommand, Void> {
 
-    private final FrameworkRepository frameworkRepository;
     private final FrameworkVersionRepository frameworkVersionRepository;
     private final FrameworkCriterionRepository frameworkCriterionRepository;
     private final FrameworkCriterionBandRepository frameworkCriterionBandRepository;
 
     public DeleteFrameworkCriterionUseCase(
-            FrameworkRepository frameworkRepository,
             FrameworkVersionRepository frameworkVersionRepository,
             FrameworkCriterionRepository frameworkCriterionRepository,
             FrameworkCriterionBandRepository frameworkCriterionBandRepository) {
-        this.frameworkRepository = frameworkRepository;
         this.frameworkVersionRepository = frameworkVersionRepository;
         this.frameworkCriterionRepository = frameworkCriterionRepository;
         this.frameworkCriterionBandRepository = frameworkCriterionBandRepository;
@@ -40,14 +35,8 @@ public class DeleteFrameworkCriterionUseCase
     @Override
     @Transactional
     public Void execute(DeleteFrameworkCriterionCommand command) {
-        frameworkRepository.findById(command.frameworkId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy khung năng lực"));
-
-        FrameworkVersion version = frameworkVersionRepository.findById(command.versionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản khung năng lực"));
-
-        FrameworkCriterion criterion = frameworkCriterionRepository.findById(command.criterionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy tiêu chí"));
+        FrameworkVersion version = getVersion(command);
+        FrameworkCriterion criterion = getCriterion(command);
 
         checkValidRequest(command, version, criterion);
 
@@ -55,6 +44,16 @@ public class DeleteFrameworkCriterionUseCase
         frameworkCriterionBandRepository.deleteByFrameworkCriterionIdIn(List.of(command.criterionId()));
         frameworkCriterionRepository.deleteById(command.criterionId());
         return null;
+    }
+
+    private FrameworkVersion getVersion(DeleteFrameworkCriterionCommand command) {
+        return frameworkVersionRepository.findFrameworkVersionById(command.versionId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản khung năng lực"));
+    }
+
+    private FrameworkCriterion getCriterion(DeleteFrameworkCriterionCommand command) {
+        return frameworkCriterionRepository.findById(command.criterionId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy tiêu chí"));
     }
 
     private void checkValidRequest(DeleteFrameworkCriterionCommand command, FrameworkVersion version,

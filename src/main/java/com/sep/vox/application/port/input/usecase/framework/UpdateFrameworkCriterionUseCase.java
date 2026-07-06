@@ -16,24 +16,20 @@ import com.sep.vox.domain.model.framework.FrameworkCriterion;
 import com.sep.vox.domain.model.framework.FrameworkVersion;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
 import com.sep.vox.domain.repository.FrameworkCriterionRepository;
-import com.sep.vox.domain.repository.FrameworkRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
 
 @Service
 public class UpdateFrameworkCriterionUseCase
         implements IUseCase<UpdateFrameworkCriterionCommand, UUID> {
 
-    private final FrameworkRepository frameworkRepository;
     private final FrameworkVersionRepository frameworkVersionRepository;
     private final FrameworkCriterionRepository frameworkCriterionRepository;
     private final UserContextPort userContextPort;
 
     public UpdateFrameworkCriterionUseCase(
-            FrameworkRepository frameworkRepository,
             FrameworkVersionRepository frameworkVersionRepository,
             FrameworkCriterionRepository frameworkCriterionRepository,
             UserContextPort userContextPort) {
-        this.frameworkRepository = frameworkRepository;
         this.frameworkVersionRepository = frameworkVersionRepository;
         this.frameworkCriterionRepository = frameworkCriterionRepository;
         this.userContextPort = userContextPort;
@@ -42,26 +38,11 @@ public class UpdateFrameworkCriterionUseCase
     @Override
     @Transactional
     public UUID execute(UpdateFrameworkCriterionCommand command) {
-        UUID userId = userContextPort.getCurrentAuthenticatedUserId();
-        OffsetDateTime now = OffsetDateTime.now();
-
-        frameworkRepository.findById(command.frameworkId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy khung năng lực"));
-
-        FrameworkVersion version = frameworkVersionRepository.findById(command.versionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản khung năng lực"));
-
-        FrameworkCriterion criterion = frameworkCriterionRepository.findById(command.criterionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy tiêu chí"));
+        FrameworkVersion version = getVersion(command);
+        FrameworkCriterion criterion = getCriterion(command);
 
         checkValidRequest(command, version, criterion);
-
-        criterion.setCode(StringNormalization.normalizeCode(command.code()));
-        criterion.setName(StringNormalization.trimAndCollapseSpaces(command.name()));
-        criterion.setDescription(StringNormalization.trimAndCollapseSpaces(command.description()));
-        criterion.setOrder(command.order());
-        criterion.setUpdatedAt(now);
-        criterion.setUpdatedBy(userId);
+        updateCriterion(command, criterion);
 
         try {
             frameworkCriterionRepository.save(criterion);
@@ -72,22 +53,34 @@ public class UpdateFrameworkCriterionUseCase
         return criterion.getId();
     }
 
+    private FrameworkVersion getVersion(UpdateFrameworkCriterionCommand command) {
+        return frameworkVersionRepository.findFrameworkVersionById(command.versionId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản khung năng lực"));
+    }
+
+    private FrameworkCriterion getCriterion(UpdateFrameworkCriterionCommand command) {
+        return frameworkCriterionRepository.findById(command.criterionId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy tiêu chí"));
+    }
+
     private void checkValidRequest(UpdateFrameworkCriterionCommand command, FrameworkVersion version,
             FrameworkCriterion criterion) {
-        if (!version.getFrameworkId().equals(command.frameworkId())) {
+        if (!version.getFrameworkId().equals(command.frameworkId()))
             throw new IllegalArgumentException("Phiên bản không thuộc khung năng lực này");
-        }
-        if (version.getStatus() != FrameworkVersionStatus.DRAFT) {
-            throw new IllegalStateException("Chỉ có thể cập nhật tiêu chí khi phiên bản đang ở trạng thái DRAFT");
-        }
-        if (!criterion.getFrameworkVersionId().equals(command.versionId())) {
-            throw new IllegalArgumentException("Tiêu chí không thuộc phiên bản này");
-        }
 
-        String safeCode = StringNormalization.normalizeCode(command.code());
-        if (frameworkCriterionRepository.existsByFrameworkVersionIdAndCodeAndIdNot(
-                command.versionId(), safeCode, criterion.getId())) {
-            throw new IllegalArgumentException("Mã tiêu chí đã tồn tại: " + safeCode);
-        }
+        if (version.getStatus() != FrameworkVersionStatus.DRAFT)
+            throw new IllegalStateException("Chỉ có thể cập nhật tiêu chí khi phiên bản đang ở trạng thái DRAFT");
+
+        if (!criterion.getFrameworkVersionId().equals(command.versionId()))
+            throw new IllegalArgumentException("Tiêu chí không thuộc phiên bản này");
+    }
+
+    private void updateCriterion(UpdateFrameworkCriterionCommand command, FrameworkCriterion criterion) {
+        criterion.setCode(StringNormalization.normalizeCode(command.code()));
+        criterion.setName(StringNormalization.trimAndCollapseSpaces(command.name()));
+        criterion.setDescription(StringNormalization.trimAndCollapseSpaces(command.description()));
+        criterion.setOrder(command.order());
+        criterion.setUpdatedAt(OffsetDateTime.now());
+        criterion.setUpdatedBy(userContextPort.getCurrentAuthenticatedUserId());
     }
 }

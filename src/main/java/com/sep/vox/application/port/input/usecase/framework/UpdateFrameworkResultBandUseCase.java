@@ -15,7 +15,6 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.framework.FrameworkResultBand;
 import com.sep.vox.domain.model.framework.FrameworkVersion;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
-import com.sep.vox.domain.repository.FrameworkRepository;
 import com.sep.vox.domain.repository.FrameworkResultBandRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
 
@@ -23,17 +22,14 @@ import com.sep.vox.domain.repository.FrameworkVersionRepository;
 public class UpdateFrameworkResultBandUseCase
         implements IUseCase<UpdateFrameworkResultBandCommand, UUID> {
 
-    private final FrameworkRepository frameworkRepository;
     private final FrameworkVersionRepository frameworkVersionRepository;
     private final FrameworkResultBandRepository frameworkResultBandRepository;
     private final UserContextPort userContextPort;
 
     public UpdateFrameworkResultBandUseCase(
-            FrameworkRepository frameworkRepository,
             FrameworkVersionRepository frameworkVersionRepository,
             FrameworkResultBandRepository frameworkResultBandRepository,
             UserContextPort userContextPort) {
-        this.frameworkRepository = frameworkRepository;
         this.frameworkVersionRepository = frameworkVersionRepository;
         this.frameworkResultBandRepository = frameworkResultBandRepository;
         this.userContextPort = userContextPort;
@@ -42,29 +38,11 @@ public class UpdateFrameworkResultBandUseCase
     @Override
     @Transactional
     public UUID execute(UpdateFrameworkResultBandCommand command) {
-        UUID userId = userContextPort.getCurrentAuthenticatedUserId();
-        OffsetDateTime now = OffsetDateTime.now();
-
-        frameworkRepository.findById(command.frameworkId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy khung năng lực"));
-
-        FrameworkVersion version = frameworkVersionRepository.findById(command.versionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản khung năng lực"));
-
-        FrameworkResultBand band = frameworkResultBandRepository.findById(command.bandId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy mức kết quả"));
+        FrameworkVersion version = getVersion(command);
+        FrameworkResultBand band = getBand(command);
 
         checkValidRequest(command, version, band);
-
-        String safeCode = StringNormalization.normalizeCode(command.code());
-        String safeLabel = StringNormalization.trimAndCollapseSpaces(command.label());
-
-        band.setCode(safeCode);
-        band.setLabel(safeLabel);
-        band.setDescription(StringNormalization.trimAndCollapseSpaces(command.description()));
-        band.setOrder(command.order());
-        band.setUpdatedAt(now);
-        band.setUpdatedBy(userId);
+        updateResultBand(command, band);
 
         try {
             frameworkResultBandRepository.save(band);
@@ -73,6 +51,16 @@ public class UpdateFrameworkResultBandUseCase
         }
 
         return band.getId();
+    }
+
+    private FrameworkVersion getVersion(UpdateFrameworkResultBandCommand command) {
+        return frameworkVersionRepository.findFrameworkVersionById(command.versionId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản khung năng lực"));
+    }
+
+    private FrameworkResultBand getBand(UpdateFrameworkResultBandCommand command) {
+        return frameworkResultBandRepository.findById(command.bandId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy mức kết quả"));
     }
 
     private void checkValidRequest(UpdateFrameworkResultBandCommand command, FrameworkVersion version, FrameworkResultBand band) {
@@ -84,17 +72,14 @@ public class UpdateFrameworkResultBandUseCase
 
         if (!band.getFrameworkVersionId().equals(command.versionId()))
             throw new IllegalArgumentException("Mức kết quả không thuộc phiên bản này");
+    }
 
-        String safeCode = StringNormalization.normalizeCode(command.code());
-        String safeLabel = StringNormalization.trimAndCollapseSpaces(command.label());
-
-        if (frameworkResultBandRepository.existsByFrameworkVersionIdAndCodeAndIdNot(
-                command.versionId(), safeCode, band.getId())) {
-            throw new IllegalArgumentException("Mã kết quả đã tồn tại: " + safeCode);
-        }
-        if (frameworkResultBandRepository.existsByFrameworkVersionIdAndLabelAndIdNot(
-                command.versionId(), safeLabel, band.getId())) {
-            throw new IllegalArgumentException("Nhãn kết quả đã tồn tại: " + safeLabel);
-        }
+    private void updateResultBand(UpdateFrameworkResultBandCommand command, FrameworkResultBand band) {
+        band.setCode(StringNormalization.normalizeCode(command.code()));
+        band.setLabel(StringNormalization.trimAndCollapseSpaces(command.label()));
+        band.setDescription(StringNormalization.trimAndCollapseSpaces(command.description()));
+        band.setOrder(command.order());
+        band.setUpdatedAt(OffsetDateTime.now());
+        band.setUpdatedBy(userContextPort.getCurrentAuthenticatedUserId());
     }
 }

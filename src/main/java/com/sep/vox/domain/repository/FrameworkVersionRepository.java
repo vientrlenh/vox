@@ -9,13 +9,13 @@ import com.sep.vox.domain.model.framework.FrameworkVersion;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
 
 public interface FrameworkVersionRepository {
-    Optional<FrameworkVersion> findById(UUID id);
-    Optional<FrameworkVersion> findByIdForUpdate(UUID id);
+    Optional<FrameworkVersion> findFrameworkVersionById(UUID id);
+    Optional<FrameworkVersion> findFrameworkVersionByIdForUpdate(UUID id);
     PageResult<FrameworkVersion> findByFrameworkId(UUID frameworkId, int pageNumber, int size);
-    List<FrameworkVersion> findByFrameworkIdAndStatus(UUID frameworkId, FrameworkVersionStatus status);
+    List<FrameworkVersion> findByFrameworkVersionIdAndStatus(UUID frameworkId, FrameworkVersionStatus status);
     Optional<FrameworkVersion> findByFrameworkIdAndVersion(UUID frameworkId, int version);
-    FrameworkVersion save(FrameworkVersion version);
-    int updateStatus(UUID id, FrameworkVersionStatus status);
-    void deleteById(UUID id);
+    FrameworkVersion saveFrameworkVersion(FrameworkVersion version);
+    int updateFrameworkVersionStatus(UUID id, FrameworkVersionStatus status);
+    void deleteFrameworkVersionById(UUID id);
     boolean existsByFrameworkId(UUID frameworkId);
 }

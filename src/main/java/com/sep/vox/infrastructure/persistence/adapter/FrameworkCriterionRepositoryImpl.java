@@ -48,6 +48,11 @@ public class FrameworkCriterionRepositoryImpl implements FrameworkCriterionRepos
     }
 
     @Override
+    public boolean existsByFrameworkVersionIdAndCodeIn(UUID frameworkVersionId, Collection<String> codes) {
+        return springDataFrameworkCriterionRepository.existsByFrameworkVersionIdAndCodeIn(frameworkVersionId, codes);
+    }
+
+    @Override
     public Optional<FrameworkCriterion> findById(UUID id) {
         return springDataFrameworkCriterionRepository.findById(id).map(FrameworkCriterionMapper::toDomain);
     }

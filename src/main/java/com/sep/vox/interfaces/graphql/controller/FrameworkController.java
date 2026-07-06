@@ -74,13 +74,11 @@ public class FrameworkController {
     @QueryMapping(name = "frameworks")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public PageResult<FrameworkDto> frameworks(
-            @Argument(name = "page") int page,
-            @Argument(name = "size") int size,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size,
             @Argument(name = "search") String search,
             @Argument(name = "isActive") Boolean isActive) {
-        if (page <= 0 || size <= 0 || size > 200) {
-            throw new IllegalArgumentException("Số trang hoặc kích thước trang không hợp lệ");
-        }
+        validatePage(page, size);
         return viewFrameworksUseCase.execute(new ViewFrameworksQuery(page, size, search, isActive));
     }
 
@@ -94,11 +92,9 @@ public class FrameworkController {
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public PageResult<FrameworkVersionDto> frameworkVersions(
             @Argument(name = "frameworkId") UUID frameworkId,
-            @Argument(name = "page") int page,
-            @Argument(name = "size") int size) {
-        if (page <= 0 || size <= 0 || size > 200) {
-            throw new IllegalArgumentException("Số trang hoặc kích thước trang không hợp lệ");
-        }
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
+        validatePage(page, size);
         return viewFrameworkVersionsUseCase.execute(new ViewFrameworkVersionsQuery(frameworkId, page, size));
     }
 
@@ -165,5 +161,11 @@ public class FrameworkController {
             FrameworkVersionDto version, DataFetchingEnvironment env) {
         DataLoader<UUID, List<FrameworkResultBandDto>> loader = env.getDataLoader("resultBandsByFrameworkVersion");
         return loader.load(version.id());
+    }
+
+    private void validatePage(Integer page, Integer size) {
+        if (page == null || size == null || page <= 0 || size <= 0)
+            throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
+        
     }
 }

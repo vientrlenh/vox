@@ -38,18 +38,25 @@ public class UpdateFrameworkVersionStatusUseCase implements IUseCase<UpdateFrame
     @Override
     @Transactional
     public UUID execute(UpdateFrameworkVersionStatusCommand input) {
-        frameworkRepository.findByIdForUpdate(input.frameworkId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy framework"));
-
-        var version = frameworkVersionRepository.findByIdForUpdate(input.versionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản framework"));
+        getFramework(input);
+        FrameworkVersion version = getVersion(input);
 
         checkValidRequest(input, version);
-        int updated = frameworkVersionRepository.updateStatus(input.versionId(), input.status());
+        int updated = frameworkVersionRepository.updateFrameworkVersionStatus(input.versionId(), input.status());
         if (updated == 0) {
             throw new NotFoundException("Không tìm thấy phiên bản framework để cập nhật trạng thái");
         }
         return input.versionId();
+    }
+
+    private void getFramework(UpdateFrameworkVersionStatusCommand input) {
+        frameworkRepository.findFrameworkByIdForUpdate(input.frameworkId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy framework"));
+    }
+
+    private FrameworkVersion getVersion(UpdateFrameworkVersionStatusCommand input) {
+        return frameworkVersionRepository.findFrameworkVersionByIdForUpdate(input.versionId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản framework"));
     }
 
     private void checkValidRequest(UpdateFrameworkVersionStatusCommand input, FrameworkVersion version) {
@@ -73,7 +80,7 @@ public class UpdateFrameworkVersionStatusUseCase implements IUseCase<UpdateFrame
     }
 
     private void validateNoConflictingPublished(UUID frameworkId, UUID versionId, OffsetDateTime effectiveFrom, OffsetDateTime effectiveTo) {
-        var published = frameworkVersionRepository.findByFrameworkIdAndStatus(frameworkId, FrameworkVersionStatus.PUBLISHED);
+        var published = frameworkVersionRepository.findByFrameworkVersionIdAndStatus(frameworkId, FrameworkVersionStatus.PUBLISHED);
         boolean hasConflict = published.stream()
             .filter(v -> !v.getId().equals(versionId))
             .anyMatch(v -> rangesOverlap(effectiveFrom, effectiveTo, v.getEffectiveFrom(), v.getEffectiveTo()));

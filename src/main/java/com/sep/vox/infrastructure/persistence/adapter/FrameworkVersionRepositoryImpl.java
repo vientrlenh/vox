@@ -24,12 +24,12 @@ public class FrameworkVersionRepositoryImpl implements FrameworkVersionRepositor
     }
 
     @Override
-    public Optional<FrameworkVersion> findById(UUID id) {
+    public Optional<FrameworkVersion> findFrameworkVersionById(UUID id) {
         return springDataFrameworkVersionRepository.findById(id).map(FrameworkVersionMapper::toDomain);
     }
 
     @Override
-    public Optional<FrameworkVersion> findByIdForUpdate(UUID id) {
+    public Optional<FrameworkVersion> findFrameworkVersionByIdForUpdate(UUID id) {
         return springDataFrameworkVersionRepository.findByIdForUpdate(id).map(FrameworkVersionMapper::toDomain);
     }
 
@@ -47,7 +47,7 @@ public class FrameworkVersionRepositoryImpl implements FrameworkVersionRepositor
     }
 
     @Override
-    public List<FrameworkVersion> findByFrameworkIdAndStatus(UUID frameworkId, FrameworkVersionStatus status) {
+    public List<FrameworkVersion> findByFrameworkVersionIdAndStatus(UUID frameworkId, FrameworkVersionStatus status) {
         return springDataFrameworkVersionRepository
             .findByFrameworkIdAndStatus(frameworkId, status.name())
             .stream().map(FrameworkVersionMapper::toDomain).toList();
@@ -61,19 +61,19 @@ public class FrameworkVersionRepositoryImpl implements FrameworkVersionRepositor
     }
 
     @Override
-    public FrameworkVersion save(FrameworkVersion version) {
+    public FrameworkVersion saveFrameworkVersion(FrameworkVersion version) {
         var entity = FrameworkVersionMapper.toJpa(version);
         var saved = springDataFrameworkVersionRepository.save(entity);
         return FrameworkVersionMapper.toDomain(saved);
     }
 
     @Override
-    public int updateStatus(UUID id, FrameworkVersionStatus status) {
+    public int updateFrameworkVersionStatus(UUID id, FrameworkVersionStatus status) {
         return springDataFrameworkVersionRepository.updateStatus(id, status.name());
     }
 
     @Override
-    public void deleteById(UUID id) {
+    public void deleteFrameworkVersionById(UUID id) {
         springDataFrameworkVersionRepository.deleteById(id);
     }
 

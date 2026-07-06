@@ -54,11 +54,11 @@ public class CreateFrameworkVersionUseCaseTests {
             frameworkId, new FrameworkCode("CEFR"), "Test Framework", "Description",
             true, now, now, null, null
         );
-        when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
+        when(frameworkRepository.findFrameworkById(frameworkId)).thenReturn(Optional.of(framework));
         when(frameworkVersionRepository.findByFrameworkIdAndVersion(frameworkId, 1))
             .thenReturn(Optional.empty());
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        when(frameworkVersionRepository.save(any(FrameworkVersion.class)))
+        when(frameworkVersionRepository.saveFrameworkVersion(any(FrameworkVersion.class)))
             .thenAnswer(invocation -> {
                 FrameworkVersion version = invocation.getArgument(0);
                 version.setId(UUID.randomUUID());
@@ -68,9 +68,9 @@ public class CreateFrameworkVersionUseCaseTests {
         var result = useCase.execute(command);
 
         assertThat(result.versionId()).isNotNull();
-        verify(frameworkRepository).findById(frameworkId);
+        verify(frameworkRepository).findFrameworkById(frameworkId);
         verify(frameworkVersionRepository).findByFrameworkIdAndVersion(frameworkId, 1);
-        verify(frameworkVersionRepository).save(any(FrameworkVersion.class));
+        verify(frameworkVersionRepository).saveFrameworkVersion(any(FrameworkVersion.class));
     }
 
     @Test
@@ -79,7 +79,7 @@ public class CreateFrameworkVersionUseCaseTests {
             frameworkId, "V1_0", "Version 1.0", "Initial version", 1, now, now.plusDays(30)
         );
 
-        when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.empty());
+        when(frameworkRepository.findFrameworkById(frameworkId)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> useCase.execute(command));
     }
@@ -97,7 +97,7 @@ public class CreateFrameworkVersionUseCaseTests {
         var existingVersion = new FrameworkVersion();
         existingVersion.setId(UUID.randomUUID());
 
-        when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
+        when(frameworkRepository.findFrameworkById(frameworkId)).thenReturn(Optional.of(framework));
         when(frameworkVersionRepository.findByFrameworkIdAndVersion(frameworkId, 1))
             .thenReturn(Optional.of(existingVersion));
 

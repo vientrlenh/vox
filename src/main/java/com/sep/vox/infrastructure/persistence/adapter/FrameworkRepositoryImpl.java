@@ -23,24 +23,24 @@ public class FrameworkRepositoryImpl implements FrameworkRepository {
     }
 
     @Override
-    public Optional<Framework> findById(UUID id) {
+    public Optional<Framework> findFrameworkById(UUID id) {
         return springDataFrameworkRepository.findById(id)
                 .map(FrameworkMapper::toDomain);
     }
 
     @Override
-    public Optional<Framework> findByIdForUpdate(UUID id) {
+    public Optional<Framework> findFrameworkByIdForUpdate(UUID id) {
         return springDataFrameworkRepository.findByIdForUpdate(id)
                 .map(FrameworkMapper::toDomain);
     }
 
     @Override
-    public Optional<Framework> findByCode(String code) {
+    public Optional<Framework> findFrameworkByCode(String code) {
         return springDataFrameworkRepository.findByCode(code).map(FrameworkMapper::toDomain);
     }
 
     @Override
-    public PageResult<Framework> findAll(int pageNumber, int size, String search, Boolean isActive) {
+    public PageResult<Framework> findAllFrameworks(int pageNumber, int size, String search, Boolean isActive) {
         var pageable = PageRequest.of(pageNumber - 1, size);
         String pattern = StringNormalization.toLikePattern(search);
         var page = isActive != null
@@ -56,14 +56,14 @@ public class FrameworkRepositoryImpl implements FrameworkRepository {
     }
 
     @Override
-    public Framework save(Framework framework) {
+    public Framework saveFramework(Framework framework) {
         var entity = FrameworkMapper.toJpa(framework);
         var saved = springDataFrameworkRepository.save(entity);
         return FrameworkMapper.toDomain(saved);
     }
 
     @Override
-    public void deleteById(UUID id) {
+    public void deleteFrameworkById(UUID id) {
         springDataFrameworkRepository.deleteById(id);
     }
 }

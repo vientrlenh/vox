@@ -21,24 +21,20 @@ import com.sep.vox.domain.model.framework.FrameworkCriterion;
 import com.sep.vox.domain.model.framework.FrameworkVersion;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
 import com.sep.vox.domain.repository.FrameworkCriterionRepository;
-import com.sep.vox.domain.repository.FrameworkRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
 
 @Service
 public class CreateFrameworkCriteriaUseCase
         implements IUseCase<CreateFrameworkCriteriaCommand, List<UUID>> {
 
-    private final FrameworkRepository frameworkRepository;
     private final FrameworkVersionRepository frameworkVersionRepository;
     private final FrameworkCriterionRepository frameworkCriterionRepository;
     private final UserContextPort userContextPort;
 
     public CreateFrameworkCriteriaUseCase(
-            FrameworkRepository frameworkRepository,
             FrameworkVersionRepository frameworkVersionRepository,
             FrameworkCriterionRepository frameworkCriterionRepository,
             UserContextPort userContextPort) {
-        this.frameworkRepository = frameworkRepository;
         this.frameworkVersionRepository = frameworkVersionRepository;
         this.frameworkCriterionRepository = frameworkCriterionRepository;
         this.userContextPort = userContextPort;
@@ -50,15 +46,10 @@ public class CreateFrameworkCriteriaUseCase
         UUID userId = userContextPort.getCurrentAuthenticatedUserId();
         OffsetDateTime now = OffsetDateTime.now();
 
-        frameworkRepository.findById(command.frameworkId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy khung năng lực"));
+        FrameworkVersion version = getVersion(command);
+        validateRequest(command, version);
 
-        FrameworkVersion version = frameworkVersionRepository.findById(command.versionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản khung năng lực"));
-
-        checkValidRequest(command, version);
-
-        List<FrameworkCriterion> criteriaToSave = new ArrayList<>();
+        List<FrameworkCriterion> criteriaToSave = new ArrayList<>(command.criteria().size());
         for (var criterionCmd : command.criteria()) {
             criteriaToSave.add(new FrameworkCriterion(
                     command.versionId(),
@@ -70,26 +61,26 @@ public class CreateFrameworkCriteriaUseCase
         }
 
         try {
-            frameworkCriterionRepository.saveAll(criteriaToSave);
+            return frameworkCriterionRepository.saveAll(criteriaToSave)
+                    .stream()
+                    .map(fc -> fc.getId())
+                    .collect(Collectors.toList());
         } catch (DataIntegrityViolationException e) {
-            throw new IllegalStateException("Mã tiêu chí đã tồn tại", e);
+            throw new IllegalStateException("Mã tiêu chí đã tồn tại trong cơ sở dữ liệu", e);
         }
-
-        return criteriaToSave.stream().map(FrameworkCriterion::getId).collect(Collectors.toList());
     }
 
-    private void checkValidRequest(CreateFrameworkCriteriaCommand command, FrameworkVersion version) {
-        if (!version.getFrameworkId().equals(command.frameworkId())) {
-            throw new IllegalArgumentException("Phiên bản không thuộc khung năng lực này");
-        }
-        if (version.getStatus() != FrameworkVersionStatus.DRAFT) {
-            throw new IllegalStateException("Chỉ có thể thêm tiêu chí khi phiên bản đang ở trạng thái DRAFT");
-        }
+    private FrameworkVersion getVersion(CreateFrameworkCriteriaCommand command) {
+        return frameworkVersionRepository.findFrameworkVersionById(command.versionId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản khung năng lực"));
+    }
 
-        Set<String> existingCodes = frameworkCriterionRepository.findByFrameworkVersionId(command.versionId())
-                .stream()
-                .map(c -> StringNormalization.normalizeCode(c.getCode()))
-                .collect(Collectors.toSet());
+    private void validateRequest(CreateFrameworkCriteriaCommand command, FrameworkVersion version) {
+        if (!version.getFrameworkId().equals(command.frameworkId()))
+            throw new IllegalArgumentException("Phiên bản không thuộc khung năng lực này");
+
+        if (version.getStatus() != FrameworkVersionStatus.DRAFT)
+            throw new IllegalStateException("Chỉ có thể thêm tiêu chí khi phiên bản đang ở trạng thái DRAFT");
 
         Set<String> requestCodes = new HashSet<>();
         for (var criterionCmd : command.criteria()) {
@@ -97,9 +88,9 @@ public class CreateFrameworkCriteriaUseCase
             if (!requestCodes.add(safeCode)) {
                 throw new IllegalArgumentException("Dữ liệu gửi lên bị trùng lặp mã tiêu chí: " + safeCode);
             }
-            if (existingCodes.contains(safeCode)) {
-                throw new IllegalArgumentException("Mã tiêu chí đã tồn tại: " + safeCode);
-            }
         }
+
+        if (frameworkCriterionRepository.existsByFrameworkVersionIdAndCodeIn(command.versionId(), requestCodes))
+            throw new IllegalStateException("Mã tiêu chí đã tồn tại");
     }
 }

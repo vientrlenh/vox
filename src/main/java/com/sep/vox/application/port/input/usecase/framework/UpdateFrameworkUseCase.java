@@ -28,13 +28,17 @@ public class UpdateFrameworkUseCase implements IUseCase<UpdateFrameworkCommand, 
     @Override
     @Transactional
     public UUID execute(UpdateFrameworkCommand input) {
-        var framework = frameworkRepository.findById(input.frameworkId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy framework"));
-        applyChanges(input, framework);
-        return frameworkRepository.save(framework).getId();
+        Framework framework = getFramework(input);
+        updateFramework(input, framework);
+        return frameworkRepository.saveFramework(framework).getId();
     }
 
-    private void applyChanges(UpdateFrameworkCommand input, Framework framework) {
+    private Framework getFramework(UpdateFrameworkCommand input) {
+        return frameworkRepository.findFrameworkById(input.frameworkId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy framework"));
+    }
+
+    private void updateFramework(UpdateFrameworkCommand input, Framework framework) {
         framework.setName(StringNormalization.trimAndCollapseSpaces(input.name()));
         framework.setDescription(StringNormalization.trimAndCollapseSpaces(input.description()));
         framework.setUpdatedAt(OffsetDateTime.now());

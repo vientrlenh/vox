@@ -22,4 +22,7 @@ public interface SpringDataFrameworkCriterionRepository extends JpaRepository<Fr
     @Modifying
     @Query("DELETE FROM FrameworkCriterionJpaEntity c WHERE c.frameworkVersionId = :frameworkVersionId")
     void deleteByFrameworkVersionId(@Param("frameworkVersionId") UUID frameworkVersionId);
+
+    @Query("SELECT COUNT(c) > 0 FROM FrameworkCriterionJpaEntity c WHERE c.frameworkVersionId = :versionId AND c.code IN :codes")
+    boolean existsByFrameworkVersionIdAndCodeIn(@Param("versionId") UUID versionId, @Param("codes") Collection<String> codes);   
 }

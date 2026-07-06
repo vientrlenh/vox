@@ -58,15 +58,15 @@ public class CreateFrameworkCriterionBandsUseCaseTests {
         frameworkResultBandRepository = mock(FrameworkResultBandRepository.class);
         userContextPort = mock(UserContextPort.class);
         useCase = new CreateFrameworkCriterionBandsUseCase(
-                frameworkRepository, frameworkVersionRepository, frameworkCriterionRepository,
+                frameworkVersionRepository, frameworkCriterionRepository,
                 frameworkCriterionBandRepository, frameworkResultBandRepository, userContextPort);
 
-        when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(
+        when(frameworkRepository.findFrameworkById(frameworkId)).thenReturn(Optional.of(
                 new Framework(frameworkId, new FrameworkCode("CEFR"), "Test", "Desc", true, now, now, null, null)));
 
         var version = new FrameworkVersion(versionId, frameworkId, "V1_0", "Version 1.0", "Desc", 1, now, now.plusDays(30),
                 FrameworkVersionStatus.DRAFT, now, now, userId, userId);
-        when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.of(version));
+        when(frameworkVersionRepository.findFrameworkVersionById(versionId)).thenReturn(Optional.of(version));
 
         var criterion = new FrameworkCriterion(criterionId, versionId, "C1", "Criterion 1", "Desc", 1, now, now, userId, userId);
         when(frameworkCriterionRepository.findById(criterionId)).thenReturn(Optional.of(criterion));
@@ -99,7 +99,7 @@ public class CreateFrameworkCriterionBandsUseCaseTests {
 
     @Test
     void should_throw_not_found_when_framework_missing() {
-        when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.empty());
+        when(frameworkRepository.findFrameworkById(frameworkId)).thenReturn(Optional.empty());
         var command = new CreateFrameworkCriterionBandsCommand(frameworkId, versionId, criterionId, List.of(bandItem("rb1")));
 
         assertThrows(NotFoundException.class, () -> useCase.execute(command));
@@ -109,7 +109,7 @@ public class CreateFrameworkCriterionBandsUseCaseTests {
     void should_throw_when_version_not_draft() {
         var activeVersion = new FrameworkVersion(versionId, frameworkId, "V1_0", "Version 1.0", "Desc", 1, now, now.plusDays(30),
                 FrameworkVersionStatus.PUBLISHED, now, now, userId, userId);
-        when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.of(activeVersion));
+        when(frameworkVersionRepository.findFrameworkVersionById(versionId)).thenReturn(Optional.of(activeVersion));
         var command = new CreateFrameworkCriterionBandsCommand(frameworkId, versionId, criterionId, List.of(bandItem("rb1")));
 
         assertThrows(IllegalStateException.class, () -> useCase.execute(command));

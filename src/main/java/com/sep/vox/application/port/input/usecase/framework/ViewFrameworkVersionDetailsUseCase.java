@@ -22,7 +22,7 @@ public class ViewFrameworkVersionDetailsUseCase implements IUseCase<ViewFramewor
     @Override
     @Transactional(readOnly = true)
     public FrameworkVersionDto execute(ViewFrameworkVersionDetailsQuery input) {
-        var version = frameworkVersionRepository.findById(input.versionId())
+        var version = frameworkVersionRepository.findFrameworkVersionById(input.versionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản framework"));
         return FrameworkVersionDtoMapper.toDto(version);
     }

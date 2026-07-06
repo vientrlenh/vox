@@ -17,26 +17,23 @@ import com.sep.vox.domain.model.framework.FrameworkVersion;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
 import com.sep.vox.domain.repository.FrameworkCriterionBandRepository;
 import com.sep.vox.domain.repository.FrameworkCriterionRepository;
-import com.sep.vox.domain.repository.FrameworkRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
+import com.sep.vox.domain.valueobject.framework.FrameworkCriterionSignals;
 
 @Service
 public class UpdateFrameworkCriterionBandUseCase
         implements IUseCase<UpdateFrameworkCriterionBandCommand, UUID> {
 
-    private final FrameworkRepository frameworkRepository;
     private final FrameworkVersionRepository frameworkVersionRepository;
     private final FrameworkCriterionRepository frameworkCriterionRepository;
     private final FrameworkCriterionBandRepository frameworkCriterionBandRepository;
     private final UserContextPort userContextPort;
 
     public UpdateFrameworkCriterionBandUseCase(
-            FrameworkRepository frameworkRepository,
             FrameworkVersionRepository frameworkVersionRepository,
             FrameworkCriterionRepository frameworkCriterionRepository,
             FrameworkCriterionBandRepository frameworkCriterionBandRepository,
             UserContextPort userContextPort) {
-        this.frameworkRepository = frameworkRepository;
         this.frameworkVersionRepository = frameworkVersionRepository;
         this.frameworkCriterionRepository = frameworkCriterionRepository;
         this.frameworkCriterionBandRepository = frameworkCriterionBandRepository;
@@ -46,32 +43,30 @@ public class UpdateFrameworkCriterionBandUseCase
     @Override
     @Transactional
     public UUID execute(UpdateFrameworkCriterionBandCommand command) {
-        UUID userId = userContextPort.getCurrentAuthenticatedUserId();
-        OffsetDateTime now = OffsetDateTime.now();
-
-        frameworkRepository.findById(command.frameworkId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy khung năng lực"));
-
-        FrameworkVersion version = frameworkVersionRepository.findById(command.versionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản khung năng lực"));
-
-        FrameworkCriterion criterion = frameworkCriterionRepository.findById(command.criterionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy tiêu chí"));
-
-        FrameworkCriterionBand band = frameworkCriterionBandRepository.findById(command.bandId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy mức đánh giá"));
+        FrameworkVersion version = getVersion(command);
+        FrameworkCriterion criterion = getCriterion(command);
+        FrameworkCriterionBand band = getBand(command);
 
         checkValidRequest(command, version, criterion, band);
+        updateCriterionBand(command, band);
 
-        band.setDescriptor(StringNormalization.trimAndCollapseSpaces(command.descriptor()));
-        band.setPositiveSignals(command.positiveSignals());
-        band.setNegativeSignals(command.negativeSignals());
-        band.setUpdatedAt(now);
-        band.setUpdatedBy(userId);
-
-        frameworkCriterionBandRepository.save(band);
-
+        frameworkCriterionBandRepository.saveCriterionBand(band);
         return band.getId();
+    }
+
+    private FrameworkVersion getVersion(UpdateFrameworkCriterionBandCommand command) {
+        return frameworkVersionRepository.findFrameworkVersionById(command.versionId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản khung năng lực"));
+    }
+
+    private FrameworkCriterion getCriterion(UpdateFrameworkCriterionBandCommand command) {
+        return frameworkCriterionRepository.findById(command.criterionId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy tiêu chí"));
+    }
+
+    private FrameworkCriterionBand getBand(UpdateFrameworkCriterionBandCommand command) {
+        return frameworkCriterionBandRepository.findById(command.bandId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy mức đánh giá"));
     }
 
     private void checkValidRequest(UpdateFrameworkCriterionBandCommand command, FrameworkVersion version,
@@ -87,5 +82,27 @@ public class UpdateFrameworkCriterionBandUseCase
 
         if (!band.getFrameworkCriterionId().equals(command.criterionId()))
             throw new IllegalArgumentException("Mức đánh giá không thuộc tiêu chí này");
+    }
+
+    private void updateCriterionBand(UpdateFrameworkCriterionBandCommand command, FrameworkCriterionBand band) {
+        if (hasText(command.descriptor()))
+            band.setDescriptor(StringNormalization.trimAndCollapseSpaces(command.descriptor()));
+
+        if (hasSignals(command.positiveSignals())) 
+            band.setPositiveSignals(command.positiveSignals());
+
+        if (hasSignals(command.negativeSignals())) 
+            band.setNegativeSignals(command.negativeSignals());
+
+        band.setUpdatedAt(OffsetDateTime.now());
+        band.setUpdatedBy(userContextPort.getCurrentAuthenticatedUserId());
+    }
+
+    private boolean hasText(String request) {
+        return request != null && !request.isEmpty();
+    }
+
+    private boolean hasSignals(FrameworkCriterionSignals signals) {
+        return signals != null && !signals.values().isEmpty();
     }
 }

@@ -10,14 +10,12 @@ import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
 import com.sep.vox.domain.repository.FrameworkCriterionBandRepository;
 import com.sep.vox.domain.repository.FrameworkCriterionRepository;
-import com.sep.vox.domain.repository.FrameworkRepository;
 import com.sep.vox.domain.repository.FrameworkResultBandRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
 
 @Service
 public class DeleteFrameworkVersionUseCase implements IUseCase<DeleteFrameworkVersionCommand, Void> {
 
-    private final FrameworkRepository frameworkRepository;
     private final FrameworkVersionRepository frameworkVersionRepository;
     private final FrameworkCriterionRepository frameworkCriterionRepository;
     private final FrameworkCriterionBandRepository frameworkCriterionBandRepository;
@@ -25,13 +23,11 @@ public class DeleteFrameworkVersionUseCase implements IUseCase<DeleteFrameworkVe
     private final AssessmentPolicyRepository assessmentPolicyRepository;
 
     public DeleteFrameworkVersionUseCase(
-            FrameworkRepository frameworkRepository,
             FrameworkVersionRepository frameworkVersionRepository,
             FrameworkCriterionRepository frameworkCriterionRepository,
             FrameworkCriterionBandRepository frameworkCriterionBandRepository,
             FrameworkResultBandRepository frameworkResultBandRepository,
             AssessmentPolicyRepository assessmentPolicyRepository) {
-        this.frameworkRepository = frameworkRepository;
         this.frameworkVersionRepository = frameworkVersionRepository;
         this.frameworkCriterionRepository = frameworkCriterionRepository;
         this.frameworkCriterionBandRepository = frameworkCriterionBandRepository;
@@ -42,10 +38,7 @@ public class DeleteFrameworkVersionUseCase implements IUseCase<DeleteFrameworkVe
     @Override
     @Transactional
     public Void execute(DeleteFrameworkVersionCommand input) {
-        frameworkRepository.findById(input.frameworkId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy framework"));
-
-        var version = frameworkVersionRepository.findByIdForUpdate(input.versionId())
+        var version = frameworkVersionRepository.findFrameworkVersionByIdForUpdate(input.versionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản framework"));
 
         if (!version.getFrameworkId().equals(input.frameworkId())) {
@@ -58,7 +51,7 @@ public class DeleteFrameworkVersionUseCase implements IUseCase<DeleteFrameworkVe
             if (assessmentPolicyRepository.existsByFrameworkVersionId(input.versionId())) {
                 throw new IllegalStateException("Không thể lưu trữ phiên bản framework đang được sử dụng trong policy");
             }
-            frameworkVersionRepository.updateStatus(input.versionId(), FrameworkVersionStatus.ARCHIVED);
+            frameworkVersionRepository.updateFrameworkVersionStatus(input.versionId(), FrameworkVersionStatus.ARCHIVED);
         }
 
         return null;
@@ -72,6 +65,6 @@ public class DeleteFrameworkVersionUseCase implements IUseCase<DeleteFrameworkVe
         }
         frameworkCriterionRepository.deleteByFrameworkVersionId(versionId);
         frameworkResultBandRepository.deleteByFrameworkVersionId(versionId);
-        frameworkVersionRepository.deleteById(versionId);
+        frameworkVersionRepository.deleteFrameworkVersionById(versionId);
     }
 }

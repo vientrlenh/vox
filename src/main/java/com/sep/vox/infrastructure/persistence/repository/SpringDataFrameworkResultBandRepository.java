@@ -18,6 +18,13 @@ public interface SpringDataFrameworkResultBandRepository extends JpaRepository<F
     boolean existsByFrameworkVersionIdAndLabelAndIdNot(UUID frameworkVersionId, String label, UUID id);
     List<FrameworkResultBandJpaEntity> findByFrameworkVersionId(UUID frameworkVersionId);
     List<FrameworkResultBandJpaEntity> findByFrameworkVersionIdIn(Collection<UUID> frameworkVersionIds);
+    List<FrameworkResultBandJpaEntity> findByFrameworkVersionIdAndCodeIn(UUID frameworkVersionId, Collection<String> codes);
+
+    @Query("SELECT COUNT(b) > 0 FROM FrameworkResultBandJpaEntity b WHERE b.frameworkVersionId = :versionId AND b.code IN :codes")
+    boolean existsByFrameworkVersionIdAndCodeIn(@Param("versionId") UUID versionId, @Param("codes") Collection<String> codes);
+
+    @Query("SELECT COUNT(b) > 0 FROM FrameworkResultBandJpaEntity b WHERE b.frameworkVersionId = :versionId AND b.label IN :labels")
+    boolean existsByFrameworkVersionIdAndLabelIn(@Param("versionId") UUID versionId, @Param("labels") Collection<String> labels);
 
     @Modifying
     @Query("DELETE FROM FrameworkResultBandJpaEntity b WHERE b.frameworkVersionId = :frameworkVersionId")

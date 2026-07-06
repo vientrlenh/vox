@@ -73,7 +73,7 @@ public class ChangeSystemRubricVersionStatusUseCase implements IUseCase<ChangeSy
             }
 
             // KIỂM TRA FRAMEWORK GỐC
-            Framework framework = frameworkRepository.findById(rubric.getFrameworkId())
+            Framework framework = frameworkRepository.findFrameworkById(rubric.getFrameworkId())
                     .orElseThrow(() -> new NotFoundException("Không tìm thấy Khung tiêu chuẩn (Framework) liên kết."));
             if (!framework.isActive()) {
                 throw new IllegalStateException("Không thể ban hành Rubric này vì Khung tiêu chuẩn (Framework) gốc đang bị vô hiệu hóa.");

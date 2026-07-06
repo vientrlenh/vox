@@ -13,21 +13,17 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.framework.FrameworkVersion;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
-import com.sep.vox.domain.repository.FrameworkRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
 
 @Service
 public class UpdateFrameworkVersionUseCase implements IUseCase<UpdateFrameworkVersionCommand, UUID> {
 
-    private final FrameworkRepository frameworkRepository;
     private final FrameworkVersionRepository frameworkVersionRepository;
     private final UserContextPort userContextPort;
 
     public UpdateFrameworkVersionUseCase(
-            FrameworkRepository frameworkRepository,
             FrameworkVersionRepository frameworkVersionRepository,
             UserContextPort userContextPort) {
-        this.frameworkRepository = frameworkRepository;
         this.frameworkVersionRepository = frameworkVersionRepository;
         this.userContextPort = userContextPort;
     }
@@ -35,27 +31,29 @@ public class UpdateFrameworkVersionUseCase implements IUseCase<UpdateFrameworkVe
     @Override
     @Transactional
     public UUID execute(UpdateFrameworkVersionCommand input) {
-        var now = OffsetDateTime.now();
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-
-        frameworkRepository.findById(input.frameworkId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy framework"));
-
-        var version = frameworkVersionRepository.findByIdForUpdate(input.versionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản framework"));
+        FrameworkVersion version = getVersion(input);
 
         checkValidRequest(input, version);
+        frameworkVersionRepository.saveFrameworkVersion(updateVersion(input, version));
 
-        frameworkVersionRepository.save(new FrameworkVersion(
+        return input.versionId();
+    }
+
+    private FrameworkVersion getVersion(UpdateFrameworkVersionCommand input) {
+        return frameworkVersionRepository.findFrameworkVersionByIdForUpdate(input.versionId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản framework"));
+    }
+
+    private FrameworkVersion updateVersion(UpdateFrameworkVersionCommand input, FrameworkVersion version) {
+        return new FrameworkVersion(
             version.getId(), version.getFrameworkId(),
             StringNormalization.normalizeCode(input.code()),
             StringNormalization.trimAndCollapseSpaces(input.name()),
             StringNormalization.trimAndCollapseSpaces(input.description()),
             version.getVersion(), input.effectiveFrom(), input.effectiveTo(),
-            version.getStatus(), version.getCreatedAt(), now,
-            version.getCreatedBy(), currentUserId));
-
-        return input.versionId();
+            version.getStatus(), 
+            version.getCreatedAt(), OffsetDateTime.now(),
+            version.getCreatedBy(), userContextPort.getCurrentAuthenticatedUserId());
     }
 
     private void checkValidRequest(UpdateFrameworkVersionCommand input, FrameworkVersion version) {

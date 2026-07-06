@@ -1,6 +1,7 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
@@ -23,6 +24,11 @@ public class ExamPaperSectionRepositoryImpl implements ExamPaperSectionRepositor
     public ExamPaperSection save(ExamPaperSection section) {
         var saved = springDataExamPaperSectionRepository.save(ExamPaperSectionMapper.toJpa(section));
         return ExamPaperSectionMapper.toDomain(saved);
+    }
+
+    @Override
+    public Optional<ExamPaperSection> findById(UUID id) {
+        return springDataExamPaperSectionRepository.findById(id).map(ExamPaperSectionMapper::toDomain);
     }
 
     @Override

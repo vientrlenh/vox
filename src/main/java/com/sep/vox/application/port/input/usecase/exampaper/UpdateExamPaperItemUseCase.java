@@ -116,6 +116,9 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
             currentUserId
         );
 
+        if (paper.getStatus() == ExamPaperStatus.APPROVED) {
+            paper.setStatus(ExamPaperStatus.IN_REVIEW);
+        }
         paper.setUpdatedAt(OffsetDateTime.now());
         paper.setUpdatedBy(currentUserId);
         examPaperRepository.save(paper);

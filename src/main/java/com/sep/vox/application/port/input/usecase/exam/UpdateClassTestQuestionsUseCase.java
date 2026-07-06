@@ -18,6 +18,7 @@ import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
 import com.sep.vox.domain.model.question.QuestionSharing;
 import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.domain.mapper.ExamDtoMapper;
+import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamBlueprintSection;
 import com.sep.vox.domain.model.exam.ExamBlueprintSlot;
 import com.sep.vox.domain.model.exam.ExamBlueprintSlotType;
@@ -102,6 +103,7 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
         if (examRepository.existsSubmittedSessionByExamId(exam.getId())) {
             throw new IllegalStateException("Không thể sửa câu hỏi khi đã có học sinh nộp bài");
         }
+        requirePrivateBlueprint(exam);
         if (input.sections() == null || input.sections().isEmpty()) {
             throw new IllegalStateException("Bài kiểm tra trên lớp phải có ít nhất 1 section");
         }
@@ -263,7 +265,7 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
             version.getId(),
             order,
             sectionCommand.title(),
-            null,
+            sectionCommand.instruction(),
             null,
             BigDecimal.ONE,
             now,
@@ -275,7 +277,7 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
             paper.getId(),
             order,
             sectionCommand.title(),
-            null,
+            sectionCommand.instruction(),
             null,
             now,
             now,
@@ -312,6 +314,15 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
             examQuestionSecureLockService.lockQuestionForExam(
                 questionId, examId, ExamSecurePoolReleaseMode.AUTO_AFTER_CLOSE, currentUserId
             );
+        }
+    }
+
+    private void requirePrivateBlueprint(Exam exam) {
+        boolean sharedWithOtherExam = examRepository.findAllByBlueprintId(exam.getBlueprintId()).stream()
+            .anyMatch(other -> !other.getId().equals(exam.getId()));
+        if (sharedWithOtherExam) {
+            throw new IllegalStateException(
+                "Blueprint đang được dùng chung cho kỳ thi/bài kiểm tra khác, không thể sửa câu hỏi trực tiếp ở đây");
         }
     }
 }

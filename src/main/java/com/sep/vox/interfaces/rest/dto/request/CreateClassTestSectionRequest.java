@@ -10,6 +10,8 @@ public record CreateClassTestSectionRequest(
     @NotBlank(message = "Tiêu đề section là bắt buộc")
     String title,
 
+    String instruction,
+
     @NotEmpty(message = "Section phải có ít nhất một câu hỏi")
     List<UUID> questionIds
 ) {

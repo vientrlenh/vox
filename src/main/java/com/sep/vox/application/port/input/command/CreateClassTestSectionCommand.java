@@ -6,6 +6,7 @@ import java.util.UUID;
 public record CreateClassTestSectionCommand(
     UUID examId,
     String title,
+    String instruction,
     List<UUID> questionIds
 ) {
 }

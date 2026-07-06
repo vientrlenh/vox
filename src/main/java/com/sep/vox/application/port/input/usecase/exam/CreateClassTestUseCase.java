@@ -1,11 +1,14 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -157,6 +160,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         var exam = createExam(blueprint, version, schoolClass, command, currentUserId, now);
         var paper = createPaper(exam, version.getId(), now, currentUserId);
 
+        var sectionWeights = distributeEqualWeights(command.sections().size());
         for (int i = 0; i < command.sections().size(); i++) {
             var sectionCommand = command.sections().get(i);
             List<Question> questions = new ArrayList<>();
@@ -169,7 +173,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
                 questions.add(question);
             }
 
-            var section = createSection(version, sectionCommand.title(), i + 1, now, currentUserId);
+            var section = createSection(version, sectionCommand.title(), sectionCommand.instruction(), i + 1, sectionWeights.get(i), now, currentUserId);
             var slots = createSlots(section, version, questions, now, currentUserId);
             var paperSection = createPaperSection(paper, section, now, currentUserId);
             createPaperItems(paperSection, slots, exam.getId(), currentUserId);
@@ -207,11 +211,15 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             throw new IllegalStateException("Blueprint version khong co section nao");
         }
 
+        var slotsBySectionId = examBlueprintSlotRepository.findByBlueprintVersionId(version.getId()).stream()
+            .collect(Collectors.groupingBy(ExamBlueprintSlot::getSectionId));
+        validateVersionWeights(sections, slotsBySectionId);
+
         var exam = createExam(blueprint, version, schoolClass, command, currentUserId, now);
         var paper = createPaper(exam, version.getId(), now, currentUserId);
 
         for (var section : sections) {
-            var slots = examBlueprintSlotRepository.findBySectionId(section.getId()).stream()
+            var slots = slotsBySectionId.getOrDefault(section.getId(), List.of()).stream()
                 .sorted(Comparator.comparingInt(ExamBlueprintSlot::getOrder))
                 .toList();
             validateReusableSlots(slots);
@@ -235,6 +243,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             input.sections() == null ? List.of() : input.sections().stream()
                 .map(section -> new ClassTestSectionCommand(
                     StringNormalization.trimAndCollapseSpaces(section.title()),
+                    StringNormalization.trimAndCollapseSpaces(section.instruction()),
                     section.questionIds() == null ? List.of() : section.questionIds()
                 ))
                 .toList(),
@@ -299,14 +308,14 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         ));
     }
 
-    private ExamBlueprintSection createSection(ExamBlueprintVersion version, String name, int order, OffsetDateTime now, UUID currentUserId) {
+    private ExamBlueprintSection createSection(ExamBlueprintVersion version, String name, String instruction, int order, BigDecimal sectionWeight, OffsetDateTime now, UUID currentUserId) {
         return examBlueprintSectionRepository.save(new ExamBlueprintSection(
             version.getId(),
             order,
             name,
+            instruction,
             null,
-            null,
-            BigDecimal.ONE,
+            sectionWeight,
             now,
             now,
             currentUserId,
@@ -321,12 +330,13 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             OffsetDateTime now,
             UUID currentUserId) {
         var slots = new ArrayList<ExamBlueprintSlot>();
+        var slotWeights = distributeEqualWeights(questions.size());
         for (int i = 0; i < questions.size(); i++) {
             var slot = examBlueprintSlotRepository.save(new ExamBlueprintSlot(
                 section.getId(),
                 version.getId(),
                 i + 1,
-                BigDecimal.ONE,
+                slotWeights.get(i),
                 null,
                 null,
                 ExamBlueprintSlotType.FIXED,
@@ -340,6 +350,18 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             slots.add(slot);
         }
         return slots;
+    }
+
+    private List<BigDecimal> distributeEqualWeights(int count) {
+        var weights = new ArrayList<BigDecimal>();
+        var perItem = BigDecimal.ONE.divide(BigDecimal.valueOf(count), 2, RoundingMode.DOWN);
+        var runningSum = BigDecimal.ZERO;
+        for (int i = 0; i < count - 1; i++) {
+            weights.add(perItem);
+            runningSum = runningSum.add(perItem);
+        }
+        weights.add(BigDecimal.ONE.subtract(runningSum));
+        return weights;
     }
 
     private Exam createExam(
@@ -424,6 +446,28 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         }
     }
 
+    private static final BigDecimal WEIGHT_TOLERANCE = new BigDecimal("0.01");
+
+    private void validateVersionWeights(List<ExamBlueprintSection> sections, Map<UUID, List<ExamBlueprintSlot>> slotsBySectionId) {
+        var sectionWeightSum = sections.stream()
+            .map(section -> section.getSectionWeight() == null ? BigDecimal.ZERO : section.getSectionWeight())
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        if (sectionWeightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
+            throw new IllegalStateException(
+                "Blueprint version đã chốt có tổng trọng số section không hợp lệ, không thể tạo bài kiểm tra");
+        }
+        for (var section : sections) {
+            var slots = slotsBySectionId.getOrDefault(section.getId(), List.of());
+            var slotWeightSum = slots.stream()
+                .map(slot -> slot.getWeight() == null ? BigDecimal.ZERO : slot.getWeight())
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+            if (slotWeightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
+                throw new IllegalStateException(
+                    "Phần \"" + section.getTitle() + "\" trong blueprint có tổng trọng số ô câu hỏi không hợp lệ, không thể tạo bài kiểm tra");
+            }
+        }
+    }
+
     private void validateReusableSlots(List<ExamBlueprintSlot> slots) {
         for (var slot : slots) {
             if (slot.getSlotType() == ExamBlueprintSlotType.SELECTION) {
@@ -456,7 +500,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
     }
 
     private int assignCandidates(Exam exam, ExamPaper paper, UUID schoolClassId, UUID currentUserId, OffsetDateTime now) {
-        var roster = schoolClassUserRepository.findBySchoolClassId(schoolClassId, 0, MAX_CLASS_ROSTER_SIZE).content();
+        var roster = schoolClassUserRepository.findBySchoolClassId(schoolClassId, 1, MAX_CLASS_ROSTER_SIZE).content();
         var candidates = new ArrayList<ExamCandidate>();
         for (var classUser : roster) {
             if (!classUser.isActive()) {

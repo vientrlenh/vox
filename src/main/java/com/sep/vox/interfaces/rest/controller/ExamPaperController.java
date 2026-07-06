@@ -19,14 +19,18 @@ import com.sep.vox.application.port.input.command.DeleteExamPaperCommand;
 import com.sep.vox.application.port.input.usecase.exampaper.CreateExamPaperUseCase;
 import com.sep.vox.application.port.input.usecase.exampaper.DeleteExamPaperUseCase;
 import com.sep.vox.application.port.input.usecase.exampaper.UpdateExamPaperItemUseCase;
+import com.sep.vox.application.port.input.usecase.exampaper.UpdateExamPaperSectionUseCase;
 import com.sep.vox.application.port.input.usecase.exampaper.UpdateExamPaperStatusUseCase;
 import com.sep.vox.domain.dto.ExamPaperDto;
 import com.sep.vox.domain.dto.ExamPaperItemDto;
+import com.sep.vox.domain.dto.ExamPaperSectionDto;
 import com.sep.vox.interfaces.rest.dto.request.CreateExamPaperRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateExamPaperItemRequest;
+import com.sep.vox.interfaces.rest.dto.request.UpdateExamPaperSectionRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateExamPaperStatusRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 import com.sep.vox.interfaces.rest.mapper.UpdateExamPaperItemCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.UpdateExamPaperSectionCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.UpdateExamPaperStatusCommandMapper;
 
 import jakarta.validation.Valid;
@@ -37,16 +41,19 @@ public class ExamPaperController {
 
     private final CreateExamPaperUseCase createExamPaperUseCase;
     private final UpdateExamPaperItemUseCase updateExamPaperItemUseCase;
+    private final UpdateExamPaperSectionUseCase updateExamPaperSectionUseCase;
     private final UpdateExamPaperStatusUseCase updateExamPaperStatusUseCase;
     private final DeleteExamPaperUseCase deleteExamPaperUseCase;
 
     public ExamPaperController(
             CreateExamPaperUseCase createExamPaperUseCase,
             UpdateExamPaperItemUseCase updateExamPaperItemUseCase,
+            UpdateExamPaperSectionUseCase updateExamPaperSectionUseCase,
             UpdateExamPaperStatusUseCase updateExamPaperStatusUseCase,
             DeleteExamPaperUseCase deleteExamPaperUseCase) {
         this.createExamPaperUseCase = createExamPaperUseCase;
         this.updateExamPaperItemUseCase = updateExamPaperItemUseCase;
+        this.updateExamPaperSectionUseCase = updateExamPaperSectionUseCase;
         this.updateExamPaperStatusUseCase = updateExamPaperStatusUseCase;
         this.deleteExamPaperUseCase = deleteExamPaperUseCase;
     }
@@ -73,8 +80,18 @@ public class ExamPaperController {
         return ResponseEntity.ok(ApiResponse.success("Cập nhật câu hỏi trong đề thi thành công", data));
     }
 
-    @PatchMapping("/exam-papers/{id}/status")
+    @PatchMapping("/exam-papers/{id}/sections/{sectionId}")
     @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<ApiResponse<ExamPaperSectionDto>> updateSection(
+            @PathVariable UUID id,
+            @PathVariable UUID sectionId,
+            @RequestBody UpdateExamPaperSectionRequest request) {
+        var data = updateExamPaperSectionUseCase.execute(UpdateExamPaperSectionCommandMapper.fromRequest(id, sectionId, request));
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật phần đề thi thành công", data));
+    }
+
+    @PatchMapping("/exam-papers/{id}/status")
+    @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<ExamPaperDto>> updateStatus(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateExamPaperStatusRequest request) {

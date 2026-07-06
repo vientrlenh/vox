@@ -7,6 +7,7 @@ public record UpdateClassTestSectionCommand(
     UUID examId,
     UUID sectionId,
     String title,
+    String instruction,
     List<UUID> questionIds
 ) {
 }

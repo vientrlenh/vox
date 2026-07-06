@@ -67,6 +67,16 @@ public class ExamMemberRepositoryImpl implements ExamMemberRepository {
     }
 
     @Override
+    public boolean canAttachBlueprint(UUID examId, UUID userId) {
+        return springDataExamMemberRepository.canAttachBlueprint(examId, userId);
+    }
+
+    @Override
+    public boolean canApproveBlueprintVersion(UUID examId, UUID userId) {
+        return springDataExamMemberRepository.canApproveBlueprintVersion(examId, userId);
+    }
+
+    @Override
     public void deleteById(UUID id) {
         springDataExamMemberRepository.deleteById(id);
     }

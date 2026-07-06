@@ -15,7 +15,7 @@ public final class UpdateClassTestQuestionsCommandMapper {
         return new UpdateClassTestQuestionsCommand(
             examId,
             request.sections().stream()
-                .map(section -> new ClassTestSectionCommand(section.title(), section.questionIds()))
+                .map(section -> new ClassTestSectionCommand(section.title(), section.instruction(), section.questionIds()))
                 .toList()
         );
     }

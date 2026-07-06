@@ -185,11 +185,14 @@ public class CreateExamBlueprintVersionUseCase implements IUseCase<CreateExamBlu
         );
     }
 
+    private static final BigDecimal WEIGHT_TOLERANCE = new BigDecimal("0.01");
+
     private void validateSections(CreateExamBlueprintVersionCommand command) {
         if (command.sections().isEmpty()) {
             throw new IllegalStateException("Blueprint version phải có ít nhất một section");
         }
         var sectionOrders = new HashSet<Integer>();
+        var sectionWeightSum = BigDecimal.ZERO;
         for (var section : command.sections()) {
             if (!sectionOrders.add(section.order())) {
                 throw new IllegalStateException("Thứ tự section không được trùng lặp");
@@ -198,12 +201,22 @@ public class CreateExamBlueprintVersionUseCase implements IUseCase<CreateExamBlu
                 throw new IllegalStateException("Mỗi section phải có ít nhất một slot");
             }
             var slotOrders = new HashSet<Integer>();
+            var slotWeightSum = BigDecimal.ZERO;
             for (var slot : slotsOf(section)) {
                 if (!slotOrders.add(slot.order())) {
                     throw new IllegalStateException("Thứ tự slot trong section không được trùng lặp");
                 }
                 validateSlot(slot);
+                slotWeightSum = slotWeightSum.add(defaultWeight(slot.weight()));
             }
+            if (slotWeightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
+                throw new IllegalStateException(
+                    "Tổng trọng số ô câu hỏi trong phần \"" + section.title() + "\" phải bằng 1.00");
+            }
+            sectionWeightSum = sectionWeightSum.add(defaultWeight(section.sectionWeight()));
+        }
+        if (sectionWeightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
+            throw new IllegalStateException("Tổng trọng số section phải bằng 1.00");
         }
     }
 

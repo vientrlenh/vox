@@ -249,6 +249,8 @@ extend type Query {
 
     exam(id: ID!): Exam
 
+    examMyRole(examId: ID!): String
+
     examPaper(id: ID!): ExamPaper
 
     examStatusCounts(schoolId: ID, kind: ExamKind): ExamStatusCounts!

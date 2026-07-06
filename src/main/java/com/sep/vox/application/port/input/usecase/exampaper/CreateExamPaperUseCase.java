@@ -1,9 +1,12 @@
 package com.sep.vox.application.port.input.usecase.exampaper;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +21,7 @@ import com.sep.vox.domain.dto.ExamPaperDto;
 import com.sep.vox.domain.mapper.ExamPaperDtoMapper;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamBlueprintSection;
+import com.sep.vox.domain.model.exam.ExamBlueprintSlot;
 import com.sep.vox.domain.model.exam.ExamBlueprintSlotType;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
@@ -110,6 +114,17 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
         var version = examBlueprintVersionRepository.findById(exam.getBlueprintVersionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy version blueprint đã chốt"));
 
+        List<ExamBlueprintSection> sections = examBlueprintSectionRepository
+            .findByBlueprintVersionId(version.getId())
+            .stream()
+            .sorted(Comparator.comparingInt(ExamBlueprintSection::getOrder))
+            .toList();
+
+        var slotsBySectionId = examBlueprintSlotRepository.findByBlueprintVersionId(version.getId()).stream()
+            .collect(Collectors.groupingBy(ExamBlueprintSlot::getSectionId));
+
+        validateVersionWeights(sections, slotsBySectionId);
+
         var now = OffsetDateTime.now();
         var variant = examPaperRepository.nextVariant(exam.getId());
         var paper = examPaperRepository.save(new ExamPaper(
@@ -124,12 +139,6 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
             currentUserId
         ));
 
-        List<ExamBlueprintSection> sections = examBlueprintSectionRepository
-            .findByBlueprintVersionId(version.getId())
-            .stream()
-            .sorted(Comparator.comparingInt(ExamBlueprintSection::getOrder))
-            .toList();
-
         for (var section : sections) {
             var savedSection = examPaperSectionRepository.save(new ExamPaperSection(
                 paper.getId(),
@@ -143,8 +152,8 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
                 currentUserId
             ));
 
-            var slots = examBlueprintSlotRepository.findBySectionId(section.getId()).stream()
-                .sorted(Comparator.comparingInt(slot -> slot.getOrder()))
+            var slots = slotsBySectionId.getOrDefault(section.getId(), List.of()).stream()
+                .sorted(Comparator.comparingInt(ExamBlueprintSlot::getOrder))
                 .toList();
 
             for (var slot : slots) {
@@ -177,6 +186,28 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
         }
 
         return ExamPaperDtoMapper.toDto(paper);
+    }
+
+    private static final BigDecimal WEIGHT_TOLERANCE = new BigDecimal("0.01");
+
+    private void validateVersionWeights(List<ExamBlueprintSection> sections, Map<UUID, List<ExamBlueprintSlot>> slotsBySectionId) {
+        var sectionWeightSum = sections.stream()
+            .map(section -> section.getSectionWeight() == null ? BigDecimal.ZERO : section.getSectionWeight())
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        if (sectionWeightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
+            throw new IllegalStateException(
+                "Blueprint version đã chốt có tổng trọng số section không hợp lệ, không thể sinh đề thi");
+        }
+        for (var section : sections) {
+            var slots = slotsBySectionId.getOrDefault(section.getId(), List.of());
+            var slotWeightSum = slots.stream()
+                .map(slot -> slot.getWeight() == null ? BigDecimal.ZERO : slot.getWeight())
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+            if (slotWeightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
+                throw new IllegalStateException(
+                    "Phần \"" + section.getTitle() + "\" trong blueprint có tổng trọng số ô câu hỏi không hợp lệ, không thể sinh đề thi");
+            }
+        }
     }
 
     private ExamPaperDto createFromCopy(Exam exam, UUID copyFromPaperId, UUID currentUserId) {

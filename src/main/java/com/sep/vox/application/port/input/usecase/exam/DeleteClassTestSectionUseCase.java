@@ -12,6 +12,7 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.domain.mapper.ExamDtoMapper;
+import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamStatus;
@@ -77,6 +78,7 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
         if (examRepository.existsSubmittedSessionByExamId(exam.getId())) {
             throw new IllegalStateException("Không thể sửa câu hỏi khi đã có học sinh nộp bài");
         }
+        requirePrivateBlueprint(exam);
 
         var section = examBlueprintSectionRepository.findById(input.sectionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy section"));
@@ -143,5 +145,14 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
         exam.setUpdatedBy(currentUserId);
         var saved = examRepository.save(exam);
         return ExamDtoMapper.toDto(saved);
+    }
+
+    private void requirePrivateBlueprint(Exam exam) {
+        boolean sharedWithOtherExam = examRepository.findAllByBlueprintId(exam.getBlueprintId()).stream()
+            .anyMatch(other -> !other.getId().equals(exam.getId()));
+        if (sharedWithOtherExam) {
+            throw new IllegalStateException(
+                "Blueprint đang được dùng chung cho kỳ thi/bài kiểm tra khác, không thể sửa câu hỏi trực tiếp ở đây");
+        }
     }
 }

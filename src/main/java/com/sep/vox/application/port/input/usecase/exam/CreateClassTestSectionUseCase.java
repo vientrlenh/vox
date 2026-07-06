@@ -13,6 +13,7 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.domain.mapper.ExamDtoMapper;
+import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamBlueprintSection;
 import com.sep.vox.domain.model.exam.ExamBlueprintSlot;
 import com.sep.vox.domain.model.exam.ExamBlueprintSlotType;
@@ -97,6 +98,7 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
         if (examRepository.existsSubmittedSessionByExamId(exam.getId())) {
             throw new IllegalStateException("Không thể sửa câu hỏi khi đã có học sinh nộp bài");
         }
+        requirePrivateBlueprint(exam);
         if (input.questionIds() == null || input.questionIds().isEmpty()) {
             throw new IllegalStateException("Section phải có ít nhất 1 câu hỏi");
         }
@@ -126,10 +128,10 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
 
         var now = OffsetDateTime.now();
         var section = examBlueprintSectionRepository.save(new ExamBlueprintSection(
-            version.getId(), order, input.title(), null, null, BigDecimal.ONE, now, now, currentUserId, currentUserId
+            version.getId(), order, input.title(), input.instruction(), null, BigDecimal.ONE, now, now, currentUserId, currentUserId
         ));
         var paperSection = examPaperSectionRepository.save(new ExamPaperSection(
-            paper.getId(), order, input.title(), null, null, now, now, currentUserId, currentUserId
+            paper.getId(), order, input.title(), input.instruction(), null, now, now, currentUserId, currentUserId
         ));
 
         var questionIds = input.questionIds();
@@ -167,5 +169,14 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
         exam.setUpdatedBy(currentUserId);
         var saved = examRepository.save(exam);
         return ExamDtoMapper.toDto(saved);
+    }
+
+    private void requirePrivateBlueprint(Exam exam) {
+        boolean sharedWithOtherExam = examRepository.findAllByBlueprintId(exam.getBlueprintId()).stream()
+            .anyMatch(other -> !other.getId().equals(exam.getId()));
+        if (sharedWithOtherExam) {
+            throw new IllegalStateException(
+                "Blueprint đang được dùng chung cho kỳ thi/bài kiểm tra khác, không thể sửa câu hỏi trực tiếp ở đây");
+        }
     }
 }

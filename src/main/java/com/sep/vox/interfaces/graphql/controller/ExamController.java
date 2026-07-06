@@ -16,9 +16,11 @@ import com.sep.vox.application.port.input.query.ViewExamDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewExamPaperDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewExamStatusCountsQuery;
 import com.sep.vox.application.port.input.query.ViewExamsQuery;
+import com.sep.vox.application.port.input.query.ViewMyExamRoleQuery;
 import com.sep.vox.application.port.input.usecase.exam.ViewExamDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.exam.ViewExamStatusCountsUseCase;
 import com.sep.vox.application.port.input.usecase.exam.ViewExamsUseCase;
+import com.sep.vox.application.port.input.usecase.exam.ViewMyExamRoleUseCase;
 import com.sep.vox.application.port.input.usecase.exampaper.ViewExamPaperDetailsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.ExamStatusCountsDto;
@@ -65,6 +67,7 @@ public class ExamController {
     private final ViewExamDetailsUseCase viewExamDetailsUseCase;
     private final ViewExamPaperDetailsUseCase viewExamPaperDetailsUseCase;
     private final ViewExamStatusCountsUseCase viewExamStatusCountsUseCase;
+    private final ViewMyExamRoleUseCase viewMyExamRoleUseCase;
     private final ExamBlueprintRepository examBlueprintRepository;
     private final ExamBlueprintVersionRepository examBlueprintVersionRepository;
     private final ExamMemberRepository examMemberRepository;
@@ -84,6 +87,7 @@ public class ExamController {
             ViewExamDetailsUseCase viewExamDetailsUseCase,
             ViewExamPaperDetailsUseCase viewExamPaperDetailsUseCase,
             ViewExamStatusCountsUseCase viewExamStatusCountsUseCase,
+            ViewMyExamRoleUseCase viewMyExamRoleUseCase,
             ExamBlueprintRepository examBlueprintRepository,
             ExamBlueprintVersionRepository examBlueprintVersionRepository,
             ExamMemberRepository examMemberRepository,
@@ -101,6 +105,7 @@ public class ExamController {
         this.viewExamDetailsUseCase = viewExamDetailsUseCase;
         this.viewExamPaperDetailsUseCase = viewExamPaperDetailsUseCase;
         this.viewExamStatusCountsUseCase = viewExamStatusCountsUseCase;
+        this.viewMyExamRoleUseCase = viewMyExamRoleUseCase;
         this.examBlueprintRepository = examBlueprintRepository;
         this.examBlueprintVersionRepository = examBlueprintVersionRepository;
         this.examMemberRepository = examMemberRepository;
@@ -144,6 +149,11 @@ public class ExamController {
     @QueryMapping(name = "exam")
     public ExamDto exam(@Argument(name = "id") UUID id) {
         return viewExamDetailsUseCase.execute(new ViewExamDetailsQuery(id));
+    }
+
+    @QueryMapping(name = "examMyRole")
+    public String examMyRole(@Argument(name = "examId") UUID examId) {
+        return viewMyExamRoleUseCase.execute(new ViewMyExamRoleQuery(examId));
     }
 
     @QueryMapping(name = "examPaper")

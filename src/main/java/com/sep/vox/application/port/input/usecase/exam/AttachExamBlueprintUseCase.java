@@ -17,10 +17,10 @@ import com.sep.vox.domain.mapper.ExamDtoMapper;
 import com.sep.vox.domain.model.exam.ExamBlueprint;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamBlueprintVersionStatus;
-import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.repository.ExamBlueprintRepository;
 import com.sep.vox.domain.repository.ExamBlueprintVersionRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
+import com.sep.vox.domain.repository.ExamPaperRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.SchoolGradeLevelRepository;
 
@@ -31,6 +31,7 @@ public class AttachExamBlueprintUseCase implements IUseCase<AttachExamBlueprintC
     private final ExamBlueprintRepository examBlueprintRepository;
     private final ExamBlueprintVersionRepository examBlueprintVersionRepository;
     private final ExamMemberRepository examMemberRepository;
+    private final ExamPaperRepository examPaperRepository;
     private final SchoolGradeLevelRepository schoolGradeLevelRepository;
     private final UserContextPort userContextPort;
 
@@ -39,12 +40,14 @@ public class AttachExamBlueprintUseCase implements IUseCase<AttachExamBlueprintC
             ExamBlueprintRepository examBlueprintRepository,
             ExamBlueprintVersionRepository examBlueprintVersionRepository,
             ExamMemberRepository examMemberRepository,
+            ExamPaperRepository examPaperRepository,
             SchoolGradeLevelRepository schoolGradeLevelRepository,
             UserContextPort userContextPort) {
         this.examRepository = examRepository;
         this.examBlueprintRepository = examBlueprintRepository;
         this.examBlueprintVersionRepository = examBlueprintVersionRepository;
         this.examMemberRepository = examMemberRepository;
+        this.examPaperRepository = examPaperRepository;
         this.schoolGradeLevelRepository = schoolGradeLevelRepository;
         this.userContextPort = userContextPort;
     }
@@ -67,8 +70,8 @@ public class AttachExamBlueprintUseCase implements IUseCase<AttachExamBlueprintC
             throw new ForbiddenException("Chỉ áp dụng cho bài kiểm tra tập trung");
         }
 
-        boolean isChair = examMemberRepository.existsByExamIdAndUserIdAndRole(exam.getId(), currentUserId, ExamMemberRole.CHAIR);
-        boolean isAuthor = examMemberRepository.existsByExamIdAndUserIdAndRole(exam.getId(), currentUserId, ExamMemberRole.AUTHOR);
+        boolean isAuthor = examMemberRepository.canAttachBlueprint(exam.getId(), currentUserId);
+        boolean isChair = examMemberRepository.canApproveBlueprintVersion(exam.getId(), currentUserId);
 
         if (input.blueprintId() != null) {
             if (!isAuthor) {
@@ -82,6 +85,7 @@ public class AttachExamBlueprintUseCase implements IUseCase<AttachExamBlueprintC
             }
 
             if (!input.blueprintId().equals(exam.getBlueprintId())) {
+                requireNoExistingPapers(exam.getId());
                 exam.setBlueprintVersionId(null);
             }
             exam.setBlueprintId(input.blueprintId());
@@ -91,6 +95,7 @@ public class AttachExamBlueprintUseCase implements IUseCase<AttachExamBlueprintC
             if (!isAuthor) {
                 throw new ForbiddenException("Quyền truy cập bị từ chối");
             }
+            requireNoExistingPapers(exam.getId());
             var createdBlueprint = createInlineBlueprint(input.newBlueprint(), exam.getSchoolId(), exam.getLanguageId(), currentUserId);
             exam.setBlueprintId(createdBlueprint.getId());
             exam.setBlueprintVersionId(null);
@@ -113,12 +118,22 @@ public class AttachExamBlueprintUseCase implements IUseCase<AttachExamBlueprintC
                 throw new IllegalStateException("Chỉ được chốt version đã PUBLISHED");
             }
 
+            if (!input.blueprintVersionId().equals(exam.getBlueprintVersionId())) {
+                requireNoExistingPapers(exam.getId());
+            }
             exam.setBlueprintVersionId(input.blueprintVersionId());
         }
 
         exam.setUpdatedAt(OffsetDateTime.now());
         exam.setUpdatedBy(currentUserId);
         return ExamDtoMapper.toDto(examRepository.save(exam));
+    }
+
+    private void requireNoExistingPapers(UUID examId) {
+        if (examPaperRepository.existsByExamId(examId)) {
+            throw new IllegalStateException(
+                "Kỳ thi đã có mã đề — phải xóa hết mã đề hiện có trước khi đổi blueprint hoặc chốt sang phiên bản khác");
+        }
     }
 
     private ExamBlueprint createInlineBlueprint(

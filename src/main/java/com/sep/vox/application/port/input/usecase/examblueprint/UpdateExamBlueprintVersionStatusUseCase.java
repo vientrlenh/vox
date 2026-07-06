@@ -2,7 +2,9 @@ package com.sep.vox.application.port.input.usecase.examblueprint;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,10 +20,12 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.ExamBlueprintVersionDto;
 import com.sep.vox.domain.mapper.ExamBlueprintVersionDtoMapper;
 import com.sep.vox.domain.model.exam.ExamBlueprint;
+import com.sep.vox.domain.model.exam.ExamBlueprintSlot;
 import com.sep.vox.domain.model.exam.ExamBlueprintVersion;
 import com.sep.vox.domain.model.exam.ExamBlueprintVersionStatus;
 import com.sep.vox.domain.repository.ExamBlueprintRepository;
 import com.sep.vox.domain.repository.ExamBlueprintSectionRepository;
+import com.sep.vox.domain.repository.ExamBlueprintSlotRepository;
 import com.sep.vox.domain.repository.ExamBlueprintVersionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
@@ -32,6 +36,7 @@ public class UpdateExamBlueprintVersionStatusUseCase
     private final ExamBlueprintVersionRepository examBlueprintVersionRepository;
     private final ExamBlueprintRepository examBlueprintRepository;
     private final ExamBlueprintSectionRepository examBlueprintSectionRepository;
+    private final ExamBlueprintSlotRepository examBlueprintSlotRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserContextPort userContextPort;
     private final EventPublisherPort eventPublisherPort;
@@ -40,12 +45,14 @@ public class UpdateExamBlueprintVersionStatusUseCase
             ExamBlueprintVersionRepository examBlueprintVersionRepository,
             ExamBlueprintRepository examBlueprintRepository,
             ExamBlueprintSectionRepository examBlueprintSectionRepository,
+            ExamBlueprintSlotRepository examBlueprintSlotRepository,
             SchoolUserRepository schoolUserRepository,
             UserContextPort userContextPort,
             EventPublisherPort eventPublisherPort) {
         this.examBlueprintVersionRepository = examBlueprintVersionRepository;
         this.examBlueprintRepository = examBlueprintRepository;
         this.examBlueprintSectionRepository = examBlueprintSectionRepository;
+        this.examBlueprintSlotRepository = examBlueprintSlotRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.userContextPort = userContextPort;
         this.eventPublisherPort = eventPublisherPort;
@@ -113,6 +120,8 @@ public class UpdateExamBlueprintVersionStatusUseCase
         }
     }
 
+    private static final BigDecimal WEIGHT_TOLERANCE = new BigDecimal("0.01");
+
     private void validatePublishable(ExamBlueprintVersion version) {
         var sections = examBlueprintSectionRepository.findByBlueprintVersionId(version.getId());
         if (sections.isEmpty()) {
@@ -121,8 +130,21 @@ public class UpdateExamBlueprintVersionStatusUseCase
         var weightSum = sections.stream()
             .map(section -> section.getSectionWeight() == null ? BigDecimal.ZERO : section.getSectionWeight())
             .reduce(BigDecimal.ZERO, BigDecimal::add);
-        if (weightSum.subtract(BigDecimal.ONE).abs().compareTo(new BigDecimal("0.01")) > 0) {
+        if (weightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
             throw new IllegalStateException("Tổng trọng số section phải bằng 1.00 trước khi publish");
+        }
+
+        var slotsBySectionId = examBlueprintSlotRepository.findByBlueprintVersionId(version.getId()).stream()
+            .collect(Collectors.groupingBy(ExamBlueprintSlot::getSectionId));
+        for (var section : sections) {
+            var slots = slotsBySectionId.getOrDefault(section.getId(), List.of());
+            var slotWeightSum = slots.stream()
+                .map(slot -> slot.getWeight() == null ? BigDecimal.ZERO : slot.getWeight())
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+            if (slotWeightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
+                throw new IllegalStateException(
+                    "Tổng trọng số ô câu hỏi trong phần \"" + section.getTitle() + "\" phải bằng 1.00 trước khi publish");
+            }
         }
     }
 }

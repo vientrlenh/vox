@@ -56,4 +56,38 @@ public interface SpringDataExamMemberRepository extends JpaRepository<ExamMember
         @Param("schoolId") UUID schoolId,
         @Param("excludeUserId") UUID excludeUserId
     );
+
+    @Query("""
+        SELECT CASE WHEN (
+            EXISTS (
+                SELECT 1 FROM UserRoleJpaEntity ur
+                JOIN RoleJpaEntity r ON r.id = ur.roleId
+                WHERE ur.userId = :userId AND r.code = 'SCHOOL_ADMIN'
+            )
+            OR EXISTS (
+                SELECT 1 FROM ExamMemberJpaEntity em
+                WHERE em.examId = :examId AND em.userId = :userId AND em.role = 'AUTHOR'
+            )
+        ) THEN true ELSE false END
+        FROM ExamJpaEntity e
+        WHERE e.id = :examId
+    """)
+    boolean canAttachBlueprint(@Param("examId") UUID examId, @Param("userId") UUID userId);
+
+    @Query("""
+        SELECT CASE WHEN (
+            EXISTS (
+                SELECT 1 FROM UserRoleJpaEntity ur
+                JOIN RoleJpaEntity r ON r.id = ur.roleId
+                WHERE ur.userId = :userId AND r.code = 'SCHOOL_ADMIN'
+            )
+            OR EXISTS (
+                SELECT 1 FROM ExamMemberJpaEntity em
+                WHERE em.examId = :examId AND em.userId = :userId AND em.role = 'CHAIR'
+            )
+        ) THEN true ELSE false END
+        FROM ExamJpaEntity e
+        WHERE e.id = :examId
+    """)
+    boolean canApproveBlueprintVersion(@Param("examId") UUID examId, @Param("userId") UUID userId);
 }

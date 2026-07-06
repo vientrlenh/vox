@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.springframework.data.core.TypedPropertyPath;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
@@ -33,8 +32,6 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
         return springDataSchoolClassRepository.findById(id)
             .map(SchoolClassMapper::toDomain);
     }
-
-    
 
     @Override
     public SchoolClass save(SchoolClass schoolClass) {

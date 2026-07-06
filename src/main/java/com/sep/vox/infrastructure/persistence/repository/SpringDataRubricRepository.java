@@ -2,7 +2,6 @@ package com.sep.vox.infrastructure.persistence.repository;
 
 import java.util.UUID;
 
-import com.sep.vox.domain.model.rubric.RubricOwnerType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -21,10 +20,10 @@ public interface SpringDataRubricRepository extends JpaRepository<RubricJpaEntit
     @Modifying
     @Query("""
             
-                UPDATE RubricJpaEntity r SET 
+        UPDATE RubricJpaEntity r SET 
             r.name = COALESCE(:name, r.name),
             r.description = COALESCE(:description, r.description)
-            WHERE r.id = :id
+        WHERE r.id = :id
             """)
     int updateRubricAtomic(
             @Param("id") UUID id,

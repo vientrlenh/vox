@@ -1,6 +1,8 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
 import java.util.UUID;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.PageRequest;
@@ -35,6 +37,14 @@ public class ExamRepositoryImpl implements ExamRepository {
         var entity = ExamMapper.toJpa(exam);
         var saved = springDataExamRepository.save(entity);
         return ExamMapper.toDomain(saved);
+    }
+
+    @Override
+    public List<Exam> findByIdIn(Collection<UUID> ids) {
+        return springDataExamRepository.findByIdIn(ids)
+            .stream()
+            .map(ExamMapper::toDomain)
+            .toList();
     }
 
     @Override

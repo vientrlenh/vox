@@ -90,7 +90,7 @@ public class CreateSystemRubricCriteriaUseCase implements IUseCase<CreateSystemR
         // BƯỚC TỐI ƯU N+1: GOM ID VÀ QUERY 1 LẦN DUY NHẤT ĐỂ VALIDATE FRAMEWORK
 
         Set<UUID> inputFrameworkIds = command.criteria().stream()
-                .map(CreateSystemRubricCriteriaCommand.CriterionItemCommand::frameworkCriterionId)
+                .map(c -> c.frameworkCriterionId())
                 .collect(Collectors.toSet());
 
         List<FrameworkCriterion> existingFwCriteria = frameworkCriterionRepository.findAllByIds(inputFrameworkIds.stream().toList());
@@ -161,6 +161,6 @@ public class CreateSystemRubricCriteriaUseCase implements IUseCase<CreateSystemR
             throw new IllegalStateException("Lỗi lưu dữ liệu: Mã tiêu chí hoặc Khung tiêu chuẩn (Framework) đã tồn tại trong phiên bản Rubric hệ thống này từ trước.");
         }
 
-        return criteriaToSave.stream().map(RubricCriterion::getId).collect(Collectors.toList());
+        return criteriaToSave.stream().map(rc -> rc.getId()).collect(Collectors.toList());
     }
 }

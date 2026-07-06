@@ -59,7 +59,7 @@ public class AddSystemRubricVersionsUseCase implements IUseCase<AddSystemRubricV
 
         // 3. Lấy danh sách Version cũ để đối chiếu
         Set<Integer> existingVersions = rubricVersionRepository.findByRubricId(command.rubricId()).stream()
-                .map(RubricVersion::getVersion)
+                .map(rv -> rv.getVersion())
                 .collect(Collectors.toSet());
 
         Set<Integer> incomingVersions = new HashSet<>();

@@ -67,11 +67,11 @@ public class ExamBlueprintController {
 
     @QueryMapping(name = "examBlueprints")
     public PageResult<ExamBlueprintDto> examBlueprints(
-            @Argument UUID schoolId,
-            @Argument Boolean isActive,
-            @Argument UUID languageId,
-            @Argument String examKind,
-            @Argument String keyword,
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "isActive") Boolean isActive,
+            @Argument(name = "languageId") UUID languageId,
+            @Argument(name = "examKind") String examKind,
+            @Argument(name = "keyword") String keyword,
             @Argument(name = "page") int page,
             @Argument(name = "size") int size) {
         validatePage(page, size);
@@ -86,7 +86,7 @@ public class ExamBlueprintController {
     }
 
     @SchemaMapping(typeName = "ExamBlueprint", field = "versions")
-    public List<ExamBlueprintVersionDto> versions(ExamBlueprintDto source, @Argument ExamBlueprintVersionStatus status) {
+    public List<ExamBlueprintVersionDto> versions(ExamBlueprintDto source, @Argument(name = "status") ExamBlueprintVersionStatus status) {
         if (status == null) {
             return ExamBlueprintVersionDtoMapper.toDtoList(examBlueprintVersionRepository.findByBlueprintId(source.id()));
         }

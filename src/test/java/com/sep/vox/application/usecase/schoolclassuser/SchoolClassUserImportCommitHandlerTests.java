@@ -18,7 +18,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionStatus;
 
-import com.sep.vox.application.port.input.service.ImportCommitResult;
 import com.sep.vox.application.port.input.service.SchoolClassUserImportCommitHandler;
 import com.sep.vox.application.support.FakeJsonSerializationPort;
 import com.sep.vox.application.usecase.TestSchoolUserRepository;

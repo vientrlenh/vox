@@ -140,6 +140,6 @@ public class CreateSchoolRubricCriterionBandsUseCase implements IUseCase<CreateS
             throw new IllegalStateException("Lỗi lưu dữ liệu: Mã mức đánh giá (Code) đã được cấu hình cho tiêu chí này từ trước.");
         }
 
-        return bandsToSave.stream().map(RubricCriterionBand::getId).collect(Collectors.toList());
+        return bandsToSave.stream().map(rcb -> rcb.getId()).collect(Collectors.toList());
     }
 }

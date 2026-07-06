@@ -57,7 +57,7 @@ public class RubricVersionImportCommitHandler implements ImportCommitHandler {
         // Tích hợp UPSERT: Lấy toàn bộ Version cũ dưới DB lên lưu vào Map để đối chiếu
         List<RubricVersion> existingVersionsList = rubricVersionRepository.findByRubricId(rubricId);
         Map<Integer, RubricVersion> existingVersionMap = existingVersionsList.stream()
-                .collect(Collectors.toMap(RubricVersion::getVersion, v -> v, (u, v) -> u));
+                .collect(Collectors.toMap(rv -> rv.getVersion(), v -> v, (u, v) -> u));
 
         List<RubricVersion> versionsToSave = new ArrayList<>();
         long importedCount = 0;

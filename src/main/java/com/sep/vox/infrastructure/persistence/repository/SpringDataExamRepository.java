@@ -1,6 +1,8 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
 import java.util.Optional;
+import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -12,7 +14,7 @@ import org.springframework.data.repository.query.Param;
 import com.sep.vox.infrastructure.persistence.entity.ExamJpaEntity;
 
 public interface SpringDataExamRepository extends JpaRepository<ExamJpaEntity, UUID> {
-
+List<ExamJpaEntity> findByIdIn(Collection<UUID> ids);
     @Query("""
         SELECT e
         FROM ExamJpaEntity e

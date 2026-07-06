@@ -97,7 +97,7 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
 
         // 4.1 Lấy toàn bộ danh sách ID của FrameworkResultBand từ request (CHỐNG N+1)
         List<UUID> frameworkBandIds = command.resultBands().stream()
-                .map(CreateSchoolRubricResultBandsCommand.ResultBandItemCommand::frameworkResultBandId)
+                .map(i -> i.frameworkResultBandId())
                 .filter(Objects::nonNull)
                 .distinct()
                 .toList();
@@ -107,7 +107,7 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
         if (!frameworkBandIds.isEmpty()) {
             List<FrameworkResultBand> existingFrameworkBands = frameworkResultBandRepository.findAllByIds(frameworkBandIds);
             frameworkBandMap = existingFrameworkBands.stream()
-                    .collect(Collectors.toMap(FrameworkResultBand::getId, band -> band));
+                    .collect(Collectors.toMap(b -> b.getId(), band -> band));
         } else {
             frameworkBandMap = new HashMap<>();
         }
@@ -169,6 +169,6 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
         }
 
         // Bốc ID từ cái mảng savedBands (đã được DB gắn ID) chứ không phải mảng bandsToSave gốc
-        return savedBands.stream().map(RubricResultBand::getId).toList();
+        return savedBands.stream().map(b -> b.getId()).toList();
     }
 }

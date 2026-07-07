@@ -107,14 +107,14 @@ class ImportExamCandidatesFromGradeUseCaseTests {
     void should_import_new_active_students_across_classes_and_dedupe() {
         when(schoolClassRepository.findBySchoolId(schoolId, null, null, null, gradeId, 1, MAX_CLASSES))
             .thenReturn(new PageResult<>(List.of(schoolClass(class1Id), schoolClass(class2Id)), 1, MAX_CLASSES, 2, 1));
-        when(schoolClassUserRepository.findBySchoolClassId(class1Id, 0, MAX_ROSTER)).thenReturn(new PageResult<>(List.of(
+        when(schoolClassUserRepository.findBySchoolClassId(class1Id, 1, MAX_ROSTER)).thenReturn(new PageResult<>(List.of(
             classUser(activeStudent, class1Id, true),
             classUser(sharedStudent, class1Id, true),
             classUser(existingStudent, class1Id, true),
             classUser(inactiveStudent, class1Id, false),
             classUser(teacherUser, class1Id, true)
         ), 0, MAX_ROSTER, 5, 1));
-        when(schoolClassUserRepository.findBySchoolClassId(class2Id, 0, MAX_ROSTER)).thenReturn(new PageResult<>(List.of(
+        when(schoolClassUserRepository.findBySchoolClassId(class2Id, 1, MAX_ROSTER)).thenReturn(new PageResult<>(List.of(
             classUser(sharedStudent, class2Id, true),
             classUser(student2, class2Id, true)
         ), 0, MAX_ROSTER, 2, 1));
@@ -153,7 +153,7 @@ class ImportExamCandidatesFromGradeUseCaseTests {
     void should_return_empty_when_nothing_to_import() {
         when(schoolClassRepository.findBySchoolId(schoolId, null, null, null, gradeId, 1, MAX_CLASSES))
             .thenReturn(new PageResult<>(List.of(schoolClass(class1Id)), 1, MAX_CLASSES, 1, 1));
-        when(schoolClassUserRepository.findBySchoolClassId(class1Id, 0, MAX_ROSTER)).thenReturn(new PageResult<>(List.of(
+        when(schoolClassUserRepository.findBySchoolClassId(class1Id, 1, MAX_ROSTER)).thenReturn(new PageResult<>(List.of(
             classUser(existingStudent, class1Id, true)
         ), 0, MAX_ROSTER, 1, 1));
         when(userRoleQueryRepository.findUserIdsByRoleCode(anyCollection(), eq(SchoolRoleCodes.STUDENT)))

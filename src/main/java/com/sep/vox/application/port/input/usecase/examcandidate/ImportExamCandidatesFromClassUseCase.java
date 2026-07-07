@@ -76,8 +76,9 @@ public class ImportExamCandidatesFromClassUseCase
         }
 
         var now = OffsetDateTime.now();
+        // findBySchoolClassId là 1-based (PageRequest.of(page - 1, size)) → trang đầu là 1, KHÔNG phải 0.
         var roster = schoolClassUserRepository.findBySchoolClassId(
-            schoolClass.getId(), 0, MAX_CLASS_ROSTER_SIZE).content();
+            schoolClass.getId(), 1, MAX_CLASS_ROSTER_SIZE).content();
 
         var activeUserIds = roster.stream()
             .filter(SchoolClassUser::isActive)

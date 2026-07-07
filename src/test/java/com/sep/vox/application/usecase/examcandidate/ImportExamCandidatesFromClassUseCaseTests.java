@@ -81,7 +81,7 @@ class ImportExamCandidatesFromClassUseCaseTests {
 
     @Test
     void should_import_only_new_active_students_and_skip_existing() {
-        when(schoolClassUserRepository.findBySchoolClassId(classId, 0, 1000)).thenReturn(new PageResult<>(List.of(
+        when(schoolClassUserRepository.findBySchoolClassId(classId, 1, 1000)).thenReturn(new PageResult<>(List.of(
             classUser(activeStudent, true),
             classUser(existingStudent, true),
             classUser(inactiveStudent, false),
@@ -103,7 +103,7 @@ class ImportExamCandidatesFromClassUseCaseTests {
 
     @Test
     void should_return_empty_when_nothing_to_import() {
-        when(schoolClassUserRepository.findBySchoolClassId(classId, 0, 1000)).thenReturn(new PageResult<>(List.of(
+        when(schoolClassUserRepository.findBySchoolClassId(classId, 1, 1000)).thenReturn(new PageResult<>(List.of(
             classUser(existingStudent, true)
         ), 0, 1000, 1, 1));
         when(userRoleQueryRepository.findUserIdsByRoleCode(anyCollection(), eq(SchoolRoleCodes.STUDENT)))

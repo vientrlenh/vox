@@ -92,8 +92,9 @@ public class ImportExamCandidatesFromGradeUseCase
 
         var activeUserIds = new LinkedHashSet<UUID>();
         for (var schoolClass : classes) {
+            // findBySchoolClassId là 1-based (PageRequest.of(page - 1, size)) → trang đầu là 1, KHÔNG phải 0.
             var roster = schoolClassUserRepository.findBySchoolClassId(
-                schoolClass.getId(), 0, MAX_CLASS_ROSTER_SIZE).content();
+                schoolClass.getId(), 1, MAX_CLASS_ROSTER_SIZE).content();
             for (var classUser : roster) {
                 if (classUser.isActive()) {
                     activeUserIds.add(classUser.getUserId());

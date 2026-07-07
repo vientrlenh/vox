@@ -1,6 +1,7 @@
 package com.sep.vox.domain.repository;
 
 import java.time.OffsetDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -39,4 +40,6 @@ public interface ExamScheduleRepository {
     int updateAtomic(UUID id, UUID schoolRoomId, OffsetDateTime start, OffsetDateTime end,
             OffsetDateTime now, UUID updatedBy);
     List<ExamSchedule> findByExamIdAndInSchedule(UUID examId, OffsetDateTime now);
+    List<ExamSchedule> findByIdInAndInSchedule(Collection<UUID> ids, OffsetDateTime now);
+    Optional<ExamSchedule> findByIdAndInSchedule(UUID id, OffsetDateTime now);
 }

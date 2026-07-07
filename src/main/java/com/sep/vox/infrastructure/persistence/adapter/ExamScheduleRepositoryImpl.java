@@ -1,6 +1,7 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
 import java.time.OffsetDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -83,4 +84,18 @@ public class ExamScheduleRepositoryImpl implements ExamScheduleRepository {
             .toList();
     }
 
+    @Override
+    public List<ExamSchedule> findByIdInAndInSchedule(Collection<UUID> ids, OffsetDateTime now) {
+        return springDataExamScheduleRepository.findByIdInAndInSchedule(ids, now)
+            .stream()
+            .map(ExamScheduleMapper::toDomain)
+            .toList();
+    }
+
+    @Override
+    public Optional<ExamSchedule> findByIdAndInSchedule(UUID id, OffsetDateTime now) {
+        return springDataExamScheduleRepository.findByIdAndInSchedule(id, now)
+            .map(ExamScheduleMapper::toDomain);
+    }
+    
 }

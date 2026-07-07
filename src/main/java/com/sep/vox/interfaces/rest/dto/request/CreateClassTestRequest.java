@@ -3,7 +3,10 @@ package com.sep.vox.interfaces.rest.dto.request;
 import java.util.List;
 import java.util.UUID;
 
+import com.sep.vox.domain.model.exam.ResultDecisionMethod;
+
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -22,6 +25,11 @@ public record CreateClassTestRequest(
     List<ClassTestSectionRequest> sections,
 
     UUID existingBlueprintId,
-    UUID existingBlueprintVersionId
+    UUID existingBlueprintVersionId,
+
+    @Min(value = 1, message = "Số lượt thi tối đa phải lớn hơn 0")
+    Integer maxAttempt,
+
+    ResultDecisionMethod resultDecisionMethod
 ) {
 }

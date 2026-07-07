@@ -20,7 +20,9 @@ public final class CreateClassTestCommandMapper {
                 .map(section -> new ClassTestSectionCommand(section.title(), section.instruction(), section.questionIds()))
                 .toList(),
             request.existingBlueprintId(),
-            request.existingBlueprintVersionId()
+            request.existingBlueprintVersionId(),
+            request.maxAttempt(),
+            request.resultDecisionMethod()
         );
     }
 }

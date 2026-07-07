@@ -257,7 +257,9 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
                 ))
                 .toList(),
             input.existingBlueprintId(),
-            input.existingBlueprintVersionId()
+            input.existingBlueprintVersionId(),
+            input.maxAttempt(),
+            input.resultDecisionMethod()
         );
     }
 
@@ -347,8 +349,8 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             ExamKind.CLASS_TEST,
             ExamDeliveryMode.STUDENT_DEVICE,
             status,
-            1,
-            ResultDecisionMethod.HIGHEST,
+            command.maxAttempt() == null ? 1 : command.maxAttempt(),
+            command.resultDecisionMethod() == null ? ResultDecisionMethod.HIGHEST : command.resultDecisionMethod(),
             openAt,
             closeAt,
             null,

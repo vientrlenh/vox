@@ -27,6 +27,7 @@ import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamPaper;
 import com.sep.vox.domain.model.exam.ExamPaperStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
+import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamPaperRepository;
 import com.sep.vox.domain.repository.ExamRepository;
@@ -37,6 +38,7 @@ class UpdateExamDeliveryModeUseCaseTests {
     private ExamRepository examRepository;
     private ExamPaperRepository examPaperRepository;
     private ExamMemberRepository examMemberRepository;
+    private ExamCandidateRepository examCandidateRepository;
     private SchoolUserRepository schoolUserRepository;
     private UserRoleQueryRepository userRoleQueryRepository;
     private UserContextPort userContextPort;
@@ -51,6 +53,7 @@ class UpdateExamDeliveryModeUseCaseTests {
         examRepository = mock(ExamRepository.class);
         examPaperRepository = mock(ExamPaperRepository.class);
         examMemberRepository = mock(ExamMemberRepository.class);
+        examCandidateRepository = mock(ExamCandidateRepository.class);
         schoolUserRepository = mock(SchoolUserRepository.class);
         userRoleQueryRepository = mock(UserRoleQueryRepository.class);
         userContextPort = mock(UserContextPort.class);
@@ -58,6 +61,7 @@ class UpdateExamDeliveryModeUseCaseTests {
             examRepository,
             examPaperRepository,
             examMemberRepository,
+            examCandidateRepository,
             schoolUserRepository,
             userRoleQueryRepository,
             userContextPort
@@ -105,6 +109,19 @@ class UpdateExamDeliveryModeUseCaseTests {
         assertThat(exam.getDeliveryMode()).isEqualTo(ExamDeliveryMode.LAB);
         assertThat(result.deliveryMode()).isEqualTo("LAB");
         verify(examRepository).save(exam);
+    }
+
+    @Test
+    void should_reject_when_candidates_already_assigned_to_schedule() {
+        var exam = exam(ExamKind.CLASS_TEST, ExamStatus.DRAFT);
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        when(examMemberRepository.existsByExamIdAndUserIdAndRole(examId, userId, ExamMemberRole.CHAIR))
+            .thenReturn(true);
+        when(examCandidateRepository.existsByExamIdAndScheduleIdIsNotNull(examId)).thenReturn(true);
+
+        assertThatThrownBy(() -> useCase.execute(new UpdateExamDeliveryModeCommand(examId, "LAB")))
+            .isInstanceOf(IllegalStateException.class);
+        verify(examRepository, never()).save(exam);
     }
 
     @Test

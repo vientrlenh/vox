@@ -19,6 +19,7 @@ import com.sep.vox.domain.model.exam.ExamDeliveryMode;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamPaperStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
+import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamPaperRepository;
 import com.sep.vox.domain.repository.ExamRepository;
@@ -30,6 +31,7 @@ public class UpdateExamDeliveryModeUseCase implements IUseCase<UpdateExamDeliver
     private final ExamRepository examRepository;
     private final ExamPaperRepository examPaperRepository;
     private final ExamMemberRepository examMemberRepository;
+    private final ExamCandidateRepository examCandidateRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
@@ -38,12 +40,14 @@ public class UpdateExamDeliveryModeUseCase implements IUseCase<UpdateExamDeliver
             ExamRepository examRepository,
             ExamPaperRepository examPaperRepository,
             ExamMemberRepository examMemberRepository,
+            ExamCandidateRepository examCandidateRepository,
             SchoolUserRepository schoolUserRepository,
             UserRoleQueryRepository userRoleQueryRepository,
             UserContextPort userContextPort) {
         this.examRepository = examRepository;
         this.examPaperRepository = examPaperRepository;
         this.examMemberRepository = examMemberRepository;
+        this.examCandidateRepository = examCandidateRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
         this.userContextPort = userContextPort;
@@ -68,6 +72,11 @@ public class UpdateExamDeliveryModeUseCase implements IUseCase<UpdateExamDeliver
 
         if (exam.getStatus() != ExamStatus.DRAFT && exam.getStatus() != ExamStatus.SCHEDULED) {
             throw new IllegalStateException("Không thể đổi hình thức làm bài khi bài kiểm tra đã bắt đầu hoặc kết thúc");
+        }
+        if (deliveryMode != exam.getDeliveryMode()
+                && examCandidateRepository.existsByExamIdAndScheduleIdIsNotNull(exam.getId())) {
+            throw new IllegalStateException(
+                "Không thể đổi hình thức làm bài khi đã có thí sinh được xếp vào ca thi — hãy gỡ hết thí sinh khỏi ca thi trước");
         }
 
         exam.setDeliveryMode(deliveryMode);

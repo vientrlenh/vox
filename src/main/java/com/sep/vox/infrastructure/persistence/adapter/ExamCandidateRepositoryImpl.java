@@ -100,5 +100,10 @@ public class ExamCandidateRepositoryImpl implements ExamCandidateRepository {
     public boolean existsByScheduleIdAndStudentId(UUID scheduleId, UUID studentId) {
         return springDataExamCandidateRepository.existsByScheduleIdAndStudentId(scheduleId, studentId);
     }
+
+    @Override
+    public boolean existsByExamIdAndScheduleIdIsNotNull(UUID examId) {
+        return springDataExamCandidateRepository.existsByExamIdAndScheduleIdIsNotNull(examId);
+    }
 }
 

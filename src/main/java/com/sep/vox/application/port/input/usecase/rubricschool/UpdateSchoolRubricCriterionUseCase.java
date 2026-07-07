@@ -113,7 +113,8 @@ public class UpdateSchoolRubricCriterionUseCase implements IUseCase<UpdateSchool
             throw new IllegalArgumentException("Điểm tối thiểu (minScore) không được lớn hơn điểm tối đa (maxScore).");
         }
 
-        // 7. Validate chuỗi JSON (Bẫy bằng Value Object RubricCriterionExamples)
+        // 7. Validate chuỗi JSON (Bẫy bằng Value Object RubricCriterionExamples) & chuẩn hóa lại đúng định dạng {"values": [...]} trước khi lưu DB
+        String examplesJsonToPersist = command.examplesJson();
         if (command.examplesJson() != null && !command.examplesJson().isBlank()) {
             try {
                 // SỬA LỖI 2: Dùng objectMapper để parse JSON thành List object
@@ -122,7 +123,10 @@ public class UpdateSchoolRubricCriterionUseCase implements IUseCase<UpdateSchool
                         new TypeReference<List<RubricCriterionExample>>() {}
                 );
 
-                new RubricCriterionExamples(parsedExamples); // Kích hoạt ném lỗi nếu List rỗng hoặc chứa null
+                RubricCriterionExamples examplesVO = new RubricCriterionExamples(parsedExamples); // Kích hoạt ném lỗi nếu List rỗng hoặc chứa null
+
+                // Serialize lại đúng shape record ({"values": [...]}) để khớp với định dạng khi đọc (view)
+                examplesJsonToPersist = objectMapper.writeValueAsString(examplesVO);
             } catch (IllegalArgumentException e) {
                 throw new IllegalArgumentException(e.getMessage());
             } catch (Exception e) {
@@ -137,7 +141,7 @@ public class UpdateSchoolRubricCriterionUseCase implements IUseCase<UpdateSchool
                     null,
                     safeName,
                     safeDesc,
-                    command.examplesJson(),
+                    examplesJsonToPersist,
                     command.weight(),
                     command.minScore(),
                     command.maxScore(),

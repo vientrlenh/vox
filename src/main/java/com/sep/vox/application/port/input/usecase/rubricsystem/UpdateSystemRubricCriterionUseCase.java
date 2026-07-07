@@ -96,7 +96,8 @@ public class UpdateSystemRubricCriterionUseCase implements IUseCase<UpdateSystem
         }
 
         // =========================================================
-        // Check lỗi examplesJson
+        // Check lỗi examplesJson & chuẩn hóa lại đúng định dạng {"values": [...]} trước khi lưu DB
+        String examplesJsonToPersist = command.examplesJson();
         if (command.examplesJson() != null && !command.examplesJson().isBlank()) {
             try {
                 // Parse chuỗi JSON thành List bằng biến objectMapper đã khởi tạo ở trên
@@ -106,7 +107,10 @@ public class UpdateSystemRubricCriterionUseCase implements IUseCase<UpdateSystem
                 );
 
                 // Kích hoạt bẫy lỗi từ Record
-                new RubricCriterionExamples(parsedExamples);
+                RubricCriterionExamples examplesVO = new RubricCriterionExamples(parsedExamples);
+
+                // Serialize lại đúng shape record ({"values": [...]}) để khớp với định dạng khi đọc (view)
+                examplesJsonToPersist = objectMapper.writeValueAsString(examplesVO);
 
             } catch (IllegalArgumentException e) {
                 throw new IllegalArgumentException(e.getMessage());
@@ -122,7 +126,7 @@ public class UpdateSystemRubricCriterionUseCase implements IUseCase<UpdateSystem
                     null,
                     safeName,
                     safeDesc,
-                    command.examplesJson(),
+                    examplesJsonToPersist,
                     command.weight(),
                     command.minScore(),
                     command.maxScore(),

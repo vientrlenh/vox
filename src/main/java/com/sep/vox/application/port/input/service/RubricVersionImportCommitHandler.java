@@ -111,6 +111,11 @@ public class RubricVersionImportCommitHandler implements ImportCommitHandler {
                     }
                 }
 
+                RubricVersion targetVersion = errors.isEmpty() ? existingVersionMap.get(versionNum) : null;
+                if (targetVersion != null && targetVersion.getStatus() != RubricStatus.DRAFT) {
+                    errors.add(error("version", "Chỉ có thể sửa Version " + versionNum + " qua import khi đang ở trạng thái DRAFT."));
+                }
+
                 BigDecimal minScore = null;
                 BigDecimal maxScore = null;
                 if (errors.isEmpty()) {
@@ -158,8 +163,6 @@ public class RubricVersionImportCommitHandler implements ImportCommitHandler {
                     invalidCount++;
                 } else {
                     // CƠ CHẾ UPSERT Lõi
-                    RubricVersion targetVersion = existingVersionMap.get(versionNum);
-
                     if (targetVersion != null) {
                         // UPDATE (Đã tồn tại Version này -> Cập nhật thông tin mới)
                         if (nameStr != null && !nameStr.isBlank()) {

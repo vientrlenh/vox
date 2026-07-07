@@ -124,9 +124,15 @@ extend type Query {
     framework(id: ID!): Framework
     frameworkVersions(frameworkId: ID!, page: Int = 1, size: Int = 20): FrameworkVersionPage!
     frameworkVersion(id: ID!): FrameworkVersion
+    # Query gốc lấy FrameworkCriterion (System Admin, không giới hạn trạng thái Version)
+    frameworkCriteria(frameworkVersionId: ID!): [FrameworkCriterion!]!
+    frameworkCriterion(id: ID!): FrameworkCriterion
     schoolFrameworks(page: Int = 1, size: Int = 20): FrameworkPage!
     schoolFrameworkVersions(frameworkId: ID!, page: Int = 1, size: Int = 20): FrameworkVersionPage!
     schoolFrameworkVersion(id: ID!): FrameworkVersion
+    # Query gốc lấy FrameworkCriterion (School Admin, chỉ Version đã PUBLISHED)
+    schoolFrameworkCriteria(frameworkVersionId: ID!): [FrameworkCriterion!]!
+    schoolFrameworkCriterion(id: ID!): FrameworkCriterion
 }
 
 extend type Mutation {

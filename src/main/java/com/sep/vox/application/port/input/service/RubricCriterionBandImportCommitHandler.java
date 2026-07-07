@@ -7,8 +7,11 @@ import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.importfile.ImportType;
 import com.sep.vox.domain.model.rubric.RubricCriterionBand;
+import com.sep.vox.domain.model.rubric.RubricStatus;
 import com.sep.vox.domain.repository.RubricCriterionBandRepository;
 import com.sep.vox.domain.repository.RubricCriterionRepository;
+import com.sep.vox.domain.repository.RubricVersionRepository;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -21,14 +24,17 @@ public class RubricCriterionBandImportCommitHandler implements ImportCommitHandl
 
     private final RubricCriterionBandRepository rubricCriterionBandRepository;
     private final RubricCriterionRepository rubricCriterionRepository;
+    private final RubricVersionRepository rubricVersionRepository;
     private final JsonSerializationPort jsonSerializationPort;
 
     public RubricCriterionBandImportCommitHandler(
             RubricCriterionBandRepository rubricCriterionBandRepository,
             RubricCriterionRepository rubricCriterionRepository,
+            RubricVersionRepository rubricVersionRepository,
             JsonSerializationPort jsonSerializationPort) {
         this.rubricCriterionBandRepository = rubricCriterionBandRepository;
         this.rubricCriterionRepository = rubricCriterionRepository;
+        this.rubricVersionRepository = rubricVersionRepository;
         this.jsonSerializationPort = jsonSerializationPort;
     }
 
@@ -42,6 +48,11 @@ public class RubricCriterionBandImportCommitHandler implements ImportCommitHandl
         UUID criterionId = session.getImportedEntityId();
         var criterion = rubricCriterionRepository.findById(criterionId)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy Tiêu chí gốc khi xử lý ngầm."));
+        var version = rubricVersionRepository.findById(criterion.getRubricVersionId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy Phiên bản Rubric chứa tiêu chí này."));
+        if (version.getStatus() != RubricStatus.DRAFT) {
+            throw new IllegalStateException("Chỉ có thể import Mức độ (Band) khi phiên bản Rubric đang ở trạng thái DRAFT.");
+        }
 
         Map<String, String> mapping = new HashMap<>();
         if (session.getConfirmedMappingJson() != null && !session.getConfirmedMappingJson().isBlank()) {
@@ -53,7 +64,7 @@ public class RubricCriterionBandImportCommitHandler implements ImportCommitHandl
         // Tích hợp UPSERT
         List<RubricCriterionBand> existingBands = rubricCriterionBandRepository.findByCriterionId(criterionId);
         Map<String, RubricCriterionBand> existingCodeMap = existingBands.stream()
-                .collect(Collectors.toMap(b -> b.getCode().toLowerCase().trim(), b -> b, (u, v) -> u));
+                .collect(Collectors.toMap(b -> normalizeCode(b.getCode()), b -> b, (u, v) -> u));
 
         List<RubricCriterionBand> bandsToSave = new ArrayList<>();
         long importedCount = 0;
@@ -83,7 +94,7 @@ public class RubricCriterionBandImportCommitHandler implements ImportCommitHandl
                 if (maxStr == null || maxStr.isBlank()) errors.add(error("scoreMax", "Thiếu Điểm tối đa (Score Max)."));
 
                 String safeCode = codeStr != null ? codeStr.trim() : "";
-                if (errors.isEmpty() && !codesInFile.add(safeCode.toLowerCase())) {
+                if (errors.isEmpty() && !codesInFile.add(normalizeCode(safeCode))) {
                     errors.add(error("code", "Bị trùng Mã mức độ '" + safeCode + "' ngay trong file Excel."));
                 }
 
@@ -111,7 +122,7 @@ public class RubricCriterionBandImportCommitHandler implements ImportCommitHandl
                     row.setErrorsJson(jsonSerializationPort.toJson(errors));
                     invalidCount++;
                 } else {
-                    RubricCriterionBand targetBand = existingCodeMap.get(safeCode.toLowerCase());
+                    RubricCriterionBand targetBand = existingCodeMap.get(normalizeCode(safeCode));
 
                     if (targetBand != null) {
                         targetBand.setScoreMin(scoreMin);
@@ -139,12 +150,29 @@ public class RubricCriterionBandImportCommitHandler implements ImportCommitHandl
             }
         }
 
-        if (!bandsToSave.isEmpty()) rubricCriterionBandRepository.saveAll(bandsToSave);
+        if (!bandsToSave.isEmpty()) {
+            try {
+                rubricCriterionBandRepository.saveAll(bandsToSave);
+            } catch (DataIntegrityViolationException e) {
+                throw new IllegalStateException("Lỗi lưu dữ liệu: Mã mức độ (Band) bị trùng lặp trong Tiêu chí này.", e);
+            }
+        }
 
         return new ImportCommitResult(importedCount, 0, 0, invalidCount);
     }
 
     private static Map<String, String> error(String field, String message) {
         return Map.of("field", field, "message", message);
+    }
+
+    /**
+     * Chuẩn hóa code để so khớp: loại bỏ non-breaking space / zero-width space / BOM
+     * (rất hay dính khi copy dữ liệu từ Excel) mà String.strip() không loại bỏ được.
+     */
+    private static String normalizeCode(String raw) {
+        if (raw == null) return null;
+        return raw.strip()
+                .replaceAll("[\\u00A0\\u200B\\u200C\\u200D\\uFEFF]", "")
+                .toLowerCase(Locale.ROOT);
     }
 }

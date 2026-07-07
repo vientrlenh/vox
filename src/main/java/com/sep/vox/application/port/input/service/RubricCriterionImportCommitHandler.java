@@ -10,9 +10,11 @@ import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.importfile.ImportType;
 import com.sep.vox.domain.model.rubric.RubricCriterion;
+import com.sep.vox.domain.model.rubric.RubricStatus;
 import com.sep.vox.domain.repository.*;
 import com.sep.vox.domain.valueobject.rubric.RubricCriterionExample;
 import com.sep.vox.domain.valueobject.rubric.RubricCriterionExamples;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -54,6 +56,9 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
         UUID versionId = session.getImportedEntityId();
         var version = rubricVersionRepository.findById(versionId)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy Phiên bản Rubric khi xử lý ngầm."));
+        if (version.getStatus() != RubricStatus.DRAFT) {
+            throw new IllegalStateException("Chỉ có thể import Tiêu chí khi phiên bản Rubric đang ở trạng thái DRAFT.");
+        }
         var rubric = rubricRepository.findById(version.getRubricId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc khi xử lý ngầm."));
 
@@ -79,7 +84,7 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
         // dưới Database vô tình có 2 mã trùng nhau thì nó lấy thằng đầu tiên, không bị sập (Crash) toàn bộ luồng ngầm
         Map<String, UUID> fwCodeToIdMap = fwCriterions.stream()
                 .collect(Collectors.toMap(
-                        fc -> fc.getCode().toLowerCase().trim(),
+                        fc -> normalizeCode(fc.getCode()),
                         FrameworkCriterion::getId,
                         (existingValue, newValue) -> existingValue // Giáp chống sập Duplicate Key
                 ));
@@ -87,7 +92,15 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
 
         Map<String, RubricCriterion> existingCodeMap = existingCriterions.stream()
                 .collect(Collectors.toMap(
-                        c -> c.getCode().toLowerCase().trim(),
+                        c -> normalizeCode(c.getCode()),
+                        c -> c,
+                        (existingValue, newValue) -> existingValue
+                ));
+
+        // Tra cứu ngược: 1 Framework Criterion đang bị Rubric Criterion (code) nào trong version này chiếm giữ
+        Map<UUID, RubricCriterion> existingByFwCriterionId = existingCriterions.stream()
+                .collect(Collectors.toMap(
+                        RubricCriterion::getFrameworkCriterionId,
                         c -> c,
                         (existingValue, newValue) -> existingValue
                 ));
@@ -99,6 +112,7 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
 
         Set<String> codesInFile = new HashSet<>();
         Set<Integer> ordersInFile = new HashSet<>();
+        Set<UUID> fwCriterionIdsInFile = new HashSet<>();
 
         for (ImportRow row : rows) {
             if (row.getStatus() != ImportRowStatus.PENDING) continue;
@@ -134,16 +148,40 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
 
                 String safeCode = codeStr != null ? codeStr.trim() : "";
                 if (errors.isEmpty()) {
-                    if (!codesInFile.add(safeCode.toLowerCase())) {
+                    if (!codesInFile.add(normalizeCode(safeCode))) {
                         errors.add(error("code", "Bị trùng Mã tiêu chí '" + safeCode + "' ngay trong file Excel."));
                     }
                 }
 
                 UUID fwCriterionId = null;
                 if (errors.isEmpty()) {
-                    fwCriterionId = fwCodeToIdMap.get(fwCodeStr.trim().toLowerCase());
-                    if (fwCriterionId == null)
+                    fwCriterionId = fwCodeToIdMap.get(normalizeCode(fwCodeStr));
+                    if (fwCriterionId == null) {
                         errors.add(error("frameworkCriterionCode", "Mã Khung tiêu chuẩn '" + fwCodeStr + "' không tồn tại trong Framework gốc."));
+                    }
+                }
+
+                RubricCriterion targetCriterion = errors.isEmpty() ? existingCodeMap.get(normalizeCode(safeCode)) : null;
+
+                // frameworkCriterionId là bất biến sau khi tạo (giống code):
+                // - Nếu sắp TẠO MỚI (targetCriterion == null): framework này không được trùng với tiêu chí khác trong file/DB.
+                // - Nếu tiêu chí ĐÃ TỒN TẠI: chặn cả dòng nếu file cố đổi sang framework khác, tránh tạo trạng thái
+                //   nửa-vời (các field khác bị update theo dòng "sai" trong khi frameworkCriterionId vẫn giữ nguyên).
+                if (errors.isEmpty() && fwCriterionId != null) {
+                    if (targetCriterion == null) {
+                        if (!fwCriterionIdsInFile.add(fwCriterionId)) {
+                            errors.add(error("frameworkCriterionCode", "Bị trùng Mã Khung tiêu chuẩn tham chiếu '" + fwCodeStr + "' ngay trong file Excel."));
+                        } else {
+                            RubricCriterion holder = existingByFwCriterionId.get(fwCriterionId);
+                            if (holder != null) {
+                                errors.add(error("frameworkCriterionCode", "Mã Khung tiêu chuẩn '" + fwCodeStr
+                                        + "' đã được gán cho tiêu chí khác (mã: " + holder.getCode() + ") trong phiên bản này."));
+                            }
+                        }
+                    } else if (!fwCriterionId.equals(targetCriterion.getFrameworkCriterionId())) {
+                        errors.add(error("frameworkCriterionCode", "Không thể thay đổi Khung tiêu chuẩn tham chiếu của tiêu chí '"
+                                + safeCode + "' đã tồn tại (Mã Khung tiêu chuẩn tham chiếu không được phép sửa sau khi tạo)."));
+                    }
                 }
 
                 //  FIX LỖI THIẾU PARAMETER Ở ĐÂY
@@ -204,12 +242,11 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
                     row.setErrorsJson(jsonSerializationPort.toJson(errors));
                     invalidCount++;
                 } else {
-                    RubricCriterion targetCriterion = existingCodeMap.get(safeCode.toLowerCase());
-
                     if (targetCriterion != null) {
+                        // Không setFrameworkCriterionId: tiêu chí đã tồn tại thì framework tham chiếu là bất biến,
+                        // giống hệt cách "code" được bảo vệ không cho sửa sau khi tạo.
                         targetCriterion.setName(nameStr.trim());
                         targetCriterion.setDescription(descStr);
-                        targetCriterion.setFrameworkCriterionId(fwCriterionId);
                         targetCriterion.setExamples(examplesObj);
                         targetCriterion.setWeight(weight);
                         targetCriterion.setMinScore(minScore);
@@ -241,12 +278,29 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
             }
         }
 
-        if (!criterionsToSave.isEmpty()) rubricCriterionRepository.saveAll(criterionsToSave);
+        if (!criterionsToSave.isEmpty()) {
+            try {
+                rubricCriterionRepository.saveAll(criterionsToSave);
+            } catch (DataIntegrityViolationException e) {
+                throw new IllegalStateException("Lỗi lưu dữ liệu: Mã tiêu chí hoặc Khung tiêu chuẩn (Framework) bị trùng lặp trong phiên bản Rubric này.", e);
+            }
+        }
 
         return new ImportCommitResult(importedCount, 0, 0, invalidCount);
     }
 
     private static Map<String, String> error(String field, String message) {
         return Map.of("field", field, "message", message);
+    }
+
+    /**
+     * Chuẩn hóa code để so khớp: loại bỏ non-breaking space / zero-width space / BOM
+     * (rất hay dính khi copy dữ liệu từ Excel) mà String.strip() không loại bỏ được.
+     */
+    private static String normalizeCode(String raw) {
+        if (raw == null) return null;
+        return raw.strip()
+                .replaceAll("[\\u00A0\\u200B\\u200C\\u200D\\uFEFF]", "")
+                .toLowerCase(Locale.ROOT);
     }
 }

@@ -1,4 +1,4 @@
-package com.sep.vox.application.port.input.service;
+package com.sep.vox.application.common;
 
 import java.util.UUID;
 

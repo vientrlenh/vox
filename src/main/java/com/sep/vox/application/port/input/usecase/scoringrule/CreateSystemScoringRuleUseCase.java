@@ -10,7 +10,7 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.CreateScoringRuleCommand;
-import com.sep.vox.application.port.input.service.ScoringRuleCriterionValidator;
+import com.sep.vox.application.common.ScoringRuleCriterionValidator;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.mapper.ScoringRuleParamsMapper;

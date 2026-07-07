@@ -172,11 +172,12 @@ public class ExamController {
         return ResponseEntity.ok(ApiResponse.success("Mở khoá câu hỏi đề thi thành công", data));
     }
 
-    @GetMapping("/{examId}/schedules/{scheduleId}")
+    @GetMapping("/{examId}/schedules/{scheduleId}/otp")
     @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<ApiResponse<GetExamScheduleOtpResponse>> getExamScheduleOtp(@PathVariable("examId") UUID examId, @PathVariable("scheduleId") UUID scheduleId) {
         var query = new GetExamScheduleOtpQuery(examId, scheduleId);
         var data = getExamScheduleOtpUseCase.execute(query);
         return ResponseEntity.ok(ApiResponse.success("Mã OTP cho lịch thi được lấy thành công", data));
     }
+
 }

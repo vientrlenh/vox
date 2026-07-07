@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.sep.vox.application.port.input.command.DeleteExamCommand;
 import com.sep.vox.application.port.input.command.DeleteExamMemberCommand;
+import com.sep.vox.application.port.input.query.GetExamScheduleOtpQuery;
 import com.sep.vox.application.port.input.usecase.exam.AttachExamBlueprintUseCase;
 import com.sep.vox.application.port.input.usecase.exam.CreateExamMemberUseCase;
 import com.sep.vox.application.port.input.usecase.exam.CreateExamUseCase;
@@ -25,7 +27,9 @@ import com.sep.vox.application.port.input.usecase.exam.UpdateExamMemberUseCase;
 import com.sep.vox.application.port.input.usecase.exam.UpdateExamSecurePoolStatusUseCase;
 import com.sep.vox.application.port.input.usecase.exam.UpdateExamStatusUseCase;
 import com.sep.vox.application.port.input.usecase.exam.UpdateExamUseCase;
+import com.sep.vox.application.port.input.usecase.examschedule.GetExamScheduleOtpUseCase;
 import com.sep.vox.application.response.input.exam.DeleteExamResponse;
+import com.sep.vox.application.response.input.examschedule.GetExamScheduleOtpResponse;
 import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.domain.dto.ExamMemberDto;
 import com.sep.vox.domain.dto.ExamSecurePoolDto;
@@ -60,6 +64,7 @@ public class ExamController {
     private final DeleteExamMemberUseCase deleteExamMemberUseCase;
     private final UpdateExamSecurePoolStatusUseCase updateExamSecurePoolStatusUseCase;
     private final AttachExamBlueprintUseCase attachExamBlueprintUseCase;
+    private final GetExamScheduleOtpUseCase getExamScheduleOtpUseCase;
 
     public ExamController(
             CreateExamUseCase createExamUseCase,
@@ -70,7 +75,9 @@ public class ExamController {
             UpdateExamMemberUseCase updateExamMemberUseCase,
             DeleteExamMemberUseCase deleteExamMemberUseCase,
             UpdateExamSecurePoolStatusUseCase updateExamSecurePoolStatusUseCase,
-            AttachExamBlueprintUseCase attachExamBlueprintUseCase) {
+            AttachExamBlueprintUseCase attachExamBlueprintUseCase, 
+            GetExamScheduleOtpUseCase getExamScheduleOtpUseCase
+        ) {
         this.createExamUseCase = createExamUseCase;
         this.updateExamUseCase = updateExamUseCase;
         this.updateExamStatusUseCase = updateExamStatusUseCase;
@@ -80,6 +87,7 @@ public class ExamController {
         this.deleteExamMemberUseCase = deleteExamMemberUseCase;
         this.updateExamSecurePoolStatusUseCase = updateExamSecurePoolStatusUseCase;
         this.attachExamBlueprintUseCase = attachExamBlueprintUseCase;
+        this.getExamScheduleOtpUseCase = getExamScheduleOtpUseCase;
     }
 
     @PostMapping
@@ -162,5 +170,13 @@ public class ExamController {
             UpdateExamSecurePoolStatusCommandMapper.fromRequest(examId, request)
         );
         return ResponseEntity.ok(ApiResponse.success("Mở khoá câu hỏi đề thi thành công", data));
+    }
+
+    @GetMapping("/{examId}/schedules/{scheduleId}")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<ApiResponse<GetExamScheduleOtpResponse>> getExamScheduleOtp(@PathVariable("examId") UUID examId, @PathVariable("scheduleId") UUID scheduleId) {
+        var query = new GetExamScheduleOtpQuery(examId, scheduleId);
+        var data = getExamScheduleOtpUseCase.execute(query);
+        return ResponseEntity.ok(ApiResponse.success("Mã OTP cho lịch thi được lấy thành công", data));
     }
 }

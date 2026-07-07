@@ -10,4 +10,6 @@ public interface CacheManagerPort {
 
     void save(String key, Object value, Duration ttl);
     <T> T get(String key, Class<T> type);
+    Long getRemainingTtl(String key);
+    String saveIfAbsentAndGet(String key, String value, Duration ttl);
 }

@@ -1,6 +1,7 @@
 package com.sep.vox.infrastructure.repository;
 
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Repository;
@@ -50,5 +51,16 @@ public class RedisCacheManagerRepository implements CacheManagerPort {
     public <T> T get(String key, Class<T> type) {
         var json = redis.opsForValue().get(key);
         return json == null ? null : jsonMapper.readValue(json, type);
+    }
+
+    @Override
+    public Long getRemainingTtl(String key) {
+        return redis.getExpire(key, TimeUnit.SECONDS);
+    }
+
+    @Override
+    public String saveIfAbsentAndGet(String key, String value, Duration ttl) {
+        var isSaved = redis.opsForValue().setIfAbsent(key, value, ttl);
+        return Boolean.TRUE.equals(isSaved) ? value : redis.opsForValue().get(key);
     }
 }

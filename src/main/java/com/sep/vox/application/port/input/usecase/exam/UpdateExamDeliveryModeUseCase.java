@@ -16,7 +16,6 @@ import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.domain.mapper.ExamDtoMapper;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamDeliveryMode;
-import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamPaperStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
@@ -67,9 +66,6 @@ public class UpdateExamDeliveryModeUseCase implements IUseCase<UpdateExamDeliver
 
         authorize(exam, currentUserId, currentSchoolId, schoolAdmin);
 
-        if (exam.getKind() != ExamKind.CLASS_TEST) {
-            throw new IllegalStateException("Hình thức làm bài chỉ áp dụng cho bài kiểm tra trên lớp");
-        }
         if (exam.getStatus() != ExamStatus.DRAFT && exam.getStatus() != ExamStatus.SCHEDULED) {
             throw new IllegalStateException("Không thể đổi hình thức làm bài khi bài kiểm tra đã bắt đầu hoặc kết thúc");
         }

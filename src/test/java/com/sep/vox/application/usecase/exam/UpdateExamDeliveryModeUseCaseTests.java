@@ -87,15 +87,24 @@ class UpdateExamDeliveryModeUseCaseTests {
     }
 
     @Test
-    void should_reject_when_exam_is_centralized() {
+    void should_update_delivery_mode_for_centralized_as_school_admin() {
         var exam = exam(ExamKind.CENTRALIZED, ExamStatus.DRAFT);
+        when(schoolUserRepository.findByUserId(userId))
+            .thenReturn(Optional.of(new com.sep.vox.domain.model.school.SchoolUser(schoolId, userId, null, null)));
+        when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId))
+            .thenReturn(List.of(new com.sep.vox.application.query.dto.UserRoleInfo(
+                UUID.randomUUID(), userId, UUID.randomUUID(), null, "SCHOOL_ADMIN", "School Admin")));
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
-        when(examMemberRepository.existsByExamIdAndUserIdAndRole(examId, userId, ExamMemberRole.CHAIR))
-            .thenReturn(true);
+        when(examRepository.save(exam)).thenAnswer(inv -> inv.getArgument(0));
+        var lockedPaper = mock(ExamPaper.class);
+        when(lockedPaper.getStatus()).thenReturn(ExamPaperStatus.LOCKED);
+        when(examPaperRepository.findByExamId(examId)).thenReturn(List.of(lockedPaper));
 
-        assertThatThrownBy(() -> useCase.execute(new UpdateExamDeliveryModeCommand(examId, "LAB")))
-            .isInstanceOf(IllegalStateException.class);
-        verify(examRepository, never()).save(exam);
+        var result = useCase.execute(new UpdateExamDeliveryModeCommand(examId, "LAB"));
+
+        assertThat(exam.getDeliveryMode()).isEqualTo(ExamDeliveryMode.LAB);
+        assertThat(result.deliveryMode()).isEqualTo("LAB");
+        verify(examRepository).save(exam);
     }
 
     @Test

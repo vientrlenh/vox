@@ -51,5 +51,11 @@ public class ExamScheduleRepositoryImpl implements ExamScheduleRepository {
             .map(ExamScheduleMapper::toDomain)
             .toList();
     }
+
+    @Override
+    public Optional<ExamSchedule> findByIdAndInSchedule(UUID id, OffsetDateTime now) {
+        return springDataExamScheduleRepository.findByIdAndInSchedule(id, now)
+            .map(ExamScheduleMapper::toDomain);
+    }
     
 }

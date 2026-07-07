@@ -13,4 +13,5 @@ public interface ExamScheduleRepository {
     List<ExamSchedule> findByExamId(UUID examId);
     List<ExamSchedule> findByExamIdAndInSchedule(UUID examId, OffsetDateTime now);
     List<ExamSchedule> findByIdInAndInSchedule(Collection<UUID> ids, OffsetDateTime now);
+    Optional<ExamSchedule> findByIdAndInSchedule(UUID id, OffsetDateTime now);
 }

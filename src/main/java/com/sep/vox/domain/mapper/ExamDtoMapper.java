@@ -29,6 +29,8 @@ public final class ExamDtoMapper {
             domain.getKind().name(),
             domain.getDeliveryMode() == null ? null : domain.getDeliveryMode().name(),
             domain.getStatus().name(),
+            domain.getMaxAttempt(),
+            domain.getResultDecisionMethod() == null ? null : domain.getResultDecisionMethod().name(),
             valueOf(domain.getOpenAt()),
             valueOf(domain.getCloseAt()),
             domain.getAssessmentPolicyId(),

@@ -14,6 +14,8 @@ public record ExamDto(
     String kind,
     String deliveryMode,
     String status,
+    Integer maxAttempt,
+    String resultDecisionMethod,
     String openAt,
     String closeAt,
     UUID assessmentPolicyId,

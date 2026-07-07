@@ -42,6 +42,7 @@ import com.sep.vox.domain.model.exam.ExamPaperSection;
 import com.sep.vox.domain.model.exam.ExamPaperStatus;
 import com.sep.vox.domain.model.exam.ExamSecurePoolReleaseMode;
 import com.sep.vox.domain.model.exam.ExamStatus;
+import com.sep.vox.domain.model.exam.ResultDecisionMethod;
 import com.sep.vox.domain.model.question.Question;
 import com.sep.vox.domain.repository.ExamBlueprintRepository;
 import com.sep.vox.domain.repository.ExamBlueprintSectionRepository;
@@ -346,6 +347,8 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             ExamKind.CLASS_TEST,
             ExamDeliveryMode.STUDENT_DEVICE,
             status,
+            1,
+            ResultDecisionMethod.HIGHEST,
             openAt,
             closeAt,
             null,

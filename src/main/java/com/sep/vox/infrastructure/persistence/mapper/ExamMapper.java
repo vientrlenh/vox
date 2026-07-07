@@ -4,6 +4,7 @@ import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamDeliveryMode;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamStatus;
+import com.sep.vox.domain.model.exam.ResultDecisionMethod;
 import com.sep.vox.infrastructure.persistence.entity.ExamJpaEntity;
 
 public final class ExamMapper {
@@ -21,6 +22,8 @@ public final class ExamMapper {
             kindFromString(jpa.getKind()),
             deliveryModeFromString(jpa.getDeliveryMode()),
             statusFromString(jpa.getStatus()),
+            jpa.getMaxAttempt(),
+            resultDecisionMethodFromString(jpa.getResultDecisionMethod()),
             jpa.getOpenAt(),
             jpa.getCloseAt(),
             jpa.getAssessmentPolicyId(),
@@ -44,6 +47,8 @@ public final class ExamMapper {
             exam.getKind().name(),
             exam.getDeliveryMode() == null ? null : exam.getDeliveryMode().name(),
             exam.getStatus().name(),
+            exam.getMaxAttempt(),
+            exam.getResultDecisionMethod() == null ? null : exam.getResultDecisionMethod().name(),
             exam.getOpenAt(),
             exam.getCloseAt(),
             exam.getAssessmentPolicyId(),
@@ -64,5 +69,9 @@ public final class ExamMapper {
 
     private static ExamDeliveryMode deliveryModeFromString(String deliveryMode) {
         return deliveryMode == null ? null : ExamDeliveryMode.valueOf(deliveryMode);
+    }
+
+    private static ResultDecisionMethod resultDecisionMethodFromString(String resultDecisionMethod) {
+        return resultDecisionMethod == null ? null : ResultDecisionMethod.valueOf(resultDecisionMethod);
     }
 }

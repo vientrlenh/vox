@@ -15,6 +15,8 @@ public class Exam {
     private ExamKind kind;
     private ExamDeliveryMode deliveryMode;
     private ExamStatus status;
+    private Integer maxAttempt;
+    private ResultDecisionMethod resultDecisionMethod;
     private OffsetDateTime openAt;
     private OffsetDateTime closeAt;
     private UUID assessmentPolicyId;
@@ -26,7 +28,8 @@ public class Exam {
     public Exam() {}
 
     public Exam(UUID id, UUID blueprintId, UUID blueprintVersionId, String code, String name, String description, UUID schoolId, UUID languageId,
-            ExamKind kind, ExamDeliveryMode deliveryMode, ExamStatus status, OffsetDateTime openAt, OffsetDateTime closeAt, UUID assessmentPolicyId,
+            ExamKind kind, ExamDeliveryMode deliveryMode, ExamStatus status, Integer maxAttempt, ResultDecisionMethod resultDecisionMethod,
+            OffsetDateTime openAt, OffsetDateTime closeAt, UUID assessmentPolicyId,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.blueprintId = blueprintId;
@@ -39,6 +42,8 @@ public class Exam {
         this.kind = kind;
         this.deliveryMode = deliveryMode;
         this.status = status;
+        this.maxAttempt = maxAttempt;
+        this.resultDecisionMethod = resultDecisionMethod;
         this.openAt = openAt;
         this.closeAt = closeAt;
         this.assessmentPolicyId = assessmentPolicyId;
@@ -49,7 +54,8 @@ public class Exam {
     }
 
     public Exam(UUID blueprintId, UUID blueprintVersionId, String code, String name, String description, UUID schoolId, UUID languageId, ExamKind kind,
-            ExamDeliveryMode deliveryMode, ExamStatus status, OffsetDateTime openAt, OffsetDateTime closeAt, UUID assessmentPolicyId, OffsetDateTime createdAt,
+            ExamDeliveryMode deliveryMode, ExamStatus status, Integer maxAttempt, ResultDecisionMethod resultDecisionMethod,
+            OffsetDateTime openAt, OffsetDateTime closeAt, UUID assessmentPolicyId, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.blueprintId = blueprintId;
         this.blueprintVersionId = blueprintVersionId;
@@ -61,6 +67,8 @@ public class Exam {
         this.kind = kind;
         this.deliveryMode = deliveryMode;
         this.status = status;
+        this.maxAttempt = maxAttempt;
+        this.resultDecisionMethod = resultDecisionMethod;
         this.openAt = openAt;
         this.closeAt = closeAt;
         this.assessmentPolicyId = assessmentPolicyId;
@@ -140,6 +148,22 @@ public class Exam {
 
     public void setStatus(ExamStatus status) {
         this.status = status;
+    }
+
+    public Integer getMaxAttempt() {
+        return maxAttempt;
+    }
+
+    public void setMaxAttempt(Integer maxAttempt) {
+        this.maxAttempt = maxAttempt;
+    }
+
+    public ResultDecisionMethod getResultDecisionMethod() {
+        return resultDecisionMethod;
+    }
+
+    public void setResultDecisionMethod(ResultDecisionMethod resultDecisionMethod) {
+        this.resultDecisionMethod = resultDecisionMethod;
     }
 
     public OffsetDateTime getOpenAt() {

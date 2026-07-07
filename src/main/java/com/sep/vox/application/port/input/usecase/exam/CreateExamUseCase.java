@@ -19,6 +19,7 @@ import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamDeliveryMode;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamStatus;
+import com.sep.vox.domain.model.exam.ResultDecisionMethod;
 import com.sep.vox.domain.repository.ExamBlueprintRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -82,6 +83,8 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
             ExamKind.CENTRALIZED,
             ExamDeliveryMode.LAB,
             ExamStatus.DRAFT,
+            command.maxAttempt() == null ? 1 : command.maxAttempt(),
+            command.resultDecisionMethod() == null ? ResultDecisionMethod.HIGHEST : command.resultDecisionMethod(),
             parseDateTime(command.openAt()),
             parseDateTime(command.closeAt()),
             command.assessmentPolicyId(),
@@ -102,7 +105,9 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
             input.blueprintId(),
             input.openAt(),
             input.closeAt(),
-            input.assessmentPolicyId()
+            input.assessmentPolicyId(),
+            input.maxAttempt(),
+            input.resultDecisionMethod()
         );
     }
 

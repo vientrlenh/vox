@@ -17,6 +17,13 @@ enum ExamStatus {
     CANCELLED
 }
 
+enum ResultDecisionMethod {
+    HIGHEST
+    LATEST
+    AVERAGE
+    FIRST
+}
+
 enum ExamMemberRole {
     CHAIR
     AUTHOR
@@ -148,6 +155,8 @@ type Exam {
     kind: ExamKind!
     deliveryMode: ExamDeliveryMode
     status: ExamStatus!
+    maxAttempt: Int
+    resultDecisionMethod: ResultDecisionMethod
     openAt: String
     closeAt: String
     assessmentPolicyId: ID

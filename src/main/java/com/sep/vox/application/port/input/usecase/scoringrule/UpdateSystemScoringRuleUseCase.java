@@ -88,7 +88,7 @@ public class UpdateSystemScoringRuleUseCase implements IUseCase<UpdateScoringRul
         var actionParams = ScoringRuleParamsMapper.toActionParams(command.actionType(), command.actionParams());
 
         // 7b. Kiểm tra criterionCode/bandCode (nếu có) có thực sự tồn tại trong Rubric Version của Policy
-        scoringRuleCriterionValidator.validate(policy.getRubricVersionId(), conditionParams, actionParams);
+        scoringRuleCriterionValidator.validate(policy.getRubricVersionId(), policy.getFrameworkVersionId(), conditionParams, actionParams);
 
         // 8. Cập nhật các field được phép sửa (code và policyId là bất biến, không đụng tới)
         rule.setName(command.name().strip());

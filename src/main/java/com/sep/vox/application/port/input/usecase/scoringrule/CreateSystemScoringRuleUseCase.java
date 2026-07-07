@@ -87,7 +87,7 @@ public class CreateSystemScoringRuleUseCase implements IUseCase<CreateScoringRul
         var actionParams = ScoringRuleParamsMapper.toActionParams(command.actionType(), command.actionParams());
 
         // 6b. Kiểm tra criterionCode/bandCode (nếu có) có thực sự tồn tại trong Rubric Version của Policy
-        scoringRuleCriterionValidator.validate(policy.getRubricVersionId(), conditionParams, actionParams);
+        scoringRuleCriterionValidator.validate(policy.getRubricVersionId(), policy.getFrameworkVersionId(), conditionParams, actionParams);
 
         // 7. Tạo mới và lưu
         OffsetDateTime now = OffsetDateTime.now();

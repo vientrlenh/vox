@@ -100,12 +100,6 @@ public class SchoolRepositoryImpl implements SchoolRepository {
 
 
     @Override
-    public List<School> findByIdIn(Collection<UUID> ids, int page, int size) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'findByIdIn'");
-    }
-
-    @Override
     public boolean existsByIdAndIsActiveTrue(UUID schoolId) {
        return springDataSchoolRepository.existsByIdAndIsActiveTrue(schoolId);
     }

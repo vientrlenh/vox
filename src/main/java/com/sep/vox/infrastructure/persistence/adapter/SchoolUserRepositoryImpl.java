@@ -58,22 +58,6 @@ public class SchoolUserRepositoryImpl implements SchoolUserRepository {
     }
 
     @Override
-    public PageResult<SchoolUser> findBySchoolId(UUID schoolId, int pageNumber, int size) {
-        var pageable = PageRequest.of(pageNumber - 1, size);
-        var page = springDataSchoolUserRepository.findBySchoolId(schoolId, pageable);
-        return new PageResult<>(
-            page.getContent()
-                .stream()
-                .map(SchoolUserMapper::toDomain)
-                .toList(), 
-            pageNumber, 
-            size, 
-            page.getTotalElements(), 
-            page.getTotalPages()
-        );
-    }
-
-    @Override
     public PageResult<SchoolUser> findBySchoolId(UUID schoolId, String search, UUID roleId, String status,
             int page, int size) {
         var searchPattern = (search == null || search.isBlank())

@@ -59,12 +59,6 @@ public class TestSchoolUserRepository implements SchoolUserRepository {
     }
 
     @Override
-    public PageResult<SchoolUser> findBySchoolId(UUID schoolId, int page, int size) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'findBySchoolId'");
-    }
-
-    @Override
     public PageResult<SchoolUser> findBySchoolId(UUID schoolId, String search, UUID roleId, String status,
             int page, int size) {
         throw new UnsupportedOperationException("Unimplemented method 'findBySchoolId'");

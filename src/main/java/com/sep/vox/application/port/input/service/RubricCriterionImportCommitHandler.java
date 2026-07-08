@@ -62,7 +62,7 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
 
         List<FrameworkCriterion> fwCriterions = frameworkCriterionRepository.findByFrameworkVersionId(rubric.getFrameworkId());
         Map<String, UUID> fwCodeToIdMap = fwCriterions.stream()
-                .collect(Collectors.toMap(fc -> fc.getCode().toLowerCase().trim(), FrameworkCriterion::getId));
+                .collect(Collectors.toMap(fc -> fc.getCode().toLowerCase().trim(), v -> v.getId()));
 
         List<RubricCriterion> existingCriterions = rubricCriterionRepository.findByRubricVersionId(versionId);
 

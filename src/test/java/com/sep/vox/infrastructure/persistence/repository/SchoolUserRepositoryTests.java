@@ -57,7 +57,7 @@ class SchoolUserRepositoryTests extends ContainerTestConfig {
 
         assertThat(found)
             .hasSize(2)
-            .extracting(SchoolUser::getUserId)
+            .extracting(user -> user.getUserId())
             .containsExactlyInAnyOrder(userId, anotherUserId);
     }
 
@@ -79,7 +79,7 @@ class SchoolUserRepositoryTests extends ContainerTestConfig {
 
         assertThat(result.totalElements()).isEqualTo(3);
         assertThat(result.content())
-            .extracting(SchoolUser::getUserId)
+            .extracting(user -> user.getUserId())
             .containsExactlyInAnyOrder(studentId, teacherId, adminId);
     }
 
@@ -94,7 +94,7 @@ class SchoolUserRepositoryTests extends ContainerTestConfig {
         var result = schoolUserRepository.findBySchoolId(schoolId, null, teacherRoleId, null, 1, 20);
 
         assertThat(result.content())
-            .extracting(SchoolUser::getUserId)
+            .extracting(user -> user.getUserId())
             .containsExactly(teacherId);
     }
 
@@ -106,11 +106,11 @@ class SchoolUserRepositoryTests extends ContainerTestConfig {
         saveMember(schoolId, studentRoleId, "binh.tran@school.vn", "0922222222", "Trần Thị Bình", "ACTIVE");
 
         assertThat(schoolUserRepository.findBySchoolId(schoolId, "an.nguyen", null, null, 1, 20).content())
-            .extracting(SchoolUser::getUserId).containsExactly(studentId);
+            .extracting(user -> user.getUserId()).containsExactly(studentId);
         assertThat(schoolUserRepository.findBySchoolId(schoolId, "0911111111", null, null, 1, 20).content())
-            .extracting(SchoolUser::getUserId).containsExactly(studentId);
+            .extracting(user -> user.getUserId()).containsExactly(studentId);
         assertThat(schoolUserRepository.findBySchoolId(schoolId, "văn an", null, null, 1, 20).content())
-            .extracting(SchoolUser::getUserId).containsExactly(studentId);
+            .extracting(user -> user.getUserId()).containsExactly(studentId);
     }
 
     @Test
@@ -123,7 +123,7 @@ class SchoolUserRepositoryTests extends ContainerTestConfig {
         var result = schoolUserRepository.findBySchoolId(schoolId, null, null, "DISABLED", 1, 20);
 
         assertThat(result.content())
-            .extracting(SchoolUser::getUserId)
+            .extracting(user -> user.getUserId())
             .containsExactly(disabledId);
     }
 

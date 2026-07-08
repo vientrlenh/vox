@@ -19,6 +19,7 @@ import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamPaper;
 import com.sep.vox.domain.model.exam.ExamPaperStatus;
 import com.sep.vox.domain.repository.ExamMemberRepository;
+import com.sep.vox.domain.repository.ExamPaperItemRepository;
 import com.sep.vox.domain.repository.ExamPaperRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -27,6 +28,7 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 public class UpdateExamPaperStatusUseCase implements IUseCase<UpdateExamPaperStatusCommand, ExamPaperDto> {
 
     private final ExamPaperRepository examPaperRepository;
+    private final ExamPaperItemRepository examPaperItemRepository;
     private final ExamRepository examRepository;
     private final ExamMemberRepository examMemberRepository;
     private final SchoolUserRepository schoolUserRepository;
@@ -35,12 +37,14 @@ public class UpdateExamPaperStatusUseCase implements IUseCase<UpdateExamPaperSta
 
     public UpdateExamPaperStatusUseCase(
             ExamPaperRepository examPaperRepository,
+            ExamPaperItemRepository examPaperItemRepository,
             ExamRepository examRepository,
             ExamMemberRepository examMemberRepository,
             SchoolUserRepository schoolUserRepository,
             UserRoleQueryRepository userRoleQueryRepository,
             UserContextPort userContextPort) {
         this.examPaperRepository = examPaperRepository;
+        this.examPaperItemRepository = examPaperItemRepository;
         this.examRepository = examRepository;
         this.examMemberRepository = examMemberRepository;
         this.schoolUserRepository = schoolUserRepository;
@@ -65,6 +69,9 @@ public class UpdateExamPaperStatusUseCase implements IUseCase<UpdateExamPaperSta
         switch (command.action()) {
             case "SUBMIT" -> {
                 requireRole(paper.getExamId(), currentUserId, ExamMemberRole.AUTHOR);
+                if (examPaperItemRepository.existsUnassignedItemByPaperId(paper.getId())) {
+                    throw new IllegalStateException("Đề thi còn ô câu hỏi chưa được gán, không thể nộp duyệt");
+                }
                 requireTransition(paper, ExamPaperStatus.DRAFT, ExamPaperStatus.IN_REVIEW);
             }
             case "APPROVE" -> {
@@ -81,6 +88,10 @@ public class UpdateExamPaperStatusUseCase implements IUseCase<UpdateExamPaperSta
             case "LOCK" -> {
                 requireChairOrAdminOverride(paper, exam.getSchoolId(), currentUserId);
                 requireTransition(paper, ExamPaperStatus.APPROVED, ExamPaperStatus.LOCKED);
+            }
+            case "REOPEN" -> {
+                requireChairOrAdminOverride(paper, exam.getSchoolId(), currentUserId);
+                requireTransition(paper, ExamPaperStatus.LOCKED, ExamPaperStatus.DRAFT);
             }
             default -> throw new IllegalStateException("Action không hợp lệ");
         }
@@ -103,7 +114,9 @@ public class UpdateExamPaperStatusUseCase implements IUseCase<UpdateExamPaperSta
     }
 
     private void requireReviewerOrAdminOverride(ExamPaper paper, UUID examSchoolId, UUID currentUserId) {
-        if (examMemberRepository.existsByExamIdAndUserIdAndRole(paper.getExamId(), currentUserId, ExamMemberRole.REVIEWER)) {
+        // CHAIR có toàn quyền của REVIEWER (approve/request-revision), ngoài quyền lock/reopen riêng của CHAIR.
+        if (examMemberRepository.existsByExamIdAndUserIdAndRole(paper.getExamId(), currentUserId, ExamMemberRole.REVIEWER)
+                || examMemberRepository.existsByExamIdAndUserIdAndRole(paper.getExamId(), currentUserId, ExamMemberRole.CHAIR)) {
             requireNotAuthor(paper, currentUserId);
             return;
         }

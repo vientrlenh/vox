@@ -148,6 +148,6 @@ public class CreateSchoolRubricCriterionUseCase implements IUseCase<CreateSchool
             throw new IllegalStateException("Lỗi lưu dữ liệu: Mã tiêu chí hoặc Khung tiêu chuẩn đã tồn tại trong phiên bản này từ trước.");
         }
 
-        return criteriaToSave.stream().map(RubricCriterion::getId).collect(Collectors.toList());
+        return criteriaToSave.stream().map(c -> c.getId()).collect(Collectors.toList());
     }
 }

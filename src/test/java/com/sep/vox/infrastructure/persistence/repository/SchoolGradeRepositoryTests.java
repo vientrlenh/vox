@@ -51,7 +51,7 @@ class SchoolGradeRepositoryTests extends ContainerTestConfig {
 
         assertThat(found)
             .hasSize(2)
-            .extracting(SchoolGrade::getCode)
+            .extracting(grade -> grade.getCode())
             .containsExactlyInAnyOrder("G10", "G11");
     }
 

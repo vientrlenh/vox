@@ -10,10 +10,13 @@ import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "exam_candidates")
+@Table(name = "exam_candidates", indexes = {
+    @Index(name = "uq_exam_candidates_exam_student", columnList = "exam_id, student_id", unique = true)
+})
 public class ExamCandidateJpaEntity {
     @Id
     @Generated(event = EventType.INSERT)
@@ -32,8 +35,8 @@ public class ExamCandidateJpaEntity {
     @Column(name = "student_id", nullable = false, updatable = false)
     private UUID studentId;
 
-    @Column(name = "assigned_paper_id", nullable = false, updatable = false)
-    private UUID assignedPaperId; 
+    @Column(name = "assigned_paper_id")
+    private UUID assignedPaperId;
 
     @Column(name = "schedule_id")
     private UUID scheduleId;

@@ -47,6 +47,16 @@ public interface SpringDataQuestionRepository extends JpaRepository<QuestionJpaE
                           AND qc.userId = :currentUserId
                     )
                 )
+                OR (
+                    :scope = 'REVIEWING'
+                    AND EXISTS (
+                        SELECT 1
+                        FROM QuestionCollaboratorJpaEntity qc
+                        WHERE qc.questionId = q.id
+                          AND qc.userId = :currentUserId
+                          AND qc.permission = 'CAN_EDIT'
+                    )
+                )
               )
           AND (
                 :keywordPattern IS NULL
@@ -67,53 +77,50 @@ public interface SpringDataQuestionRepository extends JpaRepository<QuestionJpaE
                     )
                 )
                 OR (
-                    q.confidentiality <> 'EXAM_RESTRICTED'
-                    AND (
-                        (
-                            :systemAdmin = true
-                            AND qb.ownerType = 'SCHOOL'
-                            AND qb.status = 'PUBLISHED'
-                            AND qt.status = 'PUBLISHED'
-                            AND q.status = 'PUBLISHED'
-                            AND q.sharing = 'SCHOOL_SHARED'
-                        )
-                        OR (
-                            qb.ownerType = 'SYSTEM'
-                            AND qb.status = 'PUBLISHED'
-                            AND qt.status = 'PUBLISHED'
-                            AND q.status = 'PUBLISHED'
-                            AND q.sharing = 'SCHOOL_SHARED'
-                        )
-                        OR (
-                            :schoolAdmin = true
-                            AND (
-                                qb.schoolId = :currentSchoolId
-                                OR (
-                                    qb.status = 'PUBLISHED'
-                                    AND qt.status = 'PUBLISHED'
-                                    AND q.status = 'PUBLISHED'
-                                    AND q.sharing = 'SCHOOL_SHARED'
-                                )
+                    (
+                        :systemAdmin = true
+                        AND qb.ownerType = 'SCHOOL'
+                        AND qb.status = 'PUBLISHED'
+                        AND qt.status = 'PUBLISHED'
+                        AND q.status = 'PUBLISHED'
+                        AND q.sharing = 'SCHOOL_SHARED'
+                    )
+                    OR (
+                        qb.ownerType = 'SYSTEM'
+                        AND qb.status = 'PUBLISHED'
+                        AND qt.status = 'PUBLISHED'
+                        AND q.status = 'PUBLISHED'
+                        AND q.sharing = 'SCHOOL_SHARED'
+                    )
+                    OR (
+                        :schoolAdmin = true
+                        AND (
+                            qb.schoolId = :currentSchoolId
+                            OR (
+                                qb.status = 'PUBLISHED'
+                                AND qt.status = 'PUBLISHED'
+                                AND q.status = 'PUBLISHED'
+                                AND q.sharing = 'SCHOOL_SHARED'
                             )
                         )
-                        OR (
-                            :schoolAdmin = false
-                            AND (
-                                q.createdBy = :currentUserId
-                                OR EXISTS (
-                                    SELECT 1
-                                    FROM QuestionCollaboratorJpaEntity qc
-                                    WHERE qc.questionId = q.id
-                                      AND qc.userId = :currentUserId
-                                )
-                                OR (
-                                    qb.schoolId = :currentSchoolId
-                                    AND qb.ownerType = 'SCHOOL'
-                                    AND qb.status = 'PUBLISHED'
-                                    AND qt.status = 'PUBLISHED'
-                                    AND q.status = 'PUBLISHED'
-                                    AND q.sharing = 'SCHOOL_SHARED'
-                                )
+                    )
+                    OR (
+                        :schoolAdmin = false
+                        AND (
+                            q.createdBy = :currentUserId
+                            OR EXISTS (
+                                SELECT 1
+                                FROM QuestionCollaboratorJpaEntity qc
+                                WHERE qc.questionId = q.id
+                                  AND qc.userId = :currentUserId
+                            )
+                            OR (
+                                qb.schoolId = :currentSchoolId
+                                AND qb.ownerType = 'SCHOOL'
+                                AND qb.status = 'PUBLISHED'
+                                AND qt.status = 'PUBLISHED'
+                                AND q.status = 'PUBLISHED'
+                                AND q.sharing = 'SCHOOL_SHARED'
                             )
                         )
                     )
@@ -182,54 +189,51 @@ public interface SpringDataQuestionRepository extends JpaRepository<QuestionJpaE
                     )
                 )
                 OR (
-                    q.confidentiality <> 'EXAM_RESTRICTED'
-                    AND (
-                        (
-                            :systemAdmin = true
-                            AND qb.ownerType = 'SCHOOL'
-                            AND qb.status = 'PUBLISHED'
-                            AND qt.status = 'PUBLISHED'
-                            AND q.status = 'PUBLISHED'
-                            AND q.sharing = 'SCHOOL_SHARED'
-                        )
-                        OR (
-                            qb.ownerType = 'SYSTEM'
-                            AND qb.status = 'PUBLISHED'
-                            AND qt.status = 'PUBLISHED'
-                            AND q.status = 'PUBLISHED'
-                            AND q.sharing = 'SCHOOL_SHARED'
-                        )
-                        OR (
-                            :schoolAdmin = true
-                            AND (
-                                qb.schoolId = :currentSchoolId
-                                OR (
-                                    qb.status = 'PUBLISHED'
-                                    AND qt.status = 'PUBLISHED'
-                                    AND q.status = 'PUBLISHED'
-                                    AND q.sharing = 'SCHOOL_SHARED'
-                                )
+                    (
+                        :systemAdmin = true
+                        AND qb.ownerType = 'SCHOOL'
+                        AND qb.status = 'PUBLISHED'
+                        AND qt.status = 'PUBLISHED'
+                        AND q.status = 'PUBLISHED'
+                        AND q.sharing = 'SCHOOL_SHARED'
+                    )
+                    OR (
+                        qb.ownerType = 'SYSTEM'
+                        AND qb.status = 'PUBLISHED'
+                        AND qt.status = 'PUBLISHED'
+                        AND q.status = 'PUBLISHED'
+                        AND q.sharing = 'SCHOOL_SHARED'
+                    )
+                    OR (
+                        :schoolAdmin = true
+                        AND (
+                            qb.schoolId = :currentSchoolId
+                            OR (
+                                qb.status = 'PUBLISHED'
+                                AND qt.status = 'PUBLISHED'
+                                AND q.status = 'PUBLISHED'
+                                AND q.sharing = 'SCHOOL_SHARED'
                             )
                         )
-                        OR (
-                            :schoolAdmin = false
-                            AND (
-                                q.createdBy = :currentUserId
-                                OR EXISTS (
-                                    SELECT 1
-                                    FROM QuestionCollaboratorJpaEntity qc
-                                    WHERE qc.questionId = q.id
-                                      AND qc.userId = :currentUserId
-                                      AND qc.permission IN ('CAN_USE', 'CAN_EDIT')
-                                )
-                                OR (
-                                    qb.schoolId = :currentSchoolId
-                                    AND qb.ownerType = 'SCHOOL'
-                                    AND qb.status = 'PUBLISHED'
-                                    AND qt.status = 'PUBLISHED'
-                                    AND q.status = 'PUBLISHED'
-                                    AND q.sharing = 'SCHOOL_SHARED'
-                                )
+                    )
+                    OR (
+                        :schoolAdmin = false
+                        AND (
+                            q.createdBy = :currentUserId
+                            OR EXISTS (
+                                SELECT 1
+                                FROM QuestionCollaboratorJpaEntity qc
+                                WHERE qc.questionId = q.id
+                                  AND qc.userId = :currentUserId
+                                  AND qc.permission IN ('CAN_USE', 'CAN_EDIT')
+                            )
+                            OR (
+                                qb.schoolId = :currentSchoolId
+                                AND qb.ownerType = 'SCHOOL'
+                                AND qb.status = 'PUBLISHED'
+                                AND qt.status = 'PUBLISHED'
+                                AND q.status = 'PUBLISHED'
+                                AND q.sharing = 'SCHOOL_SHARED'
                             )
                         )
                     )
@@ -273,53 +277,50 @@ public interface SpringDataQuestionRepository extends JpaRepository<QuestionJpaE
                     )
                 )
                 OR (
-                    q.confidentiality <> 'EXAM_RESTRICTED'
-                    AND (
-                        (
-                            :systemAdmin = true
-                            AND qb.ownerType = 'SCHOOL'
-                            AND qb.status = 'PUBLISHED'
-                            AND qt.status = 'PUBLISHED'
-                            AND q.status = 'PUBLISHED'
-                            AND q.sharing = 'SCHOOL_SHARED'
-                        )
-                        OR (
-                            qb.ownerType = 'SYSTEM'
-                            AND qb.status = 'PUBLISHED'
-                            AND qt.status = 'PUBLISHED'
-                            AND q.status = 'PUBLISHED'
-                            AND q.sharing = 'SCHOOL_SHARED'
-                        )
-                        OR (
-                            :schoolAdmin = true
-                            AND (
-                                qb.schoolId = :currentSchoolId
-                                OR (
-                                    qb.status = 'PUBLISHED'
-                                    AND qt.status = 'PUBLISHED'
-                                    AND q.status = 'PUBLISHED'
-                                    AND q.sharing = 'SCHOOL_SHARED'
-                                )
+                    (
+                        :systemAdmin = true
+                        AND qb.ownerType = 'SCHOOL'
+                        AND qb.status = 'PUBLISHED'
+                        AND qt.status = 'PUBLISHED'
+                        AND q.status = 'PUBLISHED'
+                        AND q.sharing = 'SCHOOL_SHARED'
+                    )
+                    OR (
+                        qb.ownerType = 'SYSTEM'
+                        AND qb.status = 'PUBLISHED'
+                        AND qt.status = 'PUBLISHED'
+                        AND q.status = 'PUBLISHED'
+                        AND q.sharing = 'SCHOOL_SHARED'
+                    )
+                    OR (
+                        :schoolAdmin = true
+                        AND (
+                            qb.schoolId = :currentSchoolId
+                            OR (
+                                qb.status = 'PUBLISHED'
+                                AND qt.status = 'PUBLISHED'
+                                AND q.status = 'PUBLISHED'
+                                AND q.sharing = 'SCHOOL_SHARED'
                             )
                         )
-                        OR (
-                            :schoolAdmin = false
-                            AND (
-                                q.createdBy = :currentUserId
-                                OR EXISTS (
-                                    SELECT 1
-                                    FROM QuestionCollaboratorJpaEntity qc
-                                    WHERE qc.questionId = q.id
-                                      AND qc.userId = :currentUserId
-                                )
-                                OR (
-                                    qb.schoolId = :currentSchoolId
-                                    AND qb.ownerType = 'SCHOOL'
-                                    AND qb.status = 'PUBLISHED'
-                                    AND qt.status = 'PUBLISHED'
-                                    AND q.status = 'PUBLISHED'
-                                    AND q.sharing = 'SCHOOL_SHARED'
-                                )
+                    )
+                    OR (
+                        :schoolAdmin = false
+                        AND (
+                            q.createdBy = :currentUserId
+                            OR EXISTS (
+                                SELECT 1
+                                FROM QuestionCollaboratorJpaEntity qc
+                                WHERE qc.questionId = q.id
+                                  AND qc.userId = :currentUserId
+                            )
+                            OR (
+                                qb.schoolId = :currentSchoolId
+                                AND qb.ownerType = 'SCHOOL'
+                                AND qb.status = 'PUBLISHED'
+                                AND qt.status = 'PUBLISHED'
+                                AND q.status = 'PUBLISHED'
+                                AND q.sharing = 'SCHOOL_SHARED'
                             )
                         )
                     )

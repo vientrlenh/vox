@@ -5,6 +5,7 @@ import java.util.UUID;
 public record AttachExamBlueprintCommand(
     UUID examId,
     UUID blueprintId,
-    UUID blueprintVersionId
+    UUID blueprintVersionId,
+    CreateBlueprintInlineCommand newBlueprint
 ) {
 }

@@ -55,6 +55,14 @@ public class ExamJpaEntity {
     })
     private String kind;
 
+    @Column(name = "delivery_mode", length = 20, check = {
+        @CheckConstraint(
+            name = "chk_exams_delivery_mode_valid",
+            constraint = "delivery_mode IN ('STUDENT_DEVICE', 'LAB')"
+        )
+    })
+    private String deliveryMode;
+
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
             name = "chk_exams_status_valid", 
@@ -62,6 +70,17 @@ public class ExamJpaEntity {
         )
     })
     private String status;
+
+    @Column(name = "max_attempt")
+    private Integer maxAttempt;
+
+    @Column(name = "result_decision_method", length = 20, check = {
+        @CheckConstraint(
+            name = "chk_exams_result_decision_method_valid",
+            constraint = "result_decision_method IN ('HIGHEST', 'LATEST', 'AVERAGE', 'FIRST')"
+        )
+    })
+    private String resultDecisionMethod;
 
     @Column(name = "open_at")
     private OffsetDateTime openAt;
@@ -87,7 +106,8 @@ public class ExamJpaEntity {
     protected ExamJpaEntity() {}
 
     public ExamJpaEntity(UUID id, UUID blueprintId, UUID blueprintVersionId, String code, String name, String description, UUID schoolId, UUID languageId,
-            String kind, String status, OffsetDateTime openAt, OffsetDateTime closeAt, UUID assessmentPolicyId,
+            String kind, String deliveryMode, String status, Integer maxAttempt, String resultDecisionMethod,
+            OffsetDateTime openAt, OffsetDateTime closeAt, UUID assessmentPolicyId,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.blueprintId = blueprintId;
@@ -98,7 +118,10 @@ public class ExamJpaEntity {
         this.schoolId = schoolId;
         this.languageId = languageId;
         this.kind = kind;
+        this.deliveryMode = deliveryMode;
         this.status = status;
+        this.maxAttempt = maxAttempt;
+        this.resultDecisionMethod = resultDecisionMethod;
         this.openAt = openAt;
         this.closeAt = closeAt;
         this.assessmentPolicyId = assessmentPolicyId;
@@ -170,6 +193,30 @@ public class ExamJpaEntity {
 
     public void setKind(String kind) {
         this.kind = kind;
+    }
+
+    public String getDeliveryMode() {
+        return deliveryMode;
+    }
+
+    public void setDeliveryMode(String deliveryMode) {
+        this.deliveryMode = deliveryMode;
+    }
+
+    public Integer getMaxAttempt() {
+        return maxAttempt;
+    }
+
+    public void setMaxAttempt(Integer maxAttempt) {
+        this.maxAttempt = maxAttempt;
+    }
+
+    public String getResultDecisionMethod() {
+        return resultDecisionMethod;
+    }
+
+    public void setResultDecisionMethod(String resultDecisionMethod) {
+        this.resultDecisionMethod = resultDecisionMethod;
     }
 
     public OffsetDateTime getOpenAt() {

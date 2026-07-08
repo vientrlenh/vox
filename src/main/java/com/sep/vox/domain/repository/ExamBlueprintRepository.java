@@ -23,5 +23,8 @@ public interface ExamBlueprintRepository {
         int size
     );
     boolean existsUsedByExam(UUID blueprintId);
+    boolean canEditBlueprint(UUID blueprintId, UUID userId, UUID schoolId);
+    boolean canChangeVersionStatus(UUID blueprintId, UUID userId, UUID schoolId);
+    boolean canViewBlueprint(UUID blueprintId, UUID userId, UUID schoolId);
     void deleteById(UUID id);
 }

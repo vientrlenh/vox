@@ -30,7 +30,7 @@ public class ExamScheduleJpaEntity {
     @Column(name = "exam_id", nullable = false, updatable = false)
     private UUID examId;
 
-    @Column(name = "school_room_id", nullable = false, updatable = false)
+    @Column(name = "school_room_id", nullable = false)
     private UUID schoolRoomId;
 
     @Column(name = "start_date", nullable = false)

@@ -52,4 +52,14 @@ public class ExamBlueprintVersionRepositoryImpl implements ExamBlueprintVersionR
     public int nextVersionNumber(UUID blueprintId) {
         return springDataExamBlueprintVersionRepository.nextVersionNumber(blueprintId);
     }
+
+    @Override
+    public boolean existsUsedByVersion(UUID versionId) {
+        return springDataExamBlueprintVersionRepository.existsUsedByVersion(versionId);
+    }
+
+    @Override
+    public void deleteById(UUID id) {
+        springDataExamBlueprintVersionRepository.deleteById(id);
+    }
 }

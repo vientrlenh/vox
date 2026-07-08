@@ -64,7 +64,7 @@ class DeviceSessionRepositoryTests extends ContainerTestConfig {
 
         assertThat(found).hasSize(2);
         assertThat(found)
-            .extracting(DeviceSession::getDeviceId)
+            .extracting(session -> session.getDeviceId())
             .containsExactlyInAnyOrder("device-3", "device-4");
     }
 

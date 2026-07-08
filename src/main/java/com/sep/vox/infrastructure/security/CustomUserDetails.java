@@ -20,12 +20,13 @@ public class CustomUserDetails implements UserDetails {
     private UUID id;
     private String email;
     private String password;
+    private UUID schoolId;
     private UserStatus status;
     private Collection<? extends GrantedAuthority> authorities;
 
     private static final String AUTHORITY_ROLE_PREFIX = "ROLE_";
 
-    public static CustomUserDetails createFromUser(User user, List<String> roleCodes) {
+    public static CustomUserDetails createFromUser(User user, UUID schoolId, List<String> roleCodes) {
         var authorities = roleCodes.stream()
             .map(role -> new SimpleGrantedAuthority(AUTHORITY_ROLE_PREFIX + role))
             .collect(Collectors.toList());
@@ -34,6 +35,7 @@ public class CustomUserDetails implements UserDetails {
             .id(user.getId())
             .email(user.getEmail().value())
             .password(user.getPasswordHash())
+            .schoolId(schoolId)
             .status(user.getStatus())
             .authorities(authorities)
             .build();
@@ -54,6 +56,10 @@ public class CustomUserDetails implements UserDetails {
 
     public UUID getId() {
         return id;
+    }
+
+    public UUID getSchoolId() {
+        return schoolId;
     }
 
     @Override

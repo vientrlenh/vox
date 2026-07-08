@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
 import java.time.OffsetDateTime;
+import java.util.Objects;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -16,8 +17,10 @@ import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.domain.mapper.ExamDtoMapper;
 import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamDeliveryMode;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamStatus;
+import com.sep.vox.domain.model.exam.ResultDecisionMethod;
 import com.sep.vox.domain.repository.ExamBlueprintRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -79,7 +82,10 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
             currentSchoolId,
             command.languageId(),
             ExamKind.CENTRALIZED,
+            ExamDeliveryMode.LAB,
             ExamStatus.DRAFT,
+            Objects.requireNonNullElse(command.maxAttempt(), 1),
+            Objects.requireNonNullElse(command.resultDecisionMethod(), ResultDecisionMethod.HIGHEST),
             parseDateTime(command.openAt()),
             parseDateTime(command.closeAt()),
             command.assessmentPolicyId(),
@@ -100,7 +106,9 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
             input.blueprintId(),
             input.openAt(),
             input.closeAt(),
-            input.assessmentPolicyId()
+            input.assessmentPolicyId(),
+            input.maxAttempt(),
+            input.resultDecisionMethod()
         );
     }
 

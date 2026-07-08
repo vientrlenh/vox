@@ -40,6 +40,11 @@ public class ExamPaperItemRepositoryImpl implements ExamPaperItemRepository {
     }
 
     @Override
+    public boolean existsUnassignedItemByPaperId(UUID paperId) {
+        return springDataExamPaperItemRepository.existsUnassignedItemByPaperId(paperId);
+    }
+
+    @Override
     public void deleteById(UUID id) {
         springDataExamPaperItemRepository.deleteById(id);
     }

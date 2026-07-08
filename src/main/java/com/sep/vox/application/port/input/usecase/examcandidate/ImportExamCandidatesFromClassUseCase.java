@@ -23,7 +23,6 @@ import com.sep.vox.domain.model.user.SchoolRoleCodes;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
-import com.sep.vox.domain.model.school.SchoolClassUser;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -81,8 +80,8 @@ public class ImportExamCandidatesFromClassUseCase
             schoolClass.getId(), 1, MAX_CLASS_ROSTER_SIZE).content();
 
         var activeUserIds = roster.stream()
-            .filter(SchoolClassUser::isActive)
-            .map(SchoolClassUser::getUserId)
+            .filter(schoolClassUser -> schoolClassUser.isActive())
+            .map(schoolClassUser -> schoolClassUser.getUserId())
             .distinct()
             .toList();
 

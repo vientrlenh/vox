@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
 import java.time.OffsetDateTime;
+import java.util.Objects;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -83,8 +84,8 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
             ExamKind.CENTRALIZED,
             ExamDeliveryMode.LAB,
             ExamStatus.DRAFT,
-            command.maxAttempt() == null ? 1 : command.maxAttempt(),
-            command.resultDecisionMethod() == null ? ResultDecisionMethod.HIGHEST : command.resultDecisionMethod(),
+            Objects.requireNonNullElse(command.maxAttempt(), 1),
+            Objects.requireNonNullElse(command.resultDecisionMethod(), ResultDecisionMethod.HIGHEST),
             parseDateTime(command.openAt()),
             parseDateTime(command.closeAt()),
             command.assessmentPolicyId(),

@@ -39,9 +39,9 @@ public class ViewExamBlueprintDetailsUseCase implements IUseCase<ViewExamBluepri
             .orElse(null);
 
         var blueprint = examBlueprintRepository.findById(input.id())
-            .orElseThrow(() -> new NotFoundException("KhÃ´ng tÃ¬m tháº¥y blueprint Ä‘á» thi"));
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy blueprint đề thi với id: " + input.id()));
         if (!hasAccess(blueprint, currentSchoolId)) {
-            throw new ForbiddenException("Quyá»n truy cáº­p bá»‹ tá»« chá»‘i");
+            throw new ForbiddenException("Quyền truy cập bị từ chối: không có quyền truy cập blueprint đề thi này");
         }
         return ExamBlueprintDtoMapper.toDto(blueprint);
     }

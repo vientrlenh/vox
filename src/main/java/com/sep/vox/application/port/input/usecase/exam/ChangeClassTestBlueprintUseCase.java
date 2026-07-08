@@ -3,7 +3,6 @@ package com.sep.vox.application.port.input.usecase.exam;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -20,11 +19,9 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.domain.mapper.ExamDtoMapper;
 import com.sep.vox.domain.model.exam.Exam;
-import com.sep.vox.domain.model.exam.ExamBlueprint;
 import com.sep.vox.domain.model.exam.ExamBlueprintSection;
 import com.sep.vox.domain.model.exam.ExamBlueprintSlot;
 import com.sep.vox.domain.model.exam.ExamBlueprintSlotType;
-import com.sep.vox.domain.model.exam.ExamBlueprintVersion;
 import com.sep.vox.domain.model.exam.ExamBlueprintVersionStatus;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
@@ -167,22 +164,22 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
         }
 
         var sections = examBlueprintSectionRepository.findByBlueprintVersionId(version.getId()).stream()
-            .sorted(Comparator.comparingInt(ExamBlueprintSection::getOrder))
+            .sorted(Comparator.comparingInt(section -> section.getOrder()))
             .toList();
         if (sections.isEmpty()) {
             throw new IllegalStateException("Blueprint version không có section nào");
         }
         var slotsBySectionId = examBlueprintSlotRepository.findByBlueprintVersionId(version.getId()).stream()
-            .collect(Collectors.groupingBy(ExamBlueprintSlot::getSectionId));
+            .collect(Collectors.groupingBy(slot -> slot.getSectionId()));
         validateVersionWeights(sections, slotsBySectionId);
-        validateReusableSlots(slotsBySectionId.values().stream().flatMap(List::stream).toList(), currentUserId);
+        validateReusableSlots(slotsBySectionId.values().stream().flatMap(sectionSlots -> sectionSlots.stream()).toList(), currentUserId);
 
         exam.setBlueprintId(blueprint.getId());
         exam.setBlueprintVersionId(version.getId());
 
         for (var section : sections) {
             var slots = slotsBySectionId.getOrDefault(section.getId(), List.of()).stream()
-                .sorted(Comparator.comparingInt(ExamBlueprintSlot::getOrder))
+                .sorted(Comparator.comparingInt(slot -> slot.getOrder()))
                 .toList();
             var paperSection = examPaperSectionRepository.save(new ExamPaperSection(
                 paper.getId(),
@@ -218,7 +215,7 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
     private void validateVersionWeights(List<ExamBlueprintSection> sections, Map<UUID, List<ExamBlueprintSlot>> slotsBySectionId) {
         var sectionWeightSum = sections.stream()
             .map(section -> section.getSectionWeight() == null ? BigDecimal.ZERO : section.getSectionWeight())
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+            .reduce(BigDecimal.ZERO, (left, right) -> left.add(right));
         if (sectionWeightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
             throw new IllegalStateException(
                 "Blueprint version đã chốt có tổng trọng số section không hợp lệ, không thể dùng cho bài kiểm tra");
@@ -227,7 +224,7 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
             var slots = slotsBySectionId.getOrDefault(section.getId(), List.of());
             var slotWeightSum = slots.stream()
                 .map(slot -> slot.getWeight() == null ? BigDecimal.ZERO : slot.getWeight())
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .reduce(BigDecimal.ZERO, (left, right) -> left.add(right));
             if (slotWeightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
                 throw new IllegalStateException(
                     "Phần \"" + section.getTitle() + "\" trong blueprint có tổng trọng số ô câu hỏi không hợp lệ");

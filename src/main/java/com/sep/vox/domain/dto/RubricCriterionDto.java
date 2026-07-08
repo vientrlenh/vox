@@ -1,10 +1,9 @@
 package com.sep.vox.domain.dto;
 
-import com.sep.vox.domain.valueobject.rubric.RubricCriterionExample;
-import com.sep.vox.domain.valueobject.rubric.RubricCriterionExamples;
-
 import java.math.BigDecimal;
 import java.util.UUID;
+
+import com.sep.vox.domain.valueobject.rubric.RubricCriterionExamples;
 
 public record RubricCriterionDto(
         UUID id,

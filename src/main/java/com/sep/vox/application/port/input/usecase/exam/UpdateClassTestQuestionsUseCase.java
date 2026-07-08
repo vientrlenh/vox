@@ -140,7 +140,7 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
             existingPaperSection.setUpdatedBy(currentUserId);
             examPaperSectionRepository.save(existingPaperSection);
 
-            updateSectionQuestions(existingPaperSection, sectionCommand.questionIds(), exam.getId(), currentUserId, now);
+            updateSectionQuestions(existingPaperSection, sectionCommand.questionIds(), exam.getId(), currentUserId);
         }
 
         for (int i = input.sections().size(); i < existingPaperSections.size(); i++) {
@@ -161,8 +161,7 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
             ExamPaperSection paperSection,
             List<UUID> questionIds,
             UUID examId,
-            UUID currentUserId,
-            OffsetDateTime now) {
+            UUID currentUserId) {
         for (var item : examPaperItemRepository.findBySectionId(paperSection.getId())) {
             examPaperItemRepository.deleteById(item.getId());
         }

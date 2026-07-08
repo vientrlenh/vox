@@ -47,7 +47,6 @@ import com.sep.vox.domain.mapper.QuestionDtoMapper;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamPaperStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
-import com.sep.vox.domain.model.school.SchoolClassUser;
 import com.sep.vox.domain.repository.ExamBlueprintRepository;
 import com.sep.vox.domain.repository.ExamBlueprintVersionRepository;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
@@ -232,9 +231,9 @@ public class ExamController {
         return examCandidateRepository.findByExamId(source.id()).stream()
             .findFirst()
             .flatMap(candidate -> schoolClassUserRepository.findByUserId(candidate.getStudentId()).stream()
-                .filter(SchoolClassUser::isActive)
+                .filter(schoolClassUser -> schoolClassUser.isActive())
                 .findFirst())
-            .map(SchoolClassUser::getSchoolClassId)
+            .map(schoolclassuser -> schoolclassuser.getSchoolClassId())
             .orElse(null);
     }
 

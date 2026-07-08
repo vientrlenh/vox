@@ -38,7 +38,7 @@ public class ExamGraphQlDataLoaderConfig {
                 Mono.fromSupplier(() -> schoolRoomRepository.findByIdIn(roomIds)
                     .stream()
                     .map(SchoolRoomDtoMapper::toDto)
-                    .collect(Collectors.toMap(SchoolRoomFromDto::id, room -> room)))
+                    .collect(Collectors.toMap(sc -> sc.id(), room -> room)))
             );
 
         registry.<UUID, ExamDto>forName("examById")
@@ -46,7 +46,7 @@ public class ExamGraphQlDataLoaderConfig {
                 Mono.fromSupplier(() -> examRepository.findByIdIn(examIds)
                     .stream()
                     .map(ExamDtoMapper::toDto)
-                    .collect(Collectors.toMap(ExamDto::id, exam -> exam)))
+                    .collect(Collectors.toMap(exam -> exam.id(), exam -> exam)))
             );
 
         registry.<UUID, ExamScheduleDto>forName("examScheduleById")
@@ -54,7 +54,7 @@ public class ExamGraphQlDataLoaderConfig {
                 Mono.fromSupplier(() -> examScheduleRepository.findByIdIn(scheduleIds)
                     .stream()
                     .map(ExamScheduleDtoMapper::toDto)
-                    .collect(Collectors.toMap(ExamScheduleDto::id, schedule -> schedule)))
+                    .collect(Collectors.toMap(schedule -> schedule.id(), schedule -> schedule)))
             );
 
         registry.<UUID, ExamPaperDto>forName("examPaperById")
@@ -62,7 +62,7 @@ public class ExamGraphQlDataLoaderConfig {
                 Mono.fromSupplier(() -> examPaperRepository.findByIdIn(paperIds)
                     .stream()
                     .map(ExamPaperDtoMapper::toDto)
-                    .collect(Collectors.toMap(ExamPaperDto::id, paper -> paper)))
+                    .collect(Collectors.toMap(paper -> paper.id(), paper -> paper)))
             );
     }
 }

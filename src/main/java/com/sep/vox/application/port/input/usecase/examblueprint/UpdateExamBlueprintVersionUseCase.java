@@ -20,10 +20,8 @@ import com.sep.vox.application.port.input.command.CreateQuestionSelectionSpecCom
 import com.sep.vox.application.port.input.command.UpdateExamBlueprintVersionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.ExamBlueprintVersionDto;
 import com.sep.vox.domain.mapper.ExamBlueprintVersionDtoMapper;
-import com.sep.vox.domain.model.exam.ExamBlueprint;
 import com.sep.vox.domain.model.exam.ExamBlueprintSection;
 import com.sep.vox.domain.model.exam.ExamBlueprintSlot;
 import com.sep.vox.domain.model.exam.ExamBlueprintSlotType;
@@ -31,13 +29,10 @@ import com.sep.vox.domain.model.exam.ExamBlueprintVersionStatus;
 import com.sep.vox.domain.model.question.QuestionDifficulty;
 import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.model.question.QuestionType;
-import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.repository.ExamBlueprintRepository;
 import com.sep.vox.domain.repository.ExamBlueprintSectionRepository;
 import com.sep.vox.domain.repository.ExamBlueprintSlotRepository;
 import com.sep.vox.domain.repository.ExamBlueprintVersionRepository;
-import com.sep.vox.domain.repository.ExamMemberRepository;
-import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.valueobject.QuestionSelectionSpec;
@@ -50,10 +45,7 @@ public class UpdateExamBlueprintVersionUseCase implements IUseCase<UpdateExamBlu
     private final ExamBlueprintSectionRepository examBlueprintSectionRepository;
     private final ExamBlueprintSlotRepository examBlueprintSlotRepository;
     private final QuestionRepository questionRepository;
-    private final ExamRepository examRepository;
-    private final ExamMemberRepository examMemberRepository;
     private final SchoolUserRepository schoolUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
 
     public UpdateExamBlueprintVersionUseCase(
@@ -62,20 +54,14 @@ public class UpdateExamBlueprintVersionUseCase implements IUseCase<UpdateExamBlu
             ExamBlueprintSectionRepository examBlueprintSectionRepository,
             ExamBlueprintSlotRepository examBlueprintSlotRepository,
             QuestionRepository questionRepository,
-            ExamRepository examRepository,
-            ExamMemberRepository examMemberRepository,
             SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
             UserContextPort userContextPort) {
         this.examBlueprintVersionRepository = examBlueprintVersionRepository;
         this.examBlueprintRepository = examBlueprintRepository;
         this.examBlueprintSectionRepository = examBlueprintSectionRepository;
         this.examBlueprintSlotRepository = examBlueprintSlotRepository;
         this.questionRepository = questionRepository;
-        this.examRepository = examRepository;
-        this.examMemberRepository = examMemberRepository;
         this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
         this.userContextPort = userContextPort;
     }
 
@@ -92,7 +78,9 @@ public class UpdateExamBlueprintVersionUseCase implements IUseCase<UpdateExamBlu
             .orElseThrow(() -> new NotFoundException("Không tìm thấy version blueprint"));
         var blueprint = examBlueprintRepository.findById(version.getBlueprintId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy blueprint đề thi"));
-        authorizeEditor(blueprint, currentUserId, currentSchoolId);
+        if (!examBlueprintRepository.canEditBlueprint(blueprint.getId(), currentUserId, currentSchoolId)) {
+            throw new ForbiddenException("Quyền truy cập bị từ chối");
+        }
 
         if (version.getStatus() != ExamBlueprintVersionStatus.DRAFT) {
             throw new IllegalStateException("Chỉ được cập nhật version ở trạng thái DRAFT");
@@ -196,30 +184,14 @@ public class UpdateExamBlueprintVersionUseCase implements IUseCase<UpdateExamBlu
         );
     }
 
-    private void authorizeEditor(ExamBlueprint blueprint, UUID currentUserId, UUID currentSchoolId) {
-        if (!blueprint.getSchoolId().equals(currentSchoolId)) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
-        }
-        var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
-        if (schoolAdmin) return;
-        var exam = examRepository.findByBlueprintId(blueprint.getId()).orElse(null);
-        if (exam != null) {
-            if (!examMemberRepository.existsByExamIdAndUserIdAndRole(exam.getId(), currentUserId, ExamMemberRole.AUTHOR)) {
-                throw new ForbiddenException("Quyền truy cập bị từ chối");
-            }
-        } else {
-            if (!blueprint.getCreatedBy().equals(currentUserId)) {
-                throw new ForbiddenException("Quyền truy cập bị từ chối");
-            }
-        }
-    }
+    private static final BigDecimal WEIGHT_TOLERANCE = new BigDecimal("0.01");
 
     private void validateSections(UpdateExamBlueprintVersionCommand command) {
         if (command.sections().isEmpty()) {
             throw new IllegalStateException("Blueprint version phải có ít nhất một section");
         }
         var sectionOrders = new HashSet<Integer>();
+        var sectionWeightSum = BigDecimal.ZERO;
         for (var section : command.sections()) {
             if (!sectionOrders.add(section.order())) {
                 throw new IllegalStateException("Thứ tự section không được trùng lặp");
@@ -228,12 +200,22 @@ public class UpdateExamBlueprintVersionUseCase implements IUseCase<UpdateExamBlu
                 throw new IllegalStateException("Mỗi section phải có ít nhất một slot");
             }
             var slotOrders = new HashSet<Integer>();
+            var slotWeightSum = BigDecimal.ZERO;
             for (var slot : slotsOf(section)) {
                 if (!slotOrders.add(slot.order())) {
                     throw new IllegalStateException("Thứ tự slot trong section không được trùng lặp");
                 }
                 validateSlot(slot);
+                slotWeightSum = slotWeightSum.add(defaultWeight(slot.weight()));
             }
+            if (slotWeightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
+                throw new IllegalStateException(
+                    "Tổng trọng số ô câu hỏi trong phần \"" + section.title() + "\" phải bằng 1.00");
+            }
+            sectionWeightSum = sectionWeightSum.add(defaultWeight(section.sectionWeight()));
+        }
+        if (sectionWeightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
+            throw new IllegalStateException("Tổng trọng số section phải bằng 1.00");
         }
     }
 

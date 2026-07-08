@@ -1,7 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examblueprint;
 
 import java.time.OffsetDateTime;
-import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,10 +10,8 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateExamBlueprintActiveStatusCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.ExamBlueprintDto;
 import com.sep.vox.domain.mapper.ExamBlueprintDtoMapper;
-import com.sep.vox.domain.model.exam.ExamBlueprint;
 import com.sep.vox.domain.repository.ExamBlueprintRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
@@ -24,17 +21,14 @@ public class UpdateExamBlueprintActiveStatusUseCase
 
     private final ExamBlueprintRepository examBlueprintRepository;
     private final SchoolUserRepository schoolUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
 
     public UpdateExamBlueprintActiveStatusUseCase(
             ExamBlueprintRepository examBlueprintRepository,
             SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
             UserContextPort userContextPort) {
         this.examBlueprintRepository = examBlueprintRepository;
         this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
         this.userContextPort = userContextPort;
     }
 
@@ -48,22 +42,13 @@ public class UpdateExamBlueprintActiveStatusUseCase
 
         var blueprint = examBlueprintRepository.findById(input.blueprintId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy blueprint đề thi"));
-        authorizeOwner(blueprint, currentUserId, currentSchoolId);
+        if (!examBlueprintRepository.canEditBlueprint(blueprint.getId(), currentUserId, currentSchoolId)) {
+            throw new ForbiddenException("Quyền truy cập bị từ chối");
+        }
 
         blueprint.setActive(input.isActive());
         blueprint.setUpdatedAt(OffsetDateTime.now());
         blueprint.setUpdatedBy(currentUserId);
         return ExamBlueprintDtoMapper.toDto(examBlueprintRepository.save(blueprint));
-    }
-
-    private void authorizeOwner(ExamBlueprint blueprint, UUID currentUserId, UUID currentSchoolId) {
-        if (!blueprint.getSchoolId().equals(currentSchoolId)) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
-        }
-        var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
-        if (!blueprint.getCreatedBy().equals(currentUserId) && !schoolAdmin) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
-        }
     }
 }

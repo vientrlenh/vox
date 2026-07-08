@@ -416,7 +416,7 @@ public class SchoolController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
 
-        int pageNumber = (page != null && page >= 0) ? page : 0;
+        int pageNumber = (page != null && page > 0) ? page : 1;
         int pageSize = (size != null && size > 0) ? size : 10;
 
         var query = new ViewSchoolRoomsQuery(schoolId, pageNumber, pageSize);

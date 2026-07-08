@@ -66,6 +66,7 @@ enum QuestionDifficulty {
 enum QuestionScope {
     MINE
     COLLABORATING
+    REVIEWING
     ALL
 }
 
@@ -185,6 +186,7 @@ type Question {
     assets: [QuestionAsset!]!
     evaluationGuide: QuestionEvaluationGuide
     collaborators: [QuestionCollaborator!]!
+    usableInExam: Boolean!
 }
 
 type QuestionPage {

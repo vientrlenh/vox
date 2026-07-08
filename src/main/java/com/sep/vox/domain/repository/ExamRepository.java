@@ -12,6 +12,7 @@ import com.sep.vox.domain.model.exam.ExamStatus;
 
 public interface ExamRepository {
     Optional<Exam> findById(UUID id);
+    List<Exam> findByIdIn(Collection<UUID> ids);
     Exam save(Exam exam);
     PageResult<Exam> findAccessible(
         UUID currentUserId,
@@ -26,9 +27,9 @@ public interface ExamRepository {
         int page,
         int size
     );
-    Optional<Exam> findByBlueprintId(UUID blueprintId);
+    List<Exam> findAllByBlueprintId(UUID blueprintId);
     boolean existsByBlueprintId(UUID blueprintId);
+    boolean existsByBlueprintIdAndKindAndStatusNot(UUID blueprintId, ExamKind kind, ExamStatus status);
     boolean existsSubmittedSessionByExamId(UUID examId);
     void deleteById(UUID id);
-    List<Exam> findByIdIn(Collection<UUID> ids);
 }

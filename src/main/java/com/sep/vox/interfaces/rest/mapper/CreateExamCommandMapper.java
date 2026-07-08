@@ -17,7 +17,9 @@ public final class CreateExamCommandMapper {
             request.blueprintId(),
             request.openAt(),
             request.closeAt(),
-            request.assessmentPolicyId()
+            request.assessmentPolicyId(),
+            request.maxAttempt(),
+            request.resultDecisionMethod()
         );
     }
 }

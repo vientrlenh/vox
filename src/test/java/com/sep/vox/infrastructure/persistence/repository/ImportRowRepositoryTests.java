@@ -43,8 +43,8 @@ class ImportRowRepositoryTests extends ContainerTestConfig {
         var found = importRowRepository.findBySessionId(sessionId, ImportRowStatus.INVALID, 1, 10);
 
         assertThat(found.content()).hasSize(2);
-        assertThat(found.content()).extracting(ImportRow::getRowNumber).containsExactly(1L, 3L);
-        assertThat(found.content()).extracting(ImportRow::getStatus).containsOnly(ImportRowStatus.INVALID);
+        assertThat(found.content()).extracting(row -> row.getRowNumber()).containsExactly(1L, 3L);
+        assertThat(found.content()).extracting(row -> row.getStatus()).containsOnly(ImportRowStatus.INVALID);
         assertThat(found.totalElements()).isEqualTo(2L);
         assertThat(found.totalPages()).isEqualTo(1);
     }

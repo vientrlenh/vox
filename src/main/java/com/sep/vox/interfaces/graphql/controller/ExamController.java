@@ -13,12 +13,21 @@ import org.springframework.stereotype.Controller;
 import graphql.schema.DataFetchingEnvironment;
 
 import com.sep.vox.application.port.input.query.ViewExamDetailsQuery;
+import com.sep.vox.application.port.input.query.ViewExamPaperDetailsQuery;
+import com.sep.vox.application.port.input.query.ViewExamStatusCountsQuery;
 import com.sep.vox.application.port.input.query.ViewExamsQuery;
+import com.sep.vox.application.port.input.query.ViewMyExamRoleQuery;
 import com.sep.vox.application.port.input.usecase.exam.ViewExamDetailsUseCase;
+import com.sep.vox.application.port.input.usecase.exam.ViewExamStatusCountsUseCase;
 import com.sep.vox.application.port.input.usecase.exam.ViewExamsUseCase;
+import com.sep.vox.application.port.input.usecase.exam.ViewMyExamRoleUseCase;
+import com.sep.vox.application.port.input.usecase.exampaper.ViewExamPaperDetailsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.query.dto.ExamStatusCountsDto;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.dto.ExamBlueprintDto;
+import com.sep.vox.domain.dto.ExamBlueprintVersionDto;
 import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.domain.dto.ExamMemberDto;
 import com.sep.vox.domain.dto.ExamPaperDto;
@@ -27,6 +36,8 @@ import com.sep.vox.domain.dto.ExamPaperSectionDto;
 import com.sep.vox.domain.dto.ExamSecurePoolDto;
 import com.sep.vox.domain.dto.QuestionDto;
 import com.sep.vox.domain.dto.UserDto;
+import com.sep.vox.domain.mapper.ExamBlueprintDtoMapper;
+import com.sep.vox.domain.mapper.ExamBlueprintVersionDtoMapper;
 import com.sep.vox.domain.mapper.ExamMemberDtoMapper;
 import com.sep.vox.domain.mapper.ExamPaperDtoMapper;
 import com.sep.vox.domain.mapper.ExamPaperItemDtoMapper;
@@ -36,6 +47,8 @@ import com.sep.vox.domain.mapper.QuestionDtoMapper;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamPaperStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
+import com.sep.vox.domain.repository.ExamBlueprintRepository;
+import com.sep.vox.domain.repository.ExamBlueprintVersionRepository;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamPaperItemRepository;
@@ -51,6 +64,11 @@ public class ExamController {
 
     private final ViewExamsUseCase viewExamsUseCase;
     private final ViewExamDetailsUseCase viewExamDetailsUseCase;
+    private final ViewExamPaperDetailsUseCase viewExamPaperDetailsUseCase;
+    private final ViewExamStatusCountsUseCase viewExamStatusCountsUseCase;
+    private final ViewMyExamRoleUseCase viewMyExamRoleUseCase;
+    private final ExamBlueprintRepository examBlueprintRepository;
+    private final ExamBlueprintVersionRepository examBlueprintVersionRepository;
     private final ExamMemberRepository examMemberRepository;
     private final ExamPaperRepository examPaperRepository;
     private final ExamPaperSectionRepository examPaperSectionRepository;
@@ -66,6 +84,11 @@ public class ExamController {
     public ExamController(
             ViewExamsUseCase viewExamsUseCase,
             ViewExamDetailsUseCase viewExamDetailsUseCase,
+            ViewExamPaperDetailsUseCase viewExamPaperDetailsUseCase,
+            ViewExamStatusCountsUseCase viewExamStatusCountsUseCase,
+            ViewMyExamRoleUseCase viewMyExamRoleUseCase,
+            ExamBlueprintRepository examBlueprintRepository,
+            ExamBlueprintVersionRepository examBlueprintVersionRepository,
             ExamMemberRepository examMemberRepository,
             ExamPaperRepository examPaperRepository,
             ExamPaperSectionRepository examPaperSectionRepository,
@@ -79,6 +102,11 @@ public class ExamController {
             UserRoleQueryRepository userRoleQueryRepository) {
         this.viewExamsUseCase = viewExamsUseCase;
         this.viewExamDetailsUseCase = viewExamDetailsUseCase;
+        this.viewExamPaperDetailsUseCase = viewExamPaperDetailsUseCase;
+        this.viewExamStatusCountsUseCase = viewExamStatusCountsUseCase;
+        this.viewMyExamRoleUseCase = viewMyExamRoleUseCase;
+        this.examBlueprintRepository = examBlueprintRepository;
+        this.examBlueprintVersionRepository = examBlueprintVersionRepository;
         this.examMemberRepository = examMemberRepository;
         this.examPaperRepository = examPaperRepository;
         this.examPaperSectionRepository = examPaperSectionRepository;
@@ -94,10 +122,10 @@ public class ExamController {
 
     @QueryMapping(name = "exams")
     public PageResult<ExamDto> exams(
-            @Argument(name = "kind") ExamKind kind,
-            @Argument(name = "status") ExamStatus status,
-            @Argument(name = "schoolId") UUID schoolId,
-            @Argument(name = "keyword") String keyword,
+            @Argument ExamKind kind,
+            @Argument ExamStatus status,
+            @Argument UUID schoolId,
+            @Argument String keyword,
             @Argument(name = "page") int page,
             @Argument(name = "size") int size) {
         validatePage(page, size);
@@ -106,9 +134,9 @@ public class ExamController {
 
     @QueryMapping(name = "classTests")
     public PageResult<ExamDto> classTests(
-            @Argument(name = "status") ExamStatus status,
-            @Argument(name = "schoolClassId") UUID schoolClassId,
-            @Argument(name = "keyword") String keyword,
+            @Argument ExamStatus status,
+            @Argument UUID schoolClassId,
+            @Argument String keyword,
             @Argument(name = "page") int page,
             @Argument(name = "size") int size) {
         validatePage(page, size);
@@ -120,6 +148,46 @@ public class ExamController {
     @QueryMapping(name = "exam")
     public ExamDto exam(@Argument(name = "id") UUID id) {
         return viewExamDetailsUseCase.execute(new ViewExamDetailsQuery(id));
+    }
+
+    @QueryMapping(name = "examMyRole")
+    public String examMyRole(@Argument(name = "examId") UUID examId) {
+        return viewMyExamRoleUseCase.execute(new ViewMyExamRoleQuery(examId));
+    }
+
+    @QueryMapping(name = "examPaper")
+    public ExamPaperDto examPaper(@Argument(name = "id") UUID id) {
+        return viewExamPaperDetailsUseCase.execute(new ViewExamPaperDetailsQuery(id));
+    }
+
+    @QueryMapping(name = "examStatusCounts")
+    public ExamStatusCountsDto examStatusCounts(@Argument UUID schoolId, @Argument ExamKind kind) {
+        return viewExamStatusCountsUseCase.execute(new ViewExamStatusCountsQuery(schoolId, kind));
+    }
+
+    @SchemaMapping(typeName = "Exam", field = "blueprint")
+    public ExamBlueprintDto blueprint(ExamDto source) {
+        if (source.blueprintId() == null || !canViewExamBlueprintData(source)) {
+            return null;
+        }
+        return examBlueprintRepository.findById(source.blueprintId())
+            .map(ExamBlueprintDtoMapper::toDto)
+            .orElse(null);
+    }
+
+    @SchemaMapping(typeName = "Exam", field = "blueprintVersion")
+    public ExamBlueprintVersionDto blueprintVersion(ExamDto source) {
+        if (source.blueprintVersionId() == null || !canViewExamBlueprintData(source)) {
+            return null;
+        }
+        return examBlueprintVersionRepository.findById(source.blueprintVersionId())
+            .map(ExamBlueprintVersionDtoMapper::toDto)
+            .orElse(null);
+    }
+
+    @SchemaMapping(typeName = "Exam", field = "candidateCount")
+    public int candidateCount(ExamDto source) {
+        return Math.toIntExact(examCandidateRepository.countByExamId(source.id()));
     }
 
     @SchemaMapping(typeName = "Exam", field = "members")
@@ -134,7 +202,7 @@ public class ExamController {
     }
 
     @SchemaMapping(typeName = "Exam", field = "papers")
-    public List<ExamPaperDto> papers(ExamDto source, @Argument(name = "status") ExamPaperStatus status) {
+    public List<ExamPaperDto> papers(ExamDto source, @Argument ExamPaperStatus status) {
         if (status == null) {
             return ExamPaperDtoMapper.toDtoList(examPaperRepository.findByExamId(source.id()));
         }
@@ -163,9 +231,9 @@ public class ExamController {
         return examCandidateRepository.findByExamId(source.id()).stream()
             .findFirst()
             .flatMap(candidate -> schoolClassUserRepository.findByUserId(candidate.getStudentId()).stream()
-                .filter(scu -> scu.isActive())
+                .filter(schoolClassUser -> schoolClassUser.isActive())
                 .findFirst())
-            .map(scu -> scu.getSchoolClassId())
+            .map(schoolclassuser -> schoolclassuser.getSchoolClassId())
             .orElse(null);
     }
 
@@ -188,6 +256,26 @@ public class ExamController {
         return questionRepository.findAccessibleById(questionId, currentUserId, currentSchoolId, systemAdmin, schoolAdmin)
             .map(QuestionDtoMapper::toQuestionDto)
             .orElse(null);
+    }
+
+    private boolean canViewExamBlueprintData(ExamDto source) {
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        if (userContextPort.isSystemAdmin()) {
+            return true;
+        }
+
+        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+            .map(schoolUser -> schoolUser.getSchoolId())
+            .orElse(null);
+        if (currentSchoolId != null && currentSchoolId.equals(source.schoolId())) {
+            var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+                .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
+            if (schoolAdmin) {
+                return true;
+            }
+        }
+
+        return examMemberRepository.findByExamIdAndUserId(source.id(), currentUserId).isPresent();
     }
 
     private void validatePage(int page, int size) {

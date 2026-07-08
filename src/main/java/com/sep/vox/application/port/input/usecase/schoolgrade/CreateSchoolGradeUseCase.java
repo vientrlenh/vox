@@ -55,7 +55,7 @@ public class CreateSchoolGradeUseCase implements IUseCase<CreateSchoolGradeComma
         checkUserAccess(currentUserId, command.schoolId());
 
         // 3. Validate Khối lớp (Grade Level) thuộc về trường
-        var gradeLevel = schoolGradeLevelRepository.findById(command.schoolGradeLevelId())
+        schoolGradeLevelRepository.findById(command.schoolGradeLevelId())
                 .filter(gl -> gl.getSchoolId().equals(command.schoolId()))
                 .orElseThrow(() -> new NotFoundException("Khối lớp không tồn tại hoặc không thuộc trường này."));
 

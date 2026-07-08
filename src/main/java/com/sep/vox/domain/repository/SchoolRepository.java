@@ -26,8 +26,6 @@ public interface SchoolRepository {
     void deleteById(UUID id);
 
     boolean existsByIdAndIsActiveTrue(UUID schoolId);
-    List<School> findByIdIn(Collection<UUID> ids, int pageNumber, int size);
-
 
     int updateSchoolAtomic(UUID id, String name, String description, String phone,
                            String email, String domain, String address, Integer studentCount,

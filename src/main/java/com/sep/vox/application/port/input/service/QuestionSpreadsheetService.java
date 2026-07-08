@@ -165,7 +165,7 @@ public class QuestionSpreadsheetService {
             autoSize(sheet, fullExportHeaders().size());
             return toBytes(workbook);
         } catch (IOException exception) {
-            throw new IllegalStateException("Khong the tao file export cau hoi", exception);
+            throw new IllegalStateException("Không thể tạo file export câu hỏi", exception);
         }
     }
 
@@ -230,12 +230,12 @@ public class QuestionSpreadsheetService {
                 "Look for relevance and reasoning.",
                 "No opinion stated."
             ));
-            addListValidation(sheet, TYPE_COLUMN_INDEX, Arrays.stream(QuestionType.values()).map(Enum::name).toArray(String[]::new));
-            addListValidation(sheet, SHARING_COLUMN_INDEX, Arrays.stream(QuestionSharing.values()).map(Enum::name).toArray(String[]::new));
+            addListValidation(sheet, TYPE_COLUMN_INDEX, Arrays.stream(QuestionType.values()).map(e -> e.name()).toArray(String[]::new));
+            addListValidation(sheet, SHARING_COLUMN_INDEX, Arrays.stream(QuestionSharing.values()).map(e -> e.name()).toArray(String[]::new));
             autoSize(sheet, IMPORT_HEADERS.size());
             return toBytes(workbook);
         } catch (IOException exception) {
-            throw new IllegalStateException("Khong the tao file template import cau hoi", exception);
+            throw new IllegalStateException("Không thể tạo file template import câu hỏi", exception);
         }
     }
 
@@ -256,7 +256,7 @@ public class QuestionSpreadsheetService {
         var schoolAdmin = !systemAdmin && userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
         if (!systemAdmin && currentSchoolId == null) {
-            throw new ForbiddenException("Quyen truy cap bi tu choi");
+            throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
         return new AccessContext(currentUserId, currentSchoolId, systemAdmin, schoolAdmin);
     }
@@ -311,14 +311,14 @@ public class QuestionSpreadsheetService {
     private String bankCodeOf(UUID questionBankId, Map<UUID, String> cache) {
         return cache.computeIfAbsent(
             questionBankId,
-            id -> questionBankRepository.findById(id).map(com.sep.vox.domain.model.question.QuestionBank::getCode).orElse("")
+            id -> questionBankRepository.findById(id).map(bank -> bank.getCode()).orElse("")
         );
     }
 
     private String topicNameOf(UUID questionTopicId, Map<UUID, String> cache) {
         return cache.computeIfAbsent(
             questionTopicId,
-            id -> questionTopicRepository.findById(id).map(com.sep.vox.domain.model.question.QuestionTopic::getName).orElse("")
+            id -> questionTopicRepository.findById(id).map(topic -> topic.getName()).orElse("")
         );
     }
 

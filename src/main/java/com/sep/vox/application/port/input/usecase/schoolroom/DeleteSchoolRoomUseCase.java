@@ -79,7 +79,7 @@ public class DeleteSchoolRoomUseCase implements IUseCase<DeleteSchoolRoomCommand
         room.setUpdatedAt(OffsetDateTime.now()); // Thời điểm bị xóa
 
         // 4. LƯU LẠI VÀO DB
-        SchoolRoom deletedRoom = schoolRoomRepository.save(room);
+        schoolRoomRepository.save(room);
 
         // 5. Trả về dữ liệu mới
         return null;

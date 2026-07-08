@@ -135,7 +135,7 @@ public class SchoolGraphQlDataLoaderConfig {
                 return schoolGradeRepository.findByIdIn(gradeIds)
                     .stream()
                     .map(SchoolGradeDtoMapper::toSchoolGradeDto)
-                    .collect(Collectors.toMap(sg -> sg.id(), sg -> sg));
+                    .collect(Collectors.toMap(grade -> grade.id(), sg -> sg));
             })
         );
 

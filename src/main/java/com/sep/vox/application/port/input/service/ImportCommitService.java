@@ -27,7 +27,7 @@ public class ImportCommitService {
 
     public ImportCommitService(List<ImportCommitHandler> handlerList, ImportSessionRepository importSessionRepository, ImportRowRepository importRowRepository) {
         this.handlers = handlerList.stream()
-            .collect(Collectors.toMap(ImportCommitHandler::supportedType, h -> h));
+            .collect(Collectors.toMap(h -> h.supportedType(), h -> h));
         this.importSessionRepository = importSessionRepository;
         this.importRowRepository = importRowRepository;
     }
@@ -48,7 +48,7 @@ public class ImportCommitService {
             session.setTotalRows(rows.size());
             session.setStatus(ImportSessionStatus.COMPLETED);
         } catch (Exception e) {
-            log.error("Loi khi xu ly phien import {} (type={})", sessionId, session.getType(), e);
+            log.error("Lỗi khi xử lý phiên import {} (type={})", sessionId, session.getType(), e);
             session.setStatus(ImportSessionStatus.FAILED);
             session.setFailureReason(
                 e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()

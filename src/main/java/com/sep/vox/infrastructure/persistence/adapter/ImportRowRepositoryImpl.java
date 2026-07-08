@@ -34,7 +34,7 @@ public class ImportRowRepositoryImpl implements ImportRowRepository {
 
     @Override
     public PageResult<ImportRow> findBySessionId(UUID sessionId, ImportRowStatus status, int pageNumber, int size) {
-        var sort = Sort.by(Sort.Order.asc(ImportRowJpaEntity::getRowNumber));
+        var sort = Sort.by(Sort.Order.asc((ImportRowJpaEntity row) -> row.getRowNumber()));
         var pageable = PageRequest.of(
             pageNumber - 1,
             size,

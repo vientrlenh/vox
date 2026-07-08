@@ -130,13 +130,13 @@ public class UpdateFrameworkVersionUseCase implements IUseCase<UpdateFrameworkVe
         var existingCriteria = frameworkCriterionRepository.findByFrameworkVersionId(versionId);
         if (!existingCriteria.isEmpty()) {
             frameworkCriterionBandRepository.deleteByFrameworkCriterionIdIn(
-                existingCriteria.stream().map(FrameworkCriterion::getId).toList());
+                existingCriteria.stream().map(criterion -> criterion.getId()).toList());
         }
         frameworkCriterionRepository.deleteByFrameworkVersionId(versionId);
 
         var savedResultBands = frameworkResultBandRepository.findByFrameworkVersionId(versionId);
         Map<String, UUID> resultBandCodeToId = savedResultBands.stream()
-            .collect(Collectors.toMap(FrameworkResultBand::getCode, FrameworkResultBand::getId));
+            .collect(Collectors.toMap(resultband -> resultband.getCode(), resultband -> resultband.getId()));
 
         var criteriaToSave = criterionInputs.stream()
             .map(c -> new FrameworkCriterion(
@@ -149,7 +149,7 @@ public class UpdateFrameworkVersionUseCase implements IUseCase<UpdateFrameworkVe
             .toList();
         var savedCriteria = frameworkCriterionRepository.saveAll(criteriaToSave);
         Map<String, UUID> criterionCodeToId = savedCriteria.stream()
-            .collect(Collectors.toMap(FrameworkCriterion::getCode, FrameworkCriterion::getId));
+            .collect(Collectors.toMap(criterion -> criterion.getCode(), criterion -> criterion.getId()));
 
         List<FrameworkCriterionBand> allBands = new ArrayList<>();
         for (var criterionInput : criterionInputs) {

@@ -30,6 +30,16 @@ public class SchoolRoomRepositoryImpl implements SchoolRoomRepository {
     }
 
     @Override
+    public List<SchoolRoom> findByIdIn(java.util.Collection<UUID> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        return springDataSchoolRoomRepository.findByIdIn(ids).stream()
+                .map(SchoolRoomMapper::toDomain)
+                .toList();
+    }
+
+    @Override
     public SchoolRoom save(SchoolRoom room) {
         var entity = SchoolRoomMapper.toJpa(room);
         var saved = springDataSchoolRoomRepository.save(entity);
@@ -39,6 +49,16 @@ public class SchoolRoomRepositoryImpl implements SchoolRoomRepository {
     @Override
     public boolean existsBySchoolIdAndCode(UUID schoolId, String code) {
         return springDataSchoolRoomRepository.existsBySchoolIdAndCode(schoolId, code);
+    }
+
+    @Override
+    public List<SchoolRoom> findBySchoolIdAndCodeIn(UUID schoolId, java.util.Collection<String> codes) {
+        if (codes == null || codes.isEmpty()) {
+            return List.of();
+        }
+        return springDataSchoolRoomRepository.findBySchoolIdAndCodeIn(schoolId, codes).stream()
+                .map(SchoolRoomMapper::toDomain)
+                .toList();
     }
 
 

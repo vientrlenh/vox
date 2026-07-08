@@ -1,9 +1,9 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import java.util.UUID;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
@@ -33,18 +33,20 @@ public class ExamRepositoryImpl implements ExamRepository {
     }
 
     @Override
+    public List<Exam> findByIdIn(Collection<UUID> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        return springDataExamRepository.findAllById(ids).stream()
+            .map(ExamMapper::toDomain)
+            .toList();
+    }
+
+    @Override
     public Exam save(Exam exam) {
         var entity = ExamMapper.toJpa(exam);
         var saved = springDataExamRepository.save(entity);
         return ExamMapper.toDomain(saved);
-    }
-
-    @Override
-    public List<Exam> findByIdIn(Collection<UUID> ids) {
-        return springDataExamRepository.findByIdIn(ids)
-            .stream()
-            .map(ExamMapper::toDomain)
-            .toList();
     }
 
     @Override
@@ -74,14 +76,20 @@ public class ExamRepositoryImpl implements ExamRepository {
     }
 
     @Override
-    public Optional<Exam> findByBlueprintId(UUID blueprintId) {
-        return springDataExamRepository.findByBlueprintId(blueprintId)
-            .map(ExamMapper::toDomain);
+    public List<Exam> findAllByBlueprintId(UUID blueprintId) {
+        return springDataExamRepository.findAllByBlueprintId(blueprintId).stream()
+            .map(ExamMapper::toDomain)
+            .toList();
     }
 
     @Override
     public boolean existsByBlueprintId(UUID blueprintId) {
         return springDataExamRepository.existsByBlueprintId(blueprintId);
+    }
+
+    @Override
+    public boolean existsByBlueprintIdAndKindAndStatusNot(UUID blueprintId, ExamKind kind, ExamStatus status) {
+        return springDataExamRepository.existsByBlueprintIdAndKindAndStatusNot(blueprintId, kind.name(), status.name());
     }
 
     @Override

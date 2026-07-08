@@ -603,7 +603,7 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
             return null;
         }
         return userRoleRepository.findByRoleId(systemAdminRole.getId()).stream()
-            .map(UserRole::getUserId)
+            .map(role -> role.getUserId())
             .findFirst()
             .orElse(null);
     }

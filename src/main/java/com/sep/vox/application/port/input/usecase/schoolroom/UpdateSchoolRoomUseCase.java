@@ -63,7 +63,7 @@ public class UpdateSchoolRoomUseCase implements IUseCase<UpdateSchoolRoomCommand
             }
         }
 
-        // 3. Chuẩn hóa dữ liệu đầu vào
+        // 3. Chuẩn hóa & validate dữ liệu đầu vào
         String safeName = (command.name() != null) ? StringNormalization.trimAndCollapseSpaces(command.name()) : null;
         String safeDesc = (command.description() != null) ? StringNormalization.trimAndCollapseSpaces(command.description()) : null;
 

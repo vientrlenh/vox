@@ -16,6 +16,7 @@ public interface ExamMemberRepository {
     boolean existsByUserIdAndRoleAndSchoolId(UUID userId, ExamMemberRole role, UUID schoolId);
     boolean existsByExamIdAndRoleExcludingUserId(UUID examId, ExamMemberRole role, UUID excludeUserId);
     boolean existsByRoleAndSchoolIdExcludingUserId(ExamMemberRole role, UUID schoolId, UUID excludeUserId);
+    boolean canAttachBlueprint(UUID examId, UUID userId);
+    boolean canApproveBlueprintVersion(UUID examId, UUID userId);
     void deleteById(UUID id);
 }
-

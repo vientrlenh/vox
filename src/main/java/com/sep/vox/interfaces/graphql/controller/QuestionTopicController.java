@@ -29,9 +29,9 @@ public class QuestionTopicController {
 
     @QueryMapping(name = "questionTopics")
     public PageResult<QuestionTopicDto> questionTopics(
-            @Argument(name = "questionBankId") UUID questionBankId,
-            @Argument(name = "status") QuestionTopicStatus status,
-            @Argument(name = "keyword") String keyword,
+            @Argument UUID questionBankId,
+            @Argument QuestionTopicStatus status,
+            @Argument String keyword,
             @Argument(name = "page") int page,
             @Argument(name = "size") int size) {
         validatePage(page, size);

@@ -1,5 +1,7 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import java.math.BigDecimal;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -67,11 +69,11 @@ public class ExamBlueprintController {
 
     @QueryMapping(name = "examBlueprints")
     public PageResult<ExamBlueprintDto> examBlueprints(
-            @Argument(name = "schoolId") UUID schoolId,
-            @Argument(name = "isActive") Boolean isActive,
-            @Argument(name = "languageId") UUID languageId,
-            @Argument(name = "examKind") String examKind,
-            @Argument(name = "keyword") String keyword,
+            @Argument UUID schoolId,
+            @Argument Boolean isActive,
+            @Argument UUID languageId,
+            @Argument String examKind,
+            @Argument String keyword,
             @Argument(name = "page") int page,
             @Argument(name = "size") int size) {
         validatePage(page, size);
@@ -86,7 +88,7 @@ public class ExamBlueprintController {
     }
 
     @SchemaMapping(typeName = "ExamBlueprint", field = "versions")
-    public List<ExamBlueprintVersionDto> versions(ExamBlueprintDto source, @Argument(name = "status") ExamBlueprintVersionStatus status) {
+    public List<ExamBlueprintVersionDto> versions(ExamBlueprintDto source, @Argument ExamBlueprintVersionStatus status) {
         if (status == null) {
             return ExamBlueprintVersionDtoMapper.toDtoList(examBlueprintVersionRepository.findByBlueprintId(source.id()));
         }
@@ -95,9 +97,47 @@ public class ExamBlueprintController {
         );
     }
 
+    @SchemaMapping(typeName = "ExamBlueprint", field = "versionCount")
+    public int versionCount(ExamBlueprintDto source) {
+        return examBlueprintVersionRepository.findByBlueprintId(source.id()).size();
+    }
+
+    @SchemaMapping(typeName = "ExamBlueprint", field = "currentVersion")
+    public ExamBlueprintVersionDto currentVersion(ExamBlueprintDto source) {
+        return examBlueprintVersionRepository.findByBlueprintId(source.id()).stream()
+            .max(Comparator.comparingInt(version -> version.getVersion()))
+            .map(ExamBlueprintVersionDtoMapper::toDto)
+            .orElse(null);
+    }
+
+    @SchemaMapping(typeName = "ExamBlueprint", field = "sectionCount")
+    public int blueprintSectionCount(ExamBlueprintDto source) {
+        return examBlueprintVersionRepository.findByBlueprintId(source.id()).stream()
+            .max(Comparator.comparingInt(version -> version.getVersion()))
+            .map(version -> examBlueprintSectionRepository.findByBlueprintVersionId(version.getId()).size())
+            .orElse(0);
+    }
+
     @SchemaMapping(typeName = "ExamBlueprintVersion", field = "sections")
     public List<ExamBlueprintSectionDto> sections(ExamBlueprintVersionDto source) {
         return ExamBlueprintSectionDtoMapper.toDtoList(examBlueprintSectionRepository.findByBlueprintVersionId(source.id()));
+    }
+
+    @SchemaMapping(typeName = "ExamBlueprintVersion", field = "sectionCount")
+    public int versionSectionCount(ExamBlueprintVersionDto source) {
+        return examBlueprintSectionRepository.findByBlueprintVersionId(source.id()).size();
+    }
+
+    @SchemaMapping(typeName = "ExamBlueprintVersion", field = "slotCount")
+    public int slotCount(ExamBlueprintVersionDto source) {
+        return examBlueprintSlotRepository.findByBlueprintVersionId(source.id()).size();
+    }
+
+    @SchemaMapping(typeName = "ExamBlueprintVersion", field = "weightSum")
+    public BigDecimal weightSum(ExamBlueprintVersionDto source) {
+        return examBlueprintSectionRepository.findByBlueprintVersionId(source.id()).stream()
+            .map(section -> section.getSectionWeight() == null ? BigDecimal.ZERO : section.getSectionWeight())
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     @SchemaMapping(typeName = "ExamBlueprintSection", field = "slots")

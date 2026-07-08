@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.question;
 
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

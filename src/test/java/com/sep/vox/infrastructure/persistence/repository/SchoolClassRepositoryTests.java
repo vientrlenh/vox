@@ -175,7 +175,7 @@ class SchoolClassRepositoryTests extends ContainerTestConfig {
 
         assertThat(found.content()).hasSize(2);
         assertThat(found.content())
-            .extracting(SchoolClass::getSchoolId)
+            .extracting(schoolClass -> schoolClass.getSchoolId())
             .containsOnly(schoolId);
         assertThat(found.totalElements()).isEqualTo(2);
     }
@@ -357,7 +357,7 @@ class SchoolClassRepositoryTests extends ContainerTestConfig {
         var found = schoolClassRepository.findByUserId(schoolId, userId, null, 1, 20);
 
         assertThat(found.content())
-            .extracting(SchoolClass::getId)
+            .extracting(schoolClass -> schoolClass.getId())
             .containsExactlyInAnyOrder(activeClass.getId(), leftClass.getId());
         assertThat(found.totalElements()).isEqualTo(2);
     }

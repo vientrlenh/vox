@@ -1,6 +1,9 @@
 package com.sep.vox.infrastructure.persistence.query;
 
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
@@ -28,8 +31,8 @@ public class JpaUserRoleQueryRepository implements UserRoleQueryRepository {
                 r.code,
                 r.name
             )
-            FROM UserRoleJpaEntity ur 
-            JOIN RoleJpaEntity r 
+            FROM UserRoleJpaEntity ur
+            JOIN RoleJpaEntity r
                 ON ur.roleId = r.id
             WHERE ur.userId = :userId
         """, UserRoleInfo.class)
@@ -37,5 +40,21 @@ public class JpaUserRoleQueryRepository implements UserRoleQueryRepository {
         .getResultStream()
         .toList();
     }
-    
+
+    @Override
+    public Set<UUID> findUserIdsByRoleCode(Collection<UUID> userIds, String roleCode) {
+        if (userIds.isEmpty()) {
+            return Set.of();
+        }
+        return new HashSet<>(em.createQuery("""
+            SELECT DISTINCT ur.userId
+            FROM UserRoleJpaEntity ur
+            JOIN RoleJpaEntity r ON ur.roleId = r.id
+            WHERE ur.userId IN :userIds AND r.code = :roleCode
+        """, UUID.class)
+        .setParameter("userIds", userIds)
+        .setParameter("roleCode", roleCode)
+        .getResultList());
+    }
+
 }

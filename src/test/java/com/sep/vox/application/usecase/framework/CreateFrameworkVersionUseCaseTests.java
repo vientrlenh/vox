@@ -13,6 +13,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.NotFoundException;
@@ -55,8 +56,6 @@ public class CreateFrameworkVersionUseCaseTests {
             true, now, now, null, null
         );
         when(frameworkRepository.findFrameworkById(frameworkId)).thenReturn(Optional.of(framework));
-        when(frameworkVersionRepository.findByFrameworkIdAndVersion(frameworkId, 1))
-            .thenReturn(Optional.empty());
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(frameworkVersionRepository.saveFrameworkVersion(any(FrameworkVersion.class)))
             .thenAnswer(invocation -> {
@@ -69,7 +68,6 @@ public class CreateFrameworkVersionUseCaseTests {
 
         assertThat(result.versionId()).isNotNull();
         verify(frameworkRepository).findFrameworkById(frameworkId);
-        verify(frameworkVersionRepository).findByFrameworkIdAndVersion(frameworkId, 1);
         verify(frameworkVersionRepository).saveFrameworkVersion(any(FrameworkVersion.class));
     }
 
@@ -94,12 +92,10 @@ public class CreateFrameworkVersionUseCaseTests {
             frameworkId, new FrameworkCode("CEFR"), "Test Framework", "Description",
             true, now, now, null, null
         );
-        var existingVersion = new FrameworkVersion();
-        existingVersion.setId(UUID.randomUUID());
-
         when(frameworkRepository.findFrameworkById(frameworkId)).thenReturn(Optional.of(framework));
-        when(frameworkVersionRepository.findByFrameworkIdAndVersion(frameworkId, 1))
-            .thenReturn(Optional.of(existingVersion));
+        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
+        when(frameworkVersionRepository.saveFrameworkVersion(any(FrameworkVersion.class)))
+            .thenThrow(new DataIntegrityViolationException("duplicate"));
 
         assertThrows(DuplicatedException.class, () -> useCase.execute(command));
     }

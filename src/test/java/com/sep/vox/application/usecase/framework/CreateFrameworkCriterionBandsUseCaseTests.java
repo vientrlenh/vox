@@ -9,7 +9,9 @@ import static org.mockito.Mockito.when;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,7 +21,6 @@ import com.sep.vox.application.port.input.command.CreateFrameworkCriterionBandsC
 import com.sep.vox.application.port.input.command.CreateFrameworkCriterionBandsCommand.CriterionBandItemCommand;
 import com.sep.vox.application.port.input.usecase.framework.CreateFrameworkCriterionBandsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.model.framework.Framework;
 import com.sep.vox.domain.model.framework.FrameworkCriterion;
 import com.sep.vox.domain.model.framework.FrameworkCriterionBand;
 import com.sep.vox.domain.model.framework.FrameworkResultBand;
@@ -27,15 +28,12 @@ import com.sep.vox.domain.model.framework.FrameworkVersion;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
 import com.sep.vox.domain.repository.FrameworkCriterionBandRepository;
 import com.sep.vox.domain.repository.FrameworkCriterionRepository;
-import com.sep.vox.domain.repository.FrameworkRepository;
 import com.sep.vox.domain.repository.FrameworkResultBandRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
-import com.sep.vox.domain.valueobject.FrameworkCode;
 import com.sep.vox.domain.valueobject.framework.FrameworkCriterionSignals;
 
 public class CreateFrameworkCriterionBandsUseCaseTests {
 
-    private FrameworkRepository frameworkRepository;
     private FrameworkVersionRepository frameworkVersionRepository;
     private FrameworkCriterionRepository frameworkCriterionRepository;
     private FrameworkCriterionBandRepository frameworkCriterionBandRepository;
@@ -51,7 +49,6 @@ public class CreateFrameworkCriterionBandsUseCaseTests {
 
     @BeforeEach
     void setUp() {
-        frameworkRepository = mock(FrameworkRepository.class);
         frameworkVersionRepository = mock(FrameworkVersionRepository.class);
         frameworkCriterionRepository = mock(FrameworkCriterionRepository.class);
         frameworkCriterionBandRepository = mock(FrameworkCriterionBandRepository.class);
@@ -61,9 +58,6 @@ public class CreateFrameworkCriterionBandsUseCaseTests {
                 frameworkVersionRepository, frameworkCriterionRepository,
                 frameworkCriterionBandRepository, frameworkResultBandRepository, userContextPort);
 
-        when(frameworkRepository.findFrameworkById(frameworkId)).thenReturn(Optional.of(
-                new Framework(frameworkId, new FrameworkCode("CEFR"), "Test", "Desc", true, now, now, null, null)));
-
         var version = new FrameworkVersion(versionId, frameworkId, "V1_0", "Version 1.0", "Desc", 1, now, now.plusDays(30),
                 FrameworkVersionStatus.DRAFT, now, now, userId, userId);
         when(frameworkVersionRepository.findFrameworkVersionById(versionId)).thenReturn(Optional.of(version));
@@ -72,7 +66,10 @@ public class CreateFrameworkCriterionBandsUseCaseTests {
         when(frameworkCriterionRepository.findById(criterionId)).thenReturn(Optional.of(criterion));
 
         var resultBand = new FrameworkResultBand(UUID.randomUUID(), versionId, "RB1", "Label", "Desc", 1, now, now, userId, userId);
-        when(frameworkResultBandRepository.findByFrameworkVersionId(versionId)).thenReturn(List.of(resultBand));
+        when(frameworkResultBandRepository.findByFrameworkVersionIdAndCodeIn(any(), any())).thenAnswer(invocation -> {
+            Set<String> codes = invocation.getArgument(1);
+            return List.of(resultBand).stream().filter(rb -> codes.contains(rb.getCode())).collect(Collectors.toList());
+        });
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
     }
@@ -98,8 +95,8 @@ public class CreateFrameworkCriterionBandsUseCaseTests {
     }
 
     @Test
-    void should_throw_not_found_when_framework_missing() {
-        when(frameworkRepository.findFrameworkById(frameworkId)).thenReturn(Optional.empty());
+    void should_throw_not_found_when_version_missing() {
+        when(frameworkVersionRepository.findFrameworkVersionById(versionId)).thenReturn(Optional.empty());
         var command = new CreateFrameworkCriterionBandsCommand(frameworkId, versionId, criterionId, List.of(bandItem("rb1")));
 
         assertThrows(NotFoundException.class, () -> useCase.execute(command));

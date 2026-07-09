@@ -16,19 +16,27 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.sep.vox.application.port.input.command.ArchiveSchoolAssessmentPolicyCommand;
+import com.sep.vox.application.port.input.command.ArchiveSystemAssessmentPolicyCommand;
 import com.sep.vox.application.port.input.command.DeleteSchoolAssessmentPolicyCommand;
 import com.sep.vox.application.port.input.command.DeleteSystemAssessmentPolicyCommand;
+import com.sep.vox.application.port.input.command.PublishSchoolAssessmentPoliciesByRubricVersionCommand;
 import com.sep.vox.application.port.input.command.PublishSchoolAssessmentPolicyCommand;
+import com.sep.vox.application.port.input.command.PublishSystemAssessmentPoliciesByRubricVersionCommand;
 import com.sep.vox.application.port.input.command.PublishSystemAssessmentPolicyCommand;
 import com.sep.vox.application.port.input.usecase.assessmentpolicyschool.AcceptSchoolAssessmentPolicyImportUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentpolicyschool.ArchiveSchoolAssessmentPolicyUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentpolicyschool.CreateSchoolAssessmentPolicyUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentpolicyschool.DeleteSchoolAssessmentPolicyUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentpolicyschool.PreviewSchoolAssessmentPolicyImportFromFileUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentpolicyschool.PublishSchoolAssessmentPoliciesByRubricVersionUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentpolicyschool.PublishSchoolAssessmentPolicyUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentpolicysystem.AcceptSystemAssessmentPolicyImportUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentpolicysystem.ArchiveSystemAssessmentPolicyUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentpolicysystem.CreateSystemAssessmentPolicyUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentpolicysystem.DeleteSystemAssessmentPolicyUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentpolicysystem.PreviewSystemAssessmentPolicyImportFromFileUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentpolicysystem.PublishSystemAssessmentPoliciesByRubricVersionUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentpolicysystem.PublishSystemAssessmentPolicyUseCase;
 import com.sep.vox.application.response.input.importfile.AcceptAssessmentPolicyImportResponse;
 import com.sep.vox.application.response.input.importfile.PreviewAssessmentPolicyImportResponse;
@@ -57,6 +65,10 @@ public class AssessmentPolicyController {
     private final AcceptSchoolAssessmentPolicyImportUseCase acceptSchoolAssessmentPolicyImportUseCase;
     private final PublishSystemAssessmentPolicyUseCase publishSystemAssessmentPolicyUseCase;
     private final PublishSchoolAssessmentPolicyUseCase publishSchoolAssessmentPolicyUseCase;
+    private final PublishSystemAssessmentPoliciesByRubricVersionUseCase publishSystemAssessmentPoliciesByRubricVersionUseCase;
+    private final PublishSchoolAssessmentPoliciesByRubricVersionUseCase publishSchoolAssessmentPoliciesByRubricVersionUseCase;
+    private final ArchiveSystemAssessmentPolicyUseCase archiveSystemAssessmentPolicyUseCase;
+    private final ArchiveSchoolAssessmentPolicyUseCase archiveSchoolAssessmentPolicyUseCase;
 
     public AssessmentPolicyController(
             CreateSystemAssessmentPolicyUseCase createSystemAssessmentPolicyUseCase,
@@ -68,7 +80,11 @@ public class AssessmentPolicyController {
             PreviewSchoolAssessmentPolicyImportFromFileUseCase previewSchoolAssessmentPolicyImportFromFileUseCase,
             AcceptSchoolAssessmentPolicyImportUseCase acceptSchoolAssessmentPolicyImportUseCase,
             PublishSystemAssessmentPolicyUseCase publishSystemAssessmentPolicyUseCase,
-            PublishSchoolAssessmentPolicyUseCase publishSchoolAssessmentPolicyUseCase) {
+            PublishSchoolAssessmentPolicyUseCase publishSchoolAssessmentPolicyUseCase,
+            PublishSystemAssessmentPoliciesByRubricVersionUseCase publishSystemAssessmentPoliciesByRubricVersionUseCase,
+            PublishSchoolAssessmentPoliciesByRubricVersionUseCase publishSchoolAssessmentPoliciesByRubricVersionUseCase,
+            ArchiveSystemAssessmentPolicyUseCase archiveSystemAssessmentPolicyUseCase,
+            ArchiveSchoolAssessmentPolicyUseCase archiveSchoolAssessmentPolicyUseCase) {
         this.createSystemAssessmentPolicyUseCase = createSystemAssessmentPolicyUseCase;
         this.createSchoolAssessmentPolicyUseCase = createSchoolAssessmentPolicyUseCase;
         this.deleteSystemAssessmentPolicyUseCase = deleteSystemAssessmentPolicyUseCase;
@@ -79,6 +95,10 @@ public class AssessmentPolicyController {
         this.acceptSchoolAssessmentPolicyImportUseCase = acceptSchoolAssessmentPolicyImportUseCase;
         this.publishSystemAssessmentPolicyUseCase = publishSystemAssessmentPolicyUseCase;
         this.publishSchoolAssessmentPolicyUseCase = publishSchoolAssessmentPolicyUseCase;
+        this.publishSystemAssessmentPoliciesByRubricVersionUseCase = publishSystemAssessmentPoliciesByRubricVersionUseCase;
+        this.publishSchoolAssessmentPoliciesByRubricVersionUseCase = publishSchoolAssessmentPoliciesByRubricVersionUseCase;
+        this.archiveSystemAssessmentPolicyUseCase = archiveSystemAssessmentPolicyUseCase;
+        this.archiveSchoolAssessmentPolicyUseCase = archiveSchoolAssessmentPolicyUseCase;
     }
 
     // Tạo mới Assessment Policy áp dụng toàn hệ thống (System Admin) - có thể gửi 1 lúc nhiều Policy
@@ -129,6 +149,29 @@ public class AssessmentPolicyController {
         return ResponseEntity.ok(ApiResponse.success("Xóa Assessment Policy của trường học thành công"));
     }
 
+    // Lưu trữ (ARCHIVE) Assessment Policy áp dụng toàn hệ thống đang PUBLISHED
+    @Operation(summary = "Lưu trữ (ARCHIVE) Assessment Policy hệ thống đang PUBLISHED")
+    @PatchMapping("/system/{policyId}/archive")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public ResponseEntity<ApiResponse<UUID>> archiveSystemAssessmentPolicy(
+            @PathVariable UUID policyId
+    ) {
+        var policyIdResult = archiveSystemAssessmentPolicyUseCase.execute(new ArchiveSystemAssessmentPolicyCommand(policyId));
+        return ResponseEntity.ok(ApiResponse.success("Lưu trữ Assessment Policy hệ thống thành công", policyIdResult));
+    }
+
+    // Lưu trữ (ARCHIVE) Assessment Policy của một trường học đang PUBLISHED
+    @Operation(summary = "Lưu trữ (ARCHIVE) Assessment Policy của trường học đang PUBLISHED")
+    @PatchMapping("/schools/{schoolId}/{policyId}/archive")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public ResponseEntity<ApiResponse<UUID>> archiveSchoolAssessmentPolicy(
+            @PathVariable UUID schoolId,
+            @PathVariable UUID policyId
+    ) {
+        var policyIdResult = archiveSchoolAssessmentPolicyUseCase.execute(new ArchiveSchoolAssessmentPolicyCommand(schoolId, policyId));
+        return ResponseEntity.ok(ApiResponse.success("Lưu trữ Assessment Policy của trường học thành công", policyIdResult));
+    }
+
     // Xuất bản Assessment Policy áp dụng toàn hệ thống (System Admin)
     @Operation(summary = "Xuất bản (PUBLISH) Assessment Policy hệ thống đang ở trạng thái DRAFT")
     @PatchMapping("/system/{policyId}/publish")
@@ -150,6 +193,31 @@ public class AssessmentPolicyController {
     ) {
         var policyIdResult = publishSchoolAssessmentPolicyUseCase.execute(new PublishSchoolAssessmentPolicyCommand(schoolId, policyId));
         return ResponseEntity.ok(ApiResponse.success("Xuất bản Assessment Policy của trường học thành công", policyIdResult));
+    }
+
+    // Xuất bản hàng loạt tất cả Assessment Policy hệ thống (DRAFT) liên kết với một Rubric Version
+    @Operation(summary = "Xuất bản (PUBLISH) toàn bộ Assessment Policy hệ thống đang DRAFT liên kết với một Rubric Version (chuẩn bị để publish Rubric Version)")
+    @PatchMapping("/system/rubric-version/{rubricVersionId}/publish-all")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public ResponseEntity<ApiResponse<List<UUID>>> publishSystemAssessmentPoliciesByRubricVersion(
+            @PathVariable UUID rubricVersionId
+    ) {
+        var policyIds = publishSystemAssessmentPoliciesByRubricVersionUseCase.execute(
+                new PublishSystemAssessmentPoliciesByRubricVersionCommand(rubricVersionId));
+        return ResponseEntity.ok(ApiResponse.success("Xuất bản hàng loạt Assessment Policy hệ thống thành công", policyIds));
+    }
+
+    // Xuất bản hàng loạt tất cả Assessment Policy của một trường (DRAFT) liên kết với một Rubric Version
+    @Operation(summary = "Xuất bản (PUBLISH) toàn bộ Assessment Policy của trường học đang DRAFT liên kết với một Rubric Version (chuẩn bị để publish Rubric Version)")
+    @PatchMapping("/schools/{schoolId}/rubric-version/{rubricVersionId}/publish-all")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public ResponseEntity<ApiResponse<List<UUID>>> publishSchoolAssessmentPoliciesByRubricVersion(
+            @PathVariable UUID schoolId,
+            @PathVariable UUID rubricVersionId
+    ) {
+        var policyIds = publishSchoolAssessmentPoliciesByRubricVersionUseCase.execute(
+                new PublishSchoolAssessmentPoliciesByRubricVersionCommand(schoolId, rubricVersionId));
+        return ResponseEntity.ok(ApiResponse.success("Xuất bản hàng loạt Assessment Policy của trường học thành công", policyIds));
     }
 
     // Review File Import Assessment Policy của hệ thống

@@ -14,9 +14,11 @@ public interface AssessmentPolicyRepository {
     List<AssessmentPolicy> saveAll(List<AssessmentPolicy> policies);
 
     // Danh sách Assessment Policy áp dụng toàn hệ thống (schoolId IS NULL)
-    PageResult<AssessmentPolicy> findAllSystemWide(String status, UUID languageId, int page, int size);
+    PageResult<AssessmentPolicy> findAllSystemWide(String status, UUID languageId, UUID rubricVersionId,
+            OffsetDateTime effectiveFrom, OffsetDateTime effectiveTo, int page, int size);
     // Danh sách Assessment Policy của một trường học
-    PageResult<AssessmentPolicy> findAllBySchoolId(UUID schoolId, String status, UUID languageId, int page, int size);
+    PageResult<AssessmentPolicy> findAllBySchoolId(UUID schoolId, String status, UUID languageId, UUID rubricVersionId,
+            OffsetDateTime effectiveFrom, OffsetDateTime effectiveTo, int page, int size);
     Optional<AssessmentPolicy> findActivePolicy(UUID schoolId, UUID languageId, UUID classId, UUID gradeId, UUID gradeLevelId, OffsetDateTime atTime);
     boolean existsByFrameworkVersionId(UUID frameworkVersionId);
 
@@ -33,6 +35,12 @@ public interface AssessmentPolicyRepository {
 
     // Kiểm tra còn Assessment Policy nào liên kết với Rubric Version này CHƯA ở trạng thái PUBLISHED hay không
     boolean existsNotPublishedByRubricVersionId(UUID rubricVersionId);
+
+    // Danh sách Assessment Policy hệ thống (schoolId IS NULL) đang DRAFT liên kết với Rubric Version này (dùng cho publish hàng loạt)
+    List<AssessmentPolicy> findDraftSystemWideByRubricVersionId(UUID rubricVersionId);
+
+    // Danh sách Assessment Policy của một trường học đang DRAFT liên kết với Rubric Version này (dùng cho publish hàng loạt)
+    List<AssessmentPolicy> findDraftBySchoolIdAndRubricVersionId(UUID schoolId, UUID rubricVersionId);
 
     void deleteById(UUID id);
 }

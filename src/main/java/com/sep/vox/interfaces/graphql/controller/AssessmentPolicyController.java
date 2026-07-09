@@ -31,6 +31,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import graphql.schema.DataFetchingEnvironment;
 
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -64,11 +66,15 @@ public class AssessmentPolicyController {
     public PageResult<AssessmentPolicyDto> viewSystemAssessmentPolicies(
             @Argument(name = "status") String status,
             @Argument(name = "languageId") UUID languageId,
+            @Argument(name = "rubricVersionId") UUID rubricVersionId,
+            @Argument(name = "effectiveFrom") String effectiveFrom,
+            @Argument(name = "effectiveTo") String effectiveTo,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
         int validPage = (page != null && page > 0) ? page : 1;
         int validSize = (size != null && size > 0) ? size : 10;
-        return viewSystemAssessmentPoliciesUseCase.execute(new ViewSystemAssessmentPoliciesQuery(status, languageId, validPage, validSize));
+        return viewSystemAssessmentPoliciesUseCase.execute(new ViewSystemAssessmentPoliciesQuery(status, languageId, rubricVersionId,
+                parseOffset(effectiveFrom), parseOffset(effectiveTo), validPage, validSize));
     }
 
     @QueryMapping(name = "viewSchoolAssessmentPolicies")
@@ -77,11 +83,26 @@ public class AssessmentPolicyController {
             @Argument(name = "schoolId") UUID schoolId,
             @Argument(name = "status") String status,
             @Argument(name = "languageId") UUID languageId,
+            @Argument(name = "rubricVersionId") UUID rubricVersionId,
+            @Argument(name = "effectiveFrom") String effectiveFrom,
+            @Argument(name = "effectiveTo") String effectiveTo,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
         int validPage = (page != null && page > 0) ? page : 1;
         int validSize = (size != null && size > 0) ? size : 10;
-        return viewSchoolAssessmentPoliciesUseCase.execute(new ViewSchoolAssessmentPoliciesQuery(schoolId, status, languageId, validPage, validSize));
+        return viewSchoolAssessmentPoliciesUseCase.execute(new ViewSchoolAssessmentPoliciesQuery(schoolId, status, languageId, rubricVersionId,
+                parseOffset(effectiveFrom), parseOffset(effectiveTo), validPage, validSize));
+    }
+
+    private static OffsetDateTime parseOffset(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return OffsetDateTime.parse(value);
+        } catch (DateTimeParseException ex) {
+            throw new IllegalArgumentException("Định dạng thời gian không hợp lệ");
+        }
     }
 
     @QueryMapping(name = "viewSystemAssessmentPolicy")

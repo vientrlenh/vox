@@ -43,9 +43,10 @@ public class AssessmentPolicyRepositoryImpl implements AssessmentPolicyRepositor
     }
 
     @Override
-    public PageResult<AssessmentPolicy> findAllSystemWide(String status, UUID languageId, int page, int size) {
+    public PageResult<AssessmentPolicy> findAllSystemWide(String status, UUID languageId, UUID rubricVersionId,
+            OffsetDateTime effectiveFrom, OffsetDateTime effectiveTo, int page, int size) {
         var pageable = PageRequest.of(page - 1, size);
-        var result = springDataAssessmentPolicyRepository.findBySchoolIdIsNullAndStatus(status, languageId, pageable);
+        var result = springDataAssessmentPolicyRepository.findBySchoolIdIsNullAndStatus(status, languageId, rubricVersionId, effectiveFrom, effectiveTo, pageable);
         return new PageResult<>(
                 result.getContent().stream().map(AssessmentPolicyMapper::toDomain).toList(),
                 page,
@@ -56,9 +57,10 @@ public class AssessmentPolicyRepositoryImpl implements AssessmentPolicyRepositor
     }
 
     @Override
-    public PageResult<AssessmentPolicy> findAllBySchoolId(UUID schoolId, String status, UUID languageId, int page, int size) {
+    public PageResult<AssessmentPolicy> findAllBySchoolId(UUID schoolId, String status, UUID languageId, UUID rubricVersionId,
+            OffsetDateTime effectiveFrom, OffsetDateTime effectiveTo, int page, int size) {
         var pageable = PageRequest.of(page - 1, size);
-        var result = springDataAssessmentPolicyRepository.findBySchoolIdAndStatus(schoolId, status, languageId, pageable);
+        var result = springDataAssessmentPolicyRepository.findBySchoolIdAndStatus(schoolId, status, languageId, rubricVersionId, effectiveFrom, effectiveTo, pageable);
         return new PageResult<>(
                 result.getContent().stream().map(AssessmentPolicyMapper::toDomain).toList(),
                 page,
@@ -104,6 +106,18 @@ public class AssessmentPolicyRepositoryImpl implements AssessmentPolicyRepositor
     @Override
     public boolean existsNotPublishedByRubricVersionId(UUID rubricVersionId) {
         return springDataAssessmentPolicyRepository.existsByRubricVersionIdAndStatusNot(rubricVersionId, "PUBLISHED");
+    }
+
+    @Override
+    public List<AssessmentPolicy> findDraftSystemWideByRubricVersionId(UUID rubricVersionId) {
+        return springDataAssessmentPolicyRepository.findBySchoolIdIsNullAndRubricVersionIdAndStatus(rubricVersionId, "DRAFT")
+                .stream().map(AssessmentPolicyMapper::toDomain).toList();
+    }
+
+    @Override
+    public List<AssessmentPolicy> findDraftBySchoolIdAndRubricVersionId(UUID schoolId, UUID rubricVersionId) {
+        return springDataAssessmentPolicyRepository.findBySchoolIdAndRubricVersionIdAndStatus(schoolId, rubricVersionId, "DRAFT")
+                .stream().map(AssessmentPolicyMapper::toDomain).toList();
     }
 
     @Override

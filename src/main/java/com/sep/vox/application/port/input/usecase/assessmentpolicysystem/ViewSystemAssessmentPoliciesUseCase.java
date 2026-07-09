@@ -49,7 +49,12 @@ public class ViewSystemAssessmentPoliciesUseCase implements IUseCase<ViewSystemA
             }
         }
 
-        var policyPage = assessmentPolicyRepository.findAllSystemWide(safeStatus, query.languageId(), query.page(), query.size());
+        if (query.effectiveFrom() != null && query.effectiveTo() != null && query.effectiveFrom().isAfter(query.effectiveTo())) {
+            throw new IllegalArgumentException("Khoảng thời gian effectiveFrom/effectiveTo không hợp lệ.");
+        }
+
+        var policyPage = assessmentPolicyRepository.findAllSystemWide(safeStatus, query.languageId(), query.rubricVersionId(),
+                query.effectiveFrom(), query.effectiveTo(), query.page(), query.size());
         return AssessmentPolicyDtoMapper.toDtoPage(policyPage);
     }
 }

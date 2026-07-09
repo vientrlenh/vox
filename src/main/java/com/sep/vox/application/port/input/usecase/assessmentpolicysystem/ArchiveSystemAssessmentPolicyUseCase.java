@@ -3,7 +3,7 @@ package com.sep.vox.application.port.input.usecase.assessmentpolicysystem;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
-import com.sep.vox.application.port.input.command.DeleteSystemAssessmentPolicyCommand;
+import com.sep.vox.application.port.input.command.ArchiveSystemAssessmentPolicyCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
@@ -15,16 +15,17 @@ import com.sep.vox.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Service
-public class DeleteSystemAssessmentPolicyUseCase implements IUseCase<DeleteSystemAssessmentPolicyCommand, Void> {
+public class ArchiveSystemAssessmentPolicyUseCase implements IUseCase<ArchiveSystemAssessmentPolicyCommand, UUID> {
 
     private final AssessmentPolicyRepository assessmentPolicyRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
 
-    public DeleteSystemAssessmentPolicyUseCase(
+    public ArchiveSystemAssessmentPolicyUseCase(
             AssessmentPolicyRepository assessmentPolicyRepository,
             UserRepository userRepository,
             UserContextPort userContextPort) {
@@ -35,7 +36,7 @@ public class DeleteSystemAssessmentPolicyUseCase implements IUseCase<DeleteSyste
 
     @Override
     @Transactional
-    public Void execute(DeleteSystemAssessmentPolicyCommand command) {
+    public UUID execute(ArchiveSystemAssessmentPolicyCommand command) {
         // 1. Kiểm tra tài khoản System Admin
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
@@ -48,14 +49,23 @@ public class DeleteSystemAssessmentPolicyUseCase implements IUseCase<DeleteSyste
         AssessmentPolicy policy = assessmentPolicyRepository.findById(command.policyId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy Assessment Policy."));
         if (policy.getSchoolId() != null) {
-            throw new ForbiddenException("Không thể can thiệp vào Assessment Policy của trường học.");
+            throw new ForbiddenException("Hành động bị từ chối: Không thể can thiệp vào Assessment Policy của trường học.");
         }
 
-        // 3. Chỉ được xóa cứng khi đang DRAFT, các trạng thái khác dùng chức năng Lưu trữ (Archive) riêng
-        if (policy.getStatus() != AssessmentPolicyStatus.DRAFT) {
-            throw new IllegalStateException("Chỉ có thể xóa Assessment Policy đang ở trạng thái DRAFT. Vui lòng dùng chức năng Lưu trữ (Archive) nếu Policy đã PUBLISHED.");
+        // 3. Chỉ được lưu trữ (ARCHIVE) khi đang PUBLISHED
+        if (policy.getStatus() != AssessmentPolicyStatus.PUBLISHED) {
+            throw new IllegalStateException("Chỉ có thể lưu trữ (ARCHIVE) Assessment Policy đang ở trạng thái PUBLISHED.");
         }
-        assessmentPolicyRepository.deleteById(policy.getId());
-        return null;
+
+        // 4. Lưu trạng thái mới
+        OffsetDateTime now = OffsetDateTime.now();
+        policy.setStatus(AssessmentPolicyStatus.ARCHIVED);
+        // Không cho effectiveTo lùi về trước effectiveFrom nếu policy chưa tới ngày hiệu lực
+        policy.setEffectiveTo(now.isBefore(policy.getEffectiveFrom()) ? policy.getEffectiveFrom() : now);
+        policy.setUpdatedAt(now);
+        policy.setUpdatedBy(currentUserId);
+
+        AssessmentPolicy saved = assessmentPolicyRepository.save(policy);
+        return saved.getId();
     }
 }

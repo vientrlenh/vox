@@ -95,6 +95,7 @@ public class ChangeSystemRubricVersionStatusUseCase implements IUseCase<ChangeSy
             // ĐÃ BỎ LỆNH SAVE RUBRIC DƯ THỪA Ở ĐÂY VÌ MODEL KHÔNG CÒN CURRENTVERSIONID
 
         } else if (command.status() == RubricStatus.ARCHIVED) {
+            throw new IllegalStateException("Hành động bị từ chối: Vui lòng dùng chức năng Lưu trữ (Archive) riêng để chuyển phiên bản sang ARCHIVED.");
         } else if (command.status() == RubricStatus.DRAFT) {
             // CHẶN LỖ HỔNG LÙI TRẠNG THÁI
             throw new IllegalStateException("Hành động bị từ chối: Không thể chuyển một phiên bản đã Ban hành/Lưu trữ quay ngược lại trạng thái Nháp (DRAFT). Vui lòng tạo phiên bản mới.");

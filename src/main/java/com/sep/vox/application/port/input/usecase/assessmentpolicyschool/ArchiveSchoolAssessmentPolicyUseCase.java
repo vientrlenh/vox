@@ -3,7 +3,7 @@ package com.sep.vox.application.port.input.usecase.assessmentpolicyschool;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
-import com.sep.vox.application.port.input.command.DeleteSchoolAssessmentPolicyCommand;
+import com.sep.vox.application.port.input.command.ArchiveSchoolAssessmentPolicyCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
@@ -17,10 +17,11 @@ import com.sep.vox.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Service
-public class DeleteSchoolAssessmentPolicyUseCase implements IUseCase<DeleteSchoolAssessmentPolicyCommand, Void> {
+public class ArchiveSchoolAssessmentPolicyUseCase implements IUseCase<ArchiveSchoolAssessmentPolicyCommand, UUID> {
 
     private final AssessmentPolicyRepository assessmentPolicyRepository;
     private final SchoolRepository schoolRepository;
@@ -28,7 +29,7 @@ public class DeleteSchoolAssessmentPolicyUseCase implements IUseCase<DeleteSchoo
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
 
-    public DeleteSchoolAssessmentPolicyUseCase(
+    public ArchiveSchoolAssessmentPolicyUseCase(
             AssessmentPolicyRepository assessmentPolicyRepository,
             SchoolRepository schoolRepository,
             SchoolUserRepository schoolUserRepository,
@@ -43,7 +44,7 @@ public class DeleteSchoolAssessmentPolicyUseCase implements IUseCase<DeleteSchoo
 
     @Override
     @Transactional
-    public Void execute(DeleteSchoolAssessmentPolicyCommand command) {
+    public UUID execute(ArchiveSchoolAssessmentPolicyCommand command) {
         // 1. Kiểm tra tài khoản School Admin
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
@@ -72,11 +73,20 @@ public class DeleteSchoolAssessmentPolicyUseCase implements IUseCase<DeleteSchoo
             throw new ForbiddenException("BẢO MẬT: Bạn không có quyền can thiệp vào Assessment Policy của trường khác.");
         }
 
-        // 4. Chỉ được xóa cứng khi đang DRAFT, các trạng thái khác dùng chức năng Lưu trữ (Archive) riêng
-        if (policy.getStatus() != AssessmentPolicyStatus.DRAFT) {
-            throw new IllegalStateException("Chỉ có thể xóa Assessment Policy đang ở trạng thái DRAFT. Vui lòng dùng chức năng Lưu trữ (Archive) nếu Policy đã PUBLISHED.");
+        // 4. Chỉ được lưu trữ (ARCHIVE) khi đang PUBLISHED
+        if (policy.getStatus() != AssessmentPolicyStatus.PUBLISHED) {
+            throw new IllegalStateException("Chỉ có thể lưu trữ (ARCHIVE) Assessment Policy đang ở trạng thái PUBLISHED.");
         }
-        assessmentPolicyRepository.deleteById(policy.getId());
-        return null;
+
+        // 5. Lưu trạng thái mới
+        OffsetDateTime now = OffsetDateTime.now();
+        policy.setStatus(AssessmentPolicyStatus.ARCHIVED);
+        // Không cho effectiveTo lùi về trước effectiveFrom nếu policy chưa tới ngày hiệu lực
+        policy.setEffectiveTo(now.isBefore(policy.getEffectiveFrom()) ? policy.getEffectiveFrom() : now);
+        policy.setUpdatedAt(now);
+        policy.setUpdatedBy(currentUserId);
+
+        AssessmentPolicy saved = assessmentPolicyRepository.save(policy);
+        return saved.getId();
     }
 }

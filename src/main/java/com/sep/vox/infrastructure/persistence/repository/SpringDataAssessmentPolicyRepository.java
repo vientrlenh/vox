@@ -19,11 +19,36 @@ public interface SpringDataAssessmentPolicyRepository extends JpaRepository<Asse
 
     boolean existsByRubricVersionIdAndStatusNot(UUID rubricVersionId, String status);
 
-    @Query("SELECT p FROM AssessmentPolicyJpaEntity p WHERE p.schoolId IS NULL AND (:status IS NULL OR p.status = :status) AND (:languageId IS NULL OR p.languageId = :languageId)")
-    Page<AssessmentPolicyJpaEntity> findBySchoolIdIsNullAndStatus(@Param("status") String status, @Param("languageId") UUID languageId, Pageable pageable);
+    List<AssessmentPolicyJpaEntity> findBySchoolIdIsNullAndRubricVersionIdAndStatus(UUID rubricVersionId, String status);
 
-    @Query("SELECT p FROM AssessmentPolicyJpaEntity p WHERE p.schoolId = :schoolId AND (:status IS NULL OR p.status = :status) AND (:languageId IS NULL OR p.languageId = :languageId)")
-    Page<AssessmentPolicyJpaEntity> findBySchoolIdAndStatus(@Param("schoolId") UUID schoolId, @Param("status") String status, @Param("languageId") UUID languageId, Pageable pageable);
+    List<AssessmentPolicyJpaEntity> findBySchoolIdAndRubricVersionIdAndStatus(UUID schoolId, UUID rubricVersionId, String status);
+
+    @Query("""
+        SELECT p FROM AssessmentPolicyJpaEntity p
+        WHERE p.schoolId IS NULL
+            AND (:status IS NULL OR p.status = :status)
+            AND (:languageId IS NULL OR p.languageId = :languageId)
+            AND (:rubricVersionId IS NULL OR p.rubricVersionId = :rubricVersionId)
+            AND (p.effectiveTo IS NULL OR p.effectiveTo >= COALESCE(:effectiveFrom, p.effectiveTo))
+            AND (p.effectiveFrom <= COALESCE(:effectiveTo, p.effectiveFrom))
+    """)
+    Page<AssessmentPolicyJpaEntity> findBySchoolIdIsNullAndStatus(@Param("status") String status, @Param("languageId") UUID languageId,
+            @Param("rubricVersionId") UUID rubricVersionId, @Param("effectiveFrom") OffsetDateTime effectiveFrom,
+            @Param("effectiveTo") OffsetDateTime effectiveTo, Pageable pageable);
+
+    @Query("""
+        SELECT p FROM AssessmentPolicyJpaEntity p
+        WHERE p.schoolId = :schoolId
+            AND (:status IS NULL OR p.status = :status)
+            AND (:languageId IS NULL OR p.languageId = :languageId)
+            AND (:rubricVersionId IS NULL OR p.rubricVersionId = :rubricVersionId)
+            AND (p.effectiveTo IS NULL OR p.effectiveTo >= COALESCE(:effectiveFrom, p.effectiveTo))
+            AND (p.effectiveFrom <= COALESCE(:effectiveTo, p.effectiveFrom))
+    """)
+    Page<AssessmentPolicyJpaEntity> findBySchoolIdAndStatus(@Param("schoolId") UUID schoolId, @Param("status") String status,
+            @Param("languageId") UUID languageId, @Param("rubricVersionId") UUID rubricVersionId,
+            @Param("effectiveFrom") OffsetDateTime effectiveFrom, @Param("effectiveTo") OffsetDateTime effectiveTo,
+            Pageable pageable);
 
 
     @Query("""

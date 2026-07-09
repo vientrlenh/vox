@@ -97,6 +97,8 @@ public class ChangeSchoolRubricVersionStatusUseCase implements IUseCase<ChangeSc
                 throw new IllegalStateException("Không thể ban hành Rubric này vì chưa có Assessment Policy nào liên kết đang ở trạng thái PUBLISHED.");
             }
 
+        } else if (command.status() == RubricStatus.ARCHIVED) {
+            throw new IllegalStateException("Hành động bị từ chối: Vui lòng dùng chức năng Lưu trữ (Archive) riêng để chuyển phiên bản sang ARCHIVED.");
         } else if (command.status() == RubricStatus.DRAFT) {
             throw new IllegalStateException("Hành động bị từ chối: Không thể chuyển một phiên bản đã Ban hành/Lưu trữ quay ngược lại trạng thái Nháp (DRAFT). Vui lòng tạo phiên bản mới.");
         }

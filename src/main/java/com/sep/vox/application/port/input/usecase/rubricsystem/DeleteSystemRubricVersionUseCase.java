@@ -15,7 +15,6 @@ import com.sep.vox.domain.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Service
@@ -55,22 +54,14 @@ public class DeleteSystemRubricVersionUseCase implements IUseCase<DeleteSystemRu
             throw new ForbiddenException("Không thể can thiệp vào phiên bản của trường học.");
         }
 
-        // Delete CadeCache
-        if (version.getStatus() == RubricStatus.DRAFT) {
-            rubricCriterionRepository.deleteByRubricVersionId(version.getId());
-            rubricResultBandRepository.deleteByRubricVersionId(version.getId());
-            rubricVersionRepository.deleteById(version.getId());
-        } else if (version.getStatus() == RubricStatus.PUBLISHED) {
-            version.setStatus(RubricStatus.ARCHIVED);
-            OffsetDateTime now = OffsetDateTime.now();
-            // Không cho effectiveTo lùi về trước effectiveFrom nếu version chưa tới ngày hiệu lực
-            version.setEffectiveTo(now.isBefore(version.getEffectiveFrom()) ? version.getEffectiveFrom() : now);
-            version.setUpdatedAt(now);
-            version.setUpdatedBy(currentUserId);
-            rubricVersionRepository.save(version);
-        } else {
-            throw new IllegalStateException("Phiên bản đã bị lưu trữ từ trước.");
+        // Chỉ được xóa cứng khi đang DRAFT, các trạng thái khác dùng chức năng Lưu trữ (Archive) riêng
+        if (version.getStatus() != RubricStatus.DRAFT) {
+            throw new IllegalStateException("Chỉ có thể xóa phiên bản đang ở trạng thái DRAFT. Vui lòng dùng chức năng Lưu trữ (Archive) nếu phiên bản đã PUBLISHED.");
         }
+
+        rubricCriterionRepository.deleteByRubricVersionId(version.getId());
+        rubricResultBandRepository.deleteByRubricVersionId(version.getId());
+        rubricVersionRepository.deleteById(version.getId());
         return null;
     }
 }

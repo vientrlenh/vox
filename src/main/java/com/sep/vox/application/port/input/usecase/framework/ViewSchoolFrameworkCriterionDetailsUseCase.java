@@ -4,7 +4,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.mapper.framework.FrameworkCriterionDtoMapper;
 import com.sep.vox.application.port.input.query.ViewFrameworkCriterionDetailsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
@@ -21,7 +20,6 @@ public class ViewSchoolFrameworkCriterionDetailsUseCase implements IUseCase<View
     private final FrameworkCriterionRepository frameworkCriterionRepository;
     private final FrameworkCriterionBandRepository frameworkCriterionBandRepository;
     private final FrameworkVersionRepository frameworkVersionRepository;
-    private final JsonSerializationPort jsonSerializationPort;
 
     public ViewSchoolFrameworkCriterionDetailsUseCase(
             FrameworkCriterionRepository frameworkCriterionRepository,
@@ -31,7 +29,6 @@ public class ViewSchoolFrameworkCriterionDetailsUseCase implements IUseCase<View
         this.frameworkCriterionRepository = frameworkCriterionRepository;
         this.frameworkCriterionBandRepository = frameworkCriterionBandRepository;
         this.frameworkVersionRepository = frameworkVersionRepository;
-        this.jsonSerializationPort = jsonSerializationPort;
     }
 
     @Override
@@ -42,7 +39,7 @@ public class ViewSchoolFrameworkCriterionDetailsUseCase implements IUseCase<View
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy Tiêu chí (Criterion) này."));
 
         // 2. Chặn không cho lộ Criterion thuộc Version chưa PUBLISHED (còn DRAFT/ARCHIVED)
-        var version = frameworkVersionRepository.findById(criterion.getFrameworkVersionId())
+        var version = frameworkVersionRepository.findFrameworkVersionById(criterion.getFrameworkVersionId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy Tiêu chí (Criterion) này."));
         if (version.getStatus() != FrameworkVersionStatus.PUBLISHED) {
             throw new NotFoundException("Không tìm thấy Tiêu chí (Criterion) này.");
@@ -50,6 +47,6 @@ public class ViewSchoolFrameworkCriterionDetailsUseCase implements IUseCase<View
 
         var bands = frameworkCriterionBandRepository.findByFrameworkCriterionIdIn(java.util.List.of(criterion.getId()));
 
-        return FrameworkCriterionDtoMapper.toDto(criterion, bands, jsonSerializationPort);
+        return FrameworkCriterionDto.of(criterion, bands);
     }
 }

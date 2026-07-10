@@ -6,10 +6,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.mapper.framework.FrameworkCriterionDtoMapper;
 import com.sep.vox.application.port.input.query.ViewFrameworkCriteriaQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.domain.dto.FrameworkCriterionDto;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
 import com.sep.vox.domain.repository.FrameworkCriterionBandRepository;
@@ -25,24 +23,21 @@ public class ViewSchoolFrameworkCriteriaUseCase implements IUseCase<ViewFramewor
     private final FrameworkVersionRepository frameworkVersionRepository;
     private final FrameworkCriterionRepository frameworkCriterionRepository;
     private final FrameworkCriterionBandRepository frameworkCriterionBandRepository;
-    private final JsonSerializationPort jsonSerializationPort;
 
     public ViewSchoolFrameworkCriteriaUseCase(
             FrameworkVersionRepository frameworkVersionRepository,
             FrameworkCriterionRepository frameworkCriterionRepository,
-            FrameworkCriterionBandRepository frameworkCriterionBandRepository,
-            JsonSerializationPort jsonSerializationPort) {
+            FrameworkCriterionBandRepository frameworkCriterionBandRepository) {
         this.frameworkVersionRepository = frameworkVersionRepository;
         this.frameworkCriterionRepository = frameworkCriterionRepository;
         this.frameworkCriterionBandRepository = frameworkCriterionBandRepository;
-        this.jsonSerializationPort = jsonSerializationPort;
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<FrameworkCriterionDto> execute(ViewFrameworkCriteriaQuery query) {
         // 1. Kiểm tra FrameworkVersion tồn tại và đã PUBLISHED
-        var version = frameworkVersionRepository.findById(query.frameworkVersionId())
+        var version = frameworkVersionRepository.findFrameworkVersionById(query.frameworkVersionId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản Framework."));
         if (version.getStatus() != FrameworkVersionStatus.PUBLISHED) {
             throw new NotFoundException("Không tìm thấy phiên bản Framework.");
@@ -56,7 +51,7 @@ public class ViewSchoolFrameworkCriteriaUseCase implements IUseCase<ViewFramewor
                 .collect(java.util.stream.Collectors.groupingBy(b -> b.getFrameworkCriterionId()));
 
         return criteria.stream()
-                .map(c -> FrameworkCriterionDtoMapper.toDto(c, bandsByCriterionId.getOrDefault(c.getId(), List.of()), jsonSerializationPort))
+                .map(c -> FrameworkCriterionDto.of(c, bandsByCriterionId.getOrDefault(c.getId(), List.of())))
                 .toList();
     }
 }

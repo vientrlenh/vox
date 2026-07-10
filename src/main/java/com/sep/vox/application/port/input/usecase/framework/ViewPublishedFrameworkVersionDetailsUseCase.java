@@ -23,7 +23,7 @@ public class ViewPublishedFrameworkVersionDetailsUseCase implements IUseCase<Vie
     @Override
     @Transactional(readOnly = true)
     public FrameworkVersionDto execute(ViewFrameworkVersionDetailsQuery input) {
-        var version = frameworkVersionRepository.findById(input.versionId())
+        var version = frameworkVersionRepository.findFrameworkVersionById(input.versionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản framework"));
         if (version.getStatus() != FrameworkVersionStatus.PUBLISHED) {
             throw new NotFoundException("Không tìm thấy phiên bản framework");

@@ -97,7 +97,7 @@ public class PublishSchoolAssessmentPoliciesByRubricVersionUseCase
         // 5. Kiểm tra và publish từng policy (rollback toàn bộ nếu có 1 policy không hợp lệ)
         OffsetDateTime now = OffsetDateTime.now();
         for (AssessmentPolicy policy : draftPolicies) {
-            FrameworkVersion frameworkVersion = frameworkVersionRepository.findById(policy.getFrameworkVersionId())
+            FrameworkVersion frameworkVersion = frameworkVersionRepository.findFrameworkVersionById(policy.getFrameworkVersionId())
                     .orElseThrow(() -> new NotFoundException("Không tìm thấy Phiên bản Khung tiêu chuẩn (Framework Version) liên kết."));
             if (frameworkVersion.getStatus() != FrameworkVersionStatus.PUBLISHED) {
                 throw new IllegalStateException("Không thể xuất bản Assessment Policy (ID: " + policy.getId()
@@ -110,6 +110,6 @@ public class PublishSchoolAssessmentPoliciesByRubricVersionUseCase
         }
 
         return assessmentPolicyRepository.saveAll(draftPolicies)
-                .stream().map(AssessmentPolicy::getId).toList();
+                .stream().map(ap -> ap.getId()).toList();
     }
 }

@@ -69,7 +69,7 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
             mapping = jsonSerializationPort.toStringMap(session.getSuggestedMappingJson());
         }
         // 1. Lấy ra Phiên bản Khung năng lực đang PUBLISHED
-        List<FrameworkVersion> activeVersions = frameworkVersionRepository.findByFrameworkIdAndStatus(
+        List<FrameworkVersion> activeVersions = frameworkVersionRepository.findByFrameworkVersionIdAndStatus(
                 rubric.getFrameworkId(),
                 FrameworkVersionStatus.PUBLISHED
         );

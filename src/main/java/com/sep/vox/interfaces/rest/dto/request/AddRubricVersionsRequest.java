@@ -20,6 +20,9 @@ public record AddRubricVersionsRequest(
             @Positive(message = "Số Version phải lớn hơn 0")
             Integer version,
 
+            @NotBlank(message = "Tên phiên bản không được để trống")
+            String name,
+
             @NotNull(message = "Điểm sàn không được để trống")
             @DecimalMin(value = "0.0", message = "Điểm sàn phải lớn hơn hoặc bằng 0")
             BigDecimal scoringScaleMin,

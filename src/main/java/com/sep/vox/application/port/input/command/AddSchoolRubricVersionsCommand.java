@@ -12,6 +12,7 @@ public record AddSchoolRubricVersionsCommand(
 ) {
     public record RubricVersionItemCommand(
             int version,
+            String name,
             BigDecimal scoringScaleMin,
             BigDecimal scoringScaleMax,
             String totalScoreMethod,

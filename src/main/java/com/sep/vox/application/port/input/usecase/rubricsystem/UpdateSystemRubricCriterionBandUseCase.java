@@ -75,8 +75,7 @@ public class UpdateSystemRubricCriterionBandUseCase implements IUseCase<UpdateSy
             throw new ForbiddenException("Hành động bị từ chối: Dải điểm này thuộc về Trường học, không phải của Hệ thống.");
         }
 
-        // 6. Chuẩn hóa & Validate Logic
-        String safeCode = (command.code() != null && !command.code().isBlank()) ? StringNormalization.trimAndCollapseSpaces(command.code()) : null;
+        // 6. Chuẩn hóa & Validate Logic (Code không được phép sửa sau khi tạo, luôn giữ nguyên)
 
         // Check chéo scoreMin <= scoreMax
         BigDecimal finalMinScore = command.scoreMin() != null ? command.scoreMin() : band.getScoreMin();
@@ -90,14 +89,14 @@ public class UpdateSystemRubricCriterionBandUseCase implements IUseCase<UpdateSy
         try {
             rubricCriterionBandRepository.updateBandAtomic(
                     command.bandId(),
-                    safeCode,
+                    null,
                     command.scoreMin(),
                     command.scoreMax(),
                     OffsetDateTime.now(),
                     currentUserId
             );
         } catch (DataIntegrityViolationException e) {
-            throw new IllegalArgumentException("Mã dải điểm (Code) này đã tồn tại trong Tiêu chí hiện tại. Vui lòng chọn mã khác.");
+            throw new IllegalArgumentException("Không thể cập nhật Dải điểm do dữ liệu bị trùng hoặc không hợp lệ.");
         }
 
         return command.bandId();

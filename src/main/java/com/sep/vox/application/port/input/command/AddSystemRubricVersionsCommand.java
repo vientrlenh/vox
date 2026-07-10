@@ -11,6 +11,7 @@ public record AddSystemRubricVersionsCommand(
 ) {
     public record RubricVersionItemCommand(
             int version,
+            String name,
             BigDecimal scoringScaleMin,
             BigDecimal scoringScaleMax,
             String totalScoreMethod,

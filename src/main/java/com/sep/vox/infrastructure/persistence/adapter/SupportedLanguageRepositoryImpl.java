@@ -39,6 +39,12 @@ public class SupportedLanguageRepositoryImpl implements SupportedLanguageReposit
     }
 
     @Override
+    public Optional<SupportedLanguage> findByName(String name) {
+        return springDataSupportedLanguageRepository.findByName(name)
+            .map(SupportedLanguageMapper::toDomain);
+    }
+
+    @Override
     public List<SupportedLanguage> findByCodeIn(Collection<String> codes) {
         if (codes == null || codes.isEmpty()) {
             return List.of();

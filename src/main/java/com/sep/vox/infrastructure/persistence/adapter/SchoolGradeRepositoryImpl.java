@@ -39,6 +39,12 @@ public class SchoolGradeRepositoryImpl implements SchoolGradeRepository {
 
 
     @Override
+    public Optional<SchoolGrade> findBySchoolIdAndName(UUID schoolId, String name) {
+        return springDataSchoolGradeRepository.findBySchoolIdAndName(schoolId, name)
+                .map(SchoolGradeMapper::toDomain);
+    }
+
+    @Override
     public SchoolGrade save(SchoolGrade grade) {
         var entity = SchoolGradeMapper.toJpa(grade);
         var saved = springDataSchoolGradeRepository.save(entity);

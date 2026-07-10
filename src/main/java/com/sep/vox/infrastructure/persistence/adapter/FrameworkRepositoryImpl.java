@@ -1,5 +1,7 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -24,7 +26,7 @@ public class FrameworkRepositoryImpl implements FrameworkRepository {
     @Override
     public Optional<Framework> findById(UUID id) {
         return springDataFrameworkRepository.findById(id)
-                .map(FrameworkMapper ::toDomain);
+                .map(FrameworkMapper::toDomain);
     }
 
     @Override
@@ -37,11 +39,24 @@ public class FrameworkRepositoryImpl implements FrameworkRepository {
         var pageable = PageRequest.of(pageNumber - 1, size);
         var page = springDataFrameworkRepository.findAll(pageable);
         return new PageResult<>(
-            page.getContent().stream().map(FrameworkMapper::toDomain).toList(),
-            page.getNumber() + 1,
-            page.getSize(),
-            page.getTotalElements(),
-            page.getTotalPages()
+                page.getContent().stream().map(FrameworkMapper::toDomain).toList(),
+                page.getNumber() + 1,
+                page.getSize(),
+                page.getTotalElements(),
+                page.getTotalPages()
+        );
+    }
+
+    @Override
+    public PageResult<Framework> findAllActive(int pageNumber, int size) {
+        var pageable = PageRequest.of(pageNumber - 1, size);
+        var page = springDataFrameworkRepository.findAllActive(pageable);
+        return new PageResult<>(
+                page.getContent().stream().map(FrameworkMapper::toDomain).toList(),
+                page.getNumber() + 1,
+                page.getSize(),
+                page.getTotalElements(),
+                page.getTotalPages()
         );
     }
 
@@ -55,5 +70,14 @@ public class FrameworkRepositoryImpl implements FrameworkRepository {
     @Override
     public void deleteById(UUID id) {
         springDataFrameworkRepository.deleteById(id);
+    }
+
+    @Override
+    public List<Framework> findByIdIn(Collection<UUID> ids) {
+        return springDataFrameworkRepository.findByIdIn(ids)
+                .stream()
+                .map(FrameworkMapper::toDomain)
+                .toList();
+
     }
 }

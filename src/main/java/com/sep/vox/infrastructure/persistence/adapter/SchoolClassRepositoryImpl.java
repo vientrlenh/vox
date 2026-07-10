@@ -112,6 +112,12 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
     }
 
     @Override
+    public Optional<SchoolClass> findBySchoolIdAndName(UUID schoolId, String name) {
+        return springDataSchoolClassRepository.findBySchoolIdAndName(schoolId, name)
+            .map(SchoolClassMapper::toDomain);
+    }
+
+    @Override
     public List<SchoolClass> findBySchoolIdAndCodeIn(UUID schoolId, Collection<String> codes) {
         if (schoolId == null || codes == null || codes.isEmpty()) {
             return List.of();

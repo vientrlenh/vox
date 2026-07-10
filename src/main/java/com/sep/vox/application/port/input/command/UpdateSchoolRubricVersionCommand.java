@@ -7,7 +7,6 @@ import java.util.UUID;
 public record UpdateSchoolRubricVersionCommand(
         UUID schoolId,
         UUID versionId,
-        String code,
         String name,
         String description,
         OffsetDateTime effectiveFrom,

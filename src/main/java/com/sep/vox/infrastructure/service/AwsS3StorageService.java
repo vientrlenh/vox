@@ -2,6 +2,7 @@ package com.sep.vox.infrastructure.service;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
@@ -17,16 +18,20 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
 @Service
 @ConditionalOnProperty(prefix = "spring.storage", name = "provider", havingValue = "s3")
 public class AwsS3StorageService implements StoragePort {
 
     private final S3Client s3Client;
+    private final S3Presigner s3Presigner;
     private final AwsS3StorageProperties properties;
 
-    public AwsS3StorageService(S3Client s3Client, AwsS3StorageProperties properties) {
+    public AwsS3StorageService(S3Client s3Client, S3Presigner s3Presigner, AwsS3StorageProperties properties) {
         this.s3Client = s3Client;
+        this.s3Presigner = s3Presigner;
         this.properties = properties;
     }
 
@@ -91,6 +96,31 @@ public class AwsS3StorageService implements StoragePort {
             properties.getRegion(),
             encodePath(objectKey)
         );
+    }
+
+    @Override
+    public PresignedUpload presignUpload(String key, String contentType, Duration ttl) {
+        validateKey(key);
+        if (ttl == null || ttl.isNegative() || ttl.isZero()) {
+            throw new IllegalArgumentException("Thời hạn presigned URL không hợp lệ");
+        }
+
+        var objectKey = buildObjectKey(key);
+        try {
+            var putObjectRequest = PutObjectRequest.builder()
+                .bucket(requiredBucket())
+                .key(objectKey)
+                .contentType(hasText(contentType) ? contentType : "application/octet-stream")
+                .build();
+            var presignRequest = PutObjectPresignRequest.builder()
+                .signatureDuration(ttl)
+                .putObjectRequest(putObjectRequest)
+                .build();
+            var presigned = s3Presigner.presignPutObject(presignRequest);
+            return new PresignedUpload(presigned.url().toString(), resolveUrl(objectKey));
+        } catch (S3Exception e) {
+            throw new InfrastructureException("Khong the tao presigned upload URL: " + errorMessageOf(e));
+        }
     }
 
     private String buildObjectKey(String key) {

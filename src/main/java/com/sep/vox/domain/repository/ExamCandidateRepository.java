@@ -15,7 +15,9 @@ public interface ExamCandidateRepository {
     long countByExamId(UUID examId);
 
     Optional<ExamCandidate> findById(UUID id);
+    Optional<ExamCandidate> findByExamIdAndStudentId(UUID examId, UUID studentId);
     boolean existsByExamIdAndStudentId(UUID examId, UUID studentId);
+    List<ExamCandidate> findByStudentId(UUID studentId);
     Set<UUID> findStudentIdsByExamId(UUID examId);
     List<ExamCandidate> findByExamIdAndScheduleIdIsNullOrderByAssignedAtAsc(UUID examId);
     List<ExamCandidate> findByIdInAndExamId(Collection<UUID> ids, UUID examId);

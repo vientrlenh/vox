@@ -74,6 +74,15 @@ public class ExamItemEvaluationJpaEntity {
     @Column(name = "signals", columnDefinition = "TEXT")
     private String signals;
 
+    @Column(name = "feedback_summary", columnDefinition = "TEXT")
+    private String feedbackSummary;
+
+    @Column(name = "suggestions", columnDefinition = "TEXT")
+    private String suggestions;
+
+    @Column(name = "prompt_version", length = 100)
+    private String promptVersion;
+
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
             name = "chk_exam_item_evaluations_status_valid", 
@@ -90,7 +99,8 @@ public class ExamItemEvaluationJpaEntity {
     public ExamItemEvaluationJpaEntity(UUID id, UUID responseId, UUID paperItemId, String engineType,
             String gradedByModel, Integer sampleCount, UUID reviewerId, BigDecimal rawItemScore, BigDecimal itemScore,
             BigDecimal overallConfidence, boolean requiresHumanReview, String reviewReasonCode, boolean markedInvalid,
-            boolean requiresRetake, String signals, String status, OffsetDateTime evaluatedAt) {
+            boolean requiresRetake, String signals, String feedbackSummary, String suggestions, String promptVersion,
+            String status, OffsetDateTime evaluatedAt) {
         this.id = id;
         this.responseId = responseId;
         this.paperItemId = paperItemId;
@@ -106,6 +116,9 @@ public class ExamItemEvaluationJpaEntity {
         this.markedInvalid = markedInvalid;
         this.requiresRetake = requiresRetake;
         this.signals = signals;
+        this.feedbackSummary = feedbackSummary;
+        this.suggestions = suggestions;
+        this.promptVersion = promptVersion;
         this.status = status;
         this.evaluatedAt = evaluatedAt;
     }
@@ -246,6 +259,27 @@ public class ExamItemEvaluationJpaEntity {
         this.evaluatedAt = evaluatedAt;
     }
 
-    
-    
+    public String getFeedbackSummary() {
+        return feedbackSummary;
+    }
+
+    public void setFeedbackSummary(String feedbackSummary) {
+        this.feedbackSummary = feedbackSummary;
+    }
+
+    public String getSuggestions() {
+        return suggestions;
+    }
+
+    public void setSuggestions(String suggestions) {
+        this.suggestions = suggestions;
+    }
+
+    public String getPromptVersion() {
+        return promptVersion;
+    }
+
+    public void setPromptVersion(String promptVersion) {
+        this.promptVersion = promptVersion;
+    }
 }

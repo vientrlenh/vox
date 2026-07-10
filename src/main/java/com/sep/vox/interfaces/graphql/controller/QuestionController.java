@@ -178,7 +178,7 @@ public class QuestionController {
             return true;
         }
         return questionCollaboratorRepository.findByQuestionIdAndUserId(source.id(), currentUserId)
-            .map(collaborator -> collaborator.getPermission() == QuestionCollaboratorPermission.CAN_EDIT)
+            .map(collaborator -> collaborator.getPermission() != QuestionCollaboratorPermission.READ_ONLY)
             .orElse(false);
     }
 

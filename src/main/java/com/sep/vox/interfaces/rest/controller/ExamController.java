@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.sep.vox.application.port.input.command.DeleteExamCommand;
 import com.sep.vox.application.port.input.command.DeleteExamMemberCommand;
+import com.sep.vox.application.port.input.command.VerifyExamScheduleOtpCommand;
 import com.sep.vox.application.port.input.query.GetExamScheduleOtpQuery;
 import com.sep.vox.application.port.input.usecase.exam.AttachExamBlueprintUseCase;
 import com.sep.vox.application.port.input.usecase.exam.CreateExamMemberUseCase;
@@ -28,6 +29,8 @@ import com.sep.vox.application.port.input.usecase.exam.UpdateExamMemberUseCase;
 import com.sep.vox.application.port.input.usecase.exam.UpdateExamSecurePoolStatusUseCase;
 import com.sep.vox.application.port.input.usecase.exam.UpdateExamStatusUseCase;
 import com.sep.vox.application.port.input.usecase.exam.UpdateExamUseCase;
+import com.sep.vox.application.port.input.usecase.exam.VerifyExamScheduleOtpUseCase;
+import com.sep.vox.application.port.input.usecase.exam.ViewMyExamsUseCase;
 import com.sep.vox.application.port.input.usecase.examschedule.GetExamScheduleOtpUseCase;
 import com.sep.vox.application.response.input.exam.DeleteExamResponse;
 import com.sep.vox.application.response.input.examschedule.GetExamScheduleOtpResponse;
@@ -42,6 +45,7 @@ import com.sep.vox.interfaces.rest.dto.request.UpdateExamMemberRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateExamRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateExamSecurePoolStatusRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateExamStatusRequest;
+import com.sep.vox.interfaces.rest.dto.request.VerifyExamOtpRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 import com.sep.vox.interfaces.rest.mapper.AttachExamBlueprintCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateExamCommandMapper;
@@ -69,6 +73,8 @@ public class ExamController {
     private final AttachExamBlueprintUseCase attachExamBlueprintUseCase;
     private final UpdateExamDeliveryModeUseCase updateExamDeliveryModeUseCase;
     private final GetExamScheduleOtpUseCase getExamScheduleOtpUseCase;
+    private final ViewMyExamsUseCase viewMyExamsUseCase;
+    private final VerifyExamScheduleOtpUseCase verifyExamScheduleOtpUseCase;
 
     public ExamController(
             CreateExamUseCase createExamUseCase,
@@ -81,7 +87,9 @@ public class ExamController {
             UpdateExamSecurePoolStatusUseCase updateExamSecurePoolStatusUseCase,
             AttachExamBlueprintUseCase attachExamBlueprintUseCase,
             UpdateExamDeliveryModeUseCase updateExamDeliveryModeUseCase,
-            GetExamScheduleOtpUseCase getExamScheduleOtpUseCase) {
+            GetExamScheduleOtpUseCase getExamScheduleOtpUseCase,
+            ViewMyExamsUseCase viewMyExamsUseCase,
+            VerifyExamScheduleOtpUseCase verifyExamScheduleOtpUseCase) {
         this.createExamUseCase = createExamUseCase;
         this.updateExamUseCase = updateExamUseCase;
         this.updateExamStatusUseCase = updateExamStatusUseCase;
@@ -93,6 +101,15 @@ public class ExamController {
         this.attachExamBlueprintUseCase = attachExamBlueprintUseCase;
         this.updateExamDeliveryModeUseCase = updateExamDeliveryModeUseCase;
         this.getExamScheduleOtpUseCase = getExamScheduleOtpUseCase;
+        this.viewMyExamsUseCase = viewMyExamsUseCase;
+        this.verifyExamScheduleOtpUseCase = verifyExamScheduleOtpUseCase;
+    }
+
+    @GetMapping
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<ApiResponse<?>> getMyExams() {
+        var data = viewMyExamsUseCase.execute(null);
+        return ResponseEntity.ok(ApiResponse.success("Lấy danh sách bài thi thành công", data));
     }
 
     @PostMapping
@@ -192,6 +209,15 @@ public class ExamController {
         var query = new GetExamScheduleOtpQuery(examId, scheduleId);
         var data = getExamScheduleOtpUseCase.execute(query);
         return ResponseEntity.ok(ApiResponse.success("Mã OTP cho lịch thi được lấy thành công", data));
+    }
+
+    @PostMapping("/{examId}/otp/verify")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<ApiResponse<?>> verifyExamOtp(
+            @PathVariable UUID examId,
+            @Valid @RequestBody VerifyExamOtpRequest request) {
+        var data = verifyExamScheduleOtpUseCase.execute(new VerifyExamScheduleOtpCommand(examId, request.otp()));
+        return ResponseEntity.ok(ApiResponse.success("Xác thực OTP thành công", data));
     }
 
 }

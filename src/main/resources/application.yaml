@@ -168,6 +168,14 @@ app:
           topic:
             user-registered: ${KAFKA_USER_TOPIC:user.registered.v1}
           group-id: ${KAFKA_USER_GROUP_ID:vox-user}
+        answer-turns:
+          topic:
+            answer-turns-recorded: ${KAFKA_ANSWER_TURNS_TOPIC:answer-turns-recorded}
+          group-id: ${KAFKA_ANSWER_TURNS_GROUP_ID:vox-answer-turns}
+        exam-evaluation:
+          topic:
+            exam-attempt-evaluation-completed: ${KAFKA_EXAM_EVALUATION_COMPLETED_TOPIC:exam-attempt-evaluation-completed}
+          group-id: ${KAFKA_EXAM_EVALUATION_GROUP_ID:vox-exam-evaluation}
 
 system-admin:
   email: ${SYS_ADMIN_EMAIL}

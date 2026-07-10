@@ -3,15 +3,18 @@ package com.sep.vox.domain.valueobject;
 import java.math.BigDecimal;
 
 public record EvaluationSignals(
-    int durationSeconds, 
-    int wordCount, 
-    BigDecimal taskRelevance, 
-    BigDecimal offTopicRatio, 
-    BigDecimal codeSwitchingRatio, 
-    BigDecimal asrConfidence, 
-    BigDecimal aiConfidence, 
-    BigDecimal audioQuality, 
-    BigDecimal silenceRatio, 
+    int durationSeconds,
+    int wordCount,
+    Integer sentenceCount,
+    BigDecimal lengthRatio,
+    Integer expectedMinWords,
+    BigDecimal taskRelevance,
+    BigDecimal offTopicRatio,
+    BigDecimal codeSwitchingRatio,
+    BigDecimal asrConfidence,
+    BigDecimal aiConfidence,
+    BigDecimal audioQuality,
+    BigDecimal silenceRatio,
     BigDecimal speechRate
 ) {
     public EvaluationSignals {
@@ -20,6 +23,15 @@ public record EvaluationSignals(
         }
         if (wordCount < 0) {
             throw new IllegalArgumentException("Số từ không được dưới 0");
+        }
+        if (sentenceCount != null && sentenceCount < 0) {
+            throw new IllegalArgumentException("Số câu không được dưới 0");
+        }
+        if (lengthRatio != null && lengthRatio.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("Length ratio không được dưới 0");
+        }
+        if (expectedMinWords != null && expectedMinWords < 0) {
+            throw new IllegalArgumentException("Số từ tối thiểu mong đợi không được dưới 0");
         }
         if (taskRelevance == null || taskRelevance.compareTo(BigDecimal.ZERO) < 0 || taskRelevance.compareTo(BigDecimal.ONE) > 0) {
             throw new IllegalArgumentException("Relevance của task phải nằm trong khoảng 0 đến 1");

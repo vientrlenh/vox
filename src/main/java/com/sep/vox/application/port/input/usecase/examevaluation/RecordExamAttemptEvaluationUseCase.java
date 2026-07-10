@@ -1,0 +1,234 @@
+package com.sep.vox.application.port.input.usecase.examevaluation;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.mapper.examevaluation.ExamEvaluationSignalMapper;
+import com.sep.vox.application.port.input.command.UpdateExamSessionStatusCommand;
+import com.sep.vox.application.port.input.usecase.IUseCase;
+import com.sep.vox.application.port.input.usecase.examsession.UpdateExamSessionStatusUseCase;
+import com.sep.vox.domain.model.exam.ExamEvaluationEngineType;
+import com.sep.vox.domain.model.exam.ExamItemCriterionScore;
+import com.sep.vox.domain.model.exam.ExamItemEvaluation;
+import com.sep.vox.domain.model.exam.ExamItemEvaluationStatus;
+import com.sep.vox.domain.model.exam.ExamItemEvaluationTurn;
+import com.sep.vox.domain.model.exam.ExamSessionStatus;
+import com.sep.vox.domain.model.exam.TurnType;
+import com.sep.vox.domain.repository.AssessmentPolicyRepository;
+import com.sep.vox.domain.repository.ExamItemCriterionScoreRepository;
+import com.sep.vox.domain.repository.ExamItemEvaluationRepository;
+import com.sep.vox.domain.repository.ExamItemEvaluationTurnRepository;
+import com.sep.vox.domain.repository.ExamItemResponseRepository;
+import com.sep.vox.domain.repository.ExamRepository;
+import com.sep.vox.domain.repository.ExamSessionRepository;
+import com.sep.vox.domain.repository.RubricCriterionRepository;
+import com.sep.vox.interfaces.kafka.dto.ExamAttemptEvaluationCompletedEventDto;
+
+import tools.jackson.databind.json.JsonMapper;
+
+@Service
+public class RecordExamAttemptEvaluationUseCase implements IUseCase<ExamAttemptEvaluationCompletedEventDto, Void> {
+
+    private final ExamItemResponseRepository examItemResponseRepository;
+    private final ExamItemEvaluationRepository examItemEvaluationRepository;
+    private final ExamItemCriterionScoreRepository examItemCriterionScoreRepository;
+    private final ExamItemEvaluationTurnRepository examItemEvaluationTurnRepository;
+    private final RubricCriterionRepository rubricCriterionRepository;
+    private final ExamSessionRepository examSessionRepository;
+    private final ExamRepository examRepository;
+    private final AssessmentPolicyRepository assessmentPolicyRepository;
+    private final UpdateExamSessionStatusUseCase updateExamSessionStatusUseCase;
+    private final JsonMapper jsonMapper;
+
+    public RecordExamAttemptEvaluationUseCase(
+            ExamItemResponseRepository examItemResponseRepository,
+            ExamItemEvaluationRepository examItemEvaluationRepository,
+            ExamItemCriterionScoreRepository examItemCriterionScoreRepository,
+            ExamItemEvaluationTurnRepository examItemEvaluationTurnRepository,
+            RubricCriterionRepository rubricCriterionRepository,
+            ExamSessionRepository examSessionRepository,
+            ExamRepository examRepository,
+            AssessmentPolicyRepository assessmentPolicyRepository,
+            UpdateExamSessionStatusUseCase updateExamSessionStatusUseCase,
+            JsonMapper jsonMapper) {
+        this.examItemResponseRepository = examItemResponseRepository;
+        this.examItemEvaluationRepository = examItemEvaluationRepository;
+        this.examItemCriterionScoreRepository = examItemCriterionScoreRepository;
+        this.examItemEvaluationTurnRepository = examItemEvaluationTurnRepository;
+        this.rubricCriterionRepository = rubricCriterionRepository;
+        this.examSessionRepository = examSessionRepository;
+        this.examRepository = examRepository;
+        this.assessmentPolicyRepository = assessmentPolicyRepository;
+        this.updateExamSessionStatusUseCase = updateExamSessionStatusUseCase;
+        this.jsonMapper = jsonMapper;
+    }
+
+    @Override
+    @Transactional
+    public Void execute(ExamAttemptEvaluationCompletedEventDto input) {
+        var responseId = UUID.fromString(input.answerId());
+        var response = examItemResponseRepository.findById(responseId)
+            .orElseThrow(() -> new NotFoundException("Khong tim thay cau tra loi can luu ket qua cham"));
+
+        var criteriaMap = input.payload() == null || input.payload().criteria() == null
+            ? Map.<String, ExamAttemptEvaluationCompletedEventDto.CriterionScoreDto>of()
+            : input.payload().criteria();
+        var averageScore = criteriaMap.values().stream()
+            .map(item -> item == null ? null : item.score())
+            .filter(score -> score != null)
+            .map(BigDecimal::valueOf)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        var criteriaCount = criteriaMap.values().stream().filter(item -> item != null && item.score() != null).count();
+        var itemScore = criteriaCount == 0
+            ? BigDecimal.ZERO
+            : averageScore.divide(BigDecimal.valueOf(criteriaCount), 2, RoundingMode.HALF_UP);
+
+        var signals = ExamEvaluationSignalMapper.toDomain(input.payload() == null ? null : input.payload().signals());
+        var validity = input.payload() == null ? null : input.payload().validity();
+        var evaluation = examItemEvaluationRepository.save(new ExamItemEvaluation(
+            response.getId(),
+            response.getPaperItemId(),
+            ExamEvaluationEngineType.AI_SINGLE,
+            input.payload() == null ? "gpt-4o" : input.payload().modelVersion(),
+            1,
+            null,
+            itemScore,
+            itemScore,
+            clampUnit(input.payload() == null || input.payload().signals() == null ? null : input.payload().signals().asrConfidenceAvg()),
+            false,
+            null,
+            validity != null && Boolean.FALSE.equals(validity.validForScoring()),
+            false,
+            signals,
+            input.payload() == null ? "" : input.payload().feedbackSummary(),
+            toJson(input.payload() == null ? List.of() : input.payload().suggestions()),
+            input.payload() == null ? null : input.payload().promptVersion(),
+            ExamItemEvaluationStatus.AUTO_GRADED,
+            parseEvaluatedAt(input.payload() == null ? null : input.payload().evaluatedAt())
+        ));
+
+        var rubricCriteriaByCode = rubricCriterionRepository.findByRubricVersionId(
+            resolveRubricVersionId(response.getSessionId())
+        ).stream().collect(Collectors.toMap(
+            item -> normalizeCode(item.getCode()),
+            Function.identity(),
+            (left, right) -> left
+        ));
+
+        var criterionScores = criteriaMap.entrySet().stream()
+            .filter(entry -> entry.getValue() != null && entry.getValue().score() != null)
+            .map(entry -> {
+                var criterion = rubricCriteriaByCode.get(normalizeCode(entry.getKey()));
+                if (criterion == null) {
+                    return null;
+                }
+                var score = BigDecimal.valueOf(entry.getValue().score()).setScale(2, RoundingMode.HALF_UP);
+                return new ExamItemCriterionScore(
+                    evaluation.getId(),
+                    criterion.getId(),
+                    score,
+                    score,
+                    entry.getValue().note()
+                );
+            })
+            .filter(item -> item != null)
+            .toList();
+        if (!criterionScores.isEmpty()) {
+            examItemCriterionScoreRepository.saveAll(criterionScores);
+        }
+
+        var turns = input.payload() == null || input.payload().turns() == null
+            ? List.<ExamItemEvaluationTurn>of()
+            : input.payload().turns().stream()
+                .map(turn -> new ExamItemEvaluationTurn(
+                    UUID.randomUUID(),
+                    evaluation.getId(),
+                    turn.turnOrder() == null ? 0 : turn.turnOrder(),
+                    parseTurnType(turn.turnType()),
+                    turn.promptText(),
+                    turn.audioUrl(),
+                    turn.transcript() == null ? "" : turn.transcript(),
+                    turn.wordCount() == null ? 0 : turn.wordCount(),
+                    turn.durationSeconds(),
+                    turn.asrConfidence(),
+                    toJson(turn.pronunciationOverall()),
+                    toJson(turn.wordFeedback())
+                ))
+                .toList();
+        if (!turns.isEmpty()) {
+            examItemEvaluationTurnRepository.saveAll(turns);
+        }
+
+        if (allResponsesHaveEvaluations(response.getSessionId())) {
+            updateExamSessionStatusUseCase.execute(new UpdateExamSessionStatusCommand(
+                response.getSessionId(),
+                ExamSessionStatus.GRADED
+            ));
+        }
+        return null;
+    }
+
+    private UUID resolveRubricVersionId(UUID sessionId) {
+        var session = examSessionRepository.findById(sessionId)
+            .orElseThrow(() -> new NotFoundException("không thể tìm thấy phiên thi cho evaluation"));
+        var exam = examRepository.findById(session.getExamId())
+            .orElseThrow(() -> new NotFoundException("không thể tìm thấy bài kiểm tra cho evaluation"));
+        if (exam.getAssessmentPolicyId() == null) {
+            throw new NotFoundException("bài kiểm tra chưa gắn assessment policy");
+        }
+        var policy = assessmentPolicyRepository.findById(exam.getAssessmentPolicyId())
+            .orElseThrow(() -> new NotFoundException("không thể tìm thấy assessment policy cho bài kiểm tra"));
+        return policy.getRubricVersionId();
+    }
+
+    private boolean allResponsesHaveEvaluations(UUID sessionId) {
+        return examItemResponseRepository.findBySessionId(sessionId).stream()
+            .allMatch(item -> examItemEvaluationRepository.findLatestByResponseId(item.getId()).isPresent());
+    }
+
+    private OffsetDateTime parseEvaluatedAt(String value) {
+        return value == null || value.isBlank() ? OffsetDateTime.now() : OffsetDateTime.parse(value);
+    }
+
+    private String normalizeCode(String value) {
+        return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private TurnType parseTurnType(String value) {
+        if (value == null || value.isBlank()) {
+            return TurnType.MAIN;
+        }
+        try {
+            return TurnType.valueOf(value.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ex) {
+            return TurnType.MAIN;
+        }
+    }
+
+    private BigDecimal clampUnit(Double value) {
+        if (value == null) {
+            return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        }
+        var decimal = BigDecimal.valueOf(Math.max(0D, Math.min(1D, value)));
+        return decimal.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private String toJson(Object value) {
+        try {
+            return jsonMapper.writeValueAsString(value == null ? List.of() : value);
+        } catch (Exception ex) {
+            throw new IllegalStateException("không thể serialize dữ liệu evaluation", ex);
+        }
+    }
+}

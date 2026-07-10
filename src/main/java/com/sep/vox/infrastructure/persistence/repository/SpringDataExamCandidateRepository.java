@@ -2,6 +2,7 @@ package com.sep.vox.infrastructure.persistence.repository;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,6 +12,8 @@ import com.sep.vox.infrastructure.persistence.entity.ExamCandidateJpaEntity;
 
 public interface SpringDataExamCandidateRepository extends JpaRepository<ExamCandidateJpaEntity, UUID> {
     List<ExamCandidateJpaEntity> findByExamId(UUID examId);
+    Optional<ExamCandidateJpaEntity> findByExamIdAndStudentId(UUID examId, UUID studentId);
+    List<ExamCandidateJpaEntity> findByStudentId(UUID studentId);
     long countByExamId(UUID examId);
     boolean existsByExamIdAndStudentId(UUID examId, UUID studentId);
 

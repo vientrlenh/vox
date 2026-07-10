@@ -65,8 +65,21 @@ public class ExamCandidateRepositoryImpl implements ExamCandidateRepository {
     }
 
     @Override
+    public Optional<ExamCandidate> findByExamIdAndStudentId(UUID examId, UUID studentId) {
+        return springDataExamCandidateRepository.findByExamIdAndStudentId(examId, studentId)
+            .map(ExamCandidateMapper::toDomain);
+    }
+
+    @Override
     public boolean existsByExamIdAndStudentId(UUID examId, UUID studentId) {
         return springDataExamCandidateRepository.existsByExamIdAndStudentId(examId, studentId);
+    }
+
+    @Override
+    public List<ExamCandidate> findByStudentId(UUID studentId) {
+        return springDataExamCandidateRepository.findByStudentId(studentId).stream()
+            .map(ExamCandidateMapper::toDomain)
+            .toList();
     }
 
     @Override

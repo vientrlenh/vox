@@ -12,7 +12,9 @@ import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3ClientBuilder;
 import software.amazon.awssdk.services.s3.S3Configuration;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 @Configuration
 @EnableConfigurationProperties(AwsS3StorageProperties.class)
@@ -27,6 +29,20 @@ public class S3StorageConfig {
                 .pathStyleAccessEnabled(properties.isPathStyleAccessEnabled())
                 .build());
 
+        configureCredentialsAndEndpoint(properties, builder);
+        return builder.build();
+    }
+
+    @Bean
+    public S3Presigner s3Presigner(AwsS3StorageProperties properties) {
+        var builder = S3Presigner.builder()
+            .region(Region.of(properties.getRegion()));
+
+        configureCredentialsAndEndpoint(properties, builder);
+        return builder.build();
+    }
+
+    private void configureCredentialsAndEndpoint(AwsS3StorageProperties properties, S3ClientBuilder builder) {
         if (hasText(properties.getEndpoint())) {
             builder.endpointOverride(URI.create(properties.getEndpoint()));
         }
@@ -38,8 +54,20 @@ public class S3StorageConfig {
         } else {
             builder.credentialsProvider(DefaultCredentialsProvider.builder().build());
         }
+    }
 
-        return builder.build();
+    private void configureCredentialsAndEndpoint(AwsS3StorageProperties properties, S3Presigner.Builder builder) {
+        if (hasText(properties.getEndpoint())) {
+            builder.endpointOverride(URI.create(properties.getEndpoint()));
+        }
+
+        if (hasText(properties.getAccessKey()) && hasText(properties.getSecretKey())) {
+            builder.credentialsProvider(StaticCredentialsProvider.create(
+                AwsBasicCredentials.create(properties.getAccessKey(), properties.getSecretKey())
+            ));
+        } else {
+            builder.credentialsProvider(DefaultCredentialsProvider.builder().build());
+        }
     }
 
     private boolean hasText(String value) {

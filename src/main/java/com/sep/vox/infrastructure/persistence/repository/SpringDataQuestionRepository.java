@@ -65,16 +65,21 @@ public interface SpringDataQuestionRepository extends JpaRepository<QuestionJpaE
               )
           AND (
                 (:systemAdmin = true AND qb.ownerType = 'SYSTEM')
-                OR (
-                    q.confidentiality = 'EXAM_RESTRICTED'
-                    AND EXISTS (
-                        SELECT 1
-                        FROM ExamPaperItemJpaEntity epi
-                        JOIN ExamPaperJpaEntity ep ON ep.id = epi.paperId
-                        JOIN ExamMemberJpaEntity em ON em.examId = ep.examId
-                        WHERE epi.questionId = q.id
-                          AND em.userId = :currentUserId
-                    )
+                OR EXISTS (
+                    SELECT 1
+                    FROM ExamPaperItemJpaEntity epi
+                    JOIN ExamPaperJpaEntity ep ON ep.id = epi.paperId
+                    JOIN ExamMemberJpaEntity em ON em.examId = ep.examId
+                    WHERE epi.questionId = q.id
+                      AND em.userId = :currentUserId
+                )
+                OR EXISTS (
+                    SELECT 1
+                    FROM ExamBlueprintSlotJpaEntity bs
+                    JOIN ExamBlueprintVersionJpaEntity bv ON bv.id = bs.blueprintVersionId
+                    JOIN ExamBlueprintJpaEntity b ON b.id = bv.blueprintId
+                    WHERE bs.fixedQuestionId = q.id
+                      AND (:systemAdmin = true OR b.schoolId = :currentSchoolId)
                 )
                 OR (
                     (
@@ -177,16 +182,21 @@ public interface SpringDataQuestionRepository extends JpaRepository<QuestionJpaE
               )
           AND (
                 (:systemAdmin = true AND qb.ownerType = 'SYSTEM')
-                OR (
-                    q.confidentiality = 'EXAM_RESTRICTED'
-                    AND EXISTS (
-                        SELECT 1
-                        FROM ExamPaperItemJpaEntity epi
-                        JOIN ExamPaperJpaEntity ep ON ep.id = epi.paperId
-                        JOIN ExamMemberJpaEntity em ON em.examId = ep.examId
-                        WHERE epi.questionId = q.id
-                          AND em.userId = :currentUserId
-                    )
+                OR EXISTS (
+                    SELECT 1
+                    FROM ExamPaperItemJpaEntity epi
+                    JOIN ExamPaperJpaEntity ep ON ep.id = epi.paperId
+                    JOIN ExamMemberJpaEntity em ON em.examId = ep.examId
+                    WHERE epi.questionId = q.id
+                      AND em.userId = :currentUserId
+                )
+                OR EXISTS (
+                    SELECT 1
+                    FROM ExamBlueprintSlotJpaEntity bs
+                    JOIN ExamBlueprintVersionJpaEntity bv ON bv.id = bs.blueprintVersionId
+                    JOIN ExamBlueprintJpaEntity b ON b.id = bv.blueprintId
+                    WHERE bs.fixedQuestionId = q.id
+                      AND (:systemAdmin = true OR b.schoolId = :currentSchoolId)
                 )
                 OR (
                     (
@@ -265,16 +275,21 @@ public interface SpringDataQuestionRepository extends JpaRepository<QuestionJpaE
         WHERE q.id = :id
           AND (
                 (:systemAdmin = true AND qb.ownerType = 'SYSTEM')
-                OR (
-                    q.confidentiality = 'EXAM_RESTRICTED'
-                    AND EXISTS (
-                        SELECT 1
-                        FROM ExamPaperItemJpaEntity epi
-                        JOIN ExamPaperJpaEntity ep ON ep.id = epi.paperId
-                        JOIN ExamMemberJpaEntity em ON em.examId = ep.examId
-                        WHERE epi.questionId = q.id
-                          AND em.userId = :currentUserId
-                    )
+                OR EXISTS (
+                    SELECT 1
+                    FROM ExamPaperItemJpaEntity epi
+                    JOIN ExamPaperJpaEntity ep ON ep.id = epi.paperId
+                    JOIN ExamMemberJpaEntity em ON em.examId = ep.examId
+                    WHERE epi.questionId = q.id
+                      AND em.userId = :currentUserId
+                )
+                OR EXISTS (
+                    SELECT 1
+                    FROM ExamBlueprintSlotJpaEntity bs
+                    JOIN ExamBlueprintVersionJpaEntity bv ON bv.id = bs.blueprintVersionId
+                    JOIN ExamBlueprintJpaEntity b ON b.id = bv.blueprintId
+                    WHERE bs.fixedQuestionId = q.id
+                      AND (:systemAdmin = true OR b.schoolId = :currentSchoolId)
                 )
                 OR (
                     (

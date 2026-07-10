@@ -45,7 +45,7 @@ public class ExamSessionJpaEntity {
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
             name = "chk_exam_sessions_status_valid", 
-            constraint = "status IN ('IN_PROGRESS', 'SUBMITTED', 'GRADING', 'GRADED', 'EXPIRED', 'GRADING_EXPIRED')"
+            constraint = "status IN ('IN_PROGRESS', 'SUBMITTED', 'GRADING', 'GRADED', 'EXPIRED', 'GRADING_FAILED')"
         )
     }
     )

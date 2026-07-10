@@ -18,7 +18,7 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 @Configuration
 @EnableConfigurationProperties(AwsS3StorageProperties.class)
-@ConditionalOnProperty(prefix = "spring.storage", name = "provider", havingValue = "s3")
+@ConditionalOnProperty(prefix = "storage", name = "provider", havingValue = "s3")
 public class S3StorageConfig {
 
     @Bean

@@ -16,7 +16,7 @@ public final class RubricCriterionMapper {
             jpa.getCode(),
             jpa.getName(),
             jpa.getDescription(),
-            JsonValueObjectMapper.fromJson(jpa.getExamplesJson(), RubricCriterionExamples.class),
+            jpa.getExamplesJson() == null ? null : JsonValueObjectMapper.fromJson(jpa.getExamplesJson(), RubricCriterionExamples.class),
             jpa.getWeight(),
             jpa.getMinScore(),
             jpa.getMaxScore(),

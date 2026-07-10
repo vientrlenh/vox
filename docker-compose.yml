@@ -104,6 +104,7 @@ services:
 
 networks:
   vox-network:
+    name: vox-network
     driver: bridge
 
 volumes:

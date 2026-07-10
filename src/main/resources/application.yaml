@@ -56,6 +56,13 @@ spring:
         "[spring.json.trusted.packages]": "com.sep.vox"
         "[session.timeout.ms]": 30000
         "[heartbeat.interval.ms]": 10000
+        # Python producers (agents' aiokafka) never send Spring's type-info headers, so
+        # JacksonJsonDeserializer has nothing to fall back to and throws IllegalStateException
+        # before any @KafkaListener body runs. Fall back to a generic map when headers are
+        # absent; listeners already treat record.value() as Object and re-parse it themselves
+        # (jsonMapper.valueToTree(...).treeToValue(...)). Headers are still honored when present,
+        # so Java-to-Java producers/consumers (e.g. DummyUserRegisteredExternalEvent) are unaffected.
+        "[spring.json.value.default.type]": "java.util.LinkedHashMap"
 
     listener:
       ack-mode: MANUAL_IMMEDIATE # commit right away

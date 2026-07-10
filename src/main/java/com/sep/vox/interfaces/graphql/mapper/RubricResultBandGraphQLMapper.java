@@ -11,7 +11,6 @@ public class RubricResultBandGraphQLMapper {
     public static UpdateSystemRubricResultBandCommand fromSystemInput(UUID resultBandId, UpdateRubricResultBandInput input) {
         return new UpdateSystemRubricResultBandCommand(
                 resultBandId,
-                input.code(),
                 input.name(),
                 input.description(),
                 input.scoreMin(),
@@ -24,7 +23,6 @@ public class RubricResultBandGraphQLMapper {
         return new UpdateSchoolRubricResultBandCommand(
                 schoolId,
                 resultBandId,
-                input.code(),
                 input.name(),
                 input.description(),
                 input.scoreMin(),

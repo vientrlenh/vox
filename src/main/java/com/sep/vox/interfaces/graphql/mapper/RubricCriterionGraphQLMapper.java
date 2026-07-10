@@ -11,7 +11,6 @@ public class RubricCriterionGraphQLMapper {
     public static UpdateSystemRubricCriterionCommand fromSystemInput(UUID criterionId, UpdateRubricCriterionInput input) {
         return new UpdateSystemRubricCriterionCommand(
                 criterionId,
-                input.code(),
                 input.name(),
                 input.description(),
                 input.examplesJson(),
@@ -26,7 +25,6 @@ public class RubricCriterionGraphQLMapper {
         return new UpdateSchoolRubricCriterionCommand(
                 schoolId,
                 criterionId,
-                input.code(),
                 input.name(),
                 input.description(),
                 input.examplesJson(),

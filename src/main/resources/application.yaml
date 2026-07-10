@@ -136,6 +136,8 @@ springdoc:
 jwt:
   secret: ${JWT_SECRET}
   expiration-ms: 1800000
+  stream:
+    secret: ${JWT_STREAM_SECRET}
 
 logging:
   level:

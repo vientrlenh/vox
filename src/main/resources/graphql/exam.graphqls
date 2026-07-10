@@ -3,6 +3,11 @@ enum ExamKind {
     CLASS_TEST
 }
 
+enum ExamDeliveryMode {
+    STUDENT_DEVICE
+    LAB
+}
+
 enum ExamStatus {
     DRAFT
     SCHEDULED
@@ -10,6 +15,13 @@ enum ExamStatus {
     CLOSED
     RESULTS_PUBLISHED
     CANCELLED
+}
+
+enum ResultDecisionMethod {
+    HIGHEST
+    LATEST
+    AVERAGE
+    FIRST
 }
 
 enum ExamMemberRole {
@@ -34,6 +46,23 @@ enum ExamPaperStatus {
     IN_REVIEW
     APPROVED
     LOCKED
+}
+
+enum ExamScheduleStatus {
+    DRAFT
+    PUBLISHED
+    COMPLETED
+    MOVED
+    CANCELLED
+    DELETED
+}
+
+enum ExamCandidateStatus {
+    ASSIGNED
+    ABSENT
+    COMPLETED
+    EXEMPTED
+    CANCELLED
 }
 
 enum ExamSecurePoolStatus {
@@ -116,16 +145,22 @@ type Exam {
     id: ID!
     blueprintId: ID
     blueprintVersionId: ID
+    blueprint: ExamBlueprint
+    blueprintVersion: ExamBlueprintVersion
     code: String!
     name: String!
     description: String
     schoolId: ID!
     languageId: ID!
     kind: ExamKind!
+    deliveryMode: ExamDeliveryMode
     status: ExamStatus!
+    maxAttempt: Int
+    resultDecisionMethod: ResultDecisionMethod
     openAt: String
     closeAt: String
     assessmentPolicyId: ID
+    papersLocked: Boolean
     createdAt: String
     updatedAt: String
     createdBy: ID
@@ -134,6 +169,17 @@ type Exam {
     papers(status: ExamPaperStatus): [ExamPaper!]!
     securePool: ExamSecurePool
     schoolClassId: ID
+    candidateCount: Int!
+}
+
+type ExamStatusCounts {
+    total: Int!
+    draft: Int!
+    scheduled: Int!
+    inProgress: Int!
+    closed: Int!
+    resultsPublished: Int!
+    cancelled: Int!
 }
 
 type ExamPage {
@@ -192,6 +238,9 @@ type ExamBlueprintVersion {
     createdBy: ID
     updatedBy: ID
     sections: [ExamBlueprintSection!]!
+    sectionCount: Int!
+    slotCount: Int!
+    weightSum: Float!
 }
 
 type ExamBlueprint {
@@ -208,6 +257,9 @@ type ExamBlueprint {
     createdBy: ID
     updatedBy: ID
     versions(status: ExamBlueprintVersionStatus): [ExamBlueprintVersion!]!
+    versionCount: Int!
+    currentVersion: ExamBlueprintVersion
+    sectionCount: Int!
 }
 
 type ExamBlueprintPage {
@@ -216,6 +268,47 @@ type ExamBlueprintPage {
     size: Int!
     totalElements: Int!
     totalPages: Int!
+}
+
+type ExamScheduleProctor {
+    id: ID!
+    scheduleId: ID!
+    teacher: User
+}
+
+type ExamSchedule {
+    id: ID!
+    examId: ID!
+    schoolRoomId: ID
+    room: SchoolRoom
+    startDate: String
+    endDate: String
+    status: ExamScheduleStatus!
+    movedToScheduleId: ID
+    proctors: [ExamScheduleProctor!]!
+    candidateCount: Int!
+    requiredProctorCount: Int!
+}
+
+type ExamCandidate {
+    id: ID!
+    examId: ID!
+    studentId: ID!
+    assignedPaperId: ID
+    scheduleId: ID
+    status: ExamCandidateStatus!
+    assignedAt: String
+    updatedAt: String
+    student: User
+    assignedPaper: ExamPaper
+    schedule: ExamSchedule
+    exam: Exam
+}
+
+input UpdateExamScheduleInput {
+    schoolRoomId: ID
+    startDate: String
+    endDate: String
 }
 
 extend type Query {
@@ -229,6 +322,12 @@ extend type Query {
     ): ExamPage!
 
     exam(id: ID!): Exam
+
+    examMyRole(examId: ID!): String
+
+    examPaper(id: ID!): ExamPaper
+
+    examStatusCounts(schoolId: ID, kind: ExamKind): ExamStatusCounts!
 
     classTests(
         status: ExamStatus,
@@ -249,4 +348,12 @@ extend type Query {
     ): ExamBlueprintPage!
 
     examBlueprint(id: ID!): ExamBlueprint
+
+    examSchedules(examId: ID, status: ExamScheduleStatus, startDate: String, endDate: String): [ExamSchedule!]!
+
+    examCandidates(examId: ID!, scheduleId: ID, status: ExamCandidateStatus): [ExamCandidate!]!
+}
+
+extend type Mutation {
+    updateExamSchedule(id: ID!, input: UpdateExamScheduleInput!): ID!
 }

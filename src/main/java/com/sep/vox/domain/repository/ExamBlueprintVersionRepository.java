@@ -13,4 +13,6 @@ public interface ExamBlueprintVersionRepository {
     List<ExamBlueprintVersion> findByBlueprintId(UUID blueprintId);
     List<ExamBlueprintVersion> findByBlueprintIdAndStatus(UUID blueprintId, ExamBlueprintVersionStatus status);
     int nextVersionNumber(UUID blueprintId);
+    boolean existsUsedByVersion(UUID versionId);
+    void deleteById(UUID id);
 }

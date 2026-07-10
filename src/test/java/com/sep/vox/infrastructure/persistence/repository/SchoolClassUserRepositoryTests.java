@@ -106,7 +106,7 @@ class SchoolClassUserRepositoryTests extends ContainerTestConfig {
 
         assertThat(found).hasSize(2);
         assertThat(found)
-            .extracting(SchoolClassUser::getSchoolClassId)
+            .extracting(classuser -> classuser.getSchoolClassId())
             .containsExactlyInAnyOrder(classId, anotherClassId);
     }
 

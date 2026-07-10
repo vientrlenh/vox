@@ -15,17 +15,17 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 
-class JwtTokenProviderTests {
+class JwtAuthTokenProviderTests {
 
     private static final String SECRET = "test-access-secret-oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo";
 
-    private JwtTokenProvider jwtTokenProvider;
+    private JwtAuthTokenProvider jwtAuthTokenProvider;
 
     @BeforeEach
     void setUp() {
-        jwtTokenProvider = new JwtTokenProvider();
-        ReflectionTestUtils.setField(jwtTokenProvider, "secret", SECRET);
-        ReflectionTestUtils.setField(jwtTokenProvider, "expirationMs", 1_800_000L);
+        jwtAuthTokenProvider = new JwtAuthTokenProvider();
+        ReflectionTestUtils.setField(jwtAuthTokenProvider, "secret", SECRET);
+        ReflectionTestUtils.setField(jwtAuthTokenProvider, "expirationMs", 1_800_000L);
     }
 
     @Test
@@ -34,11 +34,11 @@ class JwtTokenProviderTests {
         var schoolId = UUID.randomUUID();
         var roles = List.of("SCHOOL_ADMIN");
 
-        var token = jwtTokenProvider.generateJwtToken(userId.toString(), schoolId, "admin@example.com", roles);
+        var token = jwtAuthTokenProvider.generateJwtToken(userId.toString(), schoolId, "admin@example.com", roles);
 
-        assertThat(jwtTokenProvider.getUserIdFromToken(token)).isEqualTo(userId);
-        assertThat(jwtTokenProvider.getSchoolIdFromToken(token)).isEqualTo(schoolId);
-        assertThat(jwtTokenProvider.getEmailFromToken(token)).isEqualTo("admin@example.com");
+        assertThat(jwtAuthTokenProvider.getUserIdFromToken(token)).isEqualTo(userId);
+        assertThat(jwtAuthTokenProvider.getSchoolIdFromToken(token)).isEqualTo(schoolId);
+        assertThat(jwtAuthTokenProvider.getEmailFromToken(token)).isEqualTo("admin@example.com");
 
         var claims = claims(token);
         assertThat(claims.get("userId", String.class)).isEqualTo(userId.toString());
@@ -52,11 +52,11 @@ class JwtTokenProviderTests {
         var userId = UUID.randomUUID();
         var roles = List.of("SYSTEM_ADMIN");
 
-        var token = jwtTokenProvider.generateJwtToken(userId.toString(), null, "sysadmin@example.com", roles);
+        var token = jwtAuthTokenProvider.generateJwtToken(userId.toString(), null, "sysadmin@example.com", roles);
 
-        assertThat(jwtTokenProvider.getUserIdFromToken(token)).isEqualTo(userId);
-        assertThat(jwtTokenProvider.getSchoolIdFromToken(token)).isNull();
-        assertThat(jwtTokenProvider.getEmailFromToken(token)).isEqualTo("sysadmin@example.com");
+        assertThat(jwtAuthTokenProvider.getUserIdFromToken(token)).isEqualTo(userId);
+        assertThat(jwtAuthTokenProvider.getSchoolIdFromToken(token)).isNull();
+        assertThat(jwtAuthTokenProvider.getEmailFromToken(token)).isEqualTo("sysadmin@example.com");
 
         var claims = claims(token);
         assertThat(claims).doesNotContainKey("schoolId");

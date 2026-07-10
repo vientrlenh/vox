@@ -6,7 +6,6 @@ import java.util.UUID;
 
 public record UpdateSystemRubricVersionCommand(
         UUID versionId,
-        String code,
         String name,
         String description,
         OffsetDateTime effectiveFrom,

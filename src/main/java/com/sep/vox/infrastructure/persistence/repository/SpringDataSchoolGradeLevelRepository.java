@@ -16,6 +16,8 @@ import java.util.UUID;
 
 public interface SpringDataSchoolGradeLevelRepository extends JpaRepository<SchoolGradeLevelJpaEntity, UUID> {
     Optional<SchoolGradeLevelJpaEntity> findBySchoolId(UUID schoolId);
+    Optional<SchoolGradeLevelJpaEntity> findBySchoolIdAndCode(UUID schoolId, String code);
+    Optional<SchoolGradeLevelJpaEntity> findBySchoolIdAndName(UUID schoolId, String name);
     boolean existsBySchoolIdAndCode(UUID schoolId, String code);
     boolean existsBySchoolIdAndOrder(UUID schoolId, int order);
     List<SchoolGradeLevelJpaEntity> findBySchoolIdAndCodeIn(UUID schoolId, Collection<String> codes);

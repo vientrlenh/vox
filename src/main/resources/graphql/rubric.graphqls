@@ -4,7 +4,6 @@ input UpdateRubricInput {
 }
 
 input UpdateRubricVersionInput {
-    code: String
     name: String
     description: String
     effectiveFrom: String
@@ -15,7 +14,6 @@ input UpdateRubricVersionInput {
 }
 
 input UpdateRubricCriterionInput {
-    code: String
     name: String
     description: String
     examplesJson: String # Nhận chuỗi JSON từ Frontend
@@ -27,14 +25,12 @@ input UpdateRubricCriterionInput {
 }
 
 input UpdateRubricCriterionBandInput {
-    code: String
     scoreMin: Float
     scoreMax: Float
 }
 
 
 input UpdateRubricResultBandInput {
-    code: String
     name: String
     description: String
     scoreMin: Float
@@ -80,8 +76,9 @@ type Rubric {
     languageId: ID!
     frameworkId: ID!
     ownerType: String!
-    currentVersionId: ID
     versions(page: Int = 1, size: Int = 10, status: String): RubricVersionPage!
+    language: SupportedLanguage
+    framework: Framework
 }
 #Page
 type RubricPage {
@@ -131,6 +128,10 @@ type RubricCriterion {
     maxScore: Float!
     order: Int!
     isRequired: Boolean!
+    createdAt: String
+    updatedAt: String
+    createdBy: ID
+    updatedBy: ID
     bands(page: Int = 1, size: Int = 10): RubricCriterionBandPage!
 }
 

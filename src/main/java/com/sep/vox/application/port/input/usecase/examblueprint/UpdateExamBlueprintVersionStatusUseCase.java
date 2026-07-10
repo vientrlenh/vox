@@ -1,7 +1,10 @@
 package com.sep.vox.application.port.input.usecase.examblueprint;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,13 +20,15 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.ExamBlueprintVersionDto;
 import com.sep.vox.domain.mapper.ExamBlueprintVersionDtoMapper;
 import com.sep.vox.domain.model.exam.ExamBlueprint;
+import com.sep.vox.domain.model.exam.ExamBlueprintSlotType;
 import com.sep.vox.domain.model.exam.ExamBlueprintVersion;
 import com.sep.vox.domain.model.exam.ExamBlueprintVersionStatus;
-import com.sep.vox.domain.model.exam.ExamMemberRole;
+import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.repository.ExamBlueprintRepository;
+import com.sep.vox.domain.repository.ExamBlueprintSectionRepository;
+import com.sep.vox.domain.repository.ExamBlueprintSlotRepository;
 import com.sep.vox.domain.repository.ExamBlueprintVersionRepository;
-import com.sep.vox.domain.repository.ExamMemberRepository;
-import com.sep.vox.domain.repository.ExamRepository;
+import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
@@ -32,8 +37,9 @@ public class UpdateExamBlueprintVersionStatusUseCase
 
     private final ExamBlueprintVersionRepository examBlueprintVersionRepository;
     private final ExamBlueprintRepository examBlueprintRepository;
-    private final ExamRepository examRepository;
-    private final ExamMemberRepository examMemberRepository;
+    private final ExamBlueprintSectionRepository examBlueprintSectionRepository;
+    private final ExamBlueprintSlotRepository examBlueprintSlotRepository;
+    private final QuestionRepository questionRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserContextPort userContextPort;
     private final EventPublisherPort eventPublisherPort;
@@ -41,15 +47,17 @@ public class UpdateExamBlueprintVersionStatusUseCase
     public UpdateExamBlueprintVersionStatusUseCase(
             ExamBlueprintVersionRepository examBlueprintVersionRepository,
             ExamBlueprintRepository examBlueprintRepository,
-            ExamRepository examRepository,
-            ExamMemberRepository examMemberRepository,
+            ExamBlueprintSectionRepository examBlueprintSectionRepository,
+            ExamBlueprintSlotRepository examBlueprintSlotRepository,
+            QuestionRepository questionRepository,
             SchoolUserRepository schoolUserRepository,
             UserContextPort userContextPort,
             EventPublisherPort eventPublisherPort) {
         this.examBlueprintVersionRepository = examBlueprintVersionRepository;
         this.examBlueprintRepository = examBlueprintRepository;
-        this.examRepository = examRepository;
-        this.examMemberRepository = examMemberRepository;
+        this.examBlueprintSectionRepository = examBlueprintSectionRepository;
+        this.examBlueprintSlotRepository = examBlueprintSlotRepository;
+        this.questionRepository = questionRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.userContextPort = userContextPort;
         this.eventPublisherPort = eventPublisherPort;
@@ -66,32 +74,30 @@ public class UpdateExamBlueprintVersionStatusUseCase
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
-            .orElseThrow(() -> new ForbiddenException("Quyen truy cap bi tu choi"));
+            .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
 
         var version = examBlueprintVersionRepository.findById(command.versionId())
-            .orElseThrow(() -> new NotFoundException("Khong tim thay version blueprint"));
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy version blueprint"));
         var blueprint = examBlueprintRepository.findById(version.getBlueprintId())
-            .orElseThrow(() -> new NotFoundException("Khong tim thay blueprint de thi"));
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy blueprint đề thi"));
 
-        if (!blueprint.getSchoolId().equals(currentSchoolId)) {
-            throw new ForbiddenException("Quyen truy cap bi tu choi");
-        }
-        requireStatusActor(version, blueprint, currentUserId);
+        requireStatusActor(version, blueprint, currentUserId, currentSchoolId);
 
         switch (command.action()) {
             case "PUBLISH" -> {
                 if (version.getStatus() != ExamBlueprintVersionStatus.DRAFT) {
-                    throw new IllegalStateException("Chi duoc publish version o trang thai DRAFT");
+                    throw new IllegalStateException("Chỉ được publish version ở trạng thái DRAFT");
                 }
+                validatePublishable(version);
                 version.setStatus(ExamBlueprintVersionStatus.PUBLISHED);
             }
             case "ARCHIVE" -> {
                 if (version.getStatus() != ExamBlueprintVersionStatus.PUBLISHED) {
-                    throw new IllegalStateException("Chi duoc archive version o trang thai PUBLISHED");
+                    throw new IllegalStateException("Chỉ được archive version ở trạng thái PUBLISHED");
                 }
                 version.setStatus(ExamBlueprintVersionStatus.ARCHIVED);
             }
-            default -> throw new IllegalStateException("Action khong hop le");
+            default -> throw new IllegalStateException("Action không hợp lệ");
         }
 
         version.setUpdatedAt(OffsetDateTime.now());
@@ -109,16 +115,53 @@ public class UpdateExamBlueprintVersionStatusUseCase
         return ExamBlueprintVersionDtoMapper.toDto(saved);
     }
 
-    private void requireStatusActor(ExamBlueprintVersion version, ExamBlueprint blueprint, UUID currentUserId) {
-        var exam = examRepository.findByBlueprintId(blueprint.getId())
-            .orElseThrow(() -> new ForbiddenException("Blueprint chua duoc gan vao ky thi, khong the doi trang thai version"));
-        var isChair = examMemberRepository.existsByExamIdAndUserIdAndRole(exam.getId(), currentUserId, ExamMemberRole.CHAIR);
-        var isReviewer = examMemberRepository.existsByExamIdAndUserIdAndRole(exam.getId(), currentUserId, ExamMemberRole.REVIEWER);
-        if (!isChair && !isReviewer) {
-            throw new ForbiddenException("Chi CHAIR hoac REVIEWER cua ky thi moi duoc doi trang thai version blueprint");
+    private void requireStatusActor(ExamBlueprintVersion version, ExamBlueprint blueprint, UUID currentUserId, UUID currentSchoolId) {
+        if (!examBlueprintRepository.canChangeVersionStatus(blueprint.getId(), currentUserId, currentSchoolId)) {
+            throw new ForbiddenException(
+                "Quyền truy cập bị từ chối — cần là SCHOOL_ADMIN (nếu blueprint chưa gắn kỳ thi) hoặc CHAIR/REVIEWER của kỳ thi đã gắn");
         }
         if (currentUserId.equals(version.getCreatedBy())) {
-            throw new ForbiddenException("Nguoi tao version khong duoc tu doi trang thai version cua chinh minh");
+            throw new ForbiddenException("Người tạo version không được tự đổi trạng thái version của chính mình");
+        }
+    }
+
+    private static final BigDecimal WEIGHT_TOLERANCE = new BigDecimal("0.01");
+
+    private void validatePublishable(ExamBlueprintVersion version) {
+        var sections = examBlueprintSectionRepository.findByBlueprintVersionId(version.getId());
+        if (sections.isEmpty()) {
+            throw new IllegalStateException("Blueprint version phải có ít nhất một section trước khi publish");
+        }
+        var weightSum = sections.stream()
+            .map(section -> section.getSectionWeight() == null ? BigDecimal.ZERO : section.getSectionWeight())
+            .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
+        if (weightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
+            throw new IllegalStateException("Tổng trọng số section phải bằng 1.00 trước khi publish");
+        }
+
+        var allSlots = examBlueprintSlotRepository.findByBlueprintVersionId(version.getId());
+        allSlots.stream()
+            .filter(slot -> slot.getSlotType() == ExamBlueprintSlotType.FIXED)
+            .forEach(slot -> {
+                var question = slot.getFixedQuestionId() == null
+                    ? null
+                    : questionRepository.findById(slot.getFixedQuestionId()).orElse(null);
+                if (question == null || question.getStatus() != QuestionStatus.PUBLISHED) {
+                    throw new IllegalStateException("Câu hỏi fixed cho slot phải ở trạng thái PUBLISHED");
+                }
+            });
+
+        var slotsBySectionId = allSlots.stream()
+            .collect(Collectors.groupingBy(slot -> slot.getSectionId()));
+        for (var section : sections) {
+            var slots = slotsBySectionId.getOrDefault(section.getId(), List.of());
+            var slotWeightSum = slots.stream()
+                .map(slot -> slot.getWeight() == null ? BigDecimal.ZERO : slot.getWeight())
+                .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
+            if (slotWeightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
+                throw new IllegalStateException(
+                    "Tổng trọng số ô câu hỏi trong phần \"" + section.getTitle() + "\" phải bằng 1.00 trước khi publish");
+            }
         }
     }
 }

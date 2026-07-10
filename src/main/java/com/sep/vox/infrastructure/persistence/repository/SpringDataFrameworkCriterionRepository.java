@@ -25,4 +25,9 @@ public interface SpringDataFrameworkCriterionRepository extends JpaRepository<Fr
 
     @Query("SELECT COUNT(c) > 0 FROM FrameworkCriterionJpaEntity c WHERE c.frameworkVersionId = :versionId AND c.code IN :codes")
     boolean existsByFrameworkVersionIdAndCodeIn(@Param("versionId") UUID versionId, @Param("codes") Collection<String> codes);   
+    
+    @Query("SELECT fc FROM FrameworkCriterionJpaEntity fc " +
+            "WHERE fc.frameworkVersionId IN " +
+            "(SELECT fv.id FROM FrameworkVersionJpaEntity fv WHERE fv.frameworkId = :frameworkId)")
+    List<FrameworkCriterionJpaEntity> findByFrameworkId(@Param("frameworkId") UUID frameworkId);
 }

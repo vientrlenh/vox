@@ -54,7 +54,7 @@ public class AddSchoolRubricVersionsUseCase implements IUseCase<AddSchoolRubricV
         var currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
 
-        // 👉 CHECK QUYỀN TRƯỜNG HỌC
+        //  CHECK QUYỀN TRƯỜNG HỌC
         var schoolUser = schoolUserRepository.findByUserId(currentUserId).orElseThrow(() -> new ForbiddenException("Không thuộc trường học nào."));
         if (!schoolUser.getSchoolId().equals(command.schoolId())) throw new ForbiddenException("BẢO MẬT: Bạn không có quyền thao tác trên trường này.");
 
@@ -64,7 +64,7 @@ public class AddSchoolRubricVersionsUseCase implements IUseCase<AddSchoolRubricV
         }
 
         Set<Integer> existingVersions = rubricVersionRepository.findByRubricId(command.rubricId()).stream()
-                .map(RubricVersion::getVersion)
+                .map(rv -> rv.getVersion())
                 .collect(Collectors.toSet());
 
         Set<Integer> incomingVersions = new HashSet<>();
@@ -94,7 +94,9 @@ public class AddSchoolRubricVersionsUseCase implements IUseCase<AddSchoolRubricV
             }
 
             String safeCode = rubric.getCode() + "_V" + vCmd.version();
-            String safeName = rubric.getName() + " - Version " + vCmd.version();
+            String safeName = (vCmd.name() != null && !vCmd.name().isBlank())
+                    ? vCmd.name().trim()
+                    : rubric.getName() + " - Version " + vCmd.version();
 
             return new RubricVersion(
                     command.rubricId(), vCmd.version(), safeCode, safeName, rubric.getDescription(),

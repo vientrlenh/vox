@@ -271,6 +271,12 @@ public class FileProcessingService implements FileProcessingPort {
                 "startDate", List.of("startDate", "start date", "ngày bắt đầu", "ngay bat dau"),
                 "endDate", List.of("endDate", "end date", "ngày kết thúc", "ngay ket thuc")
             );
+            case SCHOOL_ROOM -> Map.of(
+                "code", List.of("code", "roomCode", "room code", "mã phòng", "ma phong", "mã"),
+                "name", List.of("name", "roomName", "room name", "tên phòng", "ten phong", "tên"),
+                "description", List.of("description", "note", "notes", "ghi chú", "ghi chu", "mô tả", "mo ta")
+            );
+
             case SCHOOL_DIRECTORY -> Map.of(
                     "code", List.of("code", "schoolCode", "school code", "mã trường", "ma truong", "mã định danh", "ma dinh danh"),
                     "name", List.of("name", "schoolName", "school name", "tên trường", "ten truong"),
@@ -282,6 +288,8 @@ public class FileProcessingService implements FileProcessingPort {
             );
             case RUBRIC_VERSION -> Map.of(
                     "version", List.of("version", "version number", "phiên bản", "phien ban", "số version"),
+                    "name", List.of("name", "version name", "tên phiên bản", "ten phien ban", "tên"),
+                    "description", List.of("description", "note", "notes", "mô tả", "mo ta", "ghi chú", "ghi chu"),
                     "scoringScaleMin", List.of("scoringScaleMin", "min score", "điểm sàn", "diem san", "điểm tối thiểu"),
                     "scoringScaleMax", List.of("scoringScaleMax", "max score", "điểm trần", "diem tran", "điểm tối đa"),
                     "totalScoreMethod", List.of("totalScoreMethod", "method", "phương pháp", "cách tính điểm", "phương pháp tính điểm tổng"),
@@ -293,7 +301,7 @@ public class FileProcessingService implements FileProcessingPort {
                     "code", List.of("code", "mã tiêu chí", "ma tieu chi", "criterion code", "mã"),
                     "name", List.of("name", "tên tiêu chí", "ten tieu chi", "criterion name", "tên"),
                     "description", List.of("description", "mô tả", "mo ta", "ghi chú"),
-                    "frameworkCriterionCode", List.of("frameworkCriterionCode", "framework code", "mã khung tiêu chuẩn", "mã khung", "ma khung"),
+                    "frameworkCriterionCode", List.of("frameworkCriterionCode", "framework code", "mã khung tiêu chuẩn", "mã khung", "ma khung","khung tiêu chuẩn"),
                     "weight", List.of("weight", "trọng số", "trong so", "tỉ lệ"),
                     "examples", List.of("examples", "ví dụ", "vi du", "mẫu", "mẫu tiêu chí"),
                     "minScore", List.of("minScore", "min score", "điểm sàn", "diem san", "điểm tối thiểu"),
@@ -316,6 +324,26 @@ public class FileProcessingService implements FileProcessingPort {
                     "scoreMax", List.of("scoreMax", "điểm tối đa", "diem toi da", "điểm trần"),
                     "order", List.of("order", "thứ tự", "thu tu")
             );
+            case ASSESSMENT_POLICY -> Map.ofEntries(
+                    // Lõi đánh giá
+                    Map.entry("frameworkVersion", List.of("frameworkVersion", "phiên bản khung", "phien ban khung", "Phiên bản khung năng lực", "mã phiên bản khung", "tên phiên bản khung")),
+                    Map.entry("rubricVersion", List.of("rubricVersion", "phiên bản rubric", "phien ban rubric", "mã phiên bản rubric", "tên phiên bản rubric")),
+                    Map.entry("language", List.of("language", "ngôn ngữ", "ngon ngu", "mã ngôn ngữ", "tên ngôn ngữ")),
+
+                    // Phạm vi áp dụng (Đã phân biệt rõ Khối tĩnh và Khối động)
+                    Map.entry("schoolGradeLevel", List.of("schoolGradeLevel", "khối", "khoi", "mã khối", "tên khối")),
+                    Map.entry("schoolGrade", List.of("schoolGrade", "khối năm học", "khoi nam hoc", "mã khối năm học", "tên khối năm học")),
+                    Map.entry("schoolClass", List.of("schoolClass", "lớp", "lop", "mã lớp", "tên lớp")),
+
+                    // Thông số đánh giá
+                    Map.entry("targetFrameworkBand", List.of("targetFrameworkBand", "band mục tiêu", "band muc tieu", "mã band mục tiêu", "tên band mục tiêu")),
+                    Map.entry("minimumFrameworkBand", List.of("minimumFrameworkBand", "band tối thiểu", "band toi thieu", "mã band tối thiểu", "tên band tối thiểu")),
+                    Map.entry("passingScore", List.of("passingScore", "điểm đạt", "diem dat")),
+                    Map.entry("strictness", List.of("strictness", "mức độ nghiêm ngặt", "muc do nghiem ngat")),
+                    Map.entry("effectiveFrom", List.of("effectiveFrom", "ngày bắt đầu", "ngay bat dau")),
+                    Map.entry("effectiveTo", List.of("effectiveTo", "ngày kết thúc", "ngay ket thuc"))
+            );
+
             case QUESTION -> Map.ofEntries(
                 Map.entry("code", List.of("code", "question code", "mã câu hỏi", "ma cau hoi")),
                 Map.entry("type", List.of("type", "question type", "loại câu hỏi", "loai cau hoi")),

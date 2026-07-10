@@ -12,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
+import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.domain.model.rubric.RubricResultBand;
 import com.sep.vox.domain.repository.RubricResultBandRepository;
 import com.sep.vox.infrastructure.persistence.mapper.RubricResultBandMapper;
@@ -96,7 +97,8 @@ public class RubricResultBandRepositoryImpl implements RubricResultBandRepositor
     @Override
     public PageResult<RubricResultBand> searchRubricResultBands(UUID versionId, String keyword, int page, int size) {
         var springPageable = PageRequest.of(page, size);
-        var pageEntity = springDataRubricResultBandRepository.searchRubricResultBands(versionId, keyword, springPageable);
+        var pageEntity = springDataRubricResultBandRepository.searchRubricResultBands(
+                versionId, StringNormalization.toLikePattern(keyword), springPageable);
 
         return new PageResult<>(
                 pageEntity.getContent().stream().map(RubricResultBandMapper::toDomain).toList(),

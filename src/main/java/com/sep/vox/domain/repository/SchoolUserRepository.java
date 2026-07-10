@@ -14,7 +14,6 @@ public interface SchoolUserRepository {
     List<SchoolUser> findByUserIdIn(Collection<UUID> userIds);
     SchoolUser save(SchoolUser schoolUser);
     List<SchoolUser> findBySchoolIdIn(Collection<UUID> schoolIds, int pageNumber, int size);
-    PageResult<SchoolUser> findBySchoolId(UUID schoolId, int pageNumber, int size);
     PageResult<SchoolUser> findBySchoolId(UUID schoolId, String search, UUID roleId, String status,
         int pageNumber, int size);
     PageResult<SchoolUser> searchBySchoolId(UUID schoolId, UUID excludeUserId, String search, UUID roleId,

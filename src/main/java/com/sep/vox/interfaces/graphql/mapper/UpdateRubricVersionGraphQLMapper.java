@@ -11,7 +11,6 @@ public class UpdateRubricVersionGraphQLMapper {
     public static UpdateSystemRubricVersionCommand fromSystemInput(UUID versionId, UpdateRubricVersionInput input) {
         return new UpdateSystemRubricVersionCommand(
                 versionId,
-                input.code(),
                 input.name(),
                 input.description(),
                 DateMapper.toOffsetDateTime(input.effectiveFrom()),
@@ -26,7 +25,6 @@ public class UpdateRubricVersionGraphQLMapper {
         return new UpdateSchoolRubricVersionCommand(
                 schoolId,
                 versionId,
-                input.code(),
                 input.name(),
                 input.description(),
                 DateMapper.toOffsetDateTime(input.effectiveFrom()),

@@ -17,6 +17,7 @@ import com.sep.vox.infrastructure.persistence.entity.SupportedLanguageJpaEntity;
 
 public interface SpringDataSupportedLanguageRepository extends JpaRepository<SupportedLanguageJpaEntity, UUID>{
     Optional<SupportedLanguageJpaEntity> findByCode(String code);
+    Optional<SupportedLanguageJpaEntity> findByName(String name);
     List<SupportedLanguageJpaEntity> findByCodeIn(Collection<String> codes);
     boolean existsByIdAndIsActive(UUID id, boolean isActive);
 

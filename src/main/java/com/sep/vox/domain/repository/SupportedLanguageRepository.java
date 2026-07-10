@@ -13,6 +13,7 @@ import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
 public interface SupportedLanguageRepository {
     Optional<SupportedLanguage> findById(UUID id);
     Optional<SupportedLanguage> findByCode(String code);
+    Optional<SupportedLanguage> findByName(String name);
     List<SupportedLanguage> findByCodeIn(Collection<String> codes);
     PageResult<SupportedLanguage> findAll(String search, Boolean isActive, int pageNumber, int size);
     SupportedLanguage save(SupportedLanguage supportedLanguage);

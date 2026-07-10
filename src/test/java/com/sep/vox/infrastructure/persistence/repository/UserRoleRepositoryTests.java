@@ -67,7 +67,7 @@ class UserRoleRepositoryTests extends ContainerTestConfig {
 
         assertThat(found).hasSize(2);
         assertThat(found)
-            .extracting(UserRole::getRoleId)
+            .extracting(role -> role.getRoleId())
             .containsExactlyInAnyOrder(roleId, anotherRoleId);
     }
 
@@ -84,7 +84,7 @@ class UserRoleRepositoryTests extends ContainerTestConfig {
 
         assertThat(found).hasSize(2);
         assertThat(found)
-            .extracting(UserRole::getUserId)
+            .extracting(role -> role.getUserId())
             .containsExactlyInAnyOrder(userId, anotherUserId);
     }
 

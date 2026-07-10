@@ -39,6 +39,12 @@ public class SupportedLanguageRepositoryImpl implements SupportedLanguageReposit
     }
 
     @Override
+    public Optional<SupportedLanguage> findByName(String name) {
+        return springDataSupportedLanguageRepository.findByName(name)
+            .map(SupportedLanguageMapper::toDomain);
+    }
+
+    @Override
     public List<SupportedLanguage> findByCodeIn(Collection<String> codes) {
         if (codes == null || codes.isEmpty()) {
             return List.of();
@@ -54,7 +60,7 @@ public class SupportedLanguageRepositoryImpl implements SupportedLanguageReposit
         var pageable = PageRequest.of(
             pageNumber - 1,
             size,
-            Sort.by(Sort.Direction.DESC, SupportedLanguageJpaEntity::getCreatedAt).and(Sort.by(Sort.Direction.ASC, SupportedLanguageJpaEntity::getId))
+            Sort.by(Sort.Direction.DESC, (SupportedLanguageJpaEntity entity) -> entity.getCreatedAt()).and(Sort.by(Sort.Direction.ASC, (SupportedLanguageJpaEntity entity) -> entity.getId()))
         );
         var page = springDataSupportedLanguageRepository.findAllWithSearchAndFilters(
             toSearchPattern(search),

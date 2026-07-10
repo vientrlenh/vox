@@ -2,6 +2,7 @@ package com.sep.vox.infrastructure.persistence.adapter;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -12,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
+import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 import com.sep.vox.infrastructure.persistence.mapper.RubricVersionMapper;
@@ -29,6 +31,27 @@ public class RubricVersionRepositoryImpl implements RubricVersionRepository {
     @Override
     public Optional<RubricVersion> findById(UUID id) {
         return springDataRubricVersionRepository.findById(id).map(RubricVersionMapper::toDomain);
+    }
+
+    @Override
+    public Optional<RubricVersion> findByCode(String code) {
+        return springDataRubricVersionRepository.findByCode(code).map(RubricVersionMapper::toDomain);
+    }
+
+    @Override
+    public Optional<RubricVersion> findByName(String name) {
+        return springDataRubricVersionRepository.findByName(name).map(RubricVersionMapper::toDomain);
+    }
+
+    @Override
+    public List<RubricVersion> findByIdIn(Collection<UUID> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        return springDataRubricVersionRepository.findAllById(ids)
+                .stream()
+                .map(RubricVersionMapper::toDomain)
+                .toList();
     }
 
     @Override
@@ -103,7 +126,8 @@ public class RubricVersionRepositoryImpl implements RubricVersionRepository {
         Pageable springPageable = PageRequest.of(page, size);
 
         // 1. Thực thi lấy dữ liệu từ Database
-        var pageEntity = springDataRubricVersionRepository.searchRubricVersions(rubricId, keyword, status, springPageable);
+        var pageEntity = springDataRubricVersionRepository.searchRubricVersions(
+                rubricId, StringNormalization.toLikePattern(keyword), status, springPageable);
 
         // 2. Map Entity về Domain và trả ra ngoài
         return new PageResult<>(

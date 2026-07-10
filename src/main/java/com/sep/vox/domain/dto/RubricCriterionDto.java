@@ -1,10 +1,10 @@
 package com.sep.vox.domain.dto;
 
-import com.sep.vox.domain.valueobject.rubric.RubricCriterionExample;
-import com.sep.vox.domain.valueobject.rubric.RubricCriterionExamples;
-
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import java.util.UUID;
+
+import com.sep.vox.domain.valueobject.rubric.RubricCriterionExamples;
 
 public record RubricCriterionDto(
         UUID id,
@@ -13,10 +13,14 @@ public record RubricCriterionDto(
         String code,
         String name,
         String description,
-        RubricCriterionExamples examplesJson,
+        String examplesJson,
         BigDecimal weight,
         BigDecimal minScore,
         BigDecimal maxScore,
         int order,
-        boolean isRequired
+        boolean isRequired,
+        OffsetDateTime createdAt,
+        OffsetDateTime updatedAt,
+        UUID createdBy,
+        UUID updatedBy
 ) {}

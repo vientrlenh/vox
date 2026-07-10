@@ -15,7 +15,6 @@ import com.sep.vox.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Service
@@ -55,20 +54,27 @@ public class UpdateSystemRubricUseCase implements IUseCase<UpdateSystemRubricCom
             throw new ForbiddenException("Rubric này thuộc về Trường học. System Admin không có quyền can thiệp.");
         }
 
-        // 4. Chuẩn hóa dữ liệu đầu vào (Nếu có gửi lên thì mới trim)
-        String safeName = (command.name() != null && !command.name().isBlank())
-                ? StringNormalization.trimAndCollapseSpaces(command.name())
-                : null;
+        String finalName = null;
+        if (command.name() != null) {
+            finalName = StringNormalization.trimAndCollapseSpaces(command.name());
+            if (finalName.isBlank()) {
+                throw new IllegalArgumentException("Tên Rubric không hợp lệ hoặc bị để trống.");
+            }
+        }
 
-        String safeDesc = (command.description() != null && !command.description().isBlank())
-                ? StringNormalization.trimAndCollapseSpaces(command.description())
-                : null;
+        String finalDesc = null;
+        if (command.description() != null) {
+            finalDesc = StringNormalization.trimAndCollapseSpaces(command.description());
+            if (finalDesc.isBlank()) {
+                throw new IllegalArgumentException("Description đang bị trống hoặc ko hợp lợi");
+            }
+        }
 
         // 5. ATOMIC UPDATE BẰNG SQL THUẦN (Sử dụng COALESCE)
         rubricRepository.updateRubricAtomic(
                 command.rubricId(),
-                safeName,
-                safeDesc
+                finalName,
+                finalDesc
         );
 
         // 6. Trả về UUID

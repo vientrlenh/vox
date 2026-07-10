@@ -21,6 +21,7 @@ import com.sep.vox.application.port.input.usecase.question.ViewQuestionsForExamP
 import com.sep.vox.application.port.input.usecase.question.ViewQuestionsUseCase;
 import com.sep.vox.application.port.input.usecase.questionbank.ViewQuestionBankDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.questiontopic.ViewQuestionTopicDetailsUseCase;
+import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.QuestionAssetDto;
 import com.sep.vox.domain.dto.QuestionBankDto;
@@ -32,6 +33,7 @@ import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.domain.mapper.QuestionAssetDtoMapper;
 import com.sep.vox.domain.mapper.QuestionCollaboratorDtoMapper;
 import com.sep.vox.domain.mapper.QuestionEvaluationGuideDtoMapper;
+import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
 import com.sep.vox.domain.model.question.QuestionSharing;
 import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.model.question.QuestionType;
@@ -50,6 +52,7 @@ public class QuestionController {
     private final QuestionAssetRepository questionAssetRepository;
     private final QuestionEvaluationGuideRepository questionEvaluationGuideRepository;
     private final QuestionCollaboratorRepository questionCollaboratorRepository;
+    private final UserContextPort userContextPort;
 
     public QuestionController(
             ViewQuestionsUseCase viewQuestionsUseCase,
@@ -59,7 +62,8 @@ public class QuestionController {
             ViewQuestionTopicDetailsUseCase viewQuestionTopicDetailsUseCase,
             QuestionAssetRepository questionAssetRepository,
             QuestionEvaluationGuideRepository questionEvaluationGuideRepository,
-            QuestionCollaboratorRepository questionCollaboratorRepository) {
+            QuestionCollaboratorRepository questionCollaboratorRepository,
+            UserContextPort userContextPort) {
         this.viewQuestionsUseCase = viewQuestionsUseCase;
         this.viewQuestionsForExamPaperUseCase = viewQuestionsForExamPaperUseCase;
         this.viewQuestionDetailsUseCase = viewQuestionDetailsUseCase;
@@ -68,18 +72,19 @@ public class QuestionController {
         this.questionAssetRepository = questionAssetRepository;
         this.questionEvaluationGuideRepository = questionEvaluationGuideRepository;
         this.questionCollaboratorRepository = questionCollaboratorRepository;
+        this.userContextPort = userContextPort;
     }
 
     @QueryMapping(name = "questions")
     public PageResult<QuestionDto> questions(
-            @Argument UUID questionBankId,
-            @Argument UUID questionTopicId,
-            @Argument String topicName,
-            @Argument QuestionStatus status,
-            @Argument QuestionType type,
-            @Argument QuestionSharing sharing,
-            @Argument String scope,
-            @Argument String keyword,
+            @Argument(name = "questionBankId") UUID questionBankId,
+            @Argument(name = "questionTopicId") UUID questionTopicId,
+            @Argument(name = "topicName") String topicName,
+            @Argument(name = "status") QuestionStatus status,
+            @Argument(name = "type") QuestionType type,
+            @Argument(name = "sharing") QuestionSharing sharing,
+            @Argument(name = "scope") String scope,
+            @Argument(name = "keyword") String keyword,
             @Argument(name = "page") int page,
             @Argument(name = "size") int size) {
         validatePage(page, size);
@@ -100,14 +105,14 @@ public class QuestionController {
 
     @QueryMapping(name = "questionsForExamPaper")
     public PageResult<QuestionDto> questionsForExamPaper(
-            @Argument UUID questionBankId,
-            @Argument UUID questionTopicId,
-            @Argument String topicName,
-            @Argument QuestionStatus status,
-            @Argument QuestionType type,
-            @Argument QuestionSharing sharing,
-            @Argument String scope,
-            @Argument String keyword,
+            @Argument(name = "questionBankId") UUID questionBankId,
+            @Argument(name = "questionTopicId") UUID questionTopicId,
+            @Argument(name = "topicName") String topicName,
+            @Argument(name = "status") QuestionStatus status,
+            @Argument(name = "type") QuestionType type,
+            @Argument(name = "sharing") QuestionSharing sharing,
+            @Argument(name = "scope") String scope,
+            @Argument(name = "keyword") String keyword,
             @Argument(name = "page") int page,
             @Argument(name = "size") int size) {
         validatePage(page, size);
@@ -161,6 +166,20 @@ public class QuestionController {
     @SchemaMapping(typeName = "Question", field = "collaborators")
     public List<QuestionCollaboratorDto> collaborators(QuestionDto source) {
         return QuestionCollaboratorDtoMapper.toDtoList(questionCollaboratorRepository.findByQuestionId(source.id()));
+    }
+
+    @SchemaMapping(typeName = "Question", field = "usableInExam")
+    public boolean usableInExam(QuestionDto source) {
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        if (currentUserId.equals(source.createdBy())) {
+            return true;
+        }
+        if (QuestionSharing.SCHOOL_SHARED.name().equals(source.sharing())) {
+            return true;
+        }
+        return questionCollaboratorRepository.findByQuestionIdAndUserId(source.id(), currentUserId)
+            .map(collaborator -> collaborator.getPermission() == QuestionCollaboratorPermission.CAN_EDIT)
+            .orElse(false);
     }
 
     @SchemaMapping(typeName = "QuestionCollaborator", field = "user")

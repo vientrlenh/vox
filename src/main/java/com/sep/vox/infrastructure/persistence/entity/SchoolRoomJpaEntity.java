@@ -58,8 +58,8 @@ public class SchoolRoomJpaEntity {
 
     protected SchoolRoomJpaEntity() {}
 
-    public SchoolRoomJpaEntity(UUID id, UUID schoolId, String code, String name, String description, boolean isActive,
-            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+    public SchoolRoomJpaEntity(UUID id, UUID schoolId, String code, String name, String description,
+            boolean isActive, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.schoolId = schoolId;
         this.code = code;
@@ -72,8 +72,8 @@ public class SchoolRoomJpaEntity {
         this.updatedBy = updatedBy;
     }
 
-    public SchoolRoomJpaEntity(UUID schoolId, String code, String name, String description, boolean isActive,
-            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+    public SchoolRoomJpaEntity(UUID schoolId, String code, String name, String description,
+            boolean isActive, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.schoolId = schoolId;
         this.code = code;
         this.name = name;

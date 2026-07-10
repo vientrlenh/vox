@@ -3,7 +3,6 @@ package com.sep.vox.interfaces.graphql.dto.request;
 import java.math.BigDecimal;
 
 public record UpdateRubricCriterionInput(
-        String code,
         String name,
         String description,
         String examplesJson,

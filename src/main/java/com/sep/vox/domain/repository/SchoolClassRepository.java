@@ -18,6 +18,7 @@ public interface SchoolClassRepository {
             UUID languageId, UUID schoolGradeId, int pageNumber, int size);
     PageResult<SchoolClass> findByUserId(UUID schoolId, UUID userId, SchoolClassStatus status, int pageNumber, int size);
     Optional<SchoolClass> findBySchoolIdAndCode(UUID schoolId, String code);
+    Optional<SchoolClass> findBySchoolIdAndName(UUID schoolId, String name);
     List<SchoolClass> findBySchoolIdAndCodeIn(UUID schoolId, Collection<String> codes);
     SchoolClass save(SchoolClass schoolClass);
     int updateMutableFields(UUID id, UUID schoolId, String name, boolean nameProvided,

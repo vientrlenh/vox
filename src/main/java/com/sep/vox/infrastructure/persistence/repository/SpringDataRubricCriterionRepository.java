@@ -3,6 +3,7 @@ package com.sep.vox.infrastructure.persistence.repository;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -55,14 +56,16 @@ public interface SpringDataRubricCriterionRepository extends JpaRepository<Rubri
     List<RubricCriterionJpaEntity> findByRubricVersionIdIn(@Param("versionIds") List<UUID> versionIds);
 
     @Query("SELECT c FROM RubricCriterionJpaEntity c WHERE c.rubricVersionId = :versionId " +
-            "AND (:keyword IS NULL OR LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(c.code) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+            "AND (:keywordPattern IS NULL OR LOWER(c.name) LIKE :keywordPattern OR LOWER(c.code) LIKE :keywordPattern) " +
             "AND (:isRequired IS NULL OR c.isRequired = :isRequired) " +
             "ORDER BY c.order ASC")
     Page<RubricCriterionJpaEntity> searchRubricCriteria(
             @Param("versionId") UUID versionId,
-            @Param("keyword") String keyword,
+            @Param("keywordPattern") String keywordPattern,
             @Param("isRequired") Boolean isRequired,
             Pageable pageable);
 
     List<RubricCriterionJpaEntity> findByRubricVersionId(UUID rubricVersionId);
+
+    Optional<RubricCriterionJpaEntity> findByRubricVersionIdAndCode(UUID rubricVersionId, String code);
 }

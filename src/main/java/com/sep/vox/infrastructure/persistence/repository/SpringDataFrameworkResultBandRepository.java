@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.Modifying;
@@ -25,6 +26,8 @@ public interface SpringDataFrameworkResultBandRepository extends JpaRepository<F
 
     @Query("SELECT COUNT(b) > 0 FROM FrameworkResultBandJpaEntity b WHERE b.frameworkVersionId = :versionId AND b.label IN :labels")
     boolean existsByFrameworkVersionIdAndLabelIn(@Param("versionId") UUID versionId, @Param("labels") Collection<String> labels);
+    Optional<FrameworkResultBandJpaEntity> findByFrameworkVersionIdAndCode(UUID frameworkVersionId, String code);
+    Optional<FrameworkResultBandJpaEntity> findByFrameworkVersionIdAndLabel(UUID frameworkVersionId, String label);
 
     @Modifying
     @Query("DELETE FROM FrameworkResultBandJpaEntity b WHERE b.frameworkVersionId = :frameworkVersionId")

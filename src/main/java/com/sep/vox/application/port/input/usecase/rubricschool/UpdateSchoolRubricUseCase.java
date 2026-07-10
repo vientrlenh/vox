@@ -74,20 +74,26 @@ public class UpdateSchoolRubricUseCase implements IUseCase<UpdateSchoolRubricCom
             throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");
         }
 
-        // 5. Chuẩn hóa dữ liệu đầu vào (Atomic)
-        String safeName = (command.name() != null && !command.name().isBlank())
-                ? StringNormalization.trimAndCollapseSpaces(command.name())
-                : null;
+        String finalName = null;
+        if (command.name() != null) {
+            finalName = StringNormalization.trimAndCollapseSpaces(command.name());
+            if (finalName.isBlank()) {
+                throw new IllegalArgumentException("Tên Rubric không hợp lệ hoặc bị để trống.");
+            }
+        }
 
-        String safeDesc = (command.description() != null && !command.description().isBlank())
-                ? StringNormalization.trimAndCollapseSpaces(command.description())
-                : null;
-
+        String finalDesc = null;
+        if (command.description() != null) {
+            finalDesc = StringNormalization.trimAndCollapseSpaces(command.description());
+            if (finalDesc.isBlank()) {
+                throw new IllegalArgumentException("Description đang bị trống hoặc ko hợp lợi");
+            }
+        }
         // 6. Bắn SQL Atomic xuống DB
         rubricRepository.updateRubricAtomic(
                 command.rubricId(),
-                safeName,
-                safeDesc
+                finalName,
+                finalDesc
         );
 
         // 7. Trả về UUID

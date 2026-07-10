@@ -14,9 +14,11 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.ExamPaperItemDto;
 import com.sep.vox.domain.mapper.ExamPaperItemDtoMapper;
 import com.sep.vox.domain.model.exam.ExamBlueprintSlotType;
+import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamPaperStatus;
 import com.sep.vox.domain.model.exam.ExamSecurePoolReleaseMode;
+import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
 import com.sep.vox.domain.model.question.QuestionSharing;
 import com.sep.vox.domain.model.question.QuestionStatus;
@@ -24,6 +26,7 @@ import com.sep.vox.domain.repository.ExamBlueprintSlotRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamPaperItemRepository;
 import com.sep.vox.domain.repository.ExamPaperRepository;
+import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.QuestionCollaboratorRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -31,6 +34,7 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 @Service
 public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemCommand, ExamPaperItemDto> {
 
+    private final ExamRepository examRepository;
     private final ExamPaperRepository examPaperRepository;
     private final ExamPaperItemRepository examPaperItemRepository;
     private final ExamBlueprintSlotRepository examBlueprintSlotRepository;
@@ -42,6 +46,7 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
     private final UserContextPort userContextPort;
 
     public UpdateExamPaperItemUseCase(
+            ExamRepository examRepository,
             ExamPaperRepository examPaperRepository,
             ExamPaperItemRepository examPaperItemRepository,
             ExamBlueprintSlotRepository examBlueprintSlotRepository,
@@ -51,6 +56,7 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
             SchoolUserRepository schoolUserRepository,
             ExamQuestionSecureLockService examQuestionSecureLockService,
             UserContextPort userContextPort) {
+        this.examRepository = examRepository;
         this.examPaperRepository = examPaperRepository;
         this.examPaperItemRepository = examPaperItemRepository;
         this.examBlueprintSlotRepository = examBlueprintSlotRepository;
@@ -73,10 +79,18 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
         }
         var paper = examPaperRepository.findById(item.getPaperId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy đề thi"));
-        if (paper.getStatus() == ExamPaperStatus.LOCKED) {
+        var exam = examRepository.findById(paper.getExamId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+        // Bài trên lớp luôn tạo mã đề ở trạng thái LOCKED (không dùng luồng duyệt như kỳ thi tập trung),
+        // nên LOCKED ở đây chỉ có ý nghĩa "khoá sửa" đối với CENTRALIZED.
+        if (exam.getKind() == ExamKind.CENTRALIZED && paper.getStatus() == ExamPaperStatus.LOCKED) {
             throw new IllegalStateException("Đề thi đã bị khoá, không thể sửa câu hỏi");
         }
-        if (!examMemberRepository.existsByExamIdAndUserIdAndRole(paper.getExamId(), currentUserId, ExamMemberRole.AUTHOR)) {
+        if (exam.getStatus() == ExamStatus.IN_PROGRESS) {
+            throw new IllegalStateException("Không thể sửa câu hỏi khi bài kiểm tra đang diễn ra");
+        }
+        var requiredRole = exam.getKind() == ExamKind.CLASS_TEST ? ExamMemberRole.CHAIR : ExamMemberRole.AUTHOR;
+        if (!examMemberRepository.existsByExamIdAndUserIdAndRole(paper.getExamId(), currentUserId, requiredRole)) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
@@ -93,7 +107,7 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
             .orElse(null);
         var question = questionRepository.findAccessibleById(input.questionId(), currentUserId, currentSchoolId, false, false)
             .orElseThrow(() -> new ForbiddenException("Không có quyền dùng câu hỏi này"));
-        if (question.getStatus() != QuestionStatus.PUBLISHED) {
+        if (exam.getKind() == ExamKind.CENTRALIZED && question.getStatus() != QuestionStatus.PUBLISHED) {
             throw new IllegalStateException("Chỉ được gán câu hỏi đã PUBLISHED vào đề thi");
         }
 
@@ -116,6 +130,9 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
             currentUserId
         );
 
+        if (paper.getStatus() == ExamPaperStatus.APPROVED) {
+            paper.setStatus(ExamPaperStatus.IN_REVIEW);
+        }
         paper.setUpdatedAt(OffsetDateTime.now());
         paper.setUpdatedBy(currentUserId);
         examPaperRepository.save(paper);

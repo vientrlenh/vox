@@ -75,6 +75,12 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
         if (command.assessmentPolicyId() != null) {
             exam.setAssessmentPolicyId(command.assessmentPolicyId());
         }
+        if (command.maxAttempt() != null) {
+            exam.setMaxAttempt(command.maxAttempt());
+        }
+        if (command.resultDecisionMethod() != null) {
+            exam.setResultDecisionMethod(command.resultDecisionMethod());
+        }
         exam.setUpdatedAt(OffsetDateTime.now());
         exam.setUpdatedBy(currentUserId);
         return ExamDtoMapper.toDto(examRepository.save(exam));
@@ -87,7 +93,9 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
             StringNormalization.trimAndCollapseSpaces(input.description()),
             input.openAt(),
             input.closeAt(),
-            input.assessmentPolicyId()
+            input.assessmentPolicyId(),
+            input.maxAttempt(),
+            input.resultDecisionMethod()
         );
     }
 

@@ -5,6 +5,6 @@ import java.util.UUID;
 
 public record UpdateClassTestQuestionsCommand(
     UUID examId,
-    List<UUID> questionIds
+    List<ClassTestSectionCommand> sections
 ) {
 }

@@ -39,7 +39,7 @@ public class SupportedLanguageController {
     }
 
     @QueryMapping(name = "supportedLanguages")
-    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER')")
     public PageResult<SupportedLanguageDto> supportedLanguages(
             @Argument(name = "page") int page,
             @Argument(name = "size") int size,

@@ -19,4 +19,5 @@ public interface FrameworkCriterionRepository {
     List<FrameworkCriterion> saveAll(List<FrameworkCriterion> criteria);
     void deleteByFrameworkVersionId(UUID frameworkVersionId);
     void deleteById(UUID id);
+    List<FrameworkCriterion> findByFrameworkId(UUID frameworkId);
 }

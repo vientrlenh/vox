@@ -9,12 +9,18 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 
 public interface SpringDataFrameworkRepository extends JpaRepository<FrameworkJpaEntity, UUID> {
     Optional<FrameworkJpaEntity> findByCode(String code);
+    List<FrameworkJpaEntity> findByIdIn(Collection<UUID> ids);
+
+    @Query("SELECT f FROM FrameworkJpaEntity f WHERE f.isActive = true")
+    Page<FrameworkJpaEntity> findAllActive(Pageable pageable);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT f FROM FrameworkJpaEntity f WHERE f.id = :id")

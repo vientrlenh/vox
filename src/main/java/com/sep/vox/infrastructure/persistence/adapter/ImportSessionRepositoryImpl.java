@@ -46,7 +46,7 @@ public class ImportSessionRepositoryImpl implements ImportSessionRepository {
         var pageable = PageRequest.of(
             pageNumber - 1,
             size,
-            Sort.by(Sort.Direction.DESC, ImportSessionJpaEntity::getCreatedAt).and(Sort.by(Sort.Direction.DESC, ImportSessionJpaEntity::getId))
+            Sort.by(Sort.Direction.DESC, (ImportSessionJpaEntity entity) -> entity.getCreatedAt()).and(Sort.by(Sort.Direction.DESC, (ImportSessionJpaEntity entity) -> entity.getId()))
         );
         var page = springDataImportSessionRepository.findBySchoolIdWithFilters(
             schoolId,

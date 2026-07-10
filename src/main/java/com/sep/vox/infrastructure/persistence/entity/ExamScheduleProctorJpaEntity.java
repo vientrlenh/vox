@@ -8,10 +8,13 @@ import org.hibernate.generator.EventType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "exam_schedule_proctors")
+@Table(name = "exam_schedule_proctors", indexes = {
+    @Index(columnList = "schedule_id, teacher_id", name = "exam_schedule_proctors_schedule_teacher", unique = true)
+})
 public class ExamScheduleProctorJpaEntity {
     @Id
     @Generated(event = EventType.INSERT)

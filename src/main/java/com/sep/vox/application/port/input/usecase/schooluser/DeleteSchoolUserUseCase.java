@@ -31,7 +31,7 @@ public class DeleteSchoolUserUseCase implements IUseCase<DeleteSchoolUserCommand
         var now = OffsetDateTime.now();
         var callerId = userContextPort.getCurrentAuthenticatedUserId();
 
-        var caller = userRepository.findById(callerId)
+        userRepository.findById(callerId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
         var callerSchoolUser = schoolUserRepository.findByUserId(callerId)
             .orElseThrow(() -> new IllegalArgumentException("Không có quyền thực hiện thao tác này"));

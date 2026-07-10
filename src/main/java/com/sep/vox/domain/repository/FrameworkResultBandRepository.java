@@ -14,6 +14,8 @@ public interface FrameworkResultBandRepository {
     boolean existsByFrameworkVersionIdAndCodeIn(UUID frameworkVersionId, Collection<String> codes);
     boolean existsByFrameworkVersionIdAndLabelIn(UUID frameworkVersionId, Collection<String> labels);
     Optional<FrameworkResultBand> findById(UUID id);
+    Optional<FrameworkResultBand> findByVersionIdAndCode(UUID frameworkVersionId, String code);
+    Optional<FrameworkResultBand> findByVersionIdAndName(UUID frameworkVersionId, String name);
 
     List<FrameworkResultBand> findAllByIds(List<UUID> ids);
     List<FrameworkResultBand> findByFrameworkVersionId(UUID frameworkVersionId);

@@ -173,14 +173,14 @@ public class UpdateQuestionStatusUseCase implements IUseCase<UpdateQuestionStatu
         }
     }
 
-    private void requireStatusIn(QuestionStatus actual, QuestionStatus... expected) {
-        for (var status : expected) {
-            if (actual == status) {
-                return;
-            }
-        }
-        throw new IllegalStateException("Trạng thái câu hỏi hiện tại không hợp lệ cho action này");
-    }
+    // private void requireStatusIn(QuestionStatus actual, QuestionStatus... expected) {
+    //     for (var status : expected) {
+    //         if (actual == status) {
+    //             return;
+    //         }
+    //     }
+    //     throw new IllegalStateException("Trạng thái câu hỏi hiện tại không hợp lệ cho action này");
+    // }
 
     private void requireNote(String note, String action) {
         if (note == null || note.isBlank()) {

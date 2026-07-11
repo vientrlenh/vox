@@ -1,5 +1,7 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -23,6 +25,32 @@ public class ExamSessionRepositoryImpl implements ExamSessionRepository {
     public Optional<ExamSession> findById(UUID id) {
         return springDataExamSessionRepository.findById(id)
             .map(ExamSessionMapper::toDomain);
+    }
+
+    @Override
+    public Optional<ExamSession> findLatestByExamIdAndCandidateId(UUID examId, UUID candidateId) {
+        return springDataExamSessionRepository.findTopByExamIdAndCandidateIdOrderByStartedAtDesc(examId, candidateId)
+            .map(ExamSessionMapper::toDomain);
+    }
+
+    @Override
+    public Optional<ExamSession> findLatestByCandidateId(UUID candidateId) {
+        return springDataExamSessionRepository.findTopByCandidateIdOrderByStartedAtDesc(candidateId)
+            .map(ExamSessionMapper::toDomain);
+    }
+
+    @Override
+    public List<ExamSession> findAllByCandidateId(UUID candidateId) {
+        return springDataExamSessionRepository.findByCandidateId(candidateId).stream()
+            .map(ExamSessionMapper::toDomain)
+            .toList();
+    }
+
+    @Override
+    public List<ExamSession> findAllByCandidateIdIn(Collection<UUID> candidateIds) {
+        return springDataExamSessionRepository.findByCandidateIdIn(candidateIds).stream()
+            .map(ExamSessionMapper::toDomain)
+            .toList();
     }
 
     @Override

@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.common.CacheKey;
+import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.CreateExamSessionCommand;
@@ -17,7 +18,9 @@ import com.sep.vox.application.port.output.CacheManagerPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.exam.ExamEntryTicketResponse;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
+import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
+import com.sep.vox.domain.repository.ExamSessionRepository;
 
 @Service
 public class VerifyExamScheduleOtpUseCase implements IUseCase<VerifyExamScheduleOtpCommand, ExamEntryTicketResponse> {
@@ -25,19 +28,25 @@ public class VerifyExamScheduleOtpUseCase implements IUseCase<VerifyExamSchedule
     private static final Duration ENTRY_TICKET_TTL = Duration.ofHours(2);
 
     private final ExamCandidateRepository examCandidateRepository;
+    private final ExamRepository examRepository;
     private final ExamScheduleRepository examScheduleRepository;
+    private final ExamSessionRepository examSessionRepository;
     private final CacheManagerPort cacheManagerPort;
     private final UserContextPort userContextPort;
     private final CreateExamSessionUseCase createExamSessionUseCase;
 
     public VerifyExamScheduleOtpUseCase(
             ExamCandidateRepository examCandidateRepository,
+            ExamRepository examRepository,
             ExamScheduleRepository examScheduleRepository,
+            ExamSessionRepository examSessionRepository,
             CacheManagerPort cacheManagerPort,
             UserContextPort userContextPort,
             CreateExamSessionUseCase createExamSessionUseCase) {
         this.examCandidateRepository = examCandidateRepository;
+        this.examRepository = examRepository;
         this.examScheduleRepository = examScheduleRepository;
+        this.examSessionRepository = examSessionRepository;
         this.cacheManagerPort = cacheManagerPort;
         this.userContextPort = userContextPort;
         this.createExamSessionUseCase = createExamSessionUseCase;
@@ -67,6 +76,15 @@ public class VerifyExamScheduleOtpUseCase implements IUseCase<VerifyExamSchedule
         var expectedOtp = cacheManagerPort.get(CacheKey.examScheduleOtpKey(candidate.getScheduleId()));
         if (expectedOtp == null || !expectedOtp.equals(input.otp())) {
             throw new UnauthorizedException("Mã OTP không đúng hoặc đã hết hạn");
+        }
+
+        var exam = examRepository.findById(input.examId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+        if (exam.getMaxAttempt() != null) {
+            var existingAttempts = examSessionRepository.findAllByCandidateId(candidate.getId());
+            if (existingAttempts.size() >= exam.getMaxAttempt()) {
+                throw new DuplicatedException("Đã hết số lượt thi cho phép (" + exam.getMaxAttempt() + " lượt)");
+            }
         }
 
         var session = createExamSessionUseCase.execute(new CreateExamSessionCommand(

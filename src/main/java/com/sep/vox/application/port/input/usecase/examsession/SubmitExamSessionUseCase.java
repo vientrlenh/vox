@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.examsession;
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
@@ -235,7 +236,7 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
                 .toList();
 
             return new ExamAttemptEvaluationRequestedExternalEvent.CriterionFramework(
-                criterion.getCode(),
+                criterion.getCode() == null ? null : criterion.getCode().trim().toLowerCase(Locale.ROOT),
                 frameworkCriterion == null ? null : frameworkCriterion.getCode(),
                 frameworkCriterion == null ? null : frameworkCriterion.getName(),
                 frameworkCriterion == null ? null : frameworkCriterion.getDescription(),

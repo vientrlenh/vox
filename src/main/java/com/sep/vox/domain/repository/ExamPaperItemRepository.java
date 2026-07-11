@@ -10,6 +10,7 @@ public interface ExamPaperItemRepository {
     ExamPaperItem save(ExamPaperItem item);
     Optional<ExamPaperItem> findById(UUID id);
     List<ExamPaperItem> findBySectionId(UUID sectionId);
+    List<ExamPaperItem> findByPaperId(UUID paperId);
     boolean existsUnassignedItemByPaperId(UUID paperId);
     void deleteById(UUID id);
 }

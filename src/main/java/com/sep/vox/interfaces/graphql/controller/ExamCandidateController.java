@@ -20,13 +20,15 @@ import com.sep.vox.domain.dto.ExamPaperDto;
 import com.sep.vox.domain.dto.ExamScheduleDto;
 import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.domain.model.exam.ExamCandidateStatus;
+import com.sep.vox.application.port.input.usecase.examevaluation.ResolveExamCandidateAttemptsUseCase;
 
 @Controller("graphqlExamCandidateController")
 public class ExamCandidateController {
 
     private final ViewExamCandidatesUseCase viewExamCandidatesUseCase;
 
-    public ExamCandidateController(ViewExamCandidatesUseCase viewExamCandidatesUseCase) {
+    public ExamCandidateController(
+            ViewExamCandidatesUseCase viewExamCandidatesUseCase) {
         this.viewExamCandidatesUseCase = viewExamCandidatesUseCase;
     }
 
@@ -66,5 +68,43 @@ public class ExamCandidateController {
     public CompletableFuture<ExamDto> exam(ExamCandidateDto source, DataFetchingEnvironment env) {
         DataLoader<UUID, ExamDto> loader = env.getDataLoader("examById");
         return loader.load(source.examId());
+    }
+
+    @SchemaMapping(typeName = "ExamCandidate", field = "latestSessionId")
+    public CompletableFuture<UUID> latestSessionId(ExamCandidateDto source, DataFetchingEnvironment env) {
+        DataLoader<UUID, ResolveExamCandidateAttemptsUseCase.ExamCandidateAttempts> loader =
+            env.getDataLoader("examCandidateAttemptsByCandidateId");
+        return loader.load(source.id())
+            .thenApply(result -> result == null || result.attempts().isEmpty() ? null : result.attempts().get(0).sessionId());
+    }
+
+    @SchemaMapping(typeName = "ExamCandidate", field = "attempts")
+    public CompletableFuture<List<ResolveExamCandidateAttemptsUseCase.ExamAttemptSummary>> attempts(
+            ExamCandidateDto source,
+            DataFetchingEnvironment env) {
+        DataLoader<UUID, ResolveExamCandidateAttemptsUseCase.ExamCandidateAttempts> loader =
+            env.getDataLoader("examCandidateAttemptsByCandidateId");
+        return loader.load(source.id())
+            .thenApply(result -> result == null ? List.of() : result.attempts());
+    }
+
+    @SchemaMapping(typeName = "ExamCandidate", field = "officialAttempt")
+    public CompletableFuture<ResolveExamCandidateAttemptsUseCase.ExamAttemptSummary> officialAttempt(
+            ExamCandidateDto source,
+            DataFetchingEnvironment env) {
+        DataLoader<UUID, ResolveExamCandidateAttemptsUseCase.ExamCandidateAttempts> loader =
+            env.getDataLoader("examCandidateAttemptsByCandidateId");
+        return loader.load(source.id())
+            .thenApply(result -> result == null ? null : result.officialAttempt());
+    }
+
+    @SchemaMapping(typeName = "ExamCandidate", field = "officialScore")
+    public CompletableFuture<java.math.BigDecimal> officialScore(
+            ExamCandidateDto source,
+            DataFetchingEnvironment env) {
+        DataLoader<UUID, ResolveExamCandidateAttemptsUseCase.ExamCandidateAttempts> loader =
+            env.getDataLoader("examCandidateAttemptsByCandidateId");
+        return loader.load(source.id())
+            .thenApply(result -> result == null ? null : result.officialScore());
     }
 }

@@ -22,6 +22,7 @@ enum ResultDecisionMethod {
     LATEST
     AVERAGE
     FIRST
+    LOWEST
 }
 
 enum ExamMemberRole {
@@ -63,6 +64,15 @@ enum ExamCandidateStatus {
     COMPLETED
     EXEMPTED
     CANCELLED
+}
+
+enum ExamSessionStatus {
+    IN_PROGRESS
+    SUBMITTED
+    GRADING
+    GRADED
+    EXPIRED
+    GRADING_FAILED
 }
 
 enum ExamSecurePoolStatus {
@@ -294,6 +304,10 @@ type ExamCandidate {
     id: ID!
     examId: ID!
     studentId: ID!
+    latestSessionId: ID
+    attempts: [ExamAttemptSummary!]!
+    officialAttempt: ExamAttemptSummary
+    officialScore: Float
     assignedPaperId: ID
     scheduleId: ID
     status: ExamCandidateStatus!
@@ -303,6 +317,16 @@ type ExamCandidate {
     assignedPaper: ExamPaper
     schedule: ExamSchedule
     exam: Exam
+}
+
+type ExamAttemptSummary {
+    sessionId: ID!
+    startedAt: String
+    submittedAt: String
+    status: ExamSessionStatus!
+    totalScore: Float
+    rubricResultBandCode: String
+    rubricResultBandName: String
 }
 
 input UpdateExamScheduleInput {

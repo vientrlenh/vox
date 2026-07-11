@@ -22,6 +22,7 @@ public record ExamItemEvaluationDetailsResponse(
     String evaluatedAt,
     String feedbackSummary,
     JsonNode signals,
+    JsonNode validity,
     JsonNode suggestions,
     List<ExamItemCriterionScoreResponse> criteria,
     List<ExamItemEvaluationTurnResponse> turns

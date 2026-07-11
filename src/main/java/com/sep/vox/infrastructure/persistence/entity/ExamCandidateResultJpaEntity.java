@@ -52,10 +52,10 @@ public class ExamCandidateResultJpaEntity {
     @Column(name = "target_framework_band_id", nullable = false, updatable = false)
     private UUID targetFrameworkBandId;
 
-    @Column(name = "rubric_result_band_id", nullable = false, updatable = false)
+    @Column(name = "rubric_result_band_id", nullable = false)
     private UUID rubricResultBandId;
 
-    @Column(name = "total_score", nullable = false, updatable = false, precision = 5, scale = 2)
+    @Column(name = "total_score", nullable = false, precision = 5, scale = 2)
     private BigDecimal totalScore;
 
     @Column(name = "status", nullable = false, length = 20, check = {

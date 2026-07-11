@@ -22,6 +22,7 @@ public class ExamItemEvaluation {
     private boolean markedInvalid;
     private boolean requiresRetake;
     private EvaluationSignals signals;
+    private String validityJson;
     private String feedbackSummary;
     private String suggestionsJson;
     private String promptVersion;
@@ -33,7 +34,7 @@ public class ExamItemEvaluation {
     public ExamItemEvaluation(UUID id, UUID responseId, UUID paperItemId, ExamEvaluationEngineType engineType,
             String gradedByModel, Integer sampleCount, UUID reviewerId, BigDecimal rawItemScore, BigDecimal itemScore,
             BigDecimal overallConfidence, boolean requiresHumanReview, String reviewReasonCode, boolean markedInvalid,
-            boolean requiresRetake, EvaluationSignals signals, String feedbackSummary, String suggestionsJson,
+            boolean requiresRetake, EvaluationSignals signals, String validityJson, String feedbackSummary, String suggestionsJson,
             String promptVersion, ExamItemEvaluationStatus status, OffsetDateTime evaluatedAt) {
         this.id = id;
         this.responseId = responseId;
@@ -50,6 +51,7 @@ public class ExamItemEvaluation {
         this.markedInvalid = markedInvalid;
         this.requiresRetake = requiresRetake;
         this.signals = signals;
+        this.validityJson = validityJson;
         this.feedbackSummary = feedbackSummary;
         this.suggestionsJson = suggestionsJson;
         this.promptVersion = promptVersion;
@@ -60,7 +62,7 @@ public class ExamItemEvaluation {
     public ExamItemEvaluation(UUID responseId, UUID paperItemId, ExamEvaluationEngineType engineType,
             String gradedByModel, Integer sampleCount, UUID reviewerId, BigDecimal rawItemScore, BigDecimal itemScore,
             BigDecimal overallConfidence, boolean requiresHumanReview, String reviewReasonCode, boolean markedInvalid,
-            boolean requiresRetake, EvaluationSignals signals, String feedbackSummary, String suggestionsJson,
+            boolean requiresRetake, EvaluationSignals signals, String validityJson, String feedbackSummary, String suggestionsJson,
             String promptVersion, ExamItemEvaluationStatus status, OffsetDateTime evaluatedAt) {
         this.responseId = responseId;
         this.paperItemId = paperItemId;
@@ -76,6 +78,7 @@ public class ExamItemEvaluation {
         this.markedInvalid = markedInvalid;
         this.requiresRetake = requiresRetake;
         this.signals = signals;
+        this.validityJson = validityJson;
         this.feedbackSummary = feedbackSummary;
         this.suggestionsJson = suggestionsJson;
         this.promptVersion = promptVersion;
@@ -201,6 +204,14 @@ public class ExamItemEvaluation {
 
     public void setSignals(EvaluationSignals signals) {
         this.signals = signals;
+    }
+
+    public String getValidityJson() {
+        return validityJson;
+    }
+
+    public void setValidityJson(String validityJson) {
+        this.validityJson = validityJson;
     }
 
     public ExamItemEvaluationStatus getStatus() {

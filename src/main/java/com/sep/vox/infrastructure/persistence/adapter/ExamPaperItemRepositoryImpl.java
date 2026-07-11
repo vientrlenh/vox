@@ -40,6 +40,13 @@ public class ExamPaperItemRepositoryImpl implements ExamPaperItemRepository {
     }
 
     @Override
+    public List<ExamPaperItem> findByPaperId(UUID paperId) {
+        return springDataExamPaperItemRepository.findByPaperId(paperId).stream()
+            .map(ExamPaperItemMapper::toDomain)
+            .toList();
+    }
+
+    @Override
     public boolean existsUnassignedItemByPaperId(UUID paperId) {
         return springDataExamPaperItemRepository.existsUnassignedItemByPaperId(paperId);
     }

@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.query.ViewExamItemResponseEvaluationQuery;
+import com.sep.vox.application.port.input.service.ExamResultAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.response.input.examitemresponse.ExamItemCriterionScoreResponse;
 import com.sep.vox.application.response.input.examitemresponse.ExamItemEvaluationDetailsResponse;
@@ -13,6 +14,7 @@ import com.sep.vox.application.response.input.examitemresponse.ExamItemEvaluatio
 import com.sep.vox.domain.repository.ExamItemCriterionScoreRepository;
 import com.sep.vox.domain.repository.ExamItemEvaluationRepository;
 import com.sep.vox.domain.repository.ExamItemEvaluationTurnRepository;
+import com.sep.vox.domain.repository.RubricCriterionRepository;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
@@ -24,31 +26,43 @@ public class ViewExamItemResponseEvaluationUseCase
     private final ExamItemEvaluationRepository examItemEvaluationRepository;
     private final ExamItemCriterionScoreRepository examItemCriterionScoreRepository;
     private final ExamItemEvaluationTurnRepository examItemEvaluationTurnRepository;
+    private final RubricCriterionRepository rubricCriterionRepository;
+    private final ExamResultAccessService examResultAccessService;
     private final JsonMapper jsonMapper;
 
     public ViewExamItemResponseEvaluationUseCase(
             ExamItemEvaluationRepository examItemEvaluationRepository,
             ExamItemCriterionScoreRepository examItemCriterionScoreRepository,
             ExamItemEvaluationTurnRepository examItemEvaluationTurnRepository,
+            RubricCriterionRepository rubricCriterionRepository,
+            ExamResultAccessService examResultAccessService,
             JsonMapper jsonMapper) {
         this.examItemEvaluationRepository = examItemEvaluationRepository;
         this.examItemCriterionScoreRepository = examItemCriterionScoreRepository;
         this.examItemEvaluationTurnRepository = examItemEvaluationTurnRepository;
+        this.rubricCriterionRepository = rubricCriterionRepository;
+        this.examResultAccessService = examResultAccessService;
         this.jsonMapper = jsonMapper;
     }
 
     @Override
     public ExamItemEvaluationDetailsResponse execute(ViewExamItemResponseEvaluationQuery input) {
+        examResultAccessService.getAuthorizedResponse(input.answerId());
         var evaluation = examItemEvaluationRepository.findLatestByResponseId(input.answerId())
-            .orElseThrow(() -> new NotFoundException("không thể tìm thấy evaluation cho câu trả lời"));
+            .orElseThrow(() -> new NotFoundException("khong the tim thay evaluation cho cau tra loi"));
         var criteria = examItemCriterionScoreRepository.findByEvaluationId(evaluation.getId()).stream()
-            .map(item -> new ExamItemCriterionScoreResponse(
-                item.getId(),
-                item.getRubricCriterionId(),
-                item.getRawScore(),
-                item.getFinalScore(),
-                item.getRationale()
-            ))
+            .map(item -> {
+                var criterion = rubricCriterionRepository.findById(item.getRubricCriterionId()).orElse(null);
+                return new ExamItemCriterionScoreResponse(
+                    item.getId(),
+                    item.getRubricCriterionId(),
+                    criterion == null ? null : criterion.getCode(),
+                    criterion == null ? null : criterion.getName(),
+                    item.getRawScore(),
+                    item.getFinalScore(),
+                    item.getRationale()
+                );
+            })
             .toList();
         var turns = examItemEvaluationTurnRepository.findByEvaluationId(evaluation.getId()).stream()
             .map(item -> new ExamItemEvaluationTurnResponse(
@@ -82,6 +96,7 @@ public class ViewExamItemResponseEvaluationUseCase
             evaluation.getEvaluatedAt() == null ? null : evaluation.getEvaluatedAt().toString(),
             evaluation.getFeedbackSummary(),
             readJson(writeJson(evaluation.getSignals())),
+            readJson(evaluation.getValidityJson()),
             readJson(evaluation.getSuggestionsJson()),
             criteria,
             turns
@@ -95,7 +110,7 @@ public class ViewExamItemResponseEvaluationUseCase
         try {
             return jsonMapper.readTree(value);
         } catch (Exception ex) {
-            throw new IllegalStateException("không thể đọc dữ liệu json của evaluation", ex);
+            throw new IllegalStateException("khong the doc du lieu json cua evaluation", ex);
         }
     }
 
@@ -103,7 +118,7 @@ public class ViewExamItemResponseEvaluationUseCase
         try {
             return jsonMapper.writeValueAsString(value == null ? List.of() : value);
         } catch (Exception ex) {
-            throw new IllegalStateException("không thể serialize dữ liệu json của evaluation", ex);
+            throw new IllegalStateException("khong the serialize du lieu json cua evaluation", ex);
         }
     }
 }

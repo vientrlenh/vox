@@ -1,5 +1,7 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -30,5 +32,12 @@ public class ExamItemEvaluationRepositoryImpl implements ExamItemEvaluationRepos
     public Optional<ExamItemEvaluation> findLatestByResponseId(UUID responseId) {
         return springDataExamItemEvaluationRepository.findTopByResponseIdOrderByEvaluatedAtDesc(responseId)
             .map(ExamItemEvaluationMapper::toDomain);
+    }
+
+    @Override
+    public List<ExamItemEvaluation> findLatestByResponseIdIn(Collection<UUID> responseIds) {
+        return springDataExamItemEvaluationRepository.findLatestByResponseIdIn(responseIds).stream()
+            .map(ExamItemEvaluationMapper::toDomain)
+            .toList();
     }
 }

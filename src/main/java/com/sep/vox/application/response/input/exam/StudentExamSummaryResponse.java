@@ -9,6 +9,7 @@ public record StudentExamSummaryResponse(
     String description,
     int duration,
     String examDate,
-    String status
+    String status,
+    UUID sessionId
 ) {
 }

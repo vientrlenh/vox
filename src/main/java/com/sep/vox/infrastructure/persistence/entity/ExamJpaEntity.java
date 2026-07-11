@@ -77,7 +77,7 @@ public class ExamJpaEntity {
     @Column(name = "result_decision_method", length = 20, check = {
         @CheckConstraint(
             name = "chk_exams_result_decision_method_valid",
-            constraint = "result_decision_method IN ('HIGHEST', 'LATEST', 'AVERAGE', 'FIRST')"
+            constraint = "result_decision_method IN ('HIGHEST', 'LATEST', 'AVERAGE', 'FIRST', 'LOWEST')"
         )
     })
     private String resultDecisionMethod;

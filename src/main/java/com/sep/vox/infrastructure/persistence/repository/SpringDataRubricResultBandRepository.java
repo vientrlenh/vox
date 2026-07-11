@@ -2,6 +2,7 @@ package com.sep.vox.infrastructure.persistence.repository;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -18,6 +19,7 @@ public interface SpringDataRubricResultBandRepository extends JpaRepository<Rubr
 
 
     List<RubricResultBandJpaEntity>findByRubricVersionId(UUID rubricVersionId);
+    List<RubricResultBandJpaEntity> findByIdIn(Collection<UUID> ids);
 
     void deleteByRubricVersionId(UUID rubricVersionId);
 

@@ -74,6 +74,9 @@ public class ExamItemEvaluationJpaEntity {
     @Column(name = "signals", columnDefinition = "TEXT")
     private String signals;
 
+    @Column(name = "validity_json", columnDefinition = "TEXT")
+    private String validityJson;
+
     @Column(name = "feedback_summary", columnDefinition = "TEXT")
     private String feedbackSummary;
 
@@ -99,7 +102,7 @@ public class ExamItemEvaluationJpaEntity {
     public ExamItemEvaluationJpaEntity(UUID id, UUID responseId, UUID paperItemId, String engineType,
             String gradedByModel, Integer sampleCount, UUID reviewerId, BigDecimal rawItemScore, BigDecimal itemScore,
             BigDecimal overallConfidence, boolean requiresHumanReview, String reviewReasonCode, boolean markedInvalid,
-            boolean requiresRetake, String signals, String feedbackSummary, String suggestions, String promptVersion,
+            boolean requiresRetake, String signals, String validityJson, String feedbackSummary, String suggestions, String promptVersion,
             String status, OffsetDateTime evaluatedAt) {
         this.id = id;
         this.responseId = responseId;
@@ -116,6 +119,7 @@ public class ExamItemEvaluationJpaEntity {
         this.markedInvalid = markedInvalid;
         this.requiresRetake = requiresRetake;
         this.signals = signals;
+        this.validityJson = validityJson;
         this.feedbackSummary = feedbackSummary;
         this.suggestions = suggestions;
         this.promptVersion = promptVersion;
@@ -265,6 +269,14 @@ public class ExamItemEvaluationJpaEntity {
 
     public void setFeedbackSummary(String feedbackSummary) {
         this.feedbackSummary = feedbackSummary;
+    }
+
+    public String getValidityJson() {
+        return validityJson;
+    }
+
+    public void setValidityJson(String validityJson) {
+        this.validityJson = validityJson;
     }
 
     public String getSuggestions() {

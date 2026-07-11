@@ -13,6 +13,7 @@ import com.sep.vox.application.response.input.exam.StudentExamSummaryResponse;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
+import com.sep.vox.domain.repository.ExamSessionRepository;
 
 @Service
 public class ViewMyExamsUseCase implements IUseCase<Void, List<StudentExamSummaryResponse>> {
@@ -20,16 +21,19 @@ public class ViewMyExamsUseCase implements IUseCase<Void, List<StudentExamSummar
     private final ExamCandidateRepository examCandidateRepository;
     private final ExamRepository examRepository;
     private final ExamScheduleRepository examScheduleRepository;
+    private final ExamSessionRepository examSessionRepository;
     private final UserContextPort userContextPort;
 
     public ViewMyExamsUseCase(
             ExamCandidateRepository examCandidateRepository,
             ExamRepository examRepository,
             ExamScheduleRepository examScheduleRepository,
+            ExamSessionRepository examSessionRepository,
             UserContextPort userContextPort) {
         this.examCandidateRepository = examCandidateRepository;
         this.examRepository = examRepository;
         this.examScheduleRepository = examScheduleRepository;
+        this.examSessionRepository = examSessionRepository;
         this.userContextPort = userContextPort;
     }
 
@@ -38,9 +42,10 @@ public class ViewMyExamsUseCase implements IUseCase<Void, List<StudentExamSummar
         var now = OffsetDateTime.now();
         var studentId = userContextPort.getCurrentAuthenticatedUserId();
         var candidates = examCandidateRepository.findByStudentId(studentId);
-        var examsById = new HashMap<>(examRepository.findByIdIn(candidates.stream().map(candidate -> candidate.getExamId()).distinct().toList())
-            .stream()
-            .collect(java.util.stream.Collectors.toMap(exam -> exam.getId(), exam -> exam)));
+        var examsById = new HashMap<>(examRepository.findByIdIn(candidates.stream()
+            .map(candidate -> candidate.getExamId())
+            .distinct()
+            .toList()).stream().collect(java.util.stream.Collectors.toMap(exam -> exam.getId(), exam -> exam)));
         var schedulesById = new HashMap<>(examScheduleRepository.findByIdIn(
             candidates.stream().map(candidate -> candidate.getScheduleId()).filter(java.util.Objects::nonNull).distinct().toList()
         ).stream().collect(java.util.stream.Collectors.toMap(schedule -> schedule.getId(), schedule -> schedule)));
@@ -52,6 +57,12 @@ public class ViewMyExamsUseCase implements IUseCase<Void, List<StudentExamSummar
                 if (exam == null) {
                     return null;
                 }
+
+                var latestSessionId = examSessionRepository
+                    .findLatestByExamIdAndCandidateId(candidate.getExamId(), candidate.getId())
+                    .map(session -> session.getId())
+                    .orElse(null);
+
                 return new StudentExamSummaryResponse(
                     exam.getId(),
                     exam.getName(),
@@ -59,7 +70,8 @@ public class ViewMyExamsUseCase implements IUseCase<Void, List<StudentExamSummar
                     exam.getDescription(),
                     StudentExamViewSupport.durationMinutesOf(schedule, 30),
                     StudentExamViewSupport.examDateOf(schedule, exam.getOpenAt()),
-                    StudentExamViewSupport.statusOf(schedule, now)
+                    StudentExamViewSupport.statusOf(schedule, now),
+                    latestSessionId
                 );
             })
             .filter(java.util.Objects::nonNull)

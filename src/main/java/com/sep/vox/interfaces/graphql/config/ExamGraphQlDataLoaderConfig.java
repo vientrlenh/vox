@@ -8,6 +8,7 @@ import org.dataloader.BatchLoaderEnvironment;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.graphql.execution.BatchLoaderRegistry;
 
+import com.sep.vox.application.port.input.usecase.examevaluation.ResolveExamCandidateAttemptsUseCase;
 import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.domain.dto.ExamPaperDto;
 import com.sep.vox.domain.dto.ExamScheduleDto;
@@ -31,7 +32,8 @@ public class ExamGraphQlDataLoaderConfig {
             SchoolRoomRepository schoolRoomRepository,
             ExamRepository examRepository,
             ExamScheduleRepository examScheduleRepository,
-            ExamPaperRepository examPaperRepository) {
+            ExamPaperRepository examPaperRepository,
+            ResolveExamCandidateAttemptsUseCase resolveExamCandidateAttemptsUseCase) {
 
         registry.<UUID, SchoolRoomFromDto>forName("schoolRoomById")
             .registerMappedBatchLoader((Set<UUID> roomIds, BatchLoaderEnvironment env) ->
@@ -63,6 +65,11 @@ public class ExamGraphQlDataLoaderConfig {
                     .stream()
                     .map(ExamPaperDtoMapper::toDto)
                     .collect(Collectors.toMap(ExamPaperDto::id, paper -> paper)))
+            );
+
+        registry.<UUID, ResolveExamCandidateAttemptsUseCase.ExamCandidateAttempts>forName("examCandidateAttemptsByCandidateId")
+            .registerMappedBatchLoader((Set<UUID> candidateIds, BatchLoaderEnvironment env) ->
+                Mono.fromSupplier(() -> resolveExamCandidateAttemptsUseCase.executeBatch(candidateIds))
             );
     }
 }

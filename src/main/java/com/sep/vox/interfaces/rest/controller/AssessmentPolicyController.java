@@ -118,7 +118,7 @@ public class AssessmentPolicyController {
     @PostMapping("/schools/{schoolId}")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<List<UUID>>> createSchoolAssessmentPolicy(
-            @PathVariable UUID schoolId,
+            @PathVariable("schoolId") UUID schoolId,
             @Valid @RequestBody List<@Valid CreateSchoolAssessmentPolicyRequest> requests
     ) {
         var commands = CreateAssessmentPolicyCommandMapper.fromSchoolRequests(schoolId, requests);
@@ -131,7 +131,7 @@ public class AssessmentPolicyController {
     @DeleteMapping("/system/{policyId}")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteSystemAssessmentPolicy(
-            @PathVariable UUID policyId
+            @PathVariable("policyId") UUID policyId
     ) {
         deleteSystemAssessmentPolicyUseCase.execute(new DeleteSystemAssessmentPolicyCommand(policyId));
         return ResponseEntity.ok(ApiResponse.success("Xóa Assessment Policy hệ thống thành công"));
@@ -142,8 +142,8 @@ public class AssessmentPolicyController {
     @DeleteMapping("/schools/{schoolId}/{policyId}")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteSchoolAssessmentPolicy(
-            @PathVariable UUID schoolId,
-            @PathVariable UUID policyId
+            @PathVariable("schoolId") UUID schoolId,
+            @PathVariable("policyId") UUID policyId
     ) {
         deleteSchoolAssessmentPolicyUseCase.execute(new DeleteSchoolAssessmentPolicyCommand(schoolId, policyId));
         return ResponseEntity.ok(ApiResponse.success("Xóa Assessment Policy của trường học thành công"));
@@ -154,7 +154,7 @@ public class AssessmentPolicyController {
     @PatchMapping("/system/{policyId}/archive")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> archiveSystemAssessmentPolicy(
-            @PathVariable UUID policyId
+            @PathVariable("policyId") UUID policyId
     ) {
         var policyIdResult = archiveSystemAssessmentPolicyUseCase.execute(new ArchiveSystemAssessmentPolicyCommand(policyId));
         return ResponseEntity.ok(ApiResponse.success("Lưu trữ Assessment Policy hệ thống thành công", policyIdResult));
@@ -165,8 +165,8 @@ public class AssessmentPolicyController {
     @PatchMapping("/schools/{schoolId}/{policyId}/archive")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> archiveSchoolAssessmentPolicy(
-            @PathVariable UUID schoolId,
-            @PathVariable UUID policyId
+            @PathVariable("schoolId") UUID schoolId,
+            @PathVariable("policyId") UUID policyId
     ) {
         var policyIdResult = archiveSchoolAssessmentPolicyUseCase.execute(new ArchiveSchoolAssessmentPolicyCommand(schoolId, policyId));
         return ResponseEntity.ok(ApiResponse.success("Lưu trữ Assessment Policy của trường học thành công", policyIdResult));
@@ -177,7 +177,7 @@ public class AssessmentPolicyController {
     @PatchMapping("/system/{policyId}/publish")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> publishSystemAssessmentPolicy(
-            @PathVariable UUID policyId
+            @PathVariable("policyId") UUID policyId
     ) {
         var policyIdResult = publishSystemAssessmentPolicyUseCase.execute(new PublishSystemAssessmentPolicyCommand(policyId));
         return ResponseEntity.ok(ApiResponse.success("Xuất bản Assessment Policy hệ thống thành công", policyIdResult));
@@ -188,8 +188,8 @@ public class AssessmentPolicyController {
     @PatchMapping("/schools/{schoolId}/{policyId}/publish")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> publishSchoolAssessmentPolicy(
-            @PathVariable UUID schoolId,
-            @PathVariable UUID policyId
+            @PathVariable("schoolId") UUID schoolId,
+            @PathVariable("policyId") UUID policyId
     ) {
         var policyIdResult = publishSchoolAssessmentPolicyUseCase.execute(new PublishSchoolAssessmentPolicyCommand(schoolId, policyId));
         return ResponseEntity.ok(ApiResponse.success("Xuất bản Assessment Policy của trường học thành công", policyIdResult));
@@ -200,7 +200,7 @@ public class AssessmentPolicyController {
     @PatchMapping("/system/rubric-version/{rubricVersionId}/publish-all")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<List<UUID>>> publishSystemAssessmentPoliciesByRubricVersion(
-            @PathVariable UUID rubricVersionId
+            @PathVariable("rubricVersionId") UUID rubricVersionId
     ) {
         var policyIds = publishSystemAssessmentPoliciesByRubricVersionUseCase.execute(
                 new PublishSystemAssessmentPoliciesByRubricVersionCommand(rubricVersionId));
@@ -212,8 +212,8 @@ public class AssessmentPolicyController {
     @PatchMapping("/schools/{schoolId}/rubric-version/{rubricVersionId}/publish-all")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<List<UUID>>> publishSchoolAssessmentPoliciesByRubricVersion(
-            @PathVariable UUID schoolId,
-            @PathVariable UUID rubricVersionId
+            @PathVariable("schoolId") UUID schoolId,
+            @PathVariable("rubricVersionId") UUID rubricVersionId
     ) {
         var policyIds = publishSchoolAssessmentPoliciesByRubricVersionUseCase.execute(
                 new PublishSchoolAssessmentPoliciesByRubricVersionCommand(schoolId, rubricVersionId));
@@ -236,7 +236,7 @@ public class AssessmentPolicyController {
     @PostMapping("/system/import/{sessionId}/accept")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<AcceptAssessmentPolicyImportResponse>> acceptSystemAssessmentPolicyImport(
-            @PathVariable UUID sessionId,
+            @PathVariable("sessionId") UUID sessionId,
             @Valid @RequestBody AcceptImportRequest request) {
         var command = AcceptAssessmentPolicyImportCommandMapper.fromSystemRequest(sessionId, request);
         var response = acceptSystemAssessmentPolicyImportUseCase.execute(command);
@@ -248,7 +248,7 @@ public class AssessmentPolicyController {
     @PostMapping(value = "/schools/{schoolId}/import/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<PreviewAssessmentPolicyImportResponse>> previewSchoolAssessmentPolicyImport(
-            @PathVariable UUID schoolId,
+            @PathVariable("schoolId") UUID schoolId,
             @RequestParam("file") MultipartFile file) {
         var command = PreviewAssessmentPolicyImportFromFileCommandMapper.fromSchoolRequest(schoolId, file);
         var response = previewSchoolAssessmentPolicyImportFromFileUseCase.execute(command);
@@ -260,8 +260,8 @@ public class AssessmentPolicyController {
     @PostMapping("/schools/{schoolId}/import/{sessionId}/accept")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<AcceptAssessmentPolicyImportResponse>> acceptSchoolAssessmentPolicyImport(
-            @PathVariable UUID schoolId,
-            @PathVariable UUID sessionId,
+            @PathVariable("schoolId") UUID schoolId,
+            @PathVariable("sessionId") UUID sessionId,
             @Valid @RequestBody AcceptImportRequest request) {
         var command = AcceptAssessmentPolicyImportCommandMapper.fromSchoolRequest(schoolId, sessionId, request);
         var response = acceptSchoolAssessmentPolicyImportUseCase.execute(command);

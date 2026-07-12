@@ -69,11 +69,11 @@ public class ExamBlueprintController {
 
     @QueryMapping(name = "examBlueprints")
     public PageResult<ExamBlueprintDto> examBlueprints(
-            @Argument(name = "schoolId") UUID schoolId,
-            @Argument(name = "isActive") Boolean isActive,
-            @Argument(name = "languageId") UUID languageId,
-            @Argument(name = "examKind") String examKind,
-            @Argument(name = "keyword") String keyword,
+            @Argument UUID schoolId,
+            @Argument Boolean isActive,
+            @Argument UUID languageId,
+            @Argument String examKind,
+            @Argument String keyword,
             @Argument(name = "page") int page,
             @Argument(name = "size") int size) {
         validatePage(page, size);

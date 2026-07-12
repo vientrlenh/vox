@@ -24,11 +24,9 @@ import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.input.exam.CreateClassTestResponse;
 import com.sep.vox.domain.mapper.ExamDtoMapper;
 import com.sep.vox.domain.model.exam.Exam;
-import com.sep.vox.domain.model.exam.ExamBlueprint;
 import com.sep.vox.domain.model.exam.ExamBlueprintSection;
 import com.sep.vox.domain.model.exam.ExamBlueprintSlot;
 import com.sep.vox.domain.model.exam.ExamBlueprintSlotType;
-import com.sep.vox.domain.model.exam.ExamBlueprintVersion;
 import com.sep.vox.domain.model.exam.ExamBlueprintVersionStatus;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamCandidateStatus;
@@ -130,16 +128,16 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
 
         if (userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
                 .noneMatch(role -> "TEACHER".equals(role.roleCode()))) {
-            throw new ForbiddenException("Quyen truy cap bi tu choi");
+            throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
         var schoolClass = schoolClassRepository.findById(command.schoolClassId())
-            .orElseThrow(() -> new NotFoundException("Khong tim thay lop hoc"));
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy lớp học"));
 
         var membership = schoolClassUserRepository.findByUserIdAndSchoolClassId(currentUserId, schoolClass.getId())
-            .orElseThrow(() -> new ForbiddenException("Quyen truy cap bi tu choi"));
+            .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
         if (!membership.isActive()) {
-            throw new ForbiddenException("Quyen truy cap bi tu choi");
+            throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
         validateInputMode(command);
@@ -168,7 +166,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             for (var questionId : sectionCommand.questionIds()) {
                 var question = questionRepository
                     .findAccessibleById(questionId, currentUserId, schoolClass.getSchoolId(), false, false)
-                    .orElseThrow(() -> new ForbiddenException("Khong co quyen dung cau hoi " + questionId));
+                    .orElseThrow(() -> new ForbiddenException("Bạn không có quyền sử dụng câu hỏi " + questionId));
                 validateCanUseQuestion(question, currentUserId);
                 validateQuestionUnlocked(question, currentUserId);
                 questions.add(question);
@@ -199,25 +197,25 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             UUID currentUserId,
             OffsetDateTime now) {
         var blueprint = examBlueprintRepository.findById(command.existingBlueprintId())
-            .orElseThrow(() -> new NotFoundException("Khong tim thay blueprint"));
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy blueprint"));
         if (!blueprint.getSchoolId().equals(schoolClass.getSchoolId())) {
-            throw new IllegalStateException("Blueprint khong thuoc truong cua giao vien");
+            throw new IllegalStateException("Blueprint không thuộc trường của giáo viên");
         }
 
         var version = examBlueprintVersionRepository.findById(command.existingBlueprintVersionId())
-            .orElseThrow(() -> new NotFoundException("Khong tim thay version blueprint"));
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy version blueprint"));
         if (!version.getBlueprintId().equals(blueprint.getId())) {
-            throw new IllegalStateException("Version khong thuoc blueprint da chon");
+            throw new IllegalStateException("Version không thuộc blueprint đã chọn");
         }
         if (version.getStatus() != ExamBlueprintVersionStatus.PUBLISHED) {
-            throw new IllegalStateException("Chi duoc dung version da PUBLISHED");
+            throw new IllegalStateException("Chỉ được dùng version đã PUBLISHED");
         }
 
         var sections = examBlueprintSectionRepository.findByBlueprintVersionId(version.getId()).stream()
-            .sorted(Comparator.comparingInt(ExamBlueprintSection::getOrder))
+            .sorted(Comparator.comparingInt(section -> section.getOrder()))
             .toList();
         if (sections.isEmpty()) {
-            throw new IllegalStateException("Blueprint version khong co section nao");
+            throw new IllegalStateException("Blueprint version không có section nào");
         }
 
         var slotsBySectionId = examBlueprintSlotRepository.findByBlueprintVersionId(version.getId()).stream()
@@ -268,13 +266,26 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         boolean hasExistingBlueprint = command.existingBlueprintId() != null || command.existingBlueprintVersionId() != null;
 
         if (!hasQuestions && !hasExistingBlueprint) {
-            throw new IllegalStateException("Phai cung cap sections hoac existing blueprint");
+            throw new IllegalStateException("Phải cung cấp sections hoặc existing blueprint");
         }
         if (hasQuestions && hasExistingBlueprint) {
-            throw new IllegalStateException("Chi duoc chon mot cach tao bai kiem tra");
+            throw new IllegalStateException("Chỉ được chọn một cách tạo bài kiểm tra");
         }
         if (!hasQuestions && (command.existingBlueprintId() == null || command.existingBlueprintVersionId() == null)) {
-            throw new IllegalStateException("Phai cung cap day du existingBlueprintId va existingBlueprintVersionId");
+            throw new IllegalStateException("Phải cung cấp đầy đủ existingBlueprintId và existingBlueprintVersionId");
+        }
+        if (hasQuestions) {
+            var seenQuestionIds = new java.util.HashSet<UUID>();
+            for (var section : command.sections()) {
+                if (section.questionIds() == null || section.questionIds().isEmpty()) {
+                    throw new IllegalStateException("Mỗi section phải có ít nhất 1 câu hỏi");
+                }
+                for (var questionId : section.questionIds()) {
+                    if (!seenQuestionIds.add(questionId)) {
+                        throw new IllegalStateException("Một câu hỏi không thể xuất hiện nhiều lần trong cùng 1 bài kiểm tra");
+                    }
+                }
+            }
         }
         if (hasQuestions) {
             var seenQuestionIds = new java.util.HashSet<UUID>();
@@ -338,6 +349,8 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         var openAt = parseDateTime(command.openAt());
         var closeAt = parseDateTime(command.closeAt());
         var status = openAt != null ? ExamStatus.SCHEDULED : ExamStatus.IN_PROGRESS;
+        Integer requestedMaxAttempt = command.maxAttempt();
+        int maxAttempt = requestedMaxAttempt == null ? 1 : requestedMaxAttempt;
         return examRepository.save(new Exam(
             blueprintId,
             blueprintVersionId,
@@ -444,10 +457,10 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
                 continue;
             }
             if (slot.getFixedQuestionId() == null) {
-                throw new IllegalStateException("Slot FIXED phai co fixedQuestionId");
+                throw new IllegalStateException("Ô câu hỏi cố định trong blueprint không có câu hỏi nào được gán");
             }
             var question = questionRepository.findById(slot.getFixedQuestionId())
-                .orElseThrow(() -> new NotFoundException("Khong tim thay cau hoi co dinh trong blueprint"));
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi cố định trong blueprint"));
             validateQuestionUnlocked(question, currentUserId);
         }
     }
@@ -466,7 +479,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
     private void validateQuestionUnlocked(Question question, UUID currentUserId) {
         boolean isOwner = currentUserId.equals(question.getCreatedBy());
         if (question.isLocked() && !isOwner) {
-            throw new IllegalStateException("Cau hoi " + question.getCode() + " dang bi khoa boi ky thi khac");
+            throw new IllegalStateException("Câu hỏi " + question.getCode() + " đang bị khóa bởi kỳ thi khác");
         }
     }
 
@@ -502,7 +515,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             return;
         }
         if (!OffsetDateTime.parse(openAt).isBefore(OffsetDateTime.parse(closeAt))) {
-            throw new IllegalStateException("Thoi gian mo bai phai nho hon thoi gian dong bai");
+            throw new IllegalStateException("Thời gian mở bài phải nhỏ hơn thời gian đóng bài");
         }
     }
 

@@ -6,7 +6,6 @@ import java.util.UUID;
 public record UpdateSchoolRubricCriterionCommand(
         UUID schoolId,
         UUID criterionId,
-        String code,
         String name,
         String description,
         String examplesJson,

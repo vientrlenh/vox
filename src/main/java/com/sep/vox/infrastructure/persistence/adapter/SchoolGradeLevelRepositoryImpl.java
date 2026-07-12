@@ -30,8 +30,14 @@ public class SchoolGradeLevelRepositoryImpl implements SchoolGradeLevelRepositor
     }
 
     @Override
-    public Optional<SchoolGradeLevel> findBySchoolIdAndCode(UUID schoolId) {
-        return schoolGradeLevelRepository.findBySchoolId(schoolId)
+    public Optional<SchoolGradeLevel> findBySchoolIdAndCode(UUID schoolId, String code) {
+        return schoolGradeLevelRepository.findBySchoolIdAndCode(schoolId, code)
+                .map(SchoolGradeLevelMapper::toDomain);
+    }
+
+    @Override
+    public Optional<SchoolGradeLevel> findBySchoolIdAndName(UUID schoolId, String name) {
+        return schoolGradeLevelRepository.findBySchoolIdAndName(schoolId, name)
                 .map(SchoolGradeLevelMapper::toDomain);
     }
 
@@ -61,6 +67,17 @@ public class SchoolGradeLevelRepositoryImpl implements SchoolGradeLevelRepositor
             return List.of();
         }
         return schoolGradeLevelRepository.findBySchoolIdAndCodeIn(schoolId, codes)
+                .stream()
+                .map(SchoolGradeLevelMapper::toDomain)
+                .toList();
+    }
+
+    @Override
+    public List<SchoolGradeLevel> findByIdIn(Collection<UUID> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        return schoolGradeLevelRepository.findAllById(ids)
                 .stream()
                 .map(SchoolGradeLevelMapper::toDomain)
                 .toList();

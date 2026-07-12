@@ -71,7 +71,7 @@ public class RubricVersionImportCommitHandler implements ImportCommitHandler {
         for (ImportRow row : rows) {
             if (row.getStatus() != ImportRowStatus.PENDING) continue;
 
-            List<String> errors = new ArrayList<>();
+            List<Map<String, String>> errors = new ArrayList<>();
             Map<String, String> rawData = jsonSerializationPort.toStringMap(row.getRawDataJson());
 
             Map<String, String> mappedData = new HashMap<>();
@@ -84,29 +84,36 @@ public class RubricVersionImportCommitHandler implements ImportCommitHandler {
 
             try {
                 String versionStr = mappedData.get("version");
+                String nameStr = mappedData.get("name");
+                String descriptionStr = mappedData.get("description");
                 String minStr = mappedData.get("scoringScaleMin");
                 String maxStr = mappedData.get("scoringScaleMax");
                 String methodStr = mappedData.get("totalScoreMethod");
                 String fromStr = mappedData.get("effectiveFrom");
                 String toStr = mappedData.get("effectiveTo");
 
-                if (versionStr == null || versionStr.isBlank()) errors.add("Thiếu số Version.");
-                if (minStr == null || minStr.isBlank()) errors.add("Thiếu điểm sàn (Min Score).");
-                if (maxStr == null || maxStr.isBlank()) errors.add("Thiếu điểm trần (Max Score).");
-                if (methodStr == null || methodStr.isBlank()) errors.add("Thiếu phương pháp tính điểm tổng.");
+                if (versionStr == null || versionStr.isBlank()) errors.add(error("version", "Thiếu số Version."));
+                if (minStr == null || minStr.isBlank()) errors.add(error("scoringScaleMin", "Thiếu điểm sàn (Min Score)."));
+                if (maxStr == null || maxStr.isBlank()) errors.add(error("scoringScaleMax", "Thiếu điểm trần (Max Score)."));
+                if (methodStr == null || methodStr.isBlank()) errors.add(error("totalScoreMethod", "Thiếu phương pháp tính điểm tổng."));
 
                 int versionNum = 0;
                 if (errors.isEmpty()) {
                     try {
                         versionNum = Integer.parseInt(versionStr.trim());
-                        if (versionNum <= 0) errors.add("Version phải lớn hơn 0.");
+                        if (versionNum <= 0) errors.add(error("version", "Version phải lớn hơn 0."));
 
                         if (!versionsInThisFile.add(versionNum)) {
-                            errors.add("Bị trùng số Version " + versionNum + " ngay trong file Excel.");
+                            errors.add(error("version", "Bị trùng số Version " + versionNum + " ngay trong file Excel."));
                         }
                     } catch (NumberFormatException e) {
-                        errors.add("Số Version không hợp lệ (Phải là số nguyên).");
+                        errors.add(error("version", "Số Version không hợp lệ (Phải là số nguyên)."));
                     }
+                }
+
+                RubricVersion targetVersion = errors.isEmpty() ? existingVersionMap.get(versionNum) : null;
+                if (targetVersion != null && targetVersion.getStatus() != RubricStatus.DRAFT) {
+                    errors.add(error("version", "Chỉ có thể sửa Version " + versionNum + " qua import khi đang ở trạng thái DRAFT."));
                 }
 
                 BigDecimal minScore = null;
@@ -115,9 +122,9 @@ public class RubricVersionImportCommitHandler implements ImportCommitHandler {
                     try {
                         minScore = new BigDecimal(minStr.trim());
                         maxScore = new BigDecimal(maxStr.trim());
-                        if (minScore.compareTo(maxScore) > 0) errors.add("Điểm sàn không được lớn hơn điểm trần.");
+                        if (minScore.compareTo(maxScore) > 0) errors.add(error("scoringScaleMin", "Điểm sàn không được lớn hơn điểm trần."));
                     } catch (NumberFormatException e) {
-                        errors.add("Điểm sàn hoặc điểm trần không đúng định dạng số.");
+                        errors.add(error("scoringScaleMin", "Điểm sàn hoặc điểm trần không đúng định dạng số."));
                     }
                 }
 
@@ -126,7 +133,7 @@ public class RubricVersionImportCommitHandler implements ImportCommitHandler {
                     try {
                         method = RubricTotalScoreMethod.valueOf(methodStr.trim().toUpperCase());
                     } catch (Exception e) {
-                        errors.add("Phương pháp tính điểm không hợp lệ (Chỉ nhận SUM hoặc WEIGHTED_AVERAGE).");
+                        errors.add(error("totalScoreMethod", "Phương pháp tính điểm không hợp lệ (Chỉ nhận SUM hoặc WEIGHTED_AVERAGE)."));
                     }
                 }
 
@@ -143,10 +150,10 @@ public class RubricVersionImportCommitHandler implements ImportCommitHandler {
 
                         if (effectiveFrom == null) effectiveFrom = now;
                         if (effectiveTo != null && effectiveTo.isBefore(effectiveFrom)) {
-                            errors.add("Ngày kết thúc không được trước ngày bắt đầu.");
+                            errors.add(error("effectiveTo", "Ngày kết thúc không được trước ngày bắt đầu."));
                         }
                     } catch (Exception e) {
-                        errors.add("Định dạng ngày tháng không hợp lệ.");
+                        errors.add(error("effectiveFrom", "Định dạng ngày tháng không hợp lệ."));
                     }
                 }
 
@@ -156,10 +163,14 @@ public class RubricVersionImportCommitHandler implements ImportCommitHandler {
                     invalidCount++;
                 } else {
                     // CƠ CHẾ UPSERT Lõi
-                    RubricVersion targetVersion = existingVersionMap.get(versionNum);
-
                     if (targetVersion != null) {
                         // UPDATE (Đã tồn tại Version này -> Cập nhật thông tin mới)
+                        if (nameStr != null && !nameStr.isBlank()) {
+                            targetVersion.setName(nameStr.trim());
+                        }
+                        if (descriptionStr != null && !descriptionStr.isBlank()) {
+                            targetVersion.setDescription(descriptionStr.trim());
+                        }
                         targetVersion.setScoringScaleMin(minScore);
                         targetVersion.setScoringScaleMax(maxScore);
                         targetVersion.setTotalScoreMethod(method);
@@ -172,10 +183,15 @@ public class RubricVersionImportCommitHandler implements ImportCommitHandler {
                     } else {
                         // INSERT (Tạo Version mới hoàn toàn)
                         String safeCode = rubric.getCode() + "_V" + versionNum;
-                        String safeName = rubric.getName() + " - Version " + versionNum;
+                        String safeName = (nameStr != null && !nameStr.isBlank())
+                                ? nameStr.trim()
+                                : rubric.getName() + " - Version " + versionNum;
+                        String safeDescription = (descriptionStr != null && !descriptionStr.isBlank())
+                                ? descriptionStr.trim()
+                                : rubric.getDescription();
 
                         targetVersion = new RubricVersion(
-                                rubricId, versionNum, safeCode, safeName, rubric.getDescription(),
+                                rubricId, versionNum, safeCode, safeName, safeDescription,
                                 RubricStatus.DRAFT, effectiveFrom, effectiveTo, minScore, maxScore,
                                 method, now, now, session.getCreatedBy(), session.getCreatedBy()
                         );
@@ -187,7 +203,7 @@ public class RubricVersionImportCommitHandler implements ImportCommitHandler {
                     importedCount++;
                 }
             } catch (Exception ex) {
-                errors.add("Lỗi xử lý luồng ngầm: " + ex.getMessage());
+                errors.add(error("general", "Lỗi xử lý luồng ngầm: " + ex.getMessage()));
                 row.setStatus(ImportRowStatus.INVALID);
                 row.setErrorsJson(jsonSerializationPort.toJson(errors));
                 invalidCount++;
@@ -199,5 +215,9 @@ public class RubricVersionImportCommitHandler implements ImportCommitHandler {
 
         // Trả kết quả thống kê về cho ImportCommitService (Không gọi save Session ở đây nữa)
         return new ImportCommitResult(importedCount, 0, 0, invalidCount);
+    }
+
+    private static Map<String, String> error(String field, String message) {
+        return Map.of("field", field, "message", message);
     }
 }

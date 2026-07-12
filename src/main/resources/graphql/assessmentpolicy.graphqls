@@ -1,0 +1,62 @@
+enum AssessmentPolicyStrictness {
+    LENIENT
+    STANDARD
+    STRICT
+}
+
+input UpdateAssessmentPolicyInput {
+    targetFrameworkBandId: ID!
+    minimumFrameworkBandId: ID!
+    passingScore: Float
+    strictness: AssessmentPolicyStrictness
+    effectiveFrom: String!
+    effectiveTo: String
+}
+
+extend type Mutation {
+    updateSystemAssessmentPolicy(policyId: ID!, input: UpdateAssessmentPolicyInput!): ID!
+    updateSchoolAssessmentPolicy(schoolId: ID!, policyId: ID!, input: UpdateAssessmentPolicyInput!): ID!
+}
+
+type AssessmentPolicy {
+    id: ID!
+    schoolId: ID
+    languageId: ID!
+    frameworkVersionId: ID!
+    rubricVersionId: ID!
+    targetFrameworkBandId: ID!
+    minimumFrameworkBandId: ID!
+    passingScore: Float
+    strictness: AssessmentPolicyStrictness!
+    version: Int!
+    status: String!
+    effectiveFrom: String!
+    effectiveTo: String
+    createdAt: String
+    updatedAt: String
+
+    school: School
+    schoolGradeLevel: SchoolGradeLevel
+    schoolGrade: SchoolGrade
+    schoolClass: SchoolClass
+    language: SupportedLanguage
+    frameworkVersion: FrameworkVersion
+    rubricVersion: RubricVersion
+    targetFrameworkBand: FrameworkResultBand
+    minimumFrameworkBand: FrameworkResultBand
+}
+
+type AssessmentPolicyPage {
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+    content: [AssessmentPolicy!]!
+}
+
+extend type Query {
+    viewSystemAssessmentPolicies(status: String, languageId: ID, rubricVersionId: ID, effectiveFrom: String, effectiveTo: String, page: Int = 1, size: Int = 10): AssessmentPolicyPage!
+    viewSchoolAssessmentPolicies(schoolId: ID!, status: String, languageId: ID, rubricVersionId: ID, effectiveFrom: String, effectiveTo: String, page: Int = 1, size: Int = 10): AssessmentPolicyPage!
+    viewSystemAssessmentPolicy(policyId: ID!): AssessmentPolicy!
+    viewSchoolAssessmentPolicy(schoolId: ID!, policyId: ID!): AssessmentPolicy!
+}

@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -29,6 +30,27 @@ public class FrameworkVersionRepositoryImpl implements FrameworkVersionRepositor
     }
 
     @Override
+    public Optional<FrameworkVersion> findByCode(String code) {
+        return springDataFrameworkVersionRepository.findByCode(code).map(FrameworkVersionMapper::toDomain);
+    }
+
+    @Override
+    public Optional<FrameworkVersion> findByName(String name) {
+        return springDataFrameworkVersionRepository.findByName(name).map(FrameworkVersionMapper::toDomain);
+    }
+
+    @Override
+    public List<FrameworkVersion> findByIdIn(Collection<UUID> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        return springDataFrameworkVersionRepository.findAllById(ids)
+                .stream()
+                .map(FrameworkVersionMapper::toDomain)
+                .toList();
+    }
+
+    @Override
     public Optional<FrameworkVersion> findByIdForUpdate(UUID id) {
         return springDataFrameworkVersionRepository.findByIdForUpdate(id).map(FrameworkVersionMapper::toDomain);
     }
@@ -51,6 +73,19 @@ public class FrameworkVersionRepositoryImpl implements FrameworkVersionRepositor
         return springDataFrameworkVersionRepository
             .findByFrameworkIdAndStatus(frameworkId, status.name())
             .stream().map(FrameworkVersionMapper::toDomain).toList();
+    }
+
+    @Override
+    public PageResult<FrameworkVersion> findByFrameworkIdAndStatus(UUID frameworkId, FrameworkVersionStatus status, int pageNumber, int size) {
+        var pageable = PageRequest.of(pageNumber - 1, size);
+        var page = springDataFrameworkVersionRepository.findByFrameworkIdAndStatus(frameworkId, status.name(), pageable);
+        return new PageResult<>(
+            page.getContent().stream().map(FrameworkVersionMapper::toDomain).toList(),
+            page.getNumber() + 1,
+            page.getSize(),
+            page.getTotalElements(),
+            page.getTotalPages()
+        );
     }
 
     @Override

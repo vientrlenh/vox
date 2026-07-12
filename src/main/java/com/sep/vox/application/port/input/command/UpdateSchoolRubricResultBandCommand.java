@@ -6,7 +6,6 @@ import java.util.UUID;
 public record UpdateSchoolRubricResultBandCommand(
         UUID schoolId,
         UUID resultBandId,
-        String code,
         String name,
         String description,
         BigDecimal scoreMin,

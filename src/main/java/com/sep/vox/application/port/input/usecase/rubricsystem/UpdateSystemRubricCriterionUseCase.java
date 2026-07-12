@@ -77,8 +77,7 @@ public class UpdateSystemRubricCriterionUseCase implements IUseCase<UpdateSystem
             throw new ForbiddenException("Hành động bị từ chối: Tiêu chí này thuộc về Trường học.");
         }
 
-        // 5. Chuẩn hóa & Validate Logic
-        String safeCode = (command.code() != null && !command.code().isBlank()) ? StringNormalization.trimAndCollapseSpaces(command.code()) : null;
+        // 5. Chuẩn hóa & Validate Logic (Code không được phép sửa sau khi tạo, luôn giữ nguyên)
         String safeName = (command.name() != null && !command.name().isBlank()) ? StringNormalization.trimAndCollapseSpaces(command.name()) : null;
         String safeDesc = (command.description() != null && !command.description().isBlank()) ? StringNormalization.trimAndCollapseSpaces(command.description()) : null;
 
@@ -97,7 +96,8 @@ public class UpdateSystemRubricCriterionUseCase implements IUseCase<UpdateSystem
         }
 
         // =========================================================
-        // Check lỗi examplesJson
+        // Check lỗi examplesJson & chuẩn hóa lại đúng định dạng {"values": [...]} trước khi lưu DB
+        String examplesJsonToPersist = command.examplesJson();
         if (command.examplesJson() != null && !command.examplesJson().isBlank()) {
             try {
                 // Parse chuỗi JSON thành List bằng biến objectMapper đã khởi tạo ở trên
@@ -107,7 +107,10 @@ public class UpdateSystemRubricCriterionUseCase implements IUseCase<UpdateSystem
                 );
 
                 // Kích hoạt bẫy lỗi từ Record
-                new RubricCriterionExamples(parsedExamples);
+                RubricCriterionExamples examplesVO = new RubricCriterionExamples(parsedExamples);
+
+                // Serialize lại đúng shape record ({"values": [...]}) để khớp với định dạng khi đọc (view)
+                examplesJsonToPersist = objectMapper.writeValueAsString(examplesVO);
 
             } catch (IllegalArgumentException e) {
                 throw new IllegalArgumentException(e.getMessage());
@@ -120,10 +123,10 @@ public class UpdateSystemRubricCriterionUseCase implements IUseCase<UpdateSystem
         try {
             rubricCriterionRepository.updateCriterionAtomic(
                     command.criterionId(),
-                    safeCode,
+                    null,
                     safeName,
                     safeDesc,
-                    command.examplesJson(),
+                    examplesJsonToPersist,
                     command.weight(),
                     command.minScore(),
                     command.maxScore(),
@@ -133,7 +136,7 @@ public class UpdateSystemRubricCriterionUseCase implements IUseCase<UpdateSystem
                     currentUserId
             );
         } catch (DataIntegrityViolationException e) {
-            throw new IllegalArgumentException("Mã Tiêu chí (Code) này đã tồn tại trong Phiên bản Rubric hiện tại.");
+            throw new IllegalArgumentException("Không thể cập nhật Tiêu chí do dữ liệu bị trùng hoặc không hợp lệ.");
         }
 
         return command.criterionId();

@@ -8,14 +8,14 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 
 public final class DateMapper {
-    
+
     private static final List<String> INPUT_LOCALDATE_FORMAT = List.of(
-        "yyyy-MM-dd",
-        "yyyy/MM/dd",
-        "dd-MM-yyyy",
-        "dd/MM/yyyy",
-        "MM/dd/yyyy",
-        "MM-dd-yyyy"
+            "yyyy-MM-dd",
+            "yyyy/MM/dd",
+            "dd-MM-yyyy",
+            "dd/MM/yyyy",
+            "MM/dd/yyyy",
+            "MM-dd-yyyy"
     );
 
     private static final String OUTPUT_LOCALDATE_FORMAT = "dd-MM-yyyy";
@@ -27,7 +27,7 @@ public final class DateMapper {
                 var formatter = DateTimeFormatter.ofPattern(pattern);
                 var date = LocalDate.parse(localDateString, formatter);
                 return date;
-            } catch (DateTimeParseException e) {  
+            } catch (DateTimeParseException e) {
             }
         }
         throw new IllegalArgumentException("Định dạng ngày yêu cầu không hợp lệ");
@@ -46,30 +46,51 @@ public final class DateMapper {
 
         String fixedString = dateString.trim();
 
-        // 1. Trường hợp có kèm theo Giờ Phút (Chuẩn ISO, có chứa ký tự 'T')
-        // Ví dụ: 2026-06-09T09:30
+        // 1. Date-only format FE đã chốt: dd.MM.yyyy
+        // Ví dụ: 07.04.2026 -> 2026-04-07T00:00:00+07:00
+        try {
+            DateTimeFormatter dotDateFormatter =
+                    DateTimeFormatter.ofPattern("dd.MM.yyyy");
+
+            LocalDate localDate = LocalDate.parse(fixedString, dotDateFormatter);
+
+            return localDate.atStartOfDay().atOffset(DEFAULT_ZONE_OFFSET);
+        } catch (DateTimeParseException ignored) {
+            // Không phải dd.MM.yyyy thì xử lý tiếp các format cũ.
+        }
+
+        // 2. Trường hợp có kèm giờ phút theo ISO
+        // Ví dụ: 2026-06-09T09:30, 2026-06-09T09:30:00,
+        //        2026-06-09T09:30:00+07:00, 2026-06-09T02:30:00Z
         if (fixedString.contains("T")) {
             try {
-                if (fixedString.length() == 13) fixedString += ":00:00+07:00";
-                else if (fixedString.length() == 16) fixedString += ":00+07:00";
-                else if (fixedString.length() == 19) fixedString += "+07:00";
+                if (fixedString.length() == 13) {
+                    fixedString += ":00:00+07:00";
+                } else if (fixedString.length() == 16) {
+                    fixedString += ":00+07:00";
+                } else if (fixedString.length() == 19) {
+                    fixedString += "+07:00";
+                }
 
                 return OffsetDateTime.parse(fixedString);
             } catch (DateTimeParseException e) {
-                throw new IllegalArgumentException("Định dạng thời gian (có giờ phút) không hợp lệ.");
+                throw new IllegalArgumentException(
+                        "Định dạng thời gian không hợp lệ. "
+                                + "Dùng dd.MM.yyyy hoặc ISO datetime."
+                );
             }
         }
 
-        // 2. Trường hợp gửi kiểu tự do chỉ có Ngày (Ví dụ: 10/06/2026, 10-06-2026, 2026-06-10)
+        // 3. Hỗ trợ các format cũ đang có trong toLocalDate()
         try {
-            // Tận dụng hàm toLocalDate ở trên để parse ra ngày
             LocalDate localDate = toLocalDate(fixedString);
 
-            // Ép thành giờ bắt đầu của ngày (00:00:00) và cộng thêm múi giờ VN (+07:00)
             return localDate.atStartOfDay().atOffset(DEFAULT_ZONE_OFFSET);
         } catch (IllegalArgumentException ex) {
-            // Bắn lại lỗi từ toLocalDate ra cho Frontend
-            throw new IllegalArgumentException("Định dạng thời gian không hợp lệ. Khuyên dùng: dd/MM/yyyy hoặc YYYY-MM-DDTHH:mm:ss");
+            throw new IllegalArgumentException(
+                    "Định dạng ngày không hợp lệ. "
+                            + "Khuyên dùng: dd.MM.yyyy, ví dụ 07.04.2026."
+            );
         }
     }
 }

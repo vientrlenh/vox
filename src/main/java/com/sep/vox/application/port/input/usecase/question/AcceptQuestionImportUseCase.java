@@ -52,21 +52,21 @@ public class AcceptQuestionImportUseCase implements IUseCase<AcceptQuestionImpor
         var now = OffsetDateTime.now();
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         var session = importSessionRepository.findById(input.importSessionId())
-            .orElseThrow(() -> new NotFoundException("Khong tim thay phien import"));
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên import với id: " + input.importSessionId()));
 
         if (session.getType() != ImportType.QUESTION) {
-            throw new IllegalArgumentException("Phien import khong phai la import cau hoi");
+            throw new IllegalArgumentException("Phiên import không phải là loại câu hỏi");
         }
         if (!Objects.equals(session.getCreatedBy(), currentUserId)) {
-            throw new IllegalArgumentException("Phien import khong thuoc nguoi dung hien tai");
+            throw new IllegalArgumentException("Phiên import không thuộc người dùng hiện tại");
         }
         if (session.getStatus() != ImportSessionStatus.PREVIEWED) {
-            throw new IllegalStateException("Phien import khong o trang thai cho accept");
+            throw new IllegalStateException("Phiên import không ở trạng thái cho accept");
         }
         if (session.getExpiresAt() != null && session.getExpiresAt().isBefore(now)) {
             session.setStatus(ImportSessionStatus.EXPIRED);
             importSessionRepository.save(session);
-            throw new IllegalStateException("Phien import da het han");
+            throw new IllegalStateException("Phiên import đã hết hạn");
         }
         validateRequiredMapping(input.confirmedMapping());
 
@@ -78,17 +78,17 @@ public class AcceptQuestionImportUseCase implements IUseCase<AcceptQuestionImpor
             currentUserId
         );
         if (queued == 0) {
-            throw new IllegalStateException("Phien import khong o trang thai cho accept hoac da het han");
+            throw new IllegalStateException("Phiên import không ở trạng thái cho accept hoac đã hết hạn");
         }
         return null;
     }
 
     private void validateCommand(AcceptQuestionImportCommand input) {
         if (input == null || input.importSessionId() == null) {
-            throw new IllegalArgumentException("Phien import khong duoc de trong");
+            throw new IllegalArgumentException("Phiên import không được để trống");
         }
         if (input.confirmedMapping() == null || input.confirmedMapping().isEmpty()) {
-            throw new IllegalArgumentException("Mapping import khong duoc de trong");
+            throw new IllegalArgumentException("Mapping import không được để trống");
         }
     }
 
@@ -103,7 +103,7 @@ public class AcceptQuestionImportUseCase implements IUseCase<AcceptQuestionImpor
             .toList();
         if (!missingFields.isEmpty()) {
             throw new IllegalArgumentException(
-                "Mapping import thieu truong bat buoc: " + String.join(", ", missingFields)
+                "Mapping import thiếu trường bắt buộc: " + String.join(", ", missingFields)
             );
         }
     }

@@ -74,7 +74,6 @@ enum ExamSessionStatus {
     EXPIRED
     GRADING_FAILED
 }
-
 enum ExamSecurePoolStatus {
     SEALED
     RELEASED
@@ -476,7 +475,6 @@ type StudentExamResultSummary {
     rubricResultBandCode: String
     rubricResultBandName: String
 }
-
 input UpdateExamScheduleInput {
     schoolRoomId: ID
     startDate: String

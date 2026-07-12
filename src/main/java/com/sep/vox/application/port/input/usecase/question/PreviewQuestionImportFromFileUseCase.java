@@ -72,10 +72,10 @@ public class PreviewQuestionImportFromFileUseCase
     @Transactional
     public PreviewQuestionImportResponse execute(PreviewQuestionImportFromFileCommand input) {
         if (input == null || input.file() == null) {
-            throw new IllegalArgumentException("File import khong duoc de trong");
+            throw new IllegalArgumentException("File import không được để trống");
         }
         if (input.questionBankId() == null || input.questionTopicId() == null) {
-            throw new IllegalArgumentException("Question bank va topic khong duoc de trong");
+            throw new IllegalArgumentException("Question bank và topic không được để trống");
         }
 
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
@@ -86,22 +86,22 @@ public class PreviewQuestionImportFromFileUseCase
             .anyMatch(role -> "TEACHER".equals(role.roleCode()));
 
         var questionBank = questionBankRepository.findById(input.questionBankId())
-            .orElseThrow(() -> new NotFoundException("Khong tim thay ngan hang cau hoi"));
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
         var questionTopic = questionTopicRepository.findById(input.questionTopicId())
-            .orElseThrow(() -> new NotFoundException("Khong tim thay chu de cau hoi"));
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy chủ đề câu hỏi"));
 
         if (!questionTopic.getQuestionBankId().equals(questionBank.getId())) {
-            throw new IllegalStateException("Chu de khong thuoc ngan hang cau hoi da chon");
+            throw new IllegalStateException("Chủ đề không thuộc ngân hàng câu hỏi đã chọn");
         }
         if (questionTopic.getStatus() != QuestionTopicStatus.PUBLISHED) {
-            throw new IllegalStateException("Chi duoc import cau hoi vao chu de da PUBLISHED");
+            throw new IllegalStateException("Chỉ có thể import câu hỏi vào chủ đề đang ở trạng thái PUBLISHED");
         }
         if (questionBank.getOwnerType() == QuestionBankOwnerType.SYSTEM) {
             if (!userContextPort.isSystemAdmin()) {
-                throw new ForbiddenException("Quyen truy cap bi tu choi");
+                throw new ForbiddenException("Quyền truy cập bị từ chối");
             }
         } else if (!teacher || currentSchoolId == null || !currentSchoolId.equals(questionBank.getSchoolId())) {
-            throw new ForbiddenException("Quyen truy cap bi tu choi");
+            throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
         var parsed = fileProcessingPort.parse(input.file(), ImportType.QUESTION);

@@ -39,7 +39,7 @@ public interface SpringDataRubricRepository extends JpaRepository<RubricJpaEntit
 
     // 1. Search cho SYSTEM (Lọc cứng owner_type = 'SYSTEM')
     @Query("SELECT r FROM RubricJpaEntity r WHERE r.ownerType = 'SYSTEM' " +
-            "AND (:keyword IS NULL OR LOWER(r.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(r.code) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+            "AND (CAST(:keyword AS string) IS NULL OR LOWER(r.name) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')) OR LOWER(r.code) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%'))) " +
             "AND (:frameworkId IS NULL OR r.frameworkId = :frameworkId) " +
             "AND (:languageId IS NULL OR r.languageId = :languageId)")
     Page<RubricJpaEntity> searchSystemRubrics(
@@ -50,7 +50,7 @@ public interface SpringDataRubricRepository extends JpaRepository<RubricJpaEntit
 
     // 2. Search cho SCHOOL (Lọc cứng theo school_id)
     @Query("SELECT r FROM RubricJpaEntity r WHERE r.schoolId = :schoolId " +
-            "AND (:keyword IS NULL OR LOWER(r.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(r.code) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+            "AND (CAST(:keyword AS string) IS NULL OR LOWER(r.name) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')) OR LOWER(r.code) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%'))) " +
             "AND (:frameworkId IS NULL OR r.frameworkId = :frameworkId) " +
             "AND (:languageId IS NULL OR r.languageId = :languageId)")
     Page<RubricJpaEntity> searchSchoolRubrics(

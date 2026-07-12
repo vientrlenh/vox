@@ -15,7 +15,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
 import com.sep.vox.config.ContainerTestConfig;
-import com.sep.vox.domain.model.school.SchoolGradeLevel;
 import com.sep.vox.domain.model.school.SchoolGradeLevelStatus;
 import com.sep.vox.domain.repository.SchoolGradeLevelRepository;
 import com.sep.vox.infrastructure.persistence.adapter.SchoolGradeLevelRepositoryImpl;
@@ -50,7 +49,7 @@ class SchoolGradeLevelRepositoryTests extends ContainerTestConfig {
 
         assertThat(result.totalElements()).isEqualTo(3);
         assertThat(result.content())
-            .extracting(SchoolGradeLevel::getOrder)
+            .extracting(gradelevel -> gradelevel.getOrder())
             .containsExactly(1, 2, 3);
     }
 
@@ -62,12 +61,12 @@ class SchoolGradeLevelRepositoryTests extends ContainerTestConfig {
 
         var byCode = schoolGradeLevelRepository.findBySchoolId(schoolId, "grade-a", null, 1, 20);
         assertThat(byCode.content())
-            .extracting(SchoolGradeLevel::getCode)
+            .extracting(gradelevel -> gradelevel.getCode())
             .containsExactly("GRADE-A");
 
         var byName = schoolGradeLevelRepository.findBySchoolId(schoolId, "beta", null, 1, 20);
         assertThat(byName.content())
-            .extracting(SchoolGradeLevel::getName)
+            .extracting(gradelevel -> gradelevel.getName())
             .containsExactly("Beta");
     }
 
@@ -80,7 +79,7 @@ class SchoolGradeLevelRepositoryTests extends ContainerTestConfig {
         var result = schoolGradeLevelRepository.findBySchoolId(schoolId, null, SchoolGradeLevelStatus.INACTIVE, 1, 20);
 
         assertThat(result.content())
-            .extracting(SchoolGradeLevel::getCode)
+            .extracting(gradelevel -> gradelevel.getCode())
             .containsExactly("K2");
     }
 
@@ -98,7 +97,7 @@ class SchoolGradeLevelRepositoryTests extends ContainerTestConfig {
         assertThat(result.totalElements()).isEqualTo(5);
         assertThat(result.totalPages()).isEqualTo(3);
         assertThat(result.content())
-            .extracting(SchoolGradeLevel::getOrder)
+            .extracting(gradelevel -> gradelevel.getOrder())
             .containsExactly(1, 2);
     }
 

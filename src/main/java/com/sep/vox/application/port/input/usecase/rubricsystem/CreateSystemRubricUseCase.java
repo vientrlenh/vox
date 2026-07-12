@@ -62,16 +62,13 @@ public class CreateSystemRubricUseCase implements IUseCase<CreateSystemRubricCom
         // Kiểm tra Framework gốc
         Framework framework = frameworkRepository.findById(command.frameworkId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy Khung tiêu chuẩn (Framework)."));
-        if (!framework.isActive()) {
+        if (!framework.isActive() ) {
             throw new IllegalStateException("Không thể sử dụng Khung tiêu chuẩn (Framework) này vì nó đang bị vô hiệu hóa.");
         }
 
-        boolean isSystemRubricExisted = rubricRepository.existsByOwnerTypeAndLanguageId(RubricOwnerType.SYSTEM.toString(), command.languageId());
-        if (isSystemRubricExisted) {
-            throw new IllegalStateException("Hệ thống đã có một bộ Rubric cho ngôn ngữ này. Chỉ được phép tồn tại duy nhất 1 bộ Rubric hệ thống cho mỗi ngôn ngữ.");
-        }
 
-        // 💡 ĐÃ XÓA TOÀN BỘ LOGIC RÀNG BUỘC VÀ TẠO RUBRIC VERSION Ở ĐÂY
+
+        // ĐÃ XÓA TOÀN BỘ LOGIC RÀNG BUỘC VÀ TẠO RUBRIC VERSION Ở ĐÂY
 
         String safeCode = StringNormalization.trimAndCollapseSpaces(command.code());
         String safeName = StringNormalization.trimAndCollapseSpaces(command.name());

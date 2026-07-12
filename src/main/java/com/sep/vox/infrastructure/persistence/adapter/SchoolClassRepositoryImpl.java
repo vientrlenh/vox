@@ -56,7 +56,7 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
         var pageable = PageRequest.of(
             pageNumber - 1,
             size,
-            Sort.by(Sort.Direction.DESC, SchoolClassJpaEntity::getCreatedAt).and(Sort.by(Sort.Direction.ASC, SchoolClassJpaEntity::getId))
+            Sort.by(Sort.Direction.DESC, (SchoolClassJpaEntity entity) -> entity.getCreatedAt()).and(Sort.by(Sort.Direction.ASC, (SchoolClassJpaEntity entity) -> entity.getId()))
         );
         var normalizedSearch = blankToNull(search);
         var page = normalizedSearch == null
@@ -91,7 +91,7 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
         var pageable = PageRequest.of(
             pageNumber - 1,
             size,
-            Sort.by(Sort.Direction.DESC, SchoolClassJpaEntity::getCreatedAt).and(Sort.by(Sort.Direction.ASC, SchoolClassJpaEntity::getId))
+            Sort.by(Sort.Direction.DESC, (SchoolClassJpaEntity entity) -> entity.getCreatedAt()).and(Sort.by(Sort.Direction.ASC, (SchoolClassJpaEntity entity) -> entity.getId()))
         );
         var page = springDataSchoolClassRepository.findByUserId(schoolId, userId, valueOf(status), pageable);
         return new PageResult<>(
@@ -108,6 +108,12 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
     @Override
     public Optional<SchoolClass> findBySchoolIdAndCode(UUID schoolId, String code) {
         return springDataSchoolClassRepository.findBySchoolIdAndCode(schoolId, code)
+            .map(SchoolClassMapper::toDomain);
+    }
+
+    @Override
+    public Optional<SchoolClass> findBySchoolIdAndName(UUID schoolId, String name) {
+        return springDataSchoolClassRepository.findBySchoolIdAndName(schoolId, name)
             .map(SchoolClassMapper::toDomain);
     }
 

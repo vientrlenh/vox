@@ -12,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
+import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.domain.model.rubric.RubricCriterionBand;
 import com.sep.vox.domain.repository.RubricCriterionBandRepository;
 import com.sep.vox.infrastructure.persistence.mapper.RubricCriterionBandMapper;
@@ -98,7 +99,8 @@ public class RubricCriterionBandRepositoryImpl implements RubricCriterionBandRep
     @Override
     public PageResult<RubricCriterionBand> searchRubricCriterionBands(UUID criterionId, String keyword, int page, int size) {
         var pageable = PageRequest.of(page, size);
-        var pageEntity = springDataRubricCriterionBandRepository.searchRubricCriterionBands(criterionId, keyword, pageable);
+        var pageEntity = springDataRubricCriterionBandRepository.searchRubricCriterionBands(
+                criterionId, StringNormalization.toLikePattern(keyword), pageable);
 
         return new PageResult<>(
                 pageEntity.getContent().stream().map(RubricCriterionBandMapper::toDomain).toList(),
@@ -115,5 +117,11 @@ public class RubricCriterionBandRepositoryImpl implements RubricCriterionBandRep
                 .stream()
                 .map(RubricCriterionBandMapper::toDomain)
                 .toList();
+    }
+
+    @Override
+    public Optional<RubricCriterionBand> findByCriterionIdAndCode(UUID criterionId, String code) {
+        return springDataRubricCriterionBandRepository.findByCriterionIdAndCode(criterionId, code)
+                .map(RubricCriterionBandMapper::toDomain);
     }
 }

@@ -23,6 +23,7 @@ public class ChangeSystemRubricVersionStatusUseCase implements IUseCase<ChangeSy
     private final RubricVersionRepository rubricVersionRepository;
     private final RubricRepository rubricRepository;
     private final FrameworkRepository frameworkRepository;
+    private final AssessmentPolicyRepository assessmentPolicyRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
 
@@ -30,11 +31,13 @@ public class ChangeSystemRubricVersionStatusUseCase implements IUseCase<ChangeSy
             RubricVersionRepository rubricVersionRepository,
             RubricRepository rubricRepository,
             FrameworkRepository frameworkRepository,
+            AssessmentPolicyRepository assessmentPolicyRepository,
             UserRepository userRepository,
             UserContextPort userContextPort) {
         this.rubricVersionRepository = rubricVersionRepository;
         this.rubricRepository = rubricRepository;
         this.frameworkRepository = frameworkRepository;
+        this.assessmentPolicyRepository = assessmentPolicyRepository;
         this.userRepository = userRepository;
         this.userContextPort = userContextPort;
     }
@@ -79,9 +82,20 @@ public class ChangeSystemRubricVersionStatusUseCase implements IUseCase<ChangeSy
                 throw new IllegalStateException("Không thể ban hành Rubric này vì Khung tiêu chuẩn (Framework) gốc đang bị vô hiệu hóa.");
             }
 
+            // KIỂM TRA ASSESSMENT POLICY LIÊN KẾT ĐÃ ĐƯỢC PUBLISHED HAY CHƯA
+            if (!assessmentPolicyRepository.existsPublishedByRubricVersionId(version.getId())) {
+                throw new IllegalStateException("Không thể ban hành Rubric này vì chưa có Assessment Policy nào liên kết đang ở trạng thái PUBLISHED.");
+            }
+
+            // BẮT BUỘC TẤT CẢ ASSESSMENT POLICY LIÊN KẾT PHẢI ĐANG Ở TRẠNG THÁI PUBLISHED
+            if (assessmentPolicyRepository.existsNotPublishedByRubricVersionId(version.getId())) {
+                throw new IllegalStateException("Không thể ban hành Rubric này vì vẫn còn Assessment Policy liên kết chưa ở trạng thái PUBLISHED.");
+            }
+
             // ĐÃ BỎ LỆNH SAVE RUBRIC DƯ THỪA Ở ĐÂY VÌ MODEL KHÔNG CÒN CURRENTVERSIONID
 
         } else if (command.status() == RubricStatus.ARCHIVED) {
+            throw new IllegalStateException("Hành động bị từ chối: Vui lòng dùng chức năng Lưu trữ (Archive) riêng để chuyển phiên bản sang ARCHIVED.");
         } else if (command.status() == RubricStatus.DRAFT) {
             // CHẶN LỖ HỔNG LÙI TRẠNG THÁI
             throw new IllegalStateException("Hành động bị từ chối: Không thể chuyển một phiên bản đã Ban hành/Lưu trữ quay ngược lại trạng thái Nháp (DRAFT). Vui lòng tạo phiên bản mới.");

@@ -13,6 +13,7 @@ import com.sep.vox.domain.model.school.SchoolGrade;
 public interface SchoolGradeRepository {
     Optional<SchoolGrade> findById(UUID id);
     Optional<SchoolGrade> findBySchoolIdAndCode(UUID schoolId, String code);
+    Optional<SchoolGrade> findBySchoolIdAndName(UUID schoolId, String name);
     SchoolGrade save(SchoolGrade grade);
 
     List<SchoolGrade> findAllById(List<UUID> gradeIds);

@@ -28,8 +28,7 @@ public class ExamCandidateController {
 
     private final ViewExamCandidatesUseCase viewExamCandidatesUseCase;
 
-    public ExamCandidateController(
-            ViewExamCandidatesUseCase viewExamCandidatesUseCase) {
+    public ExamCandidateController(ViewExamCandidatesUseCase viewExamCandidatesUseCase) {
         this.viewExamCandidatesUseCase = viewExamCandidatesUseCase;
     }
 

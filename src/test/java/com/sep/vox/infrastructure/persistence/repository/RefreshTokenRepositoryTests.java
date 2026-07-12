@@ -63,7 +63,7 @@ class RefreshTokenRepositoryTests extends ContainerTestConfig {
 
         assertThat(found).hasSize(2);
         assertThat(found)
-            .extracting(RefreshToken::getTokenHash)
+            .extracting(token -> token.getTokenHash())
             .containsExactlyInAnyOrder("hash-session-1", "hash-session-2");
     }
 

@@ -53,7 +53,7 @@ public class ExamResultAccessService {
     @Transactional(readOnly = true)
     public ExamSession getAuthorizedSession(UUID sessionId) {
         var session = examSessionRepository.findById(sessionId)
-            .orElseThrow(() -> new NotFoundException("Khong tim thay phien thi"));
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên thi"));
         authorize(session.getExamId(), session.getCandidateId());
         return session;
     }
@@ -61,7 +61,7 @@ public class ExamResultAccessService {
     @Transactional(readOnly = true)
     public ExamItemResponse getAuthorizedResponse(UUID answerId) {
         var response = examItemResponseRepository.findById(answerId)
-            .orElseThrow(() -> new NotFoundException("Khong tim thay cau tra loi cua thi sinh"));
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy câu trả lời của thí sinh"));
         getAuthorizedSession(response.getSessionId());
         return response;
     }
@@ -73,13 +73,13 @@ public class ExamResultAccessService {
         }
 
         var candidate = examCandidateRepository.findById(candidateId)
-            .orElseThrow(() -> new NotFoundException("Khong tim thay thi sinh cua phien thi"));
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy thí sinh của phiên thi"));
         if (candidate.getStudentId().equals(currentUserId)) {
             return;
         }
 
         var exam = examRepository.findById(examId)
-            .orElseThrow(() -> new NotFoundException("Khong tim thay bai kiem tra"));
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
         var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
@@ -97,6 +97,6 @@ public class ExamResultAccessService {
             return;
         }
 
-        throw new ForbiddenException("Quyen truy cap bi tu choi");
+        throw new ForbiddenException("Quyền truy cập bị từ chối");
     }
 }

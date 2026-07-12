@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.graphql.execution.BatchLoaderRegistry;
 
 import com.sep.vox.application.port.input.usecase.examevaluation.ResolveExamCandidateAttemptsUseCase;
+import com.sep.vox.application.query.dto.ExamCandidateAttempts;
 import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.domain.dto.ExamPaperDto;
 import com.sep.vox.domain.dto.ExamScheduleDto;
@@ -67,7 +68,7 @@ public class ExamGraphQlDataLoaderConfig {
                     .collect(Collectors.toMap(ExamPaperDto::id, paper -> paper)))
             );
 
-        registry.<UUID, ResolveExamCandidateAttemptsUseCase.ExamCandidateAttempts>forName("examCandidateAttemptsByCandidateId")
+        registry.<UUID, ExamCandidateAttempts>forName("examCandidateAttemptsByCandidateId")
             .registerMappedBatchLoader((Set<UUID> candidateIds, BatchLoaderEnvironment env) ->
                 Mono.fromSupplier(() -> resolveExamCandidateAttemptsUseCase.executeBatch(candidateIds))
             );

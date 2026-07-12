@@ -1,10 +1,10 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.Optional;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
@@ -96,6 +96,20 @@ public class ExamRepositoryImpl implements ExamRepository {
     @Override
     public boolean existsSubmittedSessionByExamId(UUID examId) {
         return springDataExamRepository.existsSubmittedSessionByExamId(examId);
+    }
+
+    @Override
+    public List<Exam> findByStatusAndOpenAtBefore(ExamStatus status, OffsetDateTime time) {
+        return springDataExamRepository.findByStatusAndOpenAtBefore(status.name(), time).stream()
+            .map(ExamMapper::toDomain)
+            .toList();
+    }
+
+    @Override
+    public List<Exam> findByStatusAndCloseAtBefore(ExamStatus status, OffsetDateTime time) {
+        return springDataExamRepository.findByStatusAndCloseAtBefore(status.name(), time).stream()
+            .map(ExamMapper::toDomain)
+            .toList();
     }
 
     @Override

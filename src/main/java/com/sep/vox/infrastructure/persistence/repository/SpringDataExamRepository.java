@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -83,4 +84,7 @@ public interface SpringDataExamRepository extends JpaRepository<ExamJpaEntity, U
           AND s.submittedAt IS NOT NULL
     """)
     boolean existsSubmittedSessionByExamId(@Param("examId") UUID examId);
+
+    List<ExamJpaEntity> findByStatusAndOpenAtBefore(String status, OffsetDateTime time);
+    List<ExamJpaEntity> findByStatusAndCloseAtBefore(String status, OffsetDateTime time);
 }

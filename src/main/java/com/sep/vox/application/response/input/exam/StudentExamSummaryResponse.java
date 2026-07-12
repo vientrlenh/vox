@@ -10,6 +10,11 @@ public record StudentExamSummaryResponse(
     int duration,
     String examDate,
     String status,
-    UUID sessionId
+    String kind,
+    UUID sessionId,
+    Integer maxAttempt,
+    int attemptsUsed,
+    boolean canEnter,
+    String entryMessage
 ) {
 }

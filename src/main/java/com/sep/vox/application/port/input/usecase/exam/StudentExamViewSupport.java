@@ -4,7 +4,9 @@ import java.time.Duration;
 import java.time.OffsetDateTime;
 
 import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamSchedule;
+import com.sep.vox.domain.model.exam.ExamStatus;
 
 final class StudentExamViewSupport {
 
@@ -18,7 +20,17 @@ final class StudentExamViewSupport {
         return exam.getKind().name().replace('_', ' ');
     }
 
-    static String statusOf(ExamSchedule schedule, OffsetDateTime now) {
+    static String statusOf(Exam exam, ExamSchedule schedule, OffsetDateTime now) {
+        if (exam != null && exam.getKind() == ExamKind.CLASS_TEST) {
+            if (exam.getStatus() == ExamStatus.IN_PROGRESS) {
+                return "in_progress";
+            }
+            if (exam.getStatus() == ExamStatus.DRAFT || exam.getStatus() == ExamStatus.SCHEDULED) {
+                return "upcoming";
+            }
+            return "completed";
+        }
+
         if (schedule == null || schedule.getStartDate() == null || schedule.getEndDate() == null) {
             return "upcoming";
         }
@@ -29,6 +41,10 @@ final class StudentExamViewSupport {
             return "upcoming";
         }
         return "completed";
+    }
+
+    static String statusOf(ExamSchedule schedule, OffsetDateTime now) {
+        return statusOf(null, schedule, now);
     }
 
     static int durationMinutesOf(ExamSchedule schedule, int fallbackMinutes) {

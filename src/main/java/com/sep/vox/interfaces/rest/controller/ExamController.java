@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.sep.vox.application.port.input.command.DeleteExamCommand;
 import com.sep.vox.application.port.input.command.DeleteExamMemberCommand;
+import com.sep.vox.application.port.input.command.StartClassTestSessionCommand;
 import com.sep.vox.application.port.input.command.VerifyExamScheduleOtpCommand;
 import com.sep.vox.application.port.input.query.GetExamScheduleOtpQuery;
 import com.sep.vox.application.port.input.usecase.exam.AttachExamBlueprintUseCase;
@@ -24,6 +25,7 @@ import com.sep.vox.application.port.input.usecase.exam.CreateExamMemberUseCase;
 import com.sep.vox.application.port.input.usecase.exam.CreateExamUseCase;
 import com.sep.vox.application.port.input.usecase.exam.DeleteExamMemberUseCase;
 import com.sep.vox.application.port.input.usecase.exam.DeleteExamUseCase;
+import com.sep.vox.application.port.input.usecase.exam.StartClassTestSessionUseCase;
 import com.sep.vox.application.port.input.usecase.exam.UpdateExamDeliveryModeUseCase;
 import com.sep.vox.application.port.input.usecase.exam.UpdateExamMemberUseCase;
 import com.sep.vox.application.port.input.usecase.exam.UpdateExamSecurePoolStatusUseCase;
@@ -75,6 +77,7 @@ public class ExamController {
     private final GetExamScheduleOtpUseCase getExamScheduleOtpUseCase;
     private final ViewMyExamsUseCase viewMyExamsUseCase;
     private final VerifyExamScheduleOtpUseCase verifyExamScheduleOtpUseCase;
+    private final StartClassTestSessionUseCase startClassTestSessionUseCase;
 
     public ExamController(
             CreateExamUseCase createExamUseCase,
@@ -89,7 +92,8 @@ public class ExamController {
             UpdateExamDeliveryModeUseCase updateExamDeliveryModeUseCase,
             GetExamScheduleOtpUseCase getExamScheduleOtpUseCase,
             ViewMyExamsUseCase viewMyExamsUseCase,
-            VerifyExamScheduleOtpUseCase verifyExamScheduleOtpUseCase) {
+            VerifyExamScheduleOtpUseCase verifyExamScheduleOtpUseCase,
+            StartClassTestSessionUseCase startClassTestSessionUseCase) {
         this.createExamUseCase = createExamUseCase;
         this.updateExamUseCase = updateExamUseCase;
         this.updateExamStatusUseCase = updateExamStatusUseCase;
@@ -103,6 +107,7 @@ public class ExamController {
         this.getExamScheduleOtpUseCase = getExamScheduleOtpUseCase;
         this.viewMyExamsUseCase = viewMyExamsUseCase;
         this.verifyExamScheduleOtpUseCase = verifyExamScheduleOtpUseCase;
+        this.startClassTestSessionUseCase = startClassTestSessionUseCase;
     }
 
     @GetMapping
@@ -220,4 +225,10 @@ public class ExamController {
         return ResponseEntity.ok(ApiResponse.success("Xác thực OTP thành công", data));
     }
 
+    @PostMapping("/{examId}/class-test/start")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<ApiResponse<?>> startClassTest(@PathVariable UUID examId) {
+        var data = startClassTestSessionUseCase.execute(new StartClassTestSessionCommand(examId));
+        return ResponseEntity.ok(ApiResponse.success("Bắt đầu bài kiểm tra thành công", data));
+    }
 }

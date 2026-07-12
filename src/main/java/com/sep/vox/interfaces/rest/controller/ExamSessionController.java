@@ -15,17 +15,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.sep.vox.application.port.input.command.CreateExamSessionCommand;
 import com.sep.vox.application.port.input.command.UpdateExamSessionStatusCommand;
-import com.sep.vox.application.port.input.query.ViewExamSessionFollowupsQuery;
 import com.sep.vox.application.port.input.query.ViewExamSessionPaperQuery;
-import com.sep.vox.application.port.input.query.ViewExamSessionQuery;
-import com.sep.vox.application.port.input.query.ViewExamSessionResultQuery;
 import com.sep.vox.application.port.input.usecase.exam.GetExamSessionPaperUseCase;
-import com.sep.vox.application.port.input.usecase.examitemresponse.ViewExamSessionFollowupsUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.CreateExamSessionUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.UpdateExamSessionStatusUseCase;
-import com.sep.vox.application.port.input.usecase.examsession.ViewExamSessionResultUseCase;
-import com.sep.vox.application.port.input.usecase.examsession.ViewExamSessionUseCase;
-import com.sep.vox.application.port.input.usecase.examsession.ViewMyExamResultsUseCase;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
 import com.sep.vox.interfaces.rest.dto.request.CreateExamSessionRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateExamSessionRequest;
@@ -38,28 +31,16 @@ import jakarta.validation.Valid;
 public class ExamSessionController {
 
     private final CreateExamSessionUseCase createExamSessionUseCase;
-    private final ViewExamSessionUseCase viewExamSessionUseCase;
     private final UpdateExamSessionStatusUseCase updateExamSessionStatusUseCase;
     private final GetExamSessionPaperUseCase getExamSessionPaperUseCase;
-    private final ViewExamSessionFollowupsUseCase viewExamSessionFollowupsUseCase;
-    private final ViewExamSessionResultUseCase viewExamSessionResultUseCase;
-    private final ViewMyExamResultsUseCase viewMyExamResultsUseCase;
 
     public ExamSessionController(
             CreateExamSessionUseCase createExamSessionUseCase,
-            ViewExamSessionUseCase viewExamSessionUseCase,
             UpdateExamSessionStatusUseCase updateExamSessionStatusUseCase,
-            GetExamSessionPaperUseCase getExamSessionPaperUseCase,
-            ViewExamSessionFollowupsUseCase viewExamSessionFollowupsUseCase,
-            ViewExamSessionResultUseCase viewExamSessionResultUseCase,
-            ViewMyExamResultsUseCase viewMyExamResultsUseCase) {
+            GetExamSessionPaperUseCase getExamSessionPaperUseCase) {
         this.createExamSessionUseCase = createExamSessionUseCase;
-        this.viewExamSessionUseCase = viewExamSessionUseCase;
         this.updateExamSessionStatusUseCase = updateExamSessionStatusUseCase;
         this.getExamSessionPaperUseCase = getExamSessionPaperUseCase;
-        this.viewExamSessionFollowupsUseCase = viewExamSessionFollowupsUseCase;
-        this.viewExamSessionResultUseCase = viewExamSessionResultUseCase;
-        this.viewMyExamResultsUseCase = viewMyExamResultsUseCase;
     }
 
     @PostMapping
@@ -72,20 +53,6 @@ public class ExamSessionController {
         ));
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Tao phien thi thanh cong", data));
-    }
-
-    @GetMapping("/my-results")
-    @PreAuthorize("hasRole('STUDENT')")
-    public ResponseEntity<ApiResponse<?>> getMyResults() {
-        var data = viewMyExamResultsUseCase.execute(null);
-        return ResponseEntity.ok(ApiResponse.success("Lay danh sach ket qua cua hoc sinh thanh cong", data));
-    }
-
-    @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER', 'STUDENT')")
-    public ResponseEntity<ApiResponse<?>> getById(@PathVariable UUID id) {
-        var data = viewExamSessionUseCase.execute(new ViewExamSessionQuery(id));
-        return ResponseEntity.ok(ApiResponse.success("Lay phien thi thanh cong", data));
     }
 
     @PatchMapping("/{id}")
@@ -105,19 +72,5 @@ public class ExamSessionController {
     public ResponseEntity<ApiResponse<?>> getPaper(@PathVariable UUID id) {
         var data = getExamSessionPaperUseCase.execute(new ViewExamSessionPaperQuery(id));
         return ResponseEntity.ok(ApiResponse.success("Lay de thi thanh cong", data));
-    }
-
-    @GetMapping("/{id}/followups")
-    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER', 'STUDENT')")
-    public ResponseEntity<ApiResponse<?>> getFollowups(@PathVariable UUID id) {
-        var data = viewExamSessionFollowupsUseCase.execute(new ViewExamSessionFollowupsQuery(id));
-        return ResponseEntity.ok(ApiResponse.success("Lay thong ke follow-up thanh cong", data));
-    }
-
-    @GetMapping("/{id}/result")
-    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER', 'STUDENT')")
-    public ResponseEntity<ApiResponse<?>> getResult(@PathVariable UUID id) {
-        var data = viewExamSessionResultUseCase.execute(new ViewExamSessionResultQuery(id));
-        return ResponseEntity.ok(ApiResponse.success("Lay ket qua phien thi thanh cong", data));
     }
 }

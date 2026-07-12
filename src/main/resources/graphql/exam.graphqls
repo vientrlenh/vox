@@ -327,6 +327,153 @@ type ExamAttemptSummary {
     totalScore: Float
     rubricResultBandCode: String
     rubricResultBandName: String
+    resultStatus: ExamCandidateResultStatus
+}
+
+enum ExamCandidateResultStatus {
+    PENDING_REVIEW
+    RELEASED
+    APPEALED
+    RE_GRADING
+    FINAL
+    INVALID
+    RETAKE_REQUIRED
+}
+
+type ExamSession {
+    id: ID!
+    examId: ID!
+    candidateId: ID!
+    paperId: ID!
+    startedAt: String
+    submittedAt: String
+    status: ExamSessionStatus!
+}
+
+type ExamSessionFollowup {
+    examItemResponseId: ID!
+    followupCount: Int!
+    totalTurns: Int!
+}
+
+type ExamCandidateResultSection {
+    sectionId: ID!
+    title: String
+    score: Float!
+}
+
+type ExamCandidateResultItem {
+    paperItemId: ID!
+    responseId: ID!
+    sectionId: ID!
+    itemScore: Float!
+    weightedScore: Float!
+}
+
+type ExamCandidateResult {
+    id: ID!
+    sessionId: ID!
+    examId: ID!
+    paperId: ID!
+    candidateId: ID!
+    totalScore: Float!
+    targetFrameworkBandId: ID
+    targetFrameworkBandCode: String
+    targetFrameworkBandLabel: String
+    rubricResultBandId: ID
+    rubricResultBandCode: String
+    rubricResultBandName: String
+    status: ExamCandidateResultStatus!
+    sections: [ExamCandidateResultSection!]!
+    items: [ExamCandidateResultItem!]!
+}
+
+type ExamItemResponseTurn {
+    id: ID!
+    examItemResponseId: ID!
+    turnOrder: Int!
+    turnType: String!
+    promptText: String
+    audioUrl: String
+    transcript: String
+    durationSeconds: Int
+    wordCount: Int
+    answeredAt: String
+    createdAt: String
+}
+
+type ExamItemResponseDetails {
+    id: ID!
+    sessionId: ID!
+    paperItemId: ID!
+    audioUrl: String
+    durationSeconds: Int
+    transcript: String
+    submittedAt: String
+    turns: [ExamItemResponseTurn!]!
+}
+
+type ExamItemCriterionScore {
+    id: ID!
+    rubricCriterionId: ID
+    criterionCode: String
+    criterionName: String
+    rawScore: Float
+    finalScore: Float
+    rationale: String
+}
+
+type ExamItemEvaluationTurn {
+    id: ID!
+    turnOrder: Int
+    turnType: String
+    promptText: String
+    audioUrl: String
+    transcript: String
+    wordCount: Int
+    durationSeconds: Int
+    asrConfidence: Float
+    pronunciationOverall: String
+    wordFeedback: String
+}
+
+type ExamItemEvaluationDetails {
+    id: ID!
+    responseId: ID!
+    paperItemId: ID!
+    engineType: String
+    gradedByModel: String
+    promptVersion: String
+    rawItemScore: Float
+    itemScore: Float
+    overallConfidence: Float
+    markedInvalid: Boolean!
+    requiresRetake: Boolean!
+    status: String
+    evaluatedAt: String
+    feedbackSummary: String
+    signals: String
+    validity: String
+    suggestions: String
+    criteria: [ExamItemCriterionScore!]!
+    turns: [ExamItemEvaluationTurn!]!
+}
+
+type StudentExamResultSummary {
+    candidateId: ID!
+    examId: ID!
+    examCode: String
+    examName: String
+    sessionId: ID
+    paperId: ID
+    sessionStatus: String
+    startedAt: String
+    submittedAt: String
+    totalScore: Float
+    resultStatus: String
+    rubricResultBandId: ID
+    rubricResultBandCode: String
+    rubricResultBandName: String
 }
 
 input UpdateExamScheduleInput {
@@ -376,6 +523,20 @@ extend type Query {
     examSchedules(examId: ID, status: ExamScheduleStatus, startDate: String, endDate: String): [ExamSchedule!]!
 
     examCandidates(examId: ID!, scheduleId: ID, status: ExamCandidateStatus): [ExamCandidate!]!
+
+    examSession(id: ID!): ExamSession
+
+    examSessionResult(sessionId: ID!): ExamCandidateResult
+
+    examSessionFollowups(sessionId: ID!): [ExamSessionFollowup!]!
+
+    myExamResults: [StudentExamResultSummary!]!
+
+    examItemResponse(answerId: ID!): ExamItemResponseDetails
+
+    examItemResponseTurns(answerId: ID!): [ExamItemResponseTurn!]!
+
+    examItemResponseEvaluation(answerId: ID!): ExamItemEvaluationDetails
 }
 
 extend type Mutation {

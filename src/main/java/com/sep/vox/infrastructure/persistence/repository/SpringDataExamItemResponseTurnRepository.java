@@ -14,6 +14,7 @@ public interface SpringDataExamItemResponseTurnRepository extends JpaRepository<
     List<ExamItemResponseTurnJpaEntity> findByExamItemResponseIdOrderByTurnOrderAsc(UUID examItemResponseId);
     Optional<ExamItemResponseTurnJpaEntity> findByExamItemResponseIdAndTurnOrder(UUID examItemResponseId, int turnOrder);
     Optional<ExamItemResponseTurnJpaEntity> findTopByExamItemResponseIdOrderByTurnOrderDesc(UUID examItemResponseId);
+    void deleteByExamItemResponseIdIn(java.util.Collection<UUID> examItemResponseIds);
 
     interface SessionFollowupCountProjection {
         UUID getExamItemResponseId();

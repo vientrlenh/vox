@@ -25,6 +25,7 @@ import com.sep.vox.application.port.input.command.DeleteQuestionAssetCommand;
 import com.sep.vox.application.port.input.command.DeleteQuestionCollaboratorCommand;
 import com.sep.vox.application.port.input.command.DeleteQuestionCommand;
 import com.sep.vox.application.port.input.command.PreviewQuestionImportFromFileCommand;
+import com.sep.vox.application.port.input.query.GetQuestionAssetUploadUrlQuery;
 import com.sep.vox.application.port.input.service.QuestionSpreadsheetService;
 import com.sep.vox.application.port.input.usecase.question.AcceptQuestionImportUseCase;
 import com.sep.vox.application.port.input.usecase.question.BulkUpdateQuestionStatusUseCase;
@@ -34,7 +35,9 @@ import com.sep.vox.application.port.input.usecase.question.CreateSystemQuestionB
 import com.sep.vox.application.port.input.usecase.question.DeleteQuestionAssetUseCase;
 import com.sep.vox.application.port.input.usecase.question.DeleteQuestionCollaboratorUseCase;
 import com.sep.vox.application.port.input.usecase.question.DeleteQuestionUseCase;
+import com.sep.vox.application.port.input.usecase.question.GetQuestionAssetUploadUrlUseCase;
 import com.sep.vox.application.port.input.usecase.question.PreviewQuestionImportFromFileUseCase;
+import com.sep.vox.application.port.input.usecase.question.RegenerateQuestionAssetAnalysisUseCase;
 import com.sep.vox.application.port.input.usecase.question.UpdateQuestionAssetUseCase;
 import com.sep.vox.application.port.input.usecase.question.UpdateQuestionCollaboratorUseCase;
 import com.sep.vox.application.port.input.usecase.question.UpdateQuestionStatusUseCase;
@@ -90,6 +93,8 @@ public class QuestionController {
     private final CreateQuestionAssetUseCase createQuestionAssetUseCase;
     private final UpdateQuestionAssetUseCase updateQuestionAssetUseCase;
     private final DeleteQuestionAssetUseCase deleteQuestionAssetUseCase;
+    private final RegenerateQuestionAssetAnalysisUseCase regenerateQuestionAssetAnalysisUseCase;
+    private final GetQuestionAssetUploadUrlUseCase getQuestionAssetUploadUrlUseCase;
     private final UpsertQuestionEvaluationGuideUseCase upsertQuestionEvaluationGuideUseCase;
     private final BulkUpdateQuestionStatusUseCase bulkUpdateQuestionStatusUseCase;
     private final PreviewQuestionImportFromFileUseCase previewQuestionImportFromFileUseCase;
@@ -107,6 +112,8 @@ public class QuestionController {
             CreateQuestionAssetUseCase createQuestionAssetUseCase,
             UpdateQuestionAssetUseCase updateQuestionAssetUseCase,
             DeleteQuestionAssetUseCase deleteQuestionAssetUseCase,
+            RegenerateQuestionAssetAnalysisUseCase regenerateQuestionAssetAnalysisUseCase,
+            GetQuestionAssetUploadUrlUseCase getQuestionAssetUploadUrlUseCase,
             UpsertQuestionEvaluationGuideUseCase upsertQuestionEvaluationGuideUseCase,
             BulkUpdateQuestionStatusUseCase bulkUpdateQuestionStatusUseCase,
             PreviewQuestionImportFromFileUseCase previewQuestionImportFromFileUseCase,
@@ -122,6 +129,8 @@ public class QuestionController {
         this.createQuestionAssetUseCase = createQuestionAssetUseCase;
         this.updateQuestionAssetUseCase = updateQuestionAssetUseCase;
         this.deleteQuestionAssetUseCase = deleteQuestionAssetUseCase;
+        this.regenerateQuestionAssetAnalysisUseCase = regenerateQuestionAssetAnalysisUseCase;
+        this.getQuestionAssetUploadUrlUseCase = getQuestionAssetUploadUrlUseCase;
         this.upsertQuestionEvaluationGuideUseCase = upsertQuestionEvaluationGuideUseCase;
         this.bulkUpdateQuestionStatusUseCase = bulkUpdateQuestionStatusUseCase;
         this.previewQuestionImportFromFileUseCase = previewQuestionImportFromFileUseCase;
@@ -289,6 +298,15 @@ public class QuestionController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @GetMapping("/{id}/assets/upload-url")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'TEACHER')")
+    public ResponseEntity<ApiResponse<?>> getAssetUploadUrl(
+            @PathVariable UUID id,
+            @RequestParam String contentType) {
+        var data = getQuestionAssetUploadUrlUseCase.execute(new GetQuestionAssetUploadUrlQuery(id, contentType));
+        return ResponseEntity.ok(ApiResponse.success("Lấy upload URL tài nguyên câu hỏi thành công", data));
+    }
+
     @PutMapping("/{id}/assets/{assetId}")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<QuestionAssetDto>> updateAsset(
@@ -309,6 +327,17 @@ public class QuestionController {
         deleteQuestionAssetUseCase.execute(new DeleteQuestionAssetCommand(id, assetId));
         ApiResponse<Void> response = ApiResponse.success("Xoa tai nguyen cau hoi thanh cong");
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{id}/assets/{assetId}/regenerate-analysis")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'TEACHER')")
+    public ResponseEntity<ApiResponse<QuestionAssetDto>> regenerateAssetAnalysis(
+            @PathVariable UUID id,
+            @PathVariable UUID assetId) {
+        var data = regenerateQuestionAssetAnalysisUseCase.execute(
+            new RegenerateQuestionAssetAnalysisUseCase.Command(id, assetId)
+        );
+        return ResponseEntity.ok(ApiResponse.success("Yeu cau tao lai phan tich asset da duoc tiep nhan", data));
     }
 
     @PutMapping("/{id}/evaluation-guide")

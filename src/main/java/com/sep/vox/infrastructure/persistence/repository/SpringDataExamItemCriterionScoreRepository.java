@@ -9,4 +9,5 @@ import com.sep.vox.infrastructure.persistence.entity.ExamItemCriterionScoreJpaEn
 
 public interface SpringDataExamItemCriterionScoreRepository extends JpaRepository<ExamItemCriterionScoreJpaEntity, UUID> {
     List<ExamItemCriterionScoreJpaEntity> findByEvaluationId(UUID evaluationId);
+    void deleteByEvaluationIdIn(java.util.Collection<UUID> evaluationIds);
 }

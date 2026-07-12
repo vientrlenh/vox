@@ -1,5 +1,6 @@
 package com.sep.vox.domain.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -15,4 +16,5 @@ public interface ExamItemResponseTurnRepository {
     Optional<ExamItemResponseTurn> findByExamItemResponseIdAndTurnOrder(UUID examItemResponseId, int turnOrder);
     Optional<ExamItemResponseTurn> findLatestByExamItemResponseId(UUID examItemResponseId);
     List<SessionFollowupCount> countFollowupsBySessionId(UUID sessionId);
+    void deleteByExamItemResponseIdIn(Collection<UUID> examItemResponseIds);
 }

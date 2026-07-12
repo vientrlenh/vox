@@ -5,6 +5,7 @@ import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,6 +19,7 @@ import com.sep.vox.application.port.input.command.UpdateExamSessionStatusCommand
 import com.sep.vox.application.port.input.query.ViewExamSessionPaperQuery;
 import com.sep.vox.application.port.input.usecase.exam.GetExamSessionPaperUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.CreateExamSessionUseCase;
+import com.sep.vox.application.port.input.usecase.examsession.DeleteExamSessionUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.UpdateExamSessionStatusUseCase;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
 import com.sep.vox.interfaces.rest.dto.request.CreateExamSessionRequest;
@@ -33,14 +35,17 @@ public class ExamSessionController {
     private final CreateExamSessionUseCase createExamSessionUseCase;
     private final UpdateExamSessionStatusUseCase updateExamSessionStatusUseCase;
     private final GetExamSessionPaperUseCase getExamSessionPaperUseCase;
+    private final DeleteExamSessionUseCase deleteExamSessionUseCase;
 
     public ExamSessionController(
             CreateExamSessionUseCase createExamSessionUseCase,
             UpdateExamSessionStatusUseCase updateExamSessionStatusUseCase,
-            GetExamSessionPaperUseCase getExamSessionPaperUseCase) {
+            GetExamSessionPaperUseCase getExamSessionPaperUseCase,
+            DeleteExamSessionUseCase deleteExamSessionUseCase) {
         this.createExamSessionUseCase = createExamSessionUseCase;
         this.updateExamSessionStatusUseCase = updateExamSessionStatusUseCase;
         this.getExamSessionPaperUseCase = getExamSessionPaperUseCase;
+        this.deleteExamSessionUseCase = deleteExamSessionUseCase;
     }
 
     @PostMapping
@@ -72,5 +77,12 @@ public class ExamSessionController {
     public ResponseEntity<ApiResponse<?>> getPaper(@PathVariable UUID id) {
         var data = getExamSessionPaperUseCase.execute(new ViewExamSessionPaperQuery(id));
         return ResponseEntity.ok(ApiResponse.success("Lay de thi thanh cong", data));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
+    public ResponseEntity<ApiResponse<?>> delete(@PathVariable UUID id) {
+        deleteExamSessionUseCase.execute(id);
+        return ResponseEntity.ok(ApiResponse.success("Xoa phien thi thanh cong", null));
     }
 }

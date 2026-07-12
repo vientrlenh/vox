@@ -79,6 +79,7 @@ public class ViewMyExamsUseCase implements IUseCase<Void, List<StudentExamSummar
                     StudentExamViewSupport.examDateOf(schedule, exam.getOpenAt()),
                     StudentExamViewSupport.statusOf(exam, schedule, now),
                     exam.getKind() == null ? null : exam.getKind().name(),
+                    exam.isRequiresOtp(),
                     latestSessionId,
                     exam.getMaxAttempt(),
                     attemptsUsed,
@@ -105,9 +106,9 @@ public class ViewMyExamsUseCase implements IUseCase<Void, List<StudentExamSummar
             return new EntryAvailability(false, "Bạn chưa được gán đề thi.");
         }
 
-        if (exam.getKind() == ExamKind.CLASS_TEST) {
+        if (exam.getKind() == ExamKind.CLASS_TEST || !exam.isRequiresOtp()) {
             if (exam.getStatus() != ExamStatus.IN_PROGRESS) {
-                return new EntryAvailability(false, "Bài kiểm tra trên lớp chưa được giáo viên mở.");
+                return new EntryAvailability(false, "Bài kiểm tra chưa được giáo viên mở.");
             }
             return new EntryAvailability(true, null);
         }

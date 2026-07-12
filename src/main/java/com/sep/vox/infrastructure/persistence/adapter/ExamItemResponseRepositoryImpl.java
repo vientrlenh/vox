@@ -43,4 +43,9 @@ public class ExamItemResponseRepositoryImpl implements ExamItemResponseRepositor
             .map(ExamItemResponseMapper::toDomain)
             .toList();
     }
+
+    @Override
+    public void deleteBySessionId(UUID sessionId) {
+        springDataExamItemResponseRepository.deleteBySessionId(sessionId);
+    }
 }

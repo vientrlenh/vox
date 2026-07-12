@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -33,5 +34,10 @@ public class ExamItemEvaluationTurnRepositoryImpl implements ExamItemEvaluationT
             .stream()
             .map(ExamItemEvaluationTurnMapper::toDomain)
             .toList();
+    }
+
+    @Override
+    public void deleteByEvaluationIdIn(Collection<UUID> evaluationIds) {
+        springDataExamItemEvaluationTurnRepository.deleteByEvaluationIdIn(evaluationIds);
     }
 }

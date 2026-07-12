@@ -16,6 +16,8 @@ public record ExamItemEvaluationDetailsResponse(
     BigDecimal rawItemScore,
     BigDecimal itemScore,
     BigDecimal overallConfidence,
+    boolean requiresHumanReview,
+    String reviewReasonCode,
     boolean markedInvalid,
     boolean requiresRetake,
     String status,

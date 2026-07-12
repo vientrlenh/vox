@@ -52,8 +52,8 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
 
         var exam = examRepository.findById(input.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
-        if (exam.getKind() != ExamKind.CLASS_TEST) {
-            throw new IllegalStateException("Bài kiểm tra này không phải bài kiểm tra trên lớp, vui lòng dùng luồng xác thực OTP");
+        if (exam.getKind() != ExamKind.CLASS_TEST && exam.isRequiresOtp()) {
+            throw new IllegalStateException("Bài kiểm tra này yêu cầu xác thực OTP, vui lòng dùng luồng xác thực OTP");
         }
         if (exam.getStatus() != ExamStatus.IN_PROGRESS) {
             throw new IllegalStateException("Bài kiểm tra hiện không mở để làm bài (trạng thái: " + exam.getStatus() + ")");

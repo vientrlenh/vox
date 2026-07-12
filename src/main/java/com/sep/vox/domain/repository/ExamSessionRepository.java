@@ -15,4 +15,5 @@ public interface ExamSessionRepository {
     List<ExamSession> findAllByCandidateIdIn(Collection<UUID> candidateIds);
     boolean existsById(UUID id);
     ExamSession save(ExamSession session);
+    void deleteById(UUID id);
 }

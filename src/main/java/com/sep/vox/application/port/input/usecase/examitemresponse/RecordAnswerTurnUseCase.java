@@ -58,6 +58,7 @@ public class RecordAnswerTurnUseCase implements IUseCase<RecordAnswerTurnCommand
                 input.audioUrl(),
                 input.durationSeconds(),
                 input.transcript(),
+                null,
                 answeredAt
             ));
 

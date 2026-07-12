@@ -10,6 +10,7 @@ public interface QuestionAssetRepository {
     QuestionAsset save(QuestionAsset questionAsset);
     List<QuestionAsset> saveAll(List<QuestionAsset> questionAssets);
     List<QuestionAsset> findByQuestionId(UUID questionId);
+    boolean existsByQuestionId(UUID questionId);
     Optional<QuestionAsset> findById(UUID id);
     void deleteById(UUID id);
     void deleteByQuestionId(UUID questionId);

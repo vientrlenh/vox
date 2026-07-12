@@ -20,6 +20,7 @@ public class Exam {
     private OffsetDateTime openAt;
     private OffsetDateTime closeAt;
     private UUID assessmentPolicyId;
+    private boolean requiresOtp;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
     private UUID createdBy;
@@ -29,7 +30,7 @@ public class Exam {
 
     public Exam(UUID id, UUID blueprintId, UUID blueprintVersionId, String code, String name, String description, UUID schoolId, UUID languageId,
             ExamKind kind, ExamDeliveryMode deliveryMode, ExamStatus status, Integer maxAttempt, ResultDecisionMethod resultDecisionMethod,
-            OffsetDateTime openAt, OffsetDateTime closeAt, UUID assessmentPolicyId,
+            OffsetDateTime openAt, OffsetDateTime closeAt, UUID assessmentPolicyId, boolean requiresOtp,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.blueprintId = blueprintId;
@@ -47,6 +48,7 @@ public class Exam {
         this.openAt = openAt;
         this.closeAt = closeAt;
         this.assessmentPolicyId = assessmentPolicyId;
+        this.requiresOtp = requiresOtp;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
@@ -55,7 +57,7 @@ public class Exam {
 
     public Exam(UUID blueprintId, UUID blueprintVersionId, String code, String name, String description, UUID schoolId, UUID languageId, ExamKind kind,
             ExamDeliveryMode deliveryMode, ExamStatus status, Integer maxAttempt, ResultDecisionMethod resultDecisionMethod,
-            OffsetDateTime openAt, OffsetDateTime closeAt, UUID assessmentPolicyId, OffsetDateTime createdAt,
+            OffsetDateTime openAt, OffsetDateTime closeAt, UUID assessmentPolicyId, boolean requiresOtp, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.blueprintId = blueprintId;
         this.blueprintVersionId = blueprintVersionId;
@@ -72,6 +74,7 @@ public class Exam {
         this.openAt = openAt;
         this.closeAt = closeAt;
         this.assessmentPolicyId = assessmentPolicyId;
+        this.requiresOtp = requiresOtp;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
@@ -238,5 +241,12 @@ public class Exam {
         this.blueprintVersionId = blueprintVersionId;
     }
 
+    public boolean isRequiresOtp() {
+        return requiresOtp;
+    }
+
+    public void setRequiresOtp(boolean requiresOtp) {
+        this.requiresOtp = requiresOtp;
+    }
 
 }

@@ -12,6 +12,7 @@ public record UpdateExamCommand(
     String closeAt,
     UUID assessmentPolicyId,
     Integer maxAttempt,
-    ResultDecisionMethod resultDecisionMethod
+    ResultDecisionMethod resultDecisionMethod,
+    Boolean requiresOtp
 ) {
 }

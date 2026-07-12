@@ -1,6 +1,7 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
 import java.time.OffsetDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -71,5 +72,10 @@ public class ExamItemResponseTurnRepositoryImpl implements ExamItemResponseTurnR
         return springDataExamItemResponseTurnRepository.countFollowupsBySessionId(sessionId).stream()
             .map(row -> new SessionFollowupCount(row.getExamItemResponseId(), row.getFollowupCount(), row.getTotalTurns()))
             .toList();
+    }
+
+    @Override
+    public void deleteByExamItemResponseIdIn(Collection<UUID> examItemResponseIds) {
+        springDataExamItemResponseTurnRepository.deleteByExamItemResponseIdIn(examItemResponseIds);
     }
 }

@@ -27,6 +27,7 @@ import com.sep.vox.domain.repository.FrameworkCriterionBandRepository;
 import com.sep.vox.domain.repository.FrameworkCriterionRepository;
 import com.sep.vox.domain.repository.FrameworkResultBandRepository;
 import com.sep.vox.domain.repository.QuestionEvaluationGuideRepository;
+import com.sep.vox.domain.repository.QuestionAssetRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.QuestionTopicRepository;
 import com.sep.vox.domain.repository.RubricCriterionBandRepository;
@@ -42,6 +43,7 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
     private final ExamPaperItemRepository examPaperItemRepository;
     private final QuestionRepository questionRepository;
     private final QuestionEvaluationGuideRepository questionEvaluationGuideRepository;
+    private final QuestionAssetRepository questionAssetRepository;
     private final QuestionTopicRepository questionTopicRepository;
     private final AssessmentPolicyRepository assessmentPolicyRepository;
     private final RubricCriterionRepository rubricCriterionRepository;
@@ -59,6 +61,7 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
             ExamPaperItemRepository examPaperItemRepository,
             QuestionRepository questionRepository,
             QuestionEvaluationGuideRepository questionEvaluationGuideRepository,
+            QuestionAssetRepository questionAssetRepository,
             QuestionTopicRepository questionTopicRepository,
             AssessmentPolicyRepository assessmentPolicyRepository,
             RubricCriterionRepository rubricCriterionRepository,
@@ -74,6 +77,7 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
         this.examPaperItemRepository = examPaperItemRepository;
         this.questionRepository = questionRepository;
         this.questionEvaluationGuideRepository = questionEvaluationGuideRepository;
+        this.questionAssetRepository = questionAssetRepository;
         this.questionTopicRepository = questionTopicRepository;
         this.assessmentPolicyRepository = assessmentPolicyRepository;
         this.rubricCriterionRepository = rubricCriterionRepository;
@@ -116,6 +120,7 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
             var question = questionRepository.findById(paperItem.getQuestionId())
                 .orElseThrow(() -> new NotFoundException("không thể tìm thấy câu hỏi " + paperItem.getQuestionId()));
             var guide = questionEvaluationGuideRepository.findByQuestionId(question.getId()).orElse(null);
+            var asset = questionAssetRepository.findByQuestionId(question.getId()).stream().findFirst().orElse(null);
             var topic = question.getQuestionTopicId() == null
                 ? null
                 : questionTopicRepository.findById(question.getQuestionTopicId()).orElse(null);
@@ -152,6 +157,12 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
                     question.getMaxResponseSeconds(),
                     question.getMinResponseSeconds(),
                     question.getMaxResponseSeconds(),
+                    asset == null ? null : new ExamAttemptEvaluationRequestedExternalEvent.Asset(
+                        asset.getType() == null ? null : asset.getType().name(),
+                        asset.getTranscript(),
+                        asset.getDescription(),
+                        asset.getAltText()
+                    ),
                     topic == null ? null : topic.getName(),
                     topic == null ? null : topic.getDescription(),
                     guide == null ? null : new ExamAttemptEvaluationRequestedExternalEvent.EvaluationGuide(

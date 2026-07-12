@@ -40,4 +40,16 @@ public class ExamItemEvaluationRepositoryImpl implements ExamItemEvaluationRepos
             .map(ExamItemEvaluationMapper::toDomain)
             .toList();
     }
+
+    @Override
+    public List<ExamItemEvaluation> findByResponseIdIn(Collection<UUID> responseIds) {
+        return springDataExamItemEvaluationRepository.findByResponseIdIn(responseIds).stream()
+            .map(ExamItemEvaluationMapper::toDomain)
+            .toList();
+    }
+
+    @Override
+    public void deleteByResponseIdIn(Collection<UUID> responseIds) {
+        springDataExamItemEvaluationRepository.deleteByResponseIdIn(responseIds);
+    }
 }

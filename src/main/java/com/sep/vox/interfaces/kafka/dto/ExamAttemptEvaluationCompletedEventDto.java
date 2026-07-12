@@ -48,6 +48,8 @@ public record ExamAttemptEvaluationCompletedEventDto(
         Double offTopicRatio,
         Double codeSwitchingRatio,
         Double speechRate,
+        Double aiConfidence,
+        Double audioQuality,
         Double silenceRatio
     ) {
     }

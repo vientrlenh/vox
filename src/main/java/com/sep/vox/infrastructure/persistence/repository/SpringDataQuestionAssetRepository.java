@@ -9,5 +9,6 @@ import com.sep.vox.infrastructure.persistence.entity.QuestionAssetJpaEntity;
 
 public interface SpringDataQuestionAssetRepository extends JpaRepository<QuestionAssetJpaEntity, UUID> {
     List<QuestionAssetJpaEntity> findByQuestionIdOrderByOrderAsc(UUID questionId);
+    boolean existsByQuestionId(UUID questionId);
     void deleteByQuestionId(UUID questionId);
 }

@@ -123,10 +123,10 @@ public class ExamController {
 
     @QueryMapping(name = "exams")
     public PageResult<ExamDto> exams(
-            @Argument ExamKind kind,
-            @Argument ExamStatus status,
-            @Argument UUID schoolId,
-            @Argument String keyword,
+            @Argument(name = "kind") ExamKind kind,
+            @Argument(name = "status") ExamStatus status,
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "keyword") String keyword,
             @Argument(name = "page") int page,
             @Argument(name = "size") int size) {
         validatePage(page, size);
@@ -135,9 +135,9 @@ public class ExamController {
 
     @QueryMapping(name = "classTests")
     public PageResult<ExamDto> classTests(
-            @Argument ExamStatus status,
-            @Argument UUID schoolClassId,
-            @Argument String keyword,
+            @Argument(name = "status") ExamStatus status,
+            @Argument(name = "schoolClassId") UUID schoolClassId,
+            @Argument(name = "keyword") String keyword,
             @Argument(name = "page") int page,
             @Argument(name = "size") int size) {
         validatePage(page, size);
@@ -162,7 +162,9 @@ public class ExamController {
     }
 
     @QueryMapping(name = "examStatusCounts")
-    public ExamStatusCountsDto examStatusCounts(@Argument UUID schoolId, @Argument ExamKind kind) {
+    public ExamStatusCountsDto examStatusCounts(
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "kind") ExamKind kind) {
         return viewExamStatusCountsUseCase.execute(new ViewExamStatusCountsQuery(schoolId, kind));
     }
 

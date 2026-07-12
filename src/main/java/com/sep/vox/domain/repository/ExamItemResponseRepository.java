@@ -11,4 +11,5 @@ public interface ExamItemResponseRepository {
     boolean existsById(UUID id);
     ExamItemResponse save(ExamItemResponse response);
     List<ExamItemResponse> findBySessionId(UUID sessionId);
+    void deleteBySessionId(UUID sessionId);
 }

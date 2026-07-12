@@ -16,6 +16,7 @@ import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
 
 import com.sep.vox.application.port.input.command.RecordAnswerTurnCommand;
+import com.sep.vox.application.port.input.usecase.examitemresponse.RecordAnswerTerminationReasonUseCase;
 import com.sep.vox.application.port.input.usecase.examitemresponse.RecordAnswerTurnUseCase;
 import com.sep.vox.interfaces.kafka.dto.AnswerTurnsRecordedEventDto;
 
@@ -27,12 +28,15 @@ public class AnswerTurnsRecordedConsumer {
     private static final Logger LOGGER = LoggerFactory.getLogger(AnswerTurnsRecordedConsumer.class);
 
     private final RecordAnswerTurnUseCase recordAnswerTurnUseCase;
+    private final RecordAnswerTerminationReasonUseCase recordAnswerTerminationReasonUseCase;
     private final JsonMapper jsonMapper;
 
     public AnswerTurnsRecordedConsumer(
             RecordAnswerTurnUseCase recordAnswerTurnUseCase,
+            RecordAnswerTerminationReasonUseCase recordAnswerTerminationReasonUseCase,
             JsonMapper jsonMapper) {
         this.recordAnswerTurnUseCase = recordAnswerTurnUseCase;
+        this.recordAnswerTerminationReasonUseCase = recordAnswerTerminationReasonUseCase;
         this.jsonMapper = jsonMapper;
     }
 
@@ -77,6 +81,12 @@ public class AnswerTurnsRecordedConsumer {
                     turn.durationSeconds(),
                     turn.wordCount(),
                     parseAnsweredAt(turn.answeredAt())
+                ));
+            }
+            if (event.payload().reason() != null && !event.payload().reason().isBlank()) {
+                recordAnswerTerminationReasonUseCase.execute(new RecordAnswerTerminationReasonUseCase.Command(
+                    parseUuid(event.answerId(), "answerId"),
+                    event.payload().reason().trim()
                 ));
             }
 

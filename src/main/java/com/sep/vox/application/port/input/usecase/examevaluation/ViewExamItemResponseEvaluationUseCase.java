@@ -90,6 +90,8 @@ public class ViewExamItemResponseEvaluationUseCase
             evaluation.getRawItemScore(),
             evaluation.getItemScore(),
             evaluation.getOverallConfidence(),
+            evaluation.isRequiresHumanReview(),
+            evaluation.getReviewReasonCode(),
             evaluation.isMarkedInvalid(),
             evaluation.isRequiresRetake(),
             evaluation.getStatus().name(),

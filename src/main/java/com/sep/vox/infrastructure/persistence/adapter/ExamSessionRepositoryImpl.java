@@ -63,4 +63,9 @@ public class ExamSessionRepositoryImpl implements ExamSessionRepository {
         var saved = springDataExamSessionRepository.save(ExamSessionMapper.toJpa(session));
         return ExamSessionMapper.toDomain(saved);
     }
+
+    @Override
+    public void deleteById(UUID id) {
+        springDataExamSessionRepository.deleteById(id);
+    }
 }

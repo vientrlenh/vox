@@ -52,6 +52,7 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<ExamAttemptE
     private final UpsertExamCandidateResultUseCase upsertExamCandidateResultUseCase;
     private final UpdateExamSessionStatusUseCase updateExamSessionStatusUseCase;
     private final JsonMapper jsonMapper;
+    private static final BigDecimal LOW_CONFIDENCE_THRESHOLD = BigDecimal.valueOf(0.50).setScale(2, RoundingMode.HALF_UP);
 
     public RecordExamAttemptEvaluationUseCase(
             ExamItemResponseRepository examItemResponseRepository,
@@ -102,10 +103,26 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<ExamAttemptE
             Function.identity(),
             (left, right) -> left
         ));
-        var itemScore = computeWeightedItemScore(criteriaMap, rubricCriteriaByCode);
+        BigDecimal itemScore = computeWeightedItemScore(criteriaMap, rubricCriteriaByCode);
 
-        var signals = ExamEvaluationSignalMapper.toDomain(input.payload() == null ? null : input.payload().signals());
         var validity = input.payload() == null ? null : input.payload().validity();
+        var signals = ExamEvaluationSignalMapper.toDomain(input.payload() == null ? null : input.payload().signals());
+        var overallConfidence = clampUnit(input.payload() == null || input.payload().signals() == null
+            ? null
+            : input.payload().signals().asrConfidenceAvg());
+        var hasCriticalValidityFlag = hasCriticalValidityFlag(validity);
+        boolean requiresHumanReview = hasCriticalValidityFlag || overallConfidence.compareTo(LOW_CONFIDENCE_THRESHOLD) < 0;
+        String reviewReasonCode = hasCriticalValidityFlag
+            ? "VALIDITY_FLAGGED"
+            : (overallConfidence.compareTo(LOW_CONFIDENCE_THRESHOLD) < 0 ? "LOW_CONFIDENCE" : null);
+        var requiresRetake = requiresRetake(validity);
+        boolean markedInvalid = validity != null && Boolean.FALSE.equals(validity.validForScoring());
+        if ("uncooperative_move_on".equals(response.getTerminationReason())) {
+            itemScore = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+            requiresHumanReview = true;
+            reviewReasonCode = "CONDUCT_VIOLATION";
+            markedInvalid = true;
+        }
         var evaluation = examItemEvaluationRepository.save(new ExamItemEvaluation(
             response.getId(),
             response.getPaperItemId(),
@@ -115,11 +132,11 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<ExamAttemptE
             null,
             itemScore,
             itemScore,
-            clampUnit(input.payload() == null || input.payload().signals() == null ? null : input.payload().signals().asrConfidenceAvg()),
-            false,
-            null,
-            validity != null && Boolean.FALSE.equals(validity.validForScoring()),
-            false,
+            overallConfidence,
+            requiresHumanReview,
+            reviewReasonCode,
+            markedInvalid,
+            requiresRetake,
             signals,
             toNullableJson(validity),
             input.payload() == null ? "" : input.payload().feedbackSummary(),
@@ -264,6 +281,18 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<ExamAttemptE
         }
         var decimal = BigDecimal.valueOf(Math.max(0D, Math.min(1D, value)));
         return decimal.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private boolean hasCriticalValidityFlag(ExamAttemptEvaluationCompletedEventDto.ValidityResultDto validity) {
+        return validity != null
+            && validity.overallSeverity() != null
+            && "critical".equalsIgnoreCase(validity.overallSeverity());
+    }
+
+    private boolean requiresRetake(ExamAttemptEvaluationCompletedEventDto.ValidityResultDto validity) {
+        return validity != null
+            && validity.action() != null
+            && "reject_or_zero".equalsIgnoreCase(validity.action());
     }
 
     private String toJson(Object value) {

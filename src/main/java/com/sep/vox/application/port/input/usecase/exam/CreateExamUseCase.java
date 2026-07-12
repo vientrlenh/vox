@@ -88,6 +88,7 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
             parseDateTime(command.openAt()),
             parseDateTime(command.closeAt()),
             command.assessmentPolicyId(),
+            command.requiresOtp() == null || command.requiresOtp(),
             now,
             now,
             currentUserId,
@@ -107,7 +108,8 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
             input.closeAt(),
             input.assessmentPolicyId(),
             input.maxAttempt(),
-            input.resultDecisionMethod()
+            input.resultDecisionMethod(),
+            input.requiresOtp()
         );
     }
 

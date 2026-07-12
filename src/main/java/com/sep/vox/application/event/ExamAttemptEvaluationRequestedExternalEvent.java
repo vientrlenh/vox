@@ -26,6 +26,7 @@ public record ExamAttemptEvaluationRequestedExternalEvent(
         Integer durationSeconds,
         Integer minResponseSeconds,
         Integer maxResponseSeconds,
+        Asset asset,
         String topicName,
         String topicDescription,
         EvaluationGuide evaluationGuide,
@@ -34,6 +35,14 @@ public record ExamAttemptEvaluationRequestedExternalEvent(
         String language,
         List<CriterionFramework> criteriaFrameworks,
         List<TurnInput> turns
+    ) {
+    }
+
+    public record Asset(
+        String type,
+        String transcript,
+        String description,
+        String altText
     ) {
     }
 

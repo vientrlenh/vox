@@ -34,4 +34,9 @@ public class ExamItemCriterionScoreRepositoryImpl implements ExamItemCriterionSc
             .map(ExamItemCriterionScoreMapper::toDomain)
             .toList();
     }
+
+    @Override
+    public void deleteByEvaluationIdIn(java.util.Collection<UUID> evaluationIds) {
+        springDataExamItemCriterionScoreRepository.deleteByEvaluationIdIn(evaluationIds);
+    }
 }

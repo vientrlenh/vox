@@ -183,6 +183,10 @@ app:
           topic:
             exam-attempt-evaluation-completed: ${KAFKA_EXAM_EVALUATION_COMPLETED_TOPIC:exam-attempt-evaluation-completed}
           group-id: ${KAFKA_EXAM_EVALUATION_GROUP_ID:vox-exam-evaluation}
+        question-asset-analysis:
+          topic:
+            question-asset-analysis-completed: ${KAFKA_QUESTION_ASSET_ANALYSIS_COMPLETED_TOPIC:question-asset-analysis-completed}
+          group-id: ${KAFKA_QUESTION_ASSET_ANALYSIS_GROUP_ID:vox-question-asset-analysis}
 
 system-admin:
   email: ${SYS_ADMIN_EMAIL}

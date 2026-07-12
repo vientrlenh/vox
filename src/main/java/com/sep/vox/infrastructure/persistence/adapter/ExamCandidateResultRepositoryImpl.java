@@ -39,4 +39,9 @@ public class ExamCandidateResultRepositoryImpl implements ExamCandidateResultRep
         var saved = springDataExamCandidateResultRepository.save(ExamCandidateResultMapper.toJpa(result));
         return ExamCandidateResultMapper.toDomain(saved);
     }
+
+    @Override
+    public void deleteBySessionId(UUID sessionId) {
+        springDataExamCandidateResultRepository.deleteBySessionId(sessionId);
+    }
 }

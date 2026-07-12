@@ -14,6 +14,7 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.exam.StudentExamPaperQuestionResponse;
 import com.sep.vox.application.response.input.exam.StudentExamPaperResponse;
 import com.sep.vox.application.response.input.exam.StudentQuestionResponse;
+import com.sep.vox.domain.mapper.QuestionAssetDtoMapper;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamPaperItemRepository;
 import com.sep.vox.domain.repository.ExamPaperRepository;
@@ -21,6 +22,7 @@ import com.sep.vox.domain.repository.ExamPaperSectionRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;
+import com.sep.vox.domain.repository.QuestionAssetRepository;
 import com.sep.vox.domain.repository.QuestionEvaluationGuideRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 
@@ -37,6 +39,7 @@ public class GetExamSessionPaperUseCase implements IUseCase<ViewExamSessionPaper
     private final QuestionEvaluationGuideRepository questionEvaluationGuideRepository;
     private final ExamScheduleRepository examScheduleRepository;
     private final UserContextPort userContextPort;
+    private final QuestionAssetRepository questionAssetRepository;
 
     public GetExamSessionPaperUseCase(
             ExamSessionRepository examSessionRepository,
@@ -48,7 +51,8 @@ public class GetExamSessionPaperUseCase implements IUseCase<ViewExamSessionPaper
             QuestionRepository questionRepository,
             QuestionEvaluationGuideRepository questionEvaluationGuideRepository,
             ExamScheduleRepository examScheduleRepository,
-            UserContextPort userContextPort) {
+            UserContextPort userContextPort,
+            QuestionAssetRepository questionAssetRepository) {
         this.examSessionRepository = examSessionRepository;
         this.examCandidateRepository = examCandidateRepository;
         this.examRepository = examRepository;
@@ -59,6 +63,7 @@ public class GetExamSessionPaperUseCase implements IUseCase<ViewExamSessionPaper
         this.questionEvaluationGuideRepository = questionEvaluationGuideRepository;
         this.examScheduleRepository = examScheduleRepository;
         this.userContextPort = userContextPort;
+        this.questionAssetRepository = questionAssetRepository;
     }
 
     @Override
@@ -86,9 +91,18 @@ public class GetExamSessionPaperUseCase implements IUseCase<ViewExamSessionPaper
             .map(item -> {
                 var question = questionRepository.findById(item.getQuestionId())
                     .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi trong đề thi"));
+                var section = sectionById.get(item.getSectionId());
+                var asset = questionAssetRepository.findByQuestionId(question.getId()).stream()
+                    .findFirst()
+                    .map(QuestionAssetDtoMapper::toDto)
+                    .orElse(null);
+
                 return new StudentExamPaperQuestionResponse(
                     item.getId(),
                     orderOf(sectionById, item.getSectionId(), item.getOrder()),
+                    item.getSectionId(),
+                    section == null ? null : section.getTitle(),
+                    section == null ? null : section.getInstruction(),
                     new StudentQuestionResponse(
                         question.getId(),
                         question.getCode(),
@@ -100,8 +114,10 @@ public class GetExamSessionPaperUseCase implements IUseCase<ViewExamSessionPaper
                         question.getMinResponseSeconds(),
                         question.getMaxResponseSeconds(),
                         question.getType() == null ? null : question.getType().name(),
-                        ""
+                        "",
+                        asset
                     ),
+                    asset,
                     questionEvaluationGuideRepository.findByQuestionId(question.getId()).map(guide -> new com.sep.vox.domain.dto.QuestionEvaluationGuideDto(
                         guide.getId(),
                         guide.getQuestionId(),

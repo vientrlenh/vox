@@ -9,4 +9,5 @@ import com.sep.vox.infrastructure.persistence.entity.ExamItemEvaluationTurnJpaEn
 
 public interface SpringDataExamItemEvaluationTurnRepository extends JpaRepository<ExamItemEvaluationTurnJpaEntity, UUID> {
     List<ExamItemEvaluationTurnJpaEntity> findByEvaluationIdOrderByTurnOrderAsc(UUID evaluationId);
+    void deleteByEvaluationIdIn(java.util.Collection<UUID> evaluationIds);
 }

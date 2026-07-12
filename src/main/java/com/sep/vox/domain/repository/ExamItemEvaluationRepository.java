@@ -11,4 +11,6 @@ public interface ExamItemEvaluationRepository {
     ExamItemEvaluation save(ExamItemEvaluation evaluation);
     Optional<ExamItemEvaluation> findLatestByResponseId(UUID responseId);
     List<ExamItemEvaluation> findLatestByResponseIdIn(Collection<UUID> responseIds);
+    List<ExamItemEvaluation> findByResponseIdIn(Collection<UUID> responseIds);
+    void deleteByResponseIdIn(Collection<UUID> responseIds);
 }

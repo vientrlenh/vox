@@ -46,6 +46,11 @@ public class QuestionAssetRepositoryImpl implements QuestionAssetRepository {
     }
 
     @Override
+    public boolean existsByQuestionId(UUID questionId) {
+        return springDataQuestionAssetRepository.existsByQuestionId(questionId);
+    }
+
+    @Override
     public Optional<QuestionAsset> findById(UUID id) {
         return springDataQuestionAssetRepository.findById(id)
             .map(QuestionAssetMapper::toDomain);

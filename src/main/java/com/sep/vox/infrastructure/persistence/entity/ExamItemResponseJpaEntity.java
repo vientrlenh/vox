@@ -35,19 +35,23 @@ public class ExamItemResponseJpaEntity {
     @Column(name = "transcript", columnDefinition = "TEXT")
     private String transcript;
 
+    @Column(name = "termination_reason", length = 100)
+    private String terminationReason;
+
     @Column(name = "submitted_at", nullable = false, updatable = false)
     private OffsetDateTime submittedAt;
 
     protected ExamItemResponseJpaEntity() {}
 
     public ExamItemResponseJpaEntity(UUID id, UUID sessionId, UUID paperItemId, String audioUrl,
-            Integer durationSeconds, String transcript, OffsetDateTime submittedAt) {
+            Integer durationSeconds, String transcript, String terminationReason, OffsetDateTime submittedAt) {
         this.id = id;
         this.sessionId = sessionId;
         this.paperItemId = paperItemId;
         this.audioUrl = audioUrl;
         this.durationSeconds = durationSeconds;
         this.transcript = transcript;
+        this.terminationReason = terminationReason;
         this.submittedAt = submittedAt;
     }
 
@@ -97,6 +101,14 @@ public class ExamItemResponseJpaEntity {
 
     public void setTranscript(String transcript) {
         this.transcript = transcript;
+    }
+
+    public String getTerminationReason() {
+        return terminationReason;
+    }
+
+    public void setTerminationReason(String terminationReason) {
+        this.terminationReason = terminationReason;
     }
 
     public OffsetDateTime getSubmittedAt() {

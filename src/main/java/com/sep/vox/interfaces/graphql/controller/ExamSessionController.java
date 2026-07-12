@@ -66,13 +66,13 @@ public class ExamSessionController {
 
     @QueryMapping
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER', 'STUDENT')")
-    public ExamSessionResponse examSession(@Argument UUID id) {
+    public ExamSessionResponse examSession(@Argument(name = "id") UUID id) {
         return viewExamSessionUseCase.execute(new ViewExamSessionQuery(id));
     }
 
     @QueryMapping
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER', 'STUDENT')")
-    public ExamCandidateResultResponse examSessionResult(@Argument("sessionId") UUID sessionId) {
+    public ExamCandidateResultResponse examSessionResult(@Argument(name = "sessionId") UUID sessionId) {
         try {
             return viewExamSessionResultUseCase.execute(new ViewExamSessionResultQuery(sessionId));
         } catch (NotFoundException ex) {
@@ -82,7 +82,7 @@ public class ExamSessionController {
 
     @QueryMapping
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER', 'STUDENT')")
-    public List<ExamSessionFollowupResponse> examSessionFollowups(@Argument("sessionId") UUID sessionId) {
+    public List<ExamSessionFollowupResponse> examSessionFollowups(@Argument(name = "sessionId") UUID sessionId) {
         return viewExamSessionFollowupsUseCase.execute(new ViewExamSessionFollowupsQuery(sessionId));
     }
 
@@ -94,19 +94,19 @@ public class ExamSessionController {
 
     @QueryMapping
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER', 'STUDENT')")
-    public ExamItemResponseDetailsResponse examItemResponse(@Argument UUID answerId) {
+    public ExamItemResponseDetailsResponse examItemResponse(@Argument(name = "answerId") UUID answerId) {
         return viewExamItemResponseUseCase.execute(new ViewExamItemResponseQuery(answerId));
     }
 
     @QueryMapping
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER', 'STUDENT')")
-    public List<ExamItemResponseTurnResponse> examItemResponseTurns(@Argument UUID answerId) {
+    public List<ExamItemResponseTurnResponse> examItemResponseTurns(@Argument(name = "answerId") UUID answerId) {
         return viewExamItemResponseTurnsUseCase.execute(new ViewExamItemResponseTurnsQuery(answerId));
     }
 
     @QueryMapping
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER', 'STUDENT')")
-    public ExamItemEvaluationDetailsGraphQlResponse examItemResponseEvaluation(@Argument UUID answerId) {
+    public ExamItemEvaluationDetailsGraphQlResponse examItemResponseEvaluation(@Argument(name = "answerId") UUID answerId) {
         try {
             var response = viewExamItemResponseEvaluationUseCase.execute(new ViewExamItemResponseEvaluationQuery(answerId));
             return response == null ? null : toGraphQlResponse(response);
@@ -126,6 +126,8 @@ public class ExamSessionController {
             response.rawItemScore(),
             response.itemScore(),
             response.overallConfidence(),
+            response.requiresHumanReview(),
+            response.reviewReasonCode(),
             response.markedInvalid(),
             response.requiresRetake(),
             response.status(),
@@ -182,6 +184,8 @@ public class ExamSessionController {
         java.math.BigDecimal rawItemScore,
         java.math.BigDecimal itemScore,
         java.math.BigDecimal overallConfidence,
+        boolean requiresHumanReview,
+        String reviewReasonCode,
         boolean markedInvalid,
         boolean requiresRetake,
         String status,

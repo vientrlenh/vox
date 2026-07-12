@@ -13,6 +13,8 @@ import com.sep.vox.infrastructure.persistence.entity.ExamItemEvaluationJpaEntity
 
 public interface SpringDataExamItemEvaluationRepository extends JpaRepository<ExamItemEvaluationJpaEntity, UUID> {
     Optional<ExamItemEvaluationJpaEntity> findTopByResponseIdOrderByEvaluatedAtDesc(UUID responseId);
+    List<ExamItemEvaluationJpaEntity> findByResponseIdIn(Collection<UUID> responseIds);
+    void deleteByResponseIdIn(Collection<UUID> responseIds);
 
     // Latest evaluation per response, batched in one query instead of one
     // findTopByResponseIdOrderByEvaluatedAtDesc call per response (N+1).

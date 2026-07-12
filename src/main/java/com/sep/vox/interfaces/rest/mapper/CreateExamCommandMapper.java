@@ -19,7 +19,8 @@ public final class CreateExamCommandMapper {
             request.closeAt(),
             request.assessmentPolicyId(),
             request.maxAttempt(),
-            request.resultDecisionMethod()
+            request.resultDecisionMethod(),
+            request.requiresOtp()
         );
     }
 }

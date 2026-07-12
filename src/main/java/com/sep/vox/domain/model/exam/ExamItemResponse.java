@@ -10,28 +10,31 @@ public class ExamItemResponse {
     private String audioUrl;
     private Integer durationSeconds;
     private String transcript; 
+    private String terminationReason;
     private OffsetDateTime submittedAt; 
 
     public ExamItemResponse() {}
 
     public ExamItemResponse(UUID id, UUID sessionId, UUID paperItemId, String audioUrl, Integer durationSeconds,
-            String transcript, OffsetDateTime submittedAt) {
+            String transcript, String terminationReason, OffsetDateTime submittedAt) {
         this.id = id;
         this.sessionId = sessionId;
         this.paperItemId = paperItemId;
         this.audioUrl = audioUrl;
         this.durationSeconds = durationSeconds;
         this.transcript = transcript;
+        this.terminationReason = terminationReason;
         this.submittedAt = submittedAt;
     }
 
     public ExamItemResponse(UUID sessionId, UUID paperItemId, String audioUrl, Integer durationSeconds,
-            String transcript, OffsetDateTime submittedAt) {
+            String transcript, String terminationReason, OffsetDateTime submittedAt) {
         this.sessionId = sessionId;
         this.paperItemId = paperItemId;
         this.audioUrl = audioUrl;
         this.durationSeconds = durationSeconds;
         this.transcript = transcript;
+        this.terminationReason = terminationReason;
         this.submittedAt = submittedAt;
     }
 
@@ -81,6 +84,14 @@ public class ExamItemResponse {
 
     public void setTranscript(String transcript) {
         this.transcript = transcript;
+    }
+
+    public String getTerminationReason() {
+        return terminationReason;
+    }
+
+    public void setTerminationReason(String terminationReason) {
+        this.terminationReason = terminationReason;
     }
 
     public OffsetDateTime getSubmittedAt() {

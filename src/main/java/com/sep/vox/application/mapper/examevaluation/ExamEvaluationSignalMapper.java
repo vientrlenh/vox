@@ -40,8 +40,8 @@ public final class ExamEvaluationSignalMapper {
             clamp01(dto.offTopicRatio()),
             clamp01(dto.codeSwitchingRatio()),
             clamp01(dto.asrConfidenceAvg()),
-            clamp01(null),
-            clamp01(null),
+            clamp01(dto.aiConfidence()),
+            clamp01(dto.audioQuality()),
             clamp01(dto.silenceRatio()),
             clampNonNegative(dto.speechRate())
         );

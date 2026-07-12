@@ -91,6 +91,9 @@ public class ExamJpaEntity {
     @Column(name = "assessment_policy_id")
     private UUID assessmentPolicyId;
 
+    @Column(name = "requires_otp", nullable = false, columnDefinition = "BOOLEAN NOT NULL DEFAULT true")
+    private boolean requiresOtp;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 
@@ -107,7 +110,7 @@ public class ExamJpaEntity {
 
     public ExamJpaEntity(UUID id, UUID blueprintId, UUID blueprintVersionId, String code, String name, String description, UUID schoolId, UUID languageId,
             String kind, String deliveryMode, String status, Integer maxAttempt, String resultDecisionMethod,
-            OffsetDateTime openAt, OffsetDateTime closeAt, UUID assessmentPolicyId,
+            OffsetDateTime openAt, OffsetDateTime closeAt, UUID assessmentPolicyId, boolean requiresOtp,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.blueprintId = blueprintId;
@@ -125,6 +128,7 @@ public class ExamJpaEntity {
         this.openAt = openAt;
         this.closeAt = closeAt;
         this.assessmentPolicyId = assessmentPolicyId;
+        this.requiresOtp = requiresOtp;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
@@ -289,5 +293,13 @@ public class ExamJpaEntity {
 
     public void setBlueprintVersionId(UUID blueprintVersionId) {
         this.blueprintVersionId = blueprintVersionId;
+    }
+
+    public boolean isRequiresOtp() {
+        return requiresOtp;
+    }
+
+    public void setRequiresOtp(boolean requiresOtp) {
+        this.requiresOtp = requiresOtp;
     }
 }

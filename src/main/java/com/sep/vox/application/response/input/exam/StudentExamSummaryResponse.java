@@ -11,6 +11,7 @@ public record StudentExamSummaryResponse(
     String examDate,
     String status,
     String kind,
+    boolean requiresOtp,
     UUID sessionId,
     Integer maxAttempt,
     int attemptsUsed,

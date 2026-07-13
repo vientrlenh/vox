@@ -57,6 +57,8 @@ type AssessmentPolicyPage {
 extend type Query {
     viewSystemAssessmentPolicies(status: String, languageId: ID, rubricVersionId: ID, effectiveFrom: String, effectiveTo: String, page: Int = 1, size: Int = 10): AssessmentPolicyPage!
     viewSchoolAssessmentPolicies(schoolId: ID!, status: String, languageId: ID, rubricVersionId: ID, effectiveFrom: String, effectiveTo: String, page: Int = 1, size: Int = 10): AssessmentPolicyPage!
+    # Teacher chỉ xem được policy PUBLISHED của trường mình (schoolId tự suy ra từ token)
+    viewTeacherAssessmentPolicies(languageId: ID, rubricVersionId: ID, effectiveFrom: String, effectiveTo: String, page: Int = 1, size: Int = 10): AssessmentPolicyPage!
     viewSystemAssessmentPolicy(policyId: ID!): AssessmentPolicy!
     viewSchoolAssessmentPolicy(schoolId: ID!, policyId: ID!): AssessmentPolicy!
 }

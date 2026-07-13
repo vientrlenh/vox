@@ -219,7 +219,7 @@ public class RubricController {
     @PostMapping(value = "/system/rubrics/{rubricId}/versions/import/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<PreviewRubricVersionImportResponse>> previewSystemRubricVersionImport(
-            @PathVariable UUID rubricId,
+            @PathVariable("rubricId") UUID rubricId,
             @RequestParam("file") MultipartFile file) {
 
         var command = PreviewRubricVersionImportFromFileCommandMapper.fromSystemRequest(rubricId, file);
@@ -232,7 +232,7 @@ public class RubricController {
     @PostMapping(value = "/system/rubrics/versions/import/{sessionId}/accept")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<AcceptRubricVersionImportResponse>> acceptSystemRubricVersionImport(
-            @PathVariable UUID sessionId,
+            @PathVariable("sessionId") UUID sessionId,
             @Valid @RequestBody AcceptImportRequest request) {
 
         // 1. Map dữ liệu
@@ -247,7 +247,7 @@ public class RubricController {
     @PostMapping("/system/rubrics/{rubricId}/versions")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> addSystemRubricVersions(
-            @PathVariable UUID rubricId,
+            @PathVariable("rubricId") UUID rubricId,
             @Valid @RequestBody AddRubricVersionsRequest request
     ) {
         var command = AddRubricVersionsCommandMapper.fromSystemRequest(rubricId, request);
@@ -260,7 +260,7 @@ public class RubricController {
     @PostMapping("/schools/{schoolId}/rubrics")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> createSchoolRubric(
-            @PathVariable UUID schoolId,
+            @PathVariable("schoolId") UUID schoolId,
             @Valid @RequestBody CreateSchoolRubricRequest request
     ) {
         var command = CreateSchoolRubricCommandMapper.fromRequest(schoolId, request);
@@ -274,8 +274,8 @@ public class RubricController {
     @PostMapping(value = "/schools/{schoolId}/rubrics/{rubricId}/versions/import/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<PreviewRubricVersionImportResponse>> previewSchoolRubricVersionImport(
-            @PathVariable UUID schoolId,
-            @PathVariable UUID rubricId,
+            @PathVariable("schoolId") UUID schoolId,
+            @PathVariable("rubricId") UUID rubricId,
             @RequestParam("file") MultipartFile file) {
 
         var command = PreviewRubricVersionImportFromFileCommandMapper.fromSchoolRequest(schoolId, rubricId, file);
@@ -288,8 +288,8 @@ public class RubricController {
     @PostMapping(value = "/schools/{schoolId}/rubrics/versions/import/{sessionId}/accept")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<AcceptRubricVersionImportResponse>> acceptSchoolRubricVersionImport(
-            @PathVariable UUID schoolId,
-            @PathVariable UUID sessionId,
+            @PathVariable("schoolId") UUID schoolId,
+            @PathVariable("sessionId") UUID sessionId,
             @Valid @RequestBody AcceptImportRequest request) {
         var command = AcceptRubricVersionImportCommandMapper.fromSchoolRequestId(schoolId, sessionId, request);
         var response = acceptSchoolRubricVersionImportUseCase.execute(command);
@@ -301,8 +301,8 @@ public class RubricController {
     @PostMapping("/schools/{schoolId}/rubrics/{rubricId}/versions")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> addSchoolRubricVersions(
-            @PathVariable UUID schoolId,
-            @PathVariable UUID rubricId,
+            @PathVariable("schoolId") UUID schoolId,
+            @PathVariable("rubricId") UUID rubricId,
             @Valid @RequestBody AddRubricVersionsRequest request
     ) {
         var command = AddRubricVersionsCommandMapper.fromSchoolRequest(schoolId, rubricId, request);
@@ -316,8 +316,8 @@ public class RubricController {
     @DeleteMapping("/schools/{schoolId}/rubric-versions/{versionId}")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteSchoolRubricVersion(
-            @PathVariable UUID schoolId,
-            @PathVariable UUID versionId
+            @PathVariable("schoolId") UUID schoolId,
+            @PathVariable("versionId") UUID versionId
     ) {
         var command = DeleteSchoolRubricCommandMapper.versionFromRequest(schoolId, versionId);
         deleteSchoolRubricVersionUseCase.execute(command);
@@ -330,7 +330,7 @@ public class RubricController {
     @DeleteMapping("/system/rubrics/{rubricId}") // SỬA PATH Ở ĐÂY CHO CHUẨN
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteSystemRubric(
-            @PathVariable UUID rubricId
+            @PathVariable("rubricId") UUID rubricId
     ) {
         var command = DeleteSystemRubricCommandMapper.fromRequest(rubricId);
         deleteSystemRubricUseCase.execute(command); // UseCase trả về Void nên ko cần gán biến
@@ -343,7 +343,7 @@ public class RubricController {
     @DeleteMapping("/system/rubric-versions/{versionId}")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> manageSystemRubricVersion(
-            @PathVariable UUID versionId
+            @PathVariable("versionId") UUID versionId
     ) {
         var command = DeleteSystemRubricCommandMapper.versionFromRequest(versionId);
         deleteSystemRubricVersionUseCase.execute(command);
@@ -355,7 +355,7 @@ public class RubricController {
     @PatchMapping("/system/rubric-versions/{versionId}/status")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> changeSystemRubricVersionStatus(
-            @PathVariable UUID versionId,
+            @PathVariable("versionId") UUID versionId,
             @RequestParam(name = "status") RubricStatus status
     ) {
         var command = ChangeRubricVersionStatusCommandMapper.fromSystemRequest(versionId, status);
@@ -368,8 +368,8 @@ public class RubricController {
     @PatchMapping("/schools/{schoolId}/rubric-versions/{versionId}/status")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> changeSchoolRubricVersionStatus(
-            @PathVariable UUID schoolId,
-            @PathVariable UUID versionId,
+            @PathVariable("schoolId") UUID schoolId,
+            @PathVariable("versionId") UUID versionId,
             @RequestParam(name = "status") RubricStatus status
     ) {
         var command = ChangeRubricVersionStatusCommandMapper.fromSchoolRequest(schoolId, versionId, status);
@@ -382,7 +382,7 @@ public class RubricController {
     @PatchMapping("/system/rubric-versions/{versionId}/archive")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> archiveSystemRubricVersion(
-            @PathVariable UUID versionId
+            @PathVariable("versionId") UUID versionId
     ) {
         var responseId = archiveSystemRubricVersionUseCase.execute(new ArchiveSystemRubricVersionCommand(versionId));
         return ResponseEntity.ok(ApiResponse.success("Lưu trữ phiên bản Rubric hệ thống thành công", responseId));
@@ -393,8 +393,8 @@ public class RubricController {
     @PatchMapping("/schools/{schoolId}/rubric-versions/{versionId}/archive")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> archiveSchoolRubricVersion(
-            @PathVariable UUID schoolId,
-            @PathVariable UUID versionId
+            @PathVariable("schoolId") UUID schoolId,
+            @PathVariable("versionId") UUID versionId
     ) {
         var responseId = archiveSchoolRubricVersionUseCase.execute(new ArchiveSchoolRubricVersionCommand(schoolId, versionId));
         return ResponseEntity.ok(ApiResponse.success("Lưu trữ phiên bản Rubric của trường học thành công", responseId));
@@ -407,8 +407,8 @@ public class RubricController {
     @PostMapping("/schools/{schoolId}/rubric-versions/{versionId}/criteria")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<List<UUID>>> createSchoolRubricCriterion(
-            @PathVariable UUID schoolId,
-            @PathVariable UUID versionId,
+            @PathVariable("schoolId") UUID schoolId,
+            @PathVariable("versionId") UUID versionId,
             @Valid @RequestBody CreateSchoolRubricCriteriaRequest request
     ) {
         var command = CreateSchoolRubricCriteriaCommandMapper.fromRequest(schoolId, versionId, request);
@@ -424,7 +424,7 @@ public class RubricController {
     @PostMapping("/system/rubric-versions/{versionId}/criteria")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<List<UUID>>> createSystemRubricCriterion(
-            @PathVariable UUID versionId,
+            @PathVariable("versionId") UUID versionId,
             @Valid @RequestBody CreateSystemRubricCriteriaRequest request
     ) {
         // Truyền versionId vào mapper
@@ -439,7 +439,7 @@ public class RubricController {
     @PostMapping(value = "/system/rubrics/versions/{versionId}/criterions/import/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<PreviewRubricCriterionImportResponse>> previewSystemRubricCriterionImport(
-            @PathVariable UUID versionId,
+            @PathVariable("versionId") UUID versionId,
             @RequestParam("file") MultipartFile file) {
 
         var command = PreviewRubricCriterionImportCommandMapper.fromSystemRequest(versionId, file);
@@ -453,7 +453,7 @@ public class RubricController {
     @PostMapping(value = "/system/rubrics/criterions/import/{sessionId}/accept")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<AcceptRubricCriterionImportResponse>> acceptSystemRubricCriterionImport(
-            @PathVariable UUID sessionId,
+            @PathVariable("sessionId") UUID sessionId,
             @Valid @RequestBody AcceptImportRequest request) {
 
         var command = AcceptRubricCriterionImportCommandMapper.fromSystemRequest(sessionId, request);
@@ -468,8 +468,8 @@ public class RubricController {
     @PostMapping(value = "/schools/{schoolId}/rubric-versions/{versionId}/criterions/import/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<PreviewRubricCriterionImportResponse> previewSchoolRubricCriterionImport(
-            @PathVariable UUID schoolId,
-            @PathVariable UUID versionId,
+            @PathVariable("schoolId") UUID schoolId,
+            @PathVariable("versionId") UUID versionId,
             @RequestParam("file") MultipartFile file) {
 
         var command = PreviewRubricCriterionImportCommandMapper.fromSchoolRequest(schoolId, versionId, file);
@@ -482,8 +482,8 @@ public class RubricController {
     @PostMapping("/schools/{schoolId}/rubric-versions/import-sessions/{sessionId}/accept")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<AcceptRubricCriterionImportResponse> acceptSchoolRubricCriterionImport(
-            @PathVariable UUID schoolId,
-            @PathVariable UUID sessionId,
+            @PathVariable("schoolId") UUID schoolId,
+            @PathVariable("sessionId") UUID sessionId,
             @Valid @RequestBody AcceptImportRequest request) {
 
         // Sử dụng chính xác Mapper từ School Request của bác để tạo Command dùng chung
@@ -501,9 +501,9 @@ public class RubricController {
     @DeleteMapping("/schools/{schoolId}/rubric-versions/{versionId}/criteria/{criterionId}")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteSchoolRubricCriterion(
-            @PathVariable UUID schoolId,
-            @PathVariable UUID versionId,
-            @PathVariable UUID criterionId
+            @PathVariable("schoolId") UUID schoolId,
+            @PathVariable("versionId") UUID versionId,
+            @PathVariable("criterionId") UUID criterionId
     ) {
         var command = DeleteSchoolRubricCommandMapper.criterionFromRequest(schoolId, versionId, criterionId);
         deleteSchoolRubricCriterionUseCase.execute(command);
@@ -518,8 +518,8 @@ public class RubricController {
     @DeleteMapping("/system/rubric-versions/{versionId}/criteria/{criterionId}")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteSystemRubricCriterion(
-            @PathVariable UUID versionId,
-            @PathVariable UUID criterionId
+            @PathVariable("versionId") UUID versionId,
+            @PathVariable("criterionId") UUID criterionId
     ) {
         var command = DeleteSystemRubricCommandMapper.criterionFromRequest(versionId, criterionId);
         deleteSystemRubricCriterionUseCase.execute(command);
@@ -536,7 +536,7 @@ public class RubricController {
     @PostMapping("/system/rubric-versions/{versionId}/result-bands")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<List<UUID>>> createSystemRubricResultBand(
-            @PathVariable UUID versionId,
+            @PathVariable("versionId") UUID versionId,
             @Valid @RequestBody CreateSystemRubricResultBandsRequest request // Nhớ tạo thêm Request này nhé
     ) {
         var command = CreateSystemRubricResultBandsCommandMapper.fromRequest(versionId, request);
@@ -550,7 +550,7 @@ public class RubricController {
     @PostMapping(value = "/system/rubrics/criterions/{criterionId}/bands/import/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<PreviewRubricCriterionBandImportResponse>> previewSystemRubricCriterionBandImport(
-            @PathVariable UUID criterionId,
+            @PathVariable("criterionId") UUID criterionId,
             @RequestParam("file") MultipartFile file) {
 
         var command = PreviewRubricCriterionBandImportCommandMapper.fromSystemRequest(criterionId, file);
@@ -563,7 +563,7 @@ public class RubricController {
     @PostMapping(value = "/system/rubrics/criterions/bands/import/{sessionId}/accept")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<AcceptRubricCriterionBandImportResponse>> acceptSystemRubricCriterionBandImport(
-            @PathVariable UUID sessionId,
+            @PathVariable("sessionId") UUID sessionId,
             @Valid @RequestBody AcceptImportRequest request) {
 
         var command = AcceptRubricCriterionBandImportCommandMapper.fromSystemRequest(sessionId, request);
@@ -578,8 +578,8 @@ public class RubricController {
     @PostMapping("/schools/{schoolId}/rubric-versions/{versionId}/result-bands")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<List<UUID>>> createSchoolRubricResultBand(
-            @PathVariable UUID schoolId,
-            @PathVariable UUID versionId,
+            @PathVariable("schoolId") UUID schoolId,
+            @PathVariable("versionId") UUID versionId,
             @Valid @RequestBody CreateSchoolRubricResultBandsRequest request
     ) {
         var command = CreateSchoolRubricResultBandsCommandMapper.fromRequest(schoolId, versionId, request);
@@ -594,8 +594,8 @@ public class RubricController {
     @PostMapping(value = "/schools/{schoolId}/rubric-criterions/{criterionId}/bands/import/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<PreviewRubricCriterionBandImportResponse> previewSchoolRubricCriterionBandImport(
-            @PathVariable UUID schoolId,
-            @PathVariable UUID criterionId,
+            @PathVariable("schoolId") UUID schoolId,
+            @PathVariable("criterionId") UUID criterionId,
             @RequestParam("file") MultipartFile file) {
 
         var command = PreviewRubricCriterionBandImportCommandMapper.fromSchoolRequest(schoolId, criterionId, file);
@@ -608,8 +608,8 @@ public class RubricController {
     @PostMapping("/schools/{schoolId}/rubric-criterions/bands/import/{sessionId}/accept")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<AcceptRubricCriterionBandImportResponse> acceptSchoolRubricCriterionBandImport(
-            @PathVariable UUID schoolId,
-            @PathVariable UUID sessionId,
+            @PathVariable("schoolId") UUID schoolId,
+            @PathVariable("sessionId") UUID sessionId,
             @Valid @RequestBody AcceptImportRequest request) {
 
         var command = AcceptRubricCriterionBandImportCommandMapper.fromSchoolRequest(schoolId, sessionId, request);
@@ -624,9 +624,9 @@ public class RubricController {
     @DeleteMapping("/schools/{schoolId}/rubric-versions/{versionId}/result-bands/{resultBandId}")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteSchoolRubricResultBand(
-            @PathVariable UUID schoolId,
-            @PathVariable UUID versionId,
-            @PathVariable UUID resultBandId
+            @PathVariable("schoolId") UUID schoolId,
+            @PathVariable("versionId") UUID versionId,
+            @PathVariable("resultBandId") UUID resultBandId
     ) {
         var command = DeleteSchoolRubricCommandMapper.resultBandFromRequest(schoolId, versionId, resultBandId);
         deleteSchoolRubricResultBandUseCase.execute(command);
@@ -639,8 +639,8 @@ public class RubricController {
     @DeleteMapping("/system/rubric-versions/{versionId}/result-bands/{resultBandId}")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteSystemRubricResultBand(
-            @PathVariable UUID versionId,
-            @PathVariable UUID resultBandId
+            @PathVariable("versionId") UUID versionId,
+            @PathVariable("resultBandId") UUID resultBandId
     ) {
         var command = DeleteSystemRubricCommandMapper.resultBandFromRequest(versionId, resultBandId);
         deleteSystemRubricResultBandUseCase.execute(command);
@@ -653,8 +653,8 @@ public class RubricController {
     @PostMapping("/system/rubric-versions/{versionId}/criteria/{criterionId}/bands")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<List<UUID>>> createSystemRubricCriterionBands(
-            @PathVariable UUID versionId,
-            @PathVariable UUID criterionId,
+            @PathVariable("versionId") UUID versionId,
+            @PathVariable("criterionId") UUID criterionId,
             @Valid @RequestBody CreateSystemRubricCriterionBandsRequest request
     ) {
         var command = CreateRubricCriterionBandsCommandMapper.fromSystemRequest(versionId, criterionId, request);
@@ -668,7 +668,7 @@ public class RubricController {
     @PostMapping(value = "/system/versions/{versionId}/result-bands/import/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<PreviewRubricResultBandImportResponse>> previewSystemRubricResultBandImport(
-            @PathVariable UUID versionId,
+            @PathVariable("versionId") UUID versionId,
             @RequestParam("file") MultipartFile file) {
 
         // Gọi đúng hàm fromSystemRequest (truyền schoolId = null)
@@ -683,7 +683,7 @@ public class RubricController {
     @PostMapping(value = "/system/versions/result-bands/import/{sessionId}/accept")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<AcceptRubricResultBandImportResponse>> acceptSystemRubricResultBandImport(
-            @PathVariable UUID sessionId,
+            @PathVariable("sessionId") UUID sessionId,
             @Valid @RequestBody AcceptImportRequest request) {
 
         var command = AcceptRubricResultBandImportCommandMapper.fromSystemRequest(sessionId, request);
@@ -697,9 +697,9 @@ public class RubricController {
     @PostMapping("/schools/{schoolId}/rubric-versions/{versionId}/criteria/{criterionId}/bands")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<List<UUID>>> createSchoolRubricCriterionBands(
-            @PathVariable UUID schoolId,
-            @PathVariable UUID versionId,
-            @PathVariable UUID criterionId,
+            @PathVariable("schoolId") UUID schoolId,
+            @PathVariable("versionId") UUID versionId,
+            @PathVariable("criterionId") UUID criterionId,
             @Valid @RequestBody CreateSchoolRubricCriterionBandsRequest request
     ) {
         var command = CreateRubricCriterionBandsCommandMapper.fromSchoolRequest(schoolId, versionId, criterionId, request);
@@ -716,8 +716,8 @@ public class RubricController {
     @PostMapping(value = "/school/{schoolId}/rubric-versions/{versionId}/result-bands/import/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<PreviewRubricResultBandImportResponse> previewSchoolRubricResultBandImport(
-            @PathVariable UUID schoolId,
-            @PathVariable UUID versionId,
+            @PathVariable("schoolId") UUID schoolId,
+            @PathVariable("versionId") UUID versionId,
             @RequestParam("file") MultipartFile file) {
 
         // Gọi Mapper bóc tách dữ liệu từ file và đính kèm schoolId bảo mật
@@ -735,8 +735,8 @@ public class RubricController {
     @PostMapping(value = "/school/{schoolId}/rubric-versions/result-bands/import/{sessionId}/accept")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<AcceptRubricResultBandImportResponse> acceptSchoolRubricResultBandImport(
-            @PathVariable UUID schoolId,
-            @PathVariable UUID sessionId,
+            @PathVariable("schoolId") UUID schoolId,
+            @PathVariable("sessionId") UUID sessionId,
             @Valid @RequestBody AcceptImportRequest request) {
 
         // Gọi Mapper đóng gói lệnh đồng ý import ngầm từ School
@@ -750,9 +750,9 @@ public class RubricController {
     @DeleteMapping("/system/rubric-versions/{versionId}/criteria/{criterionId}/bands/{bandId}")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteSystemRubricCriterionBand(
-            @PathVariable UUID versionId,
-            @PathVariable UUID criterionId,
-            @PathVariable UUID bandId
+            @PathVariable("versionId") UUID versionId,
+            @PathVariable("criterionId") UUID criterionId,
+            @PathVariable("bandId") UUID bandId
     ) {
         var command = DeleteSystemRubricCommandMapper.criterionBandFromRequest(versionId, criterionId, bandId);
         deleteSystemRubricCriterionBandUseCase.execute(command);
@@ -763,10 +763,10 @@ public class RubricController {
     @DeleteMapping("/schools/{schoolId}/rubric-versions/{versionId}/criteria/{criterionId}/bands/{bandId}")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteSchoolRubricCriterionBand(
-            @PathVariable UUID schoolId,
-            @PathVariable UUID versionId,
-            @PathVariable UUID criterionId,
-            @PathVariable UUID bandId
+            @PathVariable("schoolId") UUID schoolId,
+            @PathVariable("versionId") UUID versionId,
+            @PathVariable("criterionId") UUID criterionId,
+            @PathVariable("bandId") UUID bandId
     ) {
         var command = DeleteSchoolRubricCommandMapper.criterionBandFromRequest(schoolId, versionId, criterionId, bandId);
         deleteSchoolRubricCriterionBandUseCase.execute(command);

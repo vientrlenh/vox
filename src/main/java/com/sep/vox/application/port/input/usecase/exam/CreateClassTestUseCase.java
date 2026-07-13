@@ -159,6 +159,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         // để bài trên lớp thực sự tự do, không phụ thuộc lớp blueprint khi không dùng blueprint dùng chung.
         var exam = createExam(null, null, schoolClass, command, currentUserId, now);
         var paper = createPaper(exam, null, now, currentUserId);
+        var sectionWeights = ClassTestSectionWeightPolicy.resolveRequestedWeights(command.sections());
 
         for (int i = 0; i < command.sections().size(); i++) {
             var sectionCommand = command.sections().get(i);
@@ -178,6 +179,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
                 sectionCommand.title(),
                 sectionCommand.instruction(),
                 null,
+                sectionWeights.get(i),
                 now,
                 now,
                 currentUserId,
@@ -251,6 +253,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
                 .map(section -> new ClassTestSectionCommand(
                     StringNormalization.trimAndCollapseSpaces(section.title()),
                     StringNormalization.trimAndCollapseSpaces(section.instruction()),
+                    section.weight(),
                     section.questionIds() == null ? List.of() : section.questionIds()
                 ))
                 .toList(),
@@ -396,6 +399,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             section.getTitle(),
             section.getInstruction(),
             section.getSectionTimeLimitSeconds(),
+            section.getSectionWeight(),
             now,
             now,
             currentUserId,

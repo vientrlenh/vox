@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -132,6 +133,7 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
 
         var now = OffsetDateTime.now();
         var commonCount = Math.min(existingPaperSections.size(), input.sections().size());
+        var sectionWeights = ClassTestSectionWeightPolicy.resolveRequestedWeights(input.sections());
 
         for (int i = 0; i < commonCount; i++) {
             var existingPaperSection = existingPaperSections.get(i);
@@ -139,6 +141,7 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
 
             existingPaperSection.setTitle(sectionCommand.title());
             existingPaperSection.setInstruction(sectionCommand.instruction());
+            existingPaperSection.setWeight(sectionWeights.get(i));
             existingPaperSection.setUpdatedAt(now);
             existingPaperSection.setUpdatedBy(currentUserId);
             examPaperSectionRepository.save(existingPaperSection);
@@ -151,7 +154,7 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
         }
 
         for (int i = existingPaperSections.size(); i < input.sections().size(); i++) {
-            createNewSection(paper, input.sections().get(i), i + 1, exam.getId(), currentUserId, now);
+            createNewSection(paper, input.sections().get(i), sectionWeights.get(i), i + 1, exam.getId(), currentUserId, now);
         }
 
         exam.setUpdatedAt(now);
@@ -197,6 +200,7 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
     private void createNewSection(
             ExamPaper paper,
             ClassTestSectionCommand sectionCommand,
+            BigDecimal sectionWeight,
             int order,
             UUID examId,
             UUID currentUserId,
@@ -207,6 +211,7 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
             sectionCommand.title(),
             sectionCommand.instruction(),
             null,
+            sectionWeight,
             now,
             now,
             currentUserId,
@@ -249,4 +254,5 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
         weights.add(BigDecimal.ONE.subtract(runningSum));
         return weights;
     }
+
 }

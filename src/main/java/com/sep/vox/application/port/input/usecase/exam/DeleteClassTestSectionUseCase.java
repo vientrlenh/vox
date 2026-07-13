@@ -1,6 +1,11 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -82,6 +87,8 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
             .findFirst()
             .orElseThrow(() -> new NotFoundException("Không tìm thấy section"));
 
+        var shouldRebalanceAfterDelete = ClassTestSectionWeightPolicy.looksAutoWeighted(allPaperSections);
+
         for (var item : examPaperItemRepository.findBySectionId(paperSection.getId())) {
             examPaperItemRepository.deleteById(item.getId());
         }
@@ -94,10 +101,15 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
             var newOrder = i + 1;
             if (remaining.getOrder() != newOrder) {
                 remaining.setOrder(newOrder);
-                remaining.setUpdatedAt(now);
-                remaining.setUpdatedBy(currentUserId);
-                examPaperSectionRepository.save(remaining);
             }
+            remaining.setUpdatedAt(now);
+            remaining.setUpdatedBy(currentUserId);
+            examPaperSectionRepository.save(remaining);
+        }
+        if (shouldRebalanceAfterDelete) {
+            rebalanceSectionWeights(paper.getId(), now, currentUserId);
+        } else {
+            normalizeSectionWeights(remainingPaperSections, now, currentUserId);
         }
 
         exam.setUpdatedAt(now);
@@ -111,5 +123,41 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
             throw new IllegalStateException(
                 "Bài đang dùng blueprint dùng chung, không thể sửa câu hỏi trực tiếp — dùng \"Đổi blueprint khác\" ở tab Blueprint để thay đổi cấu trúc");
         }
+    }
+    private void rebalanceSectionWeights(UUID paperId, OffsetDateTime now, UUID currentUserId) {
+        var sections = examPaperSectionRepository.findByPaperId(paperId).stream()
+            .sorted(Comparator.comparingInt(com.sep.vox.domain.model.exam.ExamPaperSection::getOrder))
+            .toList();
+        var weights = distributeEqualWeights(sections.size());
+        for (int i = 0; i < sections.size(); i++) {
+            var section = sections.get(i);
+            section.setWeight(weights.get(i));
+            section.setUpdatedAt(now);
+            section.setUpdatedBy(currentUserId);
+            examPaperSectionRepository.save(section);
+        }
+    }
+
+    private void normalizeSectionWeights(List<com.sep.vox.domain.model.exam.ExamPaperSection> sections, OffsetDateTime now, UUID currentUserId) {
+        var weights = ClassTestSectionWeightPolicy.normalizeStoredWeights(sections);
+        for (int i = 0; i < sections.size(); i++) {
+            var section = sections.get(i);
+            section.setWeight(weights.get(i));
+            section.setUpdatedAt(now);
+            section.setUpdatedBy(currentUserId);
+            examPaperSectionRepository.save(section);
+        }
+    }
+
+    private List<BigDecimal> distributeEqualWeights(int count) {
+        var weights = new ArrayList<BigDecimal>();
+        var perItem = BigDecimal.ONE.divide(BigDecimal.valueOf(count), 2, java.math.RoundingMode.DOWN);
+        var runningSum = BigDecimal.ZERO;
+        for (int i = 0; i < count - 1; i++) {
+            weights.add(perItem);
+            runningSum = runningSum.add(perItem);
+        }
+        weights.add(BigDecimal.ONE.subtract(runningSum));
+        return weights;
     }
 }

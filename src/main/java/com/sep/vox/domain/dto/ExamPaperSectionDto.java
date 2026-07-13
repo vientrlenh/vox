@@ -1,5 +1,6 @@
 package com.sep.vox.domain.dto;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 public record ExamPaperSectionDto(
@@ -8,6 +9,7 @@ public record ExamPaperSectionDto(
     int order,
     String title,
     String instruction,
+    BigDecimal weight,
     Integer sectionTimeLimitSeconds
 ) {
 }

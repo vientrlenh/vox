@@ -190,6 +190,7 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
                 section.getTitle(),
                 section.getInstruction(),
                 section.getSectionTimeLimitSeconds(),
+                section.getSectionWeight(),
                 now,
                 now,
                 currentUserId,

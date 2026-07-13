@@ -128,6 +128,7 @@ type ExamPaperSection {
     order: Int!
     title: String
     instruction: String
+    weight: Float
     sectionTimeLimitSeconds: Int
     createdAt: String
     updatedAt: String

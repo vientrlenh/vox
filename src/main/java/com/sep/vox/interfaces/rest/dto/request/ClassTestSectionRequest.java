@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -11,6 +12,8 @@ public record ClassTestSectionRequest(
     String title,
 
     String instruction,
+
+    BigDecimal weight,
 
     @NotEmpty(message = "Section phải có ít nhất một câu hỏi")
     List<UUID> questionIds

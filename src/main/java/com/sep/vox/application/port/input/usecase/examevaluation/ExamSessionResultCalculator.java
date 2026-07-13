@@ -114,7 +114,7 @@ public class ExamSessionResultCalculator {
             ));
         }
 
-        var totalScore = scaled(sectionScores.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add));
+        var totalScore = calculateTotalScore(orderedSections, sectionScores);
         var rubricResultBand = rubricResultBandRepository.findByRubricVersionId(policy.getRubricVersionId()).stream()
             .sorted(Comparator.comparingInt(RubricResultBand::getOrder))
             .filter(band -> within(totalScore, band.getScoreMin(), band.getScoreMax()))
@@ -153,6 +153,29 @@ public class ExamSessionResultCalculator {
 
     private BigDecimal scaled(BigDecimal value) {
         return value.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private BigDecimal calculateTotalScore(
+            List<com.sep.vox.domain.model.exam.ExamPaperSection> orderedSections,
+            LinkedHashMap<UUID, BigDecimal> sectionScores) {
+        if (orderedSections.isEmpty()) {
+            return scaled(BigDecimal.ZERO);
+        }
+
+        var totalWeight = orderedSections.stream()
+            .map(section -> section.getWeight() == null ? BigDecimal.ZERO : section.getWeight())
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        if (totalWeight.compareTo(BigDecimal.ZERO) > 0) {
+            var weightedTotal = orderedSections.stream()
+                .map(section -> sectionScores.getOrDefault(section.getId(), scaled(BigDecimal.ZERO))
+                    .multiply(section.getWeight() == null ? BigDecimal.ZERO : section.getWeight()))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+            return scaled(weightedTotal.divide(totalWeight, 2, RoundingMode.HALF_UP));
+        }
+
+        var plainTotal = sectionScores.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+        return scaled(plainTotal.divide(BigDecimal.valueOf(sectionScores.size()), 2, RoundingMode.HALF_UP));
     }
 
     public record CalculatedExamSessionResult(

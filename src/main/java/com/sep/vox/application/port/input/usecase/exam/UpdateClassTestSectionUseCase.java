@@ -104,6 +104,17 @@ public class UpdateClassTestSectionUseCase implements IUseCase<UpdateClassTestSe
             examPaperSectionRepository.save(paperSection);
         }
 
+        if (input.weight() != null) {
+            paperSection.setWeight(input.weight());
+            var sections = examPaperSectionRepository.findByPaperId(paperSection.getPaperId()).stream()
+                .map(section -> section.getId().equals(paperSection.getId()) ? paperSection : section)
+                .toList();
+            ClassTestSectionWeightPolicy.validateStoredWeights(sections, "Tổng trọng số section phải bằng 1.00");
+            paperSection.setUpdatedAt(now);
+            paperSection.setUpdatedBy(currentUserId);
+            examPaperSectionRepository.save(paperSection);
+        }
+
         if (input.questionIds() != null) {
             if (input.questionIds().isEmpty()) {
                 throw new IllegalStateException("Section phải có ít nhất 1 câu hỏi");

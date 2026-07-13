@@ -4,7 +4,9 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -114,7 +116,7 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
 
         var now = OffsetDateTime.now();
         var paperSection = examPaperSectionRepository.save(new ExamPaperSection(
-            paper.getId(), order, input.title(), input.instruction(), null, now, now, currentUserId, currentUserId
+            paper.getId(), order, input.title(), input.instruction(), null, input.weight(), now, now, currentUserId, currentUserId
         ));
 
         var questionIds = input.questionIds();
@@ -132,6 +134,14 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
             examQuestionSecureLockService.lockQuestionForExam(
                 questionId, exam.getId(), ExamSecurePoolReleaseMode.AUTO_AFTER_CLOSE, currentUserId
             );
+        }
+        if (input.weight() == null) {
+            rebalanceSectionWeights(paper.getId(), now, currentUserId);
+        } else {
+            var sections = examPaperSectionRepository.findByPaperId(paper.getId()).stream()
+                .sorted(Comparator.comparingInt(ExamPaperSection::getOrder))
+                .toList();
+            ClassTestSectionWeightPolicy.validateStoredWeights(sections, "Tổng trọng số section phải bằng 1.00");
         }
 
         exam.setUpdatedAt(now);
@@ -157,5 +167,19 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
         }
         weights.add(BigDecimal.ONE.subtract(runningSum));
         return weights;
+    }
+
+    private void rebalanceSectionWeights(UUID paperId, OffsetDateTime now, UUID currentUserId) {
+        var sections = examPaperSectionRepository.findByPaperId(paperId).stream()
+            .sorted(Comparator.comparingInt(ExamPaperSection::getOrder))
+            .toList();
+        var weights = distributeEqualWeights(sections.size());
+        for (int i = 0; i < sections.size(); i++) {
+            var section = sections.get(i);
+            section.setWeight(weights.get(i));
+            section.setUpdatedAt(now);
+            section.setUpdatedBy(currentUserId);
+            examPaperSectionRepository.save(section);
+        }
     }
 }

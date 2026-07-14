@@ -117,7 +117,7 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
 
             if (hasDifferentContext(normalized, importContext)) {
                 row.setErrorsJson(jsonSerializationPort.toJson(List.of(
-                    error("questionTopicId", "Du lieu row khong khop bank/topic da chon truoc khi import")
+                    error("questionTopicId", "dữ liệu row không thuộc cùng question bank và question topic với phiên import")
                 )));
                 row.setStatus(ImportRowStatus.INVALID);
                 invalidRows++;
@@ -128,7 +128,7 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
             var questionText = normalized.get("questionText");
             if (isPresent(code) && questionRepository.existsByQuestionBankIdAndCode(importContext.questionBank().getId(), code)) {
                 row.setErrorsJson(jsonSerializationPort.toJson(List.of(
-                    error("code", "Da ton tai cau hoi cung ma trong question bank nay")
+                    error("code", "Đã tồn tại câu hỏi cùng mã trong question bank này")
                 )));
                 row.setStatus(ImportRowStatus.SKIPPED);
                 skippedRows++;
@@ -140,7 +140,7 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
                         importContext.questionTopic().getId(),
                         questionText)) {
                 row.setErrorsJson(jsonSerializationPort.toJson(List.of(
-                    error("questionText", "Da ton tai cau hoi cung noi dung trong chu de nay")
+                    error("questionText", "Đã tồn tại câu hỏi cùng nội dung trong chủ đề này")
                 )));
                 row.setStatus(ImportRowStatus.SKIPPED);
                 skippedRows++;
@@ -156,7 +156,7 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
                 createdRows++;
             } catch (DataIntegrityViolationException | IllegalArgumentException exception) {
                 row.setErrorsJson(jsonSerializationPort.toJson(List.of(
-                    error("questionText", "Khong the tao cau hoi tu du lieu import")
+                    error("questionText", "Không thể tạo câu hỏi từ dữ liệu import")
                 )));
                 row.setStatus(ImportRowStatus.FAILED);
                 invalidRows++;
@@ -168,17 +168,17 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
 
     private ImportContext resolveContext(ImportRow row) {
         var rawData = jsonSerializationPort.toStringMap(row.getRawDataJson());
-        var questionBankId = parseUuid(rawData.get("questionBankId"), "Khong tim thay question bank cua phien import");
-        var questionTopicId = parseUuid(rawData.get("questionTopicId"), "Khong tim thay question topic cua phien import");
+        var questionBankId = parseUuid(rawData.get("questionBankId"), "Không tìm thấy question bank của phiên import");
+        var questionTopicId = parseUuid(rawData.get("questionTopicId"), "Không tìm thấy question topic của phiên import");
         var questionBank = questionBankRepository.findById(questionBankId)
-            .orElseThrow(() -> new NotFoundException("Khong tim thay ngan hang cau hoi"));
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
         var questionTopic = questionTopicRepository.findById(questionTopicId)
-            .orElseThrow(() -> new NotFoundException("Khong tim thay chu de cau hoi"));
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy chủ đề câu hỏi"));
         if (!questionTopic.getQuestionBankId().equals(questionBank.getId())) {
-            throw new IllegalStateException("Chu de khong thuoc ngan hang cau hoi da chon");
+            throw new IllegalStateException("Chủ đề không thuộc ngân hàng câu hỏi đã chọn");
         }
         if (questionTopic.getStatus() != QuestionTopicStatus.PUBLISHED) {
-            throw new IllegalStateException("Chi duoc import cau hoi vao chu de da PUBLISHED");
+            throw new IllegalStateException("Chỉ được import câu hỏi vào chủ đề đã PUBLISHED");
         }
         return new ImportContext(questionBank, questionTopic);
     }
@@ -228,34 +228,34 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
             Set<String> seenCodes) {
         var errors = new ArrayList<Map<String, String>>();
 
-        addMissingError(errors, data, "type", "Loai cau hoi khong duoc de trong");
-        addMissingError(errors, data, "questionText", "Noi dung cau hoi khong duoc de trong");
-        addMissingError(errors, data, "preparationTimeSeconds", "Thoi gian chuan bi khong duoc de trong");
-        addMissingError(errors, data, "minResponseSeconds", "Thoi gian tra loi toi thieu khong duoc de trong");
-        addMissingError(errors, data, "maxResponseSeconds", "Thoi gian tra loi toi da khong duoc de trong");
+        addMissingError(errors, data, "type", "Loại câu hỏi không được để trống");
+        addMissingError(errors, data, "questionText", "Nội dung câu hỏi không được để trống");
+        addMissingError(errors, data, "preparationTimeSeconds", "Thời gian chuẩn bị không được để trống");
+        addMissingError(errors, data, "minResponseSeconds", "Thời gian trả lời tối thiểu không được để trống");
+        addMissingError(errors, data, "maxResponseSeconds", "Thời gian trả lời tối đa không được để trống");
 
-        validateEnumField(errors, data.get("type"), "type", QuestionType.class, "Loai cau hoi khong hop le");
-        validateEnumField(errors, data.get("sharing"), "sharing", QuestionSharing.class, "Che do chia se khong hop le");
-        validateNumberField(errors, data.get("preparationTimeSeconds"), "preparationTimeSeconds", "Thoi gian chuan bi phai la so nguyen >= 0");
-        validateNumberField(errors, data.get("minResponseSeconds"), "minResponseSeconds", "Thoi gian tra loi toi thieu phai la so nguyen >= 0");
-        validateNumberField(errors, data.get("maxResponseSeconds"), "maxResponseSeconds", "Thoi gian tra loi toi da phai la so nguyen >= 0");
+        validateEnumField(errors, data.get("type"), "type", QuestionType.class, "Loại câu hỏi không hợp lệ");
+        validateEnumField(errors, data.get("sharing"), "sharing", QuestionSharing.class, "Chế độ chia sẻ không hợp lệ");
+        validateNumberField(errors, data.get("preparationTimeSeconds"), "preparationTimeSeconds", "Thời gian chuẩn bị phải là số nguyên >= 0");
+        validateNumberField(errors, data.get("minResponseSeconds"), "minResponseSeconds", "Thời gian trả lời tối thiểu phải là số nguyên >= 0");
+        validateNumberField(errors, data.get("maxResponseSeconds"), "maxResponseSeconds", "Thời gian trả lời tối đa phải là số nguyên >= 0");
 
         var minResponse = parseInteger(data.get("minResponseSeconds"));
         var maxResponse = parseInteger(data.get("maxResponseSeconds"));
         if (minResponse != null && maxResponse != null && minResponse > maxResponse) {
-            errors.add(error("minResponseSeconds", "Thoi gian tra loi toi thieu khong duoc lon hon thoi gian tra loi toi da"));
+            errors.add(error("minResponseSeconds", "Thời gian trả lời tối thiểu không được lớn hơn thời gian trả lời tối đa"));
         }
 
         var code = data.get("code");
         if (isPresent(code) && !seenCodes.add(code)) {
-            errors.add(error("code", "Ma cau hoi bi trung trong file import"));
+            errors.add(error("code", "Mã câu hỏi bị trùng trong file import"));
         }
 
         if (!Objects.equals(data.get("questionBankId"), importContext.questionBank().getId().toString())) {
-            errors.add(error("questionBankId", "Question bank cua row khong hop le"));
+            errors.add(error("questionBankId", "Question bank của row không hợp lệ"));
         }
         if (!Objects.equals(data.get("questionTopicId"), importContext.questionTopic().getId().toString())) {
-            errors.add(error("questionTopicId", "Question topic cua row khong hop le"));
+            errors.add(error("questionTopicId", "Question topic của row không hợp lệ"));
         }
 
         return errors;

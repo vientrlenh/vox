@@ -270,7 +270,7 @@ public interface SpringDataQuestionRepository extends JpaRepository<QuestionJpaE
     @Query("""
         SELECT q
         FROM QuestionJpaEntity q
-        JOIN QuestionTopicJpaEntity qt ON qt.id = q.questionTopicId
+        LEFT JOIN QuestionTopicJpaEntity qt ON qt.id = q.questionTopicId
         JOIN QuestionBankJpaEntity qb ON qb.id = q.questionBankId
         WHERE q.id = :id
           AND (
@@ -296,14 +296,14 @@ public interface SpringDataQuestionRepository extends JpaRepository<QuestionJpaE
                         :systemAdmin = true
                         AND qb.ownerType = 'SCHOOL'
                         AND qb.status = 'PUBLISHED'
-                        AND qt.status = 'PUBLISHED'
+                        AND (qt IS NULL OR qt.status = 'PUBLISHED')
                         AND q.status = 'PUBLISHED'
                         AND q.sharing = 'SCHOOL_SHARED'
                     )
                     OR (
                         qb.ownerType = 'SYSTEM'
                         AND qb.status = 'PUBLISHED'
-                        AND qt.status = 'PUBLISHED'
+                        AND (qt IS NULL OR qt.status = 'PUBLISHED')
                         AND q.status = 'PUBLISHED'
                         AND q.sharing = 'SCHOOL_SHARED'
                     )
@@ -313,7 +313,7 @@ public interface SpringDataQuestionRepository extends JpaRepository<QuestionJpaE
                             qb.schoolId = :currentSchoolId
                             OR (
                                 qb.status = 'PUBLISHED'
-                                AND qt.status = 'PUBLISHED'
+                                AND (qt IS NULL OR qt.status = 'PUBLISHED')
                                 AND q.status = 'PUBLISHED'
                                 AND q.sharing = 'SCHOOL_SHARED'
                             )
@@ -333,7 +333,7 @@ public interface SpringDataQuestionRepository extends JpaRepository<QuestionJpaE
                                 qb.schoolId = :currentSchoolId
                                 AND qb.ownerType = 'SCHOOL'
                                 AND qb.status = 'PUBLISHED'
-                                AND qt.status = 'PUBLISHED'
+                                AND (qt IS NULL OR qt.status = 'PUBLISHED')
                                 AND q.status = 'PUBLISHED'
                                 AND q.sharing = 'SCHOOL_SHARED'
                             )

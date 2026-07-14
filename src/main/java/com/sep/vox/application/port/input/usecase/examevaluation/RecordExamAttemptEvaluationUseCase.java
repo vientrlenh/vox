@@ -107,9 +107,8 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<ExamAttemptE
 
         var validity = input.payload() == null ? null : input.payload().validity();
         var signals = ExamEvaluationSignalMapper.toDomain(input.payload() == null ? null : input.payload().signals());
-        var overallConfidence = clampUnit(input.payload() == null || input.payload().signals() == null
-            ? null
-            : input.payload().signals().asrConfidenceAvg());
+        var overallConfidence = clampUnit(averageConfidence(
+            input.payload() == null ? null : input.payload().signals()));
         var hasCriticalValidityFlag = hasCriticalValidityFlag(validity);
         boolean requiresHumanReview = hasCriticalValidityFlag || overallConfidence.compareTo(LOW_CONFIDENCE_THRESHOLD) < 0;
         String reviewReasonCode = hasCriticalValidityFlag
@@ -273,6 +272,24 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<ExamAttemptE
         } catch (IllegalArgumentException ex) {
             return TurnType.MAIN;
         }
+    }
+
+    private Double averageConfidence(ExamAttemptEvaluationCompletedEventDto.EvaluationSignalsDto signals) {
+        if (signals == null) {
+            return null;
+        }
+        var aiConfidence = signals.aiConfidence();
+        var asrConfidence = signals.asrConfidenceAvg();
+        if (aiConfidence == null && asrConfidence == null) {
+            return null;
+        }
+        if (aiConfidence == null) {
+            return asrConfidence;
+        }
+        if (asrConfidence == null) {
+            return aiConfidence;
+        }
+        return (aiConfidence + asrConfidence) / 2;
     }
 
     private BigDecimal clampUnit(Double value) {

@@ -450,6 +450,8 @@ type ExamItemEvaluationDetails {
     overallConfidence: Float
     markedInvalid: Boolean!
     requiresRetake: Boolean!
+    requiresHumanReview: Boolean!
+    reviewReasonCode: String
     status: String
     evaluatedAt: String
     feedbackSummary: String

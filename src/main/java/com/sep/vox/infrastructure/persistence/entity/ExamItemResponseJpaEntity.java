@@ -35,7 +35,12 @@ public class ExamItemResponseJpaEntity {
     @Column(name = "transcript", columnDefinition = "TEXT")
     private String transcript;
 
-    @Column(name = "termination_reason", length = 100)
+    // TEXT, not a short varchar: the value is a free-text reason from the AI's follow-up decision
+    // (e.g. "The student has only provided one reason for enjoying reading and has not
+    // elaborated..."), not a short status code -- length = 100 truncated nothing, it just made
+    // every save fail with "value too long" whenever the reason ran past 100 characters, which is
+    // the common case, not an edge case. Matches the transcript column's pattern above.
+    @Column(name = "termination_reason", columnDefinition = "TEXT")
     private String terminationReason;
 
     @Column(name = "submitted_at", nullable = false, updatable = false)

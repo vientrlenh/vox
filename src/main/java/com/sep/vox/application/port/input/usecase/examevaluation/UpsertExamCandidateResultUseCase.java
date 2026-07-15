@@ -25,6 +25,16 @@ public class UpsertExamCandidateResultUseCase {
 
     @Transactional
     public ExamCandidateResult execute(UUID sessionId) {
+        return execute(sessionId, ExamCandidateResultStatus.PENDING_REVIEW);
+    }
+
+    /**
+     * Recalculates the session result and stores it with an explicit status.
+     * The appeal flow uses this to land on FINAL after publishing a re-grade;
+     * grading uses the single-argument overload and stays on PENDING_REVIEW.
+     */
+    @Transactional
+    public ExamCandidateResult execute(UUID sessionId, ExamCandidateResultStatus status) {
         var calculated = examSessionResultCalculator.calculate(sessionId);
         var existing = examCandidateResultRepository.findBySessionId(sessionId).orElse(null);
         var result = existing == null ? new ExamCandidateResult() : existing;
@@ -40,7 +50,7 @@ public class UpsertExamCandidateResultUseCase {
         result.setTargetFrameworkBandId(calculated.policy().getTargetFrameworkBandId());
         result.setRubricResultBandId(calculated.rubricResultBand() == null ? null : calculated.rubricResultBand().getId());
         result.setTotalScore(calculated.totalScore());
-        result.setStatus(ExamCandidateResultStatus.PENDING_REVIEW);
+        result.setStatus(status);
         if (existing == null) {
             result.setCreatedAt(now);
             result.setCreatedBy(null);

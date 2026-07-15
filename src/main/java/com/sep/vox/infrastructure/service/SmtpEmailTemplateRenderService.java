@@ -24,6 +24,10 @@ public class SmtpEmailTemplateRenderService implements MailTemplatePort {
         "templates/email/register-verification-otp.html";
     private static final String EXAM_BLUEPRINT_READY_TEMPLATE =
         "templates/email/exam-blueprint-ready.html";
+    private static final String APPEAL_REJECTED_TEMPLATE =
+        "templates/email/appeal-rejected.html";
+    private static final String APPEAL_PUBLISHED_TEMPLATE =
+        "templates/email/appeal-published.html";
 
     @Override
     public String renderPasswordSetUpEmail(String schoolAdminName, String schoolName, String passwordSetupUrl,
@@ -70,6 +74,21 @@ public class SmtpEmailTemplateRenderService implements MailTemplatePort {
         return loadTemplate(EXAM_BLUEPRINT_READY_TEMPLATE)
             .replace("{{blueprintName}}", escapeHtml(blueprintName))
             .replace("{{blueprintCode}}", escapeHtml(blueprintCode));
+    }
+
+    @Override
+    public String renderAppealRejectedEmail(String examName, String reason) {
+        return loadTemplate(APPEAL_REJECTED_TEMPLATE)
+            .replace("{{examName}}", escapeHtml(examName))
+            .replace("{{reason}}", escapeHtml(reason));
+    }
+
+    @Override
+    public String renderAppealPublishedEmail(String examName, String scoreBefore, String scoreAfter) {
+        return loadTemplate(APPEAL_PUBLISHED_TEMPLATE)
+            .replace("{{examName}}", escapeHtml(examName))
+            .replace("{{scoreBefore}}", escapeHtml(scoreBefore))
+            .replace("{{scoreAfter}}", escapeHtml(scoreAfter));
     }
 
     private String loadTemplate(String path) {

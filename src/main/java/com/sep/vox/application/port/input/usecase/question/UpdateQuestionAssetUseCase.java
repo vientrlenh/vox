@@ -129,7 +129,9 @@ public class UpdateQuestionAssetUseCase implements IUseCase<UpdateQuestionAssetC
         // rule, existing content (whether AI-written or manually typed) always sticks unless the
         // teacher explicitly blanks the field or uses "Tạo lại bằng AI" to force regeneration.
         var saved = questionAssetRepository.save(targetAsset);
-        questionAssetAnalysisRequestPublisher.publishIfNeeded(targetQuestion, saved);
+        // Tạm thời bỏ auto-publish yêu cầu AI phân tích asset để luồng lưu asset
+        // luôn độc lập và ổn định. Sẽ bật lại ở task riêng về AI update asset sau.
+        // questionAssetAnalysisRequestPublisher.publishIfNeeded(targetQuestion, saved);
         return QuestionAssetDtoMapper.toDto(saved);
     }
 

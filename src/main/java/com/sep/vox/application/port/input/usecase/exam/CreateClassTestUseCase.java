@@ -55,6 +55,7 @@ import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
 import com.sep.vox.domain.model.question.QuestionSharing;
+import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.repository.QuestionCollaboratorRepository;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.repository.SchoolClassRepository;
@@ -169,7 +170,6 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
                     .findAccessibleById(questionId, currentUserId, schoolClass.getSchoolId(), false, false)
                     .orElseThrow(() -> new ForbiddenException("Bạn không có quyền sử dụng câu hỏi " + questionId));
                 validateCanUseQuestion(question, currentUserId);
-                validateQuestionUnlocked(question, currentUserId);
                 questions.add(question);
             }
 
@@ -231,7 +231,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             var slots = slotsBySectionId.getOrDefault(section.getId(), List.of()).stream()
                 .sorted(Comparator.comparingInt(ExamBlueprintSlot::getOrder))
                 .toList();
-            validateReusableSlots(slots, currentUserId);
+            validateReusableSlots(slots);
 
             var paperSection = createPaperSection(paper, section, now, currentUserId);
             createPaperItems(paperSection, slots, exam.getId(), currentUserId);
@@ -384,7 +384,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             blueprintVersionId,
             exam.getCode() + "-P1",
             1,
-            ExamPaperStatus.LOCKED,
+            ExamPaperStatus.DRAFT,
             now,
             now,
             currentUserId,
@@ -414,6 +414,22 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             UUID currentUserId) {
         for (var slot : slots) {
             var questionId = slot.getSlotType() == ExamBlueprintSlotType.FIXED ? slot.getFixedQuestionId() : null;
+            if (questionId != null) {
+                var question = questionRepository.findById(questionId)
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi cố định trong blueprint"));
+                if (question.getStatus() != QuestionStatus.PUBLISHED) {
+                    // Câu hỏi fixed đã bị archived sau khi blueprint publish — để trống ô này, CHAIR tự chọn câu khác qua picker.
+                    examPaperItemRepository.save(new ExamPaperItem(
+                        null,
+                        paperSection.getId(),
+                        paperSection.getPaperId(),
+                        null,
+                        slot.getOrder(),
+                        slot.getWeight()
+                    ));
+                    continue;
+                }
+            }
             examPaperItemRepository.save(new ExamPaperItem(
                 slot.getId(),
                 paperSection.getId(),
@@ -455,7 +471,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         }
     }
 
-    private void validateReusableSlots(List<ExamBlueprintSlot> slots, UUID currentUserId) {
+    private void validateReusableSlots(List<ExamBlueprintSlot> slots) {
         for (var slot : slots) {
             if (slot.getSlotType() == ExamBlueprintSlotType.SELECTION) {
                 continue;
@@ -463,9 +479,6 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             if (slot.getFixedQuestionId() == null) {
                 throw new IllegalStateException("Ô câu hỏi cố định trong blueprint không có câu hỏi nào được gán");
             }
-            var question = questionRepository.findById(slot.getFixedQuestionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi cố định trong blueprint"));
-            validateQuestionUnlocked(question, currentUserId);
         }
     }
 
@@ -477,13 +490,6 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             if (collaborator.isEmpty() || collaborator.get().getPermission() == QuestionCollaboratorPermission.READ_ONLY) {
                 throw new ForbiddenException("Quyền READ_ONLY không được phép dùng câu hỏi trong bài kiểm tra");
             }
-        }
-    }
-
-    private void validateQuestionUnlocked(Question question, UUID currentUserId) {
-        boolean isOwner = currentUserId.equals(question.getCreatedBy());
-        if (question.isLocked() && !isOwner) {
-            throw new IllegalStateException("Câu hỏi " + question.getCode() + " đang bị khóa bởi kỳ thi khác");
         }
     }
 

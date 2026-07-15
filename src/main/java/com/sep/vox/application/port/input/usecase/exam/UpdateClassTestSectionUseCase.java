@@ -130,9 +130,6 @@ public class UpdateClassTestSectionUseCase implements IUseCase<UpdateClassTestSe
                         throw new ForbiddenException("Quyền READ_ONLY không được phép dùng câu hỏi trong bài kiểm tra");
                     }
                 }
-                if (question.isLocked() && !isOwner) {
-                    throw new IllegalStateException("Câu hỏi " + question.getCode() + " đang bị khoá bởi kỳ thi khác");
-                }
             }
             updateSectionQuestions(paperSection, input.questionIds(), exam.getId(), currentUserId, now);
         }

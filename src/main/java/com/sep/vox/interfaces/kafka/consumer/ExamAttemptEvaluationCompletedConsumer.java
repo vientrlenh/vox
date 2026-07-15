@@ -17,6 +17,7 @@ import com.sep.vox.application.port.input.command.UpdateExamSessionStatusCommand
 import com.sep.vox.application.port.input.usecase.examevaluation.RecordExamAttemptEvaluationUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.UpdateExamSessionStatusUseCase;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
+import com.sep.vox.domain.repository.ExamItemResponseRepository;
 import com.sep.vox.interfaces.kafka.dto.ExamAttemptEvaluationCompletedEventDto;
 import com.sep.vox.interfaces.kafka.dto.ExamAttemptEvaluationFailedEventDto;
 
@@ -29,14 +30,17 @@ public class ExamAttemptEvaluationCompletedConsumer {
 
     private final RecordExamAttemptEvaluationUseCase recordExamAttemptEvaluationUseCase;
     private final UpdateExamSessionStatusUseCase updateExamSessionStatusUseCase;
+    private final ExamItemResponseRepository examItemResponseRepository;
     private final JsonMapper jsonMapper;
 
     public ExamAttemptEvaluationCompletedConsumer(
             RecordExamAttemptEvaluationUseCase recordExamAttemptEvaluationUseCase,
             UpdateExamSessionStatusUseCase updateExamSessionStatusUseCase,
+            ExamItemResponseRepository examItemResponseRepository,
             JsonMapper jsonMapper) {
         this.recordExamAttemptEvaluationUseCase = recordExamAttemptEvaluationUseCase;
         this.updateExamSessionStatusUseCase = updateExamSessionStatusUseCase;
+        this.examItemResponseRepository = examItemResponseRepository;
         this.jsonMapper = jsonMapper;
     }
 
@@ -81,5 +85,59 @@ public class ExamAttemptEvaluationCompletedConsumer {
     @DltHandler
     public void dltHandler(ConsumerRecord<String, Object> record) {
         LOGGER.error("Exam evaluation DLT message at topic {}: {}", record.topic(), record.value());
+        try {
+            var sessionId = resolveSessionId(record.value());
+            if (sessionId == null) {
+                LOGGER.error("Exam evaluation DLT message could not resolve sessionId: {}", record.value());
+                return;
+            }
+
+            updateExamSessionStatusUseCase.execute(new UpdateExamSessionStatusCommand(
+                sessionId,
+                ExamSessionStatus.GRADING_FAILED
+            ));
+        } catch (Exception ex) {
+            LOGGER.error("Failed to mark exam session as GRADING_FAILED from DLT: {}", ex.getMessage(), ex);
+        }
+    }
+
+    private UUID resolveSessionId(Object rawRecordValue) {
+        var payload = jsonMapper.valueToTree(rawRecordValue);
+        var eventType = payload.path("eventType").asText();
+
+        if ("ExamAttemptEvaluationCompleted".equals(eventType)) {
+            var completedEvent = jsonMapper.treeToValue(payload, ExamAttemptEvaluationCompletedEventDto.class);
+            var sessionId = parseUuid(completedEvent.examAttemptId());
+            return sessionId != null ? sessionId : resolveSessionIdFromAnswerId(completedEvent.answerId());
+        }
+
+        if ("ExamAttemptEvaluationFailed".equals(eventType)) {
+            var failedEvent = jsonMapper.treeToValue(payload, ExamAttemptEvaluationFailedEventDto.class);
+            var sessionId = parseUuid(failedEvent.examAttemptId());
+            return sessionId != null ? sessionId : resolveSessionIdFromAnswerId(failedEvent.answerId());
+        }
+
+        return null;
+    }
+
+    private UUID resolveSessionIdFromAnswerId(String answerId) {
+        var responseId = parseUuid(answerId);
+        if (responseId == null) {
+            return null;
+        }
+        return examItemResponseRepository.findById(responseId)
+            .map(response -> response.getSessionId())
+            .orElse(null);
+    }
+
+    private UUID parseUuid(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return UUID.fromString(value.trim());
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
     }
 }

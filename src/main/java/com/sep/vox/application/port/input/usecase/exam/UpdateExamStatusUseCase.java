@@ -16,8 +16,10 @@ import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.domain.mapper.ExamDtoMapper;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
+import com.sep.vox.domain.model.exam.ExamPaperStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.repository.ExamMemberRepository;
+import com.sep.vox.domain.repository.ExamPaperRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
@@ -26,6 +28,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
 
     private final ExamRepository examRepository;
     private final ExamMemberRepository examMemberRepository;
+    private final ExamPaperRepository examPaperRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final ExamQuestionSecureLockService examQuestionSecureLockService;
@@ -34,12 +37,14 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
     public UpdateExamStatusUseCase(
             ExamRepository examRepository,
             ExamMemberRepository examMemberRepository,
+            ExamPaperRepository examPaperRepository,
             SchoolUserRepository schoolUserRepository,
             UserRoleQueryRepository userRoleQueryRepository,
             ExamQuestionSecureLockService examQuestionSecureLockService,
             UserContextPort userContextPort) {
         this.examRepository = examRepository;
         this.examMemberRepository = examMemberRepository;
+        this.examPaperRepository = examPaperRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
         this.examQuestionSecureLockService = examQuestionSecureLockService;
@@ -68,7 +73,12 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
 
         switch (command.action()) {
             case "SCHEDULE" -> requireTransition(exam, ExamStatus.DRAFT, ExamStatus.SCHEDULED);
-            case "START" -> requireTransition(exam, ExamStatus.SCHEDULED, ExamStatus.IN_PROGRESS);
+            case "START" -> {
+                requireTransition(exam, ExamStatus.SCHEDULED, ExamStatus.IN_PROGRESS);
+                if (exam.getKind() == ExamKind.CLASS_TEST) {
+                    lockClassTestPapers(exam.getId(), currentUserId);
+                }
+            }
             case "CLOSE" -> {
                 requireTransition(exam, ExamStatus.IN_PROGRESS, ExamStatus.CLOSED);
                 examQuestionSecureLockService.releaseIfAutoAfterClose(exam.getId());
@@ -106,5 +116,17 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
             throw new IllegalStateException("Trạng thái bài kiểm tra hiện tại không hợp lệ cho action này");
         }
         exam.setStatus(to);
+    }
+
+    private void lockClassTestPapers(java.util.UUID examId, java.util.UUID currentUserId) {
+        var now = OffsetDateTime.now();
+        for (var paper : examPaperRepository.findByExamId(examId)) {
+            if (paper.getStatus() != ExamPaperStatus.LOCKED) {
+                paper.setStatus(ExamPaperStatus.LOCKED);
+                paper.setUpdatedAt(now);
+                paper.setUpdatedBy(currentUserId);
+                examPaperRepository.save(paper);
+            }
+        }
     }
 }

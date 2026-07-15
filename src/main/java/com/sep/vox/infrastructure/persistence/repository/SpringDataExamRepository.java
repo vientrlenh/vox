@@ -45,6 +45,7 @@ public interface SpringDataExamRepository extends JpaRepository<ExamJpaEntity, U
                     WHERE em.examId = e.id
                       AND em.userId = :currentUserId
                 )
+                OR (e.status IN ('CLOSED', 'RESULTS_PUBLISHED') AND e.schoolId = :currentSchoolId)
               )
         ORDER BY e.updatedAt DESC
     """)

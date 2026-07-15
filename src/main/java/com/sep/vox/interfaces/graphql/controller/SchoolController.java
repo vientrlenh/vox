@@ -360,7 +360,7 @@ public class SchoolController {
     }
 
     @SchemaMapping(typeName = "SchoolUser", field = "user")
-    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER')")
     public CompletableFuture<UserDto> schoolUserUser(SchoolUserDto schoolUser, DataFetchingEnvironment env) {
         DataLoader<UUID, UserDto> loader = env.getDataLoader("userBySchoolUser");
         return loader.load(schoolUser.userId());

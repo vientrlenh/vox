@@ -119,9 +119,6 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
                 throw new ForbiddenException("Quyền READ_ONLY không được phép gán câu hỏi vào đề thi");
             }
         }
-        if (question.isLocked() && !isOwner) {
-            throw new IllegalStateException("Câu hỏi " + question.getCode() + " đang bị khoá bởi kỳ thi khác");
-        }
 
         item.setQuestionId(question.getId());
         var savedItem = examPaperItemRepository.save(item);

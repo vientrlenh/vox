@@ -32,7 +32,7 @@ import com.sep.vox.domain.model.exam.ExamPaper;
 import com.sep.vox.domain.model.exam.ExamPaperSection;
 import com.sep.vox.domain.model.exam.ExamSecurePoolReleaseMode;
 import com.sep.vox.domain.model.exam.ExamStatus;
-import com.sep.vox.domain.model.question.Question;
+import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.repository.ExamBlueprintRepository;
 import com.sep.vox.domain.repository.ExamBlueprintSectionRepository;
 import com.sep.vox.domain.repository.ExamBlueprintSlotRepository;
@@ -175,7 +175,7 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
         var slotsBySectionId = examBlueprintSlotRepository.findByBlueprintVersionId(version.getId()).stream()
             .collect(Collectors.groupingBy(ExamBlueprintSlot::getSectionId));
         validateVersionWeights(sections, slotsBySectionId);
-        validateReusableSlots(slotsBySectionId.values().stream().flatMap(List::stream).toList(), currentUserId);
+        validateReusableSlots(slotsBySectionId.values().stream().flatMap(List::stream).toList());
 
         exam.setBlueprintId(blueprint.getId());
         exam.setBlueprintVersionId(version.getId());
@@ -198,6 +198,22 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
             ));
             for (var slot : slots) {
                 var questionId = slot.getSlotType() == ExamBlueprintSlotType.FIXED ? slot.getFixedQuestionId() : null;
+                if (questionId != null) {
+                    var fixedQuestion = questionRepository.findById(questionId)
+                        .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi cố định trong blueprint"));
+                    if (fixedQuestion.getStatus() != QuestionStatus.PUBLISHED) {
+                        // Câu hỏi fixed đã bị archived sau khi blueprint publish — để trống ô này, CHAIR tự chọn câu khác qua picker.
+                        examPaperItemRepository.save(new com.sep.vox.domain.model.exam.ExamPaperItem(
+                            null,
+                            paperSection.getId(),
+                            paper.getId(),
+                            null,
+                            slot.getOrder(),
+                            slot.getWeight()
+                        ));
+                        continue;
+                    }
+                }
                 var item = new com.sep.vox.domain.model.exam.ExamPaperItem(
                     slot.getId(),
                     paperSection.getId(),
@@ -236,7 +252,7 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
         }
     }
 
-    private void validateReusableSlots(List<ExamBlueprintSlot> slots, UUID currentUserId) {
+    private void validateReusableSlots(List<ExamBlueprintSlot> slots) {
         for (var slot : slots) {
             if (slot.getSlotType() == ExamBlueprintSlotType.SELECTION) {
                 continue;
@@ -244,16 +260,6 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
             if (slot.getFixedQuestionId() == null) {
                 throw new IllegalStateException("Slot FIXED phải có fixedQuestionId");
             }
-            var question = questionRepository.findById(slot.getFixedQuestionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi cố định trong blueprint"));
-            validateQuestionUnlocked(question, currentUserId);
-        }
-    }
-
-    private void validateQuestionUnlocked(Question question, UUID currentUserId) {
-        boolean isOwner = currentUserId.equals(question.getCreatedBy());
-        if (question.isLocked() && !isOwner) {
-            throw new IllegalStateException("Câu hỏi " + question.getCode() + " đang bị khóa bởi kỳ thi khác");
         }
     }
 }

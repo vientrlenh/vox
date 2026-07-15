@@ -83,8 +83,10 @@ public class GetQuestionAssetUploadUrlUseCase implements IUseCase<GetQuestionAss
     }
 
     private static void validateContentType(String contentType) {
-        if (!(contentType.startsWith("image/") || contentType.startsWith("video/"))) {
-            throw new IllegalArgumentException("Chỉ hỗ trợ upload asset dạng image/* hoặc video/*");
+        if (!(contentType.startsWith("image/")
+                || contentType.startsWith("video/")
+                || contentType.startsWith("audio/"))) {
+            throw new IllegalArgumentException("Chỉ hỗ trợ upload asset dạng image/*, video/* hoặc audio/*");
         }
     }
 

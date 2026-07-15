@@ -131,7 +131,7 @@ public interface SpringDataQuestionRepository extends JpaRepository<QuestionJpaE
                     )
                 )
               )
-        ORDER BY q.updatedAt DESC
+        ORDER BY q.createdAt DESC, q.updatedAt DESC
     """)
     Page<QuestionJpaEntity> findAccessible(
         @Param("currentUserId") UUID currentUserId,
@@ -249,7 +249,7 @@ public interface SpringDataQuestionRepository extends JpaRepository<QuestionJpaE
                     )
                 )
               )
-        ORDER BY q.updatedAt DESC
+        ORDER BY q.createdAt DESC, q.updatedAt DESC
     """)
     Page<QuestionJpaEntity> findAccessibleForExamPaper(
         @Param("currentUserId") UUID currentUserId,

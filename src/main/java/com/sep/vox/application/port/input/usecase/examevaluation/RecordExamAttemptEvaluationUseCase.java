@@ -11,7 +11,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.mapper.examevaluation.ExamEvaluationSignalMapper;
@@ -52,6 +54,7 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<ExamAttemptE
     private final UpsertExamCandidateResultUseCase upsertExamCandidateResultUseCase;
     private final UpdateExamSessionStatusUseCase updateExamSessionStatusUseCase;
     private final JsonMapper jsonMapper;
+    private final TransactionTemplate phaseOneTransactionTemplate;
     private static final BigDecimal LOW_CONFIDENCE_THRESHOLD = BigDecimal.valueOf(0.50).setScale(2, RoundingMode.HALF_UP);
 
     public RecordExamAttemptEvaluationUseCase(
@@ -65,6 +68,7 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<ExamAttemptE
             AssessmentPolicyRepository assessmentPolicyRepository,
             UpsertExamCandidateResultUseCase upsertExamCandidateResultUseCase,
             UpdateExamSessionStatusUseCase updateExamSessionStatusUseCase,
+            PlatformTransactionManager transactionManager,
             JsonMapper jsonMapper) {
         this.examItemResponseRepository = examItemResponseRepository;
         this.examItemEvaluationRepository = examItemEvaluationRepository;
@@ -77,126 +81,176 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<ExamAttemptE
         this.upsertExamCandidateResultUseCase = upsertExamCandidateResultUseCase;
         this.updateExamSessionStatusUseCase = updateExamSessionStatusUseCase;
         this.jsonMapper = jsonMapper;
+        this.phaseOneTransactionTemplate = new TransactionTemplate(transactionManager);
+        this.phaseOneTransactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
 
     @Override
-    @Transactional
     public Void execute(ExamAttemptEvaluationCompletedEventDto input) {
-        var responseId = UUID.fromString(input.answerId());
-        var response = examItemResponseRepository.findById(responseId)
-            .orElseThrow(() -> new NotFoundException("Khong tim thay cau tra loi can luu ket qua cham"));
+        var persisted = persistEvaluation(input);
 
-        var criteriaMap = input.payload() == null || input.payload().criteria() == null
-            ? Map.<String, ExamAttemptEvaluationCompletedEventDto.CriterionScoreDto>of()
-            : input.payload().criteria();
-
-        // Resolved before computing itemScore (not after, like before this fix) --
-        // the rubric's own per-criterion weight (e.g. pronunciation .25, fluency
-        // .20...) must be applied first to combine the 5 criteria into one item
-        // score; ExamPaperItem.weight (question weight within the paper) is a
-        // separate, later step applied on top of this item score by
-        // ExamSessionResultCalculator when rolling up section/total scores.
-        var rubricCriteriaByCode = rubricCriterionRepository.findByRubricVersionId(
-            resolveRubricVersionId(response.getSessionId())
-        ).stream().collect(Collectors.toMap(
-            item -> normalizeCode(item.getCode()),
-            Function.identity(),
-            (left, right) -> left
-        ));
-        BigDecimal itemScore = computeWeightedItemScore(criteriaMap, rubricCriteriaByCode);
-
-        var validity = input.payload() == null ? null : input.payload().validity();
-        var signals = ExamEvaluationSignalMapper.toDomain(input.payload() == null ? null : input.payload().signals());
-        var overallConfidence = clampUnit(averageConfidence(
-            input.payload() == null ? null : input.payload().signals()));
-        var hasCriticalValidityFlag = hasCriticalValidityFlag(validity);
-        boolean requiresHumanReview = hasCriticalValidityFlag || overallConfidence.compareTo(LOW_CONFIDENCE_THRESHOLD) < 0;
-        String reviewReasonCode = hasCriticalValidityFlag
-            ? "VALIDITY_FLAGGED"
-            : (overallConfidence.compareTo(LOW_CONFIDENCE_THRESHOLD) < 0 ? "LOW_CONFIDENCE" : null);
-        var requiresRetake = requiresRetake(validity);
-        boolean markedInvalid = validity != null && Boolean.FALSE.equals(validity.validForScoring());
-        if ("uncooperative_move_on".equals(response.getTerminationReason())) {
-            itemScore = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
-            requiresHumanReview = true;
-            reviewReasonCode = "CONDUCT_VIOLATION";
-            markedInvalid = true;
-        }
-        var evaluation = examItemEvaluationRepository.save(new ExamItemEvaluation(
-            response.getId(),
-            response.getPaperItemId(),
-            ExamEvaluationEngineType.AI_SINGLE,
-            input.payload() == null ? "gpt-4o" : input.payload().modelVersion(),
-            1,
-            null,
-            itemScore,
-            itemScore,
-            overallConfidence,
-            requiresHumanReview,
-            reviewReasonCode,
-            markedInvalid,
-            requiresRetake,
-            signals,
-            toNullableJson(validity),
-            input.payload() == null ? "" : input.payload().feedbackSummary(),
-            toJson(input.payload() == null ? List.of() : input.payload().suggestions()),
-            input.payload() == null ? null : input.payload().promptVersion(),
-            ExamItemEvaluationStatus.AUTO_GRADED,
-            parseEvaluatedAt(input.payload() == null ? null : input.payload().evaluatedAt())
-        ));
-
-        var criterionScores = criteriaMap.entrySet().stream()
-            .filter(entry -> entry.getValue() != null && entry.getValue().score() != null)
-            .map(entry -> {
-                var criterion = rubricCriteriaByCode.get(normalizeCode(entry.getKey()));
-                if (criterion == null) {
-                    return null;
-                }
-                var score = BigDecimal.valueOf(entry.getValue().score()).setScale(2, RoundingMode.HALF_UP);
-                return new ExamItemCriterionScore(
-                    evaluation.getId(),
-                    criterion.getId(),
-                    score,
-                    score,
-                    entry.getValue().note()
-                );
-            })
-            .filter(item -> item != null)
-            .toList();
-        if (!criterionScores.isEmpty()) {
-            examItemCriterionScoreRepository.saveAll(criterionScores);
-        }
-
-        var turns = input.payload() == null || input.payload().turns() == null
-            ? List.<ExamItemEvaluationTurn>of()
-            : input.payload().turns().stream()
-                .map(turn -> new ExamItemEvaluationTurn(
-                    UUID.randomUUID(),
-                    evaluation.getId(),
-                    turn.turnOrder() == null ? 0 : turn.turnOrder(),
-                    parseTurnType(turn.turnType()),
-                    turn.promptText(),
-                    turn.audioUrl(),
-                    turn.transcript() == null ? "" : turn.transcript(),
-                    turn.wordCount() == null ? 0 : turn.wordCount(),
-                    turn.durationSeconds(),
-                    turn.asrConfidence(),
-                    toJson(turn.pronunciationOverall()),
-                    toJson(turn.wordFeedback())
-                ))
-                .toList();
-        if (!turns.isEmpty()) {
-            examItemEvaluationTurnRepository.saveAll(turns);
-        }
-
-        if (allResponsesHaveEvaluations(response.getSessionId())) {
-            upsertExamCandidateResultUseCase.execute(response.getSessionId());
+        if (allResponsesHaveEvaluations(persisted.sessionId())) {
+            upsertExamCandidateResultUseCase.execute(persisted.sessionId());
             updateExamSessionStatusUseCase.execute(new UpdateExamSessionStatusCommand(
-                response.getSessionId(),
+                persisted.sessionId(),
                 ExamSessionStatus.GRADED
             ));
         }
         return null;
+    }
+
+    private PersistedEvaluation persistEvaluation(ExamAttemptEvaluationCompletedEventDto input) {
+        var persisted = phaseOneTransactionTemplate.execute(status -> {
+            var responseId = UUID.fromString(input.answerId());
+            var response = examItemResponseRepository.findById(responseId)
+                .orElseThrow(() -> new NotFoundException("không thể tìm thấy câu trả lời cho evaluation"));
+
+            var criteriaMap = input.payload() == null || input.payload().criteria() == null
+                ? Map.<String, ExamAttemptEvaluationCompletedEventDto.CriterionScoreDto>of()
+                : input.payload().criteria();
+
+            // Resolved before computing itemScore (not after, like before this fix) --
+            // the rubric's own per-criterion weight (e.g. pronunciation .25, fluency
+            // .20...) must be applied first to combine the 5 criteria into one item
+            // score; ExamPaperItem.weight (question weight within the paper) is a
+            // separate, later step applied on top of this item score by
+            // ExamSessionResultCalculator when rolling up section/total scores.
+            var rubricCriteriaByCode = rubricCriterionRepository.findByRubricVersionId(
+                resolveRubricVersionId(response.getSessionId())
+            ).stream().collect(Collectors.toMap(
+                item -> normalizeCode(item.getCode()),
+                Function.identity(),
+                (left, right) -> left
+            ));
+            BigDecimal itemScore = computeWeightedItemScore(criteriaMap, rubricCriteriaByCode);
+
+            var validity = input.payload() == null ? null : input.payload().validity();
+            var signals = ExamEvaluationSignalMapper.toDomain(input.payload() == null ? null : input.payload().signals());
+            var overallConfidence = clampUnit(averageConfidence(
+                input.payload() == null ? null : input.payload().signals()));
+            var hasCriticalValidityFlag = hasCriticalValidityFlag(validity);
+            boolean requiresHumanReview = hasCriticalValidityFlag || overallConfidence.compareTo(LOW_CONFIDENCE_THRESHOLD) < 0;
+            String reviewReasonCode = hasCriticalValidityFlag
+                ? "VALIDITY_FLAGGED"
+                : (overallConfidence.compareTo(LOW_CONFIDENCE_THRESHOLD) < 0 ? "LOW_CONFIDENCE" : null);
+            var requiresRetake = requiresRetake(validity);
+            boolean markedInvalid = validity != null && Boolean.FALSE.equals(validity.validForScoring());
+            if ("uncooperative_move_on".equals(response.getTerminationReason())) {
+                itemScore = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+                requiresHumanReview = true;
+                reviewReasonCode = "CONDUCT_VIOLATION";
+                markedInvalid = true;
+            }
+
+            var existingEvaluation = examItemEvaluationRepository.findLatestByResponseId(response.getId()).orElse(null);
+            var evaluation = existingEvaluation == null
+                ? new ExamItemEvaluation(
+                    response.getId(),
+                    response.getPaperItemId(),
+                    ExamEvaluationEngineType.AI_SINGLE,
+                    input.payload() == null ? "gpt-4o" : input.payload().modelVersion(),
+                    1,
+                    null,
+                    itemScore,
+                    itemScore,
+                    overallConfidence,
+                    requiresHumanReview,
+                    reviewReasonCode,
+                    markedInvalid,
+                    requiresRetake,
+                    signals,
+                    toNullableJson(validity),
+                    input.payload() == null ? "" : input.payload().feedbackSummary(),
+                    toJson(input.payload() == null ? List.of() : input.payload().suggestions()),
+                    input.payload() == null ? null : input.payload().promptVersion(),
+                    ExamItemEvaluationStatus.AUTO_GRADED,
+                    parseEvaluatedAt(input.payload() == null ? null : input.payload().evaluatedAt())
+                )
+                : existingEvaluation;
+
+            if (existingEvaluation != null) {
+                evaluation.setResponseId(response.getId());
+                evaluation.setPaperItemId(response.getPaperItemId());
+                evaluation.setEngineType(ExamEvaluationEngineType.AI_SINGLE);
+                evaluation.setGradedByModel(input.payload() == null ? "gpt-4o" : input.payload().modelVersion());
+                evaluation.setSampleCount(1);
+                evaluation.setReviewerId(null);
+                evaluation.setRawItemScore(itemScore);
+                evaluation.setItemScore(itemScore);
+                evaluation.setOverallConfidence(overallConfidence);
+                evaluation.setRequiresHumanReview(requiresHumanReview);
+                evaluation.setReviewReasonCode(reviewReasonCode);
+                evaluation.setMarkedInvalid(markedInvalid);
+                evaluation.setRequiresRetake(requiresRetake);
+                evaluation.setSignals(signals);
+                evaluation.setValidityJson(toNullableJson(validity));
+                evaluation.setFeedbackSummary(input.payload() == null ? "" : input.payload().feedbackSummary());
+                evaluation.setSuggestionsJson(toJson(input.payload() == null ? List.of() : input.payload().suggestions()));
+                evaluation.setPromptVersion(input.payload() == null ? null : input.payload().promptVersion());
+                evaluation.setStatus(ExamItemEvaluationStatus.AUTO_GRADED);
+                evaluation.setEvaluatedAt(parseEvaluatedAt(input.payload() == null ? null : input.payload().evaluatedAt()));
+            }
+
+            var savedEvaluation = examItemEvaluationRepository.save(evaluation);
+            if (existingEvaluation != null) {
+                examItemCriterionScoreRepository.deleteByEvaluationIdIn(List.of(savedEvaluation.getId()));
+                examItemEvaluationTurnRepository.deleteByEvaluationIdIn(List.of(savedEvaluation.getId()));
+            }
+
+            var criterionScores = criteriaMap.entrySet().stream()
+                .filter(entry -> entry.getValue() != null && entry.getValue().score() != null)
+                .map(entry -> {
+                    var criterion = rubricCriteriaByCode.get(normalizeCode(entry.getKey()));
+                    if (criterion == null) {
+                        return null;
+                    }
+                    var score = BigDecimal.valueOf(entry.getValue().score()).setScale(2, RoundingMode.HALF_UP);
+                    return new ExamItemCriterionScore(
+                        savedEvaluation.getId(),
+                        criterion.getId(),
+                        score,
+                        score,
+                        entry.getValue().note()
+                    );
+                })
+                .filter(item -> item != null)
+                .toList();
+            if (!criterionScores.isEmpty()) {
+                examItemCriterionScoreRepository.saveAll(criterionScores);
+            }
+
+            var turns = input.payload() == null || input.payload().turns() == null
+                ? List.<ExamItemEvaluationTurn>of()
+                : input.payload().turns().stream()
+                    .map(turn -> new ExamItemEvaluationTurn(
+                        UUID.randomUUID(),
+                        savedEvaluation.getId(),
+                        turn.turnOrder() == null ? 0 : turn.turnOrder(),
+                        parseTurnType(turn.turnType()),
+                        turn.promptText(),
+                        turn.audioUrl(),
+                        turn.transcript() == null ? "" : turn.transcript(),
+                        turn.wordCount() == null ? 0 : turn.wordCount(),
+                        turn.durationSeconds(),
+                        turn.asrConfidence(),
+                        toJson(turn.pronunciationOverall()),
+                        toJson(turn.wordFeedback())
+                    ))
+                    .toList();
+            if (!turns.isEmpty()) {
+                examItemEvaluationTurnRepository.saveAll(turns);
+            }
+
+            return new PersistedEvaluation(response.getSessionId());
+        });
+
+        if (persisted == null) {
+            throw new IllegalStateException("Không thể lưu kết quả chấm cho câu trả lời");
+        }
+        return persisted;
+    }
+
+    private record PersistedEvaluation(UUID sessionId) {
     }
 
     private BigDecimal computeWeightedItemScore(

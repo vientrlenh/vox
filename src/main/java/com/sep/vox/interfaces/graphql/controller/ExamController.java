@@ -276,6 +276,10 @@ public class ExamController {
             if (schoolAdmin) {
                 return true;
             }
+            // Sau khi kỳ thi đã đóng, ai cùng trường cũng xem được liên kết blueprint — không cần là member nữa.
+            if ("CLOSED".equals(source.status()) || "RESULTS_PUBLISHED".equals(source.status())) {
+                return true;
+            }
         }
 
         return examMemberRepository.findByExamIdAndUserId(source.id(), currentUserId).isPresent();

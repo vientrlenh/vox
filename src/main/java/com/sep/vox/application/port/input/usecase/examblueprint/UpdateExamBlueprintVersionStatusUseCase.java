@@ -17,6 +17,7 @@ import com.sep.vox.application.port.input.command.UpdateExamBlueprintVersionStat
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.EventPublisherPort;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.ExamBlueprintVersionDto;
 import com.sep.vox.domain.mapper.ExamBlueprintVersionDtoMapper;
 import com.sep.vox.domain.model.exam.ExamBlueprint;
@@ -44,6 +45,7 @@ public class UpdateExamBlueprintVersionStatusUseCase
     private final SchoolUserRepository schoolUserRepository;
     private final UserContextPort userContextPort;
     private final EventPublisherPort eventPublisherPort;
+    private final UserRoleQueryRepository userRoleQueryRepository;
 
     public UpdateExamBlueprintVersionStatusUseCase(
             ExamBlueprintVersionRepository examBlueprintVersionRepository,
@@ -53,7 +55,8 @@ public class UpdateExamBlueprintVersionStatusUseCase
             QuestionRepository questionRepository,
             SchoolUserRepository schoolUserRepository,
             UserContextPort userContextPort,
-            EventPublisherPort eventPublisherPort) {
+            EventPublisherPort eventPublisherPort,
+            UserRoleQueryRepository userRoleQueryRepository) {
         this.examBlueprintVersionRepository = examBlueprintVersionRepository;
         this.examBlueprintRepository = examBlueprintRepository;
         this.examBlueprintSectionRepository = examBlueprintSectionRepository;
@@ -62,6 +65,7 @@ public class UpdateExamBlueprintVersionStatusUseCase
         this.schoolUserRepository = schoolUserRepository;
         this.userContextPort = userContextPort;
         this.eventPublisherPort = eventPublisherPort;
+        this.userRoleQueryRepository = userRoleQueryRepository;
     }
 
     @Override
@@ -119,9 +123,16 @@ public class UpdateExamBlueprintVersionStatusUseCase
     private void requireStatusActor(ExamBlueprintVersion version, ExamBlueprint blueprint, UUID currentUserId, UUID currentSchoolId) {
         if (!examBlueprintRepository.canChangeVersionStatus(blueprint.getId(), currentUserId, currentSchoolId)) {
             throw new ForbiddenException(
-                "Quyền truy cập bị từ chối — cần là SCHOOL_ADMIN (nếu blueprint chưa gắn kỳ thi) hoặc CHAIR/REVIEWER của kỳ thi đã gắn");
+                "Quyền truy cập bị từ chối — cần là SCHOOL_ADMIN hoặc CHAIR/REVIEWER của kỳ thi đã gắn blueprint này");
         }
-        if (currentUserId.equals(version.getCreatedBy())) {
+        // SCHOOL_ADMIN (và SYSTEM_ADMIN) được tự duyệt version do chính mình tạo -- admin là
+        // người có thẩm quyền cao nhất của blueprint, và trong thực tế một trường thường chỉ có
+        // 1 admin nên chặn tuyệt đối sẽ khiến version kẹt vĩnh viễn ở DRAFT không ai duyệt được.
+        // Maker-checker (không tự duyệt) chỉ áp dụng cho nhánh CHAIR/REVIEWER (giáo viên) --
+        // teacher-CHAIR của kỳ thi đã gắn blueprint vẫn không được tự duyệt version mình tạo.
+        var isAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()) || "SYSTEM_ADMIN".equals(role.roleCode()));
+        if (!isAdmin && currentUserId.equals(version.getCreatedBy())) {
             throw new ForbiddenException("Người tạo version không được tự đổi trạng thái version của chính mình");
         }
     }

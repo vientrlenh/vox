@@ -109,7 +109,9 @@ public class CreateQuestionAssetUseCase implements IUseCase<CreateQuestionAssetM
         );
 
         var saved = questionAssetRepository.save(asset);
-        questionAssetAnalysisRequestPublisher.publishIfNeeded(targetQuestion, saved);
+        // Tạm thời bỏ auto-publish yêu cầu AI phân tích asset để luồng lưu asset
+        // luôn độc lập và ổn định. Sẽ bật lại ở task riêng về AI update asset sau.
+        // questionAssetAnalysisRequestPublisher.publishIfNeeded(targetQuestion, saved);
         return QuestionAssetDtoMapper.toDto(saved);
     }
 

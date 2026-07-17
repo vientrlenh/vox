@@ -50,12 +50,12 @@ public class UpdateFrameworkCriterionBandUseCase
         checkValidRequest(command, version, criterion, band);
         updateCriterionBand(command, band);
 
-        frameworkCriterionBandRepository.saveCriterionBand(band);
+        frameworkCriterionBandRepository.save(band);
         return band.getId();
     }
 
     private FrameworkVersion getVersion(UpdateFrameworkCriterionBandCommand command) {
-        return frameworkVersionRepository.findFrameworkVersionById(command.versionId())
+        return frameworkVersionRepository.findById(command.versionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản khung năng lực"));
     }
 

@@ -113,7 +113,7 @@ public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<Create
             }
 
             // 2. Validate Framework
-            FrameworkVersion frameworkVersion = frameworkVersionRepository.findFrameworkVersionById(command.frameworkVersionId())
+            FrameworkVersion frameworkVersion = frameworkVersionRepository.findById(command.frameworkVersionId())
                     .orElseThrow(() -> new NotFoundException("Không tìm thấy Phiên bản Khung tiêu chuẩn."));
             if (frameworkVersion.getStatus() != FrameworkVersionStatus.PUBLISHED) {
                 throw new IllegalStateException("Chỉ có thể tạo Assessment Policy trên Framework đã PUBLISHED.");

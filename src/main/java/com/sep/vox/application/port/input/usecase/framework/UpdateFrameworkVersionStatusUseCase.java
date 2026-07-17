@@ -42,7 +42,7 @@ public class UpdateFrameworkVersionStatusUseCase implements IUseCase<UpdateFrame
         FrameworkVersion version = getVersion(input);
 
         checkValidRequest(input, version);
-        int updated = frameworkVersionRepository.updateFrameworkVersionStatus(input.versionId(), input.status());
+        int updated = frameworkVersionRepository.updateStatus(input.versionId(), input.status());
         if (updated == 0) {
             throw new NotFoundException("Không tìm thấy phiên bản framework để cập nhật trạng thái");
         }
@@ -55,7 +55,7 @@ public class UpdateFrameworkVersionStatusUseCase implements IUseCase<UpdateFrame
     }
 
     private FrameworkVersion getVersion(UpdateFrameworkVersionStatusCommand input) {
-        return frameworkVersionRepository.findFrameworkVersionByIdForUpdate(input.versionId())
+        return frameworkVersionRepository.findByIdForUpdate(input.versionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản framework"));
     }
 
@@ -80,7 +80,7 @@ public class UpdateFrameworkVersionStatusUseCase implements IUseCase<UpdateFrame
     }
 
     private void validateNoConflictingPublished(UUID frameworkId, UUID versionId, OffsetDateTime effectiveFrom, OffsetDateTime effectiveTo) {
-        var published = frameworkVersionRepository.findByFrameworkVersionIdAndStatus(frameworkId, FrameworkVersionStatus.PUBLISHED);
+        var published = frameworkVersionRepository.findByFrameworkIdAndStatus(frameworkId, FrameworkVersionStatus.PUBLISHED);
         boolean hasConflict = published.stream()
             .filter(v -> !v.getId().equals(versionId))
             .anyMatch(v -> rangesOverlap(effectiveFrom, effectiveTo, v.getEffectiveFrom(), v.getEffectiveTo()));

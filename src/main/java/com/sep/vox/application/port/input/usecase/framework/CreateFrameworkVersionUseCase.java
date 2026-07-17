@@ -45,7 +45,7 @@ public class CreateFrameworkVersionUseCase implements IUseCase<CreateFrameworkVe
         var now = OffsetDateTime.now();
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
-        frameworkRepository.findFrameworkById(command.frameworkId())
+        frameworkRepository.findById(command.frameworkId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy framework"));
 
         var version = new FrameworkVersion(
@@ -64,7 +64,7 @@ public class CreateFrameworkVersionUseCase implements IUseCase<CreateFrameworkVe
         );
 
         try {
-            var saved = frameworkVersionRepository.saveFrameworkVersion(version);
+            var saved = frameworkVersionRepository.save(version);
             return CreateFrameworkVersionResponseMapper.toResponse(saved.getId());
         } catch (DataIntegrityViolationException e) {
             throw new DuplicatedException("Phiên bản hoặc mã phiên bản này đã tồn tại trong framework");

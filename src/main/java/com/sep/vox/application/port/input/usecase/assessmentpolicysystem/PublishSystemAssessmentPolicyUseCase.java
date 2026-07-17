@@ -68,7 +68,7 @@ public class PublishSystemAssessmentPolicyUseCase implements IUseCase<PublishSys
         }
 
         // 4. Kiểm tra Framework Version liên kết vẫn còn hiệu lực (PUBLISHED)
-        FrameworkVersion frameworkVersion = frameworkVersionRepository.findFrameworkVersionById(policy.getFrameworkVersionId())
+        FrameworkVersion frameworkVersion = frameworkVersionRepository.findById(policy.getFrameworkVersionId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy Phiên bản Khung tiêu chuẩn (Framework Version) liên kết."));
         if (frameworkVersion.getStatus() != FrameworkVersionStatus.PUBLISHED) {
             throw new IllegalStateException("Không thể xuất bản Assessment Policy này vì Phiên bản Khung tiêu chuẩn liên kết không còn ở trạng thái PUBLISHED.");

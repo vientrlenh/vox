@@ -38,7 +38,7 @@ public class DeleteFrameworkVersionUseCase implements IUseCase<DeleteFrameworkVe
     @Override
     @Transactional
     public Void execute(DeleteFrameworkVersionCommand input) {
-        var version = frameworkVersionRepository.findFrameworkVersionByIdForUpdate(input.versionId())
+        var version = frameworkVersionRepository.findByIdForUpdate(input.versionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản framework"));
 
         if (!version.getFrameworkId().equals(input.frameworkId())) {
@@ -51,7 +51,7 @@ public class DeleteFrameworkVersionUseCase implements IUseCase<DeleteFrameworkVe
             if (assessmentPolicyRepository.existsByFrameworkVersionId(input.versionId())) {
                 throw new IllegalStateException("Không thể lưu trữ phiên bản framework đang được sử dụng trong policy");
             }
-            frameworkVersionRepository.updateFrameworkVersionStatus(input.versionId(), FrameworkVersionStatus.ARCHIVED);
+            frameworkVersionRepository.updateStatus(input.versionId(), FrameworkVersionStatus.ARCHIVED);
         }
 
         return null;
@@ -65,6 +65,6 @@ public class DeleteFrameworkVersionUseCase implements IUseCase<DeleteFrameworkVe
         }
         frameworkCriterionRepository.deleteByFrameworkVersionId(versionId);
         frameworkResultBandRepository.deleteByFrameworkVersionId(versionId);
-        frameworkVersionRepository.deleteFrameworkVersionById(versionId);
+        frameworkVersionRepository.deleteById(versionId);
     }
 }

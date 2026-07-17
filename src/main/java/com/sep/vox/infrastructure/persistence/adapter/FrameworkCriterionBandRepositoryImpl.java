@@ -33,7 +33,7 @@ public class FrameworkCriterionBandRepositoryImpl implements FrameworkCriterionB
     }
 
     @Override
-    public FrameworkCriterionBand saveCriterionBand(FrameworkCriterionBand band) {
+    public FrameworkCriterionBand save(FrameworkCriterionBand band) {
         var entity = FrameworkCriterionBandMapper.toJpa(band);
         var saved = springDataFrameworkCriterionBandRepository.save(entity);
         return FrameworkCriterionBandMapper.toDomain(saved);

@@ -66,16 +66,16 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
         version.setStatus(FrameworkVersionStatus.DRAFT);
 
         when(frameworkRepository.findFrameworkByIdForUpdate(frameworkId)).thenReturn(Optional.of(framework));
-        when(frameworkVersionRepository.findFrameworkVersionByIdForUpdate(versionId)).thenReturn(Optional.of(version));
+        when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.of(version));
         when(frameworkCriterionRepository.existsByFrameworkVersionId(versionId)).thenReturn(true);
         when(frameworkResultBandRepository.existsByFrameworkVersionId(versionId)).thenReturn(true);
-        when(frameworkVersionRepository.findByFrameworkVersionIdAndStatus(frameworkId, FrameworkVersionStatus.PUBLISHED))
+        when(frameworkVersionRepository.findByFrameworkIdAndStatus(frameworkId, FrameworkVersionStatus.PUBLISHED))
             .thenReturn(List.of());
-        when(frameworkVersionRepository.updateFrameworkVersionStatus(versionId, FrameworkVersionStatus.PUBLISHED)).thenReturn(1);
+        when(frameworkVersionRepository.updateStatus(versionId, FrameworkVersionStatus.PUBLISHED)).thenReturn(1);
 
         useCase.execute(command);
 
-        verify(frameworkVersionRepository).updateFrameworkVersionStatus(versionId, FrameworkVersionStatus.PUBLISHED);
+        verify(frameworkVersionRepository).updateStatus(versionId, FrameworkVersionStatus.PUBLISHED);
     }
 
     @Test
@@ -96,7 +96,7 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
         version.setStatus(FrameworkVersionStatus.DRAFT);
 
         when(frameworkRepository.findFrameworkByIdForUpdate(frameworkId)).thenReturn(Optional.of(framework));
-        when(frameworkVersionRepository.findFrameworkVersionByIdForUpdate(versionId)).thenReturn(Optional.of(version));
+        when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.of(version));
         when(frameworkCriterionRepository.existsByFrameworkVersionId(versionId)).thenReturn(false);
 
         assertThrows(IllegalStateException.class, () -> useCase.execute(command));
@@ -120,7 +120,7 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
         version.setStatus(FrameworkVersionStatus.DRAFT);
 
         when(frameworkRepository.findFrameworkByIdForUpdate(frameworkId)).thenReturn(Optional.of(framework));
-        when(frameworkVersionRepository.findFrameworkVersionByIdForUpdate(versionId)).thenReturn(Optional.of(version));
+        when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.of(version));
         when(frameworkCriterionRepository.existsByFrameworkVersionId(versionId)).thenReturn(true);
         when(frameworkResultBandRepository.existsByFrameworkVersionId(versionId)).thenReturn(false);
 
@@ -143,12 +143,12 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
         version.setStatus(FrameworkVersionStatus.PUBLISHED);
 
         when(frameworkRepository.findFrameworkByIdForUpdate(frameworkId)).thenReturn(Optional.of(framework));
-        when(frameworkVersionRepository.findFrameworkVersionByIdForUpdate(versionId)).thenReturn(Optional.of(version));
-        when(frameworkVersionRepository.updateFrameworkVersionStatus(versionId, FrameworkVersionStatus.ARCHIVED)).thenReturn(1);
+        when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.of(version));
+        when(frameworkVersionRepository.updateStatus(versionId, FrameworkVersionStatus.ARCHIVED)).thenReturn(1);
 
         useCase.execute(command);
 
-        verify(frameworkVersionRepository).updateFrameworkVersionStatus(versionId, FrameworkVersionStatus.ARCHIVED);
+        verify(frameworkVersionRepository).updateStatus(versionId, FrameworkVersionStatus.ARCHIVED);
     }
 
     @Test
@@ -174,7 +174,7 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
         );
 
         when(frameworkRepository.findFrameworkByIdForUpdate(frameworkId)).thenReturn(Optional.of(framework));
-        when(frameworkVersionRepository.findFrameworkVersionByIdForUpdate(versionId)).thenReturn(Optional.empty());
+        when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> useCase.execute(command));
     }
@@ -195,7 +195,7 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
         version.setFrameworkId(otherFrameworkId);
 
         when(frameworkRepository.findFrameworkByIdForUpdate(frameworkId)).thenReturn(Optional.of(framework));
-        when(frameworkVersionRepository.findFrameworkVersionByIdForUpdate(versionId)).thenReturn(Optional.of(version));
+        when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.of(version));
 
         assertThrows(IllegalArgumentException.class, () -> useCase.execute(command));
     }
@@ -225,10 +225,10 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
         publishedVersion.setStatus(FrameworkVersionStatus.PUBLISHED);
 
         when(frameworkRepository.findFrameworkByIdForUpdate(frameworkId)).thenReturn(Optional.of(framework));
-        when(frameworkVersionRepository.findFrameworkVersionByIdForUpdate(versionId)).thenReturn(Optional.of(version));
+        when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.of(version));
         when(frameworkCriterionRepository.existsByFrameworkVersionId(versionId)).thenReturn(true);
         when(frameworkResultBandRepository.existsByFrameworkVersionId(versionId)).thenReturn(true);
-        when(frameworkVersionRepository.findByFrameworkVersionIdAndStatus(frameworkId, FrameworkVersionStatus.PUBLISHED))
+        when(frameworkVersionRepository.findByFrameworkIdAndStatus(frameworkId, FrameworkVersionStatus.PUBLISHED))
             .thenReturn(List.of(publishedVersion));
 
         assertThrows(IllegalStateException.class, () -> useCase.execute(command));
@@ -250,7 +250,7 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
         version.setStatus(FrameworkVersionStatus.DRAFT);
 
         when(frameworkRepository.findFrameworkByIdForUpdate(frameworkId)).thenReturn(Optional.of(framework));
-        when(frameworkVersionRepository.findFrameworkVersionByIdForUpdate(versionId)).thenReturn(Optional.of(version));
+        when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.of(version));
 
         assertThrows(IllegalStateException.class, () -> useCase.execute(command));
     }
@@ -280,15 +280,15 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
         publishedVersion.setStatus(FrameworkVersionStatus.PUBLISHED);
 
         when(frameworkRepository.findFrameworkByIdForUpdate(frameworkId)).thenReturn(Optional.of(framework));
-        when(frameworkVersionRepository.findFrameworkVersionByIdForUpdate(versionId)).thenReturn(Optional.of(version));
+        when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.of(version));
         when(frameworkCriterionRepository.existsByFrameworkVersionId(versionId)).thenReturn(true);
         when(frameworkResultBandRepository.existsByFrameworkVersionId(versionId)).thenReturn(true);
-        when(frameworkVersionRepository.findByFrameworkVersionIdAndStatus(frameworkId, FrameworkVersionStatus.PUBLISHED))
+        when(frameworkVersionRepository.findByFrameworkIdAndStatus(frameworkId, FrameworkVersionStatus.PUBLISHED))
             .thenReturn(List.of(publishedVersion));
-        when(frameworkVersionRepository.updateFrameworkVersionStatus(versionId, FrameworkVersionStatus.PUBLISHED)).thenReturn(1);
+        when(frameworkVersionRepository.updateStatus(versionId, FrameworkVersionStatus.PUBLISHED)).thenReturn(1);
 
         useCase.execute(command);
 
-        verify(frameworkVersionRepository).updateFrameworkVersionStatus(versionId, FrameworkVersionStatus.PUBLISHED);
+        verify(frameworkVersionRepository).updateStatus(versionId, FrameworkVersionStatus.PUBLISHED);
     }
 }

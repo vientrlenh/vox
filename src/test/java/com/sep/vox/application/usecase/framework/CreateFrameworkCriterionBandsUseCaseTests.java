@@ -60,7 +60,7 @@ public class CreateFrameworkCriterionBandsUseCaseTests {
 
         var version = new FrameworkVersion(versionId, frameworkId, "V1_0", "Version 1.0", "Desc", 1, now, now.plusDays(30),
                 FrameworkVersionStatus.DRAFT, now, now, userId, userId);
-        when(frameworkVersionRepository.findFrameworkVersionById(versionId)).thenReturn(Optional.of(version));
+        when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.of(version));
 
         var criterion = new FrameworkCriterion(criterionId, versionId, "C1", "Criterion 1", "Desc", 1, now, now, userId, userId);
         when(frameworkCriterionRepository.findById(criterionId)).thenReturn(Optional.of(criterion));
@@ -96,7 +96,7 @@ public class CreateFrameworkCriterionBandsUseCaseTests {
 
     @Test
     void should_throw_not_found_when_version_missing() {
-        when(frameworkVersionRepository.findFrameworkVersionById(versionId)).thenReturn(Optional.empty());
+        when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.empty());
         var command = new CreateFrameworkCriterionBandsCommand(frameworkId, versionId, criterionId, List.of(bandItem("rb1")));
 
         assertThrows(NotFoundException.class, () -> useCase.execute(command));
@@ -106,7 +106,7 @@ public class CreateFrameworkCriterionBandsUseCaseTests {
     void should_throw_when_version_not_draft() {
         var activeVersion = new FrameworkVersion(versionId, frameworkId, "V1_0", "Version 1.0", "Desc", 1, now, now.plusDays(30),
                 FrameworkVersionStatus.PUBLISHED, now, now, userId, userId);
-        when(frameworkVersionRepository.findFrameworkVersionById(versionId)).thenReturn(Optional.of(activeVersion));
+        when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.of(activeVersion));
         var command = new CreateFrameworkCriterionBandsCommand(frameworkId, versionId, criterionId, List.of(bandItem("rb1")));
 
         assertThrows(IllegalStateException.class, () -> useCase.execute(command));

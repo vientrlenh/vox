@@ -45,7 +45,7 @@ public class DeleteFrameworkCriterionBandUseCase
     }
 
     private FrameworkVersion getVersion(DeleteFrameworkCriterionBandCommand command) {
-        return frameworkVersionRepository.findFrameworkVersionById(command.versionId())
+        return frameworkVersionRepository.findById(command.versionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản khung năng lực"));
     }
 

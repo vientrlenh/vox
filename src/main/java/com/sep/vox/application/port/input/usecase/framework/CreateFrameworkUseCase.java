@@ -46,7 +46,7 @@ public class CreateFrameworkUseCase implements IUseCase<CreateFrameworkCommand, 
             userId, userId);
         
         try {
-            return frameworkRepository.saveFramework(framework).getId();
+            return frameworkRepository.save(framework).getId();
         } catch (DataIntegrityViolationException e) {
             throw new DuplicatedException("Mã framework đã tồn tại");
         }

@@ -55,9 +55,9 @@ public class CreateFrameworkVersionUseCaseTests {
             frameworkId, new FrameworkCode("CEFR"), "Test Framework", "Description",
             true, now, now, null, null
         );
-        when(frameworkRepository.findFrameworkById(frameworkId)).thenReturn(Optional.of(framework));
+        when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        when(frameworkVersionRepository.saveFrameworkVersion(any(FrameworkVersion.class)))
+        when(frameworkVersionRepository.save(any(FrameworkVersion.class)))
             .thenAnswer(invocation -> {
                 FrameworkVersion version = invocation.getArgument(0);
                 version.setId(UUID.randomUUID());
@@ -67,8 +67,8 @@ public class CreateFrameworkVersionUseCaseTests {
         var result = useCase.execute(command);
 
         assertThat(result.versionId()).isNotNull();
-        verify(frameworkRepository).findFrameworkById(frameworkId);
-        verify(frameworkVersionRepository).saveFrameworkVersion(any(FrameworkVersion.class));
+        verify(frameworkRepository).findById(frameworkId);
+        verify(frameworkVersionRepository).save(any(FrameworkVersion.class));
     }
 
     @Test
@@ -77,7 +77,7 @@ public class CreateFrameworkVersionUseCaseTests {
             frameworkId, "V1_0", "Version 1.0", "Initial version", 1, now, now.plusDays(30)
         );
 
-        when(frameworkRepository.findFrameworkById(frameworkId)).thenReturn(Optional.empty());
+        when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> useCase.execute(command));
     }
@@ -92,9 +92,9 @@ public class CreateFrameworkVersionUseCaseTests {
             frameworkId, new FrameworkCode("CEFR"), "Test Framework", "Description",
             true, now, now, null, null
         );
-        when(frameworkRepository.findFrameworkById(frameworkId)).thenReturn(Optional.of(framework));
+        when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        when(frameworkVersionRepository.saveFrameworkVersion(any(FrameworkVersion.class)))
+        when(frameworkVersionRepository.save(any(FrameworkVersion.class)))
             .thenThrow(new DataIntegrityViolationException("duplicate"));
 
         assertThrows(DuplicatedException.class, () -> useCase.execute(command));

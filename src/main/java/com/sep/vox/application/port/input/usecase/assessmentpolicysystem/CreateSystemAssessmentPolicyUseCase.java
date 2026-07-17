@@ -80,7 +80,7 @@ public class CreateSystemAssessmentPolicyUseCase implements IUseCase<List<Create
 
         for (CreateAssessmentPolicyCommand command : commands) {
             // 2. Validate Framework & Language
-            FrameworkVersion frameworkVersion = frameworkVersionRepository.findFrameworkVersionById(command.frameworkVersionId())
+            FrameworkVersion frameworkVersion = frameworkVersionRepository.findById(command.frameworkVersionId())
                     .orElseThrow(() -> new NotFoundException("Không tìm thấy Phiên bản Khung tiêu chuẩn."));
             if (frameworkVersion.getStatus() != FrameworkVersionStatus.PUBLISHED) {
                 throw new IllegalStateException("Chỉ có thể tạo Policy trên Framework đã PUBLISHED.");

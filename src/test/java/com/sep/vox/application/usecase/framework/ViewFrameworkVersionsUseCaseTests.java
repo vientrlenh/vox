@@ -69,7 +69,7 @@ public class ViewFrameworkVersionsUseCaseTests {
             1
         );
 
-        when(frameworkRepository.findFrameworkById(frameworkId)).thenReturn(Optional.of(framework));
+        when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
         when(frameworkVersionRepository.findByFrameworkId(frameworkId, 1, 20))
             .thenReturn(pageResult);
 
@@ -78,7 +78,7 @@ public class ViewFrameworkVersionsUseCaseTests {
         assertThat(result.content()).hasSize(2);
         assertThat(result.totalElements()).isEqualTo(2);
         assertThat(result.page()).isEqualTo(1);
-        verify(frameworkRepository).findFrameworkById(frameworkId);
+        verify(frameworkRepository).findById(frameworkId);
     }
 
     @Test
@@ -86,7 +86,7 @@ public class ViewFrameworkVersionsUseCaseTests {
         var frameworkId = UUID.randomUUID();
         var query = new ViewFrameworkVersionsQuery(frameworkId, 1, 20);
 
-        when(frameworkRepository.findFrameworkById(frameworkId)).thenReturn(Optional.empty());
+        when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> useCase.execute(query));
     }
@@ -103,7 +103,7 @@ public class ViewFrameworkVersionsUseCaseTests {
 
         var emptyPage = new PageResult<FrameworkVersion>(List.of(), 1, 20, 0, 0);
 
-        when(frameworkRepository.findFrameworkById(frameworkId)).thenReturn(Optional.of(framework));
+        when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
         when(frameworkVersionRepository.findByFrameworkId(frameworkId, 1, 20))
             .thenReturn(emptyPage);
 
@@ -125,7 +125,7 @@ public class ViewFrameworkVersionsUseCaseTests {
 
         var pageResult = new PageResult<FrameworkVersion>(List.of(), 2, 10, 25, 3);
 
-        when(frameworkRepository.findFrameworkById(frameworkId)).thenReturn(Optional.of(framework));
+        when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
         when(frameworkVersionRepository.findByFrameworkId(frameworkId, 2, 10))
             .thenReturn(pageResult);
 

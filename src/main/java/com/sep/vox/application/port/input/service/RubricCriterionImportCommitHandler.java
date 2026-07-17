@@ -69,7 +69,7 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
             mapping = jsonSerializationPort.toStringMap(session.getSuggestedMappingJson());
         }
         // 1. Lấy ra Phiên bản Khung năng lực đang PUBLISHED
-        List<FrameworkVersion> activeVersions = frameworkVersionRepository.findByFrameworkVersionIdAndStatus(
+        List<FrameworkVersion> activeVersions = frameworkVersionRepository.findByFrameworkIdAndStatus(
                 rubric.getFrameworkId(),
                 FrameworkVersionStatus.PUBLISHED
         );
@@ -85,7 +85,7 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
         Map<String, UUID> fwCodeToIdMap = fwCriterions.stream()
                 .collect(Collectors.toMap(
                         fc -> normalizeCode(fc.getCode()),
-                        FrameworkCriterion::getId,
+                        fc -> fc.getId(),
                         (existingValue, newValue) -> existingValue // Giáp chống sập Duplicate Key
                 ));
         List<RubricCriterion> existingCriterions = rubricCriterionRepository.findByRubricVersionId(versionId);
@@ -100,7 +100,7 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
         // Tra cứu ngược: 1 Framework Criterion đang bị Rubric Criterion (code) nào trong version này chiếm giữ
         Map<UUID, RubricCriterion> existingByFwCriterionId = existingCriterions.stream()
                 .collect(Collectors.toMap(
-                        RubricCriterion::getFrameworkCriterionId,
+                        rc -> rc.getFrameworkCriterionId(),
                         c -> c,
                         (existingValue, newValue) -> existingValue
                 ));
@@ -189,7 +189,7 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
                 if (errors.isEmpty() && examplesStr != null && !examplesStr.isBlank()) {
                     try {
                         List<String> rawExamples = Arrays.stream(examplesStr.split("[,;]"))
-                                .map(String::trim)
+                                .map(s -> s.trim())
                                 .filter(s -> !s.isBlank())
                                 .toList();
 

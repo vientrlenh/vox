@@ -30,11 +30,11 @@ public class UpdateFrameworkUseCase implements IUseCase<UpdateFrameworkCommand, 
     public UUID execute(UpdateFrameworkCommand input) {
         Framework framework = getFramework(input);
         updateFramework(input, framework);
-        return frameworkRepository.saveFramework(framework).getId();
+        return frameworkRepository.save(framework).getId();
     }
 
     private Framework getFramework(UpdateFrameworkCommand input) {
-        return frameworkRepository.findFrameworkById(input.frameworkId())
+        return frameworkRepository.findById(input.frameworkId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy framework"));
     }
 

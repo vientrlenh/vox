@@ -49,7 +49,7 @@ public class ViewFrameworkVersionDetailsUseCaseTests {
         version.setEffectiveFrom(now);
         version.setEffectiveTo(now.plusDays(365));
 
-        when(frameworkVersionRepository.findFrameworkVersionById(versionId)).thenReturn(Optional.of(version));
+        when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.of(version));
 
         var result = useCase.execute(query);
 
@@ -58,7 +58,7 @@ public class ViewFrameworkVersionDetailsUseCaseTests {
         assertThat(result.status()).isEqualTo(FrameworkVersionStatus.PUBLISHED.toString());
         assertThat(result.criteria()).isEmpty();
         assertThat(result.resultBands()).isEmpty();
-        verify(frameworkVersionRepository).findFrameworkVersionById(versionId);
+        verify(frameworkVersionRepository).findById(versionId);
     }
 
     @Test
@@ -66,7 +66,7 @@ public class ViewFrameworkVersionDetailsUseCaseTests {
         var versionId = UUID.randomUUID();
         var query = new ViewFrameworkVersionDetailsQuery(versionId);
 
-        when(frameworkVersionRepository.findFrameworkVersionById(versionId)).thenReturn(Optional.empty());
+        when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> useCase.execute(query));
     }
@@ -84,7 +84,7 @@ public class ViewFrameworkVersionDetailsUseCaseTests {
         version.setName("Empty Version");
         version.setStatus(FrameworkVersionStatus.DRAFT);
 
-        when(frameworkVersionRepository.findFrameworkVersionById(versionId)).thenReturn(Optional.of(version));
+        when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.of(version));
 
         var result = useCase.execute(query);
 

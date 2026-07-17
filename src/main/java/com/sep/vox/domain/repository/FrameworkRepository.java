@@ -10,13 +10,13 @@ import java.util.UUID;
 import com.sep.vox.domain.common.PageResult;
 
 public interface FrameworkRepository {
-    Optional<Framework> findFrameworkById(UUID id);
     List<Framework> findByIdIn(Collection<UUID> ids);
-    PageResult<Framework> findAllActive(int pageNumber, int size);
     Optional<Framework> findFrameworkByIdForUpdate(UUID id);
-    Optional<Framework> findFrameworkByCode(String code);
-    PageResult<Framework> findAllFrameworks(int pageNumber, int size, String search, Boolean isActive);
-    Framework saveFramework(Framework framework);
-    void deleteFrameworkById(UUID id);
+    Optional<Framework> findById(UUID id);
+    Optional<Framework> findByCode(String code);
+    PageResult<Framework> findAll(int pageNumber, int size, String search, Boolean isActive);
+    PageResult<Framework> findAllActive(int pageNumber, int size);
+    Framework save(Framework framework);
+    void deleteById(UUID id);
 }
 

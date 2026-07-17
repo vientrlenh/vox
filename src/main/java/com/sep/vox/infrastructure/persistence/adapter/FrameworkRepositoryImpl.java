@@ -25,7 +25,7 @@ public class FrameworkRepositoryImpl implements FrameworkRepository {
     }
 
     @Override
-    public Optional<Framework> findFrameworkById(UUID id) {
+    public Optional<Framework> findById(UUID id) {
         return springDataFrameworkRepository.findById(id)
                 .map(FrameworkMapper::toDomain);
     }
@@ -37,12 +37,12 @@ public class FrameworkRepositoryImpl implements FrameworkRepository {
     }
 
     @Override
-    public Optional<Framework> findFrameworkByCode(String code) {
+    public Optional<Framework> findByCode(String code) {
         return springDataFrameworkRepository.findByCode(code).map(FrameworkMapper::toDomain);
     }
 
     @Override
-    public PageResult<Framework> findAllFrameworks(int pageNumber, int size, String search, Boolean isActive) {
+    public PageResult<Framework> findAll(int pageNumber, int size, String search, Boolean isActive) {
         var pageable = PageRequest.of(pageNumber - 1, size);
         String pattern = StringNormalization.toLikePattern(search);
         var page = isActive != null
@@ -71,14 +71,14 @@ public class FrameworkRepositoryImpl implements FrameworkRepository {
     }
 
     @Override
-    public Framework saveFramework(Framework framework) {
+    public Framework save(Framework framework) {
         var entity = FrameworkMapper.toJpa(framework);
         var saved = springDataFrameworkRepository.save(entity);
         return FrameworkMapper.toDomain(saved);
     }
 
     @Override
-    public void deleteFrameworkById(UUID id) {
+    public void deleteById(UUID id) {
         springDataFrameworkRepository.deleteById(id);
     }
 

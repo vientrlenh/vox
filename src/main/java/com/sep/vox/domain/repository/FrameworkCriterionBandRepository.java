@@ -10,7 +10,7 @@ import com.sep.vox.domain.model.framework.FrameworkCriterionBand;
 public interface FrameworkCriterionBandRepository {
     Optional<FrameworkCriterionBand> findById(UUID id);
     List<FrameworkCriterionBand> findByFrameworkCriterionIdIn(Collection<UUID> frameworkCriterionIds);
-    FrameworkCriterionBand saveCriterionBand(FrameworkCriterionBand band);
+    FrameworkCriterionBand save(FrameworkCriterionBand band);
     List<FrameworkCriterionBand> saveAll(List<FrameworkCriterionBand> bands);
     void deleteByFrameworkCriterionIdIn(Collection<UUID> frameworkCriterionIds);
     void deleteByFrameworkVersionId(UUID frameworkVersionId);

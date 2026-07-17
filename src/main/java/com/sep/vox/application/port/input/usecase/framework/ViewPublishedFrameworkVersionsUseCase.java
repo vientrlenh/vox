@@ -29,7 +29,7 @@ public class ViewPublishedFrameworkVersionsUseCase implements IUseCase<ViewFrame
     @Override
     @Transactional(readOnly = true)
     public PageResult<FrameworkVersionDto> execute(ViewFrameworkVersionsQuery input) {
-        var framework = frameworkRepository.findFrameworkById(input.frameworkId())
+        var framework = frameworkRepository.findById(input.frameworkId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy framework"));
         if (!framework.isActive()) {
             throw new NotFoundException("Không tìm thấy framework");

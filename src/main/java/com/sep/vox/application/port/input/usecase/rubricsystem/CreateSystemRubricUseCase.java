@@ -60,7 +60,7 @@ public class CreateSystemRubricUseCase implements IUseCase<CreateSystemRubricCom
         }
 
         // Kiểm tra Framework gốc
-        Framework framework = frameworkRepository.findFrameworkById(command.frameworkId())
+        Framework framework = frameworkRepository.findById(command.frameworkId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy Khung tiêu chuẩn (Framework)."));
         if (!framework.isActive() ) {
             throw new IllegalStateException("Không thể sử dụng Khung tiêu chuẩn (Framework) này vì nó đang bị vô hiệu hóa.");

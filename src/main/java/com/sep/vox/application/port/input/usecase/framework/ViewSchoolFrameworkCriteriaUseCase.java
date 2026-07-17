@@ -37,7 +37,7 @@ public class ViewSchoolFrameworkCriteriaUseCase implements IUseCase<ViewFramewor
     @Transactional(readOnly = true)
     public List<FrameworkCriterionDto> execute(ViewFrameworkCriteriaQuery query) {
         // 1. Kiểm tra FrameworkVersion tồn tại và đã PUBLISHED
-        var version = frameworkVersionRepository.findFrameworkVersionById(query.frameworkVersionId())
+        var version = frameworkVersionRepository.findById(query.frameworkVersionId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản Framework."));
         if (version.getStatus() != FrameworkVersionStatus.PUBLISHED) {
             throw new NotFoundException("Không tìm thấy phiên bản Framework.");

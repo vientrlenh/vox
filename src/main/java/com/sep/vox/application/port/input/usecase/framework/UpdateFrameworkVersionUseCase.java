@@ -34,13 +34,13 @@ public class UpdateFrameworkVersionUseCase implements IUseCase<UpdateFrameworkVe
         FrameworkVersion version = getVersion(input);
 
         checkValidRequest(input, version);
-        frameworkVersionRepository.saveFrameworkVersion(updateVersion(input, version));
+        frameworkVersionRepository.save(updateVersion(input, version));
 
         return input.versionId();
     }
 
     private FrameworkVersion getVersion(UpdateFrameworkVersionCommand input) {
-        return frameworkVersionRepository.findFrameworkVersionByIdForUpdate(input.versionId())
+        return frameworkVersionRepository.findByIdForUpdate(input.versionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản framework"));
     }
 

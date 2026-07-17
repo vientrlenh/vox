@@ -39,7 +39,7 @@ public class ViewSchoolFrameworkCriterionDetailsUseCase implements IUseCase<View
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy Tiêu chí (Criterion) này."));
 
         // 2. Chặn không cho lộ Criterion thuộc Version chưa PUBLISHED (còn DRAFT/ARCHIVED)
-        var version = frameworkVersionRepository.findFrameworkVersionById(criterion.getFrameworkVersionId())
+        var version = frameworkVersionRepository.findById(criterion.getFrameworkVersionId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy Tiêu chí (Criterion) này."));
         if (version.getStatus() != FrameworkVersionStatus.PUBLISHED) {
             throw new NotFoundException("Không tìm thấy Tiêu chí (Criterion) này.");

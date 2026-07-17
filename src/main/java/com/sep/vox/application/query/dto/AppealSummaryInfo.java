@@ -15,6 +15,7 @@ public record AppealSummaryInfo(
     OffsetDateTime requestedAt,
     OffsetDateTime deadline,
     int reviewerCount,
-    int doneCount
+    int doneCount,
+    boolean overdue
 ) {
 }

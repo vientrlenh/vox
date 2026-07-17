@@ -72,6 +72,8 @@ type AppealSummary {
     deadline: String
     reviewerCount: Int!
     doneCount: Int!
+    "Đơn còn đang xử lý và đã quá hạn deadline"
+    overdue: Boolean!
 }
 
 type AppealSummaryPage {
@@ -103,6 +105,8 @@ type AppealDetail {
     aiScores: [AppealCriterionScore!]!
     turns: [AppealTurn!]!
     reviewers: [AppealReviewer!]!
+    "Đơn còn đang xử lý và đã quá hạn deadline"
+    overdue: Boolean!
 }
 
 "Góc nhìn giám khảo"
@@ -112,6 +116,8 @@ type AppealTask {
     partLabel: String
     deadline: String
     myStatus: AppealReviewerStatus!
+    "Việc chưa nộp và đã quá hạn deadline"
+    overdue: Boolean!
 }
 
 type AppealTaskPage {

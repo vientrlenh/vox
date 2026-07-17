@@ -8,6 +8,7 @@ public record AppealTaskInfo(
     String examName,
     String partLabel,
     OffsetDateTime deadline,
-    String myStatus
+    String myStatus,
+    boolean overdue
 ) {
 }

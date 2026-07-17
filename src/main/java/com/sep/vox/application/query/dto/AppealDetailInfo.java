@@ -23,6 +23,7 @@ public record AppealDetailInfo(
     OffsetDateTime resolvedAt,
     List<AppealCriterionScoreInfo> aiScores,
     List<AppealTurnInfo> turns,
-    List<AppealReviewerInfo> reviewers
+    List<AppealReviewerInfo> reviewers,
+    boolean overdue
 ) {
 }

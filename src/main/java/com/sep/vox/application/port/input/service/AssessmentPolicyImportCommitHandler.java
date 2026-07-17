@@ -103,6 +103,15 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
         Set<ScopeKey> scopesClaimedInFile = new HashSet<>();
         Map<VersionScopeKey, Integer> nextVersionByScope = new HashMap<>();
 
+        // Cache theo input thô (đã trim) -> kết quả tra cứu, tránh query lặp lại khi nhiều dòng
+        // trong file dùng chung 1 ngôn ngữ/khung/rubric/phạm vi/band (rất phổ biến trong thực tế).
+        Map<String, Optional<UUID>> languageCache = new HashMap<>();
+        Map<String, Optional<FrameworkVersion>> frameworkVersionCache = new HashMap<>();
+        Map<String, Optional<RubricVersion>> rubricVersionCache = new HashMap<>();
+        Map<UUID, Optional<Rubric>> rubricCache = new HashMap<>();
+        Map<String, Optional<UUID>> scopeCache = new HashMap<>();
+        Map<String, Optional<FrameworkResultBand>> bandCache = new HashMap<>();
+
         for (ImportRow row : rows) {
             if (row.getStatus() != ImportRowStatus.PENDING) continue;
 
@@ -114,24 +123,24 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
                 validateRequiredFields(mappedData, errors);
 
                 UUID languageId = errors.isEmpty()
-                        ? resolveLanguage(mappedData.get("language"), errors)
+                        ? resolveLanguage(mappedData.get("language"), errors, languageCache)
                         : null;
 
                 FrameworkVersion frameworkVersion = errors.isEmpty()
-                        ? resolveFrameworkVersion(mappedData.get("frameworkVersion"), errors)
+                        ? resolveFrameworkVersion(mappedData.get("frameworkVersion"), errors, frameworkVersionCache)
                         : null;
                 UUID frameworkVersionId = frameworkVersion != null ? frameworkVersion.getId() : null;
 
                 UUID rubricVersionId = errors.isEmpty()
-                        ? resolveRubricVersion(mappedData.get("rubricVersion"), frameworkVersion, schoolId, isSchoolScoped, errors)
+                        ? resolveRubricVersion(mappedData.get("rubricVersion"), frameworkVersion, schoolId, isSchoolScoped, errors, rubricVersionCache, rubricCache)
                         : null;
 
                 ScopeIds scopeIds = (errors.isEmpty() && isSchoolScoped)
-                        ? resolveScope(schoolId, mappedData.get("schoolClass"), mappedData.get("schoolGrade"), mappedData.get("schoolGradeLevel"), errors)
+                        ? resolveScope(schoolId, mappedData.get("schoolClass"), mappedData.get("schoolGrade"), mappedData.get("schoolGradeLevel"), errors, scopeCache)
                         : ScopeIds.EMPTY;
 
                 BandIds bandIds = errors.isEmpty()
-                        ? resolveBands(frameworkVersionId, mappedData.get("targetFrameworkBand"), mappedData.get("minimumFrameworkBand"), errors)
+                        ? resolveBands(frameworkVersionId, mappedData.get("targetFrameworkBand"), mappedData.get("minimumFrameworkBand"), errors, bandCache)
                         : BandIds.EMPTY;
 
                 BigDecimal passingScore = errors.isEmpty()
@@ -234,19 +243,21 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
     }
 
     // Dual Lookup: cho phép người dùng điền mã HOẶC tên trong file Excel
-    private UUID resolveLanguage(String languageInput, List<Map<String, String>> errors) {
+    private UUID resolveLanguage(String languageInput, List<Map<String, String>> errors, Map<String, Optional<UUID>> cache) {
         String cleanInput = languageInput.trim();
-        var language = languageRepository.findByCode(cleanInput).or(() -> languageRepository.findByName(cleanInput));
-        if (language.isEmpty()) {
+        Optional<UUID> cached = cache.computeIfAbsent(cleanInput, key ->
+                languageRepository.findByCode(key).or(() -> languageRepository.findByName(key)).map(l -> l.getId()));
+        if (cached.isEmpty()) {
             errors.add(error("language", "Ngôn ngữ '" + cleanInput + "' không tồn tại trên hệ thống."));
             return null;
         }
-        return language.get().getId();
+        return cached.get();
     }
 
-    private FrameworkVersion resolveFrameworkVersion(String fwVersionInput, List<Map<String, String>> errors) {
+    private FrameworkVersion resolveFrameworkVersion(String fwVersionInput, List<Map<String, String>> errors, Map<String, Optional<FrameworkVersion>> cache) {
         String cleanInput = fwVersionInput.trim();
-        var fwOpt = frameworkVersionRepository.findByCode(cleanInput).or(() -> frameworkVersionRepository.findByName(cleanInput));
+        Optional<FrameworkVersion> fwOpt = cache.computeIfAbsent(cleanInput, key ->
+                frameworkVersionRepository.findByCode(key).or(() -> frameworkVersionRepository.findByName(key)));
         if (fwOpt.isEmpty()) {
             errors.add(error("frameworkVersion", "Không tìm thấy Phiên bản Khung: '" + cleanInput + "'"));
             return null;
@@ -260,9 +271,11 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
     }
 
     private UUID resolveRubricVersion(String rubricVersionInput, FrameworkVersion frameworkVersion, UUID schoolId,
-            boolean isSchoolScoped, List<Map<String, String>> errors) {
+            boolean isSchoolScoped, List<Map<String, String>> errors,
+            Map<String, Optional<RubricVersion>> rubricVersionCache, Map<UUID, Optional<Rubric>> rubricCache) {
         String cleanInput = rubricVersionInput.trim();
-        var rubricOpt = rubricVersionRepository.findByCode(cleanInput).or(() -> rubricVersionRepository.findByName(cleanInput));
+        Optional<RubricVersion> rubricOpt = rubricVersionCache.computeIfAbsent(cleanInput, key ->
+                rubricVersionRepository.findByCode(key).or(() -> rubricVersionRepository.findByName(key)));
         if (rubricOpt.isEmpty()) {
             errors.add(error("rubricVersion", "Không tìm thấy Phiên bản Rubric: '" + cleanInput + "'"));
             return null;
@@ -273,12 +286,18 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
             errors.add(error("rubricVersion", "Phiên bản Rubric này đã được PUBLISHED, không thể tạo Assessment Policy mới cho phiên bản này."));
             return null;
         }
-        Rubric rubric = rubricRepository.findById(rubricVersion.getRubricId()).orElse(null);
+        Rubric rubric = rubricCache.computeIfAbsent(rubricVersion.getRubricId(), rubricRepository::findById).orElse(null);
         if (rubric == null) {
             errors.add(error("rubricVersion", "Không tìm thấy Rubric gốc."));
         } else if (isSchoolScoped) {
             if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || !schoolId.equals(rubric.getSchoolId())) {
                 errors.add(error("rubricVersion", "Rubric Version không thuộc quyền quản lý của trường bạn."));
+            } else if (!rubric.getFrameworkId().equals(frameworkVersion.getFrameworkId())) {
+                errors.add(error("rubricVersion", "Rubric và Khung năng lực không khớp nhau."));
+            }
+        } else {
+            if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
+                errors.add(error("rubricVersion", "Chỉ được dùng Rubric SYSTEM cho luồng System Admin."));
             } else if (!rubric.getFrameworkId().equals(frameworkVersion.getFrameworkId())) {
                 errors.add(error("rubricVersion", "Rubric và Khung năng lực không khớp nhau."));
             }
@@ -288,7 +307,7 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
 
     // Phải điền đúng 1 trong 3: Lớp, Khối năm học (schoolGrade), hoặc Khối (schoolGradeLevel)
     private ScopeIds resolveScope(UUID schoolId, String classInput, String gradeInput, String gradeLevelInput,
-            List<Map<String, String>> errors) {
+            List<Map<String, String>> errors, Map<String, Optional<UUID>> cache) {
         boolean hasClass = classInput != null && !classInput.isBlank();
         boolean hasGrade = gradeInput != null && !gradeInput.isBlank();
         boolean hasGradeLevel = gradeLevelInput != null && !gradeLevelInput.isBlank();
@@ -301,45 +320,53 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
 
         if (hasClass) {
             String cleanInput = classInput.trim();
-            var classOpt = schoolClassRepository.findBySchoolIdAndCode(schoolId, cleanInput)
-                    .or(() -> schoolClassRepository.findBySchoolIdAndName(schoolId, cleanInput));
-            if (classOpt.isEmpty()) {
+            Optional<UUID> classId = cache.computeIfAbsent("class|" + cleanInput, key ->
+                    schoolClassRepository.findBySchoolIdAndCode(schoolId, cleanInput)
+                            .or(() -> schoolClassRepository.findBySchoolIdAndName(schoolId, cleanInput))
+                            .map(c -> c.getId()));
+            if (classId.isEmpty()) {
                 errors.add(error("schoolClass", "Không tìm thấy Lớp '" + cleanInput + "'."));
                 return ScopeIds.EMPTY;
             }
-            return new ScopeIds(classOpt.get().getId(), null, null);
+            return new ScopeIds(classId.get(), null, null);
         }
 
         if (hasGrade) {
             String cleanInput = gradeInput.trim();
-            var gradeOpt = schoolGradeRepository.findBySchoolIdAndCode(schoolId, cleanInput)
-                    .or(() -> schoolGradeRepository.findBySchoolIdAndName(schoolId, cleanInput));
-            if (gradeOpt.isEmpty()) {
+            Optional<UUID> gradeId = cache.computeIfAbsent("grade|" + cleanInput, key ->
+                    schoolGradeRepository.findBySchoolIdAndCode(schoolId, cleanInput)
+                            .or(() -> schoolGradeRepository.findBySchoolIdAndName(schoolId, cleanInput))
+                            .map(g -> g.getId()));
+            if (gradeId.isEmpty()) {
                 errors.add(error("schoolGrade", "Không tìm thấy Khối năm học '" + cleanInput + "'."));
                 return ScopeIds.EMPTY;
             }
-            return new ScopeIds(null, gradeOpt.get().getId(), null);
+            return new ScopeIds(null, gradeId.get(), null);
         }
 
         String cleanInput = gradeLevelInput.trim();
-        var levelOpt = schoolGradeLevelRepository.findBySchoolIdAndCode(schoolId, cleanInput)
-                .or(() -> schoolGradeLevelRepository.findBySchoolIdAndName(schoolId, cleanInput));
-        if (levelOpt.isEmpty()) {
+        Optional<UUID> levelId = cache.computeIfAbsent("gradeLevel|" + cleanInput, key ->
+                schoolGradeLevelRepository.findBySchoolIdAndCode(schoolId, cleanInput)
+                        .or(() -> schoolGradeLevelRepository.findBySchoolIdAndName(schoolId, cleanInput))
+                        .map(l -> l.getId()));
+        if (levelId.isEmpty()) {
             errors.add(error("schoolGradeLevel", "Không tìm thấy Khối '" + cleanInput + "'."));
             return ScopeIds.EMPTY;
         }
-        return new ScopeIds(null, null, levelOpt.get().getId());
+        return new ScopeIds(null, null, levelId.get());
     }
 
     private BandIds resolveBands(UUID frameworkVersionId, String targetBandInput, String minimumBandInput,
-            List<Map<String, String>> errors) {
+            List<Map<String, String>> errors, Map<String, Optional<FrameworkResultBand>> cache) {
         String cleanTarget = targetBandInput.trim();
-        var targetBandOpt = frameworkResultBandRepository.findByVersionIdAndCode(frameworkVersionId, cleanTarget)
-                .or(() -> frameworkResultBandRepository.findByVersionIdAndName(frameworkVersionId, cleanTarget));
+        Optional<FrameworkResultBand> targetBandOpt = cache.computeIfAbsent(frameworkVersionId + "|" + cleanTarget, key ->
+                frameworkResultBandRepository.findByVersionIdAndCode(frameworkVersionId, cleanTarget)
+                        .or(() -> frameworkResultBandRepository.findByVersionIdAndName(frameworkVersionId, cleanTarget)));
 
         String cleanMin = minimumBandInput.trim();
-        var minBandOpt = frameworkResultBandRepository.findByVersionIdAndCode(frameworkVersionId, cleanMin)
-                .or(() -> frameworkResultBandRepository.findByVersionIdAndName(frameworkVersionId, cleanMin));
+        Optional<FrameworkResultBand> minBandOpt = cache.computeIfAbsent(frameworkVersionId + "|" + cleanMin, key ->
+                frameworkResultBandRepository.findByVersionIdAndCode(frameworkVersionId, cleanMin)
+                        .or(() -> frameworkResultBandRepository.findByVersionIdAndName(frameworkVersionId, cleanMin)));
 
         if (targetBandOpt.isEmpty()) errors.add(error("targetFrameworkBand", "Band mục tiêu '" + cleanTarget + "' không tồn tại trong Khung này."));
         if (minBandOpt.isEmpty()) errors.add(error("minimumFrameworkBand", "Band tối thiểu '" + cleanMin + "' không tồn tại trong Khung này."));

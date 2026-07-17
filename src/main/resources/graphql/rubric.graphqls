@@ -228,12 +228,16 @@ extend type Query {
     searchSystemRubrics(filter: SearchRubricFilter, page: Int = 0, size: Int = 10): RubricPage!
     # Cổng tìm kiếm cho School Admin (Bắt buộc phải truyền schoolId)
     searchSchoolRubrics(schoolId: ID!, filter: SearchRubricFilter, page: Int = 0, size: Int = 10): RubricPage!
-    
+    # Cổng tìm kiếm cho Teacher (schoolId tự suy ra từ token, chỉ thấy rubric của trường mình)
+    searchTeacherRubrics(filter: SearchRubricFilter, page: Int = 0, size: Int = 10): RubricPage!
+
     # RUBRIC VERSION
     viewSchoolRubricVersion(schoolId: ID!, versionId: ID!): RubricVersion
     viewSystemRubricVersion(versionId: ID!): RubricVersion
     viewSchoolRubricVersions(schoolId: ID!, rubricId: ID!, status: String, page: Int = 0, size: Int = 10): RubricVersionPage!
     viewSystemRubricVersions(rubricId: ID!, status: String, page: Int = 0, size: Int = 10): RubricVersionPage!
+    # Teacher chỉ xem được version PUBLISHED của rubric thuộc trường mình (schoolId tự suy ra từ token)
+    viewTeacherRubricVersions(rubricId: ID!, page: Int = 1, size: Int = 10): RubricVersionPage!
     searchSystemRubricVersions(rubricId: ID!, filter: SearchRubricVersionFilter, page: Int = 0, size: Int = 10): RubricVersionPage!
     searchSchoolRubricVersions(schoolId: ID!, rubricId: ID!, filter: SearchRubricVersionFilter, page: Int = 0, size: Int = 10): RubricVersionPage!
 

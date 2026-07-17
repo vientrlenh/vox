@@ -57,7 +57,7 @@ public class ScoringRuleController {
     @PostMapping("/system/{policyId}/scoring-rules")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> createSystemScoringRule(
-            @PathVariable UUID policyId,
+            @PathVariable("policyId") UUID policyId,
             @Valid @RequestBody CreateScoringRuleRequest request
     ) {
         var command = ScoringRuleCommandMapper.fromCreateRequest(policyId, request);
@@ -71,8 +71,8 @@ public class ScoringRuleController {
     @PostMapping("/schools/{schoolId}/{policyId}/scoring-rules")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> createSchoolScoringRule(
-            @PathVariable UUID schoolId,
-            @PathVariable UUID policyId,
+            @PathVariable("schoolId") UUID schoolId,
+            @PathVariable("policyId") UUID policyId,
             @Valid @RequestBody CreateScoringRuleRequest request
     ) {
         var command = ScoringRuleCommandMapper.fromCreateSchoolRequest(schoolId, policyId, request);
@@ -85,8 +85,8 @@ public class ScoringRuleController {
     @DeleteMapping("/system/{policyId}/scoring-rules/{ruleId}")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteSystemScoringRule(
-            @PathVariable UUID policyId,
-            @PathVariable UUID ruleId
+            @PathVariable("policyId") UUID policyId,
+            @PathVariable("ruleId") UUID ruleId
     ) {
         deleteSystemScoringRuleUseCase.execute(new DeleteScoringRuleCommand(policyId, ruleId));
         return ResponseEntity.ok(ApiResponse.success("Xóa Scoring Rule thành công"));
@@ -97,9 +97,9 @@ public class ScoringRuleController {
     @DeleteMapping("/schools/{schoolId}/{policyId}/scoring-rules/{ruleId}")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteSchoolScoringRule(
-            @PathVariable UUID schoolId,
-            @PathVariable UUID policyId,
-            @PathVariable UUID ruleId
+            @PathVariable("schoolId") UUID schoolId,
+            @PathVariable("policyId") UUID policyId,
+            @PathVariable("ruleId") UUID ruleId
     ) {
         deleteSchoolScoringRuleUseCase.execute(new DeleteSchoolScoringRuleCommand(schoolId, policyId, ruleId));
         return ResponseEntity.ok(ApiResponse.success("Xóa Scoring Rule cho trường học thành công"));

@@ -4,12 +4,14 @@ import com.sep.vox.application.port.input.query.ViewSchoolAssessmentPoliciesQuer
 import com.sep.vox.application.port.input.query.ViewSchoolAssessmentPolicyDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewSystemAssessmentPoliciesQuery;
 import com.sep.vox.application.port.input.query.ViewSystemAssessmentPolicyDetailsQuery;
+import com.sep.vox.application.port.input.query.ViewTeacherAssessmentPoliciesQuery;
 import com.sep.vox.application.port.input.usecase.assessmentpolicyschool.UpdateSchoolAssessmentPolicyUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentpolicyschool.ViewSchoolAssessmentPoliciesUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentpolicyschool.ViewSchoolAssessmentPolicyDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentpolicysystem.UpdateSystemAssessmentPolicyUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentpolicysystem.ViewSystemAssessmentPoliciesUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentpolicysystem.ViewSystemAssessmentPolicyDetailsUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentpolicyteacher.ViewTeacherAssessmentPoliciesUseCase;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.AssessmentPolicyDto;
 import com.sep.vox.domain.dto.FrameworkResultBandDto;
@@ -43,6 +45,7 @@ public class AssessmentPolicyController {
     private final UpdateSchoolAssessmentPolicyUseCase updateSchoolAssessmentPolicyUseCase;
     private final ViewSystemAssessmentPoliciesUseCase viewSystemAssessmentPoliciesUseCase;
     private final ViewSchoolAssessmentPoliciesUseCase viewSchoolAssessmentPoliciesUseCase;
+    private final ViewTeacherAssessmentPoliciesUseCase viewTeacherAssessmentPoliciesUseCase;
     private final ViewSystemAssessmentPolicyDetailsUseCase viewSystemAssessmentPolicyDetailsUseCase;
     private final ViewSchoolAssessmentPolicyDetailsUseCase viewSchoolAssessmentPolicyDetailsUseCase;
 
@@ -51,12 +54,14 @@ public class AssessmentPolicyController {
             UpdateSchoolAssessmentPolicyUseCase updateSchoolAssessmentPolicyUseCase,
             ViewSystemAssessmentPoliciesUseCase viewSystemAssessmentPoliciesUseCase,
             ViewSchoolAssessmentPoliciesUseCase viewSchoolAssessmentPoliciesUseCase,
+            ViewTeacherAssessmentPoliciesUseCase viewTeacherAssessmentPoliciesUseCase,
             ViewSystemAssessmentPolicyDetailsUseCase viewSystemAssessmentPolicyDetailsUseCase,
             ViewSchoolAssessmentPolicyDetailsUseCase viewSchoolAssessmentPolicyDetailsUseCase) {
         this.updateSystemAssessmentPolicyUseCase = updateSystemAssessmentPolicyUseCase;
         this.updateSchoolAssessmentPolicyUseCase = updateSchoolAssessmentPolicyUseCase;
         this.viewSystemAssessmentPoliciesUseCase = viewSystemAssessmentPoliciesUseCase;
         this.viewSchoolAssessmentPoliciesUseCase = viewSchoolAssessmentPoliciesUseCase;
+        this.viewTeacherAssessmentPoliciesUseCase = viewTeacherAssessmentPoliciesUseCase;
         this.viewSystemAssessmentPolicyDetailsUseCase = viewSystemAssessmentPolicyDetailsUseCase;
         this.viewSchoolAssessmentPolicyDetailsUseCase = viewSchoolAssessmentPolicyDetailsUseCase;
     }
@@ -91,6 +96,21 @@ public class AssessmentPolicyController {
         int validPage = (page != null && page > 0) ? page : 1;
         int validSize = (size != null && size > 0) ? size : 10;
         return viewSchoolAssessmentPoliciesUseCase.execute(new ViewSchoolAssessmentPoliciesQuery(schoolId, status, languageId, rubricVersionId,
+                parseOffset(effectiveFrom), parseOffset(effectiveTo), validPage, validSize));
+    }
+
+    @QueryMapping(name = "viewTeacherAssessmentPolicies")
+    @PreAuthorize("hasRole('TEACHER')")
+    public PageResult<AssessmentPolicyDto> viewTeacherAssessmentPolicies(
+            @Argument(name = "languageId") UUID languageId,
+            @Argument(name = "rubricVersionId") UUID rubricVersionId,
+            @Argument(name = "effectiveFrom") String effectiveFrom,
+            @Argument(name = "effectiveTo") String effectiveTo,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
+        int validPage = (page != null && page > 0) ? page : 1;
+        int validSize = (size != null && size > 0) ? size : 10;
+        return viewTeacherAssessmentPoliciesUseCase.execute(new ViewTeacherAssessmentPoliciesQuery(languageId, rubricVersionId,
                 parseOffset(effectiveFrom), parseOffset(effectiveTo), validPage, validSize));
     }
 

@@ -24,6 +24,9 @@ public record AppealDetailInfo(
     List<AppealCriterionScoreInfo> aiScores,
     List<AppealTurnInfo> turns,
     List<AppealReviewerInfo> reviewers,
-    boolean overdue
+    boolean overdue,
+    /** Thang điểm rubric — chính là khoảng BE dùng để validate partScore khi công bố. */
+    BigDecimal scoringScaleMin,
+    BigDecimal scoringScaleMax
 ) {
 }

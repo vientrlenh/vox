@@ -107,6 +107,9 @@ type AppealDetail {
     reviewers: [AppealReviewer!]!
     "Đơn còn đang xử lý và đã quá hạn deadline"
     overdue: Boolean!
+    "Thang điểm rubric — khoảng BE validate partScore khi công bố"
+    scoringScaleMin: Float!
+    scoringScaleMax: Float!
 }
 
 "Góc nhìn giám khảo"

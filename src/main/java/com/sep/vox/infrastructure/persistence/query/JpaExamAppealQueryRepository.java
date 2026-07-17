@@ -211,12 +211,13 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
         var rows = em.createQuery("""
             SELECT a.id, u.fullName, e.name, a.scoreBefore, a.status, a.requestedAt, a.deadline,
                    a.reason, a.notes, a.decisionNote, a.scoreAfter, a.approvedAt, a.resolvedAt,
-                   sec.title, a.responseId, cr.rubricVersionId
+                   sec.title, a.responseId, rv.scoringScaleMin, rv.scoringScaleMax
             FROM ExamResultAppealJpaEntity a
             JOIN ExamCandidateResultJpaEntity cr ON cr.id = a.candidateResultId
             JOIN ExamJpaEntity e ON e.id = cr.examId
             JOIN ExamCandidateJpaEntity c ON c.id = cr.candidateId
             JOIN UserJpaEntity u ON u.id = c.studentId
+            JOIN RubricVersionJpaEntity rv ON rv.id = cr.rubricVersionId
             LEFT JOIN ExamPaperItemJpaEntity pi ON pi.id = a.paperItemId
             LEFT JOIN ExamPaperSectionJpaEntity sec ON sec.id = pi.sectionId
             WHERE a.id = :appealId AND e.schoolId = :schoolId
@@ -252,7 +253,9 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
             aiEvaluationId == null ? List.of() : criterionScores(aiEvaluationId),
             aiEvaluationId == null ? List.of() : turns(aiEvaluationId),
             reviewers(appealId, true),
-            isOverdue(deadline, status, OffsetDateTime.now())
+            isOverdue(deadline, status, OffsetDateTime.now()),
+            row.get(15, BigDecimal.class),
+            row.get(16, BigDecimal.class)
         ));
     }
 

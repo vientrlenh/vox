@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
+import com.sep.vox.domain.model.subscription.QuotaType;
 import com.sep.vox.domain.model.subscription.SubscriptionQuota;
 import com.sep.vox.domain.repository.SubscriptionQuotaRepository;
 import com.sep.vox.infrastructure.persistence.mapper.SubscriptionQuotaMapper;
@@ -37,5 +38,21 @@ public class SubscriptionQuotaRepositoryImpl implements SubscriptionQuotaReposit
         return springDataSubscriptionQuotaRepository.findAllBySubscriptionId(subscriptionId).stream()
             .map(SubscriptionQuotaMapper::toDomain)
             .toList();
+    }
+
+    @Override
+    public Optional<SubscriptionQuota> findBySubscriptionIdAndQuotaType(UUID subscriptionId, QuotaType quotaType) {
+        return springDataSubscriptionQuotaRepository.findBySubscriptionIdAndQuotaType(subscriptionId, quotaType.name())
+            .map(SubscriptionQuotaMapper::toDomain);
+    }
+
+    @Override
+    public boolean tryConsume(UUID quotaId, int amount) {
+        return springDataSubscriptionQuotaRepository.tryConsume(quotaId, amount) > 0;
+    }
+
+    @Override
+    public void addAllocation(UUID quotaId, int amount) {
+        springDataSubscriptionQuotaRepository.addAllocation(quotaId, amount);
     }
 }

@@ -4,8 +4,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
+import com.sep.vox.application.common.StringNormalization;
+import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.model.subscription.SubscriptionStatus;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
@@ -45,5 +48,22 @@ public class SchoolSubscriptionRepositoryImpl implements SchoolSubscriptionRepos
         return springDataSchoolSubscriptionRepository.findAllBySchoolId(schoolId).stream()
             .map(SchoolSubscriptionMapper::toDomain)
             .toList();
+    }
+
+    @Override
+    public PageResult<SchoolSubscription> findAllForAdmin(UUID planId, SubscriptionStatus status, String keyword, int page, int size) {
+        var result = springDataSchoolSubscriptionRepository.findAllForAdmin(
+            planId,
+            status == null ? null : status.name(),
+            StringNormalization.toLikePattern(keyword),
+            PageRequest.of(page, size)
+        );
+        return new PageResult<>(
+            result.getContent().stream().map(SchoolSubscriptionMapper::toDomain).toList(),
+            page,
+            size,
+            result.getTotalElements(),
+            result.getTotalPages()
+        );
     }
 }

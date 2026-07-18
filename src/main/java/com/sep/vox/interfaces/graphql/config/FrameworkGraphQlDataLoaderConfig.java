@@ -12,6 +12,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.graphql.execution.BatchLoaderRegistry;
 
 import com.sep.vox.domain.dto.FrameworkCriterionDto;
+import com.sep.vox.domain.mapper.FrameworkCriterionDtoMapper;
 import com.sep.vox.domain.dto.FrameworkResultBandDto;
 import com.sep.vox.domain.mapper.FrameworkResultBandDtoMapper;
 import com.sep.vox.domain.model.framework.FrameworkCriterionBand;
@@ -47,7 +48,7 @@ public class FrameworkGraphQlDataLoaderConfig {
                     .collect(Collectors.groupingBy(b -> b.getFrameworkCriterionId()));
 
                 var criteriaByVersionId = criteria.stream()
-                    .map(c -> FrameworkCriterionDto.of(c, bandsByCriterionId.getOrDefault(c.getId(), List.of())))
+                    .map(c -> FrameworkCriterionDtoMapper.toDto(c, bandsByCriterionId.getOrDefault(c.getId(), List.of())))
                     .collect(Collectors.groupingBy(b -> b.frameworkVersionId()));
 
                 result.putAll(criteriaByVersionId);

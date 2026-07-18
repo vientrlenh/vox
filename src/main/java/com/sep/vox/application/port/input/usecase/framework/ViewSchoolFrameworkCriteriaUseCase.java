@@ -9,6 +9,7 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.query.ViewFrameworkCriteriaQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.FrameworkCriterionDto;
+import com.sep.vox.domain.mapper.FrameworkCriterionDtoMapper;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
 import com.sep.vox.domain.repository.FrameworkCriterionBandRepository;
 import com.sep.vox.domain.repository.FrameworkCriterionRepository;
@@ -51,7 +52,7 @@ public class ViewSchoolFrameworkCriteriaUseCase implements IUseCase<ViewFramewor
                 .collect(java.util.stream.Collectors.groupingBy(b -> b.getFrameworkCriterionId()));
 
         return criteria.stream()
-                .map(c -> FrameworkCriterionDto.of(c, bandsByCriterionId.getOrDefault(c.getId(), List.of())))
+                .map(c -> FrameworkCriterionDtoMapper.toDto(c, bandsByCriterionId.getOrDefault(c.getId(), List.of())))
                 .toList();
     }
 }

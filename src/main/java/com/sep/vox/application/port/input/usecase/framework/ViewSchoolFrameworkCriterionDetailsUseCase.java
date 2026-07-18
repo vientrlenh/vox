@@ -8,6 +8,7 @@ import com.sep.vox.application.port.input.query.ViewFrameworkCriterionDetailsQue
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.domain.dto.FrameworkCriterionDto;
+import com.sep.vox.domain.mapper.FrameworkCriterionDtoMapper;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
 import com.sep.vox.domain.repository.FrameworkCriterionBandRepository;
 import com.sep.vox.domain.repository.FrameworkCriterionRepository;
@@ -47,6 +48,6 @@ public class ViewSchoolFrameworkCriterionDetailsUseCase implements IUseCase<View
 
         var bands = frameworkCriterionBandRepository.findByFrameworkCriterionIdIn(java.util.List.of(criterion.getId()));
 
-        return FrameworkCriterionDto.of(criterion, bands);
+        return FrameworkCriterionDtoMapper.toDto(criterion, bands);
     }
 }

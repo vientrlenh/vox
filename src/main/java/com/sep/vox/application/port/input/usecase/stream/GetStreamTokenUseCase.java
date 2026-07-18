@@ -6,8 +6,16 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import com.sep.vox.domain.model.exam.ExamSession;
+import com.sep.vox.domain.repository.ExamCandidateRepository;
+import com.sep.vox.domain.repository.ExamMemberRepository;
+import com.sep.vox.domain.repository.ExamRepository;
+import com.sep.vox.domain.repository.ExamScheduleProctorRepository;
+import com.sep.vox.domain.repository.ExamScheduleRepository;
+import com.sep.vox.domain.repository.ExamSessionRepository;
+import com.sep.vox.domain.repository.UserRepository;
+
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.RoleConstant;
 import com.sep.vox.application.exception.ForbiddenException;
@@ -20,12 +28,6 @@ import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamSchedule;
 import com.sep.vox.domain.model.user.UserStatus;
-import com.sep.vox.domain.repository.ExamCandidateRepository;
-import com.sep.vox.domain.repository.ExamMemberRepository;
-import com.sep.vox.domain.repository.ExamRepository;
-import com.sep.vox.domain.repository.ExamScheduleProctorRepository;
-import com.sep.vox.domain.repository.ExamScheduleRepository;
-import com.sep.vox.domain.repository.UserRepository;
 
 @Service
 public class GetStreamTokenUseCase implements IUseCase<GetStreamTokenCommand, String> {
@@ -40,10 +42,11 @@ public class GetStreamTokenUseCase implements IUseCase<GetStreamTokenCommand, St
     private final ExamScheduleProctorRepository examScheduleProctorRepository;
     private final ExamMemberRepository examMemberRepository;
     private final ExamCandidateRepository examCandidateRepository;
+    private final ExamSessionRepository examSessionRepository;
     private final StreamTokenProvider streamTokenProvider; 
 
 
-    public GetStreamTokenUseCase(UserContextPort userContextPort, UserRepository userRepository, UserRoleQueryRepository userRoleQueryRepository, ExamScheduleRepository examScheduleRepository, ExamRepository examRepository, ExamScheduleProctorRepository examScheduleProctorRepository, ExamMemberRepository examMemberRepository, ExamCandidateRepository examCandidateRepository, StreamTokenProvider streamTokenProvider) {
+    public GetStreamTokenUseCase(UserContextPort userContextPort, UserRepository userRepository, UserRoleQueryRepository userRoleQueryRepository, ExamScheduleRepository examScheduleRepository, ExamRepository examRepository, ExamScheduleProctorRepository examScheduleProctorRepository, ExamMemberRepository examMemberRepository, ExamCandidateRepository examCandidateRepository, ExamSessionRepository examSessionRepository, StreamTokenProvider streamTokenProvider) {
         this.userContextPort = userContextPort;
         this.userRepository = userRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
@@ -52,11 +55,11 @@ public class GetStreamTokenUseCase implements IUseCase<GetStreamTokenCommand, St
         this.examScheduleProctorRepository = examScheduleProctorRepository;
         this.examMemberRepository = examMemberRepository;
         this.examCandidateRepository = examCandidateRepository;
+        this.examSessionRepository = examSessionRepository;
         this.streamTokenProvider = streamTokenProvider;
     }
 
     @Override
-    @Transactional(readOnly = true)
     public String execute(GetStreamTokenCommand input) {
         validateCommand(input);
 
@@ -64,6 +67,10 @@ public class GetStreamTokenUseCase implements IUseCase<GetStreamTokenCommand, St
         var userId = userContextPort.getCurrentAuthenticatedUserId();
         var roles = getValidUserRoles(userId);
         var streamRole = resolveStreamRole(roles);
+
+        if (streamRole.equals(RoleConstant.STUDENT_ROLE) && input.roomIds().size() != 1) {
+            throw new IllegalArgumentException("Học sinh chỉ được stream ở một phòng");
+        }
 
         var exam = examRepository.findById(input.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy kỳ thi"));
@@ -78,11 +85,20 @@ public class GetStreamTokenUseCase implements IUseCase<GetStreamTokenCommand, St
                 if (schedule == null) {
                     throw new ForbiddenException("Phòng không thuộc kỳ thi hoặc không trong giờ thi: " + roomId);
                 }
-                authorizeRoom(streamRole, userId, input.examId(), exam.getSchoolId(), schedule);
+                authorizeRoom(streamRole, userId, input.examId(), exam.getSchoolId(), schedule, now);
                 return schedule;
             })
             .toList();
-        
+
+        String sessionId = null;
+        if (streamRole.equals(RoleConstant.STUDENT_ROLE)) {
+            var schedule = requestedSchedules.getFirst();
+            var candidate = examCandidateRepository.findByScheduleIdAndStudentId(schedule.getId(), userId)
+                .orElseThrow(() -> new ForbiddenException("Bạn không thuộc ca thi này"));
+            var session = examSessionRepository.findActiveByExamIdAndCandidateId(input.examId(), candidate.getId()).orElseThrow(() -> new ForbiddenException("Bạn chưa tham gia thi"));
+            sessionId = session.getId().toString();
+        }
+
         var streamTypes = resolveStreamTypes(streamRole, input.streamTypes());
 
         var windowStart = requestedSchedules.stream()
@@ -97,7 +113,8 @@ public class GetStreamTokenUseCase implements IUseCase<GetStreamTokenCommand, St
         return streamTokenProvider.generateToken(
             userId.toString(), 
             input.roomIds().stream().map(r -> r.toString()).toList(), 
-            input.examId().toString(), 
+            input.examId().toString(),
+            sessionId,
             List.of(streamRole), 
             streamTypes, 
             windowStart, 
@@ -131,7 +148,7 @@ public class GetStreamTokenUseCase implements IUseCase<GetStreamTokenCommand, St
         throw new ForbiddenException("Vai trò không được phép");
     }
 
-    private void authorizeRoom(String streamRole, UUID userId, UUID examId, UUID examSchoolId, ExamSchedule schedule) {
+    private void authorizeRoom(String streamRole, UUID userId, UUID examId, UUID examSchoolId, ExamSchedule schedule, OffsetDateTime now) {
         switch (streamRole) {
             case RoleConstant.SCHOOL_ADMIN_ROLE -> {
                 var mySchoolId = userContextPort.getCurrentSchoolId();

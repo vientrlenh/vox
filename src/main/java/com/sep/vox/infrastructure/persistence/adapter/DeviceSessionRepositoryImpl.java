@@ -47,6 +47,24 @@ public class DeviceSessionRepositoryImpl implements DeviceSessionRepository {
         return springDataDeviceSessionRepository.revokeDeviceSession(id, now);
     }
 
-   
-    
+    @Override
+    public void updatePushToken(UUID userId, String deviceId, String pushToken) {
+        var sessions = springDataDeviceSessionRepository
+            .findByUserIdAndDeviceIdAndRevokedAtIsNullOrderByIdDesc(userId, deviceId);
+        if (sessions.isEmpty()) {
+            return;
+        }
+        var latest = sessions.get(0);
+        latest.setPushToken(pushToken);
+        springDataDeviceSessionRepository.save(latest);
+    }
+
+    @Override
+    public List<DeviceSession> findActivePushTokensByUserId(UUID userId) {
+        return springDataDeviceSessionRepository.findByUserIdAndRevokedAtIsNullAndPushTokenIsNotNull(userId)
+            .stream()
+            .map(DeviceSessionMapper::toDomain)
+            .toList();
+    }
+
 }

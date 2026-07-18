@@ -15,6 +15,10 @@ import com.sep.vox.infrastructure.persistence.entity.DeviceSessionJpaEntity;
 public interface SpringDataDeviceSessionRepository extends JpaRepository<DeviceSessionJpaEntity, UUID>{
     List<DeviceSessionJpaEntity> findByUserId(UUID userId);
 
+    List<DeviceSessionJpaEntity> findByUserIdAndDeviceIdAndRevokedAtIsNullOrderByIdDesc(UUID userId, String deviceId);
+
+    List<DeviceSessionJpaEntity> findByUserIdAndRevokedAtIsNullAndPushTokenIsNotNull(UUID userId);
+
     @Modifying
     @Query("""
         UPDATE DeviceSessionJpaEntity d 

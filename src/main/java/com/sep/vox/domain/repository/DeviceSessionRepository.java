@@ -12,4 +12,6 @@ public interface DeviceSessionRepository {
     Optional<DeviceSession> findById(UUID id);
     List<DeviceSession> findByUserId(UUID userId);
     int revokeDeviceSession(UUID id, OffsetDateTime now);
+    void updatePushToken(UUID userId, String deviceId, String pushToken);
+    List<DeviceSession> findActivePushTokensByUserId(UUID userId);
 }

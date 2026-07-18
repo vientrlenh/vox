@@ -12,11 +12,22 @@ public class DeviceSession {
     private String ipAddress;
     private String userAgent;
     private OffsetDateTime revokedAt;
+    private String pushToken;
 
     public DeviceSession() {}
 
     public DeviceSession(UUID id, UUID userId, String deviceId, String deviceName, SessionPlatform platform,
             String ipAddress, String userAgent, OffsetDateTime revokedAt) {
+        this(id, userId, deviceId, deviceName, platform, ipAddress, userAgent, revokedAt, null);
+    }
+
+    public DeviceSession(UUID userId, String deviceId, String deviceName, SessionPlatform platform, String ipAddress,
+            String userAgent, OffsetDateTime revokedAt) {
+        this(userId, deviceId, deviceName, platform, ipAddress, userAgent, revokedAt, null);
+    }
+
+    public DeviceSession(UUID id, UUID userId, String deviceId, String deviceName, SessionPlatform platform,
+            String ipAddress, String userAgent, OffsetDateTime revokedAt, String pushToken) {
         this.id = id;
         this.userId = userId;
         this.deviceId = deviceId;
@@ -25,10 +36,11 @@ public class DeviceSession {
         this.ipAddress = ipAddress;
         this.userAgent = userAgent;
         this.revokedAt = revokedAt;
+        this.pushToken = pushToken;
     }
 
     public DeviceSession(UUID userId, String deviceId, String deviceName, SessionPlatform platform, String ipAddress,
-            String userAgent, OffsetDateTime revokedAt) {
+            String userAgent, OffsetDateTime revokedAt, String pushToken) {
         this.userId = userId;
         this.deviceId = deviceId;
         this.deviceName = deviceName;
@@ -36,6 +48,7 @@ public class DeviceSession {
         this.ipAddress = ipAddress;
         this.userAgent = userAgent;
         this.revokedAt = revokedAt;
+        this.pushToken = pushToken;
     }
 
     public UUID getId() {
@@ -102,15 +115,24 @@ public class DeviceSession {
         this.revokedAt = revokedAt;
     }
 
-    
+    public String getPushToken() {
+        return pushToken;
+    }
+
+    public void setPushToken(String pushToken) {
+        this.pushToken = pushToken;
+    }
+
+
     public static DeviceSession create(UUID userId, String deviceId, String deviceName, SessionPlatform platform, String ipAddress, String userAgent) {
         return new DeviceSession(
-            userId, 
-            deviceId, 
-            deviceName, 
-            platform, 
-            ipAddress, 
-            userAgent, 
+            userId,
+            deviceId,
+            deviceName,
+            platform,
+            ipAddress,
+            userAgent,
+            null,
             null
         );
     }

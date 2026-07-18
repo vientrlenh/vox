@@ -55,10 +55,13 @@ public class DeviceSessionJpaEntity {
     @Column(name = "revoked_at")
     private OffsetDateTime revokedAt;
 
+    @Column(name = "push_token", length = 512)
+    private String pushToken;
+
     protected DeviceSessionJpaEntity() {}
 
     public DeviceSessionJpaEntity(UUID id, UUID userId, String deviceId, String deviceName, String platform,
-            String ipAddress, String userAgent, OffsetDateTime revokedAt) {
+            String ipAddress, String userAgent, OffsetDateTime revokedAt, String pushToken) {
         this.id = id;
         this.userId = userId;
         this.deviceId = deviceId;
@@ -67,10 +70,11 @@ public class DeviceSessionJpaEntity {
         this.ipAddress = ipAddress;
         this.userAgent = userAgent;
         this.revokedAt = revokedAt;
+        this.pushToken = pushToken;
     }
 
     public DeviceSessionJpaEntity(UUID userId, String deviceId, String deviceName, String platform, String ipAddress,
-            String userAgent, OffsetDateTime revokedAt) {
+            String userAgent, OffsetDateTime revokedAt, String pushToken) {
         this.userId = userId;
         this.deviceId = deviceId;
         this.deviceName = deviceName;
@@ -78,6 +82,7 @@ public class DeviceSessionJpaEntity {
         this.ipAddress = ipAddress;
         this.userAgent = userAgent;
         this.revokedAt = revokedAt;
+        this.pushToken = pushToken;
     }
 
     public UUID getId() {
@@ -144,6 +149,12 @@ public class DeviceSessionJpaEntity {
         this.revokedAt = revokedAt;
     }
 
-    
-    
+    public String getPushToken() {
+        return pushToken;
+    }
+
+    public void setPushToken(String pushToken) {
+        this.pushToken = pushToken;
+    }
+
 }

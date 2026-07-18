@@ -15,7 +15,8 @@ public final class DeviceSessionMapper {
             sessionPlatform(jpa.getPlatform()), 
             jpa.getIpAddress(), 
             jpa.getUserAgent(), 
-            jpa.getRevokedAt()
+            jpa.getRevokedAt(),
+            jpa.getPushToken()
         );
     }
 
@@ -28,7 +29,8 @@ public final class DeviceSessionMapper {
             valueOf(session.getPlatform()), 
             session.getIpAddress(), 
             session.getUserAgent(), 
-            session.getRevokedAt()
+            session.getRevokedAt(),
+            session.getPushToken()
         );
     }
 

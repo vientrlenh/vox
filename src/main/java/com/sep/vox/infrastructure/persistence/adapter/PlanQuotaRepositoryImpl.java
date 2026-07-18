@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -35,6 +36,13 @@ public class PlanQuotaRepositoryImpl implements PlanQuotaRepository {
     @Override
     public List<PlanQuota> findAllByPlanId(UUID planId) {
         return springDataPlanQuotaRepository.findAllByPlanId(planId).stream()
+            .map(PlanQuotaMapper::toDomain)
+            .toList();
+    }
+
+    @Override
+    public List<PlanQuota> findAllByPlanIdIn(Collection<UUID> planIds) {
+        return springDataPlanQuotaRepository.findAllByPlanIdIn(planIds).stream()
             .map(PlanQuotaMapper::toDomain)
             .toList();
     }

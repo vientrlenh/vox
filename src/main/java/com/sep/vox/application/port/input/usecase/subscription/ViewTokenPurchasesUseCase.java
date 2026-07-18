@@ -9,28 +9,17 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.query.ViewTokenPurchasesQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.query.repository.TokenPurchaseQueryRepository;
 import com.sep.vox.domain.dto.TokenPurchaseDto;
-import com.sep.vox.domain.mapper.TokenPurchaseDtoMapper;
-import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
-import com.sep.vox.domain.repository.TokenPurchaseItemRepository;
-import com.sep.vox.domain.repository.TokenPurchaseRepository;
 
 @Service
 public class ViewTokenPurchasesUseCase implements IUseCase<ViewTokenPurchasesQuery, List<TokenPurchaseDto>> {
 
-    private final SchoolSubscriptionRepository schoolSubscriptionRepository;
-    private final TokenPurchaseRepository tokenPurchaseRepository;
-    private final TokenPurchaseItemRepository tokenPurchaseItemRepository;
+    private final TokenPurchaseQueryRepository tokenPurchaseQueryRepository;
     private final UserContextPort userContextPort;
 
-    public ViewTokenPurchasesUseCase(
-            SchoolSubscriptionRepository schoolSubscriptionRepository,
-            TokenPurchaseRepository tokenPurchaseRepository,
-            TokenPurchaseItemRepository tokenPurchaseItemRepository,
-            UserContextPort userContextPort) {
-        this.schoolSubscriptionRepository = schoolSubscriptionRepository;
-        this.tokenPurchaseRepository = tokenPurchaseRepository;
-        this.tokenPurchaseItemRepository = tokenPurchaseItemRepository;
+    public ViewTokenPurchasesUseCase(TokenPurchaseQueryRepository tokenPurchaseQueryRepository, UserContextPort userContextPort) {
+        this.tokenPurchaseQueryRepository = tokenPurchaseQueryRepository;
         this.userContextPort = userContextPort;
     }
 
@@ -41,13 +30,6 @@ public class ViewTokenPurchasesUseCase implements IUseCase<ViewTokenPurchasesQue
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
-        var activeSubscription = schoolSubscriptionRepository.findActiveBySchoolId(input.schoolId());
-        if (activeSubscription.isEmpty()) {
-            return List.of();
-        }
-
-        return tokenPurchaseRepository.findAllBySubscriptionId(activeSubscription.get().getId()).stream()
-            .map(purchase -> TokenPurchaseDtoMapper.toDto(purchase, tokenPurchaseItemRepository.findAllByPurchaseId(purchase.getId())))
-            .toList();
+        return tokenPurchaseQueryRepository.findAllByActiveSchoolSubscription(input.schoolId());
     }
 }

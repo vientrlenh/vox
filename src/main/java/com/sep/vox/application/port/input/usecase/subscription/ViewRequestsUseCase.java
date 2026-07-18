@@ -34,7 +34,7 @@ public class ViewRequestsUseCase implements IUseCase<ViewRequestsQuery, PageResu
         }
 
         var all = subscriptionRequestRepository.findAllByStatus(input.status()).stream()
-            .sorted(Comparator.comparing(SubscriptionRequest::getSubmittedAt).reversed())
+            .sorted(Comparator.comparing((SubscriptionRequest request) -> request.getSubmittedAt()).reversed())
             .toList();
 
         var fromIndex = Math.min(input.page() * input.size(), all.size());

@@ -33,7 +33,7 @@ public class ViewSubscriptionHistoryUseCase implements IUseCase<ViewSubscription
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
         return schoolSubscriptionRepository.findAllBySchoolId(input.schoolId()).stream()
-            .sorted(Comparator.comparing(SchoolSubscription::getCreatedAt).reversed())
+            .sorted(Comparator.comparing((SchoolSubscription subscription) -> subscription.getCreatedAt()).reversed())
             .map(SchoolSubscriptionDtoMapper::toDto)
             .toList();
     }

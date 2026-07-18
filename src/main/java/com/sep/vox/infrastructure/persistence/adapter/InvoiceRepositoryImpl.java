@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -35,6 +36,13 @@ public class InvoiceRepositoryImpl implements InvoiceRepository {
     @Override
     public List<Invoice> findAllBySubscriptionId(UUID subscriptionId) {
         return springDataInvoiceRepository.findAllBySubscriptionId(subscriptionId).stream()
+            .map(InvoiceMapper::toDomain)
+            .toList();
+    }
+
+    @Override
+    public List<Invoice> findAllBySubscriptionIdIn(Collection<UUID> subscriptionIds) {
+        return springDataInvoiceRepository.findAllBySubscriptionIdIn(subscriptionIds).stream()
             .map(InvoiceMapper::toDomain)
             .toList();
     }

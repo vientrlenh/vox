@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -35,6 +36,13 @@ public class TokenPurchaseItemRepositoryImpl implements TokenPurchaseItemReposit
     @Override
     public List<TokenPurchaseItem> findAllByPurchaseId(UUID purchaseId) {
         return springDataTokenPurchaseItemRepository.findAllByPurchaseId(purchaseId).stream()
+            .map(TokenPurchaseItemMapper::toDomain)
+            .toList();
+    }
+
+    @Override
+    public List<TokenPurchaseItem> findAllByPurchaseIdIn(Collection<UUID> purchaseIds) {
+        return springDataTokenPurchaseItemRepository.findAllByPurchaseIdIn(purchaseIds).stream()
             .map(TokenPurchaseItemMapper::toDomain)
             .toList();
     }

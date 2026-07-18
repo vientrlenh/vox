@@ -139,6 +139,9 @@ jwt:
   stream:
     secret: ${JWT_STREAM_SECRET}
 
+internal:
+  api-key: ${INTERNAL_API_KEY}
+
 logging:
   level:
     org:

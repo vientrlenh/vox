@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -36,6 +37,13 @@ public class SubscriptionPlanRepositoryImpl implements SubscriptionPlanRepositor
     @Override
     public List<SubscriptionPlan> findAllByStatus(PlanStatus status) {
         return springDataSubscriptionPlanRepository.findAllByStatus(status.name()).stream()
+            .map(SubscriptionPlanMapper::toDomain)
+            .toList();
+    }
+
+    @Override
+    public List<SubscriptionPlan> findByIdIn(Collection<UUID> ids) {
+        return springDataSubscriptionPlanRepository.findAllById(ids).stream()
             .map(SubscriptionPlanMapper::toDomain)
             .toList();
     }

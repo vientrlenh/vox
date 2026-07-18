@@ -1,0 +1,12 @@
+package com.sep.vox.interfaces.graphql.dto.request;
+
+import java.math.BigDecimal;
+
+import com.sep.vox.domain.model.subscription.QuotaType;
+
+public record PlanQuotaItemInput(
+    QuotaType quotaType,
+    Integer includedQuantity,
+    BigDecimal tokenUnitPrice
+) {
+}

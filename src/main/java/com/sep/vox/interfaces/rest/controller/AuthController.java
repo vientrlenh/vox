@@ -13,7 +13,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.sep.vox.application.port.input.command.LogoutCommand;
 import com.sep.vox.application.port.input.usecase.auth.LoginUseCase;
+import com.sep.vox.application.port.input.usecase.auth.LogoutUseCase;
 import com.sep.vox.application.port.input.usecase.auth.RefreshUseCase;
 import com.sep.vox.application.port.input.usecase.auth.SetUpPasswordUseCase;
 import com.sep.vox.application.port.input.usecase.auth.SendResetPasswordOtpUseCase;
@@ -65,8 +67,9 @@ public class AuthController {
     private final ResetPasswordUseCase resetPasswordUseCase;
     private final RegisterBySelfDeclaredUseCase registerBySelfDeclaredUseCase;
     private final VerifyRegisterFormOtpUseCase verifyRegisterFormOtpUseCase;
+    private final LogoutUseCase logoutUseCase;
 
-    public AuthController(LoginUseCase loginUseCase, RegisterFromSchoolDirectoryUseCase registerFromSchoolDirectoryUseCase, SetUpPasswordUseCase setUpPasswordUseCase, RefreshUseCase refreshUseCase, SendResetPasswordOtpUseCase sendResetPasswordOtpUseCase, ResetPasswordUseCase resetPasswordUseCase, RegisterBySelfDeclaredUseCase registerBySelfDeclaredUseCase, VerifyRegisterFormOtpUseCase verifyRegisterFormOtpUseCase) {
+    public AuthController(LoginUseCase loginUseCase, RegisterFromSchoolDirectoryUseCase registerFromSchoolDirectoryUseCase, SetUpPasswordUseCase setUpPasswordUseCase, RefreshUseCase refreshUseCase, SendResetPasswordOtpUseCase sendResetPasswordOtpUseCase, ResetPasswordUseCase resetPasswordUseCase, RegisterBySelfDeclaredUseCase registerBySelfDeclaredUseCase, VerifyRegisterFormOtpUseCase verifyRegisterFormOtpUseCase, LogoutUseCase logoutUseCase) {
         this.loginUseCase = loginUseCase;
         this.registerFromSchoolDirectoryUseCase = registerFromSchoolDirectoryUseCase;
         this.setUpPasswordUseCase = setUpPasswordUseCase;
@@ -75,6 +78,7 @@ public class AuthController {
         this.resetPasswordUseCase = resetPasswordUseCase;
         this.registerBySelfDeclaredUseCase = registerBySelfDeclaredUseCase;
         this.verifyRegisterFormOtpUseCase = verifyRegisterFormOtpUseCase;
+        this.logoutUseCase = logoutUseCase;
     }
 
     private static final String REFRESH_TOKEN_COOKIE_KEY = "refresh_token";
@@ -137,6 +141,16 @@ public class AuthController {
         var response = ApiResponse.success("Yêu cầu thành công", new RefreshResponse(
             data.accessToken(), null
         ));
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<Object>> logout(@CookieValue(name = REFRESH_TOKEN_COOKIE_KEY, required = false) String token, HttpServletResponse servletResponse) {
+        if (token != null) {
+            logoutUseCase.execute(new LogoutCommand(token));
+        }
+        HttpCookieProvider.clearCookie(servletResponse, REFRESH_TOKEN_COOKIE_KEY);
+        var response = ApiResponse.success("Đăng xuất thành công");
         return ResponseEntity.ok(response);
     }
 

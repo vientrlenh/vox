@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import com.sep.vox.domain.common.PageResult;
 import org.springframework.data.domain.PageRequest;
@@ -52,6 +53,25 @@ public class RubricVersionRepositoryImpl implements RubricVersionRepository {
                 .stream()
                 .map(RubricVersionMapper::toDomain)
                 .toList();
+    }
+
+    @Override
+    public List<RubricVersion> findByCodeIn(Collection<String> codes) {
+        if (codes == null || codes.isEmpty()) {
+            return List.of();
+        }
+        var upperCodes = codes.stream().map(String::toUpperCase).collect(Collectors.toSet());
+        return springDataRubricVersionRepository.findByCodeIn(upperCodes)
+                .stream().map(RubricVersionMapper::toDomain).toList();
+    }
+
+    @Override
+    public List<RubricVersion> findByNameIn(Collection<String> names) {
+        if (names == null || names.isEmpty()) {
+            return List.of();
+        }
+        return springDataRubricVersionRepository.findByNameIn(names)
+                .stream().map(RubricVersionMapper::toDomain).toList();
     }
 
     @Override

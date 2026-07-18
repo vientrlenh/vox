@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -20,6 +21,10 @@ public interface SpringDataFrameworkVersionRepository extends JpaRepository<Fram
     boolean existsByFrameworkId(UUID frameworkId);
     Optional<FrameworkVersionJpaEntity> findByCode(String code);
     Optional<FrameworkVersionJpaEntity> findByName(String name);
+    // Nhận input đã được Impl uppercase sẵn; entity-side vẫn bọc UPPER() để phòng dữ liệu cũ lỡ không đồng nhất case.
+    @Query("SELECT v FROM FrameworkVersionJpaEntity v WHERE UPPER(v.code) IN :codes")
+    List<FrameworkVersionJpaEntity> findByCodeIn(@Param("codes") Collection<String> codes);
+    List<FrameworkVersionJpaEntity> findByNameIn(Collection<String> names);
     Page<FrameworkVersionJpaEntity> findByFrameworkId(UUID frameworkId, Pageable pageable);
     List<FrameworkVersionJpaEntity> findByFrameworkIdAndStatus(UUID frameworkId, String status);
     Page<FrameworkVersionJpaEntity> findByFrameworkIdAndStatus(UUID frameworkId, String status, Pageable pageable);

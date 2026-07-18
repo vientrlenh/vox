@@ -16,6 +16,8 @@ public interface RubricVersionRepository {
     Optional<RubricVersion> findByName(String name);
 
     List<RubricVersion> findByIdIn(Collection<UUID> ids);
+    List<RubricVersion> findByCodeIn(Collection<String> codes);
+    List<RubricVersion> findByNameIn(Collection<String> names);
 
     RubricVersion save(RubricVersion rubricVersion);
 

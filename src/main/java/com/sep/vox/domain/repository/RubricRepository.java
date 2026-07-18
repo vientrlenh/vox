@@ -1,5 +1,7 @@
 package com.sep.vox.domain.repository;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -9,6 +11,7 @@ import com.sep.vox.domain.model.rubric.RubricOwnerType;
 
 public interface RubricRepository {
     Optional<Rubric> findById(UUID id);
+    List<Rubric> findByIdIn(Collection<UUID> ids);
 
     Rubric save(Rubric rubric);
 

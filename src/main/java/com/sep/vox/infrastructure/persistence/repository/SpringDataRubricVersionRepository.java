@@ -2,6 +2,7 @@ package com.sep.vox.infrastructure.persistence.repository;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -19,6 +20,10 @@ public interface SpringDataRubricVersionRepository extends JpaRepository<RubricV
     boolean existsByRubricIdAndIdNot(UUID rubricId, UUID id);
     Optional<RubricVersionJpaEntity> findByCode(String code);
     Optional<RubricVersionJpaEntity> findByName(String name);
+    // Nhận input đã được Impl uppercase sẵn; entity-side vẫn bọc UPPER() để phòng dữ liệu cũ lỡ không đồng nhất case.
+    @Query("SELECT v FROM RubricVersionJpaEntity v WHERE UPPER(v.code) IN :codes")
+    List<RubricVersionJpaEntity> findByCodeIn(@Param("codes") Collection<String> codes);
+    List<RubricVersionJpaEntity> findByNameIn(Collection<String> names);
 
     List<RubricVersionJpaEntity> findByRubricId(UUID rubricId);
 

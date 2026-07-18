@@ -20,6 +20,7 @@ public interface SchoolClassRepository {
     Optional<SchoolClass> findBySchoolIdAndCode(UUID schoolId, String code);
     Optional<SchoolClass> findBySchoolIdAndName(UUID schoolId, String name);
     List<SchoolClass> findBySchoolIdAndCodeIn(UUID schoolId, Collection<String> codes);
+    List<SchoolClass> findBySchoolIdAndNameIn(UUID schoolId, Collection<String> names);
     SchoolClass save(SchoolClass schoolClass);
     int updateMutableFields(UUID id, UUID schoolId, String name, boolean nameProvided,
             String description, boolean descriptionProvided, SchoolClassStatus status, boolean statusProvided,

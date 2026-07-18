@@ -15,14 +15,21 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.sep.vox.application.port.input.command.CreateExamSessionCommand;
+import com.sep.vox.application.port.input.command.FlagExamSessionCommand;
+import com.sep.vox.application.port.input.command.ForceEndExamSessionCommand;
+import com.sep.vox.application.port.input.command.RetryGradingExamSessionCommand;
 import com.sep.vox.application.port.input.command.UpdateExamSessionStatusCommand;
 import com.sep.vox.application.port.input.query.ViewExamSessionPaperQuery;
 import com.sep.vox.application.port.input.usecase.exam.GetExamSessionPaperUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.CreateExamSessionUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.DeleteExamSessionUseCase;
+import com.sep.vox.application.port.input.usecase.examsession.FlagExamSessionUseCase;
+import com.sep.vox.application.port.input.usecase.examsession.ForceEndExamSessionUseCase;
+import com.sep.vox.application.port.input.usecase.examsession.RetryGradingExamSessionUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.UpdateExamSessionStatusUseCase;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
 import com.sep.vox.interfaces.rest.dto.request.CreateExamSessionRequest;
+import com.sep.vox.interfaces.rest.dto.request.SessionReasonRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateExamSessionRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 
@@ -36,16 +43,25 @@ public class ExamSessionController {
     private final UpdateExamSessionStatusUseCase updateExamSessionStatusUseCase;
     private final GetExamSessionPaperUseCase getExamSessionPaperUseCase;
     private final DeleteExamSessionUseCase deleteExamSessionUseCase;
+    private final FlagExamSessionUseCase flagExamSessionUseCase;
+    private final ForceEndExamSessionUseCase forceEndExamSessionUseCase;
+    private final RetryGradingExamSessionUseCase retryGradingExamSessionUseCase;
 
     public ExamSessionController(
             CreateExamSessionUseCase createExamSessionUseCase,
             UpdateExamSessionStatusUseCase updateExamSessionStatusUseCase,
             GetExamSessionPaperUseCase getExamSessionPaperUseCase,
-            DeleteExamSessionUseCase deleteExamSessionUseCase) {
+            DeleteExamSessionUseCase deleteExamSessionUseCase,
+            FlagExamSessionUseCase flagExamSessionUseCase,
+            ForceEndExamSessionUseCase forceEndExamSessionUseCase,
+            RetryGradingExamSessionUseCase retryGradingExamSessionUseCase) {
         this.createExamSessionUseCase = createExamSessionUseCase;
         this.updateExamSessionStatusUseCase = updateExamSessionStatusUseCase;
         this.getExamSessionPaperUseCase = getExamSessionPaperUseCase;
         this.deleteExamSessionUseCase = deleteExamSessionUseCase;
+        this.flagExamSessionUseCase = flagExamSessionUseCase;
+        this.forceEndExamSessionUseCase = forceEndExamSessionUseCase;
+        this.retryGradingExamSessionUseCase = retryGradingExamSessionUseCase;
     }
 
     @PostMapping
@@ -77,6 +93,31 @@ public class ExamSessionController {
     public ResponseEntity<ApiResponse<?>> getPaper(@PathVariable UUID id) {
         var data = getExamSessionPaperUseCase.execute(new ViewExamSessionPaperQuery(id));
         return ResponseEntity.ok(ApiResponse.success("Lay de thi thanh cong", data));
+    }
+
+    @PostMapping("/{id}/flag")
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
+    public ResponseEntity<ApiResponse<UUID>> flag(
+            @PathVariable UUID id,
+            @Valid @RequestBody SessionReasonRequest request) {
+        var data = flagExamSessionUseCase.execute(new FlagExamSessionCommand(id, request.reason()));
+        return ResponseEntity.ok(ApiResponse.success("Đánh dấu nghi vấn phiên thi thành công", data));
+    }
+
+    @PostMapping("/{id}/force-end")
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
+    public ResponseEntity<ApiResponse<UUID>> forceEnd(
+            @PathVariable UUID id,
+            @Valid @RequestBody SessionReasonRequest request) {
+        var data = forceEndExamSessionUseCase.execute(new ForceEndExamSessionCommand(id, request.reason()));
+        return ResponseEntity.ok(ApiResponse.success("Buộc kết thúc phiên thi thành công", data));
+    }
+
+    @PostMapping("/{id}/retry-grading")
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
+    public ResponseEntity<ApiResponse<UUID>> retryGrading(@PathVariable UUID id) {
+        var data = retryGradingExamSessionUseCase.execute(new RetryGradingExamSessionCommand(id));
+        return ResponseEntity.ok(ApiResponse.success("Gửi yêu cầu chấm lại thành công", data));
     }
 
     @DeleteMapping("/{id}")

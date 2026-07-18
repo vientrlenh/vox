@@ -18,6 +18,7 @@ public final class ExamCandidateMapper {
             statusFromString(jpa.getStatus()),
             jpa.getAssignedAt(),
             jpa.getUpdatedAt(),
+            jpa.getBlockedAt(),
             jpa.getAssignedBy(),
             jpa.getUpdatedBy()
         );
@@ -33,6 +34,7 @@ public final class ExamCandidateMapper {
             domain.getStatus().name(),
             domain.getAssignedAt(),
             domain.getUpdatedAt(),
+            domain.getBlockedAt(),
             domain.getAssignedBy(),
             domain.getUpdatedBy()
         );

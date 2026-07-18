@@ -44,7 +44,7 @@ public class ExamCandidateJpaEntity {
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
             name = "chk_exam_candidates_status_valid", 
-            constraint = "status IN ('ASSIGNED', 'ABSENT', 'COMPLETED', 'EXEMPTED')"
+            constraint = "status IN ('ASSIGNED', 'ABSENT', 'COMPLETED', 'EXEMPTED', 'CANCELLED')"
         )
     })
     private String status;
@@ -55,6 +55,9 @@ public class ExamCandidateJpaEntity {
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
 
+    @Column(name = "blocked_at")
+    private OffsetDateTime blockedAt;
+
     @Column(name = "assigned_by", updatable = false)
     private UUID assignedBy;
 
@@ -64,7 +67,7 @@ public class ExamCandidateJpaEntity {
     protected ExamCandidateJpaEntity() {}
 
     public ExamCandidateJpaEntity(UUID id, UUID examId, UUID studentId, UUID assignedPaperId, UUID scheduleId,
-            String status, OffsetDateTime assignedAt, OffsetDateTime updatedAt, UUID assignedBy, UUID updatedBy) {
+            String status, OffsetDateTime assignedAt, OffsetDateTime updatedAt, OffsetDateTime blockedAt, UUID assignedBy, UUID updatedBy) {
         this.id = id;
         this.examId = examId;
         this.studentId = studentId;
@@ -73,6 +76,7 @@ public class ExamCandidateJpaEntity {
         this.status = status;
         this.assignedAt = assignedAt;
         this.updatedAt = updatedAt;
+        this.blockedAt = blockedAt;
         this.assignedBy = assignedBy;
         this.updatedBy = updatedBy;
     }
@@ -141,6 +145,14 @@ public class ExamCandidateJpaEntity {
         this.updatedAt = updatedAt;
     }
 
+    public OffsetDateTime getBlockedAt() {
+        return blockedAt;
+    }
+
+    public void setBlockedAt(OffsetDateTime blockedAt) {
+        this.blockedAt = blockedAt;
+    }
+
     public UUID getAssignedBy() {
         return assignedBy;
     }
@@ -156,6 +168,4 @@ public class ExamCandidateJpaEntity {
     public void setUpdatedBy(UUID updatedBy) {
         this.updatedBy = updatedBy;
     }
-
-    
 }

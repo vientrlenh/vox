@@ -63,32 +63,32 @@ public class ResolveExamCandidateAttemptsUseCase {
     }
 
     private ExamCandidateAttempts resolveOfficial(List<ExamAttemptSummary> attempts, ResultDecisionMethod method) {
-        var graded = attempts.stream()
-            .filter(attempt -> attempt.totalScore() != null)
+        var eligible = attempts.stream()
+            .filter(this::countsTowardOfficialScore)
             .toList();
 
         if (method == ResultDecisionMethod.AVERAGE) {
-            if (graded.isEmpty()) {
+            if (eligible.isEmpty()) {
                 return new ExamCandidateAttempts(attempts, null, null);
             }
-            var average = graded.stream()
+            var average = eligible.stream()
                 .map(ExamAttemptSummary::totalScore)
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
-                .divide(BigDecimal.valueOf(graded.size()), 2, RoundingMode.HALF_UP);
-            return new ExamCandidateAttempts(attempts, graded.get(0), average);
+                .divide(BigDecimal.valueOf(eligible.size()), 2, RoundingMode.HALF_UP);
+            return new ExamCandidateAttempts(attempts, eligible.get(0), average);
         }
 
         ExamAttemptSummary official;
         switch (method) {
-            case HIGHEST -> official = graded.stream()
+            case HIGHEST -> official = eligible.stream()
                 .max(Comparator.comparing(ExamAttemptSummary::totalScore))
                 .orElse(null);
-            case LOWEST -> official = graded.stream()
+            case LOWEST -> official = eligible.stream()
                 .min(Comparator.comparing(ExamAttemptSummary::totalScore))
                 .orElse(null);
-            case FIRST -> official = attempts.isEmpty() ? null : attempts.get(attempts.size() - 1);
-            case LATEST -> official = attempts.isEmpty() ? null : attempts.get(0);
-            default -> official = attempts.isEmpty() ? null : attempts.get(0);
+            case FIRST -> official = eligible.isEmpty() ? null : eligible.get(eligible.size() - 1);
+            case LATEST -> official = eligible.isEmpty() ? null : eligible.get(0);
+            default -> official = eligible.isEmpty() ? null : eligible.get(0);
         }
 
         return new ExamCandidateAttempts(
@@ -96,5 +96,16 @@ public class ResolveExamCandidateAttemptsUseCase {
             official,
             official == null ? null : official.totalScore()
         );
+    }
+
+    private boolean countsTowardOfficialScore(ExamAttemptSummary attempt) {
+        if (attempt.totalScore() == null || attempt.resultStatus() == null) {
+            return false;
+        }
+        return switch (attempt.resultStatus()) {
+            case FINAL, RELEASED -> true;
+            case PENDING_REVIEW -> !attempt.flagged();
+            case INVALID, RETAKE_REQUIRED, APPEALED, RE_GRADING -> false;
+        };
     }
 }

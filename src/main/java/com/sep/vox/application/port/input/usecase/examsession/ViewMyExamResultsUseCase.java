@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.examsession.StudentExamResultSummaryResponse;
+import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.ExamRepository;
@@ -80,13 +81,14 @@ public class ViewMyExamResultsUseCase implements IUseCase<Void, List<StudentExam
                     session.getId(),
                     session.getPaperId(),
                     session.getStatus().name(),
+                    session.isFlagged(),
                     session.getStartedAt() == null ? null : session.getStartedAt().toString(),
                     session.getSubmittedAt() == null ? null : session.getSubmittedAt().toString(),
-                    result.getTotalScore(),
+                    isScoreVisible(session, result.getStatus()) ? result.getTotalScore() : null,
                     result.getStatus().name(),
-                    result.getRubricResultBandId(),
-                    rubricBand == null ? null : rubricBand.getCode(),
-                    rubricBand == null ? null : rubricBand.getName()
+                    isScoreVisible(session, result.getStatus()) ? result.getRubricResultBandId() : null,
+                    isScoreVisible(session, result.getStatus()) && rubricBand != null ? rubricBand.getCode() : null,
+                    isScoreVisible(session, result.getStatus()) && rubricBand != null ? rubricBand.getName() : null
                 );
             })
             .filter(java.util.Objects::nonNull)
@@ -95,5 +97,12 @@ public class ViewMyExamResultsUseCase implements IUseCase<Void, List<StudentExam
                 Comparator.nullsLast(Comparator.reverseOrder())
             ))
             .toList();
+    }
+
+    private boolean isScoreVisible(com.sep.vox.domain.model.exam.ExamSession session, ExamCandidateResultStatus status) {
+        if (!session.isFlagged()) {
+            return true;
+        }
+        return status == ExamCandidateResultStatus.FINAL || status == ExamCandidateResultStatus.RELEASED;
     }
 }

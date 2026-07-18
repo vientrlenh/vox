@@ -20,7 +20,8 @@ public final class ExamCandidateDtoMapper {
             domain.getScheduleId(),
             domain.getStatus() == null ? null : domain.getStatus().name(),
             valueOf(domain.getAssignedAt()),
-            valueOf(domain.getUpdatedAt())
+            valueOf(domain.getUpdatedAt()),
+            valueOf(domain.getBlockedAt())
         );
     }
 

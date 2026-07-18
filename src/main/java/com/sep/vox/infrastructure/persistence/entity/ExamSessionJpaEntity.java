@@ -45,16 +45,22 @@ public class ExamSessionJpaEntity {
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
             name = "chk_exam_sessions_status_valid", 
-            constraint = "status IN ('IN_PROGRESS', 'SUBMITTED', 'GRADING', 'GRADED', 'EXPIRED', 'GRADING_FAILED')"
+            constraint = "status IN ('IN_PROGRESS', 'SUBMITTED', 'INTERRUPTED', 'GRADING', 'GRADED', 'EXPIRED', 'GRADING_FAILED')"
         )
     }
     )
     private String status;
 
+    @Column(name = "flagged", nullable = false)
+    private boolean flagged;
+
+    @Column(name = "flag_reason", columnDefinition = "text")
+    private String flagReason;
+
     protected ExamSessionJpaEntity() {}
 
     public ExamSessionJpaEntity(UUID id, UUID examId, UUID candidateId, UUID paperId, OffsetDateTime startedAt,
-            OffsetDateTime submittedAt, String status) {
+            OffsetDateTime submittedAt, String status, boolean flagged, String flagReason) {
         this.id = id;
         this.examId = examId;
         this.candidateId = candidateId;
@@ -62,6 +68,8 @@ public class ExamSessionJpaEntity {
         this.startedAt = startedAt;
         this.submittedAt = submittedAt;
         this.status = status;
+        this.flagged = flagged;
+        this.flagReason = flagReason;
     }
 
     public UUID getId() {
@@ -120,5 +128,19 @@ public class ExamSessionJpaEntity {
         this.status = status;
     }
 
-    
+    public boolean isFlagged() {
+        return flagged;
+    }
+
+    public void setFlagged(boolean flagged) {
+        this.flagged = flagged;
+    }
+
+    public String getFlagReason() {
+        return flagReason;
+    }
+
+    public void setFlagReason(String flagReason) {
+        this.flagReason = flagReason;
+    }
 }

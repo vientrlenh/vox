@@ -50,7 +50,9 @@ public class CreateExamSessionUseCase implements IUseCase<CreateExamSessionComma
             input.paperId(),
             now,
             null,
-            ExamSessionStatus.IN_PROGRESS
+            ExamSessionStatus.IN_PROGRESS,
+            false,
+            null
         );
         return toResponse(examSessionRepository.save(session));
     }
@@ -63,7 +65,10 @@ public class CreateExamSessionUseCase implements IUseCase<CreateExamSessionComma
             session.getPaperId(),
             session.getStartedAt() == null ? null : session.getStartedAt().toString(),
             session.getSubmittedAt() == null ? null : session.getSubmittedAt().toString(),
-            session.getStatus() == null ? null : session.getStatus().name()
+            session.getStatus() == null ? null : session.getStatus().name(),
+            session.isFlagged(),
+            session.getFlagReason(),
+            false
         );
     }
 }

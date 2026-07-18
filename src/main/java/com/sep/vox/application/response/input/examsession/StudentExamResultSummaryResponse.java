@@ -11,6 +11,7 @@ public record StudentExamResultSummaryResponse(
     UUID sessionId,
     UUID paperId,
     String sessionStatus,
+    boolean sessionFlagged,
     String startedAt,
     String submittedAt,
     BigDecimal totalScore,

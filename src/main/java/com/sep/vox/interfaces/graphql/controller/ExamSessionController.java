@@ -4,11 +4,17 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.graphql.data.method.annotation.Argument;
+import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 
 import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.port.input.command.FlagExamSessionCommand;
+import com.sep.vox.application.port.input.command.ForceEndExamSessionCommand;
+import com.sep.vox.application.port.input.command.ReviewFlaggedExamResultCommand;
+import com.sep.vox.application.port.input.command.RetryGradingExamSessionCommand;
+import com.sep.vox.application.port.input.command.UnblockExamCandidateCommand;
 import com.sep.vox.application.port.input.query.ViewExamItemResponseEvaluationQuery;
 import com.sep.vox.application.port.input.query.ViewExamItemResponseQuery;
 import com.sep.vox.application.port.input.query.ViewExamItemResponseTurnsQuery;
@@ -16,23 +22,26 @@ import com.sep.vox.application.port.input.query.ViewExamSessionFollowupsQuery;
 import com.sep.vox.application.port.input.query.ViewExamSessionQuery;
 import com.sep.vox.application.port.input.query.ViewExamSessionResultQuery;
 import com.sep.vox.application.port.input.usecase.examevaluation.ViewExamItemResponseEvaluationUseCase;
+import com.sep.vox.application.port.input.usecase.examcandidate.UnblockExamCandidateUseCase;
 import com.sep.vox.application.port.input.usecase.examitemresponse.ViewExamItemResponseTurnsUseCase;
 import com.sep.vox.application.port.input.usecase.examitemresponse.ViewExamItemResponseUseCase;
 import com.sep.vox.application.port.input.usecase.examitemresponse.ViewExamSessionFollowupsUseCase;
+import com.sep.vox.application.port.input.usecase.examsession.FlagExamSessionUseCase;
+import com.sep.vox.application.port.input.usecase.examsession.ForceEndExamSessionUseCase;
+import com.sep.vox.application.port.input.usecase.examsession.ReviewFlaggedExamResultUseCase;
+import com.sep.vox.application.port.input.usecase.examsession.RetryGradingExamSessionUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.ViewExamSessionResultUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.ViewExamSessionUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.ViewMyExamResultsUseCase;
 import com.sep.vox.application.response.input.examitemresponse.ExamItemCriterionScoreResponse;
 import com.sep.vox.application.response.input.examitemresponse.ExamItemEvaluationDetailsResponse;
-import com.sep.vox.application.response.input.examitemresponse.ExamItemEvaluationTurnResponse;
 import com.sep.vox.application.response.input.examitemresponse.ExamItemResponseDetailsResponse;
 import com.sep.vox.application.response.input.examitemresponse.ExamItemResponseTurnResponse;
 import com.sep.vox.application.response.input.examitemresponse.ExamSessionFollowupResponse;
-import com.sep.vox.application.response.input.examsession.ExamCandidateResultItemResponse;
 import com.sep.vox.application.response.input.examsession.ExamCandidateResultResponse;
-import com.sep.vox.application.response.input.examsession.ExamCandidateResultSectionResponse;
 import com.sep.vox.application.response.input.examsession.ExamSessionResponse;
 import com.sep.vox.application.response.input.examsession.StudentExamResultSummaryResponse;
+import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 
 import tools.jackson.databind.JsonNode;
 
@@ -46,6 +55,11 @@ public class ExamSessionController {
     private final ViewExamItemResponseUseCase viewExamItemResponseUseCase;
     private final ViewExamItemResponseTurnsUseCase viewExamItemResponseTurnsUseCase;
     private final ViewExamItemResponseEvaluationUseCase viewExamItemResponseEvaluationUseCase;
+    private final FlagExamSessionUseCase flagExamSessionUseCase;
+    private final ForceEndExamSessionUseCase forceEndExamSessionUseCase;
+    private final UnblockExamCandidateUseCase unblockExamCandidateUseCase;
+    private final ReviewFlaggedExamResultUseCase reviewFlaggedExamResultUseCase;
+    private final RetryGradingExamSessionUseCase retryGradingExamSessionUseCase;
 
     public ExamSessionController(
             ViewExamSessionUseCase viewExamSessionUseCase,
@@ -54,7 +68,12 @@ public class ExamSessionController {
             ViewMyExamResultsUseCase viewMyExamResultsUseCase,
             ViewExamItemResponseUseCase viewExamItemResponseUseCase,
             ViewExamItemResponseTurnsUseCase viewExamItemResponseTurnsUseCase,
-            ViewExamItemResponseEvaluationUseCase viewExamItemResponseEvaluationUseCase) {
+            ViewExamItemResponseEvaluationUseCase viewExamItemResponseEvaluationUseCase,
+            FlagExamSessionUseCase flagExamSessionUseCase,
+            ForceEndExamSessionUseCase forceEndExamSessionUseCase,
+            UnblockExamCandidateUseCase unblockExamCandidateUseCase,
+            ReviewFlaggedExamResultUseCase reviewFlaggedExamResultUseCase,
+            RetryGradingExamSessionUseCase retryGradingExamSessionUseCase) {
         this.viewExamSessionUseCase = viewExamSessionUseCase;
         this.viewExamSessionResultUseCase = viewExamSessionResultUseCase;
         this.viewExamSessionFollowupsUseCase = viewExamSessionFollowupsUseCase;
@@ -62,6 +81,11 @@ public class ExamSessionController {
         this.viewExamItemResponseUseCase = viewExamItemResponseUseCase;
         this.viewExamItemResponseTurnsUseCase = viewExamItemResponseTurnsUseCase;
         this.viewExamItemResponseEvaluationUseCase = viewExamItemResponseEvaluationUseCase;
+        this.flagExamSessionUseCase = flagExamSessionUseCase;
+        this.forceEndExamSessionUseCase = forceEndExamSessionUseCase;
+        this.unblockExamCandidateUseCase = unblockExamCandidateUseCase;
+        this.reviewFlaggedExamResultUseCase = reviewFlaggedExamResultUseCase;
+        this.retryGradingExamSessionUseCase = retryGradingExamSessionUseCase;
     }
 
     @QueryMapping
@@ -113,6 +137,44 @@ public class ExamSessionController {
         } catch (NotFoundException ex) {
             return null;
         }
+    }
+
+    @MutationMapping
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
+    public UUID flagExamSession(
+            @Argument(name = "sessionId") UUID sessionId,
+            @Argument(name = "reason") String reason) {
+        return flagExamSessionUseCase.execute(new FlagExamSessionCommand(sessionId, reason));
+    }
+
+    @MutationMapping
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
+    public UUID forceEndExamSession(
+            @Argument(name = "sessionId") UUID sessionId,
+            @Argument(name = "reason") String reason) {
+        return forceEndExamSessionUseCase.execute(new ForceEndExamSessionCommand(sessionId, reason));
+    }
+
+    @MutationMapping
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
+    public UUID unblockExamCandidate(
+            @Argument(name = "candidateId") UUID candidateId,
+            @Argument(name = "reason") String reason) {
+        return unblockExamCandidateUseCase.execute(new UnblockExamCandidateCommand(candidateId, reason)).id();
+    }
+
+    @MutationMapping
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
+    public UUID reviewFlaggedExamResult(
+            @Argument(name = "candidateResultId") UUID candidateResultId,
+            @Argument(name = "decision") ExamCandidateResultStatus decision) {
+        return reviewFlaggedExamResultUseCase.execute(new ReviewFlaggedExamResultCommand(candidateResultId, decision));
+    }
+
+    @MutationMapping
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
+    public UUID retryGradingExamSession(@Argument(name = "sessionId") UUID sessionId) {
+        return retryGradingExamSessionUseCase.execute(new RetryGradingExamSessionCommand(sessionId));
     }
 
     private ExamItemEvaluationDetailsGraphQlResponse toGraphQlResponse(ExamItemEvaluationDetailsResponse response) {

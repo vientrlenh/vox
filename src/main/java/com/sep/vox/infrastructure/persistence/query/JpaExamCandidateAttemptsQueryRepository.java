@@ -32,6 +32,8 @@ public class JpaExamCandidateAttemptsQueryRepository implements ExamCandidateAtt
                 s.startedAt,
                 s.submittedAt,
                 s.status,
+                s.flagged,
+                s.flagReason,
                 r.totalScore,
                 r.rubricResultBandId,
                 b.code,

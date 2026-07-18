@@ -1,5 +1,6 @@
 package com.sep.vox.application.response.input.exam;
 
+import java.util.List;
 import java.util.UUID;
 
 public record StudentExamSummaryResponse(
@@ -12,7 +13,7 @@ public record StudentExamSummaryResponse(
     String status,
     String kind,
     boolean requiresOtp,
-    UUID sessionId,
+    List<StudentExamSessionSummaryResponse> sessions,
     Integer maxAttempt,
     int attemptsUsed,
     boolean canEnter,

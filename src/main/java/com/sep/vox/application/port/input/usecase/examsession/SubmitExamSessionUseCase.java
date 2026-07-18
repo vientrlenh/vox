@@ -92,7 +92,9 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
     public Void execute(SubmitExamSessionCommand input) {
         var session = examSessionRepository.findById(input.sessionId())
             .orElseThrow(() -> new NotFoundException("Không thể tìm thấy phiên thi"));
-        if (session.getStatus() != ExamSessionStatus.SUBMITTED && session.getStatus() != ExamSessionStatus.EXPIRED) {
+        if (session.getStatus() != ExamSessionStatus.SUBMITTED
+                && session.getStatus() != ExamSessionStatus.EXPIRED
+                && session.getStatus() != ExamSessionStatus.GRADING_FAILED) {
             throw new IllegalStateException("chỉ được gửi chấm khi phiên thi đã nộp hoặc hết giờ");
         }
 

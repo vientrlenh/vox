@@ -6,13 +6,17 @@ import java.util.concurrent.CompletableFuture;
 
 import org.dataloader.DataLoader;
 import org.springframework.graphql.data.method.annotation.Argument;
+import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.graphql.data.method.annotation.SchemaMapping;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 
 import graphql.schema.DataFetchingEnvironment;
 
+import com.sep.vox.application.port.input.command.UpdateExamCandidateStatusCommand;
 import com.sep.vox.application.port.input.query.ViewExamCandidatesQuery;
+import com.sep.vox.application.port.input.usecase.examcandidate.UpdateExamCandidateStatusUseCase;
 import com.sep.vox.application.port.input.usecase.examcandidate.ViewExamCandidatesUseCase;
 import com.sep.vox.application.query.dto.ExamAttemptSummary;
 import com.sep.vox.application.query.dto.ExamCandidateAttempts;
@@ -27,9 +31,13 @@ import com.sep.vox.domain.model.exam.ExamCandidateStatus;
 public class ExamCandidateController {
 
     private final ViewExamCandidatesUseCase viewExamCandidatesUseCase;
+    private final UpdateExamCandidateStatusUseCase updateExamCandidateStatusUseCase;
 
-    public ExamCandidateController(ViewExamCandidatesUseCase viewExamCandidatesUseCase) {
+    public ExamCandidateController(
+            ViewExamCandidatesUseCase viewExamCandidatesUseCase,
+            UpdateExamCandidateStatusUseCase updateExamCandidateStatusUseCase) {
         this.viewExamCandidatesUseCase = viewExamCandidatesUseCase;
+        this.updateExamCandidateStatusUseCase = updateExamCandidateStatusUseCase;
     }
 
     @QueryMapping(name = "examCandidates")
@@ -38,6 +46,14 @@ public class ExamCandidateController {
             @Argument(name = "scheduleId") UUID scheduleId,
             @Argument(name = "status") ExamCandidateStatus status) {
         return viewExamCandidatesUseCase.execute(new ViewExamCandidatesQuery(examId, scheduleId, status));
+    }
+
+    @MutationMapping
+    @PreAuthorize("hasRole('TEACHER')")
+    public UUID updateExamCandidateStatus(
+            @Argument(name = "candidateId") UUID candidateId,
+            @Argument(name = "status") ExamCandidateStatus status) {
+        return updateExamCandidateStatusUseCase.execute(new UpdateExamCandidateStatusCommand(candidateId, status)).id();
     }
 
     @SchemaMapping(typeName = "ExamCandidate", field = "student")

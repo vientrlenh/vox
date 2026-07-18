@@ -9,6 +9,9 @@ public record ExamSessionResponse(
     UUID paperId,
     String startedAt,
     String submittedAt,
-    String status
+    String status,
+    boolean flagged,
+    String flagReason,
+    boolean candidateBlocked
 ) {
 }

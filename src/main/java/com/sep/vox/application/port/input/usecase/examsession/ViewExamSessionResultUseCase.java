@@ -8,9 +8,12 @@ import com.sep.vox.application.port.input.query.ViewExamSessionResultQuery;
 import com.sep.vox.application.port.input.service.ExamResultAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.usecase.examevaluation.ExamSessionResultCalculator;
+import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.examsession.ExamCandidateResultItemResponse;
 import com.sep.vox.application.response.input.examsession.ExamCandidateResultResponse;
 import com.sep.vox.application.response.input.examsession.ExamCandidateResultSectionResponse;
+import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
+import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.FrameworkResultBandRepository;
 import com.sep.vox.domain.repository.RubricResultBandRepository;
@@ -23,18 +26,24 @@ public class ViewExamSessionResultUseCase implements IUseCase<ViewExamSessionRes
     private final FrameworkResultBandRepository frameworkResultBandRepository;
     private final RubricResultBandRepository rubricResultBandRepository;
     private final ExamResultAccessService examResultAccessService;
+    private final UserContextPort userContextPort;
+    private final ExamCandidateRepository examCandidateRepository;
 
     public ViewExamSessionResultUseCase(
             ExamCandidateResultRepository examCandidateResultRepository,
             ExamSessionResultCalculator examSessionResultCalculator,
             FrameworkResultBandRepository frameworkResultBandRepository,
             RubricResultBandRepository rubricResultBandRepository,
-            ExamResultAccessService examResultAccessService) {
+            ExamResultAccessService examResultAccessService,
+            UserContextPort userContextPort,
+            ExamCandidateRepository examCandidateRepository) {
         this.examCandidateResultRepository = examCandidateResultRepository;
         this.examSessionResultCalculator = examSessionResultCalculator;
         this.frameworkResultBandRepository = frameworkResultBandRepository;
         this.rubricResultBandRepository = rubricResultBandRepository;
         this.examResultAccessService = examResultAccessService;
+        this.userContextPort = userContextPort;
+        this.examCandidateRepository = examCandidateRepository;
     }
 
     @Override
@@ -50,6 +59,7 @@ public class ViewExamSessionResultUseCase implements IUseCase<ViewExamSessionRes
         var rubricBand = result.getRubricResultBandId() == null
             ? null
             : rubricResultBandRepository.findById(result.getRubricResultBandId()).orElse(null);
+        var scoreVisible = isScoreVisibleToCurrentUser(session, result.getStatus());
 
         return new ExamCandidateResultResponse(
             result.getId(),
@@ -57,18 +67,21 @@ public class ViewExamSessionResultUseCase implements IUseCase<ViewExamSessionRes
             result.getExamId(),
             calculated.paperId(),
             result.getCandidateId(),
-            result.getTotalScore(),
-            result.getTargetFrameworkBandId(),
-            targetBand == null ? null : targetBand.getCode(),
-            targetBand == null ? null : targetBand.getLabel(),
-            result.getRubricResultBandId(),
-            rubricBand == null ? null : rubricBand.getCode(),
-            rubricBand == null ? null : rubricBand.getName(),
+            session.isFlagged(),
+            session.getFlagReason(),
+            scoreVisible,
+            scoreVisible ? result.getTotalScore() : null,
+            scoreVisible ? result.getTargetFrameworkBandId() : null,
+            scoreVisible && targetBand != null ? targetBand.getCode() : null,
+            scoreVisible && targetBand != null ? targetBand.getLabel() : null,
+            scoreVisible ? result.getRubricResultBandId() : null,
+            scoreVisible && rubricBand != null ? rubricBand.getCode() : null,
+            scoreVisible && rubricBand != null ? rubricBand.getName() : null,
             result.getStatus().name(),
-            calculated.sections().stream()
+            scoreVisible ? calculated.sections().stream()
                 .map(section -> new ExamCandidateResultSectionResponse(section.sectionId(), section.title(), section.score()))
-                .toList(),
-            calculated.items().stream()
+                .toList() : java.util.List.of(),
+            scoreVisible ? calculated.items().stream()
                 .map(item -> new ExamCandidateResultItemResponse(
                     item.paperItemId(),
                     item.responseId(),
@@ -76,7 +89,21 @@ public class ViewExamSessionResultUseCase implements IUseCase<ViewExamSessionRes
                     item.itemScore(),
                     item.weightedScore()
                 ))
-                .toList()
+                .toList() : java.util.List.of()
         );
+    }
+
+    private boolean isScoreVisibleToCurrentUser(com.sep.vox.domain.model.exam.ExamSession session, ExamCandidateResultStatus status) {
+        if (!session.isFlagged()) {
+            return true;
+        }
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        var isStudentOwner = examCandidateRepository.findById(session.getCandidateId())
+            .map(candidate -> candidate.getStudentId().equals(currentUserId))
+            .orElse(false);
+        if (!isStudentOwner) {
+            return true;
+        }
+        return status == ExamCandidateResultStatus.FINAL || status == ExamCandidateResultStatus.RELEASED;
     }
 }

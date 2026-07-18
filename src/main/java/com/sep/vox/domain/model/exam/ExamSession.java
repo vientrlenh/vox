@@ -10,12 +10,14 @@ public class ExamSession {
     private UUID paperId;
     private OffsetDateTime startedAt;
     private OffsetDateTime submittedAt;
-    private ExamSessionStatus status; 
+    private ExamSessionStatus status;
+    private boolean flagged;
+    private String flagReason;
 
     public ExamSession() {}
 
     public ExamSession(UUID id, UUID examId, UUID candidateId, UUID paperId, OffsetDateTime startedAt,
-            OffsetDateTime submittedAt, ExamSessionStatus status) {
+            OffsetDateTime submittedAt, ExamSessionStatus status, boolean flagged, String flagReason) {
         this.id = id;
         this.examId = examId;
         this.candidateId = candidateId;
@@ -23,16 +25,20 @@ public class ExamSession {
         this.startedAt = startedAt;
         this.submittedAt = submittedAt;
         this.status = status;
+        this.flagged = flagged;
+        this.flagReason = flagReason;
     }
 
     public ExamSession(UUID examId, UUID candidateId, UUID paperId, OffsetDateTime startedAt,
-            OffsetDateTime submittedAt, ExamSessionStatus status) {
+            OffsetDateTime submittedAt, ExamSessionStatus status, boolean flagged, String flagReason) {
         this.examId = examId;
         this.candidateId = candidateId;
         this.paperId = paperId;
         this.startedAt = startedAt;
         this.submittedAt = submittedAt;
         this.status = status;
+        this.flagged = flagged;
+        this.flagReason = flagReason;
     }
 
     public UUID getId() {
@@ -91,5 +97,19 @@ public class ExamSession {
         this.status = status;
     }
 
-    
+    public boolean isFlagged() {
+        return flagged;
+    }
+
+    public void setFlagged(boolean flagged) {
+        this.flagged = flagged;
+    }
+
+    public String getFlagReason() {
+        return flagReason;
+    }
+
+    public void setFlagReason(String flagReason) {
+        this.flagReason = flagReason;
+    }
 }

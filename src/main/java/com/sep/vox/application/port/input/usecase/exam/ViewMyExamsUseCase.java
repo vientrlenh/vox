@@ -4,12 +4,18 @@ import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.input.usecase.IUseCase;
+import com.sep.vox.application.query.dto.ExamAttemptSummary;
+import com.sep.vox.application.query.repository.ExamCandidateAttemptsQueryRepository;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.response.input.exam.StudentExamSessionSummaryResponse;
 import com.sep.vox.application.response.input.exam.StudentExamSummaryResponse;
+import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamKind;
@@ -27,6 +33,7 @@ public class ViewMyExamsUseCase implements IUseCase<Void, List<StudentExamSummar
     private final ExamRepository examRepository;
     private final ExamScheduleRepository examScheduleRepository;
     private final ExamSessionRepository examSessionRepository;
+    private final ExamCandidateAttemptsQueryRepository examCandidateAttemptsQueryRepository;
     private final UserContextPort userContextPort;
 
     public ViewMyExamsUseCase(
@@ -34,11 +41,13 @@ public class ViewMyExamsUseCase implements IUseCase<Void, List<StudentExamSummar
             ExamRepository examRepository,
             ExamScheduleRepository examScheduleRepository,
             ExamSessionRepository examSessionRepository,
+            ExamCandidateAttemptsQueryRepository examCandidateAttemptsQueryRepository,
             UserContextPort userContextPort) {
         this.examCandidateRepository = examCandidateRepository;
         this.examRepository = examRepository;
         this.examScheduleRepository = examScheduleRepository;
         this.examSessionRepository = examSessionRepository;
+        this.examCandidateAttemptsQueryRepository = examCandidateAttemptsQueryRepository;
         this.userContextPort = userContextPort;
     }
 
@@ -47,6 +56,7 @@ public class ViewMyExamsUseCase implements IUseCase<Void, List<StudentExamSummar
         var now = OffsetDateTime.now();
         var studentId = userContextPort.getCurrentAuthenticatedUserId();
         var candidates = examCandidateRepository.findByStudentId(studentId);
+        var attemptsByCandidateId = groupAttemptsByCandidateId(candidates);
         var examsById = new HashMap<>(examRepository.findByIdIn(candidates.stream()
             .map(candidate -> candidate.getExamId())
             .distinct()
@@ -63,12 +73,10 @@ public class ViewMyExamsUseCase implements IUseCase<Void, List<StudentExamSummar
                     return null;
                 }
 
-                var attemptsUsed = examSessionRepository.findAllByCandidateId(candidate.getId()).size();
+                var attempts = attemptsByCandidateId.getOrDefault(candidate.getId(), List.of());
+                var attemptsUsed = countAttemptsTowardLimit(attempts);
                 var entryAvailability = resolveEntryAvailability(exam, candidate, schedule, now, attemptsUsed);
-                var latestSessionId = examSessionRepository
-                    .findLatestByExamIdAndCandidateId(candidate.getExamId(), candidate.getId())
-                    .map(session -> session.getId())
-                    .orElse(null);
+                var sessions = toSessionSummaries(attempts);
 
                 return new StudentExamSummaryResponse(
                     exam.getId(),
@@ -80,7 +88,7 @@ public class ViewMyExamsUseCase implements IUseCase<Void, List<StudentExamSummar
                     StudentExamViewSupport.statusOf(exam, schedule, now),
                     exam.getKind() == null ? null : exam.getKind().name(),
                     exam.isRequiresOtp(),
-                    latestSessionId,
+                    sessions,
                     exam.getMaxAttempt(),
                     attemptsUsed,
                     entryAvailability.canEnter(),
@@ -90,6 +98,44 @@ public class ViewMyExamsUseCase implements IUseCase<Void, List<StudentExamSummar
             .filter(java.util.Objects::nonNull)
             .sorted(Comparator.comparing(StudentExamSummaryResponse::examDate, Comparator.nullsLast(String::compareTo)))
             .toList();
+    }
+
+    private Map<java.util.UUID, List<ExamAttemptSummary>> groupAttemptsByCandidateId(List<ExamCandidate> candidates) {
+        var candidateIds = candidates.stream()
+            .map(ExamCandidate::getId)
+            .filter(Objects::nonNull)
+            .toList();
+
+        return examCandidateAttemptsQueryRepository.findByCandidateIds(candidateIds).stream()
+            .collect(java.util.stream.Collectors.groupingBy(ExamAttemptSummary::candidateId));
+    }
+
+    private int countAttemptsTowardLimit(List<ExamAttemptSummary> attempts) {
+        return (int) attempts.stream()
+            .filter(this::countsTowardAttemptLimit)
+            .count();
+    }
+
+    private boolean countsTowardAttemptLimit(ExamAttemptSummary attempt) {
+        return attempt.resultStatus() != ExamCandidateResultStatus.RETAKE_REQUIRED;
+    }
+
+    private List<StudentExamSessionSummaryResponse> toSessionSummaries(List<ExamAttemptSummary> attempts) {
+        var orderedAttempts = attempts.stream()
+            .sorted(Comparator.comparing(ExamAttemptSummary::startedAt, Comparator.nullsLast(Comparator.naturalOrder())))
+            .toList();
+
+        var out = new java.util.ArrayList<StudentExamSessionSummaryResponse>(orderedAttempts.size());
+        for (int index = 0; index < orderedAttempts.size(); index++) {
+            var attempt = orderedAttempts.get(index);
+            out.add(new StudentExamSessionSummaryResponse(
+                attempt.sessionId(),
+                index + 1,
+                attempt.status().name(),
+                attempt.flagged()
+            ));
+        }
+        return out;
     }
 
     private EntryAvailability resolveEntryAvailability(

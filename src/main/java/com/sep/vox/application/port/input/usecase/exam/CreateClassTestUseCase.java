@@ -513,6 +513,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
                 ExamCandidateStatus.ASSIGNED,
                 now,
                 now,
+                null,
                 currentUserId,
                 currentUserId
             ));

@@ -8,6 +8,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.exam.ExamSession;
+import com.sep.vox.domain.model.exam.ExamSessionStatus;
 import com.sep.vox.domain.repository.ExamSessionRepository;
 import com.sep.vox.infrastructure.persistence.mapper.ExamSessionMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataExamSessionRepository;
@@ -40,6 +41,16 @@ public class ExamSessionRepositoryImpl implements ExamSessionRepository {
     }
 
     @Override
+    public Optional<ExamSession> findLatestByCandidateIdAndStatuses(UUID candidateId, Collection<ExamSessionStatus> statuses) {
+        if (statuses == null || statuses.isEmpty()) {
+            return Optional.empty();
+        }
+        var rawStatuses = statuses.stream().map(Enum::name).toList();
+        return springDataExamSessionRepository.findTopByCandidateIdAndStatusInOrderByStartedAtDesc(candidateId, rawStatuses)
+            .map(ExamSessionMapper::toDomain);
+    }
+
+    @Override
     public List<ExamSession> findAllByCandidateId(UUID candidateId) {
         return springDataExamSessionRepository.findByCandidateId(candidateId).stream()
             .map(ExamSessionMapper::toDomain)
@@ -49,6 +60,13 @@ public class ExamSessionRepositoryImpl implements ExamSessionRepository {
     @Override
     public List<ExamSession> findAllByCandidateIdIn(Collection<UUID> candidateIds) {
         return springDataExamSessionRepository.findByCandidateIdIn(candidateIds).stream()
+            .map(ExamSessionMapper::toDomain)
+            .toList();
+    }
+
+    @Override
+    public List<ExamSession> findDeferredGradingCandidates(java.time.OffsetDateTime now) {
+        return springDataExamSessionRepository.findDeferredGradingCandidates(now).stream()
             .map(ExamSessionMapper::toDomain)
             .toList();
     }

@@ -10,6 +10,7 @@ public record ExamCandidateDto(
     UUID scheduleId,
     String status,
     String assignedAt,
-    String updatedAt
+    String updatedAt,
+    String blockedAt
 ) {
 }

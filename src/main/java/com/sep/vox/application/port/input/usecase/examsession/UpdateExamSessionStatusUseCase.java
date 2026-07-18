@@ -38,7 +38,7 @@ public class UpdateExamSessionStatusUseCase implements IUseCase<UpdateExamSessio
         }
 
         examSessionRepository.save(session);
-        if (input.status() == ExamSessionStatus.SUBMITTED || input.status() == ExamSessionStatus.EXPIRED) {
+        if (input.status() == ExamSessionStatus.SUBMITTED && !session.isFlagged()) {
             submitExamSessionUseCase.execute(new SubmitExamSessionCommand(session.getId()));
         }
 
@@ -62,7 +62,10 @@ public class UpdateExamSessionStatusUseCase implements IUseCase<UpdateExamSessio
 
     private boolean isAllowedTransition(ExamSessionStatus from, ExamSessionStatus to) {
         return switch (from) {
-            case IN_PROGRESS -> to == ExamSessionStatus.SUBMITTED || to == ExamSessionStatus.EXPIRED;
+            case IN_PROGRESS -> to == ExamSessionStatus.SUBMITTED
+                || to == ExamSessionStatus.INTERRUPTED
+                || to == ExamSessionStatus.EXPIRED;
+            case INTERRUPTED -> to == ExamSessionStatus.IN_PROGRESS || to == ExamSessionStatus.EXPIRED;
             case SUBMITTED -> to == ExamSessionStatus.GRADING;
             case EXPIRED -> to == ExamSessionStatus.GRADING;
             case GRADING -> to == ExamSessionStatus.GRADED || to == ExamSessionStatus.GRADING_FAILED;

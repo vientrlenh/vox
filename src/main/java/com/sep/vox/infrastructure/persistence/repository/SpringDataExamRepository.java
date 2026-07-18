@@ -44,6 +44,19 @@ public interface SpringDataExamRepository extends JpaRepository<ExamJpaEntity, U
                     WHERE em.examId = e.id
                       AND em.userId = :currentUserId
                 )
+                OR EXISTS (
+                    SELECT 1
+                    FROM ExamCandidateJpaEntity ec
+                    WHERE ec.examId = e.id
+                      AND ec.studentId = :currentUserId
+                )
+                OR EXISTS (
+                    SELECT 1
+                    FROM ExamScheduleJpaEntity es
+                    JOIN ExamScheduleProctorJpaEntity esp ON esp.scheduleId = es.id
+                    WHERE es.examId = e.id
+                      AND esp.teacherId = :currentUserId
+                )
               )
         ORDER BY e.updatedAt DESC
     """)

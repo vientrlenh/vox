@@ -16,6 +16,7 @@ final class JsonValueObjectMapper {
     }
 
     static <T> T fromJson(String json, Class<T> type) {
+        if (json == null) return null;
         try {
             return JSON_MAPPER.readValue(json, type);
         } catch (Exception e) {
@@ -24,6 +25,7 @@ final class JsonValueObjectMapper {
     }
 
     static <T> T fromJson(String json, TypeReference<T> typeRef) {
+        if (json == null) return null;
         try {
             return JSON_MAPPER.readValue(json, typeRef);
         } catch (Exception e) {

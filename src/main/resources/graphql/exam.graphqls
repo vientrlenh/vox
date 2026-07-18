@@ -75,6 +75,15 @@ enum ExamSecurePoolReleaseMode {
     AUTO_AFTER_CLOSE
 }
 
+enum ExamSessionStatus {
+    IN_PROGRESS
+    SUBMITTED
+    GRADING
+    GRADED
+    EXPIRED
+    GRADING_FAILED
+}
+
 type QuestionSelectionSpec {
     questionType: QuestionType
     difficulty: QuestionDifficulty
@@ -290,6 +299,16 @@ type ExamSchedule {
     requiredProctorCount: Int!
 }
 
+type ExamSession {
+    id: ID!
+    examId: ID!
+    candidateId: ID!
+    paperId: ID
+    startedAt: String
+    submittedAt: String
+    status: ExamSessionStatus!
+}
+
 type ExamCandidate {
     id: ID!
     examId: ID!
@@ -303,12 +322,50 @@ type ExamCandidate {
     assignedPaper: ExamPaper
     schedule: ExamSchedule
     exam: Exam
+    sessions: [ExamSession!]!
 }
 
 input UpdateExamScheduleInput {
     schoolRoomId: ID
     startDate: String
     endDate: String
+}
+
+type ExamCandidateResult {
+    id: ID!
+    exam: Exam
+    totalScore: Float
+    status: ExamCandidateResultStatus!
+    releasedAt: String
+    finalizedAt: String
+    createdAt: String!
+}
+
+type ExamCandidateResultPage {
+    content: [ExamCandidateResult!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+enum ExamCandidateResultStatus {
+    PENDING_REVIEW
+    RELEASED
+    APPEALED
+    RE_GRADING
+    FINAL
+    INVALID
+    RETAKE_REQUIRED
+}
+
+type ExamRecording {
+    id: ID!
+    exam: Exam
+    audioUrl: String!
+    durationSeconds: Int
+    transcript: String
+    submittedAt: String!
 }
 
 extend type Query {
@@ -352,6 +409,10 @@ extend type Query {
     examSchedules(examId: ID, status: ExamScheduleStatus, startDate: String, endDate: String): [ExamSchedule!]!
 
     examCandidates(examId: ID!, scheduleId: ID, status: ExamCandidateStatus): [ExamCandidate!]!
+
+    myExamResults(page: Int = 0, size: Int = 20): ExamCandidateResultPage!
+
+    myRecordings: [ExamRecording!]!
 }
 
 extend type Mutation {

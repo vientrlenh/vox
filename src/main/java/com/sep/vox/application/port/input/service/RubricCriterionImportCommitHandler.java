@@ -15,14 +15,14 @@ import com.sep.vox.domain.repository.*;
 import com.sep.vox.domain.valueobject.rubric.RubricCriterionExample;
 import com.sep.vox.domain.valueobject.rubric.RubricCriterionExamples;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Component
+@Service
 public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
 
     private final RubricCriterionRepository rubricCriterionRepository;

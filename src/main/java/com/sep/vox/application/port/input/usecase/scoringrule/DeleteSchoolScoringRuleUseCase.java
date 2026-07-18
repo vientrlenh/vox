@@ -5,7 +5,6 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.ScoringRuleDeletionGuard;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
@@ -13,8 +12,11 @@ import com.sep.vox.application.port.input.command.DeleteSchoolScoringRuleCommand
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
+import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStatus;
 import com.sep.vox.domain.model.scoringrule.ScoringRule;
 import com.sep.vox.domain.model.user.UserStatus;
+import com.sep.vox.domain.repository.AssessmentPolicyRepository;
+import com.sep.vox.domain.repository.ScoringRuleRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
@@ -22,19 +24,22 @@ import com.sep.vox.domain.repository.UserRepository;
 @Service
 public class DeleteSchoolScoringRuleUseCase implements IUseCase<DeleteSchoolScoringRuleCommand, Void> {
 
-    private final ScoringRuleDeletionGuard scoringRuleDeletionGuard;
+    private final ScoringRuleRepository scoringRuleRepository;
+    private final AssessmentPolicyRepository assessmentPolicyRepository;
     private final SchoolRepository schoolRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
 
     public DeleteSchoolScoringRuleUseCase(
-            ScoringRuleDeletionGuard scoringRuleDeletionGuard,
+            ScoringRuleRepository scoringRuleRepository,
+            AssessmentPolicyRepository assessmentPolicyRepository,
             SchoolRepository schoolRepository,
             SchoolUserRepository schoolUserRepository,
             UserRepository userRepository,
             UserContextPort userContextPort) {
-        this.scoringRuleDeletionGuard = scoringRuleDeletionGuard;
+        this.scoringRuleRepository = scoringRuleRepository;
+        this.assessmentPolicyRepository = assessmentPolicyRepository;
         this.schoolRepository = schoolRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.userRepository = userRepository;
@@ -66,18 +71,40 @@ public class DeleteSchoolScoringRuleUseCase implements IUseCase<DeleteSchoolScor
         }
 
         // 3-4. Kiểm tra Scoring Rule tồn tại và policyId trên path khớp với policy thật sự của rule
-        ScoringRule rule = scoringRuleDeletionGuard.requireRuleForPolicy(command.ruleId(), command.policyId());
+        ScoringRule rule = requireRuleForPolicy(command.ruleId(), command.policyId());
 
         // 5. Kiểm tra Assessment Policy tồn tại và thuộc đúng trường học
-        AssessmentPolicy policy = scoringRuleDeletionGuard.requirePolicy(rule.getPolicyId());
+        AssessmentPolicy policy = requirePolicy(rule.getPolicyId());
         if (policy.getSchoolId() == null || !policy.getSchoolId().equals(command.schoolId())) {
             throw new ForbiddenException("BẢO MẬT: Bạn không có quyền can thiệp vào Assessment Policy của trường khác.");
         }
 
         // 6. Chỉ được xóa Scoring Rule khi Policy còn DRAFT
-        scoringRuleDeletionGuard.requireDraftStatus(policy);
+        requireDraftStatus(policy);
 
-        scoringRuleDeletionGuard.delete(rule);
+        scoringRuleRepository.deleteById(rule.getId());
         return null;
+    }
+
+    private ScoringRule requireRuleForPolicy(UUID ruleId, UUID policyId) {
+        ScoringRule rule = scoringRuleRepository.findById(ruleId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy Scoring Rule."));
+        if (!rule.getPolicyId().equals(policyId)) {
+            throw new ForbiddenException("BẢO MẬT: Scoring Rule này không thuộc Assessment Policy đã chỉ định.");
+        }
+        return rule;
+    }
+
+    private AssessmentPolicy requirePolicy(UUID policyId) {
+        return assessmentPolicyRepository.findById(policyId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy Assessment Policy."));
+    }
+
+    // Chỉ được xóa Scoring Rule khi Policy còn DRAFT (tránh xóa ngầm luật chấm điểm
+    // của 1 Policy đã PUBLISHED đang chấm bài thi thật). Gọi sau khi đã kiểm tra quyền sở hữu/phạm vi.
+    private void requireDraftStatus(AssessmentPolicy policy) {
+        if (policy.getStatus() != AssessmentPolicyStatus.DRAFT) {
+            throw new IllegalStateException("Chỉ được xóa Scoring Rule khi Assessment Policy đang ở trạng thái DRAFT.");
+        }
     }
 }

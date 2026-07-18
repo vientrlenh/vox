@@ -17,13 +17,14 @@ import com.sep.vox.domain.model.rubric.RubricOwnerType;
 import com.sep.vox.domain.model.rubric.RubricStatus;
 import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.repository.*;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
-@Component
+@Service
 public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler {
 
     private final AssessmentPolicyRepository assessmentPolicyRepository;
@@ -103,6 +104,27 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
         Set<ScopeKey> scopesClaimedInFile = new HashSet<>();
         Map<VersionScopeKey, Integer> nextVersionByScope = new HashMap<>();
 
+        // Prefetch DUY NHẤT 1 lần toàn bộ Assessment Policy (mọi trạng thái) trong phạm vi schoolId này
+        // (schoolId cố định suốt 1 lượt commit), rồi tự tính trong memory ở dưới thay vì gọi
+        // existsActiveForScope/findMaxVersionForScope riêng lẻ cho từng dòng/từng scope trong file Excel
+        // (N dòng hoặc N scope khác nhau = N query round-trip tới DB nếu không prefetch).
+        List<AssessmentPolicy> existingPolicies = assessmentPolicyRepository.findAllForOwner(schoolId);
+
+        // Scope đang DRAFT/PUBLISHED -> dùng để chặn tạo trùng scope
+        Set<ScopeKey> existingActiveScopes = existingPolicies.stream()
+                .filter(p -> p.getStatus() == AssessmentPolicyStatus.DRAFT || p.getStatus() == AssessmentPolicyStatus.PUBLISHED)
+                .map(p -> new ScopeKey(p.getSchoolId(), p.getLanguageId(), p.getFrameworkVersionId(),
+                        p.getSchoolGradeLevelId(), p.getSchoolGradeId(), p.getSchoolClassId(), p.getRubricVersionId()))
+                .collect(Collectors.toSet());
+
+        // Version lớn nhất đã từng tồn tại theo từng scope (kể cả ARCHIVED) -> dùng để phát version kế tiếp,
+        // đúng ý nghĩa gốc của AssessmentPolicyRepository#findMaxVersionForScope nhưng tính 1 lần trong memory.
+        Map<VersionScopeKey, Integer> maxVersionByScope = existingPolicies.stream()
+                .collect(Collectors.groupingBy(
+                        p -> new VersionScopeKey(p.getSchoolId(), p.getLanguageId(), p.getFrameworkVersionId(),
+                                p.getSchoolGradeLevelId(), p.getSchoolGradeId(), p.getSchoolClassId()),
+                        Collectors.reducing(0, AssessmentPolicy::getVersion, Integer::max)));
+
         // Cache theo input thô (đã trim) -> kết quả tra cứu, tránh query lặp lại khi nhiều dòng
         // trong file dùng chung 1 ngôn ngữ/khung/rubric/phạm vi/band (rất phổ biến trong thực tế).
         Map<String, Optional<UUID>> languageCache = new HashMap<>();
@@ -161,8 +183,7 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
                             scopeIds.schoolGradeLevelId(), scopeIds.schoolGradeId(), scopeIds.schoolClassId(), rubricVersionId);
                     if (!scopesClaimedInFile.add(scopeKey)) {
                         errors.add(error("scope", "Bị trùng phạm vi áp dụng ngay trong file Excel."));
-                    } else if (assessmentPolicyRepository.existsActiveForScope(schoolId, languageId, frameworkVersionId,
-                            scopeIds.schoolGradeLevelId(), scopeIds.schoolGradeId(), scopeIds.schoolClassId(), rubricVersionId)) {
+                    } else if (existingActiveScopes.contains(scopeKey)) {
                         errors.add(error("scope", "Đã tồn tại một Quy chế (DRAFT/PUBLISHED) khác cho cùng phạm vi này. Vui lòng lưu trữ (ARCHIVE) bản cũ."));
                     }
                 }
@@ -177,9 +198,7 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
                 VersionScopeKey versionScopeKey = new VersionScopeKey(schoolId, languageId, frameworkVersionId,
                         scopeIds.schoolGradeLevelId(), scopeIds.schoolGradeId(), scopeIds.schoolClassId());
                 int nextVersion = nextVersionByScope.computeIfAbsent(versionScopeKey, key ->
-                        assessmentPolicyRepository.findMaxVersionForScope(
-                                key.schoolId(), key.languageId(), key.frameworkVersionId(),
-                                key.schoolGradeLevelId(), key.schoolGradeId(), key.schoolClassId()) + 1);
+                        maxVersionByScope.getOrDefault(key, 0) + 1);
                 nextVersionByScope.put(versionScopeKey, nextVersion + 1);
 
                 AssessmentPolicy newPolicy = new AssessmentPolicy(

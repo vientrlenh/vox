@@ -161,6 +161,8 @@ app:
   frontend:
     password-setup-url: ${PASSWORD_SETUP_URL}
     oauth2-url: ${OAUTH2_URL}
+  firebase:
+    credentials-path: ${FIREBASE_CREDENTIALS_PATH:classpath:firebase-service-account.json}
   external-event:
     kafka:
       consumer-groups:

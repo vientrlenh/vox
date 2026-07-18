@@ -6,10 +6,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
+import com.sep.vox.application.event.ExamMemberAssignedEvent;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreateExamMemberCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
+import com.sep.vox.application.port.output.EventPublisherPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.ExamMemberDto;
@@ -29,18 +31,21 @@ public class CreateExamMemberUseCase implements IUseCase<CreateExamMemberCommand
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
+    private final EventPublisherPort eventPublisherPort;
 
     public CreateExamMemberUseCase(
             ExamRepository examRepository,
             ExamMemberRepository examMemberRepository,
             SchoolUserRepository schoolUserRepository,
             UserRoleQueryRepository userRoleQueryRepository,
-            UserContextPort userContextPort) {
+            UserContextPort userContextPort,
+            EventPublisherPort eventPublisherPort) {
         this.examRepository = examRepository;
         this.examMemberRepository = examMemberRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
         this.userContextPort = userContextPort;
+        this.eventPublisherPort = eventPublisherPort;
     }
 
     @Override
@@ -80,6 +85,8 @@ public class CreateExamMemberUseCase implements IUseCase<CreateExamMemberCommand
             OffsetDateTime.now(),
             currentUserId
         );
-        return ExamMemberDtoMapper.toDto(examMemberRepository.save(member));
+        var saved = examMemberRepository.save(member);
+        eventPublisherPort.publish(new ExamMemberAssignedEvent(exam.getId(), command.userId(), command.role()));
+        return ExamMemberDtoMapper.toDto(saved);
     }
 }

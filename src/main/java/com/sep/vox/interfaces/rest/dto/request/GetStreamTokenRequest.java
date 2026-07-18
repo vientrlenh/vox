@@ -8,7 +8,9 @@ import jakarta.validation.constraints.NotNull;
 
 public record GetStreamTokenRequest(
     @NotNull(message = "Id của danh sách phòng không được để trống")
-    List<UUID> roomIds, 
+    List<UUID> roomIds,
+
+    UUID examSessionId,
 
     @NotNull(message = "Id của kỳ thi không được để trống")
     UUID examId, 

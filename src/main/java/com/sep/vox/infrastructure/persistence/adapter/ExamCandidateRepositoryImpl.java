@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -104,6 +105,19 @@ public class ExamCandidateRepositoryImpl implements ExamCandidateRepository {
     @Override
     public boolean existsByExamIdAndScheduleIdIsNotNull(UUID examId) {
         return springDataExamCandidateRepository.existsByExamIdAndScheduleIdIsNotNull(examId);
+    }
+
+    @Override
+    public Optional<ExamCandidate> findByScheduleIdAndStudentId(UUID scheduleId, UUID studentId) {
+        return springDataExamCandidateRepository.findByScheduleIdAndStudentId(scheduleId, studentId).map(ExamCandidateMapper::toDomain);
+    }
+
+    @Override
+    public List<ExamCandidate> findActiveCandidates(UUID studentId, OffsetDateTime now) {
+        return springDataExamCandidateRepository.findActiveCandidate(studentId, now)
+            .stream()
+            .map(ExamCandidateMapper::toDomain)
+            .toList();
     }
 }
 

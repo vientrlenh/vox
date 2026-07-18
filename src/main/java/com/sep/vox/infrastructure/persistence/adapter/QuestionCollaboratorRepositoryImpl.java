@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -42,6 +43,16 @@ public class QuestionCollaboratorRepositoryImpl implements QuestionCollaboratorR
     @Override
     public List<QuestionCollaborator> findByQuestionId(UUID questionId) {
         return springDataQuestionCollaboratorRepository.findByQuestionId(questionId).stream()
+            .map(QuestionCollaboratorMapper::toDomain)
+            .toList();
+    }
+
+    @Override
+    public List<QuestionCollaborator> findByQuestionIdIn(Collection<UUID> questionIds) {
+        if (questionIds.isEmpty()) {
+            return List.of();
+        }
+        return springDataQuestionCollaboratorRepository.findByQuestionIdIn(questionIds).stream()
             .map(QuestionCollaboratorMapper::toDomain)
             .toList();
     }

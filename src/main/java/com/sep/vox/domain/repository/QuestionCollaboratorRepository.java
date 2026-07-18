@@ -1,5 +1,6 @@
 package com.sep.vox.domain.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -11,6 +12,7 @@ public interface QuestionCollaboratorRepository {
     Optional<QuestionCollaborator> findById(UUID id);
     Optional<QuestionCollaborator> findByQuestionIdAndUserId(UUID questionId, UUID userId);
     List<QuestionCollaborator> findByQuestionId(UUID questionId);
+    List<QuestionCollaborator> findByQuestionIdIn(Collection<UUID> questionIds);
     void deleteById(UUID id);
     void deleteByQuestionId(UUID questionId);
 }

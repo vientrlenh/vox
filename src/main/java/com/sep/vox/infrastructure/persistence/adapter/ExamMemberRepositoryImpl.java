@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -36,6 +37,16 @@ public class ExamMemberRepositoryImpl implements ExamMemberRepository {
     @Override
     public List<ExamMember> findByExamId(UUID examId) {
         return springDataExamMemberRepository.findByExamId(examId).stream()
+            .map(ExamMemberMapper::toDomain)
+            .toList();
+    }
+
+    @Override
+    public List<ExamMember> findByExamIdIn(Collection<UUID> examIds) {
+        if (examIds.isEmpty()) {
+            return List.of();
+        }
+        return springDataExamMemberRepository.findByExamIdIn(examIds).stream()
             .map(ExamMemberMapper::toDomain)
             .toList();
     }

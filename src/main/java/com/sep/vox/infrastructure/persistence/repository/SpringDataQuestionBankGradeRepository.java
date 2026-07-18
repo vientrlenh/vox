@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -9,6 +10,7 @@ import com.sep.vox.infrastructure.persistence.entity.QuestionBankGradeJpaEntity;
 
 public interface SpringDataQuestionBankGradeRepository extends JpaRepository<QuestionBankGradeJpaEntity, UUID> {
     List<QuestionBankGradeJpaEntity> findByQuestionBankId(UUID questionBankId);
+    List<QuestionBankGradeJpaEntity> findByQuestionBankIdIn(Collection<UUID> questionBankIds);
     boolean existsByQuestionBankIdAndSchoolGradeId(UUID questionBankId, UUID schoolGradeId);
     void deleteByQuestionBankId(UUID questionBankId);
 }

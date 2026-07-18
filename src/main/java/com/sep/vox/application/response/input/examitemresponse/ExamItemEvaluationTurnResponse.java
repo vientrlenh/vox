@@ -2,8 +2,6 @@ package com.sep.vox.application.response.input.examitemresponse;
 
 import java.util.UUID;
 
-import tools.jackson.databind.JsonNode;
-
 public record ExamItemEvaluationTurnResponse(
     UUID id,
     Integer turnOrder,
@@ -14,7 +12,7 @@ public record ExamItemEvaluationTurnResponse(
     Integer wordCount,
     Integer durationSeconds,
     Double asrConfidence,
-    JsonNode pronunciationOverall,
-    JsonNode wordFeedback
+    String pronunciationOverall,
+    String wordFeedback
 ) {
 }

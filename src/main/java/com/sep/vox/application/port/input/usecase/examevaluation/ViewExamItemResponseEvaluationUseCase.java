@@ -1,13 +1,12 @@
 package com.sep.vox.application.port.input.usecase.examevaluation;
 
-import java.util.List;
-
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.query.ViewExamItemResponseEvaluationQuery;
 import com.sep.vox.application.port.input.service.ExamResultAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
+import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.response.input.examitemresponse.ExamItemCriterionScoreResponse;
 import com.sep.vox.application.response.input.examitemresponse.ExamItemEvaluationDetailsResponse;
 import com.sep.vox.application.response.input.examitemresponse.ExamItemEvaluationTurnResponse;
@@ -15,9 +14,6 @@ import com.sep.vox.domain.repository.ExamItemCriterionScoreRepository;
 import com.sep.vox.domain.repository.ExamItemEvaluationRepository;
 import com.sep.vox.domain.repository.ExamItemEvaluationTurnRepository;
 import com.sep.vox.domain.repository.RubricCriterionRepository;
-
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.json.JsonMapper;
 
 @Service
 public class ViewExamItemResponseEvaluationUseCase
@@ -28,7 +24,7 @@ public class ViewExamItemResponseEvaluationUseCase
     private final ExamItemEvaluationTurnRepository examItemEvaluationTurnRepository;
     private final RubricCriterionRepository rubricCriterionRepository;
     private final ExamResultAccessService examResultAccessService;
-    private final JsonMapper jsonMapper;
+    private final JsonSerializationPort jsonSerializationPort;
 
     public ViewExamItemResponseEvaluationUseCase(
             ExamItemEvaluationRepository examItemEvaluationRepository,
@@ -36,13 +32,13 @@ public class ViewExamItemResponseEvaluationUseCase
             ExamItemEvaluationTurnRepository examItemEvaluationTurnRepository,
             RubricCriterionRepository rubricCriterionRepository,
             ExamResultAccessService examResultAccessService,
-            JsonMapper jsonMapper) {
+            JsonSerializationPort jsonSerializationPort) {
         this.examItemEvaluationRepository = examItemEvaluationRepository;
         this.examItemCriterionScoreRepository = examItemCriterionScoreRepository;
         this.examItemEvaluationTurnRepository = examItemEvaluationTurnRepository;
         this.rubricCriterionRepository = rubricCriterionRepository;
         this.examResultAccessService = examResultAccessService;
-        this.jsonMapper = jsonMapper;
+        this.jsonSerializationPort = jsonSerializationPort;
     }
 
     @Override
@@ -75,8 +71,8 @@ public class ViewExamItemResponseEvaluationUseCase
                 item.getWordCount(),
                 item.getDurationSeconds(),
                 item.getAsrConfidence(),
-                readJson(item.getPronunciationOverallJson()),
-                readJson(item.getWordFeedbackJson())
+                item.getPronunciationOverallJson(),
+                item.getWordFeedbackJson()
             ))
             .toList();
 
@@ -97,30 +93,11 @@ public class ViewExamItemResponseEvaluationUseCase
             evaluation.getStatus().name(),
             evaluation.getEvaluatedAt() == null ? null : evaluation.getEvaluatedAt().toString(),
             evaluation.getFeedbackSummary(),
-            readJson(writeJson(evaluation.getSignals())),
-            readJson(evaluation.getValidityJson()),
-            readJson(evaluation.getSuggestionsJson()),
+            jsonSerializationPort.toJson(evaluation.getSignals()),
+            evaluation.getValidityJson(),
+            evaluation.getSuggestionsJson(),
             criteria,
             turns
         );
-    }
-
-    private JsonNode readJson(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        try {
-            return jsonMapper.readTree(value);
-        } catch (Exception ex) {
-            throw new IllegalStateException("khong the doc du lieu json cua evaluation", ex);
-        }
-    }
-
-    private String writeJson(Object value) {
-        try {
-            return jsonMapper.writeValueAsString(value == null ? List.of() : value);
-        } catch (Exception ex) {
-            throw new IllegalStateException("khong the serialize du lieu json cua evaluation", ex);
-        }
     }
 }

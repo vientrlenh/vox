@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -35,6 +36,16 @@ public class ExamPaperItemRepositoryImpl implements ExamPaperItemRepository {
     @Override
     public List<ExamPaperItem> findBySectionId(UUID sectionId) {
         return springDataExamPaperItemRepository.findBySectionIdOrderByOrderAsc(sectionId).stream()
+            .map(ExamPaperItemMapper::toDomain)
+            .toList();
+    }
+
+    @Override
+    public List<ExamPaperItem> findBySectionIdIn(Collection<UUID> sectionIds) {
+        if (sectionIds.isEmpty()) {
+            return List.of();
+        }
+        return springDataExamPaperItemRepository.findBySectionIdInOrderByOrderAsc(sectionIds).stream()
             .map(ExamPaperItemMapper::toDomain)
             .toList();
     }

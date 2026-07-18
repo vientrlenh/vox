@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -12,6 +13,7 @@ import com.sep.vox.infrastructure.persistence.entity.ExamMemberJpaEntity;
 
 public interface SpringDataExamMemberRepository extends JpaRepository<ExamMemberJpaEntity, UUID> {
     List<ExamMemberJpaEntity> findByExamId(UUID examId);
+    List<ExamMemberJpaEntity> findByExamIdIn(Collection<UUID> examIds);
     Optional<ExamMemberJpaEntity> findByExamIdAndUserId(UUID examId, UUID userId);
 
     boolean existsByExamIdAndUserIdAndRole(UUID examId, UUID userId, String role);

@@ -1,5 +1,7 @@
 package com.sep.vox.domain.repository;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -11,6 +13,7 @@ import com.sep.vox.domain.model.question.QuestionBankStatus;
 public interface QuestionBankRepository {
     QuestionBank save(QuestionBank questionBank);
     Optional<QuestionBank> findById(UUID id);
+    List<QuestionBank> findByIdIn(Collection<UUID> ids);
     PageResult<QuestionBank> findAll(int pageNumber, int size);
     PageResult<QuestionBank> findAccessible(
         UUID currentSchoolId,

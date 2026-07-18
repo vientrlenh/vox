@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -34,8 +35,28 @@ public class ExamBlueprintVersionRepositoryImpl implements ExamBlueprintVersionR
     }
 
     @Override
+    public List<ExamBlueprintVersion> findByIdIn(Collection<UUID> ids) {
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+        return springDataExamBlueprintVersionRepository.findAllById(ids).stream()
+            .map(ExamBlueprintVersionMapper::toDomain)
+            .toList();
+    }
+
+    @Override
     public List<ExamBlueprintVersion> findByBlueprintId(UUID blueprintId) {
         return springDataExamBlueprintVersionRepository.findByBlueprintIdOrderByVersionDesc(blueprintId).stream()
+            .map(ExamBlueprintVersionMapper::toDomain)
+            .toList();
+    }
+
+    @Override
+    public List<ExamBlueprintVersion> findByBlueprintIdIn(Collection<UUID> blueprintIds) {
+        if (blueprintIds.isEmpty()) {
+            return List.of();
+        }
+        return springDataExamBlueprintVersionRepository.findByBlueprintIdInOrderByVersionDesc(blueprintIds).stream()
             .map(ExamBlueprintVersionMapper::toDomain)
             .toList();
     }

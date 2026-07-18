@@ -20,6 +20,7 @@ import com.sep.vox.application.mapper.examevaluation.ExamEvaluationSignalMapper;
 import com.sep.vox.application.port.input.command.UpdateExamSessionStatusCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.UpdateExamSessionStatusUseCase;
+import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.domain.model.exam.ExamEvaluationEngineType;
 import com.sep.vox.domain.model.exam.ExamItemCriterionScore;
 import com.sep.vox.domain.model.exam.ExamItemEvaluation;
@@ -38,8 +39,6 @@ import com.sep.vox.domain.repository.ExamSessionRepository;
 import com.sep.vox.domain.repository.RubricCriterionRepository;
 import com.sep.vox.interfaces.kafka.dto.ExamAttemptEvaluationCompletedEventDto;
 
-import tools.jackson.databind.json.JsonMapper;
-
 @Service
 public class RecordExamAttemptEvaluationUseCase implements IUseCase<ExamAttemptEvaluationCompletedEventDto, Void> {
 
@@ -53,7 +52,7 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<ExamAttemptE
     private final AssessmentPolicyRepository assessmentPolicyRepository;
     private final UpsertExamCandidateResultUseCase upsertExamCandidateResultUseCase;
     private final UpdateExamSessionStatusUseCase updateExamSessionStatusUseCase;
-    private final JsonMapper jsonMapper;
+    private final JsonSerializationPort jsonSerializationPort;
     private final TransactionTemplate phaseOneTransactionTemplate;
     private static final BigDecimal LOW_CONFIDENCE_THRESHOLD = BigDecimal.valueOf(0.50).setScale(2, RoundingMode.HALF_UP);
 
@@ -69,7 +68,7 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<ExamAttemptE
             UpsertExamCandidateResultUseCase upsertExamCandidateResultUseCase,
             UpdateExamSessionStatusUseCase updateExamSessionStatusUseCase,
             PlatformTransactionManager transactionManager,
-            JsonMapper jsonMapper) {
+            JsonSerializationPort jsonSerializationPort) {
         this.examItemResponseRepository = examItemResponseRepository;
         this.examItemEvaluationRepository = examItemEvaluationRepository;
         this.examItemCriterionScoreRepository = examItemCriterionScoreRepository;
@@ -80,7 +79,7 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<ExamAttemptE
         this.assessmentPolicyRepository = assessmentPolicyRepository;
         this.upsertExamCandidateResultUseCase = upsertExamCandidateResultUseCase;
         this.updateExamSessionStatusUseCase = updateExamSessionStatusUseCase;
-        this.jsonMapper = jsonMapper;
+        this.jsonSerializationPort = jsonSerializationPort;
         this.phaseOneTransactionTemplate = new TransactionTemplate(transactionManager);
         this.phaseOneTransactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
@@ -367,21 +366,10 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<ExamAttemptE
     }
 
     private String toJson(Object value) {
-        try {
-            return jsonMapper.writeValueAsString(value == null ? List.of() : value);
-        } catch (Exception ex) {
-            throw new IllegalStateException("không thể serialize dữ liệu evaluation", ex);
-        }
+        return jsonSerializationPort.toJson(value == null ? List.of() : value);
     }
 
     private String toNullableJson(Object value) {
-        if (value == null) {
-            return null;
-        }
-        try {
-            return jsonMapper.writeValueAsString(value);
-        } catch (Exception ex) {
-            throw new IllegalStateException("không thể serialize dữ liệu evaluation", ex);
-        }
+        return value == null ? null : jsonSerializationPort.toJson(value);
     }
 }

@@ -4,67 +4,39 @@ import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
+import org.dataloader.DataLoader;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.graphql.data.method.annotation.SchemaMapping;
 import org.springframework.stereotype.Controller;
 
+import graphql.schema.DataFetchingEnvironment;
+
 import com.sep.vox.application.port.input.query.ViewExamBlueprintDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewExamBlueprintsQuery;
 import com.sep.vox.application.port.input.usecase.examblueprint.ViewExamBlueprintDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.examblueprint.ViewExamBlueprintsUseCase;
-import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.ExamBlueprintDto;
 import com.sep.vox.domain.dto.ExamBlueprintSectionDto;
 import com.sep.vox.domain.dto.ExamBlueprintSlotDto;
 import com.sep.vox.domain.dto.ExamBlueprintVersionDto;
 import com.sep.vox.domain.dto.QuestionDto;
-import com.sep.vox.domain.mapper.ExamBlueprintSectionDtoMapper;
-import com.sep.vox.domain.mapper.ExamBlueprintSlotDtoMapper;
-import com.sep.vox.domain.mapper.ExamBlueprintVersionDtoMapper;
-import com.sep.vox.domain.mapper.QuestionDtoMapper;
 import com.sep.vox.domain.model.exam.ExamBlueprintVersionStatus;
-import com.sep.vox.domain.repository.ExamBlueprintSectionRepository;
-import com.sep.vox.domain.repository.ExamBlueprintSlotRepository;
-import com.sep.vox.domain.repository.ExamBlueprintVersionRepository;
-import com.sep.vox.domain.repository.QuestionRepository;
-import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Controller("graphqlExamBlueprintController")
 public class ExamBlueprintController {
 
     private final ViewExamBlueprintsUseCase viewExamBlueprintsUseCase;
     private final ViewExamBlueprintDetailsUseCase viewExamBlueprintDetailsUseCase;
-    private final ExamBlueprintVersionRepository examBlueprintVersionRepository;
-    private final ExamBlueprintSectionRepository examBlueprintSectionRepository;
-    private final ExamBlueprintSlotRepository examBlueprintSlotRepository;
-    private final QuestionRepository questionRepository;
-    private final UserContextPort userContextPort;
-    private final SchoolUserRepository schoolUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
 
     public ExamBlueprintController(
             ViewExamBlueprintsUseCase viewExamBlueprintsUseCase,
-            ViewExamBlueprintDetailsUseCase viewExamBlueprintDetailsUseCase,
-            ExamBlueprintVersionRepository examBlueprintVersionRepository,
-            ExamBlueprintSectionRepository examBlueprintSectionRepository,
-            ExamBlueprintSlotRepository examBlueprintSlotRepository,
-            QuestionRepository questionRepository,
-            UserContextPort userContextPort,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository) {
+            ViewExamBlueprintDetailsUseCase viewExamBlueprintDetailsUseCase) {
         this.viewExamBlueprintsUseCase = viewExamBlueprintsUseCase;
         this.viewExamBlueprintDetailsUseCase = viewExamBlueprintDetailsUseCase;
-        this.examBlueprintVersionRepository = examBlueprintVersionRepository;
-        this.examBlueprintSectionRepository = examBlueprintSectionRepository;
-        this.examBlueprintSlotRepository = examBlueprintSlotRepository;
-        this.questionRepository = questionRepository;
-        this.userContextPort = userContextPort;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
     }
 
     @QueryMapping(name = "examBlueprints")
@@ -88,82 +60,84 @@ public class ExamBlueprintController {
     }
 
     @SchemaMapping(typeName = "ExamBlueprint", field = "versions")
-    public List<ExamBlueprintVersionDto> versions(ExamBlueprintDto source, @Argument ExamBlueprintVersionStatus status) {
-        if (status == null) {
-            return ExamBlueprintVersionDtoMapper.toDtoList(examBlueprintVersionRepository.findByBlueprintId(source.id()));
-        }
-        return ExamBlueprintVersionDtoMapper.toDtoList(
-            examBlueprintVersionRepository.findByBlueprintIdAndStatus(source.id(), status)
-        );
+    public CompletableFuture<List<ExamBlueprintVersionDto>> versions(
+            ExamBlueprintDto source,
+            @Argument ExamBlueprintVersionStatus status,
+            DataFetchingEnvironment env) {
+        DataLoader<UUID, List<ExamBlueprintVersionDto>> loader = env.getDataLoader("examBlueprintVersionsByBlueprintId");
+        return loader.load(source.id()).thenApply(versions -> status == null
+            ? versions
+            : versions.stream().filter(version -> status.name().equals(version.status())).toList());
     }
 
     @SchemaMapping(typeName = "ExamBlueprint", field = "versionCount")
-    public int versionCount(ExamBlueprintDto source) {
-        return examBlueprintVersionRepository.findByBlueprintId(source.id()).size();
+    public CompletableFuture<Integer> versionCount(ExamBlueprintDto source, DataFetchingEnvironment env) {
+        DataLoader<UUID, List<ExamBlueprintVersionDto>> loader = env.getDataLoader("examBlueprintVersionsByBlueprintId");
+        return loader.load(source.id()).thenApply(List::size);
     }
 
     @SchemaMapping(typeName = "ExamBlueprint", field = "currentVersion")
-    public ExamBlueprintVersionDto currentVersion(ExamBlueprintDto source) {
-        return examBlueprintVersionRepository.findByBlueprintId(source.id()).stream()
-            .max(Comparator.comparingInt(version -> version.getVersion()))
-            .map(ExamBlueprintVersionDtoMapper::toDto)
-            .orElse(null);
+    public CompletableFuture<ExamBlueprintVersionDto> currentVersion(ExamBlueprintDto source, DataFetchingEnvironment env) {
+        DataLoader<UUID, List<ExamBlueprintVersionDto>> loader = env.getDataLoader("examBlueprintVersionsByBlueprintId");
+        return loader.load(source.id()).thenApply(ExamBlueprintController::latestVersion);
     }
 
     @SchemaMapping(typeName = "ExamBlueprint", field = "sectionCount")
-    public int blueprintSectionCount(ExamBlueprintDto source) {
-        return examBlueprintVersionRepository.findByBlueprintId(source.id()).stream()
-            .max(Comparator.comparingInt(version -> version.getVersion()))
-            .map(version -> examBlueprintSectionRepository.findByBlueprintVersionId(version.getId()).size())
-            .orElse(0);
+    public CompletableFuture<Integer> blueprintSectionCount(ExamBlueprintDto source, DataFetchingEnvironment env) {
+        DataLoader<UUID, List<ExamBlueprintVersionDto>> versionsLoader = env.getDataLoader("examBlueprintVersionsByBlueprintId");
+        DataLoader<UUID, List<ExamBlueprintSectionDto>> sectionsLoader = env.getDataLoader("examBlueprintSectionsByVersionId");
+        return versionsLoader.load(source.id()).thenCompose(versions -> {
+            var current = latestVersion(versions);
+            if (current == null) {
+                return CompletableFuture.completedFuture(0);
+            }
+            return sectionsLoader.load(current.id()).thenApply(List::size);
+        });
     }
 
     @SchemaMapping(typeName = "ExamBlueprintVersion", field = "sections")
-    public List<ExamBlueprintSectionDto> sections(ExamBlueprintVersionDto source) {
-        return ExamBlueprintSectionDtoMapper.toDtoList(examBlueprintSectionRepository.findByBlueprintVersionId(source.id()));
+    public CompletableFuture<List<ExamBlueprintSectionDto>> sections(ExamBlueprintVersionDto source, DataFetchingEnvironment env) {
+        DataLoader<UUID, List<ExamBlueprintSectionDto>> loader = env.getDataLoader("examBlueprintSectionsByVersionId");
+        return loader.load(source.id());
     }
 
     @SchemaMapping(typeName = "ExamBlueprintVersion", field = "sectionCount")
-    public int versionSectionCount(ExamBlueprintVersionDto source) {
-        return examBlueprintSectionRepository.findByBlueprintVersionId(source.id()).size();
+    public CompletableFuture<Integer> versionSectionCount(ExamBlueprintVersionDto source, DataFetchingEnvironment env) {
+        DataLoader<UUID, List<ExamBlueprintSectionDto>> loader = env.getDataLoader("examBlueprintSectionsByVersionId");
+        return loader.load(source.id()).thenApply(List::size);
     }
 
     @SchemaMapping(typeName = "ExamBlueprintVersion", field = "slotCount")
-    public int slotCount(ExamBlueprintVersionDto source) {
-        return examBlueprintSlotRepository.findByBlueprintVersionId(source.id()).size();
+    public CompletableFuture<Integer> slotCount(ExamBlueprintVersionDto source, DataFetchingEnvironment env) {
+        DataLoader<UUID, List<ExamBlueprintSlotDto>> loader = env.getDataLoader("examBlueprintSlotsByVersionId");
+        return loader.load(source.id()).thenApply(List::size);
     }
 
     @SchemaMapping(typeName = "ExamBlueprintVersion", field = "weightSum")
-    public BigDecimal weightSum(ExamBlueprintVersionDto source) {
-        return examBlueprintSectionRepository.findByBlueprintVersionId(source.id()).stream()
-            .map(section -> section.getSectionWeight() == null ? BigDecimal.ZERO : section.getSectionWeight())
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    public CompletableFuture<BigDecimal> weightSum(ExamBlueprintVersionDto source, DataFetchingEnvironment env) {
+        DataLoader<UUID, List<ExamBlueprintSectionDto>> loader = env.getDataLoader("examBlueprintSectionsByVersionId");
+        return loader.load(source.id()).thenApply(sections -> sections.stream()
+            .map(section -> section.sectionWeight() == null ? BigDecimal.ZERO : section.sectionWeight())
+            .reduce(BigDecimal.ZERO, BigDecimal::add));
     }
 
     @SchemaMapping(typeName = "ExamBlueprintSection", field = "slots")
-    public List<ExamBlueprintSlotDto> slots(ExamBlueprintSectionDto source) {
-        return ExamBlueprintSlotDtoMapper.toDtoList(examBlueprintSlotRepository.findBySectionId(source.id()));
+    public CompletableFuture<List<ExamBlueprintSlotDto>> slots(ExamBlueprintSectionDto source, DataFetchingEnvironment env) {
+        DataLoader<UUID, List<ExamBlueprintSlotDto>> loader = env.getDataLoader("examBlueprintSlotsBySectionId");
+        return loader.load(source.id());
     }
 
     @SchemaMapping(typeName = "ExamBlueprintSlot", field = "fixedQuestion")
-    public QuestionDto fixedQuestion(ExamBlueprintSlotDto source) {
+    public CompletableFuture<QuestionDto> fixedQuestion(ExamBlueprintSlotDto source, DataFetchingEnvironment env) {
         if (source.fixedQuestionId() == null) {
-            return null;
+            return CompletableFuture.completedFuture(null);
         }
-        return resolveQuestion(source.fixedQuestionId());
+        DataLoader<UUID, QuestionDto> loader = env.getDataLoader("questionByIdAccessible");
+        return loader.load(source.fixedQuestionId());
     }
 
-    private QuestionDto resolveQuestion(UUID questionId) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var systemAdmin = userContextPort.isSystemAdmin();
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
-            .map(schoolUser -> schoolUser.getSchoolId())
-            .orElse(null);
-        var schoolAdmin = !systemAdmin && userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
-        return questionRepository.findAccessibleById(questionId, currentUserId, currentSchoolId, systemAdmin, schoolAdmin)
-            .map(QuestionDtoMapper::toQuestionDto)
-            .orElse(null);
+    private static ExamBlueprintVersionDto latestVersion(List<ExamBlueprintVersionDto> versions) {
+        return versions.stream().max(Comparator.comparingInt(ExamBlueprintVersionDto::version)).orElse(null);
     }
 
     private void validatePage(int page, int size) {

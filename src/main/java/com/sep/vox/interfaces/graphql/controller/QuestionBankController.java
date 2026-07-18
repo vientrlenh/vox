@@ -20,25 +20,20 @@ import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.QuestionBankDto;
 import com.sep.vox.domain.dto.QuestionBankGradeDto;
 import com.sep.vox.domain.dto.SchoolGradeDto;
-import com.sep.vox.domain.mapper.QuestionBankGradeDtoMapper;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
 import com.sep.vox.domain.model.question.QuestionBankStatus;
-import com.sep.vox.domain.repository.QuestionBankGradeRepository;
 
 @Controller("graphqlQuestionBankController")
 public class QuestionBankController {
 
     private final ViewQuestionBanksUseCase viewQuestionBanksUseCase;
     private final ViewQuestionBankDetailsUseCase viewQuestionBankDetailsUseCase;
-    private final QuestionBankGradeRepository questionBankGradeRepository;
 
     public QuestionBankController(
             ViewQuestionBanksUseCase viewQuestionBanksUseCase,
-            ViewQuestionBankDetailsUseCase viewQuestionBankDetailsUseCase,
-            QuestionBankGradeRepository questionBankGradeRepository) {
+            ViewQuestionBankDetailsUseCase viewQuestionBankDetailsUseCase) {
         this.viewQuestionBanksUseCase = viewQuestionBanksUseCase;
         this.viewQuestionBankDetailsUseCase = viewQuestionBankDetailsUseCase;
-        this.questionBankGradeRepository = questionBankGradeRepository;
     }
 
     @QueryMapping(name = "questionBanks")
@@ -63,8 +58,9 @@ public class QuestionBankController {
     }
 
     @SchemaMapping(typeName = "QuestionBank", field = "grades")
-    public List<QuestionBankGradeDto> grades(QuestionBankDto source) {
-        return QuestionBankGradeDtoMapper.toDtoList(questionBankGradeRepository.findByQuestionBankId(source.id()));
+    public CompletableFuture<List<QuestionBankGradeDto>> grades(QuestionBankDto source, DataFetchingEnvironment env) {
+        DataLoader<UUID, List<QuestionBankGradeDto>> loader = env.getDataLoader("questionBankGradesByBankId");
+        return loader.load(source.id());
     }
 
     @SchemaMapping(typeName = "QuestionBankGrade", field = "schoolGrade")

@@ -36,28 +36,9 @@ import com.sep.vox.domain.dto.ExamPaperSectionDto;
 import com.sep.vox.domain.dto.ExamSecurePoolDto;
 import com.sep.vox.domain.dto.QuestionDto;
 import com.sep.vox.domain.dto.UserDto;
-import com.sep.vox.domain.mapper.ExamBlueprintDtoMapper;
-import com.sep.vox.domain.mapper.ExamBlueprintVersionDtoMapper;
-import com.sep.vox.domain.mapper.ExamMemberDtoMapper;
-import com.sep.vox.domain.mapper.ExamPaperDtoMapper;
-import com.sep.vox.domain.mapper.ExamPaperItemDtoMapper;
-import com.sep.vox.domain.mapper.ExamPaperSectionDtoMapper;
-import com.sep.vox.domain.mapper.ExamSecurePoolDtoMapper;
-import com.sep.vox.domain.mapper.QuestionDtoMapper;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamPaperStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
-import com.sep.vox.domain.model.school.SchoolClassUser;
-import com.sep.vox.domain.repository.ExamBlueprintRepository;
-import com.sep.vox.domain.repository.ExamBlueprintVersionRepository;
-import com.sep.vox.domain.repository.ExamCandidateRepository;
-import com.sep.vox.domain.repository.ExamMemberRepository;
-import com.sep.vox.domain.repository.ExamPaperItemRepository;
-import com.sep.vox.domain.repository.ExamPaperRepository;
-import com.sep.vox.domain.repository.ExamPaperSectionRepository;
-import com.sep.vox.domain.repository.ExamSecurePoolRepository;
-import com.sep.vox.domain.repository.QuestionRepository;
-import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Controller("graphqlExamController")
@@ -68,16 +49,6 @@ public class ExamController {
     private final ViewExamPaperDetailsUseCase viewExamPaperDetailsUseCase;
     private final ViewExamStatusCountsUseCase viewExamStatusCountsUseCase;
     private final ViewMyExamRoleUseCase viewMyExamRoleUseCase;
-    private final ExamBlueprintRepository examBlueprintRepository;
-    private final ExamBlueprintVersionRepository examBlueprintVersionRepository;
-    private final ExamMemberRepository examMemberRepository;
-    private final ExamPaperRepository examPaperRepository;
-    private final ExamPaperSectionRepository examPaperSectionRepository;
-    private final ExamPaperItemRepository examPaperItemRepository;
-    private final ExamSecurePoolRepository examSecurePoolRepository;
-    private final ExamCandidateRepository examCandidateRepository;
-    private final SchoolClassUserRepository schoolClassUserRepository;
-    private final QuestionRepository questionRepository;
     private final UserContextPort userContextPort;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
@@ -88,16 +59,6 @@ public class ExamController {
             ViewExamPaperDetailsUseCase viewExamPaperDetailsUseCase,
             ViewExamStatusCountsUseCase viewExamStatusCountsUseCase,
             ViewMyExamRoleUseCase viewMyExamRoleUseCase,
-            ExamBlueprintRepository examBlueprintRepository,
-            ExamBlueprintVersionRepository examBlueprintVersionRepository,
-            ExamMemberRepository examMemberRepository,
-            ExamPaperRepository examPaperRepository,
-            ExamPaperSectionRepository examPaperSectionRepository,
-            ExamPaperItemRepository examPaperItemRepository,
-            ExamSecurePoolRepository examSecurePoolRepository,
-            ExamCandidateRepository examCandidateRepository,
-            SchoolClassUserRepository schoolClassUserRepository,
-            QuestionRepository questionRepository,
             UserContextPort userContextPort,
             SchoolUserRepository schoolUserRepository,
             UserRoleQueryRepository userRoleQueryRepository) {
@@ -106,16 +67,6 @@ public class ExamController {
         this.viewExamPaperDetailsUseCase = viewExamPaperDetailsUseCase;
         this.viewExamStatusCountsUseCase = viewExamStatusCountsUseCase;
         this.viewMyExamRoleUseCase = viewMyExamRoleUseCase;
-        this.examBlueprintRepository = examBlueprintRepository;
-        this.examBlueprintVersionRepository = examBlueprintVersionRepository;
-        this.examMemberRepository = examMemberRepository;
-        this.examPaperRepository = examPaperRepository;
-        this.examPaperSectionRepository = examPaperSectionRepository;
-        this.examPaperItemRepository = examPaperItemRepository;
-        this.examSecurePoolRepository = examSecurePoolRepository;
-        this.examCandidateRepository = examCandidateRepository;
-        this.schoolClassUserRepository = schoolClassUserRepository;
-        this.questionRepository = questionRepository;
         this.userContextPort = userContextPort;
         this.schoolUserRepository = schoolUserRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
@@ -169,33 +120,43 @@ public class ExamController {
     }
 
     @SchemaMapping(typeName = "Exam", field = "blueprint")
-    public ExamBlueprintDto blueprint(ExamDto source) {
-        if (source.blueprintId() == null || !canViewExamBlueprintData(source)) {
-            return null;
+    public CompletableFuture<ExamBlueprintDto> blueprint(ExamDto source, DataFetchingEnvironment env) {
+        if (source.blueprintId() == null) {
+            return CompletableFuture.completedFuture(null);
         }
-        return examBlueprintRepository.findById(source.blueprintId())
-            .map(ExamBlueprintDtoMapper::toDto)
-            .orElse(null);
+        return canViewExamBlueprintData(source, env).thenCompose(canView -> {
+            if (!canView) {
+                return CompletableFuture.completedFuture(null);
+            }
+            DataLoader<UUID, ExamBlueprintDto> loader = env.getDataLoader("examBlueprintById");
+            return loader.load(source.blueprintId());
+        });
     }
 
     @SchemaMapping(typeName = "Exam", field = "blueprintVersion")
-    public ExamBlueprintVersionDto blueprintVersion(ExamDto source) {
-        if (source.blueprintVersionId() == null || !canViewExamBlueprintData(source)) {
-            return null;
+    public CompletableFuture<ExamBlueprintVersionDto> blueprintVersion(ExamDto source, DataFetchingEnvironment env) {
+        if (source.blueprintVersionId() == null) {
+            return CompletableFuture.completedFuture(null);
         }
-        return examBlueprintVersionRepository.findById(source.blueprintVersionId())
-            .map(ExamBlueprintVersionDtoMapper::toDto)
-            .orElse(null);
+        return canViewExamBlueprintData(source, env).thenCompose(canView -> {
+            if (!canView) {
+                return CompletableFuture.completedFuture(null);
+            }
+            DataLoader<UUID, ExamBlueprintVersionDto> loader = env.getDataLoader("examBlueprintVersionById");
+            return loader.load(source.blueprintVersionId());
+        });
     }
 
     @SchemaMapping(typeName = "Exam", field = "candidateCount")
-    public int candidateCount(ExamDto source) {
-        return Math.toIntExact(examCandidateRepository.countByExamId(source.id()));
+    public CompletableFuture<Integer> candidateCount(ExamDto source, DataFetchingEnvironment env) {
+        DataLoader<UUID, Integer> loader = env.getDataLoader("examCandidateCountByExamId");
+        return loader.load(source.id());
     }
 
     @SchemaMapping(typeName = "Exam", field = "members")
-    public List<ExamMemberDto> members(ExamDto source) {
-        return ExamMemberDtoMapper.toDtoList(examMemberRepository.findByExamId(source.id()));
+    public CompletableFuture<List<ExamMemberDto>> members(ExamDto source, DataFetchingEnvironment env) {
+        DataLoader<UUID, List<ExamMemberDto>> loader = env.getDataLoader("examMembersByExamId");
+        return loader.load(source.id());
     }
 
     @SchemaMapping(typeName = "ExamMember", field = "user")
@@ -205,66 +166,53 @@ public class ExamController {
     }
 
     @SchemaMapping(typeName = "Exam", field = "papers")
-    public List<ExamPaperDto> papers(ExamDto source, @Argument ExamPaperStatus status) {
-        if (status == null) {
-            return ExamPaperDtoMapper.toDtoList(examPaperRepository.findByExamId(source.id()));
-        }
-        return ExamPaperDtoMapper.toDtoList(examPaperRepository.findByExamIdAndStatus(source.id(), status));
+    public CompletableFuture<List<ExamPaperDto>> papers(
+            ExamDto source,
+            @Argument ExamPaperStatus status,
+            DataFetchingEnvironment env) {
+        DataLoader<UUID, List<ExamPaperDto>> loader = env.getDataLoader("examPapersByExamId");
+        return loader.load(source.id()).thenApply(papers -> status == null
+            ? papers
+            : papers.stream().filter(paper -> status.name().equals(paper.status())).toList());
     }
 
     @SchemaMapping(typeName = "ExamPaper", field = "sections")
-    public List<ExamPaperSectionDto> sections(ExamPaperDto source) {
-        return ExamPaperSectionDtoMapper.toDtoList(examPaperSectionRepository.findByPaperId(source.id()));
+    public CompletableFuture<List<ExamPaperSectionDto>> sections(ExamPaperDto source, DataFetchingEnvironment env) {
+        DataLoader<UUID, List<ExamPaperSectionDto>> loader = env.getDataLoader("examPaperSectionsByPaperId");
+        return loader.load(source.id());
     }
 
     @SchemaMapping(typeName = "ExamPaperSection", field = "items")
-    public List<ExamPaperItemDto> items(ExamPaperSectionDto source) {
-        return ExamPaperItemDtoMapper.toDtoList(examPaperItemRepository.findBySectionId(source.id()));
+    public CompletableFuture<List<ExamPaperItemDto>> items(ExamPaperSectionDto source, DataFetchingEnvironment env) {
+        DataLoader<UUID, List<ExamPaperItemDto>> loader = env.getDataLoader("examPaperItemsBySectionId");
+        return loader.load(source.id());
     }
 
     @SchemaMapping(typeName = "Exam", field = "securePool")
-    public ExamSecurePoolDto securePool(ExamDto source) {
-        return examSecurePoolRepository.findByExamId(source.id())
-            .map(ExamSecurePoolDtoMapper::toDto)
-            .orElse(null);
+    public CompletableFuture<ExamSecurePoolDto> securePool(ExamDto source, DataFetchingEnvironment env) {
+        DataLoader<UUID, ExamSecurePoolDto> loader = env.getDataLoader("examSecurePoolByExamId");
+        return loader.load(source.id());
     }
 
     @SchemaMapping(typeName = "Exam", field = "schoolClassId")
-    public UUID schoolClassId(ExamDto source) {
-        return examCandidateRepository.findByExamId(source.id()).stream()
-            .findFirst()
-            .flatMap(candidate -> schoolClassUserRepository.findByUserId(candidate.getStudentId()).stream()
-                .filter(SchoolClassUser::isActive)
-                .findFirst())
-            .map(SchoolClassUser::getSchoolClassId)
-            .orElse(null);
+    public CompletableFuture<UUID> schoolClassId(ExamDto source, DataFetchingEnvironment env) {
+        DataLoader<UUID, UUID> loader = env.getDataLoader("examSchoolClassIdByExamId");
+        return loader.load(source.id());
     }
 
     @SchemaMapping(typeName = "ExamPaperItem", field = "question")
-    public QuestionDto question(ExamPaperItemDto source) {
+    public CompletableFuture<QuestionDto> question(ExamPaperItemDto source, DataFetchingEnvironment env) {
         if (source.questionId() == null) {
-            return null;
+            return CompletableFuture.completedFuture(null);
         }
-        return resolveQuestion(source.questionId());
+        DataLoader<UUID, QuestionDto> loader = env.getDataLoader("questionByIdAccessible");
+        return loader.load(source.questionId());
     }
 
-    private QuestionDto resolveQuestion(UUID questionId) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var systemAdmin = userContextPort.isSystemAdmin();
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
-            .map(schoolUser -> schoolUser.getSchoolId())
-            .orElse(null);
-        var schoolAdmin = !systemAdmin && userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
-        return questionRepository.findAccessibleById(questionId, currentUserId, currentSchoolId, systemAdmin, schoolAdmin)
-            .map(QuestionDtoMapper::toQuestionDto)
-            .orElse(null);
-    }
-
-    private boolean canViewExamBlueprintData(ExamDto source) {
+    private CompletableFuture<Boolean> canViewExamBlueprintData(ExamDto source, DataFetchingEnvironment env) {
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (userContextPort.isSystemAdmin()) {
-            return true;
+            return CompletableFuture.completedFuture(true);
         }
 
         var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
@@ -274,15 +222,17 @@ public class ExamController {
             var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
                 .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
             if (schoolAdmin) {
-                return true;
+                return CompletableFuture.completedFuture(true);
             }
             // Sau khi kỳ thi đã đóng, ai cùng trường cũng xem được liên kết blueprint — không cần là member nữa.
             if ("CLOSED".equals(source.status()) || "RESULTS_PUBLISHED".equals(source.status())) {
-                return true;
+                return CompletableFuture.completedFuture(true);
             }
         }
 
-        return examMemberRepository.findByExamIdAndUserId(source.id(), currentUserId).isPresent();
+        DataLoader<UUID, List<ExamMemberDto>> loader = env.getDataLoader("examMembersByExamId");
+        return loader.load(source.id()).thenApply(members -> members.stream()
+            .anyMatch(member -> member.userId().equals(currentUserId)));
     }
 
     private void validatePage(int page, int size) {

@@ -3,9 +3,11 @@ package com.sep.vox.infrastructure.persistence.adapter;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
@@ -55,8 +57,30 @@ public class ExamCandidateRepositoryImpl implements ExamCandidateRepository {
     }
 
     @Override
+    public List<ExamCandidate> findByExamIdIn(Collection<UUID> examIds) {
+        if (examIds.isEmpty()) {
+            return List.of();
+        }
+        return springDataExamCandidateRepository.findByExamIdIn(examIds).stream()
+            .map(ExamCandidateMapper::toDomain)
+            .toList();
+    }
+
+    @Override
     public long countByExamId(UUID examId) {
         return springDataExamCandidateRepository.countByExamId(examId);
+    }
+
+    @Override
+    public Map<UUID, Long> countByExamIdIn(Collection<UUID> examIds) {
+        if (examIds.isEmpty()) {
+            return Map.of();
+        }
+        return springDataExamCandidateRepository.countByExamIdIn(examIds).stream()
+            .collect(Collectors.toMap(
+                SpringDataExamCandidateRepository.ExamIdCandidateCount::getExamId,
+                SpringDataExamCandidateRepository.ExamIdCandidateCount::getCandidateCount
+            ));
     }
 
     public Optional<ExamCandidate> findById(UUID id) {

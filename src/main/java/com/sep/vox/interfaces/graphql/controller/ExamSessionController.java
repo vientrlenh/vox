@@ -33,7 +33,6 @@ import com.sep.vox.application.port.input.usecase.examsession.RetryGradingExamSe
 import com.sep.vox.application.port.input.usecase.examsession.ViewExamSessionResultUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.ViewExamSessionUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.ViewMyExamResultsUseCase;
-import com.sep.vox.application.response.input.examitemresponse.ExamItemCriterionScoreResponse;
 import com.sep.vox.application.response.input.examitemresponse.ExamItemEvaluationDetailsResponse;
 import com.sep.vox.application.response.input.examitemresponse.ExamItemResponseDetailsResponse;
 import com.sep.vox.application.response.input.examitemresponse.ExamItemResponseTurnResponse;
@@ -43,7 +42,6 @@ import com.sep.vox.application.response.input.examsession.ExamSessionResponse;
 import com.sep.vox.application.response.input.examsession.StudentExamResultSummaryResponse;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 
-import tools.jackson.databind.JsonNode;
 
 @Controller("graphqlExamSessionController")
 public class ExamSessionController {
@@ -130,10 +128,9 @@ public class ExamSessionController {
 
     @QueryMapping
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER', 'STUDENT')")
-    public ExamItemEvaluationDetailsGraphQlResponse examItemResponseEvaluation(@Argument(name = "answerId") UUID answerId) {
+    public ExamItemEvaluationDetailsResponse examItemResponseEvaluation(@Argument(name = "answerId") UUID answerId) {
         try {
-            var response = viewExamItemResponseEvaluationUseCase.execute(new ViewExamItemResponseEvaluationQuery(answerId));
-            return response == null ? null : toGraphQlResponse(response);
+            return viewExamItemResponseEvaluationUseCase.execute(new ViewExamItemResponseEvaluationQuery(answerId));
         } catch (NotFoundException ex) {
             return null;
         }
@@ -177,87 +174,4 @@ public class ExamSessionController {
         return retryGradingExamSessionUseCase.execute(new RetryGradingExamSessionCommand(sessionId));
     }
 
-    private ExamItemEvaluationDetailsGraphQlResponse toGraphQlResponse(ExamItemEvaluationDetailsResponse response) {
-        return new ExamItemEvaluationDetailsGraphQlResponse(
-            response.id(),
-            response.responseId(),
-            response.paperItemId(),
-            response.engineType(),
-            response.gradedByModel(),
-            response.promptVersion(),
-            response.rawItemScore(),
-            response.itemScore(),
-            response.overallConfidence(),
-            response.requiresHumanReview(),
-            response.reviewReasonCode(),
-            response.markedInvalid(),
-            response.requiresRetake(),
-            response.status(),
-            response.evaluatedAt(),
-            response.feedbackSummary(),
-            stringify(response.signals()),
-            stringify(response.validity()),
-            stringify(response.suggestions()),
-            response.criteria(),
-            response.turns().stream()
-                .map(turn -> new ExamItemEvaluationTurnGraphQlResponse(
-                    turn.id(),
-                    turn.turnOrder(),
-                    turn.turnType(),
-                    turn.promptText(),
-                    turn.audioUrl(),
-                    turn.transcript(),
-                    turn.wordCount(),
-                    turn.durationSeconds(),
-                    turn.asrConfidence(),
-                    stringify(turn.pronunciationOverall()),
-                    stringify(turn.wordFeedback())
-                ))
-                .toList()
-        );
-    }
-
-    private String stringify(JsonNode node) {
-        return node == null ? null : node.toString();
-    }
-
-    private record ExamItemEvaluationTurnGraphQlResponse(
-        UUID id,
-        Integer turnOrder,
-        String turnType,
-        String promptText,
-        String audioUrl,
-        String transcript,
-        Integer wordCount,
-        Integer durationSeconds,
-        Double asrConfidence,
-        String pronunciationOverall,
-        String wordFeedback
-    ) {
-    }
-
-    private record ExamItemEvaluationDetailsGraphQlResponse(
-        UUID id,
-        UUID responseId,
-        UUID paperItemId,
-        String engineType,
-        String gradedByModel,
-        String promptVersion,
-        java.math.BigDecimal rawItemScore,
-        java.math.BigDecimal itemScore,
-        java.math.BigDecimal overallConfidence,
-        boolean requiresHumanReview,
-        String reviewReasonCode,
-        boolean markedInvalid,
-        boolean requiresRetake,
-        String status,
-        String evaluatedAt,
-        String feedbackSummary,
-        String signals,
-        String validity,
-        String suggestions,
-        List<ExamItemCriterionScoreResponse> criteria,
-        List<ExamItemEvaluationTurnGraphQlResponse> turns
-    ) {
-    }
 }

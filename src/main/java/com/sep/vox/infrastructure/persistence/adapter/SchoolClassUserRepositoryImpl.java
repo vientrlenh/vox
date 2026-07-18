@@ -48,6 +48,17 @@ public class SchoolClassUserRepositoryImpl implements SchoolClassUserRepository 
     }
 
     @Override
+    public List<SchoolClassUser> findByUserIdIn(Collection<UUID> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return List.of();
+        }
+        return springDataSchoolClassUserRepository.findByUserIdIn(userIds)
+            .stream()
+            .map(SchoolClassUserMapper::toDomain)
+            .toList();
+    }
+
+    @Override
     public PageResult<SchoolClassUser> findBySchoolClassId(UUID schoolClassId, int page, int size) {
         var pageRequest = PageRequest.of(page - 1, size);
         var pageable = springDataSchoolClassUserRepository.findBySchoolClassId(schoolClassId, pageRequest);

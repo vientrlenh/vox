@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -174,5 +175,20 @@ public class QuestionRepositoryImpl implements QuestionRepository {
             systemAdmin,
             schoolAdmin
         ).map(QuestionMapper::toDomain);
+    }
+
+    @Override
+    public List<Question> findAccessibleByIdIn(Collection<UUID> ids, UUID currentUserId, UUID currentSchoolId,
+            boolean systemAdmin, boolean schoolAdmin) {
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+        return springDataQuestionRepository.findAccessibleByIdIn(
+            ids,
+            currentUserId,
+            currentSchoolId,
+            systemAdmin,
+            schoolAdmin
+        ).stream().map(QuestionMapper::toDomain).toList();
     }
 }

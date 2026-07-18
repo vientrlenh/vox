@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -36,6 +37,16 @@ public class QuestionBankGradeRepositoryImpl implements QuestionBankGradeReposit
     @Override
     public List<QuestionBankGrade> findByQuestionBankId(UUID questionBankId) {
         return springDataQuestionBankGradeRepository.findByQuestionBankId(questionBankId).stream()
+            .map(QuestionBankGradeMapper::toDomain)
+            .toList();
+    }
+
+    @Override
+    public List<QuestionBankGrade> findByQuestionBankIdIn(Collection<UUID> questionBankIds) {
+        if (questionBankIds.isEmpty()) {
+            return List.of();
+        }
+        return springDataQuestionBankGradeRepository.findByQuestionBankIdIn(questionBankIds).stream()
             .map(QuestionBankGradeMapper::toDomain)
             .toList();
     }

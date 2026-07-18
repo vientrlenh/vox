@@ -11,11 +11,10 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.ProctorCandidateSummary;
 import com.sep.vox.application.query.repository.ProctorScheduleCandidatesQueryRepository;
-import com.sep.vox.application.response.input.exam.ProctorCandidateSummaryResponse;
 import com.sep.vox.domain.repository.ExamScheduleProctorRepository;
 
 @Service
-public class ViewMyProctorScheduleCandidatesUseCase implements IUseCase<UUID, List<ProctorCandidateSummaryResponse>> {
+public class ViewMyProctorScheduleCandidatesUseCase implements IUseCase<UUID, List<ProctorCandidateSummary>> {
 
     private final ProctorScheduleCandidatesQueryRepository proctorScheduleCandidatesQueryRepository;
     private final ExamScheduleProctorRepository examScheduleProctorRepository;
@@ -32,28 +31,11 @@ public class ViewMyProctorScheduleCandidatesUseCase implements IUseCase<UUID, Li
 
     @Override
     @Transactional(readOnly = true)
-    public List<ProctorCandidateSummaryResponse> execute(UUID scheduleId) {
+    public List<ProctorCandidateSummary> execute(UUID scheduleId) {
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!examScheduleProctorRepository.existsByScheduleIdAndTeacherId(scheduleId, currentUserId)) {
             throw new ForbiddenException("Bạn không phải giám thị của ca thi này");
         }
-        return proctorScheduleCandidatesQueryRepository.findByScheduleId(scheduleId)
-            .stream()
-            .map(ViewMyProctorScheduleCandidatesUseCase::toResponse)
-            .toList();
-    }
-
-    public static ProctorCandidateSummaryResponse toResponse(ProctorCandidateSummary summary) {
-        return new ProctorCandidateSummaryResponse(
-            summary.candidateId(),
-            summary.studentId(),
-            summary.studentName(),
-            summary.studentEmail(),
-            summary.status(),
-            summary.blockedAt() == null ? null : summary.blockedAt().toString(),
-            summary.sessionId(),
-            summary.sessionStatus(),
-            summary.sessionFlagged()
-        );
+        return proctorScheduleCandidatesQueryRepository.findByScheduleId(scheduleId);
     }
 }

@@ -4,8 +4,6 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
-import tools.jackson.databind.JsonNode;
-
 public record ExamItemEvaluationDetailsResponse(
     UUID id,
     UUID responseId,
@@ -23,9 +21,9 @@ public record ExamItemEvaluationDetailsResponse(
     String status,
     String evaluatedAt,
     String feedbackSummary,
-    JsonNode signals,
-    JsonNode validity,
-    JsonNode suggestions,
+    String signals,
+    String validity,
+    String suggestions,
     List<ExamItemCriterionScoreResponse> criteria,
     List<ExamItemEvaluationTurnResponse> turns
 ) {

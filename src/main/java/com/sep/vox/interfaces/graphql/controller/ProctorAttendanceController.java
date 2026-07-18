@@ -10,8 +10,8 @@ import org.springframework.stereotype.Controller;
 
 import com.sep.vox.application.port.input.usecase.examcandidate.ViewMyProctorScheduleCandidatesUseCase;
 import com.sep.vox.application.port.input.usecase.examcandidate.ViewMyProctorSchedulesUseCase;
-import com.sep.vox.application.response.input.exam.ProctorCandidateSummaryResponse;
-import com.sep.vox.application.response.input.exam.ProctorScheduleSummaryResponse;
+import com.sep.vox.application.query.dto.ProctorCandidateSummary;
+import com.sep.vox.application.query.dto.ProctorScheduleSummary;
 
 @Controller("graphqlProctorAttendanceController")
 public class ProctorAttendanceController {
@@ -28,13 +28,13 @@ public class ProctorAttendanceController {
 
     @QueryMapping
     @PreAuthorize("hasRole('TEACHER')")
-    public List<ProctorScheduleSummaryResponse> myProctorSchedules() {
+    public List<ProctorScheduleSummary> myProctorSchedules() {
         return viewMyProctorSchedulesUseCase.execute(null);
     }
 
     @QueryMapping
     @PreAuthorize("hasRole('TEACHER')")
-    public List<ProctorCandidateSummaryResponse> myProctorScheduleCandidates(
+    public List<ProctorCandidateSummary> myProctorScheduleCandidates(
             @Argument(name = "scheduleId") UUID scheduleId) {
         return viewMyProctorScheduleCandidatesUseCase.execute(scheduleId);
     }

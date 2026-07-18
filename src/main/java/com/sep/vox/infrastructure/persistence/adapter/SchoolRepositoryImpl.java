@@ -3,8 +3,10 @@ package com.sep.vox.infrastructure.persistence.adapter;
 import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
@@ -126,6 +128,12 @@ public class SchoolRepositoryImpl implements SchoolRepository {
     @Override
     public boolean existsByCode(String code) {
         return springDataSchoolRepository.existsByCode(code);
+    }
+
+    @Override
+    public Map<UUID, String> findNamesByIdIn(Collection<UUID> ids) {
+        return springDataSchoolRepository.findIdNameByIdIn(ids).stream()
+            .collect(Collectors.toMap(row -> (UUID) row[0], row -> (String) row[1]));
     }
 
 }

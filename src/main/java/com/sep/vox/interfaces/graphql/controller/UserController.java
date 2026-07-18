@@ -19,6 +19,7 @@ import com.sep.vox.application.port.input.usecase.user.ViewUserDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.user.ViewUsersUseCase;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.RoleDto;
+import com.sep.vox.domain.dto.SchoolDto;
 import com.sep.vox.domain.dto.UserDto;
 
 import graphql.schema.DataFetchingEnvironment;
@@ -60,9 +61,14 @@ public class UserController {
     }
 
     @SchemaMapping(typeName = "User", field = "roles")
-    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public CompletableFuture<List<RoleDto>> userRoles(UserDto user, DataFetchingEnvironment env) {
         DataLoader<UserRolesKey, List<RoleDto>> loader = env.getDataLoader("rolesByUser");
         return loader.load(new UserRolesKey(user.id()));
+    }
+
+    @SchemaMapping(typeName = "User", field = "school")
+    public CompletableFuture<SchoolDto> userSchool(UserDto user, DataFetchingEnvironment env) {
+        DataLoader<UUID, SchoolDto> loader = env.getDataLoader("schoolByUser");
+        return loader.load(user.id());
     }
 }

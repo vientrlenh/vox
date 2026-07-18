@@ -15,9 +15,12 @@ import org.springframework.graphql.execution.BatchLoaderRegistry;
 
 import com.sep.vox.application.port.input.query.key.UserRolesKey;
 import com.sep.vox.domain.dto.RoleDto;
+import com.sep.vox.domain.dto.SchoolDto;
 import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.domain.mapper.RoleDtoMapper;
 import com.sep.vox.domain.repository.RoleRepository;
+import com.sep.vox.domain.repository.SchoolRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.repository.UserRoleRepository;
 
@@ -30,7 +33,9 @@ public class UserGraphQlDataLoaderConfig {
         BatchLoaderRegistry registry,
         UserRoleRepository userRoleRepository,
         RoleRepository roleRepository,
-        UserRepository userRepository
+        UserRepository userRepository,
+        SchoolUserRepository schoolUserRepository,
+        SchoolRepository schoolRepository
     ) {
 
         registry.<UUID, UserDto>forName("userById")
@@ -75,5 +80,26 @@ public class UserGraphQlDataLoaderConfig {
                 return result;
             })
         );
+
+        registry.<UUID, SchoolDto>forName("schoolByUser")
+        .registerMappedBatchLoader((Set<UUID> userIds, BatchLoaderEnvironment env) ->
+            Mono.fromSupplier(() -> {
+                var schoolUsers = schoolUserRepository.findByUserIdIn(userIds);
+                var schoolIds = schoolUsers.stream().map(su -> su.getSchoolId()).distinct().toList();
+                if (schoolIds.isEmpty()) {
+                    return Map.<UUID, SchoolDto>of();
+                }
+                
+                var namesById = schoolRepository.findNamesByIdIn(schoolIds);
+
+                return schoolUsers.stream()
+                    .filter(su -> namesById.containsKey(su.getSchoolId()))
+                    .collect(Collectors.toMap(su -> su.getUserId(), su -> schoolDtoWithNameOnly(su.getSchoolId(), namesById.get(su.getSchoolId()))));
+            })
+        );
+    }
+
+    private static SchoolDto schoolDtoWithNameOnly(UUID id, String name) {
+        return new SchoolDto(id, null, name, null, null, null, null, null, 0, false, null, null);
     }
 }

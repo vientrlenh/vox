@@ -3,6 +3,7 @@ package com.sep.vox.domain.repository;
 import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -32,4 +33,5 @@ public interface SchoolRepository {
                            OffsetDateTime now, UUID updatedBy);
     List<School> findByIdIn(Collection<UUID> ids);
     boolean existsByCode(String code);
+    Map<UUID, String> findNamesByIdIn(Collection<UUID> ids);
 }

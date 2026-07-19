@@ -43,12 +43,12 @@ public class QuestionBankController {
 
     @QueryMapping(name = "questionBanks")
     public PageResult<QuestionBankDto> questionBanks(
-            @Argument QuestionBankOwnerType ownerType,
-            @Argument QuestionBankStatus status,
-            @Argument UUID languageId,
-            @Argument UUID schoolId,
-            @Argument UUID schoolGradeId,
-            @Argument String keyword,
+            @Argument(name = "ownerType") QuestionBankOwnerType ownerType,
+            @Argument(name = "status") QuestionBankStatus status,
+            @Argument(name = "languageId") UUID languageId,
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "schoolGradeId") UUID schoolGradeId,
+            @Argument(name = "keyword") String keyword,
             @Argument(name = "page") int page,
             @Argument(name = "size") int size) {
         validatePage(page, size);

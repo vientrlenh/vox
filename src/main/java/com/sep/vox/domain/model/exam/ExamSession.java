@@ -91,5 +91,14 @@ public class ExamSession {
         this.status = status;
     }
 
-    
+    public static ExamSession create(UUID examId, UUID candidateId, UUID paperId, OffsetDateTime now) {
+        return new ExamSession(
+                examId,
+                candidateId,
+                paperId,
+                now,
+                null,
+                ExamSessionStatus.IN_PROGRESS
+        );
+    }
 }

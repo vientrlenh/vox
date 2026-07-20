@@ -20,9 +20,6 @@ jwt:
     stream: 
         secret: testsecretoooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
 
-internal:
-  api-key: test-internal-api-key
-
 system-admin:
   email: sysadmin@example.com
   password: TestPassword123!

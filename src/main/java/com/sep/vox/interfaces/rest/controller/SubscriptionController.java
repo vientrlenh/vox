@@ -1,10 +1,7 @@
 package com.sep.vox.interfaces.rest.controller;
 
-import java.security.MessageDigest;
-import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -12,7 +9,6 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -32,7 +28,6 @@ import com.sep.vox.application.port.input.usecase.subscription.CreatePlanUseCase
 import com.sep.vox.application.port.input.usecase.subscription.RejectRequestUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.RenewSubscriptionUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.SubmitRequestUseCase;
-import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.domain.dto.SchoolSubscriptionDto;
 import com.sep.vox.domain.dto.SubscriptionPlanDto;
 import com.sep.vox.domain.dto.SubscriptionRequestDto;
@@ -60,9 +55,6 @@ public class SubscriptionController {
     private final RejectRequestUseCase rejectRequestUseCase;
     private final BuyTokensUseCase buyTokensUseCase;
     private final ConsumeQuotaUseCase consumeQuotaUseCase;
-
-    @Value("${internal.api-key}")
-    private String internalApiKey;
 
     public SubscriptionController(
             CreatePlanUseCase createPlanUseCase,
@@ -152,16 +144,9 @@ public class SubscriptionController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Mua token thành công", data));
     }
 
-    /** Internal service-to-service endpoint (exam-session grading flow). 
-    Requires a valid JWT (standard auth) plus this shared secret, 
-    so an ordinary logged-in user can't call it even though it carries no role restriction. */
     @PostMapping("/internal/subscriptions/consume")
-    public ResponseEntity<ApiResponse<Void>> consumeQuota(
-            @Valid @RequestBody ConsumeQuotaRequest request,
-            @RequestHeader("X-Internal-Api-Key") String apiKey) {
-        if (!MessageDigest.isEqual(apiKey.getBytes(StandardCharsets.UTF_8), internalApiKey.getBytes(StandardCharsets.UTF_8))) {
-            throw new ForbiddenException("Truy cập bị từ chối");
-        }
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> consumeQuota(@Valid @RequestBody ConsumeQuotaRequest request) {
         consumeQuotaUseCase.execute(new ConsumeQuotaCommand(
             request.subscriptionId(), request.examSessionId(), request.quotaType(), request.amount()
         ));

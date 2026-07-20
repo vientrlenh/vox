@@ -6,7 +6,6 @@ import java.util.UUID;
 public record BuyTokensCommand(
     UUID schoolId,
     UUID subscriptionId,
-    List<TokenPurchaseItemInput> items,
-    String idempotencyKey
+    List<TokenPurchaseItemInput> items
 ) {
 }

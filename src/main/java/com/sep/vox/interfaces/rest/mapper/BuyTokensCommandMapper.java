@@ -11,14 +11,13 @@ public final class BuyTokensCommandMapper {
     private BuyTokensCommandMapper() {
     }
 
-    public static BuyTokensCommand fromRequest(UUID schoolId, BuyTokensRequest request, String idempotencyKey) {
+    public static BuyTokensCommand fromRequest(UUID schoolId, BuyTokensRequest request) {
         return new BuyTokensCommand(
             schoolId,
             request.subscriptionId(),
             request.items().stream()
                 .map(item -> new TokenPurchaseItemInput(item.quotaType(), item.quantity()))
-                .toList(),
-            idempotencyKey
+                .toList()
         );
     }
 }

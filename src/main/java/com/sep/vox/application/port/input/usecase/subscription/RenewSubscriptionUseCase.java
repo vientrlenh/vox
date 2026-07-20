@@ -1,7 +1,6 @@
 package com.sep.vox.application.port.input.usecase.subscription;
 
 import java.time.OffsetDateTime;
-import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,12 +14,10 @@ import com.sep.vox.domain.dto.SchoolSubscriptionDto;
 import com.sep.vox.domain.mapper.SchoolSubscriptionDtoMapper;
 import com.sep.vox.domain.model.subscription.FinancialEvent;
 import com.sep.vox.domain.model.subscription.FinancialEventType;
-import com.sep.vox.domain.model.subscription.IdempotencyKey;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.model.subscription.SubscriptionQuota;
 import com.sep.vox.domain.model.subscription.SubscriptionStatus;
 import com.sep.vox.domain.repository.FinancialEventRepository;
-import com.sep.vox.domain.repository.IdempotencyKeyRepository;
 import com.sep.vox.domain.repository.PlanQuotaRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
@@ -34,7 +31,6 @@ public class RenewSubscriptionUseCase implements IUseCase<RenewSubscriptionComma
     private final PlanQuotaRepository planQuotaRepository;
     private final SubscriptionQuotaRepository subscriptionQuotaRepository;
     private final FinancialEventRepository financialEventRepository;
-    private final IdempotencyKeyRepository idempotencyKeyRepository;
     private final UserContextPort userContextPort;
 
     public RenewSubscriptionUseCase(
@@ -43,14 +39,12 @@ public class RenewSubscriptionUseCase implements IUseCase<RenewSubscriptionComma
             PlanQuotaRepository planQuotaRepository,
             SubscriptionQuotaRepository subscriptionQuotaRepository,
             FinancialEventRepository financialEventRepository,
-            IdempotencyKeyRepository idempotencyKeyRepository,
             UserContextPort userContextPort) {
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
         this.subscriptionPlanRepository = subscriptionPlanRepository;
         this.planQuotaRepository = planQuotaRepository;
         this.subscriptionQuotaRepository = subscriptionQuotaRepository;
         this.financialEventRepository = financialEventRepository;
-        this.idempotencyKeyRepository = idempotencyKeyRepository;
         this.userContextPort = userContextPort;
     }
 
@@ -59,13 +53,6 @@ public class RenewSubscriptionUseCase implements IUseCase<RenewSubscriptionComma
     public SchoolSubscriptionDto execute(RenewSubscriptionCommand input) {
         if (!userContextPort.isSystemAdmin() && !input.schoolId().equals(userContextPort.getCurrentSchoolId())) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
-        }
-
-        var existingKey = idempotencyKeyRepository.findByKey(input.idempotencyKey());
-        if (existingKey.isPresent()) {
-            var replayed = schoolSubscriptionRepository.findById(UUID.fromString(existingKey.get().getResultRef()))
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy gói đăng ký"));
-            return SchoolSubscriptionDtoMapper.toDto(replayed);
         }
 
         var current = schoolSubscriptionRepository.findById(input.subscriptionId())
@@ -113,8 +100,6 @@ public class RenewSubscriptionUseCase implements IUseCase<RenewSubscriptionComma
             null,
             now
         ));
-
-        idempotencyKeyRepository.save(new IdempotencyKey(input.idempotencyKey(), savedSubscription.getId().toString(), now));
 
         return SchoolSubscriptionDtoMapper.toDto(savedSubscription);
     }

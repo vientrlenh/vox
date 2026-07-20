@@ -103,9 +103,8 @@ public class SubscriptionController {
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<SchoolSubscriptionDto>> renewSubscription(
             @PathVariable UUID schoolId,
-            @PathVariable UUID id,
-            @RequestHeader("Idempotency-Key") String idempotencyKey) {
-        var data = renewSubscriptionUseCase.execute(new RenewSubscriptionCommand(schoolId, id, idempotencyKey));
+            @PathVariable UUID id) {
+        var data = renewSubscriptionUseCase.execute(new RenewSubscriptionCommand(schoolId, id));
         return ResponseEntity.ok(ApiResponse.success("Gia hạn gói đăng ký thành công", data));
     }
 
@@ -122,10 +121,9 @@ public class SubscriptionController {
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<SubscriptionRequestDto>> submitRequest(
             @PathVariable UUID schoolId,
-            @Valid @RequestBody SubmitRequestRequest request,
-            @RequestHeader("Idempotency-Key") String idempotencyKey) {
+            @Valid @RequestBody SubmitRequestRequest request) {
         var data = submitRequestUseCase.execute(new SubmitRequestCommand(
-            schoolId, request.requestType(), request.currentPlanId(), request.requestedPlanId(), idempotencyKey
+            schoolId, request.requestType(), request.currentPlanId(), request.requestedPlanId()
         ));
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Gửi yêu cầu thành công", data));
     }
@@ -133,9 +131,8 @@ public class SubscriptionController {
     @PostMapping("/subscription-requests/{id}/approve")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<SubscriptionRequestDto>> approveRequest(
-            @PathVariable UUID id,
-            @RequestHeader("Idempotency-Key") String idempotencyKey) {
-        var data = approveRequestUseCase.execute(new ApproveRequestCommand(id, idempotencyKey));
+            @PathVariable UUID id) {
+        var data = approveRequestUseCase.execute(new ApproveRequestCommand(id));
         return ResponseEntity.ok(ApiResponse.success("Duyệt yêu cầu thành công", data));
     }
 
@@ -150,9 +147,8 @@ public class SubscriptionController {
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<TokenPurchaseDto>> buyTokens(
             @PathVariable UUID schoolId,
-            @Valid @RequestBody BuyTokensRequest request,
-            @RequestHeader("Idempotency-Key") String idempotencyKey) {
-        var data = buyTokensUseCase.execute(BuyTokensCommandMapper.fromRequest(schoolId, request, idempotencyKey));
+            @Valid @RequestBody BuyTokensRequest request) {
+        var data = buyTokensUseCase.execute(BuyTokensCommandMapper.fromRequest(schoolId, request));
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Mua token thành công", data));
     }
 

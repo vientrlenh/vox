@@ -1,7 +1,6 @@
 package com.sep.vox.application.port.input.usecase.subscription;
 
 import java.time.OffsetDateTime;
-import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,14 +14,12 @@ import com.sep.vox.domain.dto.SubscriptionRequestDto;
 import com.sep.vox.domain.mapper.SubscriptionRequestDtoMapper;
 import com.sep.vox.domain.model.subscription.FinancialEvent;
 import com.sep.vox.domain.model.subscription.FinancialEventType;
-import com.sep.vox.domain.model.subscription.IdempotencyKey;
 import com.sep.vox.domain.model.subscription.RequestStatus;
 import com.sep.vox.domain.model.subscription.RequestType;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.model.subscription.SubscriptionQuota;
 import com.sep.vox.domain.model.subscription.SubscriptionStatus;
 import com.sep.vox.domain.repository.FinancialEventRepository;
-import com.sep.vox.domain.repository.IdempotencyKeyRepository;
 import com.sep.vox.domain.repository.PlanQuotaRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
@@ -38,7 +35,6 @@ public class ApproveRequestUseCase implements IUseCase<ApproveRequestCommand, Su
     private final PlanQuotaRepository planQuotaRepository;
     private final SubscriptionQuotaRepository subscriptionQuotaRepository;
     private final FinancialEventRepository financialEventRepository;
-    private final IdempotencyKeyRepository idempotencyKeyRepository;
     private final UserContextPort userContextPort;
 
     public ApproveRequestUseCase(
@@ -48,7 +44,6 @@ public class ApproveRequestUseCase implements IUseCase<ApproveRequestCommand, Su
             PlanQuotaRepository planQuotaRepository,
             SubscriptionQuotaRepository subscriptionQuotaRepository,
             FinancialEventRepository financialEventRepository,
-            IdempotencyKeyRepository idempotencyKeyRepository,
             UserContextPort userContextPort) {
         this.subscriptionRequestRepository = subscriptionRequestRepository;
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
@@ -56,7 +51,6 @@ public class ApproveRequestUseCase implements IUseCase<ApproveRequestCommand, Su
         this.planQuotaRepository = planQuotaRepository;
         this.subscriptionQuotaRepository = subscriptionQuotaRepository;
         this.financialEventRepository = financialEventRepository;
-        this.idempotencyKeyRepository = idempotencyKeyRepository;
         this.userContextPort = userContextPort;
     }
 
@@ -65,13 +59,6 @@ public class ApproveRequestUseCase implements IUseCase<ApproveRequestCommand, Su
     public SubscriptionRequestDto execute(ApproveRequestCommand input) {
         if (!userContextPort.isSystemAdmin()) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
-        }
-
-        var existingKey = idempotencyKeyRepository.findByKey(input.idempotencyKey());
-        if (existingKey.isPresent()) {
-            var replayed = subscriptionRequestRepository.findById(UUID.fromString(existingKey.get().getResultRef()))
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy yêu cầu"));
-            return SubscriptionRequestDtoMapper.toDto(replayed);
         }
 
         var request = subscriptionRequestRepository.findById(input.requestId())
@@ -131,8 +118,6 @@ public class ApproveRequestUseCase implements IUseCase<ApproveRequestCommand, Su
             null,
             now
         ));
-
-        idempotencyKeyRepository.save(new IdempotencyKey(input.idempotencyKey(), savedRequest.getId().toString(), now));
 
         return SubscriptionRequestDtoMapper.toDto(savedRequest);
     }

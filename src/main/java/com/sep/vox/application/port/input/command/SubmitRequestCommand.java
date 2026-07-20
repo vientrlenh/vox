@@ -8,7 +8,6 @@ public record SubmitRequestCommand(
     UUID schoolId,
     RequestType requestType,
     UUID currentPlanId,
-    UUID requestedPlanId,
-    String idempotencyKey
+    UUID requestedPlanId
 ) {
 }

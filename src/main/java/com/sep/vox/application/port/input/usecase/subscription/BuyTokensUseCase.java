@@ -17,7 +17,6 @@ import com.sep.vox.domain.dto.TokenPurchaseDto;
 import com.sep.vox.domain.mapper.TokenPurchaseDtoMapper;
 import com.sep.vox.domain.model.subscription.FinancialEvent;
 import com.sep.vox.domain.model.subscription.FinancialEventType;
-import com.sep.vox.domain.model.subscription.IdempotencyKey;
 import com.sep.vox.domain.model.subscription.Invoice;
 import com.sep.vox.domain.model.subscription.InvoiceSourceType;
 import com.sep.vox.domain.model.subscription.InvoiceStatus;
@@ -26,7 +25,6 @@ import com.sep.vox.domain.model.subscription.SubscriptionStatus;
 import com.sep.vox.domain.model.subscription.TokenPurchase;
 import com.sep.vox.domain.model.subscription.TokenPurchaseItem;
 import com.sep.vox.domain.repository.FinancialEventRepository;
-import com.sep.vox.domain.repository.IdempotencyKeyRepository;
 import com.sep.vox.domain.repository.InvoiceRepository;
 import com.sep.vox.domain.repository.PlanQuotaRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
@@ -44,7 +42,6 @@ public class BuyTokensUseCase implements IUseCase<BuyTokensCommand, TokenPurchas
     private final TokenPurchaseItemRepository tokenPurchaseItemRepository;
     private final InvoiceRepository invoiceRepository;
     private final FinancialEventRepository financialEventRepository;
-    private final IdempotencyKeyRepository idempotencyKeyRepository;
     private final UserContextPort userContextPort;
 
     public BuyTokensUseCase(
@@ -55,7 +52,6 @@ public class BuyTokensUseCase implements IUseCase<BuyTokensCommand, TokenPurchas
             TokenPurchaseItemRepository tokenPurchaseItemRepository,
             InvoiceRepository invoiceRepository,
             FinancialEventRepository financialEventRepository,
-            IdempotencyKeyRepository idempotencyKeyRepository,
             UserContextPort userContextPort) {
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
         this.planQuotaRepository = planQuotaRepository;
@@ -64,7 +60,6 @@ public class BuyTokensUseCase implements IUseCase<BuyTokensCommand, TokenPurchas
         this.tokenPurchaseItemRepository = tokenPurchaseItemRepository;
         this.invoiceRepository = invoiceRepository;
         this.financialEventRepository = financialEventRepository;
-        this.idempotencyKeyRepository = idempotencyKeyRepository;
         this.userContextPort = userContextPort;
     }
 
@@ -73,14 +68,6 @@ public class BuyTokensUseCase implements IUseCase<BuyTokensCommand, TokenPurchas
     public TokenPurchaseDto execute(BuyTokensCommand input) {
         if (!userContextPort.isSystemAdmin() && !input.schoolId().equals(userContextPort.getCurrentSchoolId())) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
-        }
-
-        var existingKey = idempotencyKeyRepository.findByKey(input.idempotencyKey());
-        if (existingKey.isPresent()) {
-            var purchaseId = UUID.fromString(existingKey.get().getResultRef());
-            var replayed = tokenPurchaseRepository.findById(purchaseId)
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy giao dịch mua token"));
-            return TokenPurchaseDtoMapper.toDto(replayed, tokenPurchaseItemRepository.findAllByPurchaseId(purchaseId));
         }
 
         var subscription = schoolSubscriptionRepository.findById(input.subscriptionId())
@@ -133,8 +120,6 @@ public class BuyTokensUseCase implements IUseCase<BuyTokensCommand, TokenPurchas
             input.schoolId(), subscription.getId(), FinancialEventType.TOKEN_PURCHASED,
             total, "VND", userContextPort.getCurrentAuthenticatedUserId(), null, now
         ));
-
-        idempotencyKeyRepository.save(new IdempotencyKey(input.idempotencyKey(), savedPurchase.getId().toString(), now));
 
         return TokenPurchaseDtoMapper.toDto(savedPurchase, tokenPurchaseItemRepository.findAllByPurchaseId(savedPurchase.getId()));
     }

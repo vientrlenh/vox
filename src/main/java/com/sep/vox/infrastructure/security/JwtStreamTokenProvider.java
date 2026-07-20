@@ -22,11 +22,11 @@ public class JwtStreamTokenProvider implements StreamTokenProvider {
     private String secret;
 
     @Override
-    public String generateToken(String userId, List<String> roomIds, String examId, String sessionId, List<String> roles,
+    public String generateToken(String userId, List<String> scheduleIds, String examId, String sessionId, List<String> roles,
             List<String> streamTypes, OffsetDateTime windowStart, OffsetDateTime windowEnd) {
         var claims = new HashMap<String, Object>();
         claims.put("userId", userId);
-        claims.put("roomIds", roomIds);
+        claims.put("scheduleIds", scheduleIds);
         claims.put("examId", examId);
         claims.put("sessionId", sessionId);
         claims.put("roles", roles);

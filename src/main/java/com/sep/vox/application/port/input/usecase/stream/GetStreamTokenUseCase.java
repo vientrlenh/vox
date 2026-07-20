@@ -68,7 +68,7 @@ public class GetStreamTokenUseCase implements IUseCase<GetStreamTokenCommand, St
         var roles = getValidUserRoles(userId);
         var streamRole = resolveStreamRole(roles);
 
-        if (streamRole.equals(RoleConstant.STUDENT_ROLE) && input.roomIds().size() != 1) {
+        if (streamRole.equals(RoleConstant.STUDENT_ROLE) && input.scheduleIds().size() != 1) {
             throw new IllegalArgumentException("Học sinh chỉ được stream ở một phòng");
         }
 
@@ -79,11 +79,11 @@ public class GetStreamTokenUseCase implements IUseCase<GetStreamTokenCommand, St
             .stream()
             .collect(Collectors.toMap(s -> s.getId(), s -> s));
         
-        var requestedSchedules = input.roomIds().stream()
-            .map(roomId -> {
-                var schedule = activeSchedules.get(roomId);
+        var requestedSchedules = input.scheduleIds().stream()
+            .map(scheduleId -> {
+                var schedule = activeSchedules.get(scheduleId);
                 if (schedule == null) {
-                    throw new ForbiddenException("Phòng không thuộc kỳ thi hoặc không trong giờ thi: " + roomId);
+                    throw new ForbiddenException("Lịch thi không thuộc kỳ thi hoặc không trong giờ thi: " + scheduleId);
                 }
                 authorizeRoom(streamRole, userId, input.examId(), exam.getSchoolId(), schedule, now);
                 return schedule;
@@ -96,6 +96,9 @@ public class GetStreamTokenUseCase implements IUseCase<GetStreamTokenCommand, St
             var candidate = examCandidateRepository.findByScheduleIdAndStudentId(schedule.getId(), userId)
                 .orElseThrow(() -> new ForbiddenException("Bạn không thuộc ca thi này"));
             var session = examSessionRepository.findActiveByExamIdAndCandidateId(input.examId(), candidate.getId()).orElseThrow(() -> new ForbiddenException("Bạn chưa tham gia thi"));
+            if (input.examSessionId() == null || input.examSessionId().equals(session.getId())) {
+                throw new ForbiddenException("Phiên thi này không thuộc về bạn");
+            }
             sessionId = session.getId().toString();
         }
 
@@ -112,7 +115,7 @@ public class GetStreamTokenUseCase implements IUseCase<GetStreamTokenCommand, St
 
         return streamTokenProvider.generateToken(
             userId.toString(), 
-            input.roomIds().stream().map(r -> r.toString()).toList(), 
+            input.scheduleIds().stream().map(r -> r.toString()).toList(), 
             input.examId().toString(),
             sessionId,
             List.of(streamRole), 
@@ -124,7 +127,7 @@ public class GetStreamTokenUseCase implements IUseCase<GetStreamTokenCommand, St
 
 
     private void validateCommand(GetStreamTokenCommand input) {
-        if (input.roomIds().isEmpty()) {
+        if (input.scheduleIds().isEmpty()) {
             throw new IllegalArgumentException("Danh sách phòng không được để trống");
         }
     }

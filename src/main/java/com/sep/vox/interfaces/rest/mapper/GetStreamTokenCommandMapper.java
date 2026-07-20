@@ -7,7 +7,8 @@ public final class GetStreamTokenCommandMapper {
     
     public static GetStreamTokenCommand fromRequest(GetStreamTokenRequest request) {
         return new GetStreamTokenCommand(
-            request.roomIds(), 
+            request.scheduleIds(), 
+            request.examSessionId(),
             request.examId(),
             request.streamTypes()
         );

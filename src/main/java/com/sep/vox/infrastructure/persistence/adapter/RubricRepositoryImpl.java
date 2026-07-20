@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -29,6 +30,15 @@ public class RubricRepositoryImpl implements RubricRepository {
     @Override
     public Optional<Rubric> findById(UUID id) {
         return springDataRubricRepository.findById(id).map(RubricMapper::toDomain);
+    }
+
+    @Override
+    public List<Rubric> findByIdIn(Collection<UUID> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        return springDataRubricRepository.findAllById(ids)
+                .stream().map(RubricMapper::toDomain).toList();
     }
 
     @Override

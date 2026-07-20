@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
@@ -68,7 +69,19 @@ public class SchoolGradeRepositoryImpl implements SchoolGradeRepository {
         if (schoolId == null || codes == null || codes.isEmpty()) {
             return List.of();
         }
-        return springDataSchoolGradeRepository.findBySchoolIdAndCodeIn(schoolId, codes)
+        var upperCodes = codes.stream().map(String::toUpperCase).collect(Collectors.toSet());
+        return springDataSchoolGradeRepository.findBySchoolIdAndCodeIn(schoolId, upperCodes)
+                .stream()
+                .map(SchoolGradeMapper::toDomain)
+                .toList();
+    }
+
+    @Override
+    public List<SchoolGrade> findBySchoolIdAndNameIn(UUID schoolId, Collection<String> names) {
+        if (schoolId == null || names == null || names.isEmpty()) {
+            return List.of();
+        }
+        return springDataSchoolGradeRepository.findBySchoolIdAndNameIn(schoolId, names)
                 .stream()
                 .map(SchoolGradeMapper::toDomain)
                 .toList();

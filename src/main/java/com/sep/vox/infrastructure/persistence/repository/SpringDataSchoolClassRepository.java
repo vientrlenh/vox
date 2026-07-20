@@ -18,7 +18,10 @@ import com.sep.vox.infrastructure.persistence.entity.SchoolClassJpaEntity;
 public interface SpringDataSchoolClassRepository extends JpaRepository<SchoolClassJpaEntity, UUID>{
     Optional<SchoolClassJpaEntity> findBySchoolIdAndCode(UUID schoolId, String code);
     Optional<SchoolClassJpaEntity> findBySchoolIdAndName(UUID schoolId, String name);
-    List<SchoolClassJpaEntity> findBySchoolIdAndCodeIn(UUID schoolId, Collection<String> codes);
+    // Nhận codes đã được Impl uppercase sẵn; entity-side vẫn bọc UPPER() để phòng dữ liệu cũ lỡ không đồng nhất case.
+    @Query("SELECT sc FROM SchoolClassJpaEntity sc WHERE sc.schoolId = :schoolId AND UPPER(sc.code) IN :codes")
+    List<SchoolClassJpaEntity> findBySchoolIdAndCodeIn(@Param("schoolId") UUID schoolId, @Param("codes") Collection<String> codes);
+    List<SchoolClassJpaEntity> findBySchoolIdAndNameIn(UUID schoolId, Collection<String> names);
 
     @Query("""
         SELECT sc

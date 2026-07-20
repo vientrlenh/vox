@@ -12,14 +12,14 @@ import com.sep.vox.domain.repository.RubricCriterionBandRepository;
 import com.sep.vox.domain.repository.RubricCriterionRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Component
+@Service
 public class RubricCriterionBandImportCommitHandler implements ImportCommitHandler {
 
     private final RubricCriterionBandRepository rubricCriterionBandRepository;

@@ -16,6 +16,8 @@ public interface RubricVersionRepository {
     Optional<RubricVersion> findByName(String name);
 
     List<RubricVersion> findByIdIn(Collection<UUID> ids);
+    List<RubricVersion> findByCodeIn(Collection<String> codes);
+    List<RubricVersion> findByNameIn(Collection<String> names);
 
     RubricVersion save(RubricVersion rubricVersion);
 
@@ -25,7 +27,7 @@ public interface RubricVersionRepository {
 
     List<RubricVersion> findByRubricId(UUID rubricId);
 
-    void saveAll(List<RubricVersion> rubricVersions);
+    List<RubricVersion> saveAll(List<RubricVersion> rubricVersions);
 
     void updateRubricVersionAtomic(UUID id, String code, String name, String description, OffsetDateTime effectiveFrom,
                                    OffsetDateTime effectiveTo, BigDecimal scoringScaleMin,

@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -49,7 +50,19 @@ public class SupportedLanguageRepositoryImpl implements SupportedLanguageReposit
         if (codes == null || codes.isEmpty()) {
             return List.of();
         }
-        return springDataSupportedLanguageRepository.findByCodeIn(codes)
+        var upperCodes = codes.stream().map(String::toUpperCase).collect(Collectors.toSet());
+        return springDataSupportedLanguageRepository.findByCodeIn(upperCodes)
+            .stream()
+            .map(SupportedLanguageMapper::toDomain)
+            .toList();
+    }
+
+    @Override
+    public List<SupportedLanguage> findByNameIn(Collection<String> names) {
+        if (names == null || names.isEmpty()) {
+            return List.of();
+        }
+        return springDataSupportedLanguageRepository.findByNameIn(names)
             .stream()
             .map(SupportedLanguageMapper::toDomain)
             .toList();

@@ -22,15 +22,15 @@ public class JwtStreamTokenProvider implements StreamTokenProvider {
     private String secret;
 
     @Override
-    public String generateToken(String userId, List<String> scheduleIds, String examId, String sessionId, List<String> roles,
+    public String generateStreamToken(String userId, String candidateId, String scheduleId, String examId, String sessionId,
             List<String> streamTypes, OffsetDateTime windowStart, OffsetDateTime windowEnd) {
         var claims = new HashMap<String, Object>();
-        claims.put("userId", userId);
-        claims.put("scheduleIds", scheduleIds);
+        claims.put("candidateId", candidateId);
+        claims.put("scheduleId", scheduleId);
         claims.put("examId", examId);
         claims.put("sessionId", sessionId);
-        claims.put("roles", roles);
         claims.put("streamTypes", streamTypes);
+        claims.put("tokenUse", "stream");
 
         return Jwts.builder()
                 .claims(claims)
@@ -40,6 +40,24 @@ public class JwtStreamTokenProvider implements StreamTokenProvider {
                 .expiration(Date.from(windowEnd.toInstant()))
                 .signWith(getSecretKey(secret))
                 .compact();
+    }
+
+    public String generateMonitorToken(String userId, List<String> sessionIds, List<String> scheduleIds, String examId, List<String> roles, OffsetDateTime windowStart, OffsetDateTime windowEnd) {
+        var claims = new HashMap<String, Object>();
+        claims.put("userId", userId);
+        claims.put("sessionIds", sessionIds);
+        claims.put("scheduleIds", scheduleIds);
+        claims.put("examId", examId);
+        claims.put("roles", roles);
+        claims.put("tokenUse", "monitor");
+        return Jwts.builder()
+            .claims(claims)
+            .subject(userId)
+            .issuedAt(new Date())
+            .notBefore(Date.from(windowStart.toInstant()))
+            .expiration(Date.from(windowEnd.toInstant()))
+            .signWith(getSecretKey(secret))
+            .compact();
     }
 
     private SecretKey getSecretKey(String secret) {

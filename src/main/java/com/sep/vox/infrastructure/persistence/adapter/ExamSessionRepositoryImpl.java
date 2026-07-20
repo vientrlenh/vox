@@ -1,6 +1,7 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
 import com.sep.vox.domain.model.exam.ExamSession;
+import com.sep.vox.domain.model.exam.ExamSessionStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.repository.ExamSessionRepository;
 import com.sep.vox.infrastructure.persistence.mapper.ExamSessionMapper;
@@ -30,5 +31,11 @@ public class ExamSessionRepositoryImpl implements ExamSessionRepository {
     @Override
     public Optional<ExamSession> findActiveByExamIdAndCandidateId(UUID examId, UUID candidateId) {
         return springDataExamSessionRepository.findByExamIdAndCandidateIdAndStatus(examId, candidateId, ExamStatus.IN_PROGRESS.name()).map(ExamSessionMapper::toDomain);
+    }
+
+    @Override
+    public Optional<ExamSession> findByIdAndInProgress(UUID id) {
+        return springDataExamSessionRepository.findByIdAndStatus(id, ExamSessionStatus.IN_PROGRESS.name())
+            .map(ExamSessionMapper::toDomain);
     }
 }

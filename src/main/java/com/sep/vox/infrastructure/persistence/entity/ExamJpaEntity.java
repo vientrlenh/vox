@@ -13,7 +13,27 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "exams")
+@Table(name = "exams", check = {
+    @CheckConstraint(
+        name = "chk_exams_required_stream_type_and_stream_type_permission_valid", 
+        constraint = """
+            (
+                required_stream_type IS NULL 
+                AND stream_type_permission IS NULL
+            )
+            OR 
+            (
+                required_stream_type = 'CAMERA_AND_SCREEN' 
+                AND stream_type_permission IN ('ANY', 'ALL')
+            )   
+            OR 
+            (
+                required_stream_type IN ('CAMERA', 'SCREEN')
+                AND stream_type_permission IS NULL
+            )
+        """
+    )
+})
 public class ExamJpaEntity {
     @Id
     @Generated(event = EventType.INSERT)
@@ -82,6 +102,22 @@ public class ExamJpaEntity {
     })
     private String resultDecisionMethod;
 
+    @Column(name = "required_stream_type", length = 20, check = {
+        @CheckConstraint(
+            name = "chk_exams_required_stream_type_valid", 
+            constraint = "required_stream_type IN ('CAMERA', 'SCREEN', 'CAMERA_AND_SCREEN')"
+        )
+    })
+    private String requiredStreamType; 
+
+    @Column(name = "stream_type_permission", length = 20, check = {
+        @CheckConstraint(
+            name = "chk_exams_stream_type_permission_valid", 
+            constraint = "stream_type_permission IN ('ANY', 'ALL')"
+        )
+    })
+    private String streamTypePermission;
+
     @Column(name = "open_at")
     private OffsetDateTime openAt;
 
@@ -106,7 +142,7 @@ public class ExamJpaEntity {
     protected ExamJpaEntity() {}
 
     public ExamJpaEntity(UUID id, UUID blueprintId, UUID blueprintVersionId, String code, String name, String description, UUID schoolId, UUID languageId,
-            String kind, String deliveryMode, String status, Integer maxAttempt, String resultDecisionMethod,
+            String kind, String deliveryMode, String status, Integer maxAttempt, String resultDecisionMethod, String requiredStreamType, String streamTypePermission, 
             OffsetDateTime openAt, OffsetDateTime closeAt, UUID assessmentPolicyId,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
@@ -122,6 +158,8 @@ public class ExamJpaEntity {
         this.status = status;
         this.maxAttempt = maxAttempt;
         this.resultDecisionMethod = resultDecisionMethod;
+        this.requiredStreamType = requiredStreamType;
+        this.streamTypePermission = streamTypePermission;
         this.openAt = openAt;
         this.closeAt = closeAt;
         this.assessmentPolicyId = assessmentPolicyId;
@@ -290,4 +328,22 @@ public class ExamJpaEntity {
     public void setBlueprintVersionId(UUID blueprintVersionId) {
         this.blueprintVersionId = blueprintVersionId;
     }
+
+    public String getRequiredStreamType() {
+        return requiredStreamType;
+    }
+
+    public void setRequiredStreamType(String requiredStreamType) {
+        this.requiredStreamType = requiredStreamType;
+    }
+
+    public String getStreamTypePermission() {
+        return streamTypePermission;
+    }
+
+    public void setStreamTypePermission(String streamTypePermission) {
+        this.streamTypePermission = streamTypePermission;
+    }
+
+    
 }

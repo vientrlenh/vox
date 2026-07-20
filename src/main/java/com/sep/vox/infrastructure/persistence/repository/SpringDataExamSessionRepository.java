@@ -8,4 +8,5 @@ import java.util.UUID;
 
 public interface SpringDataExamSessionRepository extends JpaRepository<ExamSessionJpaEntity, UUID> {
     Optional<ExamSessionJpaEntity> findByExamIdAndCandidateIdAndStatus(UUID examId, UUID candidateId, String status);
+    Optional<ExamSessionJpaEntity> findByIdAndStatus(UUID id, String status);
 }

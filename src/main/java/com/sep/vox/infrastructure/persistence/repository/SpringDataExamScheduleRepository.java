@@ -79,14 +79,18 @@ public interface SpringDataExamScheduleRepository extends JpaRepository<ExamSche
     @Query("""
         SELECT s FROM ExamScheduleJpaEntity s
         WHERE s.id = :id
-          AND s.startDate <= :now AND s.endDate > :now
+          AND s.startDate <= :now 
+          AND s.endDate > :now 
+          AND s.status = 'PUBLISHED'
         """)
 Optional<ExamScheduleJpaEntity> findByIdAndInSchedule(@Param("id") UUID id, @Param("now") OffsetDateTime now);
 
 @Query("""
         SELECT s FROM ExamScheduleJpaEntity s
         WHERE s.id IN :ids
-          AND s.startDate <= :now AND s.endDate > :now
+          AND s.startDate <= :now 
+          AND s.endDate > :now 
+          AND s.status = 'PUBLISHED' 
         """)
 List<ExamScheduleJpaEntity> findByIdInAndInSchedule(@Param("ids") java.util.Collection<UUID> ids, @Param("now") OffsetDateTime now);
 }

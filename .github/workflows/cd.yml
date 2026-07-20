@@ -1,17 +1,19 @@
 name: CD
 
-# TEMPORARY (testing): triggers directly on push to `feat/QuestionCRUD`,
-# bypassing the normal "wait for CI Build to pass first" gate entirely --
-# no workflow_run, no dependency on ci-build.yml. Before merging this branch,
-# revert to the CI-gated design: `on: workflow_run: workflows: ["CI Build"]`
-# + `types: [completed]` + an `if:` checking
+# TEMPORARY (testing): triggers directly on push to `testDeploy` (a dedicated
+# throwaway branch for testing this pipeline, separate from feat/QuestionCRUD
+# so this doesn't collide with real feature work), bypassing the normal "wait
+# for CI Build to pass first" gate entirely -- no workflow_run, no dependency
+# on ci-build.yml. Before merging any of this to main, revert to the
+# CI-gated design: `on: workflow_run: workflows: ["CI Build"]` + `types:
+# [completed]` + an `if:` checking
 # `github.event.workflow_run.conclusion == 'success' && ...event == 'push' &&
 # ...head_branch == 'default'` (see git history / other repos' cd.yml for the
 # exact shape) -- that gate exists so a broken build never reaches ECR/deploy.
 on:
   push:
     branches:
-      - feat/QuestionCRUD
+      - testDeploy
 
 jobs:
   docker-build-push:

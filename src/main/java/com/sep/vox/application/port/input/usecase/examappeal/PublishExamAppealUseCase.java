@@ -38,6 +38,10 @@ import com.sep.vox.domain.repository.RubricVersionRepository;
  * phúc khảo nhận một bản HUMAN/FINALIZED, mọi bản cũ của các part đó chuyển SUPERSEDED,
  * rồi {@link UpsertExamCandidateResultUseCase} tính lại tổng và result band từ toàn bộ
  * item. Nhờ vậy tổng luôn bằng hàm của các item, thay vì phụ thuộc admin nhập đúng.
+ *
+ * <p>Kết quả quay về RELEASED chứ không phải FINAL: công bố phúc khảo không đóng
+ * vĩnh viễn kết quả, học sinh còn phúc khảo lại được trong hạn mức
+ * {@code CreateExamAppealUseCase.MAX_APPEAL_ROUNDS}.
  */
 @Service
 public class PublishExamAppealUseCase implements IUseCase<PublishExamAppealCommand, UUID> {
@@ -146,8 +150,10 @@ public class PublishExamAppealUseCase implements IUseCase<PublishExamAppealComma
 
         // Tổng + result band được dẫn xuất lại từ items, không do admin nhập. Một lần
         // gọi là đủ: calculator quét toàn bộ item nên thấy hết các bản FINALIZED mới.
+        // Kết quả quay về RELEASED (không phải FINAL) để học sinh còn phúc khảo lại
+        // được trong hạn mức — xem MAX_APPEAL_ROUNDS ở CreateExamAppealUseCase.
         var recalculated = upsertExamCandidateResultUseCase.execute(
-            context.candidateResult().getSessionId(), ExamCandidateResultStatus.FINAL);
+            context.candidateResult().getSessionId(), ExamCandidateResultStatus.RELEASED);
 
         appeal.setStatus(ExamAppealStatus.PUBLISHED);
         appeal.setScoreAfter(recalculated.getTotalScore());

@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Góc nhìn giám khảo. CÓ aiScores (chính sách đã chốt: giám khảo được tham chiếu
+ * Góc nhìn giám khảo. CÓ baselineScores (chính sách đã chốt: giám khảo được tham chiếu
  * điểm AI), nhưng KHÔNG có báo cáo của giám khảo khác — để tránh thiên lệch.
  */
 public record AppealTaskDetailInfo(

@@ -288,8 +288,11 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
     }
 
     /**
-     * Các phần thi của đơn kèm dữ liệu gốc để đối chiếu. Số query cố định (4) bất kể
+     * Các phần thi của đơn kèm dữ liệu để đối chiếu. Số query cố định (5) bất kể
      * đơn có bao nhiêu phần.
+     *
+     * <p>Hai lookup evaluation khác nhau là cố ý: điểm đối chiếu lấy từ bản chấm
+     * đang có hiệu lực, còn lượt nói phải lấy từ bản AI vì chỉ bản AI mới có turn.
      */
     private List<AppealItemInfo> appealItems(UUID appealId) {
         var rows = em.createQuery("""
@@ -307,19 +310,22 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
         }
 
         var responseIds = rows.stream().map(row -> row.get(2, UUID.class)).filter(Objects::nonNull).toList();
+        var baselineEvaluationIds = currentEvaluationIdsByResponseIds(responseIds);
         var aiEvaluationIds = aiEvaluationIdsByResponseIds(responseIds);
-        var evaluationIds = List.copyOf(aiEvaluationIds.values());
-        var scoresByEvaluation = criterionScoresByEvaluationIds(evaluationIds);
-        var turnsByEvaluation = turnsByEvaluationIds(evaluationIds);
+        var scoresByEvaluation = criterionScoresByEvaluationIds(List.copyOf(baselineEvaluationIds.values()));
+        var turnsByEvaluation = turnsByEvaluationIds(List.copyOf(aiEvaluationIds.values()));
 
         var result = new ArrayList<AppealItemInfo>();
         for (var row : rows) {
-            var aiEvaluationId = aiEvaluationIds.get(row.get(2, UUID.class));
+            var responseId = row.get(2, UUID.class);
+            var baselineEvaluationId = baselineEvaluationIds.get(responseId);
+            var aiEvaluationId = aiEvaluationIds.get(responseId);
             result.add(new AppealItemInfo(
                 row.get(0, UUID.class),
                 row.get(1, UUID.class),
                 row.get(3, String.class),
-                aiEvaluationId == null ? List.of() : scoresByEvaluation.getOrDefault(aiEvaluationId, List.of()),
+                baselineEvaluationId == null
+                    ? List.of() : scoresByEvaluation.getOrDefault(baselineEvaluationId, List.of()),
                 aiEvaluationId == null ? List.of() : turnsByEvaluation.getOrDefault(aiEvaluationId, List.of()),
                 row.get(4, BigDecimal.class)
             ));
@@ -328,10 +334,38 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
     }
 
     /**
-     * Điểm AI gốc để đối chiếu, cho nhiều response trong 1 query. Sau khi công bố phúc
-     * khảo, bản AI mang SUPERSEDED — vẫn phải trả về, vì đây chính là mốc so sánh của
-     * màn đối chiếu. JPQL không diễn đạt được LIMIT theo nhóm, nên order rồi giữ dòng
-     * đầu tiên của mỗi response.
+     * Bản chấm đang có hiệu lực của mỗi response — mốc để giám khảo đối chiếu.
+     * Vòng đầu rơi vào bản AI AUTO_GRADED; vòng sau rơi vào bản HUMAN FINALIZED của
+     * vòng trước, khớp với originalScore hiển thị cạnh nó thay vì điểm AI đã lỗi thời.
+     *
+     * <p>Order rồi giữ dòng đầu mỗi response, không dùng MAX(evaluatedAt): hai bản
+     * trùng mốc thời gian sẽ khiến so sánh bằng trả về cả hai.
+     */
+    private Map<UUID, UUID> currentEvaluationIdsByResponseIds(List<UUID> responseIds) {
+        if (responseIds.isEmpty()) {
+            return Map.of();
+        }
+        var rows = em.createQuery("""
+            SELECT ev.responseId, ev.id FROM ExamItemEvaluationJpaEntity ev
+            WHERE ev.responseId IN (:responseIds)
+            AND ev.status IN ('AUTO_GRADED', 'FINALIZED')
+            ORDER BY ev.responseId ASC, ev.evaluatedAt DESC
+        """, Tuple.class)
+            .setParameter("responseIds", responseIds)
+            .getResultList();
+        var map = new LinkedHashMap<UUID, UUID>();
+        for (var row : rows) {
+            map.putIfAbsent(row.get(0, UUID.class), row.get(1, UUID.class));
+        }
+        return map;
+    }
+
+    /**
+     * Bản AI của mỗi response — nguồn DUY NHẤT của lượt nói (audio/transcript), vì bản
+     * chấm tay không bao giờ sinh turn. Sau khi công bố phúc khảo, bản AI mang
+     * SUPERSEDED nên query này cố tình không lọc theo status.
+     *
+     * <p>Điểm đối chiếu KHÔNG lấy ở đây — xem {@link #currentEvaluationIdsByResponseIds}.
      */
     private Map<UUID, UUID> aiEvaluationIdsByResponseIds(List<UUID> responseIds) {
         if (responseIds.isEmpty()) {

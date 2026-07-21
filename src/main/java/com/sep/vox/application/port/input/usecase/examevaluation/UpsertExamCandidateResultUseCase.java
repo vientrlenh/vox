@@ -30,8 +30,9 @@ public class UpsertExamCandidateResultUseCase {
 
     /**
      * Recalculates the session result and stores it with an explicit status.
-     * The appeal flow uses this to land on FINAL after publishing a re-grade;
-     * grading uses the single-argument overload and stays on PENDING_REVIEW.
+     * The appeal flow uses this to land back on RELEASED after publishing a re-grade
+     * (so the result stays appealable within its round limit); grading uses the
+     * single-argument overload and stays on PENDING_REVIEW.
      */
     @Transactional
     public ExamCandidateResult execute(UUID sessionId, ExamCandidateResultStatus status) {

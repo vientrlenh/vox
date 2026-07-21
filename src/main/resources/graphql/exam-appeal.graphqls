@@ -47,13 +47,17 @@ type AppealTurn {
     durationSeconds: Int
 }
 
-"Một phần thi được phúc khảo, kèm dữ liệu gốc để đối chiếu."
+"Một phần thi được phúc khảo, kèm dữ liệu để đối chiếu."
 type AppealItem {
     appealItemId: ID!
     paperItemId: ID!
     partLabel: String
-    "Điểm AI gốc của phần này, để đối chiếu"
-    aiScores: [AppealCriterionScore!]!
+    """
+    Điểm tiêu chí của bản chấm đang có hiệu lực: vòng đầu là bản AI, vòng phúc khảo
+    sau là bản chấm tay của vòng trước. Khớp với originalScore hiển thị cạnh nó.
+    """
+    baselineScores: [AppealCriterionScore!]!
+    "Luôn lấy từ bản AI — chỉ bản AI mới có lượt nói"
     turns: [AppealTurn!]!
     "Điểm công bố cho phần này; null khi chưa công bố"
     finalScore: Float
@@ -152,12 +156,12 @@ type AppealTaskPage {
 }
 
 """
-Màn chấm lại của giám khảo. Có aiScores để tham chiếu, nhưng KHÔNG có báo cáo
+Màn chấm lại của giám khảo. Có baselineScores để tham chiếu, nhưng KHÔNG có báo cáo
 của giám khảo khác — tránh thiên lệch.
 """
 type AppealTaskDetail {
     appealId: ID!
-    "Các phần thi phải chấm lại, mỗi phần kèm lượt nói và điểm AI gốc riêng"
+    "Các phần thi phải chấm lại, mỗi phần kèm lượt nói và điểm đối chiếu riêng"
     items: [AppealItem!]!
     criteria: [AppealCriterionMeta!]!
     "Báo cáo của chính mình theo từng phần; rỗng nếu chưa nộp"

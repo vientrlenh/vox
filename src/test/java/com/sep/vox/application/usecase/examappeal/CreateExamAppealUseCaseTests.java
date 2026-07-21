@@ -173,6 +173,56 @@ public class CreateExamAppealUseCaseTests {
         verify(examResultAppealRepository, never()).save(any());
     }
 
+    // ---- hạn mức số vòng phúc khảo ------------------------------------------
+
+    @Test
+    void should_allow_a_second_appeal_after_the_first_was_published() {
+        when(examAppealAccessService.loadByCandidateResultId(candidateResultId))
+            .thenReturn(context(ExamCandidateResultStatus.RELEASED));
+        when(examResultAppealRepository.countPublishedByCandidateResultId(candidateResultId)).thenReturn(1L);
+        when(examItemResponseRepository.findBySessionId(sessionId)).thenReturn(List.of(response()));
+
+        assertThat(useCase.execute(command())).isEqualTo(appealId);
+    }
+
+    @Test
+    void should_reject_a_third_appeal_when_round_limit_reached() {
+        when(examAppealAccessService.loadByCandidateResultId(candidateResultId))
+            .thenReturn(context(ExamCandidateResultStatus.RELEASED));
+        when(examResultAppealRepository.countPublishedByCandidateResultId(candidateResultId)).thenReturn(2L);
+
+        assertThatThrownBy(() -> useCase.execute(command()))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("tối đa 2 lần");
+
+        verify(examResultAppealRepository, never()).save(any());
+    }
+
+    @Test
+    void should_not_count_rejected_appeals_toward_the_round_limit() {
+        when(examAppealAccessService.loadByCandidateResultId(candidateResultId))
+            .thenReturn(context(ExamCandidateResultStatus.RELEASED));
+        when(examItemResponseRepository.findBySessionId(sessionId)).thenReturn(List.of(response()));
+
+        useCase.execute(command());
+
+        // Quota phải đọc riêng số đơn ĐÃ CÔNG BỐ, không phải tổng số đơn của kết quả.
+        verify(examResultAppealRepository).countPublishedByCandidateResultId(candidateResultId);
+        verify(examResultAppealRepository, never()).findByCandidateResultId(any());
+    }
+
+    @Test
+    void should_report_open_appeal_before_round_limit() {
+        when(examAppealAccessService.loadByCandidateResultId(candidateResultId))
+            .thenReturn(context(ExamCandidateResultStatus.RELEASED));
+        when(examResultAppealRepository.existsOpenByCandidateResultId(candidateResultId)).thenReturn(true);
+        when(examResultAppealRepository.countPublishedByCandidateResultId(candidateResultId)).thenReturn(2L);
+
+        // Vướng cả hai thì báo lỗi cụ thể hơn: đang có đơn xử lý dở.
+        assertThatThrownBy(() -> useCase.execute(command()))
+            .isInstanceOf(DuplicatedException.class);
+    }
+
     @Test
     void should_reject_when_caller_is_not_the_owning_student() {
         var context = context(ExamCandidateResultStatus.RELEASED);

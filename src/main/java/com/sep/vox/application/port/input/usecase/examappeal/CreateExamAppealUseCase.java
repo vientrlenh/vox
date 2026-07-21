@@ -27,6 +27,12 @@ import com.sep.vox.domain.repository.ExamResultAppealRepository;
 @Service
 public class CreateExamAppealUseCase implements IUseCase<CreateExamAppealCommand, UUID> {
 
+    /**
+     * Số vòng phúc khảo tối đa cho một kết quả. Công bố phúc khảo trả kết quả về
+     * RELEASED nên trạng thái không còn tự chặn vòng sau — hạn mức này thay vai trò đó.
+     */
+    static final int MAX_APPEAL_ROUNDS = 2;
+
     private final ExamResultAppealRepository examResultAppealRepository;
     private final ExamResultAppealItemRepository examResultAppealItemRepository;
     private final ExamCandidateResultRepository examCandidateResultRepository;
@@ -59,6 +65,11 @@ public class CreateExamAppealUseCase implements IUseCase<CreateExamAppealCommand
         }
         if (examResultAppealRepository.existsOpenByCandidateResultId(command.candidateResultId())) {
             throw new DuplicatedException("Đã có đơn phúc khảo đang được xử lý cho kết quả này.");
+        }
+        if (examResultAppealRepository.countPublishedByCandidateResultId(command.candidateResultId())
+                >= MAX_APPEAL_ROUNDS) {
+            throw new IllegalStateException(
+                "Mỗi kết quả chỉ được phúc khảo tối đa " + MAX_APPEAL_ROUNDS + " lần.");
         }
         var paperItemIds = command.paperItemIds();
         if (paperItemIds == null || paperItemIds.isEmpty()) {

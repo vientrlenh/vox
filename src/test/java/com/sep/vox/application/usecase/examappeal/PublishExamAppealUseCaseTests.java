@@ -135,7 +135,7 @@ public class PublishExamAppealUseCaseTests {
 
         var recalculated = new ExamCandidateResult();
         recalculated.setTotalScore(new BigDecimal("7.25"));
-        when(upsertExamCandidateResultUseCase.execute(sessionId, ExamCandidateResultStatus.FINAL))
+        when(upsertExamCandidateResultUseCase.execute(sessionId, ExamCandidateResultStatus.RELEASED))
             .thenReturn(recalculated);
 
         useCase.execute(command(new BigDecimal("8.00"), "Đã đối chiếu"));
@@ -144,7 +144,26 @@ public class PublishExamAppealUseCaseTests {
         assertThat(context.appeal().getScoreAfter()).isEqualByComparingTo("7.25");
         assertThat(context.appeal().getStatus()).isEqualTo(ExamAppealStatus.PUBLISHED);
         assertThat(context.appeal().getResolvedBy()).isEqualTo(adminId);
-        verify(upsertExamCandidateResultUseCase).execute(sessionId, ExamCandidateResultStatus.FINAL);
+        verify(upsertExamCandidateResultUseCase).execute(sessionId, ExamCandidateResultStatus.RELEASED);
+    }
+
+    @Test
+    void should_return_candidate_result_to_released_so_it_can_be_appealed_again() {
+        var context = contextWith(ExamAppealStatus.COMPARING);
+        when(examAppealAccessService.load(appealId)).thenReturn(context);
+        when(examItemEvaluationRepository.findByResponseIdIn(anyList())).thenReturn(List.of());
+        when(examItemEvaluationRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        var recalculated = new ExamCandidateResult();
+        recalculated.setTotalScore(new BigDecimal("7.25"));
+        when(upsertExamCandidateResultUseCase.execute(any(), any())).thenReturn(recalculated);
+
+        useCase.execute(command(new BigDecimal("8.00"), null));
+
+        // RELEASED chứ không phải FINAL: công bố phúc khảo không đóng vĩnh viễn kết quả,
+        // hạn mức vòng mới là thứ chặn phúc khảo lại.
+        var captor = ArgumentCaptor.forClass(ExamCandidateResultStatus.class);
+        verify(upsertExamCandidateResultUseCase).execute(eq(sessionId), captor.capture());
+        assertThat(captor.getValue()).isEqualTo(ExamCandidateResultStatus.RELEASED);
     }
 
     @Test
@@ -333,7 +352,7 @@ public class PublishExamAppealUseCaseTests {
 
         // Calculator quét toàn bộ item, nên một lần là đủ dù đơn có bao nhiêu phần.
         verify(upsertExamCandidateResultUseCase, times(1))
-            .execute(sessionId, ExamCandidateResultStatus.FINAL);
+            .execute(sessionId, ExamCandidateResultStatus.RELEASED);
     }
 
     @Test

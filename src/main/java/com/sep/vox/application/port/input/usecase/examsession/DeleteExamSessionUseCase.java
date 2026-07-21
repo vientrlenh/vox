@@ -12,6 +12,7 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
+import com.sep.vox.domain.repository.ExamAppealReviewerRepository;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.ExamItemCriterionScoreRepository;
 import com.sep.vox.domain.repository.ExamItemEvaluationRepository;
@@ -20,14 +21,16 @@ import com.sep.vox.domain.repository.ExamItemResponseRepository;
 import com.sep.vox.domain.repository.ExamItemResponseTurnRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
+import com.sep.vox.domain.repository.ExamResultAppealRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 /**
  * Permanently deletes an exam session and every row it produced (item
  * responses, live turns, evaluations, criterion scores, evaluation turns,
- * candidate result rollup) -- for recovering from a session broken by a
- * failed/errored exam entry. Irreversible, no soft-delete/undo.
+ * candidate result rollup, and any appeal raised against that result) -- for
+ * recovering from a session broken by a failed/errored exam entry.
+ * Irreversible, no soft-delete/undo.
  *
  * Authorization: SCHOOL_ADMIN can delete any session for their own school
  * (any exam kind). A teacher can only delete a session for an exam they
@@ -50,6 +53,8 @@ public class DeleteExamSessionUseCase implements IUseCase<UUID, Void> {
     private final ExamItemEvaluationTurnRepository examItemEvaluationTurnRepository;
     private final ExamItemCriterionScoreRepository examItemCriterionScoreRepository;
     private final ExamCandidateResultRepository examCandidateResultRepository;
+    private final ExamResultAppealRepository examResultAppealRepository;
+    private final ExamAppealReviewerRepository examAppealReviewerRepository;
 
     public DeleteExamSessionUseCase(
             ExamSessionRepository examSessionRepository,
@@ -63,7 +68,9 @@ public class DeleteExamSessionUseCase implements IUseCase<UUID, Void> {
             ExamItemEvaluationRepository examItemEvaluationRepository,
             ExamItemEvaluationTurnRepository examItemEvaluationTurnRepository,
             ExamItemCriterionScoreRepository examItemCriterionScoreRepository,
-            ExamCandidateResultRepository examCandidateResultRepository) {
+            ExamCandidateResultRepository examCandidateResultRepository,
+            ExamResultAppealRepository examResultAppealRepository,
+            ExamAppealReviewerRepository examAppealReviewerRepository) {
         this.examSessionRepository = examSessionRepository;
         this.examRepository = examRepository;
         this.examMemberRepository = examMemberRepository;
@@ -76,6 +83,8 @@ public class DeleteExamSessionUseCase implements IUseCase<UUID, Void> {
         this.examItemEvaluationTurnRepository = examItemEvaluationTurnRepository;
         this.examItemCriterionScoreRepository = examItemCriterionScoreRepository;
         this.examCandidateResultRepository = examCandidateResultRepository;
+        this.examResultAppealRepository = examResultAppealRepository;
+        this.examAppealReviewerRepository = examAppealReviewerRepository;
     }
 
     @Override
@@ -107,6 +116,21 @@ public class DeleteExamSessionUseCase implements IUseCase<UUID, Void> {
         }
 
         examItemResponseRepository.deleteBySessionId(sessionId);
+
+        // Đơn phúc khảo treo trên candidate result, phải dọn TRƯỚC khi xoá nó.
+        // Không có FK nào chặn, nên bỏ sót sẽ để lại đơn mồ côi trỏ vào kết quả
+        // đã biến mất: đơn im lặng rơi khỏi mọi màn hình (INNER JOIN) nhưng dòng
+        // vẫn nằm lại trong DB.
+        examCandidateResultRepository.findBySessionId(sessionId).ifPresent(result -> {
+            var appealIds = examResultAppealRepository.findByCandidateResultId(result.getId()).stream()
+                .map(appeal -> appeal.getId())
+                .toList();
+            if (!appealIds.isEmpty()) {
+                examAppealReviewerRepository.deleteByAppealIdIn(appealIds);
+                examResultAppealRepository.deleteByIdIn(appealIds);
+            }
+        });
+
         examCandidateResultRepository.deleteBySessionId(sessionId);
         examSessionRepository.deleteById(sessionId);
         return null;

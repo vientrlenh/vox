@@ -30,7 +30,7 @@ public class ExamItemEvaluationRepositoryImpl implements ExamItemEvaluationRepos
 
     @Override
     public Optional<ExamItemEvaluation> findLatestByResponseId(UUID responseId) {
-        return springDataExamItemEvaluationRepository.findTopByResponseIdOrderByEvaluatedAtDesc(responseId)
+        return springDataExamItemEvaluationRepository.findLatestByResponseId(responseId)
             .map(ExamItemEvaluationMapper::toDomain);
     }
 

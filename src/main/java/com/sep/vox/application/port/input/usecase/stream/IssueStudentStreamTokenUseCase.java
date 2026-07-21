@@ -17,11 +17,12 @@ import com.sep.vox.application.port.input.command.IssueStudentStreamTokenCommand
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.StreamTokenProvider;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.response.input.stream.IssueStudentStreamTokenResponse;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamRequiredStreamType;
 
 @Service
-public class IssueStudentStreamTokenUseCase implements IUseCase<IssueStudentStreamTokenCommand, String> {
+public class IssueStudentStreamTokenUseCase implements IUseCase<IssueStudentStreamTokenCommand, IssueStudentStreamTokenResponse> {
 
     private final UserContextPort userContextPort;
     private final ExamScheduleRepository examScheduleRepository;
@@ -46,7 +47,7 @@ public class IssueStudentStreamTokenUseCase implements IUseCase<IssueStudentStre
     }
 
     @Override
-    public String execute(IssueStudentStreamTokenCommand input) {
+    public IssueStudentStreamTokenResponse execute(IssueStudentStreamTokenCommand input) {
         var command = normalizeCommand(input);
 
         var now = OffsetDateTime.now();
@@ -72,7 +73,7 @@ public class IssueStudentStreamTokenUseCase implements IUseCase<IssueStudentStre
         var windowStart = schedule.getStartDate();
         var windowEnd = schedule.getEndDate();
 
-        return streamTokenProvider.generateStreamToken(
+        var token = streamTokenProvider.generateStreamToken(
             userId.toString(),
             candidate.getId().toString(), 
             schedule.getId().toString(),  
@@ -82,6 +83,8 @@ public class IssueStudentStreamTokenUseCase implements IUseCase<IssueStudentStre
             windowStart, 
             windowEnd
         );
+
+        return new IssueStudentStreamTokenResponse(token, schedule.getId(), examSession.getId(), streamTypes, windowEnd);
     }
 
 

@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.sep.vox.application.port.input.usecase.stream.IssueMonitorTokenUseCase;
 import com.sep.vox.application.port.input.usecase.stream.IssueStudentStreamTokenUseCase;
+import com.sep.vox.application.response.input.stream.IssueStudentStreamTokenResponse;
 import com.sep.vox.interfaces.rest.dto.request.IssueMonitorTokenRequest;
 import com.sep.vox.interfaces.rest.dto.request.IssueStudentStreamTokenRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
@@ -31,10 +32,10 @@ public class StreamController {
 
     @PostMapping("/student/token")
     @PreAuthorize("hasRole('STUDENT')")
-    public ResponseEntity<ApiResponse<String>> getStreamToken(@Valid @RequestBody IssueStudentStreamTokenRequest request) {
+    public ResponseEntity<ApiResponse<IssueStudentStreamTokenResponse>> getStreamToken(@Valid @RequestBody IssueStudentStreamTokenRequest request) {
         var command = IssueStudentStreamTokenCommandMapper.fromRequest(request);
-        var token = issueStudentStreamTokenUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Token stream được lấy thành công", token));
+        var data = issueStudentStreamTokenUseCase.execute(command);
+        return ResponseEntity.ok(ApiResponse.success("Token stream được lấy thành công", data));
     }
 
 

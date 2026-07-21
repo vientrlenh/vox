@@ -5,6 +5,7 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.sep.vox.application.port.input.command.ClassTestQuestionCommand;
 import com.sep.vox.application.port.input.command.ClassTestSectionCommand;
 import com.sep.vox.domain.model.exam.ExamPaperSection;
 
@@ -23,6 +24,14 @@ final class ClassTestSectionWeightPolicy {
             return weights;
         }
         return distributeEqualWeights(sections.size());
+    }
+
+    // H.6.4: câu hỏi trong section class test PHẢI có weight tường minh (không auto-fill
+    // ở backend - nút "Chia trọng số tự động" là tính năng FE, backend chỉ validate).
+    static List<BigDecimal> resolveQuestionWeights(List<ClassTestQuestionCommand> questions) {
+        var weights = questions.stream().map(ClassTestQuestionCommand::weight).toList();
+        validateWeightSum(weights, "Tổng trọng số câu hỏi trong phần phải bằng 1.00");
+        return weights;
     }
 
     static void validateWeightSum(List<BigDecimal> weights, String message) {

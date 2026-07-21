@@ -28,6 +28,7 @@ public class JpaExamCandidateAttemptsQueryRepository implements ExamCandidateAtt
             SELECT NEW com.sep.vox.application.query.dto.ExamAttemptSummary(
                 s.candidateId,
                 s.examId,
+                c.status,
                 s.id,
                 s.startedAt,
                 s.submittedAt,
@@ -41,6 +42,7 @@ public class JpaExamCandidateAttemptsQueryRepository implements ExamCandidateAtt
                 r.status
             )
             FROM ExamSessionJpaEntity s
+            JOIN ExamCandidateJpaEntity c ON c.id = s.candidateId
             LEFT JOIN ExamCandidateResultJpaEntity r ON r.sessionId = s.id
             LEFT JOIN RubricResultBandJpaEntity b ON b.id = r.rubricResultBandId
             WHERE s.candidateId IN :candidateIds

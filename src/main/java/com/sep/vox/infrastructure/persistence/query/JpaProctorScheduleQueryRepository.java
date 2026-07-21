@@ -40,4 +40,27 @@ public class JpaProctorScheduleQueryRepository implements ProctorScheduleQueryRe
             .setParameter("teacherId", teacherId)
             .getResultList();
     }
+
+    @Override
+    public List<ProctorScheduleSummary> findBySchoolId(UUID schoolId) {
+        return em.createQuery("""
+            SELECT NEW com.sep.vox.application.query.dto.ProctorScheduleSummary(
+                sch.id,
+                exam.id,
+                exam.name,
+                room.id,
+                room.name,
+                sch.startDate,
+                sch.endDate,
+                sch.status
+            )
+            FROM ExamScheduleJpaEntity sch
+            JOIN ExamJpaEntity exam ON exam.id = sch.examId
+            LEFT JOIN SchoolRoomJpaEntity room ON room.id = sch.schoolRoomId
+            WHERE exam.schoolId = :schoolId
+            ORDER BY sch.startDate DESC
+        """, ProctorScheduleSummary.class)
+            .setParameter("schoolId", schoolId)
+            .getResultList();
+    }
 }

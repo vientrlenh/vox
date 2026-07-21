@@ -41,6 +41,13 @@ public class ExamCandidateResultRepositoryImpl implements ExamCandidateResultRep
     }
 
     @Override
+    public List<ExamCandidateResult> findByExamId(UUID examId) {
+        return springDataExamCandidateResultRepository.findByExamId(examId).stream()
+            .map(ExamCandidateResultMapper::toDomain)
+            .toList();
+    }
+
+    @Override
     public ExamCandidateResult save(ExamCandidateResult result) {
         var saved = springDataExamCandidateResultRepository.save(ExamCandidateResultMapper.toJpa(result));
         return ExamCandidateResultMapper.toDomain(saved);

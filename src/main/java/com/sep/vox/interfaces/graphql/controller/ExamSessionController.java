@@ -12,6 +12,7 @@ import org.springframework.stereotype.Controller;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.FlagExamSessionCommand;
 import com.sep.vox.application.port.input.command.ForceEndExamSessionCommand;
+import com.sep.vox.application.port.input.command.ReleasePendingExamResultCommand;
 import com.sep.vox.application.port.input.command.ReviewFlaggedExamResultCommand;
 import com.sep.vox.application.port.input.command.RetryGradingExamSessionCommand;
 import com.sep.vox.application.port.input.command.UnblockExamCandidateCommand;
@@ -28,6 +29,7 @@ import com.sep.vox.application.port.input.usecase.examitemresponse.ViewExamItemR
 import com.sep.vox.application.port.input.usecase.examitemresponse.ViewExamSessionFollowupsUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.FlagExamSessionUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.ForceEndExamSessionUseCase;
+import com.sep.vox.application.port.input.usecase.examsession.ReleasePendingExamResultUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.ReviewFlaggedExamResultUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.RetryGradingExamSessionUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.ViewExamSessionResultUseCase;
@@ -57,6 +59,7 @@ public class ExamSessionController {
     private final ForceEndExamSessionUseCase forceEndExamSessionUseCase;
     private final UnblockExamCandidateUseCase unblockExamCandidateUseCase;
     private final ReviewFlaggedExamResultUseCase reviewFlaggedExamResultUseCase;
+    private final ReleasePendingExamResultUseCase releasePendingExamResultUseCase;
     private final RetryGradingExamSessionUseCase retryGradingExamSessionUseCase;
 
     public ExamSessionController(
@@ -71,6 +74,7 @@ public class ExamSessionController {
             ForceEndExamSessionUseCase forceEndExamSessionUseCase,
             UnblockExamCandidateUseCase unblockExamCandidateUseCase,
             ReviewFlaggedExamResultUseCase reviewFlaggedExamResultUseCase,
+            ReleasePendingExamResultUseCase releasePendingExamResultUseCase,
             RetryGradingExamSessionUseCase retryGradingExamSessionUseCase) {
         this.viewExamSessionUseCase = viewExamSessionUseCase;
         this.viewExamSessionResultUseCase = viewExamSessionResultUseCase;
@@ -83,6 +87,7 @@ public class ExamSessionController {
         this.forceEndExamSessionUseCase = forceEndExamSessionUseCase;
         this.unblockExamCandidateUseCase = unblockExamCandidateUseCase;
         this.reviewFlaggedExamResultUseCase = reviewFlaggedExamResultUseCase;
+        this.releasePendingExamResultUseCase = releasePendingExamResultUseCase;
         this.retryGradingExamSessionUseCase = retryGradingExamSessionUseCase;
     }
 
@@ -166,6 +171,12 @@ public class ExamSessionController {
             @Argument(name = "candidateResultId") UUID candidateResultId,
             @Argument(name = "decision") ExamCandidateResultStatus decision) {
         return reviewFlaggedExamResultUseCase.execute(new ReviewFlaggedExamResultCommand(candidateResultId, decision));
+    }
+
+    @MutationMapping
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
+    public UUID releasePendingExamResult(@Argument(name = "sessionId") UUID sessionId) {
+        return releasePendingExamResultUseCase.execute(new ReleasePendingExamResultCommand(sessionId));
     }
 
     @MutationMapping

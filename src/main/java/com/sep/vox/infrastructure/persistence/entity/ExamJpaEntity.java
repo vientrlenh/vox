@@ -94,6 +94,10 @@ public class ExamJpaEntity {
     @Column(name = "requires_otp", nullable = false, columnDefinition = "BOOLEAN NOT NULL DEFAULT true")
     private boolean requiresOtp;
 
+    // H.1: tự động tính = MAX(paperDuration) trên mọi ExamPaper - không có input frontend nào.
+    @Column(name = "exam_time_duration_second")
+    private Integer examTimeDurationSecond;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 
@@ -301,5 +305,13 @@ public class ExamJpaEntity {
 
     public void setRequiresOtp(boolean requiresOtp) {
         this.requiresOtp = requiresOtp;
+    }
+
+    public Integer getExamTimeDurationSecond() {
+        return examTimeDurationSecond;
+    }
+
+    public void setExamTimeDurationSecond(Integer examTimeDurationSecond) {
+        this.examTimeDurationSecond = examTimeDurationSecond;
     }
 }

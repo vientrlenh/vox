@@ -9,6 +9,7 @@ import java.util.Objects;
 
 import org.springframework.stereotype.Service;
 
+import com.sep.vox.application.common.ExamCandidateStatusSupport;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.query.dto.ExamAttemptSummary;
 import com.sep.vox.application.query.repository.ExamCandidateAttemptsQueryRepository;
@@ -144,6 +145,14 @@ public class ViewMyExamsUseCase implements IUseCase<Void, List<StudentExamSummar
             ExamSchedule schedule,
             OffsetDateTime now,
             int attemptsUsed) {
+        if (candidate.getBlockedAt() != null) {
+            return new EntryAvailability(false, "Bạn đã bị buộc kết thúc bài thi này, không thể vào lại");
+        }
+
+        if (ExamCandidateStatusSupport.isNonScorable(candidate.getStatus())) {
+            return new EntryAvailability(false, "Bạn không đủ điều kiện tham gia kỳ thi này");
+        }
+
         if (exam.getMaxAttempt() != null && attemptsUsed >= exam.getMaxAttempt()) {
             return new EntryAvailability(false, "Bạn đã hết số lượt vào thi cho bài này.");
         }

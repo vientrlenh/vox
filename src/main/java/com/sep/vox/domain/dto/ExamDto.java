@@ -21,6 +21,7 @@ public record ExamDto(
     UUID assessmentPolicyId,
     boolean requiresOtp,
     Boolean papersLocked,
+    Integer examTimeDurationSecond,
     String createdAt,
     String updatedAt,
     UUID createdBy,

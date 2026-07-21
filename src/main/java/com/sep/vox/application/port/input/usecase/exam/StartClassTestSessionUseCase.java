@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
+import com.sep.vox.application.common.ExamCandidateStatusSupport;
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreateExamSessionCommand;
@@ -24,6 +25,7 @@ import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.ExamRepository;
+import com.sep.vox.domain.repository.ExamScheduleRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;
 
 @Service
@@ -34,6 +36,7 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
     private final ExamCandidateRepository examCandidateRepository;
     private final ExamCandidateResultRepository examCandidateResultRepository;
     private final ExamRepository examRepository;
+    private final ExamScheduleRepository examScheduleRepository;
     private final ExamSessionRepository examSessionRepository;
     private final UserContextPort userContextPort;
     private final CreateExamSessionUseCase createExamSessionUseCase;
@@ -43,6 +46,7 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
             ExamCandidateRepository examCandidateRepository,
             ExamCandidateResultRepository examCandidateResultRepository,
             ExamRepository examRepository,
+            ExamScheduleRepository examScheduleRepository,
             ExamSessionRepository examSessionRepository,
             UserContextPort userContextPort,
             CreateExamSessionUseCase createExamSessionUseCase,
@@ -50,6 +54,7 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
         this.examCandidateRepository = examCandidateRepository;
         this.examCandidateResultRepository = examCandidateResultRepository;
         this.examRepository = examRepository;
+        this.examScheduleRepository = examScheduleRepository;
         this.examSessionRepository = examSessionRepository;
         this.userContextPort = userContextPort;
         this.createExamSessionUseCase = createExamSessionUseCase;
@@ -72,12 +77,21 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
         if (candidate.getBlockedAt() != null) {
             throw new IllegalStateException("Bạn đã bị buộc kết thúc bài thi này, không thể vào lại");
         }
+        if (ExamCandidateStatusSupport.isNonScorable(candidate.getStatus())) {
+            throw new IllegalStateException("Bạn không đủ điều kiện tham gia kỳ thi này");
+        }
         if (isExamClosedForEntry(exam, now)) {
             throw new IllegalStateException("Bài kiểm tra hiện không mở để làm bài (trạng thái: " + exam.getStatus() + ")");
         }
         if (candidate.getAssignedPaperId() == null) {
             throw new IllegalStateException("Bạn chưa được gán đề bài kiểm tra");
         }
+
+        var scheduleEndAt = candidate.getScheduleId() == null
+            ? exam.getCloseAt()
+            : examScheduleRepository.findById(candidate.getScheduleId())
+                .map(schedule -> schedule.getEndDate())
+                .orElse(exam.getCloseAt());
 
         var resumableSession = findResumableSession(candidate.getId());
         if (resumableSession != null) {
@@ -87,7 +101,7 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
                 );
                 resumableSession = examSessionRepository.findById(resumableSession.getId()).orElse(resumableSession);
             }
-            return buildEntryTicket(resumableSession, now);
+            return buildEntryTicket(resumableSession, now, scheduleEndAt);
         }
 
         if (exam.getMaxAttempt() != null) {
@@ -105,7 +119,8 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
         return new ExamEntryTicketResponse(
             session.id(),
             UUID.randomUUID().toString(),
-            now.plus(ENTRY_TICKET_TTL).toString()
+            now.plus(ENTRY_TICKET_TTL).toString(),
+            scheduleEndAt == null ? null : scheduleEndAt.toString()
         );
     }
 
@@ -133,11 +148,12 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
             || (exam.getCloseAt() != null && exam.getCloseAt().isBefore(now));
     }
 
-    private ExamEntryTicketResponse buildEntryTicket(ExamSession session, OffsetDateTime now) {
+    private ExamEntryTicketResponse buildEntryTicket(ExamSession session, OffsetDateTime now, OffsetDateTime scheduleEndAt) {
         return new ExamEntryTicketResponse(
             session.getId(),
             UUID.randomUUID().toString(),
-            now.plus(ENTRY_TICKET_TTL).toString()
+            now.plus(ENTRY_TICKET_TTL).toString(),
+            scheduleEndAt == null ? null : scheduleEndAt.toString()
         );
     }
 }

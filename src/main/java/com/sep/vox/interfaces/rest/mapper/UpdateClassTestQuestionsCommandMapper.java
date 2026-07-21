@@ -13,7 +13,12 @@ public final class UpdateClassTestQuestionsCommandMapper {
 
     public static UpdateClassTestQuestionsCommand fromRequest(UUID examId, UpdateClassTestQuestionsRequest request) {
         var sections = request.sections().stream()
-            .map(section -> new ClassTestSectionCommand(section.title(), section.instruction(), section.weight(), section.questionIds()))
+            .map(section -> new ClassTestSectionCommand(
+                section.title(),
+                section.instruction(),
+                section.weight(),
+                ClassTestQuestionCommandMapper.fromRequests(section.questions())
+            ))
             .toList();
         return new UpdateClassTestQuestionsCommand(examId, sections);
     }

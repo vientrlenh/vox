@@ -144,6 +144,9 @@ public class GetExamSessionPaperUseCase implements IUseCase<ViewExamSessionPaper
             StudentExamViewSupport.durationMinutesOf(schedule, estimateDurationMinutes(paperQuestions)),
             StudentExamViewSupport.examDateOf(schedule, exam.getOpenAt()),
             StudentExamViewSupport.statusOf(schedule, OffsetDateTime.now()),
+            schedule == null
+                ? (exam.getCloseAt() == null ? null : exam.getCloseAt().toString())
+                : (schedule.getEndDate() == null ? null : schedule.getEndDate().toString()),
             paperQuestions
         );
     }

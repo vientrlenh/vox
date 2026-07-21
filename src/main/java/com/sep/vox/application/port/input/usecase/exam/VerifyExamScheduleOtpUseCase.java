@@ -8,6 +8,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.common.CacheKey;
+import com.sep.vox.application.common.ExamCandidateStatusSupport;
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
@@ -82,6 +83,9 @@ public class VerifyExamScheduleOtpUseCase implements IUseCase<VerifyExamSchedule
         if (candidate.getBlockedAt() != null) {
             throw new IllegalStateException("Bạn đã bị buộc kết thúc bài thi này, không thể vào lại");
         }
+        if (ExamCandidateStatusSupport.isNonScorable(candidate.getStatus())) {
+            throw new IllegalStateException("Bạn không đủ điều kiện tham gia kỳ thi này");
+        }
         if (isExamClosedForEntry(exam, now)) {
             throw new IllegalStateException("Kỳ thi hiện không mở để thi (trạng thái: " + exam.getStatus() + ")");
         }
@@ -113,7 +117,7 @@ public class VerifyExamScheduleOtpUseCase implements IUseCase<VerifyExamSchedule
                 );
                 resumableSession = examSessionRepository.findById(resumableSession.getId()).orElse(resumableSession);
             }
-            return buildEntryTicket(resumableSession, now);
+            return buildEntryTicket(resumableSession, now, schedule.getEndDate());
         }
 
         if (exam.getMaxAttempt() != null) {
@@ -131,7 +135,8 @@ public class VerifyExamScheduleOtpUseCase implements IUseCase<VerifyExamSchedule
         return new ExamEntryTicketResponse(
             session.id(),
             UUID.randomUUID().toString(),
-            now.plus(ENTRY_TICKET_TTL).toString()
+            now.plus(ENTRY_TICKET_TTL).toString(),
+            schedule.getEndDate() == null ? null : schedule.getEndDate().toString()
         );
     }
 
@@ -159,11 +164,12 @@ public class VerifyExamScheduleOtpUseCase implements IUseCase<VerifyExamSchedule
             || (exam.getCloseAt() != null && exam.getCloseAt().isBefore(now));
     }
 
-    private ExamEntryTicketResponse buildEntryTicket(ExamSession session, OffsetDateTime now) {
+    private ExamEntryTicketResponse buildEntryTicket(ExamSession session, OffsetDateTime now, OffsetDateTime scheduleEndAt) {
         return new ExamEntryTicketResponse(
             session.getId(),
             UUID.randomUUID().toString(),
-            now.plus(ENTRY_TICKET_TTL).toString()
+            now.plus(ENTRY_TICKET_TTL).toString(),
+            scheduleEndAt == null ? null : scheduleEndAt.toString()
         );
     }
 }

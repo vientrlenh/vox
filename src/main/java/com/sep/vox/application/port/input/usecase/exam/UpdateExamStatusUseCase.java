@@ -9,15 +9,19 @@ import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateExamStatusCommand;
+import com.sep.vox.application.port.input.service.ExamCandidateResultFinalizationService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.domain.mapper.ExamDtoMapper;
+import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamPaperStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
+import com.sep.vox.domain.repository.AssessmentPolicyRepository;
+import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamPaperRepository;
 import com.sep.vox.domain.repository.ExamRepository;
@@ -29,6 +33,9 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
     private final ExamRepository examRepository;
     private final ExamMemberRepository examMemberRepository;
     private final ExamPaperRepository examPaperRepository;
+    private final ExamCandidateResultRepository examCandidateResultRepository;
+    private final AssessmentPolicyRepository assessmentPolicyRepository;
+    private final ExamCandidateResultFinalizationService examCandidateResultFinalizationService;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final ExamQuestionSecureLockService examQuestionSecureLockService;
@@ -38,6 +45,9 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
             ExamRepository examRepository,
             ExamMemberRepository examMemberRepository,
             ExamPaperRepository examPaperRepository,
+            ExamCandidateResultRepository examCandidateResultRepository,
+            AssessmentPolicyRepository assessmentPolicyRepository,
+            ExamCandidateResultFinalizationService examCandidateResultFinalizationService,
             SchoolUserRepository schoolUserRepository,
             UserRoleQueryRepository userRoleQueryRepository,
             ExamQuestionSecureLockService examQuestionSecureLockService,
@@ -45,6 +55,9 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
         this.examRepository = examRepository;
         this.examMemberRepository = examMemberRepository;
         this.examPaperRepository = examPaperRepository;
+        this.examCandidateResultRepository = examCandidateResultRepository;
+        this.assessmentPolicyRepository = assessmentPolicyRepository;
+        this.examCandidateResultFinalizationService = examCandidateResultFinalizationService;
         this.schoolUserRepository = schoolUserRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
         this.examQuestionSecureLockService = examQuestionSecureLockService;
@@ -83,7 +96,11 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
                 requireTransition(exam, ExamStatus.IN_PROGRESS, ExamStatus.CLOSED);
                 examQuestionSecureLockService.releaseIfAutoAfterClose(exam.getId());
             }
-            case "PUBLISH_RESULTS" -> requireTransition(exam, ExamStatus.CLOSED, ExamStatus.RESULTS_PUBLISHED);
+            case "PUBLISH_RESULTS" -> {
+                requirePublishReadiness(exam.getId());
+                requireTransition(exam, ExamStatus.CLOSED, ExamStatus.RESULTS_PUBLISHED);
+                finalizePassFailForExam(exam);
+            }
             case "CANCEL" -> exam.setStatus(ExamStatus.CANCELLED);
             default -> throw new IllegalStateException("Action không hợp lệ");
         }
@@ -116,6 +133,40 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
             throw new IllegalStateException("Trạng thái bài kiểm tra hiện tại không hợp lệ cho action này");
         }
         exam.setStatus(to);
+    }
+
+    /**
+     * G.3: chỉ cho publish khi mọi ExamCandidateResult của kỳ thi đã được xử lý xong
+     * (RELEASED/INVALID, hoặc các trạng thái ngoài phạm vi như APPEALED/RE_GRADING) -
+     * không còn cái nào PENDING_REVIEW (AI chưa tự tin, giáo viên chưa xác nhận).
+     */
+    private void requirePublishReadiness(java.util.UUID examId) {
+        var pendingCount = examCandidateResultRepository.findByExamId(examId).stream()
+            .filter(result -> result.getStatus() == ExamCandidateResultStatus.PENDING_REVIEW)
+            .count();
+        if (pendingCount > 0) {
+            throw new IllegalStateException(
+                "Còn " + pendingCount + " kết quả chưa được giáo viên xác nhận, không thể công bố kết quả");
+        }
+    }
+
+    /**
+     * G.3: chốt PASSED/FAILED cho mọi ExamCandidateResult của kỳ thi ngay khi vừa
+     * chuyển RESULTS_PUBLISHED - INVALID -> FAILED (điểm ép về 0), RELEASED/FINAL ->
+     * PASSED/FAILED theo passingScore. Trạng thái CHUNG THẨM, không đổi lại nữa.
+     */
+    private void finalizePassFailForExam(com.sep.vox.domain.model.exam.Exam exam) {
+        var passingScore = exam.getAssessmentPolicyId() == null
+            ? null
+            : assessmentPolicyRepository.findById(exam.getAssessmentPolicyId())
+                .map(policy -> policy.getPassingScore())
+                .orElse(null);
+
+        for (var result : examCandidateResultRepository.findByExamId(exam.getId())) {
+            if (examCandidateResultFinalizationService.finalizeForPublish(result, passingScore)) {
+                examCandidateResultRepository.save(result);
+            }
+        }
     }
 
     private void lockClassTestPapers(java.util.UUID examId, java.util.UUID currentUserId) {

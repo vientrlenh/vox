@@ -16,6 +16,7 @@ public interface SpringDataExamCandidateRepository extends JpaRepository<ExamCan
     List<ExamCandidateJpaEntity> findByExamIdIn(Collection<UUID> examIds);
     Optional<ExamCandidateJpaEntity> findByExamIdAndStudentId(UUID examId, UUID studentId);
     List<ExamCandidateJpaEntity> findByStudentId(UUID studentId);
+    List<ExamCandidateJpaEntity> findByScheduleId(UUID scheduleId);
     long countByExamId(UUID examId);
     boolean existsByExamIdAndStudentId(UUID examId, UUID studentId);
 

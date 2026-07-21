@@ -60,7 +60,7 @@ public class ExamAppealController {
         this.publishExamAppealUseCase = publishExamAppealUseCase;
     }
 
-    @Operation(summary = "Học sinh nộp đơn phúc khảo cho một phần thi")
+    @Operation(summary = "Học sinh nộp đơn phúc khảo cho một hoặc nhiều phần thi")
     @PostMapping
     @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<ApiResponse<UUID>> createAppeal(
@@ -115,7 +115,7 @@ public class ExamAppealController {
         return ResponseEntity.ok(ApiResponse.success("Gỡ giám khảo thành công!", responseId));
     }
 
-    @Operation(summary = "Giám khảo nộp báo cáo chấm lại")
+    @Operation(summary = "Giám khảo nộp báo cáo chấm lại cho toàn bộ phần thi của đơn")
     @PostMapping("/{appealId}/reviewers/me/report")
     @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<ApiResponse<UUID>> submitReport(
@@ -126,8 +126,8 @@ public class ExamAppealController {
         return ResponseEntity.ok(ApiResponse.success("Nộp báo cáo chấm lại thành công!", responseId));
     }
 
-    @Operation(summary = "Công bố kết quả phúc khảo. `partScore` là điểm cho phần thi được phúc khảo, "
-        + "không phải điểm tổng — hệ thống tự tính lại tổng và xếp loại từ điểm này.")
+    @Operation(summary = "Công bố kết quả phúc khảo. `partScore` là điểm cho từng phần thi được phúc khảo, "
+        + "không phải điểm tổng — hệ thống tự tính lại tổng và xếp loại từ các điểm này.")
     @PostMapping("/{appealId}/publish")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> publishAppeal(

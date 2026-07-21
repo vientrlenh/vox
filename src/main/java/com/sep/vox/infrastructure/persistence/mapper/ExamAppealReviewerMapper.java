@@ -19,10 +19,7 @@ public final class ExamAppealReviewerMapper {
             toStatus(entity.getStatus()),
             entity.getAssignedAt(),
             entity.getAssignedBy(),
-            entity.getSubmittedAt(),
-            entity.getNote(),
-            entity.getSuggestedScore(),
-            entity.getEvaluationId()
+            entity.getSubmittedAt()
         );
     }
 
@@ -37,10 +34,7 @@ public final class ExamAppealReviewerMapper {
             reviewer.getStatus() == null ? null : reviewer.getStatus().name(),
             reviewer.getAssignedAt(),
             reviewer.getAssignedBy(),
-            reviewer.getSubmittedAt(),
-            reviewer.getNote(),
-            reviewer.getSuggestedScore(),
-            reviewer.getEvaluationId()
+            reviewer.getSubmittedAt()
         );
     }
 

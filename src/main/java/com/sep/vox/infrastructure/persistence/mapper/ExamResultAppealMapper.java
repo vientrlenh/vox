@@ -26,8 +26,6 @@ public final class ExamResultAppealMapper {
             entity.getNotes(),
             entity.getDeadline(),
             entity.getApprovedAt(),
-            entity.getPaperItemId(),
-            entity.getResponseId(),
             entity.getDecisionNote()
         );
     }
@@ -50,8 +48,6 @@ public final class ExamResultAppealMapper {
             appeal.getNotes(),
             appeal.getDeadline(),
             appeal.getApprovedAt(),
-            appeal.getPaperItemId(),
-            appeal.getResponseId(),
             appeal.getDecisionNote()
         );
     }

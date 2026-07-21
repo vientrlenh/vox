@@ -1,10 +1,12 @@
 package com.sep.vox.infrastructure.persistence.query;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -17,7 +19,9 @@ import org.springframework.stereotype.Repository;
 import com.sep.vox.application.query.dto.AppealCriterionMetaInfo;
 import com.sep.vox.application.query.dto.AppealCriterionScoreInfo;
 import com.sep.vox.application.query.dto.AppealDetailInfo;
+import com.sep.vox.application.query.dto.AppealItemInfo;
 import com.sep.vox.application.query.dto.AppealReviewerInfo;
+import com.sep.vox.application.query.dto.AppealReviewerItemInfo;
 import com.sep.vox.application.query.dto.AppealReviewerLiteInfo;
 import com.sep.vox.application.query.dto.AppealStatsInfo;
 import com.sep.vox.application.query.dto.AppealSummaryInfo;
@@ -50,16 +54,15 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
         var normalizedSize = Math.max(size, 1);
         var normalizedKeyword = keyword == null || keyword.isBlank() ? null : "%" + keyword.trim().toLowerCase() + "%";
 
+        // KHÔNG join sang phần thi ở đây: một đơn có N phần, join to-many sẽ nhân dòng
+        // và làm sai phân trang (một đơn ăn nhiều slot) lẫn lệch với query COUNT bên dưới.
         var query = em.createQuery("""
-            SELECT a.id, u.fullName, e.name, a.scoreBefore, a.status, a.requestedAt, a.deadline,
-                   sec.title, a.paperItemId
+            SELECT a.id, u.fullName, e.name, a.scoreBefore, a.status, a.requestedAt, a.deadline
             FROM ExamResultAppealJpaEntity a
             JOIN ExamCandidateResultJpaEntity cr ON cr.id = a.candidateResultId
             JOIN ExamJpaEntity e ON e.id = cr.examId
             JOIN ExamCandidateJpaEntity c ON c.id = cr.candidateId
             JOIN UserJpaEntity u ON u.id = c.studentId
-            LEFT JOIN ExamPaperItemJpaEntity pi ON pi.id = a.paperItemId
-            LEFT JOIN ExamPaperSectionJpaEntity sec ON sec.id = pi.sectionId
             WHERE e.schoolId = :schoolId
             AND (:status IS NULL OR a.status = :status)
             AND (:keyword IS NULL OR LOWER(u.fullName) LIKE :keyword OR LOWER(e.name) LIKE :keyword)
@@ -75,6 +78,7 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
         var appealIds = rows.stream().map(row -> row.get(0, UUID.class)).toList();
         var countsByAppeal = reviewerCountsByAppealIds(appealIds);
         var classNamesByAppeal = classNamesByAppealIds(appealIds);
+        var partLabelsByAppeal = partLabelsByAppealIds(appealIds);
         var now = OffsetDateTime.now();
 
         var content = new ArrayList<AppealSummaryInfo>();
@@ -88,7 +92,7 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
                 row.get(1, String.class),
                 classNamesByAppeal.get(appealId),
                 row.get(2, String.class),
-                row.get(7, String.class),
+                partLabelsByAppeal.getOrDefault(appealId, List.of()),
                 row.get(3, BigDecimal.class),
                 status0,
                 row.get(5, OffsetDateTime.class),
@@ -171,6 +175,36 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
         return classNamesByAppealIds(List.of(appealId)).get(appealId);
     }
 
+    /**
+     * Nhãn phần thi của nhiều đơn trong 1 query — đơn có N phần nên tuyệt đối không
+     * được join vào query phân trang. Nhiều phần cùng một section thì nhãn trùng, khử bằng set.
+     */
+    private Map<UUID, List<String>> partLabelsByAppealIds(List<UUID> appealIds) {
+        if (appealIds.isEmpty()) {
+            return Map.of();
+        }
+        var rows = em.createQuery("""
+            SELECT ai.appealId, sec.title
+            FROM ExamResultAppealItemJpaEntity ai
+            LEFT JOIN ExamPaperItemJpaEntity pi ON pi.id = ai.paperItemId
+            LEFT JOIN ExamPaperSectionJpaEntity sec ON sec.id = pi.sectionId
+            WHERE ai.appealId IN (:appealIds)
+            ORDER BY sec.order ASC, pi.order ASC
+        """, Tuple.class)
+            .setParameter("appealIds", appealIds)
+            .getResultList();
+        var map = new LinkedHashMap<UUID, LinkedHashSet<String>>();
+        for (var row : rows) {
+            var title = row.get(1, String.class);
+            if (title != null) {
+                map.computeIfAbsent(row.get(0, UUID.class), ignored -> new LinkedHashSet<>()).add(title);
+            }
+        }
+        var result = new LinkedHashMap<UUID, List<String>>();
+        map.forEach((appealId, titles) -> result.put(appealId, List.copyOf(titles)));
+        return result;
+    }
+
     // ---- stat cards --------------------------------------------------------
 
     @Override
@@ -211,15 +245,13 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
         var rows = em.createQuery("""
             SELECT a.id, u.fullName, e.name, a.scoreBefore, a.status, a.requestedAt, a.deadline,
                    a.reason, a.notes, a.decisionNote, a.scoreAfter, a.approvedAt, a.resolvedAt,
-                   sec.title, a.responseId, rv.scoringScaleMin, rv.scoringScaleMax
+                   rv.scoringScaleMin, rv.scoringScaleMax
             FROM ExamResultAppealJpaEntity a
             JOIN ExamCandidateResultJpaEntity cr ON cr.id = a.candidateResultId
             JOIN ExamJpaEntity e ON e.id = cr.examId
             JOIN ExamCandidateJpaEntity c ON c.id = cr.candidateId
             JOIN UserJpaEntity u ON u.id = c.studentId
             JOIN RubricVersionJpaEntity rv ON rv.id = cr.rubricVersionId
-            LEFT JOIN ExamPaperItemJpaEntity pi ON pi.id = a.paperItemId
-            LEFT JOIN ExamPaperSectionJpaEntity sec ON sec.id = pi.sectionId
             WHERE a.id = :appealId AND e.schoolId = :schoolId
         """, Tuple.class)
             .setParameter("appealId", appealId)
@@ -229,8 +261,6 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
             return Optional.empty();
         }
         var row = rows.get(0);
-        var responseId = row.get(14, UUID.class);
-        var aiEvaluationId = findAiEvaluationId(responseId);
         var status = row.get(4, String.class);
         var deadline = row.get(6, OffsetDateTime.class);
 
@@ -239,7 +269,6 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
             row.get(1, String.class),
             className(appealId),
             row.get(2, String.class),
-            row.get(13, String.class),
             row.get(3, BigDecimal.class),
             status,
             row.get(5, OffsetDateTime.class),
@@ -250,46 +279,77 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
             row.get(10, BigDecimal.class),
             row.get(11, OffsetDateTime.class),
             row.get(12, OffsetDateTime.class),
-            aiEvaluationId == null ? List.of() : criterionScores(aiEvaluationId),
-            aiEvaluationId == null ? List.of() : turns(aiEvaluationId),
+            appealItems(appealId),
             reviewers(appealId, true),
             isOverdue(deadline, status, OffsetDateTime.now()),
-            row.get(15, BigDecimal.class),
-            row.get(16, BigDecimal.class)
+            row.get(13, BigDecimal.class),
+            row.get(14, BigDecimal.class)
         ));
     }
 
     /**
-     * Điểm AI gốc để đối chiếu. Sau khi công bố phúc khảo, bản AI mang SUPERSEDED —
-     * vẫn phải trả về, vì đây chính là mốc so sánh của màn đối chiếu.
+     * Các phần thi của đơn kèm dữ liệu gốc để đối chiếu. Số query cố định (4) bất kể
+     * đơn có bao nhiêu phần.
      */
-    private UUID findAiEvaluationId(UUID responseId) {
-        if (responseId == null) {
-            return null;
-        }
+    private List<AppealItemInfo> appealItems(UUID appealId) {
         var rows = em.createQuery("""
-            SELECT ev.id FROM ExamItemEvaluationJpaEntity ev
-            WHERE ev.responseId = :responseId
-            AND ev.engineType IN ('AI_SINGLE', 'AI_ENSEMBLE')
-            ORDER BY ev.evaluatedAt DESC
-        """, UUID.class)
-            .setParameter("responseId", responseId)
-            .setMaxResults(1)
+            SELECT ai.id, ai.paperItemId, ai.responseId, sec.title, ai.finalScore
+            FROM ExamResultAppealItemJpaEntity ai
+            LEFT JOIN ExamPaperItemJpaEntity pi ON pi.id = ai.paperItemId
+            LEFT JOIN ExamPaperSectionJpaEntity sec ON sec.id = pi.sectionId
+            WHERE ai.appealId = :appealId
+            ORDER BY sec.order ASC, pi.order ASC
+        """, Tuple.class)
+            .setParameter("appealId", appealId)
             .getResultList();
-        return rows.isEmpty() ? null : rows.get(0);
+        if (rows.isEmpty()) {
+            return List.of();
+        }
+
+        var responseIds = rows.stream().map(row -> row.get(2, UUID.class)).filter(Objects::nonNull).toList();
+        var aiEvaluationIds = aiEvaluationIdsByResponseIds(responseIds);
+        var evaluationIds = List.copyOf(aiEvaluationIds.values());
+        var scoresByEvaluation = criterionScoresByEvaluationIds(evaluationIds);
+        var turnsByEvaluation = turnsByEvaluationIds(evaluationIds);
+
+        var result = new ArrayList<AppealItemInfo>();
+        for (var row : rows) {
+            var aiEvaluationId = aiEvaluationIds.get(row.get(2, UUID.class));
+            result.add(new AppealItemInfo(
+                row.get(0, UUID.class),
+                row.get(1, UUID.class),
+                row.get(3, String.class),
+                aiEvaluationId == null ? List.of() : scoresByEvaluation.getOrDefault(aiEvaluationId, List.of()),
+                aiEvaluationId == null ? List.of() : turnsByEvaluation.getOrDefault(aiEvaluationId, List.of()),
+                row.get(4, BigDecimal.class)
+            ));
+        }
+        return result;
     }
 
-    private List<AppealCriterionScoreInfo> criterionScores(UUID evaluationId) {
-        return em.createQuery("""
-            SELECT new com.sep.vox.application.query.dto.AppealCriterionScoreInfo(
-                cs.rubricCriterionId, rc.code, rc.name, cs.finalScore, cs.rationale)
-            FROM ExamItemCriterionScoreJpaEntity cs
-            JOIN RubricCriterionJpaEntity rc ON rc.id = cs.rubricCriterionId
-            WHERE cs.evaluationId = :evaluationId
-            ORDER BY rc.order ASC
-        """, AppealCriterionScoreInfo.class)
-            .setParameter("evaluationId", evaluationId)
+    /**
+     * Điểm AI gốc để đối chiếu, cho nhiều response trong 1 query. Sau khi công bố phúc
+     * khảo, bản AI mang SUPERSEDED — vẫn phải trả về, vì đây chính là mốc so sánh của
+     * màn đối chiếu. JPQL không diễn đạt được LIMIT theo nhóm, nên order rồi giữ dòng
+     * đầu tiên của mỗi response.
+     */
+    private Map<UUID, UUID> aiEvaluationIdsByResponseIds(List<UUID> responseIds) {
+        if (responseIds.isEmpty()) {
+            return Map.of();
+        }
+        var rows = em.createQuery("""
+            SELECT ev.responseId, ev.id FROM ExamItemEvaluationJpaEntity ev
+            WHERE ev.responseId IN (:responseIds)
+            AND ev.engineType IN ('AI_SINGLE', 'AI_ENSEMBLE')
+            ORDER BY ev.responseId ASC, ev.evaluatedAt DESC
+        """, Tuple.class)
+            .setParameter("responseIds", responseIds)
             .getResultList();
+        var map = new LinkedHashMap<UUID, UUID>();
+        for (var row : rows) {
+            map.putIfAbsent(row.get(0, UUID.class), row.get(1, UUID.class));
+        }
+        return map;
     }
 
     /** Điểm tiêu chí của nhiều evaluation trong 1 query, group theo evaluationId (tránh N+1). */
@@ -320,22 +380,39 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
         return map;
     }
 
-    private List<AppealTurnInfo> turns(UUID evaluationId) {
-        return em.createQuery("""
-            SELECT new com.sep.vox.application.query.dto.AppealTurnInfo(
-                t.id, t.turnOrder, t.turnType, t.promptText, t.audioUrl, t.transcript, t.durationSeconds)
+    /** Lượt nói của nhiều evaluation trong 1 query, group theo evaluationId (tránh N+1). */
+    private Map<UUID, List<AppealTurnInfo>> turnsByEvaluationIds(List<UUID> evaluationIds) {
+        if (evaluationIds.isEmpty()) {
+            return Map.of();
+        }
+        var rows = em.createQuery("""
+            SELECT t.evaluationId, t.id, t.turnOrder, t.turnType, t.promptText, t.audioUrl,
+                   t.transcript, t.durationSeconds
             FROM ExamItemEvaluationTurnJpaEntity t
-            WHERE t.evaluationId = :evaluationId
+            WHERE t.evaluationId IN (:evaluationIds)
             ORDER BY t.turnOrder ASC
-        """, AppealTurnInfo.class)
-            .setParameter("evaluationId", evaluationId)
+        """, Tuple.class)
+            .setParameter("evaluationIds", evaluationIds)
             .getResultList();
+        var map = new LinkedHashMap<UUID, List<AppealTurnInfo>>();
+        for (var row : rows) {
+            map.computeIfAbsent(row.get(0, UUID.class), ignored -> new ArrayList<>())
+                .add(new AppealTurnInfo(
+                    row.get(1, UUID.class),
+                    row.get(2, Integer.class),
+                    row.get(3, String.class),
+                    row.get(4, String.class),
+                    row.get(5, String.class),
+                    row.get(6, String.class),
+                    row.get(7, Integer.class)
+                ));
+        }
+        return map;
     }
 
     private List<AppealReviewerInfo> reviewers(UUID appealId, boolean includeScores) {
         var rows = em.createQuery("""
-            SELECT r.reviewerId, u.fullName, r.status, r.assignedAt, r.submittedAt,
-                   r.suggestedScore, r.note, r.evaluationId
+            SELECT r.id, r.reviewerId, u.fullName, r.status, r.assignedAt, r.submittedAt
             FROM ExamAppealReviewerJpaEntity r
             JOIN UserJpaEntity u ON u.id = r.reviewerId
             WHERE r.appealId = :appealId
@@ -344,68 +421,80 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
             .setParameter("appealId", appealId)
             .getResultList();
 
-        Map<UUID, List<AppealCriterionScoreInfo>> scoresByEvaluation = Map.of();
-        if (includeScores) {
-            var evaluationIds = rows.stream()
-                .map(row -> row.get(7, UUID.class))
-                .filter(Objects::nonNull)
-                .toList();
-            scoresByEvaluation = criterionScoresByEvaluationIds(evaluationIds);
-        }
+        var itemsByReviewer = includeScores
+            ? reviewerItemsByAppealId(appealId, null)
+            : Map.<UUID, List<AppealReviewerItemInfo>>of();
 
         var result = new ArrayList<AppealReviewerInfo>();
         for (var row : rows) {
-            var status = row.get(2, String.class);
-            var evaluationId = row.get(7, UUID.class);
+            var items = itemsByReviewer.getOrDefault(row.get(0, UUID.class), List.of());
+            var status = row.get(3, String.class);
             result.add(new AppealReviewerInfo(
-                row.get(0, UUID.class),
-                row.get(1, String.class),
+                row.get(1, UUID.class),
+                row.get(2, String.class),
                 status,
                 ExamAppealReviewerStatus.SUBMITTED.name().equals(status),
-                row.get(3, OffsetDateTime.class),
                 row.get(4, OffsetDateTime.class),
-                row.get(5, BigDecimal.class),
-                row.get(6, String.class),
-                includeScores && evaluationId != null
-                    ? scoresByEvaluation.getOrDefault(evaluationId, List.of())
-                    : null
+                row.get(5, OffsetDateTime.class),
+                averageSuggestedScore(items),
+                items
             ));
         }
         return result;
     }
 
-    /** Báo cáo của đúng một giám khảo — dùng cho màn chấm lại, tránh nạp toàn bộ giám khảo. */
-    private AppealReviewerInfo reviewerReport(UUID appealId, UUID reviewerId) {
+    /**
+     * Báo cáo theo từng phần thi, group theo dòng phân công. `reviewerId` khác null thì
+     * chỉ lấy của đúng giám khảo đó — dùng cho màn chấm mù.
+     */
+    private Map<UUID, List<AppealReviewerItemInfo>> reviewerItemsByAppealId(UUID appealId, UUID reviewerId) {
         var rows = em.createQuery("""
-            SELECT r.reviewerId, u.fullName, r.status, r.assignedAt, r.submittedAt,
-                   r.suggestedScore, r.note, r.evaluationId
-            FROM ExamAppealReviewerJpaEntity r
-            JOIN UserJpaEntity u ON u.id = r.reviewerId
-            WHERE r.appealId = :appealId AND r.reviewerId = :reviewerId
+            SELECT ri.appealReviewerId, ri.appealItemId, sec.title, ri.suggestedScore, ri.note, ri.evaluationId
+            FROM ExamAppealReviewerItemJpaEntity ri
+            JOIN ExamAppealReviewerJpaEntity r ON r.id = ri.appealReviewerId
+            JOIN ExamResultAppealItemJpaEntity ai ON ai.id = ri.appealItemId
+            LEFT JOIN ExamPaperItemJpaEntity pi ON pi.id = ai.paperItemId
+            LEFT JOIN ExamPaperSectionJpaEntity sec ON sec.id = pi.sectionId
+            WHERE r.appealId = :appealId
+            AND (:reviewerId IS NULL OR r.reviewerId = :reviewerId)
+            ORDER BY sec.order ASC, pi.order ASC
         """, Tuple.class)
             .setParameter("appealId", appealId)
             .setParameter("reviewerId", reviewerId)
             .getResultList();
         if (rows.isEmpty()) {
+            return Map.of();
+        }
+
+        var evaluationIds = rows.stream().map(row -> row.get(5, UUID.class)).filter(Objects::nonNull).toList();
+        var scoresByEvaluation = criterionScoresByEvaluationIds(evaluationIds);
+
+        var map = new LinkedHashMap<UUID, List<AppealReviewerItemInfo>>();
+        for (var row : rows) {
+            var evaluationId = row.get(5, UUID.class);
+            map.computeIfAbsent(row.get(0, UUID.class), ignored -> new ArrayList<>())
+                .add(new AppealReviewerItemInfo(
+                    row.get(1, UUID.class),
+                    row.get(2, String.class),
+                    row.get(3, BigDecimal.class),
+                    row.get(4, String.class),
+                    evaluationId == null ? List.of() : scoresByEvaluation.getOrDefault(evaluationId, List.of())
+                ));
+        }
+        return map;
+    }
+
+    /** Con số headline của màn đối chiếu: trung bình điểm đề xuất trên các phần thi. */
+    private BigDecimal averageSuggestedScore(List<AppealReviewerItemInfo> items) {
+        var scores = items.stream()
+            .map(AppealReviewerItemInfo::suggestedScore)
+            .filter(Objects::nonNull)
+            .toList();
+        if (scores.isEmpty()) {
             return null;
         }
-        var row = rows.get(0);
-        var status = row.get(2, String.class);
-        var evaluationId = row.get(7, UUID.class);
-        var scores = evaluationId == null
-            ? null
-            : criterionScoresByEvaluationIds(List.of(evaluationId)).getOrDefault(evaluationId, List.of());
-        return new AppealReviewerInfo(
-            row.get(0, UUID.class),
-            row.get(1, String.class),
-            status,
-            ExamAppealReviewerStatus.SUBMITTED.name().equals(status),
-            row.get(3, OffsetDateTime.class),
-            row.get(4, OffsetDateTime.class),
-            row.get(5, BigDecimal.class),
-            row.get(6, String.class),
-            scores
-        );
+        return scores.stream().reduce(BigDecimal.ZERO, BigDecimal::add)
+            .divide(BigDecimal.valueOf(scores.size()), 2, RoundingMode.HALF_UP);
     }
 
     // ---- việc của giám khảo ------------------------------------------------
@@ -415,14 +504,13 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
         var normalizedPage = Math.max(page, 0);
         var normalizedSize = Math.max(size, 1);
 
+        // Cùng lý do như searchAppeals: không join to-many vào query phân trang.
         var rows = em.createQuery("""
-            SELECT a.id, e.name, sec.title, a.deadline, r.status
+            SELECT a.id, e.name, a.deadline, r.status
             FROM ExamAppealReviewerJpaEntity r
             JOIN ExamResultAppealJpaEntity a ON a.id = r.appealId
             JOIN ExamCandidateResultJpaEntity cr ON cr.id = a.candidateResultId
             JOIN ExamJpaEntity e ON e.id = cr.examId
-            LEFT JOIN ExamPaperItemJpaEntity pi ON pi.id = a.paperItemId
-            LEFT JOIN ExamPaperSectionJpaEntity sec ON sec.id = pi.sectionId
             WHERE r.reviewerId = :reviewerId
             AND (:status IS NULL OR r.status = :status)
             ORDER BY a.deadline ASC NULLS LAST, r.assignedAt DESC
@@ -433,17 +521,20 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
             .setMaxResults(normalizedSize)
             .getResultList();
 
+        var partLabelsByAppeal = partLabelsByAppealIds(
+            rows.stream().map(row -> row.get(0, UUID.class)).toList());
         var now = OffsetDateTime.now();
         var content = new ArrayList<AppealTaskInfo>();
         for (var row : rows) {
-            var deadline = row.get(3, OffsetDateTime.class);
-            var myStatus = row.get(4, String.class);
+            var appealId = row.get(0, UUID.class);
+            var deadline = row.get(2, OffsetDateTime.class);
+            var myStatus = row.get(3, String.class);
             var overdue = deadline != null && deadline.isBefore(now)
                 && ExamAppealReviewerStatus.ASSIGNED.name().equals(myStatus);
             content.add(new AppealTaskInfo(
-                row.get(0, UUID.class),
+                appealId,
                 row.get(1, String.class),
-                row.get(2, String.class),
+                partLabelsByAppeal.getOrDefault(appealId, List.of()),
                 deadline,
                 myStatus,
                 overdue
@@ -469,13 +560,13 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
     public Optional<AppealTaskDetailInfo> findTaskDetail(UUID appealId, UUID reviewerId) {
         // Chỉ giám khảo được phân công vào CHÍNH đơn này mới xem được.
         // ExamResultAccessService không phủ trường hợp này (giám khảo không phải exam member).
+        // Query này chạy MỘT MÌNH và trước mọi query khác — nó chính là chốt phân quyền,
+        // không được để query phần thi nào chạy trước khi nó trả về dòng.
         var rows = em.createQuery("""
-            SELECT a.id, sec.title, a.responseId, cr.rubricVersionId, r.evaluationId
+            SELECT a.id, cr.rubricVersionId
             FROM ExamAppealReviewerJpaEntity r
             JOIN ExamResultAppealJpaEntity a ON a.id = r.appealId
             JOIN ExamCandidateResultJpaEntity cr ON cr.id = a.candidateResultId
-            LEFT JOIN ExamPaperItemJpaEntity pi ON pi.id = a.paperItemId
-            LEFT JOIN ExamPaperSectionJpaEntity sec ON sec.id = pi.sectionId
             WHERE a.id = :appealId AND r.reviewerId = :reviewerId
         """, Tuple.class)
             .setParameter("appealId", appealId)
@@ -485,20 +576,17 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
             return Optional.empty();
         }
         var row = rows.get(0);
-        var responseId = row.get(2, UUID.class);
-        var aiEvaluationId = findAiEvaluationId(responseId);
-        var myEvaluationId = row.get(4, UUID.class);
 
         // Chỉ nạp báo cáo của chính giám khảo này (chấm mù: không đụng dữ liệu người khác).
-        var myReport = myEvaluationId == null ? null : reviewerReport(appealId, reviewerId);
+        var myItems = reviewerItemsByAppealId(appealId, reviewerId).values().stream()
+            .flatMap(List::stream)
+            .toList();
 
         return Optional.of(new AppealTaskDetailInfo(
             row.get(0, UUID.class),
-            row.get(1, String.class),
-            aiEvaluationId == null ? List.of() : turns(aiEvaluationId),
-            aiEvaluationId == null ? List.of() : criterionScores(aiEvaluationId),
-            criteria(row.get(3, UUID.class)),
-            myReport
+            appealItems(appealId),
+            criteria(row.get(1, UUID.class)),
+            myItems
         ));
     }
 

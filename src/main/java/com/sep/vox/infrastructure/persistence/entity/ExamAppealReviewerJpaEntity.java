@@ -1,6 +1,5 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
-import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -55,23 +54,10 @@ public class ExamAppealReviewerJpaEntity {
     @Column(name = "submitted_at")
     private OffsetDateTime submittedAt;
 
-    /** Nhận xét tổng của giám khảo. */
-    @Column(name = "note", length = 2048)
-    private String note;
-
-    /** Điểm đề xuất cho part — trung bình các tiêu chí. */
-    @Column(name = "suggested_score", precision = 5, scale = 2)
-    private BigDecimal suggestedScore;
-
-    /** Trỏ tới exam_item_evaluations (engine HUMAN, status UNDER_REVIEW). NULL cho tới khi nộp báo cáo. */
-    @Column(name = "evaluation_id")
-    private UUID evaluationId;
-
     protected ExamAppealReviewerJpaEntity() {}
 
     public ExamAppealReviewerJpaEntity(UUID id, UUID appealId, UUID reviewerId, String status,
-            OffsetDateTime assignedAt, UUID assignedBy, OffsetDateTime submittedAt, String note,
-            BigDecimal suggestedScore, UUID evaluationId) {
+            OffsetDateTime assignedAt, UUID assignedBy, OffsetDateTime submittedAt) {
         this.id = id;
         this.appealId = appealId;
         this.reviewerId = reviewerId;
@@ -79,9 +65,6 @@ public class ExamAppealReviewerJpaEntity {
         this.assignedAt = assignedAt;
         this.assignedBy = assignedBy;
         this.submittedAt = submittedAt;
-        this.note = note;
-        this.suggestedScore = suggestedScore;
-        this.evaluationId = evaluationId;
     }
 
     public UUID getId() {
@@ -138,29 +121,5 @@ public class ExamAppealReviewerJpaEntity {
 
     public void setSubmittedAt(OffsetDateTime submittedAt) {
         this.submittedAt = submittedAt;
-    }
-
-    public String getNote() {
-        return note;
-    }
-
-    public void setNote(String note) {
-        this.note = note;
-    }
-
-    public BigDecimal getSuggestedScore() {
-        return suggestedScore;
-    }
-
-    public void setSuggestedScore(BigDecimal suggestedScore) {
-        this.suggestedScore = suggestedScore;
-    }
-
-    public UUID getEvaluationId() {
-        return evaluationId;
-    }
-
-    public void setEvaluationId(UUID evaluationId) {
-        this.evaluationId = evaluationId;
     }
 }

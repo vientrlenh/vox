@@ -24,6 +24,7 @@ import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import com.sep.vox.domain.model.exam.ExamResultAppeal;
 import com.sep.vox.domain.model.exam.ExamSession;
 import com.sep.vox.domain.model.school.SchoolUser;
+import com.sep.vox.domain.repository.ExamAppealReviewerItemRepository;
 import com.sep.vox.domain.repository.ExamAppealReviewerRepository;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.ExamItemCriterionScoreRepository;
@@ -33,6 +34,7 @@ import com.sep.vox.domain.repository.ExamItemResponseRepository;
 import com.sep.vox.domain.repository.ExamItemResponseTurnRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
+import com.sep.vox.domain.repository.ExamResultAppealItemRepository;
 import com.sep.vox.domain.repository.ExamResultAppealRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -50,6 +52,8 @@ public class DeleteExamSessionUseCaseTests {
     private ExamCandidateResultRepository examCandidateResultRepository;
     private ExamResultAppealRepository examResultAppealRepository;
     private ExamAppealReviewerRepository examAppealReviewerRepository;
+    private ExamResultAppealItemRepository examResultAppealItemRepository;
+    private ExamAppealReviewerItemRepository examAppealReviewerItemRepository;
     private UserContextPort userContextPort;
     private SchoolUserRepository schoolUserRepository;
     private UserRoleQueryRepository userRoleQueryRepository;
@@ -70,6 +74,8 @@ public class DeleteExamSessionUseCaseTests {
         examCandidateResultRepository = mock(ExamCandidateResultRepository.class);
         examResultAppealRepository = mock(ExamResultAppealRepository.class);
         examAppealReviewerRepository = mock(ExamAppealReviewerRepository.class);
+        examResultAppealItemRepository = mock(ExamResultAppealItemRepository.class);
+        examAppealReviewerItemRepository = mock(ExamAppealReviewerItemRepository.class);
         userContextPort = mock(UserContextPort.class);
         schoolUserRepository = mock(SchoolUserRepository.class);
         userRoleQueryRepository = mock(UserRoleQueryRepository.class);
@@ -88,7 +94,9 @@ public class DeleteExamSessionUseCaseTests {
             mock(ExamItemCriterionScoreRepository.class),
             examCandidateResultRepository,
             examResultAppealRepository,
-            examAppealReviewerRepository
+            examAppealReviewerRepository,
+            examResultAppealItemRepository,
+            examAppealReviewerItemRepository
         );
 
         var session = new ExamSession();
@@ -161,5 +169,22 @@ public class DeleteExamSessionUseCaseTests {
 
         verify(examResultAppealRepository, never()).findByCandidateResultId(any());
         verify(examSessionRepository).deleteById(sessionId);
+    }
+
+    @Test
+    void should_delete_appeal_items_and_reviewer_items_before_parents() {
+        when(examCandidateResultRepository.findBySessionId(sessionId)).thenReturn(Optional.of(result()));
+        when(examResultAppealRepository.findByCandidateResultId(resultId)).thenReturn(List.of(appeal()));
+
+        useCase.execute(sessionId);
+
+        // Con trước cha: không có FK nào chặn, sai thứ tự là để lại dòng mồ côi.
+        var inOrder = org.mockito.Mockito.inOrder(
+            examAppealReviewerItemRepository, examAppealReviewerRepository,
+            examResultAppealItemRepository, examResultAppealRepository);
+        inOrder.verify(examAppealReviewerItemRepository).deleteByAppealIdIn(List.of(appealId));
+        inOrder.verify(examAppealReviewerRepository).deleteByAppealIdIn(List.of(appealId));
+        inOrder.verify(examResultAppealItemRepository).deleteByAppealIdIn(List.of(appealId));
+        inOrder.verify(examResultAppealRepository).deleteByIdIn(List.of(appealId));
     }
 }

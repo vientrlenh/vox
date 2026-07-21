@@ -80,9 +80,6 @@ public class AssignExamAppealReviewersUseCase implements IUseCase<AssignExamAppe
                 ExamAppealReviewerStatus.ASSIGNED,
                 now,
                 currentUserId,
-                null,
-                null,
-                null,
                 null
             ));
         }

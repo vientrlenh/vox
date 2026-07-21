@@ -10,7 +10,6 @@ public record AppealDetailInfo(
     String studentName,
     String className,
     String examName,
-    String partLabel,
     BigDecimal originalScore,
     String status,
     OffsetDateTime requestedAt,
@@ -21,8 +20,8 @@ public record AppealDetailInfo(
     BigDecimal finalScore,
     OffsetDateTime approvedAt,
     OffsetDateTime resolvedAt,
-    List<AppealCriterionScoreInfo> aiScores,
-    List<AppealTurnInfo> turns,
+    /** Các phần thi được phúc khảo, mỗi phần kèm điểm AI gốc và lượt nói của riêng nó. */
+    List<AppealItemInfo> items,
     List<AppealReviewerInfo> reviewers,
     boolean overdue,
     /** Thang điểm rubric — chính là khoảng BE dùng để validate partScore khi công bố. */

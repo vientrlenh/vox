@@ -106,14 +106,14 @@ public class ExamAppealControllerTests {
     @Test
     void should_not_expose_other_reviewers_reports_in_task_detail() {
         var appealId = UUID.randomUUID();
-        var detail = new AppealTaskDetailInfo(appealId, "Part 2", List.of(), List.of(), List.of(), null);
+        var detail = new AppealTaskDetailInfo(appealId, List.of(), List.of(), List.of());
         when(viewAppealTaskDetailUseCase.execute(appealId)).thenReturn(detail);
 
         var result = controller.appealTaskDetail(appealId);
 
         // AppealTaskDetailInfo cố tình không có trường reviewers[]: chấm mù.
         assertThat(result.appealId()).isEqualTo(appealId);
-        assertThat(result.myReport()).isNull();
+        assertThat(result.myReport()).isEmpty();
     }
 
     @Test

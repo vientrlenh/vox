@@ -15,8 +15,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.port.input.command.UpdateExamCandidateStatusCommand;
+import com.sep.vox.application.port.input.command.UpdateExamCandidatesAttendanceCommand;
 import com.sep.vox.application.port.input.query.ViewExamCandidatesQuery;
 import com.sep.vox.application.port.input.usecase.examcandidate.UpdateExamCandidateStatusUseCase;
+import com.sep.vox.application.port.input.usecase.examcandidate.UpdateExamCandidatesAttendanceUseCase;
 import com.sep.vox.application.port.input.usecase.examcandidate.ViewExamCandidatesUseCase;
 import com.sep.vox.domain.dto.ExamCandidateDto;
 import com.sep.vox.domain.dto.ExamDto;
@@ -31,6 +33,7 @@ class ExamCandidateControllerTests {
 
     private ViewExamCandidatesUseCase viewExamCandidatesUseCase;
     private UpdateExamCandidateStatusUseCase updateExamCandidateStatusUseCase;
+    private UpdateExamCandidatesAttendanceUseCase updateExamCandidatesAttendanceUseCase;
     private ExamCandidateController controller;
 
     private final UUID examId = UUID.randomUUID();
@@ -41,7 +44,9 @@ class ExamCandidateControllerTests {
     void setUp() {
         viewExamCandidatesUseCase = mock(ViewExamCandidatesUseCase.class);
         updateExamCandidateStatusUseCase = mock(UpdateExamCandidateStatusUseCase.class);
-        controller = new ExamCandidateController(viewExamCandidatesUseCase, updateExamCandidateStatusUseCase);
+        updateExamCandidatesAttendanceUseCase = mock(UpdateExamCandidatesAttendanceUseCase.class);
+        controller = new ExamCandidateController(viewExamCandidatesUseCase, updateExamCandidateStatusUseCase,
+            updateExamCandidatesAttendanceUseCase);
     }
 
     private ExamCandidateDto candidate(UUID assignedPaperId, UUID scheduleId) {
@@ -72,6 +77,20 @@ class ExamCandidateControllerTests {
         assertThat(result).isEqualTo(dto.id());
         verify(updateExamCandidateStatusUseCase).execute(
             new UpdateExamCandidateStatusCommand(dto.id(), ExamCandidateStatus.ABSENT));
+    }
+
+    @Test
+    void should_delegate_attendance_update_to_use_case() {
+        var dto = candidate(null, scheduleId);
+        var candidateIds = List.of(dto.id());
+        when(updateExamCandidatesAttendanceUseCase.execute(any(UpdateExamCandidatesAttendanceCommand.class)))
+            .thenReturn(List.of(dto));
+
+        var result = controller.updateExamCandidatesAttendance(scheduleId, candidateIds);
+
+        assertThat(result).containsExactly(dto);
+        verify(updateExamCandidatesAttendanceUseCase).execute(
+            new UpdateExamCandidatesAttendanceCommand(scheduleId, candidateIds));
     }
 
     @Test
@@ -151,7 +170,8 @@ class ExamCandidateControllerTests {
     void should_resolve_exam_via_data_loader() {
         var dto = candidate(null, scheduleId);
         var exam = new ExamDto(examId, null, null, "E1", "Exam", null, UUID.randomUUID(), UUID.randomUUID(),
-            "CENTRALIZED", "LAB", "DRAFT", null, null, null, null, null, false, null, null, null, null, null);
+            "CENTRALIZED", "LAB", "DRAFT", null, null, null, null, null, false, null, null, null, null, null,
+            null);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
         DataLoader loader = mock(DataLoader.class);
         when(env.<UUID, ExamDto>getDataLoader("examById")).thenReturn(loader);

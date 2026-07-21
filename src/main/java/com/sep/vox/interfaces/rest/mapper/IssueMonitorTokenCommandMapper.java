@@ -7,9 +7,8 @@ public final class IssueMonitorTokenCommandMapper {
     
     public static IssueMonitorTokenCommand fromRequest(IssueMonitorTokenRequest request) {
         return new IssueMonitorTokenCommand(
-            request.sessionIds(), 
-            request.scheduleIds(), 
-            request.examId()
+            request.examId(), 
+            request.scheduleIds()
         );
     }
 }

@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -11,4 +12,6 @@ public interface SpringDataExamScheduleProctorRepository extends JpaRepository<E
     List<ExamScheduleProctorJpaEntity> findByScheduleId(UUID scheduleId);
     boolean existsByScheduleIdAndTeacherId(UUID scheduleId, UUID teacherId);
     long countByScheduleId(UUID scheduleId);
+
+    List<ExamScheduleProctorJpaEntity> findByTeacherIdAndScheduleIdIn(UUID teacherId, Collection<UUID> scheduleIds);
 }

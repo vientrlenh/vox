@@ -1,9 +1,11 @@
 package com.sep.vox.infrastructure.security;
 
+import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 
 import javax.crypto.SecretKey;
 
@@ -42,17 +44,19 @@ public class JwtStreamTokenProvider implements StreamTokenProvider {
                 .compact();
     }
 
-    public String generateMonitorToken(String userId, List<String> sessionIds, List<String> scheduleIds, String examId, List<String> roles, OffsetDateTime windowStart, OffsetDateTime windowEnd) {
+    public String generateMonitorToken(String userId, String schoolId, String examId, String monitorScope, List<String> scheduleIds, List<String> roles, OffsetDateTime windowStart, OffsetDateTime windowEnd) {
         var claims = new HashMap<String, Object>();
         claims.put("userId", userId);
-        claims.put("sessionIds", sessionIds);
-        claims.put("scheduleIds", scheduleIds);
+        claims.put("schoolId", schoolId);
         claims.put("examId", examId);
+        claims.put("monitorScope", monitorScope);
+        claims.put("scheduleIds", scheduleIds);
         claims.put("roles", roles);
         claims.put("tokenUse", "monitor");
         return Jwts.builder()
             .claims(claims)
             .subject(userId)
+            .id(UUID.randomUUID().toString())
             .issuedAt(new Date())
             .notBefore(Date.from(windowStart.toInstant()))
             .expiration(Date.from(windowEnd.toInstant()))
@@ -61,7 +65,7 @@ public class JwtStreamTokenProvider implements StreamTokenProvider {
     }
 
     private SecretKey getSecretKey(String secret) {
-        return Keys.hmacShaKeyFor(secret.getBytes());
+        return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
     
 }

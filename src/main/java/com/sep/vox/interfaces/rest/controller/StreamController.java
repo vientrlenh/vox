@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.sep.vox.application.port.input.usecase.stream.IssueMonitorTokenUseCase;
 import com.sep.vox.application.port.input.usecase.stream.IssueStudentStreamTokenUseCase;
 import com.sep.vox.interfaces.rest.dto.request.IssueMonitorTokenRequest;
 import com.sep.vox.interfaces.rest.dto.request.IssueStudentStreamTokenRequest;
@@ -21,9 +22,11 @@ import jakarta.validation.Valid;
 public class StreamController {
     
     private final IssueStudentStreamTokenUseCase issueStudentStreamTokenUseCase;
+    private final IssueMonitorTokenUseCase issueMonitorTokenUseCase;
 
-    public StreamController(IssueStudentStreamTokenUseCase issueStudentStreamTokenUseCase) {
-        this.issueStudentStreamTokenUseCase = issueStudentStreamTokenUseCase;
+    public StreamController(IssueStudentStreamTokenUseCase issueStudentStreamTokenUseCase, IssueMonitorTokenUseCase issueMonitorTokenUseCase) {
+        this.issueStudentStreamTokenUseCase = issueStudentStreamTokenUseCase; 
+        this.issueMonitorTokenUseCase = issueMonitorTokenUseCase;
     }
 
     @PostMapping("/student/token")
@@ -31,7 +34,7 @@ public class StreamController {
     public ResponseEntity<ApiResponse<String>> getStreamToken(@Valid @RequestBody IssueStudentStreamTokenRequest request) {
         var command = IssueStudentStreamTokenCommandMapper.fromRequest(request);
         var token = issueStudentStreamTokenUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success(token));
+        return ResponseEntity.ok(ApiResponse.success("Token stream được lấy thành công", token));
     }
 
 
@@ -39,6 +42,7 @@ public class StreamController {
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<String>> getMonitorToken(@Valid @RequestBody IssueMonitorTokenRequest request) {
         var command = IssueMonitorTokenCommandMapper.fromRequest(request);
-        return null;
+        var token = issueMonitorTokenUseCase.execute(command);
+        return ResponseEntity.ok(ApiResponse.success("Token giám sát được lấy thành công", token));
     }
 }

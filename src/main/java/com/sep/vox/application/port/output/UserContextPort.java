@@ -6,4 +6,6 @@ public interface UserContextPort {
     UUID getCurrentAuthenticatedUserId();
     boolean isSystemAdmin();
     UUID getCurrentSchoolId();
+    boolean isSchoolAdmin();
+    boolean isTeacher();
 }

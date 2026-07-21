@@ -7,6 +7,9 @@ import com.sep.vox.domain.repository.ExamSessionRepository;
 import com.sep.vox.infrastructure.persistence.mapper.ExamSessionMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataExamSessionRepository;
 
+import java.time.OffsetDateTime;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -37,5 +40,13 @@ public class ExamSessionRepositoryImpl implements ExamSessionRepository {
     public Optional<ExamSession> findByIdAndInProgress(UUID id) {
         return springDataExamSessionRepository.findByIdAndStatus(id, ExamSessionStatus.IN_PROGRESS.name())
             .map(ExamSessionMapper::toDomain);
+    }
+
+    @Override
+    public List<ExamSession> findActiveByIdInAndSchoolId(Collection<UUID> ids, OffsetDateTime now, UUID schoolId) {
+        return springDataExamSessionRepository.findActiveByIdInAndSchoolId(ids, now, schoolId)
+            .stream()
+            .map(ExamSessionMapper::toDomain)
+            .toList();
     }
 }

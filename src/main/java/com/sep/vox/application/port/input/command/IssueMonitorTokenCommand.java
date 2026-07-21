@@ -4,9 +4,8 @@ import java.util.List;
 import java.util.UUID;
 
 public record IssueMonitorTokenCommand(
-    List<UUID> sessionIds, 
-    List<UUID> scheduleIds, 
-    UUID examId
+    UUID examId,
+    List<UUID> scheduleIds
 ) {
     
 }

@@ -4,12 +4,14 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
+import com.sep.vox.domain.model.exam.ExamCandidateStatus;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
 
 public record ExamAttemptSummary(
     UUID candidateId,
     UUID examId,
+    ExamCandidateStatus candidateStatus,
     UUID sessionId,
     OffsetDateTime startedAt,
     OffsetDateTime submittedAt,
@@ -31,6 +33,7 @@ public record ExamAttemptSummary(
     public ExamAttemptSummary(
             UUID candidateId,
             UUID examId,
+            String candidateStatus,
             UUID sessionId,
             OffsetDateTime startedAt,
             OffsetDateTime submittedAt,
@@ -45,6 +48,7 @@ public record ExamAttemptSummary(
         this(
             candidateId,
             examId,
+            candidateStatus == null ? null : ExamCandidateStatus.valueOf(candidateStatus),
             sessionId,
             startedAt,
             submittedAt,

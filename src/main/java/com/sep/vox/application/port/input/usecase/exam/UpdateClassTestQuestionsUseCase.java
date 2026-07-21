@@ -1,9 +1,7 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
@@ -13,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.port.input.command.ClassTestQuestionCommand;
 import com.sep.vox.application.port.input.command.ClassTestSectionCommand;
 import com.sep.vox.application.port.input.command.UpdateClassTestQuestionsCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -96,20 +95,20 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
         }
         var seenQuestionIds = new java.util.HashSet<UUID>();
         for (var section : input.sections()) {
-            if (section.questionIds() == null || section.questionIds().isEmpty()) {
+            if (section.questions() == null || section.questions().isEmpty()) {
                 throw new IllegalStateException("Mỗi section phải có ít nhất 1 câu hỏi");
             }
-            for (var questionId : section.questionIds()) {
-                if (!seenQuestionIds.add(questionId)) {
+            for (var questionCommand : section.questions()) {
+                if (!seenQuestionIds.add(questionCommand.questionId())) {
                     throw new IllegalStateException("Một câu hỏi không thể xuất hiện nhiều lần trong cùng 1 bài kiểm tra");
                 }
             }
         }
 
         for (var section : input.sections()) {
-            for (var questionId : section.questionIds()) {
-                var question = questionRepository.findAccessibleById(questionId, currentUserId, exam.getSchoolId(), false, false)
-                    .orElseThrow(() -> new ForbiddenException("Không có quyền dùng câu hỏi " + questionId));
+            for (var questionCommand : section.questions()) {
+                var question = questionRepository.findAccessibleById(questionCommand.questionId(), currentUserId, exam.getSchoolId(), false, false)
+                    .orElseThrow(() -> new ForbiddenException("Không có quyền dùng câu hỏi " + questionCommand.questionId()));
                 boolean isOwner = currentUserId.equals(question.getCreatedBy());
                 boolean isSchoolShared = question.getSharing() == QuestionSharing.SCHOOL_SHARED;
                 if (!isOwner && !isSchoolShared) {
@@ -143,7 +142,7 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
             existingPaperSection.setUpdatedBy(currentUserId);
             examPaperSectionRepository.save(existingPaperSection);
 
-            updateSectionQuestions(existingPaperSection, sectionCommand.questionIds(), exam.getId(), currentUserId, now);
+            updateSectionQuestions(existingPaperSection, sectionCommand.questions(), exam.getId(), currentUserId, now);
         }
 
         for (int i = input.sections().size(); i < existingPaperSections.size(); i++) {
@@ -162,7 +161,7 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
 
     private void updateSectionQuestions(
             ExamPaperSection paperSection,
-            List<UUID> questionIds,
+            List<ClassTestQuestionCommand> questions,
             UUID examId,
             UUID currentUserId,
             OffsetDateTime now) {
@@ -170,9 +169,9 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
             examPaperItemRepository.deleteById(item.getId());
         }
 
-        var weights = distributeEqualWeights(questionIds.size());
-        for (int i = 0; i < questionIds.size(); i++) {
-            var questionId = questionIds.get(i);
+        var weights = ClassTestSectionWeightPolicy.resolveQuestionWeights(questions);
+        for (int i = 0; i < questions.size(); i++) {
+            var questionId = questions.get(i).questionId();
             examPaperItemRepository.save(new ExamPaperItem(
                 null,
                 paperSection.getId(),
@@ -215,10 +214,10 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
             currentUserId
         ));
 
-        var questionIds = sectionCommand.questionIds();
-        var weights = distributeEqualWeights(questionIds.size());
-        for (int i = 0; i < questionIds.size(); i++) {
-            var questionId = questionIds.get(i);
+        var questions = sectionCommand.questions();
+        var weights = ClassTestSectionWeightPolicy.resolveQuestionWeights(questions);
+        for (int i = 0; i < questions.size(); i++) {
+            var questionId = questions.get(i).questionId();
             examPaperItemRepository.save(new ExamPaperItem(
                 null,
                 paperSection.getId(),
@@ -238,18 +237,6 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
             throw new IllegalStateException(
                 "Bài đang dùng blueprint dùng chung, không thể sửa câu hỏi trực tiếp — dùng \"Đổi blueprint khác\" ở tab Blueprint để thay đổi cấu trúc");
         }
-    }
-
-    private List<BigDecimal> distributeEqualWeights(int count) {
-        var weights = new ArrayList<BigDecimal>();
-        var perItem = BigDecimal.ONE.divide(BigDecimal.valueOf(count), 2, RoundingMode.DOWN);
-        var runningSum = BigDecimal.ZERO;
-        for (int i = 0; i < count - 1; i++) {
-            weights.add(perItem);
-            runningSum = runningSum.add(perItem);
-        }
-        weights.add(BigDecimal.ONE.subtract(runningSum));
-        return weights;
     }
 
 }

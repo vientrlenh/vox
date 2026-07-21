@@ -21,6 +21,9 @@ public class Exam {
     private OffsetDateTime closeAt;
     private UUID assessmentPolicyId;
     private boolean requiresOtp;
+    // H.1: tự động tính = MAX(paperDuration) trên mọi ExamPaper của kỳ thi, không phải
+    // ngưỡng người dùng nhập - xem recalculateExamTimeDuration ở các use case tạo/sửa paper.
+    private Integer examTimeDurationSecond;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
     private UUID createdBy;
@@ -247,6 +250,14 @@ public class Exam {
 
     public void setRequiresOtp(boolean requiresOtp) {
         this.requiresOtp = requiresOtp;
+    }
+
+    public Integer getExamTimeDurationSecond() {
+        return examTimeDurationSecond;
+    }
+
+    public void setExamTimeDurationSecond(Integer examTimeDurationSecond) {
+        this.examTimeDurationSecond = examTimeDurationSecond;
     }
 
 }

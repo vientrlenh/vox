@@ -1,6 +1,9 @@
 package com.sep.vox.application.port.input.usecase.examcandidate;
 
 import java.time.OffsetDateTime;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -8,12 +11,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.port.input.command.UpdateExamCandidateStatusCommand;
+import com.sep.vox.application.port.input.command.UpdateExamCandidatesAttendanceCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.ExamCandidateDto;
 import com.sep.vox.domain.mapper.ExamCandidateDtoMapper;
+import com.sep.vox.domain.model.exam.ExamCandidateStatus;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamRepository;
@@ -22,7 +26,8 @@ import com.sep.vox.domain.repository.ExamScheduleRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
-public class UpdateExamCandidateStatusUseCase implements IUseCase<UpdateExamCandidateStatusCommand, ExamCandidateDto> {
+public class UpdateExamCandidatesAttendanceUseCase
+        implements IUseCase<UpdateExamCandidatesAttendanceCommand, List<ExamCandidateDto>> {
 
     private final ExamCandidateRepository examCandidateRepository;
     private final ExamRepository examRepository;
@@ -32,7 +37,7 @@ public class UpdateExamCandidateStatusUseCase implements IUseCase<UpdateExamCand
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
 
-    public UpdateExamCandidateStatusUseCase(
+    public UpdateExamCandidatesAttendanceUseCase(
             ExamCandidateRepository examCandidateRepository,
             ExamRepository examRepository,
             ExamScheduleRepository examScheduleRepository,
@@ -51,36 +56,57 @@ public class UpdateExamCandidateStatusUseCase implements IUseCase<UpdateExamCand
 
     @Override
     @Transactional
-    public ExamCandidateDto execute(UpdateExamCandidateStatusCommand input) {
-        var candidate = examCandidateRepository.findById(input.candidateId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy thí sinh"));
-        var exam = examRepository.findById(candidate.getExamId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy kỳ thi của thí sinh"));
+    public List<ExamCandidateDto> execute(UpdateExamCandidatesAttendanceCommand input) {
+        var schedule = examScheduleRepository.findById(input.scheduleId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy ca thi"));
+        var candidates = examCandidateRepository.findByScheduleId(schedule.getId());
+        if (candidates.isEmpty()) {
+            return List.of();
+        }
+
+        var exam = examRepository.findById(schedule.getExamId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy kỳ thi của ca thi"));
         if (exam.getKind() != ExamKind.CENTRALIZED) {
             throw new ForbiddenException("Chỉ hỗ trợ điểm danh cho kỳ thi tập trung");
         }
-        if (candidate.getScheduleId() == null) {
-            throw new IllegalStateException("Thí sinh chưa được xếp ca thi");
-        }
 
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        if (!hasAttendanceAccess(candidate.getScheduleId(), exam.getSchoolId(), currentUserId)) {
+        if (!hasAttendanceAccess(schedule.getId(), exam.getSchoolId(), currentUserId)) {
             throw new ForbiddenException("Bạn không phải giám thị của ca thi này");
         }
 
-        var schedule = examScheduleRepository.findById(candidate.getScheduleId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy ca thi của thí sinh"));
         var now = OffsetDateTime.now();
         var windowStart = schedule.getStartDate().minusMinutes(30);
         var windowEnd = schedule.getEndDate();
         if (now.isBefore(windowStart) || now.isAfter(windowEnd)) {
-            throw new IllegalStateException("Chỉ được điểm danh trong khoảng 30 phút trước đến khi kết thúc ca thi");
+            throw new IllegalStateException("Chỉ được điểm danh trong khoảng 30 phút trước giờ bắt đầu đến khi kết thúc ca thi");
         }
 
-        candidate.setStatus(input.status());
-        candidate.setUpdatedAt(now);
-        candidate.setUpdatedBy(currentUserId);
-        return ExamCandidateDtoMapper.toDto(examCandidateRepository.save(candidate));
+        var absentIds = new HashSet<>(input.candidateIds() == null ? List.<UUID>of() : input.candidateIds());
+        var scheduleCandidateIds = candidates.stream().map(candidate -> candidate.getId()).collect(java.util.stream.Collectors.toSet());
+        if (!scheduleCandidateIds.containsAll(absentIds)) {
+            throw new IllegalArgumentException("Danh sách thí sinh điểm danh không hợp lệ");
+        }
+
+        var changed = new java.util.ArrayList<com.sep.vox.domain.model.exam.ExamCandidate>();
+        for (var candidate : candidates) {
+            var shouldBeAbsent = absentIds.contains(candidate.getId());
+            if (shouldBeAbsent && candidate.getStatus() == ExamCandidateStatus.ASSIGNED) {
+                candidate.setStatus(ExamCandidateStatus.ABSENT);
+            } else if (!shouldBeAbsent && candidate.getStatus() == ExamCandidateStatus.ABSENT) {
+                candidate.setStatus(ExamCandidateStatus.ASSIGNED);
+            } else {
+                continue;
+            }
+            candidate.setUpdatedAt(now);
+            candidate.setUpdatedBy(currentUserId);
+            changed.add(candidate);
+        }
+
+        if (changed.isEmpty()) {
+            return List.of();
+        }
+        return ExamCandidateDtoMapper.toDtoList(examCandidateRepository.saveAll(changed));
     }
 
     private boolean hasAttendanceAccess(UUID scheduleId, UUID examSchoolId, UUID currentUserId) {

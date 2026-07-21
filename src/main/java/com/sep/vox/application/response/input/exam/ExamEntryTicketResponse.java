@@ -5,6 +5,7 @@ import java.util.UUID;
 public record ExamEntryTicketResponse(
     UUID attemptId,
     String ticketId,
-    String expiresAt
+    String expiresAt,
+    String scheduleEndAt
 ) {
 }

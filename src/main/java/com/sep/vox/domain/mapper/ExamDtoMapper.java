@@ -36,6 +36,7 @@ public final class ExamDtoMapper {
             domain.getAssessmentPolicyId(),
             domain.isRequiresOtp(),
             papersLocked,
+            domain.getExamTimeDurationSecond(),
             valueOf(domain.getCreatedAt()),
             valueOf(domain.getUpdatedAt()),
             domain.getCreatedBy(),

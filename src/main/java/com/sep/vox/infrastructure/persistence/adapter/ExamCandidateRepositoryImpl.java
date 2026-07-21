@@ -107,6 +107,13 @@ public class ExamCandidateRepositoryImpl implements ExamCandidateRepository {
     }
 
     @Override
+    public List<ExamCandidate> findByScheduleId(UUID scheduleId) {
+        return springDataExamCandidateRepository.findByScheduleId(scheduleId).stream()
+            .map(ExamCandidateMapper::toDomain)
+            .toList();
+    }
+
+    @Override
     public Set<UUID> findStudentIdsByExamId(UUID examId) {
         return new HashSet<>(springDataExamCandidateRepository.findStudentIdsByExamId(examId));
     }

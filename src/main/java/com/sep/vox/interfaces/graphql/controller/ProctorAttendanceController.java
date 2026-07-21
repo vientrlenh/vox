@@ -27,13 +27,13 @@ public class ProctorAttendanceController {
     }
 
     @QueryMapping
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
     public List<ProctorScheduleSummary> myProctorSchedules() {
         return viewMyProctorSchedulesUseCase.execute(null);
     }
 
     @QueryMapping
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
     public List<ProctorCandidateSummary> myProctorScheduleCandidates(
             @Argument(name = "scheduleId") UUID scheduleId) {
         return viewMyProctorScheduleCandidatesUseCase.execute(scheduleId);

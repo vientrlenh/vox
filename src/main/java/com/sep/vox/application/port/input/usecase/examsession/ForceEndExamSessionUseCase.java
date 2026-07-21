@@ -11,10 +11,12 @@ import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.event.ExamAttemptForceEndRequestedExternalEvent;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.ForceEndExamSessionCommand;
+import com.sep.vox.application.port.input.service.ExamCandidateResultFinalizationService;
 import com.sep.vox.application.port.input.service.ExamSessionModerationAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.ExternalEventPublisherPort;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
+import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;
@@ -28,6 +30,7 @@ public class ForceEndExamSessionUseCase implements IUseCase<ForceEndExamSessionC
     private final ExamCandidateRepository examCandidateRepository;
     private final ExamRepository examRepository;
     private final ExamSessionModerationAccessService moderationAccessService;
+    private final ExamCandidateResultFinalizationService examCandidateResultFinalizationService;
     private final ExternalEventPublisherPort externalEventPublisherPort;
 
     public ForceEndExamSessionUseCase(
@@ -35,11 +38,13 @@ public class ForceEndExamSessionUseCase implements IUseCase<ForceEndExamSessionC
             ExamCandidateRepository examCandidateRepository,
             ExamRepository examRepository,
             ExamSessionModerationAccessService moderationAccessService,
+            ExamCandidateResultFinalizationService examCandidateResultFinalizationService,
             ExternalEventPublisherPort externalEventPublisherPort) {
         this.examSessionRepository = examSessionRepository;
         this.examCandidateRepository = examCandidateRepository;
         this.examRepository = examRepository;
         this.moderationAccessService = moderationAccessService;
+        this.examCandidateResultFinalizationService = examCandidateResultFinalizationService;
         this.externalEventPublisherPort = externalEventPublisherPort;
     }
 
@@ -54,9 +59,16 @@ public class ForceEndExamSessionUseCase implements IUseCase<ForceEndExamSessionC
             .orElseThrow(() -> new NotFoundException("Không tìm thấy kỳ thi của phiên thi"));
 
         moderationAccessService.authorize(exam, candidate);
-        if (session.getStatus() != ExamSessionStatus.IN_PROGRESS
-                && session.getStatus() != ExamSessionStatus.INTERRUPTED) {
-            throw new IllegalStateException("Chỉ có thể buộc kết thúc phiên thi đang diễn ra");
+        // G.4: mốc chặn cứng duy nhất là RESULTS_PUBLISHED - trước đó (kể cả sau khi kỳ thi
+        // đã đóng) vẫn cho phát hiện vi phạm muộn qua soát lại log/video.
+        if (exam.getStatus() == ExamStatus.RESULTS_PUBLISHED) {
+            throw new IllegalStateException("Kỳ thi đã công bố kết quả, không thể thay đổi nữa");
+        }
+        var isLiveSession = session.getStatus() == ExamSessionStatus.IN_PROGRESS
+            || session.getStatus() == ExamSessionStatus.INTERRUPTED;
+        var isAlreadyGraded = session.getStatus() == ExamSessionStatus.GRADED;
+        if (!isLiveSession && !isAlreadyGraded) {
+            throw new IllegalStateException("Chỉ có thể buộc kết thúc phiên thi đang diễn ra hoặc đã chấm xong");
         }
 
         var now = OffsetDateTime.now();
@@ -65,7 +77,9 @@ public class ForceEndExamSessionUseCase implements IUseCase<ForceEndExamSessionC
 
         session.setFlagged(true);
         session.setFlagReason(normalizedReason);
-        session.setStatus(ExamSessionStatus.INTERRUPTED);
+        if (isLiveSession) {
+            session.setStatus(ExamSessionStatus.INTERRUPTED);
+        }
 
         candidate.setBlockedAt(now);
         candidate.setUpdatedAt(now);
@@ -73,6 +87,13 @@ public class ForceEndExamSessionUseCase implements IUseCase<ForceEndExamSessionC
 
         examSessionRepository.save(session);
         examCandidateRepository.save(candidate);
+
+        if (isAlreadyGraded) {
+            // G.4 case 1: phát hiện vi phạm muộn cho 1 bài đã chấm xong - chốt ngay
+            // INVALID/0 điểm, không đợi tới lúc kỳ thi công bố kết quả.
+            examCandidateResultFinalizationService.invalidateNow(session.getId(), currentUserId);
+            return session.getId();
+        }
 
         try {
             externalEventPublisherPort.publish(

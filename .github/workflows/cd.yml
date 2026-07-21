@@ -1,15 +1,9 @@
 name: CD
 
-# TEMPORARY (testing): triggers directly on push to `testDeploy` (a dedicated
-# throwaway branch for testing this pipeline, separate from feat/QuestionCRUD
-# so this doesn't collide with real feature work), bypassing the normal "wait
-# for CI Build to pass first" gate entirely -- no workflow_run, no dependency
-# on ci-build.yml. Before merging any of this to main, revert to the
-# CI-gated design: `on: workflow_run: workflows: ["CI Build"]` + `types:
-# [completed]` + an `if:` checking
-# `github.event.workflow_run.conclusion == 'success' && ...event == 'push' &&
-# ...head_branch == 'default'` (see git history / other repos' cd.yml for the
-# exact shape) -- that gate exists so a broken build never reaches ECR/deploy.
+# TEMPORARY: deploys straight off a push to `testDeploy` (CI Build doesn't run
+# on this branch at all -- see ci-build.yml, gated to `default` only -- so a
+# workflow_run gate here would just never fire). Switch back to the
+# CI-gated-on-default version once testDeploy work lands back on default.
 on:
   push:
     branches:

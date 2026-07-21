@@ -72,6 +72,13 @@ public class ExamSessionRepositoryImpl implements ExamSessionRepository {
     }
 
     @Override
+    public List<ExamSession> findPastScheduleEndCandidates(java.time.OffsetDateTime threshold) {
+        return springDataExamSessionRepository.findPastScheduleEndCandidates(threshold).stream()
+            .map(ExamSessionMapper::toDomain)
+            .toList();
+    }
+
+    @Override
     public boolean existsById(UUID id) {
         return springDataExamSessionRepository.existsById(id);
     }

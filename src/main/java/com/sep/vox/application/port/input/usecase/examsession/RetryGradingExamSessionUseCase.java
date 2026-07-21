@@ -8,9 +8,11 @@ import com.sep.vox.application.port.input.command.RetryGradingExamSessionCommand
 import com.sep.vox.application.port.input.command.SubmitExamSessionCommand;
 import com.sep.vox.application.port.input.service.ExamSessionModerationAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
+import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
+import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;
 
@@ -19,6 +21,7 @@ public class RetryGradingExamSessionUseCase implements IUseCase<RetryGradingExam
 
     private final ExamSessionRepository examSessionRepository;
     private final ExamCandidateRepository examCandidateRepository;
+    private final ExamCandidateResultRepository examCandidateResultRepository;
     private final ExamRepository examRepository;
     private final ExamSessionModerationAccessService moderationAccessService;
     private final SubmitExamSessionUseCase submitExamSessionUseCase;
@@ -26,11 +29,13 @@ public class RetryGradingExamSessionUseCase implements IUseCase<RetryGradingExam
     public RetryGradingExamSessionUseCase(
             ExamSessionRepository examSessionRepository,
             ExamCandidateRepository examCandidateRepository,
+            ExamCandidateResultRepository examCandidateResultRepository,
             ExamRepository examRepository,
             ExamSessionModerationAccessService moderationAccessService,
             SubmitExamSessionUseCase submitExamSessionUseCase) {
         this.examSessionRepository = examSessionRepository;
         this.examCandidateRepository = examCandidateRepository;
+        this.examCandidateResultRepository = examCandidateResultRepository;
         this.examRepository = examRepository;
         this.moderationAccessService = moderationAccessService;
         this.submitExamSessionUseCase = submitExamSessionUseCase;
@@ -47,11 +52,19 @@ public class RetryGradingExamSessionUseCase implements IUseCase<RetryGradingExam
             .orElseThrow(() -> new NotFoundException("Không tìm thấy kỳ thi của phiên thi"));
 
         moderationAccessService.authorize(exam, candidate);
-        if (session.getStatus() != ExamSessionStatus.GRADING_FAILED) {
-            throw new IllegalStateException("Chỉ có thể chấm lại phiên thi đang lỗi chấm");
-        }
         if (exam.getStatus() == ExamStatus.RESULTS_PUBLISHED) {
             throw new IllegalStateException("Kỳ thi đã công bố điểm, không thể chấm lại");
+        }
+        // G.4: ngoài GRADING_FAILED (lỗi chấm kỹ thuật) còn cho phép chấm AI lần đầu cho 1
+        // session từng bị đánh dấu vi phạm oan (INVALID) - đã được dỡ cấm - và CHƯA từng có
+        // ExamItemEvaluation nào (nếu đã từng có, phải recompute từ dữ liệu cũ thay vì gọi AI
+        // lại, xem UnblockExamCandidateUseCase).
+        var result = examCandidateResultRepository.findBySessionId(session.getId()).orElse(null);
+        var isUnblockedInvalidRetry = result != null
+            && result.getStatus() == ExamCandidateResultStatus.INVALID
+            && candidate.getBlockedAt() == null;
+        if (session.getStatus() != ExamSessionStatus.GRADING_FAILED && !isUnblockedInvalidRetry) {
+            throw new IllegalStateException("Chỉ có thể chấm lại phiên thi đang lỗi chấm");
         }
 
         submitExamSessionUseCase.execute(new SubmitExamSessionCommand(session.getId()));

@@ -114,6 +114,9 @@ public class ExamSessionResultCalculator {
             ));
         }
 
+        var anyRequiresHumanReview = evaluationsByResponseId.values().stream()
+            .anyMatch(ExamItemEvaluation::isRequiresHumanReview);
+
         var totalScore = calculateTotalScore(orderedSections, sectionScores);
         var rubricResultBand = rubricResultBandRepository.findByRubricVersionId(policy.getRubricVersionId()).stream()
             .sorted(Comparator.comparingInt(RubricResultBand::getOrder))
@@ -140,7 +143,8 @@ public class ExamSessionResultCalculator {
                     sectionScores.getOrDefault(section.getId(), scaled(BigDecimal.ZERO))
                 ))
                 .toList(),
-            itemScores
+            itemScores,
+            anyRequiresHumanReview
         );
     }
 
@@ -188,7 +192,8 @@ public class ExamSessionResultCalculator {
         FrameworkResultBand targetFrameworkBand,
         RubricResultBand rubricResultBand,
         List<SectionScore> sections,
-        List<ItemScore> items
+        List<ItemScore> items,
+        boolean anyRequiresHumanReview
     ) {
     }
 

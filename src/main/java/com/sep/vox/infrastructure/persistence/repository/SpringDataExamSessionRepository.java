@@ -22,14 +22,28 @@ public interface SpringDataExamSessionRepository extends JpaRepository<ExamSessi
         SELECT s
         FROM ExamSessionJpaEntity s
         JOIN ExamJpaEntity e ON e.id = s.examId
+        JOIN ExamCandidateJpaEntity c ON c.id = s.candidateId
         WHERE (e.status IN ('CLOSED', 'CANCELLED') OR (e.closeAt IS NOT NULL AND e.closeAt < :now))
           AND (
                 s.status = 'EXPIRED'
-                OR (s.status = 'SUBMITTED' AND s.flagged = true)
+                OR s.status = 'SUBMITTED'
                 OR s.status IN ('IN_PROGRESS', 'INTERRUPTED')
               )
+          AND c.status NOT IN ('ABSENT', 'EXEMPTED', 'CANCELLED')
           AND s.status NOT IN ('GRADING', 'GRADED', 'GRADING_FAILED')
         ORDER BY s.startedAt ASC
     """)
     List<ExamSessionJpaEntity> findDeferredGradingCandidates(@Param("now") java.time.OffsetDateTime now);
+
+    @Query("""
+        SELECT s
+        FROM ExamSessionJpaEntity s
+        JOIN ExamCandidateJpaEntity c ON c.id = s.candidateId
+        JOIN ExamScheduleJpaEntity sch ON sch.id = c.scheduleId
+        WHERE sch.endDate < :threshold
+          AND s.status IN ('IN_PROGRESS', 'INTERRUPTED')
+          AND c.status NOT IN ('ABSENT', 'EXEMPTED', 'CANCELLED')
+        ORDER BY sch.endDate ASC, s.startedAt ASC
+    """)
+    List<ExamSessionJpaEntity> findPastScheduleEndCandidates(@Param("threshold") java.time.OffsetDateTime threshold);
 }

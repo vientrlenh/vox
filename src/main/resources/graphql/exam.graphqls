@@ -173,6 +173,7 @@ type Exam {
     assessmentPolicyId: ID
     requiresOtp: Boolean!
     papersLocked: Boolean
+    examTimeDurationSecond: Int
     createdAt: String
     updatedAt: String
     createdBy: ID
@@ -366,6 +367,8 @@ enum ExamCandidateResultStatus {
     FINAL
     INVALID
     RETAKE_REQUIRED
+    PASSED
+    FAILED
 }
 
 type ExamSession {
@@ -585,6 +588,8 @@ extend type Mutation {
     forceEndExamSession(sessionId: ID!, reason: String!): ID!
     unblockExamCandidate(candidateId: ID!, reason: String!): ID!
     reviewFlaggedExamResult(candidateResultId: ID!, decision: ExamCandidateResultStatus!): ID!
+    releasePendingExamResult(sessionId: ID!): ID!
     retryGradingExamSession(sessionId: ID!): ID!
     updateExamCandidateStatus(candidateId: ID!, status: ExamCandidateStatus!): ID!
+    updateExamCandidatesAttendance(scheduleId: ID!, candidateIds: [ID!]!): [ExamCandidate!]!
 }

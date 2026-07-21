@@ -52,7 +52,8 @@ public class ViewExamSessionResultUseCase implements IUseCase<ViewExamSessionRes
         var session = examResultAccessService.getAuthorizedSession(input.sessionId());
         var result = examCandidateResultRepository.findBySessionId(session.getId())
             .orElseThrow(() -> new NotFoundException("Khong tim thay ket qua phien thi"));
-        var calculated = examSessionResultCalculator.calculate(session.getId());
+        var includeBreakdown = shouldIncludeBreakdown(result.getStatus());
+        var calculated = includeBreakdown ? examSessionResultCalculator.calculate(session.getId()) : null;
         var targetBand = result.getTargetFrameworkBandId() == null
             ? null
             : frameworkResultBandRepository.findById(result.getTargetFrameworkBandId()).orElse(null);
@@ -65,7 +66,7 @@ public class ViewExamSessionResultUseCase implements IUseCase<ViewExamSessionRes
             result.getId(),
             result.getSessionId(),
             result.getExamId(),
-            calculated.paperId(),
+            calculated == null ? session.getPaperId() : calculated.paperId(),
             result.getCandidateId(),
             session.isFlagged(),
             session.getFlagReason(),
@@ -78,10 +79,10 @@ public class ViewExamSessionResultUseCase implements IUseCase<ViewExamSessionRes
             scoreVisible && rubricBand != null ? rubricBand.getCode() : null,
             scoreVisible && rubricBand != null ? rubricBand.getName() : null,
             result.getStatus().name(),
-            scoreVisible ? calculated.sections().stream()
+            scoreVisible && calculated != null ? calculated.sections().stream()
                 .map(section -> new ExamCandidateResultSectionResponse(section.sectionId(), section.title(), section.score()))
                 .toList() : java.util.List.of(),
-            scoreVisible ? calculated.items().stream()
+            scoreVisible && calculated != null ? calculated.items().stream()
                 .map(item -> new ExamCandidateResultItemResponse(
                     item.paperItemId(),
                     item.responseId(),
@@ -91,6 +92,10 @@ public class ViewExamSessionResultUseCase implements IUseCase<ViewExamSessionRes
                 ))
                 .toList() : java.util.List.of()
         );
+    }
+
+    private boolean shouldIncludeBreakdown(ExamCandidateResultStatus status) {
+        return status != ExamCandidateResultStatus.INVALID;
     }
 
     private boolean isScoreVisibleToCurrentUser(com.sep.vox.domain.model.exam.ExamSession session, ExamCandidateResultStatus status) {

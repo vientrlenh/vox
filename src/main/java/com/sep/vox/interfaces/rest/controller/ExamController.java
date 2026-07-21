@@ -209,7 +209,7 @@ public class ExamController {
     }
 
     @GetMapping("/{examId}/schedules/{scheduleId}/otp")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<GetExamScheduleOtpResponse>> getExamScheduleOtp(@PathVariable("examId") UUID examId, @PathVariable("scheduleId") UUID scheduleId) {
         var query = new GetExamScheduleOtpQuery(examId, scheduleId);
         var data = getExamScheduleOtpUseCase.execute(query);

@@ -16,6 +16,7 @@ public interface ExamSessionRepository {
     List<ExamSession> findAllByCandidateId(UUID candidateId);
     List<ExamSession> findAllByCandidateIdIn(Collection<UUID> candidateIds);
     List<ExamSession> findDeferredGradingCandidates(java.time.OffsetDateTime now);
+    List<ExamSession> findPastScheduleEndCandidates(java.time.OffsetDateTime threshold);
     boolean existsById(UUID id);
     ExamSession save(ExamSession session);
     void deleteById(UUID id);

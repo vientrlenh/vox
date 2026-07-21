@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examsession;
 
-import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
@@ -16,8 +16,12 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.SubmitExamSessionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.ExternalEventPublisherPort;
+import com.sep.vox.domain.model.exam.ExamCandidateResult;
+import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
+import com.sep.vox.domain.repository.ExamCandidateRepository;
+import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.ExamItemResponseRepository;
 import com.sep.vox.domain.repository.ExamItemResponseTurnRepository;
 import com.sep.vox.domain.repository.ExamPaperItemRepository;
@@ -38,6 +42,8 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
 
     private final ExamSessionRepository examSessionRepository;
     private final ExamRepository examRepository;
+    private final ExamCandidateRepository examCandidateRepository;
+    private final ExamCandidateResultRepository examCandidateResultRepository;
     private final ExamItemResponseRepository examItemResponseRepository;
     private final ExamItemResponseTurnRepository examItemResponseTurnRepository;
     private final ExamPaperItemRepository examPaperItemRepository;
@@ -56,6 +62,8 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
     public SubmitExamSessionUseCase(
             ExamSessionRepository examSessionRepository,
             ExamRepository examRepository,
+            ExamCandidateRepository examCandidateRepository,
+            ExamCandidateResultRepository examCandidateResultRepository,
             ExamItemResponseRepository examItemResponseRepository,
             ExamItemResponseTurnRepository examItemResponseTurnRepository,
             ExamPaperItemRepository examPaperItemRepository,
@@ -72,6 +80,8 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
             ExternalEventPublisherPort externalEventPublisherPort) {
         this.examSessionRepository = examSessionRepository;
         this.examRepository = examRepository;
+        this.examCandidateRepository = examCandidateRepository;
+        this.examCandidateResultRepository = examCandidateResultRepository;
         this.examItemResponseRepository = examItemResponseRepository;
         this.examItemResponseTurnRepository = examItemResponseTurnRepository;
         this.examPaperItemRepository = examPaperItemRepository;
@@ -92,13 +102,23 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
     public Void execute(SubmitExamSessionCommand input) {
         var session = examSessionRepository.findById(input.sessionId())
             .orElseThrow(() -> new NotFoundException("Không thể tìm thấy phiên thi"));
+        // GRADED chỉ được chấp nhận ở đây cho đúng 1 trường hợp: G.4 - session từng bị đánh
+        // dấu vi phạm oan (INVALID, chưa từng có ExamItemEvaluation), đã dỡ cấm, được
+        // RetryGradingExamSessionUseCase gọi lại để AI chấm thật lần đầu.
         if (session.getStatus() != ExamSessionStatus.SUBMITTED
                 && session.getStatus() != ExamSessionStatus.EXPIRED
-                && session.getStatus() != ExamSessionStatus.GRADING_FAILED) {
+                && session.getStatus() != ExamSessionStatus.GRADING_FAILED
+                && session.getStatus() != ExamSessionStatus.GRADED) {
             throw new IllegalStateException("chỉ được gửi chấm khi phiên thi đã nộp hoặc hết giờ");
         }
 
+        var candidate = examCandidateRepository.findById(session.getCandidateId())
+            .orElseThrow(() -> new NotFoundException("không thể tìm thấy thí sinh của phiên thi"));
         var responses = examItemResponseRepository.findBySessionId(session.getId());
+        if (candidate.getBlockedAt() != null) {
+            persistInvalidBlockedResult(session);
+            return null;
+        }
         if (responses.isEmpty()) {
             session.setStatus(ExamSessionStatus.GRADING);
             session = examSessionRepository.save(session);
@@ -188,6 +208,42 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
         session.setStatus(ExamSessionStatus.GRADING);
         examSessionRepository.save(session);
         return null;
+    }
+
+    private void persistInvalidBlockedResult(com.sep.vox.domain.model.exam.ExamSession session) {
+        var exam = examRepository.findById(session.getExamId())
+            .orElseThrow(() -> new NotFoundException("không thể tìm thấy bài kiểm tra"));
+        var policy = exam.getAssessmentPolicyId() == null
+            ? null
+            : assessmentPolicyRepository.findById(exam.getAssessmentPolicyId()).orElse(null);
+        var existing = examCandidateResultRepository.findBySessionId(session.getId()).orElse(null);
+        var result = existing == null ? new ExamCandidateResult() : existing;
+        var now = OffsetDateTime.now();
+
+        result.setExamId(session.getExamId());
+        result.setCandidateId(session.getCandidateId());
+        result.setSessionId(session.getId());
+        result.setAssessmentPolicyId(policy == null ? null : policy.getId());
+        result.setPolicyVersion(policy == null ? 0 : policy.getVersion());
+        result.setRubricVersionId(policy == null ? null : policy.getRubricVersionId());
+        result.setFrameworkVersionId(policy == null ? null : policy.getFrameworkVersionId());
+        result.setTargetFrameworkBandId(policy == null ? null : policy.getTargetFrameworkBandId());
+        result.setRubricResultBandId(null);
+        result.setTotalScore(null);
+        result.setStatus(ExamCandidateResultStatus.INVALID);
+        result.setFinalizedAt(now);
+        if (existing == null) {
+            result.setCreatedAt(now);
+            result.setCreatedBy(null);
+        }
+        result.setUpdatedAt(now);
+        result.setUpdatedBy(null);
+        examCandidateResultRepository.save(result);
+
+        session.setStatus(ExamSessionStatus.GRADING);
+        examSessionRepository.save(session);
+        session.setStatus(ExamSessionStatus.GRADED);
+        examSessionRepository.save(session);
     }
 
     private List<ExamAttemptEvaluationRequestedExternalEvent.CriterionFramework> buildCriteriaFrameworks(UUID assessmentPolicyId) {

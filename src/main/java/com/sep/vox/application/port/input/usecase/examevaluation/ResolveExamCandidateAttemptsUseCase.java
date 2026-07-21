@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.common.ExamCandidateStatusSupport;
 import com.sep.vox.application.query.dto.ExamAttemptSummary;
 import com.sep.vox.application.query.dto.ExamCandidateAttempts;
 import com.sep.vox.application.query.repository.ExamCandidateAttemptsQueryRepository;
@@ -99,11 +100,14 @@ public class ResolveExamCandidateAttemptsUseCase {
     }
 
     private boolean countsTowardOfficialScore(ExamAttemptSummary attempt) {
+        if (ExamCandidateStatusSupport.isNonScorable(attempt.candidateStatus())) {
+            return false;
+        }
         if (attempt.totalScore() == null || attempt.resultStatus() == null) {
             return false;
         }
         return switch (attempt.resultStatus()) {
-            case FINAL, RELEASED -> true;
+            case FINAL, RELEASED, PASSED, FAILED -> true;
             case PENDING_REVIEW -> !attempt.flagged();
             case INVALID, RETAKE_REQUIRED, APPEALED, RE_GRADING -> false;
         };

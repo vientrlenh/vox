@@ -89,13 +89,13 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
             throw new IllegalStateException("Không thể sửa câu hỏi khi đã có học sinh nộp bài");
         }
         requireNoAttachedBlueprint(exam);
-        if (input.questionIds() == null || input.questionIds().isEmpty()) {
+        if (input.questions() == null || input.questions().isEmpty()) {
             throw new IllegalStateException("Section phải có ít nhất 1 câu hỏi");
         }
 
-        for (var questionId : input.questionIds()) {
-            var question = questionRepository.findAccessibleById(questionId, currentUserId, exam.getSchoolId(), false, false)
-                .orElseThrow(() -> new ForbiddenException("Không có quyền dùng câu hỏi " + questionId));
+        for (var questionCommand : input.questions()) {
+            var question = questionRepository.findAccessibleById(questionCommand.questionId(), currentUserId, exam.getSchoolId(), false, false)
+                .orElseThrow(() -> new ForbiddenException("Không có quyền dùng câu hỏi " + questionCommand.questionId()));
             boolean isOwner = currentUserId.equals(question.getCreatedBy());
             boolean isSchoolShared = question.getSharing() == QuestionSharing.SCHOOL_SHARED;
             if (!isOwner && !isSchoolShared) {
@@ -116,10 +116,10 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
             paper.getId(), order, input.title(), input.instruction(), null, input.weight(), now, now, currentUserId, currentUserId
         ));
 
-        var questionIds = input.questionIds();
-        var weights = distributeEqualWeights(questionIds.size());
-        for (int i = 0; i < questionIds.size(); i++) {
-            var questionId = questionIds.get(i);
+        var questions = input.questions();
+        var weights = ClassTestSectionWeightPolicy.resolveQuestionWeights(questions);
+        for (int i = 0; i < questions.size(); i++) {
+            var questionId = questions.get(i).questionId();
             examPaperItemRepository.save(new ExamPaperItem(
                 null,
                 paperSection.getId(),

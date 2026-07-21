@@ -15,7 +15,9 @@ import org.springframework.stereotype.Controller;
 import graphql.schema.DataFetchingEnvironment;
 
 import com.sep.vox.application.port.input.command.UpdateExamCandidateStatusCommand;
+import com.sep.vox.application.port.input.command.UpdateExamCandidatesAttendanceCommand;
 import com.sep.vox.application.port.input.query.ViewExamCandidatesQuery;
+import com.sep.vox.application.port.input.usecase.examcandidate.UpdateExamCandidatesAttendanceUseCase;
 import com.sep.vox.application.port.input.usecase.examcandidate.UpdateExamCandidateStatusUseCase;
 import com.sep.vox.application.port.input.usecase.examcandidate.ViewExamCandidatesUseCase;
 import com.sep.vox.application.query.dto.ExamAttemptSummary;
@@ -32,12 +34,15 @@ public class ExamCandidateController {
 
     private final ViewExamCandidatesUseCase viewExamCandidatesUseCase;
     private final UpdateExamCandidateStatusUseCase updateExamCandidateStatusUseCase;
+    private final UpdateExamCandidatesAttendanceUseCase updateExamCandidatesAttendanceUseCase;
 
     public ExamCandidateController(
             ViewExamCandidatesUseCase viewExamCandidatesUseCase,
-            UpdateExamCandidateStatusUseCase updateExamCandidateStatusUseCase) {
+            UpdateExamCandidateStatusUseCase updateExamCandidateStatusUseCase,
+            UpdateExamCandidatesAttendanceUseCase updateExamCandidatesAttendanceUseCase) {
         this.viewExamCandidatesUseCase = viewExamCandidatesUseCase;
         this.updateExamCandidateStatusUseCase = updateExamCandidateStatusUseCase;
+        this.updateExamCandidatesAttendanceUseCase = updateExamCandidatesAttendanceUseCase;
     }
 
     @QueryMapping(name = "examCandidates")
@@ -49,11 +54,19 @@ public class ExamCandidateController {
     }
 
     @MutationMapping
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
     public UUID updateExamCandidateStatus(
             @Argument(name = "candidateId") UUID candidateId,
             @Argument(name = "status") ExamCandidateStatus status) {
         return updateExamCandidateStatusUseCase.execute(new UpdateExamCandidateStatusCommand(candidateId, status)).id();
+    }
+
+    @MutationMapping
+    @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
+    public List<ExamCandidateDto> updateExamCandidatesAttendance(
+            @Argument(name = "scheduleId") UUID scheduleId,
+            @Argument(name = "candidateIds") List<UUID> candidateIds) {
+        return updateExamCandidatesAttendanceUseCase.execute(new UpdateExamCandidatesAttendanceCommand(scheduleId, candidateIds));
     }
 
     @SchemaMapping(typeName = "ExamCandidate", field = "student")

@@ -9,6 +9,6 @@ public record CreateClassTestSectionCommand(
     String title,
     String instruction,
     BigDecimal weight,
-    List<UUID> questionIds
+    List<ClassTestQuestionCommand> questions
 ) {
 }

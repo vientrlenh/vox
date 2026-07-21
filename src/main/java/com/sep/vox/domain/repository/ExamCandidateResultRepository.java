@@ -11,6 +11,7 @@ public interface ExamCandidateResultRepository {
     Optional<ExamCandidateResult> findById(UUID id);
     Optional<ExamCandidateResult> findBySessionId(UUID sessionId);
     List<ExamCandidateResult> findBySessionIdIn(Collection<UUID> sessionIds);
+    List<ExamCandidateResult> findByExamId(UUID examId);
     ExamCandidateResult save(ExamCandidateResult result);
     void deleteBySessionId(UUID sessionId);
 }

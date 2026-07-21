@@ -10,7 +10,7 @@ import com.sep.vox.infrastructure.persistence.entity.ExamJpaEntity;
 public final class ExamMapper {
 
     public static Exam toDomain(ExamJpaEntity jpa) {
-        return new Exam(
+        var exam = new Exam(
             jpa.getId(),
             jpa.getBlueprintId(),
             jpa.getBlueprintVersionId(),
@@ -33,10 +33,12 @@ public final class ExamMapper {
             jpa.getCreatedBy(),
             jpa.getUpdatedBy()
         );
+        exam.setExamTimeDurationSecond(jpa.getExamTimeDurationSecond());
+        return exam;
     }
 
     public static ExamJpaEntity toJpa(Exam exam) {
-        return new ExamJpaEntity(
+        var jpa = new ExamJpaEntity(
             exam.getId(),
             exam.getBlueprintId(),
             exam.getBlueprintVersionId(),
@@ -59,6 +61,8 @@ public final class ExamMapper {
             exam.getCreatedBy(),
             exam.getUpdatedBy()
         );
+        jpa.setExamTimeDurationSecond(exam.getExamTimeDurationSecond());
+        return jpa;
     }
 
     private static ExamStatus statusFromString(String status) {

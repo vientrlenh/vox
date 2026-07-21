@@ -12,6 +12,7 @@ public record StudentExamPaperResponse(
     int durationMinutes,
     String examDate,
     String status,
+    String scheduleEndAt,
     List<StudentExamPaperQuestionResponse> paperQuestions
 ) {
 }

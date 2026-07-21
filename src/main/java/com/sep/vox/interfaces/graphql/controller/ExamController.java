@@ -12,11 +12,13 @@ import org.springframework.stereotype.Controller;
 
 import graphql.schema.DataFetchingEnvironment;
 
+import com.sep.vox.application.port.input.query.CanViewExamBlueprintDataQuery;
 import com.sep.vox.application.port.input.query.ViewExamDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewExamPaperDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewExamStatusCountsQuery;
 import com.sep.vox.application.port.input.query.ViewExamsQuery;
 import com.sep.vox.application.port.input.query.ViewMyExamRoleQuery;
+import com.sep.vox.application.port.input.usecase.exam.CanViewExamBlueprintDataUseCase;
 import com.sep.vox.application.port.input.usecase.exam.ViewExamDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.exam.ViewExamStatusCountsUseCase;
 import com.sep.vox.application.port.input.usecase.exam.ViewExamsUseCase;
@@ -24,7 +26,6 @@ import com.sep.vox.application.port.input.usecase.exam.ViewMyExamRoleUseCase;
 import com.sep.vox.application.port.input.usecase.exampaper.ViewExamPaperDetailsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.ExamStatusCountsDto;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.ExamBlueprintDto;
 import com.sep.vox.domain.dto.ExamBlueprintVersionDto;
@@ -39,7 +40,6 @@ import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamPaperStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
-import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Controller("graphqlExamController")
 public class ExamController {
@@ -49,9 +49,8 @@ public class ExamController {
     private final ViewExamPaperDetailsUseCase viewExamPaperDetailsUseCase;
     private final ViewExamStatusCountsUseCase viewExamStatusCountsUseCase;
     private final ViewMyExamRoleUseCase viewMyExamRoleUseCase;
+    private final CanViewExamBlueprintDataUseCase canViewExamBlueprintDataUseCase;
     private final UserContextPort userContextPort;
-    private final SchoolUserRepository schoolUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
 
     public ExamController(
             ViewExamsUseCase viewExamsUseCase,
@@ -59,17 +58,15 @@ public class ExamController {
             ViewExamPaperDetailsUseCase viewExamPaperDetailsUseCase,
             ViewExamStatusCountsUseCase viewExamStatusCountsUseCase,
             ViewMyExamRoleUseCase viewMyExamRoleUseCase,
-            UserContextPort userContextPort,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository) {
+            CanViewExamBlueprintDataUseCase canViewExamBlueprintDataUseCase,
+            UserContextPort userContextPort) {
         this.viewExamsUseCase = viewExamsUseCase;
         this.viewExamDetailsUseCase = viewExamDetailsUseCase;
         this.viewExamPaperDetailsUseCase = viewExamPaperDetailsUseCase;
         this.viewExamStatusCountsUseCase = viewExamStatusCountsUseCase;
         this.viewMyExamRoleUseCase = viewMyExamRoleUseCase;
+        this.canViewExamBlueprintDataUseCase = canViewExamBlueprintDataUseCase;
         this.userContextPort = userContextPort;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
     }
 
     @QueryMapping(name = "exams")
@@ -210,26 +207,12 @@ public class ExamController {
     }
 
     private CompletableFuture<Boolean> canViewExamBlueprintData(ExamDto source, DataFetchingEnvironment env) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        if (userContextPort.isSystemAdmin()) {
+        if (canViewExamBlueprintDataUseCase.execute(
+                new CanViewExamBlueprintDataQuery(source.schoolId(), source.status()))) {
             return CompletableFuture.completedFuture(true);
         }
 
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
-            .map(schoolUser -> schoolUser.getSchoolId())
-            .orElse(null);
-        if (currentSchoolId != null && currentSchoolId.equals(source.schoolId())) {
-            var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-                .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
-            if (schoolAdmin) {
-                return CompletableFuture.completedFuture(true);
-            }
-            // Sau khi kỳ thi đã đóng, ai cùng trường cũng xem được liên kết blueprint — không cần là member nữa.
-            if ("CLOSED".equals(source.status()) || "RESULTS_PUBLISHED".equals(source.status())) {
-                return CompletableFuture.completedFuture(true);
-            }
-        }
-
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         DataLoader<UUID, List<ExamMemberDto>> loader = env.getDataLoader("examMembersByExamId");
         return loader.load(source.id()).thenApply(members -> members.stream()
             .anyMatch(member -> member.userId().equals(currentUserId)));

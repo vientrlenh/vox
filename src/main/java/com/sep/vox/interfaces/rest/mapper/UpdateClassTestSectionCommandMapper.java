@@ -11,6 +11,13 @@ public final class UpdateClassTestSectionCommandMapper {
     }
 
     public static UpdateClassTestSectionCommand fromRequest(UUID examId, UUID sectionId, UpdateClassTestSectionRequest request) {
-        return new UpdateClassTestSectionCommand(examId, sectionId, request.title(), request.instruction(), request.weight(), request.questionIds());
+        return new UpdateClassTestSectionCommand(
+            examId,
+            sectionId,
+            request.title(),
+            request.instruction(),
+            request.weight(),
+            ClassTestQuestionCommandMapper.fromRequests(request.questions())
+        );
     }
 }

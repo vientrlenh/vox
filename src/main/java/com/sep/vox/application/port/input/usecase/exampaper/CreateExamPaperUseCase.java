@@ -15,6 +15,7 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreateExamPaperCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
+import com.sep.vox.application.port.input.service.RecalculateExamTimeDurationService;
 import com.sep.vox.application.port.input.usecase.exam.ExamQuestionSecureLockService;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.ExamPaperDto;
@@ -54,6 +55,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
     private final ExamPaperItemRepository examPaperItemRepository;
     private final QuestionRepository questionRepository;
     private final ExamQuestionSecureLockService examQuestionSecureLockService;
+    private final RecalculateExamTimeDurationService recalculateExamTimeDurationService;
     private final UserContextPort userContextPort;
 
     public CreateExamPaperUseCase(
@@ -67,6 +69,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
             ExamPaperItemRepository examPaperItemRepository,
             QuestionRepository questionRepository,
             ExamQuestionSecureLockService examQuestionSecureLockService,
+            RecalculateExamTimeDurationService recalculateExamTimeDurationService,
             UserContextPort userContextPort) {
         this.examRepository = examRepository;
         this.examMemberRepository = examMemberRepository;
@@ -78,6 +81,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
         this.examPaperItemRepository = examPaperItemRepository;
         this.questionRepository = questionRepository;
         this.examQuestionSecureLockService = examQuestionSecureLockService;
+        this.recalculateExamTimeDurationService = recalculateExamTimeDurationService;
         this.userContextPort = userContextPort;
     }
 
@@ -186,6 +190,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
             }
         }
 
+        recalculateExamTimeDurationService.recalculate(exam.getId());
         return ExamPaperDtoMapper.toDto(paper);
     }
 
@@ -277,6 +282,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
             }
         }
 
+        recalculateExamTimeDurationService.recalculate(exam.getId());
         return ExamPaperDtoMapper.toDto(paper);
     }
 }

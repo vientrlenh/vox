@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.ChangeClassTestBlueprintCommand;
+import com.sep.vox.application.port.input.service.RecalculateExamTimeDurationService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.ExamDto;
@@ -60,6 +61,7 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
     private final ExamPaperItemRepository examPaperItemRepository;
     private final QuestionRepository questionRepository;
     private final ExamQuestionSecureLockService examQuestionSecureLockService;
+    private final RecalculateExamTimeDurationService recalculateExamTimeDurationService;
     private final UserContextPort userContextPort;
 
     public ChangeClassTestBlueprintUseCase(
@@ -74,6 +76,7 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
             ExamPaperItemRepository examPaperItemRepository,
             QuestionRepository questionRepository,
             ExamQuestionSecureLockService examQuestionSecureLockService,
+            RecalculateExamTimeDurationService recalculateExamTimeDurationService,
             UserContextPort userContextPort) {
         this.examRepository = examRepository;
         this.examMemberRepository = examMemberRepository;
@@ -86,6 +89,7 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
         this.examPaperItemRepository = examPaperItemRepository;
         this.questionRepository = questionRepository;
         this.examQuestionSecureLockService = examQuestionSecureLockService;
+        this.recalculateExamTimeDurationService = recalculateExamTimeDurationService;
         this.userContextPort = userContextPort;
     }
 
@@ -131,6 +135,7 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
         exam.setUpdatedAt(now);
         exam.setUpdatedBy(currentUserId);
         var saved = examRepository.save(exam);
+        recalculateExamTimeDurationService.recalculate(exam.getId());
         return ExamDtoMapper.toDto(saved);
     }
 

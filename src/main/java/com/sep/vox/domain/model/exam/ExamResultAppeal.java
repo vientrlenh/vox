@@ -16,12 +16,18 @@ public class ExamResultAppeal {
     private UUID resolvedBy;
     private OffsetDateTime resolvedAt;
     private String notes;
-    
+    private OffsetDateTime deadline;
+    private OffsetDateTime approvedAt;
+    private UUID paperItemId;
+    private UUID responseId;
+    private String decisionNote;
+
     public ExamResultAppeal() {}
 
     public ExamResultAppeal(UUID id, UUID candidateResultId, UUID requestedBy, String reason,
             OffsetDateTime requestedAt, ExamAppealStatus status, BigDecimal scoreBefore, BigDecimal scoreAfter,
-            UUID resolvedBy, OffsetDateTime resolvedAt, String notes) {
+            UUID resolvedBy, OffsetDateTime resolvedAt, String notes, OffsetDateTime deadline,
+            OffsetDateTime approvedAt, UUID paperItemId, UUID responseId, String decisionNote) {
         this.id = id;
         this.candidateResultId = candidateResultId;
         this.requestedBy = requestedBy;
@@ -33,11 +39,17 @@ public class ExamResultAppeal {
         this.resolvedBy = resolvedBy;
         this.resolvedAt = resolvedAt;
         this.notes = notes;
+        this.deadline = deadline;
+        this.approvedAt = approvedAt;
+        this.paperItemId = paperItemId;
+        this.responseId = responseId;
+        this.decisionNote = decisionNote;
     }
 
     public ExamResultAppeal(UUID candidateResultId, UUID requestedBy, String reason, OffsetDateTime requestedAt,
             ExamAppealStatus status, BigDecimal scoreBefore, BigDecimal scoreAfter, UUID resolvedBy,
-            OffsetDateTime resolvedAt, String notes) {
+            OffsetDateTime resolvedAt, String notes, OffsetDateTime deadline, OffsetDateTime approvedAt,
+            UUID paperItemId, UUID responseId, String decisionNote) {
         this.candidateResultId = candidateResultId;
         this.requestedBy = requestedBy;
         this.reason = reason;
@@ -48,6 +60,11 @@ public class ExamResultAppeal {
         this.resolvedBy = resolvedBy;
         this.resolvedAt = resolvedAt;
         this.notes = notes;
+        this.deadline = deadline;
+        this.approvedAt = approvedAt;
+        this.paperItemId = paperItemId;
+        this.responseId = responseId;
+        this.decisionNote = decisionNote;
     }
 
     public UUID getId() {
@@ -138,5 +155,43 @@ public class ExamResultAppeal {
         this.notes = notes;
     }
 
-    
+    public OffsetDateTime getDeadline() {
+        return deadline;
+    }
+
+    public void setDeadline(OffsetDateTime deadline) {
+        this.deadline = deadline;
+    }
+
+    public OffsetDateTime getApprovedAt() {
+        return approvedAt;
+    }
+
+    public void setApprovedAt(OffsetDateTime approvedAt) {
+        this.approvedAt = approvedAt;
+    }
+
+    public UUID getPaperItemId() {
+        return paperItemId;
+    }
+
+    public void setPaperItemId(UUID paperItemId) {
+        this.paperItemId = paperItemId;
+    }
+
+    public UUID getResponseId() {
+        return responseId;
+    }
+
+    public void setResponseId(UUID responseId) {
+        this.responseId = responseId;
+    }
+
+    public String getDecisionNote() {
+        return decisionNote;
+    }
+
+    public void setDecisionNote(String decisionNote) {
+        this.decisionNote = decisionNote;
+    }
 }

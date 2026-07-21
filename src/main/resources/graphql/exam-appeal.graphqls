@@ -1,0 +1,170 @@
+enum AppealStatus {
+    PENDING
+    APPROVED
+    GRADING
+    COMPARING
+    PUBLISHED
+    REJECTED
+}
+
+enum AppealReviewerStatus {
+    ASSIGNED
+    SUBMITTED
+}
+
+type AppealStats {
+    pending: Int!
+    processing: Int!   # APPROVED + GRADING + COMPARING
+    published: Int!
+    rejected: Int!
+}
+
+type AppealCriterionScore {
+    criterionId: ID!
+    criterionCode: String!
+    label: String!
+    score: Float!
+    rationale: String
+}
+
+type AppealCriterionMeta {
+    id: ID!
+    code: String!
+    label: String!
+    description: String
+    minScore: Float!
+    maxScore: Float!
+}
+
+"Một lượt hỏi-đáp trong bài nói. Mỗi lượt có audio/transcript riêng."
+type AppealTurn {
+    id: ID!
+    turnOrder: Int!
+    turnType: String!
+    promptText: String
+    audioUrl: String
+    transcript: String
+    durationSeconds: Int
+}
+
+type AppealReviewer {
+    reviewerId: ID!
+    reviewerName: String!
+    status: AppealReviewerStatus!
+    done: Boolean!
+    assignedAt: String!
+    submittedAt: String
+    suggestedScore: Float
+    note: String
+    "null khi giám khảo chưa nộp báo cáo"
+    scores: [AppealCriterionScore!]
+}
+
+type AppealSummary {
+    id: ID!
+    studentName: String!
+    className: String
+    examName: String!
+    partLabel: String
+    originalScore: Float
+    status: AppealStatus!
+    requestedAt: String!
+    deadline: String
+    reviewerCount: Int!
+    doneCount: Int!
+    "Đơn còn đang xử lý và đã quá hạn deadline"
+    overdue: Boolean!
+}
+
+type AppealSummaryPage {
+    content: [AppealSummary!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+type AppealDetail {
+    id: ID!
+    studentName: String!
+    className: String
+    examName: String!
+    partLabel: String
+    originalScore: Float
+    status: AppealStatus!
+    requestedAt: String!
+    deadline: String
+    reason: String!
+    notes: String
+    decisionNote: String
+    "score_after — chỉ có khi đã PUBLISHED"
+    finalScore: Float
+    approvedAt: String
+    resolvedAt: String
+    "Điểm AI gốc, để đối chiếu"
+    aiScores: [AppealCriterionScore!]!
+    turns: [AppealTurn!]!
+    reviewers: [AppealReviewer!]!
+    "Đơn còn đang xử lý và đã quá hạn deadline"
+    overdue: Boolean!
+    "Thang điểm rubric — khoảng BE validate partScore khi công bố"
+    scoringScaleMin: Float!
+    scoringScaleMax: Float!
+}
+
+"Góc nhìn giám khảo"
+type AppealTask {
+    appealId: ID!
+    examName: String!
+    partLabel: String
+    deadline: String
+    myStatus: AppealReviewerStatus!
+    "Việc chưa nộp và đã quá hạn deadline"
+    overdue: Boolean!
+}
+
+type AppealTaskPage {
+    content: [AppealTask!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+"""
+Màn chấm lại của giám khảo. Có aiScores để tham chiếu, nhưng KHÔNG có báo cáo
+của giám khảo khác — tránh thiên lệch.
+"""
+type AppealTaskDetail {
+    appealId: ID!
+    partLabel: String
+    turns: [AppealTurn!]!
+    aiScores: [AppealCriterionScore!]!
+    criteria: [AppealCriterionMeta!]!
+    "Báo cáo của chính mình; null nếu chưa nộp"
+    myReport: AppealReviewer
+}
+
+"Ứng viên cho picker phân công"
+type AppealReviewerLite {
+    id: ID!
+    name: String!
+    "Số việc chấm lại đang giữ (status = ASSIGNED)"
+    load: Int!
+}
+
+extend type Query {
+    "Danh sách đơn phúc khảo của trường. Phân trang 0-based."
+    appeals(status: AppealStatus, keyword: String, page: Int = 0, size: Int = 20): AppealSummaryPage!
+
+    appealStats: AppealStats!
+
+    appeal(id: ID!): AppealDetail!
+
+    "Việc chấm lại của giám khảo đang đăng nhập. Phân trang 0-based."
+    myAppealTasks(status: AppealReviewerStatus, page: Int = 0, size: Int = 20): AppealTaskPage!
+
+    appealTaskDetail(appealId: ID!): AppealTaskDetail!
+
+    appealReviewers(keyword: String): [AppealReviewerLite!]!
+}

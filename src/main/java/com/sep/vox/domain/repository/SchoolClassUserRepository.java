@@ -21,4 +21,7 @@ public interface SchoolClassUserRepository {
 
     /** Vô hiệu hóa (deactivate) mọi thành viên đang active của các lớp thuộc một năm học. Trả về số dòng bị ảnh hưởng. */
     int deactivateByGradeId(UUID schoolGradeId, OffsetDateTime leftAt);
+
+    /** Vô hiệu hóa (deactivate) mọi thành viên đang active của một lớp học. Trả về số dòng bị ảnh hưởng. */
+    int deactivateBySchoolClassId(UUID schoolClassId, OffsetDateTime leftAt);
 }

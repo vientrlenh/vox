@@ -29,6 +29,7 @@ import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassDependencyRepository;
 import com.sep.vox.domain.repository.SchoolClassRepository;
+import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -38,6 +39,7 @@ import com.sep.vox.domain.valueobject.ClassCode;
 class DeleteSchoolClassUseCaseTests {
 
     private SchoolClassRepository schoolClassRepository;
+    private SchoolClassUserRepository schoolClassUserRepository;
     private SchoolClassDependencyRepository schoolClassDependencyRepository;
     private SchoolRepository schoolRepository;
     private UserRepository userRepository;
@@ -48,6 +50,7 @@ class DeleteSchoolClassUseCaseTests {
     @BeforeEach
     void setUp() {
         schoolClassRepository = mock(SchoolClassRepository.class);
+        schoolClassUserRepository = mock(SchoolClassUserRepository.class);
         schoolClassDependencyRepository = mock(SchoolClassDependencyRepository.class);
         schoolRepository = mock(SchoolRepository.class);
         userRepository = mock(UserRepository.class);
@@ -55,6 +58,7 @@ class DeleteSchoolClassUseCaseTests {
         schoolUserRepository = mock(SchoolUserRepository.class);
         useCase = new DeleteSchoolClassUseCase(
             schoolClassRepository,
+            schoolClassUserRepository,
             schoolClassDependencyRepository,
             schoolRepository,
             userRepository,
@@ -99,10 +103,30 @@ class DeleteSchoolClassUseCaseTests {
         assertThat(captor.getValue().getStatus()).isEqualTo(SchoolClassStatus.ARCHIVED);
         assertThat(captor.getValue().getUpdatedBy()).isEqualTo(userId);
         assertThat(captor.getValue().getUpdatedAt()).isNotNull();
+        // Xóa mềm lớp phải deactivate toàn bộ thành viên trong lớp.
+        verify(schoolClassUserRepository).deactivateBySchoolClassId(org.mockito.ArgumentMatchers.eq(classId), any());
+        verify(schoolClassRepository, org.mockito.Mockito.never()).deleteById(any());
         assertThat(response.id()).isEqualTo(classId);
         assertThat(response.deleteType()).isEqualTo("SOFT");
         assertThat(response.status()).isEqualTo("ARCHIVED");
         assertThat(response.updatedAt()).isEqualTo(captor.getValue().getUpdatedAt().toString());
+    }
+
+    @Test
+    void delete_should_throw_when_class_already_archived() {
+        var userId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var classId = UUID.randomUUID();
+        var archived = schoolClass(classId, schoolId);
+        archived.setStatus(SchoolClassStatus.ARCHIVED);
+        stubActiveContext(userId, schoolId);
+        when(schoolClassRepository.findById(classId)).thenReturn(Optional.of(archived));
+
+        assertThrows(NotFoundException.class, () -> useCase.execute(new DeleteSchoolClassCommand(schoolId, classId)));
+
+        verifyNoInteractions(schoolClassDependencyRepository);
+        verify(schoolClassRepository, org.mockito.Mockito.never()).deleteById(any());
+        verify(schoolClassRepository, org.mockito.Mockito.never()).save(any());
     }
 
     @Test

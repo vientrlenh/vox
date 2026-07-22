@@ -90,6 +90,11 @@ public class SchoolClassUserRepositoryImpl implements SchoolClassUserRepository 
     }
 
     @Override
+    public int deactivateBySchoolClassId(UUID schoolClassId, OffsetDateTime leftAt) {
+        return springDataSchoolClassUserRepository.deactivateBySchoolClassId(schoolClassId, leftAt);
+    }
+
+    @Override
     public List<SchoolClassUser> saveAll(Collection<SchoolClassUser> schoolClassUsers) {
         if (schoolClassUsers == null || schoolClassUsers.isEmpty()) {
             return List.of();

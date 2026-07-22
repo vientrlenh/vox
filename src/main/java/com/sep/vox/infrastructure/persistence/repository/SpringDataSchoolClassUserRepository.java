@@ -37,4 +37,17 @@ public interface SpringDataSchoolClassUserRepository extends JpaRepository<Schoo
         @Param("schoolGradeId") UUID schoolGradeId,
         @Param("leftAt") OffsetDateTime leftAt
     );
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+        UPDATE SchoolClassUserJpaEntity m
+        SET m.isActive = false,
+            m.leftAt = :leftAt
+        WHERE m.isActive = true
+            AND m.schoolClassId = :schoolClassId
+        """)
+    int deactivateBySchoolClassId(
+        @Param("schoolClassId") UUID schoolClassId,
+        @Param("leftAt") OffsetDateTime leftAt
+    );
 }

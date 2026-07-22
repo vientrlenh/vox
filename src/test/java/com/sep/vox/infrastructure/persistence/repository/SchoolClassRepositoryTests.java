@@ -362,6 +362,63 @@ class SchoolClassRepositoryTests extends ContainerTestConfig {
         assertThat(found.totalElements()).isEqualTo(2);
     }
 
+    @Test
+    void whenFindBySchoolIdWithoutStatus_thenHidesArchivedByDefault() {
+        var schoolId = UUID.randomUUID();
+        schoolClassRepository.save(newSchoolClass(schoolId, UUID.randomUUID(), UUID.randomUUID(), "ENG-VIS", "Visible English", SchoolClassStatus.ACTIVE));
+        schoolClassRepository.save(newSchoolClass(schoolId, UUID.randomUUID(), UUID.randomUUID(), "ENG-INACT", "Inactive English", SchoolClassStatus.INACTIVE));
+        schoolClassRepository.save(newSchoolClass(schoolId, UUID.randomUUID(), UUID.randomUUID(), "ENG-ARCH", "Archived English", SchoolClassStatus.ARCHIVED));
+
+        var defaultView = schoolClassRepository.findBySchoolId(schoolId, null, null, null, null, 1, 10);
+
+        assertThat(defaultView.content())
+            .extracting(schoolClass -> schoolClass.getCode().value())
+            .containsExactlyInAnyOrder("ENG-VIS", "ENG-INACT");
+        assertThat(defaultView.totalElements()).isEqualTo(2);
+
+        var archivedView = schoolClassRepository.findBySchoolId(schoolId, null, SchoolClassStatus.ARCHIVED, null, null, 1, 10);
+
+        assertThat(archivedView.content())
+            .extracting(schoolClass -> schoolClass.getCode().value())
+            .containsExactly("ENG-ARCH");
+    }
+
+    @Test
+    void whenFindByUserIdWithoutStatus_thenHidesArchivedByDefault() {
+        var schoolId = UUID.randomUUID();
+        var userId = UUID.randomUUID();
+        var activeClass = schoolClassRepository.save(newSchoolClass(schoolId, UUID.randomUUID(), UUID.randomUUID(), "ENG-CU-ACT", "Active CU", SchoolClassStatus.ACTIVE));
+        var archivedClass = schoolClassRepository.save(newSchoolClass(schoolId, UUID.randomUUID(), UUID.randomUUID(), "ENG-CU-ARCH", "Archived CU", SchoolClassStatus.ARCHIVED));
+        var now = OffsetDateTime.now();
+        schoolClassUserRepository.save(new SchoolClassUser(userId, activeClass.getId(), true, now, null, UUID.randomUUID()));
+        schoolClassUserRepository.save(new SchoolClassUser(userId, archivedClass.getId(), true, now, null, UUID.randomUUID()));
+
+        var defaultView = schoolClassRepository.findByUserId(schoolId, userId, null, 1, 20);
+
+        assertThat(defaultView.content())
+            .extracting(schoolClass -> schoolClass.getId())
+            .containsExactly(activeClass.getId());
+
+        var archivedView = schoolClassRepository.findByUserId(schoolId, userId, SchoolClassStatus.ARCHIVED, 1, 20);
+
+        assertThat(archivedView.content())
+            .extracting(schoolClass -> schoolClass.getId())
+            .containsExactly(archivedClass.getId());
+    }
+
+    @Test
+    void whenFindBySchoolIdIn_thenHidesArchivedClasses() {
+        var schoolId = UUID.randomUUID();
+        schoolClassRepository.save(newSchoolClass(schoolId, UUID.randomUUID(), UUID.randomUUID(), "ENG-IN-ACT", "Active In", SchoolClassStatus.ACTIVE));
+        schoolClassRepository.save(newSchoolClass(schoolId, UUID.randomUUID(), UUID.randomUUID(), "ENG-IN-ARCH", "Archived In", SchoolClassStatus.ARCHIVED));
+
+        var found = schoolClassRepository.findBySchoolIdIn(Set.of(schoolId), 1, 10);
+
+        assertThat(found)
+            .extracting(schoolClass -> schoolClass.getCode().value())
+            .containsExactly("ENG-IN-ACT");
+    }
+
     private static SchoolClass newSchoolClass(UUID schoolId, String code, String name) {
         return newSchoolClass(schoolId, UUID.randomUUID(), UUID.randomUUID(), code, name, SchoolClassStatus.ACTIVE);
     }

@@ -54,10 +54,15 @@ public class ViewSchoolGradeLevelsUseCase implements IUseCase<ViewSchoolGradeLev
             throw new NotFoundException("Không tìm thấy trường học.");
         }
 
+        // Mặc định ẩn Khối đã xóa mềm: khi không lọc theo trạng thái thì chỉ trả về ACTIVE.
+        // Admin vẫn xem được Khối đã xóa bằng cách truyền status=INACTIVE.
+        var status = parseStatus(input.status());
+        var effectiveStatus = status == null ? SchoolGradeLevelStatus.ACTIVE : status;
+
         var result = schoolGradeLevelRepository.findBySchoolId(
             input.schoolId(),
             StringNormalization.trimAndCollapseSpaces(input.search()),
-            parseStatus(input.status()),
+            effectiveStatus,
             input.page(),
             input.size()
         );

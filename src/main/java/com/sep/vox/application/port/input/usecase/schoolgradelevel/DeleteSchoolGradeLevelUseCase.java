@@ -8,6 +8,7 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.school.SchoolGradeLevel;
 import com.sep.vox.domain.model.school.SchoolGradeLevelStatus;
+import com.sep.vox.domain.model.school.SchoolGradeStatus;
 import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolGradeLevelRepository;
@@ -72,24 +73,25 @@ public class DeleteSchoolGradeLevelUseCase implements IUseCase<DeleteSchoolGrade
         }
         // ====================================================================
 
-        // 3. Logic chặn xóa (Toàn vẹn dữ liệu)
-        boolean isUsed = schoolGradeRepository.existsBySchoolGradeLevelId(gradeLevel.getId());
+        // 3. Nếu Khối đã bị xóa mềm trước đó (INACTIVE) thì coi như không còn tồn tại.
+        //    KHÔNG deleteById ở đây: cùng nằm trong @Transactional nên throw sẽ rollback
+        //    và xóa cứng không bao giờ thực sự xảy ra (bug cũ).
+        if (gradeLevel.getStatus() != SchoolGradeLevelStatus.ACTIVE) {
+            throw new NotFoundException("Không tìm thấy khối học.");
+        }
+
+        // 4. Logic chặn xóa (Toàn vẹn dữ liệu): chỉ chặn khi còn Năm học CHƯA bị xóa mềm.
+        boolean isUsed = schoolGradeRepository.existsBySchoolGradeLevelIdAndStatusNot(
+                gradeLevel.getId(), SchoolGradeStatus.ARCHIVED.name());
         if (isUsed) {
             throw new IllegalStateException("Không thể xóa vì Khối này đang chứa các Năm học/Khóa học bên trong.");
         }
 
-        // 4. Thực thi Xóa (Soft Delete hoặc Hard Delete)
-        if (gradeLevel.getStatus() == SchoolGradeLevelStatus.ACTIVE) {
-            // Xóa mềm: Chuyển sang INACTIVE
-            gradeLevel.setStatus(SchoolGradeLevelStatus.INACTIVE);
-            gradeLevel.setUpdatedAt(OffsetDateTime.now());
-            gradeLevel.setUpdatedBy(currentUserId);
-            schoolGradeLevelRepository.save(gradeLevel);
-        } else {
-            // Nếu đã INACTIVE rồi thì cho xóa cứng luôn (nếu bạn có hàm deleteById)
-             schoolGradeLevelRepository.deleteById(gradeLevel.getId());
-            throw new IllegalStateException("Khối học sinh này đã bị vô hiệu hóa từ trước.");
-        }
+        // 5. Xóa mềm: chuyển sang INACTIVE.
+        gradeLevel.setStatus(SchoolGradeLevelStatus.INACTIVE);
+        gradeLevel.setUpdatedAt(OffsetDateTime.now());
+        gradeLevel.setUpdatedBy(currentUserId);
+        schoolGradeLevelRepository.save(gradeLevel);
 
         return null;
     }

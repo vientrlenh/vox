@@ -15,6 +15,7 @@ import com.sep.vox.domain.repository.SchoolGradeLevelRepository; // Bổ sung
 import com.sep.vox.domain.repository.SchoolGradeRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository; // Bổ sung
 import com.sep.vox.domain.repository.UserRepository;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -98,9 +99,14 @@ public class CreateSchoolGradeUseCase implements IUseCase<CreateSchoolGradeComma
                 command.description() != null ? StringNormalization.trimAndCollapseSpaces(command.description()) : null,
                 command.startDate(),
                 command.endDate(),
-                SchoolGradeStatus.INACTIVE,
+                SchoolGradeStatus.ACTIVE,
                 now, now, creatorId, creatorId
         );
-        return schoolGradeRepository.save(newGrade).getId();
+        try {
+            return schoolGradeRepository.save(newGrade).getId();
+        } catch (DataIntegrityViolationException e) {
+            // Chống race-condition: hai request cùng tạo trùng mã vượt qua check exists rồi mới đụng unique index.
+            throw new DuplicatedException("Mã năm học đã tồn tại trong Khối lớp này.");
+        }
     }
 }

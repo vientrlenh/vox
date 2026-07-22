@@ -80,16 +80,31 @@ class ViewSchoolGradeLevelsUseCaseTests {
     }
 
     @Test
-    void should_pass_no_status_filter_when_status_is_blank() {
+    void should_default_to_active_status_when_status_is_blank() {
+        // Mặc định ẩn Khối đã xóa mềm (INACTIVE): khi không lọc trạng thái thì chỉ trả về ACTIVE.
         when(userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)).thenReturn(true);
         when(schoolUserRepository.findSchoolIdByUserId(currentUserId)).thenReturn(Optional.of(schoolId));
         when(schoolRepository.existsById(schoolId)).thenReturn(true);
-        when(schoolGradeLevelRepository.findBySchoolId(eq(schoolId), eq(""), isNull(), eq(1), eq(20)))
+        when(schoolGradeLevelRepository.findBySchoolId(eq(schoolId), eq(""), eq(SchoolGradeLevelStatus.ACTIVE), eq(1), eq(20)))
             .thenReturn(new PageResult<>(List.of(), 1, 20, 0, 0));
 
         useCase.execute(new ViewSchoolGradeLevelsQuery(schoolId, 1, 20, "  ", null));
 
-        verify(schoolGradeLevelRepository).findBySchoolId(eq(schoolId), eq(""), isNull(), eq(1), eq(20));
+        verify(schoolGradeLevelRepository).findBySchoolId(eq(schoolId), eq(""), eq(SchoolGradeLevelStatus.ACTIVE), eq(1), eq(20));
+    }
+
+    @Test
+    void should_return_inactive_when_status_explicitly_inactive() {
+        // Admin vẫn xem được Khối đã xóa mềm bằng cách truyền status=INACTIVE.
+        when(userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)).thenReturn(true);
+        when(schoolUserRepository.findSchoolIdByUserId(currentUserId)).thenReturn(Optional.of(schoolId));
+        when(schoolRepository.existsById(schoolId)).thenReturn(true);
+        when(schoolGradeLevelRepository.findBySchoolId(eq(schoolId), isNull(), eq(SchoolGradeLevelStatus.INACTIVE), eq(1), eq(20)))
+            .thenReturn(new PageResult<>(List.of(), 1, 20, 0, 0));
+
+        useCase.execute(new ViewSchoolGradeLevelsQuery(schoolId, 1, 20, null, "inactive"));
+
+        verify(schoolGradeLevelRepository).findBySchoolId(eq(schoolId), isNull(), eq(SchoolGradeLevelStatus.INACTIVE), eq(1), eq(20));
     }
 
     @Test

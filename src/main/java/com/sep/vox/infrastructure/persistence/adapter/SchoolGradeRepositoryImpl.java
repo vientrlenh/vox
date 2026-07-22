@@ -80,6 +80,11 @@ public class SchoolGradeRepositoryImpl implements SchoolGradeRepository {
     }
 
     @Override
+    public boolean existsBySchoolGradeLevelIdAndStatusNot(UUID schoolGradeLevelId, String status) {
+        return springDataSchoolGradeRepository.existsBySchoolGradeLevelIdAndStatusNot(schoolGradeLevelId, status);
+    }
+
+    @Override
     public PageResult<SchoolGrade> findAllBySchoolId(UUID schoolId, UUID schoolGradeLevelId, int pageNumber, int size) {
         var pageable = PageRequest.of(pageNumber - 1, size);
         var page = springDataSchoolGradeRepository.findAllBySchoolId(schoolId, schoolGradeLevelId, pageable);

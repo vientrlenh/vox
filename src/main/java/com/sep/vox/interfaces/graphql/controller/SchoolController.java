@@ -456,8 +456,8 @@ public class SchoolController {
     //Nhập id của gradeId
     @QueryMapping(name = "schoolGrade")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public SchoolGradeDto schoolGrade(@Argument(name = "id") UUID id) {
-        var query = new ViewSchoolGradeDetailsQuery(id);
+    public SchoolGradeDto schoolGrade(@Argument(name = "schoolId") UUID schoolId, @Argument(name = "id") UUID id) {
+        var query = new ViewSchoolGradeDetailsQuery(schoolId, id);
         return viewSchoolGradeDetailsUseCase.execute(query);
     }
 
@@ -466,13 +466,14 @@ public class SchoolController {
     public PageResult<SchoolGradeDto> schoolGrades(
             @Argument(name = "schoolId") UUID schoolId,
             @Argument(name = "schoolGradeLevelId") UUID schoolGradeLevelId,
+            @Argument(name = "status") String status,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
 
         int pageNumber = (page != null && page > 0) ? page : 1;
         int pageSize = (size != null && size > 0) ? size : 10;
 
-        var query = new ViewSchoolGradesQuery(schoolId, schoolGradeLevelId, pageNumber, pageSize);
+        var query = new ViewSchoolGradesQuery(schoolId, schoolGradeLevelId, status, pageNumber, pageSize);
 
         return viewSchoolGradesUseCase.execute(query);
     }

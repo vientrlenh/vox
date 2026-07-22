@@ -27,7 +27,7 @@ public interface SchoolGradeRepository {
 
     boolean existsBySchoolGradeLevelIdAndStatusNot(UUID schoolGradeLevelId, String status);
 
-    PageResult<SchoolGrade> findAllBySchoolId(UUID schoolId, UUID schoolGradeLevelId, int pageNumber, int size);
+    PageResult<SchoolGrade> findAllBySchoolId(UUID schoolId, UUID schoolGradeLevelId, String status, int pageNumber, int size);
 
     boolean existsBySchoolIdAndStatus(UUID schoolId, String status);
     int updateSchoolGradeAtomic(UUID id, String name, String description, LocalDate startDate, LocalDate endDate, OffsetDateTime now, UUID updatedBy);

@@ -17,6 +17,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.DeleteSchoolGradeLevelCommand;
 import com.sep.vox.application.port.input.usecase.schoolgradelevel.DeleteSchoolGradeLevelUseCase;
@@ -77,6 +78,17 @@ class DeleteSchoolGradeLevelUseCaseTests {
         verify(schoolGradeLevelRepository).save(captor.capture());
         assertThat(captor.getValue().getStatus()).isEqualTo(SchoolGradeLevelStatus.INACTIVE);
         assertThat(captor.getValue().getUpdatedBy()).isEqualTo(currentUserId);
+        verify(schoolGradeLevelRepository, never()).deleteById(any());
+    }
+
+    @Test
+    void should_reject_when_user_has_no_school() {
+        when(schoolUserRepository.findByUserId(currentUserId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> useCase.execute(new DeleteSchoolGradeLevelCommand(schoolId, gradeLevelId)))
+            .isInstanceOf(ForbiddenException.class);
+
+        verify(schoolGradeLevelRepository, never()).save(any());
         verify(schoolGradeLevelRepository, never()).deleteById(any());
     }
 

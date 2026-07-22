@@ -83,11 +83,13 @@ public class ViewSchoolGradesUseCase implements IUseCase<ViewSchoolGradesQuery, 
         if (!userRepository.existsByIdAndStatus(userId, UserStatus.ACTIVE)) {
             throw new UnauthorizedException("Tài khoản không tồn tại hoặc đã bị khóa.");
         }
-        schoolUserRepository.findSchoolIdByUserId(userId).ifPresent(userSchoolId -> {
+        if (!userContextPort.isSystemAdmin()) {
+            UUID userSchoolId = schoolUserRepository.findSchoolIdByUserId(userId)
+                .orElseThrow(() -> new ForbiddenException("Bạn không có quyền xem năm học của trường khác."));
             if (!userSchoolId.equals(targetSchoolId)) {
                 throw new ForbiddenException("Bạn không có quyền xem năm học của trường khác.");
             }
-        });
+        }
     }
 
     private String parseStatus(String status) {

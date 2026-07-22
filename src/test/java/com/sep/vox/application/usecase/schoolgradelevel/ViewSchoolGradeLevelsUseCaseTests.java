@@ -127,6 +127,17 @@ class ViewSchoolGradeLevelsUseCaseTests {
     }
 
     @Test
+    void should_reject_when_user_has_no_school() {
+        when(userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)).thenReturn(true);
+        when(userContextPort.isSystemAdmin()).thenReturn(false);
+        when(schoolUserRepository.findSchoolIdByUserId(currentUserId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> useCase.execute(new ViewSchoolGradeLevelsQuery(schoolId, 1, 20, null, null)))
+            .isInstanceOf(ForbiddenException.class);
+        verifyNoInteractions(schoolGradeLevelRepository);
+    }
+
+    @Test
     void should_reject_when_school_not_found() {
         when(userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)).thenReturn(true);
         when(schoolUserRepository.findSchoolIdByUserId(currentUserId)).thenReturn(Optional.of(schoolId));

@@ -47,6 +47,11 @@ public class ViewSchoolUserDetailsUseCase implements IUseCase<ViewSchoolUserDeta
         var schoolUser = schoolUserRepository.findBySchoolIdAndUserId(input.schoolId(), input.userId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng nhà trường theo yêu cầu"));
 
+        // Không trả về người dùng đã bị xóa mềm (DISABLED)
+        if (userRepository.existsByIdAndStatus(input.userId(), UserStatus.DISABLED)) {
+            throw new NotFoundException("Không tìm thấy người dùng nhà trường theo yêu cầu");
+        }
+
         return SchoolUserDtoMapper.toSchoolUserDto(schoolUser);
     }
 }

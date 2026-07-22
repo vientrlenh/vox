@@ -98,6 +98,17 @@ class ViewSchoolGradeDetailsUseCaseTests {
     }
 
     @Test
+    void should_reject_when_user_has_no_school() {
+        when(userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)).thenReturn(true);
+        when(userContextPort.isSystemAdmin()).thenReturn(false);
+        when(schoolUserRepository.findSchoolIdByUserId(currentUserId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> useCase.execute(new ViewSchoolGradeDetailsQuery(schoolId, gradeId)))
+            .isInstanceOf(ForbiddenException.class);
+        verifyNoInteractions(schoolGradeRepository);
+    }
+
+    @Test
     void should_reject_when_grade_not_found() {
         grantAccess();
         when(schoolGradeRepository.findById(gradeId)).thenReturn(Optional.empty());

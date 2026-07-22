@@ -72,12 +72,14 @@ public class CreateSchoolGradeLevelUseCase implements IUseCase<CreateSchoolGrade
             throw new UnauthorizedException("Tài khoản không tồn tại hoặc đã bị khóa.");
         }
 
-        // Nếu là School Admin, phải check trùng schoolId
-        schoolUserRepository.findSchoolIdByUserId(userId).ifPresent(userSchoolId -> {
+        // System admin bỏ qua; còn lại bắt buộc thuộc đúng trường
+        if (!userContextPort.isSystemAdmin()) {
+            UUID userSchoolId = schoolUserRepository.findSchoolIdByUserId(userId)
+                .orElseThrow(() -> new ForbiddenException("Bạn không có quyền tạo khối học cho trường khác."));
             if (!userSchoolId.equals(targetSchoolId)) {
                 throw new ForbiddenException("Bạn không có quyền tạo khối học cho trường khác.");
             }
-        });
+        }
     }
 
     private void validateUniqueness(UUID schoolId, String code, int order) {

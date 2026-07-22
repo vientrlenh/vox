@@ -83,6 +83,9 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
         var command = normalize(input);
         var school = schoolRepository.findById(command.schoolId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
+        if (!school.isActive()) {
+            throw new IllegalStateException("Trường học không hoạt động");
+        }
 
         if (!ALLOWED_ROLE_CODES.contains(command.roleCode())) {
             throw new IllegalArgumentException("Vai trò không hợp lệ, chỉ chấp nhận STUDENT hoặc TEACHER");
@@ -97,9 +100,8 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
             throw new DuplicatedException("Số điện thoại đã tồn tại");
         }
 
-        User user = command.roleCode().equals("STUDENT")
-            ? User.create(command.email(), command.phone(), command.fullName(), command.dateOfBirth(), command.address(), null, callerId, now)
-            : User.create(command.email(), command.phone(), command.fullName(), command.dateOfBirth(), command.address(), null, callerId, now);
+        User user = User.create(command.email(), command.phone(), command.fullName(),
+            command.dateOfBirth(), command.address(), null, callerId, now);
 
         User savedUser;
         try {
@@ -114,18 +116,17 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
             if (command.startDate() == null || command.endDate() == null) {
                 throw new IllegalArgumentException("Ngày bắt đầu và ngày kết thúc là bắt buộc đối với học sinh");
             }
+            if (!command.startDate().isBefore(command.endDate())) {
+                throw new IllegalArgumentException("Ngày bắt đầu phải trước ngày kết thúc");
+            }
             var startDate = command.startDate().atStartOfDay(ZoneOffset.UTC).toOffsetDateTime();
             var endDate = command.endDate().atStartOfDay(ZoneOffset.UTC).toOffsetDateTime();
-            schoolUserRepository.save(
-                SchoolUser.create(savedUser.getId(), command.schoolId(), startDate, endDate)
-            );
+            saveSchoolUser(SchoolUser.create(savedUser.getId(), command.schoolId(), startDate, endDate));
         } else {
             var startDate = command.startDate() != null
                 ? command.startDate().atStartOfDay(ZoneOffset.UTC).toOffsetDateTime()
                 : now;
-            schoolUserRepository.save(
-                SchoolUser.create(savedUser.getId(), command.schoolId(), startDate, null)
-            );
+            saveSchoolUser(SchoolUser.create(savedUser.getId(), command.schoolId(), startDate, null));
         }
 
         var generatedPasswordSetUpToken = passwordSetUpTokenPort.generateToken();
@@ -139,6 +140,14 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
         ));
 
         return new CreateSchoolUserResponse(savedUser.getId());
+    }
+
+    private void saveSchoolUser(SchoolUser schoolUser) {
+        try {
+            schoolUserRepository.save(schoolUser);
+        } catch (DataIntegrityViolationException e) {
+            throw new IllegalArgumentException("Không thể gán người dùng vào trường: dữ liệu không hợp lệ");
+        }
     }
 
     private CreateSchoolUserCommand normalize(CreateSchoolUserCommand input) {

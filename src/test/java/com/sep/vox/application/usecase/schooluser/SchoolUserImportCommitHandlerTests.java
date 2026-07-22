@@ -16,7 +16,6 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionStatus;
@@ -230,7 +229,7 @@ class SchoolUserImportCommitHandlerTests {
     }
 
     @Test
-    void should_create_new_school_user_when_student_belongs_to_another_school() {
+    void should_mark_invalid_when_email_belongs_to_user_in_another_school() {
         var schoolId = UUID.randomUUID();
         var otherSchoolId = UUID.randomUUID();
         var createdBy = UUID.randomUUID();
@@ -249,21 +248,78 @@ class SchoolUserImportCommitHandlerTests {
         when(userRepository.findByEmailIn(Set.of("student@example.com"))).thenReturn(List.of(existingUser));
         when(roleRepository.findByCodeIn(Set.of("STUDENT"))).thenReturn(List.of(role));
         when(schoolUserRepository.findByUserIdIn(Set.of(existingUserId))).thenReturn(List.of(otherSchoolUser));
-        when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        ImportCommitResult result = handler.commit(session(sessionId, schoolId, createdBy), rows);
+
+        // A user already belonging to another school must NOT be overwritten or attached
+        // into the importer's school (1 user = 1 school).
+        assertThat(result.created()).isZero();
+        assertThat(result.updated()).isZero();
+        assertThat(result.invalid()).isEqualTo(1L);
+        assertThat(rows.get(0).getStatus()).isEqualTo(ImportRowStatus.INVALID);
+        assertThat(rows.get(0).getErrorsJson()).contains("trường khác");
+        verify(userRepository, never()).save(any());
+        verify(schoolUserRepository, never()).save(any(SchoolUser.class));
+        assertThat(otherSchoolUser.getStartDate()).isEqualTo(OffsetDateTime.parse("2024-09-01T00:00:00Z"));
+        assertThat(otherSchoolUser.getEndDate()).isEqualTo(OffsetDateTime.parse("2025-06-30T00:00:00Z"));
+    }
+
+    @Test
+    void should_not_require_dates_for_teacher_rows() {
+        var schoolId = UUID.randomUUID();
+        var createdBy = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var role = role("TEACHER");
+        var savedUser = user(UUID.randomUUID(), "teacher@example.com");
+        var teacherWithoutDates = Map.of(
+            "Email", "teacher@example.com", "Họ tên", "Nguyễn Văn B", "Vai trò", "TEACHER",
+            "Điện thoại", "0901234568", "Ngày sinh", "1990-05-15",
+            "Địa chỉ", "Hà Nội"
+        );
+        var rows = List.of(row(sessionId, 1L, teacherWithoutDates));
+
+        mockSchool(schoolId);
+        when(userRepository.findByEmailIn(Set.of("teacher@example.com"))).thenReturn(List.of());
+        when(roleRepository.findByCodeIn(Set.of("TEACHER"))).thenReturn(List.of(role));
+        when(schoolUserRepository.findByUserIdIn(any())).thenReturn(List.of());
+        when(userRepository.save(any())).thenReturn(savedUser);
+        when(userRoleRepository.save(any(UserRole.class))).thenAnswer(inv -> inv.getArgument(0));
         when(schoolUserRepository.save(any(SchoolUser.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(passwordSetUpTokenPort.generateToken()).thenReturn(new GeneratedPasswordSetUpToken("raw", "hash"));
+        when(passwordSetUpTokenRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        ImportCommitResult result = handler.commit(session(sessionId, schoolId, createdBy), rows);
+
+        assertThat(result.created()).isEqualTo(1L);
+        assertThat(result.invalid()).isZero();
+        assertThat(rows.get(0).getStatus()).isEqualTo(ImportRowStatus.IMPORTED);
+    }
+
+    @Test
+    void should_mark_invalid_when_student_start_date_not_before_end_date() {
+        var schoolId = UUID.randomUUID();
+        var createdBy = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var role = role("STUDENT");
+        var badDates = Map.of(
+            "Email", "student@example.com", "Họ tên", "Nguyễn Văn A", "Vai trò", "STUDENT",
+            "Điện thoại", "0901234567", "Ngày sinh", "2000-01-01",
+            "Ngày bắt đầu", "2026-06-30", "Ngày kết thúc", "2026-06-30",
+            "Địa chỉ", "Hà Nội"
+        );
+        var rows = List.of(row(sessionId, 1L, badDates));
+
+        mockSchool(schoolId);
+        when(userRepository.findByEmailIn(Set.of("student@example.com"))).thenReturn(List.of());
+        when(roleRepository.findByCodeIn(Set.of("STUDENT"))).thenReturn(List.of(role));
+        when(schoolUserRepository.findByUserIdIn(any())).thenReturn(List.of());
 
         ImportCommitResult result = handler.commit(session(sessionId, schoolId, createdBy), rows);
 
         assertThat(result.created()).isZero();
-        assertThat(result.updated()).isEqualTo(1L);
-        // The other school's membership must be filtered out: a fresh SchoolUser is created
-        // for the current school instead of mutating the unrelated one.
-        var savedSchoolUser = ArgumentCaptor.forClass(SchoolUser.class);
-        verify(schoolUserRepository).save(savedSchoolUser.capture());
-        assertThat(savedSchoolUser.getValue().getSchoolId()).isEqualTo(schoolId);
-        assertThat(savedSchoolUser.getValue()).isNotSameAs(otherSchoolUser);
-        assertThat(otherSchoolUser.getStartDate()).isEqualTo(OffsetDateTime.parse("2024-09-01T00:00:00Z"));
-        assertThat(otherSchoolUser.getEndDate()).isEqualTo(OffsetDateTime.parse("2025-06-30T00:00:00Z"));
+        assertThat(result.invalid()).isEqualTo(1L);
+        assertThat(rows.get(0).getStatus()).isEqualTo(ImportRowStatus.INVALID);
+        verify(userRepository, never()).save(any());
     }
 
     @Test

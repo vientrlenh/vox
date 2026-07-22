@@ -115,6 +115,31 @@ class ViewSchoolGradesUseCaseTests {
     }
 
     @Test
+    void should_reject_when_user_has_no_school() {
+        // Fail-open đã đóng: user active nhưng không thuộc trường nào không được truy cập.
+        when(userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)).thenReturn(true);
+        when(userContextPort.isSystemAdmin()).thenReturn(false);
+        when(schoolUserRepository.findSchoolIdByUserId(currentUserId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> useCase.execute(new ViewSchoolGradesQuery(schoolId, null, null, 1, 20)))
+            .isInstanceOf(ForbiddenException.class);
+        verifyNoInteractions(schoolGradeRepository);
+    }
+
+    @Test
+    void should_allow_system_admin_without_school() {
+        when(userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)).thenReturn(true);
+        when(userContextPort.isSystemAdmin()).thenReturn(true);
+        when(schoolRepository.existsById(schoolId)).thenReturn(true);
+        when(schoolGradeRepository.findAllBySchoolId(eq(schoolId), isNull(), isNull(), eq(1), eq(20)))
+            .thenReturn(new PageResult<>(List.<SchoolGrade>of(), 1, 20, 0, 0));
+
+        useCase.execute(new ViewSchoolGradesQuery(schoolId, null, null, 1, 20));
+
+        verify(schoolGradeRepository).findAllBySchoolId(eq(schoolId), isNull(), isNull(), eq(1), eq(20));
+    }
+
+    @Test
     void should_reject_when_school_not_found() {
         when(userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)).thenReturn(true);
         when(schoolUserRepository.findSchoolIdByUserId(currentUserId)).thenReturn(Optional.of(schoolId));

@@ -19,7 +19,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -54,10 +53,10 @@ public class DeleteSchoolGradeLevelUseCase implements IUseCase<DeleteSchoolGrade
             throw new UnauthorizedException("Tài khoản không tồn tại hoặc đã bị khóa.");
         }
 
-        // VÒNG 1: KIỂM TRA QUYỀN SCHOOL USER
-        Optional<SchoolUser> schoolUserOpt = schoolUserRepository.findByUserId(currentUserId);
-        if (schoolUserOpt.isPresent()) {
-            SchoolUser schoolUser = schoolUserOpt.get();
+        // VÒNG 1: KIỂM TRA QUYỀN SCHOOL USER (system admin bỏ qua)
+        if (!userContextPort.isSystemAdmin()) {
+            SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
+                .orElseThrow(() -> new ForbiddenException("BẢO MẬT: Bạn không có quyền xóa dữ liệu của trường khác."));
             if (!schoolUser.getSchoolId().equals(command.schoolId())) {
                 throw new ForbiddenException("BẢO MẬT: Bạn không có quyền xóa dữ liệu của trường khác.");
             }

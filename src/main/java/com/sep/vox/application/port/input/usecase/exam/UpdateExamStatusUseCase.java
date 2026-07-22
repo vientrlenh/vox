@@ -136,17 +136,19 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
     }
 
     /**
-     * G.3: chỉ cho publish khi mọi ExamCandidateResult của kỳ thi đã được xử lý xong
-     * (RELEASED/INVALID, hoặc các trạng thái ngoài phạm vi như APPEALED/RE_GRADING) -
-     * không còn cái nào PENDING_REVIEW (AI chưa tự tin, giáo viên chưa xác nhận).
+     * G.3: chỉ cho publish khi MỌI ExamCandidateResult của kỳ thi đều đã ở đúng RELEASED
+     * hoặc INVALID (2 trạng thái "đã xử lý xong, sẵn sàng chốt") - còn bất kỳ trạng thái
+     * nào khác (PENDING_REVIEW chưa duyệt, FINAL/APPEALED/RE_GRADING/RETAKE_REQUIRED từ
+     * luồng phúc khảo/nghi vấn) đều chặn publish cho tới khi được xử lý dứt điểm.
      */
     private void requirePublishReadiness(java.util.UUID examId) {
-        var pendingCount = examCandidateResultRepository.findByExamId(examId).stream()
-            .filter(result -> result.getStatus() == ExamCandidateResultStatus.PENDING_REVIEW)
+        var notReadyCount = examCandidateResultRepository.findByExamId(examId).stream()
+            .filter(result -> result.getStatus() != ExamCandidateResultStatus.RELEASED
+                && result.getStatus() != ExamCandidateResultStatus.INVALID)
             .count();
-        if (pendingCount > 0) {
+        if (notReadyCount > 0) {
             throw new IllegalStateException(
-                "Còn " + pendingCount + " kết quả chưa được giáo viên xác nhận, không thể công bố kết quả");
+                "Còn " + notReadyCount + " kết quả chưa ở trạng thái RELEASED hoặc INVALID, không thể công bố kết quả");
         }
     }
 

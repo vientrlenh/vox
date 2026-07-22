@@ -12,14 +12,14 @@ import com.sep.vox.domain.model.rubric.RubricTotalScoreMethod;
 import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.repository.RubricRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Component
+@Service
 public class RubricVersionImportCommitHandler implements ImportCommitHandler {
 
     private final RubricVersionRepository rubricVersionRepository;

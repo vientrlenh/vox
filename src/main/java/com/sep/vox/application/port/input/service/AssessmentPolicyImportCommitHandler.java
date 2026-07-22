@@ -16,14 +16,20 @@ import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
 import com.sep.vox.domain.model.rubric.RubricStatus;
 import com.sep.vox.domain.model.rubric.RubricVersion;
+import com.sep.vox.domain.model.school.SchoolClass;
+import com.sep.vox.domain.model.school.SchoolGrade;
+import com.sep.vox.domain.model.school.SchoolGradeLevel;
+import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
 import com.sep.vox.domain.repository.*;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
-@Component
+@Service
 public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler {
 
     private final AssessmentPolicyRepository assessmentPolicyRepository;
@@ -89,11 +95,39 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
         static final EffectivePeriod EMPTY = new EffectivePeriod(null, null);
     }
 
+    // Toàn bộ dữ liệu tham chiếu (ngôn ngữ/khung/rubric/scope/band) đã prefetch 1 lần bằng số query CỐ ĐỊNH
+    // (không phụ thuộc số dòng Excel lẫn số giá trị distinct), dùng để resolve thuần trong memory ở Phase 2.
+    private record LookupContext(
+            Map<String, SupportedLanguage> languageByCode,
+            Map<String, SupportedLanguage> languageByName,
+            Map<String, FrameworkVersion> frameworkVersionByCode,
+            Map<String, FrameworkVersion> frameworkVersionByName,
+            Map<String, RubricVersion> rubricVersionByCode,
+            Map<String, RubricVersion> rubricVersionByName,
+            Map<UUID, Rubric> rubricById,
+            Map<String, SchoolClass> schoolClassByCode,
+            Map<String, SchoolClass> schoolClassByName,
+            Map<String, SchoolGrade> schoolGradeByCode,
+            Map<String, SchoolGrade> schoolGradeByName,
+            Map<String, SchoolGradeLevel> schoolGradeLevelByCode,
+            Map<String, SchoolGradeLevel> schoolGradeLevelByName,
+            Map<UUID, Map<String, FrameworkResultBand>> bandByVersionAndCode,
+            Map<UUID, Map<String, FrameworkResultBand>> bandByVersionAndLabel) {}
+
     @Override
     public ImportCommitResult commit(ImportSession session, List<ImportRow> rows) {
         UUID schoolId = session.getSchoolId();
         boolean isSchoolScoped = schoolId != null;
         Map<String, String> mapping = resolveMapping(session);
+
+        List<ImportRow> pendingRows = new ArrayList<>();
+        List<Map<String, String>> mappedDataList = new ArrayList<>();
+        for (ImportRow row : rows) {
+            if (row.getStatus() != ImportRowStatus.PENDING) continue;
+            Map<String, String> rawData = jsonSerializationPort.toStringMap(row.getRawDataJson());
+            pendingRows.add(row);
+            mappedDataList.add(applyMapping(mapping, rawData));
+        }
 
         List<AssessmentPolicy> policiesToSave = new ArrayList<>();
         long importedCount = 0;
@@ -103,35 +137,57 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
         Set<ScopeKey> scopesClaimedInFile = new HashSet<>();
         Map<VersionScopeKey, Integer> nextVersionByScope = new HashMap<>();
 
-        for (ImportRow row : rows) {
-            if (row.getStatus() != ImportRowStatus.PENDING) continue;
+        // Prefetch DUY NHẤT 1 lần toàn bộ Assessment Policy (mọi trạng thái) trong phạm vi schoolId này
+        // (schoolId cố định suốt 1 lượt commit), rồi tự tính trong memory ở dưới thay vì gọi
+        // existsActiveForScope/findMaxVersionForScope riêng lẻ cho từng dòng/từng scope trong file Excel.
+        List<AssessmentPolicy> existingPolicies = assessmentPolicyRepository.findAllForOwner(schoolId);
 
+        // Scope đang DRAFT/PUBLISHED -> dùng để chặn tạo trùng scope
+        Set<ScopeKey> existingActiveScopes = existingPolicies.stream()
+                .filter(p -> p.getStatus() == AssessmentPolicyStatus.DRAFT || p.getStatus() == AssessmentPolicyStatus.PUBLISHED)
+                .map(p -> new ScopeKey(p.getSchoolId(), p.getLanguageId(), p.getFrameworkVersionId(),
+                        p.getSchoolGradeLevelId(), p.getSchoolGradeId(), p.getSchoolClassId(), p.getRubricVersionId()))
+                .collect(Collectors.toSet());
+
+        // Version lớn nhất đã từng tồn tại theo từng scope (kể cả ARCHIVED) -> dùng để phát version kế tiếp,
+        // đúng ý nghĩa gốc của AssessmentPolicyRepository#findMaxVersionForScope nhưng tính 1 lần trong memory.
+        Map<VersionScopeKey, Integer> maxVersionByScope = existingPolicies.stream()
+                .collect(Collectors.groupingBy(
+                        p -> new VersionScopeKey(p.getSchoolId(), p.getLanguageId(), p.getFrameworkVersionId(),
+                                p.getSchoolGradeLevelId(), p.getSchoolGradeId(), p.getSchoolClassId()),
+                        Collectors.reducing(0, AssessmentPolicy::getVersion, Integer::max)));
+
+        // Prefetch toàn bộ dữ liệu tham chiếu (ngôn ngữ/khung/rubric/scope/band) bằng số query CỐ ĐỊNH,
+        // rồi Phase 2 (loop chính) chỉ resolve trong memory, không còn gọi DB theo từng dòng/giá trị distinct nữa.
+        LookupContext lookup = prefetchLookups(schoolId, isSchoolScoped, mappedDataList);
+
+        for (int i = 0; i < pendingRows.size(); i++) {
+            ImportRow row = pendingRows.get(i);
+            Map<String, String> mappedData = mappedDataList.get(i);
             List<Map<String, String>> errors = new ArrayList<>();
-            Map<String, String> rawData = jsonSerializationPort.toStringMap(row.getRawDataJson());
-            Map<String, String> mappedData = applyMapping(mapping, rawData);
 
             try {
                 validateRequiredFields(mappedData, errors);
 
                 UUID languageId = errors.isEmpty()
-                        ? resolveLanguage(mappedData.get("language"), errors)
+                        ? resolveLanguage(mappedData.get("language"), errors, lookup)
                         : null;
 
                 FrameworkVersion frameworkVersion = errors.isEmpty()
-                        ? resolveFrameworkVersion(mappedData.get("frameworkVersion"), errors)
+                        ? resolveFrameworkVersion(mappedData.get("frameworkVersion"), errors, lookup)
                         : null;
                 UUID frameworkVersionId = frameworkVersion != null ? frameworkVersion.getId() : null;
 
                 UUID rubricVersionId = errors.isEmpty()
-                        ? resolveRubricVersion(mappedData.get("rubricVersion"), frameworkVersion, schoolId, isSchoolScoped, errors)
+                        ? resolveRubricVersion(mappedData.get("rubricVersion"), frameworkVersion, schoolId, isSchoolScoped, errors, lookup)
                         : null;
 
                 ScopeIds scopeIds = (errors.isEmpty() && isSchoolScoped)
-                        ? resolveScope(schoolId, mappedData.get("schoolClass"), mappedData.get("schoolGrade"), mappedData.get("schoolGradeLevel"), errors)
+                        ? resolveScope(mappedData.get("schoolClass"), mappedData.get("schoolGrade"), mappedData.get("schoolGradeLevel"), errors, lookup)
                         : ScopeIds.EMPTY;
 
                 BandIds bandIds = errors.isEmpty()
-                        ? resolveBands(frameworkVersionId, mappedData.get("targetFrameworkBand"), mappedData.get("minimumFrameworkBand"), errors)
+                        ? resolveBands(frameworkVersionId, mappedData.get("targetFrameworkBand"), mappedData.get("minimumFrameworkBand"), errors, lookup)
                         : BandIds.EMPTY;
 
                 BigDecimal passingScore = errors.isEmpty()
@@ -152,8 +208,7 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
                             scopeIds.schoolGradeLevelId(), scopeIds.schoolGradeId(), scopeIds.schoolClassId(), rubricVersionId);
                     if (!scopesClaimedInFile.add(scopeKey)) {
                         errors.add(error("scope", "Bị trùng phạm vi áp dụng ngay trong file Excel."));
-                    } else if (assessmentPolicyRepository.existsActiveForScope(schoolId, languageId, frameworkVersionId,
-                            scopeIds.schoolGradeLevelId(), scopeIds.schoolGradeId(), scopeIds.schoolClassId(), rubricVersionId)) {
+                    } else if (existingActiveScopes.contains(scopeKey)) {
                         errors.add(error("scope", "Đã tồn tại một Quy chế (DRAFT/PUBLISHED) khác cho cùng phạm vi này. Vui lòng lưu trữ (ARCHIVE) bản cũ."));
                     }
                 }
@@ -168,9 +223,7 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
                 VersionScopeKey versionScopeKey = new VersionScopeKey(schoolId, languageId, frameworkVersionId,
                         scopeIds.schoolGradeLevelId(), scopeIds.schoolGradeId(), scopeIds.schoolClassId());
                 int nextVersion = nextVersionByScope.computeIfAbsent(versionScopeKey, key ->
-                        assessmentPolicyRepository.findMaxVersionForScope(
-                                key.schoolId(), key.languageId(), key.frameworkVersionId(),
-                                key.schoolGradeLevelId(), key.schoolGradeId(), key.schoolClassId()) + 1);
+                        maxVersionByScope.getOrDefault(key, 0) + 1);
                 nextVersionByScope.put(versionScopeKey, nextVersion + 1);
 
                 AssessmentPolicy newPolicy = new AssessmentPolicy(
@@ -197,6 +250,90 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
         }
 
         return new ImportCommitResult(importedCount, 0, 0, invalidCount);
+    }
+
+    // Gom toàn bộ input thô (distinct) của các dòng PENDING rồi query 1 lần/nhóm (findByCodeIn/findByNameIn)
+    // thay vì query lười theo từng giá trị distinct trong loop chính (Phase 2). Band phụ thuộc frameworkVersionId
+    // đã resolve (không phải input thô) nên gom theo FrameworkVersion tìm được rồi query findByFrameworkVersionIdIn.
+    private LookupContext prefetchLookups(UUID schoolId, boolean isSchoolScoped, List<Map<String, String>> mappedDataList) {
+        Set<String> languageInputs = new HashSet<>();
+        Set<String> frameworkInputs = new HashSet<>();
+        Set<String> rubricInputs = new HashSet<>();
+        Set<String> classInputs = new HashSet<>();
+        Set<String> gradeInputs = new HashSet<>();
+        Set<String> gradeLevelInputs = new HashSet<>();
+
+        for (Map<String, String> mappedData : mappedDataList) {
+            addTrimmed(languageInputs, mappedData.get("language"));
+            addTrimmed(frameworkInputs, mappedData.get("frameworkVersion"));
+            addTrimmed(rubricInputs, mappedData.get("rubricVersion"));
+            if (isSchoolScoped) {
+                addTrimmed(classInputs, mappedData.get("schoolClass"));
+                addTrimmed(gradeInputs, mappedData.get("schoolGrade"));
+                addTrimmed(gradeLevelInputs, mappedData.get("schoolGradeLevel"));
+            }
+        }
+
+        // *ByCode dùng key đã UPPERCASE (khớp với DB đã lọc UPPER() ở tầng Impl) để việc tra cứu không phân biệt
+        // hoa/thường ("en"/"En"/"EN" đều khớp). *ByName giữ nguyên case gốc vì tên hiển thị không bị ép quy ước.
+        Map<String, SupportedLanguage> languageByCode = indexBy(languageRepository.findByCodeIn(languageInputs), l -> l.getCode().value().toUpperCase());
+        Map<String, SupportedLanguage> languageByName = indexBy(languageRepository.findByNameIn(languageInputs), SupportedLanguage::getName);
+
+        Map<String, FrameworkVersion> frameworkVersionByCode = indexBy(frameworkVersionRepository.findByCodeIn(frameworkInputs), v -> v.getCode().toUpperCase());
+        Map<String, FrameworkVersion> frameworkVersionByName = indexBy(frameworkVersionRepository.findByNameIn(frameworkInputs), FrameworkVersion::getName);
+
+        Map<String, RubricVersion> rubricVersionByCode = indexBy(rubricVersionRepository.findByCodeIn(rubricInputs), v -> v.getCode().toUpperCase());
+        Map<String, RubricVersion> rubricVersionByName = indexBy(rubricVersionRepository.findByNameIn(rubricInputs), RubricVersion::getName);
+
+        Set<UUID> rubricIds = new HashSet<>();
+        rubricVersionByCode.values().forEach(v -> rubricIds.add(v.getRubricId()));
+        rubricVersionByName.values().forEach(v -> rubricIds.add(v.getRubricId()));
+        Map<UUID, Rubric> rubricById = indexBy(rubricRepository.findByIdIn(rubricIds), Rubric::getId);
+
+        Map<String, SchoolClass> schoolClassByCode = Map.of();
+        Map<String, SchoolClass> schoolClassByName = Map.of();
+        Map<String, SchoolGrade> schoolGradeByCode = Map.of();
+        Map<String, SchoolGrade> schoolGradeByName = Map.of();
+        Map<String, SchoolGradeLevel> schoolGradeLevelByCode = Map.of();
+        Map<String, SchoolGradeLevel> schoolGradeLevelByName = Map.of();
+        if (isSchoolScoped) {
+            schoolClassByCode = indexBy(schoolClassRepository.findBySchoolIdAndCodeIn(schoolId, classInputs), c -> c.getCode().value().toUpperCase());
+            schoolClassByName = indexBy(schoolClassRepository.findBySchoolIdAndNameIn(schoolId, classInputs), SchoolClass::getName);
+            schoolGradeByCode = indexBy(schoolGradeRepository.findBySchoolIdAndCodeIn(schoolId, gradeInputs), g -> g.getCode().toUpperCase());
+            schoolGradeByName = indexBy(schoolGradeRepository.findBySchoolIdAndNameIn(schoolId, gradeInputs), SchoolGrade::getName);
+            schoolGradeLevelByCode = indexBy(schoolGradeLevelRepository.findBySchoolIdAndCodeIn(schoolId, gradeLevelInputs), l -> l.getCode().toUpperCase());
+            schoolGradeLevelByName = indexBy(schoolGradeLevelRepository.findBySchoolIdAndNameIn(schoolId, gradeLevelInputs), SchoolGradeLevel::getName);
+        }
+
+        Set<UUID> frameworkVersionIds = new HashSet<>();
+        frameworkVersionByCode.values().forEach(v -> frameworkVersionIds.add(v.getId()));
+        frameworkVersionByName.values().forEach(v -> frameworkVersionIds.add(v.getId()));
+        List<FrameworkResultBand> bands = frameworkVersionIds.isEmpty()
+                ? List.of()
+                : frameworkResultBandRepository.findByFrameworkVersionIdIn(frameworkVersionIds);
+        Map<UUID, Map<String, FrameworkResultBand>> bandByVersionAndCode = new HashMap<>();
+        Map<UUID, Map<String, FrameworkResultBand>> bandByVersionAndLabel = new HashMap<>();
+        for (FrameworkResultBand band : bands) {
+            bandByVersionAndCode.computeIfAbsent(band.getFrameworkVersionId(), k -> new HashMap<>()).put(band.getCode().toUpperCase(), band);
+            bandByVersionAndLabel.computeIfAbsent(band.getFrameworkVersionId(), k -> new HashMap<>()).put(band.getLabel(), band);
+        }
+
+        return new LookupContext(languageByCode, languageByName, frameworkVersionByCode, frameworkVersionByName,
+                rubricVersionByCode, rubricVersionByName, rubricById,
+                schoolClassByCode, schoolClassByName, schoolGradeByCode, schoolGradeByName,
+                schoolGradeLevelByCode, schoolGradeLevelByName, bandByVersionAndCode, bandByVersionAndLabel);
+    }
+
+    private static void addTrimmed(Set<String> set, String value) {
+        if (value != null && !value.isBlank()) set.add(value.trim());
+    }
+
+    private static <T, K> Map<K, T> indexBy(List<T> items, Function<T, K> keyFn) {
+        Map<K, T> map = new HashMap<>();
+        for (T item : items) {
+            map.put(keyFn.apply(item), item);
+        }
+        return map;
     }
 
     private Map<String, String> resolveMapping(ImportSession session) {
@@ -233,25 +370,26 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
         if (value == null || value.isBlank()) errors.add(error(field, errorMessage));
     }
 
-    // Dual Lookup: cho phép người dùng điền mã HOẶC tên trong file Excel
-    private UUID resolveLanguage(String languageInput, List<Map<String, String>> errors) {
+    // Dual Lookup: cho phép người dùng điền mã HOẶC tên trong file Excel. Tra thuần trong memory (đã prefetch).
+    private static UUID resolveLanguage(String languageInput, List<Map<String, String>> errors, LookupContext lookup) {
         String cleanInput = languageInput.trim();
-        var language = languageRepository.findByCode(cleanInput).or(() -> languageRepository.findByName(cleanInput));
-        if (language.isEmpty()) {
+        SupportedLanguage language = lookup.languageByCode().get(cleanInput.toUpperCase());
+        if (language == null) language = lookup.languageByName().get(cleanInput);
+        if (language == null) {
             errors.add(error("language", "Ngôn ngữ '" + cleanInput + "' không tồn tại trên hệ thống."));
             return null;
         }
-        return language.get().getId();
+        return language.getId();
     }
 
-    private FrameworkVersion resolveFrameworkVersion(String fwVersionInput, List<Map<String, String>> errors) {
+    private static FrameworkVersion resolveFrameworkVersion(String fwVersionInput, List<Map<String, String>> errors, LookupContext lookup) {
         String cleanInput = fwVersionInput.trim();
-        var fwOpt = frameworkVersionRepository.findByCode(cleanInput).or(() -> frameworkVersionRepository.findByName(cleanInput));
-        if (fwOpt.isEmpty()) {
+        FrameworkVersion frameworkVersion = lookup.frameworkVersionByCode().get(cleanInput.toUpperCase());
+        if (frameworkVersion == null) frameworkVersion = lookup.frameworkVersionByName().get(cleanInput);
+        if (frameworkVersion == null) {
             errors.add(error("frameworkVersion", "Không tìm thấy Phiên bản Khung: '" + cleanInput + "'"));
             return null;
         }
-        FrameworkVersion frameworkVersion = fwOpt.get();
         if (frameworkVersion.getStatus() != FrameworkVersionStatus.PUBLISHED) {
             errors.add(error("frameworkVersion", "Phiên bản Khung này chưa được PUBLISHED."));
             return null;
@@ -259,21 +397,21 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
         return frameworkVersion;
     }
 
-    private UUID resolveRubricVersion(String rubricVersionInput, FrameworkVersion frameworkVersion, UUID schoolId,
-            boolean isSchoolScoped, List<Map<String, String>> errors) {
+    private static UUID resolveRubricVersion(String rubricVersionInput, FrameworkVersion frameworkVersion, UUID schoolId,
+            boolean isSchoolScoped, List<Map<String, String>> errors, LookupContext lookup) {
         String cleanInput = rubricVersionInput.trim();
-        var rubricOpt = rubricVersionRepository.findByCode(cleanInput).or(() -> rubricVersionRepository.findByName(cleanInput));
-        if (rubricOpt.isEmpty()) {
+        RubricVersion rubricVersion = lookup.rubricVersionByCode().get(cleanInput.toUpperCase());
+        if (rubricVersion == null) rubricVersion = lookup.rubricVersionByName().get(cleanInput);
+        if (rubricVersion == null) {
             errors.add(error("rubricVersion", "Không tìm thấy Phiên bản Rubric: '" + cleanInput + "'"));
             return null;
         }
 
-        RubricVersion rubricVersion = rubricOpt.get();
         if (rubricVersion.getStatus() == RubricStatus.PUBLISHED) {
             errors.add(error("rubricVersion", "Phiên bản Rubric này đã được PUBLISHED, không thể tạo Assessment Policy mới cho phiên bản này."));
             return null;
         }
-        Rubric rubric = rubricRepository.findById(rubricVersion.getRubricId()).orElse(null);
+        Rubric rubric = lookup.rubricById().get(rubricVersion.getRubricId());
         if (rubric == null) {
             errors.add(error("rubricVersion", "Không tìm thấy Rubric gốc."));
         } else if (isSchoolScoped) {
@@ -282,76 +420,90 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
             } else if (!rubric.getFrameworkId().equals(frameworkVersion.getFrameworkId())) {
                 errors.add(error("rubricVersion", "Rubric và Khung năng lực không khớp nhau."));
             }
+        } else {
+            if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
+                errors.add(error("rubricVersion", "Chỉ được dùng Rubric SYSTEM cho luồng System Admin."));
+            } else if (!rubric.getFrameworkId().equals(frameworkVersion.getFrameworkId())) {
+                errors.add(error("rubricVersion", "Rubric và Khung năng lực không khớp nhau."));
+            }
         }
         return rubricVersion.getId();
     }
 
-    // Phải điền đúng 1 trong 3: Lớp, Khối năm học (schoolGrade), hoặc Khối (schoolGradeLevel)
-    private ScopeIds resolveScope(UUID schoolId, String classInput, String gradeInput, String gradeLevelInput,
-            List<Map<String, String>> errors) {
+    // Phải điền ít nhất 1 trong 3: Lớp, Khối năm học (schoolGrade), Khối (schoolGradeLevel).
+    // Nếu điền nhiều hơn 1, ưu tiên theo thứ tự: Khối (schoolGradeLevel) -> Khối năm học (schoolGrade) -> Lớp (schoolClass)
+    // — khác với CreateSchoolAssessmentPolicyUseCase (tạo tay vẫn bắt buộc chọn CHÍNH XÁC 1, không có fallback này).
+    private static ScopeIds resolveScope(String classInput, String gradeInput, String gradeLevelInput,
+            List<Map<String, String>> errors, LookupContext lookup) {
         boolean hasClass = classInput != null && !classInput.isBlank();
         boolean hasGrade = gradeInput != null && !gradeInput.isBlank();
         boolean hasGradeLevel = gradeLevelInput != null && !gradeLevelInput.isBlank();
-        int scopeCount = (hasClass ? 1 : 0) + (hasGrade ? 1 : 0) + (hasGradeLevel ? 1 : 0);
 
-        if (scopeCount != 1) {
-            errors.add(error("scope", "Phải điền ĐÚNG 1 phạm vi áp dụng: Lớp, Khối năm học, HOẶC Khối."));
+        if (!hasClass && !hasGrade && !hasGradeLevel) {
+            errors.add(error("scope", "Phải điền ít nhất 1 phạm vi áp dụng: Lớp, Khối năm học, HOẶC Khối."));
             return ScopeIds.EMPTY;
         }
 
-        if (hasClass) {
-            String cleanInput = classInput.trim();
-            var classOpt = schoolClassRepository.findBySchoolIdAndCode(schoolId, cleanInput)
-                    .or(() -> schoolClassRepository.findBySchoolIdAndName(schoolId, cleanInput));
-            if (classOpt.isEmpty()) {
-                errors.add(error("schoolClass", "Không tìm thấy Lớp '" + cleanInput + "'."));
+        if (hasGradeLevel) {
+            String cleanInput = gradeLevelInput.trim();
+            SchoolGradeLevel schoolGradeLevel = lookup.schoolGradeLevelByCode().get(cleanInput.toUpperCase());
+            if (schoolGradeLevel == null) schoolGradeLevel = lookup.schoolGradeLevelByName().get(cleanInput);
+            if (schoolGradeLevel == null) {
+                errors.add(error("schoolGradeLevel", "Không tìm thấy Khối '" + cleanInput + "'."));
                 return ScopeIds.EMPTY;
             }
-            return new ScopeIds(classOpt.get().getId(), null, null);
+            return new ScopeIds(null, null, schoolGradeLevel.getId());
         }
 
         if (hasGrade) {
             String cleanInput = gradeInput.trim();
-            var gradeOpt = schoolGradeRepository.findBySchoolIdAndCode(schoolId, cleanInput)
-                    .or(() -> schoolGradeRepository.findBySchoolIdAndName(schoolId, cleanInput));
-            if (gradeOpt.isEmpty()) {
+            SchoolGrade schoolGrade = lookup.schoolGradeByCode().get(cleanInput.toUpperCase());
+            if (schoolGrade == null) schoolGrade = lookup.schoolGradeByName().get(cleanInput);
+            if (schoolGrade == null) {
                 errors.add(error("schoolGrade", "Không tìm thấy Khối năm học '" + cleanInput + "'."));
                 return ScopeIds.EMPTY;
             }
-            return new ScopeIds(null, gradeOpt.get().getId(), null);
+            return new ScopeIds(null, schoolGrade.getId(), null);
         }
 
-        String cleanInput = gradeLevelInput.trim();
-        var levelOpt = schoolGradeLevelRepository.findBySchoolIdAndCode(schoolId, cleanInput)
-                .or(() -> schoolGradeLevelRepository.findBySchoolIdAndName(schoolId, cleanInput));
-        if (levelOpt.isEmpty()) {
-            errors.add(error("schoolGradeLevel", "Không tìm thấy Khối '" + cleanInput + "'."));
+        String cleanInput = classInput.trim();
+        SchoolClass schoolClass = lookup.schoolClassByCode().get(cleanInput.toUpperCase());
+        if (schoolClass == null) schoolClass = lookup.schoolClassByName().get(cleanInput);
+        if (schoolClass == null) {
+            errors.add(error("schoolClass", "Không tìm thấy Lớp '" + cleanInput + "'."));
             return ScopeIds.EMPTY;
         }
-        return new ScopeIds(null, null, levelOpt.get().getId());
+        return new ScopeIds(schoolClass.getId(), null, null);
     }
 
-    private BandIds resolveBands(UUID frameworkVersionId, String targetBandInput, String minimumBandInput,
-            List<Map<String, String>> errors) {
+    private static BandIds resolveBands(UUID frameworkVersionId, String targetBandInput, String minimumBandInput,
+            List<Map<String, String>> errors, LookupContext lookup) {
         String cleanTarget = targetBandInput.trim();
-        var targetBandOpt = frameworkResultBandRepository.findByVersionIdAndCode(frameworkVersionId, cleanTarget)
-                .or(() -> frameworkResultBandRepository.findByVersionIdAndName(frameworkVersionId, cleanTarget));
+        FrameworkResultBand targetBand = findBand(frameworkVersionId, cleanTarget, lookup);
 
         String cleanMin = minimumBandInput.trim();
-        var minBandOpt = frameworkResultBandRepository.findByVersionIdAndCode(frameworkVersionId, cleanMin)
-                .or(() -> frameworkResultBandRepository.findByVersionIdAndName(frameworkVersionId, cleanMin));
+        FrameworkResultBand minBand = findBand(frameworkVersionId, cleanMin, lookup);
 
-        if (targetBandOpt.isEmpty()) errors.add(error("targetFrameworkBand", "Band mục tiêu '" + cleanTarget + "' không tồn tại trong Khung này."));
-        if (minBandOpt.isEmpty()) errors.add(error("minimumFrameworkBand", "Band tối thiểu '" + cleanMin + "' không tồn tại trong Khung này."));
+        if (targetBand == null) errors.add(error("targetFrameworkBand", "Band mục tiêu '" + cleanTarget + "' không tồn tại trong Khung này."));
+        if (minBand == null) errors.add(error("minimumFrameworkBand", "Band tối thiểu '" + cleanMin + "' không tồn tại trong Khung này."));
 
-        if (targetBandOpt.isPresent() && minBandOpt.isPresent()
-                && minBandOpt.get().getOrder() > targetBandOpt.get().getOrder()) {
+        if (targetBand != null && minBand != null && minBand.getOrder() > targetBand.getOrder()) {
             errors.add(error("minimumFrameworkBand", "Band tối thiểu không được cao hơn Band mục tiêu."));
         }
 
         return new BandIds(
-                targetBandOpt.map(FrameworkResultBand::getId).orElse(null),
-                minBandOpt.map(FrameworkResultBand::getId).orElse(null));
+                targetBand != null ? targetBand.getId() : null,
+                minBand != null ? minBand.getId() : null);
+    }
+
+    private static FrameworkResultBand findBand(UUID frameworkVersionId, String cleanInput, LookupContext lookup) {
+        Map<String, FrameworkResultBand> byCode = lookup.bandByVersionAndCode().get(frameworkVersionId);
+        FrameworkResultBand band = byCode != null ? byCode.get(cleanInput.toUpperCase()) : null;
+        if (band == null) {
+            Map<String, FrameworkResultBand> byLabel = lookup.bandByVersionAndLabel().get(frameworkVersionId);
+            band = byLabel != null ? byLabel.get(cleanInput) : null;
+        }
+        return band;
     }
 
     private static BigDecimal parsePassingScore(String passingScoreStr, List<Map<String, String>> errors) {

@@ -18,7 +18,10 @@ import com.sep.vox.infrastructure.persistence.entity.SupportedLanguageJpaEntity;
 public interface SpringDataSupportedLanguageRepository extends JpaRepository<SupportedLanguageJpaEntity, UUID>{
     Optional<SupportedLanguageJpaEntity> findByCode(String code);
     Optional<SupportedLanguageJpaEntity> findByName(String name);
-    List<SupportedLanguageJpaEntity> findByCodeIn(Collection<String> codes);
+    // Nhận input đã được Impl uppercase sẵn; entity-side vẫn bọc UPPER() để phòng dữ liệu cũ lỡ không đồng nhất case.
+    @Query("SELECT language FROM SupportedLanguageJpaEntity language WHERE UPPER(language.code) IN :codes")
+    List<SupportedLanguageJpaEntity> findByCodeIn(@Param("codes") Collection<String> codes);
+    List<SupportedLanguageJpaEntity> findByNameIn(Collection<String> names);
     boolean existsByIdAndIsActive(UUID id, boolean isActive);
 
     @Query("""

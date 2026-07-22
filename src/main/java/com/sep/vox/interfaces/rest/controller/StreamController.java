@@ -7,10 +7,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.sep.vox.application.port.input.usecase.stream.GetStreamTokenUseCase;
-import com.sep.vox.interfaces.rest.dto.request.GetStreamTokenRequest;
+import com.sep.vox.application.port.input.usecase.stream.IssueMonitorTokenUseCase;
+import com.sep.vox.application.port.input.usecase.stream.IssueStudentStreamTokenUseCase;
+import com.sep.vox.application.response.input.stream.IssueStudentStreamTokenResponse;
+import com.sep.vox.interfaces.rest.dto.request.IssueMonitorTokenRequest;
+import com.sep.vox.interfaces.rest.dto.request.IssueStudentStreamTokenRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
-import com.sep.vox.interfaces.rest.mapper.GetStreamTokenCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.IssueMonitorTokenCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.IssueStudentStreamTokenCommandMapper;
 
 import jakarta.validation.Valid;
 
@@ -18,17 +22,28 @@ import jakarta.validation.Valid;
 @RequestMapping("/api/v1/streams")
 public class StreamController {
     
-    private final GetStreamTokenUseCase getStreamTokenUseCase;
+    private final IssueStudentStreamTokenUseCase issueStudentStreamTokenUseCase;
+    private final IssueMonitorTokenUseCase issueMonitorTokenUseCase;
 
-    public StreamController(GetStreamTokenUseCase getStreamTokenUseCase) {
-        this.getStreamTokenUseCase = getStreamTokenUseCase;
+    public StreamController(IssueStudentStreamTokenUseCase issueStudentStreamTokenUseCase, IssueMonitorTokenUseCase issueMonitorTokenUseCase) {
+        this.issueStudentStreamTokenUseCase = issueStudentStreamTokenUseCase; 
+        this.issueMonitorTokenUseCase = issueMonitorTokenUseCase;
     }
 
-    @PostMapping("/token")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse<String>> getStreamToken(@Valid @RequestBody GetStreamTokenRequest request) {
-        var command = GetStreamTokenCommandMapper.fromRequest(request);
-        var token = getStreamTokenUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success(token));
+    @PostMapping("/student/token")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<ApiResponse<IssueStudentStreamTokenResponse>> getStreamToken(@Valid @RequestBody IssueStudentStreamTokenRequest request) {
+        var command = IssueStudentStreamTokenCommandMapper.fromRequest(request);
+        var data = issueStudentStreamTokenUseCase.execute(command);
+        return ResponseEntity.ok(ApiResponse.success("Token stream được lấy thành công", data));
+    }
+
+
+    @PostMapping("/monitor/token")
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
+    public ResponseEntity<ApiResponse<String>> getMonitorToken(@Valid @RequestBody IssueMonitorTokenRequest request) {
+        var command = IssueMonitorTokenCommandMapper.fromRequest(request);
+        var token = issueMonitorTokenUseCase.execute(command);
+        return ResponseEntity.ok(ApiResponse.success("Token giám sát được lấy thành công", token));
     }
 }

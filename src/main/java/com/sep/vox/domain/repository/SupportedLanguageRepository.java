@@ -15,6 +15,7 @@ public interface SupportedLanguageRepository {
     Optional<SupportedLanguage> findByCode(String code);
     Optional<SupportedLanguage> findByName(String name);
     List<SupportedLanguage> findByCodeIn(Collection<String> codes);
+    List<SupportedLanguage> findByNameIn(Collection<String> names);
     PageResult<SupportedLanguage> findAll(String search, Boolean isActive, int pageNumber, int size);
     SupportedLanguage save(SupportedLanguage supportedLanguage);
     int updateMutableFields(UUID id, String code, boolean codeProvided, String name, boolean nameProvided,

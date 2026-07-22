@@ -17,6 +17,7 @@ public interface SchoolGradeLevelRepository {
     PageResult<SchoolGradeLevel> findBySchoolId(UUID schoolId, String search, SchoolGradeLevelStatus status,
             int page, int size);
     List<SchoolGradeLevel> findBySchoolIdAndCodeIn(UUID schoolId, Collection<String> codes);
+    List<SchoolGradeLevel> findBySchoolIdAndNameIn(UUID schoolId, Collection<String> names);
     List<SchoolGradeLevel> findByIdIn(Collection<UUID> ids);
     SchoolGradeLevel save(SchoolGradeLevel gradeLevel);
     int updateSchoolGradeLevelAtomic(UUID id, String name, String description, Integer order,

@@ -20,7 +20,10 @@ public interface SpringDataSchoolGradeLevelRepository extends JpaRepository<Scho
     Optional<SchoolGradeLevelJpaEntity> findBySchoolIdAndName(UUID schoolId, String name);
     boolean existsBySchoolIdAndCode(UUID schoolId, String code);
     boolean existsBySchoolIdAndOrder(UUID schoolId, int order);
-    List<SchoolGradeLevelJpaEntity> findBySchoolIdAndCodeIn(UUID schoolId, Collection<String> codes);
+    // Nhận codes đã được Impl uppercase sẵn; entity-side vẫn bọc UPPER() để phòng dữ liệu cũ lỡ không đồng nhất case.
+    @Query("SELECT sgl FROM SchoolGradeLevelJpaEntity sgl WHERE sgl.schoolId = :schoolId AND UPPER(sgl.code) IN :codes")
+    List<SchoolGradeLevelJpaEntity> findBySchoolIdAndCodeIn(@Param("schoolId") UUID schoolId, @Param("codes") Collection<String> codes);
+    List<SchoolGradeLevelJpaEntity> findBySchoolIdAndNameIn(UUID schoolId, Collection<String> names);
 
     @Query("""
         SELECT sgl

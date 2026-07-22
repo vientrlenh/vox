@@ -49,6 +49,9 @@ public class FrameworkResultBandRepositoryImpl implements FrameworkResultBandRep
 
     @Override
     public List<FrameworkResultBand> findByFrameworkVersionIdIn(Collection<UUID> frameworkVersionIds) {
+        if (frameworkVersionIds == null || frameworkVersionIds.isEmpty()) {
+            return List.of();
+        }
         return springDataFrameworkResultBandRepository.findByFrameworkVersionIdIn(frameworkVersionIds)
                 .stream().map(FrameworkResultBandMapper::toDomain).toList();
     }

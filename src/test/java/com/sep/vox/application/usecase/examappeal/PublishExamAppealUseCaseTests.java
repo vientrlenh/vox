@@ -281,6 +281,22 @@ public class PublishExamAppealUseCaseTests {
             .isInstanceOf(IllegalArgumentException.class);
     }
 
+    @Test
+    void should_reject_publish_when_candidate_result_invalidated_for_violation() {
+        // Bài đã bị buộc kết thúc vì phát hiện gian lận muộn -> result INVALID + blockedAt.
+        // Publish phúc khảo KHÔNG được ép RELEASED để "hồi sinh" bài đã bị vô hiệu.
+        var context = contextWith(ExamAppealStatus.COMPARING);
+        context.candidateResult().setStatus(ExamCandidateResultStatus.INVALID);
+        when(examAppealAccessService.load(appealId)).thenReturn(context);
+
+        assertThatThrownBy(() -> useCase.execute(command(new BigDecimal("8.00"), "Đã đối chiếu")))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("vô hiệu");
+
+        verify(examItemEvaluationRepository, never()).save(any());
+        verify(upsertExamCandidateResultUseCase, never()).execute(any(), any());
+    }
+
     // ---- nhiều phần thi trong một đơn --------------------------------------
 
     private AppealContext givenTwoItemAppeal() {

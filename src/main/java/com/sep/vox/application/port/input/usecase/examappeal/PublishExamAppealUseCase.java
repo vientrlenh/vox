@@ -86,6 +86,13 @@ public class PublishExamAppealUseCase implements IUseCase<PublishExamAppealComma
                 "Chỉ có thể công bố khi tất cả giám khảo đã nộp báo cáo chấm lại.");
         }
 
+        // Chặn "hồi sinh" bài đã bị vô hiệu: nếu trong lúc phúc khảo, bài bị buộc kết thúc do
+        // phát hiện vi phạm muộn (result -> INVALID), thì publish KHÔNG được ép về RELEASED.
+        if (context.candidateResult().getStatus() == ExamCandidateResultStatus.INVALID) {
+            throw new IllegalStateException(
+                "Bài thi đã bị vô hiệu do phát hiện vi phạm, không thể công bố phúc khảo.");
+        }
+
         var appealItems = examResultAppealItemRepository.findByAppealId(command.appealId()).stream()
             .collect(Collectors.toMap(ExamResultAppealItem::getId, Function.identity(),
                 (left, right) -> left, LinkedHashMap::new));

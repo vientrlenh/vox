@@ -44,13 +44,10 @@ public class ViewSchoolUserDetailsUseCase implements IUseCase<ViewSchoolUserDeta
             throw new ForbiddenException("Quyền truy cập không hợp lệ");
         }
 
+        // Admin có thể xem cả người dùng đã vô hiệu hóa (DISABLED) — FE có bộ lọc "Hiện người dùng
+        // đã vô hiệu hóa" và cho xem chi tiết. Quyền đã được giới hạn ở SCHOOL_ADMIN/SYSTEM_ADMIN phía trên.
         var schoolUser = schoolUserRepository.findBySchoolIdAndUserId(input.schoolId(), input.userId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng nhà trường theo yêu cầu"));
-
-        // Không trả về người dùng đã bị xóa mềm (DISABLED)
-        if (userRepository.existsByIdAndStatus(input.userId(), UserStatus.DISABLED)) {
-            throw new NotFoundException("Không tìm thấy người dùng nhà trường theo yêu cầu");
-        }
 
         return SchoolUserDtoMapper.toSchoolUserDto(schoolUser);
     }

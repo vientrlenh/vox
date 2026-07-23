@@ -115,22 +115,6 @@ public class ViewSchoolUserUseCaseTests {
         assertThrows(NotFoundException.class, () -> viewSchoolUserUseCase.execute(query));
     }
 
-    @Test
-    void view_should_throw_when_target_user_soft_deleted() {
-        var schoolUserId = UUID.randomUUID();
-        var schoolUser = schoolUser(schoolUserId, schoolId, targetId);
-        var query = new ViewSchoolUserDetailsQuery(schoolId, targetId);
-
-        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
-        when(userRepository.existsByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(true);
-        when(userContextPort.isSystemAdmin()).thenReturn(false);
-        when(schoolUserRepository.existsBySchoolIdAndUserId(schoolId, callerId)).thenReturn(true);
-        when(schoolUserRepository.findBySchoolIdAndUserId(schoolId, targetId)).thenReturn(Optional.of(schoolUser));
-        when(userRepository.existsByIdAndStatus(targetId, UserStatus.DISABLED)).thenReturn(true);
-
-        assertThrows(NotFoundException.class, () -> viewSchoolUserUseCase.execute(query));
-    }
-
     private SchoolUser schoolUser(UUID id, UUID userSchoolId, UUID userId) {
         var now = OffsetDateTime.now();
         return new SchoolUser(id, userSchoolId, userId, now, now.plusYears(1));

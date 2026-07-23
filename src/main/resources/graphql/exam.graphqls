@@ -75,6 +75,15 @@ enum ExamSecurePoolReleaseMode {
     AUTO_AFTER_CLOSE
 }
 
+enum ExamSessionStatus {
+    IN_PROGRESS
+    SUBMITTED
+    GRADING
+    GRADED
+    EXPIRED
+    GRADING_FAILED
+}
+
 enum ExamRecordingStreamType {
     CAMERA 
     SCREEN
@@ -367,7 +376,7 @@ enum ExamCandidateResultStatus {
     RETAKE_REQUIRED
 }
 
-type ExamRecording {
+type ExamItemResponse {
     id: ID!
     exam: Exam
     audioUrl: String!
@@ -418,6 +427,9 @@ extend type Query {
 
     examCandidates(examId: ID!, scheduleId: ID, status: ExamCandidateStatus): [ExamCandidate!]! 
     records(examSessionId: ID!, streamType: ExamRecordingStreamType): [ExamRecording!]!
+
+    myRecordings: [ExamItemResponse!]!
+    myExamResults(page: Int = 0, size: Int = 20): ExamCandidateResultPage!
 }
 
 extend type Mutation {

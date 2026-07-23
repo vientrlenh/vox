@@ -245,7 +245,7 @@ public class SampleSchoolDataInitializer implements ApplicationRunner {
     private UUID resolveSystemAdminId() {
         return roleRepository.findByCode(SYSTEM_ADMIN_ROLE_CODE)
             .flatMap(role -> userRoleRepository.findByRoleId(role.getId()).stream().findFirst())
-            .map(UserRole::getUserId)
+            .map(ur -> ur.getUserId())
             .orElse(null);
     }
 

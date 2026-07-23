@@ -47,7 +47,7 @@ public class ExamRecordingJpaEntity {
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
             name = "chk_exam_recordings_status_valid", 
-            constraint = "status IN ('PROCESSING', 'READY', 'PARTIAL', 'FAILED', ABANDONED)"
+            constraint = "status IN ('PROCESSING', 'READY', 'PARTIAL', 'FAILED', 'ABANDONED')"
         )
     })
     private String status;

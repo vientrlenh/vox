@@ -246,13 +246,13 @@ public class RubricController {
     @Operation(summary = "Thêm mới danh sách Rubric Version bằng tay (Form UI)")
     @PostMapping("/system/rubrics/{rubricId}/versions")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public ResponseEntity<ApiResponse<UUID>> addSystemRubricVersions(
+    public ResponseEntity<ApiResponse<List<UUID>>> addSystemRubricVersions(
             @PathVariable("rubricId") UUID rubricId,
             @Valid @RequestBody AddRubricVersionsRequest request
     ) {
         var command = AddRubricVersionsCommandMapper.fromSystemRequest(rubricId, request);
-        var addedCount = addSystemRubricVersionsUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Đã thêm thành công rubric version vào : " + addedCount + ".", addedCount));
+        var newVersionIds = addSystemRubricVersionsUseCase.execute(command);
+        return ResponseEntity.ok(ApiResponse.success("Đã thêm thành công " + newVersionIds.size() + " phiên bản mới vào Rubric.", newVersionIds));
     }
 
     // Tạo Rubric của trường
@@ -300,14 +300,14 @@ public class RubricController {
     @Operation(summary = "Thêm mới danh sách Rubric Version bằng tay (Form UI) cho Trường học")
     @PostMapping("/schools/{schoolId}/rubrics/{rubricId}/versions")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<UUID>> addSchoolRubricVersions(
+    public ResponseEntity<ApiResponse<List<UUID>>> addSchoolRubricVersions(
             @PathVariable("schoolId") UUID schoolId,
             @PathVariable("rubricId") UUID rubricId,
             @Valid @RequestBody AddRubricVersionsRequest request
     ) {
         var command = AddRubricVersionsCommandMapper.fromSchoolRequest(schoolId, rubricId, request);
-        var addedCount = addSchoolRubricVersionsUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Đã thêm thành công " + addedCount + " phiên bản mới vào Rubric của trường học.", addedCount));
+        var newVersionIds = addSchoolRubricVersionsUseCase.execute(command);
+        return ResponseEntity.ok(ApiResponse.success("Đã thêm thành công " + newVersionIds.size() + " phiên bản mới vào Rubric của trường học.", newVersionIds));
     }
 
 

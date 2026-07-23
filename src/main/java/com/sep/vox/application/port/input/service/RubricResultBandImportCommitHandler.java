@@ -8,14 +8,14 @@ import com.sep.vox.domain.model.rubric.RubricStatus;
 import com.sep.vox.domain.repository.RubricResultBandRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Component
+@Service
 public class RubricResultBandImportCommitHandler implements ImportCommitHandler {
 
     private final RubricResultBandRepository rubricResultBandRepository;

@@ -22,6 +22,7 @@ public interface SchoolGradeRepository {
     boolean existsBySchoolGradeLevelIdAndCode(UUID schoolGradeLevelId, String code);
     Optional<SchoolGrade> findBySchoolGradeLevelIdAndCode(UUID schoolGradeLevelId, String code);
     List<SchoolGrade> findBySchoolIdAndCodeIn(UUID schoolId, Collection<String> codes);
+    List<SchoolGrade> findBySchoolIdAndNameIn(UUID schoolId, Collection<String> names);
 
     boolean existsBySchoolGradeLevelId(UUID schoolGradeLevelId);
 

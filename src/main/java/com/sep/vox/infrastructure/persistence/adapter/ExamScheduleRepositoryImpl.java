@@ -97,5 +97,14 @@ public class ExamScheduleRepositoryImpl implements ExamScheduleRepository {
         return springDataExamScheduleRepository.findByIdAndInSchedule(id, now)
             .map(ExamScheduleMapper::toDomain);
     }
+
+    @Override
+    public List<ExamSchedule> findByIdInAndInScheduleAndSchoolId(Collection<UUID> ids, OffsetDateTime now,
+            UUID schoolId) {
+        return springDataExamScheduleRepository.findByIdInAndInScheduleAndSchoolId(ids, now, schoolId)
+                .stream()
+                .map(ExamScheduleMapper::toDomain)
+                .toList();
+    }
     
 }

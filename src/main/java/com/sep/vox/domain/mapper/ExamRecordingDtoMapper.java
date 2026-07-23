@@ -1,35 +1,21 @@
 package com.sep.vox.domain.mapper;
 
-import java.time.OffsetDateTime;
-import java.util.List;
-
 import com.sep.vox.domain.dto.ExamRecordingDto;
-import com.sep.vox.domain.repository.ExamRecordingEntry;
+import com.sep.vox.domain.model.exam.ExamRecording;
 
 public final class ExamRecordingDtoMapper {
-
-    private ExamRecordingDtoMapper() {
-    }
-
-    public static ExamRecordingDto toDto(ExamRecordingEntry entry) {
-        var domain = entry.response();
+    
+    public static ExamRecordingDto toDto(ExamRecording recording) {
         return new ExamRecordingDto(
-            domain.getId(),
-            entry.examId(),
-            domain.getAudioUrl(),
-            domain.getDurationSeconds(),
-            domain.getTranscript(),
-            valueOf(domain.getSubmittedAt())
+            recording.getId(), 
+            recording.getExamSessionId(), 
+            recording.getCandidateId(), 
+            recording.getStreamType().name(), 
+            recording.getStatus().name(), 
+            recording.getSizeBytes(), 
+            recording.getDurationSeconds(), 
+            recording.getCreatedAt().toString(), 
+            recording.getAssembledAt().toString()
         );
-    }
-
-    public static List<ExamRecordingDto> toDtoList(List<ExamRecordingEntry> entries) {
-        return entries.stream()
-            .map(ExamRecordingDtoMapper::toDto)
-            .toList();
-    }
-
-    private static String valueOf(OffsetDateTime value) {
-        return value == null ? null : value.toString();
     }
 }

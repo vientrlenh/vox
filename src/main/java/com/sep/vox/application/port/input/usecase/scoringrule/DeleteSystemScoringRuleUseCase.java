@@ -49,29 +49,42 @@ public class DeleteSystemScoringRuleUseCase implements IUseCase<DeleteScoringRul
             throw new UnauthorizedException("Tài khoản đã bị khóa.");
         }
 
-        // 2. Kiểm tra Scoring Rule tồn tại
-        ScoringRule rule = scoringRuleRepository.findById(command.ruleId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Scoring Rule."));
-
-        // 3. BẢO MẬT: policyId trên path phải khớp với policyId thật sự của rule
-        if (!rule.getPolicyId().equals(command.policyId())) {
-            throw new ForbiddenException("BẢO MẬT: Scoring Rule này không thuộc Assessment Policy đã chỉ định.");
-        }
+        // 2-3. Kiểm tra Scoring Rule tồn tại và policyId trên path khớp với policy thật sự của rule
+        ScoringRule rule = requireRuleForPolicy(command.ruleId(), command.policyId());
 
         // 4. Kiểm tra Assessment Policy tồn tại và thuộc phạm vi toàn hệ thống
-        AssessmentPolicy policy = assessmentPolicyRepository.findById(rule.getPolicyId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Assessment Policy."));
+        AssessmentPolicy policy = requirePolicy(rule.getPolicyId());
         if (policy.getSchoolId() != null) {
             throw new ForbiddenException("Không thể can thiệp vào Assessment Policy của trường học.");
         }
 
         // 5. Chỉ được xóa Scoring Rule khi Policy còn DRAFT (tránh xóa ngầm luật chấm điểm
         // của 1 Policy đã PUBLISHED đang chấm bài thi thật)
-        if (policy.getStatus() != AssessmentPolicyStatus.DRAFT) {
-            throw new IllegalStateException("Chỉ được xóa Scoring Rule khi Assessment Policy đang ở trạng thái DRAFT.");
-        }
+        requireDraftStatus(policy);
 
         scoringRuleRepository.deleteById(rule.getId());
         return null;
+    }
+
+    private ScoringRule requireRuleForPolicy(UUID ruleId, UUID policyId) {
+        ScoringRule rule = scoringRuleRepository.findById(ruleId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy Scoring Rule."));
+        if (!rule.getPolicyId().equals(policyId)) {
+            throw new ForbiddenException("BẢO MẬT: Scoring Rule này không thuộc Assessment Policy đã chỉ định.");
+        }
+        return rule;
+    }
+
+    private AssessmentPolicy requirePolicy(UUID policyId) {
+        return assessmentPolicyRepository.findById(policyId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy Assessment Policy."));
+    }
+
+    // Chỉ được xóa Scoring Rule khi Policy còn DRAFT (tránh xóa ngầm luật chấm điểm
+    // của 1 Policy đã PUBLISHED đang chấm bài thi thật). Gọi sau khi đã kiểm tra quyền sở hữu/phạm vi.
+    private void requireDraftStatus(AssessmentPolicy policy) {
+        if (policy.getStatus() != AssessmentPolicyStatus.DRAFT) {
+            throw new IllegalStateException("Chỉ được xóa Scoring Rule khi Assessment Policy đang ở trạng thái DRAFT.");
+        }
     }
 }

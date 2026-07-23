@@ -1,5 +1,6 @@
 package com.sep.vox.domain.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -13,4 +14,5 @@ public interface ExamScheduleProctorRepository {
     boolean existsByScheduleIdAndTeacherId(UUID scheduleId, UUID teacherId);
     long countByScheduleId(UUID scheduleId);
     void deleteById(UUID id);
+    List<UUID> findScheduleIdsByTeacherIdAndScheduleIdIn(UUID teacherId, Collection<UUID> scheduleIds);
 }

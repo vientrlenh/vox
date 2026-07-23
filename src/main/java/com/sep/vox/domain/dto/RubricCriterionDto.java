@@ -4,8 +4,6 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-import com.sep.vox.domain.valueobject.rubric.RubricCriterionExamples;
-
 public record RubricCriterionDto(
         UUID id,
         UUID rubricVersionId,

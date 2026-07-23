@@ -5,28 +5,26 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.domain.repository.ExamRecordingEntry;
+import com.sep.vox.domain.model.exam.ExamRecording;
 import com.sep.vox.domain.repository.ExamRecordingRepository;
-import com.sep.vox.infrastructure.persistence.entity.ExamItemResponseJpaEntity;
-import com.sep.vox.infrastructure.persistence.mapper.ExamItemResponseMapper;
-import com.sep.vox.infrastructure.persistence.repository.SpringDataExamItemResponseRepository;
+import com.sep.vox.infrastructure.persistence.mapper.ExamRecordingMapper;
+import com.sep.vox.infrastructure.persistence.repository.SpringDataExamRecordingRepository;
 
 @Repository
 public class ExamRecordingRepositoryImpl implements ExamRecordingRepository {
 
-    private final SpringDataExamItemResponseRepository springDataExamItemResponseRepository;
+    private final SpringDataExamRecordingRepository springDataExamRecordingRepository;
 
-    public ExamRecordingRepositoryImpl(
-            SpringDataExamItemResponseRepository springDataExamItemResponseRepository) {
-        this.springDataExamItemResponseRepository = springDataExamItemResponseRepository;
+    public ExamRecordingRepositoryImpl(SpringDataExamRecordingRepository springDataExamRecordingRepository) {
+        this.springDataExamRecordingRepository = springDataExamRecordingRepository;
     }
 
     @Override
-    public List<ExamRecordingEntry> findByStudentIdWithAudio(UUID studentId) {
-        return springDataExamItemResponseRepository.findByStudentIdWithAudio(studentId).stream()
-            .map(row -> new ExamRecordingEntry(
-                ExamItemResponseMapper.toDomain((ExamItemResponseJpaEntity) row[0]),
-                (UUID) row[1]))
+    public List<ExamRecording> findByExamSessionId(UUID examSessionId) {
+        return springDataExamRecordingRepository.findByExamSessionId(examSessionId)
+            .stream()
+            .map(ExamRecordingMapper::toDomain)
             .toList();
     }
+    
 }

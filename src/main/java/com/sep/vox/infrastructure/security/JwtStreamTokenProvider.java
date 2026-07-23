@@ -1,9 +1,11 @@
 package com.sep.vox.infrastructure.security;
 
+import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 
 import javax.crypto.SecretKey;
 
@@ -22,14 +24,15 @@ public class JwtStreamTokenProvider implements StreamTokenProvider {
     private String secret;
 
     @Override
-    public String generateToken(String userId, List<String> roomIds, String examId, List<String> roles,
+    public String generateStreamToken(String userId, String candidateId, String scheduleId, String examId, String sessionId,
             List<String> streamTypes, OffsetDateTime windowStart, OffsetDateTime windowEnd) {
         var claims = new HashMap<String, Object>();
-        claims.put("userId", userId);
-        claims.put("roomIds", roomIds);
+        claims.put("candidateId", candidateId);
+        claims.put("scheduleId", scheduleId);
         claims.put("examId", examId);
-        claims.put("roles", roles);
+        claims.put("sessionId", sessionId);
         claims.put("streamTypes", streamTypes);
+        claims.put("tokenUse", "stream");
 
         return Jwts.builder()
                 .claims(claims)
@@ -41,8 +44,28 @@ public class JwtStreamTokenProvider implements StreamTokenProvider {
                 .compact();
     }
 
+    public String generateMonitorToken(String userId, String schoolId, String examId, String monitorScope, List<String> scheduleIds, List<String> roles, OffsetDateTime windowStart, OffsetDateTime windowEnd) {
+        var claims = new HashMap<String, Object>();
+        claims.put("userId", userId);
+        claims.put("schoolId", schoolId);
+        claims.put("examId", examId);
+        claims.put("monitorScope", monitorScope);
+        claims.put("scheduleIds", scheduleIds);
+        claims.put("roles", roles);
+        claims.put("tokenUse", "monitor");
+        return Jwts.builder()
+            .claims(claims)
+            .subject(userId)
+            .id(UUID.randomUUID().toString())
+            .issuedAt(new Date())
+            .notBefore(Date.from(windowStart.toInstant()))
+            .expiration(Date.from(windowEnd.toInstant()))
+            .signWith(getSecretKey(secret))
+            .compact();
+    }
+
     private SecretKey getSecretKey(String secret) {
-        return Keys.hmacShaKeyFor(secret.getBytes());
+        return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
     
 }

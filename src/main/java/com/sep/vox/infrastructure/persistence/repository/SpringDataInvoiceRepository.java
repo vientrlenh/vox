@@ -13,4 +13,5 @@ public interface SpringDataInvoiceRepository extends JpaRepository<InvoiceJpaEnt
     List<InvoiceJpaEntity> findAllBySubscriptionId(UUID subscriptionId);
     List<InvoiceJpaEntity> findAllBySubscriptionIdIn(Collection<UUID> subscriptionIds);
     Optional<InvoiceJpaEntity> findByPayosOrderCode(Long payosOrderCode);
+    List<InvoiceJpaEntity> findAllByStatus(String status);
 }

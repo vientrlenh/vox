@@ -10,7 +10,6 @@ public record UpdateAssessmentPolicyCommand(
         UUID schoolId, // null cho System Admin
         UUID policyId,
         UUID targetFrameworkBandId,
-        UUID minimumFrameworkBandId,
         BigDecimal passingScore,
         AssessmentPolicyStrictness strictness,
         OffsetDateTime effectiveFrom,

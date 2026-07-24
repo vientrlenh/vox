@@ -70,6 +70,7 @@ public class CreatePaymentLinkForRenewalUseCase implements IUseCase<RenewSubscri
 
         var invoice = invoiceRepository.save(new Invoice(
             invoiceNumber,
+            subscription.getSchoolId(),
             subscription.getId(),
             InvoiceSourceType.SUBSCRIPTION,
             subscription.getId(),

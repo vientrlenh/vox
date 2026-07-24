@@ -8,6 +8,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.subscription.Invoice;
+import com.sep.vox.domain.model.subscription.InvoiceStatus;
 import com.sep.vox.domain.repository.InvoiceRepository;
 import com.sep.vox.infrastructure.persistence.mapper.InvoiceMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataInvoiceRepository;
@@ -50,5 +51,12 @@ public class InvoiceRepositoryImpl implements InvoiceRepository {
     @Override
     public Optional<Invoice> findByPayosOrderCode(Long payosOrderCode) {
         return springDataInvoiceRepository.findByPayosOrderCode(payosOrderCode).map(InvoiceMapper::toDomain);
+    }
+
+    @Override
+    public List<Invoice> findAllByStatus(InvoiceStatus status) {
+        return springDataInvoiceRepository.findAllByStatus(status.name()).stream()
+            .map(InvoiceMapper::toDomain)
+            .toList();
     }
 }

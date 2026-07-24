@@ -14,7 +14,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.output.PayOSPort;
+import com.sep.vox.application.response.output.PaymentLinkRemoteStatus;
 import com.sep.vox.application.response.output.PaymentLinkResult;
+import com.sep.vox.application.response.output.PaymentLinkStatusResult;
 
 import vn.payos.PayOS;
 import vn.payos.exception.WebhookException;
@@ -60,6 +62,12 @@ public class PayOSService implements PayOSPort {
             .build();
         var response = payOSClient.paymentRequests().create(paymentLinkRequest);
         return new PaymentLinkResult(response.getPaymentLinkId(), response.getCheckoutUrl());
+    }
+
+    @Override
+    public PaymentLinkStatusResult getPaymentLinkStatus(long orderCode) {
+        var paymentLink = payOSClient.paymentRequests().get(orderCode);
+        return new PaymentLinkStatusResult(PaymentLinkRemoteStatus.valueOf(paymentLink.getStatus().name()));
     }
 
     private String computeSignature(Map<String, Object> data) {

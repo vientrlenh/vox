@@ -116,6 +116,7 @@ public class BuyTokensUseCase implements IUseCase<BuyTokensCommand, TokenPurchas
         invoiceRepository.save(new Invoice(
             // TODO: add a DB sequence about the invoice sequence
             "INV-" + Year.now() + "-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase(),
+            input.schoolId(),
             subscription.getId(),
             InvoiceSourceType.TOKEN_PURCHASE,
             savedPurchase.getId(),

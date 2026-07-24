@@ -35,9 +35,7 @@ public class JpaInvoiceQueryRepository implements InvoiceQueryRepository {
                 i.checkoutUrl,
                 str(i.paidAt))
             FROM InvoiceJpaEntity i
-            WHERE i.subscriptionId IN (
-                SELECT s.id FROM SchoolSubscriptionJpaEntity s WHERE s.schoolId = :schoolId
-            )
+            WHERE i.schoolId = :schoolId
             ORDER BY i.issueDate DESC
         """, InvoiceDto.class)
             .setParameter("schoolId", schoolId)
@@ -48,9 +46,7 @@ public class JpaInvoiceQueryRepository implements InvoiceQueryRepository {
         var total = em.createQuery("""
             SELECT COUNT(i)
             FROM InvoiceJpaEntity i
-            WHERE i.subscriptionId IN (
-                SELECT s.id FROM SchoolSubscriptionJpaEntity s WHERE s.schoolId = :schoolId
-            )
+            WHERE i.schoolId = :schoolId
         """, Long.class)
             .setParameter("schoolId", schoolId)
             .getSingleResult();

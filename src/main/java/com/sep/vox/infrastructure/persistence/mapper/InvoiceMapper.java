@@ -13,6 +13,7 @@ public final class InvoiceMapper {
         return new Invoice(
             jpa.getId(),
             jpa.getInvoiceNumber(),
+            jpa.getSchoolId(),
             jpa.getSubscriptionId(),
             InvoiceSourceType.valueOf(jpa.getSourceType()),
             jpa.getSourceId(),
@@ -30,6 +31,7 @@ public final class InvoiceMapper {
         return new InvoiceJpaEntity(
             domain.getId(),
             domain.getInvoiceNumber(),
+            domain.getSchoolId(),
             domain.getSubscriptionId(),
             domain.getSourceType().name(),
             domain.getSourceId(),

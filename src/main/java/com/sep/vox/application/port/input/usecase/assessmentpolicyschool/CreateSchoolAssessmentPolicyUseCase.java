@@ -145,13 +145,8 @@ public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<Create
             // 5. Validate Band
             FrameworkResultBand targetBand = frameworkResultBandRepository.findById(command.targetFrameworkBandId())
                     .orElseThrow(() -> new NotFoundException("Không tìm thấy Band mục tiêu."));
-            FrameworkResultBand minimumBand = frameworkResultBandRepository.findById(command.minimumFrameworkBandId())
-                    .orElseThrow(() -> new NotFoundException("Không tìm thấy Band tối thiểu."));
-            if (!targetBand.getFrameworkVersionId().equals(command.frameworkVersionId()) || !minimumBand.getFrameworkVersionId().equals(command.frameworkVersionId())) {
-                throw new IllegalStateException("Band mục tiêu/tối thiểu phải thuộc đúng Khung năng lực đang chọn.");
-            }
-            if (minimumBand.getOrder() > targetBand.getOrder()) {
-                throw new IllegalStateException("Band tối thiểu không được cao hơn Band mục tiêu.");
+            if (!targetBand.getFrameworkVersionId().equals(command.frameworkVersionId())) {
+                throw new IllegalStateException("Band mục tiêu phải thuộc đúng Khung năng lực đang chọn.");
             }
 
             // 6. Validate Date
@@ -208,7 +203,7 @@ public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<Create
                         schoolId, command.schoolGradeLevelId(), command.schoolGradeId(), command.schoolClassId(),
                         command.languageId(), command.frameworkVersionId(),
                         rubricVersionId, // Gắn ID từ vòng lặp
-                        command.targetFrameworkBandId(), command.minimumFrameworkBandId(),
+                        command.targetFrameworkBandId(),
                         command.passingScore(), strictness, nextVersion, AssessmentPolicyStatus.DRAFT,
                         command.effectiveFrom(), command.effectiveTo(),
                         now, now, currentUserId, currentUserId

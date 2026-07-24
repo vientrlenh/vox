@@ -23,9 +23,6 @@ public record CreateSystemAssessmentPolicyRequest(
         @NotNull(message = "Band mục tiêu không được để trống")
         UUID targetFrameworkBandId,
 
-        @NotNull(message = "Band tối thiểu không được để trống")
-        UUID minimumFrameworkBandId,
-
         @DecimalMin(value = "0.0", message = "Điểm đạt phải lớn hơn hoặc bằng 0")
         BigDecimal passingScore,
 

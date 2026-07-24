@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.subscription;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.Year;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -19,7 +20,9 @@ import com.sep.vox.domain.dto.PaymentLinkDto;
 import com.sep.vox.domain.model.subscription.Invoice;
 import com.sep.vox.domain.model.subscription.InvoiceSourceType;
 import com.sep.vox.domain.model.subscription.InvoiceStatus;
+import com.sep.vox.domain.model.subscription.PlanQuota;
 import com.sep.vox.domain.model.subscription.PurchaseStatus;
+import com.sep.vox.domain.model.subscription.QuotaType;
 import com.sep.vox.domain.model.subscription.SubscriptionStatus;
 import com.sep.vox.domain.model.subscription.TokenPurchase;
 import com.sep.vox.domain.model.subscription.TokenPurchaseItem;
@@ -75,30 +78,31 @@ public class CreatePaymentLinkForTokenPurchaseUseCase implements IUseCase<BuyTok
 
         var planQuotas = planQuotaRepository.findAllByPlanId(subscription.getPlanId());
         var now = OffsetDateTime.now();
+
         var total = BigDecimal.ZERO;
-
-        var purchase = tokenPurchaseRepository.save(new TokenPurchase(subscription.getId(), BigDecimal.ZERO, PurchaseStatus.PENDING, now));
-
         for (var item : input.items()) {
-            var planQuota = planQuotas.stream()
-                .filter(pq -> pq.getQuotaType() == item.quotaType())
-                .findFirst()
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn giá cho loại quota này"));
-            var subtotal = planQuota.getTokenUnitPrice().multiply(BigDecimal.valueOf(item.quantity()));
-            total = total.add(subtotal);
-
-            tokenPurchaseItemRepository.save(new TokenPurchaseItem(
-                purchase.getId(), item.quotaType(), item.quantity(), planQuota.getTokenUnitPrice(), subtotal
-            ));
+            var planQuota = findPlanQuota(planQuotas, item.quotaType());
+            total = total.add(planQuota.getTokenUnitPrice().multiply(BigDecimal.valueOf(item.quantity())));
         }
 
-        purchase.setTotalAmount(total);
-        var savedPurchase = tokenPurchaseRepository.save(purchase);
+        // total_amount không cho update sau khi tạo (xem TokenPurchaseJpaEntity), nên phải tính total
+        // trước rồi insert một lần với giá trị cuối cùng, không được insert 0 rồi set lại.
+        var savedPurchase = tokenPurchaseRepository.save(new TokenPurchase(subscription.getId(), total, PurchaseStatus.PENDING, now));
+
+        for (var item : input.items()) {
+            var planQuota = findPlanQuota(planQuotas, item.quotaType());
+            var subtotal = planQuota.getTokenUnitPrice().multiply(BigDecimal.valueOf(item.quantity()));
+
+            tokenPurchaseItemRepository.save(new TokenPurchaseItem(
+                savedPurchase.getId(), item.quotaType(), item.quantity(), planQuota.getTokenUnitPrice(), subtotal
+            ));
+        }
 
         var orderCode = System.currentTimeMillis() * 1000 + ThreadLocalRandom.current().nextInt(1000);
         var invoiceNumber = "INV-" + Year.now() + "-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         var invoice = invoiceRepository.save(new Invoice(
             invoiceNumber,
+            subscription.getSchoolId(),
             subscription.getId(),
             InvoiceSourceType.TOKEN_PURCHASE,
             savedPurchase.getId(),
@@ -118,5 +122,12 @@ public class CreatePaymentLinkForTokenPurchaseUseCase implements IUseCase<BuyTok
         var savedInvoice = invoiceRepository.save(invoice);
 
         return new PaymentLinkDto(savedInvoice.getId(), orderCode, result.paymentLinkId(), result.checkoutUrl());
+    }
+
+    private PlanQuota findPlanQuota(List<PlanQuota> planQuotas, QuotaType quotaType) {
+        return planQuotas.stream()
+            .filter(pq -> pq.getQuotaType() == quotaType)
+            .findFirst()
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn giá cho loại quota này"));
     }
 }

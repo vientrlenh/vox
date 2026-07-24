@@ -72,6 +72,7 @@ public class CreatePaymentLinkForSubscriptionRequestUseCase
 
         var invoice = invoiceRepository.save(new Invoice(
             invoiceNumber,
+            request.getSchoolId(),
             existingSubscriptionId,
             InvoiceSourceType.SUBSCRIPTION_REQUEST,
             request.getId(),

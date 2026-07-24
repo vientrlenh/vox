@@ -32,6 +32,8 @@ import com.sep.vox.application.port.input.usecase.subscription.CreatePlanUseCase
 import com.sep.vox.application.port.input.usecase.subscription.RejectRequestUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.RenewSubscriptionUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.SubmitRequestUseCase;
+import com.sep.vox.application.port.input.usecase.subscription.SyncInvoicePaymentStatusUseCase;
+import com.sep.vox.domain.dto.InvoiceDto;
 import com.sep.vox.domain.dto.PaymentLinkDto;
 import com.sep.vox.domain.dto.SchoolSubscriptionDto;
 import com.sep.vox.domain.dto.SubscriptionPlanDto;
@@ -63,6 +65,7 @@ public class SubscriptionController {
     private final CreatePaymentLinkForSubscriptionRequestUseCase createPaymentLinkForSubscriptionRequestUseCase;
     private final CreatePaymentLinkForTokenPurchaseUseCase createPaymentLinkForTokenPurchaseUseCase;
     private final CreatePaymentLinkForRenewalUseCase createPaymentLinkForRenewalUseCase;
+    private final SyncInvoicePaymentStatusUseCase syncInvoicePaymentStatusUseCase;
 
     public SubscriptionController(
             CreatePlanUseCase createPlanUseCase,
@@ -76,7 +79,8 @@ public class SubscriptionController {
             ConsumeQuotaUseCase consumeQuotaUseCase,
             CreatePaymentLinkForSubscriptionRequestUseCase createPaymentLinkForSubscriptionRequestUseCase,
             CreatePaymentLinkForTokenPurchaseUseCase createPaymentLinkForTokenPurchaseUseCase,
-            CreatePaymentLinkForRenewalUseCase createPaymentLinkForRenewalUseCase) {
+            CreatePaymentLinkForRenewalUseCase createPaymentLinkForRenewalUseCase,
+            SyncInvoicePaymentStatusUseCase syncInvoicePaymentStatusUseCase) {
         this.createPlanUseCase = createPlanUseCase;
         this.archivePlanUseCase = archivePlanUseCase;
         this.renewSubscriptionUseCase = renewSubscriptionUseCase;
@@ -89,6 +93,7 @@ public class SubscriptionController {
         this.createPaymentLinkForSubscriptionRequestUseCase = createPaymentLinkForSubscriptionRequestUseCase;
         this.createPaymentLinkForTokenPurchaseUseCase = createPaymentLinkForTokenPurchaseUseCase;
         this.createPaymentLinkForRenewalUseCase = createPaymentLinkForRenewalUseCase;
+        this.syncInvoicePaymentStatusUseCase = syncInvoicePaymentStatusUseCase;
     }
 
     @PostMapping("/plans")
@@ -185,6 +190,15 @@ public class SubscriptionController {
             @Valid @RequestBody BuyTokensRequest request) {
         var data = createPaymentLinkForTokenPurchaseUseCase.execute(BuyTokensCommandMapper.fromRequest(schoolId, request));
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Tạo link thanh toán thành công", data));
+    }
+
+    // PAYOS — FE gọi khi PayOS redirect user về returnUrl/cancelUrl, vì PayOS không gọi webhook
+    // trong các trường hợp user tự hủy/không hoàn tất thanh toán trên checkout UI.
+    @PostMapping("/invoices/{orderCode}/sync-status")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
+    public ResponseEntity<ApiResponse<InvoiceDto>> syncInvoicePaymentStatus(@PathVariable Long orderCode) {
+        var data = syncInvoicePaymentStatusUseCase.execute(orderCode);
+        return ResponseEntity.ok(ApiResponse.success("Đồng bộ trạng thái hóa đơn thành công", data));
     }
 
     @PostMapping("/internal/subscriptions/consume")

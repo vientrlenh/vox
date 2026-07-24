@@ -7,7 +7,6 @@ import java.util.UUID;
 
 public record UpdateAssessmentPolicyInput(
         UUID targetFrameworkBandId,
-        UUID minimumFrameworkBandId,
         BigDecimal passingScore,
         AssessmentPolicyStrictness strictness,
         String effectiveFrom,

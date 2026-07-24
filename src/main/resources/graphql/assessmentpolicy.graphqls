@@ -6,7 +6,6 @@ enum AssessmentPolicyStrictness {
 
 input UpdateAssessmentPolicyInput {
     targetFrameworkBandId: ID!
-    minimumFrameworkBandId: ID!
     passingScore: Float
     strictness: AssessmentPolicyStrictness
     effectiveFrom: String!
@@ -25,7 +24,6 @@ type AssessmentPolicy {
     frameworkVersionId: ID!
     rubricVersionId: ID!
     targetFrameworkBandId: ID!
-    minimumFrameworkBandId: ID!
     passingScore: Float
     strictness: AssessmentPolicyStrictness!
     version: Int!
@@ -43,7 +41,6 @@ type AssessmentPolicy {
     frameworkVersion: FrameworkVersion
     rubricVersion: RubricVersion
     targetFrameworkBand: FrameworkResultBand
-    minimumFrameworkBand: FrameworkResultBand
 }
 
 type AssessmentPolicyPage {

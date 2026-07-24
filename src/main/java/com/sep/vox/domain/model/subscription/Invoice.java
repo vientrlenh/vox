@@ -8,6 +8,7 @@ import java.util.UUID;
 public class Invoice {
     private UUID id;
     private String invoiceNumber;
+    private UUID schoolId;
     private UUID subscriptionId;
     private InvoiceSourceType sourceType;
     private UUID sourceId;
@@ -21,11 +22,12 @@ public class Invoice {
 
     public Invoice() {}
 
-    public Invoice(UUID id, String invoiceNumber, UUID subscriptionId, InvoiceSourceType sourceType, UUID sourceId,
+    public Invoice(UUID id, String invoiceNumber, UUID schoolId, UUID subscriptionId, InvoiceSourceType sourceType, UUID sourceId,
             LocalDate issueDate, BigDecimal amount, InvoiceStatus status, Long payosOrderCode, String paymentLinkId,
             String checkoutUrl, OffsetDateTime paidAt) {
         this.id = id;
         this.invoiceNumber = invoiceNumber;
+        this.schoolId = schoolId;
         this.subscriptionId = subscriptionId;
         this.sourceType = sourceType;
         this.sourceId = sourceId;
@@ -38,10 +40,11 @@ public class Invoice {
         this.paidAt = paidAt;
     }
 
-    public Invoice(String invoiceNumber, UUID subscriptionId, InvoiceSourceType sourceType, UUID sourceId,
+    public Invoice(String invoiceNumber, UUID schoolId, UUID subscriptionId, InvoiceSourceType sourceType, UUID sourceId,
             LocalDate issueDate, BigDecimal amount, InvoiceStatus status, Long payosOrderCode, String paymentLinkId,
             String checkoutUrl, OffsetDateTime paidAt) {
         this.invoiceNumber = invoiceNumber;
+        this.schoolId = schoolId;
         this.subscriptionId = subscriptionId;
         this.sourceType = sourceType;
         this.sourceId = sourceId;
@@ -68,6 +71,14 @@ public class Invoice {
 
     public void setInvoiceNumber(String invoiceNumber) {
         this.invoiceNumber = invoiceNumber;
+    }
+
+    public UUID getSchoolId() {
+        return schoolId;
+    }
+
+    public void setSchoolId(UUID schoolId) {
+        this.schoolId = schoolId;
     }
 
     public UUID getSubscriptionId() {

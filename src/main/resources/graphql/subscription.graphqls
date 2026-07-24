@@ -42,6 +42,7 @@ enum InvoiceStatus {
     PAID
     PENDING
     FAILED
+    CANCELLED
 }
 
 enum FinancialEventType {

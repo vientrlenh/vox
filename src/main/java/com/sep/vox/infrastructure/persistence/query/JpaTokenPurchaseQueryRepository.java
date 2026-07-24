@@ -43,7 +43,7 @@ public class JpaTokenPurchaseQueryRepository implements TokenPurchaseQueryReposi
             return List.of();
         }
 
-        var purchaseIds = purchases.stream().map(p -> p.id()).toList();
+        var purchaseIds = purchases.stream().map(TokenPurchaseRowDto::id).toList();
         var itemsByPurchaseId = em.createQuery("""
             SELECT new com.sep.vox.domain.dto.TokenPurchaseItemDto(
                 i.id, 
@@ -58,7 +58,7 @@ public class JpaTokenPurchaseQueryRepository implements TokenPurchaseQueryReposi
             .setParameter("purchaseIds", purchaseIds)
             .getResultList()
             .stream()
-            .collect(Collectors.groupingBy(i -> i.purchaseId()));
+            .collect(Collectors.groupingBy(TokenPurchaseItemDto::purchaseId));
 
         return purchases.stream()
             .map(row -> new TokenPurchaseDto(

@@ -14,7 +14,6 @@ public record AssessmentPolicyDto(
         UUID frameworkVersionId,
         UUID rubricVersionId,
         UUID targetFrameworkBandId,
-        UUID minimumFrameworkBandId,
         BigDecimal passingScore,
         String strictness,
         int version,

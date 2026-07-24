@@ -12,10 +12,13 @@ import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "invoice")
+@Table(name = "invoice", indexes = {
+    @Index(columnList = "school_id", name = "idx_invoice_school")
+})
 public class InvoiceJpaEntity {
 
     @Id
@@ -31,6 +34,9 @@ public class InvoiceJpaEntity {
 
     @Column(name = "invoice_number", nullable = false, unique = true)
     private String invoiceNumber;
+
+    @Column(name = "school_id", nullable = false, updatable = false)
+    private UUID schoolId;
 
     @Column(name = "subscription_id")
     private UUID subscriptionId;
@@ -55,7 +61,7 @@ public class InvoiceJpaEntity {
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
             name = "chk_invoice_status_valid",
-            constraint = "status IN ('PAID', 'PENDING', 'FAILED')"
+            constraint = "status IN ('PAID', 'PENDING', 'FAILED', 'CANCELLED')"
         )
     })
     private String status;
@@ -74,11 +80,12 @@ public class InvoiceJpaEntity {
 
     protected InvoiceJpaEntity() {}
 
-    public InvoiceJpaEntity(UUID id, String invoiceNumber, UUID subscriptionId, String sourceType, UUID sourceId,
+    public InvoiceJpaEntity(UUID id, String invoiceNumber, UUID schoolId, UUID subscriptionId, String sourceType, UUID sourceId,
             LocalDate issueDate, BigDecimal amount, String status, Long payosOrderCode, String paymentLinkId,
             String checkoutUrl, OffsetDateTime paidAt) {
         this.id = id;
         this.invoiceNumber = invoiceNumber;
+        this.schoolId = schoolId;
         this.subscriptionId = subscriptionId;
         this.sourceType = sourceType;
         this.sourceId = sourceId;
@@ -105,6 +112,14 @@ public class InvoiceJpaEntity {
 
     public void setInvoiceNumber(String invoiceNumber) {
         this.invoiceNumber = invoiceNumber;
+    }
+
+    public UUID getSchoolId() {
+        return schoolId;
+    }
+
+    public void setSchoolId(UUID schoolId) {
+        this.schoolId = schoolId;
     }
 
     public UUID getSubscriptionId() {

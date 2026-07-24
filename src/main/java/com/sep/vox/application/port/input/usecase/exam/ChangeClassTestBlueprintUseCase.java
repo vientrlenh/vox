@@ -106,8 +106,8 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
         if (!examMemberRepository.existsByExamIdAndUserIdAndRole(exam.getId(), currentUserId, ExamMemberRole.CHAIR)) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
-        if (exam.getStatus() != ExamStatus.SCHEDULED) {
-            throw new IllegalStateException("Chỉ được đổi blueprint khi bài kiểm tra chưa mở cho học sinh làm bài (đang ở trạng thái đã lên lịch)");
+        if (exam.getStatus() != ExamStatus.DRAFT && exam.getStatus() != ExamStatus.SCHEDULED) {
+            throw new IllegalStateException("Chỉ được đổi blueprint khi bài kiểm tra chưa bắt đầu");
         }
         if (examRepository.existsSubmittedSessionByExamId(exam.getId())) {
             throw new IllegalStateException("Không thể đổi blueprint khi đã có học sinh nộp bài");

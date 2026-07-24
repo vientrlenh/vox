@@ -9,6 +9,7 @@ public record StudentExamPaperResponse(
     String title,
     String subject,
     String description,
+    int durationSeconds,
     int durationMinutes,
     String examDate,
     String status,

@@ -19,6 +19,7 @@ public final class ExamPaperDtoMapper {
             domain.getCode(),
             domain.getVariant(),
             domain.getStatus().name(),
+            domain.getTimeDurationSeconds(),
             valueOf(domain.getCreatedAt()),
             valueOf(domain.getUpdatedAt()),
             domain.getCreatedBy(),

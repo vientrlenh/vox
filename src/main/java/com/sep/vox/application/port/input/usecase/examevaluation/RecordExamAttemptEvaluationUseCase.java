@@ -150,10 +150,12 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
                         : input.payload().signals().asrConfidenceAvg()
                 );
             }
-            boolean hasCodeSwitch = signals.codeSwitchingRatio().compareTo(BigDecimal.ZERO) > 0;
+            boolean hasCodeSwitch = signals.codeSwitchingRatio() != null
+                && signals.codeSwitchingRatio().compareTo(BigDecimal.ZERO) > 0;
             boolean isShortAnswer = signals.wordCount() < 35;
             var confidenceDecision = confidenceReviewCalculator.compute(
                 confidenceCase,
+                signals.audioQuality(),
                 evaluationContext.examKind(),
                 hasCodeSwitch,
                 isShortAnswer
@@ -175,6 +177,23 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
                 reviewReasonCode = "CONDUCT_VIOLATION";
                 markedInvalid = true;
             }
+            boolean insufficientEvidence = "INSUFFICIENT_EVIDENCE".equals(signals.evidenceStatus());
+            String uncertaintyType;
+            if (insufficientEvidence && requiresHumanReview) {
+                uncertaintyType = "MIXED";
+            } else if (insufficientEvidence) {
+                uncertaintyType = "INSUFFICIENT_EVIDENCE";
+            } else if (requiresHumanReview) {
+                uncertaintyType = "SYSTEM_UNCERTAINTY";
+            } else {
+                uncertaintyType = "NONE";
+            }
+            signals = signals.withAssessment(
+                uncertaintyType,
+                confidenceDecision.confidenceMode(),
+                confidenceDecision.audioGateStatus(),
+                confidenceDecision.audioGateReasons()
+            );
 
             var existingEvaluation = examItemEvaluationRepository.findLatestByResponseId(response.getId()).orElse(null);
             var evaluation = existingEvaluation == null
@@ -373,6 +392,13 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
         return decimal.setScale(2, RoundingMode.HALF_UP);
     }
 
+    // overallConfidence hiển thị = min-gated (weakest-link, ĐÚNG research Vietnam-focus:
+    // compass_artifact_wf-52df89c9 -- "overallReliability dùng min-gated, KHÔNG average", vì
+    // weighted-average pha loãng tín hiệu cực xấu). NHƯNG chỉ gồm các tín hiệu ĐỘ TIN CẬY CHẤM ĐIỂM
+    // (cAsrLog logprob-branch, cRef, cAlign, và 3 tiêu chí case-5). CỐ TÌNH LOẠI:
+    //   - qSnr/qSpeech: là tín hiệu audio gate, KHÔNG phải confidence scalar. Audio đã hiển thị
+    //     riêng ở field audioQuality và calculator dùng chúng độc lập cho quyết định review.
+    //   - cPfBranch: = min(cRef, cAlign), đã có cRef/cAlign trong tập nên trùng lặp.
     private BigDecimal minimumConfidence(ConfidenceCaseSignals signals) {
         if (signals == null) {
             return null;
@@ -380,12 +406,8 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
         BigDecimal minimum = null;
         BigDecimal[] values = {
             signals.cAsrLog(),
-            signals.crossAsrAgreement(),
-            signals.qSnr(),
-            signals.qSpeech(),
             signals.cRef(),
             signals.cAlign(),
-            signals.cPfBranch(),
             signals.cGrammar(),
             signals.cVocabulary(),
             signals.cDiscourse()

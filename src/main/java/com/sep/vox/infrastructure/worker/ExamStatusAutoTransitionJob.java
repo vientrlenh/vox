@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import com.sep.vox.application.port.input.service.ZeroScoreExamResultService;
 import com.sep.vox.application.port.input.usecase.exam.ExamQuestionSecureLockService;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamPaperStatus;
@@ -22,14 +23,17 @@ public class ExamStatusAutoTransitionJob {
     private final ExamRepository examRepository;
     private final ExamPaperRepository examPaperRepository;
     private final ExamQuestionSecureLockService examQuestionSecureLockService;
+    private final ZeroScoreExamResultService zeroScoreExamResultService;
 
     public ExamStatusAutoTransitionJob(
             ExamRepository examRepository,
             ExamPaperRepository examPaperRepository,
-            ExamQuestionSecureLockService examQuestionSecureLockService) {
+            ExamQuestionSecureLockService examQuestionSecureLockService,
+            ZeroScoreExamResultService zeroScoreExamResultService) {
         this.examRepository = examRepository;
         this.examPaperRepository = examPaperRepository;
         this.examQuestionSecureLockService = examQuestionSecureLockService;
+        this.zeroScoreExamResultService = zeroScoreExamResultService;
     }
 
     @Scheduled(fixedDelay = 60000)
@@ -63,6 +67,7 @@ public class ExamStatusAutoTransitionJob {
             exam.setUpdatedAt(now);
             examRepository.save(exam);
             examQuestionSecureLockService.releaseIfAutoAfterClose(exam.getId());
+            zeroScoreExamResultService.ensureZeroResultsForMissingOrEmptyAttempts(exam.getId());
             log.info("Tự động đóng bài kiểm tra {} (closeAt đã tới)", exam.getId());
         }
     }

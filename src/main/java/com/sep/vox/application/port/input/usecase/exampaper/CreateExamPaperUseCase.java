@@ -137,6 +137,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
             exam.getCode() + "-P" + variant,
             variant,
             ExamPaperStatus.DRAFT,
+            0,
             now,
             now,
             currentUserId,
@@ -191,7 +192,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
         }
 
         recalculateExamTimeDurationService.recalculate(exam.getId());
-        return ExamPaperDtoMapper.toDto(paper);
+        return ExamPaperDtoMapper.toDto(examPaperRepository.findById(paper.getId()).orElse(paper));
     }
 
     private static final BigDecimal WEIGHT_TOLERANCE = new BigDecimal("0.01");
@@ -234,6 +235,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
             exam.getCode() + "-P" + variant,
             variant,
             ExamPaperStatus.DRAFT,
+            0,
             now,
             now,
             currentUserId,
@@ -283,6 +285,6 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
         }
 
         recalculateExamTimeDurationService.recalculate(exam.getId());
-        return ExamPaperDtoMapper.toDto(paper);
+        return ExamPaperDtoMapper.toDto(examPaperRepository.findById(paper.getId()).orElse(paper));
     }
 }

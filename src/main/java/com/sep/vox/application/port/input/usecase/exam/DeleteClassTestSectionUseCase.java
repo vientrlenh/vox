@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.DeleteClassTestSectionCommand;
+import com.sep.vox.application.port.input.service.RecalculateExamTimeDurationService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.ExamDto;
@@ -35,6 +36,7 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
     private final ExamPaperRepository examPaperRepository;
     private final ExamPaperSectionRepository examPaperSectionRepository;
     private final ExamPaperItemRepository examPaperItemRepository;
+    private final RecalculateExamTimeDurationService recalculateExamTimeDurationService;
     private final UserContextPort userContextPort;
 
     public DeleteClassTestSectionUseCase(
@@ -43,12 +45,14 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
             ExamPaperRepository examPaperRepository,
             ExamPaperSectionRepository examPaperSectionRepository,
             ExamPaperItemRepository examPaperItemRepository,
+            RecalculateExamTimeDurationService recalculateExamTimeDurationService,
             UserContextPort userContextPort) {
         this.examRepository = examRepository;
         this.examMemberRepository = examMemberRepository;
         this.examPaperRepository = examPaperRepository;
         this.examPaperSectionRepository = examPaperSectionRepository;
         this.examPaperItemRepository = examPaperItemRepository;
+        this.recalculateExamTimeDurationService = recalculateExamTimeDurationService;
         this.userContextPort = userContextPort;
     }
 
@@ -65,8 +69,8 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
         if (!examMemberRepository.existsByExamIdAndUserIdAndRole(exam.getId(), currentUserId, ExamMemberRole.CHAIR)) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
-        if (exam.getStatus() != ExamStatus.SCHEDULED) {
-            throw new IllegalStateException("Chỉ được sửa khi bài kiểm tra chưa mở cho học sinh làm bài (đang ở trạng thái đã lên lịch)");
+        if (exam.getStatus() != ExamStatus.DRAFT && exam.getStatus() != ExamStatus.SCHEDULED) {
+            throw new IllegalStateException("Chỉ được sửa khi bài kiểm tra chưa bắt đầu");
         }
         if (examRepository.existsSubmittedSessionByExamId(exam.getId())) {
             throw new IllegalStateException("Không thể sửa câu hỏi khi đã có học sinh nộp bài");
@@ -115,6 +119,7 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
         exam.setUpdatedAt(now);
         exam.setUpdatedBy(currentUserId);
         var saved = examRepository.save(exam);
+        recalculateExamTimeDurationService.recalculate(exam.getId());
         return ExamDtoMapper.toDto(saved);
     }
 

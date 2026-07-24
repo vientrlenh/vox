@@ -83,8 +83,11 @@ public class VerifyExamScheduleOtpUseCase implements IUseCase<VerifyExamSchedule
         if (candidate.getBlockedAt() != null) {
             throw new IllegalStateException("Bạn đã bị buộc kết thúc bài thi này, không thể vào lại");
         }
-        if (ExamCandidateStatusSupport.isNonScorable(candidate.getStatus())) {
+        if (ExamCandidateStatusSupport.isBlockedForEntry(candidate.getStatus())) {
             throw new IllegalStateException("Bạn không đủ điều kiện tham gia kỳ thi này");
+        }
+        if (!ExamCandidateStatusSupport.isAttended(candidate.getStatus())) {
+            throw new IllegalStateException("Bạn chưa được điểm danh có mặt, vui lòng liên hệ giám thị");
         }
         if (isExamClosedForEntry(exam, now)) {
             throw new IllegalStateException("Kỳ thi hiện không mở để thi (trạng thái: " + exam.getStatus() + ")");

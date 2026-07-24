@@ -78,7 +78,7 @@ public class GetExamSessionPaperUseCase implements IUseCase<ViewExamSessionPaper
 
         var exam = examRepository.findById(session.getExamId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
-        examPaperRepository.findById(session.getPaperId())
+        var paper = examPaperRepository.findById(session.getPaperId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy đề thi"));
 
         var sections = examPaperSectionRepository.findByPaperId(session.getPaperId());
@@ -135,13 +135,15 @@ public class GetExamSessionPaperUseCase implements IUseCase<ViewExamSessionPaper
         var schedule = candidate.getScheduleId() == null
             ? null
             : examScheduleRepository.findById(candidate.getScheduleId()).orElse(null);
+        var durationSeconds = estimateDurationSeconds(paperQuestions);
         return new StudentExamPaperResponse(
             exam.getId(),
             session.getPaperId(),
             exam.getName(),
             StudentExamViewSupport.subjectOf(exam),
             exam.getDescription(),
-            StudentExamViewSupport.durationMinutesOf(schedule, estimateDurationMinutes(paperQuestions)),
+            durationSeconds,
+            durationMinutesOf(durationSeconds),
             StudentExamViewSupport.examDateOf(schedule, exam.getOpenAt()),
             StudentExamViewSupport.statusOf(schedule, OffsetDateTime.now()),
             schedule == null
@@ -159,11 +161,14 @@ public class GetExamSessionPaperUseCase implements IUseCase<ViewExamSessionPaper
         return sectionOrder * 1000 + itemOrder;
     }
 
-    private static int estimateDurationMinutes(java.util.List<StudentExamPaperQuestionResponse> paperQuestions) {
-        var totalSeconds = paperQuestions.stream()
+    private static int estimateDurationSeconds(java.util.List<StudentExamPaperQuestionResponse> paperQuestions) {
+        return paperQuestions.stream()
             .map(StudentExamPaperQuestionResponse::question)
             .mapToInt(question -> question.preparationTimeSeconds() + question.maxResponseSeconds())
             .sum();
-        return Math.max(1, (int) Math.ceil(totalSeconds / 60.0));
+    }
+
+    private static int durationMinutesOf(int durationSeconds) {
+        return Math.max(1, (int) Math.ceil(durationSeconds / 60.0));
     }
 }

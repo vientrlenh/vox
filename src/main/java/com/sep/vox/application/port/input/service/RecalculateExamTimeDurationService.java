@@ -11,10 +11,9 @@ import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 
 /**
- * H.1: exam.examTimeDurationSecond = MAX(paperDuration) trên mọi ExamPaper của kỳ thi,
- * paperDuration = tổng question.maxResponseSeconds của mọi item đã gán câu hỏi trong mã đề
- * đó. Field tự động tính, KHÔNG có ô nhập frontend - gọi lại hàm này mỗi khi cấu trúc 1 mã đề
- * thay đổi (tạo mã đề mới, đổi câu hỏi 1 item, ghi đè câu hỏi class test, đổi blueprint).
+ * H.1: paper.timeDurationSeconds = tổng preparationTimeSeconds + maxResponseSeconds của mọi item
+ * đã gán câu hỏi trong mã đề; exam.examTimeDurationSecond = MAX(paperDuration) trên mọi ExamPaper của kỳ thi.
+ * Các field này tự động tính, không nhập tay ở frontend - gọi lại hàm này mỗi khi cấu trúc 1 mã đề thay đổi.
  */
 @Service
 public class RecalculateExamTimeDurationService {
@@ -58,8 +57,12 @@ public class RecalculateExamTimeDurationService {
                 }
                 var question = questionRepository.findById(item.getQuestionId()).orElse(null);
                 if (question != null) {
-                    paperDuration += question.getMaxResponseSeconds();
+                    paperDuration += question.getPreparationTimeSeconds() + question.getMaxResponseSeconds();
                 }
+            }
+            if (paper.getTimeDurationSeconds() == null || paper.getTimeDurationSeconds() != paperDuration) {
+                paper.setTimeDurationSeconds(paperDuration);
+                examPaperRepository.save(paper);
             }
             maxDuration = Math.max(maxDuration, paperDuration);
         }

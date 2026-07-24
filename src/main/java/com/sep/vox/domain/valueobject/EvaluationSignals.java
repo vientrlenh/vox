@@ -1,6 +1,7 @@
 package com.sep.vox.domain.valueobject;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public record EvaluationSignals(
     int durationSeconds,
@@ -15,9 +16,19 @@ public record EvaluationSignals(
     BigDecimal audioQuality,
     BigDecimal silenceRatio,
     BigDecimal speechRate,
+    String evidenceStatus,
+    List<String> evidenceReasonCodes,
+    String uncertaintyType,
+    String confidenceMode,
+    String audioGateStatus,
+    List<String> audioGateReasonCodes,
     ConfidenceCaseSignals confidenceCase
 ) {
     public EvaluationSignals {
+        evidenceStatus = evidenceStatus == null ? "SUFFICIENT" : evidenceStatus;
+        evidenceReasonCodes = evidenceReasonCodes == null ? List.of() : List.copyOf(evidenceReasonCodes);
+        uncertaintyType = uncertaintyType == null ? "NONE" : uncertaintyType;
+        audioGateReasonCodes = audioGateReasonCodes == null ? List.of() : List.copyOf(audioGateReasonCodes);
         if (durationSeconds < 0) {
             throw new IllegalArgumentException("Thời gian không được dưới 0");
         }
@@ -59,5 +70,33 @@ public record EvaluationSignals(
         if (speechRate != null && speechRate.compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("Speech rate không được dưới 0");
         }
+    }
+
+    public EvaluationSignals withAssessment(
+            String resolvedUncertaintyType,
+            String resolvedConfidenceMode,
+            String resolvedAudioGateStatus,
+            List<String> resolvedAudioGateReasonCodes) {
+        return new EvaluationSignals(
+            durationSeconds,
+            wordCount,
+            sentenceCount,
+            lengthRatio,
+            expectedMinWords,
+            taskRelevance,
+            offTopicRatio,
+            codeSwitchingRatio,
+            asrConfidence,
+            audioQuality,
+            silenceRatio,
+            speechRate,
+            evidenceStatus,
+            evidenceReasonCodes,
+            resolvedUncertaintyType,
+            resolvedConfidenceMode,
+            resolvedAudioGateStatus,
+            resolvedAudioGateReasonCodes,
+            confidenceCase
+        );
     }
 }

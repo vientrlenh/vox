@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.command.examevaluation;
 
+import java.util.List;
+
 public record EvaluationSignalsInput(
     Integer durationSeconds,
     Integer wordCount,
@@ -13,6 +15,8 @@ public record EvaluationSignalsInput(
     Double speechRate,
     Double audioQuality,
     Double silenceRatio,
+    String evidenceStatus,
+    List<String> evidenceReasonCodes,
     ConfidenceCaseSignalsInput confidenceCase
 ) {
 }

@@ -23,6 +23,7 @@ import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamSchedule;
 import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
+import com.sep.vox.domain.repository.ExamPaperRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;
@@ -32,6 +33,7 @@ public class ViewMyExamsUseCase implements IUseCase<Void, List<StudentExamSummar
 
     private final ExamCandidateRepository examCandidateRepository;
     private final ExamRepository examRepository;
+    private final ExamPaperRepository examPaperRepository;
     private final ExamScheduleRepository examScheduleRepository;
     private final ExamSessionRepository examSessionRepository;
     private final ExamCandidateAttemptsQueryRepository examCandidateAttemptsQueryRepository;
@@ -40,12 +42,14 @@ public class ViewMyExamsUseCase implements IUseCase<Void, List<StudentExamSummar
     public ViewMyExamsUseCase(
             ExamCandidateRepository examCandidateRepository,
             ExamRepository examRepository,
+            ExamPaperRepository examPaperRepository,
             ExamScheduleRepository examScheduleRepository,
             ExamSessionRepository examSessionRepository,
             ExamCandidateAttemptsQueryRepository examCandidateAttemptsQueryRepository,
             UserContextPort userContextPort) {
         this.examCandidateRepository = examCandidateRepository;
         this.examRepository = examRepository;
+        this.examPaperRepository = examPaperRepository;
         this.examScheduleRepository = examScheduleRepository;
         this.examSessionRepository = examSessionRepository;
         this.examCandidateAttemptsQueryRepository = examCandidateAttemptsQueryRepository;
@@ -65,11 +69,15 @@ public class ViewMyExamsUseCase implements IUseCase<Void, List<StudentExamSummar
         var schedulesById = new HashMap<>(examScheduleRepository.findByIdIn(
             candidates.stream().map(candidate -> candidate.getScheduleId()).filter(java.util.Objects::nonNull).distinct().toList()
         ).stream().collect(java.util.stream.Collectors.toMap(schedule -> schedule.getId(), schedule -> schedule)));
+        var papersById = new HashMap<>(examPaperRepository.findByIdIn(
+            candidates.stream().map(candidate -> candidate.getAssignedPaperId()).filter(java.util.Objects::nonNull).distinct().toList()
+        ).stream().collect(java.util.stream.Collectors.toMap(paper -> paper.getId(), paper -> paper)));
 
         return candidates.stream()
             .map(candidate -> {
                 var exam = examsById.get(candidate.getExamId());
                 var schedule = schedulesById.get(candidate.getScheduleId());
+                var assignedPaper = papersById.get(candidate.getAssignedPaperId());
                 if (exam == null) {
                     return null;
                 }
@@ -84,7 +92,7 @@ public class ViewMyExamsUseCase implements IUseCase<Void, List<StudentExamSummar
                     exam.getName(),
                     StudentExamViewSupport.subjectOf(exam),
                     exam.getDescription(),
-                    StudentExamViewSupport.durationMinutesOf(schedule, 30),
+                    durationMinutesOf(assignedPaper == null ? null : assignedPaper.getTimeDurationSeconds(), schedule),
                     StudentExamViewSupport.examDateOf(schedule, exam.getOpenAt()),
                     StudentExamViewSupport.statusOf(exam, schedule, now),
                     exam.getKind() == null ? null : exam.getKind().name(),
@@ -149,7 +157,7 @@ public class ViewMyExamsUseCase implements IUseCase<Void, List<StudentExamSummar
             return new EntryAvailability(false, "Bạn đã bị buộc kết thúc bài thi này, không thể vào lại");
         }
 
-        if (ExamCandidateStatusSupport.isNonScorable(candidate.getStatus())) {
+        if (ExamCandidateStatusSupport.isBlockedForEntry(candidate.getStatus())) {
             return new EntryAvailability(false, "Bạn không đủ điều kiện tham gia kỳ thi này");
         }
 
@@ -166,6 +174,10 @@ public class ViewMyExamsUseCase implements IUseCase<Void, List<StudentExamSummar
                 return new EntryAvailability(false, "Bài kiểm tra chưa được giáo viên mở.");
             }
             return new EntryAvailability(true, null);
+        }
+
+        if (!ExamCandidateStatusSupport.isAttended(candidate.getStatus())) {
+            return new EntryAvailability(false, "Bạn chưa được điểm danh có mặt, vui lòng liên hệ giám thị.");
         }
 
         if (exam.getStatus() != ExamStatus.IN_PROGRESS) {
@@ -196,5 +208,12 @@ public class ViewMyExamsUseCase implements IUseCase<Void, List<StudentExamSummar
     }
 
     private record EntryAvailability(boolean canEnter, String message) {
+    }
+
+    private static int durationMinutesOf(Integer paperDurationSeconds, ExamSchedule schedule) {
+        if (paperDurationSeconds != null && paperDurationSeconds > 0) {
+            return Math.max(1, (int) Math.ceil(paperDurationSeconds / 60.0));
+        }
+        return StudentExamViewSupport.durationMinutesOf(schedule, 30);
     }
 }

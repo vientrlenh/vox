@@ -10,6 +10,7 @@ public class ExamPaper {
     private String code;
     private int variant;
     private ExamPaperStatus status;
+    private Integer timeDurationSeconds;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
     private UUID createdBy;
@@ -17,7 +18,7 @@ public class ExamPaper {
 
     public ExamPaper() {}
 
-    public ExamPaper(UUID id, UUID examId, UUID blueprintVersionId, String code, int variant, ExamPaperStatus status, OffsetDateTime createdAt,
+    public ExamPaper(UUID id, UUID examId, UUID blueprintVersionId, String code, int variant, ExamPaperStatus status, Integer timeDurationSeconds, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.examId = examId;
@@ -25,19 +26,21 @@ public class ExamPaper {
         this.code = code;
         this.variant = variant;
         this.status = status;
+        this.timeDurationSeconds = timeDurationSeconds;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
         this.updatedBy = updatedBy;
     }
 
-    public ExamPaper(UUID examId, UUID blueprintVersionId, String code, int variant, ExamPaperStatus status, OffsetDateTime createdAt,
+    public ExamPaper(UUID examId, UUID blueprintVersionId, String code, int variant, ExamPaperStatus status, Integer timeDurationSeconds, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.examId = examId;
         this.blueprintVersionId = blueprintVersionId;
         this.code = code;
         this.variant = variant;
         this.status = status;
+        this.timeDurationSeconds = timeDurationSeconds;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
@@ -90,6 +93,14 @@ public class ExamPaper {
 
     public void setStatus(ExamPaperStatus status) {
         this.status = status;
+    }
+
+    public Integer getTimeDurationSeconds() {
+        return timeDurationSeconds;
+    }
+
+    public void setTimeDurationSeconds(Integer timeDurationSeconds) {
+        this.timeDurationSeconds = timeDurationSeconds;
     }
 
     public OffsetDateTime getCreatedAt() {

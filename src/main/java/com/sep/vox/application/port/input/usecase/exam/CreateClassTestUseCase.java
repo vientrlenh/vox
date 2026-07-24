@@ -17,6 +17,7 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.ClassTestSectionCommand;
 import com.sep.vox.application.port.input.command.CreateClassTestCommand;
+import com.sep.vox.application.port.input.service.RecalculateExamTimeDurationService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
@@ -38,7 +39,6 @@ import com.sep.vox.domain.model.exam.ExamPaperItem;
 import com.sep.vox.domain.model.exam.ExamPaperSection;
 import com.sep.vox.domain.model.exam.ExamPaperStatus;
 import com.sep.vox.domain.model.exam.ExamSchedule;
-import com.sep.vox.domain.model.exam.ExamScheduleStatus;
 import com.sep.vox.domain.model.exam.ExamSecurePoolReleaseMode;
 import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.model.exam.ResultDecisionMethod;
@@ -85,6 +85,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
     private final ExamMemberRepository examMemberRepository;
     private final ExamCandidateRepository examCandidateRepository;
     private final ExamQuestionSecureLockService examQuestionSecureLockService;
+    private final RecalculateExamTimeDurationService recalculateExamTimeDurationService;
     private final UserContextPort userContextPort;
 
     public CreateClassTestUseCase(
@@ -105,6 +106,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             ExamMemberRepository examMemberRepository,
             ExamCandidateRepository examCandidateRepository,
             ExamQuestionSecureLockService examQuestionSecureLockService,
+            RecalculateExamTimeDurationService recalculateExamTimeDurationService,
             UserContextPort userContextPort) {
         this.schoolClassRepository = schoolClassRepository;
         this.schoolClassUserRepository = schoolClassUserRepository;
@@ -123,6 +125,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         this.examMemberRepository = examMemberRepository;
         this.examCandidateRepository = examCandidateRepository;
         this.examQuestionSecureLockService = examQuestionSecureLockService;
+        this.recalculateExamTimeDurationService = recalculateExamTimeDurationService;
         this.userContextPort = userContextPort;
     }
 
@@ -165,7 +168,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         // để bài trên lớp thực sự tự do, không phụ thuộc lớp blueprint khi không dùng blueprint dùng chung.
         var exam = createExam(null, null, schoolClass, command, currentUserId, now);
         var paper = createPaper(exam, null, now, currentUserId);
-        var schedule = createPublishedSchedule(exam, currentUserId, now);
+        var schedule = createDraftSchedule(exam, currentUserId, now);
         var sectionWeights = ClassTestSectionWeightPolicy.resolveRequestedWeights(command.sections());
 
         for (int i = 0; i < command.sections().size(); i++) {
@@ -197,7 +200,9 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
 
         examMemberRepository.save(new ExamMember(exam.getId(), currentUserId, ExamMemberRole.CHAIR, now, currentUserId));
         var candidateCount = assignCandidates(exam, paper, schedule.getId(), schoolClass.getId(), currentUserId, now);
-        return new CreateClassTestResponse(ExamDtoMapper.toDto(exam), paper.getId(), candidateCount);
+        recalculateExamTimeDurationService.recalculate(exam.getId());
+        var refreshedExam = examRepository.findById(exam.getId()).orElse(exam);
+        return new CreateClassTestResponse(ExamDtoMapper.toDto(refreshedExam), paper.getId(), candidateCount);
     }
 
     private CreateClassTestResponse executeWithExistingBlueprint(
@@ -233,7 +238,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
 
         var exam = createExam(blueprint.getId(), version.getId(), schoolClass, command, currentUserId, now);
         var paper = createPaper(exam, version.getId(), now, currentUserId);
-        var schedule = createPublishedSchedule(exam, currentUserId, now);
+        var schedule = createDraftSchedule(exam, currentUserId, now);
 
         for (var section : sections) {
             var slots = slotsBySectionId.getOrDefault(section.getId(), List.of()).stream()
@@ -247,7 +252,9 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
 
         examMemberRepository.save(new ExamMember(exam.getId(), currentUserId, ExamMemberRole.CHAIR, now, currentUserId));
         var candidateCount = assignCandidates(exam, paper, schedule.getId(), schoolClass.getId(), currentUserId, now);
-        return new CreateClassTestResponse(ExamDtoMapper.toDto(exam), paper.getId(), candidateCount);
+        recalculateExamTimeDurationService.recalculate(exam.getId());
+        var refreshedExam = examRepository.findById(exam.getId()).orElse(exam);
+        return new CreateClassTestResponse(ExamDtoMapper.toDto(refreshedExam), paper.getId(), candidateCount);
     }
 
     private CreateClassTestCommand normalize(CreateClassTestCommand input) {
@@ -334,7 +341,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         var code = "CT-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase();
         var openAt = parseDateTime(command.openAt());
         var closeAt = parseDateTime(command.closeAt());
-        var status = openAt != null ? ExamStatus.SCHEDULED : ExamStatus.IN_PROGRESS;
+        var status = ExamStatus.DRAFT;
         Integer requestedMaxAttempt = command.maxAttempt();
         int maxAttempt = requestedMaxAttempt == null ? 1 : requestedMaxAttempt;
         return examRepository.save(new Exam(
@@ -368,6 +375,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             exam.getCode() + "-P1",
             1,
             ExamPaperStatus.DRAFT,
+            0,
             now,
             now,
             currentUserId,
@@ -375,7 +383,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         ));
     }
 
-    private ExamSchedule createPublishedSchedule(Exam exam, UUID currentUserId, OffsetDateTime now) {
+    private ExamSchedule createDraftSchedule(Exam exam, UUID currentUserId, OffsetDateTime now) {
         if (exam.getOpenAt() == null || exam.getCloseAt() == null) {
             throw new IllegalStateException("Bài kiểm tra trên lớp phải có thời gian mở bài và đóng bài");
         }
@@ -388,7 +396,6 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             currentUserId,
             now
         );
-        schedule.setStatus(ExamScheduleStatus.PUBLISHED);
         return examScheduleRepository.save(schedule);
     }
 
@@ -528,8 +535,8 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
     }
 
     private void validateOpenClose(String openAt, String closeAt) {
-        if (openAt == null || closeAt == null) {
-            return;
+        if (openAt == null || openAt.isBlank() || closeAt == null || closeAt.isBlank()) {
+            throw new IllegalStateException("Bài kiểm tra trên lớp phải có thời gian mở bài và đóng bài");
         }
         if (!OffsetDateTime.parse(openAt).isBefore(OffsetDateTime.parse(closeAt))) {
             throw new IllegalStateException("Thời gian mở bài phải nhỏ hơn thời gian đóng bài");

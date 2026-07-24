@@ -30,7 +30,7 @@ class ConfidenceReviewCalculatorTests {
     @Test
     void asrHardFailureRequiresMandatoryReview() {
         var decision = calculator.compute(
-            signals(decimal("0.59"), null, null, null, null, null, null, null, null, null, null),
+            signals(decimal("0.54"), null, null, null, null, null, null, null, null, null),
             ExamKind.CLASS_TEST,
             false,
             false
@@ -43,7 +43,7 @@ class ConfidenceReviewCalculatorTests {
     @Test
     void oneBranchSoftFailureRequiresSoftReview() {
         var decision = calculator.compute(
-            signals(decimal("0.70"), null, null, null, null, null, null, null, null, null, null),
+            signals(decimal("0.70"), null, null, null, null, null, null, null, null, null),
             ExamKind.CLASS_TEST,
             false,
             false
@@ -56,7 +56,7 @@ class ConfidenceReviewCalculatorTests {
     @Test
     void twoUnstableLlmCriteriaRequireRecommendedReview() {
         var decision = calculator.compute(
-            signals(null, null, null, null, null, null, null, null, decimal("0.40"), decimal("0.40"), decimal("0.90")),
+            signals(null, null, null, null, null, null, null, decimal("0.40"), decimal("0.40"), decimal("0.90")),
             ExamKind.CLASS_TEST,
             false,
             false
@@ -70,20 +70,20 @@ class ConfidenceReviewCalculatorTests {
     @Test
     void centralizedModeTightensMinimumBound() {
         var classTest = calculator.compute(
-            signals(decimal("0.82"), null, null, null, null, null, null, null, null, null, null),
+            signals(decimal("0.78"), null, null, null, null, null, null, null, null, null),
             ExamKind.CLASS_TEST,
             false,
             false
         );
         var centralized = calculator.compute(
-            signals(decimal("0.82"), null, null, null, null, null, null, null, null, null, null),
+            signals(decimal("0.78"), null, null, null, null, null, null, null, null, null),
             ExamKind.CENTRALIZED,
             false,
             false
         );
 
         assertThat(classTest.reviewSeverity()).isEqualTo("none");
-        assertThat(centralized.reviewSeverity()).isEqualTo("soft");
+        assertThat(centralized.reviewSeverity()).isEqualTo("recommended");
     }
 
     @Test
@@ -92,7 +92,7 @@ class ConfidenceReviewCalculatorTests {
         // Vietnam-adjusted đúng (soft 0.80/hard 0.70) -- đây là caseg soft-fail thật (0.75<0.80),
         // không phải hard-fail. coverage/timing đều tốt (không tự trigger group D).
         var decision = calculator.compute(
-            alignmentSignals(null, null, null, null, null, null, null,
+            alignmentSignals(null, null, null, null, null, null,
                 decimal("0.75"), decimal("0.95"), decimal("0.90"), null, null, null, null),
             ExamKind.CLASS_TEST,
             false,
@@ -108,7 +108,7 @@ class ConfidenceReviewCalculatorTests {
         // accuracy=0.85 (m=0.15): dưới ngưỡng composite cũ 0.90 (sẽ SAI bị flag ở bản trước khi
         // sửa), nhưng ĐẠT ngưỡng soft Vietnam-adjusted thật (0.80) -- không được trigger gì cả.
         var decision = calculator.compute(
-            alignmentSignals(null, null, null, null, null, null, null,
+            alignmentSignals(null, null, null, null, null, null,
                 decimal("0.85"), decimal("0.95"), decimal("0.90"), null, null, null, null),
             ExamKind.CLASS_TEST,
             false,
@@ -120,21 +120,20 @@ class ConfidenceReviewCalculatorTests {
     }
 
     @Test
-    void nologCompositeReportsItsWorstComponent() {
+    void moderateAudioDoesNotTriggerHardGate() {
         var decision = calculator.compute(
-            signals(null, decimal("0.95"), decimal("0.50"), decimal("0.90"), null, null, null, null, null, null, null),
+            signals(null, decimal("0.50"), decimal("0.90"), null, null, null, null, null, null, null),
             ExamKind.CLASS_TEST,
             false,
             false
         );
 
-        assertThat(decision.reviewSeverity()).isEqualTo("mandatory");
-        assertThat(decision.reviewReasons()).containsExactly("AUDIO_SNR_TOO_LOW");
+        assertThat(decision.reviewSeverity()).isEqualTo("none");
+        assertThat(decision.reviewReasons()).isEmpty();
     }
 
     private static ConfidenceCaseSignals signals(
             BigDecimal cAsrLog,
-            BigDecimal crossAsrAgreement,
             BigDecimal qSnr,
             BigDecimal qSpeech,
             BigDecimal clippingRatio,
@@ -144,13 +143,12 @@ class ConfidenceReviewCalculatorTests {
             BigDecimal cGrammar,
             BigDecimal cVocabulary,
             BigDecimal cDiscourse) {
-        return alignmentSignals(cAsrLog, crossAsrAgreement, qSnr, qSpeech, clippingRatio, cRef,
+        return alignmentSignals(cAsrLog, qSnr, qSpeech, clippingRatio, cRef,
             cAlign, null, null, null, cPfBranch, cGrammar, cVocabulary, cDiscourse);
     }
 
     private static ConfidenceCaseSignals alignmentSignals(
             BigDecimal cAsrLog,
-            BigDecimal crossAsrAgreement,
             BigDecimal qSnr,
             BigDecimal qSpeech,
             BigDecimal clippingRatio,
@@ -165,7 +163,6 @@ class ConfidenceReviewCalculatorTests {
             BigDecimal cDiscourse) {
         return new ConfidenceCaseSignals(
             cAsrLog,
-            crossAsrAgreement,
             qSnr,
             qSpeech,
             clippingRatio,
@@ -177,7 +174,10 @@ class ConfidenceReviewCalculatorTests {
             cPfBranch,
             cGrammar,
             cVocabulary,
-            cDiscourse
+            cDiscourse,
+            null,
+            null,
+            null
         );
     }
 

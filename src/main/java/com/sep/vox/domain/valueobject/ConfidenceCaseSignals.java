@@ -8,7 +8,6 @@ import java.math.BigDecimal;
  */
 public record ConfidenceCaseSignals(
     BigDecimal cAsrLog,
-    BigDecimal crossAsrAgreement,
     BigDecimal qSnr,
     BigDecimal qSpeech,
     BigDecimal clippingRatio,
@@ -20,6 +19,9 @@ public record ConfidenceCaseSignals(
     BigDecimal cPfBranch,
     BigDecimal cGrammar,
     BigDecimal cVocabulary,
-    BigDecimal cDiscourse
+    BigDecimal cDiscourse,
+    BigDecimal grammarScoreDelta,
+    BigDecimal vocabularyScoreDelta,
+    BigDecimal discourseScoreDelta
 ) {
 }

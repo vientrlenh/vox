@@ -12,12 +12,15 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.event.ExamAttemptEvaluationRequestedExternalEvent;
+import com.sep.vox.application.common.ExamCandidateStatusSupport;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.SubmitExamSessionCommand;
+import com.sep.vox.application.port.input.service.ZeroScoreExamResultService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.ExternalEventPublisherPort;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
+import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
@@ -58,6 +61,7 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
     private final FrameworkCriterionBandRepository frameworkCriterionBandRepository;
     private final FrameworkResultBandRepository frameworkResultBandRepository;
     private final ExternalEventPublisherPort externalEventPublisherPort;
+    private final ZeroScoreExamResultService zeroScoreExamResultService;
 
     public SubmitExamSessionUseCase(
             ExamSessionRepository examSessionRepository,
@@ -77,7 +81,8 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
             FrameworkCriterionRepository frameworkCriterionRepository,
             FrameworkCriterionBandRepository frameworkCriterionBandRepository,
             FrameworkResultBandRepository frameworkResultBandRepository,
-            ExternalEventPublisherPort externalEventPublisherPort) {
+            ExternalEventPublisherPort externalEventPublisherPort,
+            ZeroScoreExamResultService zeroScoreExamResultService) {
         this.examSessionRepository = examSessionRepository;
         this.examRepository = examRepository;
         this.examCandidateRepository = examCandidateRepository;
@@ -96,6 +101,7 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
         this.frameworkCriterionBandRepository = frameworkCriterionBandRepository;
         this.frameworkResultBandRepository = frameworkResultBandRepository;
         this.externalEventPublisherPort = externalEventPublisherPort;
+        this.zeroScoreExamResultService = zeroScoreExamResultService;
     }
 
     @Override
@@ -114,21 +120,30 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
 
         var candidate = examCandidateRepository.findById(session.getCandidateId())
             .orElseThrow(() -> new NotFoundException("không thể tìm thấy thí sinh của phiên thi"));
+        var exam = examRepository.findById(session.getExamId())
+            .orElseThrow(() -> new NotFoundException("không thể tìm thấy bài kiểm tra"));
         var responses = examItemResponseRepository.findBySessionId(session.getId());
         if (candidate.getBlockedAt() != null) {
             persistInvalidBlockedResult(session);
             return null;
         }
+        if (exam.getKind() == ExamKind.CENTRALIZED && !ExamCandidateStatusSupport.isAttended(candidate.getStatus())) {
+            session.setStatus(ExamSessionStatus.GRADING);
+            session = examSessionRepository.save(session);
+            zeroScoreExamResultService.releaseZeroForEmptySession(session.getId());
+            session.setStatus(ExamSessionStatus.GRADED);
+            examSessionRepository.save(session);
+            return null;
+        }
         if (responses.isEmpty()) {
             session.setStatus(ExamSessionStatus.GRADING);
             session = examSessionRepository.save(session);
+            zeroScoreExamResultService.releaseZeroForEmptySession(session.getId());
             session.setStatus(ExamSessionStatus.GRADED);
             examSessionRepository.save(session);
             return null;
         }
 
-        var exam = examRepository.findById(session.getExamId())
-            .orElseThrow(() -> new NotFoundException("không thể tìm thấy bài kiểm tra"));
         var criteriaFrameworks = buildCriteriaFrameworks(exam.getAssessmentPolicyId());
 
         for (var response : responses) {

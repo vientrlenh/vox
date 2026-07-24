@@ -2,7 +2,6 @@ package com.sep.vox.interfaces.kafka.dto;
 
 public record ConfidenceCaseSignalsDto(
     Double cAsrLog,
-    Double crossAsrAgreement,
     Double qSnr,
     Double qSpeech,
     Double clippingRatio,
@@ -14,6 +13,9 @@ public record ConfidenceCaseSignalsDto(
     Double cPfBranch,
     Double cGrammar,
     Double cVocabulary,
-    Double cDiscourse
+    Double cDiscourse,
+    Double grammarScoreDelta,
+    Double vocabularyScoreDelta,
+    Double discourseScoreDelta
 ) {
 }

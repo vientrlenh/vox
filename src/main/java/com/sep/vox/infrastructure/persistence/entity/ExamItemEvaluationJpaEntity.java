@@ -33,21 +33,30 @@ public class ExamItemEvaluationJpaEntity {
     @Column(name = "paper_item_id", nullable = false, updatable = false)
     private UUID paperItemId;
 
-    @Column(name = "engine_type", nullable = false, updatable = false, check = {
+    // NOTE: engineType/gradedByModel/sampleCount/reviewerId/overallConfidence/
+    // requiresHumanReview/reviewReasonCode/markedInvalid/requiresRetake used to be
+    // updatable=false. RecordExamAttemptEvaluationUseCase's "existingEvaluation != null"
+    // branch mutates-in-place for regrade (calls setters on all of these), so updatable=false
+    // silently made Hibernate DROP them from every UPDATE statement after the first INSERT --
+    // a regrade would recompute correctly in memory but these columns stayed frozen at
+    // whatever the FIRST grading pass produced forever after (confirmed live: review_reason_code
+    // still showed a reason code removed from ConfidenceReviewCalculator weeks ago, on a row
+    // whose signals/item_score genuinely did update on regrade).
+    @Column(name = "engine_type", nullable = false, check = {
         @CheckConstraint(
-            name = "chk_exam_item_evaluations_engine_type_valid", 
+            name = "chk_exam_item_evaluations_engine_type_valid",
             constraint = "engine_type IN ('AI_SINGLE', 'AI_ENSEMBLE', 'HUMAN')"
         )
     })
     private String engineType;
 
-    @Column(name = "graded_by_model", nullable = false, updatable = false, length = 100)
+    @Column(name = "graded_by_model", nullable = false, length = 100)
     private String gradedByModel;
 
-    @Column(name = "sample_count", updatable = false)
+    @Column(name = "sample_count")
     private Integer sampleCount;
 
-    @Column(name = "reviewer_id", updatable = false)
+    @Column(name = "reviewer_id")
     private UUID reviewerId;
 
     @Column(name = "raw_item_score", nullable = false, precision = 5, scale = 2)
@@ -56,19 +65,19 @@ public class ExamItemEvaluationJpaEntity {
     @Column(name = "item_score", nullable = false, precision = 5, scale = 2)
     private BigDecimal itemScore;
 
-    @Column(name = "overall_confidence", updatable = false, precision = 3, scale = 2)
+    @Column(name = "overall_confidence", precision = 3, scale = 2)
     private BigDecimal overallConfidence;
 
-    @Column(name = "requires_human_review", nullable = false, updatable = false)
+    @Column(name = "requires_human_review", nullable = false)
     private boolean requiresHumanReview;
 
-    @Column(name = "review_reason_code", updatable = false, length = 512)
+    @Column(name = "review_reason_code", length = 512)
     private String reviewReasonCode;
 
-    @Column(name = "marked_invalid", nullable = false, updatable = false)
+    @Column(name = "marked_invalid", nullable = false)
     private boolean markedInvalid;
 
-    @Column(name = "requires_retake", nullable = false, updatable = false)
+    @Column(name = "requires_retake", nullable = false)
     private boolean requiresRetake;
 
     @Column(name = "signals", columnDefinition = "TEXT")
@@ -94,7 +103,7 @@ public class ExamItemEvaluationJpaEntity {
     })
     private String status;
 
-    @Column(name = "evaluated_at", nullable = false, updatable = false)
+    @Column(name = "evaluated_at", nullable = false)
     private OffsetDateTime evaluatedAt;
 
     protected ExamItemEvaluationJpaEntity() {}

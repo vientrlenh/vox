@@ -28,6 +28,12 @@ public final class ExamEvaluationSignalMapper {
                 clamp01(null),
                 clamp01(null),
                 clampNonNegative(null),
+                "SUFFICIENT",
+                java.util.List.of(),
+                "NONE",
+                null,
+                "UNKNOWN",
+                java.util.List.of(),
                 null
             );
         }
@@ -45,6 +51,12 @@ public final class ExamEvaluationSignalMapper {
             clamp01(dto.audioQuality()),
             clamp01(dto.silenceRatio()),
             clampNonNegative(dto.speechRate()),
+            dto.evidenceStatus(),
+            dto.evidenceReasonCodes(),
+            "NONE",
+            null,
+            "UNKNOWN",
+            java.util.List.of(),
             toConfidenceCase(dto.confidenceCase())
         );
     }
@@ -55,7 +67,6 @@ public final class ExamEvaluationSignalMapper {
         }
         return new ConfidenceCaseSignals(
             clampNullable01(dto.cAsrLog()),
-            clampNullable01(dto.crossAsrAgreement()),
             clampNullable01(dto.qSnr()),
             clampNullable01(dto.qSpeech()),
             clampNullable01(dto.clippingRatio()),
@@ -67,7 +78,10 @@ public final class ExamEvaluationSignalMapper {
             clampNullable01(dto.cPfBranch()),
             clampNullable01(dto.cGrammar()),
             clampNullable01(dto.cVocabulary()),
-            clampNullable01(dto.cDiscourse())
+            clampNullable01(dto.cDiscourse()),
+            clampNonNegative(dto.grammarScoreDelta()),
+            clampNonNegative(dto.vocabularyScoreDelta()),
+            clampNonNegative(dto.discourseScoreDelta())
         );
     }
 

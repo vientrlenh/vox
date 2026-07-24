@@ -44,7 +44,7 @@ public class ExamCandidateJpaEntity {
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
             name = "chk_exam_candidates_status_valid", 
-            constraint = "status IN ('ASSIGNED', 'ABSENT', 'COMPLETED', 'EXEMPTED', 'CANCELLED')"
+            constraint = "status IN ('ASSIGNED', 'ATTENDED', 'ABSENT', 'COMPLETED', 'EXEMPTED', 'CANCELLED')"
         )
     })
     private String status;

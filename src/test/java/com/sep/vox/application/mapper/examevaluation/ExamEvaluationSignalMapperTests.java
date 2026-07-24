@@ -2,6 +2,8 @@ package com.sep.vox.application.mapper.examevaluation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.port.input.command.examevaluation.ConfidenceCaseSignalsInput;
@@ -13,7 +15,6 @@ class ExamEvaluationSignalMapperTests {
     void preservesNullableConfidenceBranchesAndClippingPrecision() {
         var confidence = new ConfidenceCaseSignalsInput(
             null,
-            0.91234,
             0.8,
             1.0,
             0.0075,
@@ -25,7 +26,10 @@ class ExamEvaluationSignalMapperTests {
             null,
             0.5,
             null,
-            0.25
+            0.25,
+            null,
+            null,
+            null
         );
         var dto = new EvaluationSignalsInput(
             30,
@@ -40,13 +44,14 @@ class ExamEvaluationSignalMapperTests {
             null,
             null,
             null,
+            "SUFFICIENT",
+            List.of(),
             confidence
         );
 
         var mapped = ExamEvaluationSignalMapper.toDomain(dto).confidenceCase();
 
         assertThat(mapped.cAsrLog()).isNull();
-        assertThat(mapped.crossAsrAgreement()).isEqualByComparingTo("0.9123");
         assertThat(mapped.clippingRatio()).isEqualByComparingTo("0.0075");
         assertThat(mapped.cRef()).isNull();
         assertThat(mapped.cAlign()).isEqualByComparingTo("0.8765");

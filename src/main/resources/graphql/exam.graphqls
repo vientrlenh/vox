@@ -60,6 +60,7 @@ enum ExamScheduleStatus {
 
 enum ExamCandidateStatus {
     ASSIGNED
+    ATTENDED
     ABSENT
     COMPLETED
     EXEMPTED
@@ -145,6 +146,7 @@ type ExamPaper {
     code: String!
     variant: Int!
     status: ExamPaperStatus!
+    timeDurationSeconds: Int
     createdAt: String
     updatedAt: String
     createdBy: ID

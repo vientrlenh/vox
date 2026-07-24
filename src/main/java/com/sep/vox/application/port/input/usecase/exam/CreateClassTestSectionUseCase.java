@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreateClassTestSectionCommand;
+import com.sep.vox.application.port.input.service.RecalculateExamTimeDurationService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.ExamDto;
@@ -46,6 +47,7 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
     private final QuestionRepository questionRepository;
     private final QuestionCollaboratorRepository questionCollaboratorRepository;
     private final ExamQuestionSecureLockService examQuestionSecureLockService;
+    private final RecalculateExamTimeDurationService recalculateExamTimeDurationService;
     private final UserContextPort userContextPort;
 
     public CreateClassTestSectionUseCase(
@@ -57,6 +59,7 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
             QuestionRepository questionRepository,
             QuestionCollaboratorRepository questionCollaboratorRepository,
             ExamQuestionSecureLockService examQuestionSecureLockService,
+            RecalculateExamTimeDurationService recalculateExamTimeDurationService,
             UserContextPort userContextPort) {
         this.examRepository = examRepository;
         this.examMemberRepository = examMemberRepository;
@@ -66,6 +69,7 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
         this.questionRepository = questionRepository;
         this.questionCollaboratorRepository = questionCollaboratorRepository;
         this.examQuestionSecureLockService = examQuestionSecureLockService;
+        this.recalculateExamTimeDurationService = recalculateExamTimeDurationService;
         this.userContextPort = userContextPort;
     }
 
@@ -82,8 +86,8 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
         if (!examMemberRepository.existsByExamIdAndUserIdAndRole(exam.getId(), currentUserId, ExamMemberRole.CHAIR)) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
-        if (exam.getStatus() != ExamStatus.SCHEDULED) {
-            throw new IllegalStateException("Chỉ được sửa khi bài kiểm tra chưa mở cho học sinh làm bài (đang ở trạng thái đã lên lịch)");
+        if (exam.getStatus() != ExamStatus.DRAFT && exam.getStatus() != ExamStatus.SCHEDULED) {
+            throw new IllegalStateException("Chỉ được sửa khi bài kiểm tra chưa bắt đầu");
         }
         if (examRepository.existsSubmittedSessionByExamId(exam.getId())) {
             throw new IllegalStateException("Không thể sửa câu hỏi khi đã có học sinh nộp bài");
@@ -144,6 +148,7 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
         exam.setUpdatedAt(now);
         exam.setUpdatedBy(currentUserId);
         var saved = examRepository.save(exam);
+        recalculateExamTimeDurationService.recalculate(exam.getId());
         return ExamDtoMapper.toDto(saved);
     }
 

@@ -1,5 +1,7 @@
 package com.sep.vox.interfaces.kafka.dto;
 
+import java.util.List;
+
 public record EvaluationSignalsDto(
     Integer durationSeconds,
     Integer wordCount,
@@ -13,6 +15,8 @@ public record EvaluationSignalsDto(
     Double speechRate,
     Double audioQuality,
     Double silenceRatio,
+    String evidenceStatus,
+    List<String> evidenceReasonCodes,
     ConfidenceCaseSignalsDto confidenceCase
 ) {
 }

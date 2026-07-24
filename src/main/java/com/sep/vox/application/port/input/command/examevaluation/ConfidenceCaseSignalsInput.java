@@ -2,7 +2,6 @@ package com.sep.vox.application.port.input.command.examevaluation;
 
 public record ConfidenceCaseSignalsInput(
     Double cAsrLog,
-    Double crossAsrAgreement,
     Double qSnr,
     Double qSpeech,
     Double clippingRatio,
@@ -14,6 +13,9 @@ public record ConfidenceCaseSignalsInput(
     Double cPfBranch,
     Double cGrammar,
     Double cVocabulary,
-    Double cDiscourse
+    Double cDiscourse,
+    Double grammarScoreDelta,
+    Double vocabularyScoreDelta,
+    Double discourseScoreDelta
 ) {
 }

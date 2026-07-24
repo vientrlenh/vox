@@ -77,7 +77,7 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
         if (candidate.getBlockedAt() != null) {
             throw new IllegalStateException("Bạn đã bị buộc kết thúc bài thi này, không thể vào lại");
         }
-        if (ExamCandidateStatusSupport.isNonScorable(candidate.getStatus())) {
+        if (ExamCandidateStatusSupport.isBlockedForEntry(candidate.getStatus())) {
             throw new IllegalStateException("Bạn không đủ điều kiện tham gia kỳ thi này");
         }
         if (isExamClosedForEntry(exam, now)) {

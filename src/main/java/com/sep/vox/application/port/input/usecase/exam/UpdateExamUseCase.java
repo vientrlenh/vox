@@ -16,8 +16,11 @@ import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.domain.mapper.ExamDtoMapper;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
+import com.sep.vox.domain.model.exam.ExamScheduleStatus;
+import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
+import com.sep.vox.domain.repository.ExamScheduleRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
@@ -25,6 +28,7 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
 
     private final ExamRepository examRepository;
     private final ExamMemberRepository examMemberRepository;
+    private final ExamScheduleRepository examScheduleRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
@@ -32,11 +36,13 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
     public UpdateExamUseCase(
             ExamRepository examRepository,
             ExamMemberRepository examMemberRepository,
+            ExamScheduleRepository examScheduleRepository,
             SchoolUserRepository schoolUserRepository,
             UserRoleQueryRepository userRoleQueryRepository,
             UserContextPort userContextPort) {
         this.examRepository = examRepository;
         this.examMemberRepository = examMemberRepository;
+        this.examScheduleRepository = examScheduleRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
         this.userContextPort = userContextPort;
@@ -57,8 +63,11 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
 
         authorizeMutation(exam.getId(), exam.getSchoolId(), exam.getKind(), currentUserId, currentSchoolId, schoolAdmin);
-
-        validateOpenClose(command.openAt(), command.closeAt());
+        if (exam.getKind() == ExamKind.CLASS_TEST
+                && exam.getStatus() != ExamStatus.DRAFT
+                && exam.getStatus() != ExamStatus.SCHEDULED) {
+            throw new IllegalStateException("Chỉ được cập nhật bài kiểm tra trên lớp khi chưa bắt đầu");
+        }
 
         if (command.name() != null) {
             exam.setName(command.name());
@@ -84,9 +93,30 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
         if (command.requiresOtp() != null) {
             exam.setRequiresOtp(command.requiresOtp());
         }
-        exam.setUpdatedAt(OffsetDateTime.now());
+        if (exam.getKind() == ExamKind.CLASS_TEST) {
+            requireClassTestScheduleWindow(exam.getOpenAt(), exam.getCloseAt());
+        } else {
+            validateOpenClose(exam.getOpenAt(), exam.getCloseAt());
+        }
+        var now = OffsetDateTime.now();
+        if (exam.getKind() == ExamKind.CLASS_TEST && (command.openAt() != null || command.closeAt() != null)) {
+            syncClassTestDraftSchedules(exam, currentUserId, now);
+        }
+        exam.setUpdatedAt(now);
         exam.setUpdatedBy(currentUserId);
         return ExamDtoMapper.toDto(examRepository.save(exam));
+    }
+
+    private void syncClassTestDraftSchedules(com.sep.vox.domain.model.exam.Exam exam, java.util.UUID currentUserId, OffsetDateTime now) {
+        for (var schedule : examScheduleRepository.findByExamId(exam.getId())) {
+            if (schedule.getStatus() == ExamScheduleStatus.DRAFT || schedule.getStatus() == ExamScheduleStatus.PUBLISHED) {
+                schedule.setStartDate(exam.getOpenAt());
+                schedule.setEndDate(exam.getCloseAt());
+                schedule.setUpdatedAt(now);
+                schedule.setUpdatedBy(currentUserId);
+                examScheduleRepository.save(schedule);
+            }
+        }
     }
 
     private UpdateExamCommand normalize(UpdateExamCommand input) {
@@ -124,12 +154,19 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
         }
     }
 
-    private void validateOpenClose(String openAt, String closeAt) {
+    private void validateOpenClose(OffsetDateTime openAt, OffsetDateTime closeAt) {
         if (openAt == null || closeAt == null) {
             return;
         }
-        if (!OffsetDateTime.parse(openAt).isBefore(OffsetDateTime.parse(closeAt))) {
+        if (!openAt.isBefore(closeAt)) {
             throw new IllegalStateException("Thời gian mở bài phải nhỏ hơn thời gian đóng bài");
         }
+    }
+
+    private void requireClassTestScheduleWindow(OffsetDateTime openAt, OffsetDateTime closeAt) {
+        if (openAt == null || closeAt == null) {
+            throw new IllegalStateException("Bài kiểm tra trên lớp phải có thời gian mở bài và đóng bài");
+        }
+        validateOpenClose(openAt, closeAt);
     }
 }

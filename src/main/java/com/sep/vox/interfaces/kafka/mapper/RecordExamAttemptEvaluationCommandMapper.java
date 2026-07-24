@@ -105,6 +105,8 @@ public final class RecordExamAttemptEvaluationCommandMapper {
             dto.speechRate(),
             dto.audioQuality(),
             dto.silenceRatio(),
+            dto.evidenceStatus(),
+            dto.evidenceReasonCodes(),
             toConfidenceCase(dto.confidenceCase())
         );
     }
@@ -115,7 +117,6 @@ public final class RecordExamAttemptEvaluationCommandMapper {
         }
         return new ConfidenceCaseSignalsInput(
             dto.cAsrLog(),
-            dto.crossAsrAgreement(),
             dto.qSnr(),
             dto.qSpeech(),
             dto.clippingRatio(),
@@ -127,7 +128,10 @@ public final class RecordExamAttemptEvaluationCommandMapper {
             dto.cPfBranch(),
             dto.cGrammar(),
             dto.cVocabulary(),
-            dto.cDiscourse()
+            dto.cDiscourse(),
+            dto.grammarScoreDelta(),
+            dto.vocabularyScoreDelta(),
+            dto.discourseScoreDelta()
         );
     }
 

@@ -56,6 +56,15 @@ public class ExamAttemptEvaluationCompletedConsumer {
         groupId = "${app.external-event.kafka.consumer-groups.exam-evaluation.group-id}"
     )
     public void consume(ConsumerRecord<String, Object> record, Acknowledgment ack) {
+        // INFO-level and in the com.sep.vox namespace on purpose: org.springframework.kafka/
+        // org.apache.kafka are both set to WARN in application.yaml, which silences Spring
+        // Kafka's own partition-assignment/poll logs -- without a line here, a message that's
+        // never delivered to this listener looks IDENTICAL in the logs to one that's delivered
+        // and processed successfully (the success path below had no log statement of its own).
+        LOGGER.info(
+            "Received exam evaluation event partition={} offset={} key={}",
+            record.partition(), record.offset(), record.key()
+        );
         try {
             var payload = jsonMapper.valueToTree(record.value());
             var eventType = payload.path("eventType").asText();
@@ -65,6 +74,7 @@ public class ExamAttemptEvaluationCompletedConsumer {
                 recordExamAttemptEvaluationUseCase.execute(
                     RecordExamAttemptEvaluationCommandMapper.toCommand(dto)
                 );
+                LOGGER.info("Recorded exam evaluation for answerId={}", dto.answerId());
             } else if ("ExamAttemptEvaluationFailed".equals(eventType)) {
                 var failedEvent = jsonMapper.treeToValue(payload, ExamAttemptEvaluationFailedEventDto.class);
                 updateExamSessionStatusUseCase.execute(new UpdateExamSessionStatusCommand(

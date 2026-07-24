@@ -91,10 +91,15 @@ public class UpdateExamCandidatesAttendanceUseCase
         var changed = new java.util.ArrayList<com.sep.vox.domain.model.exam.ExamCandidate>();
         for (var candidate : candidates) {
             var shouldBeAbsent = absentIds.contains(candidate.getId());
-            if (shouldBeAbsent && candidate.getStatus() == ExamCandidateStatus.ASSIGNED) {
+            if (candidate.getStatus() == ExamCandidateStatus.EXEMPTED
+                    || candidate.getStatus() == ExamCandidateStatus.CANCELLED
+                    || candidate.getStatus() == ExamCandidateStatus.COMPLETED) {
+                continue;
+            }
+            if (shouldBeAbsent && candidate.getStatus() != ExamCandidateStatus.ABSENT) {
                 candidate.setStatus(ExamCandidateStatus.ABSENT);
-            } else if (!shouldBeAbsent && candidate.getStatus() == ExamCandidateStatus.ABSENT) {
-                candidate.setStatus(ExamCandidateStatus.ASSIGNED);
+            } else if (!shouldBeAbsent && candidate.getStatus() != ExamCandidateStatus.ATTENDED) {
+                candidate.setStatus(ExamCandidateStatus.ATTENDED);
             } else {
                 continue;
             }

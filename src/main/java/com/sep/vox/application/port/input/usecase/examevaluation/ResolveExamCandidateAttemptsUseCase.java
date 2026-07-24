@@ -41,9 +41,9 @@ public class ResolveExamCandidateAttemptsUseCase {
         }
 
         var rows = examCandidateAttemptsQueryRepository.findByCandidateIds(candidateIds);
-        var rowsByCandidateId = rows.stream().collect(Collectors.groupingBy(ExamAttemptSummary::candidateId));
+        var rowsByCandidateId = rows.stream().collect(Collectors.groupingBy((ExamAttemptSummary row) -> row.candidateId()));
 
-        var examIds = rows.stream().map(ExamAttemptSummary::examId).distinct().toList();
+        var examIds = rows.stream().map(row -> row.examId()).distinct().toList();
         var examsById = examRepository.findByIdIn(examIds).stream()
             .collect(Collectors.toMap(exam -> exam.getId(), Function.identity(), (left, right) -> left));
 
@@ -51,7 +51,7 @@ public class ResolveExamCandidateAttemptsUseCase {
         for (var candidateId : candidateIds) {
             var candidateRows = rowsByCandidateId.getOrDefault(candidateId, List.of());
             var attempts = candidateRows.stream()
-                .sorted(Comparator.comparing(ExamAttemptSummary::startedAt, Comparator.nullsLast(Comparator.naturalOrder())).reversed())
+                .sorted(Comparator.comparing((ExamAttemptSummary row) -> row.startedAt(), Comparator.nullsLast(Comparator.naturalOrder())).reversed())
                 .toList();
 
             var exam = candidateRows.isEmpty() ? null : examsById.get(candidateRows.get(0).examId());
@@ -73,8 +73,8 @@ public class ResolveExamCandidateAttemptsUseCase {
                 return new ExamCandidateAttempts(attempts, null, null);
             }
             var average = eligible.stream()
-                .map(ExamAttemptSummary::totalScore)
-                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .map(attempt -> attempt.totalScore())
+                .reduce(BigDecimal.ZERO, (left, right) -> left.add(right))
                 .divide(BigDecimal.valueOf(eligible.size()), 2, RoundingMode.HALF_UP);
             return new ExamCandidateAttempts(attempts, eligible.get(0), average);
         }
@@ -82,10 +82,10 @@ public class ResolveExamCandidateAttemptsUseCase {
         ExamAttemptSummary official;
         switch (method) {
             case HIGHEST -> official = eligible.stream()
-                .max(Comparator.comparing(ExamAttemptSummary::totalScore))
+                .max(Comparator.comparing((ExamAttemptSummary attempt) -> attempt.totalScore()))
                 .orElse(null);
             case LOWEST -> official = eligible.stream()
-                .min(Comparator.comparing(ExamAttemptSummary::totalScore))
+                .min(Comparator.comparing((ExamAttemptSummary attempt) -> attempt.totalScore()))
                 .orElse(null);
             case FIRST -> official = eligible.isEmpty() ? null : eligible.get(eligible.size() - 1);
             case LATEST -> official = eligible.isEmpty() ? null : eligible.get(0);

@@ -82,7 +82,7 @@ public class ExamSessionResultCalculator {
 
         var rolled = rollUp(loaded, itemScoreByResponseId);
         var anyRequiresHumanReview = evaluationsByResponseId.values().stream()
-            .anyMatch(ExamItemEvaluation::isRequiresHumanReview);
+            .anyMatch(evaluation -> evaluation.isRequiresHumanReview());
         var targetFrameworkBand = loaded.policy().getTargetFrameworkBandId() == null
             ? null
             : frameworkResultBandRepository.findById(loaded.policy().getTargetFrameworkBandId()).orElse(null);
@@ -195,11 +195,11 @@ public class ExamSessionResultCalculator {
             .orElseThrow(() -> new NotFoundException("Khong tim thay assessment policy"));
 
         var orderedSections = examPaperSectionRepository.findByPaperId(session.getPaperId()).stream()
-            .sorted(Comparator.comparingInt(ExamPaperSection::getOrder))
+            .sorted(Comparator.comparingInt(section -> section.getOrder()))
             .toList();
         var responses = examItemResponseRepository.findBySessionId(sessionId);
         var paperItemsById = examPaperItemRepository.findByPaperId(session.getPaperId()).stream()
-            .collect(Collectors.toMap(ExamPaperItem::getId, Function.identity(), (left, right) -> left));
+            .collect(Collectors.toMap(item -> item.getId(), Function.identity(), (left, right) -> left));
 
         return new LoadedSession(session, exam.getId(), policy, orderedSections, responses, paperItemsById);
     }
@@ -210,14 +210,14 @@ public class ExamSessionResultCalculator {
      * grading time).
      */
     private Map<UUID, ExamItemEvaluation> evaluationsByResponseId(List<ExamItemResponse> responses) {
-        var responseIds = responses.stream().map(ExamItemResponse::getId).toList();
+        var responseIds = responses.stream().map(response -> response.getId()).toList();
         return examItemEvaluationRepository.findLatestByResponseIdIn(responseIds).stream()
-            .collect(Collectors.toMap(ExamItemEvaluation::getResponseId, Function.identity(), (left, right) -> left));
+            .collect(Collectors.toMap(evaluation -> evaluation.getResponseId(), Function.identity(), (left, right) -> left));
     }
 
     private RubricResultBand resolveRubricResultBand(AssessmentPolicy policy, BigDecimal totalScore) {
         return rubricResultBandRepository.findByRubricVersionId(policy.getRubricVersionId()).stream()
-            .sorted(Comparator.comparingInt(RubricResultBand::getOrder))
+            .sorted(Comparator.comparingInt(band -> band.getOrder()))
             .filter(band -> within(totalScore, band.getScoreMin(), band.getScoreMax()))
             .findFirst()
             .orElse(null);
@@ -243,17 +243,17 @@ public class ExamSessionResultCalculator {
 
         var totalWeight = orderedSections.stream()
             .map(section -> section.getWeight() == null ? BigDecimal.ZERO : section.getWeight())
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+            .reduce(BigDecimal.ZERO, (left, right) -> left.add(right));
 
         if (totalWeight.compareTo(BigDecimal.ZERO) > 0) {
             var weightedTotal = orderedSections.stream()
                 .map(section -> sectionScores.getOrDefault(section.getId(), scaled(BigDecimal.ZERO))
                     .multiply(section.getWeight() == null ? BigDecimal.ZERO : section.getWeight()))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .reduce(BigDecimal.ZERO, (left, right) -> left.add(right));
             return scaled(weightedTotal.divide(totalWeight, 2, RoundingMode.HALF_UP));
         }
 
-        var plainTotal = sectionScores.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+        var plainTotal = sectionScores.values().stream().reduce(BigDecimal.ZERO, (left, right) -> left.add(right));
         return scaled(plainTotal.divide(BigDecimal.valueOf(sectionScores.size()), 2, RoundingMode.HALF_UP));
     }
 

@@ -230,20 +230,24 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<ExamAttemptE
             var turns = input.payload() == null || input.payload().turns() == null
                 ? List.<ExamItemEvaluationTurn>of()
                 : input.payload().turns().stream()
-                    .map(turn -> new ExamItemEvaluationTurn(
-                        UUID.randomUUID(),
-                        savedEvaluation.getId(),
-                        turn.turnOrder() == null ? 0 : turn.turnOrder(),
-                        parseTurnType(turn.turnType()),
-                        turn.promptText(),
-                        turn.audioUrl(),
-                        turn.transcript() == null ? "" : turn.transcript(),
-                        turn.wordCount() == null ? 0 : turn.wordCount(),
-                        turn.durationSeconds(),
-                        turn.asrConfidence(),
-                        toJson(turn.pronunciationOverall()),
-                        toJson(turn.wordFeedback())
-                    ))
+                    .map(turn -> {
+                        var turnOrder = turn.turnOrder();
+                        var wordCount = turn.wordCount();
+                        return new ExamItemEvaluationTurn(
+                            UUID.randomUUID(),
+                            savedEvaluation.getId(),
+                            turnOrder == null ? 0 : turnOrder,
+                            parseTurnType(turn.turnType()),
+                            turn.promptText(),
+                            turn.audioUrl(),
+                            turn.transcript() == null ? "" : turn.transcript(),
+                            wordCount == null ? 0 : wordCount,
+                            turn.durationSeconds(),
+                            turn.asrConfidence(),
+                            toJson(turn.pronunciationOverall()),
+                            toJson(turn.wordFeedback())
+                        );
+                    })
                     .toList();
             if (!turns.isEmpty()) {
                 examItemEvaluationTurnRepository.saveAll(turns);

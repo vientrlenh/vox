@@ -14,4 +14,6 @@ public interface ExamSessionRepository {
     ExamSession save(ExamSession session);
     Optional<ExamSession> findActiveByExamIdAndCandidateId(UUID examId, UUID candidateId);
     List<ExamSession> findActiveByIdInAndSchoolId(Collection<UUID> ids, OffsetDateTime now, UUID schoolId);
+    Optional<ExamSession> findById(UUID id);
+    
 }

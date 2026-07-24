@@ -54,4 +54,10 @@ public class ExamSessionRepositoryImpl implements ExamSessionRepository {
             .map(ExamSessionMapper::toDomain)
             .toList();
     }
+
+    @Override
+    public Optional<ExamSession> findById(UUID id) {
+        return springDataExamSessionRepository.findById(id)
+            .map(ExamSessionMapper::toDomain);
+    }
 }

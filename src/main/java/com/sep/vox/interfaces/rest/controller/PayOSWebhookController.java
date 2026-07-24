@@ -33,6 +33,7 @@ public class PayOSWebhookController {
     // Đọc raw bytes + decode UTF-8 kiểu lenient (thay ký tự lỗi thay vì crash) vì payload test/webhook
     // của PayOS đôi khi chứa byte UTF-8 không hợp lệ ở phần text tiếng Việt (desc), làm Jackson mặc định
     // ném StreamReadException nếu bind thẳng qua @RequestBody Map.
+    // PAYOS
     @PostMapping
     public ResponseEntity<ApiResponse<Void>> handleWebhook(@RequestBody byte[] rawBody) {
         var decoder = StandardCharsets.UTF_8.newDecoder()

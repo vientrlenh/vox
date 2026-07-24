@@ -88,7 +88,7 @@ public class AutoAssignGradingUseCase implements IUseCase<AutoAssignGradingComma
         }
 
         return examGradingAssignmentRepository.saveAll(assignments).stream()
-            .map(ExamGradingAssignment::getId)
+            .map(assignment -> assignment.getId())
             .toList();
     }
 

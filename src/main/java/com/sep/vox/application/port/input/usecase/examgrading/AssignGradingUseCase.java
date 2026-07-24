@@ -77,22 +77,22 @@ public class AssignGradingUseCase implements IUseCase<AssignGradingCommand, List
             }
         }
         var candidateResultIds = items.stream()
-            .map(AssignGradingCommand.AssignmentItem::candidateResultId).toList();
+            .map(item -> item.candidateResultId()).toList();
         if (new HashSet<>(candidateResultIds).size() != candidateResultIds.size()) {
             throw new DuplicatedException("Không được phân công trùng bài thi.");
         }
 
         // ---- nạp theo lô: kết quả -> kỳ thi -> trường ----
         var resultsById = examCandidateResultRepository.findByIdIn(candidateResultIds).stream()
-            .collect(Collectors.toMap(ExamCandidateResult::getId, Function.identity(), (left, right) -> left));
+            .collect(Collectors.toMap(result -> result.getId(), Function.identity(), (left, right) -> left));
         for (var candidateResultId : candidateResultIds) {
             if (!resultsById.containsKey(candidateResultId)) {
                 throw new NotFoundException("Không tìm thấy kết quả bài thi.");
             }
         }
         var schoolIdByExamId = examRepository.findByIdIn(
-                resultsById.values().stream().map(ExamCandidateResult::getExamId).distinct().toList()).stream()
-            .collect(Collectors.toMap(Exam::getId, Exam::getSchoolId, (left, right) -> left));
+                resultsById.values().stream().map(result -> result.getExamId()).distinct().toList()).stream()
+            .collect(Collectors.toMap(exam -> exam.getId(), exam -> exam.getSchoolId(), (left, right) -> left));
 
         // Trường của mỗi bài; đồng thời là tập trường phân biệt để phân quyền + lọc giáo viên.
         var schoolIdByResultId = new HashMap<UUID, UUID>();
@@ -112,12 +112,12 @@ public class AssignGradingUseCase implements IUseCase<AssignGradingCommand, List
 
         // ---- đã có phân công? một query cho cả lô ----
         var alreadyAssigned = examGradingAssignmentRepository.findByCandidateResultIdIn(candidateResultIds).stream()
-            .map(ExamGradingAssignment::getCandidateResultId)
+            .map(assignment -> assignment.getCandidateResultId())
             .collect(Collectors.toSet());
 
         // ---- giáo viên hợp lệ theo từng trường, một query / trường ----
         var teacherIds = items.stream()
-            .map(AssignGradingCommand.AssignmentItem::teacherId).distinct().toList();
+            .map(item -> item.teacherId()).distinct().toList();
         var validTeachersBySchool = new HashMap<UUID, Set<UUID>>();
         for (var schoolId : distinctSchoolIds) {
             validTeachersBySchool.put(schoolId,
@@ -152,7 +152,7 @@ public class AssignGradingUseCase implements IUseCase<AssignGradingCommand, List
         }
 
         return examGradingAssignmentRepository.saveAll(assignments).stream()
-            .map(ExamGradingAssignment::getId)
+            .map(assignment -> assignment.getId())
             .toList();
     }
 }

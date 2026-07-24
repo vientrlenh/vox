@@ -103,7 +103,7 @@ public class SubmitGradingUseCase implements IUseCase<SubmitGradingCommand, Subm
         // để mỗi phần chỉ còn đúng một bản FINALIZED là nguồn điểm. Calculator dựa
         // vào việc AI bị flip trạng thái, KHÔNG ưu tiên HUMAN theo engineType.
         var responseIds = resolvedItems.stream()
-            .map(GradingItemScoreResolver.ResolvedItem::responseId).toList();
+            .map(item -> item.responseId()).toList();
         for (var evaluation : examItemEvaluationRepository.findByResponseIdIn(responseIds)) {
             if (evaluation.getStatus() != ExamItemEvaluationStatus.SUPERSEDED) {
                 evaluation.setStatus(ExamItemEvaluationStatus.SUPERSEDED);

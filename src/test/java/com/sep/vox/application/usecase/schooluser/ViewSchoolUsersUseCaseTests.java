@@ -52,6 +52,7 @@ public class ViewSchoolUsersUseCaseTests {
         var page = new PageResult<>(List.of(schoolUser), 1, 20, 1, 1);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
+        when(userContextPort.getCurrentSchoolId()).thenReturn(schoolId);
         when(userRepository.existsByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(true);
         when(schoolUserRepository.existsBySchoolIdAndUserId(schoolId, callerId)).thenReturn(true);
         when(schoolUserRepository.findBySchoolId(schoolId, null, null, null, 1, 20)).thenReturn(page);
@@ -71,6 +72,7 @@ public class ViewSchoolUsersUseCaseTests {
         var page = new PageResult<>(List.of(schoolUser), 1, 20, 1, 1);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
+        when(userContextPort.getCurrentSchoolId()).thenReturn(schoolId);
         when(userRepository.existsByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(true);
         when(schoolUserRepository.existsBySchoolIdAndUserId(schoolId, callerId)).thenReturn(true);
         when(schoolUserRepository.findBySchoolId(schoolId, null, roleId, null, 1, 20)).thenReturn(page);
@@ -97,6 +99,7 @@ public class ViewSchoolUsersUseCaseTests {
     @Test
     void list_should_throw_when_caller_is_inactive() {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
+        when(userContextPort.getCurrentSchoolId()).thenReturn(schoolId);
         when(userRepository.existsByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(false);
 
         assertThrows(

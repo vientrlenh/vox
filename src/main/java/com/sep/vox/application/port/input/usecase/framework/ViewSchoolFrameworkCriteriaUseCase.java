@@ -11,7 +11,6 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.FrameworkCriterionDto;
 import com.sep.vox.domain.mapper.FrameworkCriterionDtoMapper;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
-import com.sep.vox.domain.repository.FrameworkCriterionBandRepository;
 import com.sep.vox.domain.repository.FrameworkCriterionRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
 
@@ -23,15 +22,12 @@ public class ViewSchoolFrameworkCriteriaUseCase implements IUseCase<ViewFramewor
 
     private final FrameworkVersionRepository frameworkVersionRepository;
     private final FrameworkCriterionRepository frameworkCriterionRepository;
-    private final FrameworkCriterionBandRepository frameworkCriterionBandRepository;
 
     public ViewSchoolFrameworkCriteriaUseCase(
             FrameworkVersionRepository frameworkVersionRepository,
-            FrameworkCriterionRepository frameworkCriterionRepository,
-            FrameworkCriterionBandRepository frameworkCriterionBandRepository) {
+            FrameworkCriterionRepository frameworkCriterionRepository) {
         this.frameworkVersionRepository = frameworkVersionRepository;
         this.frameworkCriterionRepository = frameworkCriterionRepository;
-        this.frameworkCriterionBandRepository = frameworkCriterionBandRepository;
     }
 
     @Override
@@ -46,13 +42,9 @@ public class ViewSchoolFrameworkCriteriaUseCase implements IUseCase<ViewFramewor
 
         // 2. Lấy Criteria + Band tương ứng, map sang DTO
         var criteria = frameworkCriterionRepository.findByFrameworkVersionId(query.frameworkVersionId());
-        var criterionIds = criteria.stream().map(c -> c.getId()).toList();
-        var bandsByCriterionId = frameworkCriterionBandRepository.findByFrameworkCriterionIdIn(criterionIds)
-                .stream()
-                .collect(java.util.stream.Collectors.groupingBy(b -> b.getFrameworkCriterionId()));
 
         return criteria.stream()
-                .map(c -> FrameworkCriterionDtoMapper.toDto(c, bandsByCriterionId.getOrDefault(c.getId(), List.of())))
+                .map(c -> FrameworkCriterionDtoMapper.toDto(c))
                 .toList();
     }
 }

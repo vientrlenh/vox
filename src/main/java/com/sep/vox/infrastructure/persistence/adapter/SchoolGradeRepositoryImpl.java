@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -69,7 +70,7 @@ public class SchoolGradeRepositoryImpl implements SchoolGradeRepository {
         if (schoolId == null || codes == null || codes.isEmpty()) {
             return List.of();
         }
-        var upperCodes = codes.stream().map(String::toUpperCase).collect(Collectors.toSet());
+        var upperCodes = codes.stream().map(s -> s.toUpperCase(Locale.ROOT)).collect(Collectors.toSet());
         return springDataSchoolGradeRepository.findBySchoolIdAndCodeIn(schoolId, upperCodes)
                 .stream()
                 .map(SchoolGradeMapper::toDomain)

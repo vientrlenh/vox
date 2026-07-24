@@ -170,13 +170,19 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
                         : null
                 );
             var requiresRetake = requiresRetake(validity);
-            boolean markedInvalid = validity != null && Boolean.FALSE.equals(validity.validForScoring());
+            boolean markedInvalid = hasCriticalValidityFlag
+                || (validity != null && Boolean.FALSE.equals(validity.validForScoring()));
+            boolean zeroedByValidity = markedInvalid;
+            if (zeroedByValidity) {
+                itemScore = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+            }
             if ("uncooperative_move_on".equals(response.getTerminationReason())) {
                 itemScore = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
                 requiresHumanReview = true;
                 reviewReasonCode = "CONDUCT_VIOLATION";
                 markedInvalid = true;
             }
+            boolean zeroCriterionScores = markedInvalid;
             boolean insufficientEvidence = "INSUFFICIENT_EVIDENCE".equals(signals.evidenceStatus());
             String uncertaintyType;
             if (insufficientEvidence && requiresHumanReview) {
@@ -257,7 +263,9 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
                     if (criterion == null) {
                         return null;
                     }
-                    var score = BigDecimal.valueOf(entry.getValue().score()).setScale(2, RoundingMode.HALF_UP);
+                    var score = zeroCriterionScores
+                        ? BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP)
+                        : BigDecimal.valueOf(entry.getValue().score()).setScale(2, RoundingMode.HALF_UP);
                     return new ExamItemCriterionScore(
                         savedEvaluation.getId(),
                         criterion.getId(),

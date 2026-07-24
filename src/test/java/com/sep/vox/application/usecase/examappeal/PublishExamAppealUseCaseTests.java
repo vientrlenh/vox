@@ -35,15 +35,18 @@ import com.sep.vox.domain.model.exam.ExamEvaluationEngineType;
 import com.sep.vox.domain.model.exam.ExamItemEvaluation;
 import com.sep.vox.domain.model.exam.ExamItemEvaluationStatus;
 import com.sep.vox.domain.model.exam.ExamResultAppeal;
+import com.sep.vox.domain.model.exam.ExamResultAppealItem;
 import com.sep.vox.domain.model.exam.ExamSession;
 import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.repository.ExamItemEvaluationRepository;
+import com.sep.vox.domain.repository.ExamResultAppealItemRepository;
 import com.sep.vox.domain.repository.ExamResultAppealRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 
 public class PublishExamAppealUseCaseTests {
 
     private ExamResultAppealRepository examResultAppealRepository;
+    private ExamResultAppealItemRepository examResultAppealItemRepository;
     private ExamItemEvaluationRepository examItemEvaluationRepository;
     private RubricVersionRepository rubricVersionRepository;
     private UpsertExamCandidateResultUseCase upsertExamCandidateResultUseCase;
@@ -53,6 +56,9 @@ public class PublishExamAppealUseCaseTests {
 
     private final UUID appealId = UUID.randomUUID();
     private final UUID responseId = UUID.randomUUID();
+    private final UUID otherResponseId = UUID.randomUUID();
+    private final UUID appealItemId = UUID.randomUUID();
+    private final UUID otherAppealItemId = UUID.randomUUID();
     private final UUID paperItemId = UUID.randomUUID();
     private final UUID sessionId = UUID.randomUUID();
     private final UUID rubricVersionId = UUID.randomUUID();
@@ -63,6 +69,7 @@ public class PublishExamAppealUseCaseTests {
     @BeforeEach
     void setUp() {
         examResultAppealRepository = mock(ExamResultAppealRepository.class);
+        examResultAppealItemRepository = mock(ExamResultAppealItemRepository.class);
         examItemEvaluationRepository = mock(ExamItemEvaluationRepository.class);
         rubricVersionRepository = mock(RubricVersionRepository.class);
         upsertExamCandidateResultUseCase = mock(UpsertExamCandidateResultUseCase.class);
@@ -70,6 +77,7 @@ public class PublishExamAppealUseCaseTests {
         eventPublisherPort = mock(EventPublisherPort.class);
         useCase = new PublishExamAppealUseCase(
             examResultAppealRepository,
+            examResultAppealItemRepository,
             examItemEvaluationRepository,
             rubricVersionRepository,
             upsertExamCandidateResultUseCase,
@@ -82,14 +90,30 @@ public class PublishExamAppealUseCaseTests {
         rubricVersion.setScoringScaleMin(new BigDecimal("0.00"));
         rubricVersion.setScoringScaleMax(new BigDecimal("9.00"));
         when(rubricVersionRepository.findById(rubricVersionId)).thenReturn(Optional.of(rubricVersion));
+        when(examResultAppealItemRepository.findByAppealId(appealId))
+            .thenReturn(List.of(appealItem(appealItemId, responseId)));
+    }
+
+    private ExamResultAppealItem appealItem(UUID id, UUID responseId0) {
+        return new ExamResultAppealItem(id, appealId, paperItemId, responseId0, null);
+    }
+
+    private PublishExamAppealCommand command(BigDecimal partScore, String decisionNote) {
+        return new PublishExamAppealCommand(
+            appealId, List.of(new PublishExamAppealCommand.ItemScore(appealItemId, partScore)), decisionNote);
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<ExamResultAppealItem> captureSavedItems() {
+        var captor = ArgumentCaptor.forClass(List.class);
+        verify(examResultAppealItemRepository).saveAll(captor.capture());
+        return captor.getValue();
     }
 
     private AppealContext contextWith(ExamAppealStatus status) {
         var appeal = new ExamResultAppeal();
         appeal.setId(appealId);
         appeal.setStatus(status);
-        appeal.setResponseId(responseId);
-        appeal.setPaperItemId(paperItemId);
 
         var candidateResult = new ExamCandidateResult();
         candidateResult.setSessionId(sessionId);
@@ -111,16 +135,35 @@ public class PublishExamAppealUseCaseTests {
 
         var recalculated = new ExamCandidateResult();
         recalculated.setTotalScore(new BigDecimal("7.25"));
-        when(upsertExamCandidateResultUseCase.execute(sessionId, ExamCandidateResultStatus.FINAL))
+        when(upsertExamCandidateResultUseCase.execute(sessionId, ExamCandidateResultStatus.RELEASED))
             .thenReturn(recalculated);
 
-        useCase.execute(new PublishExamAppealCommand(appealId, new BigDecimal("8.00"), "Đã đối chiếu"));
+        useCase.execute(command(new BigDecimal("8.00"), "Đã đối chiếu"));
 
         // score_after phải là TỔNG do calculator dẫn xuất, không phải partScore admin nhập.
         assertThat(context.appeal().getScoreAfter()).isEqualByComparingTo("7.25");
         assertThat(context.appeal().getStatus()).isEqualTo(ExamAppealStatus.PUBLISHED);
         assertThat(context.appeal().getResolvedBy()).isEqualTo(adminId);
-        verify(upsertExamCandidateResultUseCase).execute(sessionId, ExamCandidateResultStatus.FINAL);
+        verify(upsertExamCandidateResultUseCase).execute(sessionId, ExamCandidateResultStatus.RELEASED);
+    }
+
+    @Test
+    void should_return_candidate_result_to_released_so_it_can_be_appealed_again() {
+        var context = contextWith(ExamAppealStatus.COMPARING);
+        when(examAppealAccessService.load(appealId)).thenReturn(context);
+        when(examItemEvaluationRepository.findByResponseIdIn(anyList())).thenReturn(List.of());
+        when(examItemEvaluationRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        var recalculated = new ExamCandidateResult();
+        recalculated.setTotalScore(new BigDecimal("7.25"));
+        when(upsertExamCandidateResultUseCase.execute(any(), any())).thenReturn(recalculated);
+
+        useCase.execute(command(new BigDecimal("8.00"), null));
+
+        // RELEASED chứ không phải FINAL: công bố phúc khảo không đóng vĩnh viễn kết quả,
+        // hạn mức vòng mới là thứ chặn phúc khảo lại.
+        var captor = ArgumentCaptor.forClass(ExamCandidateResultStatus.class);
+        verify(upsertExamCandidateResultUseCase).execute(eq(sessionId), captor.capture());
+        assertThat(captor.getValue()).isEqualTo(ExamCandidateResultStatus.RELEASED);
     }
 
     @Test
@@ -133,7 +176,7 @@ public class PublishExamAppealUseCaseTests {
         recalculated.setTotalScore(new BigDecimal("7.25"));
         when(upsertExamCandidateResultUseCase.execute(any(), any())).thenReturn(recalculated);
 
-        useCase.execute(new PublishExamAppealCommand(appealId, new BigDecimal("8.00"), null));
+        useCase.execute(command(new BigDecimal("8.00"), null));
 
         var captor = ArgumentCaptor.forClass(ExamItemEvaluation.class);
         verify(examItemEvaluationRepository).save(captor.capture());
@@ -160,7 +203,7 @@ public class PublishExamAppealUseCaseTests {
         recalculated.setTotalScore(new BigDecimal("7.25"));
         when(upsertExamCandidateResultUseCase.execute(any(), any())).thenReturn(recalculated);
 
-        useCase.execute(new PublishExamAppealCommand(appealId, new BigDecimal("8.00"), null));
+        useCase.execute(command(new BigDecimal("8.00"), null));
 
         assertThat(aiEvaluation.getStatus()).isEqualTo(ExamItemEvaluationStatus.SUPERSEDED);
         assertThat(reviewerDraft.getStatus()).isEqualTo(ExamItemEvaluationStatus.SUPERSEDED);
@@ -178,7 +221,7 @@ public class PublishExamAppealUseCaseTests {
         recalculated.setTotalScore(new BigDecimal("7.25"));
         when(upsertExamCandidateResultUseCase.execute(any(), any())).thenReturn(recalculated);
 
-        useCase.execute(new PublishExamAppealCommand(appealId, new BigDecimal("8.00"), null));
+        useCase.execute(command(new BigDecimal("8.00"), null));
 
         var captor = ArgumentCaptor.forClass(ExamAppealPublishedEvent.class);
         verify(eventPublisherPort).publish(captor.capture());
@@ -194,7 +237,7 @@ public class PublishExamAppealUseCaseTests {
         when(examAppealAccessService.load(appealId)).thenReturn(context);
 
         assertThatThrownBy(() ->
-            useCase.execute(new PublishExamAppealCommand(appealId, new BigDecimal("8.00"), null)))
+            useCase.execute(command(new BigDecimal("8.00"), null)))
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("tất cả giám khảo đã nộp");
 
@@ -208,7 +251,7 @@ public class PublishExamAppealUseCaseTests {
         when(examAppealAccessService.load(appealId)).thenReturn(context);
 
         assertThatThrownBy(() ->
-            useCase.execute(new PublishExamAppealCommand(appealId, new BigDecimal("9.50"), null)))
+            useCase.execute(command(new BigDecimal("9.50"), null)))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("0.00 - 9.00");
 
@@ -223,7 +266,7 @@ public class PublishExamAppealUseCaseTests {
             .when(examAppealAccessService).authorizeSchoolAdmin(eq(context), eq(adminId));
 
         assertThatThrownBy(() ->
-            useCase.execute(new PublishExamAppealCommand(appealId, new BigDecimal("8.00"), null)))
+            useCase.execute(command(new BigDecimal("8.00"), null)))
             .isInstanceOf(com.sep.vox.application.exception.ForbiddenException.class);
 
         verify(examItemEvaluationRepository, never()).save(any());
@@ -234,7 +277,122 @@ public class PublishExamAppealUseCaseTests {
         var context = contextWith(ExamAppealStatus.COMPARING);
         when(examAppealAccessService.load(appealId)).thenReturn(context);
 
-        assertThatThrownBy(() -> useCase.execute(new PublishExamAppealCommand(appealId, null, null)))
+        assertThatThrownBy(() -> useCase.execute(command(null, null)))
             .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void should_reject_publish_when_candidate_result_invalidated_for_violation() {
+        // Bài đã bị buộc kết thúc vì phát hiện gian lận muộn -> result INVALID + blockedAt.
+        // Publish phúc khảo KHÔNG được ép RELEASED để "hồi sinh" bài đã bị vô hiệu.
+        var context = contextWith(ExamAppealStatus.COMPARING);
+        context.candidateResult().setStatus(ExamCandidateResultStatus.INVALID);
+        when(examAppealAccessService.load(appealId)).thenReturn(context);
+
+        assertThatThrownBy(() -> useCase.execute(command(new BigDecimal("8.00"), "Đã đối chiếu")))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("vô hiệu");
+
+        verify(examItemEvaluationRepository, never()).save(any());
+        verify(upsertExamCandidateResultUseCase, never()).execute(any(), any());
+    }
+
+    // ---- nhiều phần thi trong một đơn --------------------------------------
+
+    private AppealContext givenTwoItemAppeal() {
+        var context = contextWith(ExamAppealStatus.COMPARING);
+        when(examAppealAccessService.load(appealId)).thenReturn(context);
+        when(examResultAppealItemRepository.findByAppealId(appealId)).thenReturn(List.of(
+            appealItem(appealItemId, responseId), appealItem(otherAppealItemId, otherResponseId)));
+        when(examItemEvaluationRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        var recalculated = new ExamCandidateResult();
+        recalculated.setTotalScore(new BigDecimal("7.25"));
+        when(upsertExamCandidateResultUseCase.execute(any(), any())).thenReturn(recalculated);
+        return context;
+    }
+
+    private PublishExamAppealCommand twoItemCommand(BigDecimal first, BigDecimal second) {
+        return new PublishExamAppealCommand(appealId, List.of(
+            new PublishExamAppealCommand.ItemScore(appealItemId, first),
+            new PublishExamAppealCommand.ItemScore(otherAppealItemId, second)), "Đã đối chiếu");
+    }
+
+    @Test
+    void should_publish_score_for_every_appeal_item() {
+        givenTwoItemAppeal();
+        when(examItemEvaluationRepository.findByResponseIdIn(anyList())).thenReturn(List.of());
+
+        useCase.execute(twoItemCommand(new BigDecimal("8.00"), new BigDecimal("6.50")));
+
+        var captor = ArgumentCaptor.forClass(ExamItemEvaluation.class);
+        verify(examItemEvaluationRepository, times(2)).save(captor.capture());
+        assertThat(captor.getAllValues()).extracting(evaluation -> evaluation.getResponseId())
+            .containsExactly(responseId, otherResponseId);
+        assertThat(captor.getAllValues()).extracting(evaluation -> evaluation.getItemScore())
+            .containsExactly(new BigDecimal("8.00"), new BigDecimal("6.50"));
+        assertThat(captor.getAllValues()).allSatisfy(evaluation ->
+            assertThat(evaluation.getStatus()).isEqualTo(ExamItemEvaluationStatus.FINALIZED));
+    }
+
+    @Test
+    void should_supersede_evaluations_of_all_appealed_responses_in_one_batch() {
+        givenTwoItemAppeal();
+        when(examItemEvaluationRepository.findByResponseIdIn(anyList())).thenReturn(List.of());
+
+        useCase.execute(twoItemCommand(new BigDecimal("8.00"), new BigDecimal("6.50")));
+
+        // Một query duy nhất cho mọi response, không phải N lần theo từng phần thi.
+        verify(examItemEvaluationRepository, times(1))
+            .findByResponseIdIn(List.of(responseId, otherResponseId));
+    }
+
+    @Test
+    void should_store_final_score_on_each_appeal_item() {
+        givenTwoItemAppeal();
+        when(examItemEvaluationRepository.findByResponseIdIn(anyList())).thenReturn(List.of());
+
+        useCase.execute(twoItemCommand(new BigDecimal("8.00"), new BigDecimal("6.50")));
+
+        var items = captureSavedItems();
+        assertThat(items).hasSize(2);
+        assertThat(items.get(0).getFinalScore()).isEqualByComparingTo("8.00");
+        assertThat(items.get(1).getFinalScore()).isEqualByComparingTo("6.50");
+    }
+
+    @Test
+    void should_recalculate_candidate_result_exactly_once() {
+        givenTwoItemAppeal();
+        when(examItemEvaluationRepository.findByResponseIdIn(anyList())).thenReturn(List.of());
+
+        useCase.execute(twoItemCommand(new BigDecimal("8.00"), new BigDecimal("6.50")));
+
+        // Calculator quét toàn bộ item, nên một lần là đủ dù đơn có bao nhiêu phần.
+        verify(upsertExamCandidateResultUseCase, times(1))
+            .execute(sessionId, ExamCandidateResultStatus.RELEASED);
+    }
+
+    @Test
+    void should_reject_when_item_scores_do_not_cover_all_appeal_items() {
+        givenTwoItemAppeal();
+
+        assertThatThrownBy(() -> useCase.execute(command(new BigDecimal("8.00"), null)))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("đủ 2 phần thi");
+
+        verify(examItemEvaluationRepository, never()).save(any());
+        verify(upsertExamCandidateResultUseCase, never()).execute(any(), any());
+    }
+
+    @Test
+    void should_reject_when_any_item_score_outside_rubric_scale() {
+        givenTwoItemAppeal();
+
+        assertThatThrownBy(() ->
+            useCase.execute(twoItemCommand(new BigDecimal("8.00"), new BigDecimal("9.50"))))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("0.00 - 9.00");
+
+        // Phần thi đầu hợp lệ vẫn không được ghi: validate hết rồi mới persist.
+        verify(examItemEvaluationRepository, never()).save(any());
     }
 }

@@ -56,9 +56,8 @@ public class ReviewFlaggedExamResultUseCase implements IUseCase<ReviewFlaggedExa
         if (result.getStatus() != ExamCandidateResultStatus.PENDING_REVIEW) {
             throw new IllegalStateException("Kết quả này không còn ở trạng thái chờ duyệt");
         }
-        if (input.decision() != ExamCandidateResultStatus.FINAL
-                && input.decision() != ExamCandidateResultStatus.INVALID
-                && input.decision() != ExamCandidateResultStatus.RETAKE_REQUIRED) {
+        if (input.decision() != ExamCandidateResultStatus.RELEASED
+                && input.decision() != ExamCandidateResultStatus.INVALID) {
             throw new IllegalArgumentException("Quyết định duyệt không hợp lệ");
         }
 

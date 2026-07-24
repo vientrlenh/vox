@@ -1,8 +1,14 @@
 package com.sep.vox.application.port.input.usecase.examappeal;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,16 +26,21 @@ import com.sep.vox.domain.model.exam.ExamEvaluationEngineType;
 import com.sep.vox.domain.model.exam.ExamItemEvaluation;
 import com.sep.vox.domain.model.exam.ExamItemEvaluationStatus;
 import com.sep.vox.domain.repository.ExamItemEvaluationRepository;
+import com.sep.vox.domain.repository.ExamResultAppealItemRepository;
 import com.sep.vox.domain.repository.ExamResultAppealRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 
 /**
  * Công bố kết quả phúc khảo.
  *
- * <p>Admin quyết <em>điểm cho part</em> chứ không quyết điểm tổng: bản HUMAN/FINALIZED
- * được ghi đè lên part đang phúc khảo, bản AI của part đó chuyển SUPERSEDED, rồi
- * {@link UpsertExamCandidateResultUseCase} tính lại tổng và result band từ toàn bộ
+ * <p>Admin quyết <em>điểm cho từng part</em> chứ không quyết điểm tổng: mỗi part đang
+ * phúc khảo nhận một bản HUMAN/FINALIZED, mọi bản cũ của các part đó chuyển SUPERSEDED,
+ * rồi {@link UpsertExamCandidateResultUseCase} tính lại tổng và result band từ toàn bộ
  * item. Nhờ vậy tổng luôn bằng hàm của các item, thay vì phụ thuộc admin nhập đúng.
+ *
+ * <p>Kết quả quay về RELEASED chứ không phải FINAL: công bố phúc khảo không đóng
+ * vĩnh viễn kết quả, học sinh còn phúc khảo lại được trong hạn mức
+ * {@code CreateExamAppealUseCase.MAX_APPEAL_ROUNDS}.
  */
 @Service
 public class PublishExamAppealUseCase implements IUseCase<PublishExamAppealCommand, UUID> {
@@ -37,6 +48,7 @@ public class PublishExamAppealUseCase implements IUseCase<PublishExamAppealComma
     private static final String HUMAN_GRADER = "HUMAN";
 
     private final ExamResultAppealRepository examResultAppealRepository;
+    private final ExamResultAppealItemRepository examResultAppealItemRepository;
     private final ExamItemEvaluationRepository examItemEvaluationRepository;
     private final RubricVersionRepository rubricVersionRepository;
     private final UpsertExamCandidateResultUseCase upsertExamCandidateResultUseCase;
@@ -45,12 +57,14 @@ public class PublishExamAppealUseCase implements IUseCase<PublishExamAppealComma
 
     public PublishExamAppealUseCase(
             ExamResultAppealRepository examResultAppealRepository,
+            ExamResultAppealItemRepository examResultAppealItemRepository,
             ExamItemEvaluationRepository examItemEvaluationRepository,
             RubricVersionRepository rubricVersionRepository,
             UpsertExamCandidateResultUseCase upsertExamCandidateResultUseCase,
             ExamAppealAccessService examAppealAccessService,
             EventPublisherPort eventPublisherPort) {
         this.examResultAppealRepository = examResultAppealRepository;
+        this.examResultAppealItemRepository = examResultAppealItemRepository;
         this.examItemEvaluationRepository = examItemEvaluationRepository;
         this.rubricVersionRepository = rubricVersionRepository;
         this.upsertExamCandidateResultUseCase = upsertExamCandidateResultUseCase;
@@ -70,24 +84,41 @@ public class PublishExamAppealUseCase implements IUseCase<PublishExamAppealComma
             throw new IllegalStateException(
                 "Chỉ có thể công bố khi tất cả giám khảo đã nộp báo cáo chấm lại.");
         }
-        if (command.partScore() == null) {
-            throw new IllegalArgumentException("Phải nhập điểm cho phần thi được phúc khảo.");
+
+        // Chặn "hồi sinh" bài đã bị vô hiệu: nếu trong lúc phúc khảo, bài bị buộc kết thúc do
+        // phát hiện vi phạm muộn (result -> INVALID), thì publish KHÔNG được ép về RELEASED.
+        if (context.candidateResult().getStatus() == ExamCandidateResultStatus.INVALID) {
+            throw new IllegalStateException(
+                "Bài thi đã bị vô hiệu do phát hiện vi phạm, không thể công bố phúc khảo.");
         }
+
+        var appealItems = examResultAppealItemRepository.findByAppealId(command.appealId()).stream()
+            .collect(Collectors.toMap(item -> item.getId(), Function.identity(),
+                (left, right) -> left, LinkedHashMap::new));
+        List<PublishExamAppealCommand.ItemScore> itemScores = command.itemScores() == null
+            ? new ArrayList<>() : command.itemScores();
+        validateItemCoverage(itemScores, appealItems.keySet());
 
         var rubricVersion = rubricVersionRepository.findById(context.candidateResult().getRubricVersionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản rubric của bài thi."));
-        if (command.partScore().compareTo(rubricVersion.getScoringScaleMin()) < 0
-                || command.partScore().compareTo(rubricVersion.getScoringScaleMax()) > 0) {
-            throw new IllegalArgumentException("Điểm công bố phải nằm trong khoảng "
-                + rubricVersion.getScoringScaleMin() + " - " + rubricVersion.getScoringScaleMax() + ".");
+        for (var itemScore : itemScores) {
+            if (itemScore.partScore() == null) {
+                throw new IllegalArgumentException("Phải nhập điểm cho phần thi được phúc khảo.");
+            }
+            if (itemScore.partScore().compareTo(rubricVersion.getScoringScaleMin()) < 0
+                    || itemScore.partScore().compareTo(rubricVersion.getScoringScaleMax()) > 0) {
+                throw new IllegalArgumentException("Điểm công bố phải nằm trong khoảng "
+                    + rubricVersion.getScoringScaleMin() + " - " + rubricVersion.getScoringScaleMax() + ".");
+            }
         }
 
         var now = OffsetDateTime.now();
         var scoreBefore = context.candidateResult().getTotalScore();
 
-        // Bản AI và toàn bộ báo cáo giám khảo đều lùi về SUPERSEDED, để chỉ còn đúng
-        // một bản FINALIZED là nguồn điểm của part này.
-        var existing = examItemEvaluationRepository.findByResponseIdIn(List.of(appeal.getResponseId()));
+        // Bản AI và toàn bộ báo cáo giám khảo của MỌI part đang phúc khảo đều lùi về
+        // SUPERSEDED, để mỗi part chỉ còn đúng một bản FINALIZED là nguồn điểm.
+        var responseIds = appealItems.values().stream().map(item -> item.getResponseId()).toList();
+        var existing = examItemEvaluationRepository.findByResponseIdIn(responseIds);
         for (var evaluation : existing) {
             if (evaluation.getStatus() != ExamItemEvaluationStatus.SUPERSEDED) {
                 evaluation.setStatus(ExamItemEvaluationStatus.SUPERSEDED);
@@ -95,33 +126,40 @@ public class PublishExamAppealUseCase implements IUseCase<PublishExamAppealComma
             }
         }
 
-        var finalEvaluation = new ExamItemEvaluation(
-            appeal.getResponseId(),
-            appeal.getPaperItemId(),
-            ExamEvaluationEngineType.HUMAN,
-            HUMAN_GRADER,
-            null,
-            currentUserId,
-            command.partScore(),
-            command.partScore(),
-            null,
-            false,
-            null,
-            false,
-            false,
-            null,
-            null,
-            command.decisionNote(),
-            null,
-            null,
-            ExamItemEvaluationStatus.FINALIZED,
-            now
-        );
-        examItemEvaluationRepository.save(finalEvaluation);
+        for (var itemScore : itemScores) {
+            var appealItem = appealItems.get(itemScore.appealItemId());
+            examItemEvaluationRepository.save(new ExamItemEvaluation(
+                appealItem.getResponseId(),
+                appealItem.getPaperItemId(),
+                ExamEvaluationEngineType.HUMAN,
+                HUMAN_GRADER,
+                null,
+                currentUserId,
+                itemScore.partScore(),
+                itemScore.partScore(),
+                null,
+                false,
+                null,
+                false,
+                false,
+                null,
+                null,
+                command.decisionNote(),
+                null,
+                null,
+                ExamItemEvaluationStatus.FINALIZED,
+                now
+            ));
+            appealItem.setFinalScore(itemScore.partScore());
+        }
+        examResultAppealItemRepository.saveAll(List.copyOf(appealItems.values()));
 
-        // Tổng + result band được dẫn xuất lại từ items, không do admin nhập.
+        // Tổng + result band được dẫn xuất lại từ items, không do admin nhập. Một lần
+        // gọi là đủ: calculator quét toàn bộ item nên thấy hết các bản FINALIZED mới.
+        // Kết quả quay về RELEASED (không phải FINAL) để học sinh còn phúc khảo lại
+        // được trong hạn mức — xem MAX_APPEAL_ROUNDS ở CreateExamAppealUseCase.
         var recalculated = upsertExamCandidateResultUseCase.execute(
-            context.candidateResult().getSessionId(), ExamCandidateResultStatus.FINAL);
+            context.candidateResult().getSessionId(), ExamCandidateResultStatus.RELEASED);
 
         appeal.setStatus(ExamAppealStatus.PUBLISHED);
         appeal.setScoreAfter(recalculated.getTotalScore());
@@ -139,5 +177,24 @@ public class PublishExamAppealUseCase implements IUseCase<PublishExamAppealComma
         ));
 
         return appeal.getId();
+    }
+
+    private void validateItemCoverage(
+            List<PublishExamAppealCommand.ItemScore> itemScores, Set<UUID> appealItemIds) {
+        if (itemScores.isEmpty()) {
+            throw new IllegalArgumentException("Phải nhập điểm cho tất cả phần thi được phúc khảo.");
+        }
+        var submittedIds = itemScores.stream()
+            .map(itemScore -> itemScore.appealItemId()).toList();
+        if (new HashSet<>(submittedIds).size() != submittedIds.size()) {
+            throw new IllegalArgumentException("Không được nhập trùng phần thi.");
+        }
+        if (!appealItemIds.containsAll(submittedIds)) {
+            throw new IllegalArgumentException("Phần thi không thuộc đơn phúc khảo này.");
+        }
+        if (submittedIds.size() != appealItemIds.size()) {
+            throw new IllegalArgumentException(
+                "Phải nhập điểm cho đủ " + appealItemIds.size() + " phần thi của đơn phúc khảo.");
+        }
     }
 }

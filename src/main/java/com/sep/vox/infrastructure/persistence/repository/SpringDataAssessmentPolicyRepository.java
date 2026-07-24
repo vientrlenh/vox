@@ -15,6 +15,8 @@ import com.sep.vox.infrastructure.persistence.entity.AssessmentPolicyJpaEntity;
 public interface SpringDataAssessmentPolicyRepository extends JpaRepository<AssessmentPolicyJpaEntity, UUID> {
     boolean existsByFrameworkVersionId(UUID frameworkVersionId);
 
+    boolean existsBySchoolClassId(UUID schoolClassId);
+
     boolean existsByRubricVersionIdAndStatus(UUID rubricVersionId, String status);
 
     boolean existsByRubricVersionIdAndStatusNot(UUID rubricVersionId, String status);

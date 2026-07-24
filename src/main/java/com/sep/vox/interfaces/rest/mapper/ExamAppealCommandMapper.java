@@ -23,7 +23,7 @@ public final class ExamAppealCommandMapper {
     public static CreateExamAppealCommand fromRequest(CreateExamAppealRequest request) {
         return new CreateExamAppealCommand(
             request.candidateResultId(),
-            request.paperItemId(),
+            request.paperItemIds(),
             request.reason(),
             request.notes()
         );
@@ -48,17 +48,26 @@ public final class ExamAppealCommandMapper {
 
     public static SubmitExamAppealReportCommand fromRequest(
             UUID appealId, SubmitExamAppealReportRequest request) {
-        var scores = request.scores().stream()
-            .map(item -> new SubmitExamAppealReportCommand.CriterionScoreItem(
-                item.criterionId(),
-                item.score(),
-                item.rationale()
+        var items = request.items().stream()
+            .map(item -> new SubmitExamAppealReportCommand.ItemReport(
+                item.appealItemId(),
+                item.scores().stream()
+                    .map(score -> new SubmitExamAppealReportCommand.CriterionScoreItem(
+                        score.criterionId(),
+                        score.score(),
+                        score.rationale()
+                    ))
+                    .toList(),
+                item.note()
             ))
             .toList();
-        return new SubmitExamAppealReportCommand(appealId, scores, request.note());
+        return new SubmitExamAppealReportCommand(appealId, items);
     }
 
     public static PublishExamAppealCommand fromRequest(UUID appealId, PublishExamAppealRequest request) {
-        return new PublishExamAppealCommand(appealId, request.partScore(), request.decisionNote());
+        var itemScores = request.itemScores().stream()
+            .map(item -> new PublishExamAppealCommand.ItemScore(item.appealItemId(), item.partScore()))
+            .toList();
+        return new PublishExamAppealCommand(appealId, itemScores, request.decisionNote());
     }
 }

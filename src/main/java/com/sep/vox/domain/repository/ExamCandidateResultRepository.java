@@ -9,6 +9,7 @@ import com.sep.vox.domain.model.exam.ExamCandidateResult;
 
 public interface ExamCandidateResultRepository {
     Optional<ExamCandidateResult> findById(UUID id);
+    List<ExamCandidateResult> findByIdIn(Collection<UUID> ids);
     Optional<ExamCandidateResult> findBySessionId(UUID sessionId);
     List<ExamCandidateResult> findBySessionIdIn(Collection<UUID> sessionIds);
     List<ExamCandidateResult> findByExamId(UUID examId);

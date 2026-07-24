@@ -12,6 +12,7 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
+import com.sep.vox.domain.repository.ExamAppealReviewerItemRepository;
 import com.sep.vox.domain.repository.ExamAppealReviewerRepository;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.ExamItemCriterionScoreRepository;
@@ -21,6 +22,7 @@ import com.sep.vox.domain.repository.ExamItemResponseRepository;
 import com.sep.vox.domain.repository.ExamItemResponseTurnRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
+import com.sep.vox.domain.repository.ExamResultAppealItemRepository;
 import com.sep.vox.domain.repository.ExamResultAppealRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -55,6 +57,8 @@ public class DeleteExamSessionUseCase implements IUseCase<UUID, Void> {
     private final ExamCandidateResultRepository examCandidateResultRepository;
     private final ExamResultAppealRepository examResultAppealRepository;
     private final ExamAppealReviewerRepository examAppealReviewerRepository;
+    private final ExamResultAppealItemRepository examResultAppealItemRepository;
+    private final ExamAppealReviewerItemRepository examAppealReviewerItemRepository;
 
     public DeleteExamSessionUseCase(
             ExamSessionRepository examSessionRepository,
@@ -70,7 +74,9 @@ public class DeleteExamSessionUseCase implements IUseCase<UUID, Void> {
             ExamItemCriterionScoreRepository examItemCriterionScoreRepository,
             ExamCandidateResultRepository examCandidateResultRepository,
             ExamResultAppealRepository examResultAppealRepository,
-            ExamAppealReviewerRepository examAppealReviewerRepository) {
+            ExamAppealReviewerRepository examAppealReviewerRepository,
+            ExamResultAppealItemRepository examResultAppealItemRepository,
+            ExamAppealReviewerItemRepository examAppealReviewerItemRepository) {
         this.examSessionRepository = examSessionRepository;
         this.examRepository = examRepository;
         this.examMemberRepository = examMemberRepository;
@@ -85,6 +91,8 @@ public class DeleteExamSessionUseCase implements IUseCase<UUID, Void> {
         this.examCandidateResultRepository = examCandidateResultRepository;
         this.examResultAppealRepository = examResultAppealRepository;
         this.examAppealReviewerRepository = examAppealReviewerRepository;
+        this.examResultAppealItemRepository = examResultAppealItemRepository;
+        this.examAppealReviewerItemRepository = examAppealReviewerItemRepository;
     }
 
     @Override
@@ -126,7 +134,11 @@ public class DeleteExamSessionUseCase implements IUseCase<UUID, Void> {
                 .map(appeal -> appeal.getId())
                 .toList();
             if (!appealIds.isEmpty()) {
+                // Con trước cha: đơn có bảng con phần thi, giám khảo có bảng con báo cáo
+                // theo từng phần. Bỏ sót một bảng là để lại đúng loại dòng mồ côi nói trên.
+                examAppealReviewerItemRepository.deleteByAppealIdIn(appealIds);
                 examAppealReviewerRepository.deleteByAppealIdIn(appealIds);
+                examResultAppealItemRepository.deleteByAppealIdIn(appealIds);
                 examResultAppealRepository.deleteByIdIn(appealIds);
             }
         });

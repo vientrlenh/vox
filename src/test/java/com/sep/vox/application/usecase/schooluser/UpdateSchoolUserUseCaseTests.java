@@ -157,7 +157,7 @@ public class UpdateSchoolUserUseCaseTests {
     void should_throw_illegal_argument_when_caller_in_different_school() {
         var otherSchoolId = UUID.randomUUID();
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
-        when(userRepository.findById(callerId)).thenReturn(Optional.of(user(callerId, "0900000000")));
+        when(userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(Optional.of(user(callerId, "0900000000")));
         when(schoolUserRepository.findByUserId(callerId)).thenReturn(Optional.of(schoolUser(otherSchoolId, callerId)));
         var command = command("Nguyen Van Updated", true, null, false, null, false, null, false);
 
@@ -176,9 +176,19 @@ public class UpdateSchoolUserUseCaseTests {
     }
 
     @Test
+    void should_throw_not_found_when_caller_inactive() {
+        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
+        when(userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(Optional.empty());
+        var command = command("Nguyen Van Updated", true, null, false, null, false, null, false);
+
+        assertThrows(NotFoundException.class, () -> updateSchoolUserUseCase.execute(command));
+        verify(userRepository, never()).saveAndFlush(any(User.class));
+    }
+
+    @Test
     void should_throw_not_found_when_target_not_found() {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
-        when(userRepository.findById(callerId)).thenReturn(Optional.of(user(callerId, "0900000000")));
+        when(userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(Optional.of(user(callerId, "0900000000")));
         when(schoolUserRepository.findByUserId(callerId)).thenReturn(Optional.of(schoolUser(schoolId, callerId)));
         when(userRepository.findByIdForUpdate(targetId)).thenReturn(Optional.empty());
         var command = command("Nguyen Van Updated", true, null, false, null, false, null, false);
@@ -189,7 +199,7 @@ public class UpdateSchoolUserUseCaseTests {
 
     private void wireCallerAndTarget(UUID targetSchoolId) {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
-        when(userRepository.findById(callerId)).thenReturn(Optional.of(user(callerId, "0900000000")));
+        when(userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(Optional.of(user(callerId, "0900000000")));
         when(schoolUserRepository.findByUserId(callerId)).thenReturn(Optional.of(schoolUser(schoolId, callerId)));
         when(userRepository.findByIdForUpdate(targetId)).thenReturn(Optional.of(user(targetId, "0987654321")));
         when(schoolUserRepository.findByUserId(targetId)).thenReturn(Optional.of(schoolUser(targetSchoolId, targetId)));

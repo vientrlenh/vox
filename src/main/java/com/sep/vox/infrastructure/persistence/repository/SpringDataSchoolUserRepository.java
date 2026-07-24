@@ -32,14 +32,16 @@ public interface SpringDataSchoolUserRepository extends JpaRepository<SchoolUser
             start_date, 
             end_date 
         FROM (
-            SELECT 
-                su.*, 
+            SELECT
+                su.*,
                 row_number() OVER (
-                    PARTITION BY su.school_id 
-                    ORDER BY su.id DESC 
-                ) AS rn 
+                    PARTITION BY su.school_id
+                    ORDER BY su.id DESC
+                ) AS rn
             FROM school_users su
+            JOIN users u ON u.id = su.user_id
             WHERE su.school_id IN (:schoolIds)
+                AND u.status <> 'DISABLED'
         ) ranked 
         WHERE ranked.rn BETWEEN :fromRow AND :toRow 
         ORDER BY ranked.school_id, ranked.rn

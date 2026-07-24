@@ -4,6 +4,7 @@ import java.time.OffsetDateTime;
 import java.util.Objects;
 import java.util.UUID;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -63,7 +64,20 @@ public class CreateSchoolClassUserUseCase implements IUseCase<CreateSchoolClassU
         validateSchool(schoolId);
         validateSchoolClass(input.classId(), schoolId);
         validateTargetUser(input.userId(), schoolId);
-        validateMembershipIsUnique(input.userId(), input.classId());
+
+        // Thêm thành viên = join hoặc re-join. Bản ghi (userId, classId) là duy nhất nên
+        // học sinh đã rời lớp (isActive=false) phải được kích hoạt lại thay vì bị chặn.
+        var existing = schoolClassUserRepository.findByUserIdAndSchoolClassId(input.userId(), input.classId())
+            .orElse(null);
+        if (existing != null) {
+            if (existing.isActive()) {
+                throw new DuplicatedException("Người dùng đã thuộc lớp học");
+            }
+            existing.activate();
+            existing.setAssignedBy(currentUserId);
+            var saved = schoolClassUserRepository.save(existing);
+            return new CreateSchoolClassUserResponse(saved.getId());
+        }
 
         var schoolClassUser = new SchoolClassUser(
             input.userId(),
@@ -73,8 +87,13 @@ public class CreateSchoolClassUserUseCase implements IUseCase<CreateSchoolClassU
             null,
             currentUserId
         );
-        var saved = schoolClassUserRepository.save(schoolClassUser);
-        return new CreateSchoolClassUserResponse(saved.getId());
+        try {
+            var saved = schoolClassUserRepository.save(schoolClassUser);
+            return new CreateSchoolClassUserResponse(saved.getId());
+        } catch (DataIntegrityViolationException e) {
+            // Chống race-condition: hai request cùng thêm một thành viên vượt qua check rồi đụng unique index.
+            throw new DuplicatedException("Người dùng đã thuộc lớp học");
+        }
     }
 
     private void validateCommand(CreateSchoolClassUserCommand input) {
@@ -143,12 +162,6 @@ public class CreateSchoolClassUserUseCase implements IUseCase<CreateSchoolClassU
         SchoolUser targetSchoolUser = schoolUserRepository.findByUserId(targetUser.getId()).orElse(null);
         if (!Objects.equals(targetSchoolUser != null ? targetSchoolUser.getSchoolId() : null, schoolId)) {
             throw new IllegalArgumentException("Người dùng không thuộc trường hiện tại");
-        }
-    }
-
-    private void validateMembershipIsUnique(UUID userId, UUID classId) {
-        if (schoolClassUserRepository.findByUserIdAndSchoolClassId(userId, classId).isPresent()) {
-            throw new DuplicatedException("Người dùng đã thuộc lớp học");
         }
     }
 }

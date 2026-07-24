@@ -174,6 +174,11 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
         return springDataSchoolClassRepository.existsBySchoolIdAndStatus(schoolId, status);
     }
 
+    @Override
+    public int archiveByGradeId(UUID schoolGradeId, OffsetDateTime updatedAt, UUID updatedBy) {
+        return springDataSchoolClassRepository.archiveByGradeId(schoolGradeId, updatedAt, updatedBy);
+    }
+
 
     @Override
     public List<SchoolClass> findAllById(List<UUID> schoolIds) {

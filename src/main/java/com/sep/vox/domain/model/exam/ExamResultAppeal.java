@@ -18,8 +18,6 @@ public class ExamResultAppeal {
     private String notes;
     private OffsetDateTime deadline;
     private OffsetDateTime approvedAt;
-    private UUID paperItemId;
-    private UUID responseId;
     private String decisionNote;
 
     public ExamResultAppeal() {}
@@ -27,7 +25,7 @@ public class ExamResultAppeal {
     public ExamResultAppeal(UUID id, UUID candidateResultId, UUID requestedBy, String reason,
             OffsetDateTime requestedAt, ExamAppealStatus status, BigDecimal scoreBefore, BigDecimal scoreAfter,
             UUID resolvedBy, OffsetDateTime resolvedAt, String notes, OffsetDateTime deadline,
-            OffsetDateTime approvedAt, UUID paperItemId, UUID responseId, String decisionNote) {
+            OffsetDateTime approvedAt, String decisionNote) {
         this.id = id;
         this.candidateResultId = candidateResultId;
         this.requestedBy = requestedBy;
@@ -41,15 +39,13 @@ public class ExamResultAppeal {
         this.notes = notes;
         this.deadline = deadline;
         this.approvedAt = approvedAt;
-        this.paperItemId = paperItemId;
-        this.responseId = responseId;
         this.decisionNote = decisionNote;
     }
 
     public ExamResultAppeal(UUID candidateResultId, UUID requestedBy, String reason, OffsetDateTime requestedAt,
             ExamAppealStatus status, BigDecimal scoreBefore, BigDecimal scoreAfter, UUID resolvedBy,
             OffsetDateTime resolvedAt, String notes, OffsetDateTime deadline, OffsetDateTime approvedAt,
-            UUID paperItemId, UUID responseId, String decisionNote) {
+            String decisionNote) {
         this.candidateResultId = candidateResultId;
         this.requestedBy = requestedBy;
         this.reason = reason;
@@ -62,8 +58,6 @@ public class ExamResultAppeal {
         this.notes = notes;
         this.deadline = deadline;
         this.approvedAt = approvedAt;
-        this.paperItemId = paperItemId;
-        this.responseId = responseId;
         this.decisionNote = decisionNote;
     }
 
@@ -169,22 +163,6 @@ public class ExamResultAppeal {
 
     public void setApprovedAt(OffsetDateTime approvedAt) {
         this.approvedAt = approvedAt;
-    }
-
-    public UUID getPaperItemId() {
-        return paperItemId;
-    }
-
-    public void setPaperItemId(UUID paperItemId) {
-        this.paperItemId = paperItemId;
-    }
-
-    public UUID getResponseId() {
-        return responseId;
-    }
-
-    public void setResponseId(UUID responseId) {
-        this.responseId = responseId;
     }
 
     public String getDecisionNote() {

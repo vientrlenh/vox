@@ -9,6 +9,7 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.DeleteSchoolUserCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
@@ -31,12 +32,15 @@ public class DeleteSchoolUserUseCase implements IUseCase<DeleteSchoolUserCommand
         var now = OffsetDateTime.now();
         var callerId = userContextPort.getCurrentAuthenticatedUserId();
 
-        userRepository.findById(callerId)
+        userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
         var callerSchoolUser = schoolUserRepository.findByUserId(callerId)
             .orElseThrow(() -> new IllegalArgumentException("Không có quyền thực hiện thao tác này"));
         if (!input.schoolId().equals(callerSchoolUser.getSchoolId())) {
             throw new IllegalArgumentException("Không có quyền thực hiện thao tác này");
+        }
+        if (callerId.equals(input.userId())) {
+            throw new IllegalArgumentException("Không thể tự xóa tài khoản của chính mình");
         }
 
         var targetUser = userRepository.findById(input.userId())
@@ -49,6 +53,15 @@ public class DeleteSchoolUserUseCase implements IUseCase<DeleteSchoolUserCommand
 
         targetUser.softDelete(callerId, now);
         userRepository.save(targetUser);
+
+        // SchoolUser không có cờ isActive: kết thúc membership bằng endDate để vô hiệu hóa,
+        // đảm bảo ràng buộc DB start_date < end_date luôn thỏa mãn.
+        var startDate = targetSchoolUser.getStartDate();
+        var membershipEnd = (startDate != null && !startDate.isBefore(now))
+            ? startDate.plusSeconds(1)
+            : now;
+        targetSchoolUser.setEndDate(membershipEnd);
+        schoolUserRepository.save(targetSchoolUser);
 
         return null;
     }

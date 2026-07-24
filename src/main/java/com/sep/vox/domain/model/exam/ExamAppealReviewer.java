@@ -1,9 +1,13 @@
 package com.sep.vox.domain.model.exam;
 
-import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
+/**
+ * Phân công một giám khảo vào đơn phúc khảo. Điểm và nhận xét nằm ở
+ * {@link ExamAppealReviewerItem} theo từng phần thi — giám khảo chấm tất cả phần
+ * của đơn, nên dòng này chỉ giữ trạng thái phân công.
+ */
 public class ExamAppealReviewer {
     private UUID id;
     private UUID appealId;
@@ -12,15 +16,11 @@ public class ExamAppealReviewer {
     private OffsetDateTime assignedAt;
     private UUID assignedBy;
     private OffsetDateTime submittedAt;
-    private String note;
-    private BigDecimal suggestedScore;
-    private UUID evaluationId;
 
     public ExamAppealReviewer() {}
 
     public ExamAppealReviewer(UUID id, UUID appealId, UUID reviewerId, ExamAppealReviewerStatus status,
-            OffsetDateTime assignedAt, UUID assignedBy, OffsetDateTime submittedAt, String note,
-            BigDecimal suggestedScore, UUID evaluationId) {
+            OffsetDateTime assignedAt, UUID assignedBy, OffsetDateTime submittedAt) {
         this.id = id;
         this.appealId = appealId;
         this.reviewerId = reviewerId;
@@ -28,23 +28,16 @@ public class ExamAppealReviewer {
         this.assignedAt = assignedAt;
         this.assignedBy = assignedBy;
         this.submittedAt = submittedAt;
-        this.note = note;
-        this.suggestedScore = suggestedScore;
-        this.evaluationId = evaluationId;
     }
 
     public ExamAppealReviewer(UUID appealId, UUID reviewerId, ExamAppealReviewerStatus status,
-            OffsetDateTime assignedAt, UUID assignedBy, OffsetDateTime submittedAt, String note,
-            BigDecimal suggestedScore, UUID evaluationId) {
+            OffsetDateTime assignedAt, UUID assignedBy, OffsetDateTime submittedAt) {
         this.appealId = appealId;
         this.reviewerId = reviewerId;
         this.status = status;
         this.assignedAt = assignedAt;
         this.assignedBy = assignedBy;
         this.submittedAt = submittedAt;
-        this.note = note;
-        this.suggestedScore = suggestedScore;
-        this.evaluationId = evaluationId;
     }
 
     public UUID getId() {
@@ -101,29 +94,5 @@ public class ExamAppealReviewer {
 
     public void setSubmittedAt(OffsetDateTime submittedAt) {
         this.submittedAt = submittedAt;
-    }
-
-    public String getNote() {
-        return note;
-    }
-
-    public void setNote(String note) {
-        this.note = note;
-    }
-
-    public BigDecimal getSuggestedScore() {
-        return suggestedScore;
-    }
-
-    public void setSuggestedScore(BigDecimal suggestedScore) {
-        this.suggestedScore = suggestedScore;
-    }
-
-    public UUID getEvaluationId() {
-        return evaluationId;
-    }
-
-    public void setEvaluationId(UUID evaluationId) {
-        this.evaluationId = evaluationId;
     }
 }

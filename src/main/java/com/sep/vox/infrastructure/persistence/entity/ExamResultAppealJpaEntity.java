@@ -74,14 +74,6 @@ public class ExamResultAppealJpaEntity {
     @Column(name = "approved_at")
     private OffsetDateTime approvedAt;
 
-    /** Part được phúc khảo. */
-    @Column(name = "paper_item_id")
-    private UUID paperItemId;
-
-    /** Câu trả lời tương ứng với part trên — giám khảo nghe lại và chấm lại. */
-    @Column(name = "response_id")
-    private UUID responseId;
-
     /** Lý do từ chối / ghi chú khi công bố — tách khỏi `reason` của học sinh. */
     @Column(name = "decision_note", length = 512)
     private String decisionNote;
@@ -91,8 +83,7 @@ public class ExamResultAppealJpaEntity {
     public ExamResultAppealJpaEntity(UUID id, UUID candidateResultId, UUID requestedBy, String reason,
             OffsetDateTime requestedAt, String status, BigDecimal scoreBefore,
             BigDecimal scoreAfter, UUID resolvedBy, OffsetDateTime resolvedAt, String notes,
-            OffsetDateTime deadline, OffsetDateTime approvedAt, UUID paperItemId, UUID responseId,
-            String decisionNote) {
+            OffsetDateTime deadline, OffsetDateTime approvedAt, String decisionNote) {
         this.id = id;
         this.candidateResultId = candidateResultId;
         this.requestedBy = requestedBy;
@@ -106,8 +97,6 @@ public class ExamResultAppealJpaEntity {
         this.notes = notes;
         this.deadline = deadline;
         this.approvedAt = approvedAt;
-        this.paperItemId = paperItemId;
-        this.responseId = responseId;
         this.decisionNote = decisionNote;
     }
 
@@ -213,22 +202,6 @@ public class ExamResultAppealJpaEntity {
 
     public void setApprovedAt(OffsetDateTime approvedAt) {
         this.approvedAt = approvedAt;
-    }
-
-    public UUID getPaperItemId() {
-        return paperItemId;
-    }
-
-    public void setPaperItemId(UUID paperItemId) {
-        this.paperItemId = paperItemId;
-    }
-
-    public UUID getResponseId() {
-        return responseId;
-    }
-
-    public void setResponseId(UUID responseId) {
-        this.responseId = responseId;
     }
 
     public String getDecisionNote() {

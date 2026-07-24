@@ -19,5 +19,13 @@ public interface SpringDataExamResultAppealRepository extends JpaRepository<Exam
     """)
     boolean existsOpenByCandidateResultId(@Param("candidateResultId") UUID candidateResultId);
 
+    /** Hạn mức phúc khảo đếm số vòng đã công bố; đơn bị từ chối không đốt lượt. */
+    @Query("""
+        SELECT COUNT(a) FROM ExamResultAppealJpaEntity a
+        WHERE a.candidateResultId = :candidateResultId
+        AND a.status = 'PUBLISHED'
+    """)
+    long countPublishedByCandidateResultId(@Param("candidateResultId") UUID candidateResultId);
+
     List<ExamResultAppealJpaEntity> findByCandidateResultId(UUID candidateResultId);
 }

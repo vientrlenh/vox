@@ -7,9 +7,11 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.domain.model.exam.ExamAppealStatus;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
+import com.sep.vox.domain.repository.ExamResultAppealRepository;
 
 /**
  * G.3/G.4: logic dùng chung để "chốt" 1 ExamCandidateResult, tái dùng ở cả job/mutation
@@ -20,9 +22,13 @@ import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 public class ExamCandidateResultFinalizationService {
 
     private final ExamCandidateResultRepository examCandidateResultRepository;
+    private final ExamResultAppealRepository examResultAppealRepository;
 
-    public ExamCandidateResultFinalizationService(ExamCandidateResultRepository examCandidateResultRepository) {
+    public ExamCandidateResultFinalizationService(
+            ExamCandidateResultRepository examCandidateResultRepository,
+            ExamResultAppealRepository examResultAppealRepository) {
         this.examCandidateResultRepository = examCandidateResultRepository;
+        this.examResultAppealRepository = examResultAppealRepository;
     }
 
     /**
@@ -45,6 +51,31 @@ public class ExamCandidateResultFinalizationService {
         result.setUpdatedAt(now);
         result.setUpdatedBy(actingUserId);
         examCandidateResultRepository.save(result);
+
+        closeOpenAppeals(result.getId(), actingUserId, now);
+    }
+
+    /**
+     * Bài vừa bị vô hiệu vì phát hiện vi phạm muộn -> đóng (REJECTED) mọi đơn phúc khảo còn
+     * đang xử lý của kết quả này. Nếu không đóng, đơn sẽ treo và lúc publish sẽ ép kết quả về
+     * RELEASED, "hồi sinh" bài đã bị vô hiệu. REJECTED không đốt lượt phúc khảo (chỉ PUBLISHED
+     * mới tính) nên không ảnh hưởng hạn mức nếu về sau kết quả được khôi phục.
+     */
+    private void closeOpenAppeals(UUID candidateResultId, UUID actingUserId, OffsetDateTime now) {
+        if (candidateResultId == null) {
+            return;
+        }
+        for (var appeal : examResultAppealRepository.findByCandidateResultId(candidateResultId)) {
+            if (appeal.getStatus() == ExamAppealStatus.PUBLISHED
+                    || appeal.getStatus() == ExamAppealStatus.REJECTED) {
+                continue;
+            }
+            appeal.setStatus(ExamAppealStatus.REJECTED);
+            appeal.setDecisionNote("Đơn phúc khảo bị đóng do bài thi đã bị vô hiệu vì phát hiện vi phạm.");
+            appeal.setResolvedBy(actingUserId);
+            appeal.setResolvedAt(now);
+            examResultAppealRepository.save(appeal);
+        }
     }
 
     /**

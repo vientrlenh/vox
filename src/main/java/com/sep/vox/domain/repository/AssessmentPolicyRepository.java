@@ -22,6 +22,9 @@ public interface AssessmentPolicyRepository {
     Optional<AssessmentPolicy> findActivePolicy(UUID schoolId, UUID languageId, UUID classId, UUID gradeId, UUID gradeLevelId, OffsetDateTime atTime);
     boolean existsByFrameworkVersionId(UUID frameworkVersionId);
 
+    // Kiểm tra còn Assessment Policy nào áp riêng cho một lớp học hay không (dùng khi xóa lớp)
+    boolean existsBySchoolClassId(UUID schoolClassId);
+
     // Kiểm tra đã tồn tại policy DRAFT/PUBLISHED nào trùng scope VÀ cùng Rubric Version hay chưa (chặn tạo trùng)
     boolean existsActiveForScope(UUID schoolId, UUID languageId, UUID frameworkVersionId,
             UUID schoolGradeLevelId, UUID schoolGradeId, UUID schoolClassId, UUID rubricVersionId);

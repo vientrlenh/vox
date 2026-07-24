@@ -2,6 +2,7 @@ package com.sep.vox.application.query.dto;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 
 public record AppealSummaryInfo(
@@ -9,7 +10,8 @@ public record AppealSummaryInfo(
     String studentName,
     String className,
     String examName,
-    String partLabel,
+    /** Nhãn các phần thi được phúc khảo; FE tự quyết cách hiển thị (chip, "+2 more"…). */
+    List<String> partLabels,
     BigDecimal originalScore,
     String status,
     OffsetDateTime requestedAt,

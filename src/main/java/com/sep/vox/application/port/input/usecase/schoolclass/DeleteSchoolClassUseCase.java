@@ -18,6 +18,7 @@ import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassDependencyRepository;
 import com.sep.vox.domain.repository.SchoolClassRepository;
+import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
@@ -29,6 +30,7 @@ public class DeleteSchoolClassUseCase implements IUseCase<DeleteSchoolClassComma
     private static final String SOFT_DELETE = "SOFT";
 
     private final SchoolClassRepository schoolClassRepository;
+    private final SchoolClassUserRepository schoolClassUserRepository;
     private final SchoolClassDependencyRepository schoolClassDependencyRepository;
     private final SchoolRepository schoolRepository;
     private final UserRepository userRepository;
@@ -37,12 +39,14 @@ public class DeleteSchoolClassUseCase implements IUseCase<DeleteSchoolClassComma
 
     public DeleteSchoolClassUseCase(
             SchoolClassRepository schoolClassRepository,
+            SchoolClassUserRepository schoolClassUserRepository,
             SchoolClassDependencyRepository schoolClassDependencyRepository,
             SchoolRepository schoolRepository,
             UserRepository userRepository,
             UserContextPort userContextPort,
             SchoolUserRepository schoolUserRepository) {
         this.schoolClassRepository = schoolClassRepository;
+        this.schoolClassUserRepository = schoolClassUserRepository;
         this.schoolClassDependencyRepository = schoolClassDependencyRepository;
         this.schoolRepository = schoolRepository;
         this.userRepository = userRepository;
@@ -65,12 +69,19 @@ public class DeleteSchoolClassUseCase implements IUseCase<DeleteSchoolClassComma
             throw new NotFoundException("Không tìm thấy lớp học");
         }
 
+        // Đã xóa mềm (ARCHIVED) trước đó → coi như không còn tồn tại, tránh archive/deactivate lại.
+        if (schoolClass.getStatus() == SchoolClassStatus.ARCHIVED) {
+            throw new NotFoundException("Lớp học đã bị xóa trước đó");
+        }
+
         if (!schoolClassDependencyRepository.existsDependencyBySchoolClassId(input.id())) {
             schoolClassRepository.deleteById(input.id());
             return new DeleteSchoolClassResponse(input.id(), HARD_DELETE, null, null);
         }
 
+        // Xóa mềm: archive lớp và deactivate toàn bộ thành viên đang active trong cùng transaction.
         var now = OffsetDateTime.now();
+        schoolClassUserRepository.deactivateBySchoolClassId(input.id(), now);
         schoolClass.setStatus(SchoolClassStatus.ARCHIVED);
         schoolClass.setUpdatedAt(now);
         schoolClass.setUpdatedBy(currentUserId);

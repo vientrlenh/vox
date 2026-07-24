@@ -12,8 +12,9 @@ public record AppealReviewerInfo(
     boolean done,
     OffsetDateTime assignedAt,
     OffsetDateTime submittedAt,
+    /** Trung bình điểm đề xuất của các phần thi; null khi giám khảo chưa nộp. */
     BigDecimal suggestedScore,
-    String note,
-    List<AppealCriterionScoreInfo> scores
+    /** Rỗng khi giám khảo chưa nộp báo cáo. */
+    List<AppealReviewerItemInfo> items
 ) {
 }

@@ -1,0 +1,166 @@
+enum GradingAssignmentStatus {
+    ASSIGNED
+    COMPLETED
+}
+
+"""
+Thẻ số đầu màn phân công. totalToGrade CHỈ đếm bài đang chờ chấm — bài đã công bố
+không chấm lại được. Không có ô 'đã chấm xong': bài chấm xong rời khỏi phạm vi này.
+"""
+type GradingStats {
+    totalToGrade: Int!
+    unassigned: Int!
+    assigned: Int!
+}
+
+"Một lượt hỏi-đáp trong một phần thi. Một phần có NHIỀU lượt, mỗi lượt audio/transcript riêng."
+type GradingTurn {
+    id: ID!
+    turnOrder: Int
+    turnType: String
+    promptText: String
+    audioUrl: String
+    transcript: String
+    durationSeconds: Int
+}
+
+type GradingCriterionScore {
+    criterionId: ID!
+    criterionCode: String
+    label: String
+    score: Float
+    rationale: String
+}
+
+"""
+Tiêu chí rubric kèm dải điểm THẬT. FE dựng ô nhập từ minScore/maxScore ở đây,
+không hardcode 0-9 — mỗi rubric một thang khác nhau.
+"""
+type GradingCriterionMeta {
+    id: ID!
+    code: String
+    label: String
+    description: String
+    minScore: Float
+    maxScore: Float
+    "Trọng số dùng để quy đổi điểm tiêu chí thành điểm phần thi"
+    weight: Float
+    required: Boolean!
+}
+
+"Một phần thi cần chấm."
+type GradingTaskItem {
+    paperItemId: ID!
+    responseId: ID!
+    partLabel: String
+    "Điểm của bản chấm đang có hiệu lực (lần đầu là điểm AI) — mốc để đối chiếu"
+    currentItemScore: Float
+    currentFeedbackSummary: String
+    currentScores: [GradingCriterionScore!]!
+    "Luôn lấy từ bản AI — chỉ bản AI mới sinh lượt nói"
+    turns: [GradingTurn!]!
+}
+
+"""
+Màn chấm của giáo viên. KHÔNG có tên/ID học sinh — giáo viên chấm ẩn danh.
+"""
+type GradingTaskDetail {
+    assignmentId: ID!
+    candidateResultId: ID!
+    "8 ký tự hex đầu của candidateResultId, viết hoa (vd A2041F3C)"
+    resultCode: String!
+    examName: String
+    assignmentStatus: GradingAssignmentStatus!
+    resultStatus: String
+    flagged: Boolean!
+    flagReason: String
+    currentTotalScore: Float
+    """
+    Cờ chỉ-đọc do BE quyết: true chỉ khi bài còn chờ chấm và phân công chưa chốt.
+    FE dựng chế độ xem-lại từ cờ này, không tự suy từ status.
+    """
+    editable: Boolean!
+    items: [GradingTaskItem!]!
+    criteria: [GradingCriterionMeta!]!
+}
+
+"Hàng đợi của giáo viên. Ẩn danh: không có tên/ID học sinh."
+type GradingTask {
+    assignmentId: ID!
+    candidateResultId: ID!
+    resultCode: String!
+    examName: String
+    "Số phần phải chấm"
+    partCount: Int!
+    status: GradingAssignmentStatus!
+    flagged: Boolean!
+    assignedAt: String
+}
+
+type GradingTaskPage {
+    content: [GradingTask!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+"Dòng bảng phân công của school admin. Admin thấy tên học sinh bình thường."
+type GradingAssignmentRow {
+    candidateResultId: ID!
+    resultCode: String!
+    studentName: String
+    className: String
+    examName: String
+    resultStatus: String
+    flagged: Boolean!
+    "null nghĩa là bài chưa được gán cho ai"
+    assignmentId: ID
+    teacherId: ID
+    teacherName: String
+    assignmentStatus: GradingAssignmentStatus
+    assignedAt: String
+    completedAt: String
+}
+
+type GradingAssignmentRowPage {
+    content: [GradingAssignmentRow!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+"Giáo viên có thể nhận bài, kèm tải hiện tại."
+type AssignableTeacher {
+    id: ID!
+    name: String
+    "Số bài đang giữ (status = ASSIGNED)"
+    load: Int!
+}
+
+extend type Query {
+    """
+    Bảng phân công chấm bài của trường. Chỉ liệt kê bài đang chờ chấm, gồm cả bài
+    chưa gán ai. Phân trang 0-based. `search` khớp tên giáo viên hoặc mã bài.
+    """
+    gradingAssignments(
+        examId: ID,
+        scheduleId: ID,
+        teacherId: ID,
+        status: GradingAssignmentStatus,
+        search: String,
+        page: Int = 0,
+        size: Int = 20
+    ): GradingAssignmentRowPage!
+
+    gradingStats(examId: ID, scheduleId: ID): GradingStats!
+
+    "Hàng đợi bài của giáo viên đang đăng nhập. Phân trang 0-based."
+    myGradingTasks(status: GradingAssignmentStatus, page: Int = 0, size: Int = 20): GradingTaskPage!
+
+    gradingTaskDetail(assignmentId: ID!): GradingTaskDetail!
+
+    "Dùng cho cả modal phân công tự động lẫn dropdown gán tay / đổi giáo viên."
+    assignableTeachers(search: String): [AssignableTeacher!]!
+}

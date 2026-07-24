@@ -1,5 +1,6 @@
 package com.sep.vox.domain.repository;
 
+import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -17,4 +18,10 @@ public interface SchoolClassUserRepository {
     boolean existsBySchoolClassId(UUID schoolClassId);
     SchoolClassUser save(SchoolClassUser schoolClassUser);
     List<SchoolClassUser> saveAll(Collection<SchoolClassUser> schoolClassUsers);
+
+    /** Vô hiệu hóa (deactivate) mọi thành viên đang active của các lớp thuộc một năm học. Trả về số dòng bị ảnh hưởng. */
+    int deactivateByGradeId(UUID schoolGradeId, OffsetDateTime leftAt);
+
+    /** Vô hiệu hóa (deactivate) mọi thành viên đang active của một lớp học. Trả về số dòng bị ảnh hưởng. */
+    int deactivateBySchoolClassId(UUID schoolClassId, OffsetDateTime leftAt);
 }

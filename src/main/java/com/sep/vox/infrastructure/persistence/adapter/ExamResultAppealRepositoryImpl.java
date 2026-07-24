@@ -40,6 +40,11 @@ public class ExamResultAppealRepositoryImpl implements ExamResultAppealRepositor
     }
 
     @Override
+    public long countPublishedByCandidateResultId(UUID candidateResultId) {
+        return springDataExamResultAppealRepository.countPublishedByCandidateResultId(candidateResultId);
+    }
+
+    @Override
     public List<ExamResultAppeal> findByCandidateResultId(UUID candidateResultId) {
         return springDataExamResultAppealRepository.findByCandidateResultId(candidateResultId).stream()
             .map(ExamResultAppealMapper::toDomain)

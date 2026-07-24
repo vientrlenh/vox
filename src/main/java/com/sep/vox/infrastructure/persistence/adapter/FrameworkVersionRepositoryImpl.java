@@ -29,7 +29,7 @@ public class FrameworkVersionRepositoryImpl implements FrameworkVersionRepositor
     public Optional<FrameworkVersion> findById(UUID id) {
         return springDataFrameworkVersionRepository.findById(id).map(FrameworkVersionMapper::toDomain);
     }
-
+    
     @Override
     public Optional<FrameworkVersion> findByCode(String code) {
         return springDataFrameworkVersionRepository.findByCode(code).map(FrameworkVersionMapper::toDomain);

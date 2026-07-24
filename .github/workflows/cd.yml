@@ -1,18 +1,21 @@
 name: CD
 
-# TEMPORARY: deploys straight off a push to `testDeploy` (CI Build doesn't run
-# on this branch at all -- see ci-build.yml, gated to `default` only -- so a
-# workflow_run gate here would just never fire). Switch back to the
-# CI-gated-on-default version once testDeploy work lands back on default.
+# Chạy sau khi CI Build (ci-build.yml) hoàn thành thành công trên nhánh `default` --
+# không tự chạy khi có push, tránh deploy 1 commit chưa build/test qua.
 on:
-  push:
+  workflow_run:
+    workflows:
+      - CI Build
+    types:
+      - completed
     branches:
-      - testDeploy
+      - default
 
 jobs:
   docker-build-push:
     name: Build Docker image and push to ECR
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     outputs:
       ecr_image: ${{ steps.build_outputs.outputs.ecr_image }}
       image_tag: ${{ steps.build_outputs.outputs.image_tag }}
@@ -22,6 +25,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+        with:
+          # workflow_run chạy trong context của nhánh mặc định lúc workflow file này
+          # được đọc, KHÔNG phải commit đã build CI -- phải ghim rõ head_sha của run
+          # CI Build vừa hoàn thành, nếu không sẽ build nhầm commit.
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v5
@@ -36,7 +44,7 @@ jobs:
 
       - name: Compute image tag
         id: tag
-        run: echo "tag=$(echo "${{ github.sha }}" | cut -c1-7)" >> "$GITHUB_OUTPUT"
+        run: echo "tag=$(echo "${{ github.event.workflow_run.head_sha }}" | cut -c1-7)" >> "$GITHUB_OUTPUT"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3

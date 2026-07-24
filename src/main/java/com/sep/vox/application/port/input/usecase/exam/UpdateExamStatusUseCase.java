@@ -228,9 +228,11 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
     }
 
     /**
-     * G.3: chốt PASSED/FAILED cho mọi ExamCandidateResult của kỳ thi ngay khi vừa
-     * chuyển RESULTS_PUBLISHED - INVALID -> FAILED (điểm ép về 0), RELEASED/FINAL ->
-     * PASSED/FAILED theo passingScore. Trạng thái CHUNG THẨM, không đổi lại nữa.
+     * G.3: chốt kết quả cho mọi ExamCandidateResult của kỳ thi ngay khi vừa chuyển
+     * RESULTS_PUBLISHED - INVALID -> FAILED (điểm ép về 0), RELEASED/FINAL -> PASSED/FAILED
+     * theo passingScore nếu policy có ngưỡng, hoặc -> FINAL nếu không có ngưỡng (nhà trường tự
+     * chọn PASSED/FAILED sau qua decideExamCandidateResultOutcome). Xem
+     * ExamCandidateResultFinalizationService.finalizeForPublish.
      */
     private void finalizePassFailForExam(com.sep.vox.domain.model.exam.Exam exam) {
         var passingScore = exam.getAssessmentPolicyId() == null

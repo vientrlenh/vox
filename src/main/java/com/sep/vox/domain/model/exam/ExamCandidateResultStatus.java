@@ -5,9 +5,13 @@ public enum ExamCandidateResultStatus {
     RELEASED,
     APPEALED,
     RE_GRADING,
+    // FINAL cũng là 1 trạng thái CHUNG THẨM riêng: khi kỳ thi RESULTS_PUBLISHED mà
+    // assessmentPolicy không có passingScore (không có ngưỡng để tự so sánh), RELEASED
+    // chốt thành FINAL thay vì PASSED/FAILED. Từ đó nhà trường tự quyết định PASSED/FAILED
+    // thủ công qua decideExamCandidateResultOutcome (xem DecideExamCandidateResultOutcomeUseCase).
     FINAL,
     INVALID,
     RETAKE_REQUIRED,
-    PASSED, // chốt sau khi kỳ thi RESULTS_PUBLISHED, điểm >= passingScore
-    FAILED // chốt sau khi kỳ thi RESULTS_PUBLISHED, điểm < passingScore hoặc INVALID
+    PASSED, // chốt sau khi kỳ thi RESULTS_PUBLISHED, điểm >= passingScore (hoặc nhà trường tự chọn từ FINAL)
+    FAILED // chốt sau khi kỳ thi RESULTS_PUBLISHED, điểm < passingScore hoặc INVALID (hoặc nhà trường tự chọn từ FINAL)
 }

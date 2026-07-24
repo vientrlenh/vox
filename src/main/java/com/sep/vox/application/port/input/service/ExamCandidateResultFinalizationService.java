@@ -48,8 +48,15 @@ public class ExamCandidateResultFinalizationService {
     }
 
     /**
-     * G.3: chốt PASSED/FAILED tại thời điểm kỳ thi RESULTS_PUBLISHED. Trả về true nếu có
-     * thay đổi cần lưu (caller tự save để gộp vào 1 transaction chung).
+     * G.3: chốt tại thời điểm kỳ thi RESULTS_PUBLISHED. Trả về true nếu có thay đổi cần lưu
+     * (caller tự save để gộp vào 1 transaction chung).
+     *
+     * INVALID luôn tự động nhảy sang FAILED (điểm ép về 0) bất kể có passingScore hay không -
+     * kết quả đã bị vô hiệu (vi phạm/lỗi hệ thống) thì không thể "đậu".
+     *
+     * RELEASED/FINAL: nếu policy CÓ passingScore, tự chốt PASSED/FAILED theo điểm như cũ. Nếu
+     * KHÔNG có passingScore (không có ngưỡng để tự so sánh), chốt tạm ở FINAL - nhà trường tự
+     * quyết định PASSED/FAILED thủ công sau đó qua DecideExamCandidateResultOutcomeUseCase.
      */
     public boolean finalizeForPublish(ExamCandidateResult result, BigDecimal passingScore) {
         if (result.getStatus() == ExamCandidateResultStatus.INVALID) {
@@ -59,8 +66,14 @@ public class ExamCandidateResultFinalizationService {
         }
         if (result.getStatus() == ExamCandidateResultStatus.RELEASED
                 || result.getStatus() == ExamCandidateResultStatus.FINAL) {
-            var passed = passingScore != null
-                && result.getTotalScore() != null
+            if (passingScore == null) {
+                if (result.getStatus() == ExamCandidateResultStatus.FINAL) {
+                    return false;
+                }
+                result.setStatus(ExamCandidateResultStatus.FINAL);
+                return true;
+            }
+            var passed = result.getTotalScore() != null
                 && result.getTotalScore().compareTo(passingScore) >= 0;
             result.setStatus(passed ? ExamCandidateResultStatus.PASSED : ExamCandidateResultStatus.FAILED);
             return true;

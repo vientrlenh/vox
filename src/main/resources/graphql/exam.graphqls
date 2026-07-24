@@ -591,6 +591,9 @@ extend type Mutation {
     unblockExamCandidate(candidateId: ID!, reason: String!): ID!
     reviewFlaggedExamResult(candidateResultId: ID!, decision: ExamCandidateResultStatus!): ID!
     releasePendingExamResult(sessionId: ID!): ID!
+    # Chỉ áp dụng khi kết quả đang FINAL (kỳ thi đã RESULTS_PUBLISHED nhưng assessmentPolicy
+    # không có passingScore) -- nhà trường tự chốt PASSED hoặc FAILED thủ công.
+    decideExamCandidateResultOutcome(candidateResultId: ID!, decision: ExamCandidateResultStatus!): ID!
     retryGradingExamSession(sessionId: ID!): ID!
     # TEST-ONLY: chấm lại 1 phiên thi bằng AI bất kể trạng thái (kể cả đã GRADED) -- re-publish
     # grading request từ dữ liệu làm bài đã lưu, evaluation cũ bị ghi đè (upsert). Dùng để kiểm

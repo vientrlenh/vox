@@ -2,6 +2,7 @@ package com.sep.vox.domain.model.subscription;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 public class Invoice {
@@ -13,11 +14,16 @@ public class Invoice {
     private LocalDate issueDate;
     private BigDecimal amount;
     private InvoiceStatus status;
+    private Long payosOrderCode;
+    private String paymentLinkId;
+    private String checkoutUrl;
+    private OffsetDateTime paidAt;
 
     public Invoice() {}
 
     public Invoice(UUID id, String invoiceNumber, UUID subscriptionId, InvoiceSourceType sourceType, UUID sourceId,
-            LocalDate issueDate, BigDecimal amount, InvoiceStatus status) {
+            LocalDate issueDate, BigDecimal amount, InvoiceStatus status, Long payosOrderCode, String paymentLinkId,
+            String checkoutUrl, OffsetDateTime paidAt) {
         this.id = id;
         this.invoiceNumber = invoiceNumber;
         this.subscriptionId = subscriptionId;
@@ -26,10 +32,15 @@ public class Invoice {
         this.issueDate = issueDate;
         this.amount = amount;
         this.status = status;
+        this.payosOrderCode = payosOrderCode;
+        this.paymentLinkId = paymentLinkId;
+        this.checkoutUrl = checkoutUrl;
+        this.paidAt = paidAt;
     }
 
     public Invoice(String invoiceNumber, UUID subscriptionId, InvoiceSourceType sourceType, UUID sourceId,
-            LocalDate issueDate, BigDecimal amount, InvoiceStatus status) {
+            LocalDate issueDate, BigDecimal amount, InvoiceStatus status, Long payosOrderCode, String paymentLinkId,
+            String checkoutUrl, OffsetDateTime paidAt) {
         this.invoiceNumber = invoiceNumber;
         this.subscriptionId = subscriptionId;
         this.sourceType = sourceType;
@@ -37,6 +48,10 @@ public class Invoice {
         this.issueDate = issueDate;
         this.amount = amount;
         this.status = status;
+        this.payosOrderCode = payosOrderCode;
+        this.paymentLinkId = paymentLinkId;
+        this.checkoutUrl = checkoutUrl;
+        this.paidAt = paidAt;
     }
 
     public UUID getId() {
@@ -101,5 +116,37 @@ public class Invoice {
 
     public void setStatus(InvoiceStatus status) {
         this.status = status;
+    }
+
+    public Long getPayosOrderCode() {
+        return payosOrderCode;
+    }
+
+    public void setPayosOrderCode(Long payosOrderCode) {
+        this.payosOrderCode = payosOrderCode;
+    }
+
+    public String getPaymentLinkId() {
+        return paymentLinkId;
+    }
+
+    public void setPaymentLinkId(String paymentLinkId) {
+        this.paymentLinkId = paymentLinkId;
+    }
+
+    public String getCheckoutUrl() {
+        return checkoutUrl;
+    }
+
+    public void setCheckoutUrl(String checkoutUrl) {
+        this.checkoutUrl = checkoutUrl;
+    }
+
+    public OffsetDateTime getPaidAt() {
+        return paidAt;
+    }
+
+    public void setPaidAt(OffsetDateTime paidAt) {
+        this.paidAt = paidAt;
     }
 }

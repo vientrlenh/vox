@@ -34,7 +34,8 @@ public class JpaSubscriptionPlanQueryRepository implements SubscriptionPlanQuery
                 p.pricePerYear, 
                 p.validityDays, 
                 p.maxTimePerAttemptMin,
-                p.popular, 
+                p.maxStudentCount,
+                p.popular,
                 p.status, 
                 p.version, 
                 str(p.createdAt), 
@@ -71,7 +72,7 @@ public class JpaSubscriptionPlanQueryRepository implements SubscriptionPlanQuery
         var content = plans.stream()
             .map(row -> new SubscriptionPlanDto(
                 row.id(), row.name(), row.tagline(), row.pricePerYear(), row.validityDays(),
-                row.maxTimePerAttemptMin(), row.popular(), row.status(), row.version(),
+                row.maxTimePerAttemptMin(), row.maxStudentCount(), row.popular(), row.status(), row.version(),
                 row.createdAt(), row.createdBy(),
                 quotasByPlanId.getOrDefault(row.id(), List.of()).stream()
                     .map(q -> new PlanQuotaDto(q.id(), q.quotaType(), q.includedQuantity(), q.tokenUnitPrice()))

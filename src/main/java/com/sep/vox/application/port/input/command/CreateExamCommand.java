@@ -14,6 +14,7 @@ public record CreateExamCommand(
     String closeAt,
     UUID assessmentPolicyId,
     Integer maxAttempt,
+    Integer examTimeDurationSecond,
     ResultDecisionMethod resultDecisionMethod
 ) {
 }

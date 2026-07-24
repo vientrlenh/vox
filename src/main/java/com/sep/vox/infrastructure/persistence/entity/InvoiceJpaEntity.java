@@ -2,6 +2,7 @@ package com.sep.vox.infrastructure.persistence.entity;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -31,13 +32,13 @@ public class InvoiceJpaEntity {
     @Column(name = "invoice_number", nullable = false, unique = true)
     private String invoiceNumber;
 
-    @Column(name = "subscription_id", nullable = false, updatable = false)
+    @Column(name = "subscription_id")
     private UUID subscriptionId;
 
     @Column(name = "source_type", nullable = false, updatable = false, length = 20, check = {
         @CheckConstraint(
             name = "chk_invoice_source_type_valid",
-            constraint = "source_type IN ('SUBSCRIPTION', 'TOKEN_PURCHASE')"
+            constraint = "source_type IN ('SUBSCRIPTION', 'SUBSCRIPTION_REQUEST', 'TOKEN_PURCHASE')"
         )
     })
     private String sourceType;
@@ -59,10 +60,23 @@ public class InvoiceJpaEntity {
     })
     private String status;
 
+    @Column(name = "payos_order_code", unique = true)
+    private Long payosOrderCode;
+
+    @Column(name = "payment_link_id")
+    private String paymentLinkId;
+
+    @Column(name = "checkout_url", length = 2048)
+    private String checkoutUrl;
+
+    @Column(name = "paid_at")
+    private OffsetDateTime paidAt;
+
     protected InvoiceJpaEntity() {}
 
     public InvoiceJpaEntity(UUID id, String invoiceNumber, UUID subscriptionId, String sourceType, UUID sourceId,
-            LocalDate issueDate, BigDecimal amount, String status) {
+            LocalDate issueDate, BigDecimal amount, String status, Long payosOrderCode, String paymentLinkId,
+            String checkoutUrl, OffsetDateTime paidAt) {
         this.id = id;
         this.invoiceNumber = invoiceNumber;
         this.subscriptionId = subscriptionId;
@@ -71,6 +85,10 @@ public class InvoiceJpaEntity {
         this.issueDate = issueDate;
         this.amount = amount;
         this.status = status;
+        this.payosOrderCode = payosOrderCode;
+        this.paymentLinkId = paymentLinkId;
+        this.checkoutUrl = checkoutUrl;
+        this.paidAt = paidAt;
     }
 
     public UUID getId() {
@@ -135,5 +153,37 @@ public class InvoiceJpaEntity {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public Long getPayosOrderCode() {
+        return payosOrderCode;
+    }
+
+    public void setPayosOrderCode(Long payosOrderCode) {
+        this.payosOrderCode = payosOrderCode;
+    }
+
+    public String getPaymentLinkId() {
+        return paymentLinkId;
+    }
+
+    public void setPaymentLinkId(String paymentLinkId) {
+        this.paymentLinkId = paymentLinkId;
+    }
+
+    public String getCheckoutUrl() {
+        return checkoutUrl;
+    }
+
+    public void setCheckoutUrl(String checkoutUrl) {
+        this.checkoutUrl = checkoutUrl;
+    }
+
+    public OffsetDateTime getPaidAt() {
+        return paidAt;
+    }
+
+    public void setPaidAt(OffsetDateTime paidAt) {
+        this.paidAt = paidAt;
     }
 }

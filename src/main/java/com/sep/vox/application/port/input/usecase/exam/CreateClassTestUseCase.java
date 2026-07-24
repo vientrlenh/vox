@@ -18,11 +18,12 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.ClassTestSectionCommand;
 import com.sep.vox.application.port.input.command.CreateClassTestCommand;
+import com.sep.vox.application.port.input.command.UpdateExamStatusCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.input.exam.CreateClassTestResponse;
-import com.sep.vox.domain.mapper.ExamDtoMapper;
+import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamBlueprintSection;
 import com.sep.vox.domain.model.exam.ExamBlueprintSlot;
@@ -81,6 +82,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
     private final ExamMemberRepository examMemberRepository;
     private final ExamCandidateRepository examCandidateRepository;
     private final ExamQuestionSecureLockService examQuestionSecureLockService;
+    private final UpdateExamStatusUseCase updateExamStatusUseCase;
     private final UserContextPort userContextPort;
 
     public CreateClassTestUseCase(
@@ -100,6 +102,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             ExamMemberRepository examMemberRepository,
             ExamCandidateRepository examCandidateRepository,
             ExamQuestionSecureLockService examQuestionSecureLockService,
+            UpdateExamStatusUseCase updateExamStatusUseCase,
             UserContextPort userContextPort) {
         this.schoolClassRepository = schoolClassRepository;
         this.schoolClassUserRepository = schoolClassUserRepository;
@@ -117,6 +120,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         this.examMemberRepository = examMemberRepository;
         this.examCandidateRepository = examCandidateRepository;
         this.examQuestionSecureLockService = examQuestionSecureLockService;
+        this.updateExamStatusUseCase = updateExamStatusUseCase;
         this.userContextPort = userContextPort;
     }
 
@@ -188,7 +192,8 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
 
         examMemberRepository.save(new ExamMember(exam.getId(), currentUserId, ExamMemberRole.CHAIR, now, currentUserId));
         var candidateCount = assignCandidates(exam, paper, schoolClass.getId(), currentUserId, now);
-        return new CreateClassTestResponse(ExamDtoMapper.toDto(exam), paper.getId(), candidateCount);
+        var examDto = scheduleAndMaybeStart(exam, command);
+        return new CreateClassTestResponse(examDto, paper.getId(), candidateCount);
     }
 
     private CreateClassTestResponse executeWithExistingBlueprint(
@@ -237,7 +242,19 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
 
         examMemberRepository.save(new ExamMember(exam.getId(), currentUserId, ExamMemberRole.CHAIR, now, currentUserId));
         var candidateCount = assignCandidates(exam, paper, schoolClass.getId(), currentUserId, now);
-        return new CreateClassTestResponse(ExamDtoMapper.toDto(exam), paper.getId(), candidateCount);
+        var examDto = scheduleAndMaybeStart(exam, command);
+        return new CreateClassTestResponse(examDto, paper.getId(), candidateCount);
+    }
+
+    // Exam luôn được tạo ở DRAFT (xem createExam) rồi chuyển tiếp qua đúng pipeline SCHEDULE/START
+    // của UpdateExamStatusUseCase để validatePlanLimits (giới hạn học sinh/thời lượng/token GRADING
+    // theo subscription) thực sự chạy, thay vì set thẳng SCHEDULED/IN_PROGRESS lúc tạo như trước.
+    private ExamDto scheduleAndMaybeStart(Exam exam, CreateClassTestCommand command) {
+        var scheduled = updateExamStatusUseCase.execute(new UpdateExamStatusCommand(exam.getId(), "SCHEDULE", null));
+        if (command.openAt() != null) {
+            return scheduled;
+        }
+        return updateExamStatusUseCase.execute(new UpdateExamStatusCommand(exam.getId(), "START", null));
     }
 
     private CreateClassTestCommand normalize(CreateClassTestCommand input) {
@@ -257,6 +274,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             input.existingBlueprintId(),
             input.existingBlueprintVersionId(),
             input.maxAttempt(),
+            input.examTimeDurationSecond(),
             input.resultDecisionMethod()
         );
     }
@@ -335,9 +353,10 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         var code = "CT-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase();
         var openAt = parseDateTime(command.openAt());
         var closeAt = parseDateTime(command.closeAt());
-        var status = openAt != null ? ExamStatus.SCHEDULED : ExamStatus.IN_PROGRESS;
         Integer requestedMaxAttempt = command.maxAttempt();
         int maxAttempt = requestedMaxAttempt == null ? 1 : requestedMaxAttempt;
+        // Luôn tạo ở DRAFT — scheduleAndMaybeStart() sẽ chuyển tiếp qua SCHEDULE (và START nếu start ngay)
+        // ngay sau khi exam được setup xong, để validatePlanLimits có cơ hội chạy trước khi vào SCHEDULED/IN_PROGRESS.
         return examRepository.save(new Exam(
             blueprintId,
             blueprintVersionId,
@@ -348,9 +367,10 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             schoolClass.getLanguageId(),
             ExamKind.CLASS_TEST,
             ExamDeliveryMode.STUDENT_DEVICE,
-            status,
+            ExamStatus.DRAFT,
             maxAttempt,
-            command.resultDecisionMethod() == null ? ResultDecisionMethod.HIGHEST : command.resultDecisionMethod(), 
+            command.examTimeDurationSecond(),
+            command.resultDecisionMethod() == null ? ResultDecisionMethod.HIGHEST : command.resultDecisionMethod(),
             null, 
             null, 
             openAt,

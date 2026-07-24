@@ -156,6 +156,7 @@ type Exam {
     deliveryMode: ExamDeliveryMode
     status: ExamStatus!
     maxAttempt: Int
+    examTimeDurationSecond: Int
     resultDecisionMethod: ResultDecisionMethod
     openAt: String
     closeAt: String

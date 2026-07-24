@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.Year;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,7 +22,9 @@ import com.sep.vox.domain.model.subscription.FinancialEventType;
 import com.sep.vox.domain.model.subscription.Invoice;
 import com.sep.vox.domain.model.subscription.InvoiceSourceType;
 import com.sep.vox.domain.model.subscription.InvoiceStatus;
+import com.sep.vox.domain.model.subscription.PaymentMethod;
 import com.sep.vox.domain.model.subscription.PurchaseStatus;
+import com.sep.vox.domain.model.subscription.SubscriptionQuota;
 import com.sep.vox.domain.model.subscription.SubscriptionStatus;
 import com.sep.vox.domain.model.subscription.TokenPurchase;
 import com.sep.vox.domain.model.subscription.TokenPurchaseItem;
@@ -80,6 +84,8 @@ public class BuyTokensUseCase implements IUseCase<BuyTokensCommand, TokenPurchas
         }
 
         var planQuotas = planQuotaRepository.findAllByPlanId(subscription.getPlanId());
+        var subscriptionQuotas = subscriptionQuotaRepository.findAllBySubscriptionId(subscription.getId()).stream()
+            .collect(Collectors.toMap(SubscriptionQuota::getQuotaType, Function.identity()));
         var now = OffsetDateTime.now();
         var total = BigDecimal.ZERO;
 
@@ -97,8 +103,10 @@ public class BuyTokensUseCase implements IUseCase<BuyTokensCommand, TokenPurchas
                 purchase.getId(), item.quotaType(), item.quantity(), planQuota.getTokenUnitPrice(), subtotal
             ));
 
-            var subscriptionQuota = subscriptionQuotaRepository.findBySubscriptionIdAndQuotaType(subscription.getId(), item.quotaType())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy hạn mức của gói đăng ký"));
+            var subscriptionQuota = subscriptionQuotas.get(item.quotaType());
+            if (subscriptionQuota == null) {
+                throw new NotFoundException("Không tìm thấy hạn mức của gói đăng ký");
+            }
             subscriptionQuotaRepository.addAllocation(subscriptionQuota.getId(), item.quantity());
         }
 
@@ -113,12 +121,16 @@ public class BuyTokensUseCase implements IUseCase<BuyTokensCommand, TokenPurchas
             savedPurchase.getId(),
             now.toLocalDate(),
             total,
-            InvoiceStatus.PAID
+            InvoiceStatus.PAID,
+            null,
+            null,
+            null,
+            now
         ));
 
         financialEventRepository.save(new FinancialEvent(
             input.schoolId(), subscription.getId(), FinancialEventType.TOKEN_PURCHASED,
-            total, "VND", userContextPort.getCurrentAuthenticatedUserId(), null, now
+            total, "VND", PaymentMethod.MANUAL, userContextPort.getCurrentAuthenticatedUserId(), null, now
         ));
 
         return TokenPurchaseDtoMapper.toDto(savedPurchase, tokenPurchaseItemRepository.findAllByPurchaseId(savedPurchase.getId()));

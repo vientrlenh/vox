@@ -14,6 +14,7 @@ import com.sep.vox.domain.dto.SchoolSubscriptionDto;
 import com.sep.vox.domain.mapper.SchoolSubscriptionDtoMapper;
 import com.sep.vox.domain.model.subscription.FinancialEvent;
 import com.sep.vox.domain.model.subscription.FinancialEventType;
+import com.sep.vox.domain.model.subscription.PaymentMethod;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.model.subscription.SubscriptionQuota;
 import com.sep.vox.domain.model.subscription.SubscriptionStatus;
@@ -96,6 +97,7 @@ public class RenewSubscriptionUseCase implements IUseCase<RenewSubscriptionComma
             FinancialEventType.SUB_RENEWED,
             plan.getPricePerYear(),
             "VND",
+            PaymentMethod.MANUAL,
             userContextPort.getCurrentAuthenticatedUserId(),
             null,
             now

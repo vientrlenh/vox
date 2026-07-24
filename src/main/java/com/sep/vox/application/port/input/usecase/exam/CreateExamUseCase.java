@@ -85,7 +85,8 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
             ExamDeliveryMode.LAB,
             ExamStatus.DRAFT,
             Objects.requireNonNullElse(command.maxAttempt(), 1),
-            Objects.requireNonNullElse(command.resultDecisionMethod(), ResultDecisionMethod.HIGHEST), 
+            command.examTimeDurationSecond(),
+            Objects.requireNonNullElse(command.resultDecisionMethod(), ResultDecisionMethod.HIGHEST),
             null, 
             null, 
             parseDateTime(command.openAt()),
@@ -110,6 +111,7 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
             input.closeAt(),
             input.assessmentPolicyId(),
             input.maxAttempt(),
+            input.examTimeDurationSecond(),
             input.resultDecisionMethod()
         );
     }

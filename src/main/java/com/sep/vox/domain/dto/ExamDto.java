@@ -15,6 +15,7 @@ public record ExamDto(
     String deliveryMode,
     String status,
     Integer maxAttempt,
+    Integer examTimeDurationSecond,
     String resultDecisionMethod,
     String openAt,
     String closeAt,

@@ -34,6 +34,7 @@ enum PurchaseStatus {
 
 enum InvoiceSourceType {
     SUBSCRIPTION
+    SUBSCRIPTION_REQUEST
     TOKEN_PURCHASE
 }
 
@@ -53,6 +54,11 @@ enum FinancialEventType {
     REFUND_ISSUED
 }
 
+enum PaymentMethod {
+    PAYOS
+    MANUAL
+}
+
 type PlanQuota {
     id: ID!
     quotaType: QuotaType!
@@ -67,6 +73,7 @@ type SubscriptionPlan {
     pricePerYear: Float!
     validityDays: Int!
     maxTimePerAttemptMin: Int
+    maxStudentCount: Int
     popular: Boolean!
     status: PlanStatus!
     version: Int!
@@ -160,6 +167,9 @@ type Invoice {
     issueDate: String
     amount: Float!
     status: InvoiceStatus!
+    paymentLinkId: String
+    checkoutUrl: String
+    paidAt: String
 }
 
 type InvoicePage {
@@ -177,6 +187,7 @@ type FinancialEvent {
     eventType: FinancialEventType!
     amountSigned: Float!
     currency: String!
+    paymentMethod: PaymentMethod!
     actorId: ID
     occurredAt: String
 }
@@ -201,6 +212,7 @@ input UpdateSubscriptionPlanInput {
     pricePerYear: Float
     validityDays: Int
     maxTimePerAttemptMin: Int
+    maxStudentCount: Int
     popular: Boolean
     quotas: [PlanQuotaItemInput!]
 }

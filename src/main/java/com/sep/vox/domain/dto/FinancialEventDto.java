@@ -10,6 +10,7 @@ public record FinancialEventDto(
     String eventType,
     BigDecimal amountSigned,
     String currency,
+    String paymentMethod,
     UUID actorId,
     String occurredAt
 ) {

@@ -11,6 +11,7 @@ public class SubscriptionPlan {
     private BigDecimal pricePerYear;
     private Integer validityDays;
     private Integer maxTimePerAttemptMin;
+    private Integer maxStudentCount;
     private boolean popular;
     private PlanStatus status;
     private Integer version;
@@ -20,7 +21,7 @@ public class SubscriptionPlan {
     public SubscriptionPlan() {}
 
     public SubscriptionPlan(UUID id, String name, String tagline, BigDecimal pricePerYear, Integer validityDays,
-            Integer maxTimePerAttemptMin, boolean popular, PlanStatus status, Integer version,
+            Integer maxTimePerAttemptMin, Integer maxStudentCount, boolean popular, PlanStatus status, Integer version,
             OffsetDateTime createdAt, UUID createdBy) {
         this.id = id;
         this.name = name;
@@ -28,6 +29,7 @@ public class SubscriptionPlan {
         this.pricePerYear = pricePerYear;
         this.validityDays = validityDays;
         this.maxTimePerAttemptMin = maxTimePerAttemptMin;
+        this.maxStudentCount = maxStudentCount;
         this.popular = popular;
         this.status = status;
         this.version = version;
@@ -36,13 +38,14 @@ public class SubscriptionPlan {
     }
 
     public SubscriptionPlan(String name, String tagline, BigDecimal pricePerYear, Integer validityDays,
-            Integer maxTimePerAttemptMin, boolean popular, PlanStatus status, Integer version,
+            Integer maxTimePerAttemptMin, Integer maxStudentCount, boolean popular, PlanStatus status, Integer version,
             OffsetDateTime createdAt, UUID createdBy) {
         this.name = name;
         this.tagline = tagline;
         this.pricePerYear = pricePerYear;
         this.validityDays = validityDays;
         this.maxTimePerAttemptMin = maxTimePerAttemptMin;
+        this.maxStudentCount = maxStudentCount;
         this.popular = popular;
         this.status = status;
         this.version = version;
@@ -96,6 +99,14 @@ public class SubscriptionPlan {
 
     public void setMaxTimePerAttemptMin(Integer maxTimePerAttemptMin) {
         this.maxTimePerAttemptMin = maxTimePerAttemptMin;
+    }
+
+    public Integer getMaxStudentCount() {
+        return maxStudentCount;
+    }
+
+    public void setMaxStudentCount(Integer maxStudentCount) {
+        this.maxStudentCount = maxStudentCount;
     }
 
     public boolean isPopular() {

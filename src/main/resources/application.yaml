@@ -176,3 +176,10 @@ system-admin:
   fullName: ${SYS_ADMIN_FULLNAME}
   dateOfBirth: ${SYS_ADMIN_DATE_OF_BIRTH}
   address: ${SYS_ADMIN_ADDRESS}
+
+payos:
+  client-id: ${PAYOS_CLIENT_ID:}
+  api-key: ${PAYOS_API_KEY:}
+  checksum-key: ${PAYOS_CHECKSUM_KEY:}
+  return-url: ${PAYOS_RETURN_URL:}
+  cancel-url: ${PAYOS_CANCEL_URL:}

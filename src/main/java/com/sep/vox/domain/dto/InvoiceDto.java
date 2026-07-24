@@ -11,6 +11,9 @@ public record InvoiceDto(
     UUID sourceId,
     String issueDate,
     BigDecimal amount,
-    String status
+    String status,
+    String paymentLinkId,
+    String checkoutUrl,
+    String paidAt
 ) {
 }

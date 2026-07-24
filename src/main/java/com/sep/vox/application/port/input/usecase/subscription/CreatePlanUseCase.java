@@ -49,6 +49,7 @@ public class CreatePlanUseCase implements IUseCase<CreatePlanCommand, Subscripti
             input.pricePerYear(),
             input.validityDays(),
             input.maxTimePerAttemptMin(),
+            input.maxStudentCount(),
             input.popular(),
             PlanStatus.ACTIVE,
             1,

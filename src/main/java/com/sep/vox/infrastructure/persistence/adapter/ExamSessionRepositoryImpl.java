@@ -25,6 +25,11 @@ public class ExamSessionRepositoryImpl implements ExamSessionRepository {
     }
 
     @Override
+    public Optional<ExamSession> findById(UUID id) {
+        return springDataExamSessionRepository.findById(id).map(ExamSessionMapper::toDomain);
+    }
+
+    @Override
     public ExamSession save(ExamSession session) {
         var entity = ExamSessionMapper.toJpa(session);
         var saved = springDataExamSessionRepository.save(entity);

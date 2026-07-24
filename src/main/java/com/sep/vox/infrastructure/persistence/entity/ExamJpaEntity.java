@@ -94,6 +94,9 @@ public class ExamJpaEntity {
     @Column(name = "max_attempt")
     private Integer maxAttempt;
 
+    @Column(name = "exam_time_duration_second")
+    private Integer examTimeDurationSecond;
+
     @Column(name = "result_decision_method", length = 20, check = {
         @CheckConstraint(
             name = "chk_exams_result_decision_method_valid",
@@ -142,7 +145,7 @@ public class ExamJpaEntity {
     protected ExamJpaEntity() {}
 
     public ExamJpaEntity(UUID id, UUID blueprintId, UUID blueprintVersionId, String code, String name, String description, UUID schoolId, UUID languageId,
-            String kind, String deliveryMode, String status, Integer maxAttempt, String resultDecisionMethod, String requiredStreamType, String streamTypePermission, 
+            String kind, String deliveryMode, String status, Integer maxAttempt, Integer examTimeDurationSecond, String resultDecisionMethod, String requiredStreamType, String streamTypePermission,
             OffsetDateTime openAt, OffsetDateTime closeAt, UUID assessmentPolicyId,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
@@ -157,6 +160,7 @@ public class ExamJpaEntity {
         this.deliveryMode = deliveryMode;
         this.status = status;
         this.maxAttempt = maxAttempt;
+        this.examTimeDurationSecond = examTimeDurationSecond;
         this.resultDecisionMethod = resultDecisionMethod;
         this.requiredStreamType = requiredStreamType;
         this.streamTypePermission = streamTypePermission;
@@ -247,6 +251,14 @@ public class ExamJpaEntity {
 
     public void setMaxAttempt(Integer maxAttempt) {
         this.maxAttempt = maxAttempt;
+    }
+
+    public Integer getExamTimeDurationSecond() {
+        return examTimeDurationSecond;
+    }
+
+    public void setExamTimeDurationSecond(Integer examTimeDurationSecond) {
+        this.examTimeDurationSecond = examTimeDurationSecond;
     }
 
     public String getResultDecisionMethod() {

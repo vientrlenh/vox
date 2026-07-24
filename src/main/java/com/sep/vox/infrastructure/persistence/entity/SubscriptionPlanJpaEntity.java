@@ -43,6 +43,9 @@ public class SubscriptionPlanJpaEntity {
     @Column(name = "max_time_per_attempt_min", nullable = false)
     private Integer maxTimePerAttemptMin;
 
+    @Column(name = "max_student_count", nullable = false)
+    private Integer maxStudentCount;
+
     @Column(name = "is_popular", nullable = false)
     private boolean popular;
 
@@ -66,7 +69,7 @@ public class SubscriptionPlanJpaEntity {
     protected SubscriptionPlanJpaEntity() {}
 
     public SubscriptionPlanJpaEntity(UUID id, String name, String tagline, BigDecimal pricePerYear, Integer validityDays,
-            Integer maxTimePerAttemptMin, boolean popular, String status, Integer version,
+            Integer maxTimePerAttemptMin, Integer maxStudentCount, boolean popular, String status, Integer version,
             OffsetDateTime createdAt, UUID createdBy) {
         this.id = id;
         this.name = name;
@@ -74,6 +77,7 @@ public class SubscriptionPlanJpaEntity {
         this.pricePerYear = pricePerYear;
         this.validityDays = validityDays;
         this.maxTimePerAttemptMin = maxTimePerAttemptMin;
+        this.maxStudentCount = maxStudentCount;
         this.popular = popular;
         this.status = status;
         this.version = version;
@@ -127,6 +131,14 @@ public class SubscriptionPlanJpaEntity {
 
     public void setMaxTimePerAttemptMin(Integer maxTimePerAttemptMin) {
         this.maxTimePerAttemptMin = maxTimePerAttemptMin;
+    }
+
+    public Integer getMaxStudentCount() {
+        return maxStudentCount;
+    }
+
+    public void setMaxStudentCount(Integer maxStudentCount) {
+        this.maxStudentCount = maxStudentCount;
     }
 
     public boolean isPopular() {

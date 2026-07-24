@@ -15,6 +15,7 @@ import com.sep.vox.domain.dto.SchoolSubscriptionDto;
 import com.sep.vox.domain.mapper.SchoolSubscriptionDtoMapper;
 import com.sep.vox.domain.model.subscription.FinancialEvent;
 import com.sep.vox.domain.model.subscription.FinancialEventType;
+import com.sep.vox.domain.model.subscription.PaymentMethod;
 import com.sep.vox.domain.model.subscription.SubscriptionStatus;
 import com.sep.vox.domain.repository.FinancialEventRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
@@ -62,6 +63,7 @@ public class CancelSubscriptionUseCase implements IUseCase<CancelSubscriptionCom
             FinancialEventType.SUB_CANCELLED,
             BigDecimal.ZERO,
             "VND",
+            PaymentMethod.MANUAL,
             userContextPort.getCurrentAuthenticatedUserId(),
             null,
             now

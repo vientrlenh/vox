@@ -30,7 +30,10 @@ public class JpaInvoiceQueryRepository implements InvoiceQueryRepository {
                 i.sourceId,
                 str(i.issueDate),
                 i.amount,
-                i.status)
+                i.status,
+                i.paymentLinkId,
+                i.checkoutUrl,
+                str(i.paidAt))
             FROM InvoiceJpaEntity i
             WHERE i.subscriptionId IN (
                 SELECT s.id FROM SchoolSubscriptionJpaEntity s WHERE s.schoolId = :schoolId

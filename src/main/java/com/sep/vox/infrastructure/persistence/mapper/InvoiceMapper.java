@@ -18,7 +18,11 @@ public final class InvoiceMapper {
             jpa.getSourceId(),
             jpa.getIssueDate(),
             jpa.getAmount(),
-            InvoiceStatus.valueOf(jpa.getStatus())
+            InvoiceStatus.valueOf(jpa.getStatus()),
+            jpa.getPayosOrderCode(),
+            jpa.getPaymentLinkId(),
+            jpa.getCheckoutUrl(),
+            jpa.getPaidAt()
         );
     }
 
@@ -31,7 +35,11 @@ public final class InvoiceMapper {
             domain.getSourceId(),
             domain.getIssueDate(),
             domain.getAmount(),
-            domain.getStatus().name()
+            domain.getStatus().name(),
+            domain.getPayosOrderCode(),
+            domain.getPaymentLinkId(),
+            domain.getCheckoutUrl(),
+            domain.getPaidAt()
         );
     }
 }

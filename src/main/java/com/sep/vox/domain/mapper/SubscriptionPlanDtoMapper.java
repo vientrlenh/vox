@@ -21,6 +21,7 @@ public final class SubscriptionPlanDtoMapper {
             domain.getPricePerYear(),
             domain.getValidityDays(),
             domain.getMaxTimePerAttemptMin(),
+            domain.getMaxStudentCount(),
             domain.isPopular(),
             domain.getStatus().name(),
             domain.getVersion(),

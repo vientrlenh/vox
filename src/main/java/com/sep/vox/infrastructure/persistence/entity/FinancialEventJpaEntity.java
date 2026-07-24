@@ -48,7 +48,15 @@ public class FinancialEventJpaEntity {
     @Column(name = "currency", nullable = false, updatable = false, length = 3)
     private String currency;
 
-    @Column(name = "actor_id", nullable = false, updatable = false)
+    @Column(name = "payment_method", nullable = false, updatable = false, length = 20, check = {
+        @CheckConstraint(
+            name = "chk_financial_event_payment_method_valid",
+            constraint = "payment_method IN ('PAYOS', 'MANUAL')"
+        )
+    })
+    private String paymentMethod;
+
+    @Column(name = "actor_id", updatable = false)
     private UUID actorId;
 
     @Column(name = "payload", updatable = false, columnDefinition = "TEXT")
@@ -60,13 +68,14 @@ public class FinancialEventJpaEntity {
     protected FinancialEventJpaEntity() {}
 
     public FinancialEventJpaEntity(UUID id, UUID schoolId, UUID subscriptionId, String eventType, BigDecimal amountSigned,
-            String currency, UUID actorId, String payload, OffsetDateTime occurredAt) {
+            String currency, String paymentMethod, UUID actorId, String payload, OffsetDateTime occurredAt) {
         this.id = id;
         this.schoolId = schoolId;
         this.subscriptionId = subscriptionId;
         this.eventType = eventType;
         this.amountSigned = amountSigned;
         this.currency = currency;
+        this.paymentMethod = paymentMethod;
         this.actorId = actorId;
         this.payload = payload;
         this.occurredAt = occurredAt;
@@ -118,6 +127,14 @@ public class FinancialEventJpaEntity {
 
     public void setCurrency(String currency) {
         this.currency = currency;
+    }
+
+    public String getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public void setPaymentMethod(String paymentMethod) {
+        this.paymentMethod = paymentMethod;
     }
 
     public UUID getActorId() {

@@ -29,6 +29,7 @@ public class JpaFinancialEventQueryRepository implements FinancialEventQueryRepo
                 e.eventType,
                 e.amountSigned,
                 e.currency,
+                e.paymentMethod,
                 e.actorId,
                 str(e.occurredAt))
             FROM FinancialEventJpaEntity e

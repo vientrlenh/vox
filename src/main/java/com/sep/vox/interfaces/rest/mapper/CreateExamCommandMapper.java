@@ -19,6 +19,7 @@ public final class CreateExamCommandMapper {
             request.closeAt(),
             request.assessmentPolicyId(),
             request.maxAttempt(),
+            request.examTimeDurationSecond(),
             request.resultDecisionMethod()
         );
     }

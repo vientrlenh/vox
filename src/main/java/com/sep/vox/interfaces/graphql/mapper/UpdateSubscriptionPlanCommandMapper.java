@@ -19,6 +19,7 @@ public final class UpdateSubscriptionPlanCommandMapper {
             input.pricePerYear(),
             input.validityDays(),
             input.maxTimePerAttemptMin(),
+            input.maxStudentCount(),
             input.popular(),
             input.quotas() == null
                 ? null

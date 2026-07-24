@@ -14,6 +14,7 @@ import com.sep.vox.domain.dto.SubscriptionRequestDto;
 import com.sep.vox.domain.mapper.SubscriptionRequestDtoMapper;
 import com.sep.vox.domain.model.subscription.FinancialEvent;
 import com.sep.vox.domain.model.subscription.FinancialEventType;
+import com.sep.vox.domain.model.subscription.PaymentMethod;
 import com.sep.vox.domain.model.subscription.RequestStatus;
 import com.sep.vox.domain.model.subscription.RequestType;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
@@ -114,6 +115,7 @@ public class ApproveRequestUseCase implements IUseCase<ApproveRequestCommand, Su
             eventType,
             request.getAmount(),
             "VND",
+            PaymentMethod.MANUAL,
             userContextPort.getCurrentAuthenticatedUserId(),
             null,
             now

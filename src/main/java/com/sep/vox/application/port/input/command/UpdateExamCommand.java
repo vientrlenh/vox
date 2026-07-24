@@ -12,6 +12,7 @@ public record UpdateExamCommand(
     String closeAt,
     UUID assessmentPolicyId,
     Integer maxAttempt,
+    Integer examTimeDurationSecond,
     ResultDecisionMethod resultDecisionMethod
 ) {
 }

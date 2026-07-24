@@ -11,6 +11,7 @@ public record UpdatePlanCommand(
     BigDecimal pricePerYear,
     Integer validityDays,
     Integer maxTimePerAttemptMin,
+    Integer maxStudentCount,
     Boolean popular,
     List<PlanQuotaInput> quotas
 ) {

@@ -9,6 +9,7 @@ public record CreatePlanCommand(
     BigDecimal pricePerYear,
     Integer validityDays,
     Integer maxTimePerAttemptMin,
+    Integer maxStudentCount,
     boolean popular,
     List<PlanQuotaInput> quotas
 ) {

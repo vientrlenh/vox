@@ -12,4 +12,5 @@ public interface InvoiceRepository {
     Invoice save(Invoice invoice);
     List<Invoice> findAllBySubscriptionId(UUID subscriptionId);
     List<Invoice> findAllBySubscriptionIdIn(Collection<UUID> subscriptionIds);
+    Optional<Invoice> findByPayosOrderCode(Long payosOrderCode);
 }

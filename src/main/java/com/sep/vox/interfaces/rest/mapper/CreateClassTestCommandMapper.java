@@ -22,6 +22,7 @@ public final class CreateClassTestCommandMapper {
             request.existingBlueprintId(),
             request.existingBlueprintVersionId(),
             request.maxAttempt(),
+            request.examTimeDurationSecond(),
             request.resultDecisionMethod()
         );
     }

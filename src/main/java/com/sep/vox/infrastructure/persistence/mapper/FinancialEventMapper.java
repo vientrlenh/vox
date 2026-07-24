@@ -2,6 +2,7 @@ package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.subscription.FinancialEvent;
 import com.sep.vox.domain.model.subscription.FinancialEventType;
+import com.sep.vox.domain.model.subscription.PaymentMethod;
 import com.sep.vox.infrastructure.persistence.entity.FinancialEventJpaEntity;
 
 public final class FinancialEventMapper {
@@ -16,6 +17,7 @@ public final class FinancialEventMapper {
             FinancialEventType.valueOf(jpa.getEventType()),
             jpa.getAmountSigned(),
             jpa.getCurrency(),
+            PaymentMethod.valueOf(jpa.getPaymentMethod()),
             jpa.getActorId(),
             jpa.getPayload(),
             jpa.getOccurredAt()
@@ -30,6 +32,7 @@ public final class FinancialEventMapper {
             domain.getEventType().name(),
             domain.getAmountSigned(),
             domain.getCurrency(),
+            domain.getPaymentMethod().name(),
             domain.getActorId(),
             domain.getPayload(),
             domain.getOccurredAt()

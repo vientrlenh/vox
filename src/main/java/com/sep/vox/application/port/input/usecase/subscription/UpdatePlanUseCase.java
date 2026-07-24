@@ -55,6 +55,9 @@ public class UpdatePlanUseCase implements IUseCase<UpdatePlanCommand, Subscripti
         if (input.maxTimePerAttemptMin() != null) {
             plan.setMaxTimePerAttemptMin(input.maxTimePerAttemptMin());
         }
+        if (input.maxStudentCount() != null) {
+            plan.setMaxStudentCount(input.maxStudentCount());
+        }
         if (input.popular() != null) {
             plan.setPopular(input.popular());
         }

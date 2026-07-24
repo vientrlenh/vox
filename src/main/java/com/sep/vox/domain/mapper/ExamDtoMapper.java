@@ -30,6 +30,7 @@ public final class ExamDtoMapper {
             domain.getDeliveryMode() == null ? null : domain.getDeliveryMode().name(),
             domain.getStatus().name(),
             domain.getMaxAttempt(),
+            domain.getExamTimeDurationSecond(),
             domain.getResultDecisionMethod() == null ? null : domain.getResultDecisionMethod().name(),
             valueOf(domain.getOpenAt()),
             valueOf(domain.getCloseAt()),

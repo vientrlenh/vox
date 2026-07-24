@@ -46,4 +46,9 @@ public class InvoiceRepositoryImpl implements InvoiceRepository {
             .map(InvoiceMapper::toDomain)
             .toList();
     }
+
+    @Override
+    public Optional<Invoice> findByPayosOrderCode(Long payosOrderCode) {
+        return springDataInvoiceRepository.findByPayosOrderCode(payosOrderCode).map(InvoiceMapper::toDomain);
+    }
 }

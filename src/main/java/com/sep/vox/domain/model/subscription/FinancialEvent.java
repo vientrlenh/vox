@@ -11,6 +11,7 @@ public class FinancialEvent {
     private FinancialEventType eventType;
     private BigDecimal amountSigned;
     private String currency;
+    private PaymentMethod paymentMethod;
     private UUID actorId;
     private String payload;
     private OffsetDateTime occurredAt;
@@ -18,25 +19,27 @@ public class FinancialEvent {
     public FinancialEvent() {}
 
     public FinancialEvent(UUID id, UUID schoolId, UUID subscriptionId, FinancialEventType eventType,
-            BigDecimal amountSigned, String currency, UUID actorId, String payload, OffsetDateTime occurredAt) {
+            BigDecimal amountSigned, String currency, PaymentMethod paymentMethod, UUID actorId, String payload, OffsetDateTime occurredAt) {
         this.id = id;
         this.schoolId = schoolId;
         this.subscriptionId = subscriptionId;
         this.eventType = eventType;
         this.amountSigned = amountSigned;
         this.currency = currency;
+        this.paymentMethod = paymentMethod;
         this.actorId = actorId;
         this.payload = payload;
         this.occurredAt = occurredAt;
     }
 
     public FinancialEvent(UUID schoolId, UUID subscriptionId, FinancialEventType eventType,
-            BigDecimal amountSigned, String currency, UUID actorId, String payload, OffsetDateTime occurredAt) {
+            BigDecimal amountSigned, String currency, PaymentMethod paymentMethod, UUID actorId, String payload, OffsetDateTime occurredAt) {
         this.schoolId = schoolId;
         this.subscriptionId = subscriptionId;
         this.eventType = eventType;
         this.amountSigned = amountSigned;
         this.currency = currency;
+        this.paymentMethod = paymentMethod;
         this.actorId = actorId;
         this.payload = payload;
         this.occurredAt = occurredAt;
@@ -88,6 +91,14 @@ public class FinancialEvent {
 
     public void setCurrency(String currency) {
         this.currency = currency;
+    }
+
+    public PaymentMethod getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public void setPaymentMethod(PaymentMethod paymentMethod) {
+        this.paymentMethod = paymentMethod;
     }
 
     public UUID getActorId() {

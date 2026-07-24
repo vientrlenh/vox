@@ -16,6 +16,7 @@ import com.sep.vox.application.port.input.command.ApproveRequestCommand;
 import com.sep.vox.application.port.input.command.ArchivePlanCommand;
 import com.sep.vox.application.port.input.command.CancelSubscriptionCommand;
 import com.sep.vox.application.port.input.command.ConsumeQuotaCommand;
+import com.sep.vox.application.port.input.command.CreatePaymentLinkForSubscriptionRequestCommand;
 import com.sep.vox.application.port.input.command.RejectRequestCommand;
 import com.sep.vox.application.port.input.command.RenewSubscriptionCommand;
 import com.sep.vox.application.port.input.command.SubmitRequestCommand;
@@ -24,10 +25,14 @@ import com.sep.vox.application.port.input.usecase.subscription.ArchivePlanUseCas
 import com.sep.vox.application.port.input.usecase.subscription.BuyTokensUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.CancelSubscriptionUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ConsumeQuotaUseCase;
+import com.sep.vox.application.port.input.usecase.subscription.CreatePaymentLinkForRenewalUseCase;
+import com.sep.vox.application.port.input.usecase.subscription.CreatePaymentLinkForSubscriptionRequestUseCase;
+import com.sep.vox.application.port.input.usecase.subscription.CreatePaymentLinkForTokenPurchaseUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.CreatePlanUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.RejectRequestUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.RenewSubscriptionUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.SubmitRequestUseCase;
+import com.sep.vox.domain.dto.PaymentLinkDto;
 import com.sep.vox.domain.dto.SchoolSubscriptionDto;
 import com.sep.vox.domain.dto.SubscriptionPlanDto;
 import com.sep.vox.domain.dto.SubscriptionRequestDto;
@@ -55,6 +60,9 @@ public class SubscriptionController {
     private final RejectRequestUseCase rejectRequestUseCase;
     private final BuyTokensUseCase buyTokensUseCase;
     private final ConsumeQuotaUseCase consumeQuotaUseCase;
+    private final CreatePaymentLinkForSubscriptionRequestUseCase createPaymentLinkForSubscriptionRequestUseCase;
+    private final CreatePaymentLinkForTokenPurchaseUseCase createPaymentLinkForTokenPurchaseUseCase;
+    private final CreatePaymentLinkForRenewalUseCase createPaymentLinkForRenewalUseCase;
 
     public SubscriptionController(
             CreatePlanUseCase createPlanUseCase,
@@ -65,7 +73,10 @@ public class SubscriptionController {
             ApproveRequestUseCase approveRequestUseCase,
             RejectRequestUseCase rejectRequestUseCase,
             BuyTokensUseCase buyTokensUseCase,
-            ConsumeQuotaUseCase consumeQuotaUseCase) {
+            ConsumeQuotaUseCase consumeQuotaUseCase,
+            CreatePaymentLinkForSubscriptionRequestUseCase createPaymentLinkForSubscriptionRequestUseCase,
+            CreatePaymentLinkForTokenPurchaseUseCase createPaymentLinkForTokenPurchaseUseCase,
+            CreatePaymentLinkForRenewalUseCase createPaymentLinkForRenewalUseCase) {
         this.createPlanUseCase = createPlanUseCase;
         this.archivePlanUseCase = archivePlanUseCase;
         this.renewSubscriptionUseCase = renewSubscriptionUseCase;
@@ -75,6 +86,9 @@ public class SubscriptionController {
         this.rejectRequestUseCase = rejectRequestUseCase;
         this.buyTokensUseCase = buyTokensUseCase;
         this.consumeQuotaUseCase = consumeQuotaUseCase;
+        this.createPaymentLinkForSubscriptionRequestUseCase = createPaymentLinkForSubscriptionRequestUseCase;
+        this.createPaymentLinkForTokenPurchaseUseCase = createPaymentLinkForTokenPurchaseUseCase;
+        this.createPaymentLinkForRenewalUseCase = createPaymentLinkForRenewalUseCase;
     }
 
     @PostMapping("/plans")
@@ -98,6 +112,15 @@ public class SubscriptionController {
             @PathVariable UUID id) {
         var data = renewSubscriptionUseCase.execute(new RenewSubscriptionCommand(schoolId, id));
         return ResponseEntity.ok(ApiResponse.success("Gia hạn gói đăng ký thành công", data));
+    }
+
+    @PostMapping("/schools/{schoolId}/subscriptions/{id}/renew/payment-link")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
+    public ResponseEntity<ApiResponse<PaymentLinkDto>> createPaymentLinkForRenewal(
+            @PathVariable UUID schoolId,
+            @PathVariable UUID id) {
+        var data = createPaymentLinkForRenewalUseCase.execute(new RenewSubscriptionCommand(schoolId, id));
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Tạo link thanh toán thành công", data));
     }
 
     @PostMapping("/schools/{schoolId}/subscriptions/{id}/cancel")
@@ -142,6 +165,23 @@ public class SubscriptionController {
             @Valid @RequestBody BuyTokensRequest request) {
         var data = buyTokensUseCase.execute(BuyTokensCommandMapper.fromRequest(schoolId, request));
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Mua token thành công", data));
+    }
+
+    @PostMapping("/subscription-requests/{id}/payment-link")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
+    public ResponseEntity<ApiResponse<PaymentLinkDto>> createPaymentLinkForSubscriptionRequest(@PathVariable UUID id) {
+        var data = createPaymentLinkForSubscriptionRequestUseCase.execute(
+            new CreatePaymentLinkForSubscriptionRequestCommand(id));
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Tạo link thanh toán thành công", data));
+    }
+
+    @PostMapping("/schools/{schoolId}/token-purchases/payment-link")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
+    public ResponseEntity<ApiResponse<PaymentLinkDto>> createPaymentLinkForTokenPurchase(
+            @PathVariable UUID schoolId,
+            @Valid @RequestBody BuyTokensRequest request) {
+        var data = createPaymentLinkForTokenPurchaseUseCase.execute(BuyTokensCommandMapper.fromRequest(schoolId, request));
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Tạo link thanh toán thành công", data));
     }
 
     @PostMapping("/internal/subscriptions/consume")

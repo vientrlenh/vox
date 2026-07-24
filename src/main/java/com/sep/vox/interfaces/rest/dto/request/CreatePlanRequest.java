@@ -13,6 +13,7 @@ public record CreatePlanRequest(
     @NotNull BigDecimal pricePerYear,
     @NotNull Integer validityDays,
     Integer maxTimePerAttemptMin,
+    @NotNull Integer maxStudentCount,
     boolean popular,
     @NotEmpty List<PlanQuotaItemRequest> quotas
 ) {

@@ -2,6 +2,7 @@ package com.sep.vox.infrastructure.persistence.adapter;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -29,7 +30,7 @@ public class FrameworkVersionRepositoryImpl implements FrameworkVersionRepositor
     public Optional<FrameworkVersion> findById(UUID id) {
         return springDataFrameworkVersionRepository.findById(id).map(FrameworkVersionMapper::toDomain);
     }
-
+    
     @Override
     public Optional<FrameworkVersion> findByCode(String code) {
         return springDataFrameworkVersionRepository.findByCode(code).map(FrameworkVersionMapper::toDomain);
@@ -56,7 +57,7 @@ public class FrameworkVersionRepositoryImpl implements FrameworkVersionRepositor
         if (codes == null || codes.isEmpty()) {
             return List.of();
         }
-        var upperCodes = codes.stream().map(String::toUpperCase).collect(Collectors.toSet());
+        var upperCodes = codes.stream().map(s -> s.toUpperCase(Locale.ROOT)).collect(Collectors.toSet());
         return springDataFrameworkVersionRepository.findByCodeIn(upperCodes)
                 .stream().map(FrameworkVersionMapper::toDomain).toList();
     }

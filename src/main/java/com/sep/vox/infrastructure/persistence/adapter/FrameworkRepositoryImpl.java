@@ -8,6 +8,7 @@ import java.util.UUID;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
+import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.framework.Framework;
 import com.sep.vox.domain.repository.FrameworkRepository;
@@ -30,14 +31,23 @@ public class FrameworkRepositoryImpl implements FrameworkRepository {
     }
 
     @Override
+    public Optional<Framework> findFrameworkByIdForUpdate(UUID id) {
+        return springDataFrameworkRepository.findByIdForUpdate(id)
+                .map(FrameworkMapper::toDomain);
+    }
+
+    @Override
     public Optional<Framework> findByCode(String code) {
         return springDataFrameworkRepository.findByCode(code).map(FrameworkMapper::toDomain);
     }
 
     @Override
-    public PageResult<Framework> findAll(int pageNumber, int size) {
+    public PageResult<Framework> findAll(int pageNumber, int size, String search, Boolean isActive) {
         var pageable = PageRequest.of(pageNumber - 1, size);
-        var page = springDataFrameworkRepository.findAll(pageable);
+        String pattern = StringNormalization.toLikePattern(search);
+        var page = isActive != null
+            ? springDataFrameworkRepository.findAllBySearchAndIsActive(pattern, isActive, pageable)
+            : springDataFrameworkRepository.findAllBySearch(pattern, pageable);
         return new PageResult<>(
                 page.getContent().stream().map(FrameworkMapper::toDomain).toList(),
                 page.getNumber() + 1,

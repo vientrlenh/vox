@@ -14,8 +14,18 @@ import org.springframework.data.repository.query.Param;
 
 
 public interface SpringDataFrameworkResultBandRepository extends JpaRepository<FrameworkResultBandJpaEntity, UUID> {
+    boolean existsByFrameworkVersionId(UUID frameworkVersionId);
+    boolean existsByFrameworkVersionIdAndCodeAndIdNot(UUID frameworkVersionId, String code, UUID id);
+    boolean existsByFrameworkVersionIdAndLabelAndIdNot(UUID frameworkVersionId, String label, UUID id);
     List<FrameworkResultBandJpaEntity> findByFrameworkVersionId(UUID frameworkVersionId);
     List<FrameworkResultBandJpaEntity> findByFrameworkVersionIdIn(Collection<UUID> frameworkVersionIds);
+    List<FrameworkResultBandJpaEntity> findByFrameworkVersionIdAndCodeIn(UUID frameworkVersionId, Collection<String> codes);
+
+    @Query("SELECT COUNT(b) > 0 FROM FrameworkResultBandJpaEntity b WHERE b.frameworkVersionId = :versionId AND b.code IN :codes")
+    boolean existsByFrameworkVersionIdAndCodeIn(@Param("versionId") UUID versionId, @Param("codes") Collection<String> codes);
+
+    @Query("SELECT COUNT(b) > 0 FROM FrameworkResultBandJpaEntity b WHERE b.frameworkVersionId = :versionId AND b.label IN :labels")
+    boolean existsByFrameworkVersionIdAndLabelIn(@Param("versionId") UUID versionId, @Param("labels") Collection<String> labels);
     Optional<FrameworkResultBandJpaEntity> findByFrameworkVersionIdAndCode(UUID frameworkVersionId, String code);
     Optional<FrameworkResultBandJpaEntity> findByFrameworkVersionIdAndLabel(UUID frameworkVersionId, String label);
 

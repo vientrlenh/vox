@@ -51,7 +51,6 @@ public class DeleteFrameworkVersionUseCaseTests {
         frameworkResultBandRepository = mock(FrameworkResultBandRepository.class);
         assessmentPolicyRepository = mock(AssessmentPolicyRepository.class);
         useCase = new DeleteFrameworkVersionUseCase(
-            frameworkRepository,
             frameworkVersionRepository,
             frameworkCriterionRepository,
             frameworkCriterionBandRepository,

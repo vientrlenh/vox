@@ -37,6 +37,11 @@ public class ViewSchoolUsersBySchoolUseCase implements IUseCase<ViewSchoolUsersB
     @Transactional(readOnly = true)
     public PageResult<SchoolUserDto> execute(ViewSchoolUsersBySchoolQuery input) {
         var callerId = userContextPort.getCurrentAuthenticatedUserId();
+        var schoolId = userContextPort.getCurrentSchoolId();
+
+        if (schoolId == null || !input.schoolId().equals(schoolId)) {
+            throw new ForbiddenException("Bạn không có quyền xem danh sách người dùng của trường này");
+        }
 
         if (!userRepository.existsByIdAndStatus(callerId, UserStatus.ACTIVE)) {
             throw new UnauthorizedException("Trạng thái người dùng không hợp lệ");

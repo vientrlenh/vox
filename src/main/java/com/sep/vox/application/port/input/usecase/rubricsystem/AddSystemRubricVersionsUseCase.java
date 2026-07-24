@@ -110,6 +110,6 @@ public class AddSystemRubricVersionsUseCase implements IUseCase<AddSystemRubricV
         // 5. Lưu vào DB và trả về ID của các version vừa tạo
         List<RubricVersion> savedVersions = rubricVersionRepository.saveAll(newVersions);
 
-        return savedVersions.stream().map(RubricVersion::getId).toList();
+        return savedVersions.stream().map(v -> v.getId()).toList();
     }
 }

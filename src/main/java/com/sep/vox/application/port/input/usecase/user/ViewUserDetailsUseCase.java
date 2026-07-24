@@ -1,7 +1,6 @@
 package com.sep.vox.application.port.input.usecase.user;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.query.ViewUserDetailsQuery;
@@ -20,7 +19,6 @@ public class ViewUserDetailsUseCase implements IUseCase<ViewUserDetailsQuery, Us
     }
 
     @Override
-    @Transactional(readOnly = true)
     public UserDto execute(ViewUserDetailsQuery input) {
         var user = userRepository.findById(input.id())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));

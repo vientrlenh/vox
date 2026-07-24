@@ -219,6 +219,6 @@ public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<Create
 
         // 8. Lưu 1 lần xuống DB
         List<AssessmentPolicy> savedPolicies = assessmentPolicyRepository.saveAll(policiesToSave);
-        return savedPolicies.stream().map(AssessmentPolicy::getId).toList();
+        return savedPolicies.stream().map(ap -> ap.getId()).toList();
     }
 }

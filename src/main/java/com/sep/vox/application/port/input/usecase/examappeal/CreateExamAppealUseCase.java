@@ -16,7 +16,6 @@ import com.sep.vox.application.port.input.service.ExamAppealAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.model.exam.ExamAppealStatus;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
-import com.sep.vox.domain.model.exam.ExamItemResponse;
 import com.sep.vox.domain.model.exam.ExamResultAppeal;
 import com.sep.vox.domain.model.exam.ExamResultAppealItem;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
@@ -86,7 +85,7 @@ public class CreateExamAppealUseCase implements IUseCase<CreateExamAppealCommand
             .stream()
             .filter(item -> item.getPaperItemId() != null)
             .collect(Collectors.toMap(
-                ExamItemResponse::getPaperItemId, Function.identity(), (left, right) -> left));
+                item -> item.getPaperItemId(), Function.identity(), (left, right) -> left));
         if (!responsesByPaperItem.keySet().containsAll(distinctPaperItemIds)) {
             throw new NotFoundException("Không tìm thấy câu trả lời của phần thi cần phúc khảo.");
         }

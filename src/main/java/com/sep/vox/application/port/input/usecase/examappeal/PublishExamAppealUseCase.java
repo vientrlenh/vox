@@ -25,7 +25,6 @@ import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.exam.ExamEvaluationEngineType;
 import com.sep.vox.domain.model.exam.ExamItemEvaluation;
 import com.sep.vox.domain.model.exam.ExamItemEvaluationStatus;
-import com.sep.vox.domain.model.exam.ExamResultAppealItem;
 import com.sep.vox.domain.repository.ExamItemEvaluationRepository;
 import com.sep.vox.domain.repository.ExamResultAppealItemRepository;
 import com.sep.vox.domain.repository.ExamResultAppealRepository;
@@ -94,10 +93,10 @@ public class PublishExamAppealUseCase implements IUseCase<PublishExamAppealComma
         }
 
         var appealItems = examResultAppealItemRepository.findByAppealId(command.appealId()).stream()
-            .collect(Collectors.toMap(ExamResultAppealItem::getId, Function.identity(),
+            .collect(Collectors.toMap(item -> item.getId(), Function.identity(),
                 (left, right) -> left, LinkedHashMap::new));
-        var itemScores = command.itemScores() == null
-            ? new ArrayList<PublishExamAppealCommand.ItemScore>() : command.itemScores();
+        List<PublishExamAppealCommand.ItemScore> itemScores = command.itemScores() == null
+            ? new ArrayList<>() : command.itemScores();
         validateItemCoverage(itemScores, appealItems.keySet());
 
         var rubricVersion = rubricVersionRepository.findById(context.candidateResult().getRubricVersionId())
@@ -118,7 +117,7 @@ public class PublishExamAppealUseCase implements IUseCase<PublishExamAppealComma
 
         // Bản AI và toàn bộ báo cáo giám khảo của MỌI part đang phúc khảo đều lùi về
         // SUPERSEDED, để mỗi part chỉ còn đúng một bản FINALIZED là nguồn điểm.
-        var responseIds = appealItems.values().stream().map(ExamResultAppealItem::getResponseId).toList();
+        var responseIds = appealItems.values().stream().map(item -> item.getResponseId()).toList();
         var existing = examItemEvaluationRepository.findByResponseIdIn(responseIds);
         for (var evaluation : existing) {
             if (evaluation.getStatus() != ExamItemEvaluationStatus.SUPERSEDED) {
@@ -186,7 +185,7 @@ public class PublishExamAppealUseCase implements IUseCase<PublishExamAppealComma
             throw new IllegalArgumentException("Phải nhập điểm cho tất cả phần thi được phúc khảo.");
         }
         var submittedIds = itemScores.stream()
-            .map(PublishExamAppealCommand.ItemScore::appealItemId).toList();
+            .map(itemScore -> itemScore.appealItemId()).toList();
         if (new HashSet<>(submittedIds).size() != submittedIds.size()) {
             throw new IllegalArgumentException("Không được nhập trùng phần thi.");
         }

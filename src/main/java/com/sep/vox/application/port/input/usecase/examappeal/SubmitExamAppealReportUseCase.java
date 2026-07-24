@@ -27,7 +27,6 @@ import com.sep.vox.domain.model.exam.ExamEvaluationEngineType;
 import com.sep.vox.domain.model.exam.ExamItemCriterionScore;
 import com.sep.vox.domain.model.exam.ExamItemEvaluation;
 import com.sep.vox.domain.model.exam.ExamItemEvaluationStatus;
-import com.sep.vox.domain.model.exam.ExamResultAppealItem;
 import com.sep.vox.domain.model.rubric.RubricCriterion;
 import com.sep.vox.domain.repository.ExamAppealReviewerItemRepository;
 import com.sep.vox.domain.repository.ExamAppealReviewerRepository;
@@ -100,15 +99,15 @@ public class SubmitExamAppealReportUseCase implements IUseCase<SubmitExamAppealR
         }
 
         var appealItems = examResultAppealItemRepository.findByAppealId(command.appealId()).stream()
-            .collect(Collectors.toMap(ExamResultAppealItem::getId, Function.identity(),
+            .collect(Collectors.toMap(item -> item.getId(), Function.identity(),
                 (left, right) -> left, LinkedHashMap::new));
-        var reports = command.items() == null
-            ? new ArrayList<SubmitExamAppealReportCommand.ItemReport>() : command.items();
+        List<SubmitExamAppealReportCommand.ItemReport> reports = command.items() == null
+            ? new ArrayList<>() : command.items();
         validateItemCoverage(reports, appealItems.keySet());
 
         var criteria = rubricCriterionRepository
             .findByRubricVersionId(context.candidateResult().getRubricVersionId()).stream()
-            .collect(Collectors.toMap(RubricCriterion::getId, Function.identity(), (left, right) -> left));
+            .collect(Collectors.toMap(criterion -> criterion.getId(), Function.identity(), (left, right) -> left));
 
         // Chấm xong toàn bộ phần thi rồi mới ghi — một phần lỗi không được để lại
         // báo cáo nửa vời của các phần trước đó.
@@ -187,7 +186,7 @@ public class SubmitExamAppealReportUseCase implements IUseCase<SubmitExamAppealR
             throw new IllegalArgumentException("Phải chấm điểm cho tất cả phần thi được phúc khảo.");
         }
         var submittedIds = reports.stream()
-            .map(SubmitExamAppealReportCommand.ItemReport::appealItemId).toList();
+            .map(report -> report.appealItemId()).toList();
         if (new HashSet<>(submittedIds).size() != submittedIds.size()) {
             throw new IllegalArgumentException("Không được chấm trùng phần thi.");
         }
@@ -207,7 +206,7 @@ public class SubmitExamAppealReportUseCase implements IUseCase<SubmitExamAppealR
             throw new IllegalArgumentException("Phải chấm điểm cho các tiêu chí.");
         }
         if (new HashSet<>(scores.stream()
-                .map(SubmitExamAppealReportCommand.CriterionScoreItem::criterionId).toList())
+                .map(score -> score.criterionId()).toList())
                 .size() != scores.size()) {
             throw new IllegalArgumentException("Không được chấm trùng tiêu chí.");
         }

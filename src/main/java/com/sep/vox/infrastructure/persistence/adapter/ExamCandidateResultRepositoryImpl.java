@@ -28,6 +28,16 @@ public class ExamCandidateResultRepositoryImpl implements ExamCandidateResultRep
     }
 
     @Override
+    public List<ExamCandidateResult> findByIdIn(Collection<UUID> ids) {
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+        return springDataExamCandidateResultRepository.findByIdIn(ids).stream()
+            .map(ExamCandidateResultMapper::toDomain)
+            .toList();
+    }
+
+    @Override
     public Optional<ExamCandidateResult> findBySessionId(UUID sessionId) {
         return springDataExamCandidateResultRepository.findBySessionId(sessionId)
             .map(ExamCandidateResultMapper::toDomain);

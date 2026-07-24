@@ -104,6 +104,15 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<ExamAttemptE
             var response = examItemResponseRepository.findById(responseId)
                 .orElseThrow(() -> new NotFoundException("không thể tìm thấy câu trả lời cho evaluation"));
 
+            // Điểm người đã chốt thắng AI. Không có optimistic lock trên
+            // exam_item_evaluations, nên một lượt chấm lại của AI (re-run, replay
+            // Kafka) sẽ ghi đè bản FINALIZED và xoá luôn criterion scores của giáo
+            // viên — mất im lặng, không ai phát hiện. Bỏ qua ở đây là chốt chặn:
+            // muốn đổi điểm đã chốt thì đi qua chấm tay hoặc phúc khảo.
+            if (hasFinalizedHumanEvaluation(response.getId())) {
+                return new PersistedEvaluation(response.getSessionId());
+            }
+
             var criteriaMap = input.payload() == null || input.payload().criteria() == null
                 ? Map.<String, ExamAttemptEvaluationCompletedEventDto.CriterionScoreDto>of()
                 : input.payload().criteria();
@@ -250,6 +259,18 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<ExamAttemptE
     }
 
     private record PersistedEvaluation(UUID sessionId) {
+    }
+
+    /**
+     * Response đã có bản chấm tay đã chốt hay chưa. Dùng
+     * {@code findLatestByResponseId} (chỉ trả AUTO_GRADED/FINALIZED) nên bản HUMAN
+     * đã bị một vòng phúc khảo sau đó SUPERSEDED sẽ không chặn nhầm.
+     */
+    private boolean hasFinalizedHumanEvaluation(UUID responseId) {
+        return examItemEvaluationRepository.findLatestByResponseId(responseId)
+            .filter(evaluation -> evaluation.getEngineType() == ExamEvaluationEngineType.HUMAN)
+            .filter(evaluation -> evaluation.getStatus() == ExamItemEvaluationStatus.FINALIZED)
+            .isPresent();
     }
 
     private BigDecimal computeWeightedItemScore(

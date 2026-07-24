@@ -11,6 +11,7 @@ import com.sep.vox.infrastructure.persistence.entity.ExamCandidateResultJpaEntit
 
 public interface SpringDataExamCandidateResultRepository extends JpaRepository<ExamCandidateResultJpaEntity, UUID> {
     Optional<ExamCandidateResultJpaEntity> findBySessionId(UUID sessionId);
+    List<ExamCandidateResultJpaEntity> findByIdIn(Collection<UUID> ids);
     List<ExamCandidateResultJpaEntity> findBySessionIdIn(Collection<UUID> sessionIds);
     List<ExamCandidateResultJpaEntity> findByExamId(UUID examId);
     void deleteBySessionId(UUID sessionId);

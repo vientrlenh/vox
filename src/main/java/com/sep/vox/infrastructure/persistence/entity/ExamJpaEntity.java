@@ -94,6 +94,12 @@ public class ExamJpaEntity {
     @Column(name = "max_attempt")
     private Integer maxAttempt;
 
+    // H.1: mặc định tự động tính = MAX(paperDuration) qua recalculateExamTimeDuration, nhưng
+    // vẫn nhận giá trị người dùng nhập lúc tạo exam, bị ghi đè ngay khi paper/section đầu tiên
+    // được tạo.
+    @Column(name = "exam_time_duration_second")
+    private Integer examTimeDurationSecond;
+
     @Column(name = "result_decision_method", length = 20, check = {
         @CheckConstraint(
             name = "chk_exams_result_decision_method_valid",
@@ -130,10 +136,6 @@ public class ExamJpaEntity {
     @Column(name = "requires_otp", nullable = false, columnDefinition = "BOOLEAN NOT NULL DEFAULT true")
     private boolean requiresOtp;
 
-    // H.1: tự động tính = MAX(paperDuration) trên mọi ExamPaper - không có input frontend nào.
-    @Column(name = "exam_time_duration_second")
-    private Integer examTimeDurationSecond;
-
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 
@@ -149,8 +151,8 @@ public class ExamJpaEntity {
     protected ExamJpaEntity() {}
 
     public ExamJpaEntity(UUID id, UUID blueprintId, UUID blueprintVersionId, String code, String name, String description, UUID schoolId, UUID languageId,
-            String kind, String deliveryMode, String status, Integer maxAttempt, String resultDecisionMethod,String requiredStreamType, String streamTypePermission, 
-            OffsetDateTime openAt, OffsetDateTime closeAt, UUID assessmentPolicyId, boolean requiresOtp,
+            String kind, String deliveryMode, String status, Integer maxAttempt, Integer examTimeDurationSecond, String resultDecisionMethod, String requiredStreamType, String streamTypePermission,
+            OffsetDateTime openAt, OffsetDateTime closeAt, UUID assessmentPolicyId,boolean requiresOtp,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.blueprintId = blueprintId;
@@ -164,6 +166,7 @@ public class ExamJpaEntity {
         this.deliveryMode = deliveryMode;
         this.status = status;
         this.maxAttempt = maxAttempt;
+        this.examTimeDurationSecond = examTimeDurationSecond;
         this.resultDecisionMethod = resultDecisionMethod;
         this.requiredStreamType = requiredStreamType;
         this.streamTypePermission = streamTypePermission;
@@ -257,6 +260,14 @@ public class ExamJpaEntity {
         this.maxAttempt = maxAttempt;
     }
 
+    public Integer getExamTimeDurationSecond() {
+        return examTimeDurationSecond;
+    }
+
+    public void setExamTimeDurationSecond(Integer examTimeDurationSecond) {
+        this.examTimeDurationSecond = examTimeDurationSecond;
+    }
+
     public String getResultDecisionMethod() {
         return resultDecisionMethod;
     }
@@ -345,13 +356,6 @@ public class ExamJpaEntity {
         this.requiresOtp = requiresOtp;
     }
 
-    public Integer getExamTimeDurationSecond() {
-        return examTimeDurationSecond;
-    }
-
-    public void setExamTimeDurationSecond(Integer examTimeDurationSecond) {
-        this.examTimeDurationSecond = examTimeDurationSecond;
-    }
     public String getRequiredStreamType() {
         return requiredStreamType;
     }

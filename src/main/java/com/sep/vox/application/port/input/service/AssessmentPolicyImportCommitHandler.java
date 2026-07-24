@@ -87,8 +87,8 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
         static final ScopeIds EMPTY = new ScopeIds(null, null, null);
     }
 
-    private record BandIds(UUID targetBandId, UUID minimumBandId) {
-        static final BandIds EMPTY = new BandIds(null, null);
+    private record BandIds(UUID targetBandId) {
+        static final BandIds EMPTY = new BandIds(null);
     }
 
     private record EffectivePeriod(OffsetDateTime from, OffsetDateTime to) {
@@ -187,7 +187,7 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
                         : ScopeIds.EMPTY;
 
                 BandIds bandIds = errors.isEmpty()
-                        ? resolveBands(frameworkVersionId, mappedData.get("targetFrameworkBand"), mappedData.get("minimumFrameworkBand"), errors, lookup)
+                        ? resolveBands(frameworkVersionId, mappedData.get("targetFrameworkBand"), errors, lookup)
                         : BandIds.EMPTY;
 
                 BigDecimal passingScore = errors.isEmpty()
@@ -228,7 +228,7 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
 
                 AssessmentPolicy newPolicy = new AssessmentPolicy(
                         schoolId, scopeIds.schoolGradeLevelId(), scopeIds.schoolGradeId(), scopeIds.schoolClassId(),
-                        languageId, frameworkVersionId, rubricVersionId, bandIds.targetBandId(), bandIds.minimumBandId(),
+                        languageId, frameworkVersionId, rubricVersionId, bandIds.targetBandId(),
                         passingScore, strictness, nextVersion, AssessmentPolicyStatus.DRAFT,
                         effectivePeriod.from(), effectivePeriod.to(), now, now, session.getCreatedBy(), session.getCreatedBy()
                 );
@@ -362,7 +362,6 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
         requireField(mappedData.get("rubricVersion"), "rubricVersion", "Thiếu Phiên bản Rubric.", errors);
         requireField(mappedData.get("language"), "language", "Thiếu Ngôn ngữ.", errors);
         requireField(mappedData.get("targetFrameworkBand"), "targetFrameworkBand", "Thiếu Band mục tiêu.", errors);
-        requireField(mappedData.get("minimumFrameworkBand"), "minimumFrameworkBand", "Thiếu Band tối thiểu.", errors);
         requireField(mappedData.get("effectiveFrom"), "effectiveFrom", "Thiếu Ngày bắt đầu.", errors);
     }
 
@@ -476,24 +475,14 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
         return new ScopeIds(schoolClass.getId(), null, null);
     }
 
-    private static BandIds resolveBands(UUID frameworkVersionId, String targetBandInput, String minimumBandInput,
+    private static BandIds resolveBands(UUID frameworkVersionId, String targetBandInput,
             List<Map<String, String>> errors, LookupContext lookup) {
         String cleanTarget = targetBandInput.trim();
         FrameworkResultBand targetBand = findBand(frameworkVersionId, cleanTarget, lookup);
 
-        String cleanMin = minimumBandInput.trim();
-        FrameworkResultBand minBand = findBand(frameworkVersionId, cleanMin, lookup);
-
         if (targetBand == null) errors.add(error("targetFrameworkBand", "Band mục tiêu '" + cleanTarget + "' không tồn tại trong Khung này."));
-        if (minBand == null) errors.add(error("minimumFrameworkBand", "Band tối thiểu '" + cleanMin + "' không tồn tại trong Khung này."));
 
-        if (targetBand != null && minBand != null && minBand.getOrder() > targetBand.getOrder()) {
-            errors.add(error("minimumFrameworkBand", "Band tối thiểu không được cao hơn Band mục tiêu."));
-        }
-
-        return new BandIds(
-                targetBand != null ? targetBand.getId() : null,
-                minBand != null ? minBand.getId() : null);
+        return new BandIds(targetBand != null ? targetBand.getId() : null);
     }
 
     private static FrameworkResultBand findBand(UUID frameworkVersionId, String cleanInput, LookupContext lookup) {

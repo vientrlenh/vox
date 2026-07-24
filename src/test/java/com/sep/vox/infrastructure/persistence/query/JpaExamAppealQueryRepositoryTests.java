@@ -81,7 +81,7 @@ class JpaExamAppealQueryRepositoryTests extends ContainerTestConfig {
         now = OffsetDateTime.parse("2026-07-15T09:00:00+07:00");
 
         examId = persisted(new ExamJpaEntity(null, null, null, "EX-1", "IELTS Speaking Mock", null, schoolId,
-            UUID.randomUUID(), "CLASS_TEST", "STUDENT_DEVICE", "RESULTS_PUBLISHED", 1, "LATEST",
+            UUID.randomUUID(), "CLASS_TEST", "STUDENT_DEVICE", "RESULTS_PUBLISHED", 1, null, "LATEST",
             null, null,
             null, null, null, false, now, now, null, null)).getId();
         sectionId = persisted(new ExamPaperSectionJpaEntity(

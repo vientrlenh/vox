@@ -1,0 +1,246 @@
+enum PlanStatus {
+    ACTIVE
+    ARCHIVED
+}
+
+enum SubscriptionStatus {
+    ACTIVE
+    EXPIRED
+    CANCELLED
+}
+
+enum QuotaType {
+    GRADING
+    CLASS_TEST
+    PRACTICE
+}
+
+enum RequestType {
+    REGISTRATION
+    UPGRADE
+}
+
+enum RequestStatus {
+    PENDING
+    APPROVED
+    REJECTED
+}
+
+enum PurchaseStatus {
+    PENDING
+    PAID
+    FAILED
+}
+
+enum InvoiceSourceType {
+    SUBSCRIPTION
+    SUBSCRIPTION_REQUEST
+    TOKEN_PURCHASE
+}
+
+enum InvoiceStatus {
+    PAID
+    PENDING
+    FAILED
+    CANCELLED
+}
+
+enum FinancialEventType {
+    SUB_PURCHASED
+    SUB_RENEWED
+    SUB_CANCELLED
+    SUB_UPGRADED
+    TOKEN_PURCHASED
+    TOKEN_CONSUMED
+    REFUND_ISSUED
+}
+
+enum PaymentMethod {
+    PAYOS
+    MANUAL
+}
+
+type PlanQuota {
+    id: ID!
+    quotaType: QuotaType!
+    includedQuantity: Int!
+    tokenUnitPrice: Float!
+}
+
+type SubscriptionPlan {
+    id: ID!
+    name: String!
+    tagline: String
+    pricePerYear: Float!
+    validityDays: Int!
+    maxTimePerAttemptMin: Int
+    maxStudentCount: Int
+    popular: Boolean!
+    status: PlanStatus!
+    version: Int!
+    createdAt: String
+    createdBy: ID
+    quotas: [PlanQuota!]!
+}
+
+type SubscriptionPlanPage {
+    content: [SubscriptionPlan!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+type SchoolSubscription {
+    id: ID!
+    schoolId: ID!
+    planId: ID!
+    startDate: String
+    endDate: String
+    status: SubscriptionStatus!
+    pricePaidSnapshot: Float!
+    cancelledAt: String
+    createdAt: String
+    plan: SubscriptionPlan
+}
+
+type SchoolSubscriptionPage {
+    content: [SchoolSubscription!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+type SubscriptionQuota {
+    id: ID!
+    subscriptionId: ID!
+    quotaType: QuotaType!
+    totalAllocated: Int!
+    usedQuantity: Int!
+}
+
+type SubscriptionRequest {
+    id: ID!
+    schoolId: ID!
+    requestType: RequestType!
+    currentPlanId: ID
+    requestedPlanId: ID!
+    amount: Float!
+    status: RequestStatus!
+    submittedAt: String
+    reviewedBy: ID
+    reviewedAt: String
+}
+
+type SubscriptionRequestPage {
+    content: [SubscriptionRequest!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+type TokenPurchaseItem {
+    id: ID!
+    purchaseId: ID!
+    quotaType: QuotaType!
+    quantity: Int!
+    unitPriceSnapshot: Float!
+    subtotal: Float!
+}
+
+type TokenPurchase {
+    id: ID!
+    subscriptionId: ID!
+    totalAmount: Float!
+    status: PurchaseStatus!
+    purchasedAt: String
+    items: [TokenPurchaseItem!]!
+}
+
+type Invoice {
+    id: ID!
+    invoiceNumber: String!
+    subscriptionId: ID!
+    sourceType: InvoiceSourceType!
+    sourceId: ID!
+    issueDate: String
+    amount: Float!
+    status: InvoiceStatus!
+    paymentLinkId: String
+    checkoutUrl: String
+    paidAt: String
+}
+
+type InvoicePage {
+    content: [Invoice!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+type FinancialEvent {
+    id: ID!
+    schoolId: ID!
+    subscriptionId: ID!
+    eventType: FinancialEventType!
+    amountSigned: Float!
+    currency: String!
+    paymentMethod: PaymentMethod!
+    actorId: ID
+    occurredAt: String
+}
+
+type FinancialEventPage {
+    content: [FinancialEvent!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+input PlanQuotaItemInput {
+    quotaType: QuotaType!
+    includedQuantity: Int!
+    tokenUnitPrice: Float!
+}
+
+input UpdateSubscriptionPlanInput {
+    name: String
+    tagline: String
+    pricePerYear: Float
+    validityDays: Int
+    maxTimePerAttemptMin: Int
+    maxStudentCount: Int
+    popular: Boolean
+    quotas: [PlanQuotaItemInput!]
+}
+
+extend type Query {
+    subscriptionPlans(page: Int = 0, size: Int = 20): SubscriptionPlanPage!
+    subscriptionPlan(id: ID!): SubscriptionPlan
+
+    schoolSubscriptions(
+        keyword: String,
+        planId: ID,
+        status: SubscriptionStatus,
+        page: Int = 0,
+        size: Int = 20
+    ): SchoolSubscriptionPage!
+    schoolSubscription(schoolId: ID!): SchoolSubscription
+    schoolSubscriptionHistory(schoolId: ID!): [SchoolSubscription!]!
+
+    subscriptionRequests(status: RequestStatus!, page: Int = 0, size: Int = 20): SubscriptionRequestPage!
+
+    tokenPurchases(schoolId: ID!): [TokenPurchase!]!
+    subscriptionUsage(schoolId: ID!): [SubscriptionQuota!]!
+
+    invoices(schoolId: ID!, page: Int = 0, size: Int = 20): InvoicePage!
+    financialEvents(schoolId: ID!, page: Int = 0, size: Int = 20): FinancialEventPage!
+}
+
+extend type Mutation {
+    updateSubscriptionPlan(id: ID!, input: UpdateSubscriptionPlanInput!): SubscriptionPlan!
+}

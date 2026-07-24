@@ -15,6 +15,7 @@ public record CreateClassTestCommand(
     UUID existingBlueprintId,
     UUID existingBlueprintVersionId,
     Integer maxAttempt,
+    Integer examTimeDurationSecond,
     ResultDecisionMethod resultDecisionMethod
 ) {
 }

@@ -1,0 +1,147 @@
+package com.sep.vox.infrastructure.persistence.entity;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.util.UUID;
+
+import org.hibernate.annotations.Generated;
+import org.hibernate.generator.EventType;
+
+import jakarta.persistence.CheckConstraint;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "school_subscription")
+public class SchoolSubscriptionJpaEntity {
+
+    @Id
+    @Generated(event = EventType.INSERT)
+    @Column(
+        name = "id",
+        nullable = false,
+        updatable = false,
+        insertable = false,
+        columnDefinition = "UUID DEFAULT uuidv7()"
+    )
+    private UUID id;
+
+    @Column(name = "school_id", nullable = false, updatable = false)
+    private UUID schoolId;
+
+    @Column(name = "plan_id", nullable = false, updatable = false)
+    private UUID planId;
+
+    @Column(name = "start_date", nullable = false)
+    private LocalDate startDate;
+
+    @Column(name = "end_date", nullable = false)
+    private LocalDate endDate;
+
+    @Column(name = "status", nullable = false, length = 20, check = {
+        @CheckConstraint(
+            name = "chk_school_subscription_status_valid",
+            constraint = "status IN ('ACTIVE', 'EXPIRED', 'CANCELLED')"
+        )
+    })
+    private String status;
+
+    @Column(name = "price_paid_snapshot", nullable = false, updatable = false, precision = 15, scale = 0)
+    private BigDecimal pricePaidSnapshot;
+
+    @Column(name = "cancelled_at")
+    private OffsetDateTime cancelledAt;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private OffsetDateTime createdAt;
+
+    protected SchoolSubscriptionJpaEntity() {}
+
+    public SchoolSubscriptionJpaEntity(UUID id, UUID schoolId, UUID planId, LocalDate startDate, LocalDate endDate,
+            String status, BigDecimal pricePaidSnapshot, OffsetDateTime cancelledAt, OffsetDateTime createdAt) {
+        this.id = id;
+        this.schoolId = schoolId;
+        this.planId = planId;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.status = status;
+        this.pricePaidSnapshot = pricePaidSnapshot;
+        this.cancelledAt = cancelledAt;
+        this.createdAt = createdAt;
+    }
+
+    public UUID getId() {
+        return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
+    public UUID getSchoolId() {
+        return schoolId;
+    }
+
+    public void setSchoolId(UUID schoolId) {
+        this.schoolId = schoolId;
+    }
+
+    public UUID getPlanId() {
+        return planId;
+    }
+
+    public void setPlanId(UUID planId) {
+        this.planId = planId;
+    }
+
+    public LocalDate getStartDate() {
+        return startDate;
+    }
+
+    public void setStartDate(LocalDate startDate) {
+        this.startDate = startDate;
+    }
+
+    public LocalDate getEndDate() {
+        return endDate;
+    }
+
+    public void setEndDate(LocalDate endDate) {
+        this.endDate = endDate;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public BigDecimal getPricePaidSnapshot() {
+        return pricePaidSnapshot;
+    }
+
+    public void setPricePaidSnapshot(BigDecimal pricePaidSnapshot) {
+        this.pricePaidSnapshot = pricePaidSnapshot;
+    }
+
+    public OffsetDateTime getCancelledAt() {
+        return cancelledAt;
+    }
+
+    public void setCancelledAt(OffsetDateTime cancelledAt) {
+        this.cancelledAt = cancelledAt;
+    }
+
+    public OffsetDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(OffsetDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+}

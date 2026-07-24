@@ -87,6 +87,9 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
         if (command.maxAttempt() != null) {
             exam.setMaxAttempt(command.maxAttempt());
         }
+        if (command.examTimeDurationSecond() != null) {
+            exam.setExamTimeDurationSecond(command.examTimeDurationSecond());
+        }
         if (command.resultDecisionMethod() != null) {
             exam.setResultDecisionMethod(command.resultDecisionMethod());
         }
@@ -128,6 +131,7 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
             input.closeAt(),
             input.assessmentPolicyId(),
             input.maxAttempt(),
+            input.examTimeDurationSecond(),
             input.resultDecisionMethod(),
             input.requiresOtp()
         );

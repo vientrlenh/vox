@@ -337,7 +337,6 @@ public class FileProcessingService implements FileProcessingPort {
 
                     // Thông số đánh giá
                     Map.entry("targetFrameworkBand", List.of("targetFrameworkBand", "band mục tiêu", "band muc tieu", "mã band mục tiêu", "tên band mục tiêu")),
-                    Map.entry("minimumFrameworkBand", List.of("minimumFrameworkBand", "band tối thiểu", "band toi thieu", "mã band tối thiểu", "tên band tối thiểu")),
                     Map.entry("passingScore", List.of("passingScore", "điểm đạt", "diem dat")),
                     Map.entry("strictness", List.of("strictness", "mức độ nghiêm ngặt", "muc do nghiem ngat")),
                     Map.entry("effectiveFrom", List.of("effectiveFrom", "ngày bắt đầu", "ngay bat dau")),

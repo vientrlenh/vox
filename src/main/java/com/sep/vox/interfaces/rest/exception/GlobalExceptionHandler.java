@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.PlanLimitExceededException;
+import com.sep.vox.application.exception.QuotaExceededException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.interfaces.rest.dto.response.ErrorResponse;
 import com.sep.vox.interfaces.rest.dto.response.ValidationErrorResponse;
@@ -34,6 +36,8 @@ public class GlobalExceptionHandler {
     private static final String UNAUTHORIZED_ERROR = "UNAUTHORIZED";
     private static final String FORBIDDEN_ERROR = "FORBIDDEN";
     private static final String INTERNAL_ERROR = "INTERNAL_SERVER_ERROR";
+    private static final String QUOTA_EXCEEDED_ERROR = "QUOTA_EXCEEDED";
+    private static final String PLAN_LIMIT_EXCEEDED_ERROR = "PLAN_LIMIT_EXCEEDED";
 
     private static final String AUTHENTICATION_ERROR = "BAD_CREDENTIALS";
     private static final String AUTHORIZATION_ERROR = "ACCESS_DENIED";
@@ -90,9 +94,21 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
     }
 
+    @ExceptionHandler(QuotaExceededException.class)
+    public ResponseEntity<ErrorResponse> handleQuotaExceeded(QuotaExceededException e) {
+        var error = new ErrorResponse(QUOTA_EXCEEDED_ERROR, e.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    @ExceptionHandler(PlanLimitExceededException.class)
+    public ResponseEntity<ErrorResponse> handlePlanLimitExceeded(PlanLimitExceededException e) {
+        var error = new ErrorResponse(PLAN_LIMIT_EXCEEDED_ERROR, e.getMessage());
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT).body(error);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneric(Exception e) {
-        LOGGER.error("An unexpected error occurred: {}", e.getMessage());
+        LOGGER.error("An unexpected error occurred", e);
         var error = new ErrorResponse(INTERNAL_ERROR, "Có lỗi xảy ra");
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }

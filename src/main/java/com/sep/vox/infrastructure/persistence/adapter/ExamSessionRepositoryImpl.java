@@ -24,6 +24,8 @@ public class ExamSessionRepositoryImpl implements ExamSessionRepository {
         this.springDataExamSessionRepository = springDataExamSessionRepository;
     }
 
+
+
     @Override
     public Optional<ExamSession> findById(UUID id) {
         return springDataExamSessionRepository.findById(id)

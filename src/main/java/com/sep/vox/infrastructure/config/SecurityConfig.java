@@ -57,6 +57,7 @@ public class SecurityConfig {
         "/error",
         "/api/v1/status",
         "/api/v1/auth/**",
+        "/api/v1/webhooks/payos/**",
         "/graphql",
         "/graphiql/**"
     };

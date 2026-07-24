@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.exam;
 
 import java.time.OffsetDateTime;
 
+import com.sep.vox.domain.model.school.SchoolUser;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -9,6 +10,7 @@ import com.sep.vox.application.common.ExamCandidateStatusSupport;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.PlanLimitExceededException;
 import com.sep.vox.application.port.input.command.UpdateExamStatusCommand;
 import com.sep.vox.application.port.input.service.ExamCandidateResultFinalizationService;
 import com.sep.vox.application.port.input.service.ZeroScoreExamResultService;
@@ -17,6 +19,7 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.domain.mapper.ExamDtoMapper;
+import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
@@ -24,6 +27,7 @@ import com.sep.vox.domain.model.exam.ExamPaperStatus;
 import com.sep.vox.domain.model.exam.ExamScheduleStatus;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
+import com.sep.vox.domain.model.subscription.QuotaType;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
@@ -32,7 +36,10 @@ import com.sep.vox.domain.repository.ExamPaperRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;
+import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
+import com.sep.vox.domain.repository.SubscriptionPlanRepository;
+import com.sep.vox.domain.repository.SubscriptionQuotaRepository;
 
 @Service
 public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand, ExamDto> {
@@ -50,6 +57,9 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final ExamQuestionSecureLockService examQuestionSecureLockService;
+    private final SchoolSubscriptionRepository schoolSubscriptionRepository;
+    private final SubscriptionPlanRepository subscriptionPlanRepository;
+    private final SubscriptionQuotaRepository subscriptionQuotaRepository;
     private final UserContextPort userContextPort;
 
     public UpdateExamStatusUseCase(
@@ -66,6 +76,9 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
             SchoolUserRepository schoolUserRepository,
             UserRoleQueryRepository userRoleQueryRepository,
             ExamQuestionSecureLockService examQuestionSecureLockService,
+            SchoolSubscriptionRepository schoolSubscriptionRepository,
+            SubscriptionPlanRepository subscriptionPlanRepository,
+            SubscriptionQuotaRepository subscriptionQuotaRepository,
             UserContextPort userContextPort) {
         this.examRepository = examRepository;
         this.examMemberRepository = examMemberRepository;
@@ -80,6 +93,9 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
         this.schoolUserRepository = schoolUserRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
         this.examQuestionSecureLockService = examQuestionSecureLockService;
+        this.schoolSubscriptionRepository = schoolSubscriptionRepository;
+        this.subscriptionPlanRepository = subscriptionPlanRepository;
+        this.subscriptionQuotaRepository = subscriptionQuotaRepository;
         this.userContextPort = userContextPort;
     }
 
@@ -93,7 +109,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
         );
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
-            .map(schoolUser -> schoolUser.getSchoolId())
+            .map(SchoolUser::getSchoolId)
             .orElse(null);
         var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
@@ -105,6 +121,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
 
         switch (command.action()) {
             case "SCHEDULE" -> {
+                validatePlanLimits(exam);
                 requireTransition(exam, ExamStatus.DRAFT, ExamStatus.SCHEDULED);
                 if (exam.getKind() == ExamKind.CLASS_TEST) {
                     publishClassTestSchedules(exam, currentUserId);
@@ -162,6 +179,46 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
             throw new IllegalStateException("Trạng thái bài kiểm tra hiện tại không hợp lệ cho action này");
         }
         exam.setStatus(to);
+    }
+
+    private void validatePlanLimits(Exam exam) {
+        var activeSubscription = schoolSubscriptionRepository.findActiveBySchoolId(exam.getSchoolId())
+            .orElseThrow(() -> new PlanLimitExceededException(
+                "Trường chưa có gói subscription đang hoạt động, không thể lên lịch kỳ thi"));
+        var plan = subscriptionPlanRepository.findById(activeSubscription.getPlanId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy gói subscription"));
+
+        var candidateCount = examCandidateRepository.countByExamId(exam.getId());
+        if (plan.getMaxStudentCount() != null && candidateCount > plan.getMaxStudentCount()) {
+            throw new PlanLimitExceededException(
+                "Số học sinh dự thi (" + candidateCount + ") vượt quá giới hạn của gói \"" + plan.getName()
+                    + "\" (tối đa " + plan.getMaxStudentCount() + " học sinh), vui lòng nâng cấp gói"
+            );
+        }
+
+        if (exam.getExamTimeDurationSecond() != null && plan.getMaxTimePerAttemptMin() != null
+                && exam.getExamTimeDurationSecond() > plan.getMaxTimePerAttemptMin() * 60) {
+            throw new PlanLimitExceededException(
+                "Thời lượng bài thi (" + exam.getExamTimeDurationSecond() + " giây) vượt quá giới hạn của gói \""
+                    + plan.getName() + "\" (tối đa " + plan.getMaxTimePerAttemptMin() + " phút/lượt thi)"
+            );
+        }
+
+        if (exam.getExamTimeDurationSecond() != null) {
+            // Ước lượng worst-case: mọi thí sinh dùng hết toàn bộ thời lượng bài thi cho mỗi lượt làm bài.
+            //Công thức worst-case: thời lượng bài thi (giây) × số thí sinh × maxAttempt — giả định mọi thí sinh dùng hết toàn bộ thời gian cho mỗi lượt thi được phép, so với token GRADING
+            //còn lại (totalAllocated - usedQuantity) của subscription đang active. Nếu vượt, chặn SCHEDULE và báo lỗi gợi ý mua thêm token hoặc nâng cấp gói
+            var estimatedTokens = (long) exam.getExamTimeDurationSecond() * candidateCount * exam.getMaxAttempt();
+            var quota = subscriptionQuotaRepository.findBySubscriptionIdAndQuotaType(activeSubscription.getId(), QuotaType.GRADING)
+                .orElseThrow(() -> new PlanLimitExceededException("Không tìm thấy hạn mức token của gói đăng ký"));
+            var remaining = quota.getTotalAllocated() - quota.getUsedQuantity();
+            if (estimatedTokens > remaining) {
+                throw new PlanLimitExceededException(
+                    "Số token ước tính cần dùng (" + estimatedTokens + ") vượt quá số token còn lại ("
+                        + remaining + "), vui lòng mua thêm token hoặc nâng cấp gói"
+                );
+            }
+        }
     }
 
     private void publishClassTestSchedules(com.sep.vox.domain.model.exam.Exam exam, java.util.UUID currentUserId) {

@@ -15,8 +15,7 @@ public class AssessmentPolicy {
     private UUID frameworkVersionId;
     private UUID rubricVersionId;
     private UUID targetFrameworkBandId; // band nào ở khung được map với khối hoặc lớp nào
-    private UUID minimumFrameworkBandId; // phải đạt tối thiểu band X mới qua
-    private BigDecimal passingScore;
+    private BigDecimal passingScore; // điểm tối thiểu để qua, nếu null thì không check điểm
     private AssessmentPolicyStrictness strictness;
     private int version;
     private AssessmentPolicyStatus status;
@@ -31,7 +30,7 @@ public class AssessmentPolicy {
 
     public AssessmentPolicy(UUID id, UUID schoolId, UUID schoolGradeLevelId, UUID schoolGradeId, UUID schoolClassId,
             UUID languageId, UUID frameworkVersionId, UUID rubricVersionId, UUID targetFrameworkBandId,
-            UUID minimumFrameworkBandId, BigDecimal passingScore, AssessmentPolicyStrictness strictness, int version,
+            BigDecimal passingScore, AssessmentPolicyStrictness strictness, int version,
             AssessmentPolicyStatus status, OffsetDateTime effectiveFrom, OffsetDateTime effectiveTo,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
@@ -43,7 +42,6 @@ public class AssessmentPolicy {
         this.frameworkVersionId = frameworkVersionId;
         this.rubricVersionId = rubricVersionId;
         this.targetFrameworkBandId = targetFrameworkBandId;
-        this.minimumFrameworkBandId = minimumFrameworkBandId;
         this.passingScore = passingScore;
         this.strictness = strictness;
         this.version = version;
@@ -58,7 +56,7 @@ public class AssessmentPolicy {
 
     public AssessmentPolicy(UUID schoolId, UUID schoolGradeLevelId, UUID schoolGradeId, UUID schoolClassId,
             UUID languageId, UUID frameworkVersionId, UUID rubricVersionId, UUID targetFrameworkBandId,
-            UUID minimumFrameworkBandId, BigDecimal passingScore, AssessmentPolicyStrictness strictness, int version,
+            BigDecimal passingScore, AssessmentPolicyStrictness strictness, int version,
             AssessmentPolicyStatus status, OffsetDateTime effectiveFrom, OffsetDateTime effectiveTo,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.schoolId = schoolId;
@@ -69,7 +67,6 @@ public class AssessmentPolicy {
         this.frameworkVersionId = frameworkVersionId;
         this.rubricVersionId = rubricVersionId;
         this.targetFrameworkBandId = targetFrameworkBandId;
-        this.minimumFrameworkBandId = minimumFrameworkBandId;
         this.passingScore = passingScore;
         this.strictness = strictness;
         this.version = version;
@@ -152,14 +149,6 @@ public class AssessmentPolicy {
 
     public void setTargetFrameworkBandId(UUID targetFrameworkBandId) {
         this.targetFrameworkBandId = targetFrameworkBandId;
-    }
-
-    public UUID getMinimumFrameworkBandId() {
-        return minimumFrameworkBandId;
-    }
-
-    public void setMinimumFrameworkBandId(UUID minimumFrameworkBandId) {
-        this.minimumFrameworkBandId = minimumFrameworkBandId;
     }
 
     public BigDecimal getPassingScore() {

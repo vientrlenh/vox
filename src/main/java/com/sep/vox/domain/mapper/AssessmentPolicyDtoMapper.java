@@ -22,7 +22,6 @@ public class AssessmentPolicyDtoMapper {
                 policy.getFrameworkVersionId(),
                 policy.getRubricVersionId(),
                 policy.getTargetFrameworkBandId(),
-                policy.getMinimumFrameworkBandId(),
                 policy.getPassingScore(),
                 policy.getStrictness() != null ? policy.getStrictness().name() : null,
                 policy.getVersion(),

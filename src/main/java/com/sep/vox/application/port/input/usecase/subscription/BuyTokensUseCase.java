@@ -1,0 +1,139 @@
+package com.sep.vox.application.port.input.usecase.subscription;
+
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+import java.time.Year;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.sep.vox.application.exception.ForbiddenException;
+import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.port.input.command.BuyTokensCommand;
+import com.sep.vox.application.port.input.usecase.IUseCase;
+import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.domain.dto.TokenPurchaseDto;
+import com.sep.vox.domain.mapper.TokenPurchaseDtoMapper;
+import com.sep.vox.domain.model.subscription.FinancialEvent;
+import com.sep.vox.domain.model.subscription.FinancialEventType;
+import com.sep.vox.domain.model.subscription.Invoice;
+import com.sep.vox.domain.model.subscription.InvoiceSourceType;
+import com.sep.vox.domain.model.subscription.InvoiceStatus;
+import com.sep.vox.domain.model.subscription.PaymentMethod;
+import com.sep.vox.domain.model.subscription.PurchaseStatus;
+import com.sep.vox.domain.model.subscription.SubscriptionQuota;
+import com.sep.vox.domain.model.subscription.SubscriptionStatus;
+import com.sep.vox.domain.model.subscription.TokenPurchase;
+import com.sep.vox.domain.model.subscription.TokenPurchaseItem;
+import com.sep.vox.domain.repository.FinancialEventRepository;
+import com.sep.vox.domain.repository.InvoiceRepository;
+import com.sep.vox.domain.repository.PlanQuotaRepository;
+import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
+import com.sep.vox.domain.repository.SubscriptionQuotaRepository;
+import com.sep.vox.domain.repository.TokenPurchaseItemRepository;
+import com.sep.vox.domain.repository.TokenPurchaseRepository;
+
+@Service
+public class BuyTokensUseCase implements IUseCase<BuyTokensCommand, TokenPurchaseDto> {
+
+    private final SchoolSubscriptionRepository schoolSubscriptionRepository;
+    private final PlanQuotaRepository planQuotaRepository;
+    private final SubscriptionQuotaRepository subscriptionQuotaRepository;
+    private final TokenPurchaseRepository tokenPurchaseRepository;
+    private final TokenPurchaseItemRepository tokenPurchaseItemRepository;
+    private final InvoiceRepository invoiceRepository;
+    private final FinancialEventRepository financialEventRepository;
+    private final UserContextPort userContextPort;
+
+    public BuyTokensUseCase(
+            SchoolSubscriptionRepository schoolSubscriptionRepository,
+            PlanQuotaRepository planQuotaRepository,
+            SubscriptionQuotaRepository subscriptionQuotaRepository,
+            TokenPurchaseRepository tokenPurchaseRepository,
+            TokenPurchaseItemRepository tokenPurchaseItemRepository,
+            InvoiceRepository invoiceRepository,
+            FinancialEventRepository financialEventRepository,
+            UserContextPort userContextPort) {
+        this.schoolSubscriptionRepository = schoolSubscriptionRepository;
+        this.planQuotaRepository = planQuotaRepository;
+        this.subscriptionQuotaRepository = subscriptionQuotaRepository;
+        this.tokenPurchaseRepository = tokenPurchaseRepository;
+        this.tokenPurchaseItemRepository = tokenPurchaseItemRepository;
+        this.invoiceRepository = invoiceRepository;
+        this.financialEventRepository = financialEventRepository;
+        this.userContextPort = userContextPort;
+    }
+
+    @Override
+    @Transactional
+    public TokenPurchaseDto execute(BuyTokensCommand input) {
+        if (!userContextPort.isSystemAdmin() && !input.schoolId().equals(userContextPort.getCurrentSchoolId())) {
+            throw new ForbiddenException("Quyền truy cập bị từ chối");
+        }
+
+        var subscription = schoolSubscriptionRepository.findById(input.subscriptionId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy gói đăng ký"));
+        if (!subscription.getSchoolId().equals(input.schoolId())) {
+            throw new ForbiddenException("Quyền truy cập bị từ chối");
+        }
+        if (subscription.getStatus() != SubscriptionStatus.ACTIVE) {
+            throw new IllegalStateException("Gói đăng ký không ở trạng thái đang hoạt động");
+        }
+
+        var planQuotas = planQuotaRepository.findAllByPlanId(subscription.getPlanId());
+        var subscriptionQuotas = subscriptionQuotaRepository.findAllBySubscriptionId(subscription.getId()).stream()
+            .collect(Collectors.toMap(SubscriptionQuota::getQuotaType, Function.identity()));
+        var now = OffsetDateTime.now();
+        var total = BigDecimal.ZERO;
+
+        var purchase = tokenPurchaseRepository.save(new TokenPurchase(subscription.getId(), BigDecimal.ZERO, PurchaseStatus.PAID, now));
+
+        for (var item : input.items()) {
+            var planQuota = planQuotas.stream()
+                .filter(pq -> pq.getQuotaType() == item.quotaType())
+                .findFirst()
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn giá cho loại quota này"));
+            var subtotal = planQuota.getTokenUnitPrice().multiply(BigDecimal.valueOf(item.quantity()));
+            total = total.add(subtotal);
+
+            tokenPurchaseItemRepository.save(new TokenPurchaseItem(
+                purchase.getId(), item.quotaType(), item.quantity(), planQuota.getTokenUnitPrice(), subtotal
+            ));
+
+            var subscriptionQuota = subscriptionQuotas.get(item.quotaType());
+            if (subscriptionQuota == null) {
+                throw new NotFoundException("Không tìm thấy hạn mức của gói đăng ký");
+            }
+            subscriptionQuotaRepository.addAllocation(subscriptionQuota.getId(), item.quantity());
+        }
+
+        purchase.setTotalAmount(total);
+        var savedPurchase = tokenPurchaseRepository.save(purchase);
+
+        invoiceRepository.save(new Invoice(
+            // TODO: add a DB sequence about the invoice sequence
+            "INV-" + Year.now() + "-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase(),
+            input.schoolId(),
+            subscription.getId(),
+            InvoiceSourceType.TOKEN_PURCHASE,
+            savedPurchase.getId(),
+            now.toLocalDate(),
+            total,
+            InvoiceStatus.PAID,
+            null,
+            null,
+            null,
+            now
+        ));
+
+        financialEventRepository.save(new FinancialEvent(
+            input.schoolId(), subscription.getId(), FinancialEventType.TOKEN_PURCHASED,
+            total, "VND", PaymentMethod.MANUAL, userContextPort.getCurrentAuthenticatedUserId(), null, now
+        ));
+
+        return TokenPurchaseDtoMapper.toDto(savedPurchase, tokenPurchaseItemRepository.findAllByPurchaseId(savedPurchase.getId()));
+    }
+}

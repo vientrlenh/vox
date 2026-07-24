@@ -2,6 +2,8 @@ package com.sep.vox.interfaces.rest.controller;
 
 import java.util.UUID;
 
+import com.sep.vox.application.port.input.command.*;
+import com.sep.vox.application.port.input.usecase.exam.CompleteExamSessionGradingUseCase;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -14,11 +16,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.sep.vox.application.port.input.command.CreateExamSessionCommand;
-import com.sep.vox.application.port.input.command.FlagExamSessionCommand;
-import com.sep.vox.application.port.input.command.ForceEndExamSessionCommand;
-import com.sep.vox.application.port.input.command.RetryGradingExamSessionCommand;
-import com.sep.vox.application.port.input.command.UpdateExamSessionStatusCommand;
 import com.sep.vox.application.port.input.query.ViewExamSessionPaperQuery;
 import com.sep.vox.application.port.input.usecase.exam.GetExamSessionPaperUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.CreateExamSessionUseCase;
@@ -39,6 +36,8 @@ import jakarta.validation.Valid;
 @RequestMapping("/api/v1/exam-sessions")
 public class ExamSessionController {
 
+    private final CompleteExamSessionGradingUseCase completeExamSessionGradingUseCase;
+
     private final CreateExamSessionUseCase createExamSessionUseCase;
     private final UpdateExamSessionStatusUseCase updateExamSessionStatusUseCase;
     private final GetExamSessionPaperUseCase getExamSessionPaperUseCase;
@@ -49,6 +48,7 @@ public class ExamSessionController {
 
     public ExamSessionController(
             CreateExamSessionUseCase createExamSessionUseCase,
+            CompleteExamSessionGradingUseCase completeExamSessionGradingUseCase,
             UpdateExamSessionStatusUseCase updateExamSessionStatusUseCase,
             GetExamSessionPaperUseCase getExamSessionPaperUseCase,
             DeleteExamSessionUseCase deleteExamSessionUseCase,
@@ -56,6 +56,8 @@ public class ExamSessionController {
             ForceEndExamSessionUseCase forceEndExamSessionUseCase,
             RetryGradingExamSessionUseCase retryGradingExamSessionUseCase) {
         this.createExamSessionUseCase = createExamSessionUseCase;
+                this.completeExamSessionGradingUseCase = completeExamSessionGradingUseCase;
+
         this.updateExamSessionStatusUseCase = updateExamSessionStatusUseCase;
         this.getExamSessionPaperUseCase = getExamSessionPaperUseCase;
         this.deleteExamSessionUseCase = deleteExamSessionUseCase;
@@ -126,4 +128,11 @@ public class ExamSessionController {
         deleteExamSessionUseCase.execute(id);
         return ResponseEntity.ok(ApiResponse.success("Xoa phien thi thanh cong", null));
     }
+
+     @PostMapping("/{sessionId}/complete-grading")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> completeGrading(@PathVariable UUID sessionId) {
+        completeExamSessionGradingUseCase.execute(new CompleteExamSessionGradingCommand(sessionId));
+        return ResponseEntity.ok(ApiResponse.success("Ghi nhận hoàn tất chấm bài thành công"));
+}
 }

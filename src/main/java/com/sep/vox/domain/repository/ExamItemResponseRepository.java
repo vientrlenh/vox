@@ -12,4 +12,6 @@ public interface ExamItemResponseRepository {
     ExamItemResponse save(ExamItemResponse response);
     List<ExamItemResponse> findBySessionId(UUID sessionId);
     void deleteBySessionId(UUID sessionId);
+        int sumDurationSecondsBySessionId(UUID sessionId);
+
 }

@@ -9,6 +9,8 @@ import org.springframework.stereotype.Component;
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.PlanLimitExceededException;
+import com.sep.vox.application.exception.QuotaExceededException;
 import com.sep.vox.application.exception.UnauthorizedException;
 
 import io.grpc.Status;
@@ -41,6 +43,16 @@ public class GlobalGrpcExceptionHandler implements GrpcExceptionHandler{
         }
         if (exception instanceof UnauthorizedException) {
             return Status.UNAUTHENTICATED
+                .withDescription(exception.getMessage())
+                .asException();
+        }
+        if (exception instanceof QuotaExceededException) {
+            return Status.RESOURCE_EXHAUSTED
+                .withDescription(exception.getMessage())
+                .asException();
+        }
+        if (exception instanceof PlanLimitExceededException) {
+            return Status.FAILED_PRECONDITION
                 .withDescription(exception.getMessage())
                 .asException();
         }

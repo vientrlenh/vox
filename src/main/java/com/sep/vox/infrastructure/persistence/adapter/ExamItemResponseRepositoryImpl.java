@@ -21,6 +21,11 @@ public class ExamItemResponseRepositoryImpl implements ExamItemResponseRepositor
     }
 
     @Override
+    public int sumDurationSecondsBySessionId(UUID sessionId) {
+        return springDataExamItemResponseRepository.sumDurationSecondsBySessionId(sessionId);
+    }
+
+    @Override
     public Optional<ExamItemResponse> findById(UUID id) {
         return springDataExamItemResponseRepository.findById(id)
             .map(ExamItemResponseMapper::toDomain);

@@ -22,8 +22,7 @@ import jakarta.persistence.Table;
     @Index(columnList = "school_id, school_grade_level_id, school_grade_id, language_id, framework_version_id, status",
         name = "idx_assessment_policies_grade_status"),
     @Index(columnList = "rubric_version_id", name = "idx_assessment_policies_rubric_version"),
-    @Index(columnList = "target_framework_band_id", name = "idx_assessment_policies_target_band"),
-    @Index(columnList = "minimum_framework_band_id", name = "idx_assessment_policies_minimum_band")
+    @Index(columnList = "target_framework_band_id", name = "idx_assessment_policies_target_band")
 }, check = {
     @CheckConstraint(
         name = "chk_assessment_policies_effective_range_valid",
@@ -60,9 +59,6 @@ public class AssessmentPolicyJpaEntity {
 
     @Column(name = "target_framework_band_id", nullable = false)
     private UUID targetFrameworkBandId;
-
-    @Column(name = "minimum_framework_band_id", nullable = false)
-    private UUID minimumFrameworkBandId;
 
     @Column(name = "passing_score", precision = 6, scale = 2, check = {
         @CheckConstraint(
@@ -118,7 +114,7 @@ public class AssessmentPolicyJpaEntity {
 
     public AssessmentPolicyJpaEntity(UUID id, UUID schoolId, UUID schoolGradeLevelId, UUID schoolGradeId,
             UUID schoolClassId, UUID languageId, UUID frameworkVersionId, UUID rubricVersionId,
-            UUID targetFrameworkBandId, UUID minimumFrameworkBandId, BigDecimal passingScore, String strictness,
+            UUID targetFrameworkBandId, BigDecimal passingScore, String strictness,
             int version, String status, OffsetDateTime effectiveFrom, OffsetDateTime effectiveTo,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
@@ -130,7 +126,6 @@ public class AssessmentPolicyJpaEntity {
         this.frameworkVersionId = frameworkVersionId;
         this.rubricVersionId = rubricVersionId;
         this.targetFrameworkBandId = targetFrameworkBandId;
-        this.minimumFrameworkBandId = minimumFrameworkBandId;
         this.passingScore = passingScore;
         this.strictness = strictness;
         this.version = version;
@@ -213,14 +208,6 @@ public class AssessmentPolicyJpaEntity {
 
     public void setTargetFrameworkBandId(UUID targetFrameworkBandId) {
         this.targetFrameworkBandId = targetFrameworkBandId;
-    }
-
-    public UUID getMinimumFrameworkBandId() {
-        return minimumFrameworkBandId;
-    }
-
-    public void setMinimumFrameworkBandId(UUID minimumFrameworkBandId) {
-        this.minimumFrameworkBandId = minimumFrameworkBandId;
     }
 
     public BigDecimal getPassingScore() {

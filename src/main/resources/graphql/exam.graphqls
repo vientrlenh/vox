@@ -174,13 +174,13 @@ type Exam {
     deliveryMode: ExamDeliveryMode
     status: ExamStatus!
     maxAttempt: Int
+    examTimeDurationSecond: Int
     resultDecisionMethod: ResultDecisionMethod
     openAt: String
     closeAt: String
     assessmentPolicyId: ID
     requiresOtp: Boolean!
     papersLocked: Boolean
-    examTimeDurationSecond: Int
     createdAt: String
     updatedAt: String
     createdBy: ID

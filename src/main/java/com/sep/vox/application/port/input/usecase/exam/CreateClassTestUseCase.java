@@ -362,6 +362,10 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             null,
             false,
             now,
+            // requiredStreamType/streamTypePermission: chưa có input nào set khi tạo exam,
+            // DB cho phép cả 2 cùng NULL (chk_exams_required_stream_type_and_stream_type_permission_valid).
+            null,
+            null,
             now,
             currentUserId,
             currentUserId

@@ -1,11 +1,7 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,164 +11,59 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateFrameworkVersionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.model.framework.FrameworkCriterion;
-import com.sep.vox.domain.model.framework.FrameworkCriterionBand;
-import com.sep.vox.domain.model.framework.FrameworkResultBand;
 import com.sep.vox.domain.model.framework.FrameworkVersion;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
-import com.sep.vox.domain.repository.FrameworkCriterionBandRepository;
-import com.sep.vox.domain.repository.FrameworkCriterionRepository;
-import com.sep.vox.domain.repository.FrameworkRepository;
-import com.sep.vox.domain.repository.FrameworkResultBandRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
 
 @Service
 public class UpdateFrameworkVersionUseCase implements IUseCase<UpdateFrameworkVersionCommand, UUID> {
 
-    private final FrameworkRepository frameworkRepository;
     private final FrameworkVersionRepository frameworkVersionRepository;
-    private final FrameworkCriterionRepository frameworkCriterionRepository;
-    private final FrameworkCriterionBandRepository frameworkCriterionBandRepository;
-    private final FrameworkResultBandRepository frameworkResultBandRepository;
     private final UserContextPort userContextPort;
 
     public UpdateFrameworkVersionUseCase(
-            FrameworkRepository frameworkRepository,
             FrameworkVersionRepository frameworkVersionRepository,
-            FrameworkCriterionRepository frameworkCriterionRepository,
-            FrameworkCriterionBandRepository frameworkCriterionBandRepository,
-            FrameworkResultBandRepository frameworkResultBandRepository,
             UserContextPort userContextPort) {
-        this.frameworkRepository = frameworkRepository;
         this.frameworkVersionRepository = frameworkVersionRepository;
-        this.frameworkCriterionRepository = frameworkCriterionRepository;
-        this.frameworkCriterionBandRepository = frameworkCriterionBandRepository;
-        this.frameworkResultBandRepository = frameworkResultBandRepository;
         this.userContextPort = userContextPort;
     }
 
     @Override
     @Transactional
     public UUID execute(UpdateFrameworkVersionCommand input) {
-        var now = OffsetDateTime.now();
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        FrameworkVersion version = getVersion(input);
 
-        frameworkRepository.findById(input.frameworkId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy framework"));
-
-        var version = frameworkVersionRepository.findByIdForUpdate(input.versionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản framework"));
-
-        if (!version.getFrameworkId().equals(input.frameworkId())) {
-            throw new IllegalArgumentException("Phiên bản không thuộc framework này");
-        }
-
-        if (version.getStatus() != FrameworkVersionStatus.DRAFT) {
-            throw new IllegalStateException("Chỉ có thể cập nhật phiên bản ở trạng thái DRAFT");
-        }
-
-        if (input.effectiveTo() != null && input.effectiveTo().isBefore(input.effectiveFrom())) {
-            throw new IllegalArgumentException("Ngày hết hiệu lực phải sau ngày hiệu lực");
-        }
-
-        var updated = new FrameworkVersion(
-            version.getId(),
-            version.getFrameworkId(),
-            StringNormalization.normalizeCode(input.code()),
-            StringNormalization.trimAndCollapseSpaces(input.name()),
-            StringNormalization.trimAndCollapseSpaces(input.description()),
-            version.getVersion(),
-            input.effectiveFrom(),
-            input.effectiveTo(),
-            version.getStatus(),
-            version.getCreatedAt(),
-            now,
-            version.getCreatedBy(),
-            currentUserId
-        );
-        frameworkVersionRepository.save(updated);
-
-        if (input.resultBands() != null) {
-            replaceResultBands(input.versionId(), input.resultBands(), now, currentUserId);
-        }
-
-        if (input.criteria() != null) {
-            replaceCriteria(input.versionId(), input.criteria(), now, currentUserId);
-        }
+        checkValidRequest(input, version);
+        frameworkVersionRepository.save(updateVersion(input, version));
 
         return input.versionId();
     }
 
-    private void replaceResultBands(UUID versionId, List<UpdateFrameworkVersionCommand.ResultBandInput> bandInputs,
-            OffsetDateTime now, UUID userId) {
-        var codes = bandInputs.stream().map(b -> StringNormalization.normalizeCode(b.code())).toList();
-        if (codes.size() != codes.stream().distinct().count())
-            throw new IllegalArgumentException("Mã kết quả bị trùng lặp");
-        frameworkCriterionBandRepository.deleteByFrameworkVersionId(versionId);
-        frameworkResultBandRepository.deleteByFrameworkVersionId(versionId);
-        var bands = bandInputs.stream()
-            .map(b -> new FrameworkResultBand(
-                versionId,
-                StringNormalization.normalizeCode(b.code()),
-                StringNormalization.trimAndCollapseSpaces(b.label()),
-                StringNormalization.trimAndCollapseSpaces(b.description()),
-                b.order(),
-                now, now, userId, userId))
-            .toList();
-        frameworkResultBandRepository.saveAll(bands);
+    private FrameworkVersion getVersion(UpdateFrameworkVersionCommand input) {
+        return frameworkVersionRepository.findByIdForUpdate(input.versionId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản framework"));
     }
 
-    private void replaceCriteria(UUID versionId, List<UpdateFrameworkVersionCommand.CriterionInput> criterionInputs,
-            OffsetDateTime now, UUID userId) {
-        var codes = criterionInputs.stream().map(c -> StringNormalization.normalizeCode(c.code())).toList();
-        if (codes.size() != codes.stream().distinct().count())
-            throw new IllegalArgumentException("Mã tiêu chí bị trùng lặp");
-        var existingCriteria = frameworkCriterionRepository.findByFrameworkVersionId(versionId);
-        if (!existingCriteria.isEmpty()) {
-            frameworkCriterionBandRepository.deleteByFrameworkCriterionIdIn(
-                existingCriteria.stream().map(criterion -> criterion.getId()).toList());
-        }
-        frameworkCriterionRepository.deleteByFrameworkVersionId(versionId);
+    private FrameworkVersion updateVersion(UpdateFrameworkVersionCommand input, FrameworkVersion version) {
+        return new FrameworkVersion(
+            version.getId(), version.getFrameworkId(),
+            StringNormalization.normalizeCode(input.code()),
+            StringNormalization.trimAndCollapseSpaces(input.name()),
+            StringNormalization.trimAndCollapseSpaces(input.description()),
+            version.getVersion(), input.effectiveFrom(), input.effectiveTo(),
+            version.getStatus(), 
+            version.getCreatedAt(), OffsetDateTime.now(),
+            version.getCreatedBy(), userContextPort.getCurrentAuthenticatedUserId());
+    }
 
-        var savedResultBands = frameworkResultBandRepository.findByFrameworkVersionId(versionId);
-        Map<String, UUID> resultBandCodeToId = savedResultBands.stream()
-            .collect(Collectors.toMap(resultband -> resultband.getCode(), resultband -> resultband.getId()));
+    private void checkValidRequest(UpdateFrameworkVersionCommand input, FrameworkVersion version) {
+        if (!version.getFrameworkId().equals(input.frameworkId()))
+            throw new IllegalArgumentException("Phiên bản không thuộc framework này");
 
-        var criteriaToSave = criterionInputs.stream()
-            .map(c -> new FrameworkCriterion(
-                versionId,
-                StringNormalization.normalizeCode(c.code()),
-                StringNormalization.trimAndCollapseSpaces(c.name()),
-                StringNormalization.trimAndCollapseSpaces(c.description()),
-                c.order(),
-                now, now, userId, userId))
-            .toList();
-        var savedCriteria = frameworkCriterionRepository.saveAll(criteriaToSave);
-        Map<String, UUID> criterionCodeToId = savedCriteria.stream()
-            .collect(Collectors.toMap(criterion -> criterion.getCode(), criterion -> criterion.getId()));
+        if (version.getStatus() != FrameworkVersionStatus.DRAFT)
+            throw new IllegalStateException("Chỉ có thể cập nhật phiên bản framework ở trạng thái DRAFT");
 
-        List<FrameworkCriterionBand> allBands = new ArrayList<>();
-        for (var criterionInput : criterionInputs) {
-            var bands = criterionInput.bands();
-            if (bands == null || bands.isEmpty()) continue;
-            var savedId = criterionCodeToId.get(StringNormalization.normalizeCode(criterionInput.code()));
-            if (savedId == null)
-                throw new IllegalArgumentException("Không tìm thấy tiêu chí với mã: " + criterionInput.code());
-            for (var bandInput : bands) {
-                var resultBandId = resultBandCodeToId.get(StringNormalization.normalizeCode(bandInput.resultBandCode()));
-                if (resultBandId == null)
-                    throw new IllegalArgumentException("Không tìm thấy kết quả với mã: " + bandInput.resultBandCode());
-                allBands.add(new FrameworkCriterionBand(
-                    savedId,
-                    resultBandId,
-                    StringNormalization.trimAndCollapseSpaces(bandInput.descriptor()),
-                    bandInput.positiveSignals(),
-                    bandInput.negativeSignals(),
-                    now, now, userId, userId));
-            }
-        }
-        if (!allBands.isEmpty()) {
-            frameworkCriterionBandRepository.saveAll(allBands);
-        }
+        if (input.effectiveTo() != null && input.effectiveTo().isBefore(input.effectiveFrom()))
+            throw new IllegalArgumentException("Ngày hết hiệu lực phải sau ngày hiệu lực");
     }
 }

@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.framework;
 
 import java.time.OffsetDateTime;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,9 +48,6 @@ public class CreateFrameworkVersionUseCase implements IUseCase<CreateFrameworkVe
         frameworkRepository.findById(command.frameworkId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy framework"));
 
-        frameworkVersionRepository.findByFrameworkIdAndVersion(command.frameworkId(), command.version())
-            .ifPresent(v -> { throw new DuplicatedException("Phiên bản này đã tồn tại trong framework"); });
-
         var version = new FrameworkVersion(
             command.frameworkId(),
             command.code(),
@@ -65,8 +63,12 @@ public class CreateFrameworkVersionUseCase implements IUseCase<CreateFrameworkVe
             currentUserId
         );
 
-        var saved = frameworkVersionRepository.save(version);
-        return CreateFrameworkVersionResponseMapper.toResponse(saved.getId());
+        try {
+            var saved = frameworkVersionRepository.save(version);
+            return CreateFrameworkVersionResponseMapper.toResponse(saved.getId());
+        } catch (DataIntegrityViolationException e) {
+            throw new DuplicatedException("Phiên bản hoặc mã phiên bản này đã tồn tại trong framework");
+        }
     }
 
     private CreateFrameworkVersionCommand normalize(CreateFrameworkVersionCommand input) {

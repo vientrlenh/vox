@@ -1,7 +1,6 @@
 package com.sep.vox.application.port.input.usecase.supportedlanguage;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.query.ViewSupportedLanguageDetailsQuery;
@@ -20,7 +19,6 @@ public class ViewSupportedLanguageDetailsUseCase implements IUseCase<ViewSupport
     }
 
     @Override
-    @Transactional(readOnly = true)
     public SupportedLanguageDto execute(ViewSupportedLanguageDetailsQuery input) {
         var language = supportedLanguageRepository.findById(input.id())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ngôn ngữ"));

@@ -1,5 +1,6 @@
 package com.sep.vox.domain.repository;
 
+import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -20,4 +21,7 @@ public interface ExamSessionRepository {
     boolean existsById(UUID id);
     ExamSession save(ExamSession session);
     void deleteById(UUID id);
+    Optional<ExamSession> findByIdAndInProgress(UUID id);
+    Optional<ExamSession> findActiveByExamIdAndCandidateId(UUID examId, UUID candidateId);
+    List<ExamSession> findActiveByIdInAndSchoolId(Collection<UUID> ids, OffsetDateTime now, UUID schoolId);
 }

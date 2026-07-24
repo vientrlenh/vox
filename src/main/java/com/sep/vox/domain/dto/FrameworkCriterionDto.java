@@ -1,6 +1,5 @@
 package com.sep.vox.domain.dto;
 
-import java.util.List;
 import java.util.UUID;
 
 public record FrameworkCriterionDto(
@@ -9,7 +8,8 @@ public record FrameworkCriterionDto(
     String code,
     String name,
     String description,
-    int order,
-    List<FrameworkCriterionBandDto> bands
+    int order, 
+    String createdAt, 
+    String updatedAt
 ) {
 }

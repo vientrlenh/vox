@@ -3,6 +3,7 @@ package com.sep.vox.interfaces.graphql.controller;
 import java.util.List;
 import java.util.UUID;
 
+import com.sep.vox.application.port.input.usecase.recording.GetExamRecordsUseCase;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
@@ -67,6 +68,8 @@ public class ExamSessionController {
     private final DecideExamCandidateResultOutcomeUseCase decideExamCandidateResultOutcomeUseCase;
     private final RetryGradingExamSessionUseCase retryGradingExamSessionUseCase;
     private final SubmitExamSessionUseCase submitExamSessionUseCase;
+    private final GetExamRecordsUseCase getExamRecordsUseCase;
+
 
     public ExamSessionController(
             ViewExamSessionUseCase viewExamSessionUseCase,
@@ -83,7 +86,7 @@ public class ExamSessionController {
             ReleasePendingExamResultUseCase releasePendingExamResultUseCase,
             DecideExamCandidateResultOutcomeUseCase decideExamCandidateResultOutcomeUseCase,
             RetryGradingExamSessionUseCase retryGradingExamSessionUseCase,
-            SubmitExamSessionUseCase submitExamSessionUseCase) {
+            SubmitExamSessionUseCase submitExamSessionUseCase,GetExamRecordsUseCase getExamRecordsUseCase) {
         this.viewExamSessionUseCase = viewExamSessionUseCase;
         this.viewExamSessionResultUseCase = viewExamSessionResultUseCase;
         this.viewExamSessionFollowupsUseCase = viewExamSessionFollowupsUseCase;
@@ -99,6 +102,8 @@ public class ExamSessionController {
         this.decideExamCandidateResultOutcomeUseCase = decideExamCandidateResultOutcomeUseCase;
         this.retryGradingExamSessionUseCase = retryGradingExamSessionUseCase;
         this.submitExamSessionUseCase = submitExamSessionUseCase;
+        this.getExamRecordsUseCase = getExamRecordsUseCase;
+
     }
 
     @QueryMapping

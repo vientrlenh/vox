@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -58,5 +59,17 @@ public class ExamScheduleProctorRepositoryImpl implements ExamScheduleProctorRep
     @Override
     public void deleteById(UUID id) {
         springDataExamScheduleProctorRepository.deleteById(id);
+    }
+
+    @Override
+    public List<UUID> findScheduleIdsByTeacherIdAndScheduleIdIn(UUID teacherId, Collection<UUID> scheduleIds) {
+        if (scheduleIds == null || scheduleIds.isEmpty()) {
+            return List.of();
+        }
+        return springDataExamScheduleProctorRepository.findByTeacherIdAndScheduleIdIn(teacherId, scheduleIds)
+            .stream()
+            .map(e -> e.getScheduleId())
+            .distinct()
+            .toList();
     }
 }

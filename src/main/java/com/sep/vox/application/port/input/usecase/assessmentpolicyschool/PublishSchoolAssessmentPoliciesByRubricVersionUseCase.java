@@ -110,6 +110,6 @@ public class PublishSchoolAssessmentPoliciesByRubricVersionUseCase
         }
 
         return assessmentPolicyRepository.saveAll(draftPolicies)
-                .stream().map(AssessmentPolicy::getId).toList();
+                .stream().map(ap -> ap.getId()).toList();
     }
 }

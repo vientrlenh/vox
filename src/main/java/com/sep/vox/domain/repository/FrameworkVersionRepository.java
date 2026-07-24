@@ -14,6 +14,8 @@ public interface FrameworkVersionRepository {
     Optional<FrameworkVersion> findByCode(String code);
     Optional<FrameworkVersion> findByName(String name);
     List<FrameworkVersion> findByIdIn(Collection<UUID> ids);
+    List<FrameworkVersion> findByCodeIn(Collection<String> codes);
+    List<FrameworkVersion> findByNameIn(Collection<String> names);
     Optional<FrameworkVersion> findByIdForUpdate(UUID id);
     PageResult<FrameworkVersion> findByFrameworkId(UUID frameworkId, int pageNumber, int size);
     List<FrameworkVersion> findByFrameworkIdAndStatus(UUID frameworkId, FrameworkVersionStatus status);

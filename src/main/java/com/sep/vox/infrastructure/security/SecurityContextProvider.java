@@ -30,9 +30,22 @@ public class SecurityContextProvider implements UserContextPort {
     public boolean isSystemAdmin() {
         var authentication = getAuthentication();
         var userDetails = getUserDetails(authentication);
-        var authorities = userDetails.getAuthorities();
-        return authorities.stream()
-            .anyMatch(authority -> authority.getAuthority().equals("ROLE_SYSTEM_ADMIN"));
+        return isRoleMatch(userDetails, "ROLE_SYSTEM_ADMIN");
+    }
+
+    
+    @Override
+    public boolean isSchoolAdmin() {
+        var authentication = getAuthentication();
+        var userDetails = getUserDetails(authentication);
+        return isRoleMatch(userDetails, "ROLE_SCHOOL_ADMIN");
+    }
+
+    @Override
+    public boolean isTeacher() {
+         var authentication = getAuthentication();
+        var userDetails = getUserDetails(authentication);
+        return isRoleMatch(userDetails, "ROLE_TEACHER");
     }
 
     private Authentication getAuthentication() {
@@ -51,4 +64,9 @@ public class SecurityContextProvider implements UserContextPort {
         return userDetails;
     }
 
+    private boolean isRoleMatch(CustomUserDetails userDetails, String role) {
+        var authorities = userDetails.getAuthorities();
+        return authorities.stream()
+            .anyMatch(authority -> authority.getAuthority().equals(role));
+    }
 }

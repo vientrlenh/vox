@@ -1,7 +1,6 @@
 package com.sep.vox.application.port.input.usecase.user;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.port.input.query.ViewUsersQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -20,7 +19,6 @@ public class ViewUsersUseCase implements IUseCase<ViewUsersQuery, PageResult<Use
     }
 
     @Override
-    @Transactional(readOnly = true)
     public PageResult<UserDto> execute(ViewUsersQuery input) {
         var result = userRepository.findAll(input.page(), input.size());
         return UserDtoMapper.toUserDtoPage(result);

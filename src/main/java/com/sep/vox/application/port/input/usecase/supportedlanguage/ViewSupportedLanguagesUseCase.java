@@ -1,7 +1,6 @@
 package com.sep.vox.application.port.input.usecase.supportedlanguage;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.port.input.query.ViewSupportedLanguagesQuery;
@@ -22,7 +21,6 @@ public class ViewSupportedLanguagesUseCase implements IUseCase<ViewSupportedLang
     }
 
     @Override
-    @Transactional(readOnly = true)
     public PageResult<SupportedLanguageDto> execute(ViewSupportedLanguagesQuery input) {
         validatePage(input);
         var result = supportedLanguageRepository.findAll(

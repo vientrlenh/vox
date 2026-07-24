@@ -4,8 +4,10 @@ import com.sep.vox.infrastructure.persistence.entity.SchoolClassJpaEntity;
 import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -122,7 +124,19 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
         if (schoolId == null || codes == null || codes.isEmpty()) {
             return List.of();
         }
-        return springDataSchoolClassRepository.findBySchoolIdAndCodeIn(schoolId, codes)
+        var upperCodes = codes.stream().map(s -> s.toUpperCase(Locale.ROOT)).collect(Collectors.toSet());
+        return springDataSchoolClassRepository.findBySchoolIdAndCodeIn(schoolId, upperCodes)
+            .stream()
+            .map(SchoolClassMapper::toDomain)
+            .toList();
+    }
+
+    @Override
+    public List<SchoolClass> findBySchoolIdAndNameIn(UUID schoolId, Collection<String> names) {
+        if (schoolId == null || names == null || names.isEmpty()) {
+            return List.of();
+        }
+        return springDataSchoolClassRepository.findBySchoolIdAndNameIn(schoolId, names)
             .stream()
             .map(SchoolClassMapper::toDomain)
             .toList();

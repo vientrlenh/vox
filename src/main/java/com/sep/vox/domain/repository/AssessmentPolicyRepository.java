@@ -29,6 +29,12 @@ public interface AssessmentPolicyRepository {
     boolean existsActiveForScope(UUID schoolId, UUID languageId, UUID frameworkVersionId,
             UUID schoolGradeLevelId, UUID schoolGradeId, UUID schoolClassId, UUID rubricVersionId);
 
+    // Lấy TOÀN BỘ Assessment Policy (mọi trạng thái, kể cả ARCHIVED) trong phạm vi schoolId (null = toàn hệ thống).
+    // Dùng để prefetch 1 lần rồi tự tính trong memory (scope đang active để chặn trùng, version lớn nhất theo
+    // scope để phát version kế tiếp) khi import hàng loạt, thay vì gọi existsActiveForScope/findMaxVersionForScope
+    // riêng lẻ cho từng dòng/từng scope trong file Excel (tránh N+1 query).
+    List<AssessmentPolicy> findAllForOwner(UUID schoolId);
+
     // Lấy version lớn nhất đã từng tồn tại cho scope (kể cả ARCHIVED) để tính version kế tiếp
     int findMaxVersionForScope(UUID schoolId, UUID languageId, UUID frameworkVersionId,
             UUID schoolGradeLevelId, UUID schoolGradeId, UUID schoolClassId);

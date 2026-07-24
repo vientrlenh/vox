@@ -82,6 +82,7 @@ class JpaExamAppealQueryRepositoryTests extends ContainerTestConfig {
 
         examId = persisted(new ExamJpaEntity(null, null, null, "EX-1", "IELTS Speaking Mock", null, schoolId,
             UUID.randomUUID(), "CLASS_TEST", "STUDENT_DEVICE", "RESULTS_PUBLISHED", 1, "LATEST",
+            null, null,
             null, null, null, false, now, now, null, null)).getId();
         sectionId = persisted(new ExamPaperSectionJpaEntity(
             null, paperId, 1, "Part 2", null, null, BigDecimal.ONE, now, now, null, null)).getId();

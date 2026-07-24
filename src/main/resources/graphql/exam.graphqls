@@ -86,6 +86,11 @@ enum ExamSecurePoolReleaseMode {
     AUTO_AFTER_CLOSE
 }
 
+enum ExamRecordingStreamType {
+    CAMERA 
+    SCREEN
+}
+
 type QuestionSelectionSpec {
     questionType: QuestionType
     difficulty: QuestionDifficulty
@@ -517,6 +522,18 @@ type StudentExamResultSummary {
     rubricResultBandCode: String
     rubricResultBandName: String
 }
+type ExamRecording {
+    id: ID! 
+    examSessionId: ID!
+    candidateId: ID 
+    streamType: String 
+    status: String 
+    sizeBytes: Int 
+    durationSeconds: Int 
+    createdAt: String 
+    assembledAt: String
+}
+
 input UpdateExamScheduleInput {
     schoolRoomId: ID
     startDate: String
@@ -582,6 +599,7 @@ extend type Query {
     examItemResponseTurns(answerId: ID!): [ExamItemResponseTurn!]!
 
     examItemResponseEvaluation(answerId: ID!): ExamItemEvaluationDetails
+    records(examSessionId: ID!, streamType: ExamRecordingStreamType): [ExamRecording!]!
 }
 
 extend type Mutation {

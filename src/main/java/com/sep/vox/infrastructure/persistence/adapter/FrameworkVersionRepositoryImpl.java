@@ -2,8 +2,10 @@ package com.sep.vox.infrastructure.persistence.adapter;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
@@ -28,7 +30,7 @@ public class FrameworkVersionRepositoryImpl implements FrameworkVersionRepositor
     public Optional<FrameworkVersion> findById(UUID id) {
         return springDataFrameworkVersionRepository.findById(id).map(FrameworkVersionMapper::toDomain);
     }
-
+    
     @Override
     public Optional<FrameworkVersion> findByCode(String code) {
         return springDataFrameworkVersionRepository.findByCode(code).map(FrameworkVersionMapper::toDomain);
@@ -48,6 +50,25 @@ public class FrameworkVersionRepositoryImpl implements FrameworkVersionRepositor
                 .stream()
                 .map(FrameworkVersionMapper::toDomain)
                 .toList();
+    }
+
+    @Override
+    public List<FrameworkVersion> findByCodeIn(Collection<String> codes) {
+        if (codes == null || codes.isEmpty()) {
+            return List.of();
+        }
+        var upperCodes = codes.stream().map(s -> s.toUpperCase(Locale.ROOT)).collect(Collectors.toSet());
+        return springDataFrameworkVersionRepository.findByCodeIn(upperCodes)
+                .stream().map(FrameworkVersionMapper::toDomain).toList();
+    }
+
+    @Override
+    public List<FrameworkVersion> findByNameIn(Collection<String> names) {
+        if (names == null || names.isEmpty()) {
+            return List.of();
+        }
+        return springDataFrameworkVersionRepository.findByNameIn(names)
+                .stream().map(FrameworkVersionMapper::toDomain).toList();
     }
 
     @Override

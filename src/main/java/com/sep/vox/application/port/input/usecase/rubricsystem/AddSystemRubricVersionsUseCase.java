@@ -25,7 +25,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
-public class AddSystemRubricVersionsUseCase implements IUseCase<AddSystemRubricVersionsCommand, UUID> {
+public class AddSystemRubricVersionsUseCase implements IUseCase<AddSystemRubricVersionsCommand, List<UUID>> {
 
     private final RubricRepository rubricRepository;
     private final RubricVersionRepository rubricVersionRepository;
@@ -45,7 +45,7 @@ public class AddSystemRubricVersionsUseCase implements IUseCase<AddSystemRubricV
 
     @Override
     @Transactional
-    public UUID execute(AddSystemRubricVersionsCommand command) {
+    public List<UUID> execute(AddSystemRubricVersionsCommand command) {
         // 1. Xác thực tài khoản Admin
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         var currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
@@ -107,10 +107,9 @@ public class AddSystemRubricVersionsUseCase implements IUseCase<AddSystemRubricV
             );
         }).toList();
 
-        // 5. Lưu vào DB
-        rubricVersionRepository.saveAll(newVersions);
+        // 5. Lưu vào DB và trả về ID của các version vừa tạo
+        List<RubricVersion> savedVersions = rubricVersionRepository.saveAll(newVersions);
 
-
-        return rubric.getId();
+        return savedVersions.stream().map(v -> v.getId()).toList();
     }
 }

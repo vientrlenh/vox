@@ -118,15 +118,13 @@ public class UpdateSchoolRubricVersionUseCase
                 command.description(), "Mô tả phiên bản Rubric không được để trống."
         );
 
-        OffsetDateTime finalEffectiveFrom = command.effectiveFrom();
-        if (finalEffectiveFrom == null) {
-            throw new IllegalArgumentException(
-                    "Ngày bắt đầu hiệu lực không được để trống."
-            );
-        }
+        // Cập nhật một phần: field nào không được truyền (null) thì giữ nguyên giá trị hiện tại của version
+        // (updateRubricVersionAtomic dùng COALESCE(:param, v.field) ở tầng SQL).
+        OffsetDateTime finalEffectiveFrom = command.effectiveFrom() != null
+                ? command.effectiveFrom() : version.getEffectiveFrom();
 
-
-        OffsetDateTime finalEffectiveTo = command.effectiveTo();
+        OffsetDateTime finalEffectiveTo = command.effectiveTo() != null
+                ? command.effectiveTo() : version.getEffectiveTo();
 
         if (finalEffectiveTo != null
                 && finalEffectiveFrom.isAfter(finalEffectiveTo)) {
@@ -135,19 +133,11 @@ public class UpdateSchoolRubricVersionUseCase
             );
         }
 
-        BigDecimal finalScoreMin = command.scoringScaleMin();
-        if (finalScoreMin == null) {
-            throw new IllegalArgumentException(
-                    "Điểm tối thiểu không được để trống."
-            );
-        }
+        BigDecimal finalScoreMin = command.scoringScaleMin() != null
+                ? command.scoringScaleMin() : version.getScoringScaleMin();
 
-        BigDecimal finalScoreMax = command.scoringScaleMax();
-        if (finalScoreMax == null) {
-            throw new IllegalArgumentException(
-                    "Điểm tối đa không được để trống."
-            );
-        }
+        BigDecimal finalScoreMax = command.scoringScaleMax() != null
+                ? command.scoringScaleMax() : version.getScoringScaleMax();
 
         if (finalScoreMin.compareTo(finalScoreMax) > 0) {
             throw new IllegalArgumentException(
@@ -155,21 +145,26 @@ public class UpdateSchoolRubricVersionUseCase
             );
         }
 
-        String safeMethod = parseRequiredTotalScoreMethod(
+        String safeMethod = parseOptionalTotalScoreMethod(
                 command.totalScoreMethod()
         );
 
-        // 6. Update atomic.
+        // 6. Update atomic. Với các field hỗ trợ cập nhật một phần (effectiveFrom/effectiveTo/
+        // scoringScaleMin/scoringScaleMax), truyền thẳng giá trị gốc (có thể null) từ command để tầng
+        // SQL COALESCE tự giữ nguyên giá trị hiện có trong DB tại thời điểm update — tránh việc ghi đè
+        // bằng snapshot `version` đã đọc trước đó (lost update khi có request khác cập nhật đồng thời
+        // các field này). finalEffectiveFrom/finalEffectiveTo/finalScoreMin/finalScoreMax vẫn được dùng
+        // ở trên để validate business rule dựa trên giá trị sau khi merge.
         try {
             rubricVersionRepository.updateRubricVersionAtomic(
                     command.versionId(),
                     null,
                     safeName,
                     safeDescription,
-                    finalEffectiveFrom,
-                    finalEffectiveTo,
-                    finalScoreMin,
-                    finalScoreMax,
+                    command.effectiveFrom(),
+                    command.effectiveTo(),
+                    command.scoringScaleMin(),
+                    command.scoringScaleMax(),
                     safeMethod,
                     OffsetDateTime.now(),
                     currentUserId
@@ -197,11 +192,9 @@ public class UpdateSchoolRubricVersionUseCase
         return normalizedValue;
     }
 
-    private String parseRequiredTotalScoreMethod(String value) {
+    private String parseOptionalTotalScoreMethod(String value) {
         if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException(
-                    "Phương pháp tính tổng điểm không được để trống."
-            );
+            return null;
         }
 
         try {

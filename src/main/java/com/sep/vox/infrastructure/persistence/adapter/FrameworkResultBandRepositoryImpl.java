@@ -24,6 +24,31 @@ public class FrameworkResultBandRepositoryImpl implements FrameworkResultBandRep
     }
 
     @Override
+    public boolean existsByFrameworkVersionId(UUID frameworkVersionId) {
+        return springDataFrameworkResultBandRepository.existsByFrameworkVersionId(frameworkVersionId);
+    }
+
+    @Override
+    public boolean existsByFrameworkVersionIdAndCodeAndIdNot(UUID frameworkVersionId, String code, UUID id) {
+        return springDataFrameworkResultBandRepository.existsByFrameworkVersionIdAndCodeAndIdNot(frameworkVersionId, code, id);
+    }
+
+    @Override
+    public boolean existsByFrameworkVersionIdAndLabelAndIdNot(UUID frameworkVersionId, String label, UUID id) {
+        return springDataFrameworkResultBandRepository.existsByFrameworkVersionIdAndLabelAndIdNot(frameworkVersionId, label, id);
+    }
+
+    @Override
+    public boolean existsByFrameworkVersionIdAndCodeIn(UUID frameworkVersionId, Collection<String> codes) {
+        return springDataFrameworkResultBandRepository.existsByFrameworkVersionIdAndCodeIn(frameworkVersionId, codes);
+    }
+
+    @Override
+    public boolean existsByFrameworkVersionIdAndLabelIn(UUID frameworkVersionId, Collection<String> labels) {
+        return springDataFrameworkResultBandRepository.existsByFrameworkVersionIdAndLabelIn(frameworkVersionId, labels);
+    }
+
+    @Override
     public List<FrameworkResultBand> findByFrameworkVersionId(UUID frameworkVersionId) {
         return springDataFrameworkResultBandRepository.findByFrameworkVersionId(frameworkVersionId)
                 .stream().map(FrameworkResultBandMapper::toDomain).toList();
@@ -49,10 +74,18 @@ public class FrameworkResultBandRepositoryImpl implements FrameworkResultBandRep
 
     @Override
     public List<FrameworkResultBand> findByFrameworkVersionIdIn(Collection<UUID> frameworkVersionIds) {
+        if (frameworkVersionIds == null || frameworkVersionIds.isEmpty()) {
+            return List.of();
+        }
         return springDataFrameworkResultBandRepository.findByFrameworkVersionIdIn(frameworkVersionIds)
                 .stream().map(FrameworkResultBandMapper::toDomain).toList();
     }
 
+    @Override
+    public List<FrameworkResultBand> findByFrameworkVersionIdAndCodeIn(UUID frameworkVersionId, Collection<String> codes) {
+        return springDataFrameworkResultBandRepository.findByFrameworkVersionIdAndCodeIn(frameworkVersionId, codes)
+                .stream().map(FrameworkResultBandMapper::toDomain).toList();
+    }
 
     @Override
     public List<FrameworkResultBand> findAllByIds(List<UUID> ids) {
@@ -79,5 +112,10 @@ public class FrameworkResultBandRepositoryImpl implements FrameworkResultBandRep
     @Override
     public void deleteByFrameworkVersionId(UUID frameworkVersionId) {
         springDataFrameworkResultBandRepository.deleteByFrameworkVersionId(frameworkVersionId);
+    }
+
+    @Override
+    public void deleteById(UUID id) {
+        springDataFrameworkResultBandRepository.deleteById(id);
     }
 }

@@ -3,7 +3,9 @@ package com.sep.vox.infrastructure.persistence.mapper;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamDeliveryMode;
 import com.sep.vox.domain.model.exam.ExamKind;
+import com.sep.vox.domain.model.exam.ExamRequiredStreamType;
 import com.sep.vox.domain.model.exam.ExamStatus;
+import com.sep.vox.domain.model.exam.ExamStreamTypePermission;
 import com.sep.vox.domain.model.exam.ResultDecisionMethod;
 import com.sep.vox.infrastructure.persistence.entity.ExamJpaEntity;
 
@@ -24,6 +26,8 @@ public final class ExamMapper {
             statusFromString(jpa.getStatus()),
             jpa.getMaxAttempt(),
             resultDecisionMethodFromString(jpa.getResultDecisionMethod()),
+            requiredStreamTypeFromString(jpa.getRequiredStreamType()), 
+            streamTypePermissionFromString(jpa.getStreamTypePermission()), 
             jpa.getOpenAt(),
             jpa.getCloseAt(),
             jpa.getAssessmentPolicyId(),
@@ -52,6 +56,8 @@ public final class ExamMapper {
             exam.getStatus().name(),
             exam.getMaxAttempt(),
             exam.getResultDecisionMethod() == null ? null : exam.getResultDecisionMethod().name(),
+            valueOf(exam.getRequiredStreamType()), 
+            valueOf(exam.getStreamTypePermission()), 
             exam.getOpenAt(),
             exam.getCloseAt(),
             exam.getAssessmentPolicyId(),
@@ -79,5 +85,21 @@ public final class ExamMapper {
 
     private static ResultDecisionMethod resultDecisionMethodFromString(String resultDecisionMethod) {
         return resultDecisionMethod == null ? null : ResultDecisionMethod.valueOf(resultDecisionMethod);
+    }
+
+    private static ExamRequiredStreamType requiredStreamTypeFromString(String type) {
+        return type == null ? null : ExamRequiredStreamType.valueOf(type);
+    }
+
+    private static String valueOf(ExamRequiredStreamType type) {
+        return type == null ? null : type.name();
+    }
+
+    private static String valueOf(ExamStreamTypePermission permission) {
+        return permission == null ? null : permission.name();
+    }
+
+    private static ExamStreamTypePermission streamTypePermissionFromString(String permission) {
+        return permission == null ? null : ExamStreamTypePermission.valueOf(permission);
     }
 }

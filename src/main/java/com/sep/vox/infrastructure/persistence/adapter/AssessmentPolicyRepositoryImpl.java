@@ -104,6 +104,12 @@ public class AssessmentPolicyRepositoryImpl implements AssessmentPolicyRepositor
     }
 
     @Override
+    public List<AssessmentPolicy> findAllForOwner(UUID schoolId) {
+        return springDataAssessmentPolicyRepository.findAllForOwner(schoolId)
+                .stream().map(AssessmentPolicyMapper::toDomain).toList();
+    }
+
+    @Override
     public boolean existsPublishedByRubricVersionId(UUID rubricVersionId) {
         return springDataAssessmentPolicyRepository.existsByRubricVersionIdAndStatus(rubricVersionId, "PUBLISHED");
     }

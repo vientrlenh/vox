@@ -1,7 +1,6 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.query.ViewFrameworkVersionsQuery;
@@ -26,7 +25,6 @@ public class ViewFrameworkVersionsUseCase implements IUseCase<ViewFrameworkVersi
     }
 
     @Override
-    @Transactional(readOnly = true)
     public PageResult<FrameworkVersionDto> execute(ViewFrameworkVersionsQuery input) {
         frameworkRepository.findById(input.frameworkId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy framework"));

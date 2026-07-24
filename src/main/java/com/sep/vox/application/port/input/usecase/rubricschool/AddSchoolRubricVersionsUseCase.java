@@ -26,7 +26,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
-public class AddSchoolRubricVersionsUseCase implements IUseCase<AddSchoolRubricVersionsCommand, UUID> {
+public class AddSchoolRubricVersionsUseCase implements IUseCase<AddSchoolRubricVersionsCommand, List<UUID>> {
 
     private final RubricRepository rubricRepository;
     private final RubricVersionRepository rubricVersionRepository;
@@ -49,7 +49,7 @@ public class AddSchoolRubricVersionsUseCase implements IUseCase<AddSchoolRubricV
 
     @Override
     @Transactional
-    public UUID execute(AddSchoolRubricVersionsCommand command) {
+    public List<UUID> execute(AddSchoolRubricVersionsCommand command) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         var currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
@@ -105,8 +105,8 @@ public class AddSchoolRubricVersionsUseCase implements IUseCase<AddSchoolRubricV
             );
         }).toList();
 
-        rubricVersionRepository.saveAll(newVersions);
+        List<RubricVersion> savedVersions = rubricVersionRepository.saveAll(newVersions);
 
-        return rubric.getId();
+        return savedVersions.stream().map(v -> v.getId()).toList();
     }
 }

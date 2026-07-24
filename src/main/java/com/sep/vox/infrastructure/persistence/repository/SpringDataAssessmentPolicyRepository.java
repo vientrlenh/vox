@@ -129,4 +129,11 @@ public interface SpringDataAssessmentPolicyRepository extends JpaRepository<Asse
         @Param("schoolGradeId") UUID schoolGradeId,
         @Param("schoolClassId") UUID schoolClassId
     );
+
+    @Query("""
+        SELECT p FROM AssessmentPolicyJpaEntity p
+        WHERE (:schoolId IS NULL OR p.schoolId = :schoolId)
+            AND (:schoolId IS NOT NULL OR p.schoolId IS NULL)
+    """)
+    List<AssessmentPolicyJpaEntity> findAllForOwner(@Param("schoolId") UUID schoolId);
 }

@@ -17,6 +17,8 @@ public class Exam {
     private ExamStatus status;
     private Integer maxAttempt;
     private ResultDecisionMethod resultDecisionMethod;
+    private ExamRequiredStreamType requiredStreamType;
+    private ExamStreamTypePermission streamTypePermission;
     private OffsetDateTime openAt;
     private OffsetDateTime closeAt;
     private UUID assessmentPolicyId;
@@ -32,7 +34,7 @@ public class Exam {
     public Exam() {}
 
     public Exam(UUID id, UUID blueprintId, UUID blueprintVersionId, String code, String name, String description, UUID schoolId, UUID languageId,
-            ExamKind kind, ExamDeliveryMode deliveryMode, ExamStatus status, Integer maxAttempt, ResultDecisionMethod resultDecisionMethod,
+            ExamKind kind, ExamDeliveryMode deliveryMode, ExamStatus status, Integer maxAttempt, ResultDecisionMethod resultDecisionMethod,ExamRequiredStreamType requiredStreamType, ExamStreamTypePermission streamTypePermission, 
             OffsetDateTime openAt, OffsetDateTime closeAt, UUID assessmentPolicyId, boolean requiresOtp,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
@@ -48,6 +50,8 @@ public class Exam {
         this.status = status;
         this.maxAttempt = maxAttempt;
         this.resultDecisionMethod = resultDecisionMethod;
+        this.requiredStreamType = requiredStreamType; 
+        this.streamTypePermission = streamTypePermission;
         this.openAt = openAt;
         this.closeAt = closeAt;
         this.assessmentPolicyId = assessmentPolicyId;
@@ -60,7 +64,7 @@ public class Exam {
 
     public Exam(UUID blueprintId, UUID blueprintVersionId, String code, String name, String description, UUID schoolId, UUID languageId, ExamKind kind,
             ExamDeliveryMode deliveryMode, ExamStatus status, Integer maxAttempt, ResultDecisionMethod resultDecisionMethod,
-            OffsetDateTime openAt, OffsetDateTime closeAt, UUID assessmentPolicyId, boolean requiresOtp, OffsetDateTime createdAt,
+            OffsetDateTime openAt, OffsetDateTime closeAt, UUID assessmentPolicyId, boolean requiresOtp, OffsetDateTime createdAt,ExamRequiredStreamType requiredStreamType, ExamStreamTypePermission streamTypePermission, 
             OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.blueprintId = blueprintId;
         this.blueprintVersionId = blueprintVersionId;
@@ -74,6 +78,8 @@ public class Exam {
         this.status = status;
         this.maxAttempt = maxAttempt;
         this.resultDecisionMethod = resultDecisionMethod;
+        this.requiredStreamType = requiredStreamType;
+        this.streamTypePermission = streamTypePermission;
         this.openAt = openAt;
         this.closeAt = closeAt;
         this.assessmentPolicyId = assessmentPolicyId;
@@ -259,5 +265,23 @@ public class Exam {
     public void setExamTimeDurationSecond(Integer examTimeDurationSecond) {
         this.examTimeDurationSecond = examTimeDurationSecond;
     }
+    
+        public ExamRequiredStreamType getRequiredStreamType () {
+            return requiredStreamType;
+        }
 
-}
+        public void setRequiredStreamType (ExamRequiredStreamType requiredStreamType){
+            this.requiredStreamType = requiredStreamType;
+        }
+
+        public ExamStreamTypePermission getStreamTypePermission () {
+            return streamTypePermission;
+        }
+
+        public void setStreamTypePermission (ExamStreamTypePermission streamTypePermission){
+            this.streamTypePermission = streamTypePermission;
+        }
+
+
+    }
+

@@ -4,7 +4,9 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreateClassTestSectionCommand;
+import com.sep.vox.application.port.input.service.RecalculateExamTimeDurationService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.ExamDto;
@@ -44,6 +47,7 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
     private final QuestionRepository questionRepository;
     private final QuestionCollaboratorRepository questionCollaboratorRepository;
     private final ExamQuestionSecureLockService examQuestionSecureLockService;
+    private final RecalculateExamTimeDurationService recalculateExamTimeDurationService;
     private final UserContextPort userContextPort;
 
     public CreateClassTestSectionUseCase(
@@ -55,6 +59,7 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
             QuestionRepository questionRepository,
             QuestionCollaboratorRepository questionCollaboratorRepository,
             ExamQuestionSecureLockService examQuestionSecureLockService,
+            RecalculateExamTimeDurationService recalculateExamTimeDurationService,
             UserContextPort userContextPort) {
         this.examRepository = examRepository;
         this.examMemberRepository = examMemberRepository;
@@ -64,6 +69,7 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
         this.questionRepository = questionRepository;
         this.questionCollaboratorRepository = questionCollaboratorRepository;
         this.examQuestionSecureLockService = examQuestionSecureLockService;
+        this.recalculateExamTimeDurationService = recalculateExamTimeDurationService;
         this.userContextPort = userContextPort;
     }
 
@@ -80,20 +86,20 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
         if (!examMemberRepository.existsByExamIdAndUserIdAndRole(exam.getId(), currentUserId, ExamMemberRole.CHAIR)) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
-        if (exam.getStatus() != ExamStatus.SCHEDULED) {
-            throw new IllegalStateException("Chỉ được sửa khi bài kiểm tra chưa mở cho học sinh làm bài (đang ở trạng thái đã lên lịch)");
+        if (exam.getStatus() != ExamStatus.DRAFT && exam.getStatus() != ExamStatus.SCHEDULED) {
+            throw new IllegalStateException("Chỉ được sửa khi bài kiểm tra chưa bắt đầu");
         }
         if (examRepository.existsSubmittedSessionByExamId(exam.getId())) {
             throw new IllegalStateException("Không thể sửa câu hỏi khi đã có học sinh nộp bài");
         }
         requireNoAttachedBlueprint(exam);
-        if (input.questionIds() == null || input.questionIds().isEmpty()) {
+        if (input.questions() == null || input.questions().isEmpty()) {
             throw new IllegalStateException("Section phải có ít nhất 1 câu hỏi");
         }
 
-        for (var questionId : input.questionIds()) {
-            var question = questionRepository.findAccessibleById(questionId, currentUserId, exam.getSchoolId(), false, false)
-                .orElseThrow(() -> new ForbiddenException("Không có quyền dùng câu hỏi " + questionId));
+        for (var questionCommand : input.questions()) {
+            var question = questionRepository.findAccessibleById(questionCommand.questionId(), currentUserId, exam.getSchoolId(), false, false)
+                .orElseThrow(() -> new ForbiddenException("Không có quyền dùng câu hỏi " + questionCommand.questionId()));
             boolean isOwner = currentUserId.equals(question.getCreatedBy());
             boolean isSchoolShared = question.getSharing() == QuestionSharing.SCHOOL_SHARED;
             if (!isOwner && !isSchoolShared) {
@@ -111,13 +117,13 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
 
         var now = OffsetDateTime.now();
         var paperSection = examPaperSectionRepository.save(new ExamPaperSection(
-            paper.getId(), order, input.title(), input.instruction(), null, now, now, currentUserId, currentUserId
+            paper.getId(), order, input.title(), input.instruction(), null, input.weight(), now, now, currentUserId, currentUserId
         ));
 
-        var questionIds = input.questionIds();
-        var weights = distributeEqualWeights(questionIds.size());
-        for (int i = 0; i < questionIds.size(); i++) {
-            var questionId = questionIds.get(i);
+        var questions = input.questions();
+        var weights = ClassTestSectionWeightPolicy.resolveQuestionWeights(questions);
+        for (int i = 0; i < questions.size(); i++) {
+            var questionId = questions.get(i).questionId();
             examPaperItemRepository.save(new ExamPaperItem(
                 null,
                 paperSection.getId(),
@@ -130,10 +136,19 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
                 questionId, exam.getId(), ExamSecurePoolReleaseMode.AUTO_AFTER_CLOSE, currentUserId
             );
         }
+        if (input.weight() == null) {
+            rebalanceSectionWeights(paper.getId(), now, currentUserId);
+        } else {
+            var sections = examPaperSectionRepository.findByPaperId(paper.getId()).stream()
+                .sorted(Comparator.comparingInt(ExamPaperSection::getOrder))
+                .toList();
+            ClassTestSectionWeightPolicy.validateStoredWeights(sections, "Tổng trọng số section phải bằng 1.00");
+        }
 
         exam.setUpdatedAt(now);
         exam.setUpdatedBy(currentUserId);
         var saved = examRepository.save(exam);
+        recalculateExamTimeDurationService.recalculate(exam.getId());
         return ExamDtoMapper.toDto(saved);
     }
 
@@ -154,5 +169,19 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
         }
         weights.add(BigDecimal.ONE.subtract(runningSum));
         return weights;
+    }
+
+    private void rebalanceSectionWeights(UUID paperId, OffsetDateTime now, UUID currentUserId) {
+        var sections = examPaperSectionRepository.findByPaperId(paperId).stream()
+            .sorted(Comparator.comparingInt(ExamPaperSection::getOrder))
+            .toList();
+        var weights = distributeEqualWeights(sections.size());
+        for (int i = 0; i < sections.size(); i++) {
+            var section = sections.get(i);
+            section.setWeight(weights.get(i));
+            section.setUpdatedAt(now);
+            section.setUpdatedBy(currentUserId);
+            examPaperSectionRepository.save(section);
+        }
     }
 }

@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -11,6 +12,9 @@ import com.sep.vox.infrastructure.persistence.entity.ExamPaperItemJpaEntity;
 
 public interface SpringDataExamPaperItemRepository extends JpaRepository<ExamPaperItemJpaEntity, UUID> {
     List<ExamPaperItemJpaEntity> findBySectionIdOrderByOrderAsc(UUID sectionId);
+    List<ExamPaperItemJpaEntity> findBySectionIdInOrderByOrderAsc(Collection<UUID> sectionIds);
+
+    List<ExamPaperItemJpaEntity> findByPaperId(UUID paperId);
 
     @Query("""
         SELECT CASE WHEN COUNT(i) > 0 THEN true ELSE false END

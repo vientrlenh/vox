@@ -13,20 +13,27 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.sep.vox.application.port.input.command.UnblockExamCandidateCommand;
+import com.sep.vox.application.port.input.command.UpdateExamCandidateStatusCommand;
 import com.sep.vox.application.port.input.usecase.examcandidate.AddExamCandidateUseCase;
 import com.sep.vox.application.port.input.usecase.examcandidate.AssignExamCandidateScheduleUseCase;
 import com.sep.vox.application.port.input.usecase.examcandidate.AssignExamPapersUseCase;
 import com.sep.vox.application.port.input.usecase.examcandidate.AutoFillExamCandidatesUseCase;
 import com.sep.vox.application.port.input.usecase.examcandidate.ImportExamCandidatesFromClassUseCase;
 import com.sep.vox.application.port.input.usecase.examcandidate.ImportExamCandidatesFromGradeUseCase;
+import com.sep.vox.application.port.input.usecase.examcandidate.UnblockExamCandidateUseCase;
+import com.sep.vox.application.port.input.usecase.examcandidate.UpdateExamCandidateStatusUseCase;
 import com.sep.vox.application.response.input.examcandidate.AssignExamPapersResponse;
 import com.sep.vox.domain.dto.ExamCandidateDto;
+import com.sep.vox.domain.model.exam.ExamCandidateStatus;
 import com.sep.vox.interfaces.rest.dto.request.AddExamCandidateRequest;
 import com.sep.vox.interfaces.rest.dto.request.AssignExamCandidateScheduleRequest;
 import com.sep.vox.interfaces.rest.dto.request.AssignExamPapersRequest;
 import com.sep.vox.interfaces.rest.dto.request.AutoFillExamCandidatesRequest;
 import com.sep.vox.interfaces.rest.dto.request.ImportExamCandidatesFromClassRequest;
 import com.sep.vox.interfaces.rest.dto.request.ImportExamCandidatesFromGradeRequest;
+import com.sep.vox.interfaces.rest.dto.request.SessionReasonRequest;
+import com.sep.vox.interfaces.rest.dto.request.UpdateExamCandidateStatusRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 import com.sep.vox.interfaces.rest.mapper.AddExamCandidateCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.AssignExamCandidateScheduleCommandMapper;
@@ -47,6 +54,8 @@ public class ExamCandidateController {
     private final AssignExamCandidateScheduleUseCase assignExamCandidateScheduleUseCase;
     private final AutoFillExamCandidatesUseCase autoFillExamCandidatesUseCase;
     private final AssignExamPapersUseCase assignExamPapersUseCase;
+    private final UpdateExamCandidateStatusUseCase updateExamCandidateStatusUseCase;
+    private final UnblockExamCandidateUseCase unblockExamCandidateUseCase;
 
     public ExamCandidateController(
             AddExamCandidateUseCase addExamCandidateUseCase,
@@ -54,13 +63,17 @@ public class ExamCandidateController {
             ImportExamCandidatesFromGradeUseCase importExamCandidatesFromGradeUseCase,
             AssignExamCandidateScheduleUseCase assignExamCandidateScheduleUseCase,
             AutoFillExamCandidatesUseCase autoFillExamCandidatesUseCase,
-            AssignExamPapersUseCase assignExamPapersUseCase) {
+            AssignExamPapersUseCase assignExamPapersUseCase,
+            UpdateExamCandidateStatusUseCase updateExamCandidateStatusUseCase,
+            UnblockExamCandidateUseCase unblockExamCandidateUseCase) {
         this.addExamCandidateUseCase = addExamCandidateUseCase;
         this.importExamCandidatesFromClassUseCase = importExamCandidatesFromClassUseCase;
         this.importExamCandidatesFromGradeUseCase = importExamCandidatesFromGradeUseCase;
         this.assignExamCandidateScheduleUseCase = assignExamCandidateScheduleUseCase;
         this.autoFillExamCandidatesUseCase = autoFillExamCandidatesUseCase;
         this.assignExamPapersUseCase = assignExamPapersUseCase;
+        this.updateExamCandidateStatusUseCase = updateExamCandidateStatusUseCase;
+        this.unblockExamCandidateUseCase = unblockExamCandidateUseCase;
     }
 
     @PostMapping
@@ -123,5 +136,28 @@ public class ExamCandidateController {
             @Valid @RequestBody AssignExamPapersRequest request) {
         var data = assignExamPapersUseCase.execute(AssignExamPapersCommandMapper.fromRequest(examId, request));
         return ResponseEntity.ok(ApiResponse.success("Phân đề thành công", data));
+    }
+
+    @PutMapping("/{candidateId}/status")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<ApiResponse<ExamCandidateDto>> updateStatus(
+            @PathVariable UUID examId,
+            @PathVariable UUID candidateId,
+            @Valid @RequestBody UpdateExamCandidateStatusRequest request) {
+        var data = updateExamCandidateStatusUseCase.execute(new UpdateExamCandidateStatusCommand(
+            candidateId,
+            ExamCandidateStatus.valueOf(request.status().trim().toUpperCase())
+        ));
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái thí sinh thành công", data));
+    }
+
+    @PostMapping("/{candidateId}/unblock")
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
+    public ResponseEntity<ApiResponse<ExamCandidateDto>> unblock(
+            @PathVariable UUID examId,
+            @PathVariable UUID candidateId,
+            @Valid @RequestBody SessionReasonRequest request) {
+        var data = unblockExamCandidateUseCase.execute(new UnblockExamCandidateCommand(candidateId, request.reason()));
+        return ResponseEntity.ok(ApiResponse.success("Dỡ chặn thí sinh thành công", data));
     }
 }

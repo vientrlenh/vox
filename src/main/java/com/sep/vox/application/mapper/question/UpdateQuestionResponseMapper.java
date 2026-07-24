@@ -9,10 +9,9 @@ public final class UpdateQuestionResponseMapper {
     private UpdateQuestionResponseMapper() {
     }
 
-    public static UpdateQuestionResponse toResponse(Question question, boolean clonedAsNew) {
+    public static UpdateQuestionResponse toResponse(Question question) {
         return new UpdateQuestionResponse(
-            QuestionDtoMapper.toQuestionDto(question),
-            clonedAsNew
+            QuestionDtoMapper.toQuestionDto(question)
         );
     }
 }

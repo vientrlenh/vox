@@ -1,5 +1,6 @@
 package com.sep.vox.domain.repository;
 
+import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -31,5 +32,7 @@ public interface ExamRepository {
     boolean existsByBlueprintId(UUID blueprintId);
     boolean existsByBlueprintIdAndKindAndStatusNot(UUID blueprintId, ExamKind kind, ExamStatus status);
     boolean existsSubmittedSessionByExamId(UUID examId);
+    List<Exam> findByStatusAndOpenAtBefore(ExamStatus status, OffsetDateTime time);
+    List<Exam> findByStatusAndCloseAtBefore(ExamStatus status, OffsetDateTime time);
     void deleteById(UUID id);
 }

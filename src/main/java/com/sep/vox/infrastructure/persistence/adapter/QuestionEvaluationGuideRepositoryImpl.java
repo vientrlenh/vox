@@ -1,5 +1,7 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -30,6 +32,16 @@ public class QuestionEvaluationGuideRepositoryImpl implements QuestionEvaluation
     public Optional<QuestionEvaluationGuide> findByQuestionId(UUID questionId) {
         return springDataQuestionEvaluationGuideRepository.findByQuestionId(questionId)
             .map(QuestionEvaluationGuideMapper::toDomain);
+    }
+
+    @Override
+    public List<QuestionEvaluationGuide> findByQuestionIdIn(Collection<UUID> questionIds) {
+        if (questionIds.isEmpty()) {
+            return List.of();
+        }
+        return springDataQuestionEvaluationGuideRepository.findByQuestionIdIn(questionIds).stream()
+            .map(QuestionEvaluationGuideMapper::toDomain)
+            .toList();
     }
 
     @Override

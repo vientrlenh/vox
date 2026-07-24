@@ -11,12 +11,19 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 @Entity
-@Table(name = "question_assets", indexes = {
-    @Index(columnList = "question_id, question_asset_order", name = "idx_question_assets_question_question_asset_order", unique = true), 
-    @Index(columnList = "question_id", name = "idx_question_assets_question")
-})
+@Table(
+    name = "question_assets",
+    uniqueConstraints = {
+        @UniqueConstraint(name = "uk_question_assets_question_id", columnNames = {"question_id"})
+    },
+    indexes = {
+        @Index(columnList = "question_id, question_asset_order", name = "idx_question_assets_question_question_asset_order", unique = true),
+        @Index(columnList = "question_id", name = "idx_question_assets_question")
+    }
+)
 public class QuestionAssetJpaEntity {
 
     @Id

@@ -69,10 +69,13 @@ public class ViewSchoolUsersForRequesterUseCase implements IUseCase<ViewSchoolUs
             roleId = input.roleId();
             excludeUserId = null;
         } else {
+            // TEACHER bắt buộc phải có role TEACHER; nếu không, từ chối thay vì để roleId=null
+            // (roleId=null sẽ khiến truy vấn trả về mọi role, lộ danh sách học sinh).
             roleId = callerRoles.stream()
                 .filter(r -> "TEACHER".equals(r.roleCode()))
                 .map(r -> r.roleId())
-                .findFirst().orElse(null);
+                .findFirst()
+                .orElseThrow(() -> new ForbiddenException("Quyền truy cập không hợp lệ"));
             excludeUserId = callerId;
         }
 

@@ -21,6 +21,7 @@ import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
+import com.sep.vox.domain.repository.SchoolGradeLevelRepository;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -35,6 +36,7 @@ public class CreateSchoolClassUseCase implements IUseCase<CreateSchoolClassComma
     private final UserRepository userRepository;
     private final SupportedLanguageRepository supportedLanguageRepository;
     private final SchoolGradeRepository schoolGradeRepository;
+    private final SchoolGradeLevelRepository schoolGradeLevelRepository;
     private final UserContextPort userContextPort;
     private final SchoolUserRepository schoolUserRepository;
 
@@ -44,6 +46,7 @@ public class CreateSchoolClassUseCase implements IUseCase<CreateSchoolClassComma
             UserRepository userRepository,
             SupportedLanguageRepository supportedLanguageRepository,
             SchoolGradeRepository schoolGradeRepository,
+            SchoolGradeLevelRepository schoolGradeLevelRepository,
             UserContextPort userContextPort,
             SchoolUserRepository schoolUserRepository) {
         this.schoolClassRepository = schoolClassRepository;
@@ -51,6 +54,7 @@ public class CreateSchoolClassUseCase implements IUseCase<CreateSchoolClassComma
         this.userRepository = userRepository;
         this.supportedLanguageRepository = supportedLanguageRepository;
         this.schoolGradeRepository = schoolGradeRepository;
+        this.schoolGradeLevelRepository = schoolGradeLevelRepository;
         this.userContextPort = userContextPort;
         this.schoolUserRepository = schoolUserRepository;
     }
@@ -143,8 +147,11 @@ public class CreateSchoolClassUseCase implements IUseCase<CreateSchoolClassComma
     private void validateSchoolGrade(UUID schoolGradeId, UUID schoolId) {
         var grade = schoolGradeRepository.findById(schoolGradeId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy khối học"));
-        var gradeInSchool = schoolGradeRepository.findBySchoolIdAndCode(schoolId, grade.getCode());
-        if (gradeInSchool.isEmpty() || !Objects.equals(gradeInSchool.get().getId(), grade.getId())) {
+        // Năm học không lưu schoolId trực tiếp; bắc cầu qua Khối (GradeLevel) để xác định trường sở hữu.
+        // Không tra theo (schoolId, code) vì code chỉ unique theo (gradeLevelId, code) -> có thể khớp nhiều dòng.
+        var gradeLevel = schoolGradeLevelRepository.findById(grade.getSchoolGradeLevelId())
+            .orElseThrow(() -> new IllegalArgumentException("Khối học không thuộc trường hiện tại"));
+        if (!Objects.equals(gradeLevel.getSchoolId(), schoolId)) {
             throw new IllegalArgumentException("Khối học không thuộc trường hiện tại");
         }
         if (grade.getStatus() != SchoolGradeStatus.ACTIVE) {

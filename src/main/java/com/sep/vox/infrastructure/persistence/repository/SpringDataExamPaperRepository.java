@@ -11,6 +11,7 @@ import com.sep.vox.infrastructure.persistence.entity.ExamPaperJpaEntity;
 
 public interface SpringDataExamPaperRepository extends JpaRepository<ExamPaperJpaEntity, UUID> {
     List<ExamPaperJpaEntity> findByExamIdOrderByVariantAsc(UUID examId);
+    List<ExamPaperJpaEntity> findByExamIdInOrderByVariantAsc(java.util.Collection<UUID> examIds);
     List<ExamPaperJpaEntity> findByExamIdAndStatusOrderByVariantAsc(UUID examId, String status);
     boolean existsByExamId(UUID examId);
 

@@ -22,6 +22,10 @@ public class ExamItemEvaluation {
     private boolean markedInvalid;
     private boolean requiresRetake;
     private EvaluationSignals signals;
+    private String validityJson;
+    private String feedbackSummary;
+    private String suggestionsJson;
+    private String promptVersion;
     private ExamItemEvaluationStatus status; 
     private OffsetDateTime evaluatedAt;
 
@@ -30,7 +34,8 @@ public class ExamItemEvaluation {
     public ExamItemEvaluation(UUID id, UUID responseId, UUID paperItemId, ExamEvaluationEngineType engineType,
             String gradedByModel, Integer sampleCount, UUID reviewerId, BigDecimal rawItemScore, BigDecimal itemScore,
             BigDecimal overallConfidence, boolean requiresHumanReview, String reviewReasonCode, boolean markedInvalid,
-            boolean requiresRetake, EvaluationSignals signals, ExamItemEvaluationStatus status, OffsetDateTime evaluatedAt) {
+            boolean requiresRetake, EvaluationSignals signals, String validityJson, String feedbackSummary, String suggestionsJson,
+            String promptVersion, ExamItemEvaluationStatus status, OffsetDateTime evaluatedAt) {
         this.id = id;
         this.responseId = responseId;
         this.paperItemId = paperItemId;
@@ -46,6 +51,10 @@ public class ExamItemEvaluation {
         this.markedInvalid = markedInvalid;
         this.requiresRetake = requiresRetake;
         this.signals = signals;
+        this.validityJson = validityJson;
+        this.feedbackSummary = feedbackSummary;
+        this.suggestionsJson = suggestionsJson;
+        this.promptVersion = promptVersion;
         this.status = status;
         this.evaluatedAt = evaluatedAt;
     }
@@ -53,7 +62,8 @@ public class ExamItemEvaluation {
     public ExamItemEvaluation(UUID responseId, UUID paperItemId, ExamEvaluationEngineType engineType,
             String gradedByModel, Integer sampleCount, UUID reviewerId, BigDecimal rawItemScore, BigDecimal itemScore,
             BigDecimal overallConfidence, boolean requiresHumanReview, String reviewReasonCode, boolean markedInvalid,
-            boolean requiresRetake, EvaluationSignals signals, ExamItemEvaluationStatus status, OffsetDateTime evaluatedAt) {
+            boolean requiresRetake, EvaluationSignals signals, String validityJson, String feedbackSummary, String suggestionsJson,
+            String promptVersion, ExamItemEvaluationStatus status, OffsetDateTime evaluatedAt) {
         this.responseId = responseId;
         this.paperItemId = paperItemId;
         this.engineType = engineType;
@@ -68,6 +78,10 @@ public class ExamItemEvaluation {
         this.markedInvalid = markedInvalid;
         this.requiresRetake = requiresRetake;
         this.signals = signals;
+        this.validityJson = validityJson;
+        this.feedbackSummary = feedbackSummary;
+        this.suggestionsJson = suggestionsJson;
+        this.promptVersion = promptVersion;
         this.status = status;
         this.evaluatedAt = evaluatedAt;
     }
@@ -192,6 +206,14 @@ public class ExamItemEvaluation {
         this.signals = signals;
     }
 
+    public String getValidityJson() {
+        return validityJson;
+    }
+
+    public void setValidityJson(String validityJson) {
+        this.validityJson = validityJson;
+    }
+
     public ExamItemEvaluationStatus getStatus() {
         return status;
     }
@@ -208,5 +230,27 @@ public class ExamItemEvaluation {
         this.evaluatedAt = evaluatedAt;
     }
 
-    
+    public String getFeedbackSummary() {
+        return feedbackSummary;
+    }
+
+    public void setFeedbackSummary(String feedbackSummary) {
+        this.feedbackSummary = feedbackSummary;
+    }
+
+    public String getSuggestionsJson() {
+        return suggestionsJson;
+    }
+
+    public void setSuggestionsJson(String suggestionsJson) {
+        this.suggestionsJson = suggestionsJson;
+    }
+
+    public String getPromptVersion() {
+        return promptVersion;
+    }
+
+    public void setPromptVersion(String promptVersion) {
+        this.promptVersion = promptVersion;
+    }
 }

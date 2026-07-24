@@ -123,7 +123,7 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
 
         var existingUsersByEmail = findUsersByEmail(emails);
         var rolesByCode = findRolesByCode(roleCodes);
-        var schoolUsersByUserId = findSchoolUsersByUserId(existingUsersByEmail.values(), schoolId);
+        var membershipsByUserId = findMembershipsByUserId(existingUsersByEmail.values());
 
         for (var rowContext : rowContexts) {
             var row = rowContext.row();
@@ -142,10 +142,23 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
             var existingUser = existingUsersByEmail.get(email);
             var role = rolesByCode.get(roleCode);
 
+            // 1 user = 1 trường: nếu email đã thuộc user của trường khác thì từ chối,
+            // không ghi đè hồ sơ và không gắn user đó vào trường hiện tại.
+            if (existingUser != null) {
+                var membership = membershipsByUserId.get(existingUser.getId());
+                if (membership != null && !Objects.equals(membership.getSchoolId(), schoolId)) {
+                    row.setErrorsJson(jsonSerializationPort.toJson(
+                            List.of(error("email", "Email đã được sử dụng bởi người dùng ở trường khác"))));
+                    row.setStatus(ImportRowStatus.INVALID);
+                    invalidRows++;
+                    continue;
+                }
+            }
+
             try {
                 if (existingUser != null) {
                     transactionTemplate.executeWithoutResult(status ->
-                            updateUser(existingUser, normalized, schoolId, schoolUsersByUserId, roleCode, currentUserId));
+                            updateUser(existingUser, normalized, schoolId, membershipsByUserId, roleCode, currentUserId));
                     updatedRows++;
                 } else {
                     transactionTemplate.executeWithoutResult(status ->
@@ -187,7 +200,7 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
     }
 
     private UUID updateUser(User existing, Map<String, String> data, UUID schoolId,
-            Map<UUID, SchoolUser> schoolUsersByUserId, String roleCode, UUID currentUserId) {
+            Map<UUID, SchoolUser> membershipsByUserId, String roleCode, UUID currentUserId) {
         var ts = OffsetDateTime.now();
         existing.setFullName(new FullName(data.get("fullName")));
         existing.setPhone(new Phone(data.get("phone")));
@@ -199,7 +212,7 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
         if (SchoolRoleCodes.STUDENT.equals(roleCode)) {
             var startOffset = parseDate(data.get("startDate")).atStartOfDay(ZoneOffset.UTC).toOffsetDateTime();
             var endOffset = parseDate(data.get("endDate")).atStartOfDay(ZoneOffset.UTC).toOffsetDateTime();
-            var schoolUser = schoolUsersByUserId.get(existing.getId());
+            var schoolUser = membershipsByUserId.get(existing.getId());
             if (schoolUser != null) {
                 schoolUser.setStartDate(startOffset);
                 schoolUser.setEndDate(endOffset);
@@ -207,7 +220,7 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
             } else {
                 schoolUserRepository.save(SchoolUser.create(existing.getId(), schoolId, startOffset, endOffset));
             }
-        } else if (SchoolRoleCodes.TEACHER.equals(roleCode) && schoolUsersByUserId.get(existing.getId()) == null) {
+        } else if (SchoolRoleCodes.TEACHER.equals(roleCode) && membershipsByUserId.get(existing.getId()) == null) {
             schoolUserRepository.save(SchoolUser.create(existing.getId(), schoolId, ts, null));
         }
         return existing.getId();
@@ -227,15 +240,11 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
         return map;
     }
 
-    private Map<UUID, SchoolUser> findSchoolUsersByUserId(Collection<User> users, UUID schoolId) {
+    private Map<UUID, SchoolUser> findMembershipsByUserId(Collection<User> users) {
         var userIds = new HashSet<UUID>();
         users.forEach(user -> userIds.add(user.getId()));
         var map = new LinkedHashMap<UUID, SchoolUser>();
-        schoolUserRepository.findByUserIdIn(userIds).forEach(su -> {
-            if (Objects.equals(su.getSchoolId(), schoolId)) {
-                map.putIfAbsent(su.getUserId(), su);
-            }
-        });
+        schoolUserRepository.findByUserIdIn(userIds).forEach(su -> map.putIfAbsent(su.getUserId(), su));
         return map;
     }
 
@@ -275,9 +284,13 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
         addMissingError(errors, data, "roleCode", "Vai trò không được để trống");
         addMissingError(errors, data, "phone", "Số điện thoại không được để trống");
         addMissingError(errors, data, "dateOfBirth", "Ngày sinh không được để trống");
-        addMissingError(errors, data, "startDate", "Ngày bắt đầu không được để trống");
-        addMissingError(errors, data, "endDate", "Ngày kết thúc không được để trống");
         addMissingError(errors, data, "address", "Địa chỉ không được để trống");
+
+        var roleCodeForDates = data.get("roleCode");
+        if (SchoolRoleCodes.STUDENT.equals(roleCodeForDates)) {
+            addMissingError(errors, data, "startDate", "Ngày bắt đầu không được để trống");
+            addMissingError(errors, data, "endDate", "Ngày kết thúc không được để trống");
+        }
 
         var email = data.get("email");
         if (isPresent(email)) {
@@ -300,6 +313,14 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
         validateDateField(errors, data, "dateOfBirth", "Ngày sinh không hợp lệ");
         validateDateField(errors, data, "startDate", "Ngày bắt đầu không hợp lệ");
         validateDateField(errors, data, "endDate", "Ngày kết thúc không hợp lệ");
+
+        if (SchoolRoleCodes.STUDENT.equals(roleCodeForDates)) {
+            var start = parseDate(data.get("startDate"));
+            var end = parseDate(data.get("endDate"));
+            if (start != null && end != null && !start.isBefore(end)) {
+                errors.add(error("startDate", "Ngày bắt đầu phải trước ngày kết thúc"));
+            }
+        }
 
         return errors;
     }

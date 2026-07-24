@@ -89,13 +89,10 @@ public interface SpringDataExamBlueprintRepository extends JpaRepository<ExamBlu
         SELECT CASE WHEN (
             b.schoolId = :schoolId
             AND (
-                (
-                    NOT EXISTS (SELECT 1 FROM ExamJpaEntity e0 WHERE e0.blueprintId = b.id)
-                    AND EXISTS (
-                        SELECT 1 FROM UserRoleJpaEntity ur
-                        JOIN RoleJpaEntity r ON r.id = ur.roleId
-                        WHERE ur.userId = :userId AND r.code = 'SCHOOL_ADMIN'
-                    )
+                EXISTS (
+                    SELECT 1 FROM UserRoleJpaEntity ur
+                    JOIN RoleJpaEntity r ON r.id = ur.roleId
+                    WHERE ur.userId = :userId AND r.code IN ('SCHOOL_ADMIN', 'SYSTEM_ADMIN')
                 )
                 OR EXISTS (
                     SELECT 1 FROM ExamJpaEntity e

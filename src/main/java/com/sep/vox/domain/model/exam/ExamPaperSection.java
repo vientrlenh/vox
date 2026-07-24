@@ -1,5 +1,6 @@
 package com.sep.vox.domain.model.exam;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -10,6 +11,7 @@ public class ExamPaperSection {
     private String title;
     private String instruction;
     private Integer sectionTimeLimitSeconds;
+    private BigDecimal weight;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
     private UUID createdBy;
@@ -18,14 +20,15 @@ public class ExamPaperSection {
     public ExamPaperSection() {}
 
     public ExamPaperSection(UUID id, UUID paperId, int order, String title, String instruction,
-            Integer sectionTimeLimitSeconds, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy,
-            UUID updatedBy) {
+            Integer sectionTimeLimitSeconds, BigDecimal weight, OffsetDateTime createdAt,
+            OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.paperId = paperId;
         this.order = order;
         this.title = title;
         this.instruction = instruction;
         this.sectionTimeLimitSeconds = sectionTimeLimitSeconds;
+        this.weight = weight;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
@@ -33,12 +36,13 @@ public class ExamPaperSection {
     }
 
     public ExamPaperSection(UUID paperId, int order, String title, String instruction, Integer sectionTimeLimitSeconds,
-            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            BigDecimal weight, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.paperId = paperId;
         this.order = order;
         this.title = title;
         this.instruction = instruction;
         this.sectionTimeLimitSeconds = sectionTimeLimitSeconds;
+        this.weight = weight;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
@@ -91,6 +95,14 @@ public class ExamPaperSection {
 
     public void setSectionTimeLimitSeconds(Integer sectionTimeLimitSeconds) {
         this.sectionTimeLimitSeconds = sectionTimeLimitSeconds;
+    }
+
+    public BigDecimal getWeight() {
+        return weight;
+    }
+
+    public void setWeight(BigDecimal weight) {
+        this.weight = weight;
     }
 
     public OffsetDateTime getCreatedAt() {

@@ -131,6 +131,50 @@ public class CreateSchoolUserUseCaseTests {
     }
 
     @Test
+    void create_student_with_start_date_not_before_end_date_should_throw() {
+        var caller = callerUser(callerId, schoolId);
+        var savedUser = savedUser(schoolId);
+        var studentRole = role("STUDENT");
+        var command = new CreateSchoolUserCommand(
+            schoolId, "student@school.edu.vn", "0987654321",
+            "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT",
+            LocalDate.of(2029, 1, 1), LocalDate.of(2029, 1, 1)
+        );
+
+        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
+        when(userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(Optional.of(caller));
+        when(roleRepository.findByCode("STUDENT")).thenReturn(Optional.of(studentRole));
+        when(userRepository.findByEmail("student@school.edu.vn")).thenReturn(Optional.empty());
+        when(userRepository.findByPhone("0987654321")).thenReturn(Optional.empty());
+        when(userRepository.save(any(User.class))).thenReturn(savedUser);
+        when(userRoleRepository.save(any(UserRole.class))).thenReturn(new UserRole(savedUser.getId(), studentRole.getId(), OffsetDateTime.now()));
+
+        assertThrows(IllegalArgumentException.class, () -> createSchoolUserUseCase.execute(command));
+        verify(schoolUserRepository, never()).save(any(SchoolUser.class));
+    }
+
+    @Test
+    void create_should_throw_when_school_inactive() {
+        var caller = callerUser(callerId, schoolId);
+        var studentRole = role("STUDENT");
+        var inactiveSchool = school(schoolId, "Trường A");
+        inactiveSchool.setActive(false);
+        var command = new CreateSchoolUserCommand(
+            schoolId, "student@school.edu.vn", "0987654321",
+            "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT",
+            LocalDate.of(2023, 1, 1), LocalDate.of(2029, 1, 1)
+        );
+
+        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
+        when(userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(Optional.of(caller));
+        when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(inactiveSchool));
+        when(roleRepository.findByCode("STUDENT")).thenReturn(Optional.of(studentRole));
+
+        assertThrows(IllegalStateException.class, () -> createSchoolUserUseCase.execute(command));
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
     void create_teacher_should_save_school_user() {
         var caller = callerUser(callerId, schoolId);
         var savedUser = savedUser(schoolId);
@@ -289,6 +333,7 @@ public class CreateSchoolUserUseCaseTests {
         var school = new School();
         school.setId(id);
         school.setName(name);
+        school.setActive(true);
         return school;
     }
 

@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -40,8 +41,28 @@ public class ExamBlueprintSlotRepositoryImpl implements ExamBlueprintSlotReposit
     }
 
     @Override
+    public List<ExamBlueprintSlot> findByBlueprintVersionIdIn(Collection<UUID> blueprintVersionIds) {
+        if (blueprintVersionIds.isEmpty()) {
+            return List.of();
+        }
+        return springDataExamBlueprintSlotRepository.findByBlueprintVersionIdInOrderByOrderAsc(blueprintVersionIds).stream()
+            .map(ExamBlueprintSlotMapper::toDomain)
+            .toList();
+    }
+
+    @Override
     public List<ExamBlueprintSlot> findBySectionId(UUID sectionId) {
         return springDataExamBlueprintSlotRepository.findBySectionIdOrderByOrderAsc(sectionId).stream()
+            .map(ExamBlueprintSlotMapper::toDomain)
+            .toList();
+    }
+
+    @Override
+    public List<ExamBlueprintSlot> findBySectionIdIn(Collection<UUID> sectionIds) {
+        if (sectionIds.isEmpty()) {
+            return List.of();
+        }
+        return springDataExamBlueprintSlotRepository.findBySectionIdInOrderByOrderAsc(sectionIds).stream()
             .map(ExamBlueprintSlotMapper::toDomain)
             .toList();
     }

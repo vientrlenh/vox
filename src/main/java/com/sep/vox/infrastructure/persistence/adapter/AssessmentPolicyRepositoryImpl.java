@@ -85,6 +85,11 @@ public class AssessmentPolicyRepositoryImpl implements AssessmentPolicyRepositor
     }
 
     @Override
+    public boolean existsBySchoolClassId(UUID schoolClassId) {
+        return springDataAssessmentPolicyRepository.existsBySchoolClassId(schoolClassId);
+    }
+
+    @Override
     public boolean existsActiveForScope(UUID schoolId, UUID languageId, UUID frameworkVersionId,
             UUID schoolGradeLevelId, UUID schoolGradeId, UUID schoolClassId, UUID rubricVersionId) {
         return springDataAssessmentPolicyRepository.existsActiveForScope(schoolId, languageId, frameworkVersionId,

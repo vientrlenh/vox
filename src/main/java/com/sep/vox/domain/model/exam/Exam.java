@@ -22,6 +22,10 @@ public class Exam {
     private OffsetDateTime openAt;
     private OffsetDateTime closeAt;
     private UUID assessmentPolicyId;
+    private boolean requiresOtp;
+    // H.1: tự động tính = MAX(paperDuration) trên mọi ExamPaper của kỳ thi, không phải
+    // ngưỡng người dùng nhập - xem recalculateExamTimeDuration ở các use case tạo/sửa paper.
+    private Integer examTimeDurationSecond;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
     private UUID createdBy;
@@ -30,8 +34,8 @@ public class Exam {
     public Exam() {}
 
     public Exam(UUID id, UUID blueprintId, UUID blueprintVersionId, String code, String name, String description, UUID schoolId, UUID languageId,
-            ExamKind kind, ExamDeliveryMode deliveryMode, ExamStatus status, Integer maxAttempt, ResultDecisionMethod resultDecisionMethod, ExamRequiredStreamType requiredStreamType, ExamStreamTypePermission streamTypePermission, 
-            OffsetDateTime openAt, OffsetDateTime closeAt, UUID assessmentPolicyId,
+            ExamKind kind, ExamDeliveryMode deliveryMode, ExamStatus status, Integer maxAttempt, ResultDecisionMethod resultDecisionMethod,ExamRequiredStreamType requiredStreamType, ExamStreamTypePermission streamTypePermission, 
+            OffsetDateTime openAt, OffsetDateTime closeAt, UUID assessmentPolicyId, boolean requiresOtp,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.blueprintId = blueprintId;
@@ -51,6 +55,7 @@ public class Exam {
         this.openAt = openAt;
         this.closeAt = closeAt;
         this.assessmentPolicyId = assessmentPolicyId;
+        this.requiresOtp = requiresOtp;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
@@ -58,8 +63,8 @@ public class Exam {
     }
 
     public Exam(UUID blueprintId, UUID blueprintVersionId, String code, String name, String description, UUID schoolId, UUID languageId, ExamKind kind,
-            ExamDeliveryMode deliveryMode, ExamStatus status, Integer maxAttempt, ResultDecisionMethod resultDecisionMethod, ExamRequiredStreamType requiredStreamType, ExamStreamTypePermission streamTypePermission, 
-            OffsetDateTime openAt, OffsetDateTime closeAt, UUID assessmentPolicyId, OffsetDateTime createdAt,
+            ExamDeliveryMode deliveryMode, ExamStatus status, Integer maxAttempt, ResultDecisionMethod resultDecisionMethod,
+            OffsetDateTime openAt, OffsetDateTime closeAt, UUID assessmentPolicyId, boolean requiresOtp, OffsetDateTime createdAt,ExamRequiredStreamType requiredStreamType, ExamStreamTypePermission streamTypePermission, 
             OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.blueprintId = blueprintId;
         this.blueprintVersionId = blueprintVersionId;
@@ -78,6 +83,7 @@ public class Exam {
         this.openAt = openAt;
         this.closeAt = closeAt;
         this.assessmentPolicyId = assessmentPolicyId;
+        this.requiresOtp = requiresOtp;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
@@ -244,21 +250,38 @@ public class Exam {
         this.blueprintVersionId = blueprintVersionId;
     }
 
-    public ExamRequiredStreamType getRequiredStreamType() {
-        return requiredStreamType;
+    public boolean isRequiresOtp() {
+        return requiresOtp;
     }
 
-    public void setRequiredStreamType(ExamRequiredStreamType requiredStreamType) {
-        this.requiredStreamType = requiredStreamType;
+    public void setRequiresOtp(boolean requiresOtp) {
+        this.requiresOtp = requiresOtp;
     }
 
-    public ExamStreamTypePermission getStreamTypePermission() {
-        return streamTypePermission;
+    public Integer getExamTimeDurationSecond() {
+        return examTimeDurationSecond;
     }
 
-    public void setStreamTypePermission(ExamStreamTypePermission streamTypePermission) {
-        this.streamTypePermission = streamTypePermission;
+    public void setExamTimeDurationSecond(Integer examTimeDurationSecond) {
+        this.examTimeDurationSecond = examTimeDurationSecond;
     }
-
     
-}
+        public ExamRequiredStreamType getRequiredStreamType () {
+            return requiredStreamType;
+        }
+
+        public void setRequiredStreamType (ExamRequiredStreamType requiredStreamType){
+            this.requiredStreamType = requiredStreamType;
+        }
+
+        public ExamStreamTypePermission getStreamTypePermission () {
+            return streamTypePermission;
+        }
+
+        public void setStreamTypePermission (ExamStreamTypePermission streamTypePermission){
+            this.streamTypePermission = streamTypePermission;
+        }
+
+
+    }
+

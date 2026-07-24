@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.DeleteExamPaperCommand;
+import com.sep.vox.application.port.input.service.RecalculateExamTimeDurationService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
@@ -18,14 +19,17 @@ public class DeleteExamPaperUseCase implements IUseCase<DeleteExamPaperCommand, 
 
     private final ExamPaperRepository examPaperRepository;
     private final ExamMemberRepository examMemberRepository;
+    private final RecalculateExamTimeDurationService recalculateExamTimeDurationService;
     private final UserContextPort userContextPort;
 
     public DeleteExamPaperUseCase(
             ExamPaperRepository examPaperRepository,
             ExamMemberRepository examMemberRepository,
+            RecalculateExamTimeDurationService recalculateExamTimeDurationService,
             UserContextPort userContextPort) {
         this.examPaperRepository = examPaperRepository;
         this.examMemberRepository = examMemberRepository;
+        this.recalculateExamTimeDurationService = recalculateExamTimeDurationService;
         this.userContextPort = userContextPort;
     }
 
@@ -45,6 +49,7 @@ public class DeleteExamPaperUseCase implements IUseCase<DeleteExamPaperCommand, 
         }
 
         examPaperRepository.deleteById(paper.getId());
+        recalculateExamTimeDurationService.recalculate(paper.getExamId());
         return null;
     }
 }

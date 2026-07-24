@@ -1,5 +1,6 @@
 package com.sep.vox.domain.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -10,6 +11,7 @@ public interface QuestionBankGradeRepository {
     QuestionBankGrade save(QuestionBankGrade grade);
     Optional<QuestionBankGrade> findById(UUID id);
     List<QuestionBankGrade> findByQuestionBankId(UUID questionBankId);
+    List<QuestionBankGrade> findByQuestionBankIdIn(Collection<UUID> questionBankIds);
     boolean existsByQuestionBankIdAndSchoolGradeId(UUID questionBankId, UUID schoolGradeId);
     void deleteById(UUID id);
     void deleteByQuestionBankId(UUID questionBankId);

@@ -16,6 +16,8 @@ public record UpdateExamRequest(
     @Min(value = 1, message = "Số lượt thi tối đa phải lớn hơn 0")
     Integer maxAttempt,
 
-    ResultDecisionMethod resultDecisionMethod
+    ResultDecisionMethod resultDecisionMethod,
+
+    Boolean requiresOtp
 ) {
 }

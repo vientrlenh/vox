@@ -22,6 +22,7 @@ enum ResultDecisionMethod {
     LATEST
     AVERAGE
     FIRST
+    LOWEST
 }
 
 enum ExamMemberRole {
@@ -59,12 +60,22 @@ enum ExamScheduleStatus {
 
 enum ExamCandidateStatus {
     ASSIGNED
+    ATTENDED
     ABSENT
     COMPLETED
     EXEMPTED
     CANCELLED
 }
 
+enum ExamSessionStatus {
+    IN_PROGRESS
+    SUBMITTED
+    INTERRUPTED
+    GRADING
+    GRADED
+    EXPIRED
+    GRADING_FAILED
+}
 enum ExamSecurePoolStatus {
     SEALED
     RELEASED
@@ -124,6 +135,7 @@ type ExamPaperSection {
     order: Int!
     title: String
     instruction: String
+    weight: Float
     sectionTimeLimitSeconds: Int
     createdAt: String
     updatedAt: String
@@ -139,6 +151,7 @@ type ExamPaper {
     code: String!
     variant: Int!
     status: ExamPaperStatus!
+    timeDurationSeconds: Int
     createdAt: String
     updatedAt: String
     createdBy: ID
@@ -165,7 +178,9 @@ type Exam {
     openAt: String
     closeAt: String
     assessmentPolicyId: ID
+    requiresOtp: Boolean!
     papersLocked: Boolean
+    examTimeDurationSecond: Int
     createdAt: String
     updatedAt: String
     createdBy: ID
@@ -299,17 +314,214 @@ type ExamCandidate {
     id: ID!
     examId: ID!
     studentId: ID!
+    latestSessionId: ID
+    attempts: [ExamAttemptSummary!]!
+    officialAttempt: ExamAttemptSummary
+    officialScore: Float
     assignedPaperId: ID
     scheduleId: ID
     status: ExamCandidateStatus!
     assignedAt: String
     updatedAt: String
+    blockedAt: String
     student: User
     assignedPaper: ExamPaper
     schedule: ExamSchedule
     exam: Exam
 }
 
+type ProctorScheduleSummary {
+    scheduleId: ID!
+    examId: ID!
+    examName: String
+    schoolRoomId: ID
+    roomName: String
+    startDate: String
+    endDate: String
+    status: String
+}
+
+type ProctorCandidateSummary {
+    candidateId: ID!
+    studentId: ID!
+    studentName: String
+    studentEmail: String
+    status: String
+    blockedAt: String
+    sessionId: ID
+    sessionStatus: String
+    sessionFlagged: Boolean!
+}
+
+type ExamAttemptSummary {
+    sessionId: ID!
+    startedAt: String
+    submittedAt: String
+    status: ExamSessionStatus!
+    flagged: Boolean!
+    flagReason: String
+    totalScore: Float
+    rubricResultBandCode: String
+    rubricResultBandName: String
+    resultStatus: ExamCandidateResultStatus
+}
+
+enum ExamCandidateResultStatus {
+    PENDING_REVIEW
+    RELEASED
+    APPEALED
+    RE_GRADING
+    FINAL
+    INVALID
+    RETAKE_REQUIRED
+    PASSED
+    FAILED
+}
+
+type ExamSession {
+    id: ID!
+    examId: ID!
+    candidateId: ID!
+    paperId: ID!
+    startedAt: String
+    submittedAt: String
+    status: ExamSessionStatus!
+    flagged: Boolean!
+    flagReason: String
+    candidateBlocked: Boolean!
+}
+
+type ExamSessionFollowup {
+    examItemResponseId: ID!
+    followupCount: Int!
+    totalTurns: Int!
+}
+
+type ExamCandidateResultSection {
+    sectionId: ID!
+    title: String
+    score: Float!
+}
+
+type ExamCandidateResultItem {
+    paperItemId: ID!
+    responseId: ID!
+    sectionId: ID!
+    itemScore: Float!
+    weightedScore: Float!
+}
+
+type ExamCandidateResult {
+    id: ID!
+    sessionId: ID!
+    examId: ID!
+    paperId: ID!
+    candidateId: ID!
+    flagged: Boolean!
+    flagReason: String
+    scoreVisible: Boolean!
+    totalScore: Float
+    targetFrameworkBandId: ID
+    targetFrameworkBandCode: String
+    targetFrameworkBandLabel: String
+    rubricResultBandId: ID
+    rubricResultBandCode: String
+    rubricResultBandName: String
+    status: ExamCandidateResultStatus!
+    sections: [ExamCandidateResultSection!]!
+    items: [ExamCandidateResultItem!]!
+}
+
+type ExamItemResponseTurn {
+    id: ID!
+    examItemResponseId: ID!
+    turnOrder: Int!
+    turnType: String!
+    promptText: String
+    audioUrl: String
+    transcript: String
+    durationSeconds: Int
+    wordCount: Int
+    answeredAt: String
+    createdAt: String
+}
+
+type ExamItemResponseDetails {
+    id: ID!
+    sessionId: ID!
+    paperItemId: ID!
+    audioUrl: String
+    durationSeconds: Int
+    transcript: String
+    submittedAt: String
+    turns: [ExamItemResponseTurn!]!
+}
+
+type ExamItemCriterionScore {
+    id: ID!
+    rubricCriterionId: ID
+    criterionCode: String
+    criterionName: String
+    rawScore: Float
+    finalScore: Float
+    rationale: String
+}
+
+type ExamItemEvaluationTurn {
+    id: ID!
+    turnOrder: Int
+    turnType: String
+    promptText: String
+    audioUrl: String
+    transcript: String
+    wordCount: Int
+    durationSeconds: Int
+    asrConfidence: Float
+    pronunciationOverall: String
+    wordFeedback: String
+}
+
+type ExamItemEvaluationDetails {
+    id: ID!
+    responseId: ID!
+    paperItemId: ID!
+    engineType: String
+    gradedByModel: String
+    promptVersion: String
+    rawItemScore: Float
+    itemScore: Float
+    overallConfidence: Float
+    markedInvalid: Boolean!
+    requiresRetake: Boolean!
+    requiresHumanReview: Boolean!
+    reviewReasonCode: String
+    status: String
+    evaluatedAt: String
+    feedbackSummary: String
+    signals: String
+    validity: String
+    suggestions: String
+    criteria: [ExamItemCriterionScore!]!
+    turns: [ExamItemEvaluationTurn!]!
+}
+
+type StudentExamResultSummary {
+    candidateId: ID!
+    examId: ID!
+    examCode: String
+    examName: String
+    sessionId: ID
+    paperId: ID
+    sessionStatus: String
+    sessionFlagged: Boolean!
+    startedAt: String
+    submittedAt: String
+    totalScore: Float
+    resultStatus: String
+    rubricResultBandId: ID
+    rubricResultBandCode: String
+    rubricResultBandName: String
+}
 type ExamRecording {
     id: ID! 
     examSessionId: ID!
@@ -368,10 +580,43 @@ extend type Query {
 
     examSchedules(examId: ID, status: ExamScheduleStatus, startDate: String, endDate: String): [ExamSchedule!]!
 
-    examCandidates(examId: ID!, scheduleId: ID, status: ExamCandidateStatus): [ExamCandidate!]! 
+    examCandidates(examId: ID!, scheduleId: ID, status: ExamCandidateStatus): [ExamCandidate!]!
+
+    examSession(id: ID!): ExamSession
+
+    examSessionResult(sessionId: ID!): ExamCandidateResult
+
+    examSessionFollowups(sessionId: ID!): [ExamSessionFollowup!]!
+
+    myExamResults: [StudentExamResultSummary!]!
+
+    myProctorSchedules: [ProctorScheduleSummary!]!
+
+    myProctorScheduleCandidates(scheduleId: ID!): [ProctorCandidateSummary!]!
+
+    examItemResponse(answerId: ID!): ExamItemResponseDetails
+
+    examItemResponseTurns(answerId: ID!): [ExamItemResponseTurn!]!
+
+    examItemResponseEvaluation(answerId: ID!): ExamItemEvaluationDetails
     records(examSessionId: ID!, streamType: ExamRecordingStreamType): [ExamRecording!]!
 }
 
 extend type Mutation {
     updateExamSchedule(id: ID!, input: UpdateExamScheduleInput!): ID!
+    flagExamSession(sessionId: ID!, reason: String!): ID!
+    forceEndExamSession(sessionId: ID!, reason: String!): ID!
+    unblockExamCandidate(candidateId: ID!, reason: String!): ID!
+    reviewFlaggedExamResult(candidateResultId: ID!, decision: ExamCandidateResultStatus!): ID!
+    releasePendingExamResult(sessionId: ID!): ID!
+    # Chỉ áp dụng khi kết quả đang FINAL (kỳ thi đã RESULTS_PUBLISHED nhưng assessmentPolicy
+    # không có passingScore) -- nhà trường tự chốt PASSED hoặc FAILED thủ công.
+    decideExamCandidateResultOutcome(candidateResultId: ID!, decision: ExamCandidateResultStatus!): ID!
+    retryGradingExamSession(sessionId: ID!): ID!
+    # TEST-ONLY: chấm lại 1 phiên thi bằng AI bất kể trạng thái (kể cả đã GRADED) -- re-publish
+    # grading request từ dữ liệu làm bài đã lưu, evaluation cũ bị ghi đè (upsert). Dùng để kiểm
+    # thử pipeline chấm điểm, không phải luồng nghiệp vụ chính thức.
+    regradeExamSessionForTest(sessionId: ID!): ID!
+    updateExamCandidateStatus(candidateId: ID!, status: ExamCandidateStatus!): ID!
+    updateExamCandidatesAttendance(scheduleId: ID!, candidateIds: [ID!]!): [ExamCandidate!]!
 }

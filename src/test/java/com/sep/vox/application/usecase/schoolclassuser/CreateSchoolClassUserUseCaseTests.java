@@ -110,6 +110,50 @@ class CreateSchoolClassUserUseCaseTests {
     }
 
     @Test
+    void create_should_reactivate_when_membership_inactive() {
+        var currentUserId = UUID.randomUUID();
+        var targetUserId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var classId = UUID.randomUUID();
+        var membershipId = UUID.randomUUID();
+        var command = new CreateSchoolClassUserCommand(schoolId, classId, targetUserId);
+
+        mockValidContext(currentUserId, schoolId, classId, targetUserId);
+        var leftMembership = new SchoolClassUser(
+            membershipId, targetUserId, classId, false, OffsetDateTime.now().minusDays(5),
+            OffsetDateTime.now().minusDays(1), UUID.randomUUID());
+        when(schoolClassUserRepository.findByUserIdAndSchoolClassId(targetUserId, classId))
+            .thenReturn(Optional.of(leftMembership));
+        when(schoolClassUserRepository.save(any(SchoolClassUser.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = useCase.execute(command);
+
+        assertThat(response.schoolClassUserId()).isEqualTo(membershipId);
+        var captor = ArgumentCaptor.forClass(SchoolClassUser.class);
+        verify(schoolClassUserRepository).save(captor.capture());
+        assertThat(captor.getValue().getId()).isEqualTo(membershipId);
+        assertThat(captor.getValue().isActive()).isTrue();
+        assertThat(captor.getValue().getLeftAt()).isNull();
+        assertThat(captor.getValue().getAssignedBy()).isEqualTo(currentUserId);
+    }
+
+    @Test
+    void create_should_throw_duplicated_when_save_hits_unique_violation() {
+        var currentUserId = UUID.randomUUID();
+        var targetUserId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var classId = UUID.randomUUID();
+        var command = new CreateSchoolClassUserCommand(schoolId, classId, targetUserId);
+
+        mockValidContext(currentUserId, schoolId, classId, targetUserId);
+        when(schoolClassUserRepository.findByUserIdAndSchoolClassId(targetUserId, classId)).thenReturn(Optional.empty());
+        when(schoolClassUserRepository.save(any(SchoolClassUser.class)))
+            .thenThrow(new org.springframework.dao.DataIntegrityViolationException("unique violation"));
+
+        assertThrows(DuplicatedException.class, () -> useCase.execute(command));
+    }
+
+    @Test
     void create_should_throw_when_class_not_found() {
         var currentUserId = UUID.randomUUID();
         var targetUserId = UUID.randomUUID();

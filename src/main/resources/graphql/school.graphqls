@@ -249,8 +249,8 @@ extend type Query {
     schoolClassUsers(schoolClassId: ID!, page: Int = 1, size: Int = 20): SchoolClassUserPage!
     schoolClassesByUser(schoolId: ID!, userId: ID!, status: String, page: Int = 1, size: Int = 20): SchoolClassPage!
     mySchoolClasses(schoolId: ID!, status: String, page: Int! = 1, size: Int! = 10): SchoolClassPage!
-    schoolGrades(schoolId: ID!, schoolGradeLevelId: ID, page: Int, size: Int): SchoolGradePage
-    schoolGrade(id: ID!): SchoolGrade
+    schoolGrades(schoolId: ID!, schoolGradeLevelId: ID, status: String, page: Int, size: Int): SchoolGradePage
+    schoolGrade(schoolId: ID!, id: ID!): SchoolGrade
     schoolGradeLevels(schoolId: ID!, page: Int! = 1, size: Int! = 20, search: String, status: String): SchoolGradeLevelPage!
     schoolGradeLevel(schoolId: ID!, gradeLevelId: ID!): SchoolGradeLevel
     schoolDirectoryCursorPage(cursor: ID, limit: Int! = 10): SchoolDirectoryCursorPage

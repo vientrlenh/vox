@@ -15,6 +15,7 @@ public final class ExamItemResponseMapper {
             jpa.getAudioUrl(),
             jpa.getDurationSeconds(),
             jpa.getTranscript(),
+            jpa.getTerminationReason(),
             jpa.getSubmittedAt()
         );
     }
@@ -27,6 +28,7 @@ public final class ExamItemResponseMapper {
             domain.getAudioUrl(),
             domain.getDurationSeconds(),
             domain.getTranscript(),
+            domain.getTerminationReason(),
             domain.getSubmittedAt()
         );
     }

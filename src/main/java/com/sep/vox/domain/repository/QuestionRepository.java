@@ -52,6 +52,13 @@ public interface QuestionRepository {
         boolean systemAdmin,
         boolean schoolAdmin
     );
+    List<Question> findAccessibleByIdIn(
+        java.util.Collection<UUID> ids,
+        UUID currentUserId,
+        UUID currentSchoolId,
+        boolean systemAdmin,
+        boolean schoolAdmin
+    );
     boolean existsUsedInExam(UUID id);
     boolean existsById(UUID id);
     boolean existsByQuestionBankIdAndCode(UUID questionBankId, String code);

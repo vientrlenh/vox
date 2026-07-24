@@ -62,6 +62,16 @@ public class ExamPaperRepositoryImpl implements ExamPaperRepository {
     }
 
     @Override
+    public List<ExamPaper> findByExamIdIn(Collection<UUID> examIds) {
+        if (examIds.isEmpty()) {
+            return List.of();
+        }
+        return springDataExamPaperRepository.findByExamIdInOrderByVariantAsc(examIds).stream()
+            .map(ExamPaperMapper::toDomain)
+            .toList();
+    }
+
+    @Override
     public List<ExamPaper> findByExamIdAndStatus(UUID examId, ExamPaperStatus status) {
         return springDataExamPaperRepository.findByExamIdAndStatusOrderByVariantAsc(examId, status.name()).stream()
             .map(ExamPaperMapper::toDomain)

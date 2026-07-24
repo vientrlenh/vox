@@ -1,7 +1,6 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
 import java.time.OffsetDateTime;
-import java.util.Objects;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -84,14 +83,17 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
             ExamKind.CENTRALIZED,
             ExamDeliveryMode.LAB,
             ExamStatus.DRAFT,
-            Objects.requireNonNullElse(command.maxAttempt(), 1),
-            Objects.requireNonNullElse(command.resultDecisionMethod(), ResultDecisionMethod.HIGHEST), 
-            null, 
-            null, 
+            command.maxAttempt() == null ? 1 : command.maxAttempt(),
+            command.resultDecisionMethod() == null ? ResultDecisionMethod.HIGHEST : command.resultDecisionMethod(),
             parseDateTime(command.openAt()),
             parseDateTime(command.closeAt()),
-            command.assessmentPolicyId(), 
+            command.assessmentPolicyId(),
+            command.requiresOtp() == null || command.requiresOtp(),
             now,
+            // requiredStreamType/streamTypePermission: chưa có input nào set khi tạo exam,
+            // DB cho phép cả 2 cùng NULL (chk_exams_required_stream_type_and_stream_type_permission_valid).
+            null,
+            null,
             now,
             currentUserId,
             currentUserId
@@ -110,7 +112,8 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
             input.closeAt(),
             input.assessmentPolicyId(),
             input.maxAttempt(),
-            input.resultDecisionMethod()
+            input.resultDecisionMethod(),
+            input.requiresOtp()
         );
     }
 

@@ -71,11 +71,14 @@ public interface SpringDataSchoolGradeRepository extends JpaRepository<SchoolGra
         JOIN SchoolGradeLevelJpaEntity l ON l.id = g.schoolGradeLevelId
         WHERE l.schoolId = :schoolId
             AND (:gradeLevelId IS NULL OR g.schoolGradeLevelId = :gradeLevelId)
+            AND (:status IS NULL OR g.status = :status)
+            AND (:status IS NOT NULL OR g.status <> 'ARCHIVED')
         ORDER BY g.startDate DESC
         """)
     Page<SchoolGradeJpaEntity> findAllBySchoolId(
         @Param("schoolId") UUID schoolId,
         @Param("gradeLevelId") UUID gradeLevelId,
+        @Param("status") String status,
         Pageable pageable
     );
 
@@ -107,5 +110,7 @@ public interface SpringDataSchoolGradeRepository extends JpaRepository<SchoolGra
     boolean existsBySchoolIdAndStatus(@Param("schoolId") UUID schoolId, @Param("status") String status);
 
     boolean existsBySchoolGradeLevelId(UUID schoolGradeLevelId);
+
+    boolean existsBySchoolGradeLevelIdAndStatusNot(UUID schoolGradeLevelId, String status);
 
 }

@@ -54,10 +54,15 @@ public class ViewSchoolGradeLevelsUseCase implements IUseCase<ViewSchoolGradeLev
             throw new NotFoundException("Không tìm thấy trường học.");
         }
 
+        // Mặc định ẩn Khối đã xóa mềm: khi không lọc theo trạng thái thì chỉ trả về ACTIVE.
+        // Admin vẫn xem được Khối đã xóa bằng cách truyền status=INACTIVE.
+        var status = parseStatus(input.status());
+        var effectiveStatus = status == null ? SchoolGradeLevelStatus.ACTIVE : status;
+
         var result = schoolGradeLevelRepository.findBySchoolId(
             input.schoolId(),
             StringNormalization.trimAndCollapseSpaces(input.search()),
-            parseStatus(input.status()),
+            effectiveStatus,
             input.page(),
             input.size()
         );
@@ -68,11 +73,13 @@ public class ViewSchoolGradeLevelsUseCase implements IUseCase<ViewSchoolGradeLev
         if (!userRepository.existsByIdAndStatus(userId, UserStatus.ACTIVE)) {
             throw new UnauthorizedException("Tài khoản không tồn tại hoặc đã bị khóa.");
         }
-        schoolUserRepository.findSchoolIdByUserId(userId).ifPresent(userSchoolId -> {
+        if (!userContextPort.isSystemAdmin()) {
+            UUID userSchoolId = schoolUserRepository.findSchoolIdByUserId(userId)
+                .orElseThrow(() -> new ForbiddenException("Bạn không có quyền xem khối học của trường khác."));
             if (!userSchoolId.equals(targetSchoolId)) {
                 throw new ForbiddenException("Bạn không có quyền xem khối học của trường khác.");
             }
-        });
+        }
     }
 
     private SchoolGradeLevelStatus parseStatus(String status) {

@@ -8,12 +8,12 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateExamPaperItemCommand;
+import com.sep.vox.application.port.input.service.RecalculateExamTimeDurationService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.usecase.exam.ExamQuestionSecureLockService;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.ExamPaperItemDto;
 import com.sep.vox.domain.mapper.ExamPaperItemDtoMapper;
-import com.sep.vox.domain.model.exam.ExamBlueprintSlotType;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamPaperStatus;
@@ -22,7 +22,6 @@ import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
 import com.sep.vox.domain.model.question.QuestionSharing;
 import com.sep.vox.domain.model.question.QuestionStatus;
-import com.sep.vox.domain.repository.ExamBlueprintSlotRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamPaperItemRepository;
 import com.sep.vox.domain.repository.ExamPaperRepository;
@@ -37,34 +36,34 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
     private final ExamRepository examRepository;
     private final ExamPaperRepository examPaperRepository;
     private final ExamPaperItemRepository examPaperItemRepository;
-    private final ExamBlueprintSlotRepository examBlueprintSlotRepository;
     private final ExamMemberRepository examMemberRepository;
     private final QuestionRepository questionRepository;
     private final QuestionCollaboratorRepository questionCollaboratorRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final ExamQuestionSecureLockService examQuestionSecureLockService;
+    private final RecalculateExamTimeDurationService recalculateExamTimeDurationService;
     private final UserContextPort userContextPort;
 
     public UpdateExamPaperItemUseCase(
             ExamRepository examRepository,
             ExamPaperRepository examPaperRepository,
             ExamPaperItemRepository examPaperItemRepository,
-            ExamBlueprintSlotRepository examBlueprintSlotRepository,
             ExamMemberRepository examMemberRepository,
             QuestionRepository questionRepository,
             QuestionCollaboratorRepository questionCollaboratorRepository,
             SchoolUserRepository schoolUserRepository,
             ExamQuestionSecureLockService examQuestionSecureLockService,
+            RecalculateExamTimeDurationService recalculateExamTimeDurationService,
             UserContextPort userContextPort) {
         this.examRepository = examRepository;
         this.examPaperRepository = examPaperRepository;
         this.examPaperItemRepository = examPaperItemRepository;
-        this.examBlueprintSlotRepository = examBlueprintSlotRepository;
         this.examMemberRepository = examMemberRepository;
         this.questionRepository = questionRepository;
         this.questionCollaboratorRepository = questionCollaboratorRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.examQuestionSecureLockService = examQuestionSecureLockService;
+        this.recalculateExamTimeDurationService = recalculateExamTimeDurationService;
         this.userContextPort = userContextPort;
     }
 
@@ -94,12 +93,11 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
-        if (item.getBlueprintSlotId() != null) {
-            var slot = examBlueprintSlotRepository.findById(item.getBlueprintSlotId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy slot blueprint"));
-            if (slot.getSlotType() == ExamBlueprintSlotType.FIXED) {
-                throw new IllegalStateException("Slot FIXED không cho phép đổi câu hỏi");
-            }
+        // H.7: CENTRALIZED (và CLASS_TEST đã gắn blueprint) phải khớp y hệt blueprint - mọi
+        // thay đổi câu hỏi/weight phải qua đổi version blueprint, không sửa tay từng item.
+        if (exam.getKind() != ExamKind.CLASS_TEST || exam.getBlueprintId() != null) {
+            throw new IllegalStateException(
+                "Đề thi này gắn với blueprint, không thể sửa câu hỏi trực tiếp - phải qua đổi version blueprint");
         }
 
         var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
@@ -137,6 +135,7 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
         paper.setUpdatedBy(currentUserId);
         examPaperRepository.save(paper);
 
+        recalculateExamTimeDurationService.recalculate(paper.getExamId());
         return ExamPaperItemDtoMapper.toDto(savedItem);
     }
 }

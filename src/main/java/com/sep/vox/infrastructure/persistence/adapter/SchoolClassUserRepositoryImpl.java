@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -48,6 +49,17 @@ public class SchoolClassUserRepositoryImpl implements SchoolClassUserRepository 
     }
 
     @Override
+    public List<SchoolClassUser> findByUserIdIn(Collection<UUID> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return List.of();
+        }
+        return springDataSchoolClassUserRepository.findByUserIdIn(userIds)
+            .stream()
+            .map(SchoolClassUserMapper::toDomain)
+            .toList();
+    }
+
+    @Override
     public PageResult<SchoolClassUser> findBySchoolClassId(UUID schoolClassId, int page, int size) {
         var pageRequest = PageRequest.of(page - 1, size);
         var pageable = springDataSchoolClassUserRepository.findBySchoolClassId(schoolClassId, pageRequest);
@@ -70,6 +82,16 @@ public class SchoolClassUserRepositoryImpl implements SchoolClassUserRepository 
         var entity = SchoolClassUserMapper.toJpa(schoolClassUser);
         var saved = springDataSchoolClassUserRepository.save(entity);
         return SchoolClassUserMapper.toDomain(saved);
+    }
+
+    @Override
+    public int deactivateByGradeId(UUID schoolGradeId, OffsetDateTime leftAt) {
+        return springDataSchoolClassUserRepository.deactivateByGradeId(schoolGradeId, leftAt);
+    }
+
+    @Override
+    public int deactivateBySchoolClassId(UUID schoolClassId, OffsetDateTime leftAt) {
+        return springDataSchoolClassUserRepository.deactivateBySchoolClassId(schoolClassId, leftAt);
     }
 
     @Override

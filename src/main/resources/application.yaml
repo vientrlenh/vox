@@ -56,6 +56,13 @@ spring:
         "[spring.json.trusted.packages]": "com.sep.vox"
         "[session.timeout.ms]": 30000
         "[heartbeat.interval.ms]": 10000
+        # Python producers (agents' aiokafka) never send Spring's type-info headers, so
+        # JacksonJsonDeserializer has nothing to fall back to and throws IllegalStateException
+        # before any @KafkaListener body runs. Fall back to a generic map when headers are
+        # absent; listeners already treat record.value() as Object and re-parse it themselves
+        # (jsonMapper.valueToTree(...).treeToValue(...)). Headers are still honored when present,
+        # so Java-to-Java producers/consumers (e.g. DummyUserRegisteredExternalEvent) are unaffected.
+        "[spring.json.value.default.type]": "java.util.LinkedHashMap"
 
     listener:
       ack-mode: MANUAL_IMMEDIATE # commit right away
@@ -168,6 +175,18 @@ app:
           topic:
             user-registered: ${KAFKA_USER_TOPIC:user.registered.v1}
           group-id: ${KAFKA_USER_GROUP_ID:vox-user}
+        answer-turns:
+          topic:
+            answer-turns-recorded: ${KAFKA_ANSWER_TURNS_TOPIC:answer-turns-recorded}
+          group-id: ${KAFKA_ANSWER_TURNS_GROUP_ID:vox-answer-turns}
+        exam-evaluation:
+          topic:
+            exam-attempt-evaluation-completed: ${KAFKA_EXAM_EVALUATION_COMPLETED_TOPIC:exam-attempt-evaluation-completed}
+          group-id: ${KAFKA_EXAM_EVALUATION_GROUP_ID:vox-exam-evaluation}
+        question-asset-analysis:
+          topic:
+            question-asset-analysis-completed: ${KAFKA_QUESTION_ASSET_ANALYSIS_COMPLETED_TOPIC:question-asset-analysis-completed}
+          group-id: ${KAFKA_QUESTION_ASSET_ANALYSIS_GROUP_ID:vox-question-asset-analysis}
 
 system-admin:
   email: ${SYS_ADMIN_EMAIL}

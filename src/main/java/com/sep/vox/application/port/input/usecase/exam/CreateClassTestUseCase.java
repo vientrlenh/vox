@@ -1,7 +1,6 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -19,6 +18,7 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.ClassTestSectionCommand;
 import com.sep.vox.application.port.input.command.CreateClassTestCommand;
 import com.sep.vox.application.port.input.command.UpdateExamStatusCommand;
+import com.sep.vox.application.port.input.service.RecalculateExamTimeDurationService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
@@ -39,6 +39,7 @@ import com.sep.vox.domain.model.exam.ExamPaper;
 import com.sep.vox.domain.model.exam.ExamPaperItem;
 import com.sep.vox.domain.model.exam.ExamPaperSection;
 import com.sep.vox.domain.model.exam.ExamPaperStatus;
+import com.sep.vox.domain.model.exam.ExamSchedule;
 import com.sep.vox.domain.model.exam.ExamSecurePoolReleaseMode;
 import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.model.exam.ResultDecisionMethod;
@@ -53,9 +54,11 @@ import com.sep.vox.domain.repository.ExamPaperItemRepository;
 import com.sep.vox.domain.repository.ExamPaperRepository;
 import com.sep.vox.domain.repository.ExamPaperSectionRepository;
 import com.sep.vox.domain.repository.ExamRepository;
+import com.sep.vox.domain.repository.ExamScheduleRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
 import com.sep.vox.domain.model.question.QuestionSharing;
+import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.repository.QuestionCollaboratorRepository;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.repository.SchoolClassRepository;
@@ -79,10 +82,12 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
     private final ExamPaperRepository examPaperRepository;
     private final ExamPaperSectionRepository examPaperSectionRepository;
     private final ExamPaperItemRepository examPaperItemRepository;
+    private final ExamScheduleRepository examScheduleRepository;
     private final ExamMemberRepository examMemberRepository;
     private final ExamCandidateRepository examCandidateRepository;
     private final ExamQuestionSecureLockService examQuestionSecureLockService;
     private final UpdateExamStatusUseCase updateExamStatusUseCase;
+    private final RecalculateExamTimeDurationService recalculateExamTimeDurationService;
     private final UserContextPort userContextPort;
 
     public CreateClassTestUseCase(
@@ -99,10 +104,12 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             ExamPaperRepository examPaperRepository,
             ExamPaperSectionRepository examPaperSectionRepository,
             ExamPaperItemRepository examPaperItemRepository,
+            ExamScheduleRepository examScheduleRepository,
             ExamMemberRepository examMemberRepository,
             ExamCandidateRepository examCandidateRepository,
             ExamQuestionSecureLockService examQuestionSecureLockService,
             UpdateExamStatusUseCase updateExamStatusUseCase,
+            RecalculateExamTimeDurationService recalculateExamTimeDurationService,
             UserContextPort userContextPort) {
         this.schoolClassRepository = schoolClassRepository;
         this.schoolClassUserRepository = schoolClassUserRepository;
@@ -117,10 +124,12 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         this.examPaperRepository = examPaperRepository;
         this.examPaperSectionRepository = examPaperSectionRepository;
         this.examPaperItemRepository = examPaperItemRepository;
+        this.examScheduleRepository = examScheduleRepository;
         this.examMemberRepository = examMemberRepository;
         this.examCandidateRepository = examCandidateRepository;
         this.examQuestionSecureLockService = examQuestionSecureLockService;
         this.updateExamStatusUseCase = updateExamStatusUseCase;
+        this.recalculateExamTimeDurationService = recalculateExamTimeDurationService;
         this.userContextPort = userContextPort;
     }
 
@@ -163,16 +172,18 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         // để bài trên lớp thực sự tự do, không phụ thuộc lớp blueprint khi không dùng blueprint dùng chung.
         var exam = createExam(null, null, schoolClass, command, currentUserId, now);
         var paper = createPaper(exam, null, now, currentUserId);
+        var schedule = createDraftSchedule(exam, currentUserId, now);
+        var sectionWeights = ClassTestSectionWeightPolicy.resolveRequestedWeights(command.sections());
 
         for (int i = 0; i < command.sections().size(); i++) {
             var sectionCommand = command.sections().get(i);
+            var questionWeights = ClassTestSectionWeightPolicy.resolveQuestionWeights(sectionCommand.questions());
             List<Question> questions = new ArrayList<>();
-            for (var questionId : sectionCommand.questionIds()) {
+            for (var questionCommand : sectionCommand.questions()) {
                 var question = questionRepository
-                    .findAccessibleById(questionId, currentUserId, schoolClass.getSchoolId(), false, false)
-                    .orElseThrow(() -> new ForbiddenException("Bạn không có quyền sử dụng câu hỏi " + questionId));
+                    .findAccessibleById(questionCommand.questionId(), currentUserId, schoolClass.getSchoolId(), false, false)
+                    .orElseThrow(() -> new ForbiddenException("Bạn không có quyền sử dụng câu hỏi " + questionCommand.questionId()));
                 validateCanUseQuestion(question, currentUserId);
-                validateQuestionUnlocked(question, currentUserId);
                 questions.add(question);
             }
 
@@ -182,16 +193,18 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
                 sectionCommand.title(),
                 sectionCommand.instruction(),
                 null,
+                sectionWeights.get(i),
                 now,
                 now,
                 currentUserId,
                 currentUserId
             ));
-            createPaperItemsDirect(paperSection, questions, exam.getId(), currentUserId);
+            createPaperItemsDirect(paperSection, questions, questionWeights, exam.getId(), currentUserId);
         }
 
         examMemberRepository.save(new ExamMember(exam.getId(), currentUserId, ExamMemberRole.CHAIR, now, currentUserId));
-        var candidateCount = assignCandidates(exam, paper, schoolClass.getId(), currentUserId, now);
+        var candidateCount = assignCandidates(exam, paper, schedule.getId(), schoolClass.getId(), currentUserId, now);
+        recalculateExamTimeDurationService.recalculate(exam.getId());
         var examDto = scheduleAndMaybeStart(exam, command);
         return new CreateClassTestResponse(examDto, paper.getId(), candidateCount);
     }
@@ -224,24 +237,26 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         }
 
         var slotsBySectionId = examBlueprintSlotRepository.findByBlueprintVersionId(version.getId()).stream()
-            .collect(Collectors.groupingBy(slot -> slot.getSectionId()));
+            .collect(Collectors.groupingBy(ExamBlueprintSlot::getSectionId));
         validateVersionWeights(sections, slotsBySectionId);
 
         var exam = createExam(blueprint.getId(), version.getId(), schoolClass, command, currentUserId, now);
         var paper = createPaper(exam, version.getId(), now, currentUserId);
+        var schedule = createDraftSchedule(exam, currentUserId, now);
 
         for (var section : sections) {
             var slots = slotsBySectionId.getOrDefault(section.getId(), List.of()).stream()
-                .sorted(Comparator.comparingInt(slot -> slot.getOrder()))
+                .sorted(Comparator.comparingInt(ExamBlueprintSlot::getOrder))
                 .toList();
-            validateReusableSlots(slots, currentUserId);
+            validateReusableSlots(slots);
 
             var paperSection = createPaperSection(paper, section, now, currentUserId);
             createPaperItems(paperSection, slots, exam.getId(), currentUserId);
         }
 
         examMemberRepository.save(new ExamMember(exam.getId(), currentUserId, ExamMemberRole.CHAIR, now, currentUserId));
-        var candidateCount = assignCandidates(exam, paper, schoolClass.getId(), currentUserId, now);
+        var candidateCount = assignCandidates(exam, paper, schedule.getId(), schoolClass.getId(), currentUserId, now);
+        recalculateExamTimeDurationService.recalculate(exam.getId());
         var examDto = scheduleAndMaybeStart(exam, command);
         return new CreateClassTestResponse(examDto, paper.getId(), candidateCount);
     }
@@ -268,7 +283,8 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
                 .map(section -> new ClassTestSectionCommand(
                     StringNormalization.trimAndCollapseSpaces(section.title()),
                     StringNormalization.trimAndCollapseSpaces(section.instruction()),
-                    section.questionIds() == null ? List.of() : section.questionIds()
+                    section.weight(),
+                    section.questions() == null ? List.of() : section.questions()
                 ))
                 .toList(),
             input.existingBlueprintId(),
@@ -295,11 +311,11 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         if (hasQuestions) {
             var seenQuestionIds = new java.util.HashSet<UUID>();
             for (var section : command.sections()) {
-                if (section.questionIds() == null || section.questionIds().isEmpty()) {
+                if (section.questions() == null || section.questions().isEmpty()) {
                     throw new IllegalStateException("Mỗi section phải có ít nhất 1 câu hỏi");
                 }
-                for (var questionId : section.questionIds()) {
-                    if (!seenQuestionIds.add(questionId)) {
+                for (var questionCommand : section.questions()) {
+                    if (!seenQuestionIds.add(questionCommand.questionId())) {
                         throw new IllegalStateException("Một câu hỏi không thể xuất hiện nhiều lần trong cùng 1 bài kiểm tra");
                     }
                 }
@@ -310,9 +326,9 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
     private void createPaperItemsDirect(
             ExamPaperSection paperSection,
             List<Question> questions,
+            List<BigDecimal> questionWeights,
             UUID examId,
             UUID currentUserId) {
-        var weights = distributeEqualWeights(questions.size());
         for (int i = 0; i < questions.size(); i++) {
             examPaperItemRepository.save(new ExamPaperItem(
                 null,
@@ -320,7 +336,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
                 paperSection.getPaperId(),
                 questions.get(i).getId(),
                 i + 1,
-                weights.get(i)
+                questionWeights.get(i)
             ));
             examQuestionSecureLockService.lockQuestionForExam(
                 questions.get(i).getId(),
@@ -329,18 +345,6 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
                 currentUserId
             );
         }
-    }
-
-    private List<BigDecimal> distributeEqualWeights(int count) {
-        var weights = new ArrayList<BigDecimal>();
-        var perItem = BigDecimal.ONE.divide(BigDecimal.valueOf(count), 2, RoundingMode.DOWN);
-        var runningSum = BigDecimal.ZERO;
-        for (int i = 0; i < count - 1; i++) {
-            weights.add(perItem);
-            runningSum = runningSum.add(perItem);
-        }
-        weights.add(BigDecimal.ONE.subtract(runningSum));
-        return weights;
     }
 
     private Exam createExam(
@@ -371,12 +375,15 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             maxAttempt,
             command.examTimeDurationSecond(),
             command.resultDecisionMethod() == null ? ResultDecisionMethod.HIGHEST : command.resultDecisionMethod(),
-            null, 
-            null, 
             openAt,
             closeAt,
             null,
+            false,
             now,
+            // requiredStreamType/streamTypePermission: chưa có input nào set khi tạo exam,
+            // DB cho phép cả 2 cùng NULL (chk_exams_required_stream_type_and_stream_type_permission_valid).
+            null,
+            null,
             now,
             currentUserId,
             currentUserId
@@ -389,12 +396,29 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             blueprintVersionId,
             exam.getCode() + "-P1",
             1,
-            ExamPaperStatus.LOCKED,
+            ExamPaperStatus.DRAFT,
+            0,
             now,
             now,
             currentUserId,
             currentUserId
         ));
+    }
+
+    private ExamSchedule createDraftSchedule(Exam exam, UUID currentUserId, OffsetDateTime now) {
+        if (exam.getOpenAt() == null || exam.getCloseAt() == null) {
+            throw new IllegalStateException("Bài kiểm tra trên lớp phải có thời gian mở bài và đóng bài");
+        }
+
+        var schedule = ExamSchedule.createFresh(
+            exam.getId(),
+            null,
+            exam.getOpenAt(),
+            exam.getCloseAt(),
+            currentUserId,
+            now
+        );
+        return examScheduleRepository.save(schedule);
     }
 
     private ExamPaperSection createPaperSection(ExamPaper paper, ExamBlueprintSection section, OffsetDateTime now, UUID currentUserId) {
@@ -404,6 +428,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             section.getTitle(),
             section.getInstruction(),
             section.getSectionTimeLimitSeconds(),
+            section.getSectionWeight(),
             now,
             now,
             currentUserId,
@@ -418,6 +443,22 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             UUID currentUserId) {
         for (var slot : slots) {
             var questionId = slot.getSlotType() == ExamBlueprintSlotType.FIXED ? slot.getFixedQuestionId() : null;
+            if (questionId != null) {
+                var question = questionRepository.findById(questionId)
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi cố định trong blueprint"));
+                if (question.getStatus() != QuestionStatus.PUBLISHED) {
+                    // Câu hỏi fixed đã bị archived sau khi blueprint publish — để trống ô này, CHAIR tự chọn câu khác qua picker.
+                    examPaperItemRepository.save(new ExamPaperItem(
+                        null,
+                        paperSection.getId(),
+                        paperSection.getPaperId(),
+                        null,
+                        slot.getOrder(),
+                        slot.getWeight()
+                    ));
+                    continue;
+                }
+            }
             examPaperItemRepository.save(new ExamPaperItem(
                 slot.getId(),
                 paperSection.getId(),
@@ -442,7 +483,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
     private void validateVersionWeights(List<ExamBlueprintSection> sections, Map<UUID, List<ExamBlueprintSlot>> slotsBySectionId) {
         var sectionWeightSum = sections.stream()
             .map(section -> section.getSectionWeight() == null ? BigDecimal.ZERO : section.getSectionWeight())
-            .reduce(BigDecimal.ZERO, (left, right) -> left.add(right));
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
         if (sectionWeightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
             throw new IllegalStateException(
                 "Blueprint version đã chốt có tổng trọng số section không hợp lệ, không thể tạo bài kiểm tra");
@@ -451,7 +492,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             var slots = slotsBySectionId.getOrDefault(section.getId(), List.of());
             var slotWeightSum = slots.stream()
                 .map(slot -> slot.getWeight() == null ? BigDecimal.ZERO : slot.getWeight())
-                .reduce(BigDecimal.ZERO, (left, right) -> left.add(right));
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
             if (slotWeightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
                 throw new IllegalStateException(
                     "Phần \"" + section.getTitle() + "\" trong blueprint có tổng trọng số ô câu hỏi không hợp lệ, không thể tạo bài kiểm tra");
@@ -459,7 +500,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         }
     }
 
-    private void validateReusableSlots(List<ExamBlueprintSlot> slots, UUID currentUserId) {
+    private void validateReusableSlots(List<ExamBlueprintSlot> slots) {
         for (var slot : slots) {
             if (slot.getSlotType() == ExamBlueprintSlotType.SELECTION) {
                 continue;
@@ -467,9 +508,6 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             if (slot.getFixedQuestionId() == null) {
                 throw new IllegalStateException("Ô câu hỏi cố định trong blueprint không có câu hỏi nào được gán");
             }
-            var question = questionRepository.findById(slot.getFixedQuestionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi cố định trong blueprint"));
-            validateQuestionUnlocked(question, currentUserId);
         }
     }
 
@@ -484,14 +522,13 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         }
     }
 
-    private void validateQuestionUnlocked(Question question, UUID currentUserId) {
-        boolean isOwner = currentUserId.equals(question.getCreatedBy());
-        if (question.isLocked() && !isOwner) {
-            throw new IllegalStateException("Câu hỏi " + question.getCode() + " đang bị khóa bởi kỳ thi khác");
-        }
-    }
-
-    private int assignCandidates(Exam exam, ExamPaper paper, UUID schoolClassId, UUID currentUserId, OffsetDateTime now) {
+    private int assignCandidates(
+            Exam exam,
+            ExamPaper paper,
+            UUID scheduleId,
+            UUID schoolClassId,
+            UUID currentUserId,
+            OffsetDateTime now) {
         var roster = schoolClassUserRepository.findBySchoolClassId(schoolClassId, 1, MAX_CLASS_ROSTER_SIZE).content();
         var candidates = new ArrayList<ExamCandidate>();
         for (var classUser : roster) {
@@ -507,10 +544,11 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
                 exam.getId(),
                 classUser.getUserId(),
                 paper.getId(),
-                null,
+                scheduleId,
                 ExamCandidateStatus.ASSIGNED,
                 now,
                 now,
+                null,
                 currentUserId,
                 currentUserId
             ));
@@ -519,8 +557,8 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
     }
 
     private void validateOpenClose(String openAt, String closeAt) {
-        if (openAt == null || closeAt == null) {
-            return;
+        if (openAt == null || openAt.isBlank() || closeAt == null || closeAt.isBlank()) {
+            throw new IllegalStateException("Bài kiểm tra trên lớp phải có thời gian mở bài và đóng bài");
         }
         if (!OffsetDateTime.parse(openAt).isBefore(OffsetDateTime.parse(closeAt))) {
             throw new IllegalStateException("Thời gian mở bài phải nhỏ hơn thời gian đóng bài");

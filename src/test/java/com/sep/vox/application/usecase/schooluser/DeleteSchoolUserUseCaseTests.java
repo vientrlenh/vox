@@ -56,7 +56,7 @@ public class DeleteSchoolUserUseCaseTests {
         var command = new DeleteSchoolUserCommand(schoolId, targetId);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
-        when(userRepository.findById(callerId)).thenReturn(Optional.of(caller));
+        when(userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(Optional.of(caller));
         when(userRepository.findById(targetId)).thenReturn(Optional.of(target));
         when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -71,7 +71,7 @@ public class DeleteSchoolUserUseCaseTests {
         var command = new DeleteSchoolUserCommand(schoolId, UUID.randomUUID());
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
-        when(userRepository.findById(callerId)).thenReturn(Optional.of(caller));
+        when(userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(Optional.of(caller));
 
         assertThrows(IllegalArgumentException.class, () -> deleteSchoolUserUseCase.execute(command));
         verify(userRepository, never()).save(any(User.class));
@@ -84,7 +84,7 @@ public class DeleteSchoolUserUseCaseTests {
         var command = new DeleteSchoolUserCommand(schoolId, targetId);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
-        when(userRepository.findById(callerId)).thenReturn(Optional.of(caller));
+        when(userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(Optional.of(caller));
         when(userRepository.findById(targetId)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> deleteSchoolUserUseCase.execute(command));
@@ -99,7 +99,7 @@ public class DeleteSchoolUserUseCaseTests {
         var command = new DeleteSchoolUserCommand(schoolId, targetId);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
-        when(userRepository.findById(callerId)).thenReturn(Optional.of(caller));
+        when(userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(Optional.of(caller));
         when(userRepository.findById(targetId)).thenReturn(Optional.of(target));
 
         assertThrows(NotFoundException.class, () -> deleteSchoolUserUseCase.execute(command));
@@ -114,13 +114,56 @@ public class DeleteSchoolUserUseCaseTests {
         var command = new DeleteSchoolUserCommand(schoolId, targetId);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
-        when(userRepository.findById(callerId)).thenReturn(Optional.of(caller));
+        when(userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(Optional.of(caller));
         when(userRepository.findById(targetId)).thenReturn(Optional.of(target));
         when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 
         deleteSchoolUserUseCase.execute(command);
 
         verify(userRepository).save(argThat(u -> u.getStatus() == UserStatus.DISABLED));
+    }
+
+    @Test
+    void delete_should_reject_self_delete() {
+        var caller = user(callerId, schoolId, UserStatus.ACTIVE);
+        var command = new DeleteSchoolUserCommand(schoolId, callerId);
+
+        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
+        when(userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(Optional.of(caller));
+
+        assertThrows(IllegalArgumentException.class, () -> deleteSchoolUserUseCase.execute(command));
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void delete_should_throw_when_caller_inactive() {
+        var command = new DeleteSchoolUserCommand(schoolId, UUID.randomUUID());
+
+        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
+        when(userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> deleteSchoolUserUseCase.execute(command));
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void delete_should_end_membership() {
+        var targetId = UUID.randomUUID();
+        var caller = user(callerId, schoolId, UserStatus.ACTIVE);
+        var target = user(targetId, schoolId, UserStatus.ACTIVE);
+        var command = new DeleteSchoolUserCommand(schoolId, targetId);
+
+        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
+        when(userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(Optional.of(caller));
+        when(userRepository.findById(targetId)).thenReturn(Optional.of(target));
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(schoolUserRepository.save(any(SchoolUser.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        deleteSchoolUserUseCase.execute(command);
+
+        // Membership bị kết thúc: endDate không còn ở tương lai xa (100 năm) mà <= hiện tại + biên nhỏ
+        verify(schoolUserRepository).save(argThat(su ->
+            su.getEndDate() != null && su.getEndDate().isBefore(OffsetDateTime.now().plusMinutes(1))));
     }
 
     private User user(UUID id, UUID userSchoolId, UserStatus status) {

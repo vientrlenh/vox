@@ -29,8 +29,10 @@ import com.sep.vox.domain.repository.UserRepository;
 public class AcceptSchoolUserImportUseCase
         implements IUseCase<AcceptSchoolUserImportCommand, Void> {
 
+    // startDate/endDate chỉ bắt buộc với học sinh nên được kiểm tra ở mức từng dòng
+    // (SchoolUserImportCommitHandler), không ép buộc trong mapping cấp file.
     private static final Set<String> REQUIRED_FIELDS = Set.of("email", "fullName", "roleCode", "phone",
-            "dateOfBirth", "startDate", "endDate", "address");
+            "dateOfBirth", "address");
     private static final String USER_TYPE = "USER";
 
     private final ImportSessionRepository importSessionRepository;

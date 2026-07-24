@@ -9,6 +9,7 @@ public record ExamPaperDto(
     String code,
     int variant,
     String status,
+    Integer timeDurationSeconds,
     String createdAt,
     String updatedAt,
     UUID createdBy,

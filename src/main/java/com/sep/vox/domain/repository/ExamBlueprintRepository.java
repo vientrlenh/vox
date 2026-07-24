@@ -1,5 +1,7 @@
 package com.sep.vox.domain.repository;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -9,6 +11,7 @@ import com.sep.vox.domain.model.exam.ExamBlueprint;
 public interface ExamBlueprintRepository {
     ExamBlueprint save(ExamBlueprint blueprint);
     Optional<ExamBlueprint> findById(UUID id);
+    List<ExamBlueprint> findByIdIn(Collection<UUID> ids);
     PageResult<ExamBlueprint> findAccessible(
         UUID currentUserId,
         UUID currentSchoolId,

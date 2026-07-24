@@ -46,6 +46,9 @@ public class ExamPaperJpaEntity {
     })
     private String status;
 
+    @Column(name = "time_duration_seconds")
+    private Integer timeDurationSeconds;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 
@@ -60,7 +63,7 @@ public class ExamPaperJpaEntity {
 
     protected ExamPaperJpaEntity() {}
 
-    public ExamPaperJpaEntity(UUID id, UUID examId, UUID blueprintVersionId, String code, int variant, String status, OffsetDateTime createdAt,
+    public ExamPaperJpaEntity(UUID id, UUID examId, UUID blueprintVersionId, String code, int variant, String status, Integer timeDurationSeconds, OffsetDateTime createdAt,
             OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.examId = examId;
@@ -68,6 +71,7 @@ public class ExamPaperJpaEntity {
         this.code = code;
         this.variant = variant;
         this.status = status;
+        this.timeDurationSeconds = timeDurationSeconds;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
@@ -120,6 +124,14 @@ public class ExamPaperJpaEntity {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public Integer getTimeDurationSeconds() {
+        return timeDurationSeconds;
+    }
+
+    public void setTimeDurationSeconds(Integer timeDurationSeconds) {
+        this.timeDurationSeconds = timeDurationSeconds;
     }
 
     public OffsetDateTime getCreatedAt() {

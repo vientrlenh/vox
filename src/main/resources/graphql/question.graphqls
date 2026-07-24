@@ -132,9 +132,11 @@ type QuestionAsset {
     durationSeconds: Int
     altText: String
     type: QuestionAssetType!
-    url: String!
+    url: String
     transcript: String
     description: String
+    transcriptManuallyEdited: Boolean!
+    descriptionManuallyEdited: Boolean!
     order: Int!
 }
 

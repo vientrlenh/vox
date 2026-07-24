@@ -14,8 +14,25 @@ import com.sep.vox.infrastructure.persistence.entity.ExamCandidateJpaEntity;
 
 public interface SpringDataExamCandidateRepository extends JpaRepository<ExamCandidateJpaEntity, UUID> {
     List<ExamCandidateJpaEntity> findByExamId(UUID examId);
+    List<ExamCandidateJpaEntity> findByExamIdIn(Collection<UUID> examIds);
+    Optional<ExamCandidateJpaEntity> findByExamIdAndStudentId(UUID examId, UUID studentId);
+    List<ExamCandidateJpaEntity> findByStudentId(UUID studentId);
+    List<ExamCandidateJpaEntity> findByScheduleId(UUID scheduleId);
     long countByExamId(UUID examId);
     boolean existsByExamIdAndStudentId(UUID examId, UUID studentId);
+
+    interface ExamIdCandidateCount {
+        UUID getExamId();
+        long getCandidateCount();
+    }
+
+    @Query("""
+        SELECT c.examId AS examId, COUNT(c) AS candidateCount
+        FROM ExamCandidateJpaEntity c
+        WHERE c.examId IN :examIds
+        GROUP BY c.examId
+    """)
+    List<ExamIdCandidateCount> countByExamIdIn(@Param("examIds") Collection<UUID> examIds);
 
     @Query("SELECT c.studentId FROM ExamCandidateJpaEntity c WHERE c.examId = :examId")
     List<UUID> findStudentIdsByExamId(UUID examId);

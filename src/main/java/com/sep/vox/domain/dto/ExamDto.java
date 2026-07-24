@@ -20,6 +20,7 @@ public record ExamDto(
     String openAt,
     String closeAt,
     UUID assessmentPolicyId,
+    boolean requiresOtp,
     Boolean papersLocked,
     String createdAt,
     String updatedAt,

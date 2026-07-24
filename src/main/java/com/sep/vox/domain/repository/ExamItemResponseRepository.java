@@ -1,7 +1,17 @@
 package com.sep.vox.domain.repository;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
+import com.sep.vox.domain.model.exam.ExamItemResponse;
+
 public interface ExamItemResponseRepository {
-    int sumDurationSecondsBySessionId(UUID sessionId);
+    Optional<ExamItemResponse> findById(UUID id);
+    boolean existsById(UUID id);
+    ExamItemResponse save(ExamItemResponse response);
+    List<ExamItemResponse> findBySessionId(UUID sessionId);
+    void deleteBySessionId(UUID sessionId);
+        int sumDurationSecondsBySessionId(UUID sessionId);
+
 }

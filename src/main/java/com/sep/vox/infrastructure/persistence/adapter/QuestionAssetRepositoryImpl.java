@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -43,6 +44,21 @@ public class QuestionAssetRepositoryImpl implements QuestionAssetRepository {
         return springDataQuestionAssetRepository.findByQuestionIdOrderByOrderAsc(questionId).stream()
             .map(QuestionAssetMapper::toDomain)
             .toList();
+    }
+
+    @Override
+    public List<QuestionAsset> findByQuestionIdIn(Collection<UUID> questionIds) {
+        if (questionIds.isEmpty()) {
+            return List.of();
+        }
+        return springDataQuestionAssetRepository.findByQuestionIdInOrderByOrderAsc(questionIds).stream()
+            .map(QuestionAssetMapper::toDomain)
+            .toList();
+    }
+
+    @Override
+    public boolean existsByQuestionId(UUID questionId) {
+        return springDataQuestionAssetRepository.existsByQuestionId(questionId);
     }
 
     @Override

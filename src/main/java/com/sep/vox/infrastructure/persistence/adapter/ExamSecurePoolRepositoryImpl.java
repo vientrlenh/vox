@@ -1,5 +1,7 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -35,5 +37,15 @@ public class ExamSecurePoolRepositoryImpl implements ExamSecurePoolRepository {
     public Optional<ExamSecurePool> findByExamId(UUID examId) {
         return springDataExamSecurePoolRepository.findByExamId(examId)
             .map(ExamSecurePoolMapper::toDomain);
+    }
+
+    @Override
+    public List<ExamSecurePool> findByExamIdIn(Collection<UUID> examIds) {
+        if (examIds.isEmpty()) {
+            return List.of();
+        }
+        return springDataExamSecurePoolRepository.findByExamIdIn(examIds).stream()
+            .map(ExamSecurePoolMapper::toDomain)
+            .toList();
     }
 }

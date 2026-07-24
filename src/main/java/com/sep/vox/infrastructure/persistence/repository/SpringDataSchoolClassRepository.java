@@ -30,6 +30,7 @@ public interface SpringDataSchoolClassRepository extends JpaRepository<SchoolCla
         WHERE sc.schoolId = :schoolId
             AND scu.userId = :userId
             AND (:status IS NULL OR sc.status = :status)
+            AND (:status IS NOT NULL OR sc.status <> 'ARCHIVED')
         """)
     Page<SchoolClassJpaEntity> findByUserId(
         @Param("schoolId") UUID schoolId,
@@ -42,6 +43,7 @@ public interface SpringDataSchoolClassRepository extends JpaRepository<SchoolCla
         FROM SchoolClassJpaEntity sc
         WHERE sc.schoolId = :schoolId
             AND (:status IS NULL OR sc.status = :status)
+            AND (:status IS NOT NULL OR sc.status <> 'ARCHIVED')
             AND (:languageId IS NULL OR sc.languageId = :languageId)
             AND (:schoolGradeId IS NULL OR sc.schoolGradeId = :schoolGradeId)
         """)
@@ -60,6 +62,7 @@ public interface SpringDataSchoolClassRepository extends JpaRepository<SchoolCla
             AND (LOWER(sc.code) LIKE :searchPattern
                 OR LOWER(sc.name) LIKE :searchPattern)
             AND (:status IS NULL OR sc.status = :status)
+            AND (:status IS NOT NULL OR sc.status <> 'ARCHIVED')
             AND (:languageId IS NULL OR sc.languageId = :languageId)
             AND (:schoolGradeId IS NULL OR sc.schoolGradeId = :schoolGradeId)
         """)
@@ -117,8 +120,9 @@ public interface SpringDataSchoolClassRepository extends JpaRepository<SchoolCla
                     PARTITION BY sc.school_id 
                     ORDER BY sc.id DESC
                 ) AS rn 
-            FROM school_classes sc 
+            FROM school_classes sc
             WHERE sc.school_id IN (:schoolIds)
+                AND sc.status <> 'ARCHIVED'
         ) ranked
         WHERE ranked.rn BETWEEN :fromRow AND :toRow
         ORDER BY ranked.school_id, ranked.rn
@@ -128,4 +132,19 @@ public interface SpringDataSchoolClassRepository extends JpaRepository<SchoolCla
     boolean existsBySchoolGradeId(UUID schoolGradeId);
 
     boolean existsBySchoolIdAndStatus(UUID schoolId, String status);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+        UPDATE SchoolClassJpaEntity sc
+        SET sc.status = 'ARCHIVED',
+            sc.updatedAt = :updatedAt,
+            sc.updatedBy = :updatedBy
+        WHERE sc.schoolGradeId = :schoolGradeId
+            AND sc.status <> 'ARCHIVED'
+        """)
+    int archiveByGradeId(
+        @Param("schoolGradeId") UUID schoolGradeId,
+        @Param("updatedAt") java.time.OffsetDateTime updatedAt,
+        @Param("updatedBy") UUID updatedBy
+    );
 }

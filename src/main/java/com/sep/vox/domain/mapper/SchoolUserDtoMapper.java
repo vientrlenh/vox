@@ -13,8 +13,8 @@ public final class SchoolUserDtoMapper {
         return new SchoolUserDto(
             schoolUser.getId(),  
             schoolUser.getSchoolId(), 
-            schoolUser.getUserId(), 
-            schoolUser.getStartDate().toString(), 
+            schoolUser.getUserId(),
+            valueOf(schoolUser.getStartDate()),
             valueOf(schoolUser.getEndDate())
         );
     }

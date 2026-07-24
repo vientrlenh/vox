@@ -18,7 +18,11 @@ public record CreateClassTestRequest(
     String name,
 
     String description,
+
+    @NotBlank(message = "Thời gian mở bài là bắt buộc")
     String openAt,
+
+    @NotBlank(message = "Thời gian đóng bài là bắt buộc")
     String closeAt,
 
     @Valid

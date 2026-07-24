@@ -33,4 +33,7 @@ public interface SchoolClassRepository {
     boolean existsBySchoolGradeId(UUID schoolGradeId);
 
     boolean existsBySchoolIdAndStatus(UUID schoolId, String status);
+
+    /** Xóa mềm (ARCHIVED) tất cả lớp thuộc một năm học, bỏ qua lớp đã ARCHIVED. Trả về số dòng bị ảnh hưởng. */
+    int archiveByGradeId(UUID schoolGradeId, OffsetDateTime updatedAt, UUID updatedBy);
 }

@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -41,6 +42,9 @@ public class ExamPaperSectionJpaEntity {
     @Column(name = "section_time_limit_seconds")
     private Integer sectionTimeLimitSeconds;
 
+    @Column(name = "weight", precision = 8, scale = 4)
+    private BigDecimal weight;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 
@@ -56,14 +60,15 @@ public class ExamPaperSectionJpaEntity {
     protected ExamPaperSectionJpaEntity() {}
 
     public ExamPaperSectionJpaEntity(UUID id, UUID paperId, int order, String title, String instruction,
-            Integer sectionTimeLimitSeconds, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy,
-            UUID updatedBy) {
+            Integer sectionTimeLimitSeconds, BigDecimal weight, OffsetDateTime createdAt,
+            OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.paperId = paperId;
         this.order = order;
         this.title = title;
         this.instruction = instruction;
         this.sectionTimeLimitSeconds = sectionTimeLimitSeconds;
+        this.weight = weight;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
@@ -116,6 +121,14 @@ public class ExamPaperSectionJpaEntity {
 
     public void setSectionTimeLimitSeconds(Integer sectionTimeLimitSeconds) {
         this.sectionTimeLimitSeconds = sectionTimeLimitSeconds;
+    }
+
+    public BigDecimal getWeight() {
+        return weight;
+    }
+
+    public void setWeight(BigDecimal weight) {
+        this.weight = weight;
     }
 
     public OffsetDateTime getCreatedAt() {

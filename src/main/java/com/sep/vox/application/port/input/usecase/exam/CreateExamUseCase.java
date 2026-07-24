@@ -87,12 +87,15 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
             Objects.requireNonNullElse(command.maxAttempt(), 1),
             command.examTimeDurationSecond(),
             Objects.requireNonNullElse(command.resultDecisionMethod(), ResultDecisionMethod.HIGHEST),
-            null, 
-            null, 
             parseDateTime(command.openAt()),
             parseDateTime(command.closeAt()),
-            command.assessmentPolicyId(), 
+            command.assessmentPolicyId(),
+            command.requiresOtp() == null || command.requiresOtp(),
             now,
+            // requiredStreamType/streamTypePermission: chưa có input nào set khi tạo exam,
+            // DB cho phép cả 2 cùng NULL (chk_exams_required_stream_type_and_stream_type_permission_valid).
+            null,
+            null,
             now,
             currentUserId,
             currentUserId
@@ -112,7 +115,8 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
             input.assessmentPolicyId(),
             input.maxAttempt(),
             input.examTimeDurationSecond(),
-            input.resultDecisionMethod()
+            input.resultDecisionMethod(),
+            input.requiresOtp()
         );
     }
 

@@ -2,6 +2,7 @@ package com.sep.vox.infrastructure.persistence.adapter;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -30,6 +31,13 @@ public class RubricResultBandRepositoryImpl implements RubricResultBandRepositor
     @Override
     public Optional<RubricResultBand> findById(UUID id) {
         return springDataRubricResultBandRepository.findById(id).map(RubricResultBandMapper::toDomain);
+    }
+
+    @Override
+    public List<RubricResultBand> findByIdIn(Collection<UUID> ids) {
+        return springDataRubricResultBandRepository.findByIdIn(ids).stream()
+                .map(RubricResultBandMapper::toDomain)
+                .toList();
     }
 
     @Override

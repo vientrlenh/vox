@@ -4,5 +4,6 @@ public enum ResultDecisionMethod {
     HIGHEST,
     LATEST,
     AVERAGE,
-    FIRST
+    FIRST,
+    LOWEST
 }

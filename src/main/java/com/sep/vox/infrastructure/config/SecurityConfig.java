@@ -63,7 +63,7 @@ public class SecurityConfig {
     };
 
     private static final List<String> CORS_ALLOWED_PATTERNS = List.of(
-        "http://localhost:5173"
+        "*"
     );
     private static final List<String> CORS_ALLOWED_METHODS = List.of(
         HttpMethod.GET.name(),

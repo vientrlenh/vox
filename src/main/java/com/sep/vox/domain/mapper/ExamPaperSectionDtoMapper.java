@@ -17,6 +17,7 @@ public final class ExamPaperSectionDtoMapper {
             domain.getOrder(),
             domain.getTitle(),
             domain.getInstruction(),
+            domain.getWeight(),
             domain.getSectionTimeLimitSeconds()
         );
     }

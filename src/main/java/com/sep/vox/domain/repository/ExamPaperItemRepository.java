@@ -1,5 +1,6 @@
 package com.sep.vox.domain.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -10,6 +11,8 @@ public interface ExamPaperItemRepository {
     ExamPaperItem save(ExamPaperItem item);
     Optional<ExamPaperItem> findById(UUID id);
     List<ExamPaperItem> findBySectionId(UUID sectionId);
+    List<ExamPaperItem> findBySectionIdIn(Collection<UUID> sectionIds);
+    List<ExamPaperItem> findByPaperId(UUID paperId);
     boolean existsUnassignedItemByPaperId(UUID paperId);
     void deleteById(UUID id);
 }

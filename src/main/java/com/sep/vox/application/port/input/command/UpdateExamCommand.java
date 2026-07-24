@@ -13,6 +13,7 @@ public record UpdateExamCommand(
     UUID assessmentPolicyId,
     Integer maxAttempt,
     Integer examTimeDurationSecond,
-    ResultDecisionMethod resultDecisionMethod
+    ResultDecisionMethod resultDecisionMethod,
+    Boolean requiresOtp
 ) {
 }

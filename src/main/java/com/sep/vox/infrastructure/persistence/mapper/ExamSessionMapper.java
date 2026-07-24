@@ -16,7 +16,9 @@ public final class ExamSessionMapper {
             jpa.getPaperId(),
             jpa.getStartedAt(),
             jpa.getSubmittedAt(),
-            statusFromString(jpa.getStatus())
+            statusFromString(jpa.getStatus()),
+            jpa.isFlagged(),
+            jpa.getFlagReason()
         );
     }
 
@@ -28,7 +30,9 @@ public final class ExamSessionMapper {
             domain.getPaperId(),
             domain.getStartedAt(),
             domain.getSubmittedAt(),
-            domain.getStatus().name()
+            domain.getStatus().name(),
+            domain.isFlagged(),
+            domain.getFlagReason()
         );
     }
 

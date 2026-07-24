@@ -12,15 +12,11 @@ import org.springframework.stereotype.Controller;
 
 import graphql.schema.DataFetchingEnvironment;
 
-import com.sep.vox.application.port.input.query.ViewQuestionBankDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewQuestionDetailsQuery;
-import com.sep.vox.application.port.input.query.ViewQuestionTopicDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewQuestionsQuery;
 import com.sep.vox.application.port.input.usecase.question.ViewQuestionDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.question.ViewQuestionsForExamPaperUseCase;
 import com.sep.vox.application.port.input.usecase.question.ViewQuestionsUseCase;
-import com.sep.vox.application.port.input.usecase.questionbank.ViewQuestionBankDetailsUseCase;
-import com.sep.vox.application.port.input.usecase.questiontopic.ViewQuestionTopicDetailsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.QuestionAssetDto;
@@ -30,16 +26,10 @@ import com.sep.vox.domain.dto.QuestionDto;
 import com.sep.vox.domain.dto.QuestionEvaluationGuideDto;
 import com.sep.vox.domain.dto.QuestionTopicDto;
 import com.sep.vox.domain.dto.UserDto;
-import com.sep.vox.domain.mapper.QuestionAssetDtoMapper;
-import com.sep.vox.domain.mapper.QuestionCollaboratorDtoMapper;
-import com.sep.vox.domain.mapper.QuestionEvaluationGuideDtoMapper;
 import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
 import com.sep.vox.domain.model.question.QuestionSharing;
 import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.model.question.QuestionType;
-import com.sep.vox.domain.repository.QuestionAssetRepository;
-import com.sep.vox.domain.repository.QuestionCollaboratorRepository;
-import com.sep.vox.domain.repository.QuestionEvaluationGuideRepository;
 
 @Controller("graphqlQuestionController")
 public class QuestionController {
@@ -47,31 +37,16 @@ public class QuestionController {
     private final ViewQuestionsUseCase viewQuestionsUseCase;
     private final ViewQuestionsForExamPaperUseCase viewQuestionsForExamPaperUseCase;
     private final ViewQuestionDetailsUseCase viewQuestionDetailsUseCase;
-    private final ViewQuestionBankDetailsUseCase viewQuestionBankDetailsUseCase;
-    private final ViewQuestionTopicDetailsUseCase viewQuestionTopicDetailsUseCase;
-    private final QuestionAssetRepository questionAssetRepository;
-    private final QuestionEvaluationGuideRepository questionEvaluationGuideRepository;
-    private final QuestionCollaboratorRepository questionCollaboratorRepository;
     private final UserContextPort userContextPort;
 
     public QuestionController(
             ViewQuestionsUseCase viewQuestionsUseCase,
             ViewQuestionsForExamPaperUseCase viewQuestionsForExamPaperUseCase,
             ViewQuestionDetailsUseCase viewQuestionDetailsUseCase,
-            ViewQuestionBankDetailsUseCase viewQuestionBankDetailsUseCase,
-            ViewQuestionTopicDetailsUseCase viewQuestionTopicDetailsUseCase,
-            QuestionAssetRepository questionAssetRepository,
-            QuestionEvaluationGuideRepository questionEvaluationGuideRepository,
-            QuestionCollaboratorRepository questionCollaboratorRepository,
             UserContextPort userContextPort) {
         this.viewQuestionsUseCase = viewQuestionsUseCase;
         this.viewQuestionsForExamPaperUseCase = viewQuestionsForExamPaperUseCase;
         this.viewQuestionDetailsUseCase = viewQuestionDetailsUseCase;
-        this.viewQuestionBankDetailsUseCase = viewQuestionBankDetailsUseCase;
-        this.viewQuestionTopicDetailsUseCase = viewQuestionTopicDetailsUseCase;
-        this.questionAssetRepository = questionAssetRepository;
-        this.questionEvaluationGuideRepository = questionEvaluationGuideRepository;
-        this.questionCollaboratorRepository = questionCollaboratorRepository;
         this.userContextPort = userContextPort;
     }
 
@@ -137,49 +112,56 @@ public class QuestionController {
     }
 
     @SchemaMapping(typeName = "Question", field = "bank")
-    public QuestionBankDto bank(QuestionDto source) {
-        return viewQuestionBankDetailsUseCase.execute(new ViewQuestionBankDetailsQuery(source.questionBankId()));
+    public CompletableFuture<QuestionBankDto> bank(QuestionDto source, DataFetchingEnvironment env) {
+        DataLoader<UUID, QuestionBankDto> loader = env.getDataLoader("questionBankById");
+        return loader.load(source.questionBankId());
     }
 
     @SchemaMapping(typeName = "Question", field = "topic")
-    public QuestionTopicDto topic(QuestionDto source) {
-        return viewQuestionTopicDetailsUseCase.execute(new ViewQuestionTopicDetailsQuery(source.questionTopicId()));
+    public CompletableFuture<QuestionTopicDto> topic(QuestionDto source, DataFetchingEnvironment env) {
+        if (source.questionTopicId() == null) {
+            return CompletableFuture.completedFuture(null);
+        }
+        DataLoader<UUID, QuestionTopicDto> loader = env.getDataLoader("questionTopicById");
+        return loader.load(source.questionTopicId());
     }
 
     @SchemaMapping(typeName = "QuestionTopic", field = "bank")
-    public QuestionBankDto topicBank(QuestionTopicDto source) {
-        return viewQuestionBankDetailsUseCase.execute(new ViewQuestionBankDetailsQuery(source.questionBankId()));
+    public CompletableFuture<QuestionBankDto> topicBank(QuestionTopicDto source, DataFetchingEnvironment env) {
+        DataLoader<UUID, QuestionBankDto> loader = env.getDataLoader("questionBankById");
+        return loader.load(source.questionBankId());
     }
 
     @SchemaMapping(typeName = "Question", field = "assets")
-    public List<QuestionAssetDto> assets(QuestionDto source) {
-        return QuestionAssetDtoMapper.toDtoList(questionAssetRepository.findByQuestionId(source.id()));
+    public CompletableFuture<List<QuestionAssetDto>> assets(QuestionDto source, DataFetchingEnvironment env) {
+        DataLoader<UUID, List<QuestionAssetDto>> loader = env.getDataLoader("questionAssetsByQuestionId");
+        return loader.load(source.id());
     }
 
     @SchemaMapping(typeName = "Question", field = "evaluationGuide")
-    public QuestionEvaluationGuideDto evaluationGuide(QuestionDto source) {
-        return questionEvaluationGuideRepository.findByQuestionId(source.id())
-            .map(QuestionEvaluationGuideDtoMapper::toDto)
-            .orElse(null);
+    public CompletableFuture<QuestionEvaluationGuideDto> evaluationGuide(QuestionDto source, DataFetchingEnvironment env) {
+        DataLoader<UUID, QuestionEvaluationGuideDto> loader = env.getDataLoader("questionEvaluationGuideByQuestionId");
+        return loader.load(source.id());
     }
 
     @SchemaMapping(typeName = "Question", field = "collaborators")
-    public List<QuestionCollaboratorDto> collaborators(QuestionDto source) {
-        return QuestionCollaboratorDtoMapper.toDtoList(questionCollaboratorRepository.findByQuestionId(source.id()));
+    public CompletableFuture<List<QuestionCollaboratorDto>> collaborators(QuestionDto source, DataFetchingEnvironment env) {
+        DataLoader<UUID, List<QuestionCollaboratorDto>> loader = env.getDataLoader("questionCollaboratorsByQuestionId");
+        return loader.load(source.id());
     }
 
     @SchemaMapping(typeName = "Question", field = "usableInExam")
-    public boolean usableInExam(QuestionDto source) {
+    public CompletableFuture<Boolean> usableInExam(QuestionDto source, DataFetchingEnvironment env) {
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        if (currentUserId.equals(source.createdBy())) {
-            return true;
+        if (currentUserId.equals(source.createdBy()) || QuestionSharing.SCHOOL_SHARED.name().equals(source.sharing())) {
+            return CompletableFuture.completedFuture(true);
         }
-        if (QuestionSharing.SCHOOL_SHARED.name().equals(source.sharing())) {
-            return true;
-        }
-        return questionCollaboratorRepository.findByQuestionIdAndUserId(source.id(), currentUserId)
-            .map(collaborator -> collaborator.getPermission() == QuestionCollaboratorPermission.CAN_EDIT)
-            .orElse(false);
+        DataLoader<UUID, List<QuestionCollaboratorDto>> loader = env.getDataLoader("questionCollaboratorsByQuestionId");
+        return loader.load(source.id()).thenApply(collaborators -> collaborators.stream()
+            .filter(collaborator -> collaborator.userId().equals(currentUserId))
+            .findFirst()
+            .map(collaborator -> !QuestionCollaboratorPermission.READ_ONLY.name().equals(collaborator.permission()))
+            .orElse(false));
     }
 
     @SchemaMapping(typeName = "QuestionCollaborator", field = "user")

@@ -52,16 +52,18 @@ public class ExamCandidateResultJpaEntity {
     @Column(name = "target_framework_band_id", nullable = false, updatable = false)
     private UUID targetFrameworkBandId;
 
-    @Column(name = "rubric_result_band_id", nullable = false, updatable = false)
+    // Nullable: session bị kicked (blockedAt) TRƯỚC KHI từng được chấm AI lần nào chưa hề có
+    // band/điểm gì để gán (mục B.2) - INVALID lúc đó không có band/score thật.
+    @Column(name = "rubric_result_band_id", nullable = true)
     private UUID rubricResultBandId;
 
-    @Column(name = "total_score", nullable = false, updatable = false, precision = 5, scale = 2)
+    @Column(name = "total_score", nullable = true, precision = 5, scale = 2)
     private BigDecimal totalScore;
 
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
-            name = "chk_exam_candidate_results_status_valid", 
-            constraint = "status IN ('PENDING_REVIEW', 'RELEASED', 'APPEALED', 'RE_GRADING', 'FINAL', 'INVALID', 'RETAKE_REQUIRED')"
+            name = "chk_exam_candidate_results_status_valid",
+            constraint = "status IN ('PENDING_REVIEW', 'RELEASED', 'APPEALED', 'RE_GRADING', 'FINAL', 'INVALID', 'RETAKE_REQUIRED', 'PASSED', 'FAILED')"
         )
     })
     private String status;

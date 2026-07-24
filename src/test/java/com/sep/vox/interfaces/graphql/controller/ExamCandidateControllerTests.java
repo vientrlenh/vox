@@ -15,6 +15,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.port.input.query.ViewExamCandidatesQuery;
+import com.sep.vox.application.port.input.usecase.examcandidate.UpdateExamCandidateStatusUseCase;
+import com.sep.vox.application.port.input.usecase.examcandidate.UpdateExamCandidatesAttendanceUseCase;
 import com.sep.vox.application.port.input.usecase.examcandidate.ViewExamCandidatesUseCase;
 import com.sep.vox.domain.dto.ExamCandidateDto;
 import com.sep.vox.domain.dto.ExamDto;
@@ -37,13 +39,17 @@ class ExamCandidateControllerTests {
     @BeforeEach
     void setUp() {
         viewExamCandidatesUseCase = mock(ViewExamCandidatesUseCase.class);
-        controller = new ExamCandidateController(viewExamCandidatesUseCase);
+        controller = new ExamCandidateController(
+            viewExamCandidatesUseCase,
+            mock(UpdateExamCandidateStatusUseCase.class),
+            mock(UpdateExamCandidatesAttendanceUseCase.class)
+        );
     }
 
     @Test
     void should_delegate_query_to_use_case() {
         var dto = new ExamCandidateDto(UUID.randomUUID(), examId, studentId, null, scheduleId,
-            "ASSIGNED", null, null);
+            "ASSIGNED", null, null, null);
         when(viewExamCandidatesUseCase.execute(any(ViewExamCandidatesQuery.class))).thenReturn(List.of(dto));
 
         var result = controller.examCandidates(examId, scheduleId, ExamCandidateStatus.ASSIGNED);
@@ -57,7 +63,7 @@ class ExamCandidateControllerTests {
     @SuppressWarnings({"unchecked", "rawtypes"})
     void should_resolve_student_via_user_data_loader() {
         var dto = new ExamCandidateDto(UUID.randomUUID(), examId, studentId, null, scheduleId,
-            "ASSIGNED", null, null);
+            "ASSIGNED", null, null, null);
         var user = new UserDto(studentId, "student@example.com", null, "Student",
             null, null, null, null, null, null);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
@@ -74,7 +80,7 @@ class ExamCandidateControllerTests {
     @Test
     void should_return_null_assigned_paper_when_not_assigned() {
         var dto = new ExamCandidateDto(UUID.randomUUID(), examId, studentId, null, scheduleId,
-            "ASSIGNED", null, null);
+            "ASSIGNED", null, null, null);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
 
         var result = controller.assignedPaper(dto, env);
@@ -88,7 +94,7 @@ class ExamCandidateControllerTests {
     void should_resolve_assigned_paper_via_data_loader() {
         var paperId = UUID.randomUUID();
         var dto = new ExamCandidateDto(UUID.randomUUID(), examId, studentId, paperId, scheduleId,
-            "ASSIGNED", null, null);
+            "ASSIGNED", null, null, null);
         var paper = new ExamPaperDto(paperId, examId, null, "P1", 1, "LOCKED", null, null, null, null);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
         DataLoader loader = mock(DataLoader.class);
@@ -105,7 +111,7 @@ class ExamCandidateControllerTests {
     @SuppressWarnings({"unchecked", "rawtypes"})
     void should_resolve_schedule_via_data_loader() {
         var dto = new ExamCandidateDto(UUID.randomUUID(), examId, studentId, null, scheduleId,
-            "ASSIGNED", null, null);
+            "ASSIGNED", null, null, null);
         var schedule = new ExamScheduleDto(scheduleId, examId, UUID.randomUUID(), null, null, "DRAFT", null);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
         DataLoader loader = mock(DataLoader.class);
@@ -121,7 +127,7 @@ class ExamCandidateControllerTests {
     @Test
     void should_return_null_schedule_when_not_assigned() {
         var dto = new ExamCandidateDto(UUID.randomUUID(), examId, studentId, null, null,
-            "ASSIGNED", null, null);
+            "ASSIGNED", null, null, null);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
 
         var result = controller.schedule(dto, env);
@@ -134,9 +140,9 @@ class ExamCandidateControllerTests {
     @SuppressWarnings({"unchecked", "rawtypes"})
     void should_resolve_exam_via_data_loader() {
         var dto = new ExamCandidateDto(UUID.randomUUID(), examId, studentId, null, scheduleId,
-            "ASSIGNED", null, null);
+            "ASSIGNED", null, null, null);
         var exam = new ExamDto(examId, null, null, "E1", "Exam", null, UUID.randomUUID(), UUID.randomUUID(),
-            "CENTRALIZED", "LAB", "DRAFT", null, null, null, null, null, false, null, null, null, null, null);
+            "CENTRALIZED", "LAB", "DRAFT", null, null, null, null, null, false, null, null, null, null, null, null);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
         DataLoader loader = mock(DataLoader.class);
         when(env.<UUID, ExamDto>getDataLoader("examById")).thenReturn(loader);

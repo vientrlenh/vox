@@ -15,11 +15,12 @@ import org.springframework.stereotype.Component;
 
 import com.sep.vox.application.port.input.command.UpdateExamSessionStatusCommand;
 import com.sep.vox.application.port.input.usecase.examevaluation.RecordExamAttemptEvaluationUseCase;
+import com.sep.vox.application.port.input.usecase.examitemresponse.ResolveExamSessionIdByResponseIdUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.UpdateExamSessionStatusUseCase;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
-import com.sep.vox.domain.repository.ExamItemResponseRepository;
 import com.sep.vox.interfaces.kafka.dto.ExamAttemptEvaluationCompletedEventDto;
 import com.sep.vox.interfaces.kafka.dto.ExamAttemptEvaluationFailedEventDto;
+import com.sep.vox.interfaces.kafka.mapper.RecordExamAttemptEvaluationCommandMapper;
 
 import tools.jackson.databind.json.JsonMapper;
 
@@ -30,17 +31,17 @@ public class ExamAttemptEvaluationCompletedConsumer {
 
     private final RecordExamAttemptEvaluationUseCase recordExamAttemptEvaluationUseCase;
     private final UpdateExamSessionStatusUseCase updateExamSessionStatusUseCase;
-    private final ExamItemResponseRepository examItemResponseRepository;
+    private final ResolveExamSessionIdByResponseIdUseCase resolveExamSessionIdByResponseIdUseCase;
     private final JsonMapper jsonMapper;
 
     public ExamAttemptEvaluationCompletedConsumer(
             RecordExamAttemptEvaluationUseCase recordExamAttemptEvaluationUseCase,
             UpdateExamSessionStatusUseCase updateExamSessionStatusUseCase,
-            ExamItemResponseRepository examItemResponseRepository,
+            ResolveExamSessionIdByResponseIdUseCase resolveExamSessionIdByResponseIdUseCase,
             JsonMapper jsonMapper) {
         this.recordExamAttemptEvaluationUseCase = recordExamAttemptEvaluationUseCase;
         this.updateExamSessionStatusUseCase = updateExamSessionStatusUseCase;
-        this.examItemResponseRepository = examItemResponseRepository;
+        this.resolveExamSessionIdByResponseIdUseCase = resolveExamSessionIdByResponseIdUseCase;
         this.jsonMapper = jsonMapper;
     }
 
@@ -60,8 +61,9 @@ public class ExamAttemptEvaluationCompletedConsumer {
             var eventType = payload.path("eventType").asText();
 
             if ("ExamAttemptEvaluationCompleted".equals(eventType)) {
+                var dto = jsonMapper.treeToValue(payload, ExamAttemptEvaluationCompletedEventDto.class);
                 recordExamAttemptEvaluationUseCase.execute(
-                    jsonMapper.treeToValue(payload, ExamAttemptEvaluationCompletedEventDto.class)
+                    RecordExamAttemptEvaluationCommandMapper.toCommand(dto)
                 );
             } else if ("ExamAttemptEvaluationFailed".equals(eventType)) {
                 var failedEvent = jsonMapper.treeToValue(payload, ExamAttemptEvaluationFailedEventDto.class);
@@ -122,12 +124,7 @@ public class ExamAttemptEvaluationCompletedConsumer {
 
     private UUID resolveSessionIdFromAnswerId(String answerId) {
         var responseId = parseUuid(answerId);
-        if (responseId == null) {
-            return null;
-        }
-        return examItemResponseRepository.findById(responseId)
-            .map(response -> response.getSessionId())
-            .orElse(null);
+        return responseId == null ? null : resolveExamSessionIdByResponseIdUseCase.execute(responseId);
     }
 
     private UUID parseUuid(String value) {

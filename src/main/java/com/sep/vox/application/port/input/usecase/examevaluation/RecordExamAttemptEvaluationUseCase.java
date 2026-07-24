@@ -18,6 +18,9 @@ import org.springframework.transaction.support.TransactionTemplate;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.mapper.examevaluation.ExamEvaluationSignalMapper;
 import com.sep.vox.application.port.input.command.UpdateExamSessionStatusCommand;
+import com.sep.vox.application.port.input.command.examevaluation.CriterionScoreInput;
+import com.sep.vox.application.port.input.command.examevaluation.RecordExamAttemptEvaluationCommand;
+import com.sep.vox.application.port.input.command.examevaluation.ValidityResultInput;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.UpdateExamSessionStatusUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
@@ -27,8 +30,11 @@ import com.sep.vox.domain.model.exam.ExamItemEvaluation;
 import com.sep.vox.domain.model.exam.ExamItemEvaluationStatus;
 import com.sep.vox.domain.model.exam.ExamItemEvaluationTurn;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
+import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.TurnType;
 import com.sep.vox.domain.model.rubric.RubricCriterion;
+import com.sep.vox.application.port.input.service.ConfidenceReviewCalculator;
+import com.sep.vox.domain.valueobject.ConfidenceCaseSignals;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
 import com.sep.vox.domain.repository.ExamItemCriterionScoreRepository;
 import com.sep.vox.domain.repository.ExamItemEvaluationRepository;
@@ -37,10 +43,9 @@ import com.sep.vox.domain.repository.ExamItemResponseRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;
 import com.sep.vox.domain.repository.RubricCriterionRepository;
-import com.sep.vox.interfaces.kafka.dto.ExamAttemptEvaluationCompletedEventDto;
 
 @Service
-public class RecordExamAttemptEvaluationUseCase implements IUseCase<ExamAttemptEvaluationCompletedEventDto, Void> {
+public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAttemptEvaluationCommand, Void> {
 
     private final ExamItemResponseRepository examItemResponseRepository;
     private final ExamItemEvaluationRepository examItemEvaluationRepository;
@@ -54,7 +59,7 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<ExamAttemptE
     private final UpdateExamSessionStatusUseCase updateExamSessionStatusUseCase;
     private final JsonSerializationPort jsonSerializationPort;
     private final TransactionTemplate phaseOneTransactionTemplate;
-    private static final BigDecimal LOW_CONFIDENCE_THRESHOLD = BigDecimal.valueOf(0.50).setScale(2, RoundingMode.HALF_UP);
+    private final ConfidenceReviewCalculator confidenceReviewCalculator;
 
     public RecordExamAttemptEvaluationUseCase(
             ExamItemResponseRepository examItemResponseRepository,
@@ -68,7 +73,8 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<ExamAttemptE
             UpsertExamCandidateResultUseCase upsertExamCandidateResultUseCase,
             UpdateExamSessionStatusUseCase updateExamSessionStatusUseCase,
             PlatformTransactionManager transactionManager,
-            JsonSerializationPort jsonSerializationPort) {
+            JsonSerializationPort jsonSerializationPort,
+            ConfidenceReviewCalculator confidenceReviewCalculator) {
         this.examItemResponseRepository = examItemResponseRepository;
         this.examItemEvaluationRepository = examItemEvaluationRepository;
         this.examItemCriterionScoreRepository = examItemCriterionScoreRepository;
@@ -82,10 +88,11 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<ExamAttemptE
         this.jsonSerializationPort = jsonSerializationPort;
         this.phaseOneTransactionTemplate = new TransactionTemplate(transactionManager);
         this.phaseOneTransactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        this.confidenceReviewCalculator = confidenceReviewCalculator;
     }
 
     @Override
-    public Void execute(ExamAttemptEvaluationCompletedEventDto input) {
+    public Void execute(RecordExamAttemptEvaluationCommand input) {
         var persisted = persistEvaluation(input);
 
         if (allResponsesHaveEvaluations(persisted.sessionId())) {
@@ -98,14 +105,14 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<ExamAttemptE
         return null;
     }
 
-    private PersistedEvaluation persistEvaluation(ExamAttemptEvaluationCompletedEventDto input) {
+    private PersistedEvaluation persistEvaluation(RecordExamAttemptEvaluationCommand input) {
         var persisted = phaseOneTransactionTemplate.execute(status -> {
             var responseId = UUID.fromString(input.answerId());
             var response = examItemResponseRepository.findById(responseId)
                 .orElseThrow(() -> new NotFoundException("không thể tìm thấy câu trả lời cho evaluation"));
 
             var criteriaMap = input.payload() == null || input.payload().criteria() == null
-                ? Map.<String, ExamAttemptEvaluationCompletedEventDto.CriterionScoreDto>of()
+                ? Map.<String, CriterionScoreInput>of()
                 : input.payload().criteria();
 
             // Resolved before computing itemScore (not after, like before this fix) --
@@ -114,8 +121,9 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<ExamAttemptE
             // score; ExamPaperItem.weight (question weight within the paper) is a
             // separate, later step applied on top of this item score by
             // ExamSessionResultCalculator when rolling up section/total scores.
+            var evaluationContext = resolveEvaluationContext(response.getSessionId());
             var rubricCriteriaByCode = rubricCriterionRepository.findByRubricVersionId(
-                resolveRubricVersionId(response.getSessionId())
+                evaluationContext.rubricVersionId()
             ).stream().collect(Collectors.toMap(
                 item -> normalizeCode(item.getCode()),
                 Function.identity(),
@@ -125,13 +133,40 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<ExamAttemptE
 
             var validity = input.payload() == null ? null : input.payload().validity();
             var signals = ExamEvaluationSignalMapper.toDomain(input.payload() == null ? null : input.payload().signals());
-            var overallConfidence = clampUnit(averageConfidence(
-                input.payload() == null ? null : input.payload().signals()));
+            var confidenceCase = signals.confidenceCase();
+            // overallConfidence: min() của mọi c-value trong confidenceCase (severity-aware,
+            // đúng tinh thần research -- không phải trung bình cộng). aiConfidence (trung bình
+            // cộng cũ, KHÔNG phải kết quả research) đã bị bỏ hẳn -- nó từng gộp cả giá trị
+            // sentinel "gọi LLM thất bại" (0.0) vào trung bình chung với giá trị thật, hiện sai
+            // thành "AI confidence 25%/33%" trên UI dù chỉ là lỗi hạ tầng, không phải chấm kém
+            // thật. Nếu confidenceCase chưa có (turn cũ trước khi case (1)-(5) được nối, hoặc
+            // graph lỗi 1 phần), asrConfidenceAvg là tín hiệu thật duy nhất còn lại, dùng làm
+            // fallback hiển thị -- vẫn null nếu không có, KHÔNG fabricate số.
+            var overallConfidence = minimumConfidence(confidenceCase);
+            if (overallConfidence == null) {
+                overallConfidence = clampUnit(
+                    input.payload() == null || input.payload().signals() == null
+                        ? null
+                        : input.payload().signals().asrConfidenceAvg()
+                );
+            }
+            boolean hasCodeSwitch = signals.codeSwitchingRatio().compareTo(BigDecimal.ZERO) > 0;
+            boolean isShortAnswer = signals.wordCount() < 35;
+            var confidenceDecision = confidenceReviewCalculator.compute(
+                confidenceCase,
+                evaluationContext.examKind(),
+                hasCodeSwitch,
+                isShortAnswer
+            );
             var hasCriticalValidityFlag = hasCriticalValidityFlag(validity);
-            boolean requiresHumanReview = hasCriticalValidityFlag || overallConfidence.compareTo(LOW_CONFIDENCE_THRESHOLD) < 0;
+            boolean requiresHumanReview = hasCriticalValidityFlag || confidenceDecision.requiresHumanReview();
             String reviewReasonCode = hasCriticalValidityFlag
                 ? "VALIDITY_FLAGGED"
-                : (overallConfidence.compareTo(LOW_CONFIDENCE_THRESHOLD) < 0 ? "LOW_CONFIDENCE" : null);
+                : (
+                    confidenceDecision.requiresHumanReview()
+                        ? String.join(",", confidenceDecision.reviewReasons())
+                        : null
+                );
             var requiresRetake = requiresRetake(validity);
             boolean markedInvalid = validity != null && Boolean.FALSE.equals(validity.validForScoring());
             if ("uncooperative_move_on".equals(response.getTerminationReason())) {
@@ -253,7 +288,7 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<ExamAttemptE
     }
 
     private BigDecimal computeWeightedItemScore(
-            Map<String, ExamAttemptEvaluationCompletedEventDto.CriterionScoreDto> criteriaMap,
+            Map<String, CriterionScoreInput> criteriaMap,
             Map<String, RubricCriterion> rubricCriteriaByCode) {
         var weightedSum = BigDecimal.ZERO;
         var weightSum = BigDecimal.ZERO;
@@ -290,7 +325,7 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<ExamAttemptE
             : unweightedSum.divide(BigDecimal.valueOf(unweightedCount), 2, RoundingMode.HALF_UP);
     }
 
-    private UUID resolveRubricVersionId(UUID sessionId) {
+    private EvaluationContext resolveEvaluationContext(UUID sessionId) {
         var session = examSessionRepository.findById(sessionId)
             .orElseThrow(() -> new NotFoundException("không thể tìm thấy phiên thi cho evaluation"));
         var exam = examRepository.findById(session.getExamId())
@@ -300,7 +335,10 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<ExamAttemptE
         }
         var policy = assessmentPolicyRepository.findById(exam.getAssessmentPolicyId())
             .orElseThrow(() -> new NotFoundException("không thể tìm thấy assessment policy cho bài kiểm tra"));
-        return policy.getRubricVersionId();
+        return new EvaluationContext(policy.getRubricVersionId(), exam.getKind());
+    }
+
+    private record EvaluationContext(UUID rubricVersionId, ExamKind examKind) {
     }
 
     private boolean allResponsesHaveEvaluations(UUID sessionId) {
@@ -327,24 +365,6 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<ExamAttemptE
         }
     }
 
-    private Double averageConfidence(ExamAttemptEvaluationCompletedEventDto.EvaluationSignalsDto signals) {
-        if (signals == null) {
-            return null;
-        }
-        var aiConfidence = signals.aiConfidence();
-        var asrConfidence = signals.asrConfidenceAvg();
-        if (aiConfidence == null && asrConfidence == null) {
-            return null;
-        }
-        if (aiConfidence == null) {
-            return asrConfidence;
-        }
-        if (asrConfidence == null) {
-            return aiConfidence;
-        }
-        return (aiConfidence + asrConfidence) / 2;
-    }
-
     private BigDecimal clampUnit(Double value) {
         if (value == null) {
             return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
@@ -353,13 +373,38 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<ExamAttemptE
         return decimal.setScale(2, RoundingMode.HALF_UP);
     }
 
-    private boolean hasCriticalValidityFlag(ExamAttemptEvaluationCompletedEventDto.ValidityResultDto validity) {
+    private BigDecimal minimumConfidence(ConfidenceCaseSignals signals) {
+        if (signals == null) {
+            return null;
+        }
+        BigDecimal minimum = null;
+        BigDecimal[] values = {
+            signals.cAsrLog(),
+            signals.crossAsrAgreement(),
+            signals.qSnr(),
+            signals.qSpeech(),
+            signals.cRef(),
+            signals.cAlign(),
+            signals.cPfBranch(),
+            signals.cGrammar(),
+            signals.cVocabulary(),
+            signals.cDiscourse()
+        };
+        for (BigDecimal value : values) {
+            if (value != null && (minimum == null || value.compareTo(minimum) < 0)) {
+                minimum = value;
+            }
+        }
+        return minimum == null ? null : minimum.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private boolean hasCriticalValidityFlag(ValidityResultInput validity) {
         return validity != null
             && validity.overallSeverity() != null
             && "critical".equalsIgnoreCase(validity.overallSeverity());
     }
 
-    private boolean requiresRetake(ExamAttemptEvaluationCompletedEventDto.ValidityResultDto validity) {
+    private boolean requiresRetake(ValidityResultInput validity) {
         return validity != null
             && validity.action() != null
             && "reject_or_zero".equalsIgnoreCase(validity.action());

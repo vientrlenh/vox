@@ -15,6 +15,7 @@ import com.sep.vox.application.port.input.command.ForceEndExamSessionCommand;
 import com.sep.vox.application.port.input.command.ReleasePendingExamResultCommand;
 import com.sep.vox.application.port.input.command.ReviewFlaggedExamResultCommand;
 import com.sep.vox.application.port.input.command.RetryGradingExamSessionCommand;
+import com.sep.vox.application.port.input.command.SubmitExamSessionCommand;
 import com.sep.vox.application.port.input.command.UnblockExamCandidateCommand;
 import com.sep.vox.application.port.input.query.ViewExamItemResponseEvaluationQuery;
 import com.sep.vox.application.port.input.query.ViewExamItemResponseQuery;
@@ -32,6 +33,7 @@ import com.sep.vox.application.port.input.usecase.examsession.ForceEndExamSessio
 import com.sep.vox.application.port.input.usecase.examsession.ReleasePendingExamResultUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.ReviewFlaggedExamResultUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.RetryGradingExamSessionUseCase;
+import com.sep.vox.application.port.input.usecase.examsession.SubmitExamSessionUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.ViewExamSessionResultUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.ViewExamSessionUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.ViewMyExamResultsUseCase;
@@ -61,6 +63,7 @@ public class ExamSessionController {
     private final ReviewFlaggedExamResultUseCase reviewFlaggedExamResultUseCase;
     private final ReleasePendingExamResultUseCase releasePendingExamResultUseCase;
     private final RetryGradingExamSessionUseCase retryGradingExamSessionUseCase;
+    private final SubmitExamSessionUseCase submitExamSessionUseCase;
 
     public ExamSessionController(
             ViewExamSessionUseCase viewExamSessionUseCase,
@@ -75,7 +78,8 @@ public class ExamSessionController {
             UnblockExamCandidateUseCase unblockExamCandidateUseCase,
             ReviewFlaggedExamResultUseCase reviewFlaggedExamResultUseCase,
             ReleasePendingExamResultUseCase releasePendingExamResultUseCase,
-            RetryGradingExamSessionUseCase retryGradingExamSessionUseCase) {
+            RetryGradingExamSessionUseCase retryGradingExamSessionUseCase,
+            SubmitExamSessionUseCase submitExamSessionUseCase) {
         this.viewExamSessionUseCase = viewExamSessionUseCase;
         this.viewExamSessionResultUseCase = viewExamSessionResultUseCase;
         this.viewExamSessionFollowupsUseCase = viewExamSessionFollowupsUseCase;
@@ -89,6 +93,7 @@ public class ExamSessionController {
         this.reviewFlaggedExamResultUseCase = reviewFlaggedExamResultUseCase;
         this.releasePendingExamResultUseCase = releasePendingExamResultUseCase;
         this.retryGradingExamSessionUseCase = retryGradingExamSessionUseCase;
+        this.submitExamSessionUseCase = submitExamSessionUseCase;
     }
 
     @QueryMapping
@@ -183,6 +188,16 @@ public class ExamSessionController {
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public UUID retryGradingExamSession(@Argument(name = "sessionId") UUID sessionId) {
         return retryGradingExamSessionUseCase.execute(new RetryGradingExamSessionCommand(sessionId));
+    }
+
+    // TEST-ONLY: chấm lại bằng AI từ đầu bất kể trạng thái (kể cả GRADED). SubmitExamSessionUseCase
+    // đã chấp nhận GRADED và re-publish grading request từ dữ liệu làm bài đã lưu; evaluation cũ
+    // bị RecordExamAttemptEvaluationUseCase ghi đè (upsert). Không xoá tay gì.
+    @MutationMapping
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
+    public UUID regradeExamSessionForTest(@Argument(name = "sessionId") UUID sessionId) {
+        submitExamSessionUseCase.execute(new SubmitExamSessionCommand(sessionId));
+        return sessionId;
     }
 
 }

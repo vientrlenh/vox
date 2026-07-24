@@ -590,6 +590,10 @@ extend type Mutation {
     reviewFlaggedExamResult(candidateResultId: ID!, decision: ExamCandidateResultStatus!): ID!
     releasePendingExamResult(sessionId: ID!): ID!
     retryGradingExamSession(sessionId: ID!): ID!
+    # TEST-ONLY: chấm lại 1 phiên thi bằng AI bất kể trạng thái (kể cả đã GRADED) -- re-publish
+    # grading request từ dữ liệu làm bài đã lưu, evaluation cũ bị ghi đè (upsert). Dùng để kiểm
+    # thử pipeline chấm điểm, không phải luồng nghiệp vụ chính thức.
+    regradeExamSessionForTest(sessionId: ID!): ID!
     updateExamCandidateStatus(candidateId: ID!, status: ExamCandidateStatus!): ID!
     updateExamCandidatesAttendance(scheduleId: ID!, candidateIds: [ID!]!): [ExamCandidate!]!
 }

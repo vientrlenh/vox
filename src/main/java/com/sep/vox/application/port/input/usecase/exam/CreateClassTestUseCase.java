@@ -18,6 +18,7 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.ClassTestSectionCommand;
 import com.sep.vox.application.port.input.command.CreateClassTestCommand;
 import com.sep.vox.application.port.input.command.UpdateExamStatusCommand;
+import com.sep.vox.application.port.input.service.ExamTimeQuotaGuardService;
 import com.sep.vox.application.port.input.service.RecalculateExamTimeDurationService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -87,6 +88,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
     private final ExamCandidateRepository examCandidateRepository;
     private final ExamQuestionSecureLockService examQuestionSecureLockService;
     private final UpdateExamStatusUseCase updateExamStatusUseCase;
+    private final ExamTimeQuotaGuardService examTimeQuotaGuardService;
     private final RecalculateExamTimeDurationService recalculateExamTimeDurationService;
     private final UserContextPort userContextPort;
 
@@ -109,6 +111,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             ExamCandidateRepository examCandidateRepository,
             ExamQuestionSecureLockService examQuestionSecureLockService,
             UpdateExamStatusUseCase updateExamStatusUseCase,
+            ExamTimeQuotaGuardService examTimeQuotaGuardService,
             RecalculateExamTimeDurationService recalculateExamTimeDurationService,
             UserContextPort userContextPort) {
         this.schoolClassRepository = schoolClassRepository;
@@ -129,6 +132,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         this.examCandidateRepository = examCandidateRepository;
         this.examQuestionSecureLockService = examQuestionSecureLockService;
         this.updateExamStatusUseCase = updateExamStatusUseCase;
+        this.examTimeQuotaGuardService = examTimeQuotaGuardService;
         this.recalculateExamTimeDurationService = recalculateExamTimeDurationService;
         this.userContextPort = userContextPort;
     }
@@ -170,6 +174,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             OffsetDateTime now) {
         // Chế độ "câu hỏi trực tiếp": không tạo blueprint ẩn nào — thao tác thẳng trên ExamPaperSection/ExamPaperItem
         // để bài trên lớp thực sự tự do, không phụ thuộc lớp blueprint khi không dùng blueprint dùng chung.
+        validateDirectQuestionDurationWithinPlan(command, schoolClass, currentUserId);
         var exam = createExam(null, null, schoolClass, command, currentUserId, now);
         var paper = createPaper(exam, null, now, currentUserId);
         var schedule = createDraftSchedule(exam, currentUserId, now);
@@ -239,6 +244,11 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         var slotsBySectionId = examBlueprintSlotRepository.findByBlueprintVersionId(version.getId()).stream()
             .collect(Collectors.groupingBy(ExamBlueprintSlot::getSectionId));
         validateVersionWeights(sections, slotsBySectionId);
+        examTimeQuotaGuardService.requireWithinPlan(
+            schoolClass.getSchoolId(),
+            version.getTotalTimeLimitSeconds(),
+            "Phiên bản blueprint " + version.getCode()
+        );
 
         var exam = createExam(blueprint.getId(), version.getId(), schoolClass, command, currentUserId, now);
         var paper = createPaper(exam, version.getId(), now, currentUserId);
@@ -321,6 +331,27 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
                 }
             }
         }
+    }
+
+    private void validateDirectQuestionDurationWithinPlan(
+            CreateClassTestCommand command,
+            SchoolClass schoolClass,
+            UUID currentUserId) {
+        var totalSeconds = 0;
+        for (var sectionCommand : command.sections()) {
+            for (var questionCommand : sectionCommand.questions()) {
+                var question = questionRepository
+                    .findAccessibleById(questionCommand.questionId(), currentUserId, schoolClass.getSchoolId(), false, false)
+                    .orElseThrow(() -> new ForbiddenException("Bạn không có quyền sử dụng câu hỏi " + questionCommand.questionId()));
+                validateCanUseQuestion(question, currentUserId);
+                totalSeconds += question.getPreparationTimeSeconds() + question.getMaxResponseSeconds();
+            }
+        }
+        examTimeQuotaGuardService.requireWithinPlan(
+            schoolClass.getSchoolId(),
+            totalSeconds,
+            "Bài kiểm tra trên lớp"
+        );
     }
 
     private void createPaperItemsDirect(

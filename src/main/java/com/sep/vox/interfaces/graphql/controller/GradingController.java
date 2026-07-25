@@ -15,6 +15,7 @@ import com.sep.vox.application.port.input.query.ViewMyGradingTasksQuery;
 import com.sep.vox.application.port.input.usecase.examgrading.ViewAssignableTeachersUseCase;
 import com.sep.vox.application.port.input.usecase.examgrading.ViewGradingAssignmentsUseCase;
 import com.sep.vox.application.port.input.usecase.examgrading.ViewGradingStatsUseCase;
+import com.sep.vox.application.port.input.usecase.examgrading.ViewGradingTaskDetailBySchoolUseCase;
 import com.sep.vox.application.port.input.usecase.examgrading.ViewGradingTaskDetailUseCase;
 import com.sep.vox.application.port.input.usecase.examgrading.ViewMyGradingTasksUseCase;
 import com.sep.vox.application.query.dto.AssignableTeacherInfo;
@@ -33,6 +34,7 @@ public class GradingController {
     private final ViewGradingStatsUseCase viewGradingStatsUseCase;
     private final ViewMyGradingTasksUseCase viewMyGradingTasksUseCase;
     private final ViewGradingTaskDetailUseCase viewGradingTaskDetailUseCase;
+    private final ViewGradingTaskDetailBySchoolUseCase viewGradingTaskDetailBySchoolUseCase;
     private final ViewAssignableTeachersUseCase viewAssignableTeachersUseCase;
 
     public GradingController(
@@ -40,11 +42,13 @@ public class GradingController {
             ViewGradingStatsUseCase viewGradingStatsUseCase,
             ViewMyGradingTasksUseCase viewMyGradingTasksUseCase,
             ViewGradingTaskDetailUseCase viewGradingTaskDetailUseCase,
+            ViewGradingTaskDetailBySchoolUseCase viewGradingTaskDetailBySchoolUseCase,
             ViewAssignableTeachersUseCase viewAssignableTeachersUseCase) {
         this.viewGradingAssignmentsUseCase = viewGradingAssignmentsUseCase;
         this.viewGradingStatsUseCase = viewGradingStatsUseCase;
         this.viewMyGradingTasksUseCase = viewMyGradingTasksUseCase;
         this.viewGradingTaskDetailUseCase = viewGradingTaskDetailUseCase;
+        this.viewGradingTaskDetailBySchoolUseCase = viewGradingTaskDetailBySchoolUseCase;
         this.viewAssignableTeachersUseCase = viewAssignableTeachersUseCase;
     }
 
@@ -85,6 +89,14 @@ public class GradingController {
     @PreAuthorize("hasRole('TEACHER')")
     public GradingTaskDetailInfo gradingTaskDetail(@Argument("assignmentId") UUID assignmentId) {
         return viewGradingTaskDetailUseCase.execute(assignmentId);
+    }
+
+    // Nhà trường xem/chấm trực tiếp theo candidateResultId, không cần phân công --
+    // luôn xem được bất kỳ bài PENDING_REVIEW nào của trường mình.
+    @QueryMapping(name = "gradingTaskDetailBySchool")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public GradingTaskDetailInfo gradingTaskDetailBySchool(@Argument("candidateResultId") UUID candidateResultId) {
+        return viewGradingTaskDetailBySchoolUseCase.execute(candidateResultId);
     }
 
     @QueryMapping(name = "assignableTeachers")

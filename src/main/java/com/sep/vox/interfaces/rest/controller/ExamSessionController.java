@@ -102,7 +102,7 @@ public class ExamSessionController {
     public ResponseEntity<ApiResponse<UUID>> flag(
             @PathVariable UUID id,
             @Valid @RequestBody SessionReasonRequest request) {
-        var data = flagExamSessionUseCase.execute(new FlagExamSessionCommand(id, request.reason()));
+        var data = flagExamSessionUseCase.execute(new FlagExamSessionCommand(id, true, request.reason()));
         return ResponseEntity.ok(ApiResponse.success("Đánh dấu nghi vấn phiên thi thành công", data));
     }
 

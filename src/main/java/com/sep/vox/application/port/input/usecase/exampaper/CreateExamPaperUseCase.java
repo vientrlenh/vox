@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreateExamPaperCommand;
+import com.sep.vox.application.port.input.service.ExamTimeQuotaGuardService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.service.RecalculateExamTimeDurationService;
 import com.sep.vox.application.port.input.usecase.exam.ExamQuestionSecureLockService;
@@ -55,6 +56,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
     private final ExamPaperItemRepository examPaperItemRepository;
     private final QuestionRepository questionRepository;
     private final ExamQuestionSecureLockService examQuestionSecureLockService;
+    private final ExamTimeQuotaGuardService examTimeQuotaGuardService;
     private final RecalculateExamTimeDurationService recalculateExamTimeDurationService;
     private final UserContextPort userContextPort;
 
@@ -69,6 +71,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
             ExamPaperItemRepository examPaperItemRepository,
             QuestionRepository questionRepository,
             ExamQuestionSecureLockService examQuestionSecureLockService,
+            ExamTimeQuotaGuardService examTimeQuotaGuardService,
             RecalculateExamTimeDurationService recalculateExamTimeDurationService,
             UserContextPort userContextPort) {
         this.examRepository = examRepository;
@@ -81,6 +84,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
         this.examPaperItemRepository = examPaperItemRepository;
         this.questionRepository = questionRepository;
         this.examQuestionSecureLockService = examQuestionSecureLockService;
+        this.examTimeQuotaGuardService = examTimeQuotaGuardService;
         this.recalculateExamTimeDurationService = recalculateExamTimeDurationService;
         this.userContextPort = userContextPort;
     }
@@ -117,6 +121,11 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
 
         var version = examBlueprintVersionRepository.findById(exam.getBlueprintVersionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy version blueprint đã chốt"));
+        examTimeQuotaGuardService.requireWithinPlan(
+            exam.getSchoolId(),
+            version.getTotalTimeLimitSeconds(),
+            "Mã đề tạo từ blueprint " + version.getCode()
+        );
 
         List<ExamBlueprintSection> sections = examBlueprintSectionRepository
             .findByBlueprintVersionId(version.getId())
@@ -226,6 +235,11 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
         if (!sourcePaper.getExamId().equals(exam.getId())) {
             throw new IllegalStateException("Đề thi nguồn không thuộc cùng bài kiểm tra");
         }
+        examTimeQuotaGuardService.requireWithinPlan(
+            exam.getSchoolId(),
+            sourcePaper.getTimeDurationSeconds(),
+            "Mã đề sao chép " + sourcePaper.getCode()
+        );
 
         var now = OffsetDateTime.now();
         var variant = examPaperRepository.nextVariant(exam.getId());

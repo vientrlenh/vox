@@ -16,7 +16,6 @@ public record CreateSchoolRubricResultBandsRequest(
         List<ResultBandItemRequest> resultBands
 ) {
         public record ResultBandItemRequest(
-                @NotNull(message = "Framework Result Band ID không được để trống")
                 UUID frameworkResultBandId,
 
                 @NotBlank(message = "Mã thang điểm không được để trống")
@@ -27,11 +26,11 @@ public record CreateSchoolRubricResultBandsRequest(
 
                 String description,
 
-                @NotNull(message = "Điểm quy đổi tối thiểu không được để trống")
-                BigDecimal mappedScoreMin,
+                @NotNull(message = "Điểm tối thiểu không được để trống")
+                BigDecimal scoreMin,
 
-                @NotNull(message = "Điểm quy đổi tối đa không được để trống")
-                BigDecimal mappedScoreMax,
+                @NotNull(message = "Điểm tối đa không được để trống")
+                BigDecimal scoreMax,
 
                 @NotNull(message = "Thứ tự không được để trống")
                 @Min(value = 1, message = "Thứ tự (Order) phải lớn hơn 0")

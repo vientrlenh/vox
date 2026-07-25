@@ -12,6 +12,12 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+// TODO(perf): thiếu index (exam_id, user_id) gây EXISTS-subquery chậm ở
+// SpringDataQuestionRepository.findAccessibleByIdIn. Chờ được yêu cầu mới insert:
+// @Table(name = "exam_members", indexes = {
+//     @Index(columnList = "exam_id, user_id", name = "idx_exam_members_exam_user"),
+//     @Index(columnList = "user_id", name = "idx_exam_members_user")
+// })
 @Entity
 @Table(name = "exam_members")
 public class ExamMemberJpaEntity {

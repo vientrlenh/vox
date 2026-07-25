@@ -14,6 +14,7 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.ClassTestQuestionCommand;
 import com.sep.vox.application.port.input.command.ClassTestSectionCommand;
 import com.sep.vox.application.port.input.command.UpdateClassTestQuestionsCommand;
+import com.sep.vox.application.port.input.service.ExamTimeQuotaGuardService;
 import com.sep.vox.application.port.input.service.RecalculateExamTimeDurationService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -48,6 +49,7 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
     private final QuestionRepository questionRepository;
     private final QuestionCollaboratorRepository questionCollaboratorRepository;
     private final ExamQuestionSecureLockService examQuestionSecureLockService;
+    private final ExamTimeQuotaGuardService examTimeQuotaGuardService;
     private final RecalculateExamTimeDurationService recalculateExamTimeDurationService;
     private final UserContextPort userContextPort;
 
@@ -60,6 +62,7 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
             QuestionRepository questionRepository,
             QuestionCollaboratorRepository questionCollaboratorRepository,
             ExamQuestionSecureLockService examQuestionSecureLockService,
+            ExamTimeQuotaGuardService examTimeQuotaGuardService,
             RecalculateExamTimeDurationService recalculateExamTimeDurationService,
             UserContextPort userContextPort) {
         this.examRepository = examRepository;
@@ -70,6 +73,7 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
         this.questionRepository = questionRepository;
         this.questionCollaboratorRepository = questionCollaboratorRepository;
         this.examQuestionSecureLockService = examQuestionSecureLockService;
+        this.examTimeQuotaGuardService = examTimeQuotaGuardService;
         this.recalculateExamTimeDurationService = recalculateExamTimeDurationService;
         this.userContextPort = userContextPort;
     }
@@ -109,6 +113,7 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
             }
         }
 
+        var candidateDurationSeconds = 0;
         for (var section : input.sections()) {
             for (var questionCommand : section.questions()) {
                 var question = questionRepository.findAccessibleById(questionCommand.questionId(), currentUserId, exam.getSchoolId(), false, false)
@@ -121,8 +126,14 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
                         throw new ForbiddenException("Quyền READ_ONLY không được phép dùng câu hỏi trong bài kiểm tra");
                     }
                 }
+                candidateDurationSeconds += question.getPreparationTimeSeconds() + question.getMaxResponseSeconds();
             }
         }
+        examTimeQuotaGuardService.requireWithinPlan(
+            exam.getSchoolId(),
+            candidateDurationSeconds,
+            "Mã đề trên lớp"
+        );
 
         var paper = examPaperRepository.findByExamId(exam.getId()).stream()
             .findFirst()

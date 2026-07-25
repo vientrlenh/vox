@@ -45,8 +45,16 @@ public class FlagExamSessionUseCase implements IUseCase<FlagExamSessionCommand, 
 
         moderationAccessService.authorize(exam, candidate);
 
-        session.setFlagged(true);
-        session.setFlagReason(StringNormalization.trimAndCollapseSpaces(input.reason()));
+        if (input.flagged()) {
+            var reason = StringNormalization.trimAndCollapseSpaces(input.reason());
+            if (reason == null || reason.isBlank()) {
+                throw new IllegalArgumentException("Phải nhập lý do khi đánh dấu nghi vấn");
+            }
+            session.setFlagReason(reason);
+        } else {
+            session.setFlagReason(null);
+        }
+        session.setFlagged(input.flagged());
         examSessionRepository.save(session);
         return session.getId();
     }

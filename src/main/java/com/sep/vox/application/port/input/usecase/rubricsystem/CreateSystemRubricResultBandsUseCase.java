@@ -115,15 +115,14 @@ public class CreateSystemRubricResultBandsUseCase implements IUseCase<CreateSyst
             }
 
             // 4.2 Lấy dữ liệu từ Map trên RAM (Không gọi DB)
-            FrameworkResultBand frameworkBand =     frameworkBandMap.get(bCmd.frameworkResultBandId());
-
-            if (frameworkBand == null) {
+            FrameworkResultBand frameworkBand = frameworkBandMap.get(bCmd.frameworkResultBandId());
+            if (bCmd.frameworkResultBandId() != null && frameworkBand == null) {
                 throw new NotFoundException("Không tìm thấy Framework Result Band với ID: " + bCmd.frameworkResultBandId());
             }
 
 
             // 4.3 Validate Min/Max Score
-            if (bCmd.mappedScoreMin().compareTo(bCmd.mappedScoreMax()) > 0) {
+            if (bCmd.scoreMin().compareTo(bCmd.scoreMax()) > 0) {
                 throw new IllegalArgumentException("Thang điểm '" + safeName + "': Điểm quy đổi tối thiểu không được lớn hơn tối đa.");
             }
 
@@ -134,8 +133,8 @@ public class CreateSystemRubricResultBandsUseCase implements IUseCase<CreateSyst
                     safeCode,
                     safeName,
                     bCmd.description() != null ? StringNormalization.trimAndCollapseSpaces(bCmd.description()) : null,
-                    bCmd.mappedScoreMin(),
-                    bCmd.mappedScoreMax(),
+                    bCmd.scoreMin(),
+                    bCmd.scoreMax(),
                     bCmd.order(),
                     now,
                     now,

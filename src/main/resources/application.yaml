@@ -111,6 +111,16 @@ spring:
     url: jdbc:postgresql://${DB_URL}/${DB_NAME}
     username: ${DB_USER}
     password: ${DB_PASSWORD}
+    hikari:
+      pool-name: vox-hikari
+      # Log kèm stack trace nếu 1 connection bị giữ >5s — cho biết đúng request/repo nào
+      # đang ôm connection khiến các request khác phải xếp hàng chờ rồi timeout.
+      leak-detection-threshold: 5000
+      # Mặc định Spring Boot chỉ 10 — quá ít khi nhiều tab/request đồng thời cùng gọi
+      # GraphQL (mỗi request giữ 1 connection suốt thời gian resolve). Postgres cho phép
+      # tới 100 connection, còn dư nhiều nên tăng lên đây để giảm nghẽn hàng đợi.
+      maximum-pool-size: 25
+      minimum-idle: 5
 
   jpa:
     properties:

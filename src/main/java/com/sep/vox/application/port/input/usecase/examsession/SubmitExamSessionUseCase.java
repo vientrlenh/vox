@@ -4,7 +4,6 @@ import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -37,7 +36,6 @@ import com.sep.vox.domain.repository.QuestionEvaluationGuideRepository;
 import com.sep.vox.domain.repository.QuestionAssetRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.QuestionTopicRepository;
-import com.sep.vox.domain.repository.RubricCriterionBandRepository;
 import com.sep.vox.domain.repository.RubricCriterionRepository;
 
 @Service
@@ -56,7 +54,6 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
     private final QuestionTopicRepository questionTopicRepository;
     private final AssessmentPolicyRepository assessmentPolicyRepository;
     private final RubricCriterionRepository rubricCriterionRepository;
-    private final RubricCriterionBandRepository rubricCriterionBandRepository;
     private final FrameworkCriterionRepository frameworkCriterionRepository;
     private final FrameworkCriterionBandRepository frameworkCriterionBandRepository;
     private final FrameworkResultBandRepository frameworkResultBandRepository;
@@ -77,7 +74,6 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
             QuestionTopicRepository questionTopicRepository,
             AssessmentPolicyRepository assessmentPolicyRepository,
             RubricCriterionRepository rubricCriterionRepository,
-            RubricCriterionBandRepository rubricCriterionBandRepository,
             FrameworkCriterionRepository frameworkCriterionRepository,
             FrameworkCriterionBandRepository frameworkCriterionBandRepository,
             FrameworkResultBandRepository frameworkResultBandRepository,
@@ -96,7 +92,6 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
         this.questionTopicRepository = questionTopicRepository;
         this.assessmentPolicyRepository = assessmentPolicyRepository;
         this.rubricCriterionRepository = rubricCriterionRepository;
-        this.rubricCriterionBandRepository = rubricCriterionBandRepository;
         this.frameworkCriterionRepository = frameworkCriterionRepository;
         this.frameworkCriterionBandRepository = frameworkCriterionBandRepository;
         this.frameworkResultBandRepository = frameworkResultBandRepository;
@@ -270,65 +265,82 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
         if (policy == null) {
             return List.of();
         }
+        if (policy.getTargetFrameworkBandId() == null) {
+            throw new IllegalStateException("Assessment policy chưa cấu hình bậc mục tiêu để AI chấm.");
+        }
+        var targetBand = frameworkResultBandRepository.findById(policy.getTargetFrameworkBandId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy bậc mục tiêu của assessment policy."));
+        if (!policy.getFrameworkVersionId().equals(targetBand.getFrameworkVersionId())) {
+            throw new IllegalStateException("Bậc mục tiêu không thuộc framework version của assessment policy.");
+        }
 
         var rubricCriteria = rubricCriterionRepository.findByRubricVersionId(policy.getRubricVersionId());
         if (rubricCriteria.isEmpty()) {
             return List.of();
         }
 
-        var criterionIds = rubricCriteria.stream().map(item -> item.getId()).toList();
         var frameworkCriterionIds = rubricCriteria.stream()
             .map(item -> item.getFrameworkCriterionId())
             .filter(id -> id != null)
             .toList();
-        var rubricBandsByCriterionId = rubricCriterionBandRepository.findByCriterionIdIn(criterionIds).stream()
-            .collect(Collectors.groupingBy(item -> item.getCriterionId()));
         var frameworkCriteriaById = frameworkCriterionRepository.findAllByIds(frameworkCriterionIds).stream()
             .collect(Collectors.toMap(item -> item.getId(), Function.identity()));
         var frameworkBandsByCriterionId = frameworkCriterionBandRepository.findByFrameworkCriterionIdIn(frameworkCriterionIds).stream()
             .collect(Collectors.groupingBy(item -> item.getFrameworkCriterionId()));
-        var resultBandIds = frameworkBandsByCriterionId.values().stream()
-            .flatMap(List::stream)
-            .map(item -> item.getFrameworkResultBandId())
-            .distinct()
-            .toList();
-        var resultBandsById = frameworkResultBandRepository.findAllByIds(resultBandIds).stream()
-            .collect(Collectors.toMap(item -> item.getId(), Function.identity()));
 
         return rubricCriteria.stream().map(criterion -> {
+            if (criterion.getMinScore() == null || criterion.getMaxScore() == null
+                    || criterion.getMinScore().compareTo(criterion.getMaxScore()) >= 0) {
+                throw new IllegalStateException("Tiêu chí rubric '" + criterion.getName()
+                    + "' phải có minScore nhỏ hơn maxScore trước khi gửi sang AI.");
+            }
             var frameworkCriterion = frameworkCriteriaById.get(criterion.getFrameworkCriterionId());
-            var rubricBands = rubricBandsByCriterionId.getOrDefault(criterion.getId(), List.of()).stream()
-                .collect(Collectors.toMap(item -> item.getCode().trim().toUpperCase(), Function.identity(), (left, right) -> left));
-            var bands = frameworkBandsByCriterionId.getOrDefault(criterion.getFrameworkCriterionId(), List.of()).stream()
-                .sorted(Comparator.comparing(item -> {
-                    var resultBand = resultBandsById.get(item.getFrameworkResultBandId());
-                    return resultBand == null ? Integer.MAX_VALUE : resultBand.getOrder();
-                }))
-                .map(item -> {
-                    var resultBand = resultBandsById.get(item.getFrameworkResultBandId());
-                    var rubricBand = resultBand == null ? null : rubricBands.get(resultBand.getCode().trim().toUpperCase());
-                    return new ExamAttemptEvaluationRequestedExternalEvent.FrameworkBand(
-                        resultBand == null ? null : resultBand.getCode(),
-                        resultBand == null ? null : resultBand.getLabel(),
-                        rubricBand == null ? 0D : rubricBand.getScoreMin().doubleValue(),
-                        rubricBand == null ? 100D : rubricBand.getScoreMax().doubleValue(),
-                        item.getDescriptor(),
-                        item.getPositiveSignals() == null ? List.of() : item.getPositiveSignals().values().stream().map(signal -> signal.description()).toList(),
-                        item.getNegativeSignals() == null ? List.of() : item.getNegativeSignals().values().stream().map(signal -> signal.description()).toList()
-                    );
-                })
-                .toList();
+            var targetCriterionBand = frameworkBandsByCriterionId
+                .getOrDefault(criterion.getFrameworkCriterionId(), List.of()).stream()
+                .filter(item -> policy.getTargetFrameworkBandId().equals(item.getFrameworkResultBandId()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException(
+                    "Tiêu chí framework chưa có mô tả cho bậc mục tiêu " + targetBand.getLabel() + "."));
+            var bands = List.of(new ExamAttemptEvaluationRequestedExternalEvent.FrameworkBand(
+                targetBand.getCode(),
+                targetBand.getLabel(),
+                criterion.getMinScore().doubleValue(),
+                criterion.getMaxScore().doubleValue(),
+                targetCriterionBand.getDescriptor(),
+                targetCriterionBand.getPositiveSignals() == null
+                    ? List.of()
+                    : targetCriterionBand.getPositiveSignals().values().stream()
+                        .map(signal -> signal.description())
+                        .toList(),
+                targetCriterionBand.getNegativeSignals() == null
+                    ? List.of()
+                    : targetCriterionBand.getNegativeSignals().values().stream()
+                        .map(signal -> signal.description())
+                        .toList()
+            ));
 
             return new ExamAttemptEvaluationRequestedExternalEvent.CriterionFramework(
-                criterion.getCode() == null ? null : criterion.getCode().trim().toLowerCase(Locale.ROOT),
+                agentCriterionKey(criterion.getCode()),
                 frameworkCriterion == null ? null : frameworkCriterion.getCode(),
                 frameworkCriterion == null ? null : frameworkCriterion.getName(),
                 frameworkCriterion == null ? null : frameworkCriterion.getDescription(),
+                policy.getTargetFrameworkBandId().toString(),
+                targetBand.getCode(),
+                targetBand.getLabel(),
+                true,
                 criterion.getWeight() == null ? null : criterion.getWeight().doubleValue(),
-                criterion.getMinScore() == null ? 0D : criterion.getMinScore().doubleValue(),
-                criterion.getMaxScore() == null ? 100D : criterion.getMaxScore().doubleValue(),
+                criterion.getMinScore().doubleValue(),
+                criterion.getMaxScore().doubleValue(),
                 bands
             );
         }).toList();
+    }
+
+    private String agentCriterionKey(String rubricCriterionCode) {
+        if (rubricCriterionCode == null) {
+            return null;
+        }
+        var normalized = rubricCriterionCode.trim().toLowerCase(Locale.ROOT);
+        return "discourse".equals(normalized) ? "coherence" : normalized;
     }
 }

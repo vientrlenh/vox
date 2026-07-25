@@ -13,8 +13,8 @@ public record CreateSystemRubricResultBandsCommand (
             String code,
             String name,
             String description,
-            BigDecimal mappedScoreMin,
-            BigDecimal mappedScoreMax,
+            BigDecimal scoreMin,
+            BigDecimal scoreMax,
             Integer order
     ) {}
 }

@@ -132,14 +132,13 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
 
             // Tra cứu từ trong RAM (Map) thay vì gọi xuống Database
             FrameworkResultBand frameworkBand = frameworkBandMap.get(bCmd.frameworkResultBandId());
-
-            if (frameworkBand == null) {
+            if (bCmd.frameworkResultBandId() != null && frameworkBand == null) {
                 throw new NotFoundException("Không tìm thấy Framework Result Band với ID: " + bCmd.frameworkResultBandId());
             }
 
 
             // Validate logic điểm
-            if (bCmd.mappedScoreMin().compareTo(bCmd.mappedScoreMax()) > 0) {
+            if (bCmd.scoreMin().compareTo(bCmd.scoreMax()) > 0) {
                 throw new IllegalArgumentException("Thang điểm '" + safeName + "': Điểm quy đổi tối thiểu không được lớn hơn tối đa.");
             }
 
@@ -150,8 +149,8 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
                     safeCode,
                     safeName,
                     bCmd.description() != null ? StringNormalization.trimAndCollapseSpaces(bCmd.description()) : null,
-                    bCmd.mappedScoreMin(),
-                    bCmd.mappedScoreMax(),
+                    bCmd.scoreMin(),
+                    bCmd.scoreMax(),
                     bCmd.order(),
                     now,
                     now,

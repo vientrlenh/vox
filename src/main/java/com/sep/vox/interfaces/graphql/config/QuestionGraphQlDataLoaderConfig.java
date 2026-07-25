@@ -8,6 +8,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.dataloader.BatchLoaderEnvironment;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.graphql.execution.BatchLoaderRegistry;
 
@@ -40,6 +42,8 @@ import reactor.core.publisher.Mono;
 
 @Configuration
 public class QuestionGraphQlDataLoaderConfig {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(QuestionGraphQlDataLoaderConfig.class);
 
     public QuestionGraphQlDataLoaderConfig(
             BatchLoaderRegistry registry,
@@ -117,6 +121,7 @@ public class QuestionGraphQlDataLoaderConfig {
         registry.<UUID, QuestionDto>forName("questionByIdAccessible")
             .registerMappedBatchLoader((Set<UUID> ids, BatchLoaderEnvironment env) ->
                 Mono.fromSupplier(() -> {
+                    var startedAt = System.nanoTime();
                     var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
                     var systemAdmin = userContextPort.isSystemAdmin();
                     var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
@@ -124,10 +129,29 @@ public class QuestionGraphQlDataLoaderConfig {
                         .orElse(null);
                     var schoolAdmin = !systemAdmin && userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
                         .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
-                    return questionRepository.findAccessibleByIdIn(ids, currentUserId, currentSchoolId, systemAdmin, schoolAdmin)
+                    var result = questionRepository.findAccessibleByIdIn(ids, currentUserId, currentSchoolId, systemAdmin, schoolAdmin)
                         .stream()
                         .map(QuestionDtoMapper::toQuestionDto)
                         .collect(Collectors.toMap(QuestionDto::id, dto -> dto));
+                    LOGGER.info("[blueprint-perf] loader=questionByIdAccessible batchSize={} tookMs={}",
+                        ids.size(), (System.nanoTime() - startedAt) / 1_000_000);
+                    return result;
+                })
+            );
+
+        // KHÔNG check quyền — chỉ dùng ở nơi quyền xem đã được xác nhận qua parent
+        // (vd: ExamBlueprintSlot.fixedQuestion, sau khi ViewExamBlueprintDetailsUseCase.hasAccess
+        // đã pass rồi). Tránh lặp lại OR-tree phân quyền của questionByIdAccessible.
+        registry.<UUID, QuestionDto>forName("questionByIdBasic")
+            .registerMappedBatchLoader((Set<UUID> ids, BatchLoaderEnvironment env) ->
+                Mono.fromSupplier(() -> {
+                    var startedAt = System.nanoTime();
+                    var result = questionRepository.findByIdIn(ids).stream()
+                        .map(QuestionDtoMapper::toQuestionDto)
+                        .collect(Collectors.toMap(QuestionDto::id, dto -> dto));
+                    LOGGER.info("[blueprint-perf] loader=questionByIdBasic batchSize={} tookMs={}",
+                        ids.size(), (System.nanoTime() - startedAt) / 1_000_000);
+                    return result;
                 })
             );
     }

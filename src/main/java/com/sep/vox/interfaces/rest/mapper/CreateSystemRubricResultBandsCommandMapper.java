@@ -17,8 +17,8 @@ public class CreateSystemRubricResultBandsCommandMapper {
                         b.code(),
                         b.name(),
                         b.description(),
-                        b.mappedScoreMin(),
-                        b.mappedScoreMax(),
+                        b.scoreMin(),
+                        b.scoreMax(),
                         b.order()
                 ))
                 .collect(Collectors.toList());

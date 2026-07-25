@@ -141,4 +141,42 @@ public class GradingAssignmentController {
         return ResponseEntity.ok(
             ApiResponse.success("Vô hiệu bài thi thành công!", invalidateGradingUseCase.execute(command)));
     }
+
+    // ---- Nhà trường chấm/chỉnh trực tiếp theo candidateResultId, không cần phân
+    // công trước -- luôn xem/chấm được bất kỳ bài PENDING_REVIEW nào của trường mình,
+    // kể cả bài chưa có phân công hoặc đang gán cho giáo viên khác. Cùng use case với
+    // luồng giáo viên ở trên, chỉ khác đầu vào (candidateResultId thay vì assignmentId).
+
+    @Operation(summary = "Nhà trường nộp điểm chấm trực tiếp cho một bài PENDING_REVIEW theo candidateResultId")
+    @PostMapping("/by-result/{candidateResultId}/grade")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public ResponseEntity<ApiResponse<SubmitGradingResponse>> gradeByResult(
+            @PathVariable("candidateResultId") UUID candidateResultId,
+            @Valid @RequestBody SubmitGradingRequest request) {
+        var command = ExamGradingCommandMapper.fromResultRequest(candidateResultId, request);
+        return ResponseEntity.ok(
+            ApiResponse.success("Nộp điểm chấm bài thành công!", submitGradingUseCase.execute(command)));
+    }
+
+    @Operation(summary = "Tính thử tổng điểm cho nhà trường chấm trực tiếp theo candidateResultId. KHÔNG ghi gì.")
+    @PostMapping("/by-result/{candidateResultId}/grade/preview")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public ResponseEntity<ApiResponse<GradingPreviewResponse>> previewGradeByResult(
+            @PathVariable("candidateResultId") UUID candidateResultId,
+            @Valid @RequestBody SubmitGradingRequest request) {
+        var command = ExamGradingCommandMapper.fromResultRequest(candidateResultId, request);
+        return ResponseEntity.ok(
+            ApiResponse.success("Tính thử điểm thành công!", previewGradingUseCase.execute(command)));
+    }
+
+    @Operation(summary = "Nhà trường kết luận bài nghi vấn là vi phạm thật theo candidateResultId -> vô hiệu kết quả")
+    @PostMapping("/by-result/{candidateResultId}/invalidate")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public ResponseEntity<ApiResponse<InvalidateGradingResponse>> invalidateByResult(
+            @PathVariable("candidateResultId") UUID candidateResultId,
+            @Valid @RequestBody(required = false) InvalidateGradingRequest request) {
+        var command = ExamGradingCommandMapper.fromResultRequest(candidateResultId, request);
+        return ResponseEntity.ok(
+            ApiResponse.success("Vô hiệu bài thi thành công!", invalidateGradingUseCase.execute(command)));
+    }
 }

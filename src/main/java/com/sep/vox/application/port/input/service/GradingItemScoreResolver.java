@@ -17,8 +17,10 @@ import com.sep.vox.application.port.input.command.SubmitGradingCommand;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService.GradingContext;
 import com.sep.vox.domain.model.exam.ExamItemResponse;
 import com.sep.vox.domain.model.rubric.RubricCriterion;
+import com.sep.vox.domain.model.rubric.RubricTotalScoreMethod;
 import com.sep.vox.domain.repository.ExamItemResponseRepository;
 import com.sep.vox.domain.repository.RubricCriterionRepository;
+import com.sep.vox.domain.repository.RubricVersionRepository;
 
 /**
  * Validate + quy đổi điểm tiêu chí thành điểm phần thi.
@@ -33,12 +35,15 @@ public class GradingItemScoreResolver {
 
     private final ExamItemResponseRepository examItemResponseRepository;
     private final RubricCriterionRepository rubricCriterionRepository;
+    private final RubricVersionRepository rubricVersionRepository;
 
     public GradingItemScoreResolver(
             ExamItemResponseRepository examItemResponseRepository,
-            RubricCriterionRepository rubricCriterionRepository) {
+            RubricCriterionRepository rubricCriterionRepository,
+            RubricVersionRepository rubricVersionRepository) {
         this.examItemResponseRepository = examItemResponseRepository;
         this.rubricCriterionRepository = rubricCriterionRepository;
+        this.rubricVersionRepository = rubricVersionRepository;
     }
 
     /** Một phần thi đã chấm xong, sẵn sàng ghi xuống hoặc đem đi tính thử. */
@@ -83,6 +88,8 @@ public class GradingItemScoreResolver {
         var criteria = rubricCriterionRepository
             .findByRubricVersionId(context.candidateResult().getRubricVersionId()).stream()
             .collect(Collectors.toMap(RubricCriterion::getId, Function.identity(), (left, right) -> left));
+        var rubricVersion = rubricVersionRepository.findById(context.candidateResult().getRubricVersionId())
+            .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy rubric version của bài thi."));
 
         // Chấm xong toàn bộ rồi mới trả về — một phần lỗi không được để lại điểm
         // nửa vời của các phần trước đó.
@@ -95,7 +102,8 @@ public class GradingItemScoreResolver {
             resolved.add(new ResolvedItem(
                 item.paperItemId(),
                 response.getId(),
-                weightedItemScore(item.criterionScores(), criteria),
+                itemScore(item.criterionScores(), criteria, rubricVersion.getTotalScoreMethod(),
+                    rubricVersion.getScoringScaleMin(), rubricVersion.getScoringScaleMax()),
                 item.feedbackSummary(),
                 item.criterionScores()
             ));
@@ -104,16 +112,20 @@ public class GradingItemScoreResolver {
     }
 
     /**
-     * Điểm phần = Σ(điểm × trọng số tiêu chí) / Σ(trọng số) — KHÔNG phải trung bình
-     * cộng. Trọng số nằm ở {@link RubricCriterion#getWeight()} và có thật (phát âm
-     * .25, trôi chảy .20...), bỏ qua nó là chấm sai.
+     * Tính điểm phần thi theo phương pháp của rubric version. {@code SUM} cộng trực
+     * tiếp các điểm tiêu chí; {@code WEIGHTED_AVERAGE} dùng trọng số khai báo tại
+     * {@link RubricCriterion#getWeight()}.
      *
-     * <p>Rubric không khai trọng số (tổng bằng 0) thì lùi về trung bình cộng, giống
-     * fallback của luồng AI — thà đúng-xấp-xỉ còn hơn sập về 0.
+     * <p>Rubric weighted không khai trọng số (tổng bằng 0) thì lùi về trung bình
+     * cộng, giống fallback của luồng AI. Kết quả cuối cùng luôn bị chặn trong thang
+     * điểm của rubric version.
      */
-    private BigDecimal weightedItemScore(
+    private BigDecimal itemScore(
             List<SubmitGradingCommand.CriterionScoreItem> scores,
-            Map<UUID, RubricCriterion> criteria) {
+            Map<UUID, RubricCriterion> criteria,
+            RubricTotalScoreMethod totalScoreMethod,
+            BigDecimal scoringScaleMin,
+            BigDecimal scoringScaleMax) {
         if (scores == null || scores.isEmpty()) {
             throw new IllegalArgumentException("Phải chấm điểm cho các tiêu chí.");
         }
@@ -158,9 +170,20 @@ public class GradingItemScoreResolver {
             }
         }
 
-        if (weightSum.compareTo(BigDecimal.ZERO) > 0) {
-            return weightedSum.divide(weightSum, 2, RoundingMode.HALF_UP);
+        BigDecimal resolved;
+        if (totalScoreMethod == RubricTotalScoreMethod.SUM) {
+            resolved = plainSum;
+        } else if (weightSum.compareTo(BigDecimal.ZERO) > 0) {
+            resolved = weightedSum.divide(weightSum, 2, RoundingMode.HALF_UP);
+        } else {
+            resolved = plainSum.divide(BigDecimal.valueOf(scores.size()), 2, RoundingMode.HALF_UP);
         }
-        return plainSum.divide(BigDecimal.valueOf(scores.size()), 2, RoundingMode.HALF_UP);
+        if (scoringScaleMin != null && resolved.compareTo(scoringScaleMin) < 0) {
+            resolved = scoringScaleMin;
+        }
+        if (scoringScaleMax != null && resolved.compareTo(scoringScaleMax) > 0) {
+            resolved = scoringScaleMax;
+        }
+        return resolved.setScale(2, RoundingMode.HALF_UP);
     }
 }

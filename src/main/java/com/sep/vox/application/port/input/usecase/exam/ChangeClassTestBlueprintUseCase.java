@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.ChangeClassTestBlueprintCommand;
+import com.sep.vox.application.port.input.service.ExamTimeQuotaGuardService;
 import com.sep.vox.application.port.input.service.RecalculateExamTimeDurationService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -61,6 +62,7 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
     private final ExamPaperItemRepository examPaperItemRepository;
     private final QuestionRepository questionRepository;
     private final ExamQuestionSecureLockService examQuestionSecureLockService;
+    private final ExamTimeQuotaGuardService examTimeQuotaGuardService;
     private final RecalculateExamTimeDurationService recalculateExamTimeDurationService;
     private final UserContextPort userContextPort;
 
@@ -76,6 +78,7 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
             ExamPaperItemRepository examPaperItemRepository,
             QuestionRepository questionRepository,
             ExamQuestionSecureLockService examQuestionSecureLockService,
+            ExamTimeQuotaGuardService examTimeQuotaGuardService,
             RecalculateExamTimeDurationService recalculateExamTimeDurationService,
             UserContextPort userContextPort) {
         this.examRepository = examRepository;
@@ -89,6 +92,7 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
         this.examPaperItemRepository = examPaperItemRepository;
         this.questionRepository = questionRepository;
         this.examQuestionSecureLockService = examQuestionSecureLockService;
+        this.examTimeQuotaGuardService = examTimeQuotaGuardService;
         this.recalculateExamTimeDurationService = recalculateExamTimeDurationService;
         this.userContextPort = userContextPort;
     }
@@ -116,6 +120,9 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
             throw new IllegalStateException(
                 "Phải cung cấp đầy đủ blueprintId và blueprintVersionId, hoặc để trống cả hai để gỡ blueprint");
         }
+        if (input.blueprintId() != null) {
+            validateExistingBlueprintDuration(input, exam);
+        }
 
         var now = OffsetDateTime.now();
         var paper = examPaperRepository.findByExamId(exam.getId()).stream()
@@ -137,6 +144,27 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
         var saved = examRepository.save(exam);
         recalculateExamTimeDurationService.recalculate(exam.getId());
         return ExamDtoMapper.toDto(saved);
+    }
+
+    private void validateExistingBlueprintDuration(ChangeClassTestBlueprintCommand input, Exam exam) {
+        var blueprint = examBlueprintRepository.findById(input.blueprintId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy blueprint"));
+        if (!blueprint.getSchoolId().equals(exam.getSchoolId())) {
+            throw new IllegalStateException("Blueprint không thuộc trường của giáo viên");
+        }
+        var version = examBlueprintVersionRepository.findById(input.blueprintVersionId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy version blueprint"));
+        if (!version.getBlueprintId().equals(blueprint.getId())) {
+            throw new IllegalStateException("Version không thuộc blueprint đã chọn");
+        }
+        if (version.getStatus() != ExamBlueprintVersionStatus.PUBLISHED) {
+            throw new IllegalStateException("Chỉ được dùng version đã PUBLISHED");
+        }
+        examTimeQuotaGuardService.requireWithinPlan(
+            exam.getSchoolId(),
+            version.getTotalTimeLimitSeconds(),
+            "Phiên bản blueprint " + version.getCode()
+        );
     }
 
     private void clearExistingPaperContent(ExamPaper paper, UUID currentUserId) {

@@ -128,10 +128,10 @@ public final class RecordExamAttemptEvaluationCommandMapper {
             dto.cPfBranch(),
             dto.cGrammar(),
             dto.cVocabulary(),
-            dto.cDiscourse(),
+            dto.cCoherence(),
             dto.grammarScoreDelta(),
             dto.vocabularyScoreDelta(),
-            dto.discourseScoreDelta()
+            dto.coherenceScoreDelta()
         );
     }
 

@@ -7,6 +7,8 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 import org.dataloader.DataLoader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.graphql.data.method.annotation.SchemaMapping;
@@ -24,19 +26,26 @@ import com.sep.vox.domain.dto.ExamBlueprintSectionDto;
 import com.sep.vox.domain.dto.ExamBlueprintSlotDto;
 import com.sep.vox.domain.dto.ExamBlueprintVersionDto;
 import com.sep.vox.domain.dto.QuestionDto;
+import com.sep.vox.domain.mapper.ExamBlueprintVersionDtoMapper;
 import com.sep.vox.domain.model.exam.ExamBlueprintVersionStatus;
+import com.sep.vox.domain.repository.ExamBlueprintVersionRepository;
 
 @Controller("graphqlExamBlueprintController")
 public class ExamBlueprintController {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(ExamBlueprintController.class);
+
     private final ViewExamBlueprintsUseCase viewExamBlueprintsUseCase;
     private final ViewExamBlueprintDetailsUseCase viewExamBlueprintDetailsUseCase;
+    private final ExamBlueprintVersionRepository examBlueprintVersionRepository;
 
     public ExamBlueprintController(
             ViewExamBlueprintsUseCase viewExamBlueprintsUseCase,
-            ViewExamBlueprintDetailsUseCase viewExamBlueprintDetailsUseCase) {
+            ViewExamBlueprintDetailsUseCase viewExamBlueprintDetailsUseCase,
+            ExamBlueprintVersionRepository examBlueprintVersionRepository) {
         this.viewExamBlueprintsUseCase = viewExamBlueprintsUseCase;
         this.viewExamBlueprintDetailsUseCase = viewExamBlueprintDetailsUseCase;
+        this.examBlueprintVersionRepository = examBlueprintVersionRepository;
     }
 
     @QueryMapping(name = "examBlueprints")
@@ -56,7 +65,25 @@ public class ExamBlueprintController {
 
     @QueryMapping(name = "examBlueprint")
     public ExamBlueprintDto examBlueprint(@Argument(name = "id") UUID id) {
-        return viewExamBlueprintDetailsUseCase.execute(new ViewExamBlueprintDetailsQuery(id));
+        var startedAt = System.nanoTime();
+        LOGGER.info("[blueprint-perf] query examBlueprint start id={}", id);
+        var dto = viewExamBlueprintDetailsUseCase.execute(new ViewExamBlueprintDetailsQuery(id));
+        LOGGER.info("[blueprint-perf] query examBlueprint done id={} tookMs={}", id, (System.nanoTime() - startedAt) / 1_000_000);
+        return dto;
+    }
+
+    @QueryMapping(name = "examBlueprintVersion")
+    public ExamBlueprintVersionDto examBlueprintVersion(@Argument(name = "id") UUID id) {
+        var startedAt = System.nanoTime();
+        LOGGER.info("[blueprint-perf] query examBlueprintVersion start id={}", id);
+        var dto = examBlueprintVersionRepository.findById(id)
+            .map(version -> {
+                viewExamBlueprintDetailsUseCase.execute(new ViewExamBlueprintDetailsQuery(version.getBlueprintId()));
+                return ExamBlueprintVersionDtoMapper.toDto(version);
+            })
+            .orElse(null);
+        LOGGER.info("[blueprint-perf] query examBlueprintVersion done id={} tookMs={}", id, (System.nanoTime() - startedAt) / 1_000_000);
+        return dto;
     }
 
     @SchemaMapping(typeName = "ExamBlueprint", field = "versions")
@@ -132,8 +159,15 @@ public class ExamBlueprintController {
         if (source.fixedQuestionId() == null) {
             return CompletableFuture.completedFuture(null);
         }
-        DataLoader<UUID, QuestionDto> loader = env.getDataLoader("questionByIdAccessible");
-        return loader.load(source.fixedQuestionId());
+        // Không cần questionByIdAccessible (OR-tree phân quyền) ở đây: muốn tới được field này
+        // thì examBlueprint(id)/examBlueprintVersion(id) đã bắt buộc pass
+        // ViewExamBlueprintDetailsUseCase.hasAccess trước rồi, nên lookup thẳng theo id là đủ.
+        var startedAt = System.nanoTime();
+        DataLoader<UUID, QuestionDto> loader = env.getDataLoader("questionByIdBasic");
+        return loader.load(source.fixedQuestionId()).whenComplete((result, error) ->
+            LOGGER.info("[blueprint-perf] fixedQuestion questionId={} tookMs={} error={}",
+                source.fixedQuestionId(), (System.nanoTime() - startedAt) / 1_000_000, error != null ? error.toString() : "none")
+        );
     }
 
     private static ExamBlueprintVersionDto latestVersion(List<ExamBlueprintVersionDto> versions) {

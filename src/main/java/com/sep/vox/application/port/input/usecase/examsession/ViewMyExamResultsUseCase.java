@@ -72,6 +72,7 @@ public class ViewMyExamResultsUseCase implements IUseCase<Void, List<StudentExam
                 var rubricBand = result.getRubricResultBandId() == null
                     ? null
                     : rubricResultBandRepository.findById(result.getRubricResultBandId()).orElse(null);
+                var scoreVisible = isScoreVisible(session, result.getStatus());
 
                 return new StudentExamResultSummaryResponse(
                     candidate.getId(),
@@ -84,11 +85,11 @@ public class ViewMyExamResultsUseCase implements IUseCase<Void, List<StudentExam
                     session.isFlagged(),
                     session.getStartedAt() == null ? null : session.getStartedAt().toString(),
                     session.getSubmittedAt() == null ? null : session.getSubmittedAt().toString(),
-                    isScoreVisible(session, result.getStatus()) ? result.getTotalScore() : null,
+                    scoreVisible ? result.getTotalScore() : null,
                     result.getStatus().name(),
-                    isScoreVisible(session, result.getStatus()) ? result.getRubricResultBandId() : null,
-                    isScoreVisible(session, result.getStatus()) && rubricBand != null ? rubricBand.getCode() : null,
-                    isScoreVisible(session, result.getStatus()) && rubricBand != null ? rubricBand.getName() : null
+                    scoreVisible ? result.getRubricResultBandId() : null,
+                    scoreVisible && rubricBand != null ? rubricBand.getCode() : null,
+                    scoreVisible && rubricBand != null ? rubricBand.getName() : null
                 );
             })
             .filter(java.util.Objects::nonNull)

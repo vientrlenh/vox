@@ -7,7 +7,6 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
@@ -46,7 +45,6 @@ public class ViewExamBlueprintDetailsUseCase implements IUseCase<ViewExamBluepri
     }
 
     @Override
-    @Transactional(readOnly = true)
     public ExamBlueprintDto execute(ViewExamBlueprintDetailsQuery input) {
         var startedAt = System.nanoTime();
         LOGGER.info("[blueprint-perf] ViewExamBlueprintDetailsUseCase start blueprintId={}", input.id());

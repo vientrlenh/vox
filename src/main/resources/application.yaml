@@ -46,7 +46,7 @@ spring:
       group-id: ${KAFKA_GROUP_ID:vox}
       enable-auto-commit: false
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
       max-poll-records: 50 # max records per pools
       max-poll-interval: 10m # 10 min
       fetch-min-size: 1
@@ -56,6 +56,8 @@ spring:
         "[spring.json.trusted.packages]": "com.sep.vox"
         "[session.timeout.ms]": 30000
         "[heartbeat.interval.ms]": 10000
+        "[spring.deserializer.value.delegate.class]": org.springframework.kafka.support.serializer.JacksonJsonDeserializer
+        "[spring.json.use.type.headers]": false
         # Python producers (agents' aiokafka) never send Spring's type-info headers, so
         # JacksonJsonDeserializer has nothing to fall back to and throws IllegalStateException
         # before any @KafkaListener body runs. Fall back to a generic map when headers are
@@ -187,6 +189,12 @@ app:
           topic:
             question-asset-analysis-completed: ${KAFKA_QUESTION_ASSET_ANALYSIS_COMPLETED_TOPIC:question-asset-analysis-completed}
           group-id: ${KAFKA_QUESTION_ASSET_ANALYSIS_GROUP_ID:vox-question-asset-analysis}
+        recording:
+          topic:
+            recording-part-changed: ${KAFKA_RECORDING_PART_CHANGED_TOPIC:exam.recording.part.changed}
+          group-id: ${KAFKA_RECORDING_GROUP_ID:vox-recording}
+  recording:
+    bucket: ${RECORDING_S3_BUCKET:}
 
 system-admin:
   email: ${SYS_ADMIN_EMAIL}

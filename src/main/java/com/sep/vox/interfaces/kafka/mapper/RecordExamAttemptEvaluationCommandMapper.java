@@ -68,7 +68,7 @@ public final class RecordExamAttemptEvaluationCommandMapper {
             return null;
         }
         return criteria.entrySet().stream().collect(Collectors.toMap(
-            Map.Entry::getKey,
+            k -> k.getKey(),
             entry -> toCriterion(entry.getValue())
         ));
     }

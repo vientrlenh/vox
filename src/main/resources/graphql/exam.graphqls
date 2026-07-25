@@ -86,15 +86,6 @@ enum ExamSecurePoolReleaseMode {
     AUTO_AFTER_CLOSE
 }
 
-enum ExamSessionStatus {
-    IN_PROGRESS
-    SUBMITTED
-    GRADING
-    GRADED
-    EXPIRED
-    GRADING_FAILED
-}
-
 enum ExamRecordingStreamType {
     CAMERA 
     SCREEN
@@ -319,16 +310,6 @@ type ExamSchedule {
     requiredProctorCount: Int!
 }
 
-type ExamSession {
-    id: ID!
-    examId: ID!
-    candidateId: ID!
-    paperId: ID
-    startedAt: String
-    submittedAt: String
-    status: ExamSessionStatus!
-}
-
 type ExamCandidate {
     id: ID!
     examId: ID!
@@ -347,7 +328,6 @@ type ExamCandidate {
     assignedPaper: ExamPaper
     schedule: ExamSchedule
     exam: Exam
-    sessions: [ExamSession!]!
 }
 
 type ProctorScheduleSummary {
@@ -560,43 +540,6 @@ input UpdateExamScheduleInput {
     endDate: String
 }
 
-type ExamCandidateResult {
-    id: ID!
-    exam: Exam
-    totalScore: Float
-    status: ExamCandidateResultStatus!
-    releasedAt: String
-    finalizedAt: String
-    createdAt: String!
-}
-
-type ExamCandidateResultPage {
-    content: [ExamCandidateResult!]!
-    page: Int!
-    size: Int!
-    totalElements: Int!
-    totalPages: Int!
-}
-
-enum ExamCandidateResultStatus {
-    PENDING_REVIEW
-    RELEASED
-    APPEALED
-    RE_GRADING
-    FINAL
-    INVALID
-    RETAKE_REQUIRED
-}
-
-type ExamItemResponse {
-    id: ID!
-    exam: Exam
-    audioUrl: String!
-    durationSeconds: Int
-    transcript: String
-    submittedAt: String!
-}
-
 extend type Query {
     exams(
         kind: ExamKind,
@@ -657,9 +600,6 @@ extend type Query {
 
     examItemResponseEvaluation(answerId: ID!): ExamItemEvaluationDetails
     records(examSessionId: ID!, streamType: ExamRecordingStreamType): [ExamRecording!]!
-
-    myRecordings: [ExamItemResponse!]!
-    myExamResults(page: Int = 0, size: Int = 20): ExamCandidateResultPage!
 }
 
 extend type Mutation {

@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.service;
 
+import com.sep.vox.application.common.ScoreRangeValidator;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.domain.model.framework.FrameworkCriterion;
@@ -234,6 +235,16 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
                         }
                     } catch (NumberFormatException e) {
                         errors.add(error("general", "Dữ liệu Trọng số/Điểm/Thứ tự không đúng định dạng số."));
+                    }
+                }
+
+                // Kiểm tra khoảng điểm có nằm trong thang điểm tổng của Rubric Version không
+                if (errors.isEmpty()) {
+                    try {
+                        ScoreRangeValidator.assertWithinScale(version.getScoringScaleMin(), version.getScoringScaleMax(),
+                                minScore, maxScore, safeCode);
+                    } catch (IllegalArgumentException e) {
+                        errors.add(error("minScore", e.getMessage()));
                     }
                 }
 

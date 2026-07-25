@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.rubricschool;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sep.vox.application.common.ScoreRangeValidator;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
@@ -112,6 +113,11 @@ public class UpdateSchoolRubricCriterionUseCase implements IUseCase<UpdateSchool
         if (finalMinScore.compareTo(finalMaxScore) > 0) {
             throw new IllegalArgumentException("Điểm tối thiểu (minScore) không được lớn hơn điểm tối đa (maxScore).");
         }
+
+        // Validate nằm trong thang điểm tổng của RubricVersion
+        String nameForError = safeName != null ? safeName : criterion.getName();
+        ScoreRangeValidator.assertWithinScale(version.getScoringScaleMin(), version.getScoringScaleMax(),
+                finalMinScore, finalMaxScore, nameForError);
 
         // 7. Validate chuỗi JSON (Bẫy bằng Value Object RubricCriterionExamples) & chuẩn hóa lại đúng định dạng {"values": [...]} trước khi lưu DB
         String examplesJsonToPersist = command.examplesJson();

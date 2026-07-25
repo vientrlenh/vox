@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.rubricschool;
 
+import com.sep.vox.application.common.RubricResultBandValidator;
+import com.sep.vox.application.common.ScoreRangeValidator;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
@@ -8,6 +10,7 @@ import com.sep.vox.application.port.input.command.UpdateSchoolRubricResultBandCo
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
+import com.sep.vox.domain.model.rubric.RubricResultBand;
 import com.sep.vox.domain.model.rubric.RubricStatus;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.*;
@@ -17,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -101,6 +105,18 @@ public class UpdateSchoolRubricResultBandUseCase implements IUseCase<UpdateSchoo
         if (finalMinScore.compareTo(finalMaxScore) > 0) {
             throw new IllegalArgumentException("Điểm sàn (scoreMin) không được lớn hơn điểm trần (scoreMax).");
         }
+
+        // Validate không chồng lấn với các band khác trong cùng version
+        List<RubricResultBand> siblingBands = rubricResultBandRepository.findByRubricVersionId(resultBand.getRubricVersionId())
+                .stream()
+                .filter(b -> !b.getId().equals(resultBand.getId()))
+                .toList();
+        String nameForError = safeName != null ? safeName : resultBand.getName();
+        RubricResultBandValidator.assertNoOverlap(siblingBands, finalMinScore, finalMaxScore, nameForError);
+
+        // Validate nằm trong thang điểm tổng của RubricVersion
+        ScoreRangeValidator.assertWithinScale(version.getScoringScaleMin(), version.getScoringScaleMax(),
+                finalMinScore, finalMaxScore, nameForError);
 
         // 6. Bắn SQL Atomic Update
         try {

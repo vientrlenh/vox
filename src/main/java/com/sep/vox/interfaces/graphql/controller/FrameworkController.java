@@ -25,13 +25,17 @@ import com.sep.vox.application.port.input.usecase.framework.UpdateFrameworkCrite
 import com.sep.vox.application.port.input.usecase.framework.UpdateFrameworkCriterionUseCase;
 import com.sep.vox.application.port.input.usecase.framework.UpdateFrameworkResultBandUseCase;
 import com.sep.vox.application.port.input.usecase.framework.UpdateFrameworkVersionUseCase;
+import com.sep.vox.application.port.input.usecase.framework.ViewActiveFrameworksUseCase;
 import com.sep.vox.application.port.input.usecase.framework.ViewFrameworkCriteriaUseCase;
 import com.sep.vox.application.port.input.usecase.framework.ViewFrameworkCriterionDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.framework.ViewFrameworkDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.framework.ViewFrameworkVersionDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.framework.ViewFrameworkVersionsUseCase;
 import com.sep.vox.application.port.input.usecase.framework.ViewFrameworksUseCase;
+import com.sep.vox.application.port.input.usecase.framework.ViewPublishedFrameworkVersionDetailsUseCase;
+import com.sep.vox.application.port.input.usecase.framework.ViewPublishedFrameworkVersionsUseCase;
 import com.sep.vox.application.port.input.usecase.framework.ViewSchoolFrameworkCriteriaUseCase;
+import com.sep.vox.application.port.input.usecase.framework.ViewSchoolFrameworkCriterionDetailsUseCase;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.FrameworkCriterionBandDto;
 import com.sep.vox.domain.dto.FrameworkCriterionDto;
@@ -61,6 +65,10 @@ public class FrameworkController {
     private final ViewFrameworkCriteriaUseCase viewFrameworkCriteriaUseCase;
     private final ViewFrameworkCriterionDetailsUseCase viewFrameworkCriterionDetailsUseCase;
     private final ViewSchoolFrameworkCriteriaUseCase viewSchoolFrameworkCriteriaUseCase;
+    private final ViewActiveFrameworksUseCase viewActiveFrameworksUseCase;
+    private final ViewPublishedFrameworkVersionsUseCase viewPublishedFrameworkVersionsUseCase;
+    private final ViewPublishedFrameworkVersionDetailsUseCase viewPublishedFrameworkVersionDetailsUseCase;
+    private final ViewSchoolFrameworkCriterionDetailsUseCase viewSchoolFrameworkCriterionDetailsUseCase;
 
     public FrameworkController(
             ViewFrameworksUseCase viewFrameworksUseCase,
@@ -73,7 +81,11 @@ public class FrameworkController {
             UpdateFrameworkResultBandUseCase updateFrameworkResultBandUseCase,
             ViewFrameworkCriteriaUseCase viewFrameworkCriteriaUseCase,
             ViewFrameworkCriterionDetailsUseCase viewFrameworkCriterionDetailsUseCase,
-            ViewSchoolFrameworkCriteriaUseCase viewSchoolFrameworkCriteriaUseCase) {
+            ViewSchoolFrameworkCriteriaUseCase viewSchoolFrameworkCriteriaUseCase,
+            ViewActiveFrameworksUseCase viewActiveFrameworksUseCase,
+            ViewPublishedFrameworkVersionsUseCase viewPublishedFrameworkVersionsUseCase,
+            ViewPublishedFrameworkVersionDetailsUseCase viewPublishedFrameworkVersionDetailsUseCase,
+            ViewSchoolFrameworkCriterionDetailsUseCase viewSchoolFrameworkCriterionDetailsUseCase) {
         this.viewFrameworksUseCase = viewFrameworksUseCase;
         this.viewFrameworkDetailsUseCase = viewFrameworkDetailsUseCase;
         this.viewFrameworkVersionsUseCase = viewFrameworkVersionsUseCase;
@@ -85,6 +97,10 @@ public class FrameworkController {
         this.viewFrameworkCriteriaUseCase = viewFrameworkCriteriaUseCase;
         this.viewFrameworkCriterionDetailsUseCase = viewFrameworkCriterionDetailsUseCase;
         this.viewSchoolFrameworkCriteriaUseCase = viewSchoolFrameworkCriteriaUseCase;
+        this.viewActiveFrameworksUseCase = viewActiveFrameworksUseCase;
+        this.viewPublishedFrameworkVersionsUseCase = viewPublishedFrameworkVersionsUseCase;
+        this.viewPublishedFrameworkVersionDetailsUseCase = viewPublishedFrameworkVersionDetailsUseCase;
+        this.viewSchoolFrameworkCriterionDetailsUseCase = viewSchoolFrameworkCriterionDetailsUseCase;
     }
 
     @QueryMapping(name = "frameworks")
@@ -120,6 +136,31 @@ public class FrameworkController {
         return viewFrameworkVersionDetailsUseCase.execute(new ViewFrameworkVersionDetailsQuery(id));
     }
 
+    @QueryMapping(name = "schoolFrameworks")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public PageResult<FrameworkDto> schoolFrameworks(
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
+        validatePage(page, size);
+        return viewActiveFrameworksUseCase.execute(new ViewFrameworksQuery(page, size, null, true));
+    }
+
+    @QueryMapping(name = "schoolFrameworkVersions")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public PageResult<FrameworkVersionDto> schoolFrameworkVersions(
+            @Argument(name = "frameworkId") UUID frameworkId,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
+        validatePage(page, size);
+        return viewPublishedFrameworkVersionsUseCase.execute(new ViewFrameworkVersionsQuery(frameworkId, page, size));
+    }
+
+    @QueryMapping(name = "schoolFrameworkVersion")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public FrameworkVersionDto schoolFrameworkVersion(@Argument(name = "id") UUID id) {
+        return viewPublishedFrameworkVersionDetailsUseCase.execute(new ViewFrameworkVersionDetailsQuery(id));
+    }
+
     // Query gốc lấy danh sách FrameworkCriterion cho System Admin (không giới hạn trạng thái Version)
     @QueryMapping(name = "frameworkCriteria")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
@@ -139,6 +180,13 @@ public class FrameworkController {
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public List<FrameworkCriterionDto> schoolFrameworkCriteria(@Argument(name = "frameworkVersionId") UUID frameworkVersionId) {
         return viewSchoolFrameworkCriteriaUseCase.execute(new ViewFrameworkCriteriaQuery(frameworkVersionId));
+    }
+
+    // Query gốc lấy chi tiết 1 FrameworkCriterion cho School Admin (chỉ Version đã PUBLISHED)
+    @QueryMapping(name = "schoolFrameworkCriterion")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public FrameworkCriterionDto schoolFrameworkCriterion(@Argument(name = "id") UUID id) {
+        return viewSchoolFrameworkCriterionDetailsUseCase.execute(new ViewFrameworkCriterionDetailsQuery(id));
     }
 
     @MutationMapping(name = "updateFrameworkVersion")

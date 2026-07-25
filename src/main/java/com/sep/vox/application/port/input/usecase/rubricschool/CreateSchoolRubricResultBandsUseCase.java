@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.rubricschool;
 
+import com.sep.vox.application.common.RubricResultBandValidator;
+import com.sep.vox.application.common.ScoreRangeValidator;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
@@ -19,6 +21,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -116,6 +119,12 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
         Set<String> uniqueCodes = new HashSet<>();
         Set<UUID> uniqueFrameworkIds = new HashSet<>();
 
+        // Tích luỹ band đã có trong version + các band mới trong cùng batch để check overlap khoảng điểm.
+        // Dùng TreeMap (key = scoreMin) để check O(log n)/band thay vì quét List O(n)/band (O(n log n) cho cả batch thay vì O(n^2)).
+        NavigableMap<BigDecimal, RubricResultBand> bandsSoFarByMin = new TreeMap<>();
+        rubricResultBandRepository.findByRubricVersionId(command.versionId())
+                .forEach(b -> bandsSoFarByMin.put(b.getScoreMin(), b));
+
         // 4.4 Lặp qua danh sách từ Command và xử lý logic
         List<RubricResultBand> bandsToSave = command.resultBands().stream().map(bCmd -> {
 
@@ -143,8 +152,15 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
                 throw new IllegalArgumentException("Thang điểm '" + safeName + "': Điểm quy đổi tối thiểu không được lớn hơn tối đa.");
             }
 
+            // Validate không chồng lấn với các band đã có/đang tạo cùng batch
+            RubricResultBandValidator.assertNoOverlap(bandsSoFarByMin, bCmd.mappedScoreMin(), bCmd.mappedScoreMax(), safeName);
+
+            // Validate nằm trong thang điểm tổng của RubricVersion
+            ScoreRangeValidator.assertWithinScale(version.getScoringScaleMin(), version.getScoringScaleMax(),
+                    bCmd.mappedScoreMin(), bCmd.mappedScoreMax(), safeName);
+
             // Để ID là null để đảm bảo JPA hiểu đây là record mới, chừa cho DB sinh UUID
-            return new RubricResultBand(
+            RubricResultBand band = new RubricResultBand(
                     null,
                     command.versionId(),
                     safeCode,
@@ -158,6 +174,8 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
                     currentUserId,
                     currentUserId
             );
+            bandsSoFarByMin.put(band.getScoreMin(), band);
+            return band;
         }).toList();
 
         // 5. Lưu hàng loạt xuống Database

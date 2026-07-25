@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.rubricsystem;
 
+import com.sep.vox.application.common.RubricResultBandValidator;
+import com.sep.vox.application.common.ScoreRangeValidator;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
@@ -19,6 +21,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -100,6 +103,12 @@ public class CreateSystemRubricResultBandsUseCase implements IUseCase<CreateSyst
         Set<String> uniqueCodes = new HashSet<>();
         Set<UUID> uniqueFrameworkIds = new HashSet<>();
 
+        // Tích luỹ band đã có trong version + các band mới trong cùng batch để check overlap khoảng điểm.
+        // Dùng TreeMap (key = scoreMin) để check O(log n)/band thay vì quét List O(n)/band (O(n log n) cho cả batch thay vì O(n^2)).
+        NavigableMap<BigDecimal, RubricResultBand> bandsSoFarByMin = new TreeMap<>();
+        rubricResultBandRepository.findByRubricVersionId(command.versionId())
+                .forEach(b -> bandsSoFarByMin.put(b.getScoreMin(), b));
+
         // 4. Lặp và build thực thể (Toàn bộ thao tác diễn ra trên RAM)
         List<RubricResultBand> bandsToSave = command.resultBands().stream().map(bCmd -> {
 
@@ -127,8 +136,15 @@ public class CreateSystemRubricResultBandsUseCase implements IUseCase<CreateSyst
                 throw new IllegalArgumentException("Thang điểm '" + safeName + "': Điểm quy đổi tối thiểu không được lớn hơn tối đa.");
             }
 
+            // 4.3.1 Validate không chồng lấn với các band đã có/đang tạo cùng batch
+            RubricResultBandValidator.assertNoOverlap(bandsSoFarByMin, bCmd.mappedScoreMin(), bCmd.mappedScoreMax(), safeName);
+
+            // 4.3.2 Validate nằm trong thang điểm tổng của RubricVersion
+            ScoreRangeValidator.assertWithinScale(version.getScoringScaleMin(), version.getScoringScaleMax(),
+                    bCmd.mappedScoreMin(), bCmd.mappedScoreMax(), safeName);
+
             // 4.4 Build Object với ID = null để báo cho Hibernate biết đây là dữ liệu mới
-            return new RubricResultBand(
+            RubricResultBand band = new RubricResultBand(
                     null,                 // ĐỂ NULL: Chặn đứng lệnh SELECT dư thừa trước khi INSERT
                     command.versionId(),
                     safeCode,
@@ -142,6 +158,8 @@ public class CreateSystemRubricResultBandsUseCase implements IUseCase<CreateSyst
                     currentUserId,
                     currentUserId
             );
+            bandsSoFarByMin.put(band.getScoreMin(), band);
+            return band;
         }).toList();
 
         // CHỐNG N+1 (PHA INSERT): Đẩy nguyên List xuống Repository bằng saveAll

@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.rubricsystem;
 
+import com.sep.vox.application.common.ScoreRangeValidator;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
@@ -11,7 +12,9 @@ import com.sep.vox.domain.model.rubric.RubricOwnerType;
 import com.sep.vox.domain.model.rubric.RubricStatus;
 import com.sep.vox.domain.model.rubric.RubricTotalScoreMethod;
 import com.sep.vox.domain.model.user.UserStatus;
+import com.sep.vox.domain.repository.RubricCriterionRepository;
 import com.sep.vox.domain.repository.RubricRepository;
+import com.sep.vox.domain.repository.RubricResultBandRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -30,17 +33,23 @@ public class UpdateSystemRubricVersionUseCase
     private final RubricRepository rubricRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
+    private final RubricResultBandRepository rubricResultBandRepository;
+    private final RubricCriterionRepository rubricCriterionRepository;
 
     public UpdateSystemRubricVersionUseCase(
             RubricVersionRepository rubricVersionRepository,
             RubricRepository rubricRepository,
             UserRepository userRepository,
-            UserContextPort userContextPort
+            UserContextPort userContextPort,
+            RubricResultBandRepository rubricResultBandRepository,
+            RubricCriterionRepository rubricCriterionRepository
     ) {
         this.rubricVersionRepository = rubricVersionRepository;
         this.rubricRepository = rubricRepository;
         this.userRepository = userRepository;
         this.userContextPort = userContextPort;
+        this.rubricResultBandRepository = rubricResultBandRepository;
+        this.rubricCriterionRepository = rubricCriterionRepository;
     }
 
     @Override
@@ -116,6 +125,14 @@ public class UpdateSystemRubricVersionUseCase
                     "Điểm tối thiểu không được lớn hơn điểm tối đa."
             );
         }
+
+        // Chặn thu hẹp thang điểm làm ResultBand/Criterion đã tạo trước đó bị lọt ra ngoài thang mới
+        rubricResultBandRepository.findByRubricVersionId(command.versionId()).forEach(band ->
+                ScoreRangeValidator.assertWithinScale(finalScoreMin, finalScoreMax,
+                        band.getScoreMin(), band.getScoreMax(), band.getName()));
+        rubricCriterionRepository.findByRubricVersionId(command.versionId()).forEach(criterion ->
+                ScoreRangeValidator.assertWithinScale(finalScoreMin, finalScoreMax,
+                        criterion.getMinScore(), criterion.getMaxScore(), criterion.getName()));
 
         String safeMethod = parseOptionalTotalScoreMethod(
                 command.totalScoreMethod()

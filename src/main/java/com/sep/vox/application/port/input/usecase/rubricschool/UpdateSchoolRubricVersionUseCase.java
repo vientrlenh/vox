@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.rubricschool;
 
+import com.sep.vox.application.common.ScoreRangeValidator;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
@@ -11,7 +12,9 @@ import com.sep.vox.domain.model.rubric.RubricOwnerType;
 import com.sep.vox.domain.model.rubric.RubricStatus;
 import com.sep.vox.domain.model.rubric.RubricTotalScoreMethod;
 import com.sep.vox.domain.model.user.UserStatus;
+import com.sep.vox.domain.repository.RubricCriterionRepository;
 import com.sep.vox.domain.repository.RubricRepository;
+import com.sep.vox.domain.repository.RubricResultBandRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -34,6 +37,8 @@ public class UpdateSchoolRubricVersionUseCase
     private final UserContextPort userContextPort;
     private final SchoolRepository schoolRepository;
     private final SchoolUserRepository schoolUserRepository;
+    private final RubricResultBandRepository rubricResultBandRepository;
+    private final RubricCriterionRepository rubricCriterionRepository;
 
     public UpdateSchoolRubricVersionUseCase(
             RubricVersionRepository rubricVersionRepository,
@@ -41,7 +46,9 @@ public class UpdateSchoolRubricVersionUseCase
             UserRepository userRepository,
             UserContextPort userContextPort,
             SchoolRepository schoolRepository,
-            SchoolUserRepository schoolUserRepository
+            SchoolUserRepository schoolUserRepository,
+            RubricResultBandRepository rubricResultBandRepository,
+            RubricCriterionRepository rubricCriterionRepository
     ) {
         this.rubricVersionRepository = rubricVersionRepository;
         this.rubricRepository = rubricRepository;
@@ -49,6 +56,8 @@ public class UpdateSchoolRubricVersionUseCase
         this.userContextPort = userContextPort;
         this.schoolRepository = schoolRepository;
         this.schoolUserRepository = schoolUserRepository;
+        this.rubricResultBandRepository = rubricResultBandRepository;
+        this.rubricCriterionRepository = rubricCriterionRepository;
     }
 
     @Override
@@ -144,6 +153,14 @@ public class UpdateSchoolRubricVersionUseCase
                     "Điểm tối thiểu không được lớn hơn điểm tối đa."
             );
         }
+
+        // Chặn thu hẹp thang điểm làm ResultBand/Criterion đã tạo trước đó bị lọt ra ngoài thang mới
+        rubricResultBandRepository.findByRubricVersionId(command.versionId()).forEach(band ->
+                ScoreRangeValidator.assertWithinScale(finalScoreMin, finalScoreMax,
+                        band.getScoreMin(), band.getScoreMax(), band.getName()));
+        rubricCriterionRepository.findByRubricVersionId(command.versionId()).forEach(criterion ->
+                ScoreRangeValidator.assertWithinScale(finalScoreMin, finalScoreMax,
+                        criterion.getMinScore(), criterion.getMaxScore(), criterion.getName()));
 
         String safeMethod = parseOptionalTotalScoreMethod(
                 command.totalScoreMethod()

@@ -46,11 +46,11 @@ public class RubricGraphQlDataLoaderConfig {
                             for (var entry : keysByStatus.entrySet()) {
                                 String status = "NULL".equals(entry.getKey()) ? null : entry.getKey();
                                 var groupedKeys = entry.getValue();
-                                var rubricIds = groupedKeys.stream().map(RubricVersionsKey::rubricId).distinct().toList();
+                                var rubricIds = groupedKeys.stream().map(k -> k.rubricId()).distinct().toList();
 
                                 List<RubricVersion> allVersions = rubricVersionRepository.findByRubricIdInAndStatus(rubricIds, status);
                                 Map<UUID, List<RubricVersion>> versionsByRubric = allVersions.stream()
-                                        .collect(Collectors.groupingBy(RubricVersion::getRubricId));
+                                        .collect(Collectors.groupingBy(v -> v.getRubricId()));
 
                                 for (RubricVersionsKey key : groupedKeys) {
                                     List<RubricVersion> rubricVersions = versionsByRubric.getOrDefault(key.rubricId(), List.of());
@@ -78,10 +78,10 @@ public class RubricGraphQlDataLoaderConfig {
                             Map<RubricCriteriaKey, PageResult<RubricCriterionDto>> result = new HashMap<>();
                             keys.forEach(k -> result.put(k, new PageResult<>(List.of(), k.page(), k.size(), 0, 0)));
 
-                            var versionIds = keys.stream().map(RubricCriteriaKey::versionId).distinct().toList();
+                            var versionIds = keys.stream().map(k -> k.versionId()).distinct().toList();
                             List<RubricCriterion> allCriteria = rubricCriterionRepository.findByRubricVersionIdIn(versionIds);
                             Map<UUID, List<RubricCriterion>> criteriaByVersion = allCriteria.stream()
-                                    .collect(Collectors.groupingBy(RubricCriterion::getRubricVersionId));
+                                    .collect(Collectors.groupingBy(c -> c.getRubricVersionId()));
 
                             for (RubricCriteriaKey key : keys) {
                                 List<RubricCriterion> criteriaList = criteriaByVersion.getOrDefault(key.versionId(), List.of());
@@ -89,7 +89,7 @@ public class RubricGraphQlDataLoaderConfig {
                                 int totalPages = (int) Math.ceil((double) totalElements / key.size());
 
                                 List<RubricCriterionDto> pagedDtos = criteriaList.stream()
-                                        .sorted(Comparator.comparingInt(RubricCriterion::getOrder))
+                                        .sorted(Comparator.comparingInt(c -> c.getOrder()))
                                         .skip((long) key.page() * key.size())
                                         .limit(key.size())
                                         .map(RubricCriterionDtoMapper::toDto)
@@ -108,10 +108,10 @@ public class RubricGraphQlDataLoaderConfig {
                             Map<RubricCriterionBandsKey, PageResult<RubricCriterionBandDto>> result = new HashMap<>();
                             keys.forEach(k -> result.put(k, new PageResult<>(List.of(), k.page(), k.size(), 0, 0)));
 
-                            var criterionIds = keys.stream().map(RubricCriterionBandsKey::criterionId).distinct().toList();
+                            var criterionIds = keys.stream().map(k -> k.criterionId()).distinct().toList();
                             List<RubricCriterionBand> allBands = rubricCriterionBandRepository.findByCriterionIdIn(criterionIds);
                             Map<UUID, List<RubricCriterionBand>> bandsByCriterion = allBands.stream()
-                                    .collect(Collectors.groupingBy(RubricCriterionBand::getCriterionId));
+                                    .collect(Collectors.groupingBy(b -> b.getCriterionId()));
 
                             for (RubricCriterionBandsKey key : keys) {
                                 List<RubricCriterionBand> bandList = bandsByCriterion.getOrDefault(key.criterionId(), List.of());
@@ -138,10 +138,10 @@ public class RubricGraphQlDataLoaderConfig {
                             Map<RubricResultBandsKey, PageResult<RubricResultBandDto>> result = new HashMap<>();
                             keys.forEach(k -> result.put(k, new PageResult<>(List.of(), k.page(), k.size(), 0, 0)));
 
-                            var versionIds = keys.stream().map(RubricResultBandsKey::versionId).distinct().toList();
+                            var versionIds = keys.stream().map(k -> k.versionId()).distinct().toList();
                             List<RubricResultBand> allResultBands = rubricResultBandRepository.findByRubricVersionIdIn(versionIds);
                             Map<UUID, List<RubricResultBand>> resultBandsByVersion = allResultBands.stream()
-                                    .collect(Collectors.groupingBy(RubricResultBand::getRubricVersionId));
+                                    .collect(Collectors.groupingBy(b -> b.getRubricVersionId()));
 
                             for (RubricResultBandsKey key : keys) {
                                 List<RubricResultBand> bandList = resultBandsByVersion.getOrDefault(key.versionId(), List.of());
@@ -171,7 +171,7 @@ public class RubricGraphQlDataLoaderConfig {
 
                             return languages.stream()
                                     .collect(Collectors.toMap(
-                                            SupportedLanguage::getId,
+                                            l -> l.getId(),
                                             SupportedLanguageDtoMapper::toDto
                                     ));
                         })
@@ -187,7 +187,7 @@ public class RubricGraphQlDataLoaderConfig {
 
                             return frameworks.stream()
                                     .collect(Collectors.toMap(
-                                            Framework::getId,
+                                            f -> f.getId(),
                                             FrameworkDtoMapper::toDto
                                     ));
                         })

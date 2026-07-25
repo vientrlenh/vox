@@ -14,6 +14,7 @@ import com.sep.vox.application.port.input.command.UpdateSchoolUserCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.schooluser.UpdateSchoolUserResponse;
+import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.valueobject.DateOfBirth;
 import com.sep.vox.domain.valueobject.FullName;
 import com.sep.vox.domain.valueobject.Phone;
@@ -43,7 +44,7 @@ public class UpdateSchoolUserUseCase implements IUseCase<UpdateSchoolUserCommand
         var now = OffsetDateTime.now();
         var callerId = userContextPort.getCurrentAuthenticatedUserId();
 
-        var caller = userRepository.findById(callerId)
+        var caller = userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
 
         var callerSchoolUser = schoolUserRepository.findByUserId(caller.getId())

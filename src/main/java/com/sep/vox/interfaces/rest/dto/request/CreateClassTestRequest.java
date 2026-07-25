@@ -18,7 +18,11 @@ public record CreateClassTestRequest(
     String name,
 
     String description,
+
+    @NotBlank(message = "Thời gian mở bài là bắt buộc")
     String openAt,
+
+    @NotBlank(message = "Thời gian đóng bài là bắt buộc")
     String closeAt,
 
     @Valid
@@ -29,6 +33,9 @@ public record CreateClassTestRequest(
 
     @Min(value = 1, message = "Số lượt thi tối đa phải lớn hơn 0")
     Integer maxAttempt,
+
+    @Min(value = 1, message = "Thời lượng bài thi phải lớn hơn 0 giây")
+    Integer examTimeDurationSecond,
 
     ResultDecisionMethod resultDecisionMethod
 ) {

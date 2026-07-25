@@ -84,17 +84,11 @@ public class UpdateSchoolAssessmentPolicyUseCase implements IUseCase<UpdateAsses
             throw new IllegalStateException("Chỉ có thể cập nhật Assessment Policy khi đang ở trạng thái DRAFT.");
         }
 
-        // 5. Kiểm tra Band mục tiêu / Band tối thiểu (frameworkVersionId giữ nguyên, không cho đổi)
+        // 5. Kiểm tra Band mục tiêu (frameworkVersionId giữ nguyên, không cho đổi)
         FrameworkResultBand targetBand = frameworkResultBandRepository.findById(command.targetFrameworkBandId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy Band mục tiêu (targetFrameworkBandId)."));
-        FrameworkResultBand minimumBand = frameworkResultBandRepository.findById(command.minimumFrameworkBandId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Band tối thiểu (minimumFrameworkBandId)."));
-        if (!targetBand.getFrameworkVersionId().equals(policy.getFrameworkVersionId())
-                || !minimumBand.getFrameworkVersionId().equals(policy.getFrameworkVersionId())) {
-            throw new IllegalStateException("Band mục tiêu/tối thiểu phải thuộc đúng Phiên bản Khung tiêu chuẩn của Policy này.");
-        }
-        if (minimumBand.getOrder() > targetBand.getOrder()) {
-            throw new IllegalStateException("Band tối thiểu không được xếp hạng cao hơn Band mục tiêu.");
+        if (!targetBand.getFrameworkVersionId().equals(policy.getFrameworkVersionId())) {
+            throw new IllegalStateException("Band mục tiêu phải thuộc đúng Phiên bản Khung tiêu chuẩn của Policy này.");
         }
 
         // 6. Kiểm tra khoảng thời gian hiệu lực
@@ -110,7 +104,6 @@ public class UpdateSchoolAssessmentPolicyUseCase implements IUseCase<UpdateAsses
         AssessmentPolicyStrictness strictness = command.strictness() != null ? command.strictness() : AssessmentPolicyStrictness.STANDARD;
 
         policy.setTargetFrameworkBandId(command.targetFrameworkBandId());
-        policy.setMinimumFrameworkBandId(command.minimumFrameworkBandId());
         policy.setPassingScore(command.passingScore());
         policy.setStrictness(strictness);
         policy.setEffectiveFrom(command.effectiveFrom());

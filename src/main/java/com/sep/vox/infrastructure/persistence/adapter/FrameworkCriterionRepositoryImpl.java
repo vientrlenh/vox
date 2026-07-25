@@ -43,6 +43,21 @@ public class FrameworkCriterionRepositoryImpl implements FrameworkCriterionRepos
     }
 
     @Override
+    public boolean existsByFrameworkVersionId(UUID frameworkVersionId) {
+        return springDataFrameworkCriterionRepository.existsByFrameworkVersionId(frameworkVersionId);
+    }
+
+    @Override
+    public boolean existsByFrameworkVersionIdAndCodeAndIdNot(UUID frameworkVersionId, String code, UUID id) {
+        return springDataFrameworkCriterionRepository.existsByFrameworkVersionIdAndCodeAndIdNot(frameworkVersionId, code, id);
+    }
+
+    @Override
+    public boolean existsByFrameworkVersionIdAndCodeIn(UUID frameworkVersionId, Collection<String> codes) {
+        return springDataFrameworkCriterionRepository.existsByFrameworkVersionIdAndCodeIn(frameworkVersionId, codes);
+    }
+
+    @Override
     public List<FrameworkCriterion> findByFrameworkVersionId(UUID frameworkVersionId) {
         return springDataFrameworkCriterionRepository.findByFrameworkVersionId(frameworkVersionId)
                 .stream()
@@ -78,6 +93,10 @@ public class FrameworkCriterionRepositoryImpl implements FrameworkCriterionRepos
     }
 
     @Override
+    public void deleteById(UUID id) {
+        springDataFrameworkCriterionRepository.deleteById(id);
+    }
+    
     public List<FrameworkCriterion> findByFrameworkId(UUID frameworkId) {
         var entities = springDataFrameworkCriterionRepository.findByFrameworkId(frameworkId);
         return entities.stream()

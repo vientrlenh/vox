@@ -57,12 +57,13 @@ public class SecurityConfig {
         "/error",
         "/api/v1/status",
         "/api/v1/auth/**",
+        "/api/v1/webhooks/payos/**",
         "/graphql",
         "/graphiql/**"
     };
 
     private static final List<String> CORS_ALLOWED_PATTERNS = List.of(
-        "http://localhost:5173"
+        "*"
     );
     private static final List<String> CORS_ALLOWED_METHODS = List.of(
         HttpMethod.GET.name(),

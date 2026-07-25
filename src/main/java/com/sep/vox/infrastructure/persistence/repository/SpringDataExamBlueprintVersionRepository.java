@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -11,6 +12,7 @@ import com.sep.vox.infrastructure.persistence.entity.ExamBlueprintVersionJpaEnti
 
 public interface SpringDataExamBlueprintVersionRepository extends JpaRepository<ExamBlueprintVersionJpaEntity, UUID> {
     List<ExamBlueprintVersionJpaEntity> findByBlueprintIdOrderByVersionDesc(UUID blueprintId);
+    List<ExamBlueprintVersionJpaEntity> findByBlueprintIdInOrderByVersionDesc(Collection<UUID> blueprintIds);
 
     List<ExamBlueprintVersionJpaEntity> findByBlueprintIdAndStatusOrderByVersionDesc(UUID blueprintId, String status);
 

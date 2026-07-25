@@ -14,7 +14,9 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
+import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.model.school.SchoolRoom;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
@@ -59,7 +61,11 @@ public class UpdateExamScheduleUseCase implements IUseCase<UpdateExamScheduleCom
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
         var currentUserId = authorize(exam);
 
-        if (!schedule.isModifiable()) {
+        var isClassTest = exam.getKind() == ExamKind.CLASS_TEST;
+        if (isClassTest && exam.getStatus() != ExamStatus.DRAFT && exam.getStatus() != ExamStatus.SCHEDULED) {
+            throw new IllegalStateException("Chỉ có thể sửa lịch bài kiểm tra trên lớp trước khi bắt đầu");
+        }
+        if (!isClassTest && !schedule.isModifiable()) {
             throw new IllegalStateException("Chỉ có thể sửa ca thi khi đang ở trạng thái nháp");
         }
 
@@ -84,15 +90,30 @@ public class UpdateExamScheduleUseCase implements IUseCase<UpdateExamScheduleCom
             throw new DuplicatedException("Phòng học đã có ca thi khác trong khoảng thời gian này");
         }
 
-        int updated = examScheduleRepository.updateAtomic(
-            schedule.getId(),
-            input.schoolRoomId(),
-            input.startDate(),
-            input.endDate(),
-            OffsetDateTime.now(),
-            currentUserId);
-        if (updated == 0) {
-            throw new IllegalStateException("Không thể cập nhật ca thi (đã bị thay đổi trạng thái)");
+        var now = OffsetDateTime.now();
+        if (isClassTest) {
+            schedule.setSchoolRoomId(effectiveRoomId);
+            schedule.setStartDate(effectiveStart);
+            schedule.setEndDate(effectiveEnd);
+            schedule.setUpdatedAt(now);
+            schedule.setUpdatedBy(currentUserId);
+            examScheduleRepository.save(schedule);
+            exam.setOpenAt(effectiveStart);
+            exam.setCloseAt(effectiveEnd);
+            exam.setUpdatedAt(now);
+            exam.setUpdatedBy(currentUserId);
+            examRepository.save(exam);
+        } else {
+            int updated = examScheduleRepository.updateAtomic(
+                schedule.getId(),
+                input.schoolRoomId(),
+                input.startDate(),
+                input.endDate(),
+                now,
+                currentUserId);
+            if (updated == 0) {
+                throw new IllegalStateException("Không thể cập nhật ca thi (đã bị thay đổi trạng thái)");
+            }
         }
         return schedule.getId();
     }

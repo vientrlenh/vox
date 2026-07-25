@@ -17,11 +17,17 @@ public final class CreateClassTestCommandMapper {
             request.openAt(),
             request.closeAt(),
             request.sections() == null ? null : request.sections().stream()
-                .map(section -> new ClassTestSectionCommand(section.title(), section.instruction(), section.questionIds()))
+                .map(section -> new ClassTestSectionCommand(
+                    section.title(),
+                    section.instruction(),
+                    section.weight(),
+                    ClassTestQuestionCommandMapper.fromRequests(section.questions())
+                ))
                 .toList(),
             request.existingBlueprintId(),
             request.existingBlueprintVersionId(),
             request.maxAttempt(),
+            request.examTimeDurationSecond(),
             request.resultDecisionMethod()
         );
     }

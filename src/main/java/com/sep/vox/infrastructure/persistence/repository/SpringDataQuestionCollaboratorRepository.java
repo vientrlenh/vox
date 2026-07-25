@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -11,5 +12,6 @@ import com.sep.vox.infrastructure.persistence.entity.QuestionCollaboratorJpaEnti
 public interface SpringDataQuestionCollaboratorRepository extends JpaRepository<QuestionCollaboratorJpaEntity, UUID> {
     Optional<QuestionCollaboratorJpaEntity> findByQuestionIdAndUserId(UUID questionId, UUID userId);
     List<QuestionCollaboratorJpaEntity> findByQuestionId(UUID questionId);
+    List<QuestionCollaboratorJpaEntity> findByQuestionIdIn(Collection<UUID> questionIds);
     void deleteByQuestionId(UUID questionId);
 }

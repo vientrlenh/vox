@@ -16,12 +16,16 @@ public class ExamResultAppeal {
     private UUID resolvedBy;
     private OffsetDateTime resolvedAt;
     private String notes;
-    
+    private OffsetDateTime deadline;
+    private OffsetDateTime approvedAt;
+    private String decisionNote;
+
     public ExamResultAppeal() {}
 
     public ExamResultAppeal(UUID id, UUID candidateResultId, UUID requestedBy, String reason,
             OffsetDateTime requestedAt, ExamAppealStatus status, BigDecimal scoreBefore, BigDecimal scoreAfter,
-            UUID resolvedBy, OffsetDateTime resolvedAt, String notes) {
+            UUID resolvedBy, OffsetDateTime resolvedAt, String notes, OffsetDateTime deadline,
+            OffsetDateTime approvedAt, String decisionNote) {
         this.id = id;
         this.candidateResultId = candidateResultId;
         this.requestedBy = requestedBy;
@@ -33,11 +37,15 @@ public class ExamResultAppeal {
         this.resolvedBy = resolvedBy;
         this.resolvedAt = resolvedAt;
         this.notes = notes;
+        this.deadline = deadline;
+        this.approvedAt = approvedAt;
+        this.decisionNote = decisionNote;
     }
 
     public ExamResultAppeal(UUID candidateResultId, UUID requestedBy, String reason, OffsetDateTime requestedAt,
             ExamAppealStatus status, BigDecimal scoreBefore, BigDecimal scoreAfter, UUID resolvedBy,
-            OffsetDateTime resolvedAt, String notes) {
+            OffsetDateTime resolvedAt, String notes, OffsetDateTime deadline, OffsetDateTime approvedAt,
+            String decisionNote) {
         this.candidateResultId = candidateResultId;
         this.requestedBy = requestedBy;
         this.reason = reason;
@@ -48,6 +56,9 @@ public class ExamResultAppeal {
         this.resolvedBy = resolvedBy;
         this.resolvedAt = resolvedAt;
         this.notes = notes;
+        this.deadline = deadline;
+        this.approvedAt = approvedAt;
+        this.decisionNote = decisionNote;
     }
 
     public UUID getId() {
@@ -138,5 +149,27 @@ public class ExamResultAppeal {
         this.notes = notes;
     }
 
-    
+    public OffsetDateTime getDeadline() {
+        return deadline;
+    }
+
+    public void setDeadline(OffsetDateTime deadline) {
+        this.deadline = deadline;
+    }
+
+    public OffsetDateTime getApprovedAt() {
+        return approvedAt;
+    }
+
+    public void setApprovedAt(OffsetDateTime approvedAt) {
+        this.approvedAt = approvedAt;
+    }
+
+    public String getDecisionNote() {
+        return decisionNote;
+    }
+
+    public void setDecisionNote(String decisionNote) {
+        this.decisionNote = decisionNote;
+    }
 }

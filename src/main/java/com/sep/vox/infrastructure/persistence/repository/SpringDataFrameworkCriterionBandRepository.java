@@ -13,6 +13,7 @@ import com.sep.vox.infrastructure.persistence.entity.FrameworkCriterionBandJpaEn
 
 public interface SpringDataFrameworkCriterionBandRepository extends JpaRepository<FrameworkCriterionBandJpaEntity, UUID> {
     List<FrameworkCriterionBandJpaEntity> findByFrameworkCriterionIdIn(Collection<UUID> frameworkCriterionIds);
+    boolean existsByFrameworkResultBandId(UUID frameworkResultBandId);
 
     @Modifying
     @Query("DELETE FROM FrameworkCriterionBandJpaEntity b WHERE b.frameworkCriterionId IN :frameworkCriterionIds")

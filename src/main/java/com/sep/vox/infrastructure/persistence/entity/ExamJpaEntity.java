@@ -94,10 +94,16 @@ public class ExamJpaEntity {
     @Column(name = "max_attempt")
     private Integer maxAttempt;
 
+    // H.1: mặc định tự động tính = MAX(paperDuration) qua recalculateExamTimeDuration, nhưng
+    // vẫn nhận giá trị người dùng nhập lúc tạo exam, bị ghi đè ngay khi paper/section đầu tiên
+    // được tạo.
+    @Column(name = "exam_time_duration_second")
+    private Integer examTimeDurationSecond;
+
     @Column(name = "result_decision_method", length = 20, check = {
         @CheckConstraint(
             name = "chk_exams_result_decision_method_valid",
-            constraint = "result_decision_method IN ('HIGHEST', 'LATEST', 'AVERAGE', 'FIRST')"
+            constraint = "result_decision_method IN ('HIGHEST', 'LATEST', 'AVERAGE', 'FIRST', 'LOWEST')"
         )
     })
     private String resultDecisionMethod;
@@ -127,6 +133,9 @@ public class ExamJpaEntity {
     @Column(name = "assessment_policy_id")
     private UUID assessmentPolicyId;
 
+    @Column(name = "requires_otp", nullable = false, columnDefinition = "BOOLEAN NOT NULL DEFAULT true")
+    private boolean requiresOtp;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 
@@ -142,8 +151,8 @@ public class ExamJpaEntity {
     protected ExamJpaEntity() {}
 
     public ExamJpaEntity(UUID id, UUID blueprintId, UUID blueprintVersionId, String code, String name, String description, UUID schoolId, UUID languageId,
-            String kind, String deliveryMode, String status, Integer maxAttempt, String resultDecisionMethod, String requiredStreamType, String streamTypePermission, 
-            OffsetDateTime openAt, OffsetDateTime closeAt, UUID assessmentPolicyId,
+            String kind, String deliveryMode, String status, Integer maxAttempt, Integer examTimeDurationSecond, String resultDecisionMethod, String requiredStreamType, String streamTypePermission,
+            OffsetDateTime openAt, OffsetDateTime closeAt, UUID assessmentPolicyId,boolean requiresOtp,
             OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.blueprintId = blueprintId;
@@ -157,12 +166,14 @@ public class ExamJpaEntity {
         this.deliveryMode = deliveryMode;
         this.status = status;
         this.maxAttempt = maxAttempt;
+        this.examTimeDurationSecond = examTimeDurationSecond;
         this.resultDecisionMethod = resultDecisionMethod;
         this.requiredStreamType = requiredStreamType;
         this.streamTypePermission = streamTypePermission;
         this.openAt = openAt;
         this.closeAt = closeAt;
         this.assessmentPolicyId = assessmentPolicyId;
+        this.requiresOtp = requiresOtp;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
@@ -249,6 +260,14 @@ public class ExamJpaEntity {
         this.maxAttempt = maxAttempt;
     }
 
+    public Integer getExamTimeDurationSecond() {
+        return examTimeDurationSecond;
+    }
+
+    public void setExamTimeDurationSecond(Integer examTimeDurationSecond) {
+        this.examTimeDurationSecond = examTimeDurationSecond;
+    }
+
     public String getResultDecisionMethod() {
         return resultDecisionMethod;
     }
@@ -327,6 +346,14 @@ public class ExamJpaEntity {
 
     public void setBlueprintVersionId(UUID blueprintVersionId) {
         this.blueprintVersionId = blueprintVersionId;
+    }
+
+    public boolean isRequiresOtp() {
+        return requiresOtp;
+    }
+
+    public void setRequiresOtp(boolean requiresOtp) {
+        this.requiresOtp = requiresOtp;
     }
 
     public String getRequiredStreamType() {

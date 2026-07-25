@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -44,19 +45,7 @@ public interface SpringDataExamRepository extends JpaRepository<ExamJpaEntity, U
                     WHERE em.examId = e.id
                       AND em.userId = :currentUserId
                 )
-                OR EXISTS (
-                    SELECT 1
-                    FROM ExamCandidateJpaEntity ec
-                    WHERE ec.examId = e.id
-                      AND ec.studentId = :currentUserId
-                )
-                OR EXISTS (
-                    SELECT 1
-                    FROM ExamScheduleJpaEntity es
-                    JOIN ExamScheduleProctorJpaEntity esp ON esp.scheduleId = es.id
-                    WHERE es.examId = e.id
-                      AND esp.teacherId = :currentUserId
-                )
+                OR (e.status IN ('CLOSED', 'RESULTS_PUBLISHED') AND e.schoolId = :currentSchoolId)
               )
         ORDER BY e.updatedAt DESC
     """)
@@ -96,4 +85,7 @@ public interface SpringDataExamRepository extends JpaRepository<ExamJpaEntity, U
           AND s.submittedAt IS NOT NULL
     """)
     boolean existsSubmittedSessionByExamId(@Param("examId") UUID examId);
+
+    List<ExamJpaEntity> findByStatusAndOpenAtBefore(String status, OffsetDateTime time);
+    List<ExamJpaEntity> findByStatusAndCloseAtBefore(String status, OffsetDateTime time);
 }

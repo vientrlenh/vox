@@ -1,5 +1,7 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -36,6 +38,16 @@ public class QuestionBankRepositoryImpl implements QuestionBankRepository {
     public Optional<QuestionBank> findById(UUID id) {
         return springDataQuestionBankRepository.findById(id)
             .map(QuestionBankMapper::toDomain);
+    }
+
+    @Override
+    public List<QuestionBank> findByIdIn(Collection<UUID> ids) {
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+        return springDataQuestionBankRepository.findAllById(ids).stream()
+            .map(QuestionBankMapper::toDomain)
+            .toList();
     }
 
     @Override

@@ -6,7 +6,8 @@ import com.sep.vox.infrastructure.persistence.entity.ExamCandidateResultJpaEntit
 
 public final class ExamCandidateResultMapper {
 
-    private ExamCandidateResultMapper() {}
+    private ExamCandidateResultMapper() {
+    }
 
     public static ExamCandidateResult toDomain(ExamCandidateResultJpaEntity jpa) {
         return new ExamCandidateResult(
@@ -21,13 +22,36 @@ public final class ExamCandidateResultMapper {
             jpa.getTargetFrameworkBandId(),
             jpa.getRubricResultBandId(),
             jpa.getTotalScore(),
-            jpa.getStatus() == null ? null : ExamCandidateResultStatus.valueOf(jpa.getStatus()),
+            ExamCandidateResultStatus.valueOf(jpa.getStatus()),
             jpa.getReleasedAt(),
             jpa.getFinalizedAt(),
             jpa.getCreatedAt(),
             jpa.getUpdatedAt(),
             jpa.getCreatedBy(),
             jpa.getUpdatedBy()
+        );
+    }
+
+    public static ExamCandidateResultJpaEntity toJpa(ExamCandidateResult domain) {
+        return new ExamCandidateResultJpaEntity(
+            domain.getId(),
+            domain.getExamId(),
+            domain.getCandidateId(),
+            domain.getSessionId(),
+            domain.getAssessmentPolicyId(),
+            domain.getPolicyVersion(),
+            domain.getRubricVersionId(),
+            domain.getFrameworkVersionId(),
+            domain.getTargetFrameworkBandId(),
+            domain.getRubricResultBandId(),
+            domain.getTotalScore(),
+            domain.getStatus().name(),
+            domain.getReleasedAt(),
+            domain.getFinalizedAt(),
+            domain.getCreatedAt(),
+            domain.getUpdatedAt(),
+            domain.getCreatedBy(),
+            domain.getUpdatedBy()
         );
     }
 }

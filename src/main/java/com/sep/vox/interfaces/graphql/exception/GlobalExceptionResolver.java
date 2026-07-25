@@ -8,6 +8,8 @@ import org.springframework.stereotype.Component;
 
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.PlanLimitExceededException;
+import com.sep.vox.application.exception.QuotaExceededException;
 import com.sep.vox.application.exception.UnauthorizedException;
 
 import graphql.GraphQLError;
@@ -86,6 +88,15 @@ public class GlobalExceptionResolver extends DataFetcherExceptionResolverAdapter
         if (ex instanceof ForbiddenException) {
             return GraphQLError.newError()
                     .errorType(ErrorType.FORBIDDEN)
+                    .message(ex.getMessage())
+                    .path(env.getExecutionStepInfo().getPath())
+                    .location(env.getField().getSourceLocation())
+                    .build();
+        }
+
+        if (ex instanceof QuotaExceededException || ex instanceof PlanLimitExceededException) {
+            return GraphQLError.newError()
+                    .errorType(ErrorType.BAD_REQUEST)
                     .message(ex.getMessage())
                     .path(env.getExecutionStepInfo().getPath())
                     .location(env.getField().getSourceLocation())

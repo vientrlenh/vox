@@ -15,6 +15,7 @@ import com.sep.vox.domain.repository.SchoolGradeLevelRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -71,12 +72,14 @@ public class CreateSchoolGradeLevelUseCase implements IUseCase<CreateSchoolGrade
             throw new UnauthorizedException("Tài khoản không tồn tại hoặc đã bị khóa.");
         }
 
-        // Nếu là School Admin, phải check trùng schoolId
-        schoolUserRepository.findSchoolIdByUserId(userId).ifPresent(userSchoolId -> {
+        // System admin bỏ qua; còn lại bắt buộc thuộc đúng trường
+        if (!userContextPort.isSystemAdmin()) {
+            UUID userSchoolId = schoolUserRepository.findSchoolIdByUserId(userId)
+                .orElseThrow(() -> new ForbiddenException("Bạn không có quyền tạo khối học cho trường khác."));
             if (!userSchoolId.equals(targetSchoolId)) {
                 throw new ForbiddenException("Bạn không có quyền tạo khối học cho trường khác.");
             }
-        });
+        }
     }
 
     private void validateUniqueness(UUID schoolId, String code, int order) {
@@ -99,6 +102,11 @@ public class CreateSchoolGradeLevelUseCase implements IUseCase<CreateSchoolGrade
                 SchoolGradeLevelStatus.ACTIVE,
                 now, now, creatorId, creatorId
         );
-        return schoolGradeLevelRepository.save(newGradeLevel).getId();
+        try {
+            return schoolGradeLevelRepository.save(newGradeLevel).getId();
+        } catch (DataIntegrityViolationException e) {
+            // Chống race-condition: hai request cùng tạo trùng mã/thứ tự vượt qua check exists rồi mới đụng unique index.
+            throw new DuplicatedException("Mã hoặc thứ tự khối học đã tồn tại trong trường.");
+        }
     }
 }

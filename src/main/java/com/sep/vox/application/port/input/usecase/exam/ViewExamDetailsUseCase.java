@@ -12,6 +12,7 @@ import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.domain.mapper.ExamDtoMapper;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
+import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -52,7 +53,7 @@ public class ViewExamDetailsUseCase implements IUseCase<ViewExamDetailsQuery, Ex
         var exam = examRepository.findById(input.id())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
 
-        if (!hasAccess(exam.getId(), exam.getSchoolId(), currentUserId, currentSchoolId, schoolAdmin)) {
+        if (!hasAccess(exam.getId(), exam.getSchoolId(), exam.getStatus(), currentUserId, currentSchoolId, schoolAdmin)) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
@@ -62,6 +63,7 @@ public class ViewExamDetailsUseCase implements IUseCase<ViewExamDetailsQuery, Ex
     private boolean hasAccess(
             java.util.UUID examId,
             java.util.UUID examSchoolId,
+            ExamStatus examStatus,
             java.util.UUID currentUserId,
             java.util.UUID currentSchoolId,
             boolean schoolAdmin) {
@@ -69,6 +71,11 @@ public class ViewExamDetailsUseCase implements IUseCase<ViewExamDetailsQuery, Ex
             return true;
         }
         if (schoolAdmin && currentSchoolId != null && currentSchoolId.equals(examSchoolId)) {
+            return true;
+        }
+        // Sau khi kỳ thi đã đóng, ai cùng trường cũng xem được — không cần là member nữa.
+        if ((examStatus == ExamStatus.CLOSED || examStatus == ExamStatus.RESULTS_PUBLISHED)
+                && currentSchoolId != null && currentSchoolId.equals(examSchoolId)) {
             return true;
         }
         return examMemberRepository.existsByExamIdAndUserIdAndRole(examId, currentUserId, ExamMemberRole.CHAIR)

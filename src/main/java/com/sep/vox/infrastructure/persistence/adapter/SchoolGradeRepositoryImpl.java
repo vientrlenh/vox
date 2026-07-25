@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -69,7 +70,7 @@ public class SchoolGradeRepositoryImpl implements SchoolGradeRepository {
         if (schoolId == null || codes == null || codes.isEmpty()) {
             return List.of();
         }
-        var upperCodes = codes.stream().map(String::toUpperCase).collect(Collectors.toSet());
+        var upperCodes = codes.stream().map(s -> s.toUpperCase(Locale.ROOT)).collect(Collectors.toSet());
         return springDataSchoolGradeRepository.findBySchoolIdAndCodeIn(schoolId, upperCodes)
                 .stream()
                 .map(SchoolGradeMapper::toDomain)
@@ -93,9 +94,14 @@ public class SchoolGradeRepositoryImpl implements SchoolGradeRepository {
     }
 
     @Override
-    public PageResult<SchoolGrade> findAllBySchoolId(UUID schoolId, UUID schoolGradeLevelId, int pageNumber, int size) {
+    public boolean existsBySchoolGradeLevelIdAndStatusNot(UUID schoolGradeLevelId, String status) {
+        return springDataSchoolGradeRepository.existsBySchoolGradeLevelIdAndStatusNot(schoolGradeLevelId, status);
+    }
+
+    @Override
+    public PageResult<SchoolGrade> findAllBySchoolId(UUID schoolId, UUID schoolGradeLevelId, String status, int pageNumber, int size) {
         var pageable = PageRequest.of(pageNumber - 1, size);
-        var page = springDataSchoolGradeRepository.findAllBySchoolId(schoolId, schoolGradeLevelId, pageable);
+        var page = springDataSchoolGradeRepository.findAllBySchoolId(schoolId, schoolGradeLevelId, status, pageable);
         return new PageResult<>(
                 page.getContent().stream()
                         .map(SchoolGradeMapper::toDomain)

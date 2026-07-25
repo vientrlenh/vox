@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.rubricschool;
 
-import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;

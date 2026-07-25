@@ -4,9 +4,11 @@ import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
@@ -56,8 +58,30 @@ public class ExamCandidateRepositoryImpl implements ExamCandidateRepository {
     }
 
     @Override
+    public List<ExamCandidate> findByExamIdIn(Collection<UUID> examIds) {
+        if (examIds.isEmpty()) {
+            return List.of();
+        }
+        return springDataExamCandidateRepository.findByExamIdIn(examIds).stream()
+            .map(ExamCandidateMapper::toDomain)
+            .toList();
+    }
+
+    @Override
     public long countByExamId(UUID examId) {
         return springDataExamCandidateRepository.countByExamId(examId);
+    }
+
+    @Override
+    public Map<UUID, Long> countByExamIdIn(Collection<UUID> examIds) {
+        if (examIds.isEmpty()) {
+            return Map.of();
+        }
+        return springDataExamCandidateRepository.countByExamIdIn(examIds).stream()
+            .collect(Collectors.toMap(
+                SpringDataExamCandidateRepository.ExamIdCandidateCount::getExamId,
+                SpringDataExamCandidateRepository.ExamIdCandidateCount::getCandidateCount
+            ));
     }
 
     public Optional<ExamCandidate> findById(UUID id) {
@@ -66,8 +90,28 @@ public class ExamCandidateRepositoryImpl implements ExamCandidateRepository {
     }
 
     @Override
+    public Optional<ExamCandidate> findByExamIdAndStudentId(UUID examId, UUID studentId) {
+        return springDataExamCandidateRepository.findByExamIdAndStudentId(examId, studentId)
+            .map(ExamCandidateMapper::toDomain);
+    }
+
+    @Override
     public boolean existsByExamIdAndStudentId(UUID examId, UUID studentId) {
         return springDataExamCandidateRepository.existsByExamIdAndStudentId(examId, studentId);
+    }
+
+    @Override
+    public List<ExamCandidate> findByStudentId(UUID studentId) {
+        return springDataExamCandidateRepository.findByStudentId(studentId).stream()
+            .map(ExamCandidateMapper::toDomain)
+            .toList();
+    }
+
+    @Override
+    public List<ExamCandidate> findByScheduleId(UUID scheduleId) {
+        return springDataExamCandidateRepository.findByScheduleId(scheduleId).stream()
+            .map(ExamCandidateMapper::toDomain)
+            .toList();
     }
 
     @Override

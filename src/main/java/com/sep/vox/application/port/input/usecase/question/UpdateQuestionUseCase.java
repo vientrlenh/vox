@@ -30,19 +30,16 @@ public class UpdateQuestionUseCase implements IUseCase<UpdateQuestionCommand, Up
     private final QuestionRepository questionRepository;
     private final QuestionBankRepository questionBankRepository;
     private final QuestionCollaboratorRepository questionCollaboratorRepository;
-    private final QuestionCloneService questionCloneService;
     private final UserContextPort userContextPort;
 
     public UpdateQuestionUseCase(
             QuestionRepository questionRepository,
             QuestionBankRepository questionBankRepository,
             QuestionCollaboratorRepository questionCollaboratorRepository,
-            QuestionCloneService questionCloneService,
             UserContextPort userContextPort) {
         this.questionRepository = questionRepository;
         this.questionBankRepository = questionBankRepository;
         this.questionCollaboratorRepository = questionCollaboratorRepository;
-        this.questionCloneService = questionCloneService;
         this.userContextPort = userContextPort;
     }
 
@@ -78,34 +75,30 @@ public class UpdateQuestionUseCase implements IUseCase<UpdateQuestionCommand, Up
                 || command.questionType() != null || command.preparationTimeSeconds() != null
                 || command.minResponseSeconds() != null || command.maxResponseSeconds() != null;
 
-        var target = question;
-        var clonedAsNew = false;
         if (hasContentUpdate) {
             var usedInExam = questionRepository.existsUsedInExam(question.getId());
             var immutable = question.getStatus() == QuestionStatus.PUBLISHED || question.isLocked() || usedInExam;
+            if (immutable) {
+                throw new IllegalStateException(
+                    "Câu hỏi đã publish hoặc đã dùng trong bài kiểm tra, không thể sửa trực tiếp — dùng nút Nhân bản để tạo bản có thể sửa");
+            }
             if (!systemAdminOnSystemBank
                     && (owner || editorCollaborator)
-                    && !immutable
                     && question.getStatus() != QuestionStatus.DRAFT
                     && question.getStatus() != QuestionStatus.REVISION_REQUESTED) {
                 throw new ForbiddenException("Chỉ được sửa câu hỏi khi ở trạng thái DRAFT hoặc REVISION_REQUESTED");
             }
-            if (immutable) {
-                target = questionCloneService.cloneAsDraftWithDetails(question, currentUserId);
-                clonedAsNew = true;
+            if (command.preparationTimeSeconds() == null || command.minResponseSeconds() == null || command.maxResponseSeconds() == null) {
+                throw new IllegalStateException("Phải nhập đầy đủ thời gian chuẩn bị, thời gian trả lời tối thiểu và tối đa");
             }
-            applyContentUpdates(target, command, currentUserId);
+            applyContentUpdates(question, command, currentUserId);
         }
 
         question.setUpdatedAt(OffsetDateTime.now());
         question.setUpdatedBy(currentUserId);
         questionRepository.save(question);
 
-        if (clonedAsNew) {
-            var savedClone = questionRepository.save(target);
-            return UpdateQuestionResponseMapper.toResponse(savedClone, true);
-        }
-        return UpdateQuestionResponseMapper.toResponse(question, false);
+        return UpdateQuestionResponseMapper.toResponse(question);
     }
 
     private void applyContentUpdates(Question question, UpdateQuestionCommand command, UUID currentUserId) {

@@ -30,7 +30,9 @@ public class ExamScheduleJpaEntity {
     @Column(name = "exam_id", nullable = false, updatable = false)
     private UUID examId;
 
-    @Column(name = "school_room_id", nullable = false)
+    // Nullable: CLASS_TEST không có phòng thi vật lý, dùng 1 ExamSchedule "ảo"
+    // (schoolRoomId = null) để có mốc thời gian thống nhất với CENTRALIZED.
+    @Column(name = "school_room_id", nullable = true)
     private UUID schoolRoomId;
 
     @Column(name = "start_date", nullable = false)

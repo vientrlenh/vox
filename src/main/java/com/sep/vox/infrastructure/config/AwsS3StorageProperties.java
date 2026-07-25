@@ -2,7 +2,7 @@ package com.sep.vox.infrastructure.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties(prefix = "spring.storage.s3")
+@ConfigurationProperties(prefix = "storage.s3")
 public class AwsS3StorageProperties {
 
     private String bucket;

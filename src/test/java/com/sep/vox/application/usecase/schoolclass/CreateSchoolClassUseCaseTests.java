@@ -25,11 +25,14 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolGrade;
+import com.sep.vox.domain.model.school.SchoolGradeLevel;
+import com.sep.vox.domain.model.school.SchoolGradeLevelStatus;
 import com.sep.vox.domain.model.school.SchoolGradeStatus;
 import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
+import com.sep.vox.domain.repository.SchoolGradeLevelRepository;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;
@@ -45,6 +48,7 @@ class CreateSchoolClassUseCaseTests {
     private UserRepository userRepository;
     private SupportedLanguageRepository supportedLanguageRepository;
     private SchoolGradeRepository schoolGradeRepository;
+    private SchoolGradeLevelRepository schoolGradeLevelRepository;
     private UserContextPort userContextPort;
     private SchoolUserRepository schoolUserRepository;
     private CreateSchoolClassUseCase useCase;
@@ -56,6 +60,7 @@ class CreateSchoolClassUseCaseTests {
         userRepository = mock(UserRepository.class);
         supportedLanguageRepository = mock(SupportedLanguageRepository.class);
         schoolGradeRepository = mock(SchoolGradeRepository.class);
+        schoolGradeLevelRepository = mock(SchoolGradeLevelRepository.class);
         userContextPort = mock(UserContextPort.class);
         schoolUserRepository = mock(SchoolUserRepository.class);
         useCase = new CreateSchoolClassUseCase(
@@ -64,6 +69,7 @@ class CreateSchoolClassUseCaseTests {
             userRepository,
             supportedLanguageRepository,
             schoolGradeRepository,
+            schoolGradeLevelRepository,
             userContextPort,
             schoolUserRepository
         );
@@ -85,7 +91,6 @@ class CreateSchoolClassUseCaseTests {
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(supportedLanguageRepository.findById(languageId)).thenReturn(Optional.of(activeLanguage(languageId)));
         when(schoolGradeRepository.findById(gradeId)).thenReturn(Optional.of(grade));
-        when(schoolGradeRepository.findBySchoolIdAndCode(schoolId, "G10")).thenReturn(Optional.of(grade));
         when(schoolClassRepository.findBySchoolIdAndCode(schoolId, "ENG-01")).thenReturn(Optional.empty());
         when(schoolClassRepository.save(any(SchoolClass.class))).thenAnswer(invocation -> {
             var schoolClass = invocation.getArgument(0, SchoolClass.class);
@@ -123,13 +128,41 @@ class CreateSchoolClassUseCaseTests {
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(supportedLanguageRepository.findById(languageId)).thenReturn(Optional.of(activeLanguage(languageId)));
         when(schoolGradeRepository.findById(gradeId)).thenReturn(Optional.of(grade));
-        when(schoolGradeRepository.findBySchoolIdAndCode(schoolId, "G10")).thenReturn(Optional.of(grade));
         when(schoolClassRepository.findBySchoolIdAndCode(schoolId, "ENG-01"))
             .thenReturn(Optional.of(SchoolClass.create(schoolId, languageId, gradeId, "ENG-01", "Existing", null, userId, OffsetDateTime.now())));
 
         assertThrows(DuplicatedException.class, () -> useCase.execute(command));
 
         verify(schoolClassRepository).findBySchoolIdAndCode(schoolId, "ENG-01");
+        verify(schoolClassRepository, org.mockito.Mockito.never()).save(any());
+    }
+
+    @Test
+    void create_should_throw_when_grade_belongs_to_another_school() {
+        var userId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var languageId = UUID.randomUUID();
+        var gradeId = UUID.randomUUID();
+        var gradeLevelId = UUID.randomUUID();
+        var grade = new SchoolGrade();
+        grade.setId(gradeId);
+        grade.setCode("G10");
+        grade.setSchoolGradeLevelId(gradeLevelId);
+        grade.setStatus(SchoolGradeStatus.ACTIVE);
+        var command = new CreateSchoolClassCommand(schoolId, languageId, gradeId, "ENG-01", "English 01", null);
+
+        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
+        var _user = activeUser(userId, schoolId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(_user));
+        when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
+        when(supportedLanguageRepository.findById(languageId)).thenReturn(Optional.of(activeLanguage(languageId)));
+        when(schoolGradeRepository.findById(gradeId)).thenReturn(Optional.of(grade));
+        // Khối thuộc trường khác → phải bị chặn.
+        when(schoolGradeLevelRepository.findById(gradeLevelId))
+            .thenReturn(Optional.of(gradeLevel(gradeLevelId, UUID.randomUUID())));
+
+        assertThrows(IllegalArgumentException.class, () -> useCase.execute(command));
+
         verify(schoolClassRepository, org.mockito.Mockito.never()).save(any());
     }
 
@@ -191,11 +224,23 @@ class CreateSchoolClassUseCaseTests {
         return language;
     }
 
-    private static SchoolGrade activeGrade(UUID id, UUID schoolId) {
+    private SchoolGrade activeGrade(UUID id, UUID schoolId) {
+        var gradeLevelId = UUID.randomUUID();
         var grade = new SchoolGrade();
         grade.setId(id);
         grade.setCode("G10");
+        grade.setSchoolGradeLevelId(gradeLevelId);
         grade.setStatus(SchoolGradeStatus.ACTIVE);
+        // Năm học xác định trường sở hữu qua Khối (GradeLevel), không qua (schoolId, code).
+        when(schoolGradeLevelRepository.findById(gradeLevelId)).thenReturn(Optional.of(gradeLevel(gradeLevelId, schoolId)));
         return grade;
+    }
+
+    private static SchoolGradeLevel gradeLevel(UUID id, UUID schoolId) {
+        var gradeLevel = new SchoolGradeLevel();
+        gradeLevel.setId(id);
+        gradeLevel.setSchoolId(schoolId);
+        gradeLevel.setStatus(SchoolGradeLevelStatus.ACTIVE);
+        return gradeLevel;
     }
 }

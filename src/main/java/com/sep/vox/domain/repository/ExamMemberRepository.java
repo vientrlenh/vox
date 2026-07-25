@@ -1,5 +1,6 @@
 package com.sep.vox.domain.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -11,6 +12,7 @@ public interface ExamMemberRepository {
     ExamMember save(ExamMember examMember);
     Optional<ExamMember> findById(UUID id);
     List<ExamMember> findByExamId(UUID examId);
+    List<ExamMember> findByExamIdIn(Collection<UUID> examIds);
     Optional<ExamMember> findByExamIdAndUserId(UUID examId, UUID userId);
     boolean existsByExamIdAndUserIdAndRole(UUID examId, UUID userId, ExamMemberRole role);
     boolean existsByUserIdAndRoleAndSchoolId(UUID userId, ExamMemberRole role, UUID schoolId);

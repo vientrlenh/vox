@@ -199,12 +199,6 @@ public class AssessmentPolicyController {
         return loader.load(policy.targetFrameworkBandId());
     }
 
-    @SchemaMapping(typeName = "AssessmentPolicy", field = "minimumFrameworkBand")
-    public CompletableFuture<FrameworkResultBandDto> getMinimumFrameworkBand(AssessmentPolicyDto policy, DataFetchingEnvironment env) {
-        DataLoader<UUID, FrameworkResultBandDto> loader = env.getDataLoader("frameworkResultBandDataLoader");
-        return loader.load(policy.minimumFrameworkBandId());
-    }
-
     @MutationMapping(name = "updateSystemAssessmentPolicy")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public UUID updateSystemAssessmentPolicy(

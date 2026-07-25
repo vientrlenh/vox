@@ -11,12 +11,12 @@ import org.dataloader.BatchLoaderEnvironment;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.graphql.execution.BatchLoaderRegistry;
 
-import com.sep.vox.application.mapper.framework.FrameworkCriterionDtoMapper;
-import com.sep.vox.application.port.output.JsonSerializationPort;
+import com.sep.vox.domain.dto.FrameworkCriterionBandDto;
 import com.sep.vox.domain.dto.FrameworkCriterionDto;
+import com.sep.vox.domain.mapper.FrameworkCriterionBandDtoMapper;
+import com.sep.vox.domain.mapper.FrameworkCriterionDtoMapper;
 import com.sep.vox.domain.dto.FrameworkResultBandDto;
 import com.sep.vox.domain.mapper.FrameworkResultBandDtoMapper;
-import com.sep.vox.domain.model.framework.FrameworkCriterionBand;
 import com.sep.vox.domain.repository.FrameworkCriterionBandRepository;
 import com.sep.vox.domain.repository.FrameworkCriterionRepository;
 import com.sep.vox.domain.repository.FrameworkResultBandRepository;
@@ -30,8 +30,7 @@ public class FrameworkGraphQlDataLoaderConfig {
             BatchLoaderRegistry registry,
             FrameworkCriterionRepository frameworkCriterionRepository,
             FrameworkCriterionBandRepository frameworkCriterionBandRepository,
-            FrameworkResultBandRepository frameworkResultBandRepository,
-            JsonSerializationPort jsonSerializationPort) {
+            FrameworkResultBandRepository frameworkResultBandRepository) {
 
         registry.<UUID, List<FrameworkCriterionDto>>forName("criteriaByFrameworkVersion")
         .registerMappedBatchLoader((Set<UUID> versionIds, BatchLoaderEnvironment env) ->
@@ -41,16 +40,8 @@ public class FrameworkGraphQlDataLoaderConfig {
 
                 var criteria = frameworkCriterionRepository.findByFrameworkVersionIdIn(versionIds);
 
-                var criterionIds = criteria.stream().map(c -> c.getId()).toList();
-                var allBands = criterionIds.isEmpty()
-                    ? List.<FrameworkCriterionBand>of()
-                    : frameworkCriterionBandRepository.findByFrameworkCriterionIdIn(criterionIds);
-
-                var bandsByCriterionId = allBands.stream()
-                    .collect(Collectors.groupingBy(b -> b.getFrameworkCriterionId()));
-
                 var criteriaByVersionId = criteria.stream()
-                    .map(c -> FrameworkCriterionDtoMapper.toDto(c, bandsByCriterionId.getOrDefault(c.getId(), List.of()), jsonSerializationPort))
+                    .map(c -> FrameworkCriterionDtoMapper.toDto(c))
                     .collect(Collectors.groupingBy(b -> b.frameworkVersionId()));
 
                 result.putAll(criteriaByVersionId);
@@ -72,6 +63,22 @@ public class FrameworkGraphQlDataLoaderConfig {
                 result.putAll(bandsByVersionId);
                 return result;
             })
+        );
+
+        registry.<UUID, List<FrameworkCriterionBandDto>>forName("criterionBandsByFrameworkCriterion")
+            .registerMappedBatchLoader((Set<UUID> criterionIds, BatchLoaderEnvironment env) -> 
+                Mono.fromSupplier(() -> {
+                    var result = new HashMap<UUID, List<FrameworkCriterionBandDto>>();
+                    criterionIds.forEach(id -> result.put(id, List.of()));
+
+                    var criterionBandsByCriterionId = frameworkCriterionBandRepository.findByFrameworkCriterionIdIn(criterionIds)
+                        .stream()
+                        .map(FrameworkCriterionBandDtoMapper::toDto)
+                        .collect(Collectors.groupingBy(b -> b.frameworkCriterionId()));
+
+                    result.putAll(criterionBandsByCriterionId);
+                    return result;
+                })
         );
     }
 

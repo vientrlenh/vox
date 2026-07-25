@@ -12,13 +12,14 @@ public class ExamCandidate {
     private ExamCandidateStatus status;
     private OffsetDateTime assignedAt;
     private OffsetDateTime updatedAt;
+    private OffsetDateTime blockedAt;
     private UUID assignedBy;
     private UUID updatedBy;
 
     public ExamCandidate() {}
 
     public ExamCandidate(UUID id, UUID examId, UUID studentId, UUID assignedPaperId, UUID scheduleId,
-            ExamCandidateStatus status, OffsetDateTime assignedAt, OffsetDateTime updatedAt, UUID assignedBy,
+            ExamCandidateStatus status, OffsetDateTime assignedAt, OffsetDateTime updatedAt, OffsetDateTime blockedAt, UUID assignedBy,
             UUID updatedBy) {
         this.id = id;
         this.examId = examId;
@@ -28,12 +29,13 @@ public class ExamCandidate {
         this.status = status;
         this.assignedAt = assignedAt;
         this.updatedAt = updatedAt;
+        this.blockedAt = blockedAt;
         this.assignedBy = assignedBy;
         this.updatedBy = updatedBy;
     }
 
     public ExamCandidate(UUID examId, UUID studentId, UUID assignedPaperId, UUID scheduleId, ExamCandidateStatus status,
-            OffsetDateTime assignedAt, OffsetDateTime updatedAt, UUID assignedBy, UUID updatedBy) {
+            OffsetDateTime assignedAt, OffsetDateTime updatedAt, OffsetDateTime blockedAt, UUID assignedBy, UUID updatedBy) {
         this.examId = examId;
         this.studentId = studentId;
         this.assignedPaperId = assignedPaperId;
@@ -41,6 +43,7 @@ public class ExamCandidate {
         this.status = status;
         this.assignedAt = assignedAt;
         this.updatedAt = updatedAt;
+        this.blockedAt = blockedAt;
         this.assignedBy = assignedBy;
         this.updatedBy = updatedBy;
     }
@@ -50,7 +53,7 @@ public class ExamCandidate {
      */
     public static ExamCandidate createFresh(UUID examId, UUID studentId, UUID createdBy, OffsetDateTime now) {
         return new ExamCandidate(examId, studentId, null, null,
-                ExamCandidateStatus.ASSIGNED, now, now, createdBy, createdBy);
+                ExamCandidateStatus.ASSIGNED, now, now, null, createdBy, createdBy);
     }
 
     /**
@@ -160,5 +163,11 @@ public class ExamCandidate {
         this.updatedBy = updatedBy;
     }
 
-    
+    public OffsetDateTime getBlockedAt() {
+        return blockedAt;
+    }
+
+    public void setBlockedAt(OffsetDateTime blockedAt) {
+        this.blockedAt = blockedAt;
+    }
 }

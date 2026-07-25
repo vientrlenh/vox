@@ -15,6 +15,7 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreateExamPaperCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
+import com.sep.vox.application.port.input.service.RecalculateExamTimeDurationService;
 import com.sep.vox.application.port.input.usecase.exam.ExamQuestionSecureLockService;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.ExamPaperDto;
@@ -54,6 +55,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
     private final ExamPaperItemRepository examPaperItemRepository;
     private final QuestionRepository questionRepository;
     private final ExamQuestionSecureLockService examQuestionSecureLockService;
+    private final RecalculateExamTimeDurationService recalculateExamTimeDurationService;
     private final UserContextPort userContextPort;
 
     public CreateExamPaperUseCase(
@@ -67,6 +69,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
             ExamPaperItemRepository examPaperItemRepository,
             QuestionRepository questionRepository,
             ExamQuestionSecureLockService examQuestionSecureLockService,
+            RecalculateExamTimeDurationService recalculateExamTimeDurationService,
             UserContextPort userContextPort) {
         this.examRepository = examRepository;
         this.examMemberRepository = examMemberRepository;
@@ -78,6 +81,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
         this.examPaperItemRepository = examPaperItemRepository;
         this.questionRepository = questionRepository;
         this.examQuestionSecureLockService = examQuestionSecureLockService;
+        this.recalculateExamTimeDurationService = recalculateExamTimeDurationService;
         this.userContextPort = userContextPort;
     }
 
@@ -117,11 +121,11 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
         List<ExamBlueprintSection> sections = examBlueprintSectionRepository
             .findByBlueprintVersionId(version.getId())
             .stream()
-            .sorted(Comparator.comparingInt(section -> section.getOrder()))
+            .sorted(Comparator.comparingInt(ExamBlueprintSection::getOrder))
             .toList();
 
         var slotsBySectionId = examBlueprintSlotRepository.findByBlueprintVersionId(version.getId()).stream()
-            .collect(Collectors.groupingBy(slot -> slot.getSectionId()));
+            .collect(Collectors.groupingBy(ExamBlueprintSlot::getSectionId));
 
         validateVersionWeights(sections, slotsBySectionId);
 
@@ -133,6 +137,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
             exam.getCode() + "-P" + variant,
             variant,
             ExamPaperStatus.DRAFT,
+            0,
             now,
             now,
             currentUserId,
@@ -146,6 +151,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
                 section.getTitle(),
                 section.getInstruction(),
                 section.getSectionTimeLimitSeconds(),
+                section.getSectionWeight(),
                 now,
                 now,
                 currentUserId,
@@ -153,7 +159,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
             ));
 
             var slots = slotsBySectionId.getOrDefault(section.getId(), List.of()).stream()
-                .sorted(Comparator.comparingInt(slot -> slot.getOrder()))
+                .sorted(Comparator.comparingInt(ExamBlueprintSlot::getOrder))
                 .toList();
 
             for (var slot : slots) {
@@ -185,7 +191,8 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
             }
         }
 
-        return ExamPaperDtoMapper.toDto(paper);
+        recalculateExamTimeDurationService.recalculate(exam.getId());
+        return ExamPaperDtoMapper.toDto(examPaperRepository.findById(paper.getId()).orElse(paper));
     }
 
     private static final BigDecimal WEIGHT_TOLERANCE = new BigDecimal("0.01");
@@ -193,7 +200,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
     private void validateVersionWeights(List<ExamBlueprintSection> sections, Map<UUID, List<ExamBlueprintSlot>> slotsBySectionId) {
         var sectionWeightSum = sections.stream()
             .map(section -> section.getSectionWeight() == null ? BigDecimal.ZERO : section.getSectionWeight())
-            .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
         if (sectionWeightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
             throw new IllegalStateException(
                 "Blueprint version đã chốt có tổng trọng số section không hợp lệ, không thể sinh đề thi");
@@ -202,7 +209,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
             var slots = slotsBySectionId.getOrDefault(section.getId(), List.of());
             var slotWeightSum = slots.stream()
                 .map(slot -> slot.getWeight() == null ? BigDecimal.ZERO : slot.getWeight())
-                .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
             if (slotWeightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
                 throw new IllegalStateException(
                     "Phần \"" + section.getTitle() + "\" trong blueprint có tổng trọng số ô câu hỏi không hợp lệ, không thể sinh đề thi");
@@ -228,6 +235,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
             exam.getCode() + "-P" + variant,
             variant,
             ExamPaperStatus.DRAFT,
+            0,
             now,
             now,
             currentUserId,
@@ -235,7 +243,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
         ));
 
         var sourceSections = examPaperSectionRepository.findByPaperId(sourcePaper.getId()).stream()
-            .sorted(Comparator.comparingInt(section -> section.getOrder()))
+            .sorted(Comparator.comparingInt(ExamPaperSection::getOrder))
             .toList();
 
         for (var section : sourceSections) {
@@ -245,6 +253,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
                 section.getTitle(),
                 section.getInstruction(),
                 section.getSectionTimeLimitSeconds(),
+                section.getWeight(),
                 now,
                 now,
                 currentUserId,
@@ -252,7 +261,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
             ));
 
             var items = examPaperItemRepository.findBySectionId(section.getId()).stream()
-                .sorted(Comparator.comparingInt(item -> item.getOrder()))
+                .sorted(Comparator.comparingInt(ExamPaperItem::getOrder))
                 .toList();
 
             for (var item : items) {
@@ -275,6 +284,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
             }
         }
 
-        return ExamPaperDtoMapper.toDto(paper);
+        recalculateExamTimeDurationService.recalculate(exam.getId());
+        return ExamPaperDtoMapper.toDto(examPaperRepository.findById(paper.getId()).orElse(paper));
     }
 }

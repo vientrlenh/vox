@@ -13,6 +13,7 @@ public interface ExamPaperRepository {
     Optional<ExamPaper> findById(UUID id);
     List<ExamPaper> findByIdIn(Collection<UUID> ids);
     List<ExamPaper> findByExamId(UUID examId);
+    List<ExamPaper> findByExamIdIn(Collection<UUID> examIds);
     List<ExamPaper> findByExamIdAndStatus(UUID examId, ExamPaperStatus status);
     boolean existsByExamId(UUID examId);
     int nextVariant(UUID examId);

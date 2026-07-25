@@ -16,7 +16,6 @@ public record CreateAssessmentPolicyCommand(
         UUID schoolGradeId,
         UUID schoolClassId,
         UUID targetFrameworkBandId,
-        UUID minimumFrameworkBandId,
         BigDecimal passingScore,
         AssessmentPolicyStrictness strictness,
         OffsetDateTime effectiveFrom,

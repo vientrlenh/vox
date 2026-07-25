@@ -11,19 +11,23 @@ import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "exam_result_appeals")
+@Table(name = "exam_result_appeals", indexes = {
+    @Index(columnList = "candidate_result_id", name = "idx_exam_result_appeals_candidate_result"),
+    @Index(columnList = "status", name = "idx_exam_result_appeals_status")
+})
 public class ExamResultAppealJpaEntity {
-    
+
     @Id
     @Generated(event = EventType.INSERT)
     @Column(
-        name = "id", 
-        nullable = false, 
-        updatable = false, 
-        insertable = false, 
+        name = "id",
+        nullable = false,
+        updatable = false,
+        insertable = false,
         columnDefinition = "UUID DEFAULT uuidv7()"
     )
     private UUID id;
@@ -42,32 +46,44 @@ public class ExamResultAppealJpaEntity {
 
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
-            name = "chk_exam_result_appeals_status_valid", 
-            constraint = "status IN ('PENDING', 'AUTO_REGRADING', 'RESOLVED_NO_CHANGE', 'RESOLVED_CHANGED', 'ESCALATED', 'HUMAN_RESOLVED', 'REJECTED')"
+            name = "chk_exam_result_appeals_status_valid",
+            constraint = "status IN ('PENDING', 'APPROVED', 'GRADING', 'COMPARING', 'PUBLISHED', 'REJECTED')"
         )
     })
     private String status;
 
-    @Column(name = "score_before", precision = 3, scale = 2)
+    @Column(name = "score_before", precision = 5, scale = 2)
     private BigDecimal scoreBefore;
 
-    @Column(name = "score_after", precision = 3, scale = 2)
+    @Column(name = "score_after", precision = 5, scale = 2)
     private BigDecimal scoreAfter;
 
     @Column(name = "resolved_by")
     private UUID resolvedBy;
 
     @Column(name = "resolved_at")
-    private UUID resolvedAt;
+    private OffsetDateTime resolvedAt;
 
     @Column(name = "notes", length = 512)
     private String notes;
+
+    /** Hạn xử lý đơn — school admin đặt ở bước duyệt. */
+    @Column(name = "deadline")
+    private OffsetDateTime deadline;
+
+    @Column(name = "approved_at")
+    private OffsetDateTime approvedAt;
+
+    /** Lý do từ chối / ghi chú khi công bố — tách khỏi `reason` của học sinh. */
+    @Column(name = "decision_note", length = 512)
+    private String decisionNote;
 
     protected ExamResultAppealJpaEntity() {}
 
     public ExamResultAppealJpaEntity(UUID id, UUID candidateResultId, UUID requestedBy, String reason,
             OffsetDateTime requestedAt, String status, BigDecimal scoreBefore,
-            BigDecimal scoreAfter, UUID resolvedBy, UUID resolvedAt, String notes) {
+            BigDecimal scoreAfter, UUID resolvedBy, OffsetDateTime resolvedAt, String notes,
+            OffsetDateTime deadline, OffsetDateTime approvedAt, String decisionNote) {
         this.id = id;
         this.candidateResultId = candidateResultId;
         this.requestedBy = requestedBy;
@@ -79,6 +95,9 @@ public class ExamResultAppealJpaEntity {
         this.resolvedBy = resolvedBy;
         this.resolvedAt = resolvedAt;
         this.notes = notes;
+        this.deadline = deadline;
+        this.approvedAt = approvedAt;
+        this.decisionNote = decisionNote;
     }
 
     public UUID getId() {
@@ -153,11 +172,11 @@ public class ExamResultAppealJpaEntity {
         this.resolvedBy = resolvedBy;
     }
 
-    public UUID getResolvedAt() {
+    public OffsetDateTime getResolvedAt() {
         return resolvedAt;
     }
 
-    public void setResolvedAt(UUID resolvedAt) {
+    public void setResolvedAt(OffsetDateTime resolvedAt) {
         this.resolvedAt = resolvedAt;
     }
 
@@ -169,5 +188,27 @@ public class ExamResultAppealJpaEntity {
         this.notes = notes;
     }
 
-    
+    public OffsetDateTime getDeadline() {
+        return deadline;
+    }
+
+    public void setDeadline(OffsetDateTime deadline) {
+        this.deadline = deadline;
+    }
+
+    public OffsetDateTime getApprovedAt() {
+        return approvedAt;
+    }
+
+    public void setApprovedAt(OffsetDateTime approvedAt) {
+        this.approvedAt = approvedAt;
+    }
+
+    public String getDecisionNote() {
+        return decisionNote;
+    }
+
+    public void setDecisionNote(String decisionNote) {
+        this.decisionNote = decisionNote;
+    }
 }

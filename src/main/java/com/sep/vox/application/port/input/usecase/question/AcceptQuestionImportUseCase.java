@@ -14,6 +14,7 @@ import com.sep.vox.application.port.input.command.AcceptQuestionImportCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
 import com.sep.vox.domain.repository.ImportSessionRepository;
@@ -95,7 +96,7 @@ public class AcceptQuestionImportUseCase implements IUseCase<AcceptQuestionImpor
         var mappedFields = new HashSet<String>();
         confirmedMapping.values().stream()
             .filter(Objects::nonNull)
-            .map((String field) -> field.trim())
+            .map(String::strip)
             .forEach(mappedFields::add);
         var missingFields = REQUIRED_FIELDS.stream()
             .filter(field -> !mappedFields.contains(field))

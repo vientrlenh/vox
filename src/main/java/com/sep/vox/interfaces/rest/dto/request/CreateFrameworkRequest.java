@@ -15,6 +15,8 @@ public record CreateFrameworkRequest(
     String name,
 
     @Size(max = 2048, message = "Mô tả không được vượt quá 2048 ký tự")
-    String description
+    String description,
+
+    Boolean isActive
 ) {
 }

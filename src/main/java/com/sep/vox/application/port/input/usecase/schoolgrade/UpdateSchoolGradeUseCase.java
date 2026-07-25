@@ -19,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -60,10 +59,10 @@ public class UpdateSchoolGradeUseCase implements IUseCase<UpdateSchoolGradeComma
             throw new UnauthorizedException("Tài khoản không tồn tại hoặc đã bị khóa.");
         }
 
-        // VÒNG BẢO MẬT: KIỂM TRA QUYỀN SCHOOL USER
-        Optional<SchoolUser> schoolUserOpt = schoolUserRepository.findByUserId(currentUserId);
-        if (schoolUserOpt.isPresent()) {
-            SchoolUser schoolUser = schoolUserOpt.get();
+        // VÒNG BẢO MẬT: KIỂM TRA QUYỀN SCHOOL USER (system admin bỏ qua)
+        if (!userContextPort.isSystemAdmin()) {
+            SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
+                .orElseThrow(() -> new ForbiddenException("BẢO MẬT: Bạn không có quyền sửa dữ liệu của trường khác."));
             // So sánh SchoolId của người dùng với SchoolId của Khối Lớp chứa năm học này
             if (!schoolUser.getSchoolId().equals(gradeLevel.getSchoolId())) {
                 throw new ForbiddenException("BẢO MẬT: Bạn không có quyền sửa dữ liệu của trường khác.");

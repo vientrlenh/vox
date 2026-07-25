@@ -4,6 +4,7 @@ import com.sep.vox.infrastructure.persistence.entity.SchoolClassJpaEntity;
 import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -123,7 +124,7 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
         if (schoolId == null || codes == null || codes.isEmpty()) {
             return List.of();
         }
-        var upperCodes = codes.stream().map(String::toUpperCase).collect(Collectors.toSet());
+        var upperCodes = codes.stream().map(s -> s.toUpperCase(Locale.ROOT)).collect(Collectors.toSet());
         return springDataSchoolClassRepository.findBySchoolIdAndCodeIn(schoolId, upperCodes)
             .stream()
             .map(SchoolClassMapper::toDomain)
@@ -185,6 +186,11 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
     @Override
     public boolean existsBySchoolIdAndStatus(UUID schoolId, String status) {
         return springDataSchoolClassRepository.existsBySchoolIdAndStatus(schoolId, status);
+    }
+
+    @Override
+    public int archiveByGradeId(UUID schoolGradeId, OffsetDateTime updatedAt, UUID updatedBy) {
+        return springDataSchoolClassRepository.archiveByGradeId(schoolGradeId, updatedAt, updatedBy);
     }
 
 

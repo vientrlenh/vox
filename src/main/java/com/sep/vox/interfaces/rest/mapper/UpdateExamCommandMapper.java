@@ -19,7 +19,9 @@ public final class UpdateExamCommandMapper {
             request.closeAt(),
             request.assessmentPolicyId(),
             request.maxAttempt(),
-            request.resultDecisionMethod()
+            request.examTimeDurationSecond(),
+            request.resultDecisionMethod(),
+            request.requiresOtp()
         );
     }
 }

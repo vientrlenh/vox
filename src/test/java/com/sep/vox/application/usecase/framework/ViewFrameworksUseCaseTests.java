@@ -33,7 +33,7 @@ public class ViewFrameworksUseCaseTests {
 
     @Test
     void should_return_paginated_frameworks() {
-        var query = new ViewFrameworksQuery(1, 10);
+        var query = new ViewFrameworksQuery(1, 10, null, null);
 
         var fw1 = new Framework(
             UUID.randomUUID(), new FrameworkCode("CEFR"), "CEFR Framework", "Description 1",
@@ -52,7 +52,7 @@ public class ViewFrameworksUseCaseTests {
             1
         );
 
-        when(frameworkRepository.findAll(1, 10))
+        when(frameworkRepository.findAll(1, 10, null, null))
             .thenReturn(pageResult);
 
         var result = useCase.execute(query);
@@ -61,15 +61,15 @@ public class ViewFrameworksUseCaseTests {
         assertThat(result.page()).isEqualTo(1);
         assertThat(result.size()).isEqualTo(10);
         assertThat(result.totalElements()).isEqualTo(2);
-        verify(frameworkRepository).findAll(1, 10);
+        verify(frameworkRepository).findAll(1, 10, null, null);
     }
 
     @Test
     void should_return_empty_when_no_frameworks() {
-        var query = new ViewFrameworksQuery(1, 10);
+        var query = new ViewFrameworksQuery(1, 10, null, null);
         var emptyPage = new PageResult<Framework>(List.of(), 1, 10, 0, 0);
 
-        when(frameworkRepository.findAll(1, 10))
+        when(frameworkRepository.findAll(1, 10, null, null))
             .thenReturn(emptyPage);
 
         var result = useCase.execute(query);
@@ -80,7 +80,7 @@ public class ViewFrameworksUseCaseTests {
 
     @Test
     void should_convert_page_to_zero_based_index() {
-        var query = new ViewFrameworksQuery(2, 10);
+        var query = new ViewFrameworksQuery(2, 10, null, null);
 
         var fw1 = new Framework(
             UUID.randomUUID(), new FrameworkCode("CEFR"), "CEFR", "Description",
@@ -95,11 +95,11 @@ public class ViewFrameworksUseCaseTests {
             1
         );
 
-        when(frameworkRepository.findAll(2, 10))
+        when(frameworkRepository.findAll(2, 10, null, null))
             .thenReturn(pageResult);
 
         useCase.execute(query);
 
-        verify(frameworkRepository).findAll(2, 10);
+        verify(frameworkRepository).findAll(2, 10, null, null);
     }
 }

@@ -11,6 +11,7 @@ import com.sep.vox.domain.model.school.SchoolGradeStatus;
 import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
+import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.domain.repository.SchoolGradeLevelRepository;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -26,6 +27,7 @@ public class DeleteSchoolGradeUseCase implements IUseCase<DeleteSchoolGradeComma
 
     private final SchoolGradeRepository schoolGradeRepository;
     private final SchoolClassRepository schoolClassRepository;
+    private final SchoolClassUserRepository schoolClassUserRepository;
     private final SchoolGradeLevelRepository schoolGradeLevelRepository;
     private final UserContextPort userContextPort;
     private final UserRepository userRepository;
@@ -34,6 +36,7 @@ public class DeleteSchoolGradeUseCase implements IUseCase<DeleteSchoolGradeComma
     public DeleteSchoolGradeUseCase(
             SchoolGradeRepository schoolGradeRepository,
             SchoolClassRepository schoolClassRepository,
+            SchoolClassUserRepository schoolClassUserRepository,
             SchoolGradeLevelRepository schoolGradeLevelRepository,
             UserContextPort userContextPort,
             UserRepository userRepository,
@@ -41,6 +44,7 @@ public class DeleteSchoolGradeUseCase implements IUseCase<DeleteSchoolGradeComma
     ) {
         this.schoolGradeRepository = schoolGradeRepository;
         this.schoolClassRepository = schoolClassRepository;
+        this.schoolClassUserRepository = schoolClassUserRepository;
         this.schoolGradeLevelRepository = schoolGradeLevelRepository;
         this.userContextPort = userContextPort;
         this.userRepository = userRepository;
@@ -77,27 +81,26 @@ public class DeleteSchoolGradeUseCase implements IUseCase<DeleteSchoolGradeComma
             throw new ForbiddenException("BẢO MẬT: Dữ liệu này không thuộc quyền quản lý của trường bạn.");
         }
 
-        // 4. Logic nghiệp vụ: Chặn xóa nếu đang sử dụng
+        // 4. Nếu đã xóa mềm (ARCHIVED) trước đó → coi như không còn tồn tại.
         if (grade.getStatus() == SchoolGradeStatus.ARCHIVED) {
-            throw new IllegalStateException("Dữ liệu này đã được lưu trữ (xóa mềm) từ trước.");
+            throw new NotFoundException("Năm học/khóa học này đã bị xóa trước đó.");
         }
 
-        boolean isUsed = schoolClassRepository.existsBySchoolGradeId(grade.getId());
-        if (isUsed) {
-            throw new IllegalStateException("Không thể xóa vì đang có Lớp học (Class) sử dụng năm học này.");
-        }
+        // 5. Cascade xóa mềm trong cùng một transaction:
+        //    - Vô hiệu hóa (deactivate) mọi thành viên đang active của các lớp thuộc năm học
+        //      (chỉ tác động membership, KHÔNG đụng tài khoản học sinh/giáo viên).
+        //    - Xóa mềm (ARCHIVED) toàn bộ lớp thuộc năm học.
+        //    - Xóa mềm (ARCHIVED) chính năm học.
+        //    Toàn bộ đều là xóa mềm để giữ lại tham chiếu (bài thi/điểm...).
+        OffsetDateTime now = OffsetDateTime.now();
+        schoolClassUserRepository.deactivateByGradeId(grade.getId(), now);
+        schoolClassRepository.archiveByGradeId(grade.getId(), now, currentUserId);
 
-        // 5. Thực hiện Xóa
-        if (grade.getStatus() == SchoolGradeStatus.ACTIVE) {
-            grade.setStatus(SchoolGradeStatus.ARCHIVED);
-            grade.setUpdatedAt(OffsetDateTime.now());
-            grade.setUpdatedBy(currentUserId);
-            schoolGradeRepository.save(grade); // Xóa mềm
-        } else if (grade.getStatus() == SchoolGradeStatus.INACTIVE) {
-            schoolGradeRepository.deleteById(grade.getId()); // Xóa cứng
-        }
+        grade.setStatus(SchoolGradeStatus.ARCHIVED);
+        grade.setUpdatedAt(now);
+        grade.setUpdatedBy(currentUserId);
+        schoolGradeRepository.save(grade);
 
-        // 6. Trả về kết quả
         return null;
     }
 }

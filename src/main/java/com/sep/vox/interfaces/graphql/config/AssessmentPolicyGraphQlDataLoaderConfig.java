@@ -46,7 +46,7 @@ public class AssessmentPolicyGraphQlDataLoaderConfig {
                             if (ids.isEmpty()) return Collections.emptyMap();
                             return schoolRepository.findByIdIn(ids).stream()
                                     .map(SchoolDtoMapper::toSchoolDto)
-                                    .collect(Collectors.toMap(SchoolDto::id, dto -> dto));
+                                    .collect(Collectors.toMap(s -> s.id(), dto -> dto));
                         })
                 );
 
@@ -56,7 +56,7 @@ public class AssessmentPolicyGraphQlDataLoaderConfig {
                             if (ids.isEmpty()) return Collections.emptyMap();
                             return schoolGradeLevelRepository.findByIdIn(ids).stream()
                                     .map(SchoolGradeLevelDtoMapper::toDto)
-                                    .collect(Collectors.toMap(SchoolGradeLevelDto::id, dto -> dto));
+                                    .collect(Collectors.toMap(sg -> sg.id(), dto -> dto));
                         })
                 );
 
@@ -66,7 +66,7 @@ public class AssessmentPolicyGraphQlDataLoaderConfig {
                             if (ids.isEmpty()) return Collections.emptyMap();
                             return schoolClassRepository.findAllById(ids.stream().toList()).stream()
                                     .map(SchoolClassDtoMapper::toDto)
-                                    .collect(Collectors.toMap(SchoolClassDto::id, dto -> dto));
+                                    .collect(Collectors.toMap(sc -> sc.id(), dto -> dto));
                         })
                 );
 
@@ -76,7 +76,7 @@ public class AssessmentPolicyGraphQlDataLoaderConfig {
                             if (ids.isEmpty()) return Collections.emptyMap();
                             return frameworkVersionRepository.findByIdIn(ids).stream()
                                     .map(FrameworkVersionDtoMapper::toDto)
-                                    .collect(Collectors.toMap(FrameworkVersionDto::id, dto -> dto));
+                                    .collect(Collectors.toMap(sc -> sc.id(), dto -> dto));
                         })
                 );
 
@@ -86,7 +86,7 @@ public class AssessmentPolicyGraphQlDataLoaderConfig {
                             if (ids.isEmpty()) return Collections.emptyMap();
                             return rubricVersionRepository.findByIdIn(ids).stream()
                                     .map(RubricVersionDtoMapper::toRubricVersionDto)
-                                    .collect(Collectors.toMap(RubricVersionDto::id, dto -> dto));
+                                    .collect(Collectors.toMap(rv -> rv.id(), dto -> dto));
                         })
                 );
 
@@ -96,7 +96,7 @@ public class AssessmentPolicyGraphQlDataLoaderConfig {
                             if (ids.isEmpty()) return Collections.emptyMap();
                             return frameworkResultBandRepository.findAllByIds(ids.stream().toList()).stream()
                                     .map(FrameworkResultBandDtoMapper::toDto)
-                                    .collect(Collectors.toMap(FrameworkResultBandDto::id, dto -> dto));
+                                    .collect(Collectors.toMap(rb -> rb.id(), dto -> dto));
                         })
                 );
     }

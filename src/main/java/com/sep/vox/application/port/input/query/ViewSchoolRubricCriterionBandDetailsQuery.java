@@ -1,8 +1,0 @@
-package com.sep.vox.application.port.input.query;
-
-import java.util.UUID;
-
-public record ViewSchoolRubricCriterionBandDetailsQuery(
-        UUID schoolId,
-        UUID bandId
-) {}

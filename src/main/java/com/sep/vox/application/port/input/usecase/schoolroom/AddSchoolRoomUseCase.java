@@ -85,7 +85,7 @@ public class AddSchoolRoomUseCase implements IUseCase<AddSchoolRoomCommand, UUID
                 code,
                 StringNormalization.trimAndCollapseSpaces(command.name()),
                 StringNormalization.trimAndCollapseSpaces(command.description()),
-                false, now, now, creatorId, creatorId
+                true, now, now, creatorId, creatorId
         );
         return schoolRoomRepository.save(newRoom);
     }

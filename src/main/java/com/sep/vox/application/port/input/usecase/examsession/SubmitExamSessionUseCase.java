@@ -37,7 +37,6 @@ import com.sep.vox.domain.repository.QuestionEvaluationGuideRepository;
 import com.sep.vox.domain.repository.QuestionAssetRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.QuestionTopicRepository;
-import com.sep.vox.domain.repository.RubricCriterionBandRepository;
 import com.sep.vox.domain.repository.RubricCriterionRepository;
 
 @Service
@@ -56,7 +55,6 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
     private final QuestionTopicRepository questionTopicRepository;
     private final AssessmentPolicyRepository assessmentPolicyRepository;
     private final RubricCriterionRepository rubricCriterionRepository;
-    private final RubricCriterionBandRepository rubricCriterionBandRepository;
     private final FrameworkCriterionRepository frameworkCriterionRepository;
     private final FrameworkCriterionBandRepository frameworkCriterionBandRepository;
     private final FrameworkResultBandRepository frameworkResultBandRepository;
@@ -77,7 +75,6 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
             QuestionTopicRepository questionTopicRepository,
             AssessmentPolicyRepository assessmentPolicyRepository,
             RubricCriterionRepository rubricCriterionRepository,
-            RubricCriterionBandRepository rubricCriterionBandRepository,
             FrameworkCriterionRepository frameworkCriterionRepository,
             FrameworkCriterionBandRepository frameworkCriterionBandRepository,
             FrameworkResultBandRepository frameworkResultBandRepository,
@@ -96,7 +93,6 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
         this.questionTopicRepository = questionTopicRepository;
         this.assessmentPolicyRepository = assessmentPolicyRepository;
         this.rubricCriterionRepository = rubricCriterionRepository;
-        this.rubricCriterionBandRepository = rubricCriterionBandRepository;
         this.frameworkCriterionRepository = frameworkCriterionRepository;
         this.frameworkCriterionBandRepository = frameworkCriterionBandRepository;
         this.frameworkResultBandRepository = frameworkResultBandRepository;
@@ -276,13 +272,10 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
             return List.of();
         }
 
-        var criterionIds = rubricCriteria.stream().map(item -> item.getId()).toList();
         var frameworkCriterionIds = rubricCriteria.stream()
             .map(item -> item.getFrameworkCriterionId())
             .filter(id -> id != null)
             .toList();
-        var rubricBandsByCriterionId = rubricCriterionBandRepository.findByCriterionIdIn(criterionIds).stream()
-            .collect(Collectors.groupingBy(item -> item.getCriterionId()));
         var frameworkCriteriaById = frameworkCriterionRepository.findAllByIds(frameworkCriterionIds).stream()
             .collect(Collectors.toMap(item -> item.getId(), Function.identity()));
         var frameworkBandsByCriterionId = frameworkCriterionBandRepository.findByFrameworkCriterionIdIn(frameworkCriterionIds).stream()
@@ -297,8 +290,8 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
 
         return rubricCriteria.stream().map(criterion -> {
             var frameworkCriterion = frameworkCriteriaById.get(criterion.getFrameworkCriterionId());
-            var rubricBands = rubricBandsByCriterionId.getOrDefault(criterion.getId(), List.of()).stream()
-                .collect(Collectors.toMap(item -> item.getCode().trim().toUpperCase(), Function.identity(), (left, right) -> left));
+            double criterionScoreMin = criterion.getMinScore() == null ? 0D : criterion.getMinScore().doubleValue();
+            double criterionScoreMax = criterion.getMaxScore() == null ? 100D : criterion.getMaxScore().doubleValue();
             var bands = frameworkBandsByCriterionId.getOrDefault(criterion.getFrameworkCriterionId(), List.of()).stream()
                 .sorted(Comparator.comparing(item -> {
                     var resultBand = resultBandsById.get(item.getFrameworkResultBandId());
@@ -306,12 +299,11 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
                 }))
                 .map(item -> {
                     var resultBand = resultBandsById.get(item.getFrameworkResultBandId());
-                    var rubricBand = resultBand == null ? null : rubricBands.get(resultBand.getCode().trim().toUpperCase());
                     return new ExamAttemptEvaluationRequestedExternalEvent.FrameworkBand(
                         resultBand == null ? null : resultBand.getCode(),
                         resultBand == null ? null : resultBand.getLabel(),
-                        rubricBand == null ? 0D : rubricBand.getScoreMin().doubleValue(),
-                        rubricBand == null ? 100D : rubricBand.getScoreMax().doubleValue(),
+                        criterionScoreMin,
+                        criterionScoreMax,
                         item.getDescriptor(),
                         item.getPositiveSignals() == null ? List.of() : item.getPositiveSignals().values().stream().map(signal -> signal.description()).toList(),
                         item.getNegativeSignals() == null ? List.of() : item.getNegativeSignals().values().stream().map(signal -> signal.description()).toList()
@@ -325,8 +317,8 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
                 frameworkCriterion == null ? null : frameworkCriterion.getName(),
                 frameworkCriterion == null ? null : frameworkCriterion.getDescription(),
                 criterion.getWeight() == null ? null : criterion.getWeight().doubleValue(),
-                criterion.getMinScore() == null ? 0D : criterion.getMinScore().doubleValue(),
-                criterion.getMaxScore() == null ? 100D : criterion.getMaxScore().doubleValue(),
+                criterionScoreMin,
+                criterionScoreMax,
                 bands
             );
         }).toList();

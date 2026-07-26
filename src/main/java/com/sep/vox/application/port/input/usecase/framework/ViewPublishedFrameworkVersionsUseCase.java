@@ -13,12 +13,12 @@ import com.sep.vox.domain.repository.FrameworkRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
 
 @Service
-public class ViewFrameworkVersionsUseCase implements IUseCase<ViewFrameworkVersionsQuery, PageResult<FrameworkVersionDto>> {
+public class ViewPublishedFrameworkVersionsUseCase implements IUseCase<ViewFrameworkVersionsQuery, PageResult<FrameworkVersionDto>> {
 
     private final FrameworkRepository frameworkRepository;
     private final FrameworkVersionRepository frameworkVersionRepository;
 
-    public ViewFrameworkVersionsUseCase(
+    public ViewPublishedFrameworkVersionsUseCase(
             FrameworkRepository frameworkRepository,
             FrameworkVersionRepository frameworkVersionRepository) {
         this.frameworkRepository = frameworkRepository;
@@ -27,21 +27,14 @@ public class ViewFrameworkVersionsUseCase implements IUseCase<ViewFrameworkVersi
 
     @Override
     public PageResult<FrameworkVersionDto> execute(ViewFrameworkVersionsQuery input) {
-        frameworkRepository.findById(input.frameworkId())
+        var framework = frameworkRepository.findById(input.frameworkId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy framework"));
-
-        var result = (input.status() != null && !input.status().isBlank())
-            ? frameworkVersionRepository.findByFrameworkIdAndStatus(
-                input.frameworkId(), parseStatus(input.status()), input.page(), input.size())
-            : frameworkVersionRepository.findByFrameworkId(input.frameworkId(), input.page(), input.size());
-        return FrameworkVersionDtoMapper.toDtoPage(result);
-    }
-
-    private FrameworkVersionStatus parseStatus(String status) {
-        try {
-            return FrameworkVersionStatus.valueOf(status.trim().toUpperCase());
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Trạng thái (status) không hợp lệ. Chỉ chấp nhận DRAFT, PUBLISHED, ARCHIVED.");
+        if (!framework.isActive()) {
+            throw new NotFoundException("Không tìm thấy framework");
         }
+
+        var result = frameworkVersionRepository.findByFrameworkIdAndStatus(
+            input.frameworkId(), FrameworkVersionStatus.PUBLISHED, input.page(), input.size());
+        return FrameworkVersionDtoMapper.toDtoPage(result);
     }
 }

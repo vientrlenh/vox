@@ -3,7 +3,6 @@ package com.sep.vox.interfaces.graphql.controller;
 
 import com.sep.vox.application.port.input.query.*;
 import com.sep.vox.application.port.input.query.key.RubricCriteriaKey;
-import com.sep.vox.application.port.input.query.key.RubricCriterionBandsKey;
 import com.sep.vox.application.port.input.query.key.RubricResultBandsKey;
 import com.sep.vox.application.port.input.query.key.RubricVersionsKey;
 import com.sep.vox.application.port.input.usecase.rubricschool.*;
@@ -48,12 +47,6 @@ public class RubricController {
     private final ViewSchoolRubricCriterionDetailsUseCase viewSchoolRubricCriterionDetailsUseCase;
     private final ViewSystemRubricCriteriaUseCase viewSystemRubricCriteriaUseCase;
     private final ViewSchoolRubricCriteriaUseCase viewSchoolRubricCriteriaUseCase;
-    private final UpdateSchoolRubricCriterionBandUseCase updateSchoolRubricCriterionBandUseCase;
-    private final UpdateSystemRubricCriterionBandUseCase updateSystemRubricCriterionBandUseCase;
-    private final ViewSystemRubricCriterionBandDetailsUseCase viewSystemRubricCriterionBandDetailsUseCase;
-    private final ViewSchoolRubricCriterionBandDetailsUseCase viewSchoolRubricCriterionBandDetailsUseCase;
-    private final ViewSchoolRubricCriterionBandsUseCase viewSchoolRubricCriterionBandsUseCase;
-    private final ViewSystemRubricCriterionBandsUseCase viewSystemRubricCriterionBandsUseCase;
     private final UpdateSystemRubricResultBandUseCase updateSystemRubricResultBandUseCase;
     private final UpdateSchoolRubricResultBandUseCase updateSchoolRubricResultBandUseCase;
     private final ViewSystemRubricResultBandDetailsUseCase viewSystemRubricResultBandDetailsUseCase;
@@ -67,12 +60,10 @@ public class RubricController {
     private final SearchSchoolRubricVersionsUseCase searchSchoolRubricVersionsUseCase;
     private final SearchSchoolRubricCriteriaUseCase searchSchoolRubricCriteriaUseCase;
     private final SearchSystemRubricCriteriaUseCase searchSystemRubricCriteriaUseCase;
-    private final SearchSystemRubricCriterionBandsUseCase searchSystemRubricCriterionBandsUseCase;
-    private final SearchSchoolRubricCriterionBandsUseCase searchSchoolRubricCriterionBandsUseCase;
     private final SearchSystemRubricResultBandsUseCase searchSystemRubricResultBandsUseCase;
     private final SearchSchoolRubricResultBandsUseCase searchSchoolRubricResultBandsUseCase;
 
-    public RubricController(UpdateSystemRubricUseCase updateSystemRubricUseCase, UpdateSchoolRubricUseCase updateSchoolRubricUseCase, ViewSystemRubricDetailsUseCase viewSystemRubricDetailsUseCase, ViewSchoolRubricDetailsUseCase viewSchoolRubricDetailsUseCase, ViewSystemRubricsUseCase viewSystemRubricsUseCase, ViewSchoolRubricsUseCase viewSchoolRubricsUseCase, UpdateSystemRubricVersionUseCase updateSystemRubricVersionUseCase, UpdateSchoolRubricVersionUseCase updateSchoolRubricVersionUseCase, ViewSchoolRubricVersionDetailsUseCase viewSchoolRubricVersionDetailsUseCase, ViewSystemRubricVersionDetailsUseCase viewSystemRubricVersionDetailsUseCase, ViewSchoolRubricVersionsUseCase viewSchoolRubricVersionsUseCase, ViewSystemRubricVersionsUseCase viewSystemRubricVersionsUseCase, ViewTeacherRubricVersionsUseCase viewTeacherRubricVersionsUseCase, UpdateSystemRubricCriterionUseCase updateSystemRubricCriterionUseCase, UpdateSchoolRubricCriterionUseCase updateSchoolRubricCriterionUseCase, ViewSystemRubricCriterionDetailsUseCase viewSystemRubricCriterionDetailsUseCase, ViewSchoolRubricCriterionDetailsUseCase viewSchoolRubricCriterionDetailsUseCase, ViewSystemRubricCriteriaUseCase viewSystemRubricCriteriaUseCase, ViewSchoolRubricCriteriaUseCase viewSchoolRubricCriteriaUseCase, UpdateSchoolRubricCriterionBandUseCase updateSchoolRubricCriterionBandUseCase, UpdateSystemRubricCriterionBandUseCase updateSystemRubricCriterionBandUseCase, ViewSystemRubricCriterionBandDetailsUseCase viewSystemRubricCriterionBandDetailsUseCase, ViewSchoolRubricCriterionBandDetailsUseCase viewSchoolRubricCriterionBandDetailsUseCase, ViewSchoolRubricCriterionBandsUseCase viewSchoolRubricCriterionBandsUseCase, ViewSystemRubricCriterionBandsUseCase viewSystemRubricCriterionBandsUseCase, UpdateSystemRubricResultBandUseCase updateSystemRubricResultBandUseCase, UpdateSchoolRubricResultBandUseCase updateSchoolRubricResultBandUseCase, ViewSystemRubricResultBandDetailsUseCase viewSystemRubricResultBandDetailsUseCase, ViewSchoolRubricResultBandDetailsUseCase viewSchoolRubricResultBandDetailsUseCase, ViewSystemRubricResultBandsUseCase viewSystemRubricResultBandsUseCase, ViewSchoolRubricResultBandsUseCase viewSchoolRubricResultBandsUseCase, SearchSystemRubricsUseCase searchSystemRubricsUseCase, SearchSchoolRubricsUseCase searchSchoolRubricsUseCase, SearchTeacherRubricsUseCase searchTeacherRubricsUseCase, SearchSystemRubricVersionsUseCase searchSystemRubricVersionsUseCase, SearchSchoolRubricVersionsUseCase searchSchoolRubricVersionsUseCase, SearchSchoolRubricCriteriaUseCase searchSchoolRubricCriteriaUseCase, SearchSystemRubricCriteriaUseCase searchSystemRubricCriteriaUseCase, SearchSystemRubricCriterionBandsUseCase searchSystemRubricCriterionBandsUseCase, SearchSchoolRubricCriterionBandsUseCase searchSchoolRubricCriterionBandsUseCase, SearchSystemRubricResultBandsUseCase searchSystemRubricResultBandsUseCase, SearchSchoolRubricResultBandsUseCase searchSchoolRubricResultBandsUseCase) {
+    public RubricController(UpdateSystemRubricUseCase updateSystemRubricUseCase, UpdateSchoolRubricUseCase updateSchoolRubricUseCase, ViewSystemRubricDetailsUseCase viewSystemRubricDetailsUseCase, ViewSchoolRubricDetailsUseCase viewSchoolRubricDetailsUseCase, ViewSystemRubricsUseCase viewSystemRubricsUseCase, ViewSchoolRubricsUseCase viewSchoolRubricsUseCase, UpdateSystemRubricVersionUseCase updateSystemRubricVersionUseCase, UpdateSchoolRubricVersionUseCase updateSchoolRubricVersionUseCase, ViewSchoolRubricVersionDetailsUseCase viewSchoolRubricVersionDetailsUseCase, ViewSystemRubricVersionDetailsUseCase viewSystemRubricVersionDetailsUseCase, ViewSchoolRubricVersionsUseCase viewSchoolRubricVersionsUseCase, ViewSystemRubricVersionsUseCase viewSystemRubricVersionsUseCase, ViewTeacherRubricVersionsUseCase viewTeacherRubricVersionsUseCase, UpdateSystemRubricCriterionUseCase updateSystemRubricCriterionUseCase, UpdateSchoolRubricCriterionUseCase updateSchoolRubricCriterionUseCase, ViewSystemRubricCriterionDetailsUseCase viewSystemRubricCriterionDetailsUseCase, ViewSchoolRubricCriterionDetailsUseCase viewSchoolRubricCriterionDetailsUseCase, ViewSystemRubricCriteriaUseCase viewSystemRubricCriteriaUseCase, ViewSchoolRubricCriteriaUseCase viewSchoolRubricCriteriaUseCase, UpdateSystemRubricResultBandUseCase updateSystemRubricResultBandUseCase, UpdateSchoolRubricResultBandUseCase updateSchoolRubricResultBandUseCase, ViewSystemRubricResultBandDetailsUseCase viewSystemRubricResultBandDetailsUseCase, ViewSchoolRubricResultBandDetailsUseCase viewSchoolRubricResultBandDetailsUseCase, ViewSystemRubricResultBandsUseCase viewSystemRubricResultBandsUseCase, ViewSchoolRubricResultBandsUseCase viewSchoolRubricResultBandsUseCase, SearchSystemRubricsUseCase searchSystemRubricsUseCase, SearchSchoolRubricsUseCase searchSchoolRubricsUseCase, SearchTeacherRubricsUseCase searchTeacherRubricsUseCase, SearchSystemRubricVersionsUseCase searchSystemRubricVersionsUseCase, SearchSchoolRubricVersionsUseCase searchSchoolRubricVersionsUseCase, SearchSchoolRubricCriteriaUseCase searchSchoolRubricCriteriaUseCase, SearchSystemRubricCriteriaUseCase searchSystemRubricCriteriaUseCase, SearchSystemRubricResultBandsUseCase searchSystemRubricResultBandsUseCase, SearchSchoolRubricResultBandsUseCase searchSchoolRubricResultBandsUseCase) {
         this.updateSystemRubricUseCase = updateSystemRubricUseCase;
         this.updateSchoolRubricUseCase = updateSchoolRubricUseCase;
         this.viewSystemRubricDetailsUseCase = viewSystemRubricDetailsUseCase;
@@ -92,12 +83,6 @@ public class RubricController {
         this.viewSchoolRubricCriterionDetailsUseCase = viewSchoolRubricCriterionDetailsUseCase;
         this.viewSystemRubricCriteriaUseCase = viewSystemRubricCriteriaUseCase;
         this.viewSchoolRubricCriteriaUseCase = viewSchoolRubricCriteriaUseCase;
-        this.updateSchoolRubricCriterionBandUseCase = updateSchoolRubricCriterionBandUseCase;
-        this.updateSystemRubricCriterionBandUseCase = updateSystemRubricCriterionBandUseCase;
-        this.viewSystemRubricCriterionBandDetailsUseCase = viewSystemRubricCriterionBandDetailsUseCase;
-        this.viewSchoolRubricCriterionBandDetailsUseCase = viewSchoolRubricCriterionBandDetailsUseCase;
-        this.viewSchoolRubricCriterionBandsUseCase = viewSchoolRubricCriterionBandsUseCase;
-        this.viewSystemRubricCriterionBandsUseCase = viewSystemRubricCriterionBandsUseCase;
         this.updateSystemRubricResultBandUseCase = updateSystemRubricResultBandUseCase;
         this.updateSchoolRubricResultBandUseCase = updateSchoolRubricResultBandUseCase;
         this.viewSystemRubricResultBandDetailsUseCase = viewSystemRubricResultBandDetailsUseCase;
@@ -111,8 +96,6 @@ public class RubricController {
         this.searchSchoolRubricVersionsUseCase = searchSchoolRubricVersionsUseCase;
         this.searchSchoolRubricCriteriaUseCase = searchSchoolRubricCriteriaUseCase;
         this.searchSystemRubricCriteriaUseCase = searchSystemRubricCriteriaUseCase;
-        this.searchSystemRubricCriterionBandsUseCase = searchSystemRubricCriterionBandsUseCase;
-        this.searchSchoolRubricCriterionBandsUseCase = searchSchoolRubricCriterionBandsUseCase;
         this.searchSystemRubricResultBandsUseCase = searchSystemRubricResultBandsUseCase;
         this.searchSchoolRubricResultBandsUseCase = searchSchoolRubricResultBandsUseCase;
     }
@@ -653,26 +636,6 @@ public class RubricController {
     }
 
 
-    // Lấy điểm đánh giá tiêu chí của rubric criterion
-    @SchemaMapping(typeName = "RubricCriterion", field = "bands")
-    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
-    public CompletableFuture<PageResult<RubricCriterionBandDto>> getRubricCriterionBands(
-            RubricCriterionDto criterion,
-            @Argument(name = "page") Integer page,
-            @Argument(name = "size") Integer size,
-            DataFetchingEnvironment env) {
-
-        int validPage = (page != null && page > 0) ? page - 1 : 0;
-        int validSize = (size != null && size > 0) ? size : 10;
-
-        DataLoader<RubricCriterionBandsKey, PageResult<RubricCriterionBandDto>> loader = env.getDataLoader("rubricCriterionBandsDataLoader");
-        if (loader == null) {
-            throw new IllegalStateException("Không tìm thấy DataLoader rubricCriterionBandsDataLoader.");
-        }
-
-        return loader.load(new RubricCriterionBandsKey(criterion.id(), validPage, validSize));
-    }
-
     // GraphQL: TÌM KIẾM TIÊU CHÍ (CRITERIA) CHO SYSTEM ADMIN
     @QueryMapping(name = "searchSystemRubricCriteria")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
@@ -712,139 +675,6 @@ public class RubricController {
         );
 
         return searchSchoolRubricCriteriaUseCase.execute(query);
-    }
-
-    // ====================RUBRIC CRITERION BAND =====================
-
-    //Update Rubric Criterion band cửa trường
-    @MutationMapping(name = "updateSchoolRubricCriterionBand")
-    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public UUID updateSchoolRubricCriterionBand(
-            @Argument(name = "schoolId") UUID schoolId,
-            @Argument(name = "bandId") UUID bandId,
-            @Argument(name = "input") UpdateRubricCriterionBandInput input
-    ) {
-        var command = RubricCriterionBandGraphQLMapper.fromSchoolInput(schoolId, bandId, input);
-        return updateSchoolRubricCriterionBandUseCase.execute(command);
-    }
-
-    // Update Rubric Criterion band của hệ thống
-    @MutationMapping(name = "updateSystemRubricCriterionBand")
-    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public UUID updateSystemRubricCriterionBand(
-            @Argument(name = "bandId") UUID bandId,
-            @Argument(name = "input") UpdateRubricCriterionBandInput input
-    ) {
-        var command = RubricCriterionBandGraphQLMapper.fromSystemInput(bandId, input);
-        return updateSystemRubricCriterionBandUseCase.execute(command);
-    }
-
-    //View Rubric Cretiron Band của hệ thống
-    @QueryMapping(name = "viewSystemRubricCriterionBand")
-    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public RubricCriterionBandDto viewSystemRubricCriterionBand(
-            @Argument(name = "bandId") UUID bandId
-    ) {
-        var query = new ViewSystemRubricCriterionBandDetailsQuery(bandId);
-        return viewSystemRubricCriterionBandDetailsUseCase.execute(query);
-    }
-
-    //View RUBRIC CRITERION BAND của trường học
-    @QueryMapping(name = "viewSchoolRubricCriterionBand")
-    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public RubricCriterionBandDto viewSchoolRubricCriterionBand(
-            @Argument(name = "schoolId") UUID schoolId,
-            @Argument(name = "bandId") UUID bandId
-    ) {
-        var query = new ViewSchoolRubricCriterionBandDetailsQuery(schoolId, bandId);
-        return viewSchoolRubricCriterionBandDetailsUseCase.execute(query);
-    }
-
-    //View  Rubric Criterion Bands của trường học
-    @QueryMapping(name = "viewSchoolRubricCriterionBands")
-    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public PageResult<RubricCriterionBandDto> viewSchoolRubricCriterionBands(
-            @Argument(name = "schoolId") UUID schoolId,
-            @Argument(name = "criterionId") UUID criterionId,
-            @Argument(name = "page") Integer page,
-            @Argument(name = "size") Integer size
-    ) {
-        if (page != null && page <= 0) {
-            throw new IllegalArgumentException("Tham số 'page' không hợp lệ. Trang phải bắt đầu từ 1.");
-        }
-        if (size != null && size <= 0) {
-            throw new IllegalArgumentException("Tham số 'size' không hợp lệ. Số lượng phần tử phải lớn hơn 0.");
-        }
-
-        int validPage = page != null ? page - 1 : 0;
-        int pageSize = (size != null) ? size : 10;
-
-        var query = new ViewSchoolRubricCriterionBandsQuery(schoolId, criterionId, validPage, pageSize);
-        return viewSchoolRubricCriterionBandsUseCase.execute(query);
-    }
-
-    //View  Rubric Criterion Bands của hệ thống
-    @QueryMapping(name = "viewSystemRubricCriterionBands")
-    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public PageResult<RubricCriterionBandDto> viewSystemRubricCriterionBands(
-            @Argument(name = "criterionId") UUID criterionId,
-            @Argument(name = "page") Integer page,
-            @Argument(name = "size") Integer size
-    ) {
-        if (page != null && page <= 0) {
-            throw new IllegalArgumentException("Tham số 'page' không hợp lệ. Trang phải bắt đầu từ 1.");
-        }
-        if (size != null && size <= 0) {
-            throw new IllegalArgumentException("Tham số 'size' không hợp lệ. Số lượng phần tử phải lớn hơn 0.");
-        }
-
-        int validPage = page != null ? page - 1 : 0;
-        int pageSize = (size != null) ? size : 10;
-
-        var query = new ViewSystemRubricCriterionBandsQuery(criterionId, validPage, pageSize);
-        return viewSystemRubricCriterionBandsUseCase.execute(query);
-    }
-
-
-    // GraphQL: TÌM KIẾM MỨC ĐIỂM TIÊU CHÍ CHO SYSTEM ADMIN
-    @QueryMapping(name = "searchSystemRubricCriterionBands")
-    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public PageResult<RubricCriterionBandDto> searchSystemRubricCriterionBands(
-            @Argument(name = "criterionId") UUID criterionId,
-            @Argument(name = "filter") SearchRubricCriterionBandFilterRequest filter,
-            @Argument(name = "page") Integer page,
-            @Argument(name = "size") Integer size) {
-
-        int validPage = (page != null && page > 0) ? page - 1 : 0;
-        int validSize = (size != null && size > 0) ? size : 10;
-        var safeFilter = (filter != null) ? filter : new SearchRubricCriterionBandFilterRequest(null);
-
-        var query = new SearchSystemRubricCriterionBandsQuery(
-                criterionId, safeFilter.keyword(), validPage, validSize
-        );
-
-        return searchSystemRubricCriterionBandsUseCase.execute(query);
-    }
-
-    // GraphQL: TÌM KIẾM MỨC ĐIỂM TIÊU CHÍ CHO SCHOOL ADMIN
-    @QueryMapping(name = "searchSchoolRubricCriterionBands")
-    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public PageResult<RubricCriterionBandDto> searchSchoolRubricCriterionBands(
-            @Argument(name = "schoolId") UUID schoolId,
-            @Argument(name = "criterionId") UUID criterionId,
-            @Argument(name = "filter") SearchRubricCriterionBandFilterRequest filter,
-            @Argument(name = "page") Integer page,
-            @Argument(name = "size") Integer size) {
-
-        int validPage = (page != null && page > 0) ? page - 1 : 0;
-        int validSize = (size != null && size > 0) ? size : 10;
-        var safeFilter = (filter != null) ? filter : new SearchRubricCriterionBandFilterRequest(null);
-
-        var query = new SearchSchoolRubricCriterionBandsQuery(
-                schoolId, criterionId, safeFilter.keyword(), validPage, validSize
-        );
-
-        return searchSchoolRubricCriterionBandsUseCase.execute(query);
     }
 
     // ====================RUBRIC RESULT BAND =====================

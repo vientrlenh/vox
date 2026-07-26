@@ -42,7 +42,7 @@ public class ViewFrameworkVersionsUseCaseTests {
     @Test
     void should_return_paginated_versions_when_framework_exists() {
         var frameworkId = UUID.randomUUID();
-        var query = new ViewFrameworkVersionsQuery(frameworkId, 1, 20);
+        var query = new ViewFrameworkVersionsQuery(frameworkId, null, 1, 20);
 
         var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "CEFR", "Description",
@@ -84,7 +84,7 @@ public class ViewFrameworkVersionsUseCaseTests {
     @Test
     void should_throw_not_found_when_framework_missing() {
         var frameworkId = UUID.randomUUID();
-        var query = new ViewFrameworkVersionsQuery(frameworkId, 1, 20);
+        var query = new ViewFrameworkVersionsQuery(frameworkId, null, 1, 20);
 
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.empty());
 
@@ -94,7 +94,7 @@ public class ViewFrameworkVersionsUseCaseTests {
     @Test
     void should_return_empty_page_when_no_versions() {
         var frameworkId = UUID.randomUUID();
-        var query = new ViewFrameworkVersionsQuery(frameworkId, 1, 20);
+        var query = new ViewFrameworkVersionsQuery(frameworkId, null, 1, 20);
 
         var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "CEFR", "Description",
@@ -116,7 +116,7 @@ public class ViewFrameworkVersionsUseCaseTests {
     @Test
     void should_handle_pagination_correctly() {
         var frameworkId = UUID.randomUUID();
-        var query = new ViewFrameworkVersionsQuery(frameworkId, 2, 10);
+        var query = new ViewFrameworkVersionsQuery(frameworkId, null, 2, 10);
 
         var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "CEFR", "Description",
@@ -134,5 +134,46 @@ public class ViewFrameworkVersionsUseCaseTests {
         assertThat(result.page()).isEqualTo(2);
         assertThat(result.size()).isEqualTo(10);
         assertThat(result.totalPages()).isEqualTo(3);
+    }
+
+    @Test
+    void should_filter_by_status_when_status_provided() {
+        var frameworkId = UUID.randomUUID();
+        var query = new ViewFrameworkVersionsQuery(frameworkId, "published", 1, 20);
+
+        var framework = new Framework(
+            frameworkId, new FrameworkCode("CEFR"), "CEFR", "Description",
+            true, now, now, null, null
+        );
+
+        var version = new FrameworkVersion();
+        version.setId(UUID.randomUUID());
+        version.setFrameworkId(frameworkId);
+        version.setStatus(FrameworkVersionStatus.PUBLISHED);
+
+        var pageResult = new PageResult<>(List.of(version), 1, 20, 1, 1);
+
+        when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
+        when(frameworkVersionRepository.findByFrameworkIdAndStatus(frameworkId, FrameworkVersionStatus.PUBLISHED, 1, 20))
+            .thenReturn(pageResult);
+
+        var result = useCase.execute(query);
+
+        assertThat(result.content()).hasSize(1);
+        verify(frameworkVersionRepository).findByFrameworkIdAndStatus(frameworkId, FrameworkVersionStatus.PUBLISHED, 1, 20);
+    }
+
+    @Test
+    void should_throw_when_status_invalid() {
+        var frameworkId = UUID.randomUUID();
+        var query = new ViewFrameworkVersionsQuery(frameworkId, "NOT_A_STATUS", 1, 20);
+
+        var framework = new Framework(
+            frameworkId, new FrameworkCode("CEFR"), "CEFR", "Description",
+            true, now, now, null, null
+        );
+        when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
+
+        assertThrows(IllegalArgumentException.class, () -> useCase.execute(query));
     }
 }

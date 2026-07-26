@@ -8,7 +8,6 @@ import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.UUID;
 
 public record CreateSystemRubricResultBandsRequest(
         @NotEmpty(message = "Phải có ít nhất 1 thang điểm được gửi lên")
@@ -16,9 +15,6 @@ public record CreateSystemRubricResultBandsRequest(
         List<ResultBandItemRequest> resultBands
 ) {
     public record ResultBandItemRequest(
-            @NotNull(message = "Framework Result Band ID không được để trống")
-            UUID frameworkResultBandId,
-
             @NotBlank(message = "Mã thang điểm không được để trống")
             String code,
 

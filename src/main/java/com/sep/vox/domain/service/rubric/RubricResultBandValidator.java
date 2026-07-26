@@ -1,4 +1,4 @@
-package com.sep.vox.application.common;
+package com.sep.vox.domain.service.rubric;
 
 import java.math.BigDecimal;
 import java.util.List;

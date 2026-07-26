@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.rubricschool;
 
-import com.sep.vox.application.common.RubricResultBandValidator;
-import com.sep.vox.application.common.ScoreRangeValidator;
+import com.sep.vox.domain.service.rubric.RubricResultBandValidator;
+import com.sep.vox.domain.service.rubric.ScoreRangeValidator;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;

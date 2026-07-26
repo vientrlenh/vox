@@ -9,7 +9,6 @@ public record CreateSystemRubricResultBandsCommand (
         List<ResultBandItemCommand> resultBands
 ) {
     public record ResultBandItemCommand(
-            UUID frameworkResultBandId,
             String code,
             String name,
             String description,

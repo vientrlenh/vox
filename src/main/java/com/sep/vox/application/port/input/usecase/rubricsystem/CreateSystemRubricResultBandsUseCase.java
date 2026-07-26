@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.rubricsystem;
 
-import com.sep.vox.application.common.RubricResultBandValidator;
-import com.sep.vox.application.common.ScoreRangeValidator;
+import com.sep.vox.domain.service.rubric.RubricResultBandValidator;
+import com.sep.vox.domain.service.rubric.ScoreRangeValidator;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
@@ -9,7 +9,6 @@ import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.CreateSystemRubricResultBandsCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.model.framework.FrameworkResultBand;
 import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
 import com.sep.vox.domain.model.rubric.RubricResultBand;
@@ -24,7 +23,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 public class CreateSystemRubricResultBandsUseCase implements IUseCase<CreateSystemRubricResultBandsCommand, List<UUID>> {
@@ -33,7 +31,6 @@ public class CreateSystemRubricResultBandsUseCase implements IUseCase<CreateSyst
     private final RubricVersionRepository rubricVersionRepository;
     private final RubricRepository rubricRepository;
     private final UserContextPort userContextPort;
-    private final FrameworkResultBandRepository frameworkResultBandRepository;
     private final UserRepository userRepository;
 
     public CreateSystemRubricResultBandsUseCase(
@@ -41,13 +38,11 @@ public class CreateSystemRubricResultBandsUseCase implements IUseCase<CreateSyst
             RubricVersionRepository rubricVersionRepository,
             RubricRepository rubricRepository,
             UserContextPort userContextPort,
-            FrameworkResultBandRepository frameworkResultBandRepository,
             UserRepository userRepository) {
         this.rubricResultBandRepository = rubricResultBandRepository;
         this.rubricVersionRepository = rubricVersionRepository;
         this.rubricRepository = rubricRepository;
         this.userContextPort = userContextPort;
-        this.frameworkResultBandRepository = frameworkResultBandRepository;
         this.userRepository = userRepository;
     }
 
@@ -81,27 +76,8 @@ public class CreateSystemRubricResultBandsUseCase implements IUseCase<CreateSyst
 
         OffsetDateTime now = OffsetDateTime.now();
 
-        // CHỐNG N+1 (PHA SELECT): Gom tất cả ID lại và truy vấn DB 1 lần duy nhất
-        List<UUID> frameworkBandIds = command.resultBands().stream()
-                .map(c -> c.frameworkResultBandId())
-                .filter(Objects::nonNull)
-                .distinct()
-                .toList();
-
-        Map<UUID, FrameworkResultBand> frameworkBandMap;
-        if (!frameworkBandIds.isEmpty()) {
-            List<FrameworkResultBand> existingFrameworkBands = frameworkResultBandRepository.findAllByIds(frameworkBandIds);
-
-            // Xây dựng HashMap trên RAM để tra cứu nhanh O(1) ở vòng lặp bên dưới
-            frameworkBandMap = existingFrameworkBands.stream()
-                    .collect(Collectors.toMap(b -> b.getId(), band -> band));
-        } else {
-            frameworkBandMap = new HashMap<>();
-        }
-
         // Bộ nhớ tạm để kiểm tra trùng lặp dữ liệu đầu vào (O(1) lookup)
         Set<String> uniqueCodes = new HashSet<>();
-        Set<UUID> uniqueFrameworkIds = new HashSet<>();
 
         // Tích luỹ band đã có trong version + các band mới trong cùng batch để check overlap khoảng điểm.
         // Dùng TreeMap (key = scoreMin) để check O(log n)/band thay vì quét List O(n)/band (O(n log n) cho cả batch thay vì O(n^2)).
@@ -119,17 +95,6 @@ public class CreateSystemRubricResultBandsUseCase implements IUseCase<CreateSyst
             if (!uniqueCodes.add(safeCode)) {
                 throw new IllegalArgumentException("Dữ liệu gửi lên bị trùng lặp Mã thang điểm (Code): " + safeCode);
             }
-            if (bCmd.frameworkResultBandId() != null && !uniqueFrameworkIds.add(bCmd.frameworkResultBandId())) {
-                throw new IllegalArgumentException("Dữ liệu gửi lên bị trùng lặp Framework Result Band cho thang điểm: " + safeName);
-            }
-
-            // 4.2 Lấy dữ liệu từ Map trên RAM (Không gọi DB)
-            FrameworkResultBand frameworkBand =     frameworkBandMap.get(bCmd.frameworkResultBandId());
-
-            if (frameworkBand == null) {
-                throw new NotFoundException("Không tìm thấy Framework Result Band với ID: " + bCmd.frameworkResultBandId());
-            }
-
 
             // 4.3 Validate Min/Max Score
             if (bCmd.mappedScoreMin().compareTo(bCmd.mappedScoreMax()) > 0) {
@@ -167,7 +132,7 @@ public class CreateSystemRubricResultBandsUseCase implements IUseCase<CreateSyst
         try {
             savedBands = rubricResultBandRepository.saveAll(bandsToSave);
         } catch (DataIntegrityViolationException e) {
-            throw new IllegalStateException("Lỗi lưu dữ liệu: Mã thang điểm (Code) hoặc Framework Result Band đã tồn tại trong phiên bản Rubric hệ thống này từ trước.");
+            throw new IllegalStateException("Lỗi lưu dữ liệu: Mã thang điểm (Code) đã tồn tại trong phiên bản Rubric hệ thống này từ trước.");
         }
 
         // 5. Trích xuất ID từ List trả về và gửi cho Client

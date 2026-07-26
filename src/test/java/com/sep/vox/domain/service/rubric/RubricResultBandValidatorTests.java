@@ -1,4 +1,4 @@
-package com.sep.vox.application.common;
+package com.sep.vox.domain.service.rubric;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;

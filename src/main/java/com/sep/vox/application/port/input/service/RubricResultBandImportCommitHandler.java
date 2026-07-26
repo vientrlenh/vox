@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.service;
 
-import com.sep.vox.application.common.RubricResultBandValidator;
-import com.sep.vox.application.common.ScoreRangeValidator;
+import com.sep.vox.domain.service.rubric.RubricResultBandValidator;
+import com.sep.vox.domain.service.rubric.ScoreRangeValidator;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.domain.model.importfile.*;

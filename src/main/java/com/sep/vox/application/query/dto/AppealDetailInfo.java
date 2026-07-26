@@ -20,11 +20,15 @@ public record AppealDetailInfo(
     BigDecimal finalScore,
     OffsetDateTime approvedAt,
     OffsetDateTime resolvedAt,
-    /** Các phần thi được phúc khảo, mỗi phần kèm điểm AI gốc và lượt nói của riêng nó. */
+    OffsetDateTime withdrawnAt,
+    /** Lý do admin giao cho người đã từng chấm bài này; null khi không override. */
+    String reviewerOverrideReason,
+    /** Các phần thi được phúc khảo, mỗi phần kèm điểm gốc và lượt nói của riêng nó. */
     List<AppealItemInfo> items,
-    List<AppealReviewerInfo> reviewers,
+    /** Chỉ MỘT người chấm; null khi chưa phân công. */
+    AppealReviewerInfo reviewer,
     boolean overdue,
-    /** Thang điểm rubric — chính là khoảng BE dùng để validate partScore khi công bố. */
+    /** Thang điểm rubric — khoảng BE dùng để validate điểm tiêu chí khi chấm lại. */
     BigDecimal scoringScaleMin,
     BigDecimal scoringScaleMax
 ) {

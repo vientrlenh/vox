@@ -13,12 +13,16 @@ import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreateExamAppealCommand;
 import com.sep.vox.application.port.input.service.ExamAppealAccessService;
+import com.sep.vox.application.port.input.service.ResultStatusHistoryRecorder;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.model.exam.ExamAppealStatus;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.exam.ExamResultAppeal;
 import com.sep.vox.domain.model.exam.ExamResultAppealItem;
+import com.sep.vox.domain.model.exam.GradingOutcome;
+import com.sep.vox.domain.model.exam.ResultStatusChangeSource;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
+import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
 import com.sep.vox.domain.repository.ExamItemResponseRepository;
 import com.sep.vox.domain.repository.ExamResultAppealItemRepository;
 import com.sep.vox.domain.repository.ExamResultAppealRepository;
@@ -36,19 +40,25 @@ public class CreateExamAppealUseCase implements IUseCase<CreateExamAppealCommand
     private final ExamResultAppealItemRepository examResultAppealItemRepository;
     private final ExamCandidateResultRepository examCandidateResultRepository;
     private final ExamItemResponseRepository examItemResponseRepository;
+    private final ExamGradingAssignmentRepository examGradingAssignmentRepository;
     private final ExamAppealAccessService examAppealAccessService;
+    private final ResultStatusHistoryRecorder resultStatusHistoryRecorder;
 
     public CreateExamAppealUseCase(
             ExamResultAppealRepository examResultAppealRepository,
             ExamResultAppealItemRepository examResultAppealItemRepository,
             ExamCandidateResultRepository examCandidateResultRepository,
             ExamItemResponseRepository examItemResponseRepository,
-            ExamAppealAccessService examAppealAccessService) {
+            ExamGradingAssignmentRepository examGradingAssignmentRepository,
+            ExamAppealAccessService examAppealAccessService,
+            ResultStatusHistoryRecorder resultStatusHistoryRecorder) {
         this.examResultAppealRepository = examResultAppealRepository;
         this.examResultAppealItemRepository = examResultAppealItemRepository;
         this.examCandidateResultRepository = examCandidateResultRepository;
         this.examItemResponseRepository = examItemResponseRepository;
+        this.examGradingAssignmentRepository = examGradingAssignmentRepository;
         this.examAppealAccessService = examAppealAccessService;
+        this.resultStatusHistoryRecorder = resultStatusHistoryRecorder;
     }
 
     @Override
@@ -104,6 +114,8 @@ public class CreateExamAppealUseCase implements IUseCase<CreateExamAppealCommand
             command.notes(),
             null,
             null,
+            null,
+            null,
             null
         );
         var saved = examResultAppealRepository.save(appeal);
@@ -114,10 +126,27 @@ public class CreateExamAppealUseCase implements IUseCase<CreateExamAppealCommand
                 saved.getId(), paperItemId, responsesByPaperItem.get(paperItemId).getId(), null))
             .toList());
 
+        // Đóng vòng chấm đang mở (thường là hậu kiểm) trước khi kéo bài sang APPEALED.
+        // Bỏ qua bước này chính là review BE-4: bài rời khỏi trạng thái mà vòng đó xử
+        // lý được, phân công treo vĩnh viễn trong hàng đợi của giáo viên và
+        // active_result_id vẫn giữ chỗ nên không giao được người chấm phúc khảo.
+        //
+        // Đóng bằng DECLINED chứ không phải UPHELD: giáo viên chưa ra quyết định nào,
+        // ghi UPHELD là bịa ra một phán quyết mà họ không hề đưa.
+        examGradingAssignmentRepository.findOpenByCandidateResultId(command.candidateResultId())
+            .ifPresent(open -> {
+                open.complete(GradingOutcome.DECLINED,
+                    "Bài chuyển sang phúc khảo theo đơn của học sinh.", now);
+                examGradingAssignmentRepository.save(open);
+            });
+
+        var before = resultStatusHistoryRecorder.snapshot(candidateResult);
         candidateResult.setStatus(ExamCandidateResultStatus.APPEALED);
         candidateResult.setUpdatedAt(now);
         candidateResult.setUpdatedBy(currentUserId);
         examCandidateResultRepository.save(candidateResult);
+        resultStatusHistoryRecorder.record(before, candidateResult,
+            ResultStatusChangeSource.SYSTEM, currentUserId, "Học sinh nộp đơn phúc khảo.");
 
         return saved.getId();
     }

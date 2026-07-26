@@ -23,10 +23,15 @@ import org.mockito.ArgumentCaptor;
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.port.input.command.AutoAssignGradingCommand;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService;
+import com.sep.vox.application.port.input.service.GradingSampleSelector;
+import com.sep.vox.application.port.input.service.RoundRobinLoadBalancer;
 import com.sep.vox.application.port.input.usecase.examgrading.AutoAssignGradingUseCase;
 import com.sep.vox.application.query.repository.ExamGradingQueryRepository;
 import com.sep.vox.domain.model.exam.ExamGradingAssignment;
 import com.sep.vox.domain.model.exam.GradingAssignmentStatus;
+import com.sep.vox.domain.model.exam.GradingRoundType;
+import com.sep.vox.domain.model.exam.GradingSampleSelectionMode;
+import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
 
 public class AutoAssignGradingUseCaseTests {
@@ -34,6 +39,7 @@ public class AutoAssignGradingUseCaseTests {
     private ExamGradingAssignmentRepository examGradingAssignmentRepository;
     private ExamGradingQueryRepository examGradingQueryRepository;
     private ExamGradingAccessService examGradingAccessService;
+    private ExamCandidateResultRepository examCandidateResultRepository;
     private AutoAssignGradingUseCase useCase;
 
     private final UUID adminId = UUID.randomUUID();
@@ -48,8 +54,13 @@ public class AutoAssignGradingUseCaseTests {
         examGradingAssignmentRepository = mock(ExamGradingAssignmentRepository.class);
         examGradingQueryRepository = mock(ExamGradingQueryRepository.class);
         examGradingAccessService = mock(ExamGradingAccessService.class);
+        examCandidateResultRepository = mock(ExamCandidateResultRepository.class);
+        // Selector và balancer là service thuần, dùng bản THẬT: luật chia tải chính là
+        // thứ những test dưới đây kiểm, mock chúng đi thì không còn gì để kiểm.
         useCase = new AutoAssignGradingUseCase(
-            examGradingAssignmentRepository, examGradingQueryRepository, examGradingAccessService);
+            examGradingAssignmentRepository, examCandidateResultRepository, examGradingQueryRepository,
+            examGradingAccessService, new GradingSampleSelector(new java.util.Random(42)),
+            new RoundRobinLoadBalancer());
 
         when(examGradingAccessService.requireActiveUserId()).thenReturn(adminId);
         when(examGradingAccessService.requireCurrentSchoolId(adminId)).thenReturn(schoolId);
@@ -69,12 +80,14 @@ public class AutoAssignGradingUseCaseTests {
         for (var index = 0; index < count; index++) {
             ids.add(UUID.randomUUID());
         }
-        when(examGradingQueryRepository.findUnassignedPendingReviewResultIds(schoolId, examId, null))
+        when(examGradingQueryRepository.findAssignableResultIds(eq(schoolId), eq(examId), eq(null), anyCollection()))
             .thenReturn(ids);
+        when(examCandidateResultRepository.findByIdIn(anyCollection())).thenReturn(List.of());
     }
 
     private AutoAssignGradingCommand command(UUID... teacherIds) {
-        return new AutoAssignGradingCommand(examId, null, List.of(teacherIds));
+        return new AutoAssignGradingCommand(examId, null, GradingRoundType.INITIAL.name(),
+            GradingSampleSelectionMode.ALL.name(), null, null, null, List.of(teacherIds));
     }
 
     @SuppressWarnings("unchecked")
@@ -154,7 +167,8 @@ public class AutoAssignGradingUseCaseTests {
     @Test
     void should_reject_when_neither_exam_nor_schedule_is_given() {
         assertThatThrownBy(() ->
-            useCase.execute(new AutoAssignGradingCommand(null, null, List.of(anh))))
+            useCase.execute(new AutoAssignGradingCommand(null, null, GradingRoundType.INITIAL.name(),
+                GradingSampleSelectionMode.ALL.name(), null, null, null, List.of(anh))))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("kỳ thi hoặc ca thi");
 
@@ -186,5 +200,40 @@ public class AutoAssignGradingUseCaseTests {
             .hasMessageContaining("cùng trường");
 
         verify(examGradingAssignmentRepository, never()).saveAll(anyList());
+    }
+
+    @Test
+    void should_only_take_a_percentage_of_the_pool_when_sampling_randomly() {
+        givenUnassignedResults(10);
+
+        useCase.execute(new AutoAssignGradingCommand(examId, null, GradingRoundType.SPOT_CHECK.name(),
+            GradingSampleSelectionMode.RANDOM_PERCENT.name(), 30, null, null, List.of(anh, binh)));
+
+        // Hậu kiểm không ai soi 100% bài; 30% của 10 là 3.
+        assertThat(captureSaved()).hasSize(3);
+    }
+
+    @Test
+    void should_reject_a_random_sample_without_a_percentage() {
+        givenUnassignedResults(10);
+
+        assertThatThrownBy(() -> useCase.execute(new AutoAssignGradingCommand(
+            examId, null, GradingRoundType.SPOT_CHECK.name(),
+            GradingSampleSelectionMode.RANDOM_PERCENT.name(), null, null, null, List.of(anh))))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("1 - 100");
+
+        verify(examGradingAssignmentRepository, never()).saveAll(anyList());
+    }
+
+    @Test
+    void should_stamp_the_round_type_on_every_assignment() {
+        givenUnassignedResults(2);
+
+        useCase.execute(new AutoAssignGradingCommand(examId, null, GradingRoundType.SPOT_CHECK.name(),
+            null, null, null, null, List.of(anh)));
+
+        assertThat(captureSaved()).allSatisfy(assignment ->
+            assertThat(assignment.getRoundType()).isEqualTo(GradingRoundType.SPOT_CHECK));
     }
 }

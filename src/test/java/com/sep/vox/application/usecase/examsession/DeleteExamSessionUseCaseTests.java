@@ -24,8 +24,8 @@ import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import com.sep.vox.domain.model.exam.ExamResultAppeal;
 import com.sep.vox.domain.model.exam.ExamSession;
 import com.sep.vox.domain.model.school.SchoolUser;
-import com.sep.vox.domain.repository.ExamAppealReviewerItemRepository;
-import com.sep.vox.domain.repository.ExamAppealReviewerRepository;
+import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
+import com.sep.vox.domain.repository.ExamResultStatusHistoryRepository;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.ExamItemCriterionScoreRepository;
 import com.sep.vox.domain.repository.ExamItemEvaluationRepository;
@@ -51,9 +51,9 @@ public class DeleteExamSessionUseCaseTests {
     private ExamItemResponseRepository examItemResponseRepository;
     private ExamCandidateResultRepository examCandidateResultRepository;
     private ExamResultAppealRepository examResultAppealRepository;
-    private ExamAppealReviewerRepository examAppealReviewerRepository;
+    private ExamGradingAssignmentRepository examGradingAssignmentRepository;
     private ExamResultAppealItemRepository examResultAppealItemRepository;
-    private ExamAppealReviewerItemRepository examAppealReviewerItemRepository;
+    private ExamResultStatusHistoryRepository examResultStatusHistoryRepository;
     private UserContextPort userContextPort;
     private SchoolUserRepository schoolUserRepository;
     private UserRoleQueryRepository userRoleQueryRepository;
@@ -73,9 +73,9 @@ public class DeleteExamSessionUseCaseTests {
         examItemResponseRepository = mock(ExamItemResponseRepository.class);
         examCandidateResultRepository = mock(ExamCandidateResultRepository.class);
         examResultAppealRepository = mock(ExamResultAppealRepository.class);
-        examAppealReviewerRepository = mock(ExamAppealReviewerRepository.class);
+        examGradingAssignmentRepository = mock(ExamGradingAssignmentRepository.class);
         examResultAppealItemRepository = mock(ExamResultAppealItemRepository.class);
-        examAppealReviewerItemRepository = mock(ExamAppealReviewerItemRepository.class);
+        examResultStatusHistoryRepository = mock(ExamResultStatusHistoryRepository.class);
         userContextPort = mock(UserContextPort.class);
         schoolUserRepository = mock(SchoolUserRepository.class);
         userRoleQueryRepository = mock(UserRoleQueryRepository.class);
@@ -94,9 +94,9 @@ public class DeleteExamSessionUseCaseTests {
             mock(ExamItemCriterionScoreRepository.class),
             examCandidateResultRepository,
             examResultAppealRepository,
-            examAppealReviewerRepository,
             examResultAppealItemRepository,
-            examAppealReviewerItemRepository
+            examGradingAssignmentRepository,
+            examResultStatusHistoryRepository
         );
 
         var session = new ExamSession();
@@ -134,19 +134,32 @@ public class DeleteExamSessionUseCaseTests {
     }
 
     @Test
-    void should_delete_appeal_and_its_reviewers_before_deleting_the_result() {
+    void should_delete_appeal_and_its_items_before_deleting_the_result() {
         when(examCandidateResultRepository.findBySessionId(sessionId)).thenReturn(Optional.of(result()));
         when(examResultAppealRepository.findByCandidateResultId(resultId)).thenReturn(List.of(appeal()));
 
         useCase.execute(sessionId);
 
-        var reviewerCaptor = ArgumentCaptor.forClass(java.util.Collection.class);
-        verify(examAppealReviewerRepository).deleteByAppealIdIn(reviewerCaptor.capture());
-        org.assertj.core.api.Assertions.assertThat(reviewerCaptor.getValue()).containsExactly(appealId);
+        var itemCaptor = ArgumentCaptor.forClass(java.util.Collection.class);
+        verify(examResultAppealItemRepository).deleteByAppealIdIn(itemCaptor.capture());
+        org.assertj.core.api.Assertions.assertThat(itemCaptor.getValue()).containsExactly(appealId);
 
         verify(examResultAppealRepository).deleteByIdIn(List.of(appealId));
         verify(examCandidateResultRepository).deleteBySessionId(sessionId);
         verify(examSessionRepository).deleteById(sessionId);
+    }
+
+    @Test
+    void should_delete_grading_assignments_and_status_history_of_the_result() {
+        when(examCandidateResultRepository.findBySessionId(sessionId)).thenReturn(Optional.of(result()));
+        when(examResultAppealRepository.findByCandidateResultId(resultId)).thenReturn(List.of());
+
+        useCase.execute(sessionId);
+
+        // Hai bảng này treo trên candidate_result và KHÔNG có FK — bỏ sót là để lại
+        // phân công và nhật ký trỏ vào một kết quả đã biến mất.
+        verify(examGradingAssignmentRepository).deleteByCandidateResultIdIn(List.of(resultId));
+        verify(examResultStatusHistoryRepository).deleteByCandidateResultIdIn(List.of(resultId));
     }
 
     @Test
@@ -156,7 +169,7 @@ public class DeleteExamSessionUseCaseTests {
 
         useCase.execute(sessionId);
 
-        verify(examAppealReviewerRepository, never()).deleteByAppealIdIn(anyList());
+        verify(examResultAppealItemRepository, never()).deleteByAppealIdIn(anyList());
         verify(examResultAppealRepository, never()).deleteByIdIn(any());
         verify(examSessionRepository).deleteById(sessionId);
     }
@@ -172,7 +185,7 @@ public class DeleteExamSessionUseCaseTests {
     }
 
     @Test
-    void should_delete_appeal_items_and_reviewer_items_before_parents() {
+    void should_delete_appeal_items_before_their_parent_appeal() {
         when(examCandidateResultRepository.findBySessionId(sessionId)).thenReturn(Optional.of(result()));
         when(examResultAppealRepository.findByCandidateResultId(resultId)).thenReturn(List.of(appeal()));
 
@@ -180,10 +193,7 @@ public class DeleteExamSessionUseCaseTests {
 
         // Con trước cha: không có FK nào chặn, sai thứ tự là để lại dòng mồ côi.
         var inOrder = org.mockito.Mockito.inOrder(
-            examAppealReviewerItemRepository, examAppealReviewerRepository,
             examResultAppealItemRepository, examResultAppealRepository);
-        inOrder.verify(examAppealReviewerItemRepository).deleteByAppealIdIn(List.of(appealId));
-        inOrder.verify(examAppealReviewerRepository).deleteByAppealIdIn(List.of(appealId));
         inOrder.verify(examResultAppealItemRepository).deleteByAppealIdIn(List.of(appealId));
         inOrder.verify(examResultAppealRepository).deleteByIdIn(List.of(appealId));
     }

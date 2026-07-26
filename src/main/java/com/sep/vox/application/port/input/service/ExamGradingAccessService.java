@@ -90,7 +90,8 @@ public class ExamGradingAccessService {
 
     @Transactional(readOnly = true)
     public GradingContext loadByCandidateResultId(UUID candidateResultId) {
-        var assignment = examGradingAssignmentRepository.findByCandidateResultId(candidateResultId).orElse(null);
+        var assignment = examGradingAssignmentRepository.findOpenByCandidateResultId(candidateResultId)
+            .orElse(null);
         return loadFromCandidateResult(assignment, candidateResultId);
     }
 

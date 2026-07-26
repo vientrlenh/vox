@@ -126,7 +126,7 @@ class JpaExamAppealQueryRepositoryTests extends ContainerTestConfig {
             new BigDecimal("6.00"), "RELEASED", now, null, now, now, null, null)).getId();
 
         var appealId = persisted(new ExamResultAppealJpaEntity(null, resultId, studentId, "Lý do", now,
-            "PENDING", new BigDecimal("6.00"), null, null, null, null, null, null, null)).getId();
+            "PENDING", new BigDecimal("6.00"), null, null, null, null, null, null, null, null, null)).getId();
 
         for (var i = 0; i < partCount; i++) {
             var paperItemId = persisted(new ExamPaperItemJpaEntity(
@@ -188,7 +188,8 @@ class JpaExamAppealQueryRepositoryTests extends ContainerTestConfig {
             assertThat(item.turns()).isEmpty();
             assertThat(item.finalScore()).isNull();
         });
-        assertThat(detail.get().reviewers()).isEmpty();
+        // Chưa phân công ai chấm phúc khảo -> không có dòng phân công vòng APPEAL.
+        assertThat(detail.get().reviewer()).isNull();
     }
 
     @Test
@@ -199,20 +200,12 @@ class JpaExamAppealQueryRepositoryTests extends ContainerTestConfig {
     }
 
     @Test
-    void should_deny_task_detail_to_a_reviewer_who_is_not_assigned() {
+    void should_run_every_reviewer_scoped_query() {
         var appealId = appealWithItems("Nguyen Van A", 2);
 
-        // Query phân quyền chạy một mình và trước mọi query khác: không có dòng ⇒ 403.
-        assertThat(repository.findTaskDetail(appealId, UUID.randomUUID())).isEmpty();
-    }
-
-    @Test
-    void should_run_every_reviewer_scoped_query() {
-        appealWithItems("Nguyen Van A", 2);
-
-        // Khói: các JPQL này là chuỗi, sai tên field chỉ nổ lúc chạy.
-        assertThat(repository.findTasksByReviewerId(UUID.randomUUID(), null, 0, 20).content()).isEmpty();
-        assertThat(repository.findAssignableReviewers(schoolId, "Lan")).isEmpty();
+        // Khói: các JPQL này là chuỗi, sai tên field chỉ nổ lúc chạy. Query xung đột
+        // lợi ích đi qua 4 bảng nên đặc biệt đáng chạy thật một lần.
+        assertThat(repository.findAssignableReviewers(schoolId, appealId, "Lan")).isEmpty();
         assertThat(repository.countByStatus(schoolId).pending()).isEqualTo(1);
     }
 

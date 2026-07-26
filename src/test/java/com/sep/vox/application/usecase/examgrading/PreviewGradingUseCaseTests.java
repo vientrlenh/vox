@@ -30,14 +30,15 @@ import com.sep.vox.application.port.input.usecase.examevaluation.ExamSessionResu
 import com.sep.vox.application.port.input.usecase.examevaluation.ExamSessionResultCalculator.PreviewedExamSessionResult;
 import com.sep.vox.application.port.input.usecase.examevaluation.UpsertExamCandidateResultUseCase;
 import com.sep.vox.application.port.input.usecase.examgrading.PreviewGradingUseCase;
-import com.sep.vox.application.port.input.usecase.examgrading.SubmitGradingUseCase;
+import com.sep.vox.application.port.input.usecase.examgrading.RegradeResultUseCase;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.exam.ExamGradingAssignment;
 import com.sep.vox.domain.model.exam.ExamItemEvaluation;
 import com.sep.vox.domain.model.exam.ExamItemResponse;
 import com.sep.vox.domain.model.exam.ExamSession;
-import com.sep.vox.domain.model.exam.GradingAssignmentStatus;
+import com.sep.vox.domain.model.exam.GradingOutcome;
+import com.sep.vox.domain.model.exam.GradingRoundType;
 import com.sep.vox.domain.model.rubric.RubricCriterion;
 import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
 import com.sep.vox.domain.repository.ExamItemCriterionScoreRepository;
@@ -103,8 +104,9 @@ public class PreviewGradingUseCaseTests {
     }
 
     private GradingContext context() {
-        var assignment = new ExamGradingAssignment(assignmentId, candidateResultId, teacherId,
-            GradingAssignmentStatus.ASSIGNED, OffsetDateTime.now(), null, null);
+        var assignment = ExamGradingAssignment.open(candidateResultId, teacherId,
+            GradingRoundType.INITIAL, null, null, OffsetDateTime.now(), null, null);
+        assignment.setId(assignmentId);
 
         var candidateResult = new ExamCandidateResult();
         candidateResult.setId(candidateResultId);
@@ -160,9 +162,17 @@ public class PreviewGradingUseCaseTests {
         useCase.execute(command("8.00", "6.00"));
         var previewedItemScore = captureOverrides().get(responseId);
 
-        var submitUseCase = new SubmitGradingUseCase(
-            examGradingAssignmentRepository, examItemEvaluationRepository, examItemCriterionScoreRepository,
-            examSessionRepository, upsertExamCandidateResultUseCase, examGradingAccessService, resolver);
+        // GradingActionSupport được mock: phần phân quyền / audit / đóng phân công đã
+        // có test riêng, ở đây chỉ cần đúng ĐƯỜNG ĐIỂM đi qua cùng một resolver.
+        var gradingActionSupport = mock(com.sep.vox.application.port.input.service.GradingActionSupport.class);
+        var context = context();
+        when(gradingActionSupport.prepare(any(), any(), any())).thenReturn(
+            new com.sep.vox.application.port.input.service.GradingActionSupport.PreparedAction(
+                context, teacherId, GradingRoundType.INITIAL, GradingOutcome.REGRADED, null, null));
+
+        var regradeUseCase = new RegradeResultUseCase(
+            gradingActionSupport, resolver, examItemEvaluationRepository, examItemCriterionScoreRepository,
+            examSessionRepository, upsertExamCandidateResultUseCase);
         when(examItemEvaluationRepository.findByResponseIdIn(anyList())).thenReturn(List.of());
         when(examItemEvaluationRepository.save(any())).thenAnswer(invocation -> {
             var evaluation = (ExamItemEvaluation) invocation.getArgument(0);
@@ -172,9 +182,9 @@ public class PreviewGradingUseCaseTests {
         var recalculated = new ExamCandidateResult();
         recalculated.setStatus(ExamCandidateResultStatus.RELEASED);
         recalculated.setTotalScore(new BigDecimal("7.20"));
-        when(upsertExamCandidateResultUseCase.execute(sessionId)).thenReturn(recalculated);
+        when(upsertExamCandidateResultUseCase.execute(eq(sessionId), any())).thenReturn(recalculated);
 
-        submitUseCase.execute(command("8.00", "6.00"));
+        regradeUseCase.execute(command("8.00", "6.00"));
 
         var captor = ArgumentCaptor.forClass(ExamItemEvaluation.class);
         verify(examItemEvaluationRepository).save(captor.capture());

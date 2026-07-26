@@ -5,14 +5,18 @@ import java.util.UUID;
 
 import com.sep.vox.application.port.input.command.AssignGradingCommand;
 import com.sep.vox.application.port.input.command.AutoAssignGradingCommand;
-import com.sep.vox.application.port.input.command.InvalidateGradingCommand;
+import com.sep.vox.application.port.input.command.GradingDecisionCommand;
 import com.sep.vox.application.port.input.command.ReassignGradingCommand;
+import com.sep.vox.application.port.input.command.ReclaimOverdueAssignmentsCommand;
 import com.sep.vox.application.port.input.command.RemoveGradingAssignmentCommand;
+import com.sep.vox.application.port.input.command.SetGradingDeadlineCommand;
 import com.sep.vox.application.port.input.command.SubmitGradingCommand;
 import com.sep.vox.interfaces.rest.dto.request.AssignGradingRequest;
 import com.sep.vox.interfaces.rest.dto.request.AutoAssignGradingRequest;
-import com.sep.vox.interfaces.rest.dto.request.InvalidateGradingRequest;
+import com.sep.vox.interfaces.rest.dto.request.GradingDecisionRequest;
 import com.sep.vox.interfaces.rest.dto.request.ReassignGradingRequest;
+import com.sep.vox.interfaces.rest.dto.request.ReclaimOverdueAssignmentsRequest;
+import com.sep.vox.interfaces.rest.dto.request.SetGradingDeadlineRequest;
 import com.sep.vox.interfaces.rest.dto.request.SubmitGradingRequest;
 
 public final class ExamGradingCommandMapper {
@@ -21,6 +25,8 @@ public final class ExamGradingCommandMapper {
 
     public static AssignGradingCommand fromRequest(AssignGradingRequest request) {
         return new AssignGradingCommand(
+            request.roundType(),
+            request.deadlineAt(),
             request.assignments() == null ? List.of() : request.assignments().stream()
                 .map(item -> new AssignGradingCommand.AssignmentItem(item.candidateResultId(), item.teacherId()))
                 .toList()
@@ -28,7 +34,16 @@ public final class ExamGradingCommandMapper {
     }
 
     public static AutoAssignGradingCommand fromRequest(AutoAssignGradingRequest request) {
-        return new AutoAssignGradingCommand(request.examId(), request.scheduleId(), request.teacherIds());
+        return new AutoAssignGradingCommand(
+            request.examId(),
+            request.scheduleId(),
+            request.roundType(),
+            request.selectionMode(),
+            request.percent(),
+            request.candidateResultIds(),
+            request.deadlineAt(),
+            request.teacherIds()
+        );
     }
 
     public static ReassignGradingCommand fromRequest(UUID assignmentId, ReassignGradingRequest request) {
@@ -56,7 +71,21 @@ public final class ExamGradingCommandMapper {
         );
     }
 
-    public static InvalidateGradingCommand fromRequest(UUID assignmentId, InvalidateGradingRequest request) {
-        return new InvalidateGradingCommand(assignmentId, request == null ? null : request.reason());
+    public static SetGradingDeadlineCommand fromRequest(SetGradingDeadlineRequest request) {
+        return new SetGradingDeadlineCommand(request.assignmentIds(), request.deadlineAt());
+    }
+
+    public static ReclaimOverdueAssignmentsCommand fromRequest(ReclaimOverdueAssignmentsRequest request) {
+        return new ReclaimOverdueAssignmentsCommand(
+            request.examId(),
+            request.assignmentIds(),
+            request.reassignToTeacherIds(),
+            request.newDeadlineAt()
+        );
+    }
+
+    /** Dùng chung cho /uphold, /invalidate, /clear-invalid và /decline — cùng một body. */
+    public static GradingDecisionCommand toDecisionCommand(UUID assignmentId, GradingDecisionRequest request) {
+        return new GradingDecisionCommand(assignmentId, request == null ? null : request.reason());
     }
 }

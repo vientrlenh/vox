@@ -210,3 +210,5 @@ payos:
   checksum-key: ${PAYOS_CHECKSUM_KEY:}
   return-url: ${PAYOS_RETURN_URL:}
   cancel-url: ${PAYOS_CANCEL_URL:}
+  system-admin-return-url: ${PAYOS_SYSTEM_ADMIN_RETURN_URL:}
+  system-admin-cancel-url: ${PAYOS_SYSTEM_ADMIN_CANCEL_URL:}

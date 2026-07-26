@@ -149,6 +149,8 @@ public class GetExamSessionPaperUseCase implements IUseCase<ViewExamSessionPaper
             schedule == null
                 ? (exam.getCloseAt() == null ? null : exam.getCloseAt().toString())
                 : (schedule.getEndDate() == null ? null : schedule.getEndDate().toString()),
+            session.getStartedAt() == null ? null : session.getStartedAt().toString(),
+            session.getRemainingSeconds(),
             paperQuestions
         );
     }

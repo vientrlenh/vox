@@ -14,6 +14,8 @@ public record StudentExamPaperResponse(
     String examDate,
     String status,
     String scheduleEndAt,
+    String startedAt,
+    Integer remainingSeconds,
     List<StudentExamPaperQuestionResponse> paperQuestions
 ) {
 }

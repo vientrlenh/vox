@@ -13,6 +13,7 @@ public class ExamSession {
     private ExamSessionStatus status;
     private boolean flagged;
     private String flagReason;
+    private Integer remainingSeconds;
 
     public ExamSession() {}
 
@@ -111,5 +112,13 @@ public class ExamSession {
 
     public void setFlagReason(String flagReason) {
         this.flagReason = flagReason;
+    }
+
+    public Integer getRemainingSeconds() {
+        return remainingSeconds;
+    }
+
+    public void setRemainingSeconds(Integer remainingSeconds) {
+        this.remainingSeconds = remainingSeconds;
     }
 }

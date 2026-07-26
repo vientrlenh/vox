@@ -9,7 +9,7 @@ public final class ExamSessionMapper {
     private ExamSessionMapper() {}
 
     public static ExamSession toDomain(ExamSessionJpaEntity jpa) {
-        return new ExamSession(
+        var domain = new ExamSession(
             jpa.getId(),
             jpa.getExamId(),
             jpa.getCandidateId(),
@@ -20,10 +20,12 @@ public final class ExamSessionMapper {
             jpa.isFlagged(),
             jpa.getFlagReason()
         );
+        domain.setRemainingSeconds(jpa.getRemainingSeconds());
+        return domain;
     }
 
     public static ExamSessionJpaEntity toJpa(ExamSession domain) {
-        return new ExamSessionJpaEntity(
+        var jpa = new ExamSessionJpaEntity(
             domain.getId(),
             domain.getExamId(),
             domain.getCandidateId(),
@@ -34,6 +36,8 @@ public final class ExamSessionMapper {
             domain.isFlagged(),
             domain.getFlagReason()
         );
+        jpa.setRemainingSeconds(domain.getRemainingSeconds());
+        return jpa;
     }
 
     private static ExamSessionStatus statusFromString(String status) {

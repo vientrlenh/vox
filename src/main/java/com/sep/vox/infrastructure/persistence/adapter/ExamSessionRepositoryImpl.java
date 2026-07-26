@@ -33,6 +33,12 @@ public class ExamSessionRepositoryImpl implements ExamSessionRepository {
     }
 
     @Override
+    public Optional<ExamSession> findByIdForUpdate(UUID id) {
+        return springDataExamSessionRepository.findByIdForUpdate(id)
+            .map(ExamSessionMapper::toDomain);
+    }
+
+    @Override
     public Optional<ExamSession> findLatestByExamIdAndCandidateId(UUID examId, UUID candidateId) {
         return springDataExamSessionRepository.findTopByExamIdAndCandidateIdOrderByStartedAtDesc(examId, candidateId)
             .map(ExamSessionMapper::toDomain);

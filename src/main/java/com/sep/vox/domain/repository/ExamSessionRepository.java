@@ -11,6 +11,7 @@ import com.sep.vox.domain.model.exam.ExamSessionStatus;
 
 public interface ExamSessionRepository {
     Optional<ExamSession> findById(UUID id);
+    Optional<ExamSession> findByIdForUpdate(UUID id);
     Optional<ExamSession> findLatestByExamIdAndCandidateId(UUID examId, UUID candidateId);
     Optional<ExamSession> findLatestByCandidateId(UUID candidateId);
     Optional<ExamSession> findLatestByCandidateIdAndStatuses(UUID candidateId, Collection<ExamSessionStatus> statuses);

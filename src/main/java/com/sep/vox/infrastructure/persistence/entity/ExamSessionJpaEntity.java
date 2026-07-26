@@ -57,6 +57,9 @@ public class ExamSessionJpaEntity {
     @Column(name = "flag_reason", columnDefinition = "text")
     private String flagReason;
 
+    @Column(name = "remaining_seconds")
+    private Integer remainingSeconds;
+
     protected ExamSessionJpaEntity() {}
 
     public ExamSessionJpaEntity(UUID id, UUID examId, UUID candidateId, UUID paperId, OffsetDateTime startedAt,
@@ -142,5 +145,13 @@ public class ExamSessionJpaEntity {
 
     public void setFlagReason(String flagReason) {
         this.flagReason = flagReason;
+    }
+
+    public Integer getRemainingSeconds() {
+        return remainingSeconds;
+    }
+
+    public void setRemainingSeconds(Integer remainingSeconds) {
+        this.remainingSeconds = remainingSeconds;
     }
 }

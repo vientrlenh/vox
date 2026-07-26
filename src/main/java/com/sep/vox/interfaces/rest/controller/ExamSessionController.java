@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.sep.vox.application.port.input.query.ViewExamSessionPaperQuery;
 import com.sep.vox.application.port.input.usecase.exam.GetExamSessionPaperUseCase;
+import com.sep.vox.application.port.input.usecase.examsession.CheckpointExamSessionRemainingTimeUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.CreateExamSessionUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.DeleteExamSessionUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.FlagExamSessionUseCase;
@@ -25,6 +26,7 @@ import com.sep.vox.application.port.input.usecase.examsession.ForceEndExamSessio
 import com.sep.vox.application.port.input.usecase.examsession.RetryGradingExamSessionUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.UpdateExamSessionStatusUseCase;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
+import com.sep.vox.interfaces.rest.dto.request.CheckpointExamSessionRemainingTimeRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateExamSessionRequest;
 import com.sep.vox.interfaces.rest.dto.request.SessionReasonRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateExamSessionRequest;
@@ -45,6 +47,7 @@ public class ExamSessionController {
     private final FlagExamSessionUseCase flagExamSessionUseCase;
     private final ForceEndExamSessionUseCase forceEndExamSessionUseCase;
     private final RetryGradingExamSessionUseCase retryGradingExamSessionUseCase;
+    private final CheckpointExamSessionRemainingTimeUseCase checkpointRemainingTimeUseCase;
 
     public ExamSessionController(
             CreateExamSessionUseCase createExamSessionUseCase,
@@ -54,7 +57,8 @@ public class ExamSessionController {
             DeleteExamSessionUseCase deleteExamSessionUseCase,
             FlagExamSessionUseCase flagExamSessionUseCase,
             ForceEndExamSessionUseCase forceEndExamSessionUseCase,
-            RetryGradingExamSessionUseCase retryGradingExamSessionUseCase) {
+            RetryGradingExamSessionUseCase retryGradingExamSessionUseCase,
+            CheckpointExamSessionRemainingTimeUseCase checkpointRemainingTimeUseCase) {
         this.createExamSessionUseCase = createExamSessionUseCase;
                 this.completeExamSessionGradingUseCase = completeExamSessionGradingUseCase;
 
@@ -64,6 +68,7 @@ public class ExamSessionController {
         this.flagExamSessionUseCase = flagExamSessionUseCase;
         this.forceEndExamSessionUseCase = forceEndExamSessionUseCase;
         this.retryGradingExamSessionUseCase = retryGradingExamSessionUseCase;
+        this.checkpointRemainingTimeUseCase = checkpointRemainingTimeUseCase;
     }
 
     @PostMapping
@@ -95,6 +100,17 @@ public class ExamSessionController {
     public ResponseEntity<ApiResponse<?>> getPaper(@PathVariable UUID id) {
         var data = getExamSessionPaperUseCase.execute(new ViewExamSessionPaperQuery(id));
         return ResponseEntity.ok(ApiResponse.success("Lay de thi thanh cong", data));
+    }
+
+    @PatchMapping("/{id}/remaining-time")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<ApiResponse<Integer>> checkpointRemainingTime(
+            @PathVariable UUID id,
+            @Valid @RequestBody CheckpointExamSessionRemainingTimeRequest request) {
+        var data = checkpointRemainingTimeUseCase.execute(
+            new CheckpointExamSessionRemainingTimeCommand(id, request.remainingSeconds())
+        );
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật thời gian còn lại thành công", data));
     }
 
     @PostMapping("/{id}/flag")

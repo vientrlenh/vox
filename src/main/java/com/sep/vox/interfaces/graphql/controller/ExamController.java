@@ -165,7 +165,7 @@ public class ExamController {
     @SchemaMapping(typeName = "Exam", field = "papers")
     public CompletableFuture<List<ExamPaperDto>> papers(
             ExamDto source,
-            @Argument ExamPaperStatus status,
+            @Argument(name = "status") ExamPaperStatus status,
             DataFetchingEnvironment env) {
         DataLoader<UUID, List<ExamPaperDto>> loader = env.getDataLoader("examPapersByExamId");
         return loader.load(source.id()).thenApply(papers -> status == null

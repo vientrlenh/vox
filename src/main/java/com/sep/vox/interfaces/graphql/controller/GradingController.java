@@ -55,13 +55,13 @@ public class GradingController {
     @QueryMapping(name = "gradingAssignments")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<GradingAssignmentRowInfo> gradingAssignments(
-            @Argument("examId") UUID examId,
-            @Argument("scheduleId") UUID scheduleId,
-            @Argument("teacherId") UUID teacherId,
-            @Argument("status") String status,
-            @Argument("search") String search,
-            @Argument("page") Integer page,
-            @Argument("size") Integer size) {
+            @Argument(name = "examId") UUID examId,
+            @Argument(name = "scheduleId") UUID scheduleId,
+            @Argument(name = "teacherId") UUID teacherId,
+            @Argument(name = "status") String status,
+            @Argument(name = "search") String search,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
         return viewGradingAssignmentsUseCase.execute(new SearchGradingAssignmentsQuery(
             examId, scheduleId, teacherId, status, search,
             page == null ? 0 : page, size == null ? DEFAULT_PAGE_SIZE : size));
@@ -70,24 +70,24 @@ public class GradingController {
     @QueryMapping(name = "gradingStats")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public GradingStatsInfo gradingStats(
-            @Argument("examId") UUID examId,
-            @Argument("scheduleId") UUID scheduleId) {
+            @Argument(name = "examId") UUID examId,
+            @Argument(name = "scheduleId") UUID scheduleId) {
         return viewGradingStatsUseCase.execute(new ViewGradingStatsQuery(examId, scheduleId));
     }
 
     @QueryMapping(name = "myGradingTasks")
     @PreAuthorize("hasRole('TEACHER')")
     public PageResult<GradingTaskInfo> myGradingTasks(
-            @Argument("status") String status,
-            @Argument("page") Integer page,
-            @Argument("size") Integer size) {
+            @Argument(name = "status") String status,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
         return viewMyGradingTasksUseCase.execute(new ViewMyGradingTasksQuery(
             status, page == null ? 0 : page, size == null ? DEFAULT_PAGE_SIZE : size));
     }
 
     @QueryMapping(name = "gradingTaskDetail")
     @PreAuthorize("hasRole('TEACHER')")
-    public GradingTaskDetailInfo gradingTaskDetail(@Argument("assignmentId") UUID assignmentId) {
+    public GradingTaskDetailInfo gradingTaskDetail(@Argument(name = "assignmentId") UUID assignmentId) {
         return viewGradingTaskDetailUseCase.execute(assignmentId);
     }
 
@@ -95,13 +95,14 @@ public class GradingController {
     // luôn xem được bất kỳ bài PENDING_REVIEW nào của trường mình.
     @QueryMapping(name = "gradingTaskDetailBySchool")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public GradingTaskDetailInfo gradingTaskDetailBySchool(@Argument("candidateResultId") UUID candidateResultId) {
+    public GradingTaskDetailInfo gradingTaskDetailBySchool(
+            @Argument(name = "candidateResultId") UUID candidateResultId) {
         return viewGradingTaskDetailBySchoolUseCase.execute(candidateResultId);
     }
 
     @QueryMapping(name = "assignableTeachers")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public List<AssignableTeacherInfo> assignableTeachers(@Argument("search") String search) {
+    public List<AssignableTeacherInfo> assignableTeachers(@Argument(name = "search") String search) {
         return viewAssignableTeachersUseCase.execute(new ViewAssignableTeachersQuery(search));
     }
 }

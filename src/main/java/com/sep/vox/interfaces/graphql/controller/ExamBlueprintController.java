@@ -100,7 +100,7 @@ public class ExamBlueprintController {
     @SchemaMapping(typeName = "ExamBlueprint", field = "versions")
     public List<ExamBlueprintVersionDto> versions(
             ExamBlueprintDto source,
-            @Argument ExamBlueprintVersionStatus status) {
+            @Argument(name = "status") ExamBlueprintVersionStatus status) {
         var versions = examBlueprintVersionRepository.findByBlueprintId(source.id()).stream()
             .map(ExamBlueprintVersionDtoMapper::toDto)
             .toList();

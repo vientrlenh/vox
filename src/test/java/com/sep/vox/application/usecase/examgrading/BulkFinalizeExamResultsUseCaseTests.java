@@ -9,6 +9,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -37,8 +38,9 @@ import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamResultStatusHistoryRepository;
 
 /**
- * Lối thoát cho tình trạng một bài treo chặn cả kỳ thi (review BE-5) — nhưng nó không
- * được biến thành nút "công bố bừa", nên hai lớp bảo vệ ở đây quan trọng ngang nhau.
+ * Lối thoát cho tình trạng một bài treo chặn cả kỳ thi (review BE-5) — nhưng nó chỉ đưa
+ * bài về {@code RELEASED}, KHÔNG bao giờ sinh {@code FINAL}, và không được đụng vào tranh
+ * chấp điểm đang treo. Ba điều đó quan trọng ngang nhau.
  */
 class BulkFinalizeExamResultsUseCaseTests {
 
@@ -75,13 +77,14 @@ class BulkFinalizeExamResultsUseCaseTests {
         when(examGradingAssignmentRepository.findOpenByCandidateResultIdIn(anyCollection()))
             .thenReturn(List.of());
         givenPreview(clean());
+        givenResults();
     }
 
     private BulkFinalizePreviewInfo clean() {
         return new BulkFinalizePreviewInfo(3, 3, 0, 0, 0, 0, List.of());
     }
 
-    private BulkFinalizePreviewInfo blocked() {
+    private BulkFinalizePreviewInfo pendingBlocked() {
         return new BulkFinalizePreviewInfo(3, 1, 1, 1, 0, 0, List.of(UUID.randomUUID()));
     }
 
@@ -89,11 +92,19 @@ class BulkFinalizeExamResultsUseCaseTests {
         when(examGradingQueryRepository.previewBulkFinalize(schoolId, examId)).thenReturn(preview);
     }
 
+    private void givenResults(ExamCandidateResult... results) {
+        when(examCandidateResultRepository.findByExamId(examId)).thenReturn(List.of(results));
+    }
+
     private ExamCandidateResult result(ExamCandidateResultStatus status) {
         var result = new ExamCandidateResult();
         result.setId(UUID.randomUUID());
         result.setStatus(status);
         return result;
+    }
+
+    private BulkFinalizeExamResultsCommand confirmed() {
+        return new BulkFinalizeExamResultsCommand(examId, true);
     }
 
     @SuppressWarnings("unchecked")
@@ -106,7 +117,8 @@ class BulkFinalizeExamResultsUseCaseTests {
 
     @Test
     void should_refuse_when_papers_are_still_in_flight_and_the_admin_has_not_confirmed() {
-        givenPreview(blocked());
+        givenPreview(pendingBlocked());
+        givenResults(result(ExamCandidateResultStatus.PENDING_REVIEW));
 
         assertThatThrownBy(() -> useCase.execute(new BulkFinalizeExamResultsCommand(examId, false)))
             .isInstanceOf(IllegalStateException.class)
@@ -117,12 +129,12 @@ class BulkFinalizeExamResultsUseCaseTests {
 
     @Test
     void should_refuse_while_an_appeal_is_still_open_even_when_the_admin_confirmed() {
+        // Cờ "công bố theo điểm AI" chỉ nói về bài chưa ai chấm. Nuốt luôn một tranh
+        // chấp điểm đang treo thì đơn kẹt mở vĩnh viễn.
         givenPreview(new BulkFinalizePreviewInfo(3, 2, 0, 0, 1, 0, List.of(UUID.randomUUID())));
+        givenResults(result(ExamCandidateResultStatus.RELEASED));
 
-        // Cờ "công bố theo điểm hiện có" chỉ nói về bài chưa ai chấm. Nuốt luôn một
-        // tranh chấp điểm đang treo thì đơn kẹt mở vĩnh viễn, và học sinh rút đơn sau
-        // đó kéo bài từ FINAL ngược về RELEASED.
-        assertThatThrownBy(() -> useCase.execute(new BulkFinalizeExamResultsCommand(examId, true)))
+        assertThatThrownBy(() -> useCase.execute(confirmed()))
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("phúc khảo");
 
@@ -130,71 +142,152 @@ class BulkFinalizeExamResultsUseCaseTests {
     }
 
     @Test
-    void should_proceed_once_the_admin_confirms_publishing_ai_scores() {
-        givenPreview(blocked());
-        when(examCandidateResultRepository.findByExamId(examId))
-            .thenReturn(List.of(result(ExamCandidateResultStatus.PENDING_REVIEW)));
+    void should_refuse_when_a_paper_is_still_under_appeal() {
+        givenResults(
+            result(ExamCandidateResultStatus.APPEALED),
+            result(ExamCandidateResultStatus.PENDING_REVIEW));
 
-        var changed = useCase.execute(new BulkFinalizeExamResultsCommand(examId, true));
+        assertThatThrownBy(() -> useCase.execute(confirmed()))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("đơn phúc khảo");
+
+        verify(examCandidateResultRepository, never()).save(any());
+    }
+
+    @Test
+    void should_refuse_when_a_paper_is_being_regraded_for_an_appeal() {
+        // Một giáo viên đang cầm bài chấm dở ở vòng APPEAL — chốt sổ không quyết thay.
+        givenResults(result(ExamCandidateResultStatus.RE_GRADING));
+
+        assertThatThrownBy(() -> useCase.execute(confirmed()))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("chấm phúc khảo");
+
+        verify(examCandidateResultRepository, never()).save(any());
+    }
+
+    @Test
+    void should_name_every_blocking_status_in_one_message() {
+        // Báo từng thứ một là bắt admin bấm lại nhiều lần mới biết còn gì phải xử lý.
+        givenResults(
+            result(ExamCandidateResultStatus.APPEALED),
+            result(ExamCandidateResultStatus.RE_GRADING));
+
+        assertThatThrownBy(() -> useCase.execute(confirmed()))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContainingAll("đơn phúc khảo", "chấm phúc khảo");
+    }
+
+    @Test
+    void should_release_pending_papers_on_ai_scores_once_the_admin_confirms() {
+        givenPreview(pendingBlocked());
+        var pending = result(ExamCandidateResultStatus.PENDING_REVIEW);
+        givenResults(pending);
+
+        var changed = useCase.execute(confirmed());
 
         assertThat(changed).isEqualTo(1);
+        assertThat(pending.getStatus()).isEqualTo(ExamCandidateResultStatus.RELEASED);
+        assertThat(pending.getReleasedAt()).isNotNull();
+        // Bài mới công bố thì chưa chung thẩm: publish mới là chỗ chốt PASSED/FAILED.
+        assertThat(pending.getFinalizedAt()).isNull();
     }
 
     @Test
-    void should_move_open_statuses_to_final() {
-        when(examCandidateResultRepository.findByExamId(examId)).thenReturn(List.of(
-            result(ExamCandidateResultStatus.PENDING_REVIEW),
-            result(ExamCandidateResultStatus.RELEASED),
-            result(ExamCandidateResultStatus.APPEALED)));
+    void should_never_produce_final() {
+        // FINAL là trạng thái HẬU publish (finalizeForPublish sinh ra khi policy không có
+        // passingScore). Sinh nó ở đây thì requirePublishReadiness từ chối cả kỳ thi, mà
+        // lối ra duy nhất khỏi FINAL lại đòi kỳ thi đã publish — deadlock kín.
+        givenPreview(pendingBlocked());
+        var pending = result(ExamCandidateResultStatus.PENDING_REVIEW);
+        var released = result(ExamCandidateResultStatus.RELEASED);
+        givenResults(pending, released);
 
-        assertThat(useCase.execute(new BulkFinalizeExamResultsCommand(examId, true))).isEqualTo(3);
+        useCase.execute(confirmed());
+
+        assertThat(pending.getStatus()).isNotEqualTo(ExamCandidateResultStatus.FINAL);
+        assertThat(released.getStatus()).isNotEqualTo(ExamCandidateResultStatus.FINAL);
     }
 
     @Test
-    void should_leave_invalid_and_already_decided_results_alone() {
+    void should_leave_released_invalid_and_already_decided_results_alone() {
+        var released = result(ExamCandidateResultStatus.RELEASED);
         var invalid = result(ExamCandidateResultStatus.INVALID);
         var passed = result(ExamCandidateResultStatus.PASSED);
-        when(examCandidateResultRepository.findByExamId(examId)).thenReturn(List.of(invalid, passed));
+        givenResults(released, invalid, passed);
 
-        var changed = useCase.execute(new BulkFinalizeExamResultsCommand(examId, true));
+        var changed = useCase.execute(confirmed());
 
-        // INVALID đã có kết luận và sẽ tự thành FAILED lúc kỳ thi công bố; PASSED đã chốt.
+        // RELEASED đã sẵn sàng publish; INVALID đã có kết luận và sẽ tự thành FAILED
+        // (điểm ép về 0) lúc kỳ thi công bố; PASSED đã chốt.
         assertThat(changed).isZero();
+        assertThat(released.getStatus()).isEqualTo(ExamCandidateResultStatus.RELEASED);
         assertThat(invalid.getStatus()).isEqualTo(ExamCandidateResultStatus.INVALID);
         assertThat(passed.getStatus()).isEqualTo(ExamCandidateResultStatus.PASSED);
     }
 
     @Test
-    void should_record_which_papers_were_published_on_ai_scores() {
-        when(examCandidateResultRepository.findByExamId(examId)).thenReturn(List.of(
-            result(ExamCandidateResultStatus.PENDING_REVIEW),
-            result(ExamCandidateResultStatus.RELEASED)));
+    void should_keep_the_original_released_at_when_a_paper_already_had_one() {
+        // Bài từng RELEASED rồi bị kéo về PENDING_REVIEW (gỡ vô hiệu) không được đặt lại
+        // mốc công bố: cửa sổ phúc khảo tính từ mốc đó.
+        givenPreview(pendingBlocked());
+        var pending = result(ExamCandidateResultStatus.PENDING_REVIEW);
+        var originalReleasedAt = OffsetDateTime.now().minusDays(3);
+        pending.setReleasedAt(originalReleasedAt);
+        givenResults(pending);
 
-        useCase.execute(new BulkFinalizeExamResultsCommand(examId, true));
+        useCase.execute(confirmed());
 
-        var histories = captureHistories();
-        assertThat(histories).hasSize(2);
-        assertThat(histories).allSatisfy(history ->
-            assertThat(history.getSource()).isEqualTo(ResultStatusChangeSource.ADMIN_BULK_FINALIZE));
-        // Bài chưa ai chấm phải phân biệt được về sau: nó được công bố theo điểm AI.
-        assertThat(histories).anySatisfy(history ->
-            assertThat(history.getReason()).contains("điểm AI"));
+        assertThat(pending.getReleasedAt()).isEqualTo(originalReleasedAt);
     }
 
     @Test
-    void should_close_assignments_that_have_nothing_left_to_do() {
-        var result = result(ExamCandidateResultStatus.PENDING_REVIEW);
-        when(examCandidateResultRepository.findByExamId(examId)).thenReturn(List.of(result));
-        var open = ExamGradingAssignment.open(result.getId(), UUID.randomUUID(),
-            GradingRoundType.INITIAL, null, null, java.time.OffsetDateTime.now(), adminId, null);
+    void should_record_which_papers_were_published_on_ai_scores() {
+        givenPreview(pendingBlocked());
+        givenResults(result(ExamCandidateResultStatus.PENDING_REVIEW));
+
+        useCase.execute(confirmed());
+
+        var histories = captureHistories();
+        assertThat(histories).hasSize(1);
+        assertThat(histories).allSatisfy(history -> {
+            assertThat(history.getSource()).isEqualTo(ResultStatusChangeSource.ADMIN_BULK_FINALIZE);
+            assertThat(history.getToStatus()).isEqualTo(ExamCandidateResultStatus.RELEASED);
+            // Phải phân biệt được về sau: bài này công bố theo điểm AI, không phải điểm người.
+            assertThat(history.getReason()).contains("điểm AI");
+        });
+    }
+
+    @Test
+    void should_close_assignments_on_the_papers_it_released() {
+        givenPreview(pendingBlocked());
+        var pending = result(ExamCandidateResultStatus.PENDING_REVIEW);
+        givenResults(pending);
+        var open = ExamGradingAssignment.open(pending.getId(), UUID.randomUUID(),
+            GradingRoundType.INITIAL, null, null, OffsetDateTime.now(), adminId, null);
         when(examGradingAssignmentRepository.findOpenByCandidateResultIdIn(anyCollection()))
             .thenReturn(List.of(open));
 
-        useCase.execute(new BulkFinalizeExamResultsCommand(examId, true));
+        useCase.execute(confirmed());
 
-        // Không đóng thì phân công treo vĩnh viễn trong hàng đợi của giáo viên.
+        // Bài đã rời PENDING_REVIEW nên vòng INITIAL không còn xử lý được nó nữa; không
+        // đóng thì phân công treo vĩnh viễn trong hàng đợi của giáo viên.
         assertThat(open.isCompleted()).isTrue();
         assertThat(open.getOutcome()).isEqualTo(GradingOutcome.DECLINED);
         assertThat(open.getActiveResultId()).isNull();
+    }
+
+    @Test
+    void should_leave_assignments_on_papers_it_did_not_touch() {
+        // Vòng SPOT_CHECK trên bài RELEASED và vòng REMEDIATION trên bài INVALID vẫn còn
+        // nguyên việc để làm — đóng chúng là xoá một quyết định chưa được đưa ra.
+        givenResults(
+            result(ExamCandidateResultStatus.RELEASED),
+            result(ExamCandidateResultStatus.INVALID));
+
+        useCase.execute(confirmed());
+
+        verify(examGradingAssignmentRepository, never()).findOpenByCandidateResultIdIn(anyCollection());
+        verify(examGradingAssignmentRepository, never()).save(any());
     }
 }

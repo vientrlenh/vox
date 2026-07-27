@@ -14,7 +14,8 @@ import java.util.UUID;
  * @param pendingUnassigned  bài chờ chấm và CHƯA có ai nhận
  * @param pendingAssigned    bài chờ chấm và đang có người cầm
  * @param openAppeals        đơn phúc khảo chưa kết thúc
- * @param invalid            bài đã bị vô hiệu (sẽ thành FAILED khi chốt)
+ * @param invalid            bài đã bị vô hiệu (chốt sổ không đụng tới; sẽ thành FAILED
+ *                           với điểm 0 khi kỳ thi công bố kết quả)
  * @param blockingResultIds  danh sách bài đang chặn, cắt ngắn cho UI
  */
 public record BulkFinalizePreviewInfo(

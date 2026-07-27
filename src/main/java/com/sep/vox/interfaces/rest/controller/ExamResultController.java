@@ -60,8 +60,9 @@ public class ExamResultController {
             ApiResponse.success("Lấy thông tin chốt sổ thành công!", previewBulkFinalizeUseCase.execute(examId)));
     }
 
-    @Operation(summary = "Chốt sổ toàn bộ kết quả của kỳ thi về FINAL. Nếu còn bài dở, phải bật "
-        + "`releasePendingWithAiScores` để xác nhận công bố theo điểm AI hiện có.")
+    @Operation(summary = "Chốt sổ kỳ thi: công bố (RELEASED) các bài còn chờ người chấm theo điểm AI "
+        + "đang có, để kỳ thi publish được. Nếu còn bài dở, phải bật `releasePendingWithAiScores` "
+        + "để xác nhận. Bài đang phúc khảo chặn cứng; bài RELEASED/INVALID giữ nguyên.")
     @PostMapping("/finalize")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<Integer>> finalizeResults(

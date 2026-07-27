@@ -67,7 +67,7 @@ public class InvalidateGradingUseCaseTests {
 
         var context = new GradingContext(
             assignment, candidateResult, session, UUID.randomUUID(), "IELTS Speaking Mock");
-        when(examGradingAccessService.load(assignmentId)).thenReturn(context);
+        when(examGradingAccessService.loadForGrading(assignmentId, null)).thenReturn(context);
         return context;
     }
 

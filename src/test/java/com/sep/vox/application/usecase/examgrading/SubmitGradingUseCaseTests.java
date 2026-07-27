@@ -149,7 +149,7 @@ public class SubmitGradingUseCaseTests {
     private GradingContext given(
             GradingAssignmentStatus assignmentStatus, ExamCandidateResultStatus resultStatus, boolean flagged) {
         var context = contextWith(assignmentStatus, resultStatus, flagged);
-        when(examGradingAccessService.load(assignmentId)).thenReturn(context);
+        when(examGradingAccessService.loadForGrading(assignmentId, null)).thenReturn(context);
         return context;
     }
 

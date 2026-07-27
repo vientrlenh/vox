@@ -94,7 +94,7 @@ public class PreviewGradingUseCaseTests {
             examSessionResultCalculator, examGradingAccessService, resolver);
 
         when(examGradingAccessService.requireActiveUserId()).thenReturn(teacherId);
-        when(examGradingAccessService.load(assignmentId)).thenReturn(context());
+        when(examGradingAccessService.loadForGrading(assignmentId, null)).thenReturn(context());
         when(examItemResponseRepository.findBySessionId(sessionId)).thenReturn(List.of(
             new ExamItemResponse(responseId, sessionId, paperItemId, null, null, null, null, null)));
         when(rubricCriterionRepository.findByRubricVersionId(rubricVersionId)).thenReturn(List.of(

@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.common.ExamScheduleWindowMessages;
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
@@ -78,9 +79,7 @@ public class UpdateExamScheduleUseCase implements IUseCase<UpdateExamScheduleCom
             throw new IllegalArgumentException("Thời gian kết thúc phải sau thời gian bắt đầu");
         }
         if (exam.isScheduleWindowShorterThanExamTime(effectiveStart, effectiveEnd)) {
-            throw new IllegalArgumentException(
-                "Thời lượng ca thi phải lớn hơn hoặc bằng thời gian làm bài của kỳ thi ("
-                    + exam.getExamTimeDurationSecond() + " giây)");
+            throw new IllegalArgumentException(ExamScheduleWindowMessages.tooShortForExamTime(exam));
         }
         // Chỉ ràng buộc với kỳ thi thường: ca thi phải nằm trong khung mở/đóng đã định của kỳ thi.
         // CLASS_TEST đi chiều ngược lại -- openAt/closeAt được ghi lại theo ca thi ở dưới, nên so

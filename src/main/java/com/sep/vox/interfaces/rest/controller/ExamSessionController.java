@@ -81,7 +81,7 @@ public class ExamSessionController {
     @PatchMapping("/{id}")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER', 'STUDENT')")
     public ResponseEntity<ApiResponse<?>> updateStatus(
-            @PathVariable UUID id,
+            @PathVariable("id") UUID id,
             @Valid @RequestBody UpdateExamSessionRequest request) {
         var data = updateExamSessionStatusUseCase.execute(new UpdateExamSessionStatusCommand(
             id,
@@ -92,7 +92,7 @@ public class ExamSessionController {
 
     @GetMapping("/{id}/paper")
     @PreAuthorize("hasRole('STUDENT')")
-    public ResponseEntity<ApiResponse<?>> getPaper(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<?>> getPaper(@PathVariable("id") UUID id) {
         var data = getExamSessionPaperUseCase.execute(new ViewExamSessionPaperQuery(id));
         return ResponseEntity.ok(ApiResponse.success("Lay de thi thanh cong", data));
     }
@@ -100,7 +100,7 @@ public class ExamSessionController {
     @PostMapping("/{id}/flag")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<UUID>> flag(
-            @PathVariable UUID id,
+            @PathVariable("id") UUID id,
             @Valid @RequestBody SessionReasonRequest request) {
         var data = flagExamSessionUseCase.execute(new FlagExamSessionCommand(id, request.reason()));
         return ResponseEntity.ok(ApiResponse.success("Đánh dấu nghi vấn phiên thi thành công", data));
@@ -109,7 +109,7 @@ public class ExamSessionController {
     @PostMapping("/{id}/force-end")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<UUID>> forceEnd(
-            @PathVariable UUID id,
+            @PathVariable("id") UUID id,
             @Valid @RequestBody SessionReasonRequest request) {
         var data = forceEndExamSessionUseCase.execute(new ForceEndExamSessionCommand(id, request.reason()));
         return ResponseEntity.ok(ApiResponse.success("Buộc kết thúc phiên thi thành công", data));
@@ -117,21 +117,21 @@ public class ExamSessionController {
 
     @PostMapping("/{id}/retry-grading")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
-    public ResponseEntity<ApiResponse<UUID>> retryGrading(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<UUID>> retryGrading(@PathVariable("id") UUID id) {
         var data = retryGradingExamSessionUseCase.execute(new RetryGradingExamSessionCommand(id));
         return ResponseEntity.ok(ApiResponse.success("Gửi yêu cầu chấm lại thành công", data));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
-    public ResponseEntity<ApiResponse<?>> delete(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<?>> delete(@PathVariable("id") UUID id) {
         deleteExamSessionUseCase.execute(id);
         return ResponseEntity.ok(ApiResponse.success("Xoa phien thi thanh cong", null));
     }
 
      @PostMapping("/{sessionId}/complete-grading")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public ResponseEntity<ApiResponse<Void>> completeGrading(@PathVariable UUID sessionId) {
+    public ResponseEntity<ApiResponse<Void>> completeGrading(@PathVariable("id") UUID sessionId) {
         completeExamSessionGradingUseCase.execute(new CompleteExamSessionGradingCommand(sessionId));
         return ResponseEntity.ok(ApiResponse.success("Ghi nhận hoàn tất chấm bài thành công"));
 }

@@ -62,7 +62,7 @@ public class ExamBlueprintController {
     @SchemaMapping(typeName = "ExamBlueprint", field = "versions")
     public CompletableFuture<List<ExamBlueprintVersionDto>> versions(
             ExamBlueprintDto source,
-            @Argument ExamBlueprintVersionStatus status,
+            @Argument(name = "status") ExamBlueprintVersionStatus status,
             DataFetchingEnvironment env) {
         DataLoader<UUID, List<ExamBlueprintVersionDto>> loader = env.getDataLoader("examBlueprintVersionsByBlueprintId");
         return loader.load(source.id()).thenApply(versions -> status == null

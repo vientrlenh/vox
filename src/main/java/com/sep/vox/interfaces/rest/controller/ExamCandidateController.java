@@ -79,7 +79,7 @@ public class ExamCandidateController {
     @PostMapping
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<ExamCandidateDto>> add(
-            @PathVariable UUID examId,
+            @PathVariable("examId") UUID examId,
             @Valid @RequestBody AddExamCandidateRequest request) {
         var data = addExamCandidateUseCase.execute(AddExamCandidateCommandMapper.fromRequest(examId, request));
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -89,7 +89,7 @@ public class ExamCandidateController {
     @PostMapping("/import-class")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<List<ExamCandidateDto>>> importClass(
-            @PathVariable UUID examId,
+            @PathVariable("examId") UUID examId,
             @Valid @RequestBody ImportExamCandidatesFromClassRequest request) {
         var data = importExamCandidatesFromClassUseCase.execute(
             ImportExamCandidatesFromClassCommandMapper.fromRequest(examId, request));
@@ -100,7 +100,7 @@ public class ExamCandidateController {
     @PostMapping("/import-grade")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<List<ExamCandidateDto>>> importGrade(
-            @PathVariable UUID examId,
+            @PathVariable("examId") UUID examId,
             @Valid @RequestBody ImportExamCandidatesFromGradeRequest request) {
         var data = importExamCandidatesFromGradeUseCase.execute(
             ImportExamCandidatesFromGradeCommandMapper.fromRequest(examId, request));
@@ -111,8 +111,8 @@ public class ExamCandidateController {
     @PutMapping("/{candidateId}/schedule")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<ExamCandidateDto>> assignSchedule(
-            @PathVariable UUID examId,
-            @PathVariable UUID candidateId,
+            @PathVariable("examId") UUID examId,
+            @PathVariable("candidateId") UUID candidateId,
             @RequestBody AssignExamCandidateScheduleRequest request) {
         var data = assignExamCandidateScheduleUseCase.execute(
             AssignExamCandidateScheduleCommandMapper.fromRequest(examId, candidateId, request));
@@ -122,7 +122,7 @@ public class ExamCandidateController {
     @PostMapping("/auto-fill")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<List<ExamCandidateDto>>> autoFill(
-            @PathVariable UUID examId,
+            @PathVariable("examId") UUID examId,
             @RequestBody(required = false) AutoFillExamCandidatesRequest request) {
         var data = autoFillExamCandidatesUseCase.execute(
             AutoFillExamCandidatesCommandMapper.fromRequest(examId, request));
@@ -132,7 +132,7 @@ public class ExamCandidateController {
     @PutMapping("/assign-papers")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<AssignExamPapersResponse>> assignPapers(
-            @PathVariable UUID examId,
+            @PathVariable("examId") UUID examId,
             @Valid @RequestBody AssignExamPapersRequest request) {
         var data = assignExamPapersUseCase.execute(AssignExamPapersCommandMapper.fromRequest(examId, request));
         return ResponseEntity.ok(ApiResponse.success("Phân đề thành công", data));
@@ -141,8 +141,8 @@ public class ExamCandidateController {
     @PutMapping("/{candidateId}/status")
     @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<ApiResponse<ExamCandidateDto>> updateStatus(
-            @PathVariable UUID examId,
-            @PathVariable UUID candidateId,
+            @PathVariable("examId") UUID examId,
+            @PathVariable("candidateId") UUID candidateId,
             @Valid @RequestBody UpdateExamCandidateStatusRequest request) {
         var data = updateExamCandidateStatusUseCase.execute(new UpdateExamCandidateStatusCommand(
             candidateId,
@@ -154,8 +154,8 @@ public class ExamCandidateController {
     @PostMapping("/{candidateId}/unblock")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<ExamCandidateDto>> unblock(
-            @PathVariable UUID examId,
-            @PathVariable UUID candidateId,
+            @PathVariable("examId") UUID examId,
+            @PathVariable("candidateId") UUID candidateId,
             @Valid @RequestBody SessionReasonRequest request) {
         var data = unblockExamCandidateUseCase.execute(new UnblockExamCandidateCommand(candidateId, request.reason()));
         return ResponseEntity.ok(ApiResponse.success("Dỡ chặn thí sinh thành công", data));

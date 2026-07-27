@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
+import com.sep.vox.domain.model.exam.ExamRequiredStreamType;
 import com.sep.vox.domain.model.exam.ExamSession;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
 import com.sep.vox.infrastructure.persistence.entity.ExamSessionJpaEntity;
@@ -9,7 +10,7 @@ public final class ExamSessionMapper {
     private ExamSessionMapper() {}
 
     public static ExamSession toDomain(ExamSessionJpaEntity jpa) {
-        return new ExamSession(
+        var domain = new ExamSession(
             jpa.getId(),
             jpa.getExamId(),
             jpa.getCandidateId(),
@@ -20,10 +21,12 @@ public final class ExamSessionMapper {
             jpa.isFlagged(),
             jpa.getFlagReason()
         );
+        domain.setChosenStreamType(chosenStreamTypeFromString(jpa.getChosenStreamType()));
+        return domain;
     }
 
     public static ExamSessionJpaEntity toJpa(ExamSession domain) {
-        return new ExamSessionJpaEntity(
+        var jpa = new ExamSessionJpaEntity(
             domain.getId(),
             domain.getExamId(),
             domain.getCandidateId(),
@@ -34,9 +37,17 @@ public final class ExamSessionMapper {
             domain.isFlagged(),
             domain.getFlagReason()
         );
+        jpa.setChosenStreamType(
+            domain.getChosenStreamType() == null ? null : domain.getChosenStreamType().name()
+        );
+        return jpa;
     }
 
     private static ExamSessionStatus statusFromString(String status) {
         return status == null ? null : ExamSessionStatus.valueOf(status);
+    }
+
+    private static ExamRequiredStreamType chosenStreamTypeFromString(String chosenStreamType) {
+        return chosenStreamType == null ? null : ExamRequiredStreamType.valueOf(chosenStreamType);
     }
 }

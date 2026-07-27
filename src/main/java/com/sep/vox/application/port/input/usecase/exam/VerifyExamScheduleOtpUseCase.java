@@ -2,7 +2,6 @@ package com.sep.vox.application.port.input.usecase.exam;
 
 import java.time.Duration;
 import java.time.OffsetDateTime;
-import java.util.EnumSet;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -146,7 +145,7 @@ public class VerifyExamScheduleOtpUseCase implements IUseCase<VerifyExamSchedule
     private ExamSession findResumableSession(UUID candidateId) {
         return examSessionRepository.findLatestByCandidateIdAndStatuses(
             candidateId,
-            EnumSet.of(ExamSessionStatus.IN_PROGRESS, ExamSessionStatus.INTERRUPTED)
+            ExamSessionStatus.RESUMABLE
         ).orElse(null);
     }
 

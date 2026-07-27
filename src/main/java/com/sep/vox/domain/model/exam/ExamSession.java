@@ -13,6 +13,20 @@ public class ExamSession {
     private ExamSessionStatus status;
     private boolean flagged;
     private String flagReason;
+    /**
+     * Loại stream đã được chốt cho phiên thi này, null nếu chưa phát token stream lần nào.
+     *
+     * <p>Chỉ có ý nghĩa khi kỳ thi đặt {@code streamTypePermission = ANY} - lúc đó học viên được
+     * tự chọn trong số các loại mà kỳ thi chấp nhận, và lựa chọn ấy phải được ghi lại thay vì chỉ
+     * sống trong JWT: token được phát lại nhiều lần trong một phiên (reconnect, gia hạn credential
+     * upload), nên nếu không lưu thì mỗi lần phát lại là một cơ hội đổi sang loại giám sát nhẹ hơn
+     * giữa kỳ thi. Ghi một lần rồi khóa - xem
+     * {@code ExamSessionRepository#lockChosenStreamType}.
+     *
+     * <p>Đồng thời đây là bằng chứng để phân biệt "học viên chọn không stream màn hình" với
+     * "stream màn hình bị lỗi": cả hai đều dẫn tới việc thiếu bản ghi screen trên storage.
+     */
+    private ExamRequiredStreamType chosenStreamType;
 
     public ExamSession() {}
 
@@ -111,5 +125,13 @@ public class ExamSession {
 
     public void setFlagReason(String flagReason) {
         this.flagReason = flagReason;
+    }
+
+    public ExamRequiredStreamType getChosenStreamType() {
+        return chosenStreamType;
+    }
+
+    public void setChosenStreamType(ExamRequiredStreamType chosenStreamType) {
+        this.chosenStreamType = chosenStreamType;
     }
 }

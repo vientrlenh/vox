@@ -57,6 +57,14 @@ public class ExamSessionJpaEntity {
     @Column(name = "flag_reason", columnDefinition = "text")
     private String flagReason;
 
+    @Column(name = "chosen_stream_type", length = 20, check = {
+        @CheckConstraint(
+            name = "chk_exam_sessions_chosen_stream_type_valid",
+            constraint = "chosen_stream_type IN ('CAMERA', 'SCREEN', 'CAMERA_AND_SCREEN')"
+        )
+    })
+    private String chosenStreamType;
+
     protected ExamSessionJpaEntity() {}
 
     public ExamSessionJpaEntity(UUID id, UUID examId, UUID candidateId, UUID paperId, OffsetDateTime startedAt,
@@ -142,5 +150,13 @@ public class ExamSessionJpaEntity {
 
     public void setFlagReason(String flagReason) {
         this.flagReason = flagReason;
+    }
+
+    public String getChosenStreamType() {
+        return chosenStreamType;
+    }
+
+    public void setChosenStreamType(String chosenStreamType) {
+        this.chosenStreamType = chosenStreamType;
     }
 }

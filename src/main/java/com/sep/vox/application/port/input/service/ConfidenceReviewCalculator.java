@@ -78,22 +78,22 @@ public class ConfidenceReviewCalculator {
     public Decision compute(
             ConfidenceCaseSignals signals,
             ExamKind examKind,
-            boolean hasCodeSwitch,
+            BigDecimal codeSwitchingRatio,
             boolean isShortAnswer) {
-        return compute(signals, null, ConfidenceMode.fromExamKind(examKind), hasCodeSwitch, isShortAnswer);
+        return compute(signals, null, ConfidenceMode.fromExamKind(examKind), codeSwitchingRatio, isShortAnswer);
     }
 
     public Decision compute(
             ConfidenceCaseSignals signals,
             BigDecimal audioQuality,
             ExamKind examKind,
-            boolean hasCodeSwitch,
+            BigDecimal codeSwitchingRatio,
             boolean isShortAnswer) {
         return compute(
             signals,
             audioQuality,
             ConfidenceMode.fromExamKind(examKind),
-            hasCodeSwitch,
+            codeSwitchingRatio,
             isShortAnswer
         );
     }
@@ -102,9 +102,11 @@ public class ConfidenceReviewCalculator {
             ConfidenceCaseSignals signals,
             BigDecimal audioQuality,
             ConfidenceMode mode,
-            boolean hasCodeSwitch,
+            BigDecimal codeSwitchingRatio,
             boolean isShortAnswer) {
         var profile = profile(mode);
+        boolean hasCodeSwitch = codeSwitchingRatio != null
+            && codeSwitchingRatio.compareTo(BigDecimal.ZERO) > 0;
         if (signals == null) {
             return new Decision(
                 false,
@@ -172,30 +174,38 @@ public class ConfidenceReviewCalculator {
         // đúng ngưỡng riêng của nó (không gộp qua composite) để giữ đúng biên nới Vietnam-
         // adjusted chỉ áp cho accuracy (1-m), không lây sang coverage/timing.
         if (signals.cAlignAccuracy() != null) {
-            evaluateMinimumBound(
-                signals.cAlignAccuracy(),
-                C_ALIGN_ACCURACY_HARD.add(profile.hardDelta()),
-                C_ALIGN_ACCURACY_SOFT.add(profile.softDelta()),
-                "ALIGNMENT_MISCUE_HIGH",
-                "D",
-                hardReasons,
-                softReasons,
-                hardGroups,
-                softGroups
-            );
+            boolean explainedByCodeSwitch = codeSwitchingRatio != null
+                && codeSwitchingRatio.compareTo(BigDecimal.ONE.subtract(signals.cAlignAccuracy())) >= 0;
+            if (!explainedByCodeSwitch) {
+                evaluateMinimumBound(
+                    signals.cAlignAccuracy(),
+                    C_ALIGN_ACCURACY_HARD.add(profile.hardDelta()),
+                    C_ALIGN_ACCURACY_SOFT.add(profile.softDelta()),
+                    "ALIGNMENT_MISCUE_HIGH",
+                    "D",
+                    hardReasons,
+                    softReasons,
+                    hardGroups,
+                    softGroups
+                );
+            }
         }
         if (signals.cAlignCoverage() != null) {
-            evaluateMinimumBound(
-                signals.cAlignCoverage(),
-                C_ALIGN_COVERAGE_HARD.add(profile.hardDelta()),
-                C_ALIGN_COVERAGE_SOFT.add(profile.softDelta()),
-                "ALIGNMENT_COVERAGE_LOW",
-                "D",
-                hardReasons,
-                softReasons,
-                hardGroups,
-                softGroups
-            );
+            boolean explainedByCodeSwitch = codeSwitchingRatio != null
+                && codeSwitchingRatio.compareTo(BigDecimal.ONE.subtract(signals.cAlignCoverage())) >= 0;
+            if (!explainedByCodeSwitch) {
+                evaluateMinimumBound(
+                    signals.cAlignCoverage(),
+                    C_ALIGN_COVERAGE_HARD.add(profile.hardDelta()),
+                    C_ALIGN_COVERAGE_SOFT.add(profile.softDelta()),
+                    "ALIGNMENT_COVERAGE_LOW",
+                    "D",
+                    hardReasons,
+                    softReasons,
+                    hardGroups,
+                    softGroups
+                );
+            }
         }
         if (signals.cAlignTiming() != null) {
             evaluateMinimumBound(

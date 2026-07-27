@@ -170,14 +170,12 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
                         : input.payload().signals().asrConfidenceAvg()
                 );
             }
-            boolean hasCodeSwitch = signals.codeSwitchingRatio() != null
-                && signals.codeSwitchingRatio().compareTo(BigDecimal.ZERO) > 0;
             boolean isShortAnswer = signals.wordCount() < 35;
             var confidenceDecision = confidenceReviewCalculator.compute(
                 confidenceCase,
                 signals.audioQuality(),
                 evaluationContext.examKind(),
-                hasCodeSwitch,
+                signals.codeSwitchingRatio(),
                 isShortAnswer
             );
             var hasCriticalValidityFlag = hasCriticalValidityFlag(validity);

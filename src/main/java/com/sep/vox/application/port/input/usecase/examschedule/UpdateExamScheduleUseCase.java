@@ -77,6 +77,17 @@ public class UpdateExamScheduleUseCase implements IUseCase<UpdateExamScheduleCom
         if (!effectiveEnd.isAfter(effectiveStart)) {
             throw new IllegalArgumentException("Thời gian kết thúc phải sau thời gian bắt đầu");
         }
+        if (exam.isScheduleWindowShorterThanExamTime(effectiveStart, effectiveEnd)) {
+            throw new IllegalArgumentException(
+                "Thời lượng ca thi phải lớn hơn hoặc bằng thời gian làm bài của kỳ thi ("
+                    + exam.getExamTimeDurationSecond() + " giây)");
+        }
+        // Chỉ ràng buộc với kỳ thi thường: ca thi phải nằm trong khung mở/đóng đã định của kỳ thi.
+        // CLASS_TEST đi chiều ngược lại -- openAt/closeAt được ghi lại theo ca thi ở dưới, nên so
+        // với khung cũ rồi chặn sẽ khiến không dời được lịch bài kiểm tra trên lớp.
+        if (!isClassTest && exam.isScheduleWindowOutsideExamWindow(effectiveStart, effectiveEnd)) {
+            throw new IllegalArgumentException(ExamScheduleWindowMessages.outsideExamWindow(exam));
+        }
 
         if (input.schoolRoomId() != null) {
             SchoolRoom room = schoolRoomRepository.findById(input.schoolRoomId())

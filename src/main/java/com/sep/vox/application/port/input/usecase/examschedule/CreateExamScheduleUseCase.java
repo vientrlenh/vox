@@ -66,6 +66,14 @@ public class CreateExamScheduleUseCase implements IUseCase<CreateExamScheduleCom
         if (!input.endDate().isAfter(input.startDate())) {
             throw new IllegalArgumentException("Thời gian kết thúc phải sau thời gian bắt đầu");
         }
+        if (exam.isScheduleWindowShorterThanExamTime(input.startDate(), input.endDate())) {
+            throw new IllegalArgumentException(
+                "Thời lượng ca thi phải lớn hơn hoặc bằng thời gian làm bài của kỳ thi ("
+                    + exam.getExamTimeDurationSecond() + " giây)");
+        }
+        if (exam.isScheduleWindowOutsideExamWindow(input.startDate(), input.endDate())) {
+            throw new IllegalArgumentException(ExamScheduleWindowMessages.outsideExamWindow(exam));
+        }
 
         SchoolRoom room = schoolRoomRepository.findById(input.schoolRoomId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phòng học"));

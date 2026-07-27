@@ -23,9 +23,11 @@ import com.sep.vox.application.port.input.usecase.examschedule.UpdateExamSchedul
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamSchedule;
 import com.sep.vox.domain.model.exam.ExamScheduleStatus;
+import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
@@ -115,6 +117,56 @@ class UpdateExamScheduleUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateExamScheduleCommand(scheduleId, null, newStart, newEnd)))
             .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void should_reject_when_new_window_shorter_than_exam_time_duration() {
+        var exam = exam();
+        // Khung giờ mới dài 2 tiếng nhưng thời gian làm bài là 3 tiếng.
+        exam.setExamTimeDurationSecond(3 * 3600);
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        when(examScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule(ExamScheduleStatus.DRAFT)));
+
+        assertThatThrownBy(() -> useCase.execute(new UpdateExamScheduleCommand(scheduleId, null, newStart, newEnd)))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("thời gian làm bài");
+        verify(examScheduleRepository, never()).updateAtomic(any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void should_reject_when_new_window_falls_outside_exam_window() {
+        var exam = exam();
+        exam.setOpenAt(start);
+        exam.setCloseAt(end);
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        when(examScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule(ExamScheduleStatus.DRAFT)));
+
+        // newStart/newEnd là ngày hôm sau, nằm ngoài khung mở/đóng của kỳ thi.
+        assertThatThrownBy(() -> useCase.execute(new UpdateExamScheduleCommand(scheduleId, null, newStart, newEnd)))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("mở và đóng");
+        verify(examScheduleRepository, never()).updateAtomic(any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void should_allow_moving_class_test_schedule_outside_current_exam_window() {
+        // Với CLASS_TEST, ca thi là thứ định nghĩa khung giờ kỳ thi (openAt/closeAt được ghi
+        // ngược lại từ ca thi), nên dời ca thi ra ngoài khung hiện tại là hợp lệ.
+        var exam = exam();
+        exam.setKind(ExamKind.CLASS_TEST);
+        exam.setStatus(ExamStatus.DRAFT);
+        exam.setOpenAt(start);
+        exam.setCloseAt(end);
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        when(examScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule(ExamScheduleStatus.DRAFT)));
+        when(examScheduleRepository.existsOverlapping(roomId, newStart, newEnd, scheduleId)).thenReturn(false);
+
+        var result = useCase.execute(new UpdateExamScheduleCommand(scheduleId, null, newStart, newEnd));
+
+        assertThat(result).isEqualTo(scheduleId);
+        assertThat(exam.getOpenAt()).isEqualTo(newStart);
+        assertThat(exam.getCloseAt()).isEqualTo(newEnd);
+        verify(examRepository).save(exam);
     }
 
     private Exam exam() {

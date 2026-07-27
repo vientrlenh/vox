@@ -48,12 +48,16 @@ class ExportExamScoresUseCaseTests {
         when(examGradingQueryRepository.findScoreRows(any(), any(), any())).thenReturn(List.of());
     }
 
-    private void givenRowWithStudentName(String studentName) {
+    private void givenRow(String studentName, OffsetDateTime releasedAt) {
         when(examGradingQueryRepository.findScoreRows(schoolId, examId, null)).thenReturn(List.of(
             new ExamScoreRowInfo(UUID.randomUUID(), studentName, "hs@example.com", "12A1",
                 "IELTS Mock", OffsetDateTime.parse("2026-07-12T08:00:00+07:00"),
                 new BigDecimal("7.50"), "B2", "RELEASED",
-                "INITIAL", "UPHELD", "Cô Lan", null)));
+                "INITIAL", "UPHELD", "Cô Lan", releasedAt)));
+    }
+
+    private void givenRowWithStudentName(String studentName) {
+        givenRow(studentName, null);
     }
 
     private String export() {
@@ -115,6 +119,15 @@ class ExportExamScoresUseCaseTests {
 
         // Nguồn là 08:00+07:00; in ra phải là 08:00 bất kể JVM chạy ở múi giờ nào.
         assertThat(export()).contains("\"08:00 12/07/2026\"");
+    }
+
+    @Test
+    void should_print_the_release_time_in_vietnam_time_too() {
+        givenRow("Nguyễn Văn A", OffsetDateTime.parse("2026-07-20T03:30:00Z"));
+
+        // Cùng một file, cùng một người đọc: "Thời điểm công bố" không được là ISO thô
+        // giờ UTC trong khi "Ca thi" đã là giờ VN.
+        assertThat(export()).contains("\"10:30 20/07/2026\"").doesNotContain("2026-07-20T03:30");
     }
 
     @Test

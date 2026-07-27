@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.exam.ExamGradingAssignment;
@@ -78,8 +79,10 @@ public class ExamGradingAssignmentRepositoryImpl implements ExamGradingAssignmen
     }
 
     @Override
-    public List<ExamGradingAssignment> findOverdueInSchool(OffsetDateTime now, UUID schoolId, UUID examId) {
-        return springDataExamGradingAssignmentRepository.findOverdueInSchool(now, schoolId, examId).stream()
+    public List<ExamGradingAssignment> findOverdueInSchool(
+            OffsetDateTime now, UUID schoolId, UUID examId, int limit) {
+        return springDataExamGradingAssignmentRepository
+            .findOverdueInSchool(now, schoolId, examId, PageRequest.of(0, limit)).stream()
             .map(ExamGradingAssignmentMapper::toDomain)
             .toList();
     }

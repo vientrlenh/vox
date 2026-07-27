@@ -40,6 +40,13 @@ public class ReclaimOverdueAssignmentsUseCase
 
     private static final String RECLAIM_REASON = "Thu hồi do quá hạn chấm.";
 
+    /**
+     * Trần một lượt thu hồi. Nhánh "không chỉ định" chạy trong một transaction GHI, nên
+     * không có trần thì một trường tồn đọng lớn giữ connection và khoá rất lâu. Lấy dư
+     * đúng một dòng để biết còn nữa hay không mà không cần thêm câu COUNT.
+     */
+    private static final int MAX_RECLAIM_BATCH = 500;
+
     private final ExamGradingAssignmentRepository examGradingAssignmentRepository;
     private final ExamResultAppealRepository examResultAppealRepository;
     private final ExamGradingQueryRepository examGradingQueryRepository;
@@ -83,10 +90,13 @@ public class ReclaimOverdueAssignmentsUseCase
             }
         }
 
-        var overdue = selectOverdue(command, schoolId, currentUserId, now);
+        var batch = selectOverdue(command, schoolId, currentUserId, now);
+        var overdue = batch.assignments();
         if (overdue.isEmpty()) {
             return ReclaimOverdueResponse.empty();
         }
+
+        rejectConflictedReplacements(overdue, teacherIds);
 
         for (var assignment : overdue) {
             assignment.complete(GradingOutcome.DECLINED, RECLAIM_REASON, now);
@@ -97,7 +107,7 @@ public class ReclaimOverdueAssignmentsUseCase
             // Không có người thay: đơn phúc khảo phải được nhả ra, nếu không nó kẹt ở
             // GRADING mà chẳng còn phân công nào đang mở để chấm tiếp.
             overdue.forEach(this::releaseAppeal);
-            return new ReclaimOverdueResponse(reclaimedIds, List.of());
+            return new ReclaimOverdueResponse(reclaimedIds, List.of(), batch.hasMore());
         }
 
         // Tải được đọc SAU khi đóng dòng cũ, nên người vừa bị thu hồi không còn bị tính
@@ -123,7 +133,48 @@ public class ReclaimOverdueAssignmentsUseCase
         var reassignedIds = examGradingAssignmentRepository.saveAll(reopened).stream()
             .map(assignment -> assignment.getId())
             .toList();
-        return new ReclaimOverdueResponse(reclaimedIds, reassignedIds);
+        return new ReclaimOverdueResponse(reclaimedIds, reassignedIds, batch.hasMore());
+    }
+
+    /**
+     * Một lượt thu hồi cùng với câu trả lời "còn nữa không".
+     *
+     * @param hasMore đã chạm trần {@link #MAX_RECLAIM_BATCH}, còn dòng chưa xử lý
+     */
+    private record OverdueBatch(List<ExamGradingAssignment> assignments, boolean hasMore) {}
+
+    /**
+     * Vòng {@code APPEAL} chịu chung luật xung đột lợi ích với
+     * {@code ReassignGradingUseCase}: người đã từng ghi phán quyết điểm cho bài không
+     * được ngồi soi lại chính mình. Giao lại HÀNG LOẠT không được là cửa sau để lách
+     * thứ mà giao lại từng dòng đã chặn — và sau khi
+     * {@code AutoAssignGradingUseCase} cấm hẳn vòng phúc khảo, đây là cửa cuối cùng.
+     *
+     * <p>Chặn cả lô thay vì lọc lẻ từng người là lựa chọn cố ý: round-robin chia bài
+     * sau khi danh sách đã chốt, nên lọc lẻ sẽ làm kết quả chia phụ thuộc vào dữ liệu
+     * ẩn mà admin không nhìn thấy lúc bấm.
+     *
+     * <p>Chỉ hỏi khi trong lô thật sự có vòng phúc khảo — ba vòng còn lại không có luật
+     * này, hỏi thừa là thêm query cho mọi lượt thu hồi.
+     */
+    private void rejectConflictedReplacements(List<ExamGradingAssignment> overdue, List<UUID> teacherIds) {
+        if (teacherIds.isEmpty()) {
+            return;
+        }
+        var appealResultIds = overdue.stream()
+            .filter(assignment -> assignment.getRoundType() == GradingRoundType.APPEAL)
+            .map(assignment -> assignment.getCandidateResultId())
+            .distinct()
+            .toList();
+        for (var candidateResultId : appealResultIds) {
+            var conflicted = examGradingQueryRepository.findTeacherIdsWithHumanEvaluation(candidateResultId);
+            if (conflicted.stream().anyMatch(teacherIds::contains)) {
+                throw new IllegalArgumentException(
+                    "Danh sách giáo viên thay thế có người đã từng chấm một bài đang phúc khảo "
+                        + "nên không được chấm phúc khảo bài đó. Bỏ người này ra, hoặc giao lại "
+                        + "ở màn đơn phúc khảo nếu cần ghi lý do ngoại lệ.");
+            }
+        }
     }
 
     /**
@@ -152,12 +203,20 @@ public class ReclaimOverdueAssignmentsUseCase
      * <p>Nhánh "không chỉ định" trước đây quét {@code findOverdue} toàn hệ thống rồi
      * gọi {@code load()} từng dòng chỉ để đọc {@code schoolId} — 4 query mỗi dòng, và
      * chạm cả dữ liệu trường khác. Bộ lọc đã xuống SQL nên ở đây là MỘT query.
+     *
+     * <p>Nhánh đó lấy dư đúng MỘT dòng so với trần: nếu về đủ {@code MAX + 1} thì biết
+     * chắc còn việc, mà không phải chạy thêm câu COUNT trên cùng vị ngữ. Danh sách chỉ
+     * định thì admin đã tự chọn nên không áp trần.
      */
-    private List<ExamGradingAssignment> selectOverdue(
+    private OverdueBatch selectOverdue(
             ReclaimOverdueAssignmentsCommand command, UUID schoolId, UUID currentUserId, OffsetDateTime now) {
         var assignmentIds = command.assignmentIds() == null ? List.<UUID>of() : command.assignmentIds();
         if (assignmentIds.isEmpty()) {
-            return examGradingAssignmentRepository.findOverdueInSchool(now, schoolId, command.examId());
+            var found = examGradingAssignmentRepository.findOverdueInSchool(
+                now, schoolId, command.examId(), MAX_RECLAIM_BATCH + 1);
+            return found.size() > MAX_RECLAIM_BATCH
+                ? new OverdueBatch(found.subList(0, MAX_RECLAIM_BATCH), true)
+                : new OverdueBatch(found, false);
         }
 
         var selected = new ArrayList<ExamGradingAssignment>();
@@ -169,6 +228,6 @@ public class ReclaimOverdueAssignmentsUseCase
             }
             selected.add(context.assignment());
         }
-        return selected;
+        return new OverdueBatch(selected, false);
     }
 }

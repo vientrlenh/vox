@@ -1,9 +1,12 @@
 package com.sep.vox.application.usecase.examgrading;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -15,6 +18,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -87,7 +91,7 @@ class ReclaimOverdueAssignmentsUseCaseTests {
     }
 
     private void givenOverdue(ExamGradingAssignment... assignments) {
-        when(examGradingAssignmentRepository.findOverdueInSchool(any(), any(), any()))
+        when(examGradingAssignmentRepository.findOverdueInSchool(any(), any(), any(), anyInt()))
             .thenReturn(List.of(assignments));
     }
 
@@ -124,6 +128,51 @@ class ReclaimOverdueAssignmentsUseCaseTests {
     }
 
     @Test
+    void should_reject_a_replacement_who_already_graded_the_paper_under_appeal() {
+        var conflicted = UUID.randomUUID();
+        givenOverdue(overdue(GradingRoundType.APPEAL, appealId));
+        when(examGradingQueryRepository.findTeacherIdsInSchool(schoolId, List.of(conflicted)))
+            .thenReturn(Set.of(conflicted));
+        when(examGradingQueryRepository.findTeacherIdsWithHumanEvaluation(candidateResultId))
+            .thenReturn(Set.of(conflicted));
+
+        // Cùng luật COI mà ReassignGradingUseCase đã áp cho đổi người từng dòng: giao
+        // lại hàng loạt không được là cửa sau để lách nó.
+        assertThatThrownBy(() -> useCase.execute(reclaimAll(List.of(conflicted))))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("đã từng chấm");
+
+        verify(examGradingAssignmentRepository, never()).saveAll(anyList());
+    }
+
+    @Test
+    void should_allow_a_clean_replacement_for_an_appeal_round() {
+        var replacement = UUID.randomUUID();
+        givenOverdue(overdue(GradingRoundType.APPEAL, appealId));
+        when(examGradingQueryRepository.findTeacherIdsInSchool(schoolId, List.of(replacement)))
+            .thenReturn(Set.of(replacement));
+        when(examGradingQueryRepository.findTeacherIdsWithHumanEvaluation(candidateResultId))
+            .thenReturn(Set.of(UUID.randomUUID()));
+        when(examGradingQueryRepository.assignedLoadByTeacherIds(anyCollection())).thenReturn(Map.of());
+
+        assertThat(useCase.execute(reclaimAll(List.of(replacement))).reassignedAssignmentIds()).hasSize(1);
+    }
+
+    @Test
+    void should_not_ask_about_conflicts_when_no_appeal_round_is_involved() {
+        var replacement = UUID.randomUUID();
+        givenOverdue(overdue(GradingRoundType.INITIAL, null));
+        when(examGradingQueryRepository.findTeacherIdsInSchool(schoolId, List.of(replacement)))
+            .thenReturn(Set.of(replacement));
+        when(examGradingQueryRepository.assignedLoadByTeacherIds(anyCollection())).thenReturn(Map.of());
+
+        useCase.execute(reclaimAll(List.of(replacement)));
+
+        // Ba vòng còn lại không có luật COI — hỏi thừa là thêm query cho mọi lượt thu hồi.
+        verify(examGradingQueryRepository, never()).findTeacherIdsWithHumanEvaluation(any());
+    }
+
+    @Test
     void should_leave_appeals_alone_for_the_other_three_rounds() {
         givenOverdue(overdue(GradingRoundType.INITIAL, null));
 
@@ -146,6 +195,30 @@ class ReclaimOverdueAssignmentsUseCaseTests {
     }
 
     @Test
+    void should_cap_one_batch_and_tell_the_admin_there_is_more_to_do() {
+        var tooMany = IntStream.range(0, 501)
+            .mapToObj(ignored -> overdue(GradingRoundType.INITIAL, null))
+            .toArray(ExamGradingAssignment[]::new);
+        givenOverdue(tooMany);
+
+        var response = useCase.execute(reclaimAll(null));
+
+        // Một cú bấm "Thu hồi toàn bộ" không được ôm cả trường vào một transaction ghi;
+        // cờ hasMore là thứ cho admin biết cần bấm tiếp thay vì tưởng đã xong.
+        assertThat(response.reclaimedAssignmentIds()).hasSize(500);
+        assertThat(response.hasMore()).isTrue();
+        // Lấy dư đúng MỘT dòng là đủ để biết còn nữa — không cần thêm câu COUNT.
+        verify(examGradingAssignmentRepository).findOverdueInSchool(any(), any(), any(), eq(501));
+    }
+
+    @Test
+    void should_not_flag_more_work_when_the_batch_fits() {
+        givenOverdue(overdue(GradingRoundType.INITIAL, null));
+
+        assertThat(useCase.execute(reclaimAll(null)).hasMore()).isFalse();
+    }
+
+    @Test
     void should_scan_only_the_current_school_instead_of_the_whole_system() {
         givenOverdue(overdue(GradingRoundType.INITIAL, null));
 
@@ -153,7 +226,7 @@ class ReclaimOverdueAssignmentsUseCaseTests {
 
         // Bản cũ gọi findOverdue toàn hệ thống rồi load() từng dòng để đọc schoolId —
         // 4N+1 query và chạm cả dữ liệu trường khác.
-        verify(examGradingAssignmentRepository).findOverdueInSchool(any(), any(), any());
+        verify(examGradingAssignmentRepository).findOverdueInSchool(any(), any(), any(), anyInt());
         verify(examGradingAssignmentRepository, never()).findOverdue(any());
         verify(examGradingAccessService, never()).load(any());
     }

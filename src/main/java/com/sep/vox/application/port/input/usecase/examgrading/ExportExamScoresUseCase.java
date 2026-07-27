@@ -83,7 +83,7 @@ public class ExportExamScoresUseCase implements IUseCase<ExportExamScoresQuery, 
             quote(row.lastRoundType()),
             quote(row.lastOutcome()),
             quote(row.lastGraderName()),
-            quote(time(row.releasedAt())));
+            quote(localTime(row.releasedAt())));
     }
 
     private String shortCode(ExamScoreRowInfo row) {
@@ -95,13 +95,11 @@ public class ExportExamScoresUseCase implements IUseCase<ExportExamScoresQuery, 
         return value == null ? "" : value.toPlainString();
     }
 
-    private String time(OffsetDateTime value) {
-        return value == null ? "" : value.toString();
-    }
-
     /**
-     * Mốc thời gian người đọc: đổi về giờ Việt Nam trước khi in. Container chạy UTC nên
-     * format thẳng sẽ lệch 7 tiếng — cùng lỗi với hai listener mail.
+     * MỌI mốc thời gian trong file đều đi qua đây: đổi về giờ Việt Nam trước khi in.
+     * Container chạy UTC nên format thẳng sẽ lệch 7 tiếng — cùng lỗi với hai listener
+     * mail. Không giữ biến thể in ISO thô: hai cột thời gian hai định dạng trong cùng
+     * một file là thứ người đọc không có cách nào tự nhận ra.
      */
     private String localTime(OffsetDateTime value) {
         return value == null ? "" : LOCAL_TIME_FORMAT.format(value);

@@ -149,7 +149,9 @@ public class GradingAssignmentController {
     @Operation(summary = "Thu hồi phân công quá hạn, giao lại ngay nếu có chọn nhóm giáo viên thay thế. "
         + "Bỏ trống `assignmentIds` để thu hồi mọi phân công quá hạn của kỳ thi. "
         + "Trả về hai danh sách tách bạch: `reclaimedAssignmentIds` (phân công cũ vừa đóng) và "
-        + "`reassignedAssignmentIds` (phân công mới vừa mở, rỗng nếu chỉ thu hồi).")
+        + "`reassignedAssignmentIds` (phân công mới vừa mở, rỗng nếu chỉ thu hồi). "
+        + "Mỗi lượt xử lý tối đa 500 phân công; `hasMore = true` nghĩa là còn dòng quá hạn "
+        + "chưa xử lý, gọi lại để chạy lượt tiếp theo.")
     @PostMapping("/reclaim-overdue")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<ReclaimOverdueResponse>> reclaimOverdue(

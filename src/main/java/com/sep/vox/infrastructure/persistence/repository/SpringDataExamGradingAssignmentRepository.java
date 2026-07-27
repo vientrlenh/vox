@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -42,6 +43,10 @@ public interface SpringDataExamGradingAssignmentRepository
      * thay vì {@link #findOverdue} + lọc ở Java: bản cũ quét toàn hệ thống rồi gọi
      * access service từng dòng để đọc ra schoolId — 4N+1 query, và thời gian phản hồi
      * của một trường phụ thuộc vào dữ liệu của các trường khác.
+     *
+     * <p>{@code Pageable} ở đây là TRẦN của một lượt thu hồi, không phải phân trang cho
+     * UI: một cú bấm "Thu hồi toàn bộ" không được ôm cả trường vào một transaction ghi.
+     * Cũ nhất trước để lượt sau tiếp đúng chỗ lượt trước dừng.
      */
     @Query("""
         SELECT ga FROM ExamGradingAssignmentJpaEntity ga
@@ -55,7 +60,8 @@ public interface SpringDataExamGradingAssignmentRepository
     List<ExamGradingAssignmentJpaEntity> findOverdueInSchool(
         @Param("now") OffsetDateTime now,
         @Param("schoolId") UUID schoolId,
-        @Param("examId") UUID examId);
+        @Param("examId") UUID examId,
+        Pageable pageable);
 
     /**
      * Sắp/đã tới hạn mà chưa nhắc lần nào — {@code reminded_at} là chốt chống trùng.

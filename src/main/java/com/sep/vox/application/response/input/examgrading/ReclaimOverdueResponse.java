@@ -13,12 +13,16 @@ import java.util.UUID;
  * @param reclaimedAssignmentIds phân công cũ vừa bị đóng (luôn có khi thu hồi được gì đó)
  * @param reassignedAssignmentIds phân công mới vừa mở cho nhóm thay thế; rỗng khi admin
  *        chỉ thu hồi mà không chọn ai
+ * @param hasMore còn phân công quá hạn chưa xử lý vì đã chạm trần một lượt — admin bấm
+ *        tiếp là chạy lượt sau. Không có cờ này thì một lượt "thu hồi toàn bộ" bị cắt
+ *        trông y hệt một lượt đã làm xong.
  */
 public record ReclaimOverdueResponse(
     List<UUID> reclaimedAssignmentIds,
-    List<UUID> reassignedAssignmentIds
+    List<UUID> reassignedAssignmentIds,
+    boolean hasMore
 ) {
     public static ReclaimOverdueResponse empty() {
-        return new ReclaimOverdueResponse(List.of(), List.of());
+        return new ReclaimOverdueResponse(List.of(), List.of(), false);
     }
 }

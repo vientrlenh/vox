@@ -14,15 +14,18 @@ import com.sep.vox.application.query.dto.ResultStatusHistoryInfo;
 import com.sep.vox.application.query.repository.ExamResultAuditQueryRepository;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
+import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 
 /**
  * Dòng thời gian điểm của một bài: ai, lúc nào, từ trạng thái nào sang trạng thái nào,
  * vì sao, điểm trước → sau.
  *
- * <p>Hai nhóm người xem, hai lý do khác nhau: school admin cần nó để giải trình tranh
- * chấp, còn học sinh cần nó để hiểu vì sao điểm mình thay đổi. Học sinh chỉ xem được
- * bài của chính mình.
+ * <p>Ba nhóm người xem, ba lý do khác nhau: school admin cần nó để giải trình tranh
+ * chấp, học sinh cần nó để hiểu vì sao điểm mình thay đổi, và giáo viên ĐANG được giao
+ * bài cần nó làm ngữ cảnh khi chấm — nhất là ở vòng phúc khảo, nơi câu hỏi đúng là
+ * "điểm này đã đi qua những tay nào". Học sinh chỉ xem được bài của chính mình; giáo
+ * viên chỉ xem được bài mình đang cầm, hết phân công là hết quyền.
  */
 @Service
 public class ViewResultStatusHistoryUseCase implements IUseCase<UUID, List<ResultStatusHistoryInfo>> {
@@ -30,6 +33,7 @@ public class ViewResultStatusHistoryUseCase implements IUseCase<UUID, List<Resul
     private final ExamResultAuditQueryRepository examResultAuditQueryRepository;
     private final ExamCandidateResultRepository examCandidateResultRepository;
     private final ExamCandidateRepository examCandidateRepository;
+    private final ExamGradingAssignmentRepository examGradingAssignmentRepository;
     private final ExamRepository examRepository;
     private final ExamGradingAccessService examGradingAccessService;
     private final UserContextPort userContextPort;
@@ -38,12 +42,14 @@ public class ViewResultStatusHistoryUseCase implements IUseCase<UUID, List<Resul
             ExamResultAuditQueryRepository examResultAuditQueryRepository,
             ExamCandidateResultRepository examCandidateResultRepository,
             ExamCandidateRepository examCandidateRepository,
+            ExamGradingAssignmentRepository examGradingAssignmentRepository,
             ExamRepository examRepository,
             ExamGradingAccessService examGradingAccessService,
             UserContextPort userContextPort) {
         this.examResultAuditQueryRepository = examResultAuditQueryRepository;
         this.examCandidateResultRepository = examCandidateResultRepository;
         this.examCandidateRepository = examCandidateRepository;
+        this.examGradingAssignmentRepository = examGradingAssignmentRepository;
         this.examRepository = examRepository;
         this.examGradingAccessService = examGradingAccessService;
         this.userContextPort = userContextPort;
@@ -63,6 +69,15 @@ public class ViewResultStatusHistoryUseCase implements IUseCase<UUID, List<Resul
             .orElse(false);
         if (!isOwner) {
             if (userContextPort.isSystemAdmin()) {
+                return examResultAuditQueryRepository.findHistory(candidateResultId);
+            }
+            // Giáo viên đang cầm bài: quyền đến từ chính dòng phân công đang mở, đúng
+            // khuôn với mọi thao tác chấm khác. Phân công đóng lại là quyền mất theo.
+            var isAssignedTeacher = examGradingAssignmentRepository
+                .findOpenByCandidateResultId(candidateResultId)
+                .map(assignment -> currentUserId.equals(assignment.getTeacherId()))
+                .orElse(false);
+            if (isAssignedTeacher) {
                 return examResultAuditQueryRepository.findHistory(candidateResultId);
             }
             var exam = examRepository.findById(result.getExamId())

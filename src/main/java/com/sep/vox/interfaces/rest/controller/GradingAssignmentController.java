@@ -28,6 +28,7 @@ import com.sep.vox.application.port.input.usecase.examgrading.SetGradingDeadline
 import com.sep.vox.application.port.input.usecase.examgrading.UpholdResultUseCase;
 import com.sep.vox.application.response.input.examgrading.GradingActionResponse;
 import com.sep.vox.application.response.input.examgrading.GradingPreviewResponse;
+import com.sep.vox.application.response.input.examgrading.ReclaimOverdueResponse;
 import com.sep.vox.interfaces.rest.dto.request.AssignGradingRequest;
 import com.sep.vox.interfaces.rest.dto.request.AutoAssignGradingRequest;
 import com.sep.vox.interfaces.rest.dto.request.GradingDecisionRequest;
@@ -146,10 +147,12 @@ public class GradingAssignmentController {
     }
 
     @Operation(summary = "Thu hồi phân công quá hạn, giao lại ngay nếu có chọn nhóm giáo viên thay thế. "
-        + "Bỏ trống `assignmentIds` để thu hồi mọi phân công quá hạn của kỳ thi.")
+        + "Bỏ trống `assignmentIds` để thu hồi mọi phân công quá hạn của kỳ thi. "
+        + "Trả về hai danh sách tách bạch: `reclaimedAssignmentIds` (phân công cũ vừa đóng) và "
+        + "`reassignedAssignmentIds` (phân công mới vừa mở, rỗng nếu chỉ thu hồi).")
     @PostMapping("/reclaim-overdue")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<List<UUID>>> reclaimOverdue(
+    public ResponseEntity<ApiResponse<ReclaimOverdueResponse>> reclaimOverdue(
             @Valid @RequestBody ReclaimOverdueAssignmentsRequest request) {
         var command = ExamGradingCommandMapper.fromRequest(request);
         return ResponseEntity.ok(

@@ -97,8 +97,15 @@ public class JpaExamResultAuditQueryRepository implements ExamResultAuditQueryRe
         var perTeacher = new LinkedHashMap<UUID, TeacherAccumulator>();
 
         for (var row : rows) {
-            var teacherId = row.get(0, UUID.class);
             var outcome = row.get(2, String.class);
+            // Bỏ qua ngay từ đầu, không chỉ khỏi mẫu số tổng: giáo viên trả lại bài
+            // (hoặc bị thu hồi quá hạn) thì chưa đọc bài, không nói được gì về chất
+            // lượng AI. Đếm họ vào byTeacher.reviewed khiến Σ byTeacher > reviewed, và
+            // khiến người chưa đọc trông y hệt người đã hậu kiểm rồi kết luận AI đúng.
+            if (outcome == null || GradingOutcome.DECLINED.name().equals(outcome)) {
+                continue;
+            }
+            var teacherId = row.get(0, UUID.class);
             var delta = absoluteDelta(row.get(3, BigDecimal.class), row.get(4, BigDecimal.class));
 
             var accumulator = perTeacher.computeIfAbsent(

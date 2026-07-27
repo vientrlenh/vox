@@ -31,6 +31,12 @@ public interface ExamGradingAssignmentRepository {
     /** Phân công còn mở đã quá hạn — nguồn của job nhắc và của thu hồi hàng loạt. */
     List<ExamGradingAssignment> findOverdue(OffsetDateTime now);
 
+    /**
+     * Quá hạn trong phạm vi một trường (và một kỳ thi nếu {@code examId != null}).
+     * Thu hồi hàng loạt dùng cái này để không chạm dữ liệu trường khác.
+     */
+    List<ExamGradingAssignment> findOverdueInSchool(OffsetDateTime now, UUID schoolId, UUID examId);
+
     /** Quá hạn và chưa từng gửi mail nhắc. Chống nhắc trùng bằng {@code reminded_at}. */
     List<ExamGradingAssignment> findDueForReminder(OffsetDateTime threshold);
 

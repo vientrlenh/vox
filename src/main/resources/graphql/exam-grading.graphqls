@@ -64,7 +64,10 @@ vốn chỉ đếm bài chờ chấm, vì admin nay điều phối cả bốn v�
 type GradingStats {
     total: Int!
     byResultStatus: [GradingResultStatusCount!]!
-    "Bài chưa có phân công đang mở"
+    """
+    Bài còn có thể nhận một vòng chấm (PENDING_REVIEW / RELEASED / INVALID / APPEALED /
+    RE_GRADING) mà chưa có phân công đang mở. Bài đã kết thúc vòng đời không tính vào đây.
+    """
     unassigned: Int!
     "Phân công đang mở"
     assigned: Int!
@@ -301,6 +304,7 @@ extend type Query {
         hasOpenAppeal: Boolean,
         search: String,
         page: Int = 0,
+        "Tối đa 100 — giá trị lớn hơn bị kẹp xuống 100 chứ không báo lỗi."
         size: Int = 20
     ): GradingAssignmentRowPage!
 
@@ -311,6 +315,7 @@ extend type Query {
         status: GradingAssignmentStatus,
         roundType: GradingRoundType,
         page: Int = 0,
+        "Tối đa 100 — giá trị lớn hơn bị kẹp xuống 100 chứ không báo lỗi."
         size: Int = 20
     ): GradingTaskPage!
 
@@ -321,7 +326,8 @@ extend type Query {
 
     """
     Dòng thời gian điểm của một bài, cũ trước. Học sinh xem được của CHÍNH MÌNH,
-    school admin xem được của bài thuộc trường mình.
+    school admin xem được của bài thuộc trường mình, giáo viên xem được bài mình
+    ĐANG được giao chấm (hết phân công là hết quyền).
     """
     resultStatusHistory(candidateResultId: ID!): [ResultStatusHistoryEntry!]!
 

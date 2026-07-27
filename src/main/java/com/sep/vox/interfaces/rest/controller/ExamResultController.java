@@ -72,7 +72,8 @@ public class ExamResultController {
             ApiResponse.success("Chốt sổ kỳ thi thành công!", bulkFinalizeExamResultsUseCase.execute(command)));
     }
 
-    @Operation(summary = "Xuất bảng điểm ra CSV (UTF-8 có BOM để Excel đọc đúng tiếng Việt)")
+    @Operation(summary = "Xuất bảng điểm ra CSV (UTF-8 có BOM để Excel đọc đúng tiếng Việt). "
+        + "Phải truyền ít nhất một trong `examId` / `scheduleId`.")
     @GetMapping(value = "/export", produces = "text/csv")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<byte[]> exportScores(

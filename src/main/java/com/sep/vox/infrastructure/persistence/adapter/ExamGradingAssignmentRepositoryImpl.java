@@ -78,6 +78,13 @@ public class ExamGradingAssignmentRepositoryImpl implements ExamGradingAssignmen
     }
 
     @Override
+    public List<ExamGradingAssignment> findOverdueInSchool(OffsetDateTime now, UUID schoolId, UUID examId) {
+        return springDataExamGradingAssignmentRepository.findOverdueInSchool(now, schoolId, examId).stream()
+            .map(ExamGradingAssignmentMapper::toDomain)
+            .toList();
+    }
+
+    @Override
     public List<ExamGradingAssignment> findDueForReminder(OffsetDateTime threshold) {
         return springDataExamGradingAssignmentRepository.findDueForReminder(threshold).stream()
             .map(ExamGradingAssignmentMapper::toDomain)

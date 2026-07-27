@@ -37,13 +37,43 @@ public interface SpringDataExamGradingAssignmentRepository
     """)
     List<ExamGradingAssignmentJpaEntity> findOverdue(@Param("now") OffsetDateTime now);
 
-    /** Sắp/đã tới hạn mà chưa nhắc lần nào — {@code reminded_at} là chốt chống trùng. */
+    /**
+     * Quá hạn TRONG một trường (và một kỳ thi nếu có). Thu hồi hàng loạt đi lối này
+     * thay vì {@link #findOverdue} + lọc ở Java: bản cũ quét toàn hệ thống rồi gọi
+     * access service từng dòng để đọc ra schoolId — 4N+1 query, và thời gian phản hồi
+     * của một trường phụ thuộc vào dữ liệu của các trường khác.
+     */
     @Query("""
         SELECT ga FROM ExamGradingAssignmentJpaEntity ga
-        WHERE ga.status = 'ASSIGNED' AND ga.remindedAt IS NULL
-        AND ga.deadlineAt IS NOT NULL AND ga.deadlineAt < :threshold
+        JOIN ExamCandidateResultJpaEntity cr ON cr.id = ga.candidateResultId
+        JOIN ExamJpaEntity e ON e.id = cr.examId
+        WHERE ga.status = 'ASSIGNED' AND ga.deadlineAt IS NOT NULL AND ga.deadlineAt < :now
+        AND e.schoolId = :schoolId
+        AND (:examId IS NULL OR cr.examId = :examId)
         ORDER BY ga.deadlineAt ASC
     """)
+    List<ExamGradingAssignmentJpaEntity> findOverdueInSchool(
+        @Param("now") OffsetDateTime now,
+        @Param("schoolId") UUID schoolId,
+        @Param("examId") UUID examId);
+
+    /**
+     * Sắp/đã tới hạn mà chưa nhắc lần nào — {@code reminded_at} là chốt chống trùng.
+     *
+     * <p>Native + {@code FOR UPDATE SKIP LOCKED} vì {@code reminded_at} một mình chỉ
+     * chống trùng qua các LƯỢT chạy, không chống trùng giữa các INSTANCE: hai replica
+     * cùng đọc trước khi bên nào commit thì cả hai đều thấy {@code NULL} và cùng gửi
+     * mail. {@code SKIP LOCKED} cho chúng chia nhau các dòng khác nhau; {@code LIMIT}
+     * chặn một lượt chạy ôm cả nghìn dòng trong một transaction.
+     */
+    @Query(value = """
+        SELECT * FROM exam_grading_assignments
+        WHERE status = 'ASSIGNED' AND reminded_at IS NULL
+        AND deadline_at IS NOT NULL AND deadline_at < :threshold
+        ORDER BY deadline_at ASC
+        LIMIT 200
+        FOR UPDATE SKIP LOCKED
+    """, nativeQuery = true)
     List<ExamGradingAssignmentJpaEntity> findDueForReminder(@Param("threshold") OffsetDateTime threshold);
 
     void deleteByCandidateResultIdIn(Collection<UUID> candidateResultIds);

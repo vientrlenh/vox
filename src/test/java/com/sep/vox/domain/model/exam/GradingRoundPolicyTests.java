@@ -54,6 +54,25 @@ class GradingRoundPolicyTests {
         assertThat(GradingRoundPolicy.isAssignable(roundType, null)).isFalse();
     }
 
+    @Test
+    void should_expose_every_status_that_can_still_receive_a_round() {
+        // Mẫu số của thẻ "Chưa phân công". Bài đã kết thúc vòng đời không được lọt vào,
+        // nếu không con số đó phình tới bằng tổng số bài khi kỳ thi đã chấm xong.
+        assertThat(GradingRoundPolicy.allAssignableStatuses()).containsExactlyInAnyOrder(
+            ExamCandidateResultStatus.PENDING_REVIEW,
+            ExamCandidateResultStatus.RELEASED,
+            ExamCandidateResultStatus.INVALID,
+            ExamCandidateResultStatus.APPEALED,
+            ExamCandidateResultStatus.RE_GRADING);
+    }
+
+    @ParameterizedTest
+    @EnumSource(GradingRoundType.class)
+    void should_cover_every_round_in_the_union(GradingRoundType roundType) {
+        assertThat(GradingRoundPolicy.allAssignableStatuses())
+            .containsAll(GradingRoundPolicy.assignableStatuses(roundType));
+    }
+
     // ---- hành động nào hợp lệ với vòng nào ---------------------------------
 
     @Test

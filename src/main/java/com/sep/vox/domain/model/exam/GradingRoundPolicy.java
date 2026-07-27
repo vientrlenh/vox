@@ -42,6 +42,23 @@ public final class GradingRoundPolicy {
         };
     }
 
+    /**
+     * Hợp của {@link #assignableStatuses} bốn vòng — "bài còn có thể nhận một vòng
+     * chấm nào đó". Đây là mẫu số đúng cho con số <em>chưa phân công</em>: bài đã kết
+     * thúc vòng đời ({@code FINAL}, {@code PASSED}, {@code FAILED},
+     * {@code RETAKE_REQUIRED}…) không nằm trong tập này.
+     *
+     * <p>Sinh từ chính ma trận ở trên chứ không chép cứng, để thêm vòng mới là con số
+     * tự đúng theo.
+     */
+    public static Set<ExamCandidateResultStatus> allAssignableStatuses() {
+        var all = EnumSet.noneOf(ExamCandidateResultStatus.class);
+        for (var roundType : GradingRoundType.values()) {
+            all.addAll(assignableStatuses(roundType));
+        }
+        return all;
+    }
+
     /** Hành động hợp lệ của vòng. {@code DECLINED} hợp lệ ở mọi vòng nên không nằm đây. */
     public static Set<GradingOutcome> allowedOutcomes(GradingRoundType roundType) {
         return switch (roundType) {

@@ -135,6 +135,12 @@ public class GradingActionSupport {
             if (targetStatus == ExamCandidateResultStatus.INVALID) {
                 result.setFinalizedAt(now);
             }
+            // Gỡ vô hiệu kéo bài về PENDING_REVIEW: mốc "đã chốt" của lần vô hiệu
+            // trước không còn đúng nữa. Để lại thì tồn tại bài PENDING_REVIEW mang
+            // finalized_at — một cái bẫy cho người đọc sau.
+            if (targetStatus == ExamCandidateResultStatus.PENDING_REVIEW) {
+                result.setFinalizedAt(null);
+            }
             result.setUpdatedAt(now);
             result.setUpdatedBy(prepared.currentUserId());
             examCandidateResultRepository.save(result);

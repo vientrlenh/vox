@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.event.GradingAssignmentDeclinedEvent;
 import com.sep.vox.application.event.GradingDeadlineReminderEvent;
 import com.sep.vox.application.port.output.MailSendingPort;
@@ -24,8 +25,9 @@ import com.sep.vox.domain.repository.UserRepository;
 @Component
 public class GradingAssignmentEmailListener {
 
+    /** {@code withZone} là phần bắt buộc: thiếu nó thì mail ghi giờ UTC của container. */
     private static final DateTimeFormatter DEADLINE_FORMAT =
-        DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy");
+        DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy").withZone(DateMapper.APP_ZONE);
 
     private final UserRepository userRepository;
     private final MailSendingPort mailSendingPort;

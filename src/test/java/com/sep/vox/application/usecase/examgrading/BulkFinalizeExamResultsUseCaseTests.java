@@ -116,6 +116,20 @@ class BulkFinalizeExamResultsUseCaseTests {
     }
 
     @Test
+    void should_refuse_while_an_appeal_is_still_open_even_when_the_admin_confirmed() {
+        givenPreview(new BulkFinalizePreviewInfo(3, 2, 0, 0, 1, 0, List.of(UUID.randomUUID())));
+
+        // Cờ "công bố theo điểm hiện có" chỉ nói về bài chưa ai chấm. Nuốt luôn một
+        // tranh chấp điểm đang treo thì đơn kẹt mở vĩnh viễn, và học sinh rút đơn sau
+        // đó kéo bài từ FINAL ngược về RELEASED.
+        assertThatThrownBy(() -> useCase.execute(new BulkFinalizeExamResultsCommand(examId, true)))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("phúc khảo");
+
+        verify(examCandidateResultRepository, never()).save(any());
+    }
+
+    @Test
     void should_proceed_once_the_admin_confirms_publishing_ai_scores() {
         givenPreview(blocked());
         when(examCandidateResultRepository.findByExamId(examId))

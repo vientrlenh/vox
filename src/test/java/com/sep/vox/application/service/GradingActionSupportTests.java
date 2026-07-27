@@ -25,10 +25,12 @@ import com.sep.vox.application.port.input.service.ExamGradingAccessService.Gradi
 import com.sep.vox.application.port.input.service.GradingActionSupport;
 import com.sep.vox.application.port.input.service.ResultStatusHistoryRecorder;
 import com.sep.vox.application.port.output.EventPublisherPort;
+import com.sep.vox.domain.model.exam.ExamAppealStatus;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.exam.ExamGradingAssignment;
+import com.sep.vox.domain.model.exam.ExamResultAppeal;
 import com.sep.vox.domain.model.exam.ExamResultStatusHistory;
 import com.sep.vox.domain.model.exam.ExamSession;
 import com.sep.vox.domain.model.exam.GradingAssignmentStatus;
@@ -52,6 +54,7 @@ class GradingActionSupportTests {
     private ExamCandidateResultRepository examCandidateResultRepository;
     private ExamCandidateRepository examCandidateRepository;
     private ExamGradingAssignmentRepository examGradingAssignmentRepository;
+    private ExamResultAppealRepository examResultAppealRepository;
     private ExamResultStatusHistoryRepository examResultStatusHistoryRepository;
     private EventPublisherPort eventPublisherPort;
     private GradingActionSupport support;
@@ -61,6 +64,7 @@ class GradingActionSupportTests {
     private final UUID studentId = UUID.randomUUID();
     private final UUID candidateResultId = UUID.randomUUID();
     private final UUID assignmentId = UUID.randomUUID();
+    private final UUID appealId = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
@@ -68,6 +72,7 @@ class GradingActionSupportTests {
         examCandidateResultRepository = mock(ExamCandidateResultRepository.class);
         examCandidateRepository = mock(ExamCandidateRepository.class);
         examGradingAssignmentRepository = mock(ExamGradingAssignmentRepository.class);
+        examResultAppealRepository = mock(ExamResultAppealRepository.class);
         examResultStatusHistoryRepository = mock(ExamResultStatusHistoryRepository.class);
         eventPublisherPort = mock(EventPublisherPort.class);
 
@@ -77,7 +82,7 @@ class GradingActionSupportTests {
             examCandidateResultRepository,
             examCandidateRepository,
             examGradingAssignmentRepository,
-            mock(ExamResultAppealRepository.class),
+            examResultAppealRepository,
             new ResultStatusHistoryRecorder(examResultStatusHistoryRepository),
             eventPublisherPort);
 
@@ -99,10 +104,27 @@ class GradingActionSupportTests {
     }
 
     private GradingContext context(GradingRoundType roundType, ExamCandidateResult result) {
-        var assignment = ExamGradingAssignment.open(candidateResultId, teacherId, roundType, null,
+        return context(roundType, result, null);
+    }
+
+    private GradingContext context(
+            GradingRoundType roundType, ExamCandidateResult result, UUID linkedAppealId) {
+        var assignment = ExamGradingAssignment.open(candidateResultId, teacherId, roundType, linkedAppealId,
             result.getTotalScore(), OffsetDateTime.now(), UUID.randomUUID(), null);
         assignment.setId(assignmentId);
         return new GradingContext(assignment, result, new ExamSession(), UUID.randomUUID(), "IELTS Mock");
+    }
+
+    /** Vòng phúc khảo có đơn đi kèm; đơn đang ở GRADING vì giáo viên đang cầm bài. */
+    private ExamResultAppeal givenAppealRound(ExamCandidateResult result) {
+        when(examGradingAccessService.load(assignmentId))
+            .thenReturn(context(GradingRoundType.APPEAL, result, appealId));
+        var appeal = new ExamResultAppeal();
+        appeal.setId(appealId);
+        appeal.setStatus(ExamAppealStatus.GRADING);
+        appeal.setScoreBefore(result.getTotalScore());
+        when(examResultAppealRepository.findById(appealId)).thenReturn(Optional.of(appeal));
+        return appeal;
     }
 
     private void given(GradingRoundType roundType, ExamCandidateResult result) {
@@ -263,6 +285,66 @@ class GradingActionSupportTests {
         assertThat(result.getStatus()).isEqualTo(ExamCandidateResultStatus.INVALID);
         assertThat(result.getFinalizedAt()).isNotNull();
         assertThat(captureHistory().getReason()).isEqualTo("Gian lận: đọc bài mẫu");
+    }
+
+    // ---- vòng phúc khảo: số phận của đơn ------------------------------------
+
+    @Test
+    void should_move_the_appeal_back_to_approved_when_the_reviewer_declines() {
+        var result = result(ExamCandidateResultStatus.RE_GRADING, "6.00");
+        var appeal = givenAppealRound(result);
+        var prepared = support.prepare(assignmentId, GradingOutcome.DECLINED, "Quen thí sinh");
+
+        support.finish(prepared, result);
+
+        // Giáo viên trả bài lại thì đơn vẫn đang chờ NGƯỜI KHÁC, không phải đã xong.
+        // APPROVED là trạng thái duy nhất mà AssignExamAppealReviewerUseCase nhận.
+        assertThat(appeal.getStatus()).isEqualTo(ExamAppealStatus.APPROVED);
+        assertThat(appeal.getResolvedAt()).isNull();
+        verify(examResultAppealRepository).save(appeal);
+    }
+
+    @Test
+    void should_publish_the_appeal_when_the_reviewer_decides() {
+        var result = result(ExamCandidateResultStatus.RE_GRADING, "6.00");
+        var appeal = givenAppealRound(result);
+        var prepared = support.prepare(assignmentId, GradingOutcome.REGRADED, "Chấm lại phần 2");
+        result.setTotalScore(new BigDecimal("7.00"));
+
+        support.finish(prepared, result);
+
+        assertThat(appeal.getStatus()).isEqualTo(ExamAppealStatus.PUBLISHED);
+        assertThat(appeal.getScoreAfter()).isEqualByComparingTo("7.00");
+        assertThat(appeal.getResolvedBy()).isEqualTo(teacherId);
+        assertThat(appeal.getResolvedAt()).isNotNull();
+        assertThat(result.getStatus()).isEqualTo(ExamCandidateResultStatus.RELEASED);
+    }
+
+    @Test
+    void should_not_touch_the_appeal_when_the_round_is_not_an_appeal() {
+        var result = result(ExamCandidateResultStatus.PENDING_REVIEW, "6.00");
+        given(GradingRoundType.INITIAL, result);
+        var prepared = support.prepare(assignmentId, GradingOutcome.UPHELD, null);
+
+        support.finish(prepared, result);
+
+        verify(examResultAppealRepository, never()).findById(any());
+    }
+
+    // ---- dấu vết trạng thái không được để lại rác ---------------------------
+
+    @Test
+    void should_clear_the_finalized_mark_when_a_result_returns_to_pending_review() {
+        var result = result(ExamCandidateResultStatus.INVALID, "0.00");
+        result.setFinalizedAt(OffsetDateTime.now().minusDays(1));
+        given(GradingRoundType.REMEDIATION, result);
+        var prepared = support.prepare(assignmentId, GradingOutcome.CLEARED_INVALID, "Không vi phạm");
+
+        support.finish(prepared, result);
+
+        // Bài PENDING_REVIEW mang finalized_at là mâu thuẫn: nó chưa chốt gì cả.
+        assertThat(result.getStatus()).isEqualTo(ExamCandidateResultStatus.PENDING_REVIEW);
+        assertThat(result.getFinalizedAt()).isNull();
     }
 
     @Test

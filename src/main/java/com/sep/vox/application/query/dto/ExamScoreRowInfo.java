@@ -11,7 +11,8 @@ public record ExamScoreRowInfo(
     String studentEmail,
     String className,
     String examName,
-    String scheduleName,
+    /** Ca thi được nhận diện bằng mốc bắt đầu — {@code exam_schedules} không có cột tên. */
+    OffsetDateTime scheduleStartAt,
     BigDecimal totalScore,
     String resultBand,
     String status,

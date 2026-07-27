@@ -89,6 +89,28 @@ class WithdrawExamAppealUseCaseTests {
     }
 
     @Test
+    void should_not_pull_a_result_that_already_moved_on_back_to_released() {
+        // Bài đã chốt sổ (hoặc đã sang PASSED/FAILED) thì một thao tác của học sinh
+        // không được phép mở lại nó — rút đơn chỉ đóng đơn.
+        candidateResult.setStatus(ExamCandidateResultStatus.FINAL);
+
+        useCase.execute(appealId);
+
+        assertThat(appeal.getStatus()).isEqualTo(ExamAppealStatus.WITHDRAWN);
+        assertThat(candidateResult.getStatus()).isEqualTo(ExamCandidateResultStatus.FINAL);
+        verify(examCandidateResultRepository, never()).save(any());
+    }
+
+    @Test
+    void should_restore_a_result_that_is_still_being_re_graded() {
+        candidateResult.setStatus(ExamCandidateResultStatus.RE_GRADING);
+
+        useCase.execute(appealId);
+
+        assertThat(candidateResult.getStatus()).isEqualTo(ExamCandidateResultStatus.RELEASED);
+    }
+
+    @Test
     void should_reject_withdrawing_after_the_appeal_was_approved() {
         appeal.setStatus(ExamAppealStatus.APPROVED);
 

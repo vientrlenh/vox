@@ -2,12 +2,24 @@ package com.sep.vox.application.common;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 
 public final class DateMapper {
+
+    /**
+     * Múi giờ nghiệp vụ của hệ thống — MỘT nguồn cho mọi chỗ hiển thị thời gian cho
+     * người dùng (mail, CSV, chuỗi ngày).
+     *
+     * <p>Không dựa vào múi giờ mặc định của JVM: {@code build.gradle} chỉ đặt
+     * {@code user.timezone} cho task {@code test}, còn container chạy UTC — format
+     * thẳng một {@code OffsetDateTime} ở production sẽ lệch 7 tiếng mà test không bao
+     * giờ bắt được.
+     */
+    public static final ZoneId APP_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
     private static final List<String> INPUT_LOCALDATE_FORMAT = List.of(
             "yyyy-MM-dd",

@@ -63,14 +63,22 @@ public class WithdrawExamAppealUseCase implements IUseCase<UUID, UUID> {
         appeal.setResolvedBy(currentUserId);
         examResultAppealRepository.save(appeal);
 
+        // Chỉ trả bài về RELEASED khi nó đang thật sự đứng ở trạng thái phúc khảo.
+        // Bài đã đi tiếp (FINAL, PASSED/FAILED, INVALID...) thì rút đơn không được
+        // phép kéo ngược trạng thái — nếu không, một thao tác của học sinh mở lại
+        // được kết quả đã chốt sổ.
         var candidateResult = context.candidateResult();
-        var before = resultStatusHistoryRecorder.snapshot(candidateResult);
-        candidateResult.setStatus(ExamCandidateResultStatus.RELEASED);
-        candidateResult.setUpdatedAt(now);
-        candidateResult.setUpdatedBy(currentUserId);
-        examCandidateResultRepository.save(candidateResult);
-        resultStatusHistoryRecorder.record(
-            before, candidateResult, ResultStatusChangeSource.SYSTEM, currentUserId, "Học sinh rút đơn phúc khảo.");
+        var status = candidateResult.getStatus();
+        if (status == ExamCandidateResultStatus.APPEALED || status == ExamCandidateResultStatus.RE_GRADING) {
+            var before = resultStatusHistoryRecorder.snapshot(candidateResult);
+            candidateResult.setStatus(ExamCandidateResultStatus.RELEASED);
+            candidateResult.setUpdatedAt(now);
+            candidateResult.setUpdatedBy(currentUserId);
+            examCandidateResultRepository.save(candidateResult);
+            resultStatusHistoryRecorder.record(
+                before, candidateResult, ResultStatusChangeSource.SYSTEM, currentUserId,
+                "Học sinh rút đơn phúc khảo.");
+        }
 
         return appeal.getId();
     }

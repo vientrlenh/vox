@@ -54,6 +54,34 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
     /** Số bài chặn gửi kèm preview chốt sổ — đủ để admin nhận ra vấn đề, không dựng cả danh sách. */
     private static final int BLOCKING_SAMPLE_SIZE = 20;
 
+    /**
+     * "Bài này còn đơn phúc khảo mở" — fragment JPQL tương quan với alias {@code cr},
+     * đã cân bằng ngoặc, dùng lại được ở nhiều câu.
+     */
+    private static final String OPEN_APPEAL_EXISTS = " EXISTS ("
+        + " SELECT 1 FROM ExamResultAppealJpaEntity ap"
+        + " WHERE ap.candidateResultId = cr.id AND ap.status IN (" + OPEN_APPEAL_STATUSES + "))";
+
+    /**
+     * Bài chặn chốt sổ: còn chờ chấm, hoặc còn đơn phúc khảo mở. Một định nghĩa dùng
+     * chung cho cả câu đếm lẫn câu lấy danh sách mẫu, để hai con số không nói khác nhau.
+     */
+    private static final String BLOCKING_CONDITION =
+        " (cr.status = :pendingReview OR " + OPEN_APPEAL_EXISTS + ")";
+
+    /**
+     * Trần số dòng một trang. {@code size} trong schema chỉ là giá trị MẶC ĐỊNH, không
+     * phải giới hạn — không kẹp ở đây thì một client gửi {@code size: 100000} là đủ
+     * làm nghẽn connection pool, kèm theo các query phụ với mệnh đề IN khổng lồ.
+     */
+    private static final int MAX_PAGE_SIZE = 100;
+
+    /** Trạng thái bài còn có thể nhận một vòng chấm — luật lấy từ domain, không chép cứng. */
+    private static final List<String> ASSIGNABLE_STATUS_NAMES = GradingRoundPolicy.allAssignableStatuses()
+        .stream()
+        .map(Enum::name)
+        .toList();
+
     @PersistenceContext
     private EntityManager em;
 
@@ -72,7 +100,7 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
     public PageResult<GradingAssignmentRowInfo> searchAssignments(
             GradingAssignmentFilter filter, int page, int size) {
         var normalizedPage = Math.max(page, 0);
-        var normalizedSize = Math.max(size, 1);
+        var normalizedSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
         var now = OffsetDateTime.now();
 
         var rows = applyFilters(em.createQuery("""
@@ -325,6 +353,29 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
         var overdueSum = openRow.get(1, Long.class);
         var overdue = overdueSum == null ? 0 : overdueSum.intValue();
 
+        // "Chưa phân công" phải đếm đúng thứ nó hứa: bài ĐỦ ĐIỀU KIỆN nhận một vòng
+        // chấm mà chưa có phân công mở. Cách cũ (total - assigned) gộp cả bài đã kết
+        // thúc vòng đời vào, nên con số phình dần tới bằng tổng số bài khi kỳ thi đã
+        // chấm xong — đúng lúc nó phải về 0.
+        var unassigned = em.createQuery("""
+            SELECT COUNT(cr)
+            FROM ExamCandidateResultJpaEntity cr
+            JOIN ExamJpaEntity e ON e.id = cr.examId
+            JOIN ExamCandidateJpaEntity c ON c.id = cr.candidateId
+            WHERE e.schoolId = :schoolId
+            AND (:examId IS NULL OR cr.examId = :examId)
+            AND (:scheduleId IS NULL OR c.scheduleId = :scheduleId)
+            AND cr.status IN (:assignableStatuses)
+            AND NOT EXISTS (
+                SELECT 1 FROM ExamGradingAssignmentJpaEntity ga WHERE ga.activeResultId = cr.id
+            )
+        """, Long.class)
+            .setParameter("schoolId", schoolId)
+            .setParameter("examId", examId)
+            .setParameter("scheduleId", scheduleId)
+            .setParameter("assignableStatuses", ASSIGNABLE_STATUS_NAMES)
+            .getSingleResult();
+
         var progressRows = em.createQuery("""
             SELECT ga.teacherId, t.fullName,
                    SUM(CASE WHEN ga.status = 'ASSIGNED' THEN 1 ELSE 0 END),
@@ -360,7 +411,7 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
         }
 
         return new GradingStatsInfo(
-            total, byResultStatus, Math.max(total - assigned, 0), assigned, overdue, teacherProgress);
+            total, byResultStatus, unassigned.intValue(), assigned, overdue, teacherProgress);
     }
 
     private int intOf(Long value) {
@@ -377,7 +428,7 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
     public PageResult<GradingTaskInfo> findTasksByTeacherId(
             UUID teacherId, String status, String roundType, int page, int size) {
         var normalizedPage = Math.max(page, 0);
-        var normalizedSize = Math.max(size, 1);
+        var normalizedSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
         var now = OffsetDateTime.now();
 
         // Không join sang candidate/user: giáo viên chấm ẩn danh, dữ liệu học sinh
@@ -888,81 +939,81 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
     // ---- chốt sổ & xuất bảng điểm ------------------------------------------
 
     /**
-     * Ba con số chặn việc chốt sổ, lấy trong MỘT query gom nhóm: bài chờ chấm chưa ai
-     * nhận, bài chờ chấm đang có người cầm, và đơn phúc khảo chưa xong.
+     * Các con số chặn việc chốt sổ: bài chờ chấm chưa ai nhận, bài chờ chấm đang có
+     * người cầm, đơn phúc khảo chưa xong, và bài đã vô hiệu.
+     *
+     * <p>Hai query, cả hai đều aggregate: một câu {@code SUM(CASE WHEN …)} cho các con
+     * số, một câu {@code LIMIT 20} cho danh sách bài chặn làm ví dụ. Bản trước kéo MỌI
+     * dòng của kỳ thi về Java rồi đếm bằng vòng lặp — chấp nhận được ở quy mô hiện tại,
+     * nhưng đây là aggregate thuần tuý nên không có lý do gì để dữ liệu rời khỏi DB.
      */
     @Override
     public BulkFinalizePreviewInfo previewBulkFinalize(UUID schoolId, UUID examId) {
-        var rows = em.createQuery("""
-            SELECT cr.id, cr.status,
-                   CASE WHEN EXISTS (
+        var counts = em.createQuery("""
+            SELECT COUNT(cr),
+                   SUM(CASE WHEN cr.status = :pendingReview AND NOT EXISTS (
                        SELECT 1 FROM ExamGradingAssignmentJpaEntity ga WHERE ga.activeResultId = cr.id
-                   ) THEN TRUE ELSE FALSE END,
-                   CASE WHEN EXISTS (
-                       SELECT 1 FROM ExamResultAppealJpaEntity ap
-                       WHERE ap.candidateResultId = cr.id AND ap.status IN (""" + OPEN_APPEAL_STATUSES + """
-                   ) THEN TRUE ELSE FALSE END
+                   ) THEN 1 ELSE 0 END),
+                   SUM(CASE WHEN cr.status = :pendingReview AND EXISTS (
+                       SELECT 1 FROM ExamGradingAssignmentJpaEntity ga WHERE ga.activeResultId = cr.id
+                   ) THEN 1 ELSE 0 END),
+                   SUM(CASE WHEN """ + OPEN_APPEAL_EXISTS + """
+                        THEN 1 ELSE 0 END),
+                   SUM(CASE WHEN cr.status = :invalid THEN 1 ELSE 0 END),
+                   SUM(CASE WHEN """ + BLOCKING_CONDITION + """
+                        THEN 1 ELSE 0 END)
             FROM ExamCandidateResultJpaEntity cr
             JOIN ExamJpaEntity e ON e.id = cr.examId
             WHERE e.schoolId = :schoolId AND cr.examId = :examId
-            ORDER BY cr.id ASC
         """, Tuple.class)
             .setParameter("schoolId", schoolId)
             .setParameter("examId", examId)
+            .setParameter("pendingReview", ExamCandidateResultStatus.PENDING_REVIEW.name())
+            .setParameter("invalid", ExamCandidateResultStatus.INVALID.name())
+            .getSingleResult();
+
+        var total = intOf(counts.get(0, Long.class));
+        var blocked = intOf(counts.get(5, Long.class));
+
+        // Danh sách mẫu: UI chỉ cần vài ví dụ để admin nhận ra vấn đề, con số tổng đã
+        // nằm ở các trường đếm ở trên. Không lấy khi chẳng có gì chặn.
+        var blockingResultIds = blocked == 0 ? List.<UUID>of() : em.createQuery("""
+            SELECT cr.id
+            FROM ExamCandidateResultJpaEntity cr
+            JOIN ExamJpaEntity e ON e.id = cr.examId
+            WHERE e.schoolId = :schoolId AND cr.examId = :examId
+            AND """ + BLOCKING_CONDITION + """
+            ORDER BY cr.id ASC
+        """, UUID.class)
+            .setParameter("schoolId", schoolId)
+            .setParameter("examId", examId)
+            .setParameter("pendingReview", ExamCandidateResultStatus.PENDING_REVIEW.name())
+            .setMaxResults(BLOCKING_SAMPLE_SIZE)
             .getResultList();
 
-        var pendingUnassigned = 0;
-        var pendingAssigned = 0;
-        var openAppeals = 0;
-        var invalid = 0;
-        var readyToFinalize = 0;
-        var blocking = new ArrayList<UUID>();
-        for (var row : rows) {
-            var candidateResultId = row.get(0, UUID.class);
-            var status = row.get(1, String.class);
-            var assigned = Boolean.TRUE.equals(row.get(2, Boolean.class));
-            var hasOpenAppeal = Boolean.TRUE.equals(row.get(3, Boolean.class));
-
-            var blocked = false;
-            if (ExamCandidateResultStatus.PENDING_REVIEW.name().equals(status)) {
-                blocked = true;
-                if (assigned) {
-                    pendingAssigned++;
-                } else {
-                    pendingUnassigned++;
-                }
-            }
-            if (hasOpenAppeal) {
-                blocked = true;
-                openAppeals++;
-            }
-            if (ExamCandidateResultStatus.INVALID.name().equals(status)) {
-                invalid++;
-            }
-            if (blocked) {
-                // Cắt danh sách: UI chỉ cần vài ví dụ để admin nhận ra vấn đề, còn con
-                // số tổng đã nằm ở các trường đếm.
-                if (blocking.size() < BLOCKING_SAMPLE_SIZE) {
-                    blocking.add(candidateResultId);
-                }
-            } else {
-                readyToFinalize++;
-            }
-        }
-
         return new BulkFinalizePreviewInfo(
-            rows.size(), readyToFinalize, pendingUnassigned, pendingAssigned, openAppeals, invalid,
-            List.copyOf(blocking));
+            total,
+            total - blocked,
+            intOf(counts.get(1, Long.class)),
+            intOf(counts.get(2, Long.class)),
+            intOf(counts.get(3, Long.class)),
+            intOf(counts.get(4, Long.class)),
+            List.copyOf(blockingResultIds));
     }
 
     /**
      * Bảng điểm để xuất CSV. Hai bước: lấy dòng chính, rồi nạp vòng chấm gần nhất theo
      * lô — không lặp query theo từng học sinh.
+     *
+     * <p>Cột "ca thi" là {@code startDate} của lịch chứ không phải một cái tên:
+     * {@code exam_schedules} không có cột tên, một ca được nhận diện bằng mốc bắt đầu
+     * (bản trước chọn {@code sch.name} nên câu này ném {@code UnknownPathException}
+     * mỗi lần xuất).
      */
     @Override
     public List<ExamScoreRowInfo> findScoreRows(UUID schoolId, UUID examId, UUID scheduleId) {
         var rows = em.createQuery("""
-            SELECT cr.id, u.fullName, u.email, e.name, sch.name, cr.totalScore, rb.name,
+            SELECT cr.id, u.fullName, u.email, e.name, sch.startDate, cr.totalScore, rb.name,
                    cr.status, cr.releasedAt
             FROM ExamCandidateResultJpaEntity cr
             JOIN ExamJpaEntity e ON e.id = cr.examId
@@ -994,7 +1045,7 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
                 row.get(2, String.class),
                 classNames.get(candidateResultId),
                 row.get(3, String.class),
-                row.get(4, String.class),
+                row.get(4, OffsetDateTime.class),
                 row.get(5, BigDecimal.class),
                 row.get(6, String.class),
                 row.get(7, String.class),

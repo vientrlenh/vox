@@ -28,8 +28,10 @@ import com.sep.vox.domain.repository.ExamRepository;
  * không công bố được (review BE-5): {@code finalizeForPublish} bỏ qua bài
  * {@code PENDING_REVIEW}, nên trước đây kỳ thi kẹt vô thời hạn và không có nút nào gỡ.
  *
- * <p>Hai lớp bảo vệ để nó không thành nút "công bố bừa":
+ * <p>Ba lớp bảo vệ để nó không thành nút "công bố bừa":
  * <ol>
+ *   <li>Đơn phúc khảo đang mở là điều kiện chặn CỨNG, không cờ nào bỏ qua được — chốt
+ *       sổ không được phép quyết thay một tranh chấp điểm đang treo.
  *   <li>Preview bắt buộc — nếu còn bài chặn mà admin chưa xác nhận
  *       {@code releasePendingWithAiScores}, use case từ chối và nói rõ còn bao nhiêu bài.
  *   <li>Mọi lần đổi trạng thái đều vào nhật ký với nguồn {@code ADMIN_BULK_FINALIZE},
@@ -78,11 +80,20 @@ public class BulkFinalizeExamResultsUseCase
         examGradingAccessService.authorizeSchoolAdmin(exam.getSchoolId(), currentUserId);
 
         var preview = examGradingQueryRepository.previewBulkFinalize(exam.getSchoolId(), command.examId());
+        // Đơn phúc khảo đang mở thì LUÔN chặn, kể cả khi admin đã tick "công bố theo
+        // điểm hiện có": cờ đó chỉ nói "chấp nhận điểm AI cho bài chưa ai chấm", không
+        // nói "nuốt luôn tranh chấp điểm của học sinh". Nuốt đơn còn để lại hai hậu
+        // quả: đơn treo mở vĩnh viễn, và học sinh rút đơn sau đó kéo bài từ FINAL
+        // ngược về RELEASED.
+        if (preview.openAppeals() > 0) {
+            throw new IllegalStateException(
+                "Kỳ thi còn " + preview.openAppeals() + " đơn phúc khảo chưa xong. "
+                    + "Hãy xử lý hoặc từ chối các đơn này trước khi chốt sổ.");
+        }
         if (!preview.isClean() && !command.releasePendingWithAiScores()) {
             throw new IllegalStateException(
-                "Kỳ thi còn " + preview.pendingUnassigned() + " bài chưa ai chấm, "
-                    + preview.pendingAssigned() + " bài đang chấm dở và "
-                    + preview.openAppeals() + " đơn phúc khảo chưa xong. "
+                "Kỳ thi còn " + preview.pendingUnassigned() + " bài chưa ai chấm và "
+                    + preview.pendingAssigned() + " bài đang chấm dở. "
                     + "Hãy xử lý nốt, hoặc xác nhận công bố theo điểm hiện có.");
         }
 

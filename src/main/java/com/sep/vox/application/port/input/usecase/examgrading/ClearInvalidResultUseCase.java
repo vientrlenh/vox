@@ -76,6 +76,11 @@ public class ClearInvalidResultUseCase implements IUseCase<GradingDecisionComman
         // được vòng INITIAL cho cùng bài mà không đụng unique index.
         gradingActionSupport.finish(prepared, result);
 
+        // Hạn của vòng REMEDIATION KHÔNG được kế thừa: vòng soi bài vô hiệu thường
+        // được xử lý sát hoặc đã quá hạn, nên phân công mới sẽ sinh ra với một mốc đã
+        // trôi qua — đỏ "quá hạn" ngay lúc tạo, job nhắc bắn ngay lượt sau, và lọt vào
+        // danh sách thu hồi dù giáo viên chưa có một phút nào để chấm. Để trống, admin
+        // đặt hạn sau qua PUT /grading-assignments/{id}/deadline.
         var next = examGradingAssignmentRepository.save(ExamGradingAssignment.open(
             result.getId(),
             prepared.currentUserId(),
@@ -84,7 +89,7 @@ public class ClearInvalidResultUseCase implements IUseCase<GradingDecisionComman
             result.getTotalScore(),
             now,
             prepared.currentUserId(),
-            prepared.context().assignment().getDeadlineAt()
+            null
         ));
 
         var studentId = gradingActionSupport.resolveStudentId(result);

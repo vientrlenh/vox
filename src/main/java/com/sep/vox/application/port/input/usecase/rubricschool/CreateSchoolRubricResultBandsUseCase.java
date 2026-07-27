@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.rubricschool;
 
+import com.sep.vox.domain.service.rubric.RubricResultBandValidator;
+import com.sep.vox.domain.service.rubric.ScoreRangeValidator;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
@@ -7,7 +9,6 @@ import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.CreateSchoolRubricResultBandsCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.model.framework.FrameworkResultBand;
 import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricResultBand;
 import com.sep.vox.domain.model.rubric.RubricStatus;
@@ -19,9 +20,9 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateSchoolRubricResultBandsCommand, List<UUID>> {
@@ -31,7 +32,6 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
     private final RubricRepository rubricRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
-    private final FrameworkResultBandRepository frameworkResultBandRepository;
     private final SchoolRepository schoolRepository;
     private final SchoolUserRepository schoolUserRepository;
 
@@ -41,7 +41,6 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
             RubricRepository rubricRepository,
             UserRepository userRepository,
             UserContextPort userContextPort,
-            FrameworkResultBandRepository frameworkResultBandRepository,
             SchoolRepository schoolRepository,
             SchoolUserRepository schoolUserRepository) {
         this.rubricResultBandRepository = rubricResultBandRepository;
@@ -49,7 +48,6 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
         this.rubricRepository = rubricRepository;
         this.userRepository = userRepository;
         this.userContextPort = userContextPort;
-        this.frameworkResultBandRepository = frameworkResultBandRepository;
         this.schoolRepository = schoolRepository;
         this.schoolUserRepository = schoolUserRepository;
     }
@@ -95,26 +93,14 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
 
         OffsetDateTime now = OffsetDateTime.now();
 
-        // 4.1 Lấy toàn bộ danh sách ID của FrameworkResultBand từ request (CHỐNG N+1)
-        List<UUID> frameworkBandIds = command.resultBands().stream()
-                .map(i -> i.frameworkResultBandId())
-                .filter(Objects::nonNull)
-                .distinct()
-                .toList();
-
-        // 4.2 Gọi Database 1 LẦN DUY NHẤT
-        Map<UUID, FrameworkResultBand> frameworkBandMap;
-        if (!frameworkBandIds.isEmpty()) {
-            List<FrameworkResultBand> existingFrameworkBands = frameworkResultBandRepository.findAllByIds(frameworkBandIds);
-            frameworkBandMap = existingFrameworkBands.stream()
-                    .collect(Collectors.toMap(b -> b.getId(), band -> band));
-        } else {
-            frameworkBandMap = new HashMap<>();
-        }
-
         // Khởi tạo Set để chống trùng lặp dữ liệu nội bộ
         Set<String> uniqueCodes = new HashSet<>();
-        Set<UUID> uniqueFrameworkIds = new HashSet<>();
+
+        // Tích luỹ band đã có trong version + các band mới trong cùng batch để check overlap khoảng điểm.
+        // Dùng TreeMap (key = scoreMin) để check O(log n)/band thay vì quét List O(n)/band (O(n log n) cho cả batch thay vì O(n^2)).
+        NavigableMap<BigDecimal, RubricResultBand> bandsSoFarByMin = new TreeMap<>();
+        rubricResultBandRepository.findByRubricVersionId(command.versionId())
+                .forEach(b -> bandsSoFarByMin.put(b.getScoreMin(), b));
 
         // 4.4 Lặp qua danh sách từ Command và xử lý logic
         List<RubricResultBand> bandsToSave = command.resultBands().stream().map(bCmd -> {
@@ -122,41 +108,40 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
             String safeCode = StringNormalization.trimAndCollapseSpaces(bCmd.code());
             String safeName = StringNormalization.trimAndCollapseSpaces(bCmd.name());
 
-            // Check trùng lặp Mã (Code) và FrameworkBandId
+            // Check trùng lặp Mã (Code)
             if (!uniqueCodes.add(safeCode)) {
                 throw new IllegalArgumentException("Dữ liệu gửi lên bị trùng lặp Mã thang điểm (Code): " + safeCode);
             }
-            if (bCmd.frameworkResultBandId() != null && !uniqueFrameworkIds.add(bCmd.frameworkResultBandId())) {
-                throw new IllegalArgumentException("Dữ liệu gửi lên bị trùng lặp Framework Result Band cho thang điểm: " + safeName);
-            }
-
-            // Tra cứu từ trong RAM (Map) thay vì gọi xuống Database
-            FrameworkResultBand frameworkBand = frameworkBandMap.get(bCmd.frameworkResultBandId());
-            if (bCmd.frameworkResultBandId() != null && frameworkBand == null) {
-                throw new NotFoundException("Không tìm thấy Framework Result Band với ID: " + bCmd.frameworkResultBandId());
-            }
-
 
             // Validate logic điểm
-            if (bCmd.scoreMin().compareTo(bCmd.scoreMax()) > 0) {
+            if (bCmd.mappedScoreMin().compareTo(bCmd.mappedScoreMax()) > 0) {
                 throw new IllegalArgumentException("Thang điểm '" + safeName + "': Điểm quy đổi tối thiểu không được lớn hơn tối đa.");
             }
 
+            // Validate không chồng lấn với các band đã có/đang tạo cùng batch
+            RubricResultBandValidator.assertNoOverlap(bandsSoFarByMin, bCmd.mappedScoreMin(), bCmd.mappedScoreMax(), safeName);
+
+            // Validate nằm trong thang điểm tổng của RubricVersion
+            ScoreRangeValidator.assertWithinScale(version.getScoringScaleMin(), version.getScoringScaleMax(),
+                    bCmd.mappedScoreMin(), bCmd.mappedScoreMax(), safeName);
+
             // Để ID là null để đảm bảo JPA hiểu đây là record mới, chừa cho DB sinh UUID
-            return new RubricResultBand(
+            RubricResultBand band = new RubricResultBand(
                     null,
                     command.versionId(),
                     safeCode,
                     safeName,
                     bCmd.description() != null ? StringNormalization.trimAndCollapseSpaces(bCmd.description()) : null,
-                    bCmd.scoreMin(),
-                    bCmd.scoreMax(),
+                    bCmd.mappedScoreMin(),
+                    bCmd.mappedScoreMax(),
                     bCmd.order(),
                     now,
                     now,
                     currentUserId,
                     currentUserId
             );
+            bandsSoFarByMin.put(band.getScoreMin(), band);
+            return band;
         }).toList();
 
         // 5. Lưu hàng loạt xuống Database
@@ -164,7 +149,7 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
         try {
             savedBands = rubricResultBandRepository.saveAll(bandsToSave);
         } catch (DataIntegrityViolationException e) {
-            throw new IllegalStateException("Lỗi lưu dữ liệu: Mã thang điểm (Code) hoặc Framework Result Band đã tồn tại trong phiên bản Rubric này từ trước. Vui lòng kiểm tra lại.");
+            throw new IllegalStateException("Lỗi lưu dữ liệu: Mã thang điểm (Code) đã tồn tại trong phiên bản Rubric này từ trước. Vui lòng kiểm tra lại.");
         }
 
         // Bốc ID từ cái mảng savedBands (đã được DB gắn ID) chứ không phải mảng bandsToSave gốc

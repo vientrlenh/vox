@@ -24,12 +24,6 @@ input UpdateRubricCriterionInput {
     isRequired: Boolean
 }
 
-input UpdateRubricCriterionBandInput {
-    scoreMin: Float
-    scoreMax: Float
-}
-
-
 input UpdateRubricResultBandInput {
     name: String
     description: String
@@ -53,10 +47,6 @@ input SearchRubricVersionFilter {
 input SearchRubricCriterionFilter {
     keyword: String     # Tìm theo tên (name) hoặc mã (code) của tiêu chí
     isRequired: Boolean # Lọc theo tiêu chí bắt buộc hoặc không
-}
-
-input SearchRubricCriterionBandFilter {
-    keyword: String     # Tìm kiếm theo Mã mức điểm (code)
 }
 
 input SearchRubricResultBandFilter {
@@ -132,7 +122,6 @@ type RubricCriterion {
     updatedAt: String
     createdBy: ID
     updatedBy: ID
-    bands(page: Int = 1, size: Int = 10): RubricCriterionBandPage!
 }
 
 type RubricCriterionPage {
@@ -144,27 +133,6 @@ type RubricCriterionPage {
 
 }
 
-
-#=======================RUBRIC CRITERION BAND ====================
-type RubricCriterionBand {
-    id: ID!
-    criterionId: ID!
-    code: String!
-    scoreMin: Float!
-    scoreMax: Float!
-    createdAt: String
-    updatedAt: String
-    createdBy: ID
-    updatedBy: ID
-}
-type RubricCriterionBandPage {
-    page: Int!
-    size: Int!
-    totalElements: Int!
-    totalPages: Int!
-    content: [RubricCriterionBand!]!
-
-}
 
 #====================RUBRIC RESULT BAND =========================
 type RubricResultBand {
@@ -203,10 +171,6 @@ extend type Mutation {
     # RUBRIC CRITERION
     updateSystemRubricCriterion(criterionId: ID!, input: UpdateRubricCriterionInput!): ID!
     updateSchoolRubricCriterion(schoolId: ID!, criterionId: ID!, input: UpdateRubricCriterionInput!): ID!
-
-    # RUBRIC CRITERION BAND
-    updateSchoolRubricCriterionBand(schoolId: ID!, bandId: ID!, input: UpdateRubricCriterionBandInput!): ID!
-    updateSystemRubricCriterionBand(bandId: ID!, input: UpdateRubricCriterionBandInput!): ID!
 
     # RUBRIC CRITERION RESULT BAND
     updateSystemRubricResultBand(resultBandId: ID!, input: UpdateRubricResultBandInput!): ID!
@@ -250,14 +214,6 @@ extend type Query {
     searchSystemRubricCriteria(versionId: ID!, filter: SearchRubricCriterionFilter, page: Int = 0, size: Int = 10): RubricCriterionPage!
     searchSchoolRubricCriteria(schoolId: ID!, versionId: ID!, filter: SearchRubricCriterionFilter, page: Int = 0, size: Int = 10): RubricCriterionPage!
 
-
-    # RUBRIC CRITERION BAND
-    viewSystemRubricCriterionBand(bandId: ID!): RubricCriterionBand
-    viewSchoolRubricCriterionBand(schoolId: ID!, bandId: ID!): RubricCriterionBand
-    viewSchoolRubricCriterionBands(schoolId: ID!, criterionId: ID!, page: Int = 0, size: Int = 10): RubricCriterionBandPage!
-    viewSystemRubricCriterionBands(criterionId: ID!, page: Int = 0, size: Int = 10): RubricCriterionBandPage!
-    searchSystemRubricCriterionBands(criterionId: ID!, filter: SearchRubricCriterionBandFilter, page: Int = 0, size: Int = 10): RubricCriterionBandPage!
-    searchSchoolRubricCriterionBands(schoolId: ID!, criterionId: ID!, filter: SearchRubricCriterionBandFilter, page: Int = 0, size: Int = 10): RubricCriterionBandPage!
 
     # RUBRIC CRITERION RESULT BAND
     viewSystemRubricResultBand(resultBandId: ID!): RubricResultBand

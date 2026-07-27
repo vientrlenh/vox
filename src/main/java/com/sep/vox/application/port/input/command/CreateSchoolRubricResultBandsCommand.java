@@ -10,12 +10,11 @@ public record CreateSchoolRubricResultBandsCommand(
         List<ResultBandItemCommand> resultBands
 ) {
     public record ResultBandItemCommand(
-            UUID frameworkResultBandId,
             String code,
             String name,
             String description,
-            BigDecimal scoreMin,
-            BigDecimal scoreMax,
+            BigDecimal mappedScoreMin,
+            BigDecimal mappedScoreMax,
             Integer order
     ) {}
 }

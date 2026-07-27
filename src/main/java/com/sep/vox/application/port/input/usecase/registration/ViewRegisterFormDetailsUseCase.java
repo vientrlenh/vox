@@ -9,14 +9,17 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.RegisterFormDto;
 import com.sep.vox.domain.mapper.RegisterFormDtoMapper;
 import com.sep.vox.domain.repository.RegisterFormRepository;
+import com.sep.vox.domain.repository.SchoolDirectoryRepository;
 
 @Service
 public class ViewRegisterFormDetailsUseCase implements IUseCase<ViewRegisterFormDetailsQuery, RegisterFormDto> {
 
     private final RegisterFormRepository registerFormRepository;
+    private final SchoolDirectoryRepository schoolDirectoryRepository;
 
-    public ViewRegisterFormDetailsUseCase(RegisterFormRepository registerFormRepository) {
+    public ViewRegisterFormDetailsUseCase(RegisterFormRepository registerFormRepository, SchoolDirectoryRepository schoolDirectoryRepository) {
         this.registerFormRepository = registerFormRepository;
+        this.schoolDirectoryRepository = schoolDirectoryRepository;
     }
 
     @Override
@@ -24,7 +27,17 @@ public class ViewRegisterFormDetailsUseCase implements IUseCase<ViewRegisterForm
     public RegisterFormDto execute(ViewRegisterFormDetailsQuery input) {
         var registerForm = registerFormRepository.findById(input.id())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn đăng ký"));
-        return RegisterFormDtoMapper.toRegisterFormDto(registerForm);
+        String schoolDomain = null;
+        String schoolName = null;
+        String schoolAddress = null;
+        if (registerForm.getSchoolDirectoryId() != null) {
+            var schoolDirectory = schoolDirectoryRepository.findById(registerForm.getSchoolDirectoryId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy danh mục trường"));
+            schoolDomain = schoolDirectory.getDomain();
+            schoolName = schoolDirectory.getName();
+            schoolAddress = schoolDirectory.getAddress();
+        }
+        return RegisterFormDtoMapper.toRegisterFormDto(registerForm, schoolDomain, schoolName, schoolAddress);
     }
     
 }

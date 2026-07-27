@@ -13,12 +13,11 @@ public class CreateSchoolRubricResultBandsCommandMapper {
         List<CreateSchoolRubricResultBandsCommand.ResultBandItemCommand> bandCommands = request.resultBands()
                 .stream()
                 .map(b -> new CreateSchoolRubricResultBandsCommand.ResultBandItemCommand(
-                        b.frameworkResultBandId(),
                         b.code(),
                         b.name(),
                         b.description(),
-                        b.scoreMin(),
-                        b.scoreMax(),
+                        b.mappedScoreMin(),
+                        b.mappedScoreMax(),
                         b.order()
                 ))
                 .collect(Collectors.toList());

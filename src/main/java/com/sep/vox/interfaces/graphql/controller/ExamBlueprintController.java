@@ -66,8 +66,8 @@ public class ExamBlueprintController {
             @Argument(name = "languageId") UUID languageId,
             @Argument(name = "examKind") String examKind,
             @Argument(name = "keyword") String keyword,
-            @Argument(name = "page") int page,
-            @Argument(name = "size") int size) {
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
         validatePage(page, size);
         return viewExamBlueprintsUseCase.execute(
             new ViewExamBlueprintsQuery(schoolId, isActive, languageId, examKind, keyword, page, size)
@@ -175,8 +175,8 @@ public class ExamBlueprintController {
         return versions.stream().max(Comparator.comparingInt(ExamBlueprintVersionDto::version)).orElse(null);
     }
 
-    private void validatePage(int page, int size) {
-        if (page < 0 || size <= 0) {
+    private void validatePage(Integer page, Integer size) {
+        if (page == null || size == null || page < 0 || size <= 0) {
             throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
         }
     }

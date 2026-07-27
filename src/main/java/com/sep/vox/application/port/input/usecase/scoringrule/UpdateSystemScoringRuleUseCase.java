@@ -21,7 +21,6 @@ import com.sep.vox.domain.model.scoringrule.ScoringRule;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
 import com.sep.vox.domain.repository.FrameworkResultBandRepository;
-import com.sep.vox.domain.repository.RubricCriterionBandRepository;
 import com.sep.vox.domain.repository.RubricCriterionRepository;
 import com.sep.vox.domain.repository.ScoringRuleRepository;
 import com.sep.vox.domain.repository.UserRepository;
@@ -30,7 +29,6 @@ import com.sep.vox.domain.valueobject.scoringruleaction.CapFrameworkResultBandPa
 import com.sep.vox.domain.valueobject.scoringruleaction.CriterionScoreDeltaParams;
 import com.sep.vox.domain.valueobject.scoringruleaction.ScoringRuleActionParams;
 import com.sep.vox.domain.valueobject.scoringruleaction.SetFrameworkResultBandParams;
-import com.sep.vox.domain.valueobject.scoringrulecondition.CriterionBandThresholdParams;
 import com.sep.vox.domain.valueobject.scoringrulecondition.CriterionScoreThresholdParams;
 import com.sep.vox.domain.valueobject.scoringrulecondition.ScoringRuleConditionParams;
 
@@ -42,7 +40,6 @@ public class UpdateSystemScoringRuleUseCase implements IUseCase<UpdateScoringRul
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
     private final RubricCriterionRepository rubricCriterionRepository;
-    private final RubricCriterionBandRepository rubricCriterionBandRepository;
     private final FrameworkResultBandRepository frameworkResultBandRepository;
 
     public UpdateSystemScoringRuleUseCase(
@@ -51,14 +48,12 @@ public class UpdateSystemScoringRuleUseCase implements IUseCase<UpdateScoringRul
             UserRepository userRepository,
             UserContextPort userContextPort,
             RubricCriterionRepository rubricCriterionRepository,
-            RubricCriterionBandRepository rubricCriterionBandRepository,
             FrameworkResultBandRepository frameworkResultBandRepository) {
         this.scoringRuleRepository = scoringRuleRepository;
         this.assessmentPolicyRepository = assessmentPolicyRepository;
         this.userRepository = userRepository;
         this.userContextPort = userContextPort;
         this.rubricCriterionRepository = rubricCriterionRepository;
-        this.rubricCriterionBandRepository = rubricCriterionBandRepository;
         this.frameworkResultBandRepository = frameworkResultBandRepository;
     }
 
@@ -132,10 +127,6 @@ public class UpdateSystemScoringRuleUseCase implements IUseCase<UpdateScoringRul
             ScoringRuleConditionParams conditionParams, ScoringRuleActionParams actionParams) {
         switch (conditionParams) {
             case CriterionScoreThresholdParams p -> requireCriterion(rubricVersionId, p.criterionCode());
-            case CriterionBandThresholdParams p -> {
-                RubricCriterion criterion = requireCriterion(rubricVersionId, p.criterionCode());
-                requireCriterionBand(criterion, p.bandCode());
-            }
             default -> {
             }
         }
@@ -154,12 +145,6 @@ public class UpdateSystemScoringRuleUseCase implements IUseCase<UpdateScoringRul
         return rubricCriterionRepository.findByRubricVersionIdAndCode(rubricVersionId, criterionCode)
                 .orElseThrow(() -> new NotFoundException(
                         "Mã tiêu chí (criterionCode) '" + criterionCode + "' không tồn tại trong Rubric Version của Assessment Policy này."));
-    }
-
-    private void requireCriterionBand(RubricCriterion criterion, String bandCode) {
-        rubricCriterionBandRepository.findByCriterionIdAndCode(criterion.getId(), bandCode)
-                .orElseThrow(() -> new NotFoundException(
-                        "Mã mức độ (bandCode) '" + bandCode + "' không tồn tại trong tiêu chí '" + criterion.getCode() + "'."));
     }
 
     private void requireFrameworkResultBand(UUID frameworkVersionId, UUID frameworkResultBandId) {

@@ -10,6 +10,7 @@ import com.sep.vox.domain.model.subscription.InvoiceStatus;
 
 public interface InvoiceRepository {
     Optional<Invoice> findById(UUID id);
+    Optional<Invoice> findByIdForUpdate(UUID id);
     Invoice save(Invoice invoice);
     List<Invoice> findAllBySubscriptionId(UUID subscriptionId);
     List<Invoice> findAllBySubscriptionIdIn(Collection<UUID> subscriptionIds);

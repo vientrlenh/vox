@@ -65,6 +65,7 @@ import com.sep.vox.application.port.input.usecase.schoolclassuser.UpdateSchoolCl
 import com.sep.vox.application.port.input.usecase.schooldirectory.AcceptSchoolDirectoryImportUseCase;
 import com.sep.vox.application.port.input.usecase.schooldirectory.CreateSchoolDirectoryUseCase;
 import com.sep.vox.application.port.input.usecase.schooldirectory.PreviewSchoolDirectoryImportFromFileUseCase;
+import com.sep.vox.application.port.input.usecase.schooldirectory.VerifySchoolDirectoryUseCase;
 import com.sep.vox.application.response.input.importfile.PreviewSchoolClassUserImportResponse;
 import com.sep.vox.application.response.input.schoolclassuser.CreateSchoolClassUserResponse;
 import com.sep.vox.application.response.input.schoolclassuser.UpdateSchoolClassUserStatusResponse;
@@ -104,6 +105,7 @@ class SchoolControllerTests {
     private PreviewSchoolDirectoryImportFromFileUseCase previewSchoolDirectoryImportFromFileUseCase;
     private AcceptSchoolDirectoryImportUseCase acceptSchoolDirectoryImportUseCase;
     private CreateSchoolDirectoryUseCase createSchoolDirectoryUseCase;
+    private VerifySchoolDirectoryUseCase verifySchoolDirectoryUseCase;
     private SchoolController controller;
 
     private final UUID schoolId = UUID.randomUUID();
@@ -145,6 +147,7 @@ class SchoolControllerTests {
         previewSchoolDirectoryImportFromFileUseCase = mock(PreviewSchoolDirectoryImportFromFileUseCase.class);
         acceptSchoolDirectoryImportUseCase = mock(AcceptSchoolDirectoryImportUseCase.class);
         createSchoolDirectoryUseCase = mock(CreateSchoolDirectoryUseCase.class);
+        verifySchoolDirectoryUseCase = mock(VerifySchoolDirectoryUseCase.class);
         
         controller = new SchoolController(
             createSchoolClassUseCase, 
@@ -176,7 +179,8 @@ class SchoolControllerTests {
             acceptSchoolGradeLevelImportUseCase,
             previewSchoolDirectoryImportFromFileUseCase,
             acceptSchoolDirectoryImportUseCase, 
-            createSchoolDirectoryUseCase
+            createSchoolDirectoryUseCase, 
+            verifySchoolDirectoryUseCase
         );
     }
 

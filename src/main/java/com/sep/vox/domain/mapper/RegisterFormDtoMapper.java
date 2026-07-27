@@ -19,15 +19,16 @@ import com.sep.vox.domain.valueobject.StudentCount;
 
 public class RegisterFormDtoMapper {
     
-    public static RegisterFormDto toRegisterFormDto(RegisterForm registerForm) {
+    public static RegisterFormDto toRegisterFormDto(RegisterForm registerForm, String schoolDomain, String schoolName, String schoolAddress) {
+        var directoryId = registerForm.getSchoolDirectoryId();
         return new RegisterFormDto(
             registerForm.getId(), 
-            registerForm.getSchoolDirectoryId(), 
-            registerForm.getSchoolName(), 
-            valueOf(registerForm.getSchoolDomain()),
+            directoryId, 
+            directoryId == null ? registerForm.getSchoolName() : schoolName, 
+            directoryId == null ? valueOf(registerForm.getSchoolDomain()) : schoolDomain,
             registerForm.getSchoolDistrict(), 
             registerForm.getSchoolProvince(), 
-            registerForm.getSchoolAddress(), 
+            directoryId == null ? registerForm.getSchoolAddress() : schoolAddress, 
             valueOf(registerForm.getContactFullName()), 
             valueOf(registerForm.getIdentityNumber()), 
             valueOf(registerForm.getContactPhone()), 
@@ -45,7 +46,7 @@ public class RegisterFormDtoMapper {
 
     public static List<RegisterFormDto> toRegisterFormDtoList(List<RegisterForm> registerForms) {
         return registerForms.stream()
-            .map(RegisterFormDtoMapper::toRegisterFormDto)
+            .map(r -> RegisterFormDtoMapper.toRegisterFormDto(r, null, null, null))
             .toList();
     }
 

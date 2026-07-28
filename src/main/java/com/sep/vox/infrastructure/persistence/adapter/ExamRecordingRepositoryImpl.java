@@ -30,9 +30,11 @@ public class ExamRecordingRepositoryImpl implements ExamRecordingRepository {
     }
 
     @Override
-    public Optional<ExamRecording> findByExamSessionIdAndStreamType(UUID examSessionId, ExamRequiredStreamType streamType) {
+    public Optional<ExamRecording> findByExamSessionIdAndStreamTypeAndSource(
+        UUID examSessionId, ExamRequiredStreamType streamType, String source
+    ) {
         return springDataExamRecordingRepository
-            .findByExamSessionIdAndStreamType(examSessionId, streamType.name())
+            .findByExamSessionIdAndStreamTypeAndSource(examSessionId, streamType.name(), source)
             .map(ExamRecordingMapper::toDomain);
     }
 

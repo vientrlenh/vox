@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
+import com.sep.vox.domain.model.exam.ExamRequiredStreamType;
 import com.sep.vox.domain.model.exam.ExamSession;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
 import com.sep.vox.infrastructure.persistence.entity.ExamSessionJpaEntity;
@@ -20,6 +21,7 @@ public final class ExamSessionMapper {
             jpa.isFlagged(),
             jpa.getFlagReason()
         );
+        domain.setChosenStreamType(chosenStreamTypeFromString(jpa.getChosenStreamType()));
         domain.setRemainingSeconds(jpa.getRemainingSeconds());
         return domain;
     }
@@ -36,11 +38,18 @@ public final class ExamSessionMapper {
             domain.isFlagged(),
             domain.getFlagReason()
         );
+        jpa.setChosenStreamType(
+            domain.getChosenStreamType() == null ? null : domain.getChosenStreamType().name()
+        );
         jpa.setRemainingSeconds(domain.getRemainingSeconds());
         return jpa;
     }
 
     private static ExamSessionStatus statusFromString(String status) {
         return status == null ? null : ExamSessionStatus.valueOf(status);
+    }
+
+    private static ExamRequiredStreamType chosenStreamTypeFromString(String chosenStreamType) {
+        return chosenStreamType == null ? null : ExamRequiredStreamType.valueOf(chosenStreamType);
     }
 }

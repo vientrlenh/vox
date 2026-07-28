@@ -10,5 +10,6 @@ import com.sep.vox.infrastructure.persistence.entity.ExamRecordingJpaEntity;
 
 public interface SpringDataExamRecordingRepository extends JpaRepository<ExamRecordingJpaEntity, UUID> {
     List<ExamRecordingJpaEntity> findByExamSessionId(UUID examSessionId);
-    Optional<ExamRecordingJpaEntity> findByExamSessionIdAndStreamType(UUID examSessionId, String streamType);
+    Optional<ExamRecordingJpaEntity> findByExamSessionIdAndStreamTypeAndSource(
+        UUID examSessionId, String streamType, String source);
 }

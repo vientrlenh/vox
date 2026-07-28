@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.examsession;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -92,7 +93,7 @@ public class ViewMyExamResultsUseCase implements IUseCase<Void, List<StudentExam
                     scoreVisible && rubricBand != null ? rubricBand.getName() : null
                 );
             })
-            .filter(java.util.Objects::nonNull)
+            .filter(Objects::nonNull)
             .sorted(Comparator.comparing(
                 StudentExamResultSummaryResponse::submittedAt,
                 Comparator.nullsLast(Comparator.reverseOrder())

@@ -525,14 +525,16 @@ type StudentExamResultSummary {
     rubricResultBandName: String
 }
 type ExamRecording {
-    id: ID! 
+    id: ID!
     examSessionId: ID!
-    candidateId: ID 
-    streamType: String 
-    status: String 
-    sizeBytes: Int 
-    durationSeconds: Int 
-    createdAt: String 
+    candidateId: ID
+    streamType: String
+    status: String
+    sizeBytes: Int
+    durationSeconds: Int
+    source: String
+    canonical: Boolean!
+    createdAt: String
     assembledAt: String
 }
 

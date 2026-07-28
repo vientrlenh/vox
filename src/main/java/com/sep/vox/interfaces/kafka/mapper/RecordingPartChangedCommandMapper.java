@@ -1,6 +1,7 @@
 package com.sep.vox.interfaces.kafka.mapper;
 
 import java.time.OffsetDateTime;
+import java.util.Locale;
 import java.util.UUID;
 
 import com.sep.vox.application.port.input.command.RecordRecordingPartChangedCommand;
@@ -21,8 +22,22 @@ public final class RecordingPartChangedCommandMapper {
             toStatus(dto.status()),
             dto.objectKey(),
             dto.durationSecs(),
-            OffsetDateTime.parse(dto.occurredAt())
+            OffsetDateTime.parse(dto.occurredAt()),
+            toSource(dto.source())
         );
+    }
+
+    /**
+     * source là một phần khoá tra cứu của hàng bản ghi, nên nó không được phép rỗng.
+     *
+     * <p>Một khoá chứa null không khớp gì trong SQL: mỗi event thiếu source sẽ không tìm thấy
+     * hàng của chính nó và đẻ thêm một hàng mới, lần sau lại tiếp -- hàng nhân bản âm thầm thay
+     * vì được cập nhật. UNKNOWN giữ cho khoá toàn phần, và vì nó xếp dưới mọi nguồn đã biết
+     * (xem RecordingPrecedence.rankOf) nên nó không bao giờ được chọn làm bản chuẩn nếu có một
+     * bản biết rõ nguồn của mình.
+     */
+    private static String toSource(String raw) {
+        return (raw == null || raw.isBlank()) ? "UNKNOWN" : raw.trim().toUpperCase(Locale.ROOT);
     }
 
     private static ExamRequiredStreamType toStreamType(String raw) {

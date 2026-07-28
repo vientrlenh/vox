@@ -3,6 +3,8 @@ package com.sep.vox.infrastructure.event.internal.listener;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -25,6 +27,8 @@ import com.sep.vox.domain.repository.UserRepository;
 @Component
 public class GradingAssignmentEmailListener {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(GradingAssignmentEmailListener.class);
+
     /** {@code withZone} là phần bắt buộc: thiếu nó thì mail ghi giờ UTC của container. */
     private static final DateTimeFormatter DEADLINE_FORMAT =
         DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy").withZone(DateMapper.APP_ZONE);
@@ -42,20 +46,31 @@ public class GradingAssignmentEmailListener {
         this.mailTemplatePort = mailTemplatePort;
     }
 
+    /**
+     * Lỗi mail chỉ được log: {@code GradingDeadlineReminderBatch} đánh dấu
+     * {@code reminded_at} và commit TRƯỚC khi listener này chạy, nên ném ra ngoài sẽ chặn
+     * luôn các phân công còn lại trong lô — và chúng đã bị đánh dấu là đã nhắc, không bao
+     * giờ được gửi lại.
+     */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void onDeadlineReminder(GradingDeadlineReminderEvent event) throws Exception {
+    public void onDeadlineReminder(GradingDeadlineReminderEvent event) {
         if (event.teacherId() == null) {
             return;
         }
-        var teacher = userRepository.findById(event.teacherId()).orElse(null);
-        if (teacher == null) {
-            return;
+        try {
+            var teacher = userRepository.findById(event.teacherId()).orElse(null);
+            if (teacher == null) {
+                return;
+            }
+            var html = mailTemplatePort.renderGradingDeadlineReminderEmail(
+                event.examName() == null ? "-" : event.examName(),
+                roundLabel(event.roundType()),
+                format(event.deadlineAt()));
+            mailSendingPort.sendHtml(teacher.getEmail().value(), "Nhắc hạn chấm bài", html);
+        } catch (Exception e) {
+            LOGGER.error("Không gửi được mail nhắc hạn chấm bài cho phân công {}: {}",
+                event.assignmentId(), e.getMessage());
         }
-        var html = mailTemplatePort.renderGradingDeadlineReminderEmail(
-            event.examName() == null ? "-" : event.examName(),
-            roundLabel(event.roundType()),
-            format(event.deadlineAt()));
-        mailSendingPort.sendHtml(teacher.getEmail().value(), "Nhắc hạn chấm bài", html);
     }
 
     /** Người nhận là admin ĐÃ GIAO bài, không phải học sinh: bài đang chờ giao lại. */

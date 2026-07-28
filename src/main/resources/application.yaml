@@ -96,6 +96,11 @@ spring:
           auth: true
           starttls:
             enable: true
+          # Không có timeout thì thread gửi mail treo vô hạn khi SMTP không phản hồi —
+          # queue mail đầy dần và (với CallerRunsPolicy) thread import bị giữ luôn.
+          connectiontimeout: 5000
+          timeout: 10000
+          writetimeout: 10000
 
   security:
     oauth2:

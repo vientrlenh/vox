@@ -4,7 +4,6 @@ import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -281,7 +280,7 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
         var frameworkBandsByCriterionId = frameworkCriterionBandRepository.findByFrameworkCriterionIdIn(frameworkCriterionIds).stream()
             .collect(Collectors.groupingBy(item -> item.getFrameworkCriterionId()));
         var resultBandIds = frameworkBandsByCriterionId.values().stream()
-            .flatMap(List::stream)
+            .flatMap(list -> list.stream())
             .map(item -> item.getFrameworkResultBandId())
             .distinct()
             .toList();

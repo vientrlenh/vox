@@ -20,25 +20,21 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.query.ViewExamSchedulesQuery;
 import com.sep.vox.application.port.input.usecase.examschedule.ViewExamSchedulesUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.dto.UserRoleInfo;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamSchedule;
 import com.sep.vox.domain.model.exam.ExamScheduleStatus;
-import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
+import com.sep.vox.domain.repository.ExamScheduleProctorRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
-import com.sep.vox.domain.repository.SchoolUserRepository;
 
 class ViewExamSchedulesUseCaseTests {
 
     private ExamRepository examRepository;
     private ExamScheduleRepository examScheduleRepository;
     private ExamMemberRepository examMemberRepository;
-    private SchoolUserRepository schoolUserRepository;
-    private UserRoleQueryRepository userRoleQueryRepository;
+    private ExamScheduleProctorRepository examScheduleProctorRepository;
     private UserContextPort userContextPort;
     private ViewExamSchedulesUseCase useCase;
 
@@ -53,16 +49,12 @@ class ViewExamSchedulesUseCaseTests {
         examRepository = mock(ExamRepository.class);
         examScheduleRepository = mock(ExamScheduleRepository.class);
         examMemberRepository = mock(ExamMemberRepository.class);
-        schoolUserRepository = mock(SchoolUserRepository.class);
-        userRoleQueryRepository = mock(UserRoleQueryRepository.class);
+        examScheduleProctorRepository = mock(ExamScheduleProctorRepository.class);
         userContextPort = mock(UserContextPort.class);
         useCase = new ViewExamSchedulesUseCase(
-            examRepository, examScheduleRepository, examMemberRepository,
-            schoolUserRepository, userRoleQueryRepository, userContextPort);
+            examRepository, examScheduleRepository, examMemberRepository, examScheduleProctorRepository, userContextPort);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        when(schoolUserRepository.findByUserId(userId)).thenReturn(Optional.empty());
-        when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId)).thenReturn(List.of());
         when(examMemberRepository.existsByExamIdAndUserIdAndRole(examId, userId, ExamMemberRole.CHAIR))
             .thenReturn(true);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam()));
@@ -107,8 +99,6 @@ class ViewExamSchedulesUseCaseTests {
 
     @Test
     void should_list_school_wide_when_exam_id_null_and_school_admin() {
-        when(schoolUserRepository.findByUserId(userId)).thenReturn(Optional.of(schoolUser()));
-        when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId)).thenReturn(List.of(schoolAdminRole()));
         when(examScheduleRepository.findBySchoolId(schoolId)).thenReturn(List.of(
             schedule(base, ExamScheduleStatus.DRAFT),
             schedule(base.plusDays(2), ExamScheduleStatus.PUBLISHED)
@@ -124,8 +114,6 @@ class ViewExamSchedulesUseCaseTests {
 
     @Test
     void should_reject_school_wide_when_not_school_admin() {
-        when(schoolUserRepository.findByUserId(userId)).thenReturn(Optional.of(schoolUser()));
-        when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId)).thenReturn(List.of());
 
         assertThatThrownBy(() -> useCase.execute(new ViewExamSchedulesQuery(null, null, null, null)))
             .isInstanceOf(ForbiddenException.class);
@@ -133,8 +121,6 @@ class ViewExamSchedulesUseCaseTests {
 
     @Test
     void should_reject_school_wide_when_school_admin_has_no_school() {
-        when(schoolUserRepository.findByUserId(userId)).thenReturn(Optional.empty());
-        when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId)).thenReturn(List.of(schoolAdminRole()));
 
         assertThatThrownBy(() -> useCase.execute(new ViewExamSchedulesQuery(null, null, null, null)))
             .isInstanceOf(ForbiddenException.class);
@@ -149,15 +135,6 @@ class ViewExamSchedulesUseCaseTests {
         s.setEndDate(startDate.plusHours(2));
         s.setStatus(status);
         return s;
-    }
-
-    private UserRoleInfo schoolAdminRole() {
-        return new UserRoleInfo(UUID.randomUUID(), userId, UUID.randomUUID(), OffsetDateTime.now(),
-            "SCHOOL_ADMIN", "School Admin");
-    }
-
-    private SchoolUser schoolUser() {
-        return new SchoolUser(schoolId, userId, OffsetDateTime.now(), null);
     }
 
     private Exam exam() {

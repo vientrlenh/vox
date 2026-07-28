@@ -27,6 +27,17 @@ public class ExamSession {
      * "stream màn hình bị lỗi": cả hai đều dẫn tới việc thiếu bản ghi screen trên storage.
      */
     private ExamRequiredStreamType chosenStreamType;
+    /**
+     * Checkpoint đồng hồ đếm ngược do client gửi lên, null nếu phiên thi chưa checkpoint lần nào.
+     *
+     * <p>Phải do client báo chứ server không tự suy ra được: đồng hồ phía WPF <b>không trừ giây khi
+     * avatar đang nói</b>, nên thời gian còn lại không phải là {@code startedAt + duration - now}.
+     * Chỉ client biết avatar đã nói mất bao lâu.
+     *
+     * <p>Không có giá trị này thì mỗi lần vào lại phiên thi là đếm ngược lại từ đầu - học viên thoát
+     * ra ở phút 25 của bài 30 phút sẽ được thêm trọn 30 phút nữa.
+     */
+    private Integer remainingSeconds;
 
     public ExamSession() {}
 
@@ -133,5 +144,13 @@ public class ExamSession {
 
     public void setChosenStreamType(ExamRequiredStreamType chosenStreamType) {
         this.chosenStreamType = chosenStreamType;
+    }
+
+    public Integer getRemainingSeconds() {
+        return remainingSeconds;
+    }
+
+    public void setRemainingSeconds(Integer remainingSeconds) {
+        this.remainingSeconds = remainingSeconds;
     }
 }

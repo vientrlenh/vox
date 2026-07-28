@@ -15,4 +15,5 @@ public interface ExamScheduleProctorRepository {
     long countByScheduleId(UUID scheduleId);
     void deleteById(UUID id);
     List<UUID> findScheduleIdsByTeacherIdAndScheduleIdIn(UUID teacherId, Collection<UUID> scheduleIds);
+    
 }

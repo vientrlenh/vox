@@ -84,4 +84,25 @@ public interface SpringDataExamSessionRepository extends JpaRepository<ExamSessi
         WHERE s.id = :id AND s.chosenStreamType IS NULL
     """)
     int lockChosenStreamType(@Param("id") UUID id, @Param("chosenStreamType") String chosenStreamType);
+
+    /**
+     * Ghi checkpoint đồng hồ đếm ngược, chỉ khi giá trị mới nhỏ hơn giá trị đang có.
+     *
+     * <p>Điều kiện {@code remainingSeconds > :remainingSeconds} không phải để tối ưu mà là ràng
+     * buộc bảo mật: giá trị này do máy học viên gửi lên, nên nếu cho phép ghi đè tự do thì endpoint
+     * checkpoint trở thành API tự gia hạn thời gian thi. Đồng hồ chỉ được đi lùi.
+     *
+     * <p>Đồng thời xử lý luôn chuyện đua: client checkpoint 10 giây một lần và các request có thể
+     * đến không đúng thứ tự, một gói cũ đến muộn sẽ bị chính điều kiện này loại.
+     *
+     * @return 1 nếu ghi được, 0 nếu giá trị gửi lên không nhỏ hơn giá trị đã lưu.
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+        UPDATE ExamSessionJpaEntity s
+        SET s.remainingSeconds = :remainingSeconds
+        WHERE s.id = :id
+          AND (s.remainingSeconds IS NULL OR s.remainingSeconds > :remainingSeconds)
+    """)
+    int checkpointRemainingSeconds(@Param("id") UUID id, @Param("remainingSeconds") int remainingSeconds);
 }

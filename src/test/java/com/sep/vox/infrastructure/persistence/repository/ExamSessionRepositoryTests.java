@@ -78,7 +78,7 @@ class ExamSessionRepositoryTests extends ContainerTestConfig {
         assertThat(updated).isEqualTo(1);
         assertThat(examSessionRepository.findById(saved.getId()))
             .get()
-            .extracting(ExamSession::getChosenStreamType)
+            .extracting(session -> session.getChosenStreamType())
             .isEqualTo(ExamRequiredStreamType.SCREEN);
     }
 
@@ -96,8 +96,50 @@ class ExamSessionRepositoryTests extends ContainerTestConfig {
         assertThat(updated).isEqualTo(0);
         assertThat(examSessionRepository.findById(saved.getId()))
             .get()
-            .extracting(ExamSession::getChosenStreamType)
+            .extracting(session -> session.getChosenStreamType())
             .isEqualTo(ExamRequiredStreamType.CAMERA_AND_SCREEN);
+    }
+
+    @Test
+    void whenSessionHasNoCheckpoint_thenRemainingSecondsIsWritten() {
+        var saved = newSession(ExamSessionStatus.IN_PROGRESS);
+        assertThat(saved.getRemainingSeconds()).isNull();
+
+        assertThat(examSessionRepository.checkpointRemainingSeconds(saved.getId(), 1500)).isEqualTo(1);
+        assertThat(examSessionRepository.findById(saved.getId()))
+            .get()
+            .extracting(session -> session.getRemainingSeconds())
+            .isEqualTo(1500);
+    }
+
+    @Test
+    void whenCountdownMovesDown_thenCheckpointIsAccepted() {
+        var saved = newSession(ExamSessionStatus.IN_PROGRESS);
+        examSessionRepository.checkpointRemainingSeconds(saved.getId(), 1500);
+
+        assertThat(examSessionRepository.checkpointRemainingSeconds(saved.getId(), 1490)).isEqualTo(1);
+        assertThat(examSessionRepository.findById(saved.getId()))
+            .get()
+            .extracting(session -> session.getRemainingSeconds())
+            .isEqualTo(1490);
+    }
+
+    /**
+     * Ràng buộc bảo mật, không phải tối ưu: giá trị đến từ máy học viên, nên nếu đồng hồ được phép
+     * đi tới thì endpoint checkpoint trở thành API tự gia hạn thời gian thi. Cũng loại luôn các gói
+     * checkpoint cũ đến muộn không đúng thứ tự.
+     */
+    @Test
+    void whenCountdownWouldMoveUp_thenCheckpointIsRejected() {
+        var saved = newSession(ExamSessionStatus.IN_PROGRESS);
+        examSessionRepository.checkpointRemainingSeconds(saved.getId(), 600);
+
+        assertThat(examSessionRepository.checkpointRemainingSeconds(saved.getId(), 1500)).isEqualTo(0);
+        assertThat(examSessionRepository.checkpointRemainingSeconds(saved.getId(), 600)).isEqualTo(0);
+        assertThat(examSessionRepository.findById(saved.getId()))
+            .get()
+            .extracting(session -> session.getRemainingSeconds())
+            .isEqualTo(600);
     }
 
     @Test
@@ -113,7 +155,7 @@ class ExamSessionRepositoryTests extends ContainerTestConfig {
 
         assertThat(examSessionRepository.findById(saved.getId()))
             .get()
-            .extracting(ExamSession::getChosenStreamType)
+            .extracting(session -> session.getChosenStreamType())
             .isEqualTo(ExamRequiredStreamType.CAMERA);
     }
 }

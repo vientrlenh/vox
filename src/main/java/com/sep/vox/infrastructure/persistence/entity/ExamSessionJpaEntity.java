@@ -65,6 +65,9 @@ public class ExamSessionJpaEntity {
     })
     private String chosenStreamType;
 
+    @Column(name = "remaining_seconds")
+    private Integer remainingSeconds;
+
     protected ExamSessionJpaEntity() {}
 
     public ExamSessionJpaEntity(UUID id, UUID examId, UUID candidateId, UUID paperId, OffsetDateTime startedAt,
@@ -158,5 +161,13 @@ public class ExamSessionJpaEntity {
 
     public void setChosenStreamType(String chosenStreamType) {
         this.chosenStreamType = chosenStreamType;
+    }
+
+    public Integer getRemainingSeconds() {
+        return remainingSeconds;
+    }
+
+    public void setRemainingSeconds(Integer remainingSeconds) {
+        this.remainingSeconds = remainingSeconds;
     }
 }

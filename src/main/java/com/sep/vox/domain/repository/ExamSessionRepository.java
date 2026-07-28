@@ -35,4 +35,11 @@ public interface ExamSessionRepository {
      * @return 1 nếu ghi được, 0 nếu phiên thi đã chốt loại stream từ trước.
      */
     int lockChosenStreamType(UUID id, ExamRequiredStreamType chosenStreamType);
+
+    /**
+     * Ghi checkpoint đồng hồ đếm ngược, chỉ khi giá trị mới nhỏ hơn giá trị đang có.
+     *
+     * @return 1 nếu ghi được, 0 nếu bị từ chối vì không nhỏ hơn.
+     */
+    int checkpointRemainingSeconds(UUID id, int remainingSeconds);
 }

@@ -23,11 +23,13 @@ import com.sep.vox.application.port.input.usecase.examsession.DeleteExamSessionU
 import com.sep.vox.application.port.input.usecase.examsession.FlagExamSessionUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.ForceEndExamSessionUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.RetryGradingExamSessionUseCase;
+import com.sep.vox.application.port.input.usecase.examsession.UpdateExamSessionRemainingTimeUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.UpdateExamSessionStatusUseCase;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
 import com.sep.vox.interfaces.rest.dto.request.CreateExamSessionRequest;
 import com.sep.vox.interfaces.rest.dto.request.SessionReasonRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateExamSessionRequest;
+import com.sep.vox.interfaces.rest.dto.request.UpdateRemainingTimeRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 
 import jakarta.validation.Valid;
@@ -45,6 +47,7 @@ public class ExamSessionController {
     private final FlagExamSessionUseCase flagExamSessionUseCase;
     private final ForceEndExamSessionUseCase forceEndExamSessionUseCase;
     private final RetryGradingExamSessionUseCase retryGradingExamSessionUseCase;
+    private final UpdateExamSessionRemainingTimeUseCase updateExamSessionRemainingTimeUseCase;
 
     public ExamSessionController(
             CreateExamSessionUseCase createExamSessionUseCase,
@@ -54,7 +57,8 @@ public class ExamSessionController {
             DeleteExamSessionUseCase deleteExamSessionUseCase,
             FlagExamSessionUseCase flagExamSessionUseCase,
             ForceEndExamSessionUseCase forceEndExamSessionUseCase,
-            RetryGradingExamSessionUseCase retryGradingExamSessionUseCase) {
+            RetryGradingExamSessionUseCase retryGradingExamSessionUseCase,
+            UpdateExamSessionRemainingTimeUseCase updateExamSessionRemainingTimeUseCase) {
         this.createExamSessionUseCase = createExamSessionUseCase;
                 this.completeExamSessionGradingUseCase = completeExamSessionGradingUseCase;
 
@@ -64,6 +68,7 @@ public class ExamSessionController {
         this.flagExamSessionUseCase = flagExamSessionUseCase;
         this.forceEndExamSessionUseCase = forceEndExamSessionUseCase;
         this.retryGradingExamSessionUseCase = retryGradingExamSessionUseCase;
+        this.updateExamSessionRemainingTimeUseCase = updateExamSessionRemainingTimeUseCase;
     }
 
     @PostMapping
@@ -88,6 +93,21 @@ public class ExamSessionController {
             ExamSessionStatus.valueOf(request.status().trim().toUpperCase())
         ));
         return ResponseEntity.ok(ApiResponse.success("Cap nhat trang thai phien thi thanh cong", data));
+    }
+
+    /**
+     * Ghi lại đồng hồ đếm ngược của client (mặc định 10 giây một lần) để lần vào lại phiên thi
+     * không bắt đầu lại từ đầu. Trả về giá trị server thực sự đang giữ, có thể nhỏ hơn giá trị gửi
+     * lên nếu nó bị chặn trên hoặc bị từ chối vì không đi lùi.
+     */
+    @PatchMapping("/{id}/remaining-time")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<ApiResponse<Integer>> updateRemainingTime(
+            @PathVariable("id") UUID id,
+            @Valid @RequestBody UpdateRemainingTimeRequest request) {
+        var data = updateExamSessionRemainingTimeUseCase.execute(
+            new UpdateExamSessionRemainingTimeCommand(id, request.remainingSeconds()));
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật thời gian còn lại thành công", data));
     }
 
     @GetMapping("/{id}/paper")

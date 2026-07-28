@@ -143,7 +143,7 @@ public class IssueStudentStreamTokenUseCase implements IUseCase<IssueStudentStre
             return chosenStreamType;
         }
         return examSessionRepository.findById(examSession.getId())
-            .map(ExamSession::getChosenStreamType)
+            .map(session -> session.getChosenStreamType())
             .orElse(chosenStreamType);
     }
 

@@ -11,6 +11,7 @@ import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.graphql.data.method.annotation.SchemaMapping;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 
 import graphql.schema.DataFetchingEnvironment;
@@ -49,6 +50,7 @@ public class ExamScheduleController {
     }
 
     @QueryMapping(name = "examSchedules")
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public List<ExamScheduleDto> examSchedules(
             @Argument(name = "examId") UUID examId,
             @Argument(name = "status") ExamScheduleStatus status,

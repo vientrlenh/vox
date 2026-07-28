@@ -14,6 +14,12 @@ public record StudentExamPaperResponse(
     String examDate,
     String status,
     String scheduleEndAt,
+    /**
+     * Checkpoint đồng hồ đếm ngược, null nếu phiên thi chưa checkpoint lần nào - client hiểu là
+     * "đếm từ durationSeconds". Không suy ra được từ startedAt vì đồng hồ dừng lúc avatar nói.
+     */
+    Integer remainingSeconds,
+    String startedAt,
     List<StudentExamPaperQuestionResponse> paperQuestions
 ) {
 }

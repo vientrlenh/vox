@@ -10,8 +10,10 @@ import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 @Entity
+@Table(name = "exam_recordings")
 public class ExamRecordingJpaEntity {
     @Id
     @Generated(event = EventType.INSERT)

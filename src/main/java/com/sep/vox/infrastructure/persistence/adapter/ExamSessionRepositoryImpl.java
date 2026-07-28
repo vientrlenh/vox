@@ -118,6 +118,11 @@ public class ExamSessionRepositoryImpl implements ExamSessionRepository {
     }
 
     @Override
+    public int checkpointRemainingSeconds(UUID id, int remainingSeconds) {
+        return springDataExamSessionRepository.checkpointRemainingSeconds(id, remainingSeconds);
+    }
+
+    @Override
     public List<ExamSession> findActiveByIdInAndSchoolId(Collection<UUID> ids, OffsetDateTime now, UUID schoolId) {
         return springDataExamSessionRepository.findActiveByIdInAndSchoolId(ids, now, schoolId)
             .stream()

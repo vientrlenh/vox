@@ -22,6 +22,7 @@ public final class ExamSessionMapper {
             jpa.getFlagReason()
         );
         domain.setChosenStreamType(chosenStreamTypeFromString(jpa.getChosenStreamType()));
+        domain.setRemainingSeconds(jpa.getRemainingSeconds());
         return domain;
     }
 
@@ -40,6 +41,7 @@ public final class ExamSessionMapper {
         jpa.setChosenStreamType(
             domain.getChosenStreamType() == null ? null : domain.getChosenStreamType().name()
         );
+        jpa.setRemainingSeconds(domain.getRemainingSeconds());
         return jpa;
     }
 

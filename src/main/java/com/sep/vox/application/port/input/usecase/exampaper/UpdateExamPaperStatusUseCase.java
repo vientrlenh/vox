@@ -10,11 +10,13 @@ import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateExamPaperStatusCommand;
+import com.sep.vox.application.port.input.service.ExamTimeQuotaGuardService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.ExamPaperDto;
 import com.sep.vox.domain.mapper.ExamPaperDtoMapper;
+import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamPaper;
 import com.sep.vox.domain.model.exam.ExamPaperStatus;
@@ -33,6 +35,7 @@ public class UpdateExamPaperStatusUseCase implements IUseCase<UpdateExamPaperSta
     private final ExamMemberRepository examMemberRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
+    private final ExamTimeQuotaGuardService examTimeQuotaGuardService;
     private final UserContextPort userContextPort;
 
     public UpdateExamPaperStatusUseCase(
@@ -42,6 +45,7 @@ public class UpdateExamPaperStatusUseCase implements IUseCase<UpdateExamPaperSta
             ExamMemberRepository examMemberRepository,
             SchoolUserRepository schoolUserRepository,
             UserRoleQueryRepository userRoleQueryRepository,
+            ExamTimeQuotaGuardService examTimeQuotaGuardService,
             UserContextPort userContextPort) {
         this.examPaperRepository = examPaperRepository;
         this.examPaperItemRepository = examPaperItemRepository;
@@ -49,6 +53,7 @@ public class UpdateExamPaperStatusUseCase implements IUseCase<UpdateExamPaperSta
         this.examMemberRepository = examMemberRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
+        this.examTimeQuotaGuardService = examTimeQuotaGuardService;
         this.userContextPort = userContextPort;
     }
 
@@ -72,10 +77,12 @@ public class UpdateExamPaperStatusUseCase implements IUseCase<UpdateExamPaperSta
                 if (examPaperItemRepository.existsUnassignedItemByPaperId(paper.getId())) {
                     throw new IllegalStateException("Đề thi còn ô câu hỏi chưa được gán, không thể nộp duyệt");
                 }
+                requirePaperWithinPlan(exam, paper);
                 requireTransition(paper, ExamPaperStatus.DRAFT, ExamPaperStatus.IN_REVIEW);
             }
             case "APPROVE" -> {
                 requireReviewerOrAdminOverride(paper, exam.getSchoolId(), currentUserId);
+                requirePaperWithinPlan(exam, paper);
                 requireTransition(paper, ExamPaperStatus.IN_REVIEW, ExamPaperStatus.APPROVED);
             }
             case "REQUEST_REVISION" -> {
@@ -87,6 +94,7 @@ public class UpdateExamPaperStatusUseCase implements IUseCase<UpdateExamPaperSta
             }
             case "LOCK" -> {
                 requireChairOrAdminOverride(paper, exam.getSchoolId(), currentUserId);
+                requirePaperWithinPlan(exam, paper);
                 requireTransition(paper, ExamPaperStatus.APPROVED, ExamPaperStatus.LOCKED);
             }
             case "REOPEN" -> {
@@ -153,6 +161,14 @@ public class UpdateExamPaperStatusUseCase implements IUseCase<UpdateExamPaperSta
             return false;
         }
         return !examMemberRepository.existsByExamIdAndRoleExcludingUserId(paper.getExamId(), role, paper.getCreatedBy());
+    }
+
+    private void requirePaperWithinPlan(Exam exam, ExamPaper paper) {
+        examTimeQuotaGuardService.requireWithinPlan(
+            exam.getSchoolId(),
+            paper.getTimeDurationSeconds(),
+            "Mã đề " + paper.getCode()
+        );
     }
 
     private void requireTransition(ExamPaper paper, ExamPaperStatus from, ExamPaperStatus to) {

@@ -34,11 +34,11 @@ public class ViewExamSchedulesUseCase implements IUseCase<ViewExamSchedulesQuery
             ExamRepository examRepository,
             ExamScheduleRepository examScheduleRepository,
             ExamMemberRepository examMemberRepository,
-            ExamScheduleProctorRepository examScheduleProctorRepository, 
+            ExamScheduleProctorRepository examScheduleProctorRepository,
             UserContextPort userContextPort) {
         this.examRepository = examRepository;
         this.examScheduleRepository = examScheduleRepository;
-        this.examMemberRepository = examMemberRepository; 
+        this.examMemberRepository = examMemberRepository;
         this.examScheduleProctorRepository = examScheduleProctorRepository;
         this.userContextPort = userContextPort;
     }
@@ -92,7 +92,7 @@ public class ViewExamSchedulesUseCase implements IUseCase<ViewExamSchedulesQuery
             var isChair = examMemberRepository.existsByExamIdAndUserIdAndRole(exam.getId(), currentUserId, ExamMemberRole.CHAIR);
             if (isChair) {
                 return schedules;
-            } 
+            }
             var scheduleIds = schedules.stream().map(s -> s.getId()).toList();
             var proctoredScheduleIds = examScheduleProctorRepository.findScheduleIdsByTeacherIdAndScheduleIdIn(currentUserId, scheduleIds);
             return examScheduleRepository.findByIdIn(proctoredScheduleIds);

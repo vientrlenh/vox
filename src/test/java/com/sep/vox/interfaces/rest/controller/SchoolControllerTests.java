@@ -179,7 +179,7 @@ class SchoolControllerTests {
             acceptSchoolGradeLevelImportUseCase,
             previewSchoolDirectoryImportFromFileUseCase,
             acceptSchoolDirectoryImportUseCase, 
-            createSchoolDirectoryUseCase, 
+            createSchoolDirectoryUseCase,
             verifySchoolDirectoryUseCase
         );
     }

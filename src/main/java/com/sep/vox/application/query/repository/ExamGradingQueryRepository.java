@@ -36,6 +36,13 @@ public interface ExamGradingQueryRepository {
     /** Màn chấm. Trả empty nếu người gọi không phải giáo viên được gán bài này. */
     Optional<GradingTaskDetailInfo> findTaskDetail(UUID assignmentId, UUID teacherId);
 
+    /**
+     * Màn chấm cho nhà trường: theo candidateResultId, không cần phân công (LEFT
+     * JOIN), chỉ cần bài thuộc đúng trường. Cho phép nhà trường xem/chấm bất kỳ bài
+     * PENDING_REVIEW nào của trường mình, kể cả chưa có ai được gán.
+     */
+    Optional<GradingTaskDetailInfo> findTaskDetailBySchool(UUID candidateResultId, UUID schoolId);
+
     List<AssignableTeacherInfo> findAssignableTeachers(UUID schoolId, String keyword);
 
     /**

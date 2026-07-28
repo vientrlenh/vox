@@ -13,6 +13,7 @@ public class ExamSession {
     private ExamSessionStatus status;
     private boolean flagged;
     private String flagReason;
+
     /**
      * Loại stream đã được chốt cho phiên thi này, null nếu chưa phát token stream lần nào.
      *
@@ -27,6 +28,7 @@ public class ExamSession {
      * "stream màn hình bị lỗi": cả hai đều dẫn tới việc thiếu bản ghi screen trên storage.
      */
     private ExamRequiredStreamType chosenStreamType;
+
     /**
      * Checkpoint đồng hồ đếm ngược do client gửi lên, null nếu phiên thi chưa checkpoint lần nào.
      *

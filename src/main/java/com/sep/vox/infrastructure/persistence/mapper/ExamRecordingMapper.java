@@ -18,7 +18,7 @@ public final class ExamRecordingMapper {
             statusFromString(jpa.getStatus()), 
             jpa.getSizeBytes(), 
             jpa.getDurationSeconds(), 
-            jpa.getSource(), 
+            jpa.getSource(),
             jpa.getCreatedAt(), 
             jpa.getAssembledAt()
         );
@@ -35,7 +35,7 @@ public final class ExamRecordingMapper {
             valueOf(recording.getStatus()), 
             recording.getSizeBytes(), 
             recording.getDurationSeconds(), 
-            recording.getSource(), 
+            recording.getSource(),
             recording.getCreatedAt(), 
             recording.getAssembledAt()
         );

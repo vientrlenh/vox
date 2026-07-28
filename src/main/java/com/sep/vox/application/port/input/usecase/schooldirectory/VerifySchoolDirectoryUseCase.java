@@ -39,5 +39,5 @@ public class VerifySchoolDirectoryUseCase implements IUseCase<VerifySchoolDirect
         var updated = schoolDirectoryRepository.save(directory);
         return updated.getId();
     }
-    
+
 }

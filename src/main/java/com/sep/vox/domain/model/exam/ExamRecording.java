@@ -20,7 +20,7 @@ public class ExamRecording {
     public ExamRecording() {}
 
     public ExamRecording(UUID id, UUID examSessionId, UUID candidateId, ExamRequiredStreamType streamType,
-            String bucket, String s3Key, ExamRecordingAssemblyStatus status, Long sizeBytes, Integer durationSeconds, String source, 
+            String bucket, String s3Key, ExamRecordingAssemblyStatus status, Long sizeBytes, Integer durationSeconds, String source,
             OffsetDateTime createdAt, OffsetDateTime assembledAt) {
         this.id = id;
         this.examSessionId = examSessionId;
@@ -30,14 +30,14 @@ public class ExamRecording {
         this.s3Key = s3Key;
         this.status = status;
         this.sizeBytes = sizeBytes;
-        this.durationSeconds = durationSeconds; 
+        this.durationSeconds = durationSeconds;
         this.source = source;
         this.createdAt = createdAt;
         this.assembledAt = assembledAt;
     }
 
     public ExamRecording(UUID examSessionId, UUID candidateId, ExamRequiredStreamType streamType, String bucket,
-            String s3Key, ExamRecordingAssemblyStatus status, Long sizeBytes, Integer durationSeconds, String source, 
+            String s3Key, ExamRecordingAssemblyStatus status, Long sizeBytes, Integer durationSeconds, String source,
             OffsetDateTime createdAt, OffsetDateTime assembledAt) {
         this.examSessionId = examSessionId;
         this.candidateId = candidateId;
@@ -46,7 +46,7 @@ public class ExamRecording {
         this.s3Key = s3Key;
         this.status = status;
         this.sizeBytes = sizeBytes;
-        this.durationSeconds = durationSeconds; 
+        this.durationSeconds = durationSeconds;
         this.source = source;
         this.createdAt = createdAt;
         this.assembledAt = assembledAt;

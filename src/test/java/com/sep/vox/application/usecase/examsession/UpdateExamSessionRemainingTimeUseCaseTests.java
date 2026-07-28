@@ -21,12 +21,12 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateExamSessionRemainingTimeCommand;
 import com.sep.vox.application.port.input.usecase.examsession.UpdateExamSessionRemainingTimeUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
+import com.sep.vox.domain.model.exam.ExamPaper;
 import com.sep.vox.domain.model.exam.ExamSession;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
-import com.sep.vox.domain.repository.ExamRepository;
+import com.sep.vox.domain.repository.ExamPaperRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;
 
 class UpdateExamSessionRemainingTimeUseCaseTests {
@@ -34,15 +34,16 @@ class UpdateExamSessionRemainingTimeUseCaseTests {
     private UserContextPort userContextPort;
     private ExamSessionRepository examSessionRepository;
     private ExamCandidateRepository examCandidateRepository;
-    private ExamRepository examRepository;
+    private ExamPaperRepository examPaperRepository;
     private UpdateExamSessionRemainingTimeUseCase useCase;
 
     private final UUID userId = UUID.randomUUID();
     private final UUID examId = UUID.randomUUID();
+    private final UUID paperId = UUID.randomUUID();
     private final UUID sessionId = UUID.randomUUID();
     private final UUID candidateId = UUID.randomUUID();
 
-    private Exam exam;
+    private ExamPaper paper;
     private ExamSession session;
 
     @BeforeEach
@@ -50,21 +51,23 @@ class UpdateExamSessionRemainingTimeUseCaseTests {
         userContextPort = mock(UserContextPort.class);
         examSessionRepository = mock(ExamSessionRepository.class);
         examCandidateRepository = mock(ExamCandidateRepository.class);
-        examRepository = mock(ExamRepository.class);
+        examPaperRepository = mock(ExamPaperRepository.class);
         useCase = new UpdateExamSessionRemainingTimeUseCase(
             userContextPort,
             examSessionRepository,
             examCandidateRepository,
-            examRepository
+            examPaperRepository
         );
 
-        exam = new Exam();
-        exam.setId(examId);
-        exam.setExamTimeDurationSecond(1800);
+        paper = new ExamPaper();
+        paper.setId(paperId);
+        paper.setExamId(examId);
+        paper.setTimeDurationSeconds(1800);
 
         session = new ExamSession();
         session.setId(sessionId);
         session.setExamId(examId);
+        session.setPaperId(paperId);
         session.setCandidateId(candidateId);
         session.setStatus(ExamSessionStatus.IN_PROGRESS);
 
@@ -75,7 +78,7 @@ class UpdateExamSessionRemainingTimeUseCaseTests {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(examSessionRepository.findByIdAndResumable(sessionId)).thenReturn(Optional.of(session));
         when(examCandidateRepository.findById(candidateId)).thenReturn(Optional.of(candidate));
-        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        when(examPaperRepository.findById(paperId)).thenReturn(Optional.of(paper));
         when(examSessionRepository.checkpointRemainingSeconds(eq(sessionId), anyInt())).thenReturn(1);
         when(examSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
     }
@@ -96,7 +99,7 @@ class UpdateExamSessionRemainingTimeUseCaseTests {
      * gian thi thật.
      */
     @Test
-    void should_clamp_a_value_above_the_exam_duration() {
+    void should_clamp_a_value_above_the_assigned_paper_duration() {
         useCase.execute(command(999_999));
 
         verify(examSessionRepository).checkpointRemainingSeconds(sessionId, 1800);
@@ -110,12 +113,12 @@ class UpdateExamSessionRemainingTimeUseCaseTests {
     }
 
     /**
-     * Kỳ thi chưa đặt thời lượng thì không có chặn trên để áp; ràng buộc "chỉ đi lùi" ở tầng DB vẫn
+     * Mã đề chưa có thời lượng thì không có chặn trên để áp; ràng buộc "chỉ đi lùi" ở tầng DB vẫn
      * giữ cho giá trị không tăng.
      */
     @Test
-    void should_skip_the_ceiling_when_the_exam_has_no_duration() {
-        exam.setExamTimeDurationSecond(null);
+    void should_skip_the_ceiling_when_the_paper_has_no_duration() {
+        paper.setTimeDurationSeconds(null);
 
         useCase.execute(command(5_000));
 

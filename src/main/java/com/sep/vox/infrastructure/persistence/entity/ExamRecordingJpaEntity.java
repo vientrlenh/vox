@@ -65,9 +65,11 @@ public class ExamRecordingJpaEntity {
     private Long sizeBytes;
 
     @Column(name = "duration_seconds")
-    private Integer durationSeconds; 
+    private Integer durationSeconds;
 
-    @Column(name = "source", nullable = false, updatable = false, length = 32)
+    // Nullable để schema update tương thích với recording cũ chưa có source. Event mới luôn được
+    // mapper chuẩn hóa thành source cụ thể hoặc UNKNOWN.
+    @Column(name = "source", updatable = false, length = 32)
     private String source;
 
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -89,7 +91,7 @@ public class ExamRecordingJpaEntity {
         this.s3Key = s3Key;
         this.status = status;
         this.sizeBytes = sizeBytes;
-        this.durationSeconds = durationSeconds; 
+        this.durationSeconds = durationSeconds;
         this.source = source;
         this.createdAt = createdAt;
         this.assembledAt = assembledAt;

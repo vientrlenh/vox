@@ -78,7 +78,7 @@ public class GetExamSessionPaperUseCase implements IUseCase<ViewExamSessionPaper
 
         var exam = examRepository.findById(session.getExamId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
-        var _ = examPaperRepository.findById(session.getPaperId())
+        var paper = examPaperRepository.findById(session.getPaperId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy đề thi"));
 
         var sections = examPaperSectionRepository.findByPaperId(session.getPaperId());
@@ -135,7 +135,10 @@ public class GetExamSessionPaperUseCase implements IUseCase<ViewExamSessionPaper
         var schedule = candidate.getScheduleId() == null
             ? null
             : examScheduleRepository.findById(candidate.getScheduleId()).orElse(null);
-        var durationSeconds = estimateDurationSeconds(paperQuestions);
+        var calculatedDurationSeconds = estimateDurationSeconds(paperQuestions);
+        var durationSeconds = paper.getTimeDurationSeconds() == null
+            ? calculatedDurationSeconds
+            : paper.getTimeDurationSeconds();
         return new StudentExamPaperResponse(
             exam.getId(),
             session.getPaperId(),
@@ -149,8 +152,8 @@ public class GetExamSessionPaperUseCase implements IUseCase<ViewExamSessionPaper
             schedule == null
                 ? (exam.getCloseAt() == null ? null : exam.getCloseAt().toString())
                 : (schedule.getEndDate() == null ? null : schedule.getEndDate().toString()),
-            session.getRemainingSeconds(),
             session.getStartedAt() == null ? null : session.getStartedAt().toString(),
+            session.getRemainingSeconds(),
             paperQuestions
         );
     }

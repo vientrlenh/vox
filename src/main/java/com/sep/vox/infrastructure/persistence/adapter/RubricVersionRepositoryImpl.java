@@ -109,9 +109,32 @@ public class RubricVersionRepositoryImpl implements RubricVersionRepository {
     }
 
     @Override
-    public void updateRubricVersionAtomic(UUID id, String code, String name, String description, OffsetDateTime effectiveFrom, OffsetDateTime effectiveTo, BigDecimal scoringScaleMin, BigDecimal scoringScaleMax, String totalScoreMethod, OffsetDateTime updatedAt, UUID updatedBy) {
+    public void updateRubricVersionAtomic(
+            UUID id,
+            String code,
+            String name,
+            String description,
+            OffsetDateTime effectiveFrom,
+            OffsetDateTime effectiveTo,
+            BigDecimal scoringScaleMin,
+            BigDecimal scoringScaleMax,
+            String totalScoreMethod,
+            OffsetDateTime updatedAt,
+            UUID updatedBy) {
         // SpringDataRubricVersionRepository.updateRubricVersionAtomic khai báo tham số theo thứ tự (id, name, code, ...)
-        springDataRubricVersionRepository.updateRubricVersionAtomic(id, name, code, description, effectiveFrom, effectiveTo, scoringScaleMin, scoringScaleMax, totalScoreMethod, updatedAt, updatedBy);
+        springDataRubricVersionRepository.updateRubricVersionAtomic(
+            id,
+            name,
+            code,
+            description,
+            effectiveFrom,
+            effectiveTo,
+            scoringScaleMin,
+            scoringScaleMax,
+            totalScoreMethod,
+            updatedAt,
+            updatedBy
+        );
     }
 
     @Override

@@ -60,7 +60,7 @@ public class ExamSessionController {
             RetryGradingExamSessionUseCase retryGradingExamSessionUseCase,
             UpdateExamSessionRemainingTimeUseCase updateExamSessionRemainingTimeUseCase) {
         this.createExamSessionUseCase = createExamSessionUseCase;
-                this.completeExamSessionGradingUseCase = completeExamSessionGradingUseCase;
+        this.completeExamSessionGradingUseCase = completeExamSessionGradingUseCase;
 
         this.updateExamSessionStatusUseCase = updateExamSessionStatusUseCase;
         this.getExamSessionPaperUseCase = getExamSessionPaperUseCase;
@@ -122,7 +122,7 @@ public class ExamSessionController {
     public ResponseEntity<ApiResponse<UUID>> flag(
             @PathVariable("id") UUID id,
             @Valid @RequestBody SessionReasonRequest request) {
-        var data = flagExamSessionUseCase.execute(new FlagExamSessionCommand(id, request.reason()));
+        var data = flagExamSessionUseCase.execute(new FlagExamSessionCommand(id, true, request.reason()));
         return ResponseEntity.ok(ApiResponse.success("Đánh dấu nghi vấn phiên thi thành công", data));
     }
 
@@ -149,10 +149,10 @@ public class ExamSessionController {
         return ResponseEntity.ok(ApiResponse.success("Xoa phien thi thanh cong", null));
     }
 
-     @PostMapping("/{sessionId}/complete-grading")
+    @PostMapping("/{sessionId}/complete-grading")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public ResponseEntity<ApiResponse<Void>> completeGrading(@PathVariable("id") UUID sessionId) {
+    public ResponseEntity<ApiResponse<Void>> completeGrading(@PathVariable("sessionId") UUID sessionId) {
         completeExamSessionGradingUseCase.execute(new CompleteExamSessionGradingCommand(sessionId));
         return ResponseEntity.ok(ApiResponse.success("Ghi nhận hoàn tất chấm bài thành công"));
-}
+    }
 }

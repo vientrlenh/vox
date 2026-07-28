@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.exam.ExamBlueprintSlot;
@@ -14,6 +16,8 @@ import com.sep.vox.infrastructure.persistence.repository.SpringDataExamBlueprint
 
 @Repository
 public class ExamBlueprintSlotRepositoryImpl implements ExamBlueprintSlotRepository {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ExamBlueprintSlotRepositoryImpl.class);
 
     private final SpringDataExamBlueprintSlotRepository springDataExamBlueprintSlotRepository;
 
@@ -45,9 +49,13 @@ public class ExamBlueprintSlotRepositoryImpl implements ExamBlueprintSlotReposit
         if (blueprintVersionIds.isEmpty()) {
             return List.of();
         }
-        return springDataExamBlueprintSlotRepository.findByBlueprintVersionIdInOrderByOrderAsc(blueprintVersionIds).stream()
+        var startedAt = System.nanoTime();
+        var result = springDataExamBlueprintSlotRepository.findByBlueprintVersionIdInOrderByOrderAsc(blueprintVersionIds).stream()
             .map(ExamBlueprintSlotMapper::toDomain)
             .toList();
+        LOGGER.info("[blueprint-perf] repo ExamBlueprintSlotRepositoryImpl.findByBlueprintVersionIdIn versionIds={} tookMs={}",
+            blueprintVersionIds.size(), (System.nanoTime() - startedAt) / 1_000_000);
+        return result;
     }
 
     @Override
@@ -62,9 +70,13 @@ public class ExamBlueprintSlotRepositoryImpl implements ExamBlueprintSlotReposit
         if (sectionIds.isEmpty()) {
             return List.of();
         }
-        return springDataExamBlueprintSlotRepository.findBySectionIdInOrderByOrderAsc(sectionIds).stream()
+        var startedAt = System.nanoTime();
+        var result = springDataExamBlueprintSlotRepository.findBySectionIdInOrderByOrderAsc(sectionIds).stream()
             .map(ExamBlueprintSlotMapper::toDomain)
             .toList();
+        LOGGER.info("[blueprint-perf] repo ExamBlueprintSlotRepositoryImpl.findBySectionIdIn sectionIds={} tookMs={}",
+            sectionIds.size(), (System.nanoTime() - startedAt) / 1_000_000);
+        return result;
     }
 
     @Override

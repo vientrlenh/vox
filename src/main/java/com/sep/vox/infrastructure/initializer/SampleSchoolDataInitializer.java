@@ -205,6 +205,10 @@ public class SampleSchoolDataInitializer implements ApplicationRunner {
     private static final String SAMPLE_SCHOOL_DOMAIN = "sample.edu.vn";
     private static final String ENGLISH_CODE = "ENG";
     private static final String ACADEMIC_YEAR = "2025-2026";
+    private static final String FRAMEWORK_CODE = "KNLNN-VN";
+    private static final String FRAMEWORK_VERSION_CODE = "KNLNN-VN-V1";
+    private static final String RUBRIC_CODE = "RUB-" + SAMPLE_SCHOOL_CODE + "-SPEAKING";
+    private static final String RUBRIC_VERSION_CODE = RUBRIC_CODE + "-V1";
 
     private static final String SCHOOL_ADMIN_ROLE_CODE = "SCHOOL_ADMIN";
     private static final String TEACHER_ROLE_CODE = "TEACHER";
@@ -501,7 +505,7 @@ public class SampleSchoolDataInitializer implements ApplicationRunner {
                 ))
         )),
 
-        new CriterionSeed("DISCOURSE", "Tổ chức ý và mạch lạc",
+        new CriterionSeed("COHERENCE", "Mạch lạc và liên kết ý",
             "Bố cục câu trả lời, liên kết ý và mức độ bám sát yêu cầu đề.", 5, List.of(
             new CriterionBandSeed("BAC1",
                 "Ý rời rạc, chủ yếu là liệt kê từng câu độc lập.",
@@ -580,7 +584,7 @@ public class SampleSchoolDataInitializer implements ApplicationRunner {
             "The festival attracts a huge crowd of visitors every spring.", "Dùng cụm kết hợp tự nhiên, không lặp từ.", "7.5"),
         new RubricCriterionSeed("GRAMMAR", "Ngữ pháp", "0.15", 4,
             "If I had more time, I would join the debate club.", "Câu điều kiện loại hai dùng đúng và tự nhiên.", "8.5"),
-        new RubricCriterionSeed("DISCOURSE", "Tổ chức ý và mạch lạc", "0.15", 5,
+        new RubricCriterionSeed("COHERENCE", "Mạch lạc và liên kết ý", "0.15", 5,
             "There are two reasons. First, ... Second, ... So overall I believe ...", "Bố cục rõ, có câu chốt ý.", "8.0")
     );
 
@@ -1108,17 +1112,22 @@ public class SampleSchoolDataInitializer implements ApplicationRunner {
     // ---------------------------------------------------------------------------------
 
     private SeededFrameworkVersion seedFramework(UUID createdBy, OffsetDateTime now) {
-        var framework = assessment.frameworkRepository().findByCode("KNLNN-VN")
+        var framework = assessment.frameworkRepository().findByCode(FRAMEWORK_CODE)
             .orElseGet(() -> assessment.frameworkRepository().save(new Framework(
-                new FrameworkCode("KNLNN-VN"),
+                new FrameworkCode(FRAMEWORK_CODE),
                 "Khung năng lực ngoại ngữ 6 bậc dùng cho Việt Nam",
                 "Khung tham chiếu quốc gia, sáu bậc tương ứng A1 đến C2 của CEFR.",
                 true, now, now, createdBy, createdBy
             )));
 
+        var existingVersion = assessment.frameworkVersionRepository().findByCode(FRAMEWORK_VERSION_CODE);
+        if (existingVersion.isPresent()) {
+            return loadExistingFrameworkVersion(framework, existingVersion.get());
+        }
+
         var version = assessment.frameworkVersionRepository().save(new FrameworkVersion(
             framework.getId(),
-            "KNLNN-VN-V1",
+            FRAMEWORK_VERSION_CODE,
             "Khung năng lực ngoại ngữ 6 bậc - phiên bản 1",
             "Phiên bản seed cho kỹ năng nói, năm chỉ số đánh giá.",
             1,
@@ -1165,6 +1174,60 @@ public class SampleSchoolDataInitializer implements ApplicationRunner {
         return new SeededFrameworkVersion(framework.getId(), version.getId(), bandIdsByCode, criterionIdsByCode);
     }
 
+    private SeededFrameworkVersion loadExistingFrameworkVersion(Framework framework, FrameworkVersion version) {
+        if (!framework.getId().equals(version.getFrameworkId())) {
+            throw new IllegalStateException(
+                "Framework version " + FRAMEWORK_VERSION_CODE + " không thuộc framework " + FRAMEWORK_CODE);
+        }
+
+        var bandIdsByCode = new LinkedHashMap<String, UUID>();
+        for (var band : assessment.frameworkResultBandRepository().findByFrameworkVersionId(version.getId())) {
+            if (bandIdsByCode.putIfAbsent(band.getCode(), band.getId()) != null) {
+                throw new IllegalStateException(
+                    "Framework version " + FRAMEWORK_VERSION_CODE + " có mã bậc bị trùng: " + band.getCode());
+            }
+        }
+
+        var criterionIdsByCode = new LinkedHashMap<String, UUID>();
+        for (var criterion : assessment.frameworkCriterionRepository().findByFrameworkVersionId(version.getId())) {
+            if (criterionIdsByCode.putIfAbsent(criterion.getCode(), criterion.getId()) != null) {
+                throw new IllegalStateException(
+                    "Framework version " + FRAMEWORK_VERSION_CODE + " có mã tiêu chí bị trùng: " + criterion.getCode());
+            }
+        }
+
+        // Tương thích dữ liệu seed cũ trong khi dữ liệu mới dùng thống nhất COHERENCE.
+        if (!criterionIdsByCode.containsKey("COHERENCE") && criterionIdsByCode.containsKey("DISCOURSE")) {
+            criterionIdsByCode.put("COHERENCE", criterionIdsByCode.get("DISCOURSE"));
+        }
+
+        var missingBandCodes = FRAMEWORK_BANDS.stream()
+            .map(ResultBandSeed::code)
+            .filter(code -> !bandIdsByCode.containsKey(code))
+            .toList();
+        var missingCriterionCodes = FRAMEWORK_CRITERIA.stream()
+            .map(CriterionSeed::code)
+            .filter(code -> !criterionIdsByCode.containsKey(code))
+            .toList();
+        var distinctCriterionIds = criterionIdsByCode.values().stream().distinct().toList();
+        var criterionBandCount = assessment.frameworkCriterionBandRepository()
+            .findByFrameworkCriterionIdIn(distinctCriterionIds)
+            .size();
+        var expectedCriterionBandCount = FRAMEWORK_BANDS.size() * FRAMEWORK_CRITERIA.size();
+
+        if (!missingBandCodes.isEmpty() || !missingCriterionCodes.isEmpty()
+                || criterionBandCount < expectedCriterionBandCount) {
+            throw new IllegalStateException(
+                "Framework version " + FRAMEWORK_VERSION_CODE
+                    + " đã tồn tại nhưng chưa đầy đủ; không insert thêm dữ liệu trùng. Thiếu bậc="
+                    + missingBandCodes + ", thiếu tiêu chí=" + missingCriterionCodes
+                    + ", criterion bands=" + criterionBandCount + "/" + expectedCriterionBandCount);
+        }
+
+        LOGGER.info("Tái sử dụng framework version {} đã tồn tại", FRAMEWORK_VERSION_CODE);
+        return new SeededFrameworkVersion(framework.getId(), version.getId(), bandIdsByCode, criterionIdsByCode);
+    }
+
     // ---------------------------------------------------------------------------------
     // Khung chấm điểm của trường
     // ---------------------------------------------------------------------------------
@@ -1175,10 +1238,25 @@ public class SampleSchoolDataInitializer implements ApplicationRunner {
             SeededFrameworkVersion frameworkVersion,
             UUID createdBy,
             OffsetDateTime now) {
+        var existingVersion = assessment.rubricVersionRepository().findByCode(RUBRIC_VERSION_CODE);
+        if (existingVersion.isPresent()) {
+            var version = existingVersion.get();
+            var rubric = assessment.rubricRepository().findById(version.getRubricId())
+                .orElseThrow(() -> new IllegalStateException(
+                    "Rubric version " + RUBRIC_VERSION_CODE + " không còn rubric cha."));
+            if (!schoolId.equals(rubric.getSchoolId())
+                    || !frameworkVersion.frameworkId().equals(rubric.getFrameworkId())) {
+                throw new IllegalStateException(
+                    "Rubric version " + RUBRIC_VERSION_CODE + " đã được dùng bởi trường hoặc framework khác.");
+            }
+            LOGGER.info("Tái sử dụng rubric version {} đã tồn tại", RUBRIC_VERSION_CODE);
+            return version.getId();
+        }
+
         var rubric = assessment.rubricRepository().save(new Rubric(
             language.getId(),
             frameworkVersion.frameworkId(),
-            "RUB-" + SAMPLE_SCHOOL_CODE + "-SPEAKING",
+            RUBRIC_CODE,
             "Khung chấm nói - Trường THPT Mẫu Vox",
             "Ánh xạ năm tiêu chí của khung quốc gia sang thang điểm 0-10 của trường.",
             RubricOwnerType.SCHOOL,
@@ -1188,7 +1266,7 @@ public class SampleSchoolDataInitializer implements ApplicationRunner {
         var version = assessment.rubricVersionRepository().save(new RubricVersion(
             rubric.getId(),
             1,
-            "RUB-" + SAMPLE_SCHOOL_CODE + "-SPEAKING-V1",
+            RUBRIC_VERSION_CODE,
             "Khung chấm nói - phiên bản 1",
             "Thang 0-10, tổng điểm theo trung bình có trọng số.",
             RubricStatus.PUBLISHED,

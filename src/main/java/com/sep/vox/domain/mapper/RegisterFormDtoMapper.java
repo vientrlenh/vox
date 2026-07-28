@@ -23,12 +23,12 @@ public class RegisterFormDtoMapper {
         var directoryId = registerForm.getSchoolDirectoryId();
         return new RegisterFormDto(
             registerForm.getId(), 
-            directoryId, 
-            directoryId == null ? registerForm.getSchoolName() : schoolName, 
+            directoryId,
+            directoryId == null ? registerForm.getSchoolName() : schoolName,
             directoryId == null ? valueOf(registerForm.getSchoolDomain()) : schoolDomain,
             registerForm.getSchoolDistrict(), 
             registerForm.getSchoolProvince(), 
-            directoryId == null ? registerForm.getSchoolAddress() : schoolAddress, 
+            directoryId == null ? registerForm.getSchoolAddress() : schoolAddress,
             valueOf(registerForm.getContactFullName()), 
             valueOf(registerForm.getIdentityNumber()), 
             valueOf(registerForm.getContactPhone()), 

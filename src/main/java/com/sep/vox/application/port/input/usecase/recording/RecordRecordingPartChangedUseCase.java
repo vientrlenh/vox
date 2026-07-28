@@ -65,8 +65,8 @@ public class RecordRecordingPartChangedUseCase implements IUseCase<RecordRecordi
             "",
             input.status(),
             null,
-            null, 
-            input.source(), 
+            null,
+            input.source(),
             now,
             null
         ));

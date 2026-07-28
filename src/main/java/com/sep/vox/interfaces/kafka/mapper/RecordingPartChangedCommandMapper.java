@@ -1,6 +1,7 @@
 package com.sep.vox.interfaces.kafka.mapper;
 
 import java.time.OffsetDateTime;
+import java.util.Locale;
 import java.util.UUID;
 
 import com.sep.vox.application.port.input.command.RecordRecordingPartChangedCommand;
@@ -36,7 +37,7 @@ public final class RecordingPartChangedCommandMapper {
      * bản biết rõ nguồn của mình.
      */
     private static String toSource(String raw) {
-        return (raw == null || raw.isBlank()) ? "UNKNOWN" : raw.trim();
+        return (raw == null || raw.isBlank()) ? "UNKNOWN" : raw.trim().toUpperCase(Locale.ROOT);
     }
 
     private static ExamRequiredStreamType toStreamType(String raw) {

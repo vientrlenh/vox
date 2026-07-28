@@ -160,8 +160,9 @@ public class ExamSessionController {
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public UUID flagExamSession(
             @Argument(name = "sessionId") UUID sessionId,
+            @Argument(name = "flagged") boolean flagged,
             @Argument(name = "reason") String reason) {
-        return flagExamSessionUseCase.execute(new FlagExamSessionCommand(sessionId, reason));
+        return flagExamSessionUseCase.execute(new FlagExamSessionCommand(sessionId, flagged, reason));
     }
 
     @MutationMapping

@@ -19,6 +19,8 @@ import com.sep.vox.application.port.input.command.CreateExamBlueprintSlotCommand
 import com.sep.vox.application.port.input.command.CreateQuestionSelectionSpecCommand;
 import com.sep.vox.application.port.input.command.UpdateExamBlueprintVersionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
+import com.sep.vox.application.port.input.service.ExamTimeQuotaGuardService;
+import com.sep.vox.application.port.input.service.RecalculateBlueprintVersionTimeLimitService;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.ExamBlueprintVersionDto;
 import com.sep.vox.domain.mapper.ExamBlueprintVersionDtoMapper;
@@ -46,6 +48,8 @@ public class UpdateExamBlueprintVersionUseCase implements IUseCase<UpdateExamBlu
     private final ExamBlueprintSlotRepository examBlueprintSlotRepository;
     private final QuestionRepository questionRepository;
     private final SchoolUserRepository schoolUserRepository;
+    private final ExamTimeQuotaGuardService examTimeQuotaGuardService;
+    private final RecalculateBlueprintVersionTimeLimitService recalculateBlueprintVersionTimeLimitService;
     private final UserContextPort userContextPort;
 
     public UpdateExamBlueprintVersionUseCase(
@@ -55,6 +59,8 @@ public class UpdateExamBlueprintVersionUseCase implements IUseCase<UpdateExamBlu
             ExamBlueprintSlotRepository examBlueprintSlotRepository,
             QuestionRepository questionRepository,
             SchoolUserRepository schoolUserRepository,
+            ExamTimeQuotaGuardService examTimeQuotaGuardService,
+            RecalculateBlueprintVersionTimeLimitService recalculateBlueprintVersionTimeLimitService,
             UserContextPort userContextPort) {
         this.examBlueprintVersionRepository = examBlueprintVersionRepository;
         this.examBlueprintRepository = examBlueprintRepository;
@@ -62,6 +68,8 @@ public class UpdateExamBlueprintVersionUseCase implements IUseCase<UpdateExamBlu
         this.examBlueprintSlotRepository = examBlueprintSlotRepository;
         this.questionRepository = questionRepository;
         this.schoolUserRepository = schoolUserRepository;
+        this.examTimeQuotaGuardService = examTimeQuotaGuardService;
+        this.recalculateBlueprintVersionTimeLimitService = recalculateBlueprintVersionTimeLimitService;
         this.userContextPort = userContextPort;
     }
 
@@ -90,7 +98,6 @@ public class UpdateExamBlueprintVersionUseCase implements IUseCase<UpdateExamBlu
         if (command.description() != null) {
             version.setDescription(command.description());
         }
-        version.setTotalTimeLimitSeconds(command.totalTimeLimitSeconds());
         version.setEffectiveFrom(command.effectiveFrom() == null ? version.getEffectiveFrom() : OffsetDateTime.parse(command.effectiveFrom()));
         version.setEffectiveTo(parseDateTime(command.effectiveTo()));
         version.setUpdatedAt(OffsetDateTime.now());
@@ -128,7 +135,13 @@ public class UpdateExamBlueprintVersionUseCase implements IUseCase<UpdateExamBlu
         deleteRemovedSlots(existingSlotsBySectionId, keptSlotIds);
         deleteRemovedSections(existingSections, keptSectionIds);
 
-        return ExamBlueprintVersionDtoMapper.toDto(savedVersion);
+        var recalculatedVersion = recalculateBlueprintVersionTimeLimitService.recalculate(savedVersion.getId());
+        examTimeQuotaGuardService.requireWithinPlan(
+            blueprint.getSchoolId(),
+            recalculatedVersion.getTotalTimeLimitSeconds(),
+            "Phiên bản blueprint " + recalculatedVersion.getCode()
+        );
+        return ExamBlueprintVersionDtoMapper.toDto(recalculatedVersion);
     }
 
     private UpdateExamBlueprintVersionCommand normalize(UpdateExamBlueprintVersionCommand input) {

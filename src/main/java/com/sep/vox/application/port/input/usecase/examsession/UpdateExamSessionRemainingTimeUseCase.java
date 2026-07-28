@@ -10,7 +10,7 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.exam.ExamSession;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
-import com.sep.vox.domain.repository.ExamRepository;
+import com.sep.vox.domain.repository.ExamPaperRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;
 
 /**
@@ -22,7 +22,7 @@ import com.sep.vox.domain.repository.ExamSessionRepository;
  * thành API tự gia hạn thời gian thi:
  *
  * <ul>
- *   <li>chặn trên bằng thời lượng cấu hình của kỳ thi, để một giá trị lớn bất thường không có tác
+ *   <li>chặn trên bằng thời lượng của đúng mã đề được cấp, để một giá trị lớn bất thường không có tác
  *       dụng gì;
  *   <li>chỉ cho đồng hồ đi lùi (thực thi bằng câu UPDATE có điều kiện ở
  *       {@code ExamSessionRepository#checkpointRemainingSeconds}).
@@ -38,17 +38,17 @@ public class UpdateExamSessionRemainingTimeUseCase
     private final UserContextPort userContextPort;
     private final ExamSessionRepository examSessionRepository;
     private final ExamCandidateRepository examCandidateRepository;
-    private final ExamRepository examRepository;
+    private final ExamPaperRepository examPaperRepository;
 
     public UpdateExamSessionRemainingTimeUseCase(
             UserContextPort userContextPort,
             ExamSessionRepository examSessionRepository,
             ExamCandidateRepository examCandidateRepository,
-            ExamRepository examRepository) {
+            ExamPaperRepository examPaperRepository) {
         this.userContextPort = userContextPort;
         this.examSessionRepository = examSessionRepository;
         this.examCandidateRepository = examCandidateRepository;
-        this.examRepository = examRepository;
+        this.examPaperRepository = examPaperRepository;
     }
 
     @Override
@@ -76,14 +76,13 @@ public class UpdateExamSessionRemainingTimeUseCase
     }
 
     /**
-     * Ép giá trị client gửi về khoảng hợp lệ. Chặn trên là thời lượng cấu hình của kỳ thi; nếu kỳ
-     * thi chưa đặt thời lượng thì bỏ qua chặn trên và chỉ còn dựa vào ràng buộc "chỉ đi lùi" ở tầng
-     * DB - vẫn đủ để giá trị không bao giờ tăng trong một phiên thi.
+     * Ép giá trị client gửi về khoảng hợp lệ. Chặn trên là thời lượng của đúng mã đề được cấp cho
+     * session, không phải thời lượng lớn nhất của toàn kỳ thi vì một exam có thể có nhiều paper.
      */
     private int clamp(ExamSession session, int remainingSeconds) {
         var value = Math.max(0, remainingSeconds);
-        var ceiling = examRepository.findById(session.getExamId())
-            .map(e -> e.getExamTimeDurationSecond())
+        var ceiling = examPaperRepository.findById(session.getPaperId())
+            .map(paper -> paper.getTimeDurationSeconds())
             .orElse(null);
         if (ceiling != null && value > ceiling) {
             return ceiling;

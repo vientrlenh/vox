@@ -185,7 +185,7 @@ public class SchoolController {
                         AcceptSchoolGradeLevelImportUseCase acceptSchoolGradeLevelImportUseCase,
                         PreviewSchoolDirectoryImportFromFileUseCase previewSchoolDirectoryImportFromFileUseCase,
                         AcceptSchoolDirectoryImportUseCase acceptSchoolDirectoryImportUseCase, 
-                        CreateSchoolDirectoryUseCase createSchoolDirectoryUseCase, 
+                        CreateSchoolDirectoryUseCase createSchoolDirectoryUseCase,
                         VerifySchoolDirectoryUseCase verifySchoolDirectoryUseCase
                     ) {
         this.createSchoolClassUseCase = createSchoolClassUseCase;

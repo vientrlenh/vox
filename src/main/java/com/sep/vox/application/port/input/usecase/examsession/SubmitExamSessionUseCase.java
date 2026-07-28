@@ -342,7 +342,7 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
                     );
                 })
                 .sorted(Comparator.comparing(
-                    ExamAttemptEvaluationRequestedExternalEvent.FrameworkBand::order
+                    band -> band.order()
                 ))
                 .toList();
 

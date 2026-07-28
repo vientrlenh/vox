@@ -227,7 +227,7 @@ public class SubmitGradingUseCaseTests {
             ArgumentCaptor.forClass(List.class);
         verify(examItemCriterionScoreRepository).saveAll(captor.capture());
         assertThat(captor.getValue()).hasSize(2);
-        assertThat(captor.getValue()).extracting(ExamItemCriterionScore::getFinalScore)
+        assertThat(captor.getValue()).extracting(criterionScore -> criterionScore.getFinalScore())
             .containsExactly(new BigDecimal("8.00"), new BigDecimal("6.00"));
     }
 

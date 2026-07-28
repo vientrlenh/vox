@@ -140,7 +140,7 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
             rebalanceSectionWeights(paper.getId(), now, currentUserId);
         } else {
             var sections = examPaperSectionRepository.findByPaperId(paper.getId()).stream()
-                .sorted(Comparator.comparingInt(ExamPaperSection::getOrder))
+                .sorted(Comparator.comparingInt(section -> section.getOrder()))
                 .toList();
             ClassTestSectionWeightPolicy.validateStoredWeights(sections, "Tổng trọng số section phải bằng 1.00");
         }
@@ -173,7 +173,7 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
 
     private void rebalanceSectionWeights(UUID paperId, OffsetDateTime now, UUID currentUserId) {
         var sections = examPaperSectionRepository.findByPaperId(paperId).stream()
-            .sorted(Comparator.comparingInt(ExamPaperSection::getOrder))
+            .sorted(Comparator.comparingInt(section -> section.getOrder()))
             .toList();
         var weights = distributeEqualWeights(sections.size());
         for (int i = 0; i < sections.size(); i++) {

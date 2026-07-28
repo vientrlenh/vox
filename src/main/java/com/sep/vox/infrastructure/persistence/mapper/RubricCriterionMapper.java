@@ -29,18 +29,6 @@ public final class RubricCriterionMapper {
         );
     }
 
-    /**
-     * Dữ liệu cũ có thể đã bị lưu sai dạng mảng thô ([...]) thay vì đúng shape
-     * record RubricCriterionExamples ({"values": [...]}). Bọc lại nếu phát hiện dạng mảng.
-     */
-    private static String normalizeExamplesJson(String examplesJson) {
-        if (examplesJson == null) {
-            return null;
-        }
-        String trimmed = examplesJson.strip();
-        return trimmed.startsWith("[") ? "{\"values\":" + trimmed + "}" : examplesJson;
-    }
-
     public static RubricCriterionJpaEntity toJpa(RubricCriterion criterion) {
         return new RubricCriterionJpaEntity(
             criterion.getId(),

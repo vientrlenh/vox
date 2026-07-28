@@ -369,13 +369,15 @@ public class ConfidenceReviewCalculator {
             return 0;
         }
         // Payload cũ chưa có score delta: fallback sang confidence để đọc được dữ liệu lịch sử.
-        if (confidence.compareTo(BigDecimal.ZERO) <= 0) {
-            addReason(hardReasons, hardGroups, reason, "E");
-            return 0;
-        }
-        if (confidence.compareTo(confidenceSoftThreshold) < 0) {
-            addReason(softReasons, softGroups, reason, "E");
-            return 1;
+        if (confidence != null) {
+            if (confidence.compareTo(BigDecimal.ZERO) <= 0) {
+                addReason(hardReasons, hardGroups, reason, "E");
+                return 0;
+            }
+            if (confidence.compareTo(confidenceSoftThreshold) < 0) {
+                addReason(softReasons, softGroups, reason, "E");
+                return 1;
+            }
         }
         return 0;
     }

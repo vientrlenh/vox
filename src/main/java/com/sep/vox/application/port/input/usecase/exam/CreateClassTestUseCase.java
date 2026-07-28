@@ -242,7 +242,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         }
 
         var slotsBySectionId = examBlueprintSlotRepository.findByBlueprintVersionId(version.getId()).stream()
-            .collect(Collectors.groupingBy(ExamBlueprintSlot::getSectionId));
+            .collect(Collectors.groupingBy(slot -> slot.getSectionId()));
         validateVersionWeights(sections, slotsBySectionId);
         examTimeQuotaGuardService.requireWithinPlan(
             schoolClass.getSchoolId(),
@@ -256,7 +256,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
 
         for (var section : sections) {
             var slots = slotsBySectionId.getOrDefault(section.getId(), List.of()).stream()
-                .sorted(Comparator.comparingInt(ExamBlueprintSlot::getOrder))
+                .sorted(Comparator.comparingInt(slot -> slot.getOrder()))
                 .toList();
             validateReusableSlots(slots);
 
@@ -514,7 +514,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
     private void validateVersionWeights(List<ExamBlueprintSection> sections, Map<UUID, List<ExamBlueprintSlot>> slotsBySectionId) {
         var sectionWeightSum = sections.stream()
             .map(section -> section.getSectionWeight() == null ? BigDecimal.ZERO : section.getSectionWeight())
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+            .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
         if (sectionWeightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
             throw new IllegalStateException(
                 "Blueprint version đã chốt có tổng trọng số section không hợp lệ, không thể tạo bài kiểm tra");
@@ -523,7 +523,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             var slots = slotsBySectionId.getOrDefault(section.getId(), List.of());
             var slotWeightSum = slots.stream()
                 .map(slot -> slot.getWeight() == null ? BigDecimal.ZERO : slot.getWeight())
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
             if (slotWeightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
                 throw new IllegalStateException(
                     "Phần \"" + section.getTitle() + "\" trong blueprint có tổng trọng số ô câu hỏi không hợp lệ, không thể tạo bài kiểm tra");

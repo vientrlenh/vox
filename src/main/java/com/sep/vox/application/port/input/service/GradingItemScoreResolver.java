@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -15,7 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.port.input.command.SubmitGradingCommand;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService.GradingContext;
-import com.sep.vox.domain.model.exam.ExamItemResponse;
 import com.sep.vox.domain.model.rubric.RubricCriterion;
 import com.sep.vox.domain.model.rubric.RubricTotalScoreMethod;
 import com.sep.vox.domain.repository.ExamItemResponseRepository;
@@ -69,7 +69,7 @@ public class GradingItemScoreResolver {
         if (items.isEmpty()) {
             throw new IllegalArgumentException("Phải chấm điểm cho ít nhất một phần thi.");
         }
-        var paperItemIds = items.stream().map(SubmitGradingCommand.ItemGrade::paperItemId).toList();
+        var paperItemIds = items.stream().map(itemGrade -> itemGrade.paperItemId()).toList();
         if (paperItemIds.stream().anyMatch(java.util.Objects::isNull)) {
             throw new IllegalArgumentException("Thiếu phần thi cần chấm.");
         }
@@ -79,7 +79,7 @@ public class GradingItemScoreResolver {
 
         var responsesByPaperItemId = examItemResponseRepository
             .findBySessionId(context.candidateResult().getSessionId()).stream()
-            .collect(Collectors.toMap(ExamItemResponse::getPaperItemId, Function.identity(),
+            .collect(Collectors.toMap(res -> res.getPaperItemId(), Function.identity(),
                 (left, right) -> left));
         if (enforceFullCoverage && !new HashSet<>(paperItemIds).containsAll(responsesByPaperItemId.keySet())) {
             throw new IllegalArgumentException(
@@ -87,7 +87,7 @@ public class GradingItemScoreResolver {
         }
         var criteria = rubricCriterionRepository
             .findByRubricVersionId(context.candidateResult().getRubricVersionId()).stream()
-            .collect(Collectors.toMap(RubricCriterion::getId, Function.identity(), (left, right) -> left));
+            .collect(Collectors.toMap(criterion -> criterion.getId(), Function.identity(), (left, right) -> left));
         var rubricVersion = rubricVersionRepository.findById(context.candidateResult().getRubricVersionId())
             .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy rubric version của bài thi."));
 
@@ -130,17 +130,17 @@ public class GradingItemScoreResolver {
             throw new IllegalArgumentException("Phải chấm điểm cho các tiêu chí.");
         }
         var submittedIds = scores.stream()
-            .map(SubmitGradingCommand.CriterionScoreItem::rubricCriterionId).toList();
-        if (submittedIds.stream().anyMatch(java.util.Objects::isNull)) {
+            .map(item -> item.rubricCriterionId()).toList();
+        if (submittedIds.stream().anyMatch(Objects::isNull)) {
             throw new IllegalArgumentException("Thiếu tiêu chí chấm điểm.");
         }
         if (new HashSet<>(submittedIds).size() != submittedIds.size()) {
             throw new IllegalArgumentException("Không được chấm trùng tiêu chí.");
         }
         var missingRequired = criteria.values().stream()
-            .filter(RubricCriterion::isRequired)
+            .filter(criterion -> criterion.isRequired())
             .filter(criterion -> !submittedIds.contains(criterion.getId()))
-            .map(RubricCriterion::getName)
+            .map(criterion -> criterion.getName())
             .toList();
         if (!missingRequired.isEmpty()) {
             throw new IllegalArgumentException(

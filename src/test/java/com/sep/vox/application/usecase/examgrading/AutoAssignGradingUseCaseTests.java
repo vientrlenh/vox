@@ -88,7 +88,10 @@ public class AutoAssignGradingUseCaseTests {
     private Map<UUID, Long> countByTeacher(List<ExamGradingAssignment> assignments) {
         var counts = new java.util.HashMap<UUID, Long>();
         assignments.forEach(assignment ->
-            counts.merge(assignment.getTeacherId(), 1L, Long::sum));
+            counts.merge(
+                assignment.getTeacherId(), 
+                1L, 
+                (existingCount, increment) -> existingCount == null ? increment : existingCount + increment));
         return counts;
     }
 

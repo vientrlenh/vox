@@ -95,7 +95,7 @@ public class ViewMyExamResultsUseCase implements IUseCase<Void, List<StudentExam
             })
             .filter(Objects::nonNull)
             .sorted(Comparator.comparing(
-                StudentExamResultSummaryResponse::submittedAt,
+                (StudentExamResultSummaryResponse response) -> response.submittedAt(),
                 Comparator.nullsLast(Comparator.reverseOrder())
             ))
             .toList();

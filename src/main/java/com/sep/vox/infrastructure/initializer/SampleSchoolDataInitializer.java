@@ -1202,11 +1202,11 @@ public class SampleSchoolDataInitializer implements ApplicationRunner {
         }
 
         var missingBandCodes = FRAMEWORK_BANDS.stream()
-            .map(ResultBandSeed::code)
+            .map(seed -> seed.code())
             .filter(code -> !bandIdsByCode.containsKey(code))
             .toList();
         var missingCriterionCodes = FRAMEWORK_CRITERIA.stream()
-            .map(CriterionSeed::code)
+            .map(seed -> seed.code())
             .filter(code -> !criterionIdsByCode.containsKey(code))
             .toList();
         var distinctCriterionIds = criterionIdsByCode.values().stream().distinct().toList();

@@ -1926,7 +1926,7 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
             if (criterionWeights == null || criterionWeights.size() != 5) {
                 throw new IllegalArgumentException("Rubric version phải có đúng 5 trọng số tiêu chí");
             }
-            var weightSum = criterionWeights.stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+            var weightSum = criterionWeights.stream().reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
             if (totalScoreMethod == RubricTotalScoreMethod.WEIGHTED_AVERAGE
                     && weightSum.compareTo(BigDecimal.ONE) != 0) {
                 throw new IllegalArgumentException("Rubric WEIGHTED_AVERAGE phải có tổng trọng số bằng 1");

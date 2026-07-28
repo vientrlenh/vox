@@ -214,15 +214,20 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
                 boolean isRequired = true;
 
                 if (errors.isEmpty()) {
+                    var safeWeightStr = weightStr == null ? "" : weightStr.trim();
+                    var safeMinStr = minStr == null ? "" : minStr.trim();
+                    var safeMaxStr = maxStr == null ? "" : maxStr.trim();
+                    var safeOrderStr = orderStr == null ? "" : orderStr.trim();
+
                     try {
-                        weight = new BigDecimal(weightStr.trim());
+                        weight = new BigDecimal(safeWeightStr);
                         if (weight.compareTo(BigDecimal.ZERO) < 0) errors.add(error("weight", "Trọng số không được âm."));
 
-                        minScore = new BigDecimal(minStr.trim());
-                        maxScore = new BigDecimal(maxStr.trim());
+                        minScore = new BigDecimal(safeMinStr);
+                        maxScore = new BigDecimal(safeMaxStr);
                         if (minScore.compareTo(maxScore) > 0) errors.add(error("minScore", "Điểm sàn không được lớn hơn điểm trần."));
 
-                        order = Integer.parseInt(orderStr.trim());
+                        order = Integer.parseInt(safeOrderStr.trim());
                         if (order <= 0) errors.add(error("order", "Thứ tự phải lớn hơn 0."));
 
                         if (!ordersInFile.add(order)) {
@@ -253,10 +258,11 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
                     row.setErrorsJson(jsonSerializationPort.toJson(errors));
                     invalidCount++;
                 } else {
+                    var safeNameStr = nameStr == null ? "" : nameStr.trim();
                     if (targetCriterion != null) {
                         // Không setFrameworkCriterionId: tiêu chí đã tồn tại thì framework tham chiếu là bất biến,
                         // giống hệt cách "code" được bảo vệ không cho sửa sau khi tạo.
-                        targetCriterion.setName(nameStr.trim());
+                        targetCriterion.setName(safeNameStr);
                         targetCriterion.setDescription(descStr);
                         targetCriterion.setExamples(examplesObj);
                         targetCriterion.setWeight(weight);
@@ -270,7 +276,7 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
                         criterionsToSave.add(targetCriterion);
                     } else {
                         targetCriterion = new RubricCriterion(
-                                versionId, fwCriterionId, safeCode, nameStr.trim(), descStr,
+                                versionId, fwCriterionId, safeCode, safeNameStr, descStr,
                                 examplesObj, weight, minScore, maxScore, order, isRequired,
                                 now, now, session.getCreatedBy(), session.getCreatedBy()
                         );

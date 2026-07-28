@@ -404,7 +404,7 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
         var currentEvaluations = currentEvaluationsByResponseIds(responseIds);
         var aiEvaluationIds = aiEvaluationIdsByResponseIds(responseIds);
         var scoresByEvaluation = criterionScoresByEvaluationIds(
-            currentEvaluations.values().stream().map(CurrentEvaluation::id).toList());
+            currentEvaluations.values().stream().map(evaluation -> evaluation.id()).toList());
         var turnsByEvaluation = turnsByEvaluationIds(List.copyOf(aiEvaluationIds.values()));
 
         var result = new ArrayList<GradingTaskItemInfo>();

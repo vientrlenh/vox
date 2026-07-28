@@ -223,7 +223,7 @@ public class PayOSInvoiceSettlementService {
 
         var items = tokenPurchaseItemRepository.findAllByPurchaseId(purchase.getId());
         var subscriptionQuotas = subscriptionQuotaRepository.findAllBySubscriptionId(subscriptionId).stream()
-            .collect(Collectors.toMap(SubscriptionQuota::getQuotaType, Function.identity()));
+            .collect(Collectors.toMap(quota -> quota.getQuotaType(), Function.identity()));
         for (var item : items) {
             var subscriptionQuota = subscriptionQuotas.get(item.getQuotaType());
             if (subscriptionQuota == null) {

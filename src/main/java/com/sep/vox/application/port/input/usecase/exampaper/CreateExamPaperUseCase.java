@@ -130,11 +130,11 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
         List<ExamBlueprintSection> sections = examBlueprintSectionRepository
             .findByBlueprintVersionId(version.getId())
             .stream()
-            .sorted(Comparator.comparingInt(ExamBlueprintSection::getOrder))
+            .sorted(Comparator.comparingInt(section -> section.getOrder()))
             .toList();
 
         var slotsBySectionId = examBlueprintSlotRepository.findByBlueprintVersionId(version.getId()).stream()
-            .collect(Collectors.groupingBy(ExamBlueprintSlot::getSectionId));
+            .collect(Collectors.groupingBy(slot -> slot.getSectionId()));
 
         validateVersionWeights(sections, slotsBySectionId);
 
@@ -168,7 +168,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
             ));
 
             var slots = slotsBySectionId.getOrDefault(section.getId(), List.of()).stream()
-                .sorted(Comparator.comparingInt(ExamBlueprintSlot::getOrder))
+                .sorted(Comparator.comparingInt(slot -> slot.getOrder()))
                 .toList();
 
             for (var slot : slots) {
@@ -209,7 +209,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
     private void validateVersionWeights(List<ExamBlueprintSection> sections, Map<UUID, List<ExamBlueprintSlot>> slotsBySectionId) {
         var sectionWeightSum = sections.stream()
             .map(section -> section.getSectionWeight() == null ? BigDecimal.ZERO : section.getSectionWeight())
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+            .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
         if (sectionWeightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
             throw new IllegalStateException(
                 "Blueprint version đã chốt có tổng trọng số section không hợp lệ, không thể sinh đề thi");
@@ -218,7 +218,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
             var slots = slotsBySectionId.getOrDefault(section.getId(), List.of());
             var slotWeightSum = slots.stream()
                 .map(slot -> slot.getWeight() == null ? BigDecimal.ZERO : slot.getWeight())
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
             if (slotWeightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
                 throw new IllegalStateException(
                     "Phần \"" + section.getTitle() + "\" trong blueprint có tổng trọng số ô câu hỏi không hợp lệ, không thể sinh đề thi");
@@ -257,7 +257,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
         ));
 
         var sourceSections = examPaperSectionRepository.findByPaperId(sourcePaper.getId()).stream()
-            .sorted(Comparator.comparingInt(ExamPaperSection::getOrder))
+            .sorted(Comparator.comparingInt(section -> section.getOrder()))
             .toList();
 
         for (var section : sourceSections) {
@@ -275,7 +275,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
             ));
 
             var items = examPaperItemRepository.findBySectionId(section.getId()).stream()
-                .sorted(Comparator.comparingInt(ExamPaperItem::getOrder))
+                .sorted(Comparator.comparingInt(item -> item.getOrder()))
                 .toList();
 
             for (var item : items) {

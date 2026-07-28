@@ -151,7 +151,7 @@ public class ExamBlueprintController {
         return examBlueprintSectionRepository.findByBlueprintVersionId(source.id()).stream()
             .map(ExamBlueprintSectionDtoMapper::toDto)
             .map(section -> section.sectionWeight() == null ? BigDecimal.ZERO : section.sectionWeight())
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+            .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
     }
 
     @SchemaMapping(typeName = "ExamBlueprintSection", field = "slots")
@@ -172,7 +172,7 @@ public class ExamBlueprintController {
     }
 
     private static ExamBlueprintVersionDto latestVersion(List<ExamBlueprintVersionDto> versions) {
-        return versions.stream().max(Comparator.comparingInt(ExamBlueprintVersionDto::version)).orElse(null);
+        return versions.stream().max(Comparator.comparingInt(blueprintVersion -> blueprintVersion.version())).orElse(null);
     }
 
     private void validatePage(Integer page, Integer size) {

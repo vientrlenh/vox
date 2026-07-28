@@ -13,6 +13,7 @@ public record RecordRecordingPartChangedCommand(
     ExamRecordingAssemblyStatus status,
     String objectKey,
     Long durationSecs,
-    OffsetDateTime occurredAt
+    OffsetDateTime occurredAt, 
+    String source
 ) {
 }

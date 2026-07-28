@@ -13,13 +13,14 @@ public class ExamRecording {
     private ExamRecordingAssemblyStatus status;
     private Long sizeBytes;
     private Integer durationSeconds;
+    private String source;
     private OffsetDateTime createdAt;
     private OffsetDateTime assembledAt;
 
     public ExamRecording() {}
 
     public ExamRecording(UUID id, UUID examSessionId, UUID candidateId, ExamRequiredStreamType streamType,
-            String bucket, String s3Key, ExamRecordingAssemblyStatus status, Long sizeBytes, Integer durationSeconds,
+            String bucket, String s3Key, ExamRecordingAssemblyStatus status, Long sizeBytes, Integer durationSeconds, String source, 
             OffsetDateTime createdAt, OffsetDateTime assembledAt) {
         this.id = id;
         this.examSessionId = examSessionId;
@@ -29,13 +30,14 @@ public class ExamRecording {
         this.s3Key = s3Key;
         this.status = status;
         this.sizeBytes = sizeBytes;
-        this.durationSeconds = durationSeconds;
+        this.durationSeconds = durationSeconds; 
+        this.source = source;
         this.createdAt = createdAt;
         this.assembledAt = assembledAt;
     }
 
     public ExamRecording(UUID examSessionId, UUID candidateId, ExamRequiredStreamType streamType, String bucket,
-            String s3Key, ExamRecordingAssemblyStatus status, Long sizeBytes, Integer durationSeconds,
+            String s3Key, ExamRecordingAssemblyStatus status, Long sizeBytes, Integer durationSeconds, String source, 
             OffsetDateTime createdAt, OffsetDateTime assembledAt) {
         this.examSessionId = examSessionId;
         this.candidateId = candidateId;
@@ -44,7 +46,8 @@ public class ExamRecording {
         this.s3Key = s3Key;
         this.status = status;
         this.sizeBytes = sizeBytes;
-        this.durationSeconds = durationSeconds;
+        this.durationSeconds = durationSeconds; 
+        this.source = source;
         this.createdAt = createdAt;
         this.assembledAt = assembledAt;
     }
@@ -135,6 +138,14 @@ public class ExamRecording {
 
     public void setAssembledAt(OffsetDateTime assembledAt) {
         this.assembledAt = assembledAt;
+    }
+
+    public String getSource() {
+        return source;
+    }
+
+    public void setSource(String source) {
+        this.source = source;
     }
 
     

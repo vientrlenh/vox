@@ -75,7 +75,7 @@ public class ViewExamSchedulesUseCase implements IUseCase<ViewExamSchedulesQuery
     private UUID authorizeSchoolWide() {
         var currentSchoolId = userContextPort.getCurrentSchoolId();
         var schoolAdmin = userContextPort.isSchoolAdmin();
-        if (schoolAdmin) {
+        if (schoolAdmin && currentSchoolId != null) {
             return currentSchoolId;
         }
         throw new ForbiddenException("Quyền truy cập bị từ chối");
@@ -83,7 +83,9 @@ public class ViewExamSchedulesUseCase implements IUseCase<ViewExamSchedulesQuery
 
     private List<ExamSchedule> resolveExamSchedules(Exam exam, UUID currentUserId, UUID currentSchoolId) {
         var schedules = examScheduleRepository.findByExamId(exam.getId());
-        if (userContextPort.isSchoolAdmin() && currentSchoolId.equals(exam.getSchoolId())) {
+        if (userContextPort.isSchoolAdmin()
+                && currentSchoolId != null
+                && currentSchoolId.equals(exam.getSchoolId())) {
             return schedules;
         }
         if (userContextPort.isTeacher()) {

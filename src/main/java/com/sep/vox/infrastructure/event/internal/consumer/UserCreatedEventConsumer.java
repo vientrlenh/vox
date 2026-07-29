@@ -68,7 +68,8 @@ public class UserCreatedEventConsumer {
         attempts = "4",
         backOff = @BackOff(delay = 2000, multiplier = 2.0, maxDelay = 30000),
         autoCreateTopics = "true",
-        dltStrategy = DltStrategy.FAIL_ON_ERROR
+        dltStrategy = DltStrategy.FAIL_ON_ERROR, 
+        kafkaTemplate = "outboxKafkaTemplate"
     )
     @KafkaListener(
         topics = "${app.internal-event.kafka.consumer-groups.email.topic.user-created}",

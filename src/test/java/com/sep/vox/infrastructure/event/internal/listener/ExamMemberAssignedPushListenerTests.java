@@ -24,8 +24,8 @@ class ExamMemberAssignedPushListenerTests {
 
         verify(pushNotificationPort).sendToUser(
             teacherUserId,
-            "New exam assignment",
-            "You've been assigned to an exam",
+            "Phân công mới",
+            "Bạn vừa được giao quản lí một kì kiểm tra mới",
             Map.of("type", "exam_member_assigned", "examId", examId.toString())
         );
     }

@@ -20,22 +20,23 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.event.SchoolUserPasswordSetUpEmailRequestedEvent;
+import com.sep.vox.application.event.UserCreatedPayloadV1;
 import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.port.output.EventPublisherPort;
 import com.sep.vox.application.port.output.JsonSerializationPort;
-import com.sep.vox.application.port.output.PasswordSetUpTokenPort;
+import com.sep.vox.domain.common.AggregateTypeConstant;
+import com.sep.vox.domain.common.EventTypeConstant;
+import com.sep.vox.domain.common.UserTypeConstant;
 import com.sep.vox.domain.model.importfile.ImportRow;
 import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.importfile.ImportType;
-import com.sep.vox.domain.model.passwordsetuptoken.PasswordSetUpToken;
+import com.sep.vox.domain.model.outbox.Outbox;
 import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.Role;
 import com.sep.vox.domain.model.user.SchoolRoleCodes;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserRole;
-import com.sep.vox.domain.repository.PasswordSetUpTokenRepository;
+import com.sep.vox.domain.repository.OutboxRepository;
 import com.sep.vox.domain.repository.RoleRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -56,9 +57,7 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
     private final RoleRepository roleRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final SchoolRepository schoolRepository;
-    private final PasswordSetUpTokenPort passwordSetUpTokenPort;
-    private final PasswordSetUpTokenRepository passwordSetUpTokenRepository;
-    private final EventPublisherPort eventPublisherPort;
+    private final OutboxRepository outboxRepository;
     private final JsonSerializationPort jsonSerializationPort;
     private final TransactionTemplate transactionTemplate;
 
@@ -68,9 +67,7 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
             RoleRepository roleRepository,
             SchoolUserRepository schoolUserRepository,
             SchoolRepository schoolRepository,
-            PasswordSetUpTokenPort passwordSetUpTokenPort,
-            PasswordSetUpTokenRepository passwordSetUpTokenRepository,
-            EventPublisherPort eventPublisherPort,
+            OutboxRepository outboxRepository,
             JsonSerializationPort jsonSerializationPort,
             PlatformTransactionManager transactionManager) {
         this.userRepository = userRepository;
@@ -78,9 +75,7 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
         this.roleRepository = roleRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.schoolRepository = schoolRepository;
-        this.passwordSetUpTokenPort = passwordSetUpTokenPort;
-        this.passwordSetUpTokenRepository = passwordSetUpTokenRepository;
-        this.eventPublisherPort = eventPublisherPort;
+        this.outboxRepository = outboxRepository;
         this.jsonSerializationPort = jsonSerializationPort;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
         this.transactionTemplate.setPropagationBehavior(TransactionTemplate.PROPAGATION_REQUIRES_NEW);
@@ -192,10 +187,25 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
         } else if (SchoolRoleCodes.TEACHER.equals(role.getCode().value())) {
             schoolUserRepository.save(SchoolUser.create(savedUser.getId(), schoolId, ts, null));
         }
-        var generatedToken = passwordSetUpTokenPort.generateToken();
-        passwordSetUpTokenRepository.save(PasswordSetUpToken.create(savedUser.getId(), generatedToken.hashedToken()));
-        eventPublisherPort.publish(new SchoolUserPasswordSetUpEmailRequestedEvent(
-                data.get("email"), data.get("fullName"), schoolName, savedUser.getId(), generatedToken.rawToken()));
+        // Token đặt mật khẩu do consumer sinh ngay trước khi gửi mail, để nó không nằm
+        // plaintext trong bảng outboxes lẫn trong topic Kafka.
+        var event = new UserCreatedPayloadV1(
+            savedUser.getId(),
+            data.get("email"),
+            data.get("fullName"),
+            schoolName,
+            UserTypeConstant.SCHOOL_USER
+        );
+        var payload = jsonSerializationPort.toJson(event);
+        var outbox = Outbox.create(
+            AggregateTypeConstant.USER, 
+            savedUser.getId(), 
+            EventTypeConstant.USER_CREATED, 
+            payload, 
+            ts
+        );
+        outboxRepository.save(outbox);
+        
         return savedUser.getId();
     }
 

@@ -203,8 +203,22 @@ app:
           topic:
             recording-part-changed: ${KAFKA_RECORDING_PART_CHANGED_TOPIC:exam.recording.part.changed}
           group-id: ${KAFKA_RECORDING_GROUP_ID:vox-recording}
+  internal-event: 
+    kafka: 
+      consumer-groups:
+        email:
+          topic: 
+            register-form-rejected: ${KAFKA_REGISTER_FORM_REJECTED_TOPIC:vox.register-form-rejected.v1}
+            user-created: ${KAFKA_USER_CREATED_TOPIC:vox.user-created.v1}
+          group-id: ${KAFKA_EMAIL_GROUP_ID:vox-email}
   recording:
     bucket: ${RECORDING_S3_BUCKET:}
+  outbox: 
+    topics: 
+      "[RegisterFormRejected]": ${KAFKA_REGISTER_FORM_REJECTED_TOPIC:vox.register-form-rejected.v1}
+      "[UserCreated]": ${KAFKA_USER_CREATED_TOPIC:vox.user-created.v1}
+    
+
 
 system-admin:
   email: ${SYS_ADMIN_EMAIL}

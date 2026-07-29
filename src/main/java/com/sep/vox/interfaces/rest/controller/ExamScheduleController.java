@@ -68,8 +68,8 @@ public class ExamScheduleController {
     @PatchMapping("/{scheduleId}/status")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<ExamScheduleDto>> updateStatus(
-            @PathVariable UUID examId,
-            @PathVariable UUID scheduleId,
+            @PathVariable("examId") UUID examId,
+            @PathVariable("scheduleId") UUID scheduleId,
             @Valid @RequestBody UpdateExamScheduleStatusRequest request) {
         var data = updateExamScheduleStatusUseCase.execute(
             UpdateExamScheduleStatusCommandMapper.fromRequest(examId, scheduleId, request));
@@ -79,8 +79,8 @@ public class ExamScheduleController {
     @DeleteMapping("/{scheduleId}")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<Void>> delete(
-            @PathVariable UUID examId,
-            @PathVariable UUID scheduleId) {
+            @PathVariable("examId") UUID examId,
+            @PathVariable("scheduleId") UUID scheduleId) {
         deleteExamScheduleUseCase.execute(new DeleteExamScheduleCommand(examId, scheduleId));
         return ResponseEntity.ok(ApiResponse.success("Xoá ca thi thành công"));
     }
@@ -88,8 +88,8 @@ public class ExamScheduleController {
     @PostMapping("/{scheduleId}/proctors")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<ExamScheduleProctorDto>> addProctor(
-            @PathVariable UUID examId,
-            @PathVariable UUID scheduleId,
+            @PathVariable("examId") UUID examId,
+            @PathVariable("scheduleId") UUID scheduleId,
             @Valid @RequestBody AddExamScheduleProctorRequest request) {
         var data = addExamScheduleProctorUseCase.execute(
             AddExamScheduleProctorCommandMapper.fromRequest(examId, scheduleId, request));
@@ -100,9 +100,9 @@ public class ExamScheduleController {
     @DeleteMapping("/{scheduleId}/proctors/{proctorId}")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<Void>> removeProctor(
-            @PathVariable UUID examId,
-            @PathVariable UUID scheduleId,
-            @PathVariable UUID proctorId) {
+            @PathVariable("examId") UUID examId,
+            @PathVariable("scheduleId") UUID scheduleId,
+            @PathVariable("proctorId") UUID proctorId) {
         removeExamScheduleProctorUseCase.execute(new DeleteExamScheduleProctorCommand(examId, scheduleId, proctorId));
         return ResponseEntity.ok(ApiResponse.success("Gỡ giám thị thành công"));
     }

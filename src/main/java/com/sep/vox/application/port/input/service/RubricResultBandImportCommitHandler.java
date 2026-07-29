@@ -102,10 +102,13 @@ public class RubricResultBandImportCommitHandler implements ImportCommitHandler 
 
                 BigDecimal scoreMin = null; BigDecimal scoreMax = null; int order = 0;
                 if (errors.isEmpty()) {
+                    var safeMinStr = minStr == null ? "" : minStr.trim();
+                    var safeMaxStr = maxStr == null ? "" : maxStr.trim();
+                    var safeOrderStr = orderStr == null ? "" : orderStr.trim();
                     try {
-                        scoreMin = new BigDecimal(minStr.trim());
-                        scoreMax = new BigDecimal(maxStr.trim());
-                        order = Integer.parseInt(orderStr.trim());
+                        scoreMin = new BigDecimal(safeMinStr);
+                        scoreMax = new BigDecimal(safeMaxStr);
+                        order = Integer.parseInt(safeOrderStr);
 
                         if (scoreMin.compareTo(BigDecimal.ZERO) < 0) errors.add(error("scoreMin", "Điểm số không được âm."));
                         if (scoreMin.compareTo(scoreMax) > 0) errors.add(error("scoreMin", "Điểm tối thiểu không được lớn hơn tối đa."));
@@ -132,12 +135,13 @@ public class RubricResultBandImportCommitHandler implements ImportCommitHandler 
                 BigDecimal previousScoreMin = existingForCode != null ? existingForCode.getScoreMin() : null;
 
                 // Kiểm tra không chồng lấn (kể cả chạm biên) với các band khác đã có/đã xử lý trong file
+                var safeNameStr = nameStr == null ? "" : nameStr.trim();
                 if (errors.isEmpty()) {
                     if (previousScoreMin != null) {
                         bandsSoFarByMin.remove(previousScoreMin);
                     }
                     try {
-                        RubricResultBandValidator.assertNoOverlap(bandsSoFarByMin, scoreMin, scoreMax, nameStr.trim());
+                        RubricResultBandValidator.assertNoOverlap(bandsSoFarByMin, scoreMin, scoreMax, safeNameStr.trim());
                     } catch (IllegalArgumentException e) {
                         errors.add(error("scoreMin", e.getMessage()));
                     }
@@ -156,7 +160,7 @@ public class RubricResultBandImportCommitHandler implements ImportCommitHandler 
 
                     if (targetBand != null) {
                         // Update
-                        targetBand.setName(nameStr.trim());
+                        targetBand.setName(safeNameStr);
                         targetBand.setDescription(descStr);
                         targetBand.setScoreMin(scoreMin);
                         targetBand.setScoreMax(scoreMax);
@@ -167,7 +171,7 @@ public class RubricResultBandImportCommitHandler implements ImportCommitHandler 
                     } else {
                         // Insert
                         targetBand = new RubricResultBand(
-                                versionId, safeCode, nameStr.trim(), descStr, scoreMin, scoreMax, order,
+                                versionId, safeCode, safeNameStr, descStr, scoreMin, scoreMax, order,
                                 now, now, session.getCreatedBy(), session.getCreatedBy()
                         );
                         bandsToSave.add(targetBand);

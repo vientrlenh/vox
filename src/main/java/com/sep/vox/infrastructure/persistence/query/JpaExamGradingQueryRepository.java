@@ -334,6 +334,49 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
         ));
     }
 
+    @Override
+    public Optional<GradingTaskDetailInfo> findTaskDetailBySchool(UUID candidateResultId, UUID schoolId) {
+        // LEFT JOIN assignment (cố ý, khác findTaskDetail): nhà trường phải xem được
+        // cả bài PENDING_REVIEW chưa ai nhận, không chỉ bài đã gán.
+        var rows = em.createQuery("""
+            SELECT ga.id, cr.id, e.name, ga.status, cr.status, s.flagged, s.flagReason,
+                   cr.totalScore, cr.rubricVersionId, cr.sessionId
+            FROM ExamCandidateResultJpaEntity cr
+            JOIN ExamSessionJpaEntity s ON s.id = cr.sessionId
+            JOIN ExamJpaEntity e ON e.id = cr.examId
+            LEFT JOIN ExamGradingAssignmentJpaEntity ga ON ga.candidateResultId = cr.id
+            WHERE cr.id = :candidateResultId AND e.schoolId = :schoolId
+        """, Tuple.class)
+            .setParameter("candidateResultId", candidateResultId)
+            .setParameter("schoolId", schoolId)
+            .getResultList();
+        if (rows.isEmpty()) {
+            return Optional.empty();
+        }
+        var row = rows.get(0);
+        var candidateResultIdValue = row.get(1, UUID.class);
+        var assignmentStatus = row.get(3, String.class);
+        var resultStatus = row.get(4, String.class);
+
+        var editable = GRADABLE_STATUS.equals(resultStatus)
+            && !GradingAssignmentStatus.COMPLETED.name().equals(assignmentStatus);
+
+        return Optional.of(new GradingTaskDetailInfo(
+            row.get(0, UUID.class),
+            candidateResultIdValue,
+            GradingResultCode.of(candidateResultIdValue),
+            row.get(2, String.class),
+            assignmentStatus,
+            resultStatus,
+            Boolean.TRUE.equals(row.get(5, Boolean.class)),
+            row.get(6, String.class),
+            row.get(7, BigDecimal.class),
+            editable,
+            taskItems(row.get(9, UUID.class)),
+            criteria(row.get(8, UUID.class))
+        ));
+    }
+
     /**
      * Các phần thi của bài kèm dữ liệu để chấm. Số query cố định (4) bất kể bài có
      * bao nhiêu phần.
@@ -361,7 +404,7 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
         var currentEvaluations = currentEvaluationsByResponseIds(responseIds);
         var aiEvaluationIds = aiEvaluationIdsByResponseIds(responseIds);
         var scoresByEvaluation = criterionScoresByEvaluationIds(
-            currentEvaluations.values().stream().map(CurrentEvaluation::id).toList());
+            currentEvaluations.values().stream().map(evaluation -> evaluation.id()).toList());
         var turnsByEvaluation = turnsByEvaluationIds(List.copyOf(aiEvaluationIds.values()));
 
         var result = new ArrayList<GradingTaskItemInfo>();

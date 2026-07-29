@@ -10,8 +10,17 @@ import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 @Entity
+@Table(
+    name = "exam_recordings",
+    uniqueConstraints = @UniqueConstraint(
+        name = "uq_exam_recordings_session_stream_source",
+        columnNames = {"exam_session_id", "stream_type", "source"}
+    )
+)
 public class ExamRecordingJpaEntity {
     @Id
     @Generated(event = EventType.INSERT)
@@ -58,6 +67,11 @@ public class ExamRecordingJpaEntity {
     @Column(name = "duration_seconds")
     private Integer durationSeconds;
 
+    // Nullable để schema update tương thích với recording cũ chưa có source. Event mới luôn được
+    // mapper chuẩn hóa thành source cụ thể hoặc UNKNOWN.
+    @Column(name = "source", updatable = false, length = 32)
+    private String source;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 
@@ -67,7 +81,7 @@ public class ExamRecordingJpaEntity {
     protected ExamRecordingJpaEntity() {}
 
     public ExamRecordingJpaEntity(UUID id, UUID examSessionId, UUID candidateId, String streamType, String bucket, String s3Key, 
-            String status, Long sizeBytes, Integer durationSeconds, OffsetDateTime createdAt,
+            String status, Long sizeBytes, Integer durationSeconds, String source, OffsetDateTime createdAt,
             OffsetDateTime assembledAt) {
         this.id = id;
         this.examSessionId = examSessionId;
@@ -78,6 +92,7 @@ public class ExamRecordingJpaEntity {
         this.status = status;
         this.sizeBytes = sizeBytes;
         this.durationSeconds = durationSeconds;
+        this.source = source;
         this.createdAt = createdAt;
         this.assembledAt = assembledAt;
     }
@@ -168,6 +183,14 @@ public class ExamRecordingJpaEntity {
 
     public void setS3Key(String s3Key) {
         this.s3Key = s3Key;
+    }
+
+    public String getSource() {
+        return source;
+    }
+
+    public void setSource(String source) {
+        this.source = source;
     }
 
     

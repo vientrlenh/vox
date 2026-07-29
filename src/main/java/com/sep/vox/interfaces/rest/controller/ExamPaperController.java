@@ -61,7 +61,7 @@ public class ExamPaperController {
     @PostMapping("/exams/{examId}/papers")
     @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<ApiResponse<ExamPaperDto>> create(
-            @PathVariable UUID examId,
+            @PathVariable("examId") UUID examId,
             @RequestBody(required = false) CreateExamPaperRequest request) {
         var source = request == null ? null : request.source();
         var copyFromPaperId = request == null ? null : request.copyFromPaperId();
@@ -73,8 +73,8 @@ public class ExamPaperController {
     @PutMapping("/exam-papers/{id}/items/{itemId}")
     @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<ApiResponse<ExamPaperItemDto>> updateItem(
-            @PathVariable UUID id,
-            @PathVariable UUID itemId,
+            @PathVariable("id") UUID id,
+            @PathVariable("itemId") UUID itemId,
             @Valid @RequestBody UpdateExamPaperItemRequest request) {
         var data = updateExamPaperItemUseCase.execute(UpdateExamPaperItemCommandMapper.fromRequest(id, itemId, request));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật câu hỏi trong đề thi thành công", data));
@@ -83,8 +83,8 @@ public class ExamPaperController {
     @PatchMapping("/exam-papers/{id}/sections/{sectionId}")
     @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<ApiResponse<ExamPaperSectionDto>> updateSection(
-            @PathVariable UUID id,
-            @PathVariable UUID sectionId,
+            @PathVariable("id") UUID id,
+            @PathVariable("sectionId") UUID sectionId,
             @RequestBody UpdateExamPaperSectionRequest request) {
         var data = updateExamPaperSectionUseCase.execute(UpdateExamPaperSectionCommandMapper.fromRequest(id, sectionId, request));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật phần đề thi thành công", data));
@@ -93,7 +93,7 @@ public class ExamPaperController {
     @PatchMapping("/exam-papers/{id}/status")
     @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<ExamPaperDto>> updateStatus(
-            @PathVariable UUID id,
+            @PathVariable("id") UUID id,
             @Valid @RequestBody UpdateExamPaperStatusRequest request) {
         var data = updateExamPaperStatusUseCase.execute(UpdateExamPaperStatusCommandMapper.fromRequest(id, request));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái đề thi thành công", data));
@@ -101,7 +101,7 @@ public class ExamPaperController {
 
     @DeleteMapping("/exam-papers/{id}")
     @PreAuthorize("hasRole('TEACHER')")
-    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable("id") UUID id) {
         deleteExamPaperUseCase.execute(new DeleteExamPaperCommand(id));
         return ResponseEntity.ok(ApiResponse.success("Xóa đề thi thành công"));
     }

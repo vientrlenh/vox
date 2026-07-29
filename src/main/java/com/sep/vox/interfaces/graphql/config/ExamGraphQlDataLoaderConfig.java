@@ -33,7 +33,6 @@ import com.sep.vox.domain.mapper.ExamPaperSectionDtoMapper;
 import com.sep.vox.domain.mapper.ExamScheduleDtoMapper;
 import com.sep.vox.domain.mapper.ExamSecurePoolDtoMapper;
 import com.sep.vox.domain.mapper.SchoolRoomDtoMapper;
-import com.sep.vox.domain.model.school.SchoolClassUser;
 import com.sep.vox.domain.repository.ExamBlueprintRepository;
 import com.sep.vox.domain.repository.ExamBlueprintVersionRepository;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
@@ -73,7 +72,7 @@ public class ExamGraphQlDataLoaderConfig {
                 Mono.fromSupplier(() -> schoolRoomRepository.findByIdIn(roomIds)
                     .stream()
                     .map(SchoolRoomDtoMapper::toDto)
-                    .collect(Collectors.toMap(SchoolRoomFromDto::id, room -> room)))
+                    .collect(Collectors.toMap(room -> room.id(), room -> room)))
             );
 
         registry.<UUID, ExamDto>forName("examById")
@@ -81,7 +80,7 @@ public class ExamGraphQlDataLoaderConfig {
                 Mono.fromSupplier(() -> examRepository.findByIdIn(examIds)
                     .stream()
                     .map(ExamDtoMapper::toDto)
-                    .collect(Collectors.toMap(ExamDto::id, exam -> exam)))
+                    .collect(Collectors.toMap(exam -> exam.id(), exam -> exam)))
             );
 
         registry.<UUID, ExamScheduleDto>forName("examScheduleById")
@@ -89,7 +88,7 @@ public class ExamGraphQlDataLoaderConfig {
                 Mono.fromSupplier(() -> examScheduleRepository.findByIdIn(scheduleIds)
                     .stream()
                     .map(ExamScheduleDtoMapper::toDto)
-                    .collect(Collectors.toMap(ExamScheduleDto::id, schedule -> schedule)))
+                    .collect(Collectors.toMap(schedule -> schedule.id(), schedule -> schedule)))
             );
 
         registry.<UUID, ExamPaperDto>forName("examPaperById")
@@ -97,7 +96,7 @@ public class ExamGraphQlDataLoaderConfig {
                 Mono.fromSupplier(() -> examPaperRepository.findByIdIn(paperIds)
                     .stream()
                     .map(ExamPaperDtoMapper::toDto)
-                    .collect(Collectors.toMap(ExamPaperDto::id, paper -> paper)))
+                    .collect(Collectors.toMap(paper -> paper.id(), paper -> paper)))
             );
 
         registry.<UUID, ExamCandidateAttempts>forName("examCandidateAttemptsByCandidateId")
@@ -110,7 +109,7 @@ public class ExamGraphQlDataLoaderConfig {
                 Mono.fromSupplier(() -> examBlueprintRepository.findByIdIn(blueprintIds)
                     .stream()
                     .map(ExamBlueprintDtoMapper::toDto)
-                    .collect(Collectors.toMap(ExamBlueprintDto::id, dto -> dto)))
+                    .collect(Collectors.toMap(blueprint -> blueprint.id(), dto -> dto)))
             );
 
         registry.<UUID, ExamBlueprintVersionDto>forName("examBlueprintVersionById")
@@ -118,7 +117,7 @@ public class ExamGraphQlDataLoaderConfig {
                 Mono.fromSupplier(() -> examBlueprintVersionRepository.findByIdIn(versionIds)
                     .stream()
                     .map(ExamBlueprintVersionDtoMapper::toDto)
-                    .collect(Collectors.toMap(ExamBlueprintVersionDto::id, dto -> dto)))
+                    .collect(Collectors.toMap(version -> version.id(), dto -> dto)))
             );
 
         registry.<UUID, List<ExamMemberDto>>forName("examMembersByExamId")
@@ -128,7 +127,7 @@ public class ExamGraphQlDataLoaderConfig {
                     examIds.forEach(id -> result.put(id, List.of()));
                     examMemberRepository.findByExamIdIn(examIds).stream()
                         .map(ExamMemberDtoMapper::toDto)
-                        .collect(Collectors.groupingBy(ExamMemberDto::examId))
+                        .collect(Collectors.groupingBy(member -> member.examId()))
                         .forEach(result::put);
                     return result;
                 })
@@ -141,7 +140,7 @@ public class ExamGraphQlDataLoaderConfig {
                     examIds.forEach(id -> result.put(id, List.of()));
                     examPaperRepository.findByExamIdIn(examIds).stream()
                         .map(ExamPaperDtoMapper::toDto)
-                        .collect(Collectors.groupingBy(ExamPaperDto::examId))
+                        .collect(Collectors.groupingBy(paper -> paper.examId()))
                         .forEach(result::put);
                     return result;
                 })
@@ -154,7 +153,7 @@ public class ExamGraphQlDataLoaderConfig {
                     paperIds.forEach(id -> result.put(id, List.of()));
                     examPaperSectionRepository.findByPaperIdIn(paperIds).stream()
                         .map(ExamPaperSectionDtoMapper::toDto)
-                        .collect(Collectors.groupingBy(ExamPaperSectionDto::paperId))
+                        .collect(Collectors.groupingBy(section -> section.paperId()))
                         .forEach(result::put);
                     return result;
                 })
@@ -167,7 +166,7 @@ public class ExamGraphQlDataLoaderConfig {
                     sectionIds.forEach(id -> result.put(id, List.of()));
                     examPaperItemRepository.findBySectionIdIn(sectionIds).stream()
                         .map(ExamPaperItemDtoMapper::toDto)
-                        .collect(Collectors.groupingBy(ExamPaperItemDto::sectionId))
+                        .collect(Collectors.groupingBy(item -> item.sectionId()))
                         .forEach(result::put);
                     return result;
                 })
@@ -178,7 +177,7 @@ public class ExamGraphQlDataLoaderConfig {
                 Mono.fromSupplier(() -> examSecurePoolRepository.findByExamIdIn(examIds)
                     .stream()
                     .map(ExamSecurePoolDtoMapper::toDto)
-                    .collect(Collectors.toMap(ExamSecurePoolDto::examId, dto -> dto)))
+                    .collect(Collectors.toMap(pool -> pool.examId(), dto -> dto)))
             );
 
         registry.<UUID, Integer>forName("examCandidateCountByExamId")
@@ -202,8 +201,8 @@ public class ExamGraphQlDataLoaderConfig {
 
                     var activeClassByStudentId = schoolClassUserRepository.findByUserIdIn(firstStudentIdByExam.values())
                         .stream()
-                        .filter(SchoolClassUser::isActive)
-                        .collect(Collectors.groupingBy(SchoolClassUser::getUserId));
+                        .filter(user -> user.isActive())
+                        .collect(Collectors.groupingBy(user -> user.getUserId()));
 
                     Map<UUID, UUID> result = new HashMap<>();
                     firstStudentIdByExam.forEach((examId, studentId) -> {

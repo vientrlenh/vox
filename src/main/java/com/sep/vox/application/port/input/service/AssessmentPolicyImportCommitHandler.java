@@ -155,7 +155,7 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
                 .collect(Collectors.groupingBy(
                         p -> new VersionScopeKey(p.getSchoolId(), p.getLanguageId(), p.getFrameworkVersionId(),
                                 p.getSchoolGradeLevelId(), p.getSchoolGradeId(), p.getSchoolClassId()),
-                        Collectors.reducing(0, AssessmentPolicy::getVersion, Integer::max)));
+                        Collectors.reducing(0, policy -> policy.getVersion(), (a, b) -> Integer.max(a, b))));
 
         // Prefetch toàn bộ dữ liệu tham chiếu (ngôn ngữ/khung/rubric/scope/band) bằng số query CỐ ĐỊNH,
         // rồi Phase 2 (loop chính) chỉ resolve trong memory, không còn gọi DB theo từng dòng/giá trị distinct nữa.
@@ -277,18 +277,18 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
         // *ByCode dùng key đã UPPERCASE (khớp với DB đã lọc UPPER() ở tầng Impl) để việc tra cứu không phân biệt
         // hoa/thường ("en"/"En"/"EN" đều khớp). *ByName giữ nguyên case gốc vì tên hiển thị không bị ép quy ước.
         Map<String, SupportedLanguage> languageByCode = indexBy(languageRepository.findByCodeIn(languageInputs), l -> l.getCode().value().toUpperCase());
-        Map<String, SupportedLanguage> languageByName = indexBy(languageRepository.findByNameIn(languageInputs), SupportedLanguage::getName);
+        Map<String, SupportedLanguage> languageByName = indexBy(languageRepository.findByNameIn(languageInputs), language -> language.getName());
 
         Map<String, FrameworkVersion> frameworkVersionByCode = indexBy(frameworkVersionRepository.findByCodeIn(frameworkInputs), v -> v.getCode().toUpperCase());
-        Map<String, FrameworkVersion> frameworkVersionByName = indexBy(frameworkVersionRepository.findByNameIn(frameworkInputs), FrameworkVersion::getName);
+        Map<String, FrameworkVersion> frameworkVersionByName = indexBy(frameworkVersionRepository.findByNameIn(frameworkInputs), version -> version.getName());
 
         Map<String, RubricVersion> rubricVersionByCode = indexBy(rubricVersionRepository.findByCodeIn(rubricInputs), v -> v.getCode().toUpperCase());
-        Map<String, RubricVersion> rubricVersionByName = indexBy(rubricVersionRepository.findByNameIn(rubricInputs), RubricVersion::getName);
+        Map<String, RubricVersion> rubricVersionByName = indexBy(rubricVersionRepository.findByNameIn(rubricInputs), version -> version.getName());
 
         Set<UUID> rubricIds = new HashSet<>();
         rubricVersionByCode.values().forEach(v -> rubricIds.add(v.getRubricId()));
         rubricVersionByName.values().forEach(v -> rubricIds.add(v.getRubricId()));
-        Map<UUID, Rubric> rubricById = indexBy(rubricRepository.findByIdIn(rubricIds), Rubric::getId);
+        Map<UUID, Rubric> rubricById = indexBy(rubricRepository.findByIdIn(rubricIds), r -> r.getId());
 
         Map<String, SchoolClass> schoolClassByCode = Map.of();
         Map<String, SchoolClass> schoolClassByName = Map.of();
@@ -298,11 +298,11 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
         Map<String, SchoolGradeLevel> schoolGradeLevelByName = Map.of();
         if (isSchoolScoped) {
             schoolClassByCode = indexBy(schoolClassRepository.findBySchoolIdAndCodeIn(schoolId, classInputs), c -> c.getCode().value().toUpperCase());
-            schoolClassByName = indexBy(schoolClassRepository.findBySchoolIdAndNameIn(schoolId, classInputs), SchoolClass::getName);
+            schoolClassByName = indexBy(schoolClassRepository.findBySchoolIdAndNameIn(schoolId, classInputs), c -> c.getName());
             schoolGradeByCode = indexBy(schoolGradeRepository.findBySchoolIdAndCodeIn(schoolId, gradeInputs), g -> g.getCode().toUpperCase());
-            schoolGradeByName = indexBy(schoolGradeRepository.findBySchoolIdAndNameIn(schoolId, gradeInputs), SchoolGrade::getName);
+            schoolGradeByName = indexBy(schoolGradeRepository.findBySchoolIdAndNameIn(schoolId, gradeInputs), g -> g.getName());
             schoolGradeLevelByCode = indexBy(schoolGradeLevelRepository.findBySchoolIdAndCodeIn(schoolId, gradeLevelInputs), l -> l.getCode().toUpperCase());
-            schoolGradeLevelByName = indexBy(schoolGradeLevelRepository.findBySchoolIdAndNameIn(schoolId, gradeLevelInputs), SchoolGradeLevel::getName);
+            schoolGradeLevelByName = indexBy(schoolGradeLevelRepository.findBySchoolIdAndNameIn(schoolId, gradeLevelInputs), level -> level.getName());
         }
 
         Set<UUID> frameworkVersionIds = new HashSet<>();
@@ -444,7 +444,7 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
         }
 
         if (hasGradeLevel) {
-            String cleanInput = gradeLevelInput.trim();
+            String cleanInput = gradeLevelInput == null ? "" : gradeLevelInput.trim();
             SchoolGradeLevel schoolGradeLevel = lookup.schoolGradeLevelByCode().get(cleanInput.toUpperCase());
             if (schoolGradeLevel == null) schoolGradeLevel = lookup.schoolGradeLevelByName().get(cleanInput);
             if (schoolGradeLevel == null) {
@@ -455,7 +455,7 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
         }
 
         if (hasGrade) {
-            String cleanInput = gradeInput.trim();
+            String cleanInput = gradeInput == null ? "" : gradeInput.trim();
             SchoolGrade schoolGrade = lookup.schoolGradeByCode().get(cleanInput.toUpperCase());
             if (schoolGrade == null) schoolGrade = lookup.schoolGradeByName().get(cleanInput);
             if (schoolGrade == null) {
@@ -465,7 +465,7 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
             return new ScopeIds(null, schoolGrade.getId(), null);
         }
 
-        String cleanInput = classInput.trim();
+        String cleanInput = classInput == null ? "" : classInput.trim();
         SchoolClass schoolClass = lookup.schoolClassByCode().get(cleanInput.toUpperCase());
         if (schoolClass == null) schoolClass = lookup.schoolClassByName().get(cleanInput);
         if (schoolClass == null) {

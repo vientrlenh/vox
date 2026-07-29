@@ -32,6 +32,7 @@ import com.sep.vox.domain.model.exam.ExamItemEvaluationTurn;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.TurnType;
 import com.sep.vox.domain.model.rubric.RubricCriterion;
+import com.sep.vox.domain.model.rubric.RubricTotalScoreMethod;
 import com.sep.vox.application.port.input.service.ConfidenceReviewCalculator;
 import com.sep.vox.domain.valueobject.ConfidenceCaseSignals;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
@@ -42,6 +43,7 @@ import com.sep.vox.domain.repository.ExamItemResponseRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;
 import com.sep.vox.domain.repository.RubricCriterionRepository;
+import com.sep.vox.domain.repository.RubricVersionRepository;
 
 @Service
 public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAttemptEvaluationCommand, Void> {
@@ -54,6 +56,7 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
     private final ExamSessionRepository examSessionRepository;
     private final ExamRepository examRepository;
     private final AssessmentPolicyRepository assessmentPolicyRepository;
+    private final RubricVersionRepository rubricVersionRepository;
     private final UpsertExamCandidateResultUseCase upsertExamCandidateResultUseCase;
     private final CompleteExamSessionGradingUseCase completeExamSessionGradingUseCase;
     private final JsonSerializationPort jsonSerializationPort;
@@ -69,6 +72,7 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
             ExamSessionRepository examSessionRepository,
             ExamRepository examRepository,
             AssessmentPolicyRepository assessmentPolicyRepository,
+            RubricVersionRepository rubricVersionRepository,
             UpsertExamCandidateResultUseCase upsertExamCandidateResultUseCase,
             CompleteExamSessionGradingUseCase completeExamSessionGradingUseCase,
             PlatformTransactionManager transactionManager,
@@ -82,6 +86,7 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
         this.examSessionRepository = examSessionRepository;
         this.examRepository = examRepository;
         this.assessmentPolicyRepository = assessmentPolicyRepository;
+        this.rubricVersionRepository = rubricVersionRepository;
         this.upsertExamCandidateResultUseCase = upsertExamCandidateResultUseCase;
         this.completeExamSessionGradingUseCase = completeExamSessionGradingUseCase;
         this.jsonSerializationPort = jsonSerializationPort;
@@ -122,12 +127,9 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
                 ? Map.<String, CriterionScoreInput>of()
                 : input.payload().criteria();
 
-            // Resolved before computing itemScore (not after, like before this fix) --
-            // the rubric's own per-criterion weight (e.g. pronunciation .25, fluency
-            // .20...) must be applied first to combine the 5 criteria into one item
-            // score; ExamPaperItem.weight (question weight within the paper) is a
-            // separate, later step applied on top of this item score by
-            // ExamSessionResultCalculator when rolling up section/total scores.
+            // Resolve the rubric version before combining criteria because each
+            // school may use WEIGHTED_AVERAGE or SUM and a different score scale.
+            // ExamPaperItem.weight remains a separate, later paper-level weight.
             var evaluationContext = resolveEvaluationContext(response.getSessionId());
             var rubricCriteriaByCode = rubricCriterionRepository.findByRubricVersionId(
                 evaluationContext.rubricVersionId()
@@ -136,7 +138,16 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
                 Function.identity(),
                 (left, right) -> left
             ));
-            BigDecimal itemScore = computeWeightedItemScore(criteriaMap, rubricCriteriaByCode);
+            BigDecimal itemScore = computeItemScore(
+                criteriaMap,
+                rubricCriteriaByCode,
+                evaluationContext.totalScoreMethod()
+            );
+            itemScore = clampScore(
+                itemScore,
+                evaluationContext.scoringScaleMin(),
+                evaluationContext.scoringScaleMax()
+            );
 
             var validity = input.payload() == null ? null : input.payload().validity();
             var signals = ExamEvaluationSignalMapper.toDomain(input.payload() == null ? null : input.payload().signals());
@@ -157,14 +168,12 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
                         : input.payload().signals().asrConfidenceAvg()
                 );
             }
-            boolean hasCodeSwitch = signals.codeSwitchingRatio() != null
-                && signals.codeSwitchingRatio().compareTo(BigDecimal.ZERO) > 0;
             boolean isShortAnswer = signals.wordCount() < 35;
             var confidenceDecision = confidenceReviewCalculator.compute(
                 confidenceCase,
                 signals.audioQuality(),
                 evaluationContext.examKind(),
-                hasCodeSwitch,
+                signals.codeSwitchingRatio(),
                 isShortAnswer
             );
             var hasCriticalValidityFlag = hasCriticalValidityFlag(validity);
@@ -272,7 +281,10 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
                     }
                     var score = zeroCriterionScores
                         ? BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP)
-                        : BigDecimal.valueOf(entry.getValue().score()).setScale(2, RoundingMode.HALF_UP);
+                        : clampCriterionScore(
+                            BigDecimal.valueOf(entry.getValue().score()),
+                            criterion
+                        );
                     return new ExamItemCriterionScore(
                         savedEvaluation.getId(),
                         criterion.getId(),
@@ -337,11 +349,14 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
             .isPresent();
     }
 
-    private BigDecimal computeWeightedItemScore(
+    private BigDecimal computeItemScore(
             Map<String, CriterionScoreInput> criteriaMap,
-            Map<String, RubricCriterion> rubricCriteriaByCode) {
+            Map<String, RubricCriterion> rubricCriteriaByCode,
+            RubricTotalScoreMethod totalScoreMethod) {
         var weightedSum = BigDecimal.ZERO;
         var weightSum = BigDecimal.ZERO;
+        var matchedSum = BigDecimal.ZERO;
+        var matchedCount = 0;
         var unweightedSum = BigDecimal.ZERO;
         var unweightedCount = 0;
 
@@ -350,18 +365,26 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
             if (criterionScore == null || criterionScore.score() == null) {
                 continue;
             }
-            var score = BigDecimal.valueOf(criterionScore.score());
+            var criterion = rubricCriteriaByCode.get(normalizeCode(entry.getKey()));
+            if (criterion == null) {
+                continue;
+            }
+            var score = clampCriterionScore(BigDecimal.valueOf(criterionScore.score()), criterion);
             unweightedSum = unweightedSum.add(score);
             unweightedCount++;
 
-            var criterion = rubricCriteriaByCode.get(normalizeCode(entry.getKey()));
-            if (criterion == null || criterion.getWeight() == null) {
+            matchedSum = matchedSum.add(score);
+            matchedCount++;
+            if (criterion.getWeight() == null) {
                 continue;
             }
             weightedSum = weightedSum.add(score.multiply(criterion.getWeight()));
             weightSum = weightSum.add(criterion.getWeight());
         }
 
+        if (totalScoreMethod == RubricTotalScoreMethod.SUM && matchedCount > 0) {
+            return matchedSum.setScale(2, RoundingMode.HALF_UP);
+        }
         if (weightSum.compareTo(BigDecimal.ZERO) > 0) {
             return weightedSum.divide(weightSum, 2, RoundingMode.HALF_UP);
         }
@@ -375,6 +398,21 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
             : unweightedSum.divide(BigDecimal.valueOf(unweightedCount), 2, RoundingMode.HALF_UP);
     }
 
+    private BigDecimal clampScore(BigDecimal score, BigDecimal scaleMin, BigDecimal scaleMax) {
+        var safeScore = score == null ? BigDecimal.ZERO : score;
+        if (scaleMin != null && safeScore.compareTo(scaleMin) < 0) {
+            safeScore = scaleMin;
+        }
+        if (scaleMax != null && safeScore.compareTo(scaleMax) > 0) {
+            safeScore = scaleMax;
+        }
+        return safeScore.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private BigDecimal clampCriterionScore(BigDecimal score, RubricCriterion criterion) {
+        return clampScore(score, criterion.getMinScore(), criterion.getMaxScore());
+    }
+
     private EvaluationContext resolveEvaluationContext(UUID sessionId) {
         var session = examSessionRepository.findById(sessionId)
             .orElseThrow(() -> new NotFoundException("không thể tìm thấy phiên thi cho evaluation"));
@@ -385,10 +423,24 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
         }
         var policy = assessmentPolicyRepository.findById(exam.getAssessmentPolicyId())
             .orElseThrow(() -> new NotFoundException("không thể tìm thấy assessment policy cho bài kiểm tra"));
-        return new EvaluationContext(policy.getRubricVersionId(), exam.getKind());
+        var rubricVersion = rubricVersionRepository.findById(policy.getRubricVersionId())
+            .orElseThrow(() -> new NotFoundException("không thể tìm thấy rubric version cho bài kiểm tra"));
+        return new EvaluationContext(
+            policy.getRubricVersionId(),
+            exam.getKind(),
+            rubricVersion.getTotalScoreMethod(),
+            rubricVersion.getScoringScaleMin(),
+            rubricVersion.getScoringScaleMax()
+        );
     }
 
-    private record EvaluationContext(UUID rubricVersionId, ExamKind examKind) {
+    private record EvaluationContext(
+        UUID rubricVersionId,
+        ExamKind examKind,
+        RubricTotalScoreMethod totalScoreMethod,
+        BigDecimal scoringScaleMin,
+        BigDecimal scoringScaleMax
+    ) {
     }
 
     private boolean allResponsesHaveEvaluations(UUID sessionId) {
@@ -401,7 +453,11 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
     }
 
     private String normalizeCode(String value) {
-        return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+        if (value == null) {
+            return "";
+        }
+        var normalized = value.trim().toLowerCase(Locale.ROOT);
+        return "discourse".equals(normalized) ? "coherence" : normalized;
     }
 
     private TurnType parseTurnType(String value) {
@@ -441,7 +497,7 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
             signals.cAlign(),
             signals.cGrammar(),
             signals.cVocabulary(),
-            signals.cDiscourse()
+            signals.cCoherence()
         };
         for (BigDecimal value : values) {
             if (value != null && (minimum == null || value.compareTo(minimum) < 0)) {

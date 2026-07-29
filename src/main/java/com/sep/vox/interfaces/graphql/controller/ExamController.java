@@ -75,8 +75,8 @@ public class ExamController {
             @Argument(name = "status") ExamStatus status,
             @Argument(name = "schoolId") UUID schoolId,
             @Argument(name = "keyword") String keyword,
-            @Argument(name = "page") int page,
-            @Argument(name = "size") int size) {
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
         validatePage(page, size);
         return viewExamsUseCase.execute(new ViewExamsQuery(kind, status, schoolId, null, keyword, page, size));
     }
@@ -86,8 +86,8 @@ public class ExamController {
             @Argument(name = "status") ExamStatus status,
             @Argument(name = "schoolClassId") UUID schoolClassId,
             @Argument(name = "keyword") String keyword,
-            @Argument(name = "page") int page,
-            @Argument(name = "size") int size) {
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
         validatePage(page, size);
         return viewExamsUseCase.execute(
             new ViewExamsQuery(ExamKind.CLASS_TEST, status, null, schoolClassId, keyword, page, size)
@@ -165,7 +165,7 @@ public class ExamController {
     @SchemaMapping(typeName = "Exam", field = "papers")
     public CompletableFuture<List<ExamPaperDto>> papers(
             ExamDto source,
-            @Argument ExamPaperStatus status,
+            @Argument(name = "status") ExamPaperStatus status,
             DataFetchingEnvironment env) {
         DataLoader<UUID, List<ExamPaperDto>> loader = env.getDataLoader("examPapersByExamId");
         return loader.load(source.id()).thenApply(papers -> status == null
@@ -218,8 +218,8 @@ public class ExamController {
             .anyMatch(member -> member.userId().equals(currentUserId)));
     }
 
-    private void validatePage(int page, int size) {
-        if (page < 0 || size <= 0) {
+    private void validatePage(Integer page, Integer size) {
+        if (page == null || size == null || page < 0 || size <= 0) {
             throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
         }
     }

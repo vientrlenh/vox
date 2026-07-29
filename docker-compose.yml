@@ -22,6 +22,8 @@ services:
       REDIS_HOST: redis
       EXTERNAL_EVENT_PROVIDER: kafka
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      # Tạm thời để chẩn đoán treo 5s ở examBlueprint — xóa sau khi tìm ra nguyên nhân.
+      JAVA_OPTS: "-Xlog:gc*:file=/app/gc.log:time,uptime,level,tags:filecount=5,filesize=10M"
     networks:
       - vox-network
 

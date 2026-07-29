@@ -19,7 +19,7 @@ final class ClassTestSectionWeightPolicy {
     static List<BigDecimal> resolveRequestedWeights(List<ClassTestSectionCommand> sections) {
         var providedCount = sections.stream().filter(section -> section.weight() != null).count();
         if (providedCount == sections.size()) {
-            var weights = sections.stream().map(ClassTestSectionCommand::weight).toList();
+            var weights = sections.stream().map(command -> command.weight()).toList();
             validateWeightSum(weights, "Tổng trọng số section phải bằng 1.00");
             return weights;
         }
@@ -29,7 +29,7 @@ final class ClassTestSectionWeightPolicy {
     // H.6.4: câu hỏi trong section class test PHẢI có weight tường minh (không auto-fill
     // ở backend - nút "Chia trọng số tự động" là tính năng FE, backend chỉ validate).
     static List<BigDecimal> resolveQuestionWeights(List<ClassTestQuestionCommand> questions) {
-        var weights = questions.stream().map(ClassTestQuestionCommand::weight).toList();
+        var weights = questions.stream().map(command -> command.weight()).toList();
         validateWeightSum(weights, "Tổng trọng số câu hỏi trong phần phải bằng 1.00");
         return weights;
     }
@@ -51,7 +51,7 @@ final class ClassTestSectionWeightPolicy {
     }
 
     static void validateStoredWeights(List<ExamPaperSection> sections, String message) {
-        validateWeightSum(sections.stream().map(ExamPaperSection::getWeight).toList(), message);
+        validateWeightSum(sections.stream().map(section -> section.getWeight()).toList(), message);
     }
 
     static boolean looksAutoWeighted(List<ExamPaperSection> sections) {
@@ -70,7 +70,7 @@ final class ClassTestSectionWeightPolicy {
     static List<BigDecimal> normalizeStoredWeights(List<ExamPaperSection> sections) {
         var totalWeight = sections.stream()
             .map(section -> section.getWeight() == null ? BigDecimal.ZERO : section.getWeight())
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+            .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
         if (totalWeight.compareTo(BigDecimal.ZERO) <= 0) {
             return distributeEqualWeights(sections.size());
         }

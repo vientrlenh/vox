@@ -45,6 +45,13 @@ public class JwtStreamTokenProvider implements StreamTokenProvider {
     }
 
     public String generateMonitorToken(String userId, String schoolId, String examId, String monitorScope, List<String> scheduleIds, List<String> roles, OffsetDateTime windowStart, OffsetDateTime windowEnd) {
+
+        // Hạn của ca thi, tách khỏi expiresAt của token
+        // Giúp trả lời "bao lâu thì dữ liệu đã ghi vẫn còn đẩy lên được service streaming"
+        // Dùng để đặt hạn upload credentials. Giúp nới thời gian cứu dữ liệu upload record
+        var scheduleEndAt = windowEnd.toInstant().getEpochSecond();
+
+        var tokenExpiry = windowEnd.isBefore(OffsetDateTime.now().plusMinutes(15)) ? windowEnd : OffsetDateTime.now().plusMinutes(15);
         var claims = new HashMap<String, Object>();
         claims.put("userId", userId);
         claims.put("schoolId", schoolId);
@@ -53,13 +60,14 @@ public class JwtStreamTokenProvider implements StreamTokenProvider {
         claims.put("scheduleIds", scheduleIds);
         claims.put("roles", roles);
         claims.put("tokenUse", "monitor");
+        claims.put("scheduleEndAt", scheduleEndAt);
         return Jwts.builder()
             .claims(claims)
             .subject(userId)
             .id(UUID.randomUUID().toString())
             .issuedAt(new Date())
             .notBefore(Date.from(windowStart.toInstant()))
-            .expiration(Date.from(windowEnd.toInstant()))
+            .expiration(Date.from(tokenExpiry.toInstant()))
             .signWith(getSecretKey(secret))
             .compact();
     }

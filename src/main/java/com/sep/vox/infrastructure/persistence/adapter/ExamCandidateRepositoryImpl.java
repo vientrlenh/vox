@@ -79,8 +79,8 @@ public class ExamCandidateRepositoryImpl implements ExamCandidateRepository {
         }
         return springDataExamCandidateRepository.countByExamIdIn(examIds).stream()
             .collect(Collectors.toMap(
-                SpringDataExamCandidateRepository.ExamIdCandidateCount::getExamId,
-                SpringDataExamCandidateRepository.ExamIdCandidateCount::getCandidateCount
+                count -> count.getExamId(),
+                count -> count.getCandidateCount()
             ));
     }
 

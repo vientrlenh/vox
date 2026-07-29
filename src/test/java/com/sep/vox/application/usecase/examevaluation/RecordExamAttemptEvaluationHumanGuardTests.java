@@ -41,6 +41,7 @@ import com.sep.vox.domain.repository.ExamItemResponseRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;
 import com.sep.vox.domain.repository.RubricCriterionRepository;
+import com.sep.vox.domain.repository.RubricVersionRepository;
 import com.sep.vox.interfaces.kafka.dto.ExamAttemptEvaluationCompletedEventDto;
 import com.sep.vox.interfaces.kafka.dto.ExamAttemptEvaluationCompletedPayloadDto;
 import com.sep.vox.interfaces.kafka.mapper.RecordExamAttemptEvaluationCommandMapper;
@@ -63,6 +64,7 @@ public class RecordExamAttemptEvaluationHumanGuardTests {
     private ExamSessionRepository examSessionRepository;
     private ExamRepository examRepository;
     private AssessmentPolicyRepository assessmentPolicyRepository;
+    private RubricVersionRepository rubricVersionRepository;
     private UpsertExamCandidateResultUseCase upsertExamCandidateResultUseCase;
     private UpdateExamSessionStatusUseCase updateExamSessionStatusUseCase;
     private JsonSerializationPort jsonSerializationPort;
@@ -85,6 +87,7 @@ public class RecordExamAttemptEvaluationHumanGuardTests {
         examSessionRepository = mock(ExamSessionRepository.class);
         examRepository = mock(ExamRepository.class);
         assessmentPolicyRepository = mock(AssessmentPolicyRepository.class);
+        rubricVersionRepository = mock(RubricVersionRepository.class);
         upsertExamCandidateResultUseCase = mock(UpsertExamCandidateResultUseCase.class);
         updateExamSessionStatusUseCase = mock(UpdateExamSessionStatusUseCase.class);
         jsonSerializationPort = mock(JsonSerializationPort.class);
@@ -96,7 +99,8 @@ public class RecordExamAttemptEvaluationHumanGuardTests {
         useCase = new RecordExamAttemptEvaluationUseCase(
             examItemResponseRepository, examItemEvaluationRepository, examItemCriterionScoreRepository,
             examItemEvaluationTurnRepository, rubricCriterionRepository, examSessionRepository, examRepository,
-            assessmentPolicyRepository, upsertExamCandidateResultUseCase, updateExamSessionStatusUseCase,
+            assessmentPolicyRepository, rubricVersionRepository, upsertExamCandidateResultUseCase,
+            updateExamSessionStatusUseCase,
             transactionManager, jsonSerializationPort, new ConfidenceReviewCalculator());
 
         when(examItemResponseRepository.findById(responseId)).thenReturn(Optional.of(
@@ -119,6 +123,8 @@ public class RecordExamAttemptEvaluationHumanGuardTests {
         policy.setId(policyId);
         policy.setRubricVersionId(rubricVersionId);
         when(assessmentPolicyRepository.findById(policyId)).thenReturn(Optional.of(policy));
+        when(rubricVersionRepository.findById(rubricVersionId))
+            .thenReturn(Optional.of(new com.sep.vox.domain.model.rubric.RubricVersion()));
         when(rubricCriterionRepository.findByRubricVersionId(rubricVersionId)).thenReturn(List.of());
     }
 

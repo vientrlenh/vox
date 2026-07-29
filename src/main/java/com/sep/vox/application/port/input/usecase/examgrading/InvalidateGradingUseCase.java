@@ -41,11 +41,11 @@ public class InvalidateGradingUseCase implements IUseCase<InvalidateGradingComma
     @Transactional
     public InvalidateGradingResponse execute(InvalidateGradingCommand command) {
         var currentUserId = examGradingAccessService.requireActiveUserId();
-        var context = examGradingAccessService.load(command.assignmentId());
-        examGradingAccessService.authorizeAssignedTeacher(context, currentUserId);
+        var context = examGradingAccessService.loadForGrading(command.assignmentId(), command.candidateResultId());
+        examGradingAccessService.authorizeGrader(context, currentUserId);
 
         var assignment = context.assignment();
-        if (assignment.isCompleted()) {
+        if (assignment != null && assignment.isCompleted()) {
             throw new IllegalStateException("Bạn đã chốt kết quả cho bài thi này.");
         }
         // Bài không bị đánh dấu thì không có gì để kết luận vi phạm — điểm kém là
@@ -65,9 +65,11 @@ public class InvalidateGradingUseCase implements IUseCase<InvalidateGradingComma
         result.setUpdatedBy(currentUserId);
         examCandidateResultRepository.save(result);
 
-        assignment.setStatus(GradingAssignmentStatus.COMPLETED);
-        assignment.setCompletedAt(now);
-        examGradingAssignmentRepository.save(assignment);
+        if (assignment != null) {
+            assignment.setStatus(GradingAssignmentStatus.COMPLETED);
+            assignment.setCompletedAt(now);
+            examGradingAssignmentRepository.save(assignment);
+        }
 
         return new InvalidateGradingResponse(result.getId(), result.getStatus().name());
     }

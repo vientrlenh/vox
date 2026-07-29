@@ -3,7 +3,6 @@ package com.sep.vox.application.port.input.usecase.exam;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -15,17 +14,16 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.ChangeClassTestBlueprintCommand;
+import com.sep.vox.application.port.input.service.ExamTimeQuotaGuardService;
 import com.sep.vox.application.port.input.service.RecalculateExamTimeDurationService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.domain.mapper.ExamDtoMapper;
 import com.sep.vox.domain.model.exam.Exam;
-import com.sep.vox.domain.model.exam.ExamBlueprint;
 import com.sep.vox.domain.model.exam.ExamBlueprintSection;
 import com.sep.vox.domain.model.exam.ExamBlueprintSlot;
 import com.sep.vox.domain.model.exam.ExamBlueprintSlotType;
-import com.sep.vox.domain.model.exam.ExamBlueprintVersion;
 import com.sep.vox.domain.model.exam.ExamBlueprintVersionStatus;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
@@ -61,6 +59,7 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
     private final ExamPaperItemRepository examPaperItemRepository;
     private final QuestionRepository questionRepository;
     private final ExamQuestionSecureLockService examQuestionSecureLockService;
+    private final ExamTimeQuotaGuardService examTimeQuotaGuardService;
     private final RecalculateExamTimeDurationService recalculateExamTimeDurationService;
     private final UserContextPort userContextPort;
 
@@ -76,6 +75,7 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
             ExamPaperItemRepository examPaperItemRepository,
             QuestionRepository questionRepository,
             ExamQuestionSecureLockService examQuestionSecureLockService,
+            ExamTimeQuotaGuardService examTimeQuotaGuardService,
             RecalculateExamTimeDurationService recalculateExamTimeDurationService,
             UserContextPort userContextPort) {
         this.examRepository = examRepository;
@@ -89,6 +89,7 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
         this.examPaperItemRepository = examPaperItemRepository;
         this.questionRepository = questionRepository;
         this.examQuestionSecureLockService = examQuestionSecureLockService;
+        this.examTimeQuotaGuardService = examTimeQuotaGuardService;
         this.recalculateExamTimeDurationService = recalculateExamTimeDurationService;
         this.userContextPort = userContextPort;
     }
@@ -116,6 +117,9 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
             throw new IllegalStateException(
                 "Phải cung cấp đầy đủ blueprintId và blueprintVersionId, hoặc để trống cả hai để gỡ blueprint");
         }
+        if (input.blueprintId() != null) {
+            validateExistingBlueprintDuration(input, exam);
+        }
 
         var now = OffsetDateTime.now();
         var paper = examPaperRepository.findByExamId(exam.getId()).stream()
@@ -137,6 +141,27 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
         var saved = examRepository.save(exam);
         recalculateExamTimeDurationService.recalculate(exam.getId());
         return ExamDtoMapper.toDto(saved);
+    }
+
+    private void validateExistingBlueprintDuration(ChangeClassTestBlueprintCommand input, Exam exam) {
+        var blueprint = examBlueprintRepository.findById(input.blueprintId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy blueprint"));
+        if (!blueprint.getSchoolId().equals(exam.getSchoolId())) {
+            throw new IllegalStateException("Blueprint không thuộc trường của giáo viên");
+        }
+        var version = examBlueprintVersionRepository.findById(input.blueprintVersionId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy version blueprint"));
+        if (!version.getBlueprintId().equals(blueprint.getId())) {
+            throw new IllegalStateException("Version không thuộc blueprint đã chọn");
+        }
+        if (version.getStatus() != ExamBlueprintVersionStatus.PUBLISHED) {
+            throw new IllegalStateException("Chỉ được dùng version đã PUBLISHED");
+        }
+        examTimeQuotaGuardService.requireWithinPlan(
+            exam.getSchoolId(),
+            version.getTotalTimeLimitSeconds(),
+            "Phiên bản blueprint " + version.getCode()
+        );
     }
 
     private void clearExistingPaperContent(ExamPaper paper, UUID currentUserId) {
@@ -172,22 +197,22 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
         }
 
         var sections = examBlueprintSectionRepository.findByBlueprintVersionId(version.getId()).stream()
-            .sorted(Comparator.comparingInt(ExamBlueprintSection::getOrder))
+            .sorted(Comparator.comparingInt(section -> section.getOrder()))
             .toList();
         if (sections.isEmpty()) {
             throw new IllegalStateException("Blueprint version không có section nào");
         }
         var slotsBySectionId = examBlueprintSlotRepository.findByBlueprintVersionId(version.getId()).stream()
-            .collect(Collectors.groupingBy(ExamBlueprintSlot::getSectionId));
+            .collect(Collectors.groupingBy(slot -> slot.getSectionId()));
         validateVersionWeights(sections, slotsBySectionId);
-        validateReusableSlots(slotsBySectionId.values().stream().flatMap(List::stream).toList());
+        validateReusableSlots(slotsBySectionId.values().stream().flatMap(list -> list.stream()).toList());
 
         exam.setBlueprintId(blueprint.getId());
         exam.setBlueprintVersionId(version.getId());
 
         for (var section : sections) {
             var slots = slotsBySectionId.getOrDefault(section.getId(), List.of()).stream()
-                .sorted(Comparator.comparingInt(ExamBlueprintSlot::getOrder))
+                .sorted(Comparator.comparingInt(slot -> slot.getOrder()))
                 .toList();
             var paperSection = examPaperSectionRepository.save(new ExamPaperSection(
                 paper.getId(),
@@ -240,7 +265,7 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
     private void validateVersionWeights(List<ExamBlueprintSection> sections, Map<UUID, List<ExamBlueprintSlot>> slotsBySectionId) {
         var sectionWeightSum = sections.stream()
             .map(section -> section.getSectionWeight() == null ? BigDecimal.ZERO : section.getSectionWeight())
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+            .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
         if (sectionWeightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
             throw new IllegalStateException(
                 "Blueprint version đã chốt có tổng trọng số section không hợp lệ, không thể dùng cho bài kiểm tra");
@@ -249,7 +274,7 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
             var slots = slotsBySectionId.getOrDefault(section.getId(), List.of());
             var slotWeightSum = slots.stream()
                 .map(slot -> slot.getWeight() == null ? BigDecimal.ZERO : slot.getWeight())
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
             if (slotWeightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
                 throw new IllegalStateException(
                     "Phần \"" + section.getTitle() + "\" trong blueprint có tổng trọng số ô câu hỏi không hợp lệ");

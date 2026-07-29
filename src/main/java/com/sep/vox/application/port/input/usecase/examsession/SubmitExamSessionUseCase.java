@@ -4,7 +4,7 @@ import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -266,6 +266,14 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
         if (policy == null) {
             return List.of();
         }
+        if (policy.getTargetFrameworkBandId() == null) {
+            throw new IllegalStateException("Assessment policy chưa cấu hình bậc mục tiêu để AI chấm.");
+        }
+        var targetBand = frameworkResultBandRepository.findById(policy.getTargetFrameworkBandId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy bậc mục tiêu của assessment policy."));
+        if (!policy.getFrameworkVersionId().equals(targetBand.getFrameworkVersionId())) {
+            throw new IllegalStateException("Bậc mục tiêu không thuộc framework version của assessment policy.");
+        }
 
         var rubricCriteria = rubricCriterionRepository.findByRubricVersionId(policy.getRubricVersionId());
         if (rubricCriteria.isEmpty()) {
@@ -278,49 +286,88 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
             .toList();
         var frameworkCriteriaById = frameworkCriterionRepository.findAllByIds(frameworkCriterionIds).stream()
             .collect(Collectors.toMap(item -> item.getId(), Function.identity()));
-        var frameworkBandsByCriterionId = frameworkCriterionBandRepository.findByFrameworkCriterionIdIn(frameworkCriterionIds).stream()
+        var frameworkCriterionBands = frameworkCriterionBandRepository.findByFrameworkCriterionIdIn(frameworkCriterionIds);
+        var frameworkBandsByCriterionId = frameworkCriterionBands.stream()
             .collect(Collectors.groupingBy(item -> item.getFrameworkCriterionId()));
-        var resultBandIds = frameworkBandsByCriterionId.values().stream()
-            .flatMap(List::stream)
+        var frameworkResultBandIds = frameworkCriterionBands.stream()
             .map(item -> item.getFrameworkResultBandId())
             .distinct()
             .toList();
-        var resultBandsById = frameworkResultBandRepository.findAllByIds(resultBandIds).stream()
+        var frameworkResultBandsById = frameworkResultBandRepository.findAllByIds(frameworkResultBandIds).stream()
             .collect(Collectors.toMap(item -> item.getId(), Function.identity()));
+        var ladderCriterionKeys = Set.of("grammar", "vocabulary", "coherence");
 
         return rubricCriteria.stream().map(criterion -> {
+            if (criterion.getMinScore() == null || criterion.getMaxScore() == null
+                    || criterion.getMinScore().compareTo(criterion.getMaxScore()) >= 0) {
+                throw new IllegalStateException("Tiêu chí rubric '" + criterion.getName()
+                    + "' phải có minScore nhỏ hơn maxScore trước khi gửi sang AI.");
+            }
             var frameworkCriterion = frameworkCriteriaById.get(criterion.getFrameworkCriterionId());
-            double criterionScoreMin = criterion.getMinScore() == null ? 0D : criterion.getMinScore().doubleValue();
-            double criterionScoreMax = criterion.getMaxScore() == null ? 100D : criterion.getMaxScore().doubleValue();
-            var bands = frameworkBandsByCriterionId.getOrDefault(criterion.getFrameworkCriterionId(), List.of()).stream()
-                .sorted(Comparator.comparing(item -> {
-                    var resultBand = resultBandsById.get(item.getFrameworkResultBandId());
-                    return resultBand == null ? Integer.MAX_VALUE : resultBand.getOrder();
-                }))
+            var criterionBands = frameworkBandsByCriterionId
+                .getOrDefault(criterion.getFrameworkCriterionId(), List.of());
+            var targetCriterionBand = criterionBands.stream()
+                .filter(item -> policy.getTargetFrameworkBandId().equals(item.getFrameworkResultBandId()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException(
+                    "Tiêu chí framework chưa có mô tả cho bậc mục tiêu " + targetBand.getLabel() + "."));
+            var criterionKey = agentCriterionKey(criterion.getCode());
+            var sourceBands = criterionKey != null && ladderCriterionKeys.contains(criterionKey)
+                ? criterionBands
+                : List.of(targetCriterionBand);
+            var bands = sourceBands.stream()
                 .map(item -> {
-                    var resultBand = resultBandsById.get(item.getFrameworkResultBandId());
+                    var resultBand = frameworkResultBandsById.get(item.getFrameworkResultBandId());
+                    if (resultBand == null) {
+                        throw new IllegalStateException(
+                            "Không tìm thấy bậc framework cho tiêu chí '" + criterion.getName() + "'.");
+                    }
                     return new ExamAttemptEvaluationRequestedExternalEvent.FrameworkBand(
-                        resultBand == null ? null : resultBand.getCode(),
-                        resultBand == null ? null : resultBand.getLabel(),
-                        criterionScoreMin,
-                        criterionScoreMax,
+                        resultBand.getCode(),
+                        resultBand.getLabel(),
+                        criterion.getMinScore().doubleValue(),
+                        criterion.getMaxScore().doubleValue(),
                         item.getDescriptor(),
-                        item.getPositiveSignals() == null ? List.of() : item.getPositiveSignals().values().stream().map(signal -> signal.description()).toList(),
-                        item.getNegativeSignals() == null ? List.of() : item.getNegativeSignals().values().stream().map(signal -> signal.description()).toList()
+                        item.getPositiveSignals() == null
+                            ? List.of()
+                            : item.getPositiveSignals().values().stream()
+                                .map(signal -> signal.description())
+                                .toList(),
+                        item.getNegativeSignals() == null
+                            ? List.of()
+                            : item.getNegativeSignals().values().stream()
+                                .map(signal -> signal.description())
+                                .toList(),
+                        resultBand.getOrder()
                     );
                 })
+                .sorted(Comparator.comparing(
+                    band -> band.order()
+                ))
                 .toList();
 
             return new ExamAttemptEvaluationRequestedExternalEvent.CriterionFramework(
-                criterion.getCode() == null ? null : criterion.getCode().trim().toLowerCase(Locale.ROOT),
+                criterionKey,
                 frameworkCriterion == null ? null : frameworkCriterion.getCode(),
                 frameworkCriterion == null ? null : frameworkCriterion.getName(),
                 frameworkCriterion == null ? null : frameworkCriterion.getDescription(),
+                policy.getTargetFrameworkBandId().toString(),
+                targetBand.getCode(),
+                targetBand.getLabel(),
+                true,
                 criterion.getWeight() == null ? null : criterion.getWeight().doubleValue(),
-                criterionScoreMin,
-                criterionScoreMax,
+                criterion.getMinScore().doubleValue(),
+                criterion.getMaxScore().doubleValue(),
                 bands
             );
         }).toList();
+    }
+
+    private String agentCriterionKey(String rubricCriterionCode) {
+        if (rubricCriterionCode == null) {
+            return null;
+        }
+        var normalized = rubricCriterionCode.trim().toLowerCase(Locale.ROOT);
+        return "discourse".equals(normalized) ? "coherence" : normalized;
     }
 }

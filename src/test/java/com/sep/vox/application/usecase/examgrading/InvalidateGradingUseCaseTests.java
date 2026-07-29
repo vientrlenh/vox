@@ -67,12 +67,12 @@ public class InvalidateGradingUseCaseTests {
 
         var context = new GradingContext(
             assignment, candidateResult, session, UUID.randomUUID(), "IELTS Speaking Mock");
-        when(examGradingAccessService.load(assignmentId)).thenReturn(context);
+        when(examGradingAccessService.loadForGrading(assignmentId, null)).thenReturn(context);
         return context;
     }
 
     private InvalidateGradingCommand command() {
-        return new InvalidateGradingCommand(assignmentId, "Có người thứ hai nhắc bài");
+        return new InvalidateGradingCommand(assignmentId, null, "Có người thứ hai nhắc bài");
     }
 
     @Test
@@ -129,7 +129,7 @@ public class InvalidateGradingUseCaseTests {
     void should_reject_when_teacher_is_not_the_assigned_one() {
         var context = given(GradingAssignmentStatus.ASSIGNED, ExamCandidateResultStatus.PENDING_REVIEW, true);
         org.mockito.Mockito.doThrow(new ForbiddenException("BẢO MẬT"))
-            .when(examGradingAccessService).authorizeAssignedTeacher(eq(context), eq(teacherId));
+            .when(examGradingAccessService).authorizeGrader(eq(context), eq(teacherId));
 
         assertThatThrownBy(() -> useCase.execute(command()))
             .isInstanceOf(ForbiddenException.class);

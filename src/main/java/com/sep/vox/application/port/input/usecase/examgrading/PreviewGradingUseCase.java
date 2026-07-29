@@ -47,8 +47,8 @@ public class PreviewGradingUseCase implements IUseCase<SubmitGradingCommand, Gra
     @Transactional(readOnly = true)
     public GradingPreviewResponse execute(SubmitGradingCommand command) {
         var currentUserId = examGradingAccessService.requireActiveUserId();
-        var context = examGradingAccessService.load(command.assignmentId());
-        examGradingAccessService.authorizeAssignedTeacher(context, currentUserId);
+        var context = examGradingAccessService.loadForGrading(command.assignmentId(), command.candidateResultId());
+        examGradingAccessService.authorizeGrader(context, currentUserId);
 
         // Preview cho phép chấm dở để xem tổng chạy dần — KHÔNG bắt phủ đủ như /grade.
         var resolvedItems = gradingItemScoreResolver.resolve(context, command, false);

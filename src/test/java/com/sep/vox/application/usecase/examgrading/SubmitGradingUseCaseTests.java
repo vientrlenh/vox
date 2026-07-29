@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -37,12 +38,15 @@ import com.sep.vox.domain.model.exam.ExamItemResponse;
 import com.sep.vox.domain.model.exam.ExamSession;
 import com.sep.vox.domain.model.exam.GradingAssignmentStatus;
 import com.sep.vox.domain.model.rubric.RubricCriterion;
+import com.sep.vox.domain.model.rubric.RubricTotalScoreMethod;
+import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
 import com.sep.vox.domain.repository.ExamItemCriterionScoreRepository;
 import com.sep.vox.domain.repository.ExamItemEvaluationRepository;
 import com.sep.vox.domain.repository.ExamItemResponseRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;
 import com.sep.vox.domain.repository.RubricCriterionRepository;
+import com.sep.vox.domain.repository.RubricVersionRepository;
 
 public class SubmitGradingUseCaseTests {
 
@@ -52,6 +56,7 @@ public class SubmitGradingUseCaseTests {
     private ExamSessionRepository examSessionRepository;
     private ExamItemResponseRepository examItemResponseRepository;
     private RubricCriterionRepository rubricCriterionRepository;
+    private RubricVersionRepository rubricVersionRepository;
     private UpsertExamCandidateResultUseCase upsertExamCandidateResultUseCase;
     private ExamGradingAccessService examGradingAccessService;
     private SubmitGradingUseCase useCase;
@@ -75,12 +80,14 @@ public class SubmitGradingUseCaseTests {
         examSessionRepository = mock(ExamSessionRepository.class);
         examItemResponseRepository = mock(ExamItemResponseRepository.class);
         rubricCriterionRepository = mock(RubricCriterionRepository.class);
+        rubricVersionRepository = mock(RubricVersionRepository.class);
         upsertExamCandidateResultUseCase = mock(UpsertExamCandidateResultUseCase.class);
         examGradingAccessService = mock(ExamGradingAccessService.class);
 
         // Resolver thật (không mock): công thức điểm có trọng số là thứ các test này
         // phải chứng minh, mock nó đi thì chẳng còn gì để kiểm.
-        var resolver = new GradingItemScoreResolver(examItemResponseRepository, rubricCriterionRepository);
+        var resolver = new GradingItemScoreResolver(
+            examItemResponseRepository, rubricCriterionRepository, rubricVersionRepository);
         useCase = new SubmitGradingUseCase(
             examGradingAssignmentRepository,
             examItemEvaluationRepository,
@@ -97,6 +104,7 @@ public class SubmitGradingUseCaseTests {
         when(rubricCriterionRepository.findByRubricVersionId(rubricVersionId)).thenReturn(List.of(
             criterion(fluencyId, "FLU", "Trôi chảy", new BigDecimal("0.60")),
             criterion(pronunciationId, "PRO", "Phát âm", new BigDecimal("0.40"))));
+        when(rubricVersionRepository.findById(rubricVersionId)).thenReturn(Optional.of(rubricVersion()));
         when(examItemEvaluationRepository.save(any())).thenAnswer(invocation -> {
             var evaluation = (ExamItemEvaluation) invocation.getArgument(0);
             if (evaluation.getId() == null) {
@@ -109,6 +117,14 @@ public class SubmitGradingUseCaseTests {
     private RubricCriterion criterion(UUID id, String code, String name, BigDecimal weight) {
         return new RubricCriterion(id, rubricVersionId, null, code, name, null, null, weight,
             new BigDecimal("0.00"), new BigDecimal("9.00"), 1, true, null, null, null, null);
+    }
+
+    private RubricVersion rubricVersion() {
+        var version = new RubricVersion();
+        version.setTotalScoreMethod(RubricTotalScoreMethod.WEIGHTED_AVERAGE);
+        version.setScoringScaleMin(BigDecimal.ZERO);
+        version.setScoringScaleMax(BigDecimal.TEN);
+        return version;
     }
 
     private GradingContext contextWith(
@@ -133,7 +149,7 @@ public class SubmitGradingUseCaseTests {
     private GradingContext given(
             GradingAssignmentStatus assignmentStatus, ExamCandidateResultStatus resultStatus, boolean flagged) {
         var context = contextWith(assignmentStatus, resultStatus, flagged);
-        when(examGradingAccessService.load(assignmentId)).thenReturn(context);
+        when(examGradingAccessService.loadForGrading(assignmentId, null)).thenReturn(context);
         return context;
     }
 
@@ -145,7 +161,7 @@ public class SubmitGradingUseCaseTests {
     }
 
     private SubmitGradingCommand command(String fluency, String pronunciation) {
-        return new SubmitGradingCommand(assignmentId, List.of(
+        return new SubmitGradingCommand(assignmentId, null, List.of(
             new SubmitGradingCommand.ItemGrade(paperItemId, List.of(
                 new SubmitGradingCommand.CriterionScoreItem(fluencyId, new BigDecimal(fluency), "trôi chảy"),
                 new SubmitGradingCommand.CriterionScoreItem(pronunciationId, new BigDecimal(pronunciation), null)
@@ -211,7 +227,7 @@ public class SubmitGradingUseCaseTests {
             ArgumentCaptor.forClass(List.class);
         verify(examItemCriterionScoreRepository).saveAll(captor.capture());
         assertThat(captor.getValue()).hasSize(2);
-        assertThat(captor.getValue()).extracting(ExamItemCriterionScore::getFinalScore)
+        assertThat(captor.getValue()).extracting(criterionScore -> criterionScore.getFinalScore())
             .containsExactly(new BigDecimal("8.00"), new BigDecimal("6.00"));
     }
 
@@ -291,7 +307,7 @@ public class SubmitGradingUseCaseTests {
     void should_reject_when_teacher_is_not_the_assigned_one() {
         var context = given(GradingAssignmentStatus.ASSIGNED, ExamCandidateResultStatus.PENDING_REVIEW, false);
         org.mockito.Mockito.doThrow(new ForbiddenException("BẢO MẬT"))
-            .when(examGradingAccessService).authorizeAssignedTeacher(context, teacherId);
+            .when(examGradingAccessService).authorizeGrader(context, teacherId);
 
         assertThatThrownBy(() -> useCase.execute(command("8.00", "6.00")))
             .isInstanceOf(ForbiddenException.class);
@@ -339,7 +355,7 @@ public class SubmitGradingUseCaseTests {
     @Test
     void should_reject_when_a_required_criterion_is_missing() {
         given(GradingAssignmentStatus.ASSIGNED, ExamCandidateResultStatus.PENDING_REVIEW, false);
-        var partial = new SubmitGradingCommand(assignmentId, List.of(
+        var partial = new SubmitGradingCommand(assignmentId, null, List.of(
             new SubmitGradingCommand.ItemGrade(paperItemId, List.of(
                 new SubmitGradingCommand.CriterionScoreItem(fluencyId, new BigDecimal("8.00"), null)
             ), null)));
@@ -356,7 +372,7 @@ public class SubmitGradingUseCaseTests {
         given(GradingAssignmentStatus.ASSIGNED, ExamCandidateResultStatus.PENDING_REVIEW, false);
         // Phủ đủ phần thật (để qua kiểm coverage) NHƯNG kèm một phần lạ không có response.
         var foreignPaperItemId = UUID.randomUUID();
-        var withForeign = new SubmitGradingCommand(assignmentId, List.of(
+        var withForeign = new SubmitGradingCommand(assignmentId, null, List.of(
             new SubmitGradingCommand.ItemGrade(paperItemId, List.of(
                 new SubmitGradingCommand.CriterionScoreItem(fluencyId, new BigDecimal("8.00"), null),
                 new SubmitGradingCommand.CriterionScoreItem(pronunciationId, new BigDecimal("6.00"), null)

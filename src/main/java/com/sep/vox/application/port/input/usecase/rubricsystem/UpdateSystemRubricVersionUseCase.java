@@ -137,7 +137,6 @@ public class UpdateSystemRubricVersionUseCase
         String safeMethod = parseOptionalTotalScoreMethod(
                 command.totalScoreMethod()
         );
-
         // 5. Update atomic: truyền null cho code để giữ nguyên code cũ. Với các field hỗ trợ cập nhật
         // một phần (effectiveFrom/effectiveTo/scoringScaleMin/scoringScaleMax), truyền thẳng giá trị gốc
         // (có thể null) từ command để tầng SQL COALESCE tự giữ nguyên giá trị hiện có trong DB tại thời

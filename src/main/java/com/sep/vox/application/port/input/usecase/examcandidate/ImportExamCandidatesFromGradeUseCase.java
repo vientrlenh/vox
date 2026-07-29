@@ -12,23 +12,19 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.ImportExamCandidatesFromGradeCommand;
+import com.sep.vox.application.port.input.service.ExamDirectoryAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.ExamCandidateDto;
 import com.sep.vox.domain.mapper.ExamCandidateDtoMapper;
-import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
-import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.user.SchoolRoleCodes;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
-import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.domain.repository.SchoolGradeLevelRepository;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
-import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
 public class ImportExamCandidatesFromGradeUseCase
@@ -43,10 +39,8 @@ public class ImportExamCandidatesFromGradeUseCase
     private final SchoolGradeLevelRepository schoolGradeLevelRepository;
     private final SchoolClassRepository schoolClassRepository;
     private final SchoolClassUserRepository schoolClassUserRepository;
-    private final ExamMemberRepository examMemberRepository;
-    private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
-    private final UserContextPort userContextPort;
+    private final ExamDirectoryAccessService examDirectoryAccessService;
 
     public ImportExamCandidatesFromGradeUseCase(
             ExamRepository examRepository,
@@ -55,20 +49,16 @@ public class ImportExamCandidatesFromGradeUseCase
             SchoolGradeLevelRepository schoolGradeLevelRepository,
             SchoolClassRepository schoolClassRepository,
             SchoolClassUserRepository schoolClassUserRepository,
-            ExamMemberRepository examMemberRepository,
-            SchoolUserRepository schoolUserRepository,
             UserRoleQueryRepository userRoleQueryRepository,
-            UserContextPort userContextPort) {
+            ExamDirectoryAccessService examDirectoryAccessService) {
         this.examRepository = examRepository;
         this.examCandidateRepository = examCandidateRepository;
         this.schoolGradeRepository = schoolGradeRepository;
         this.schoolGradeLevelRepository = schoolGradeLevelRepository;
         this.schoolClassRepository = schoolClassRepository;
         this.schoolClassUserRepository = schoolClassUserRepository;
-        this.examMemberRepository = examMemberRepository;
-        this.schoolUserRepository = schoolUserRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
-        this.userContextPort = userContextPort;
+        this.examDirectoryAccessService = examDirectoryAccessService;
     }
 
     @Override
@@ -76,7 +66,14 @@ public class ImportExamCandidatesFromGradeUseCase
     public List<ExamCandidateDto> execute(ImportExamCandidatesFromGradeCommand input) {
         var exam = examRepository.findById(input.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
-        var currentUserId = authorize(exam);
+        var scope = examDirectoryAccessService.resolve(exam);
+        // Nhập theo niên khóa là gom mọi lớp của niên khóa đó — vượt xa phạm vi của chủ
+        // tịch một bài trên lớp. Chặn ở đây để quyền ghi khớp đúng quyền đọc
+        // (`ViewExamDirectoryGradesUseCase` từ chối cùng trường hợp này).
+        if (!scope.schoolWide()) {
+            throw new ForbiddenException("Bài kiểm tra trên lớp không hỗ trợ nhập thí sinh theo niên khóa");
+        }
+        var currentUserId = scope.callerId();
 
         var grade = schoolGradeRepository.findById(input.schoolGradeId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy khối"));
@@ -120,21 +117,5 @@ public class ImportExamCandidatesFromGradeUseCase
             return List.of();
         }
         return ExamCandidateDtoMapper.toDtoList(examCandidateRepository.saveAll(newCandidates));
-    }
-
-    private UUID authorize(Exam exam) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
-            .map(schoolUser -> schoolUser.getSchoolId())
-            .orElse(null);
-        var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
-        if (schoolAdmin && currentSchoolId != null && currentSchoolId.equals(exam.getSchoolId())) {
-            return currentUserId;
-        }
-        if (examMemberRepository.existsByExamIdAndUserIdAndRole(exam.getId(), currentUserId, ExamMemberRole.CHAIR)) {
-            return currentUserId;
-        }
-        throw new ForbiddenException("Quyền truy cập bị từ chối");
     }
 }

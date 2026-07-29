@@ -17,52 +17,53 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.command.AddExamCandidateCommand;
+import com.sep.vox.application.port.input.service.ExamDirectoryAccessService;
+import com.sep.vox.application.port.input.service.ExamDirectoryAccessService.ExamDirectoryScope;
 import com.sep.vox.application.port.input.usecase.examcandidate.AddExamCandidateUseCase;
-import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.UserRoleInfo;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
-import com.sep.vox.domain.model.exam.ExamMemberRole;
+import com.sep.vox.domain.model.school.SchoolClassUser;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
-import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
+import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 class AddExamCandidateUseCaseTests {
 
     private ExamRepository examRepository;
     private ExamCandidateRepository examCandidateRepository;
-    private ExamMemberRepository examMemberRepository;
     private SchoolUserRepository schoolUserRepository;
+    private SchoolClassUserRepository schoolClassUserRepository;
     private UserRoleQueryRepository userRoleQueryRepository;
-    private UserContextPort userContextPort;
+    private ExamDirectoryAccessService examDirectoryAccessService;
     private AddExamCandidateUseCase useCase;
 
     private final UUID userId = UUID.randomUUID();
     private final UUID examId = UUID.randomUUID();
     private final UUID schoolId = UUID.randomUUID();
     private final UUID studentId = UUID.randomUUID();
+    private final UUID classId = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
         examRepository = mock(ExamRepository.class);
         examCandidateRepository = mock(ExamCandidateRepository.class);
-        examMemberRepository = mock(ExamMemberRepository.class);
         schoolUserRepository = mock(SchoolUserRepository.class);
+        schoolClassUserRepository = mock(SchoolClassUserRepository.class);
         userRoleQueryRepository = mock(UserRoleQueryRepository.class);
-        userContextPort = mock(UserContextPort.class);
+        examDirectoryAccessService = mock(ExamDirectoryAccessService.class);
         useCase = new AddExamCandidateUseCase(
-            examRepository, examCandidateRepository, examMemberRepository,
-            schoolUserRepository, userRoleQueryRepository, userContextPort);
+            examRepository, examCandidateRepository, schoolUserRepository,
+            schoolClassUserRepository, userRoleQueryRepository, examDirectoryAccessService);
 
-        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        when(schoolUserRepository.findByUserId(userId)).thenReturn(Optional.empty());
-        when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId)).thenReturn(List.of());
-        when(examMemberRepository.existsByExamIdAndUserIdAndRole(examId, userId, ExamMemberRole.CHAIR))
-            .thenReturn(true);
-        when(examRepository.findById(examId)).thenReturn(Optional.of(exam()));
+        var exam = exam();
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        when(examDirectoryAccessService.resolve(exam))
+            .thenReturn(new ExamDirectoryScope(userId, schoolId, true));
     }
 
     @Test
@@ -114,6 +115,64 @@ class AddExamCandidateUseCaseTests {
         assertThatThrownBy(() -> useCase.execute(new AddExamCandidateCommand(examId, studentId)))
             .isInstanceOf(DuplicatedException.class);
         verify(examCandidateRepository, never()).save(any());
+    }
+
+    @Test
+    void should_reject_class_test_chair_when_student_is_outside_their_classes() {
+        givenClassTestScope();
+        when(schoolUserRepository.existsBySchoolIdAndUserId(schoolId, studentId)).thenReturn(true);
+        when(examDirectoryAccessService.callerClassIds(any())).thenReturn(List.of(classId));
+        when(schoolClassUserRepository.findByUserIdInAndSchoolClassIdIn(List.of(studentId), List.of(classId)))
+            .thenReturn(List.of());
+
+        assertThatThrownBy(() -> useCase.execute(new AddExamCandidateCommand(examId, studentId)))
+            .isInstanceOf(ForbiddenException.class)
+            .hasMessage("Học sinh không thuộc lớp bạn phụ trách");
+        verify(examCandidateRepository, never()).save(any());
+    }
+
+    @Test
+    void should_allow_class_test_chair_for_student_in_their_class() {
+        givenClassTestScope();
+        when(schoolUserRepository.existsBySchoolIdAndUserId(schoolId, studentId)).thenReturn(true);
+        when(examDirectoryAccessService.callerClassIds(any())).thenReturn(List.of(classId));
+        when(schoolClassUserRepository.findByUserIdInAndSchoolClassIdIn(List.of(studentId), List.of(classId)))
+            .thenReturn(List.of(activeMembership()));
+        when(userRoleQueryRepository.findByUserIdWithRoleInfo(studentId)).thenReturn(List.of(studentRole()));
+        when(examCandidateRepository.existsByExamIdAndStudentId(examId, studentId)).thenReturn(false);
+        when(examCandidateRepository.save(any(ExamCandidate.class))).thenAnswer(inv -> {
+            ExamCandidate c = inv.getArgument(0);
+            c.setId(UUID.randomUUID());
+            return c;
+        });
+
+        var result = useCase.execute(new AddExamCandidateCommand(examId, studentId));
+
+        assertThat(result.studentId()).isEqualTo(studentId);
+    }
+
+    @Test
+    void should_reject_class_test_chair_who_teaches_no_class() {
+        givenClassTestScope();
+        when(schoolUserRepository.existsBySchoolIdAndUserId(schoolId, studentId)).thenReturn(true);
+        when(examDirectoryAccessService.callerClassIds(any())).thenReturn(List.of());
+
+        assertThatThrownBy(() -> useCase.execute(new AddExamCandidateCommand(examId, studentId)))
+            .isInstanceOf(ForbiddenException.class);
+        verify(examCandidateRepository, never()).save(any());
+    }
+
+    private void givenClassTestScope() {
+        when(examDirectoryAccessService.resolve(any(Exam.class)))
+            .thenReturn(new ExamDirectoryScope(userId, schoolId, false));
+    }
+
+    private SchoolClassUser activeMembership() {
+        var membership = new SchoolClassUser();
+        membership.setUserId(studentId);
+        membership.setSchoolClassId(classId);
+        membership.setActive(true);
+        return membership;
     }
 
     private UserRoleInfo studentRole() {

@@ -3,8 +3,10 @@ package com.sep.vox.infrastructure.persistence.adapter;
 import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
@@ -64,12 +66,50 @@ public class SchoolClassUserRepositoryImpl implements SchoolClassUserRepository 
         var pageRequest = PageRequest.of(page - 1, size);
         var pageable = springDataSchoolClassUserRepository.findBySchoolClassId(schoolClassId, pageRequest);
         return new PageResult<>(
-            pageable.getContent().stream().map(SchoolClassUserMapper::toDomain).toList(), 
-            page, 
-            size, 
-            pageable.getTotalElements(), 
+            pageable.getContent().stream().map(SchoolClassUserMapper::toDomain).toList(),
+            page,
+            size,
+            pageable.getTotalElements(),
             pageable.getTotalPages()
         );
+    }
+
+    @Override
+    public PageResult<SchoolClassUser> findBySchoolClassId(UUID schoolClassId, String roleCode, String search,
+            int page, int size) {
+        // Sort nằm sẵn trong ORDER BY của @Query nên PageRequest ở đây để unsorted.
+        var pageRequest = PageRequest.of(page - 1, size);
+        var normalizedSearch = blankToNull(search);
+        var pageable = springDataSchoolClassUserRepository.findBySchoolClassIdWithFilters(
+            schoolClassId,
+            blankToNull(roleCode),
+            normalizedSearch == null ? null : "%" + normalizedSearch.toLowerCase() + "%",
+            pageRequest
+        );
+        return new PageResult<>(
+            pageable.getContent().stream().map(SchoolClassUserMapper::toDomain).toList(),
+            page,
+            size,
+            pageable.getTotalElements(),
+            pageable.getTotalPages()
+        );
+    }
+
+    @Override
+    public Map<UUID, Integer> countActiveBySchoolClassIdIn(Collection<UUID> schoolClassIds) {
+        if (schoolClassIds == null || schoolClassIds.isEmpty()) {
+            return Map.of();
+        }
+        return springDataSchoolClassUserRepository.countActiveBySchoolClassIdIn(schoolClassIds)
+            .stream()
+            .collect(Collectors.toMap(
+                row -> (UUID) row[0],
+                row -> ((Number) row[1]).intValue()
+            ));
+    }
+
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value;
     }
 
     @Override

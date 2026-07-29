@@ -38,6 +38,26 @@ public interface SpringDataSchoolClassRepository extends JpaRepository<SchoolCla
         @Param("status") String status,
         Pageable pageable);
 
+    // Bản có tìm kiếm của findByUserId ở trên; tách riêng để đường cũ (Flutter,
+    // màn tạo bài trên lớp) không đổi hành vi.
+    @Query("""
+        SELECT sc
+        FROM SchoolClassJpaEntity sc
+        JOIN SchoolClassUserJpaEntity scu ON scu.schoolClassId = sc.id
+        WHERE sc.schoolId = :schoolId
+            AND scu.userId = :userId
+            AND (LOWER(sc.code) LIKE :searchPattern
+                OR LOWER(sc.name) LIKE :searchPattern)
+            AND (:status IS NULL OR sc.status = :status)
+            AND (:status IS NOT NULL OR sc.status <> 'ARCHIVED')
+        """)
+    Page<SchoolClassJpaEntity> findByUserIdWithSearch(
+        @Param("schoolId") UUID schoolId,
+        @Param("userId") UUID userId,
+        @Param("searchPattern") String searchPattern,
+        @Param("status") String status,
+        Pageable pageable);
+
     @Query("""
         SELECT sc
         FROM SchoolClassJpaEntity sc

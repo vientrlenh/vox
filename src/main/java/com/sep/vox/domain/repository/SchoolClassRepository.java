@@ -17,6 +17,9 @@ public interface SchoolClassRepository {
     PageResult<SchoolClass> findBySchoolId(UUID schoolId, String search, SchoolClassStatus status,
             UUID languageId, UUID schoolGradeId, int pageNumber, int size);
     PageResult<SchoolClass> findByUserId(UUID schoolId, UUID userId, SchoolClassStatus status, int pageNumber, int size);
+    /** Như trên nhưng lọc thêm theo mã/tên lớp. `pageNumber` là 1-based. */
+    PageResult<SchoolClass> findByUserId(UUID schoolId, UUID userId, String search, SchoolClassStatus status,
+            int pageNumber, int size);
     Optional<SchoolClass> findBySchoolIdAndCode(UUID schoolId, String code);
     Optional<SchoolClass> findBySchoolIdAndName(UUID schoolId, String name);
     List<SchoolClass> findBySchoolIdAndCodeIn(UUID schoolId, Collection<String> codes);

@@ -20,6 +20,7 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.UserStatus;
+import com.sep.vox.domain.repository.RoleRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
@@ -28,6 +29,7 @@ public class ViewSchoolUsersUseCaseTests {
     private UserContextPort userContextPort;
     private UserRepository userRepository;
     private SchoolUserRepository schoolUserRepository;
+    private RoleRepository roleRepository;
     private ViewSchoolUsersBySchoolUseCase viewSchoolUsersBySchoolUseCase;
 
     private final UUID schoolId = UUID.randomUUID();
@@ -38,10 +40,12 @@ public class ViewSchoolUsersUseCaseTests {
         userContextPort = mock(UserContextPort.class);
         userRepository = mock(UserRepository.class);
         schoolUserRepository = mock(SchoolUserRepository.class);
+        roleRepository = mock(RoleRepository.class);
         viewSchoolUsersBySchoolUseCase = new ViewSchoolUsersBySchoolUseCase(
             userContextPort,
             userRepository,
-            schoolUserRepository
+            schoolUserRepository,
+            roleRepository
         );
     }
 
@@ -55,7 +59,7 @@ public class ViewSchoolUsersUseCaseTests {
         when(userContextPort.getCurrentSchoolId()).thenReturn(schoolId);
         when(userRepository.existsByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(true);
         when(schoolUserRepository.existsBySchoolIdAndUserId(schoolId, callerId)).thenReturn(true);
-        when(schoolUserRepository.findBySchoolId(schoolId, null, null, null, 1, 20)).thenReturn(page);
+        when(schoolUserRepository.findBySchoolId(schoolId, null, null, null, null, 1, 20)).thenReturn(page);
 
         var result = viewSchoolUsersBySchoolUseCase.execute(new ViewSchoolUsersBySchoolQuery(schoolId, 1, 20, null, null, null));
 
@@ -75,7 +79,7 @@ public class ViewSchoolUsersUseCaseTests {
         when(userContextPort.getCurrentSchoolId()).thenReturn(schoolId);
         when(userRepository.existsByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(true);
         when(schoolUserRepository.existsBySchoolIdAndUserId(schoolId, callerId)).thenReturn(true);
-        when(schoolUserRepository.findBySchoolId(schoolId, null, roleId, null, 1, 20)).thenReturn(page);
+        when(schoolUserRepository.findBySchoolId(schoolId, null, roleId, null, null, 1, 20)).thenReturn(page);
 
         var result = viewSchoolUsersBySchoolUseCase.execute(new ViewSchoolUsersBySchoolQuery(schoolId, 1, 20, null, roleId, null));
 

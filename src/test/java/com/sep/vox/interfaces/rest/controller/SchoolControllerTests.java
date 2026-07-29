@@ -58,6 +58,7 @@ import com.sep.vox.interfaces.rest.dto.request.AcceptSchoolUserImportRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolClassRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolUserRequest;
 import com.sep.vox.application.port.input.usecase.schoolclassuser.AcceptSchoolClassUserImportUseCase;
+import com.sep.vox.application.port.input.usecase.schoolclassuser.BulkCreateSchoolClassUsersUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclassuser.CreateSchoolClassUserUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclassuser.DeleteSchoolClassUserUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclassuser.PreviewSchoolClassUserImportFromFileUseCase;
@@ -83,6 +84,7 @@ class SchoolControllerTests {
     private PreviewSchoolUserImportFromFileUseCase previewSchoolUserImportFromFileUseCase;
     private AcceptSchoolUserImportUseCase acceptSchoolUserImportUseCase;
     private CreateSchoolClassUserUseCase createSchoolClassUserUseCase;
+    private BulkCreateSchoolClassUsersUseCase bulkCreateSchoolClassUsersUseCase;
     private DeleteSchoolClassUserUseCase deleteSchoolClassUserUseCase;
     private UpdateSchoolClassUserStatusUseCase updateSchoolClassUserStatusUseCase;
     private PreviewSchoolClassUserImportFromFileUseCase previewSchoolClassUserImportFromFileUseCase;
@@ -124,6 +126,7 @@ class SchoolControllerTests {
         previewSchoolUserImportFromFileUseCase = mock(PreviewSchoolUserImportFromFileUseCase.class);
         acceptSchoolUserImportUseCase = mock(AcceptSchoolUserImportUseCase.class);
         createSchoolClassUserUseCase = mock(CreateSchoolClassUserUseCase.class);
+        bulkCreateSchoolClassUsersUseCase = mock(BulkCreateSchoolClassUsersUseCase.class);
         deleteSchoolClassUserUseCase = mock(DeleteSchoolClassUserUseCase.class);
         updateSchoolClassUserStatusUseCase = mock(UpdateSchoolClassUserStatusUseCase.class);
         previewSchoolClassUserImportFromFileUseCase = mock(PreviewSchoolClassUserImportFromFileUseCase.class);
@@ -149,6 +152,7 @@ class SchoolControllerTests {
         controller = new SchoolController(
             createSchoolClassUseCase, 
             createSchoolClassUserUseCase,
+            bulkCreateSchoolClassUsersUseCase,
             deleteSchoolClassUseCase, 
             deleteSchoolClassUserUseCase, 
             updateSchoolClassUserStatusUseCase, 

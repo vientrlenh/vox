@@ -62,6 +62,11 @@ public interface SpringDataSchoolUserRepository extends JpaRepository<SchoolUser
                 SELECT 1 FROM UserRoleJpaEntity ur
                 WHERE ur.userId = u.id
                     AND ur.roleId = :roleId))
+            AND (:excludeClassId IS NULL OR NOT EXISTS (
+                SELECT 1 FROM SchoolClassUserJpaEntity scu
+                WHERE scu.userId = u.id
+                    AND scu.schoolClassId = :excludeClassId
+                    AND scu.isActive = true))
         ORDER BY su.id DESC
         """,
         countQuery = """
@@ -75,6 +80,11 @@ public interface SpringDataSchoolUserRepository extends JpaRepository<SchoolUser
                 SELECT 1 FROM UserRoleJpaEntity ur
                 WHERE ur.userId = u.id
                     AND ur.roleId = :roleId))
+            AND (:excludeClassId IS NULL OR NOT EXISTS (
+                SELECT 1 FROM SchoolClassUserJpaEntity scu
+                WHERE scu.userId = u.id
+                    AND scu.schoolClassId = :excludeClassId
+                    AND scu.isActive = true))
         """)
     Page<SchoolUserJpaEntity> searchBySchoolId(
         @Param("schoolId") UUID schoolId,
@@ -82,5 +92,6 @@ public interface SpringDataSchoolUserRepository extends JpaRepository<SchoolUser
         @Param("search") String search,
         @Param("roleId") UUID roleId,
         @Param("status") String status,
+        @Param("excludeClassId") UUID excludeClassId,
         Pageable pageable);
 }

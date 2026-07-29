@@ -9,6 +9,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 
 import com.sep.vox.application.port.input.query.SearchExamAppealsQuery;
+import com.sep.vox.application.port.input.query.SearchMyExamAppealsQuery;
 import com.sep.vox.application.port.input.query.ViewMyAppealTasksQuery;
 import com.sep.vox.application.port.input.usecase.examappeal.ViewAppealTaskDetailUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.ViewAssignableReviewersUseCase;
@@ -16,6 +17,8 @@ import com.sep.vox.application.port.input.usecase.examappeal.ViewExamAppealDetai
 import com.sep.vox.application.port.input.usecase.examappeal.ViewExamAppealStatsUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.ViewExamAppealsUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.ViewMyAppealTasksUseCase;
+import com.sep.vox.application.port.input.usecase.examappeal.ViewMyExamAppealDetailUseCase;
+import com.sep.vox.application.port.input.usecase.examappeal.ViewMyExamAppealsUseCase;
 import com.sep.vox.application.query.dto.AppealDetailInfo;
 import com.sep.vox.application.query.dto.AppealReviewerLiteInfo;
 import com.sep.vox.application.query.dto.AppealStatsInfo;
@@ -33,6 +36,8 @@ public class ExamAppealController {
     private final ViewMyAppealTasksUseCase viewMyAppealTasksUseCase;
     private final ViewAppealTaskDetailUseCase viewAppealTaskDetailUseCase;
     private final ViewAssignableReviewersUseCase viewAssignableReviewersUseCase;
+    private final ViewMyExamAppealsUseCase viewMyExamAppealsUseCase;
+    private final ViewMyExamAppealDetailUseCase viewMyExamAppealDetailUseCase;
 
     public ExamAppealController(
             ViewExamAppealsUseCase viewExamAppealsUseCase,
@@ -40,13 +45,17 @@ public class ExamAppealController {
             ViewExamAppealDetailUseCase viewExamAppealDetailUseCase,
             ViewMyAppealTasksUseCase viewMyAppealTasksUseCase,
             ViewAppealTaskDetailUseCase viewAppealTaskDetailUseCase,
-            ViewAssignableReviewersUseCase viewAssignableReviewersUseCase) {
+            ViewAssignableReviewersUseCase viewAssignableReviewersUseCase,
+            ViewMyExamAppealsUseCase viewMyExamAppealsUseCase,
+            ViewMyExamAppealDetailUseCase viewMyExamAppealDetailUseCase) {
         this.viewExamAppealsUseCase = viewExamAppealsUseCase;
         this.viewExamAppealStatsUseCase = viewExamAppealStatsUseCase;
         this.viewExamAppealDetailUseCase = viewExamAppealDetailUseCase;
         this.viewMyAppealTasksUseCase = viewMyAppealTasksUseCase;
         this.viewAppealTaskDetailUseCase = viewAppealTaskDetailUseCase;
         this.viewAssignableReviewersUseCase = viewAssignableReviewersUseCase;
+        this.viewMyExamAppealsUseCase = viewMyExamAppealsUseCase;
+        this.viewMyExamAppealDetailUseCase = viewMyExamAppealDetailUseCase;
     }
 
     @QueryMapping(name = "appeals")
@@ -92,5 +101,21 @@ public class ExamAppealController {
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public List<AppealReviewerLiteInfo> appealReviewers(@Argument("keyword") String keyword) {
         return viewAssignableReviewersUseCase.execute(keyword);
+    }
+
+    @QueryMapping(name = "myAppeals")
+    @PreAuthorize("hasRole('STUDENT')")
+    public PageResult<AppealSummaryInfo> myAppeals(
+            @Argument("status") String status,
+            @Argument("page") Integer page,
+            @Argument("size") Integer size) {
+        return viewMyExamAppealsUseCase.execute(new SearchMyExamAppealsQuery(
+            status, page == null ? 0 : page, size == null ? 20 : size));
+    }
+
+    @QueryMapping(name = "myAppeal")
+    @PreAuthorize("hasRole('STUDENT')")
+    public AppealDetailInfo myAppeal(@Argument("id") UUID id) {
+        return viewMyExamAppealDetailUseCase.execute(id);
     }
 }

@@ -205,6 +205,121 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
         return result;
     }
 
+    // ---- danh sách đơn (chính học sinh) -------------------------------------
+
+    @Override
+    public PageResult<AppealSummaryInfo> searchMyAppeals(UUID studentId, String status, int page, int size) {
+        var normalizedPage = Math.max(page, 0);
+        var normalizedSize = Math.max(size, 1);
+
+        var rows = em.createQuery("""
+            SELECT a.id, u.fullName, e.name, a.scoreBefore, a.status, a.requestedAt, a.deadline
+            FROM ExamResultAppealJpaEntity a
+            JOIN ExamCandidateResultJpaEntity cr ON cr.id = a.candidateResultId
+            JOIN ExamJpaEntity e ON e.id = cr.examId
+            JOIN ExamCandidateJpaEntity c ON c.id = cr.candidateId
+            JOIN UserJpaEntity u ON u.id = c.studentId
+            WHERE c.studentId = :studentId
+            AND (:status IS NULL OR a.status = :status)
+            ORDER BY a.requestedAt DESC
+        """, Tuple.class)
+            .setParameter("studentId", studentId)
+            .setParameter("status", status)
+            .setFirstResult(normalizedPage * normalizedSize)
+            .setMaxResults(normalizedSize)
+            .getResultList();
+
+        var appealIds = rows.stream().map(row -> row.get(0, UUID.class)).toList();
+        var countsByAppeal = reviewerCountsByAppealIds(appealIds);
+        var classNamesByAppeal = classNamesByAppealIds(appealIds);
+        var partLabelsByAppeal = partLabelsByAppealIds(appealIds);
+        var now = OffsetDateTime.now();
+
+        var content = new ArrayList<AppealSummaryInfo>();
+        for (var row : rows) {
+            var appealId = row.get(0, UUID.class);
+            var counts = countsByAppeal.getOrDefault(appealId, new int[] { 0, 0 });
+            var status0 = row.get(4, String.class);
+            var deadline = row.get(6, OffsetDateTime.class);
+            content.add(new AppealSummaryInfo(
+                appealId,
+                row.get(1, String.class),
+                classNamesByAppeal.get(appealId),
+                row.get(2, String.class),
+                partLabelsByAppeal.getOrDefault(appealId, List.of()),
+                row.get(3, BigDecimal.class),
+                status0,
+                row.get(5, OffsetDateTime.class),
+                deadline,
+                counts[0],
+                counts[1],
+                isOverdue(deadline, status0, now)
+            ));
+        }
+
+        var total = em.createQuery("""
+            SELECT COUNT(a) FROM ExamResultAppealJpaEntity a
+            JOIN ExamCandidateResultJpaEntity cr ON cr.id = a.candidateResultId
+            JOIN ExamCandidateJpaEntity c ON c.id = cr.candidateId
+            WHERE c.studentId = :studentId
+            AND (:status IS NULL OR a.status = :status)
+        """, Long.class)
+            .setParameter("studentId", studentId)
+            .setParameter("status", status)
+            .getSingleResult();
+
+        var totalPages = (int) Math.ceil((double) total / normalizedSize);
+        return new PageResult<>(content, normalizedPage, normalizedSize, total, totalPages);
+    }
+
+    @Override
+    public Optional<AppealDetailInfo> findMyDetailById(UUID appealId, UUID studentId) {
+        var rows = em.createQuery("""
+            SELECT a.id, u.fullName, e.name, a.scoreBefore, a.status, a.requestedAt, a.deadline,
+                   a.reason, a.notes, a.decisionNote, a.scoreAfter, a.approvedAt, a.resolvedAt,
+                   rv.scoringScaleMin, rv.scoringScaleMax
+            FROM ExamResultAppealJpaEntity a
+            JOIN ExamCandidateResultJpaEntity cr ON cr.id = a.candidateResultId
+            JOIN ExamJpaEntity e ON e.id = cr.examId
+            JOIN ExamCandidateJpaEntity c ON c.id = cr.candidateId
+            JOIN UserJpaEntity u ON u.id = c.studentId
+            JOIN RubricVersionJpaEntity rv ON rv.id = cr.rubricVersionId
+            WHERE a.id = :appealId AND c.studentId = :studentId
+        """, Tuple.class)
+            .setParameter("appealId", appealId)
+            .setParameter("studentId", studentId)
+            .getResultList();
+        if (rows.isEmpty()) {
+            return Optional.empty();
+        }
+        var row = rows.get(0);
+        var status = row.get(4, String.class);
+        var deadline = row.get(6, OffsetDateTime.class);
+
+        // Học sinh không cần thấy báo cáo từng giám khảo (chấm mù) — chỉ điểm/nhận xét cuối.
+        return Optional.of(new AppealDetailInfo(
+            row.get(0, UUID.class),
+            row.get(1, String.class),
+            className(appealId),
+            row.get(2, String.class),
+            row.get(3, BigDecimal.class),
+            status,
+            row.get(5, OffsetDateTime.class),
+            deadline,
+            row.get(7, String.class),
+            row.get(8, String.class),
+            row.get(9, String.class),
+            row.get(10, BigDecimal.class),
+            row.get(11, OffsetDateTime.class),
+            row.get(12, OffsetDateTime.class),
+            appealItems(appealId),
+            reviewers(appealId, false),
+            isOverdue(deadline, status, OffsetDateTime.now()),
+            row.get(13, BigDecimal.class),
+            row.get(14, BigDecimal.class)
+        ));
+    }
+
     // ---- stat cards --------------------------------------------------------
 
     @Override

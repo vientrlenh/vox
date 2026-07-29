@@ -20,6 +20,8 @@ import com.sep.vox.application.port.input.usecase.examappeal.ViewExamAppealDetai
 import com.sep.vox.application.port.input.usecase.examappeal.ViewExamAppealStatsUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.ViewExamAppealsUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.ViewMyAppealTasksUseCase;
+import com.sep.vox.application.port.input.usecase.examappeal.ViewMyExamAppealDetailUseCase;
+import com.sep.vox.application.port.input.usecase.examappeal.ViewMyExamAppealsUseCase;
 import com.sep.vox.application.query.dto.AppealReviewerLiteInfo;
 import com.sep.vox.application.query.dto.AppealStatsInfo;
 import com.sep.vox.application.query.dto.AppealTaskDetailInfo;
@@ -33,6 +35,8 @@ public class ExamAppealControllerTests {
     private ViewMyAppealTasksUseCase viewMyAppealTasksUseCase;
     private ViewAppealTaskDetailUseCase viewAppealTaskDetailUseCase;
     private ViewAssignableReviewersUseCase viewAssignableReviewersUseCase;
+    private ViewMyExamAppealsUseCase viewMyExamAppealsUseCase;
+    private ViewMyExamAppealDetailUseCase viewMyExamAppealDetailUseCase;
     private ExamAppealController controller;
 
     @BeforeEach
@@ -43,13 +47,17 @@ public class ExamAppealControllerTests {
         viewMyAppealTasksUseCase = mock(ViewMyAppealTasksUseCase.class);
         viewAppealTaskDetailUseCase = mock(ViewAppealTaskDetailUseCase.class);
         viewAssignableReviewersUseCase = mock(ViewAssignableReviewersUseCase.class);
+        viewMyExamAppealsUseCase = mock(ViewMyExamAppealsUseCase.class);
+        viewMyExamAppealDetailUseCase = mock(ViewMyExamAppealDetailUseCase.class);
         controller = new ExamAppealController(
             viewExamAppealsUseCase,
             viewExamAppealStatsUseCase,
             viewExamAppealDetailUseCase,
             viewMyAppealTasksUseCase,
             viewAppealTaskDetailUseCase,
-            viewAssignableReviewersUseCase
+            viewAssignableReviewersUseCase,
+            viewMyExamAppealsUseCase,
+            viewMyExamAppealDetailUseCase
         );
     }
 

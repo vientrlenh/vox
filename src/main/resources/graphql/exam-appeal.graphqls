@@ -190,4 +190,9 @@ extend type Query {
     appealTaskDetail(appealId: ID!): AppealTaskDetail!
 
     appealReviewers(keyword: String): [AppealReviewerLite!]!
+
+    "Đơn phúc khảo của chính học sinh đang đăng nhập. Phân trang 0-based."
+    myAppeals(status: AppealStatus, page: Int = 0, size: Int = 20): AppealSummaryPage!
+
+    myAppeal(id: ID!): AppealDetail!
 }

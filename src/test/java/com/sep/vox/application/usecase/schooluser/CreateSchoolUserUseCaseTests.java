@@ -18,22 +18,19 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.event.SchoolUserPasswordSetUpEmailRequestedEvent;
 import com.sep.vox.application.port.input.command.CreateSchoolUserCommand;
 import com.sep.vox.application.port.input.usecase.schooluser.CreateSchoolUserUseCase;
-import com.sep.vox.application.port.output.EventPublisherPort;
-import com.sep.vox.application.port.output.PasswordSetUpTokenPort;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.response.output.GeneratedPasswordSetUpToken;
 import com.sep.vox.domain.model.user.Role;
 import com.sep.vox.domain.model.school.School;
-import com.sep.vox.domain.model.passwordsetuptoken.PasswordSetUpToken;
+import com.sep.vox.domain.model.outbox.Outbox;
 import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.model.user.UserRole;
+import com.sep.vox.application.support.FakeJsonSerializationPort;
+import com.sep.vox.domain.repository.OutboxRepository;
 import com.sep.vox.domain.repository.RoleRepository;
-import com.sep.vox.domain.repository.PasswordSetUpTokenRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
@@ -52,9 +49,8 @@ public class CreateSchoolUserUseCaseTests {
     private UserRoleRepository userRoleRepository;
     private SchoolUserRepository schoolUserRepository;
     private SchoolRepository schoolRepository;
-    private PasswordSetUpTokenPort passwordSetUpTokenPort;
-    private PasswordSetUpTokenRepository passwordSetUpTokenRepository;
-    private EventPublisherPort eventPublisherPort;
+    private OutboxRepository outboxRepository;
+    private FakeJsonSerializationPort jsonSerializationPort;
     private CreateSchoolUserUseCase createSchoolUserUseCase;
 
     private final UUID schoolId = UUID.randomUUID();
@@ -68,17 +64,14 @@ public class CreateSchoolUserUseCaseTests {
         userRoleRepository = mock(UserRoleRepository.class);
         schoolUserRepository = mock(SchoolUserRepository.class);
         schoolRepository = mock(SchoolRepository.class);
-        passwordSetUpTokenPort = mock(PasswordSetUpTokenPort.class);
-        passwordSetUpTokenRepository = mock(PasswordSetUpTokenRepository.class);
-        eventPublisherPort = mock(EventPublisherPort.class);
+        outboxRepository = mock(OutboxRepository.class);
+        jsonSerializationPort = new FakeJsonSerializationPort();
         createSchoolUserUseCase = new CreateSchoolUserUseCase(
             userContextPort, userRepository, roleRepository,
             userRoleRepository, schoolUserRepository,
-            schoolRepository, passwordSetUpTokenPort, passwordSetUpTokenRepository, eventPublisherPort
+            schoolRepository, outboxRepository, jsonSerializationPort
         );
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(school(schoolId, "Trường A")));
-        when(passwordSetUpTokenPort.generateToken()).thenReturn(new GeneratedPasswordSetUpToken("raw-token", "hashed-token"));
-        when(passwordSetUpTokenRepository.save(any(PasswordSetUpToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
     }
 
     @Test
@@ -127,7 +120,7 @@ public class CreateSchoolUserUseCaseTests {
 
         assertThat(result.id()).isEqualTo(savedUser.getId());
         verify(schoolUserRepository).save(any(SchoolUser.class));
-        verify(eventPublisherPort).publish(any(SchoolUserPasswordSetUpEmailRequestedEvent.class));
+        verify(outboxRepository).save(any(Outbox.class));
     }
 
     @Test
@@ -196,7 +189,7 @@ public class CreateSchoolUserUseCaseTests {
         assertThat(result.id()).isEqualTo(savedUser.getId());
         // Giáo viên giờ cũng được gắn vào trường qua school_users (không có thời hạn)
         verify(schoolUserRepository).save(any(SchoolUser.class));
-        verify(eventPublisherPort).publish(any(SchoolUserPasswordSetUpEmailRequestedEvent.class));
+        verify(outboxRepository).save(any(Outbox.class));
     }
 
     @Test

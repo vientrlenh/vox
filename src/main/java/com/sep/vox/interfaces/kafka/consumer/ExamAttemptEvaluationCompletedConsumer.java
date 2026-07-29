@@ -67,7 +67,7 @@ public class ExamAttemptEvaluationCompletedConsumer {
         );
         try {
             var payload = jsonMapper.valueToTree(record.value());
-            var eventType = payload.path("eventType").asText();
+            var eventType = payload.path("eventType").asString();
 
             if ("ExamAttemptEvaluationCompleted".equals(eventType)) {
                 var dto = jsonMapper.treeToValue(payload, ExamAttemptEvaluationCompletedEventDto.class);
@@ -115,7 +115,7 @@ public class ExamAttemptEvaluationCompletedConsumer {
 
     private UUID resolveSessionId(Object rawRecordValue) {
         var payload = jsonMapper.valueToTree(rawRecordValue);
-        var eventType = payload.path("eventType").asText();
+        var eventType = payload.path("eventType").asString();
 
         if ("ExamAttemptEvaluationCompleted".equals(eventType)) {
             var completedEvent = jsonMapper.treeToValue(payload, ExamAttemptEvaluationCompletedEventDto.class);

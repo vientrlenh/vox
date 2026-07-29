@@ -1,14 +1,12 @@
 package com.sep.vox.interfaces.graphql.config;
 
 import com.sep.vox.application.port.input.query.key.RubricCriteriaKey;
-import com.sep.vox.application.port.input.query.key.RubricCriterionBandsKey;
 import com.sep.vox.application.port.input.query.key.RubricResultBandsKey;
 import com.sep.vox.application.port.input.query.key.RubricVersionsKey;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.*;
 import com.sep.vox.domain.mapper.*;
 import com.sep.vox.domain.model.rubric.RubricCriterion;
-import com.sep.vox.domain.model.rubric.RubricCriterionBand;
 import com.sep.vox.domain.model.rubric.RubricResultBand;
 import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
@@ -29,7 +27,6 @@ public class RubricGraphQlDataLoaderConfig {
             BatchLoaderRegistry registry,
             RubricVersionRepository rubricVersionRepository,
             RubricCriterionRepository rubricCriterionRepository,
-            RubricCriterionBandRepository rubricCriterionBandRepository,
             RubricResultBandRepository rubricResultBandRepository,
             SupportedLanguageRepository supportedLanguageRepository,
             FrameworkRepository frameworkRepository
@@ -93,36 +90,6 @@ public class RubricGraphQlDataLoaderConfig {
                                         .skip((long) key.page() * key.size())
                                         .limit(key.size())
                                         .map(RubricCriterionDtoMapper::toDto)
-                                        .toList();
-
-                                result.put(key, new PageResult<>(pagedDtos, key.page(), key.size(), totalElements, totalPages));
-                            }
-                            return result;
-                        })
-                );
-
-        // 3. LOADER: LẤY DANH SÁCH THANG ĐIỂM (BANDS) CHO TIÊU CHÍ
-        registry.<RubricCriterionBandsKey, PageResult<RubricCriterionBandDto>>forName("rubricCriterionBandsDataLoader")
-                .registerMappedBatchLoader((Set<RubricCriterionBandsKey> keys, BatchLoaderEnvironment env) ->
-                        Mono.fromSupplier(() -> {
-                            Map<RubricCriterionBandsKey, PageResult<RubricCriterionBandDto>> result = new HashMap<>();
-                            keys.forEach(k -> result.put(k, new PageResult<>(List.of(), k.page(), k.size(), 0, 0)));
-
-                            var criterionIds = keys.stream().map(k -> k.criterionId()).distinct().toList();
-                            List<RubricCriterionBand> allBands = rubricCriterionBandRepository.findByCriterionIdIn(criterionIds);
-                            Map<UUID, List<RubricCriterionBand>> bandsByCriterion = allBands.stream()
-                                    .collect(Collectors.groupingBy(b -> b.getCriterionId()));
-
-                            for (RubricCriterionBandsKey key : keys) {
-                                List<RubricCriterionBand> bandList = bandsByCriterion.getOrDefault(key.criterionId(), List.of());
-                                int totalElements = bandList.size();
-                                int totalPages = (int) Math.ceil((double) totalElements / key.size());
-
-                                List<RubricCriterionBandDto> pagedDtos = bandList.stream()
-                                        .sorted((b1, b2) -> b1.getScoreMin().compareTo(b2.getScoreMin()))
-                                        .skip((long) key.page() * key.size())
-                                        .limit(key.size())
-                                        .map(RubricCriterionBandDtoMapper::toDto)
                                         .toList();
 
                                 result.put(key, new PageResult<>(pagedDtos, key.page(), key.size(), totalElements, totalPages));

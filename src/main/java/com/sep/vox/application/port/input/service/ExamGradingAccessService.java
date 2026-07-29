@@ -94,6 +94,22 @@ public class ExamGradingAccessService {
         return loadFromCandidateResult(assignment, candidateResultId);
     }
 
+    /**
+     * Điểm vào chung cho mọi thao tác chấm: {@code assignmentId} cho luồng giáo
+     * viên (đã có phân công), {@code candidateResultId} cho luồng nhà trường chấm
+     * trực tiếp (có thể chưa có phân công nào). Đúng một trong hai phải khác null.
+     */
+    @Transactional(readOnly = true)
+    public GradingContext loadForGrading(UUID assignmentId, UUID candidateResultId) {
+        if (assignmentId != null) {
+            return load(assignmentId);
+        }
+        if (candidateResultId != null) {
+            return loadByCandidateResultId(candidateResultId);
+        }
+        throw new NotFoundException("Thiếu assignmentId hoặc candidateResultId để chấm bài.");
+    }
+
     private GradingContext loadFromCandidateResult(ExamGradingAssignment assignment, UUID candidateResultId) {
         var candidateResult = examCandidateResultRepository.findById(candidateResultId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy kết quả bài thi."));
@@ -106,29 +122,40 @@ public class ExamGradingAccessService {
 
     /** School admin cùng trường với bài thi. Dùng cho gán / đổi / gỡ phân công. */
     public void authorizeSchoolAdmin(UUID schoolId, UUID currentUserId) {
-        if (userContextPort.isSystemAdmin()) {
-            return;
-        }
-        var isSchoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
-            .map(schoolUser -> schoolUser.getSchoolId())
-            .orElse(null);
-        if (isSchoolAdmin && currentSchoolId != null && currentSchoolId.equals(schoolId)) {
+        if (isSchoolAdminOfSchool(schoolId, currentUserId)) {
             return;
         }
         throw new ForbiddenException("BẢO MẬT: Bạn không có quyền phân công chấm bài của trường này.");
     }
 
     /**
-     * Chính giáo viên được gán bài này. Đây là chốt phân quyền duy nhất cho mọi
-     * thao tác chấm — kể cả gỡ cờ và đánh INVALID.
+     * Chốt phân quyền cho mọi thao tác chấm — kể cả gỡ cờ và đánh INVALID. Cho qua
+     * khi: (a) chính giáo viên được gán bài này, HOẶC (b) SCHOOL_ADMIN cùng trường
+     * với kỳ thi — nhà trường luôn xem/chấm/chỉnh lại được bất kỳ bài PENDING_REVIEW
+     * nào của trường mình, kể cả bài chưa có phân công hoặc đang gán cho giáo viên
+     * khác (không cần tự gán trước).
      */
-    public void authorizeAssignedTeacher(GradingContext context, UUID currentUserId) {
+    public void authorizeGrader(GradingContext context, UUID currentUserId) {
         var assignment = context.assignment();
-        if (assignment == null || !currentUserId.equals(assignment.getTeacherId())) {
-            throw new ForbiddenException("BẢO MẬT: Bạn không được phân công chấm bài thi này.");
+        if (assignment != null && currentUserId.equals(assignment.getTeacherId())) {
+            return;
         }
+        if (isSchoolAdminOfSchool(context.schoolId(), currentUserId)) {
+            return;
+        }
+        throw new ForbiddenException("BẢO MẬT: Bạn không được phân công chấm bài thi này.");
+    }
+
+    private boolean isSchoolAdminOfSchool(UUID schoolId, UUID currentUserId) {
+        if (userContextPort.isSystemAdmin()) {
+            return true;
+        }
+        var isSchoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
+        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+            .map(schoolUser -> schoolUser.getSchoolId())
+            .orElse(null);
+        return isSchoolAdmin && currentSchoolId != null && currentSchoolId.equals(schoolId);
     }
 
     /** Trường của người đang đăng nhập — mọi màn phân công đều bị giới hạn trong đó. */

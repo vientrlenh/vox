@@ -7,6 +7,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -140,7 +141,9 @@ public class DeleteExamSessionUseCaseTests {
 
         useCase.execute(sessionId);
 
-        var reviewerCaptor = ArgumentCaptor.forClass(java.util.Collection.class);
+        @SuppressWarnings("unchecked")
+        var reviewerCaptor = ArgumentCaptor.forClass((Class<Collection<UUID>>) (Class<?>) Collection.class);
+        
         verify(examAppealReviewerRepository).deleteByAppealIdIn(reviewerCaptor.capture());
         org.assertj.core.api.Assertions.assertThat(reviewerCaptor.getValue()).containsExactly(appealId);
 

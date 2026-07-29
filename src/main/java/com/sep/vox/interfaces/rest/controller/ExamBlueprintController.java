@@ -126,7 +126,7 @@ public class ExamBlueprintController {
     @PutMapping("/exam-blueprints/{id}")
     @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<ExamBlueprintDto>> update(
-            @PathVariable UUID id,
+            @PathVariable("id") UUID id,
             @Valid @RequestBody UpdateExamBlueprintRequest request) {
         var data = updateExamBlueprintUseCase.execute(UpdateExamBlueprintCommandMapper.fromRequest(id, request));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật blueprint đề thi thành công", data));
@@ -135,7 +135,7 @@ public class ExamBlueprintController {
     @PatchMapping("/exam-blueprints/{id}/active")
     @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<ExamBlueprintDto>> updateActiveStatus(
-            @PathVariable UUID id,
+            @PathVariable("id") UUID id,
             @RequestBody UpdateExamBlueprintActiveStatusRequest request) {
         var data = updateExamBlueprintActiveStatusUseCase.execute(
             new UpdateExamBlueprintActiveStatusCommand(id, request.isActive())
@@ -145,7 +145,7 @@ public class ExamBlueprintController {
 
     @DeleteMapping("/exam-blueprints/{id}")
     @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable("id") UUID id) {
         deleteExamBlueprintUseCase.execute(new DeleteExamBlueprintCommand(id));
         return ResponseEntity.ok(ApiResponse.success("Xóa blueprint đề thi thành công"));
     }
@@ -153,7 +153,7 @@ public class ExamBlueprintController {
     @PostMapping("/exam-blueprints/{id}/versions")
     @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<ExamBlueprintVersionDto>> createVersion(
-            @PathVariable UUID id,
+            @PathVariable("id") UUID id,
             @Valid @RequestBody CreateExamBlueprintVersionRequest request) {
         var data = createExamBlueprintVersionUseCase.execute(CreateExamBlueprintVersionCommandMapper.fromRequest(id, request));
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -162,7 +162,7 @@ public class ExamBlueprintController {
 
     @PostMapping("/exam-blueprint-versions/{id}/duplicate")
     @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<ExamBlueprintVersionDto>> duplicateVersion(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<ExamBlueprintVersionDto>> duplicateVersion(@PathVariable("id") UUID id) {
         var data = duplicateExamBlueprintVersionUseCase.execute(new DuplicateExamBlueprintVersionCommand(id));
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Nhân bản version blueprint đề thi thành công", data));
@@ -171,7 +171,7 @@ public class ExamBlueprintController {
     @PutMapping("/exam-blueprint-versions/{id}")
     @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<ExamBlueprintVersionDto>> updateVersion(
-            @PathVariable UUID id,
+            @PathVariable("id") UUID id,
             @Valid @RequestBody UpdateExamBlueprintVersionRequest request) {
         var data = updateExamBlueprintVersionUseCase.execute(UpdateExamBlueprintVersionCommandMapper.fromRequest(id, request));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật version blueprint đề thi thành công", data));
@@ -180,7 +180,7 @@ public class ExamBlueprintController {
     @PatchMapping("/exam-blueprint-versions/{id}/status")
     @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<ExamBlueprintVersionDto>> updateVersionStatus(
-            @PathVariable UUID id,
+            @PathVariable("id") UUID id,
             @Valid @RequestBody UpdateExamBlueprintVersionStatusRequest request) {
         var data = updateExamBlueprintVersionStatusUseCase.execute(
             UpdateExamBlueprintVersionStatusCommandMapper.fromRequest(id, request)
@@ -191,7 +191,7 @@ public class ExamBlueprintController {
     @PostMapping("/exam-blueprint-versions/{versionId}/sections")
     @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<ExamBlueprintSectionDto>> createSection(
-            @PathVariable UUID versionId,
+            @PathVariable("id") UUID versionId,
             @Valid @RequestBody CreateExamBlueprintSectionItemRequest request) {
         var data = createExamBlueprintSectionUseCase.execute(
             CreateExamBlueprintSectionCommandMapper.fromRequest(versionId, request)
@@ -203,7 +203,7 @@ public class ExamBlueprintController {
     @PutMapping("/exam-blueprint-sections/{sectionId}")
     @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<ExamBlueprintSectionDto>> updateSection(
-            @PathVariable UUID sectionId,
+            @PathVariable("sectionId") UUID sectionId,
             @Valid @RequestBody UpdateExamBlueprintSectionRequest request) {
         var data = updateExamBlueprintSectionUseCase.execute(
             UpdateExamBlueprintSectionCommandMapper.fromRequest(sectionId, request)
@@ -213,7 +213,7 @@ public class ExamBlueprintController {
 
     @DeleteMapping("/exam-blueprint-sections/{sectionId}")
     @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<Void>> deleteSection(@PathVariable UUID sectionId) {
+    public ResponseEntity<ApiResponse<Void>> deleteSection(@PathVariable("sectionId") UUID sectionId) {
         deleteExamBlueprintSectionUseCase.execute(new DeleteExamBlueprintSectionCommand(sectionId));
         return ResponseEntity.ok(ApiResponse.success("Xóa section thành công"));
     }
@@ -221,7 +221,7 @@ public class ExamBlueprintController {
     @PostMapping("/exam-blueprint-sections/{sectionId}/slots")
     @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<ExamBlueprintSlotDto>> createSlot(
-            @PathVariable UUID sectionId,
+            @PathVariable("sectionId") UUID sectionId,
             @Valid @RequestBody CreateExamBlueprintSlotItemRequest request) {
         var data = createExamBlueprintSlotUseCase.execute(
             CreateExamBlueprintSlotCommandMapper.fromRequest(sectionId, request)
@@ -233,7 +233,7 @@ public class ExamBlueprintController {
     @PutMapping("/exam-blueprint-slots/{slotId}")
     @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<ExamBlueprintSlotDto>> updateSlot(
-            @PathVariable UUID slotId,
+            @PathVariable("slotId") UUID slotId,
             @Valid @RequestBody UpdateExamBlueprintSlotRequest request) {
         var data = updateExamBlueprintSlotUseCase.execute(
             UpdateExamBlueprintSlotCommandMapper.fromRequest(slotId, request)
@@ -243,14 +243,14 @@ public class ExamBlueprintController {
 
     @DeleteMapping("/exam-blueprint-slots/{slotId}")
     @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<Void>> deleteSlot(@PathVariable UUID slotId) {
+    public ResponseEntity<ApiResponse<Void>> deleteSlot(@PathVariable("slotId") UUID slotId) {
         deleteExamBlueprintSlotUseCase.execute(new DeleteExamBlueprintSlotCommand(slotId));
         return ResponseEntity.ok(ApiResponse.success("Xóa slot thành công"));
     }
 
     @DeleteMapping("/exam-blueprint-versions/{id}")
     @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<Void>> deleteVersion(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<Void>> deleteVersion(@PathVariable("id") UUID id) {
         deleteExamBlueprintVersionUseCase.execute(new DeleteExamBlueprintVersionCommand(id));
         return ResponseEntity.ok(ApiResponse.success("Xóa phiên bản blueprint đề thi thành công"));
     }

@@ -12,7 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.common.ExamCandidateStatusSupport;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
-import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.exam.ExamSession;
@@ -167,13 +166,17 @@ public class ZeroScoreExamResultService {
         if (policy.getRubricVersionId() == null) {
             return null;
         }
-        return rubricResultBandRepository.findByRubricVersionId(policy.getRubricVersionId()).stream()
-            .sorted(Comparator.comparingInt(RubricResultBand::getOrder))
+        var matchingBands = rubricResultBandRepository.findByRubricVersionId(policy.getRubricVersionId()).stream()
+            .sorted(Comparator.comparingInt(band -> band.getOrder()))
             .filter(band -> band.getScoreMin() != null
                 && band.getScoreMax() != null
                 && ZERO_SCORE.compareTo(band.getScoreMin()) >= 0
                 && ZERO_SCORE.compareTo(band.getScoreMax()) <= 0)
-            .findFirst()
-            .orElse(null);
+            .toList();
+        if (matchingBands.size() != 1) {
+            throw new IllegalStateException("Điểm 0.00 phải thuộc chính xác một dải điểm kết quả, nhưng tìm thấy "
+                + matchingBands.size() + " dải.");
+        }
+        return matchingBands.get(0);
     }
 }

@@ -30,6 +30,12 @@ spring:
             message:
               max-size: 8MB
 
+  flyway: 
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 1
+
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
@@ -46,7 +52,7 @@ spring:
       group-id: ${KAFKA_GROUP_ID:vox}
       enable-auto-commit: false
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
       max-poll-records: 50 # max records per pools
       max-poll-interval: 10m # 10 min
       fetch-min-size: 1
@@ -56,6 +62,8 @@ spring:
         "[spring.json.trusted.packages]": "com.sep.vox"
         "[session.timeout.ms]": 30000
         "[heartbeat.interval.ms]": 10000
+        "[spring.deserializer.value.delegate.class]": org.springframework.kafka.support.serializer.JacksonJsonDeserializer
+        "[spring.json.use.type.headers]": false
         # Python producers (agents' aiokafka) never send Spring's type-info headers, so
         # JacksonJsonDeserializer has nothing to fall back to and throws IllegalStateException
         # before any @KafkaListener body runs. Fall back to a generic map when headers are
@@ -94,6 +102,9 @@ spring:
           auth: true
           starttls:
             enable: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
 
   security:
     oauth2:
@@ -111,13 +122,23 @@ spring:
     url: jdbc:postgresql://${DB_URL}/${DB_NAME}
     username: ${DB_USER}
     password: ${DB_PASSWORD}
+    hikari:
+      pool-name: vox-hikari
+      # Log kèm stack trace nếu 1 connection bị giữ >5s — cho biết đúng request/repo nào
+      # đang ôm connection khiến các request khác phải xếp hàng chờ rồi timeout.
+      leak-detection-threshold: 5000
+      # Mặc định Spring Boot chỉ 10 — quá ít khi nhiều tab/request đồng thời cùng gọi
+      # GraphQL (mỗi request giữ 1 connection suốt thời gian resolve). Postgres cho phép
+      # tới 100 connection, còn dư nhiều nên tăng lên đây để giảm nghẽn hàng đợi.
+      maximum-pool-size: 25
+      minimum-idle: 5
 
   jpa:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: true
 
 storage:
@@ -147,6 +168,12 @@ jwt:
     secret: ${JWT_STREAM_SECRET}
 
 logging:
+  file: 
+    name: logs/vox.log
+  logback: 
+    rollingpolicy:
+      max-file-size: 20MB
+      max-history: 7
   level:
     org:
       springframework:
@@ -189,6 +216,26 @@ app:
           topic:
             question-asset-analysis-completed: ${KAFKA_QUESTION_ASSET_ANALYSIS_COMPLETED_TOPIC:question-asset-analysis-completed}
           group-id: ${KAFKA_QUESTION_ASSET_ANALYSIS_GROUP_ID:vox-question-asset-analysis}
+        recording:
+          topic:
+            recording-part-changed: ${KAFKA_RECORDING_PART_CHANGED_TOPIC:exam.recording.part.changed}
+          group-id: ${KAFKA_RECORDING_GROUP_ID:vox-recording}
+  internal-event: 
+    kafka: 
+      consumer-groups:
+        email:
+          topic: 
+            register-form-rejected: ${KAFKA_REGISTER_FORM_REJECTED_TOPIC:vox.register-form-rejected.v1}
+            user-created: ${KAFKA_USER_CREATED_TOPIC:vox.user-created.v1}
+          group-id: ${KAFKA_EMAIL_GROUP_ID:vox-email}
+  recording:
+    bucket: ${RECORDING_S3_BUCKET:}
+  outbox: 
+    topics: 
+      "[RegisterFormRejected]": ${KAFKA_REGISTER_FORM_REJECTED_TOPIC:vox.register-form-rejected.v1}
+      "[UserCreated]": ${KAFKA_USER_CREATED_TOPIC:vox.user-created.v1}
+    
+
 
 system-admin:
   email: ${SYS_ADMIN_EMAIL}
@@ -204,3 +251,5 @@ payos:
   checksum-key: ${PAYOS_CHECKSUM_KEY:}
   return-url: ${PAYOS_RETURN_URL:}
   cancel-url: ${PAYOS_CANCEL_URL:}
+  system-admin-return-url: ${PAYOS_SYSTEM_ADMIN_RETURN_URL:}
+  system-admin-cancel-url: ${PAYOS_SYSTEM_ADMIN_CANCEL_URL:}

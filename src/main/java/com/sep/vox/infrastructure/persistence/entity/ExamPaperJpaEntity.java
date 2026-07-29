@@ -12,6 +12,11 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+// TODO(perf): thiếu index cho exam_id/blueprint_version_id. Chờ được yêu cầu mới insert:
+// @Table(name = "exam_papers", indexes = {
+//     @Index(columnList = "exam_id", name = "idx_exam_papers_exam"),
+//     @Index(columnList = "blueprint_version_id", name = "idx_exam_papers_blueprint_version")
+// })
 @Entity
 @Table(name = "exam_papers")
 public class ExamPaperJpaEntity {

@@ -68,7 +68,7 @@ public final class RecordExamAttemptEvaluationCommandMapper {
             return null;
         }
         return criteria.entrySet().stream().collect(Collectors.toMap(
-            Map.Entry::getKey,
+            k -> k.getKey(),
             entry -> toCriterion(entry.getValue())
         ));
     }
@@ -128,10 +128,10 @@ public final class RecordExamAttemptEvaluationCommandMapper {
             dto.cPfBranch(),
             dto.cGrammar(),
             dto.cVocabulary(),
-            dto.cDiscourse(),
+            dto.cCoherence(),
             dto.grammarScoreDelta(),
             dto.vocabularyScoreDelta(),
-            dto.discourseScoreDelta()
+            dto.coherenceScoreDelta()
         );
     }
 

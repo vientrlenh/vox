@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
@@ -20,6 +22,8 @@ import com.sep.vox.infrastructure.persistence.repository.SpringDataQuestionRepos
 
 @Repository
 public class QuestionRepositoryImpl implements QuestionRepository {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(QuestionRepositoryImpl.class);
 
     private final SpringDataQuestionRepository springDataQuestionRepository;
 
@@ -38,6 +42,20 @@ public class QuestionRepositoryImpl implements QuestionRepository {
     public Optional<Question> findById(UUID id) {
         return springDataQuestionRepository.findById(id)
             .map(QuestionMapper::toDomain);
+    }
+
+    @Override
+    public List<Question> findByIdIn(Collection<UUID> ids) {
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+        var startedAt = System.nanoTime();
+        var result = springDataQuestionRepository.findAllById(ids).stream()
+            .map(QuestionMapper::toDomain)
+            .toList();
+        LOGGER.info("[blueprint-perf] repo QuestionRepositoryImpl.findByIdIn ids={} tookMs={}",
+            ids.size(), (System.nanoTime() - startedAt) / 1_000_000);
+        return result;
     }
 
     @Override
@@ -183,12 +201,16 @@ public class QuestionRepositoryImpl implements QuestionRepository {
         if (ids.isEmpty()) {
             return List.of();
         }
-        return springDataQuestionRepository.findAccessibleByIdIn(
+        var startedAt = System.nanoTime();
+        var result = springDataQuestionRepository.findAccessibleByIdIn(
             ids,
             currentUserId,
             currentSchoolId,
             systemAdmin,
             schoolAdmin
         ).stream().map(QuestionMapper::toDomain).toList();
+        LOGGER.info("[blueprint-perf] repo QuestionRepositoryImpl.findAccessibleByIdIn ids={} tookMs={}",
+            ids.size(), (System.nanoTime() - startedAt) / 1_000_000);
+        return result;
     }
 }

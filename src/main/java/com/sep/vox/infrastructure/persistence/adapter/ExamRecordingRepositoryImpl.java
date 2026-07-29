@@ -1,11 +1,13 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.exam.ExamRecording;
+import com.sep.vox.domain.model.exam.ExamRequiredStreamType;
 import com.sep.vox.domain.repository.ExamRecordingRepository;
 import com.sep.vox.infrastructure.persistence.mapper.ExamRecordingMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataExamRecordingRepository;
@@ -26,5 +28,19 @@ public class ExamRecordingRepositoryImpl implements ExamRecordingRepository {
             .map(ExamRecordingMapper::toDomain)
             .toList();
     }
-    
+
+    @Override
+    public Optional<ExamRecording> findByExamSessionIdAndStreamTypeAndSource(
+        UUID examSessionId, ExamRequiredStreamType streamType, String source
+    ) {
+        return springDataExamRecordingRepository
+            .findByExamSessionIdAndStreamTypeAndSource(examSessionId, streamType.name(), source)
+            .map(ExamRecordingMapper::toDomain);
+    }
+
+    @Override
+    public ExamRecording save(ExamRecording recording) {
+        var saved = springDataExamRecordingRepository.save(ExamRecordingMapper.toJpa(recording));
+        return ExamRecordingMapper.toDomain(saved);
+    }
 }

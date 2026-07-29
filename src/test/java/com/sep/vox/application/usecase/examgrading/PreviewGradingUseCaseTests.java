@@ -15,6 +15,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -39,12 +40,15 @@ import com.sep.vox.domain.model.exam.ExamItemResponse;
 import com.sep.vox.domain.model.exam.ExamSession;
 import com.sep.vox.domain.model.exam.GradingAssignmentStatus;
 import com.sep.vox.domain.model.rubric.RubricCriterion;
+import com.sep.vox.domain.model.rubric.RubricTotalScoreMethod;
+import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
 import com.sep.vox.domain.repository.ExamItemCriterionScoreRepository;
 import com.sep.vox.domain.repository.ExamItemEvaluationRepository;
 import com.sep.vox.domain.repository.ExamItemResponseRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;
 import com.sep.vox.domain.repository.RubricCriterionRepository;
+import com.sep.vox.domain.repository.RubricVersionRepository;
 
 public class PreviewGradingUseCaseTests {
 
@@ -52,6 +56,7 @@ public class PreviewGradingUseCaseTests {
     private ExamGradingAccessService examGradingAccessService;
     private ExamItemResponseRepository examItemResponseRepository;
     private RubricCriterionRepository rubricCriterionRepository;
+    private RubricVersionRepository rubricVersionRepository;
     private ExamItemEvaluationRepository examItemEvaluationRepository;
     private ExamItemCriterionScoreRepository examItemCriterionScoreRepository;
     private ExamSessionRepository examSessionRepository;
@@ -76,23 +81,26 @@ public class PreviewGradingUseCaseTests {
         examGradingAccessService = mock(ExamGradingAccessService.class);
         examItemResponseRepository = mock(ExamItemResponseRepository.class);
         rubricCriterionRepository = mock(RubricCriterionRepository.class);
+        rubricVersionRepository = mock(RubricVersionRepository.class);
         examItemEvaluationRepository = mock(ExamItemEvaluationRepository.class);
         examItemCriterionScoreRepository = mock(ExamItemCriterionScoreRepository.class);
         examSessionRepository = mock(ExamSessionRepository.class);
         examGradingAssignmentRepository = mock(ExamGradingAssignmentRepository.class);
         upsertExamCandidateResultUseCase = mock(UpsertExamCandidateResultUseCase.class);
 
-        resolver = new GradingItemScoreResolver(examItemResponseRepository, rubricCriterionRepository);
+        resolver = new GradingItemScoreResolver(
+            examItemResponseRepository, rubricCriterionRepository, rubricVersionRepository);
         useCase = new PreviewGradingUseCase(
             examSessionResultCalculator, examGradingAccessService, resolver);
 
         when(examGradingAccessService.requireActiveUserId()).thenReturn(teacherId);
-        when(examGradingAccessService.load(assignmentId)).thenReturn(context());
+        when(examGradingAccessService.loadForGrading(assignmentId, null)).thenReturn(context());
         when(examItemResponseRepository.findBySessionId(sessionId)).thenReturn(List.of(
             new ExamItemResponse(responseId, sessionId, paperItemId, null, null, null, null, null)));
         when(rubricCriterionRepository.findByRubricVersionId(rubricVersionId)).thenReturn(List.of(
             criterion(fluencyId, "FLU", "Trôi chảy", new BigDecimal("0.60")),
             criterion(pronunciationId, "PRO", "Phát âm", new BigDecimal("0.40"))));
+        when(rubricVersionRepository.findById(rubricVersionId)).thenReturn(Optional.of(rubricVersion()));
         when(examSessionResultCalculator.preview(eq(sessionId), any())).thenReturn(
             new PreviewedExamSessionResult(new BigDecimal("7.20"), "Trung cao cấp", List.of(), List.of()));
     }
@@ -100,6 +108,14 @@ public class PreviewGradingUseCaseTests {
     private RubricCriterion criterion(UUID id, String code, String name, BigDecimal weight) {
         return new RubricCriterion(id, rubricVersionId, null, code, name, null, null, weight,
             new BigDecimal("0.00"), new BigDecimal("9.00"), 1, true, null, null, null, null);
+    }
+
+    private RubricVersion rubricVersion() {
+        var version = new RubricVersion();
+        version.setTotalScoreMethod(RubricTotalScoreMethod.WEIGHTED_AVERAGE);
+        version.setScoringScaleMin(BigDecimal.ZERO);
+        version.setScoringScaleMax(BigDecimal.TEN);
+        return version;
     }
 
     private GradingContext context() {
@@ -119,7 +135,7 @@ public class PreviewGradingUseCaseTests {
     }
 
     private SubmitGradingCommand command(String fluency, String pronunciation) {
-        return new SubmitGradingCommand(assignmentId, List.of(
+        return new SubmitGradingCommand(assignmentId, null, List.of(
             new SubmitGradingCommand.ItemGrade(paperItemId, List.of(
                 new SubmitGradingCommand.CriterionScoreItem(fluencyId, new BigDecimal(fluency), null),
                 new SubmitGradingCommand.CriterionScoreItem(pronunciationId, new BigDecimal(pronunciation), null)
@@ -184,7 +200,7 @@ public class PreviewGradingUseCaseTests {
     @Test
     void should_reject_when_teacher_is_not_the_assigned_one() {
         org.mockito.Mockito.doThrow(new ForbiddenException("BẢO MẬT"))
-            .when(examGradingAccessService).authorizeAssignedTeacher(any(), eq(teacherId));
+            .when(examGradingAccessService).authorizeGrader(any(), eq(teacherId));
 
         assertThatThrownBy(() -> useCase.execute(command("8.00", "6.00")))
             .isInstanceOf(ForbiddenException.class);

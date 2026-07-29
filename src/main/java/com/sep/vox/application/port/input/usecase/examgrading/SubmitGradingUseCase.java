@@ -74,11 +74,13 @@ public class SubmitGradingUseCase implements IUseCase<SubmitGradingCommand, Subm
     @Transactional
     public SubmitGradingResponse execute(SubmitGradingCommand command) {
         var currentUserId = examGradingAccessService.requireActiveUserId();
-        var context = examGradingAccessService.load(command.assignmentId());
-        examGradingAccessService.authorizeAssignedTeacher(context, currentUserId);
+        var context = examGradingAccessService.loadForGrading(command.assignmentId(), command.candidateResultId());
+        examGradingAccessService.authorizeGrader(context, currentUserId);
 
+        // assignment == null: nhà trường chấm trực tiếp một bài chưa có phân công --
+        // không có gì để chốt COMPLETED, bỏ qua toàn bộ bookkeeping phân công bên dưới.
         var assignment = context.assignment();
-        if (assignment.isCompleted()) {
+        if (assignment != null && assignment.isCompleted()) {
             throw new IllegalStateException("Bạn đã nộp điểm cho bài thi này.");
         }
         // Chặn chấm lại bài đã công bố (QĐ #3): chỉ bài đang chờ chấm mới nhận điểm.
@@ -150,9 +152,11 @@ public class SubmitGradingUseCase implements IUseCase<SubmitGradingCommand, Subm
         // Một lần gọi là đủ: calculator quét toàn bộ item nên thấy hết bản mới.
         var recalculated = upsertExamCandidateResultUseCase.execute(context.candidateResult().getSessionId());
 
-        assignment.setStatus(GradingAssignmentStatus.COMPLETED);
-        assignment.setCompletedAt(now);
-        examGradingAssignmentRepository.save(assignment);
+        if (assignment != null) {
+            assignment.setStatus(GradingAssignmentStatus.COMPLETED);
+            assignment.setCompletedAt(now);
+            examGradingAssignmentRepository.save(assignment);
+        }
 
         return new SubmitGradingResponse(
             context.candidateResult().getId(),

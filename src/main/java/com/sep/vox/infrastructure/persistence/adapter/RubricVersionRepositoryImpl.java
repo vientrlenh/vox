@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -60,7 +61,7 @@ public class RubricVersionRepositoryImpl implements RubricVersionRepository {
         if (codes == null || codes.isEmpty()) {
             return List.of();
         }
-        var upperCodes = codes.stream().map(String::toUpperCase).collect(Collectors.toSet());
+        var upperCodes = codes.stream().map(s -> s.toUpperCase(Locale.ROOT)).collect(Collectors.toSet());
         return springDataRubricVersionRepository.findByCodeIn(upperCodes)
                 .stream().map(RubricVersionMapper::toDomain).toList();
     }
@@ -109,9 +110,32 @@ public class RubricVersionRepositoryImpl implements RubricVersionRepository {
     }
 
     @Override
-    public void updateRubricVersionAtomic(UUID id, String code, String name, String description, OffsetDateTime effectiveFrom, OffsetDateTime effectiveTo, BigDecimal scoringScaleMin, BigDecimal scoringScaleMax, String totalScoreMethod, OffsetDateTime updatedAt, UUID updatedBy) {
+    public void updateRubricVersionAtomic(
+            UUID id,
+            String code,
+            String name,
+            String description,
+            OffsetDateTime effectiveFrom,
+            OffsetDateTime effectiveTo,
+            BigDecimal scoringScaleMin,
+            BigDecimal scoringScaleMax,
+            String totalScoreMethod,
+            OffsetDateTime updatedAt,
+            UUID updatedBy) {
         // SpringDataRubricVersionRepository.updateRubricVersionAtomic khai báo tham số theo thứ tự (id, name, code, ...)
-        springDataRubricVersionRepository.updateRubricVersionAtomic(id, name, code, description, effectiveFrom, effectiveTo, scoringScaleMin, scoringScaleMax, totalScoreMethod, updatedAt, updatedBy);
+        springDataRubricVersionRepository.updateRubricVersionAtomic(
+            id,
+            name,
+            code,
+            description,
+            effectiveFrom,
+            effectiveTo,
+            scoringScaleMin,
+            scoringScaleMax,
+            totalScoreMethod,
+            updatedAt,
+            updatedBy
+        );
     }
 
     @Override

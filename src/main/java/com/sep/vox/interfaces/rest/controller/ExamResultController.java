@@ -31,7 +31,7 @@ public class ExamResultController {
     @PostMapping("/{candidateResultId}/review")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<UUID>> review(
-            @PathVariable UUID candidateResultId,
+            @PathVariable("candidateResultId") UUID candidateResultId,
             @Valid @RequestBody ReviewFlaggedExamResultRequest request) {
         var data = reviewFlaggedExamResultUseCase.execute(new ReviewFlaggedExamResultCommand(
             candidateResultId,

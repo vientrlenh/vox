@@ -1,7 +1,6 @@
 package com.sep.vox.domain.model.scoringrule;
 
 import com.sep.vox.domain.valueobject.scoringrulecondition.ConfidenceThresholdParams;
-import com.sep.vox.domain.valueobject.scoringrulecondition.CriterionBandThresholdParams;
 import com.sep.vox.domain.valueobject.scoringrulecondition.CriterionScoreThresholdParams;
 import com.sep.vox.domain.valueobject.scoringrulecondition.DurationThresholdParams;
 import com.sep.vox.domain.valueobject.scoringrulecondition.FinalScoreThresholdParams;
@@ -19,8 +18,6 @@ public enum ScoringRuleConditionType {
 
     CRITERION_SCORE_LESS_THAN(CriterionScoreThresholdParams.class),
     CRITERION_SCORE_GREATER_THAN(CriterionScoreThresholdParams.class),
-    CRITERION_BAND_AT_OR_BELOW(CriterionBandThresholdParams.class),
-    CRITERION_BAND_AT_OR_ABOVE(CriterionBandThresholdParams.class),
 
     FINAL_SCORE_LESS_THAN(FinalScoreThresholdParams.class),
     FINAL_SCORE_GREATER_THAN(FinalScoreThresholdParams.class),

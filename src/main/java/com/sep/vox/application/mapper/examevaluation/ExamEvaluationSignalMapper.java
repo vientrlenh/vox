@@ -78,10 +78,10 @@ public final class ExamEvaluationSignalMapper {
             clampNullable01(dto.cPfBranch()),
             clampNullable01(dto.cGrammar()),
             clampNullable01(dto.cVocabulary()),
-            clampNullable01(dto.cDiscourse()),
+            clampNullable01(dto.cCoherence()),
             clampNonNegative(dto.grammarScoreDelta()),
             clampNonNegative(dto.vocabularyScoreDelta()),
-            clampNonNegative(dto.discourseScoreDelta())
+            clampNonNegative(dto.coherenceScoreDelta())
         );
     }
 

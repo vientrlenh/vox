@@ -636,13 +636,13 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
     /** Con số headline của màn đối chiếu: trung bình điểm đề xuất trên các phần thi. */
     private BigDecimal averageSuggestedScore(List<AppealReviewerItemInfo> items) {
         var scores = items.stream()
-            .map(AppealReviewerItemInfo::suggestedScore)
+            .map(info -> info.suggestedScore())
             .filter(Objects::nonNull)
             .toList();
         if (scores.isEmpty()) {
             return null;
         }
-        return scores.stream().reduce(BigDecimal.ZERO, BigDecimal::add)
+        return scores.stream().reduce(BigDecimal.ZERO, (a, b) -> a.add(b))
             .divide(BigDecimal.valueOf(scores.size()), 2, RoundingMode.HALF_UP);
     }
 
@@ -728,7 +728,7 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
 
         // Chỉ nạp báo cáo của chính giám khảo này (chấm mù: không đụng dữ liệu người khác).
         var myItems = reviewerItemsByAppealId(appealId, reviewerId).values().stream()
-            .flatMap(List::stream)
+            .flatMap(list -> list.stream())
             .toList();
 
         return Optional.of(new AppealTaskDetailInfo(

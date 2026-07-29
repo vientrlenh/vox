@@ -163,7 +163,7 @@ public class ExamSessionResultCalculatorTests {
         // Speaking 6.00*1.00 = 6.00; Listening 8.00*1.00 = 8.00.
         // Tổng = (6.00*0.60 + 8.00*0.40) / 1.00 = 6.80 — trung bình cộng sẽ ra 7.00.
         assertThat(result.totalScore()).isEqualByComparingTo("6.80");
-        assertThat(result.sections()).extracting(ExamSessionResultCalculator.SectionScore::score)
+        assertThat(result.sections()).extracting(section -> section.score())
             .containsExactly(new BigDecimal("6.00"), new BigDecimal("8.00"));
     }
 
@@ -173,7 +173,7 @@ public class ExamSessionResultCalculatorTests {
 
         var result = calculator.calculate(sessionId);
 
-        assertThat(result.sections()).extracting(ExamSessionResultCalculator.SectionScore::title)
+        assertThat(result.sections()).extracting(section -> section.title())
             .containsExactly("Speaking", "Listening");
     }
 
@@ -254,9 +254,9 @@ public class ExamSessionResultCalculatorTests {
 
         var previewed = calculator.preview(sessionId, Map.of(speakingResponseId, new BigDecimal("9.00")));
 
-        assertThat(previewed.items()).extracting(ExamSessionResultCalculator.ItemScore::paperItemId)
+        assertThat(previewed.items()).extracting(itemScore -> itemScore.paperItemId())
             .containsExactly(speakingItemId, listeningItemId);
-        assertThat(previewed.items()).extracting(ExamSessionResultCalculator.ItemScore::itemScore)
+        assertThat(previewed.items()).extracting(itemScore -> itemScore.itemScore())
             .containsExactly(new BigDecimal("9.00"), new BigDecimal("8.00"));
     }
 }

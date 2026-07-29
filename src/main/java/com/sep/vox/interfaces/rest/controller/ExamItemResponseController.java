@@ -29,8 +29,8 @@ public class ExamItemResponseController {
     @PatchMapping("/{answerId}/turns/{turnOrder}")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER', 'STUDENT')")
     public ResponseEntity<ApiResponse<?>> updateTurn(
-            @PathVariable UUID answerId,
-            @PathVariable int turnOrder,
+            @PathVariable("answerId") UUID answerId,
+            @PathVariable("turnOrder") int turnOrder,
             @RequestBody UpdateExamItemResponseTurnRequest request) {
         var data = updateExamItemResponseTurnUseCase.execute(new UpdateExamItemResponseTurnCommand(
             answerId,

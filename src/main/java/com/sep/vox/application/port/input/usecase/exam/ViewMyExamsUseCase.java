@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
@@ -26,7 +27,6 @@ import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamPaperRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
-import com.sep.vox.domain.repository.ExamSessionRepository;
 
 @Service
 public class ViewMyExamsUseCase implements IUseCase<Void, List<StudentExamSummaryResponse>> {
@@ -35,7 +35,6 @@ public class ViewMyExamsUseCase implements IUseCase<Void, List<StudentExamSummar
     private final ExamRepository examRepository;
     private final ExamPaperRepository examPaperRepository;
     private final ExamScheduleRepository examScheduleRepository;
-    private final ExamSessionRepository examSessionRepository;
     private final ExamCandidateAttemptsQueryRepository examCandidateAttemptsQueryRepository;
     private final UserContextPort userContextPort;
 
@@ -44,14 +43,12 @@ public class ViewMyExamsUseCase implements IUseCase<Void, List<StudentExamSummar
             ExamRepository examRepository,
             ExamPaperRepository examPaperRepository,
             ExamScheduleRepository examScheduleRepository,
-            ExamSessionRepository examSessionRepository,
             ExamCandidateAttemptsQueryRepository examCandidateAttemptsQueryRepository,
             UserContextPort userContextPort) {
         this.examCandidateRepository = examCandidateRepository;
         this.examRepository = examRepository;
         this.examPaperRepository = examPaperRepository;
         this.examScheduleRepository = examScheduleRepository;
-        this.examSessionRepository = examSessionRepository;
         this.examCandidateAttemptsQueryRepository = examCandidateAttemptsQueryRepository;
         this.userContextPort = userContextPort;
     }
@@ -105,18 +102,18 @@ public class ViewMyExamsUseCase implements IUseCase<Void, List<StudentExamSummar
                 );
             })
             .filter(java.util.Objects::nonNull)
-            .sorted(Comparator.comparing(StudentExamSummaryResponse::examDate, Comparator.nullsLast(String::compareTo)))
+            .sorted(Comparator.comparing((StudentExamSummaryResponse response) -> response.examDate(), Comparator.nullsLast(Comparator.naturalOrder())))
             .toList();
     }
 
     private Map<java.util.UUID, List<ExamAttemptSummary>> groupAttemptsByCandidateId(List<ExamCandidate> candidates) {
         var candidateIds = candidates.stream()
-            .map(ExamCandidate::getId)
+            .map(candidate -> candidate.getId())
             .filter(Objects::nonNull)
             .toList();
 
         return examCandidateAttemptsQueryRepository.findByCandidateIds(candidateIds).stream()
-            .collect(java.util.stream.Collectors.groupingBy(ExamAttemptSummary::candidateId));
+            .collect(Collectors.groupingBy(summary -> summary.candidateId()));
     }
 
     private int countAttemptsTowardLimit(List<ExamAttemptSummary> attempts) {
@@ -131,7 +128,7 @@ public class ViewMyExamsUseCase implements IUseCase<Void, List<StudentExamSummar
 
     private List<StudentExamSessionSummaryResponse> toSessionSummaries(List<ExamAttemptSummary> attempts) {
         var orderedAttempts = attempts.stream()
-            .sorted(Comparator.comparing(ExamAttemptSummary::startedAt, Comparator.nullsLast(Comparator.naturalOrder())))
+            .sorted(Comparator.comparing((ExamAttemptSummary summary) -> summary.startedAt(), Comparator.nullsLast(Comparator.naturalOrder())))
             .toList();
 
         var out = new java.util.ArrayList<StudentExamSessionSummaryResponse>(orderedAttempts.size());

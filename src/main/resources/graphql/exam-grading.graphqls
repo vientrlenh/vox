@@ -65,12 +65,13 @@ type GradingTaskItem {
 Màn chấm của giáo viên. KHÔNG có tên/ID học sinh — giáo viên chấm ẩn danh.
 """
 type GradingTaskDetail {
-    assignmentId: ID!
+    "null nghĩa là bài chưa được gán cho ai (chỉ xảy ra khi nhà trường xem/chấm trực tiếp)"
+    assignmentId: ID
     candidateResultId: ID!
     "8 ký tự hex đầu của candidateResultId, viết hoa (vd A2041F3C)"
     resultCode: String!
     examName: String
-    assignmentStatus: GradingAssignmentStatus!
+    assignmentStatus: GradingAssignmentStatus
     resultStatus: String
     flagged: Boolean!
     flagReason: String
@@ -160,6 +161,9 @@ extend type Query {
     myGradingTasks(status: GradingAssignmentStatus, page: Int = 0, size: Int = 20): GradingTaskPage!
 
     gradingTaskDetail(assignmentId: ID!): GradingTaskDetail!
+
+    "Nhà trường xem/chấm trực tiếp theo candidateResultId, không cần phân công trước."
+    gradingTaskDetailBySchool(candidateResultId: ID!): GradingTaskDetail!
 
     "Dùng cho cả modal phân công tự động lẫn dropdown gán tay / đổi giáo viên."
     assignableTeachers(search: String): [AssignableTeacher!]!

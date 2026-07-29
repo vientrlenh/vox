@@ -17,26 +17,21 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.sep.vox.application.port.input.usecase.rubricschool.AcceptSchoolRubricCriterionBandImportUseCase;
 import com.sep.vox.application.port.input.usecase.rubricschool.AcceptSchoolRubricCriterionImportUseCase;
 import com.sep.vox.application.port.input.usecase.rubricschool.AcceptSchoolRubricResultBandImportUseCase;
 import com.sep.vox.application.port.input.usecase.rubricschool.AcceptSchoolRubricVersionImportUseCase;
 import com.sep.vox.application.port.input.usecase.rubricschool.AddSchoolRubricVersionsUseCase;
 import com.sep.vox.application.port.input.usecase.rubricschool.ArchiveSchoolRubricVersionUseCase;
 import com.sep.vox.application.port.input.usecase.rubricschool.ChangeSchoolRubricVersionStatusUseCase;
-import com.sep.vox.application.port.input.usecase.rubricschool.CreateSchoolRubricCriterionBandsUseCase;
 import com.sep.vox.application.port.input.usecase.rubricschool.CreateSchoolRubricCriterionUseCase;
 import com.sep.vox.application.port.input.usecase.rubricschool.CreateSchoolRubricResultBandsUseCase;
 import com.sep.vox.application.port.input.usecase.rubricschool.CreateSchoolRubricUseCase;
-import com.sep.vox.application.port.input.usecase.rubricschool.DeleteSchoolRubricCriterionBandUseCase;
 import com.sep.vox.application.port.input.usecase.rubricschool.DeleteSchoolRubricCriterionUseCase;
 import com.sep.vox.application.port.input.usecase.rubricschool.DeleteSchoolRubricResultBandUseCase;
 import com.sep.vox.application.port.input.usecase.rubricschool.DeleteSchoolRubricVersionUseCase;
-import com.sep.vox.application.port.input.usecase.rubricschool.PreviewSchoolRubricCriterionBandImportFromFileUseCase;
 import com.sep.vox.application.port.input.usecase.rubricschool.PreviewSchoolRubricCriterionImportFromFileUseCase;
 import com.sep.vox.application.port.input.usecase.rubricschool.PreviewSchoolRubricResultBandImportFromFileUseCase;
 import com.sep.vox.application.port.input.usecase.rubricschool.PreviewSchoolRubricVersionImportFromFileUseCase;
-import com.sep.vox.application.port.input.usecase.rubricsystem.AcceptSystemRubricCriterionBandImportUseCase;
 import com.sep.vox.application.port.input.usecase.rubricsystem.AcceptSystemRubricCriterionImportUseCase;
 import com.sep.vox.application.port.input.usecase.rubricsystem.AcceptSystemRubricResultBandImportUseCase;
 import com.sep.vox.application.port.input.usecase.rubricsystem.AcceptSystemRubricVersionImportUseCase;
@@ -44,25 +39,20 @@ import com.sep.vox.application.port.input.usecase.rubricsystem.AddSystemRubricVe
 import com.sep.vox.application.port.input.usecase.rubricsystem.ArchiveSystemRubricVersionUseCase;
 import com.sep.vox.application.port.input.usecase.rubricsystem.ChangeSystemRubricVersionStatusUseCase;
 import com.sep.vox.application.port.input.usecase.rubricsystem.CreateSystemRubricCriteriaUseCase;
-import com.sep.vox.application.port.input.usecase.rubricsystem.CreateSystemRubricCriterionBandsUseCase;
 import com.sep.vox.application.port.input.usecase.rubricsystem.CreateSystemRubricResultBandsUseCase;
 import com.sep.vox.application.port.input.usecase.rubricsystem.CreateSystemRubricUseCase;
-import com.sep.vox.application.port.input.usecase.rubricsystem.DeleteSystemRubricCriterionBandUseCase;
 import com.sep.vox.application.port.input.usecase.rubricsystem.DeleteSystemRubricCriterionUseCase;
 import com.sep.vox.application.port.input.usecase.rubricsystem.DeleteSystemRubricResultBandUseCase;
 import com.sep.vox.application.port.input.usecase.rubricsystem.DeleteSystemRubricUseCase;
 import com.sep.vox.application.port.input.usecase.rubricsystem.DeleteSystemRubricVersionUseCase;
-import com.sep.vox.application.port.input.usecase.rubricsystem.PreviewSystemRubricCriterionBandImportFromFileUseCase;
 import com.sep.vox.application.port.input.usecase.rubricsystem.PreviewSystemRubricCriterionImportFromFileUseCase;
 import com.sep.vox.application.port.input.usecase.rubricsystem.PreviewSystemRubricResultBandImportFromFileUseCase;
 import com.sep.vox.application.port.input.usecase.rubricsystem.PreviewSystemRubricVersionImportFromFileUseCase;
 import com.sep.vox.application.port.input.command.ArchiveSchoolRubricVersionCommand;
 import com.sep.vox.application.port.input.command.ArchiveSystemRubricVersionCommand;
-import com.sep.vox.application.response.input.importfile.AcceptRubricCriterionBandImportResponse;
 import com.sep.vox.application.response.input.importfile.AcceptRubricCriterionImportResponse;
 import com.sep.vox.application.response.input.importfile.AcceptRubricResultBandImportResponse;
 import com.sep.vox.application.response.input.importfile.AcceptRubricVersionImportResponse;
-import com.sep.vox.application.response.input.importfile.PreviewRubricCriterionBandImportResponse;
 import com.sep.vox.application.response.input.importfile.PreviewRubricCriterionImportResponse;
 import com.sep.vox.application.response.input.importfile.PreviewRubricResultBandImportResponse;
 import com.sep.vox.application.response.input.importfile.PreviewRubricVersionImportResponse;
@@ -70,21 +60,17 @@ import com.sep.vox.domain.model.rubric.RubricStatus;
 import com.sep.vox.interfaces.rest.dto.request.AcceptImportRequest;
 import com.sep.vox.interfaces.rest.dto.request.AddRubricVersionsRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolRubricCriteriaRequest;
-import com.sep.vox.interfaces.rest.dto.request.CreateSchoolRubricCriterionBandsRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolRubricRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolRubricResultBandsRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSystemRubricCriteriaRequest;
-import com.sep.vox.interfaces.rest.dto.request.CreateSystemRubricCriterionBandsRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSystemRubricRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSystemRubricResultBandsRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
-import com.sep.vox.interfaces.rest.mapper.AcceptRubricCriterionBandImportCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.AcceptRubricCriterionImportCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.AcceptRubricResultBandImportCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.AcceptRubricVersionImportCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.AddRubricVersionsCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.ChangeRubricVersionStatusCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.CreateRubricCriterionBandsCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateSchoolRubricCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateSchoolRubricCriteriaCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateSchoolRubricResultBandsCommandMapper;
@@ -93,7 +79,6 @@ import com.sep.vox.interfaces.rest.mapper.CreateSystemRubricCriteriaCommandMappe
 import com.sep.vox.interfaces.rest.mapper.CreateSystemRubricResultBandsCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.DeleteSchoolRubricCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.DeleteSystemRubricCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.PreviewRubricCriterionBandImportCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.PreviewRubricCriterionImportCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.PreviewRubricResultBandImportCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.PreviewRubricVersionImportFromFileCommandMapper;
@@ -122,10 +107,6 @@ public class RubricController {
     private final ChangeSchoolRubricVersionStatusUseCase changeSchoolRubricVersionStatusUseCase;
     private final ArchiveSystemRubricVersionUseCase archiveSystemRubricVersionUseCase;
     private final ArchiveSchoolRubricVersionUseCase archiveSchoolRubricVersionUseCase;
-    private final CreateSystemRubricCriterionBandsUseCase createSystemRubricCriterionBandsUseCase;
-    private final CreateSchoolRubricCriterionBandsUseCase createSchoolRubricCriterionBandsUseCase;
-    private final DeleteSystemRubricCriterionBandUseCase deleteSystemRubricCriterionBandUseCase;
-    private final DeleteSchoolRubricCriterionBandUseCase deleteSchoolRubricCriterionBandUseCase;
     private final PreviewSystemRubricVersionImportFromFileUseCase previewSystemRubricVersionImportFromFileUseCase;
     private final AcceptSystemRubricVersionImportUseCase acceptSystemRubricVersionImportUseCase;
     private final AddSystemRubricVersionsUseCase addSystemRubricVersionsUseCase;
@@ -134,12 +115,8 @@ public class RubricController {
     private final AddSchoolRubricVersionsUseCase addSchoolRubricVersionsUseCase;
     private final PreviewSystemRubricCriterionImportFromFileUseCase previewSystemRubricCriterionImportFromFileUseCase;
     private final AcceptSystemRubricCriterionImportUseCase acceptSystemRubricCriterionImportUseCase;
-    private final PreviewSchoolRubricCriterionImportFromFileUseCase previewSchoolRubricCriterionImportFromFileUseCase;;
+    private final PreviewSchoolRubricCriterionImportFromFileUseCase previewSchoolRubricCriterionImportFromFileUseCase;
     private final AcceptSchoolRubricCriterionImportUseCase acceptSchoolRubricCriterionImportUseCase;
-    private final PreviewSystemRubricCriterionBandImportFromFileUseCase previewSystemRubricCriterionBandImportFromFileUseCase;
-    private final AcceptSystemRubricCriterionBandImportUseCase acceptSystemRubricCriterionBandImportUseCase;
-    private final PreviewSchoolRubricCriterionBandImportFromFileUseCase previewSchoolRubricCriterionBandImportFromFileUseCase;
-    private final AcceptSchoolRubricCriterionBandImportUseCase acceptSchoolRubricCriterionBandImportUseCase;
     private final PreviewSystemRubricResultBandImportFromFileUseCase previewSystemRubricResultBandImportFromFileUseCase;
     private final AcceptSystemRubricResultBandImportUseCase acceptSystemRubricResultBandImportUseCase;
     private final PreviewSchoolRubricResultBandImportFromFileUseCase previewSchoolRubricResultBandImportFromFileUseCase;
@@ -157,7 +134,7 @@ public class RubricController {
                             DeleteSystemRubricUseCase deleteSystemRubricUseCase,
                             DeleteSystemRubricVersionUseCase deleteSystemRubricVersionUseCase,
                             DeleteSystemRubricCriterionUseCase deleteSystemRubricCriterionUseCase, DeleteSystemRubricResultBandUseCase deleteSystemRubricResultBandUseCase, ChangeSystemRubricVersionStatusUseCase changeSystemRubricVersionStatusUseCase,
-                            ChangeSchoolRubricVersionStatusUseCase changeSchoolRubricVersionStatusUseCase, CreateSystemRubricCriterionBandsUseCase createSystemRubricCriterionBandsUseCase, CreateSchoolRubricCriterionBandsUseCase createSchoolRubricCriterionBandsUseCase, DeleteSystemRubricCriterionBandUseCase deleteSystemRubricCriterionBandUseCase, DeleteSchoolRubricCriterionBandUseCase deleteSchoolRubricCriterionBandUseCase, PreviewSystemRubricVersionImportFromFileUseCase previewSystemRubricVersionImportFromFileUseCase, AcceptSystemRubricVersionImportUseCase acceptSystemRubricVersionImportUseCase, AddSystemRubricVersionsUseCase addSystemRubricVersionsUseCase, AcceptSchoolRubricVersionImportUseCase acceptSchoolRubricVersionImportUseCase, PreviewSchoolRubricVersionImportFromFileUseCase previewSchoolRubricVersionImportFromFileUseCase, AddSchoolRubricVersionsUseCase addSchoolRubricVersionsUseCase, PreviewSystemRubricCriterionImportFromFileUseCase previewSystemRubricCriterionImportFromFileUseCase, AcceptSystemRubricCriterionImportUseCase acceptSystemRubricCriterionImportUseCase, PreviewSystemRubricCriterionImportFromFileUseCase previewSchoolRubricCriterionImportFromFileUseCase, PreviewSchoolRubricCriterionImportFromFileUseCase previewSchoolRubricCriterionImportFromFileUseCase1, AcceptSchoolRubricCriterionImportUseCase acceptSchoolRubricCriterionImportUseCase, PreviewSystemRubricCriterionBandImportFromFileUseCase previewSystemRubricCriterionBandImportFromFileUseCase, AcceptSystemRubricCriterionBandImportUseCase acceptSystemRubricCriterionBandImportUseCase, PreviewSchoolRubricCriterionBandImportFromFileUseCase previewSchoolRubricCriterionBandImportFromFileUseCase, AcceptSchoolRubricCriterionBandImportUseCase acceptSchoolRubricCriterionBandImportUseCase, PreviewSystemRubricResultBandImportFromFileUseCase previewSystemRubricResultBandImportFromFileUseCase, AcceptSystemRubricResultBandImportUseCase acceptSystemRubricResultBandImportUseCase, PreviewSchoolRubricResultBandImportFromFileUseCase previewSchoolRubricResultBandImportFromFileUseCase, AcceptSchoolRubricResultBandImportUseCase acceptSchoolRubricResultBandImportUseCase, ArchiveSystemRubricVersionUseCase archiveSystemRubricVersionUseCase, ArchiveSchoolRubricVersionUseCase archiveSchoolRubricVersionUseCase) {
+                            ChangeSchoolRubricVersionStatusUseCase changeSchoolRubricVersionStatusUseCase, PreviewSystemRubricVersionImportFromFileUseCase previewSystemRubricVersionImportFromFileUseCase, AcceptSystemRubricVersionImportUseCase acceptSystemRubricVersionImportUseCase, AddSystemRubricVersionsUseCase addSystemRubricVersionsUseCase, AcceptSchoolRubricVersionImportUseCase acceptSchoolRubricVersionImportUseCase, PreviewSchoolRubricVersionImportFromFileUseCase previewSchoolRubricVersionImportFromFileUseCase, AddSchoolRubricVersionsUseCase addSchoolRubricVersionsUseCase, PreviewSystemRubricCriterionImportFromFileUseCase previewSystemRubricCriterionImportFromFileUseCase, AcceptSystemRubricCriterionImportUseCase acceptSystemRubricCriterionImportUseCase, PreviewSchoolRubricCriterionImportFromFileUseCase previewSchoolRubricCriterionImportFromFileUseCase1, AcceptSchoolRubricCriterionImportUseCase acceptSchoolRubricCriterionImportUseCase, PreviewSystemRubricResultBandImportFromFileUseCase previewSystemRubricResultBandImportFromFileUseCase, AcceptSystemRubricResultBandImportUseCase acceptSystemRubricResultBandImportUseCase, PreviewSchoolRubricResultBandImportFromFileUseCase previewSchoolRubricResultBandImportFromFileUseCase, AcceptSchoolRubricResultBandImportUseCase acceptSchoolRubricResultBandImportUseCase, ArchiveSystemRubricVersionUseCase archiveSystemRubricVersionUseCase, ArchiveSchoolRubricVersionUseCase archiveSchoolRubricVersionUseCase) {
         this.createSchoolRubricCriterionUseCase = createSchoolRubricCriterionUseCase;
         this.createSchoolRubricUseCase = createSchoolRubricUseCase;
         this.createSystemRubricUseCase = createSystemRubricUseCase;
@@ -173,10 +150,6 @@ public class RubricController {
         this.deleteSystemRubricResultBandUseCase = deleteSystemRubricResultBandUseCase;
         this.changeSystemRubricVersionStatusUseCase = changeSystemRubricVersionStatusUseCase;
         this.changeSchoolRubricVersionStatusUseCase = changeSchoolRubricVersionStatusUseCase;
-        this.createSystemRubricCriterionBandsUseCase = createSystemRubricCriterionBandsUseCase;
-        this.createSchoolRubricCriterionBandsUseCase = createSchoolRubricCriterionBandsUseCase;
-        this.deleteSystemRubricCriterionBandUseCase = deleteSystemRubricCriterionBandUseCase;
-        this.deleteSchoolRubricCriterionBandUseCase = deleteSchoolRubricCriterionBandUseCase;
         this.previewSystemRubricVersionImportFromFileUseCase = previewSystemRubricVersionImportFromFileUseCase;
         this.acceptSystemRubricVersionImportUseCase = acceptSystemRubricVersionImportUseCase;
         this.addSystemRubricVersionsUseCase = addSystemRubricVersionsUseCase;
@@ -187,10 +160,6 @@ public class RubricController {
         this.acceptSystemRubricCriterionImportUseCase = acceptSystemRubricCriterionImportUseCase;
         this.previewSchoolRubricCriterionImportFromFileUseCase = previewSchoolRubricCriterionImportFromFileUseCase1;
         this.acceptSchoolRubricCriterionImportUseCase = acceptSchoolRubricCriterionImportUseCase;
-        this.previewSystemRubricCriterionBandImportFromFileUseCase = previewSystemRubricCriterionBandImportFromFileUseCase;
-        this.acceptSystemRubricCriterionBandImportUseCase = acceptSystemRubricCriterionBandImportUseCase;
-        this.previewSchoolRubricCriterionBandImportFromFileUseCase = previewSchoolRubricCriterionBandImportFromFileUseCase;
-        this.acceptSchoolRubricCriterionBandImportUseCase = acceptSchoolRubricCriterionBandImportUseCase;
         this.previewSystemRubricResultBandImportFromFileUseCase = previewSystemRubricResultBandImportFromFileUseCase;
         this.acceptSystemRubricResultBandImportUseCase = acceptSystemRubricResultBandImportUseCase;
         this.previewSchoolRubricResultBandImportFromFileUseCase = previewSchoolRubricResultBandImportFromFileUseCase;
@@ -545,32 +514,6 @@ public class RubricController {
     }
 
 
-    // Endpoint 1: Preview  Điểm tiêu chí của rubric criteria
-    @Operation(summary = "Preview file import Điểm  Tiêu chí (Band) cho Hệ thống")
-    @PostMapping(value = "/system/rubrics/criterions/{criterionId}/bands/import/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public ResponseEntity<ApiResponse<PreviewRubricCriterionBandImportResponse>> previewSystemRubricCriterionBandImport(
-            @PathVariable("criterionId") UUID criterionId,
-            @RequestParam("file") MultipartFile file) {
-
-        var command = PreviewRubricCriterionBandImportCommandMapper.fromSystemRequest(criterionId, file);
-        var response = previewSystemRubricCriterionBandImportFromFileUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Nạp file danh sách mức độ thành công. Vui lòng kiểm tra dữ liệu.", response));
-    }
-
-    // Endpoint 2: Accept Band
-    @Operation(summary = "Xác nhận Import Điểm tiêu chí rubric (Band) vào rubric criteria cho Hệ thống")
-    @PostMapping(value = "/system/rubrics/criterions/bands/import/{sessionId}/accept")
-    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public ResponseEntity<ApiResponse<AcceptRubricCriterionBandImportResponse>> acceptSystemRubricCriterionBandImport(
-            @PathVariable("sessionId") UUID sessionId,
-            @Valid @RequestBody AcceptImportRequest request) {
-
-        var command = AcceptRubricCriterionBandImportCommandMapper.fromSystemRequest(sessionId, request);
-        var response = acceptSystemRubricCriterionBandImportUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Đã đưa yêu cầu Import Mức độ Tiêu chí vào hàng đợi xử lý ngầm.", response));
-    }
-
     // Phục vụ : Đánh giá sinh viên của trường (Giỏi, Khá, Trung Bình) UI
     //Đã tối ưu/ chưa chạy lại
     // Check 2 UI
@@ -586,35 +529,6 @@ public class RubricController {
         var newResultBandId = createSchoolRubricResultBandsUseCase.execute(command);
 
         return ResponseEntity.ok(ApiResponse.success("Thêm thang điểm kết quả thành công", newResultBandId));
-    }
-
-
-    // Endpoint 1: Preview Band cho School Admin
-    @Operation(summary = "Preview file import Điểm  Tiêu chí (Band) cho trường")
-    @PostMapping(value = "/schools/{schoolId}/rubric-criterions/{criterionId}/bands/import/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public ResponseEntity<PreviewRubricCriterionBandImportResponse> previewSchoolRubricCriterionBandImport(
-            @PathVariable("schoolId") UUID schoolId,
-            @PathVariable("criterionId") UUID criterionId,
-            @RequestParam("file") MultipartFile file) {
-
-        var command = PreviewRubricCriterionBandImportCommandMapper.fromSchoolRequest(schoolId, criterionId, file);
-        var response = previewSchoolRubricCriterionBandImportFromFileUseCase.execute(command);
-        return ResponseEntity.ok(response);
-    }
-
-    // Endpoint 2: Accept Band cho School Admin
-    @Operation(summary = "Xác nhận Import Điểm tiêu chí rubric (Band) vào rubric criteria cho trường")
-    @PostMapping("/schools/{schoolId}/rubric-criterions/bands/import/{sessionId}/accept")
-    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public ResponseEntity<AcceptRubricCriterionBandImportResponse> acceptSchoolRubricCriterionBandImport(
-            @PathVariable("schoolId") UUID schoolId,
-            @PathVariable("sessionId") UUID sessionId,
-            @Valid @RequestBody AcceptImportRequest request) {
-
-        var command = AcceptRubricCriterionBandImportCommandMapper.fromSchoolRequest(schoolId, sessionId, request);
-        var response = acceptSchoolRubricCriterionBandImportUseCase.execute(command);
-        return ResponseEntity.ok(response);
     }
 
 
@@ -647,22 +561,6 @@ public class RubricController {
         return ResponseEntity.ok(ApiResponse.success("Xóa thang điểm hệ thống thành công"));
     }
 
-    //=====================RUBRIC CRITERION BAND ============================================
-
-    @Operation(summary = "Thêm cấu hình điểm (Criterion Band) cho một Tiêu chí trong hệ thống - UI")
-    @PostMapping("/system/rubric-versions/{versionId}/criteria/{criterionId}/bands")
-    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public ResponseEntity<ApiResponse<List<UUID>>> createSystemRubricCriterionBands(
-            @PathVariable("versionId") UUID versionId,
-            @PathVariable("criterionId") UUID criterionId,
-            @Valid @RequestBody CreateSystemRubricCriterionBandsRequest request
-    ) {
-        var command = CreateRubricCriterionBandsCommandMapper.fromSystemRequest(versionId, criterionId, request);
-        var responseIds = createSystemRubricCriterionBandsUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Thêm cấu hình điểm cho Tiêu chí thành công", responseIds));
-    }
-
-
     // 1. Preview Result Band (Dành riêng cho System Admin)
     @Operation(summary = "Preview file import Mức độ/Xếp loại kết quả (Result Band) cho Hệ thống")
     @PostMapping(value = "/system/versions/{versionId}/result-bands/import/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -690,21 +588,6 @@ public class RubricController {
         var response = acceptSystemRubricResultBandImportUseCase.execute(command);
 
         return ResponseEntity.ok(ApiResponse.success("Đã đưa yêu cầu import xếp loại hệ thống vào hàng đợi ngầm xử lý.", response));
-    }
-
-
-    @Operation(summary = "Thêm cấu hình điểm (Criterion Band) cho một Tiêu chí của Trường học - UI")
-    @PostMapping("/schools/{schoolId}/rubric-versions/{versionId}/criteria/{criterionId}/bands")
-    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<List<UUID>>> createSchoolRubricCriterionBands(
-            @PathVariable("schoolId") UUID schoolId,
-            @PathVariable("versionId") UUID versionId,
-            @PathVariable("criterionId") UUID criterionId,
-            @Valid @RequestBody CreateSchoolRubricCriterionBandsRequest request
-    ) {
-        var command = CreateRubricCriterionBandsCommandMapper.fromSchoolRequest(schoolId, versionId, criterionId, request);
-        var responseIds = createSchoolRubricCriterionBandsUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Thêm cấu hình điểm cho Tiêu chí thành công", responseIds));
     }
 
 
@@ -745,33 +628,5 @@ public class RubricController {
 
         return ResponseEntity.ok(response);
     }
-
-    @Operation(summary = "Xóa một cấu hình điểm (Criterion Band) khỏi Tiêu chí trong Hệ thống")
-    @DeleteMapping("/system/rubric-versions/{versionId}/criteria/{criterionId}/bands/{bandId}")
-    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public ResponseEntity<ApiResponse<Void>> deleteSystemRubricCriterionBand(
-            @PathVariable("versionId") UUID versionId,
-            @PathVariable("criterionId") UUID criterionId,
-            @PathVariable("bandId") UUID bandId
-    ) {
-        var command = DeleteSystemRubricCommandMapper.criterionBandFromRequest(versionId, criterionId, bandId);
-        deleteSystemRubricCriterionBandUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Xóa cấu hình điểm thành công"));
-    }
-
-    @Operation(summary = "Xóa một cấu hình điểm (Criterion Band) khỏi Tiêu chí của Trường học")
-    @DeleteMapping("/schools/{schoolId}/rubric-versions/{versionId}/criteria/{criterionId}/bands/{bandId}")
-    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<Void>> deleteSchoolRubricCriterionBand(
-            @PathVariable("schoolId") UUID schoolId,
-            @PathVariable("versionId") UUID versionId,
-            @PathVariable("criterionId") UUID criterionId,
-            @PathVariable("bandId") UUID bandId
-    ) {
-        var command = DeleteSchoolRubricCommandMapper.criterionBandFromRequest(schoolId, versionId, criterionId, bandId);
-        deleteSchoolRubricCriterionBandUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Xóa cấu hình điểm thành công"));
-    }
-
 
 }

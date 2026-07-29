@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -15,4 +16,5 @@ public interface SpringDataSchoolDirectoryRepository extends JpaRepository<Schoo
     List<SchoolDirectoryJpaEntity> findByCodeIn(Collection<String> codes);
     Slice<SchoolDirectoryJpaEntity> findAllByOrderByIdAsc(Pageable pageable);
     Slice<SchoolDirectoryJpaEntity> findByIdGreaterThanOrderByIdAsc(UUID cursor, Pageable pageable);
+    Page<SchoolDirectoryJpaEntity> findAllByOrderByIdDesc(Pageable pageable);
 }

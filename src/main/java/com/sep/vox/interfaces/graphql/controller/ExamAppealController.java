@@ -61,10 +61,10 @@ public class ExamAppealController {
     @QueryMapping(name = "appeals")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<AppealSummaryInfo> appeals(
-            @Argument("status") String status,
-            @Argument("keyword") String keyword,
-            @Argument("page") Integer page,
-            @Argument("size") Integer size) {
+            @Argument(name = "status") String status,
+            @Argument(name = "keyword") String keyword,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
         return viewExamAppealsUseCase.execute(new SearchExamAppealsQuery(
             status, keyword, page == null ? 0 : page, size == null ? 20 : size));
     }
@@ -77,29 +77,29 @@ public class ExamAppealController {
 
     @QueryMapping(name = "appeal")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public AppealDetailInfo appeal(@Argument("id") UUID id) {
+    public AppealDetailInfo appeal(@Argument(name = "id") UUID id) {
         return viewExamAppealDetailUseCase.execute(id);
     }
 
     @QueryMapping(name = "myAppealTasks")
     @PreAuthorize("hasRole('TEACHER')")
     public PageResult<AppealTaskInfo> myAppealTasks(
-            @Argument("status") String status,
-            @Argument("page") Integer page,
-            @Argument("size") Integer size) {
+            @Argument(name = "status") String status,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
         return viewMyAppealTasksUseCase.execute(new ViewMyAppealTasksQuery(
             status, page == null ? 0 : page, size == null ? 20 : size));
     }
 
     @QueryMapping(name = "appealTaskDetail")
     @PreAuthorize("hasRole('TEACHER')")
-    public AppealTaskDetailInfo appealTaskDetail(@Argument("appealId") UUID appealId) {
+    public AppealTaskDetailInfo appealTaskDetail(@Argument(name = "appealId") UUID appealId) {
         return viewAppealTaskDetailUseCase.execute(appealId);
     }
 
     @QueryMapping(name = "appealReviewers")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public List<AppealReviewerLiteInfo> appealReviewers(@Argument("keyword") String keyword) {
+    public List<AppealReviewerLiteInfo> appealReviewers(@Argument(name = "keyword") String keyword) {
         return viewAssignableReviewersUseCase.execute(keyword);
     }
 

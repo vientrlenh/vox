@@ -25,6 +25,7 @@ import com.sep.vox.application.port.input.command.PreviewSchoolDirectoryImportFr
 import com.sep.vox.application.port.input.command.PreviewSchoolGradeImportFromFileCommand;
 import com.sep.vox.application.port.input.command.PreviewSchoolGradeLevelImportFromFileCommand;
 import com.sep.vox.application.port.input.command.PreviewSchoolUserImportFromFileCommand;
+import com.sep.vox.application.port.input.command.VerifySchoolDirectoryCommand;
 import com.sep.vox.application.port.input.usecase.school.DeleteSchoolUseCase;
 import com.sep.vox.application.port.input.usecase.school.UpdateSchoolStatusUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.AcceptSchoolClassImportUseCase;
@@ -39,6 +40,7 @@ import com.sep.vox.application.port.input.usecase.schoolclassuser.UpdateSchoolCl
 import com.sep.vox.application.port.input.usecase.schooldirectory.AcceptSchoolDirectoryImportUseCase;
 import com.sep.vox.application.port.input.usecase.schooldirectory.CreateSchoolDirectoryUseCase;
 import com.sep.vox.application.port.input.usecase.schooldirectory.PreviewSchoolDirectoryImportFromFileUseCase;
+import com.sep.vox.application.port.input.usecase.schooldirectory.VerifySchoolDirectoryUseCase;
 import com.sep.vox.application.port.input.usecase.schoolgrade.AcceptSchoolGradeImportUseCase;
 import com.sep.vox.application.port.input.usecase.schoolgrade.CreateSchoolGradeUseCase;
 import com.sep.vox.application.port.input.usecase.schoolgrade.DeleteSchoolGradeUseCase;
@@ -155,6 +157,7 @@ public class SchoolController {
     private final PreviewSchoolDirectoryImportFromFileUseCase previewSchoolDirectoryImportFromFileUseCase;
     private final AcceptSchoolDirectoryImportUseCase acceptSchoolDirectoryImportUseCase;
     private final CreateSchoolDirectoryUseCase createSchoolDirectoryUseCase;
+    private final VerifySchoolDirectoryUseCase verifySchoolDirectoryUseCase;
 
     public SchoolController(CreateSchoolClassUseCase createSchoolClassUseCase, 
                         CreateSchoolClassUserUseCase createSchoolClassUserUseCase, 
@@ -182,7 +185,8 @@ public class SchoolController {
                         AcceptSchoolGradeLevelImportUseCase acceptSchoolGradeLevelImportUseCase,
                         PreviewSchoolDirectoryImportFromFileUseCase previewSchoolDirectoryImportFromFileUseCase,
                         AcceptSchoolDirectoryImportUseCase acceptSchoolDirectoryImportUseCase, 
-                        CreateSchoolDirectoryUseCase createSchoolDirectoryUseCase
+                        CreateSchoolDirectoryUseCase createSchoolDirectoryUseCase,
+                        VerifySchoolDirectoryUseCase verifySchoolDirectoryUseCase
                     ) {
         this.createSchoolClassUseCase = createSchoolClassUseCase;
         this.createSchoolClassUserUseCase = createSchoolClassUserUseCase;
@@ -214,6 +218,7 @@ public class SchoolController {
         this.previewSchoolDirectoryImportFromFileUseCase = previewSchoolDirectoryImportFromFileUseCase;
         this.acceptSchoolDirectoryImportUseCase = acceptSchoolDirectoryImportUseCase;
         this.createSchoolDirectoryUseCase = createSchoolDirectoryUseCase;
+        this.verifySchoolDirectoryUseCase = verifySchoolDirectoryUseCase;
     }
 
     @PostMapping(value = "/directories/import/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -610,5 +615,16 @@ public class SchoolController {
 
         // Ném về response báo thành công
         return ResponseEntity.ok(ApiResponse.success("Xóa Khối học sinh thành công", null));
+    }
+
+
+    @Operation(summary = "Xác minh trường theo nhu cầu của hệ thống (hỗ trợ nguời đăng ký không cần nộp tài liệu chứng thực)")
+    @PatchMapping("/directories/{id}/verify")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public ResponseEntity<ApiResponse<UUID>> verifySchoolDirectory(@PathVariable("id") UUID id) {
+        var command = new VerifySchoolDirectoryCommand(id);
+        var data = verifySchoolDirectoryUseCase.execute(command);
+        var response = ApiResponse.success("Danh mục trường đã được xác minh", data);
+        return ResponseEntity.ok(response);
     }
 }

@@ -41,22 +41,33 @@ public final class ExamGradingCommandMapper {
 
     /** Dùng cho cả /grade lẫn /grade/preview — cùng body, cùng command. */
     public static SubmitGradingCommand fromRequest(UUID assignmentId, SubmitGradingRequest request) {
-        return new SubmitGradingCommand(
-            assignmentId,
-            request.items() == null ? List.of() : request.items().stream()
-                .map(item -> new SubmitGradingCommand.ItemGrade(
-                    item.paperItemId(),
-                    item.criterionScores() == null ? List.of() : item.criterionScores().stream()
-                        .map(score -> new SubmitGradingCommand.CriterionScoreItem(
-                            score.rubricCriterionId(), score.score(), score.rationale()))
-                        .toList(),
-                    item.feedbackSummary()
-                ))
-                .toList()
-        );
+        return new SubmitGradingCommand(assignmentId, null, toItemGrades(request));
+    }
+
+    /** Luồng nhà trường chấm trực tiếp theo candidateResultId, không qua phân công. */
+    public static SubmitGradingCommand fromResultRequest(UUID candidateResultId, SubmitGradingRequest request) {
+        return new SubmitGradingCommand(null, candidateResultId, toItemGrades(request));
+    }
+
+    private static List<SubmitGradingCommand.ItemGrade> toItemGrades(SubmitGradingRequest request) {
+        return request.items() == null ? List.of() : request.items().stream()
+            .map(item -> new SubmitGradingCommand.ItemGrade(
+                item.paperItemId(),
+                item.criterionScores() == null ? List.of() : item.criterionScores().stream()
+                    .map(score -> new SubmitGradingCommand.CriterionScoreItem(
+                        score.rubricCriterionId(), score.score(), score.rationale()))
+                    .toList(),
+                item.feedbackSummary()
+            ))
+            .toList();
     }
 
     public static InvalidateGradingCommand fromRequest(UUID assignmentId, InvalidateGradingRequest request) {
-        return new InvalidateGradingCommand(assignmentId, request == null ? null : request.reason());
+        return new InvalidateGradingCommand(assignmentId, null, request == null ? null : request.reason());
+    }
+
+    /** Luồng nhà trường chấm trực tiếp theo candidateResultId, không qua phân công. */
+    public static InvalidateGradingCommand fromResultRequest(UUID candidateResultId, InvalidateGradingRequest request) {
+        return new InvalidateGradingCommand(null, candidateResultId, request == null ? null : request.reason());
     }
 }

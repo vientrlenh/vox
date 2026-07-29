@@ -8,6 +8,8 @@ public record ExamItemCriterionScoreResponse(
     UUID rubricCriterionId,
     String criterionCode,
     String criterionName,
+    BigDecimal minScore,
+    BigDecimal maxScore,
     BigDecimal rawScore,
     BigDecimal finalScore,
     String rationale

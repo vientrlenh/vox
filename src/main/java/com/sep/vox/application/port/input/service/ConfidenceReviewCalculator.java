@@ -30,13 +30,13 @@ public class ConfidenceReviewCalculator {
     private static final BigDecimal C_ALIGN_COVERAGE_HARD = decimal(0.80); // c hard < 0.80 (giữ nguyên)
     private static final BigDecimal C_ALIGN_TIMING_SOFT = decimal(0.85); // 1 - j, j soft > 0.15 (giữ nguyên)
     private static final BigDecimal C_ALIGN_TIMING_HARD = decimal(0.70); // j hard > 0.30 (giữ nguyên)
-    // Discourse/Coherence có trần đồng thuận NGƯỜI-NGƯỜI thấp hơn hẳn Grammar/Vocabulary
+    // Coherence có trần đồng thuận NGƯỜI-NGƯỜI thấp hơn hẳn Grammar/Vocabulary
     // (kappa .653-.68 trong literature review correctness/03-bo-sung-con-thieu.md, vì bản
     // thân construct không có 1 cách tổ chức ý "đúng duy nhất") -- dao động Δc giữa 3 lần
-    // chấm độc lập vì vậy ít đáng báo động hơn cho discourse so với grammar, nới thêm ngưỡng
-    // soft riêng cho discourse thay vì dùng chung LLM_SOFT_LONG/SHORT với 2 tiêu chí kia.
-    private static final BigDecimal LLM_DISCOURSE_SOFT_RELAXATION = decimal(0.10);
-    private static final BigDecimal LLM_DISCOURSE_DELTA_SOFT_RELAXATION = decimal(0.20);
+    // chấm độc lập vì vậy ít đáng báo động hơn cho coherence so với grammar, nới thêm ngưỡng
+    // soft riêng cho coherence thay vì dùng chung LLM_SOFT_LONG/SHORT với 2 tiêu chí kia.
+    private static final BigDecimal LLM_COHERENCE_SOFT_RELAXATION = decimal(0.10);
+    private static final BigDecimal LLM_COHERENCE_DELTA_SOFT_RELAXATION = decimal(0.20);
     public enum ConfidenceMode {
         PRACTICE,
         MOCK_TEST,
@@ -78,22 +78,22 @@ public class ConfidenceReviewCalculator {
     public Decision compute(
             ConfidenceCaseSignals signals,
             ExamKind examKind,
-            boolean hasCodeSwitch,
+            BigDecimal codeSwitchingRatio,
             boolean isShortAnswer) {
-        return compute(signals, null, ConfidenceMode.fromExamKind(examKind), hasCodeSwitch, isShortAnswer);
+        return compute(signals, null, ConfidenceMode.fromExamKind(examKind), codeSwitchingRatio, isShortAnswer);
     }
 
     public Decision compute(
             ConfidenceCaseSignals signals,
             BigDecimal audioQuality,
             ExamKind examKind,
-            boolean hasCodeSwitch,
+            BigDecimal codeSwitchingRatio,
             boolean isShortAnswer) {
         return compute(
             signals,
             audioQuality,
             ConfidenceMode.fromExamKind(examKind),
-            hasCodeSwitch,
+            codeSwitchingRatio,
             isShortAnswer
         );
     }
@@ -102,9 +102,11 @@ public class ConfidenceReviewCalculator {
             ConfidenceCaseSignals signals,
             BigDecimal audioQuality,
             ConfidenceMode mode,
-            boolean hasCodeSwitch,
+            BigDecimal codeSwitchingRatio,
             boolean isShortAnswer) {
         var profile = profile(mode);
+        boolean hasCodeSwitch = codeSwitchingRatio != null
+            && codeSwitchingRatio.compareTo(BigDecimal.ZERO) > 0;
         if (signals == null) {
             return new Decision(
                 false,
@@ -172,30 +174,38 @@ public class ConfidenceReviewCalculator {
         // đúng ngưỡng riêng của nó (không gộp qua composite) để giữ đúng biên nới Vietnam-
         // adjusted chỉ áp cho accuracy (1-m), không lây sang coverage/timing.
         if (signals.cAlignAccuracy() != null) {
-            evaluateMinimumBound(
-                signals.cAlignAccuracy(),
-                C_ALIGN_ACCURACY_HARD.add(profile.hardDelta()),
-                C_ALIGN_ACCURACY_SOFT.add(profile.softDelta()),
-                "ALIGNMENT_MISCUE_HIGH",
-                "D",
-                hardReasons,
-                softReasons,
-                hardGroups,
-                softGroups
-            );
+            boolean explainedByCodeSwitch = codeSwitchingRatio != null
+                && codeSwitchingRatio.compareTo(BigDecimal.ONE.subtract(signals.cAlignAccuracy())) >= 0;
+            if (!explainedByCodeSwitch) {
+                evaluateMinimumBound(
+                    signals.cAlignAccuracy(),
+                    C_ALIGN_ACCURACY_HARD.add(profile.hardDelta()),
+                    C_ALIGN_ACCURACY_SOFT.add(profile.softDelta()),
+                    "ALIGNMENT_MISCUE_HIGH",
+                    "D",
+                    hardReasons,
+                    softReasons,
+                    hardGroups,
+                    softGroups
+                );
+            }
         }
         if (signals.cAlignCoverage() != null) {
-            evaluateMinimumBound(
-                signals.cAlignCoverage(),
-                C_ALIGN_COVERAGE_HARD.add(profile.hardDelta()),
-                C_ALIGN_COVERAGE_SOFT.add(profile.softDelta()),
-                "ALIGNMENT_COVERAGE_LOW",
-                "D",
-                hardReasons,
-                softReasons,
-                hardGroups,
-                softGroups
-            );
+            boolean explainedByCodeSwitch = codeSwitchingRatio != null
+                && codeSwitchingRatio.compareTo(BigDecimal.ONE.subtract(signals.cAlignCoverage())) >= 0;
+            if (!explainedByCodeSwitch) {
+                evaluateMinimumBound(
+                    signals.cAlignCoverage(),
+                    C_ALIGN_COVERAGE_HARD.add(profile.hardDelta()),
+                    C_ALIGN_COVERAGE_SOFT.add(profile.softDelta()),
+                    "ALIGNMENT_COVERAGE_LOW",
+                    "D",
+                    hardReasons,
+                    softReasons,
+                    hardGroups,
+                    softGroups
+                );
+            }
         }
         if (signals.cAlignTiming() != null) {
             evaluateMinimumBound(
@@ -243,17 +253,17 @@ public class ConfidenceReviewCalculator {
             hardGroups,
             softGroups
         );
-        BigDecimal llmSoftDiscourse = llmSoft.subtract(LLM_DISCOURSE_SOFT_RELAXATION);
-        BigDecimal llmDeltaSoftDiscourse = llmDeltaSoft.add(
-            LLM_DISCOURSE_DELTA_SOFT_RELAXATION
+        BigDecimal llmSoftCoherence = llmSoft.subtract(LLM_COHERENCE_SOFT_RELAXATION);
+        BigDecimal llmDeltaSoftCoherence = llmDeltaSoft.add(
+            LLM_COHERENCE_DELTA_SOFT_RELAXATION
         );
         llmSoftCount += evaluateLlm(
-            signals.cDiscourse(),
-            signals.discourseScoreDelta(),
-            llmSoftDiscourse,
-            llmDeltaSoftDiscourse,
+            signals.cCoherence(),
+            signals.coherenceScoreDelta(),
+            llmSoftCoherence,
+            llmDeltaSoftCoherence,
             llmDeltaHard,
-            "LLM_UNSTABLE_DISCOURSE",
+            "LLM_UNSTABLE_COHERENCE",
             hardReasons,
             softReasons,
             hardGroups,
@@ -359,13 +369,15 @@ public class ConfidenceReviewCalculator {
             return 0;
         }
         // Payload cũ chưa có score delta: fallback sang confidence để đọc được dữ liệu lịch sử.
-        if (confidence.compareTo(BigDecimal.ZERO) <= 0) {
-            addReason(hardReasons, hardGroups, reason, "E");
-            return 0;
-        }
-        if (confidence.compareTo(confidenceSoftThreshold) < 0) {
-            addReason(softReasons, softGroups, reason, "E");
-            return 1;
+        if (confidence != null) {
+            if (confidence.compareTo(BigDecimal.ZERO) <= 0) {
+                addReason(hardReasons, hardGroups, reason, "E");
+                return 0;
+            }
+            if (confidence.compareTo(confidenceSoftThreshold) < 0) {
+                addReason(softReasons, softGroups, reason, "E");
+                return 1;
+            }
         }
         return 0;
     }

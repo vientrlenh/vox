@@ -216,11 +216,16 @@ public class ExamSessionResultCalculator {
     }
 
     private RubricResultBand resolveRubricResultBand(AssessmentPolicy policy, BigDecimal totalScore) {
-        return rubricResultBandRepository.findByRubricVersionId(policy.getRubricVersionId()).stream()
+        var matchingBands = rubricResultBandRepository.findByRubricVersionId(policy.getRubricVersionId()).stream()
             .sorted(Comparator.comparingInt(band -> band.getOrder()))
             .filter(band -> within(totalScore, band.getScoreMin(), band.getScoreMax()))
-            .findFirst()
-            .orElse(null);
+            .toList();
+        if (matchingBands.size() != 1) {
+            throw new IllegalStateException("Điểm " + totalScore
+                + " phải thuộc chính xác một dải điểm kết quả, nhưng tìm thấy "
+                + matchingBands.size() + " dải.");
+        }
+        return matchingBands.get(0);
     }
 
     private boolean within(BigDecimal score, BigDecimal min, BigDecimal max) {

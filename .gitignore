@@ -44,3 +44,6 @@ out/
 AI/
 CLAUDE.md
 .DS_Store
+
+### Secrets ###
+*firebase-adminsdk*.json

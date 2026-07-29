@@ -12,8 +12,8 @@ import com.sep.vox.application.port.output.PushNotificationPort;
 @Component
 public class ExamMemberAssignedPushListener {
 
-    private static final String TITLE = "New exam assignment";
-    private static final String BODY = "You've been assigned to an exam";
+    private static final String TITLE = "Phân công mới";
+    private static final String BODY = "Bạn vừa được giao quản lí một kì kiểm tra mới";
 
     private final PushNotificationPort pushNotificationPort;
 

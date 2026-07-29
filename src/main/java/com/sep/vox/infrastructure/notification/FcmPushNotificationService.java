@@ -53,7 +53,6 @@ public class FcmPushNotificationService implements PushNotificationPort {
                 ? FirebaseApp.initializeApp(options)
                 : FirebaseApp.getInstance();
         } catch (IOException | RuntimeException e) {
-            // ponytail: no credentials yet in this environment — push sends no-op until the file is supplied.
             log.warn("Firebase credentials not available at {}, push notifications disabled: {}",
                 credentialsPath, e.getMessage());
             this.firebaseApp = null;

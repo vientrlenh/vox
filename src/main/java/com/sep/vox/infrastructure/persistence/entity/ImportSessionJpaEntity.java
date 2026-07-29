@@ -36,7 +36,7 @@ public class ImportSessionJpaEntity {
     @Column(name = "type", nullable = false, updatable = false, length = 30, check = {
         @CheckConstraint(
             name = "chk_import_sessions_type_valid",
-            constraint = "type IN ('USER', 'SCHOOL_CLASS', 'SCHOOL_CLASS_USER','QUESTION', 'SCHOOL_DIRECTORY', 'SCHOOL_GRADE_LEVEL', 'SCHOOL_GRADE','RUBRIC_VERSION','RUBRIC_CRITERION','ASSESSMENT_POLICY')"
+            constraint = "type IN ('USER', 'SCHOOL_CLASS', 'SCHOOL_CLASS_USER','QUESTION', 'SCHOOL_DIRECTORY', 'SCHOOL_GRADE_LEVEL', 'SCHOOL_GRADE','RUBRIC_VERSION','RUBRIC_CRITERION','ASSESSMENT_POLICY','SCHOOL_ROOM','RUBRIC_RESULT_BAND')"
         )
     })
     private String type;

@@ -6,8 +6,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -20,6 +22,9 @@ import com.sep.vox.application.port.input.command.CreatePaymentLinkForSubscripti
 import com.sep.vox.application.port.input.command.RejectRequestCommand;
 import com.sep.vox.application.port.input.command.RenewSubscriptionCommand;
 import com.sep.vox.application.port.input.command.SubmitRequestCommand;
+import com.sep.vox.application.port.input.query.ViewQuotaAllocationsQuery;
+import com.sep.vox.application.port.input.usecase.subscription.AllocateClassTestQuotaToTeachersUseCase;
+import com.sep.vox.application.port.input.usecase.subscription.AllocatePracticeQuotaToStudentsUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ApproveRequestUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ArchivePlanUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.BuyTokensUseCase;
@@ -33,17 +38,22 @@ import com.sep.vox.application.port.input.usecase.subscription.RejectRequestUseC
 import com.sep.vox.application.port.input.usecase.subscription.RenewSubscriptionUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.SubmitRequestUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.SyncInvoicePaymentStatusUseCase;
+import com.sep.vox.application.port.input.usecase.subscription.ViewClassTestQuotaAllocationsUseCase;
+import com.sep.vox.application.port.input.usecase.subscription.ViewPracticeQuotaAllocationsUseCase;
 import com.sep.vox.domain.dto.InvoiceDto;
 import com.sep.vox.domain.dto.PaymentLinkDto;
+import com.sep.vox.domain.dto.QuotaUserAllocationSummaryDto;
 import com.sep.vox.domain.dto.SchoolSubscriptionDto;
 import com.sep.vox.domain.dto.SubscriptionPlanDto;
 import com.sep.vox.domain.dto.SubscriptionRequestDto;
 import com.sep.vox.domain.dto.TokenPurchaseDto;
+import com.sep.vox.interfaces.rest.dto.request.AllocateQuotaRequest;
 import com.sep.vox.interfaces.rest.dto.request.BuyTokensRequest;
 import com.sep.vox.interfaces.rest.dto.request.ConsumeQuotaRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreatePlanRequest;
 import com.sep.vox.interfaces.rest.dto.request.SubmitRequestRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
+import com.sep.vox.interfaces.rest.mapper.AllocateQuotaCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.BuyTokensCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreatePlanCommandMapper;
 
@@ -66,6 +76,10 @@ public class SubscriptionController {
     private final CreatePaymentLinkForTokenPurchaseUseCase createPaymentLinkForTokenPurchaseUseCase;
     private final CreatePaymentLinkForRenewalUseCase createPaymentLinkForRenewalUseCase;
     private final SyncInvoicePaymentStatusUseCase syncInvoicePaymentStatusUseCase;
+    private final AllocateClassTestQuotaToTeachersUseCase allocateClassTestQuotaToTeachersUseCase;
+    private final AllocatePracticeQuotaToStudentsUseCase allocatePracticeQuotaToStudentsUseCase;
+    private final ViewClassTestQuotaAllocationsUseCase viewClassTestQuotaAllocationsUseCase;
+    private final ViewPracticeQuotaAllocationsUseCase viewPracticeQuotaAllocationsUseCase;
 
     public SubscriptionController(
             CreatePlanUseCase createPlanUseCase,
@@ -80,7 +94,11 @@ public class SubscriptionController {
             CreatePaymentLinkForSubscriptionRequestUseCase createPaymentLinkForSubscriptionRequestUseCase,
             CreatePaymentLinkForTokenPurchaseUseCase createPaymentLinkForTokenPurchaseUseCase,
             CreatePaymentLinkForRenewalUseCase createPaymentLinkForRenewalUseCase,
-            SyncInvoicePaymentStatusUseCase syncInvoicePaymentStatusUseCase) {
+            SyncInvoicePaymentStatusUseCase syncInvoicePaymentStatusUseCase,
+            AllocateClassTestQuotaToTeachersUseCase allocateClassTestQuotaToTeachersUseCase,
+            AllocatePracticeQuotaToStudentsUseCase allocatePracticeQuotaToStudentsUseCase,
+            ViewClassTestQuotaAllocationsUseCase viewClassTestQuotaAllocationsUseCase,
+            ViewPracticeQuotaAllocationsUseCase viewPracticeQuotaAllocationsUseCase) {
         this.createPlanUseCase = createPlanUseCase;
         this.archivePlanUseCase = archivePlanUseCase;
         this.renewSubscriptionUseCase = renewSubscriptionUseCase;
@@ -94,6 +112,10 @@ public class SubscriptionController {
         this.createPaymentLinkForTokenPurchaseUseCase = createPaymentLinkForTokenPurchaseUseCase;
         this.createPaymentLinkForRenewalUseCase = createPaymentLinkForRenewalUseCase;
         this.syncInvoicePaymentStatusUseCase = syncInvoicePaymentStatusUseCase;
+        this.allocateClassTestQuotaToTeachersUseCase = allocateClassTestQuotaToTeachersUseCase;
+        this.allocatePracticeQuotaToStudentsUseCase = allocatePracticeQuotaToStudentsUseCase;
+        this.viewClassTestQuotaAllocationsUseCase = viewClassTestQuotaAllocationsUseCase;
+        this.viewPracticeQuotaAllocationsUseCase = viewPracticeQuotaAllocationsUseCase;
     }
 
     @PostMapping("/plans")
@@ -201,11 +223,47 @@ public class SubscriptionController {
         return ResponseEntity.ok(ApiResponse.success("Đồng bộ trạng thái hóa đơn thành công", data));
     }
 
+    @PutMapping("/schools/{schoolId}/teachers/class-test-quota")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
+    public ResponseEntity<ApiResponse<QuotaUserAllocationSummaryDto>> allocateClassTestQuotaToTeachers(
+            @PathVariable UUID schoolId,
+            @Valid @RequestBody AllocateQuotaRequest request) {
+        var data = allocateClassTestQuotaToTeachersUseCase.execute(
+            AllocateQuotaCommandMapper.toClassTestCommand(schoolId, request));
+        return ResponseEntity.ok(ApiResponse.success("Phân bổ hạn mức kiểm tra lớp cho giáo viên thành công", data));
+    }
+
+    @GetMapping("/schools/{schoolId}/teachers/class-test-quota")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
+    public ResponseEntity<ApiResponse<QuotaUserAllocationSummaryDto>> viewClassTestQuotaAllocations(
+            @PathVariable UUID schoolId) {
+        var data = viewClassTestQuotaAllocationsUseCase.execute(new ViewQuotaAllocationsQuery(schoolId));
+        return ResponseEntity.ok(ApiResponse.success("Lấy danh sách hạn mức kiểm tra lớp thành công", data));
+    }
+
+    @PutMapping("/schools/{schoolId}/students/practice-quota")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
+    public ResponseEntity<ApiResponse<QuotaUserAllocationSummaryDto>> allocatePracticeQuotaToStudents(
+            @PathVariable UUID schoolId,
+            @Valid @RequestBody AllocateQuotaRequest request) {
+        var data = allocatePracticeQuotaToStudentsUseCase.execute(
+            AllocateQuotaCommandMapper.toPracticeCommand(schoolId, request));
+        return ResponseEntity.ok(ApiResponse.success("Phân bổ hạn mức luyện tập cho học sinh thành công", data));
+    }
+
+    @GetMapping("/schools/{schoolId}/students/practice-quota")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
+    public ResponseEntity<ApiResponse<QuotaUserAllocationSummaryDto>> viewPracticeQuotaAllocations(
+            @PathVariable UUID schoolId) {
+        var data = viewPracticeQuotaAllocationsUseCase.execute(new ViewQuotaAllocationsQuery(schoolId));
+        return ResponseEntity.ok(ApiResponse.success("Lấy danh sách hạn mức luyện tập thành công", data));
+    }
+
     @PostMapping("/internal/subscriptions/consume")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> consumeQuota(@Valid @RequestBody ConsumeQuotaRequest request) {
         consumeQuotaUseCase.execute(new ConsumeQuotaCommand(
-            request.subscriptionId(), request.examSessionId(), request.quotaType(), request.amount()
+            request.subscriptionId(), request.examSessionId(), request.quotaType(), request.amount(), request.userId()
         ));
         return ResponseEntity.ok(ApiResponse.success("Ghi nhận sử dụng hạn mức thành công"));
     }

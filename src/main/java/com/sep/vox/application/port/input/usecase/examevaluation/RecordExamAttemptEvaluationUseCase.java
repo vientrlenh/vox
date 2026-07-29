@@ -17,19 +17,18 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.mapper.examevaluation.ExamEvaluationSignalMapper;
-import com.sep.vox.application.port.input.command.UpdateExamSessionStatusCommand;
+import com.sep.vox.application.port.input.command.CompleteExamSessionGradingCommand;
 import com.sep.vox.application.port.input.command.examevaluation.CriterionScoreInput;
 import com.sep.vox.application.port.input.command.examevaluation.RecordExamAttemptEvaluationCommand;
 import com.sep.vox.application.port.input.command.examevaluation.ValidityResultInput;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.input.usecase.examsession.UpdateExamSessionStatusUseCase;
+import com.sep.vox.application.port.input.usecase.exam.CompleteExamSessionGradingUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.domain.model.exam.ExamEvaluationEngineType;
 import com.sep.vox.domain.model.exam.ExamItemCriterionScore;
 import com.sep.vox.domain.model.exam.ExamItemEvaluation;
 import com.sep.vox.domain.model.exam.ExamItemEvaluationStatus;
 import com.sep.vox.domain.model.exam.ExamItemEvaluationTurn;
-import com.sep.vox.domain.model.exam.ExamSessionStatus;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.TurnType;
 import com.sep.vox.domain.model.rubric.RubricCriterion;
@@ -56,7 +55,7 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
     private final ExamRepository examRepository;
     private final AssessmentPolicyRepository assessmentPolicyRepository;
     private final UpsertExamCandidateResultUseCase upsertExamCandidateResultUseCase;
-    private final UpdateExamSessionStatusUseCase updateExamSessionStatusUseCase;
+    private final CompleteExamSessionGradingUseCase completeExamSessionGradingUseCase;
     private final JsonSerializationPort jsonSerializationPort;
     private final TransactionTemplate phaseOneTransactionTemplate;
     private final ConfidenceReviewCalculator confidenceReviewCalculator;
@@ -71,7 +70,7 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
             ExamRepository examRepository,
             AssessmentPolicyRepository assessmentPolicyRepository,
             UpsertExamCandidateResultUseCase upsertExamCandidateResultUseCase,
-            UpdateExamSessionStatusUseCase updateExamSessionStatusUseCase,
+            CompleteExamSessionGradingUseCase completeExamSessionGradingUseCase,
             PlatformTransactionManager transactionManager,
             JsonSerializationPort jsonSerializationPort,
             ConfidenceReviewCalculator confidenceReviewCalculator) {
@@ -84,7 +83,7 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
         this.examRepository = examRepository;
         this.assessmentPolicyRepository = assessmentPolicyRepository;
         this.upsertExamCandidateResultUseCase = upsertExamCandidateResultUseCase;
-        this.updateExamSessionStatusUseCase = updateExamSessionStatusUseCase;
+        this.completeExamSessionGradingUseCase = completeExamSessionGradingUseCase;
         this.jsonSerializationPort = jsonSerializationPort;
         this.phaseOneTransactionTemplate = new TransactionTemplate(transactionManager);
         this.phaseOneTransactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
@@ -97,10 +96,9 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
 
         if (allResponsesHaveEvaluations(persisted.sessionId())) {
             upsertExamCandidateResultUseCase.execute(persisted.sessionId());
-            updateExamSessionStatusUseCase.execute(new UpdateExamSessionStatusCommand(
-                persisted.sessionId(),
-                ExamSessionStatus.GRADED
-            ));
+            completeExamSessionGradingUseCase.execute(
+                new CompleteExamSessionGradingCommand(persisted.sessionId())
+            );
         }
         return null;
     }

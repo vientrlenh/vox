@@ -8,6 +8,7 @@ public record ConsumeQuotaCommand(
     UUID subscriptionId,
     UUID examSessionId,
     QuotaType quotaType,
-    Integer amount
+    Integer amount,
+    UUID userId
 ) {
 }

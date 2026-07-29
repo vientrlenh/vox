@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.command;
 
+import java.util.List;
 import java.util.UUID;
 
 import com.sep.vox.domain.model.exam.ResultDecisionMethod;
@@ -16,6 +17,8 @@ public record CreateExamCommand(
     Integer maxAttempt,
     Integer examTimeDurationSecond,
     ResultDecisionMethod resultDecisionMethod,
-    Boolean requiresOtp
+    Boolean requiresOtp, 
+    List<String> requiredStreamTypes, 
+    String streamTypePermission
 ) {
 }

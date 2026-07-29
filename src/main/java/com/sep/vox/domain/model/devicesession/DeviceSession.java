@@ -130,12 +130,12 @@ public class DeviceSession {
 
     public static DeviceSession create(UUID userId, String deviceId, String deviceName, SessionPlatform platform, String ipAddress, String userAgent, String pushToken) {
         return new DeviceSession(
-            userId,
-            deviceId,
-            deviceName,
-            platform,
-            ipAddress,
-            userAgent,
+            userId, 
+            deviceId, 
+            deviceName, 
+            platform, 
+            ipAddress, 
+            userAgent, 
             null,
             pushToken
         );

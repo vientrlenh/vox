@@ -12,8 +12,8 @@ import com.sep.vox.application.port.output.PushNotificationPort;
 @Component
 public class ExamCandidateAddedPushListener {
 
-    private static final String TITLE = "New exam";
-    private static final String BODY = "You have a new exam";
+    private static final String TITLE = "Bài kiểm tra mới";
+    private static final String BODY = "Bạn có bài kiểm tra mới";
 
     private final PushNotificationPort pushNotificationPort;
 

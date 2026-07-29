@@ -90,7 +90,8 @@ public class LoginUseCase implements IUseCase<LoginCommand, LoginResponse> {
             new ClientDeviceCommand(
                 StringNormalization.trimAndCollapseSpaces(input.device().deviceId()),
                 StringNormalization.trimAndCollapseSpaces(input.device().deviceName()),
-                StringNormalization.trimAndCollapseSpaces(input.device().platform())
+                StringNormalization.trimAndCollapseSpaces(input.device().platform()),
+                StringNormalization.trimAndCollapseSpaces(input.device().pushToken())
             )
         );
     }
@@ -118,7 +119,8 @@ public class LoginUseCase implements IUseCase<LoginCommand, LoginResponse> {
             command.device().deviceName(), 
             sessionPlatformFromRequest(command.device().platform()), 
             command.ipAddress(), 
-            command.userAgent()
+            command.userAgent(),
+            command.device().pushToken()
         );
         return deviceSessionRepository.save(deviceSession);
     }

@@ -158,7 +158,7 @@ class OAuth2LoginUseCaseTests {
             "https://example.com/avatar.png",
             "203.0.113.10",
             "JUnit User Agent",
-            new ClientDeviceCommand("device-1", "Chrome on Windows", "WEB")
+            new ClientDeviceCommand("device-1", "Chrome on Windows", "WEB", null)
         );
     }
 

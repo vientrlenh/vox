@@ -14,7 +14,10 @@ public record ClientDeviceRequest(
 
     @NotBlank(message = "Nền tảng của thiết bị không được để trống")
     @Size(max = 20, message = "Nền tảng của thiết bị không được vuợt quá 20 ký tự")
-    String platform
+    String platform,
+
+    @Size(max = 255, message = "Push token không được vuợt quá 255 ký tự")
+    String pushToken
 ) {
     
 }

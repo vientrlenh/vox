@@ -13,9 +13,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.sep.vox.application.port.input.command.ClientDeviceCommand;
 import com.sep.vox.application.port.input.command.LogoutCommand;
+import com.sep.vox.application.port.input.command.OAuth2LoginCommand;
 import com.sep.vox.application.port.input.usecase.auth.LoginUseCase;
 import com.sep.vox.application.port.input.usecase.auth.LogoutUseCase;
+import com.sep.vox.application.port.input.usecase.auth.OAuth2LoginUseCase;
 import com.sep.vox.application.port.input.usecase.auth.RefreshUseCase;
 import com.sep.vox.application.port.input.usecase.auth.SetUpPasswordUseCase;
 import com.sep.vox.application.port.input.usecase.auth.SendResetPasswordOtpUseCase;
@@ -27,6 +30,7 @@ import com.sep.vox.application.port.input.usecase.registration.VerifyRegisterFor
 import com.sep.vox.application.response.input.auth.LoginResponse;
 import com.sep.vox.application.response.input.auth.RefreshResponse;
 import com.sep.vox.application.response.input.registration.RegisterFromSchoolDirectoryResponse;
+import com.sep.vox.interfaces.rest.dto.request.GoogleIdTokenLoginRequest;
 import com.sep.vox.interfaces.rest.dto.request.LoginRequest;
 import com.sep.vox.interfaces.rest.dto.request.RefreshRequest;
 import com.sep.vox.interfaces.rest.dto.request.RegisterBySelfDeclaredRequest;
@@ -46,6 +50,7 @@ import com.sep.vox.interfaces.rest.mapper.RegisterFromSchoolDirectoryCommandMapp
 import com.sep.vox.interfaces.rest.mapper.ResetPasswordCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.VerifyRegisterFormOtpCommandMapper;
 
+import com.sep.vox.infrastructure.security.GoogleIdTokenVerifierService;
 import com.sep.vox.interfaces.shared.HttpCookieProvider;
 import com.sep.vox.interfaces.shared.IpAddressReceiver;
 
@@ -68,8 +73,10 @@ public class AuthController {
     private final RegisterBySelfDeclaredUseCase registerBySelfDeclaredUseCase;
     private final VerifyRegisterFormOtpUseCase verifyRegisterFormOtpUseCase;
     private final LogoutUseCase logoutUseCase;
+    private final OAuth2LoginUseCase oAuth2LoginUseCase;
+    private final GoogleIdTokenVerifierService googleIdTokenVerifierService;
 
-    public AuthController(LoginUseCase loginUseCase, RegisterFromSchoolDirectoryUseCase registerFromSchoolDirectoryUseCase, SetUpPasswordUseCase setUpPasswordUseCase, RefreshUseCase refreshUseCase, SendResetPasswordOtpUseCase sendResetPasswordOtpUseCase, ResetPasswordUseCase resetPasswordUseCase, RegisterBySelfDeclaredUseCase registerBySelfDeclaredUseCase, VerifyRegisterFormOtpUseCase verifyRegisterFormOtpUseCase, LogoutUseCase logoutUseCase) {
+    public AuthController(LoginUseCase loginUseCase, RegisterFromSchoolDirectoryUseCase registerFromSchoolDirectoryUseCase, SetUpPasswordUseCase setUpPasswordUseCase, RefreshUseCase refreshUseCase, SendResetPasswordOtpUseCase sendResetPasswordOtpUseCase, ResetPasswordUseCase resetPasswordUseCase, RegisterBySelfDeclaredUseCase registerBySelfDeclaredUseCase, VerifyRegisterFormOtpUseCase verifyRegisterFormOtpUseCase, LogoutUseCase logoutUseCase, OAuth2LoginUseCase oAuth2LoginUseCase, GoogleIdTokenVerifierService googleIdTokenVerifierService) {
         this.loginUseCase = loginUseCase;
         this.registerFromSchoolDirectoryUseCase = registerFromSchoolDirectoryUseCase;
         this.setUpPasswordUseCase = setUpPasswordUseCase;
@@ -79,6 +86,8 @@ public class AuthController {
         this.registerBySelfDeclaredUseCase = registerBySelfDeclaredUseCase;
         this.verifyRegisterFormOtpUseCase = verifyRegisterFormOtpUseCase;
         this.logoutUseCase = logoutUseCase;
+        this.oAuth2LoginUseCase = oAuth2LoginUseCase;
+        this.googleIdTokenVerifierService = googleIdTokenVerifierService;
     }
 
     private static final String REFRESH_TOKEN_COOKIE_KEY = "refresh_token";
@@ -185,5 +194,28 @@ public class AuthController {
         session.setAttribute("oauth2_platform", platform);
 
         response.sendRedirect("/oauth2/authorization/google");
+    }
+
+    @PostMapping("/oauth2/google/token")
+    public ResponseEntity<ApiResponse<LoginResponse>> googleTokenLogin(@Valid @RequestBody GoogleIdTokenLoginRequest request, HttpServletRequest servletRequest, HttpServletResponse servletResponse) {
+        var payload = googleIdTokenVerifierService.verify(request.idToken());
+        var device = new ClientDeviceCommand(request.device().deviceId(), request.device().deviceName(), request.device().platform(), request.device().pushToken());
+        var command = new OAuth2LoginCommand(
+            "google",
+            payload.getSubject(),
+            payload.getEmail(),
+            payload.getEmailVerified(),
+            (String) payload.get("name"),
+            (String) payload.get("picture"),
+            IpAddressReceiver.getClientIp(servletRequest),
+            servletRequest.getHeader("User-Agent"),
+            device
+        );
+
+        var data = oAuth2LoginUseCase.execute(command);
+        HttpCookieProvider.setCookie(servletResponse, REFRESH_TOKEN_COOKIE_KEY, data.refreshToken(), REFRESH_TOKEN_COOKIE_TTL_SECONDS);
+        var response = ApiResponse.success("Đăng nhập thành công", new LoginResponse(data.accessToken(), null, data.roles()));
+
+        return ResponseEntity.ok(response);
     }
 }

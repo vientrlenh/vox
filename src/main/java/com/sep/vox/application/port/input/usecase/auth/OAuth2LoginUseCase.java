@@ -91,7 +91,8 @@ public class OAuth2LoginUseCase implements IUseCase<OAuth2LoginCommand, LoginRes
             command.device().deviceName(), 
             sessionPlatformFromRequest(command.device().platform()), 
             command.ipAddress(), 
-            command.userAgent()
+            command.userAgent(),
+            command.device().pushToken()
         );
         return deviceSessionRepository.save(deviceSession);
     }

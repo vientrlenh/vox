@@ -125,6 +125,10 @@ public class DeviceSession {
 
 
     public static DeviceSession create(UUID userId, String deviceId, String deviceName, SessionPlatform platform, String ipAddress, String userAgent) {
+        return create(userId, deviceId, deviceName, platform, ipAddress, userAgent, null);
+    }
+
+    public static DeviceSession create(UUID userId, String deviceId, String deviceName, SessionPlatform platform, String ipAddress, String userAgent, String pushToken) {
         return new DeviceSession(
             userId,
             deviceId,
@@ -133,7 +137,7 @@ public class DeviceSession {
             ipAddress,
             userAgent,
             null,
-            null
+            pushToken
         );
     }
     

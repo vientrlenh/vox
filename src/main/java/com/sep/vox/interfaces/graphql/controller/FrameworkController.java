@@ -200,6 +200,7 @@ public class FrameworkController {
         return loader.load(version.id());
     }
 
+    @SchemaMapping(typeName = "FrameworkCriterion", field = "bands")
     public CompletableFuture<List<FrameworkCriterionBandDto>> criterionBands(FrameworkCriterionDto criterion, DataFetchingEnvironment env) {
         DataLoader<UUID, List<FrameworkCriterionBandDto>> loader = env.getDataLoader("criterionBandsByFrameworkCriterion");
         if (loader == null) {

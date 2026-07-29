@@ -57,7 +57,8 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
             var device = new ClientDeviceCommand(
                 deviceId, 
                 deviceName, 
-                platform
+                platform,
+                null
             );
 
             var command = new OAuth2LoginCommand(

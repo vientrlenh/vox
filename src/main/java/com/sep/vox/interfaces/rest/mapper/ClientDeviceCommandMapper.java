@@ -9,7 +9,8 @@ public final class ClientDeviceCommandMapper {
         return new ClientDeviceCommand(
             request.deviceId(), 
             request.deviceName(), 
-            request.platform()
+            request.platform(),
+            request.pushToken()
         );
     }
 }

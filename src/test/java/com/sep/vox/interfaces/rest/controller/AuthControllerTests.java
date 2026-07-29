@@ -22,10 +22,12 @@ import com.sep.vox.application.port.input.command.ResetPasswordCommand;
 import com.sep.vox.application.port.input.command.SendResetPasswordOtpCommand;
 import com.sep.vox.application.port.input.usecase.auth.LoginUseCase;
 import com.sep.vox.application.port.input.usecase.auth.LogoutUseCase;
+import com.sep.vox.application.port.input.usecase.auth.OAuth2LoginUseCase;
 import com.sep.vox.application.port.input.usecase.auth.RefreshUseCase;
 import com.sep.vox.application.port.input.usecase.auth.ResetPasswordUseCase;
 import com.sep.vox.application.port.input.usecase.auth.SendResetPasswordOtpUseCase;
 import com.sep.vox.application.port.input.usecase.auth.SetUpPasswordUseCase;
+import com.sep.vox.infrastructure.security.GoogleIdTokenVerifierService;
 import com.sep.vox.application.port.input.usecase.registration.RegisterBySelfDeclaredUseCase;
 import com.sep.vox.application.port.input.usecase.registration.RegisterFromSchoolDirectoryUseCase;
 import com.sep.vox.application.port.input.usecase.registration.VerifyRegisterFormOtpUseCase;
@@ -53,11 +55,13 @@ public class AuthControllerTests {
         var registerBySelfDeclaredUseCase = mock(RegisterBySelfDeclaredUseCase.class);
         var verifyRegisterFormOtpUseCase = mock(VerifyRegisterFormOtpUseCase.class);
         var logoutUseCase = mock(LogoutUseCase.class);
-        var controller = new AuthController(loginUseCase, registerUseCase, setUpPasswordUseCase, refreshUseCase, sendResetPasswordOtpUseCase, resetPasswordUseCase, registerBySelfDeclaredUseCase, verifyRegisterFormOtpUseCase, logoutUseCase);
+        var oAuth2LoginUseCase = mock(OAuth2LoginUseCase.class);
+        var googleIdTokenVerifierService = mock(GoogleIdTokenVerifierService.class);
+        var controller = new AuthController(loginUseCase, registerUseCase, setUpPasswordUseCase, refreshUseCase, sendResetPasswordOtpUseCase, resetPasswordUseCase, registerBySelfDeclaredUseCase, verifyRegisterFormOtpUseCase, logoutUseCase, oAuth2LoginUseCase, googleIdTokenVerifierService);
         var request = new LoginRequest(
             "admin@example.com",
             "password",
-            new ClientDeviceRequest("device-1", "Chrome on Windows", "WEB")
+            new ClientDeviceRequest("device-1", "Chrome on Windows", "WEB", null)
         );
         var expectedCommand = new LoginCommand(
             request.login(),
@@ -67,7 +71,8 @@ public class AuthControllerTests {
             new ClientDeviceCommand(
                 request.device().deviceId(),
                 request.device().deviceName(),
-                request.device().platform()
+                request.device().platform(),
+                request.device().pushToken()
             )
         );
         var roles = List.of("STUDENT");
@@ -105,7 +110,9 @@ public class AuthControllerTests {
         var registerBySelfDeclaredUseCase = mock(RegisterBySelfDeclaredUseCase.class);
         var verifyRegisterFormOtpUseCase = mock(VerifyRegisterFormOtpUseCase.class);
         var logoutUseCase = mock(LogoutUseCase.class);
-        var controller = new AuthController(loginUseCase, registerUseCase, setUpPasswordUseCase, refreshUseCase, sendResetPasswordOtpUseCase, resetPasswordUseCase, registerBySelfDeclaredUseCase, verifyRegisterFormOtpUseCase, logoutUseCase);
+        var oAuth2LoginUseCase = mock(OAuth2LoginUseCase.class);
+        var googleIdTokenVerifierService = mock(GoogleIdTokenVerifierService.class);
+        var controller = new AuthController(loginUseCase, registerUseCase, setUpPasswordUseCase, refreshUseCase, sendResetPasswordOtpUseCase, resetPasswordUseCase, registerBySelfDeclaredUseCase, verifyRegisterFormOtpUseCase, logoutUseCase, oAuth2LoginUseCase, googleIdTokenVerifierService);
         var request = new RefreshRequest("device-1");
         var expectedCommand = new RefreshCommand("old-refresh-token", request.deviceId());
         var refreshResponse = new RefreshResponse("access-token", "new-refresh-token");
@@ -138,7 +145,9 @@ public class AuthControllerTests {
         var registerBySelfDeclaredUseCase = mock(RegisterBySelfDeclaredUseCase.class);
         var verifyRegisterFormOtpUseCase = mock(VerifyRegisterFormOtpUseCase.class);
         var logoutUseCase = mock(LogoutUseCase.class);
-        var controller = new AuthController(loginUseCase, registerUseCase, setUpPasswordUseCase, refreshUseCase, sendResetPasswordOtpUseCase, resetPasswordUseCase, registerBySelfDeclaredUseCase, verifyRegisterFormOtpUseCase, logoutUseCase);
+        var oAuth2LoginUseCase = mock(OAuth2LoginUseCase.class);
+        var googleIdTokenVerifierService = mock(GoogleIdTokenVerifierService.class);
+        var controller = new AuthController(loginUseCase, registerUseCase, setUpPasswordUseCase, refreshUseCase, sendResetPasswordOtpUseCase, resetPasswordUseCase, registerBySelfDeclaredUseCase, verifyRegisterFormOtpUseCase, logoutUseCase, oAuth2LoginUseCase, googleIdTokenVerifierService);
 
         var servletResponse = new MockHttpServletResponse();
 
@@ -163,7 +172,9 @@ public class AuthControllerTests {
         var registerBySelfDeclaredUseCase = mock(RegisterBySelfDeclaredUseCase.class);
         var verifyRegisterFormOtpUseCase = mock(VerifyRegisterFormOtpUseCase.class);
         var logoutUseCase = mock(LogoutUseCase.class);
-        var controller = new AuthController(loginUseCase, registerUseCase, setUpPasswordUseCase, refreshUseCase, sendResetPasswordOtpUseCase, resetPasswordUseCase, registerBySelfDeclaredUseCase, verifyRegisterFormOtpUseCase, logoutUseCase);
+        var oAuth2LoginUseCase = mock(OAuth2LoginUseCase.class);
+        var googleIdTokenVerifierService = mock(GoogleIdTokenVerifierService.class);
+        var controller = new AuthController(loginUseCase, registerUseCase, setUpPasswordUseCase, refreshUseCase, sendResetPasswordOtpUseCase, resetPasswordUseCase, registerBySelfDeclaredUseCase, verifyRegisterFormOtpUseCase, logoutUseCase, oAuth2LoginUseCase, googleIdTokenVerifierService);
 
         var servletResponse = new MockHttpServletResponse();
 
@@ -185,7 +196,9 @@ public class AuthControllerTests {
         var registerBySelfDeclaredUseCase = mock(RegisterBySelfDeclaredUseCase.class);
         var verifyRegisterFormOtpUseCase = mock(VerifyRegisterFormOtpUseCase.class);
         var logoutUseCase = mock(LogoutUseCase.class);
-        var controller = new AuthController(loginUseCase, registerUseCase, setUpPasswordUseCase, refreshUseCase, sendResetPasswordOtpUseCase, resetPasswordUseCase, registerBySelfDeclaredUseCase, verifyRegisterFormOtpUseCase, logoutUseCase);
+        var oAuth2LoginUseCase = mock(OAuth2LoginUseCase.class);
+        var googleIdTokenVerifierService = mock(GoogleIdTokenVerifierService.class);
+        var controller = new AuthController(loginUseCase, registerUseCase, setUpPasswordUseCase, refreshUseCase, sendResetPasswordOtpUseCase, resetPasswordUseCase, registerBySelfDeclaredUseCase, verifyRegisterFormOtpUseCase, logoutUseCase, oAuth2LoginUseCase, googleIdTokenVerifierService);
         var request = new SendResetPasswordOtpRequest("admin@example.com");
         var expectedCommand = new SendResetPasswordOtpCommand(request.email());
 
@@ -209,7 +222,9 @@ public class AuthControllerTests {
         var registerBySelfDeclaredUseCase = mock(RegisterBySelfDeclaredUseCase.class);
         var verifyRegisterFormOtpUseCase = mock(VerifyRegisterFormOtpUseCase.class);
         var logoutUseCase = mock(LogoutUseCase.class);
-        var controller = new AuthController(loginUseCase, registerUseCase, setUpPasswordUseCase, refreshUseCase, sendResetPasswordOtpUseCase, resetPasswordUseCase, registerBySelfDeclaredUseCase, verifyRegisterFormOtpUseCase, logoutUseCase);
+        var oAuth2LoginUseCase = mock(OAuth2LoginUseCase.class);
+        var googleIdTokenVerifierService = mock(GoogleIdTokenVerifierService.class);
+        var controller = new AuthController(loginUseCase, registerUseCase, setUpPasswordUseCase, refreshUseCase, sendResetPasswordOtpUseCase, resetPasswordUseCase, registerBySelfDeclaredUseCase, verifyRegisterFormOtpUseCase, logoutUseCase, oAuth2LoginUseCase, googleIdTokenVerifierService);
         var request = new ResetPasswordRequest("admin@example.com", "new-password", "1234567");
         var expectedCommand = new ResetPasswordCommand(request.email(), request.password(), request.otp());
 

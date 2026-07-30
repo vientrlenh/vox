@@ -1833,7 +1833,13 @@ public class SampleSchoolDataInitializer implements ApplicationRunner {
 
         /** Mỗi khối thi một ngày riêng để hai ca của các khối không tranh cùng một phòng. */
         private Instant examStart(Instant now) {
-            return now.plus(6L + order(), ChronoUnit.DAYS).with(ChronoField.HOUR_OF_DAY, 8);
+            return now.atZone(DateMapper.DEFAULT_INPUT_ZONE)
+                .plusDays(6L + order())
+                .withHour(8)
+                .withMinute(0)
+                .withSecond(0)
+                .withNano(0)
+                .toInstant();
         }
     }
 

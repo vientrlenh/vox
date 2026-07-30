@@ -7,7 +7,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -70,11 +71,11 @@ class ClearInvalidResultUseCaseTests {
         candidate = new ExamCandidate();
         candidate.setId(candidateId);
         candidate.setStudentId(studentId);
-        candidate.setBlockedAt(OffsetDateTime.now().minusDays(1));
+        candidate.setBlockedAt(Instant.now().minus(1, ChronoUnit.DAYS));
         when(examCandidateRepository.findById(candidateId)).thenReturn(Optional.of(candidate));
 
         var assignment = ExamGradingAssignment.open(candidateResultId, teacherId,
-            GradingRoundType.REMEDIATION, null, null, OffsetDateTime.now(), UUID.randomUUID(), null);
+            GradingRoundType.REMEDIATION, null, null, Instant.now(), UUID.randomUUID(), null);
         assignment.setId(assignmentId);
         var context = new GradingContext(
             assignment, result, new ExamSession(), UUID.randomUUID(), "IELTS Mock");

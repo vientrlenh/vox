@@ -20,7 +20,7 @@ import com.sep.vox.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 @Service
@@ -114,7 +114,7 @@ public class AcceptSchoolRubricCriterionImportUseCase implements IUseCase<Accept
         // Bước 5: Cập nhật trạng thái Session sang QUEUED để kích hoạt luồng xử lý ngầm (Async Worker)
         session.setStatus(ImportSessionStatus.QUEUED);
         session.setAttempts(0); // Reset số lần thử lại về 0 để Scheduler bốc việc lên chạy
-        session.setUpdatedAt(OffsetDateTime.now());
+        session.setUpdatedAt(Instant.now());
         session.setUpdatedBy(currentUserId);
 
         importSessionRepository.save(session);

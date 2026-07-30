@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examcandidate;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -83,7 +83,7 @@ public class ImportExamCandidatesFromGradeUseCase
             throw new ForbiddenException("Khối không thuộc trường của bài kiểm tra");
         }
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var classes = schoolClassRepository.findBySchoolId(
             exam.getSchoolId(), null, null, null, grade.getId(), 1, MAX_CLASSES).content();
 

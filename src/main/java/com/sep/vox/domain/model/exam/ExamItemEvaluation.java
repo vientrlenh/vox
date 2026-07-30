@@ -1,7 +1,7 @@
 package com.sep.vox.domain.model.exam;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import com.sep.vox.domain.valueobject.EvaluationSignals;
@@ -27,7 +27,7 @@ public class ExamItemEvaluation {
     private String suggestionsJson;
     private String promptVersion;
     private ExamItemEvaluationStatus status; 
-    private OffsetDateTime evaluatedAt;
+    private Instant evaluatedAt;
 
     public ExamItemEvaluation() {}
 
@@ -35,7 +35,7 @@ public class ExamItemEvaluation {
             String gradedByModel, Integer sampleCount, UUID reviewerId, BigDecimal rawItemScore, BigDecimal itemScore,
             BigDecimal overallConfidence, boolean requiresHumanReview, String reviewReasonCode, boolean markedInvalid,
             boolean requiresRetake, EvaluationSignals signals, String validityJson, String feedbackSummary, String suggestionsJson,
-            String promptVersion, ExamItemEvaluationStatus status, OffsetDateTime evaluatedAt) {
+            String promptVersion, ExamItemEvaluationStatus status, Instant evaluatedAt) {
         this.id = id;
         this.responseId = responseId;
         this.paperItemId = paperItemId;
@@ -63,7 +63,7 @@ public class ExamItemEvaluation {
             String gradedByModel, Integer sampleCount, UUID reviewerId, BigDecimal rawItemScore, BigDecimal itemScore,
             BigDecimal overallConfidence, boolean requiresHumanReview, String reviewReasonCode, boolean markedInvalid,
             boolean requiresRetake, EvaluationSignals signals, String validityJson, String feedbackSummary, String suggestionsJson,
-            String promptVersion, ExamItemEvaluationStatus status, OffsetDateTime evaluatedAt) {
+            String promptVersion, ExamItemEvaluationStatus status, Instant evaluatedAt) {
         this.responseId = responseId;
         this.paperItemId = paperItemId;
         this.engineType = engineType;
@@ -222,11 +222,11 @@ public class ExamItemEvaluation {
         this.status = status;
     }
 
-    public OffsetDateTime getEvaluatedAt() {
+    public Instant getEvaluatedAt() {
         return evaluatedAt;
     }
 
-    public void setEvaluatedAt(OffsetDateTime evaluatedAt) {
+    public void setEvaluatedAt(Instant evaluatedAt) {
         this.evaluatedAt = evaluatedAt;
     }
 

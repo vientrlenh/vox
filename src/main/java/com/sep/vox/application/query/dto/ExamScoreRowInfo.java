@@ -1,7 +1,7 @@
 package com.sep.vox.application.query.dto;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 /** Một dòng bảng điểm để xuất CSV. */
@@ -12,7 +12,7 @@ public record ExamScoreRowInfo(
     String className,
     String examName,
     /** Ca thi được nhận diện bằng mốc bắt đầu — {@code exam_schedules} không có cột tên. */
-    OffsetDateTime scheduleStartAt,
+    Instant scheduleStartAt,
     BigDecimal totalScore,
     String resultBand,
     String status,
@@ -20,6 +20,6 @@ public record ExamScoreRowInfo(
     String lastRoundType,
     String lastOutcome,
     String lastGraderName,
-    OffsetDateTime releasedAt
+    Instant releasedAt
 ) {
 }

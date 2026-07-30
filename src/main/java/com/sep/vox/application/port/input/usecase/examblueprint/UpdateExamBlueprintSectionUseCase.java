@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.examblueprint;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -77,7 +77,7 @@ public class UpdateExamBlueprintSectionUseCase implements IUseCase<UpdateExamBlu
         section.setInstruction(command.instruction());
         section.setSectionTimeLimitSeconds(command.sectionTimeLimitSeconds());
         section.setSectionWeight(command.sectionWeight() == null ? BigDecimal.ONE : command.sectionWeight());
-        section.setUpdatedAt(OffsetDateTime.now());
+        section.setUpdatedAt(Instant.now());
         section.setUpdatedBy(currentUserId);
 
         return ExamBlueprintSectionDtoMapper.toDto(examBlueprintSectionRepository.save(section));

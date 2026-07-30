@@ -1,6 +1,6 @@
 package com.sep.vox.domain.model.framework;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class FrameworkResultBand {
@@ -10,15 +10,15 @@ public class FrameworkResultBand {
     private String label;
     private String description;
     private int order;
-    private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
     private UUID createdBy;
     private UUID updatedBy;
 
     public FrameworkResultBand() {}
 
-    public FrameworkResultBand(UUID id, UUID frameworkVersionId, String code, String label, String description, int order, OffsetDateTime createdAt,
-            OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+    public FrameworkResultBand(UUID id, UUID frameworkVersionId, String code, String label, String description, int order, Instant createdAt,
+            Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.frameworkVersionId = frameworkVersionId;
         this.code = code;
@@ -31,8 +31,8 @@ public class FrameworkResultBand {
         this.updatedBy = updatedBy;
     }
 
-    public FrameworkResultBand(UUID frameworkVersionId, String code, String label, String description, int order, OffsetDateTime createdAt,
-            OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+    public FrameworkResultBand(UUID frameworkVersionId, String code, String label, String description, int order, Instant createdAt,
+            Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.frameworkVersionId = frameworkVersionId;
         this.code = code;
         this.label = label;
@@ -84,7 +84,7 @@ public class FrameworkResultBand {
         this.description = description;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
     
@@ -96,15 +96,15 @@ public class FrameworkResultBand {
         this.order = order;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 

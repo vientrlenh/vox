@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.auth;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -54,7 +54,7 @@ public class OAuth2LoginUseCase implements IUseCase<OAuth2LoginCommand, LoginRes
         var user = userRepository.findByEmailAndStatus(input.email(), UserStatus.ACTIVE)
             .orElseThrow(() -> new UnauthorizedException("Người dùng hiện chưa tồn tại. Vui lòng gửi đơn đăng ký hoặc liên hệ bên nhà trường để được hỗ trợ"));
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var userRoles = getUserRoles(user.getId());
         var deviceSession = createDeviceSession(user.getId(), input);
         var schoolId = schoolUserRepository.findByUserId(user.getId())
@@ -96,7 +96,7 @@ public class OAuth2LoginUseCase implements IUseCase<OAuth2LoginCommand, LoginRes
         return deviceSessionRepository.save(deviceSession);
     }
 
-    private void createRefreshToken(DeviceSession deviceSession, GeneratedSessionToken sessionToken, OffsetDateTime now) {
+    private void createRefreshToken(DeviceSession deviceSession, GeneratedSessionToken sessionToken, Instant now) {
         var refreshToken = RefreshToken.createFresh(deviceSession.getId(), sessionToken.hashedToken(), now);
         refreshTokenRepository.save(refreshToken);
     }

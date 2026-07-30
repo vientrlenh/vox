@@ -1,6 +1,6 @@
 package com.sep.vox.domain.repository;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
@@ -15,8 +15,8 @@ public interface RegisterFormRepository {
     Optional<RegisterForm> findById(UUID id);
     PageResult<RegisterForm> findAll(int pageNumber, int size);
     Optional<RegisterForm> findByIdForUpdate(UUID id);
-    int updateApprovedRegisterForm(UUID id, UUID updatedBy, OffsetDateTime now);
-    int updateRejectedRegisterForm(UUID id, UUID updatedBy, String reason, OffsetDateTime now);
+    int updateApprovedRegisterForm(UUID id, UUID updatedBy, Instant now);
+    int updateRejectedRegisterForm(UUID id, UUID updatedBy, String reason, Instant now);
     boolean existsBySchoolDirectoryIdAndStatusIn(UUID schoolDirectoryId, Collection<RegisterFormStatus> statuses);
     boolean existsByContactEmailAndStatus(String contactEmail, RegisterFormStatus status);
     boolean existsByContactPhoneAndStatus(String contactPhone, RegisterFormStatus status);

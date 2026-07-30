@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -73,16 +73,16 @@ public class ExamRecordingJpaEntity {
     private String source;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "assembled_at")
-    private OffsetDateTime assembledAt;
+    private Instant assembledAt;
 
     protected ExamRecordingJpaEntity() {}
 
     public ExamRecordingJpaEntity(UUID id, UUID examSessionId, UUID candidateId, String streamType, String bucket, String s3Key, 
-            String status, Long sizeBytes, Integer durationSeconds, String source, OffsetDateTime createdAt,
-            OffsetDateTime assembledAt) {
+            String status, Long sizeBytes, Integer durationSeconds, String source, Instant createdAt,
+            Instant assembledAt) {
         this.id = id;
         this.examSessionId = examSessionId;
         this.candidateId = candidateId;
@@ -161,19 +161,19 @@ public class ExamRecordingJpaEntity {
         this.durationSeconds = durationSeconds;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getAssembledAt() {
+    public Instant getAssembledAt() {
         return assembledAt;
     }
 
-    public void setAssembledAt(OffsetDateTime assembledAt) {
+    public void setAssembledAt(Instant assembledAt) {
         this.assembledAt = assembledAt;
     }
 

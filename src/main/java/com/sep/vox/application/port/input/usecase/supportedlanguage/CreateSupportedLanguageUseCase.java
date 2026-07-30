@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.supportedlanguage;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -45,7 +45,7 @@ public class CreateSupportedLanguageUseCase implements IUseCase<CreateSupportedL
         }
 
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var language = new SupportedLanguage(
             new LanguageCode(command.code()),
             command.name(),

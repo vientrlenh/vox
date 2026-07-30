@@ -1,6 +1,6 @@
 package com.sep.vox.domain.repository;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -17,8 +17,8 @@ public interface ExamSessionRepository {
     Optional<ExamSession> findLatestByCandidateIdAndStatuses(UUID candidateId, Collection<ExamSessionStatus> statuses);
     List<ExamSession> findAllByCandidateId(UUID candidateId);
     List<ExamSession> findAllByCandidateIdIn(Collection<UUID> candidateIds);
-    List<ExamSession> findDeferredGradingCandidates(java.time.OffsetDateTime now);
-    List<ExamSession> findPastScheduleEndCandidates(java.time.OffsetDateTime threshold);
+    List<ExamSession> findDeferredGradingCandidates(java.time.Instant now);
+    List<ExamSession> findPastScheduleEndCandidates(java.time.Instant threshold);
     boolean existsById(UUID id);
     ExamSession save(ExamSession session);
     void deleteById(UUID id);
@@ -27,7 +27,7 @@ public interface ExamSessionRepository {
      */
     Optional<ExamSession> findByIdAndResumable(UUID id);
     Optional<ExamSession> findActiveByExamIdAndCandidateId(UUID examId, UUID candidateId);
-    List<ExamSession> findActiveByIdInAndSchoolId(Collection<UUID> ids, OffsetDateTime now, UUID schoolId);
+    List<ExamSession> findActiveByIdInAndSchoolId(Collection<UUID> ids, Instant now, UUID schoolId);
 
     /** Atomic conditional transition: only succeeds if current status equals {@code from}. Returns false if another writer already moved it. */
     boolean tryTransitionStatus(UUID sessionId, ExamSessionStatus from, ExamSessionStatus to);

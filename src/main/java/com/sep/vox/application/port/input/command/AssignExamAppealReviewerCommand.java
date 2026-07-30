@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.command;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -15,6 +15,6 @@ public record AssignExamAppealReviewerCommand(
     UUID appealId,
     UUID reviewerId,
     String overrideReason,
-    OffsetDateTime deadlineAt
+    Instant deadlineAt
 ) {
 }

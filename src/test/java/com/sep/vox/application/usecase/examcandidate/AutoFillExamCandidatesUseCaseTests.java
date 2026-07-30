@@ -8,7 +8,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -82,13 +82,13 @@ class AutoFillExamCandidatesUseCaseTests {
     @Test
     void should_distribute_candidates_round_robin_in_schedule_order() {
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(
-            schedule(schedule2, room2, ExamScheduleStatus.PUBLISHED, OffsetDateTime.parse("2026-01-02T09:00:00Z")),
-            schedule(schedule1, room1, ExamScheduleStatus.DRAFT, OffsetDateTime.parse("2026-01-01T09:00:00Z"))
+            schedule(schedule2, room2, ExamScheduleStatus.PUBLISHED, Instant.parse("2026-01-02T09:00:00Z")),
+            schedule(schedule1, room1, ExamScheduleStatus.DRAFT, Instant.parse("2026-01-01T09:00:00Z"))
         ));
         when(examScheduleRepository.findByIdForUpdate(schedule1)).thenReturn(Optional.of(
-            schedule(schedule1, room1, ExamScheduleStatus.DRAFT, OffsetDateTime.parse("2026-01-01T09:00:00Z"))));
+            schedule(schedule1, room1, ExamScheduleStatus.DRAFT, Instant.parse("2026-01-01T09:00:00Z"))));
         when(examScheduleRepository.findByIdForUpdate(schedule2)).thenReturn(Optional.of(
-            schedule(schedule2, room2, ExamScheduleStatus.PUBLISHED, OffsetDateTime.parse("2026-01-02T09:00:00Z"))));
+            schedule(schedule2, room2, ExamScheduleStatus.PUBLISHED, Instant.parse("2026-01-02T09:00:00Z"))));
         var c1 = candidate();
         var c2 = candidate();
         var c3 = candidate();
@@ -108,13 +108,13 @@ class AutoFillExamCandidatesUseCaseTests {
     @Test
     void should_lock_all_schedules_before_touching_candidates() {
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(
-            schedule(schedule1, room1, ExamScheduleStatus.DRAFT, OffsetDateTime.parse("2026-01-01T09:00:00Z")),
-            schedule(schedule2, room2, ExamScheduleStatus.DRAFT, OffsetDateTime.parse("2026-01-02T09:00:00Z"))
+            schedule(schedule1, room1, ExamScheduleStatus.DRAFT, Instant.parse("2026-01-01T09:00:00Z")),
+            schedule(schedule2, room2, ExamScheduleStatus.DRAFT, Instant.parse("2026-01-02T09:00:00Z"))
         ));
         when(examScheduleRepository.findByIdForUpdate(schedule1)).thenReturn(Optional.of(
-            schedule(schedule1, room1, ExamScheduleStatus.DRAFT, OffsetDateTime.parse("2026-01-01T09:00:00Z"))));
+            schedule(schedule1, room1, ExamScheduleStatus.DRAFT, Instant.parse("2026-01-01T09:00:00Z"))));
         when(examScheduleRepository.findByIdForUpdate(schedule2)).thenReturn(Optional.of(
-            schedule(schedule2, room2, ExamScheduleStatus.DRAFT, OffsetDateTime.parse("2026-01-02T09:00:00Z"))));
+            schedule(schedule2, room2, ExamScheduleStatus.DRAFT, Instant.parse("2026-01-02T09:00:00Z"))));
         when(examCandidateRepository.findByExamIdAndScheduleIdIsNullOrderByAssignedAtAsc(examId))
             .thenReturn(List.of(candidate()));
 
@@ -131,11 +131,11 @@ class AutoFillExamCandidatesUseCaseTests {
     @Test
     void should_restrict_to_given_schedule_ids() {
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(
-            schedule(schedule1, room1, ExamScheduleStatus.DRAFT, OffsetDateTime.parse("2026-01-01T09:00:00Z")),
-            schedule(schedule2, room2, ExamScheduleStatus.DRAFT, OffsetDateTime.parse("2026-01-02T09:00:00Z"))
+            schedule(schedule1, room1, ExamScheduleStatus.DRAFT, Instant.parse("2026-01-01T09:00:00Z")),
+            schedule(schedule2, room2, ExamScheduleStatus.DRAFT, Instant.parse("2026-01-02T09:00:00Z"))
         ));
         when(examScheduleRepository.findByIdForUpdate(schedule2)).thenReturn(Optional.of(
-            schedule(schedule2, room2, ExamScheduleStatus.DRAFT, OffsetDateTime.parse("2026-01-02T09:00:00Z"))));
+            schedule(schedule2, room2, ExamScheduleStatus.DRAFT, Instant.parse("2026-01-02T09:00:00Z"))));
         var c1 = candidate();
         when(examCandidateRepository.findByExamIdAndScheduleIdIsNullOrderByAssignedAtAsc(examId))
             .thenReturn(List.of(c1));
@@ -150,10 +150,10 @@ class AutoFillExamCandidatesUseCaseTests {
     @Test
     void should_return_empty_when_no_unassigned_candidates() {
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(
-            schedule(schedule1, room1, ExamScheduleStatus.DRAFT, OffsetDateTime.parse("2026-01-01T09:00:00Z"))
+            schedule(schedule1, room1, ExamScheduleStatus.DRAFT, Instant.parse("2026-01-01T09:00:00Z"))
         ));
         when(examScheduleRepository.findByIdForUpdate(schedule1)).thenReturn(Optional.of(
-            schedule(schedule1, room1, ExamScheduleStatus.DRAFT, OffsetDateTime.parse("2026-01-01T09:00:00Z"))));
+            schedule(schedule1, room1, ExamScheduleStatus.DRAFT, Instant.parse("2026-01-01T09:00:00Z"))));
         when(examCandidateRepository.findByExamIdAndScheduleIdIsNullOrderByAssignedAtAsc(examId))
             .thenReturn(List.of());
 
@@ -166,7 +166,7 @@ class AutoFillExamCandidatesUseCaseTests {
     @Test
     void should_return_empty_when_no_target_schedules() {
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(
-            schedule(schedule1, room1, ExamScheduleStatus.COMPLETED, OffsetDateTime.parse("2026-01-01T09:00:00Z"))
+            schedule(schedule1, room1, ExamScheduleStatus.COMPLETED, Instant.parse("2026-01-01T09:00:00Z"))
         ));
 
         var result = useCase.execute(new AutoFillExamCandidatesCommand(examId, null));
@@ -182,11 +182,11 @@ class AutoFillExamCandidatesUseCaseTests {
         c.setExamId(examId);
         c.setStudentId(UUID.randomUUID());
         c.setStatus(ExamCandidateStatus.ASSIGNED);
-        c.setAssignedAt(OffsetDateTime.now());
+        c.setAssignedAt(Instant.now());
         return c;
     }
 
-    private ExamSchedule schedule(UUID id, UUID roomId, ExamScheduleStatus status, OffsetDateTime start) {
+    private ExamSchedule schedule(UUID id, UUID roomId, ExamScheduleStatus status, Instant start) {
         var s = new ExamSchedule();
         s.setId(id);
         s.setExamId(examId);

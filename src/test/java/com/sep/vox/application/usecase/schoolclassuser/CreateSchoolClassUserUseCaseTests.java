@@ -11,7 +11,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -102,7 +103,7 @@ class CreateSchoolClassUserUseCaseTests {
 
         mockValidContext(currentUserId, schoolId, classId, targetUserId);
         when(schoolClassUserRepository.findByUserIdAndSchoolClassId(targetUserId, classId))
-            .thenReturn(Optional.of(new SchoolClassUser(targetUserId, classId, true, OffsetDateTime.now(), null, currentUserId)));
+            .thenReturn(Optional.of(new SchoolClassUser(targetUserId, classId, true, Instant.now(), null, currentUserId)));
 
         assertThrows(DuplicatedException.class, () -> useCase.execute(command));
 
@@ -120,8 +121,8 @@ class CreateSchoolClassUserUseCaseTests {
 
         mockValidContext(currentUserId, schoolId, classId, targetUserId);
         var leftMembership = new SchoolClassUser(
-            membershipId, targetUserId, classId, false, OffsetDateTime.now().minusDays(5),
-            OffsetDateTime.now().minusDays(1), UUID.randomUUID());
+            membershipId, targetUserId, classId, false, Instant.now().minus(5, ChronoUnit.DAYS),
+            Instant.now().minus(1, ChronoUnit.DAYS), UUID.randomUUID());
         when(schoolClassUserRepository.findByUserIdAndSchoolClassId(targetUserId, classId))
             .thenReturn(Optional.of(leftMembership));
         when(schoolClassUserRepository.save(any(SchoolClassUser.class))).thenAnswer(invocation -> invocation.getArgument(0));

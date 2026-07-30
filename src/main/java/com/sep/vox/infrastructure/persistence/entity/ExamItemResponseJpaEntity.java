@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import jakarta.persistence.Column;
@@ -44,12 +44,12 @@ public class ExamItemResponseJpaEntity {
     private String terminationReason;
 
     @Column(name = "submitted_at", nullable = false, updatable = false)
-    private OffsetDateTime submittedAt;
+    private Instant submittedAt;
 
     protected ExamItemResponseJpaEntity() {}
 
     public ExamItemResponseJpaEntity(UUID id, UUID sessionId, UUID paperItemId, String audioUrl,
-            Integer durationSeconds, String transcript, String terminationReason, OffsetDateTime submittedAt) {
+            Integer durationSeconds, String transcript, String terminationReason, Instant submittedAt) {
         this.id = id;
         this.sessionId = sessionId;
         this.paperItemId = paperItemId;
@@ -116,11 +116,11 @@ public class ExamItemResponseJpaEntity {
         this.terminationReason = terminationReason;
     }
 
-    public OffsetDateTime getSubmittedAt() {
+    public Instant getSubmittedAt() {
         return submittedAt;
     }
 
-    public void setSubmittedAt(OffsetDateTime submittedAt) {
+    public void setSubmittedAt(Instant submittedAt) {
         this.submittedAt = submittedAt;
     }
 

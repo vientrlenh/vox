@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examgrading;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -61,7 +61,7 @@ public class ClearInvalidResultUseCase implements IUseCase<GradingDecisionComman
             command.assignmentId(), GradingOutcome.CLEARED_INVALID, command.reason());
 
         var result = prepared.context().candidateResult();
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
 
         var candidate = examCandidateRepository.findById(result.getCandidateId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy thí sinh của bài thi."));

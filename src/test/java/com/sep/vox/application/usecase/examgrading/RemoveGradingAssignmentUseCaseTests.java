@@ -8,7 +8,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -74,7 +74,7 @@ class RemoveGradingAssignmentUseCaseTests {
     private ExamGradingAssignment assignment(GradingRoundType roundType, UUID linkedAppealId) {
         var open = ExamGradingAssignment.open(
             candidateResultId, UUID.randomUUID(), roundType, linkedAppealId, null,
-            OffsetDateTime.now(), adminId, null);
+            Instant.now(), adminId, null);
         open.setId(UUID.randomUUID());
         return open;
     }
@@ -114,7 +114,7 @@ class RemoveGradingAssignmentUseCaseTests {
     @Test
     void should_refuse_removing_an_assignment_that_is_already_completed() {
         var completed = assignment(GradingRoundType.APPEAL, appealId);
-        completed.complete(GradingOutcome.UPHELD, null, OffsetDateTime.now());
+        completed.complete(GradingOutcome.UPHELD, null, Instant.now());
         var assignmentId = given(completed);
 
         assertThatThrownBy(() -> useCase.execute(new RemoveGradingAssignmentCommand(assignmentId)))

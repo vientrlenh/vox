@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examschedule;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -73,7 +73,7 @@ public class UpdateExamScheduleStatusUseCase implements IUseCase<UpdateExamSched
             default -> throw new IllegalArgumentException("Hành động không hợp lệ");
         }
 
-        schedule.setUpdatedAt(OffsetDateTime.now());
+        schedule.setUpdatedAt(Instant.now());
         schedule.setUpdatedBy(currentUserId);
         return ExamScheduleDtoMapper.toDto(examScheduleRepository.save(schedule));
     }

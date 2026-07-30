@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.service;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -58,7 +58,7 @@ public class ImportCommitService {
         // riêng, nên khi nó lỗi giữa đường thì những dòng đã xong vẫn phải giữ được kết quả
         // thay vì quay hết về PENDING.
         saveRowsQuietly(rows);
-        session.setUpdatedAt(OffsetDateTime.now());
+        session.setUpdatedAt(Instant.now());
         importSessionRepository.save(session);
 
     }

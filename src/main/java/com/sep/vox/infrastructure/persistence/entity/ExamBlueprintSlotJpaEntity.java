@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -61,10 +61,10 @@ public class ExamBlueprintSlotJpaEntity {
     private String selectionSpec;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private OffsetDateTime updatedAt;
+    private Instant updatedAt;
 
     @Column(name = "created_by", updatable = false)
     private UUID createdBy;
@@ -76,7 +76,7 @@ public class ExamBlueprintSlotJpaEntity {
 
     public ExamBlueprintSlotJpaEntity(UUID id, UUID sectionId, UUID blueprintVersionId, int order, BigDecimal weight,
             Integer prepTimeSecondsOverride, Integer responseTimeSecondsOverride, String slotType, UUID fixedQuestionId,
-            String selectionSpec, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            String selectionSpec, Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.sectionId = sectionId;
         this.blueprintVersionId = blueprintVersionId;
@@ -173,19 +173,19 @@ public class ExamBlueprintSlotJpaEntity {
         this.selectionSpec = selectionSpec;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 

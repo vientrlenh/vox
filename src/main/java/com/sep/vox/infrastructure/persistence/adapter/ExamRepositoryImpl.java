@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -99,14 +99,14 @@ public class ExamRepositoryImpl implements ExamRepository {
     }
 
     @Override
-    public List<Exam> findByStatusAndOpenAtBefore(ExamStatus status, OffsetDateTime time) {
+    public List<Exam> findByStatusAndOpenAtBefore(ExamStatus status, Instant time) {
         return springDataExamRepository.findByStatusAndOpenAtBefore(status.name(), time).stream()
             .map(ExamMapper::toDomain)
             .toList();
     }
 
     @Override
-    public List<Exam> findByStatusAndCloseAtBefore(ExamStatus status, OffsetDateTime time) {
+    public List<Exam> findByStatusAndCloseAtBefore(ExamStatus status, Instant time) {
         return springDataExamRepository.findByStatusAndCloseAtBefore(status.name(), time).stream()
             .map(ExamMapper::toDomain)
             .toList();

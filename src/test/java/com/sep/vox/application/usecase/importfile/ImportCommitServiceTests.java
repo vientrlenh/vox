@@ -8,7 +8,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -105,8 +106,8 @@ class ImportCommitServiceTests {
         return new ImportSession(
             id, UUID.randomUUID(), ImportType.USER, "users.csv", "[]", "{}", "{}",
             0L, 0L, 0L, 0L, 0L, null, ImportSessionStatus.IMPORTING, null,
-            OffsetDateTime.now().plusDays(1), null, null, null, 0,
-            OffsetDateTime.now(), OffsetDateTime.now(),
+            Instant.now().plus(1, ChronoUnit.DAYS), null, null, null, 0,
+            Instant.now(), Instant.now(),
             UUID.randomUUID(), UUID.randomUUID()
         );
     }

@@ -16,7 +16,7 @@ import com.sep.vox.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -73,7 +73,7 @@ public class UpdateSchoolRoomUseCase implements IUseCase<UpdateSchoolRoomCommand
                 command.id(),
                 safeName,
                 safeDesc,
-                OffsetDateTime.now(),
+                Instant.now(),
                 currentUserId
         );
 

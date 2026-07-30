@@ -1,7 +1,7 @@
 package com.sep.vox.domain.model.exam;
 
 import java.time.Duration;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class Exam {
@@ -25,12 +25,12 @@ public class Exam {
     private ResultDecisionMethod resultDecisionMethod;
     private ExamRequiredStreamType requiredStreamType;
     private ExamStreamTypePermission streamTypePermission;
-    private OffsetDateTime openAt;
-    private OffsetDateTime closeAt;
+    private Instant openAt;
+    private Instant closeAt;
     private UUID assessmentPolicyId;
     private boolean requiresOtp;
-    private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
     private UUID createdBy;
     private UUID updatedBy;
 
@@ -39,8 +39,8 @@ public class Exam {
     public Exam(UUID id, UUID blueprintId, UUID blueprintVersionId, String code, String name, String description, UUID schoolId, UUID languageId,
             ExamKind kind, ExamDeliveryMode deliveryMode, ExamStatus status, Integer maxAttempt, Integer examTimeDurationSecond,
             ResultDecisionMethod resultDecisionMethod, ExamRequiredStreamType requiredStreamType, ExamStreamTypePermission streamTypePermission,
-            OffsetDateTime openAt, OffsetDateTime closeAt, UUID assessmentPolicyId, boolean requiresOtp,
-            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            Instant openAt, Instant closeAt, UUID assessmentPolicyId, boolean requiresOtp,
+            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.blueprintId = blueprintId;
         this.blueprintVersionId = blueprintVersionId;
@@ -69,8 +69,8 @@ public class Exam {
 
     public Exam(UUID blueprintId, UUID blueprintVersionId, String code, String name, String description, UUID schoolId, UUID languageId, ExamKind kind,
             ExamDeliveryMode deliveryMode, ExamStatus status, Integer maxAttempt, Integer examTimeDurationSecond, ResultDecisionMethod resultDecisionMethod,
-            OffsetDateTime openAt, OffsetDateTime closeAt, UUID assessmentPolicyId, boolean requiresOtp, OffsetDateTime createdAt,ExamRequiredStreamType requiredStreamType, ExamStreamTypePermission streamTypePermission,
-            OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            Instant openAt, Instant closeAt, UUID assessmentPolicyId, boolean requiresOtp, Instant createdAt,ExamRequiredStreamType requiredStreamType, ExamStreamTypePermission streamTypePermission,
+            Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.blueprintId = blueprintId;
         this.blueprintVersionId = blueprintVersionId;
         this.code = code;
@@ -100,7 +100,7 @@ public class Exam {
      * H.1: một ca thi phải đủ dài để thí sinh làm hết đề, tức là (end - start) >= examTimeDurationSecond.
      * Khi kỳ thi chưa tính được thời gian làm bài (chưa có mã đề/câu hỏi nên null hoặc 0) thì chưa ràng buộc.
      */
-    public boolean isScheduleWindowShorterThanExamTime(OffsetDateTime start, OffsetDateTime end) {
+    public boolean isScheduleWindowShorterThanExamTime(Instant start, Instant end) {
         if (examTimeDurationSecond == null || examTimeDurationSecond <= 0 || start == null || end == null) {
             return false;
         }
@@ -112,7 +112,7 @@ public class Exam {
      * Hai cận kiểm tra độc lập nhau vì kỳ thi thường được phép chưa set openAt/closeAt
      * (chỉ CLASS_TEST mới bắt buộc có, xem UpdateExamStatusUseCase.requireClassTestScheduleWindow).
      */
-    public boolean isScheduleWindowOutsideExamWindow(OffsetDateTime start, OffsetDateTime end) {
+    public boolean isScheduleWindowOutsideExamWindow(Instant start, Instant end) {
         if (start == null || end == null) {
             return false;
         }
@@ -218,19 +218,19 @@ public class Exam {
         this.resultDecisionMethod = resultDecisionMethod;
     }
 
-    public OffsetDateTime getOpenAt() {
+    public Instant getOpenAt() {
         return openAt;
     }
 
-    public void setOpenAt(OffsetDateTime openAt) {
+    public void setOpenAt(Instant openAt) {
         this.openAt = openAt;
     }
 
-    public OffsetDateTime getCloseAt() {
+    public Instant getCloseAt() {
         return closeAt;
     }
 
-    public void setCloseAt(OffsetDateTime closeAt) {
+    public void setCloseAt(Instant closeAt) {
         this.closeAt = closeAt;
     }
 
@@ -242,19 +242,19 @@ public class Exam {
         this.assessmentPolicyId = assessmentPolicyId;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 

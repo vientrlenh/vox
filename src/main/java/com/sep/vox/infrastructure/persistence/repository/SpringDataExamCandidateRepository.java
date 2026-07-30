@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -52,6 +52,6 @@ public interface SpringDataExamCandidateRepository extends JpaRepository<ExamCan
             AND s.startDate <= :now 
             AND s.endDate > :now
     """)
-    List<ExamCandidateJpaEntity> findActiveCandidate(@Param("userId") UUID userId, @Param("now") OffsetDateTime now);
+    List<ExamCandidateJpaEntity> findActiveCandidate(@Param("userId") UUID userId, @Param("now") Instant now);
 }
 

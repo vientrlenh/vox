@@ -6,7 +6,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -96,7 +97,7 @@ class SchoolRoomImportCommitHandlerTests {
         var schoolId = UUID.randomUUID();
         var createdBy = UUID.randomUUID();
         var sessionId = UUID.randomUUID();
-        var createdAt = OffsetDateTime.now().minusDays(5);
+        var createdAt = Instant.now().minus(5, ChronoUnit.DAYS);
         var existing = new SchoolRoom(
             UUID.randomUUID(), schoolId, "P101", "Phòng cũ", "Mô tả cũ", true,
             createdAt, createdAt, createdBy, createdBy
@@ -176,8 +177,8 @@ class SchoolRoomImportCommitHandlerTests {
             id, schoolId, ImportType.SCHOOL_ROOM, "rooms.csv", "[]", "{}",
             jsonSerializationPort.toJson(mapping),
             0L, 0L, 0L, 0L, 0L, null, ImportSessionStatus.IMPORTING, null,
-            OffsetDateTime.now().plusDays(1), null, null, null, 0,
-            OffsetDateTime.now(), OffsetDateTime.now(),
+            Instant.now().plus(1, ChronoUnit.DAYS), null, null, null, 0,
+            Instant.now(), Instant.now(),
             createdBy, createdBy
         );
     }

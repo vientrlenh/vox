@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examappeal;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -56,7 +56,7 @@ public class WithdrawExamAppealUseCase implements IUseCase<UUID, UUID> {
             throw new IllegalStateException("Chỉ có thể rút đơn khi đơn còn đang chờ duyệt.");
         }
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         appeal.setStatus(ExamAppealStatus.WITHDRAWN);
         appeal.setWithdrawnAt(now);
         appeal.setResolvedAt(now);

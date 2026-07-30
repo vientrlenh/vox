@@ -24,7 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 @Service
@@ -129,10 +129,10 @@ public class UpdateSchoolRubricVersionUseCase
 
         // Cập nhật một phần: field nào không được truyền (null) thì giữ nguyên giá trị hiện tại của version
         // (updateRubricVersionAtomic dùng COALESCE(:param, v.field) ở tầng SQL).
-        OffsetDateTime finalEffectiveFrom = command.effectiveFrom() != null
+        Instant finalEffectiveFrom = command.effectiveFrom() != null
                 ? command.effectiveFrom() : version.getEffectiveFrom();
 
-        OffsetDateTime finalEffectiveTo = command.effectiveTo() != null
+        Instant finalEffectiveTo = command.effectiveTo() != null
                 ? command.effectiveTo() : version.getEffectiveTo();
 
         if (finalEffectiveTo != null
@@ -182,7 +182,7 @@ public class UpdateSchoolRubricVersionUseCase
                     command.scoringScaleMin(),
                     command.scoringScaleMax(),
                     safeMethod,
-                    OffsetDateTime.now(),
+                    Instant.now(),
                     currentUserId
             );
         } catch (DataIntegrityViolationException e) {

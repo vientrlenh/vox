@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.schoolclassuser;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -55,7 +55,7 @@ public class CreateSchoolClassUserUseCase implements IUseCase<CreateSchoolClassU
     @Transactional
     public CreateSchoolClassUserResponse execute(CreateSchoolClassUserCommand input) {
         validateCommand(input);
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         var currentUser = findCurrentUser(currentUserId);
         var schoolId = getSchoolId(currentUser);

@@ -13,8 +13,8 @@ public class UpdateRubricVersionGraphQLMapper {
                 versionId,
                 input.name(),
                 input.description(),
-                DateMapper.toOffsetDateTime(input.effectiveFrom()),
-                DateMapper.toOffsetDateTime(input.effectiveTo()),
+                DateMapper.toInstant(input.effectiveFrom()),
+                DateMapper.toInstant(input.effectiveTo()),
                 input.scoringScaleMin(),
                 input.scoringScaleMax(),
                 input.totalScoreMethod()
@@ -27,8 +27,8 @@ public class UpdateRubricVersionGraphQLMapper {
                 versionId,
                 input.name(),
                 input.description(),
-                DateMapper.toOffsetDateTime(input.effectiveFrom()),
-                DateMapper.toOffsetDateTime(input.effectiveTo()),
+                DateMapper.toInstant(input.effectiveFrom()),
+                DateMapper.toInstant(input.effectiveTo()),
                 input.scoringScaleMin(),
                 input.scoringScaleMax(),
                 input.totalScoreMethod()

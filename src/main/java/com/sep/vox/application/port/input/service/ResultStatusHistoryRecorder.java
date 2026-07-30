@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.service;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -73,7 +73,7 @@ public class ResultStatusHistoryRecorder {
             source,
             actorId,
             reason,
-            OffsetDateTime.now()
+            Instant.now()
         ));
     }
 
@@ -97,7 +97,7 @@ public class ResultStatusHistoryRecorder {
             source,
             actorId,
             reason,
-            OffsetDateTime.now()
+            Instant.now()
         ));
     }
 

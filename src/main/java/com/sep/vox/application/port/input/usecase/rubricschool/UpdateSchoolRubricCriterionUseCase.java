@@ -21,7 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -153,7 +153,7 @@ public class UpdateSchoolRubricCriterionUseCase implements IUseCase<UpdateSchool
                     command.maxScore(),
                     command.order(),
                     command.isRequired(),
-                    OffsetDateTime.now(),
+                    Instant.now(),
                     currentUserId
             );
         } catch (DataIntegrityViolationException e) {

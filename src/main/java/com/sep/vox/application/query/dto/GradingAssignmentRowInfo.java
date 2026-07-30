@@ -1,7 +1,7 @@
 package com.sep.vox.application.query.dto;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -27,9 +27,9 @@ public record GradingAssignmentRowInfo(
     String roundType,
     String assignmentStatus,
     String outcome,
-    OffsetDateTime assignedAt,
-    OffsetDateTime completedAt,
-    OffsetDateTime deadlineAt,
+    Instant assignedAt,
+    Instant completedAt,
+    Instant deadlineAt,
     boolean overdue,
     /** Còn đơn phúc khảo chưa kết thúc — admin cần biết trước khi giao vòng khác. */
     boolean hasOpenAppeal

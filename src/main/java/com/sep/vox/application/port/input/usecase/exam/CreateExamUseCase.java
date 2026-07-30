@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
@@ -81,7 +81,7 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
 
         validateOpenClose(command.openAt(), command.closeAt());
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var exam = new Exam(
             command.blueprintId(),
             null,
@@ -135,13 +135,13 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
         if (openAt == null || closeAt == null) {
             return;
         }
-        if (!OffsetDateTime.parse(openAt).isBefore(OffsetDateTime.parse(closeAt))) {
+        if (!Instant.parse(openAt).isBefore(Instant.parse(closeAt))) {
             throw new IllegalStateException("Thời gian mở bài phải nhỏ hơn thời gian đóng bài");
         }
     }
 
-    private OffsetDateTime parseDateTime(String value) {
-        return value == null ? null : OffsetDateTime.parse(value);
+    private Instant parseDateTime(String value) {
+        return value == null ? null : Instant.parse(value);
     }
 
     private String examCodeOf(String code) {

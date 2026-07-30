@@ -1,7 +1,7 @@
 package com.sep.vox.domain.model.rubric;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class RubricResultBand {
@@ -13,15 +13,15 @@ public class RubricResultBand {
     private BigDecimal scoreMin;
     private BigDecimal scoreMax;
     private int order;
-    private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
     private UUID createdBy;
     private UUID updatedBy;
 
     public RubricResultBand() {}
 
     public RubricResultBand(UUID id, UUID rubricVersionId, String code, String name, String description,
-            BigDecimal scoreMin, BigDecimal scoreMax, int order, OffsetDateTime createdAt, OffsetDateTime updatedAt,
+            BigDecimal scoreMin, BigDecimal scoreMax, int order, Instant createdAt, Instant updatedAt,
             UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.rubricVersionId = rubricVersionId;
@@ -38,7 +38,7 @@ public class RubricResultBand {
     }
 
     public RubricResultBand(UUID rubricVersionId, String code, String name, String description, BigDecimal scoreMin,
-            BigDecimal scoreMax, int order, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy,
+            BigDecimal scoreMax, int order, Instant createdAt, Instant updatedAt, UUID createdBy,
             UUID updatedBy) {
         this.rubricVersionId = rubricVersionId;
         this.code = code;
@@ -117,19 +117,19 @@ public class RubricResultBand {
         this.order = order;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 

@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.security;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Component;
@@ -21,7 +21,7 @@ public class DeviceSessionProvider implements SessionManagerPort {
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void revoke(UUID sessionId, OffsetDateTime now) {
+    public void revoke(UUID sessionId, Instant now) {
         deviceSessionRepository.revokeDeviceSession(sessionId, now);
     }
     

@@ -1,7 +1,5 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
-import java.time.OffsetDateTime;
-
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -23,8 +21,8 @@ public record CreateFrameworkVersionRequest(
     int version,
 
     @NotNull(message = "Ngày hiệu lực không được để trống")
-    OffsetDateTime effectiveFrom,
+    String effectiveFrom,
 
-    OffsetDateTime effectiveTo
+    String effectiveTo
 ) {
 }

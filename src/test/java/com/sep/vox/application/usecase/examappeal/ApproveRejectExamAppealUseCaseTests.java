@@ -1,6 +1,7 @@
 package com.sep.vox.application.usecase.examappeal;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -74,7 +75,7 @@ public class ApproveRejectExamAppealUseCaseTests {
     void should_approve_and_set_deadline_and_approved_at() {
         var context = context(ExamAppealStatus.PENDING);
         when(examAppealAccessService.load(appealId)).thenReturn(context);
-        var deadline = OffsetDateTime.now().plusDays(7);
+        var deadline = Instant.now().plus(7, ChronoUnit.DAYS);
 
         approveUseCase.execute(new ApproveExamAppealCommand(appealId, deadline));
 
@@ -88,7 +89,7 @@ public class ApproveRejectExamAppealUseCaseTests {
         when(examAppealAccessService.load(appealId)).thenReturn(context(ExamAppealStatus.PENDING));
 
         assertThatThrownBy(() -> approveUseCase.execute(
-            new ApproveExamAppealCommand(appealId, OffsetDateTime.now().minusDays(1))))
+            new ApproveExamAppealCommand(appealId, Instant.now().minus(1, ChronoUnit.DAYS))))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("tương lai");
 
@@ -100,7 +101,7 @@ public class ApproveRejectExamAppealUseCaseTests {
         when(examAppealAccessService.load(appealId)).thenReturn(context(ExamAppealStatus.GRADING));
 
         assertThatThrownBy(() -> approveUseCase.execute(
-            new ApproveExamAppealCommand(appealId, OffsetDateTime.now().plusDays(7))))
+            new ApproveExamAppealCommand(appealId, Instant.now().plus(7, ChronoUnit.DAYS))))
             .isInstanceOf(IllegalStateException.class);
     }
 

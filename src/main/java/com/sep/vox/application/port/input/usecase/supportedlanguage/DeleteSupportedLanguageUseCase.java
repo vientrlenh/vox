@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.supportedlanguage;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,7 +31,7 @@ public class DeleteSupportedLanguageUseCase implements IUseCase<DeleteSupportedL
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ngôn ngữ"));
 
         language.setActive(false);
-        language.setUpdatedAt(OffsetDateTime.now());
+        language.setUpdatedAt(Instant.now());
         language.setUpdatedBy(userContextPort.getCurrentAuthenticatedUserId());
         supportedLanguageRepository.save(language);
         return null;

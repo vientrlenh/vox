@@ -1,6 +1,6 @@
 package com.sep.vox.domain.repository;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -15,11 +15,11 @@ public interface AssessmentPolicyRepository {
 
     // Danh sách Assessment Policy áp dụng toàn hệ thống (schoolId IS NULL)
     PageResult<AssessmentPolicy> findAllSystemWide(String status, UUID languageId, UUID rubricVersionId,
-            OffsetDateTime effectiveFrom, OffsetDateTime effectiveTo, int page, int size);
+            Instant effectiveFrom, Instant effectiveTo, int page, int size);
     // Danh sách Assessment Policy của một trường học
     PageResult<AssessmentPolicy> findAllBySchoolId(UUID schoolId, String status, UUID languageId, UUID rubricVersionId,
-            OffsetDateTime effectiveFrom, OffsetDateTime effectiveTo, int page, int size);
-    Optional<AssessmentPolicy> findActivePolicy(UUID schoolId, UUID languageId, UUID classId, UUID gradeId, UUID gradeLevelId, OffsetDateTime atTime);
+            Instant effectiveFrom, Instant effectiveTo, int page, int size);
+    Optional<AssessmentPolicy> findActivePolicy(UUID schoolId, UUID languageId, UUID classId, UUID gradeId, UUID gradeLevelId, Instant atTime);
     boolean existsByFrameworkVersionId(UUID frameworkVersionId);
 
     // Kiểm tra còn Assessment Policy nào áp riêng cho một lớp học hay không (dùng khi xóa lớp)

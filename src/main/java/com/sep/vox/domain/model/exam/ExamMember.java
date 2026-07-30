@@ -1,6 +1,6 @@
 package com.sep.vox.domain.model.exam;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class ExamMember {
@@ -8,12 +8,12 @@ public class ExamMember {
     private UUID examId;
     private UUID userId;
     private ExamMemberRole role;
-    private OffsetDateTime grantedAt;
+    private Instant grantedAt;
     private UUID grantedBy; 
 
     public ExamMember() {}
 
-    public ExamMember(UUID id, UUID examId, UUID userId, ExamMemberRole role, OffsetDateTime grantedAt,
+    public ExamMember(UUID id, UUID examId, UUID userId, ExamMemberRole role, Instant grantedAt,
             UUID grantedBy) {
         this.id = id;
         this.examId = examId;
@@ -23,7 +23,7 @@ public class ExamMember {
         this.grantedBy = grantedBy;
     }
 
-    public ExamMember(UUID examId, UUID userId, ExamMemberRole role, OffsetDateTime grantedAt, UUID grantedBy) {
+    public ExamMember(UUID examId, UUID userId, ExamMemberRole role, Instant grantedAt, UUID grantedBy) {
         this.examId = examId;
         this.userId = userId;
         this.role = role;
@@ -63,11 +63,11 @@ public class ExamMember {
         this.role = role;
     }
 
-    public OffsetDateTime getGrantedAt() {
+    public Instant getGrantedAt() {
         return grantedAt;
     }
 
-    public void setGrantedAt(OffsetDateTime grantedAt) {
+    public void setGrantedAt(Instant grantedAt) {
         this.grantedAt = grantedAt;
     }
 

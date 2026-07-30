@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.schoolroom;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Objects;
@@ -72,7 +73,7 @@ public class PreviewSchoolRoomImportFromFileUseCase
             throw new IllegalArgumentException("File import không được để trống");
         }
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         var currentUser = findCurrentUser(currentUserId);
         var schoolId = getSchoolId(currentUser);
@@ -80,7 +81,7 @@ public class PreviewSchoolRoomImportFromFileUseCase
         validateSchool(schoolId);
 
         var parsed = fileProcessingPort.parse(input.file(), ImportType.SCHOOL_ROOM);
-        var expiresAt = now.plusDays(SESSION_EXPIRY_DAYS);
+        var expiresAt = now.plus(SESSION_EXPIRY_DAYS, ChronoUnit.DAYS);
         var savedSession = importSessionRepository.save(createSession(input, parsed, schoolId, currentUserId, now, expiresAt));
         saveRows(savedSession.getId(), parsed);
 
@@ -132,8 +133,8 @@ public class PreviewSchoolRoomImportFromFileUseCase
             ParseImportFileResult parsed,
             UUID schoolId,
             UUID currentUserId,
-            OffsetDateTime now,
-            OffsetDateTime expiresAt) {
+            Instant now,
+            Instant expiresAt) {
         return new ImportSession(
             schoolId,
             ImportType.SCHOOL_ROOM,

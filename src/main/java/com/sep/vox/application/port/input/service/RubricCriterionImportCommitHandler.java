@@ -19,7 +19,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -109,7 +109,7 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
         List<RubricCriterion> criterionsToSave = new ArrayList<>();
         long importedCount = 0;
         long invalidCount = 0;
-        OffsetDateTime now = OffsetDateTime.now();
+        Instant now = Instant.now();
 
         Set<String> codesInFile = new HashSet<>();
         Set<Integer> ordersInFile = new HashSet<>();

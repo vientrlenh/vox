@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.event.internal.listener;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 
 import org.slf4j.Logger;
@@ -31,7 +31,7 @@ public class GradingAssignmentEmailListener {
 
     /** {@code withZone} là phần bắt buộc: thiếu nó thì mail ghi giờ UTC của container. */
     private static final DateTimeFormatter DEADLINE_FORMAT =
-        DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy").withZone(DateMapper.APP_ZONE);
+        DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy").withZone(DateMapper.DEFAULT_INPUT_ZONE);
 
     private final UserRepository userRepository;
     private final MailSendingPort mailSendingPort;
@@ -106,7 +106,7 @@ public class GradingAssignmentEmailListener {
         };
     }
 
-    private String format(OffsetDateTime deadline) {
+    private String format(Instant deadline) {
         return deadline == null ? "-" : DEADLINE_FORMAT.format(deadline);
     }
 }

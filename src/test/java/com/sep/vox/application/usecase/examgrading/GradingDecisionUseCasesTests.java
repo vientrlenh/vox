@@ -9,7 +9,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -116,8 +117,8 @@ class GradingDecisionUseCasesTests {
         result.setTotalScore(new BigDecimal("6.00"));
 
         var assignment = ExamGradingAssignment.open(candidateResultId, teacherId, roundType, null,
-            result.getTotalScore(), OffsetDateTime.now().minusDays(4), adminId,
-            OffsetDateTime.now().minusDays(1));
+            result.getTotalScore(), Instant.now().minus(4, ChronoUnit.DAYS), adminId,
+            Instant.now().minus(1, ChronoUnit.DAYS));
         assignment.setId(assignmentId);
         when(examGradingAccessService.load(assignmentId)).thenReturn(
             new GradingContext(assignment, result, session, UUID.randomUUID(), "IELTS Mock"));
@@ -233,7 +234,7 @@ class GradingDecisionUseCasesTests {
     @Test
     void should_unblock_the_candidate_and_reopen_a_first_round() {
         var result = given(GradingRoundType.REMEDIATION, ExamCandidateResultStatus.INVALID);
-        candidate.setBlockedAt(OffsetDateTime.now().minusDays(2));
+        candidate.setBlockedAt(Instant.now().minus(2, ChronoUnit.DAYS));
 
         clearInvalid.execute(command("Không có vi phạm"));
 
@@ -265,7 +266,7 @@ class GradingDecisionUseCasesTests {
     @Test
     void should_clear_the_finalized_mark_when_the_paper_goes_back_to_pending_review() {
         var result = given(GradingRoundType.REMEDIATION, ExamCandidateResultStatus.INVALID);
-        result.setFinalizedAt(OffsetDateTime.now().minusDays(2));
+        result.setFinalizedAt(Instant.now().minus(2, ChronoUnit.DAYS));
 
         clearInvalid.execute(command("Không có vi phạm"));
 

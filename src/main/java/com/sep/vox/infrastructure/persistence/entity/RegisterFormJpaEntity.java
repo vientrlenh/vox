@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -86,7 +86,7 @@ public class RegisterFormJpaEntity {
     private String verificationMethod;
 
     @Column(name = "verified_at")
-    private OffsetDateTime verifiedAt;
+    private Instant verifiedAt;
 
     @Column(name = "rejected_reason", length = 255)
     private String rejectedReason;
@@ -100,10 +100,10 @@ public class RegisterFormJpaEntity {
     private String status;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private OffsetDateTime updatedAt;
+    private Instant updatedAt;
 
     @Column(name = "reviewed_by")
     private UUID reviewedBy;
@@ -115,8 +115,8 @@ public class RegisterFormJpaEntity {
             String schoolDistrict, String schoolProvince, String schoolAddress, String contactFullName,
             String identityNumber, String contactPhone, String contactEmail, LocalDate dateOfBirth,
             String contactAddress, String postalCode, String position, int studentCount, String verificationMethod,
-            OffsetDateTime verifiedAt, String rejectedReason, String status, OffsetDateTime createdAt,
-            OffsetDateTime updatedAt, UUID reviewedBy) {
+            Instant verifiedAt, String rejectedReason, String status, Instant createdAt,
+            Instant updatedAt, UUID reviewedBy) {
         this.id = id;
         this.schoolDirectoryId = schoolDirectoryId;
         this.schoolName = schoolName;
@@ -278,11 +278,11 @@ public class RegisterFormJpaEntity {
         this.verificationMethod = verificationMethod;
     }
 
-    public OffsetDateTime getVerifiedAt() {
+    public Instant getVerifiedAt() {
         return verifiedAt;
     }
 
-    public void setVerifiedAt(OffsetDateTime verifiedAt) {
+    public void setVerifiedAt(Instant verifiedAt) {
         this.verifiedAt = verifiedAt;
     }
 
@@ -302,19 +302,19 @@ public class RegisterFormJpaEntity {
         this.status = status;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 

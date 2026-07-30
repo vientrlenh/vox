@@ -2,7 +2,7 @@ package com.sep.vox.infrastructure.persistence.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -35,7 +35,7 @@ class ExamSessionRepositoryTests extends ContainerTestConfig {
             UUID.randomUUID(),
             UUID.randomUUID(),
             UUID.randomUUID(),
-            OffsetDateTime.now(),
+            Instant.now(),
             null,
             status,
             false,

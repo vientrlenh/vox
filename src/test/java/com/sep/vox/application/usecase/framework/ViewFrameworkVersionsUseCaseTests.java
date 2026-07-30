@@ -6,7 +6,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -30,7 +30,7 @@ public class ViewFrameworkVersionsUseCaseTests {
     private FrameworkRepository frameworkRepository;
     private FrameworkVersionRepository frameworkVersionRepository;
     private ViewFrameworkVersionsUseCase useCase;
-    private OffsetDateTime now = OffsetDateTime.now();
+    private Instant now = Instant.now();
 
     @BeforeEach
     void setUp() {

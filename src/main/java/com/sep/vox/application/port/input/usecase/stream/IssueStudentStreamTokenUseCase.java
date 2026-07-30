@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.stream;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 
 import com.sep.vox.domain.model.exam.ExamStreamTypePermission;
@@ -53,7 +53,7 @@ public class IssueStudentStreamTokenUseCase implements IUseCase<IssueStudentStre
     public IssueStudentStreamTokenResponse execute(IssueStudentStreamTokenCommand input) {
         var command = normalizeCommand(input);
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var userId = userContextPort.getCurrentAuthenticatedUserId();
 
         var examSession = examSessionRepository.findByIdAndResumable(command.examSessionId())

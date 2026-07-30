@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.service;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -124,7 +124,7 @@ public class GradingActionSupport {
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public void finish(PreparedAction prepared, ExamCandidateResult result) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var targetStatus = GradingRoundPolicy.resultStatusAfter(prepared.roundType(), prepared.outcome());
 
         if (targetStatus != null && result.getStatus() != targetStatus) {
@@ -175,7 +175,7 @@ public class GradingActionSupport {
      * <p>{@code DECLINED} không công bố gì: giáo viên trả bài lại thì đơn vẫn đang chờ
      * người khác, chỉ lùi về {@code APPROVED} để admin giao lại.
      */
-    private void publishAppeal(PreparedAction prepared, ExamCandidateResult result, OffsetDateTime now) {
+    private void publishAppeal(PreparedAction prepared, ExamCandidateResult result, Instant now) {
         var appealId = prepared.context().assignment().getAppealId();
         if (appealId == null) {
             return;

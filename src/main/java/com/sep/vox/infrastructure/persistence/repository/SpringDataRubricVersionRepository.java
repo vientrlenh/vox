@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -47,12 +47,12 @@ public interface SpringDataRubricVersionRepository extends JpaRepository<RubricV
             @Param("name") String name,
             @Param("code") String code,
             @Param("description") String description,
-            @Param("effectiveFrom") OffsetDateTime effectiveFrom,
-            @Param("effectiveTo") OffsetDateTime effectiveTo,
+            @Param("effectiveFrom") Instant effectiveFrom,
+            @Param("effectiveTo") Instant effectiveTo,
             @Param("scoringScaleMin") BigDecimal scoringScaleMin,
             @Param("scoringScaleMax") BigDecimal scoringScaleMax,
             @Param("totalScoreMethod") String totalScoreMethod,
-            @Param("updatedAt") OffsetDateTime updatedAt,
+            @Param("updatedAt") Instant updatedAt,
             @Param("updatedBy") UUID updatedBy
     );
 

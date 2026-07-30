@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.schooldirectory;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,7 +34,7 @@ public class CreateSchoolDirectoryUseCase implements IUseCase<CreateSchoolDirect
             throw new DuplicatedException("Mã trường này đã tồn tại trong danh mục hệ thống");
         }
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         var directory = SchoolDirectory.createByAdmin(

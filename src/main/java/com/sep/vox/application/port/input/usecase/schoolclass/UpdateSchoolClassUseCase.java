@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.schoolclass;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -53,7 +53,7 @@ public class UpdateSchoolClassUseCase implements IUseCase<UpdateSchoolClassComma
         validateCommand(command);
         var status = command.statusProvided() ? parseStatus(command.status()) : null;
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         var currentUser = findCurrentUser(currentUserId);
         var schoolId = getSchoolId(currentUser);

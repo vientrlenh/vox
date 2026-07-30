@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.exampaper;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -67,7 +67,7 @@ public class UpdateExamPaperSectionUseCase implements IUseCase<UpdateExamPaperSe
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         if (input.title() != null) {
             section.setTitle(input.title());
         }

@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -23,5 +23,5 @@ public interface SpringDataPasswordSetUpTokenRepository extends JpaRepository<Pa
         AND p.usedAt IS NULL 
         AND p.expiredAt > :now
     """)
-    int updateUsedToken(@Param("userId") UUID userId, @Param("tokenHash") String tokenHash, @Param("now") OffsetDateTime now);
+    int updateUsedToken(@Param("userId") UUID userId, @Param("tokenHash") String tokenHash, @Param("now") Instant now);
 }

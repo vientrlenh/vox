@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.initializer;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,14 +80,14 @@ public class SystemAdminUserInitializer implements ApplicationRunner {
         var userRole = new UserRole(
             savedUser.getId(), 
             systemAdminRole.getId(), 
-            OffsetDateTime.now()
+            Instant.now()
         );
         userRoleRepository.save(userRole);
         LOGGER.info("System admin initialized successfully");
     }
 
     private User systemAdminUser() {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         return new User(
             new Email(email),
             passwordEncoderPort.hash(password),

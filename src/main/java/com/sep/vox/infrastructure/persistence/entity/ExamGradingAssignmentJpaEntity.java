@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -86,19 +86,19 @@ public class ExamGradingAssignmentJpaEntity {
     private BigDecimal scoreBefore;
 
     @Column(name = "assigned_at", nullable = false)
-    private OffsetDateTime assignedAt;
+    private Instant assignedAt;
 
     @Column(name = "assigned_by")
     private UUID assignedBy;
 
     @Column(name = "completed_at")
-    private OffsetDateTime completedAt;
+    private Instant completedAt;
 
     @Column(name = "deadline_at")
-    private OffsetDateTime deadlineAt;
+    private Instant deadlineAt;
 
     @Column(name = "reminded_at")
-    private OffsetDateTime remindedAt;
+    private Instant remindedAt;
 
     @Column(name = "reason", columnDefinition = "TEXT")
     private String reason;
@@ -114,8 +114,8 @@ public class ExamGradingAssignmentJpaEntity {
     protected ExamGradingAssignmentJpaEntity() {}
 
     public ExamGradingAssignmentJpaEntity(UUID id, UUID candidateResultId, UUID teacherId, String roundType,
-            UUID appealId, String status, String outcome, BigDecimal scoreBefore, OffsetDateTime assignedAt,
-            UUID assignedBy, OffsetDateTime completedAt, OffsetDateTime deadlineAt, OffsetDateTime remindedAt,
+            UUID appealId, String status, String outcome, BigDecimal scoreBefore, Instant assignedAt,
+            UUID assignedBy, Instant completedAt, Instant deadlineAt, Instant remindedAt,
             String reason, UUID activeResultId, int version) {
         this.id = id;
         this.candidateResultId = candidateResultId;
@@ -199,11 +199,11 @@ public class ExamGradingAssignmentJpaEntity {
         this.scoreBefore = scoreBefore;
     }
 
-    public OffsetDateTime getAssignedAt() {
+    public Instant getAssignedAt() {
         return assignedAt;
     }
 
-    public void setAssignedAt(OffsetDateTime assignedAt) {
+    public void setAssignedAt(Instant assignedAt) {
         this.assignedAt = assignedAt;
     }
 
@@ -215,27 +215,27 @@ public class ExamGradingAssignmentJpaEntity {
         this.assignedBy = assignedBy;
     }
 
-    public OffsetDateTime getCompletedAt() {
+    public Instant getCompletedAt() {
         return completedAt;
     }
 
-    public void setCompletedAt(OffsetDateTime completedAt) {
+    public void setCompletedAt(Instant completedAt) {
         this.completedAt = completedAt;
     }
 
-    public OffsetDateTime getDeadlineAt() {
+    public Instant getDeadlineAt() {
         return deadlineAt;
     }
 
-    public void setDeadlineAt(OffsetDateTime deadlineAt) {
+    public void setDeadlineAt(Instant deadlineAt) {
         this.deadlineAt = deadlineAt;
     }
 
-    public OffsetDateTime getRemindedAt() {
+    public Instant getRemindedAt() {
         return remindedAt;
     }
 
-    public void setRemindedAt(OffsetDateTime remindedAt) {
+    public void setRemindedAt(Instant remindedAt) {
         this.remindedAt = remindedAt;
     }
 

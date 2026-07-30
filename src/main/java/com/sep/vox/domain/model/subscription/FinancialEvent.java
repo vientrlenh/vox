@@ -1,7 +1,7 @@
 package com.sep.vox.domain.model.subscription;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class FinancialEvent {
@@ -14,12 +14,12 @@ public class FinancialEvent {
     private PaymentMethod paymentMethod;
     private UUID actorId;
     private String payload;
-    private OffsetDateTime occurredAt;
+    private Instant occurredAt;
 
     public FinancialEvent() {}
 
     public FinancialEvent(UUID id, UUID schoolId, UUID subscriptionId, FinancialEventType eventType,
-            BigDecimal amountSigned, String currency, PaymentMethod paymentMethod, UUID actorId, String payload, OffsetDateTime occurredAt) {
+            BigDecimal amountSigned, String currency, PaymentMethod paymentMethod, UUID actorId, String payload, Instant occurredAt) {
         this.id = id;
         this.schoolId = schoolId;
         this.subscriptionId = subscriptionId;
@@ -33,7 +33,7 @@ public class FinancialEvent {
     }
 
     public FinancialEvent(UUID schoolId, UUID subscriptionId, FinancialEventType eventType,
-            BigDecimal amountSigned, String currency, PaymentMethod paymentMethod, UUID actorId, String payload, OffsetDateTime occurredAt) {
+            BigDecimal amountSigned, String currency, PaymentMethod paymentMethod, UUID actorId, String payload, Instant occurredAt) {
         this.schoolId = schoolId;
         this.subscriptionId = subscriptionId;
         this.eventType = eventType;
@@ -117,11 +117,11 @@ public class FinancialEvent {
         this.payload = payload;
     }
 
-    public OffsetDateTime getOccurredAt() {
+    public Instant getOccurredAt() {
         return occurredAt;
     }
 
-    public void setOccurredAt(OffsetDateTime occurredAt) {
+    public void setOccurredAt(Instant occurredAt) {
         this.occurredAt = occurredAt;
     }
 }

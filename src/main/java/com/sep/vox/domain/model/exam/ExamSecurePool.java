@@ -1,6 +1,6 @@
 package com.sep.vox.domain.model.exam;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class ExamSecurePool {
@@ -8,19 +8,19 @@ public class ExamSecurePool {
     private UUID examId;
     private ExamSecurePoolStatus status;
     private ExamSecurePoolReleaseMode releaseMode;
-    private OffsetDateTime embargoUntil; // auto thì tự release sau thời gian này
-    private OffsetDateTime releasedAt;
+    private Instant embargoUntil; // auto thì tự release sau thời gian này
+    private Instant releasedAt;
     private UUID releasedBy;
-    private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
     private UUID createdBy;
     private UUID updatedBy;
 
     public ExamSecurePool() {}
 
     public ExamSecurePool(UUID id, UUID examId, ExamSecurePoolStatus status, ExamSecurePoolReleaseMode releaseMode,
-            OffsetDateTime embargoUntil, OffsetDateTime releasedAt, UUID releasedBy, OffsetDateTime createdAt,
-            OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            Instant embargoUntil, Instant releasedAt, UUID releasedBy, Instant createdAt,
+            Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.examId = examId;
         this.status = status;
@@ -35,8 +35,8 @@ public class ExamSecurePool {
     }
 
     public ExamSecurePool(UUID examId, ExamSecurePoolStatus status, ExamSecurePoolReleaseMode releaseMode,
-            OffsetDateTime embargoUntil, OffsetDateTime releasedAt, UUID releasedBy, OffsetDateTime createdAt,
-            OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            Instant embargoUntil, Instant releasedAt, UUID releasedBy, Instant createdAt,
+            Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.examId = examId;
         this.status = status;
         this.releaseMode = releaseMode;
@@ -81,19 +81,19 @@ public class ExamSecurePool {
         this.releaseMode = releaseMode;
     }
 
-    public OffsetDateTime getEmbargoUntil() {
+    public Instant getEmbargoUntil() {
         return embargoUntil;
     }
 
-    public void setEmbargoUntil(OffsetDateTime embargoUntil) {
+    public void setEmbargoUntil(Instant embargoUntil) {
         this.embargoUntil = embargoUntil;
     }
 
-    public OffsetDateTime getReleasedAt() {
+    public Instant getReleasedAt() {
         return releasedAt;
     }
 
-    public void setReleasedAt(OffsetDateTime releasedAt) {
+    public void setReleasedAt(Instant releasedAt) {
         this.releasedAt = releasedAt;
     }
 
@@ -105,19 +105,19 @@ public class ExamSecurePool {
         this.releasedBy = releasedBy;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 

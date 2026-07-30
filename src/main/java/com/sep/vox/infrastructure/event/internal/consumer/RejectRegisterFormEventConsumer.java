@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.event.internal.consumer;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -96,7 +96,7 @@ public class RejectRegisterFormEventConsumer {
 
     private void markProcessed(UUID eventId) {
         try {
-            var event = new ProcessedEvent(eventId, CONSUMER_GROUP, OffsetDateTime.now());
+            var event = new ProcessedEvent(eventId, CONSUMER_GROUP, Instant.now());
             processedEventRepository.save(event);
         } catch (DataIntegrityViolationException e) {
             LOGGER.warn("This event was already marked by another instance: eventId={}", eventId);

@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.service;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -92,7 +92,7 @@ public class ProvisionSchoolService {
         );
         var payload = jsonSerializationPort.toJson(event);
         var outbox = Outbox.create(
-            AggregateTypeConstant.USER, savedSchoolAdmin.getId(), EventTypeConstant.USER_CREATED, payload, OffsetDateTime.now());
+            AggregateTypeConstant.USER, savedSchoolAdmin.getId(), EventTypeConstant.USER_CREATED, payload, Instant.now());
         outboxRepository.save(outbox);
     }
 

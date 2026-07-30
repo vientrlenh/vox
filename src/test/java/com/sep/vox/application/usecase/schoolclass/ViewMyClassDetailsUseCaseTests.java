@@ -7,7 +7,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -130,8 +130,8 @@ class ViewMyClassDetailsUseCaseTests {
                 callerId,
                 classId,
                 isActive,
-                OffsetDateTime.now(),
-                isActive ? null : OffsetDateTime.now(),
+                Instant.now(),
+                isActive ? null : Instant.now(),
                 UUID.randomUUID()
             )));
     }
@@ -145,7 +145,7 @@ class ViewMyClassDetailsUseCaseTests {
             "English 01",
             "Starter class",
             UUID.randomUUID(),
-            OffsetDateTime.now()
+            Instant.now()
         );
         schoolClass.setId(classId);
         return schoolClass;

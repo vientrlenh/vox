@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -125,12 +125,12 @@ public class SchoolClassUserRepositoryImpl implements SchoolClassUserRepository 
     }
 
     @Override
-    public int deactivateByGradeId(UUID schoolGradeId, OffsetDateTime leftAt) {
+    public int deactivateByGradeId(UUID schoolGradeId, Instant leftAt) {
         return springDataSchoolClassUserRepository.deactivateByGradeId(schoolGradeId, leftAt);
     }
 
     @Override
-    public int deactivateBySchoolClassId(UUID schoolClassId, OffsetDateTime leftAt) {
+    public int deactivateBySchoolClassId(UUID schoolClassId, Instant leftAt) {
         return springDataSchoolClassUserRepository.deactivateBySchoolClassId(schoolClassId, leftAt);
     }
 

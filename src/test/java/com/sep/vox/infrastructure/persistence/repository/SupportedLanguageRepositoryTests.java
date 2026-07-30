@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
 
@@ -116,8 +116,8 @@ class SupportedLanguageRepositoryTests extends ContainerTestConfig {
 
     @Test
     void whenFindAll_thenReturnsRequestedPageSortedByCreatedAtDescending() {
-        supportedLanguageRepository.save(newSupportedLanguage("SV", "Swedish", true, OffsetDateTime.parse("2026-06-01T10:00:00Z")));
-        supportedLanguageRepository.save(newSupportedLanguage("DA", "Danish", true, OffsetDateTime.parse("2026-06-02T10:00:00Z")));
+        supportedLanguageRepository.save(newSupportedLanguage("SV", "Swedish", true, Instant.parse("2026-06-01T10:00:00Z")));
+        supportedLanguageRepository.save(newSupportedLanguage("DA", "Danish", true, Instant.parse("2026-06-02T10:00:00Z")));
 
         var result = supportedLanguageRepository.findAll(null, null, 1, 1);
 
@@ -132,7 +132,7 @@ class SupportedLanguageRepositoryTests extends ContainerTestConfig {
     @Test
     void whenUpdateMutableFields_thenOnlyProvidedFieldsAreUpdated() {
         var saved = supportedLanguageRepository.save(newSupportedLanguage("RU", "Russian", true));
-        var updatedAt = OffsetDateTime.parse("2026-06-10T10:00:00Z");
+        var updatedAt = Instant.parse("2026-06-10T10:00:00Z");
         var updatedBy = UUID.randomUUID();
 
         var updatedRows = supportedLanguageRepository.updateMutableFields(
@@ -173,7 +173,7 @@ class SupportedLanguageRepositoryTests extends ContainerTestConfig {
             true,
             null,
             false,
-            OffsetDateTime.now(),
+            Instant.now(),
             UUID.randomUUID()
         );
 
@@ -194,7 +194,7 @@ class SupportedLanguageRepositoryTests extends ContainerTestConfig {
             true,
             true,
             true,
-            OffsetDateTime.now(),
+            Instant.now(),
             UUID.randomUUID()
         );
 
@@ -206,10 +206,10 @@ class SupportedLanguageRepositoryTests extends ContainerTestConfig {
     }
 
     private static SupportedLanguage newSupportedLanguage(String code, String name, boolean active) {
-        return newSupportedLanguage(code, name, active, OffsetDateTime.now());
+        return newSupportedLanguage(code, name, active, Instant.now());
     }
 
-    private static SupportedLanguage newSupportedLanguage(String code, String name, boolean active, OffsetDateTime now) {
+    private static SupportedLanguage newSupportedLanguage(String code, String name, boolean active, Instant now) {
         return new SupportedLanguage(
             new LanguageCode(code),
             name,

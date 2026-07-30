@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examgrading;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -73,7 +73,7 @@ public class ReclaimOverdueAssignmentsUseCase
         var schoolId = examGradingAccessService.requireCurrentSchoolId(currentUserId);
         examGradingAccessService.authorizeSchoolAdmin(schoolId, currentUserId);
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         if (command.newDeadlineAt() != null && command.newDeadlineAt().isBefore(now)) {
             throw new IllegalArgumentException("Hạn chấm mới phải ở tương lai.");
         }
@@ -209,7 +209,7 @@ public class ReclaimOverdueAssignmentsUseCase
      * định thì admin đã tự chọn nên không áp trần.
      */
     private OverdueBatch selectOverdue(
-            ReclaimOverdueAssignmentsCommand command, UUID schoolId, UUID currentUserId, OffsetDateTime now) {
+            ReclaimOverdueAssignmentsCommand command, UUID schoolId, UUID currentUserId, Instant now) {
         var assignmentIds = command.assignmentIds() == null ? List.<UUID>of() : command.assignmentIds();
         if (assignmentIds.isEmpty()) {
             var found = examGradingAssignmentRepository.findOverdueInSchool(

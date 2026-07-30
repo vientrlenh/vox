@@ -1,6 +1,6 @@
 package com.sep.vox.application.query.dto;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -18,9 +18,9 @@ public record AppealReviewerInfo(
     String status,
     /** UPHELD | REGRADED | DECLINED; null khi chưa nộp. */
     String outcome,
-    OffsetDateTime assignedAt,
-    OffsetDateTime completedAt,
-    OffsetDateTime deadlineAt,
+    Instant assignedAt,
+    Instant completedAt,
+    Instant deadlineAt,
     boolean overdue
 ) {
 }

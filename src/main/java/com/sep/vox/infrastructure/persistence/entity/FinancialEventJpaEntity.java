@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -63,12 +63,12 @@ public class FinancialEventJpaEntity {
     private String payload;
 
     @Column(name = "occurred_at", nullable = false, updatable = false)
-    private OffsetDateTime occurredAt;
+    private Instant occurredAt;
 
     protected FinancialEventJpaEntity() {}
 
     public FinancialEventJpaEntity(UUID id, UUID schoolId, UUID subscriptionId, String eventType, BigDecimal amountSigned,
-            String currency, String paymentMethod, UUID actorId, String payload, OffsetDateTime occurredAt) {
+            String currency, String paymentMethod, UUID actorId, String payload, Instant occurredAt) {
         this.id = id;
         this.schoolId = schoolId;
         this.subscriptionId = subscriptionId;
@@ -153,11 +153,11 @@ public class FinancialEventJpaEntity {
         this.payload = payload;
     }
 
-    public OffsetDateTime getOccurredAt() {
+    public Instant getOccurredAt() {
         return occurredAt;
     }
 
-    public void setOccurredAt(OffsetDateTime occurredAt) {
+    public void setOccurredAt(Instant occurredAt) {
         this.occurredAt = occurredAt;
     }
 }

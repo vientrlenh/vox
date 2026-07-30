@@ -1,6 +1,6 @@
 package com.sep.vox.application.event;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -14,6 +14,6 @@ public record ExamAppealApprovedEvent(
     UUID appealId,
     UUID studentId,
     String examName,
-    OffsetDateTime deadline
+    Instant deadline
 ) {
 }

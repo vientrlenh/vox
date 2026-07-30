@@ -8,7 +8,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Set;
 import java.util.UUID;
 
@@ -60,9 +61,9 @@ class ReassignGradingUseCaseTests {
     private ExamGradingAssignment given(GradingRoundType roundType) {
         var assignment = ExamGradingAssignment.open(
             candidateResultId, UUID.randomUUID(), roundType, null, null,
-            OffsetDateTime.now().minusDays(2), adminId, OffsetDateTime.now().plusDays(1));
+            Instant.now().minus(2, ChronoUnit.DAYS), adminId, Instant.now().plus(1, ChronoUnit.DAYS));
         assignment.setId(UUID.randomUUID());
-        assignment.setRemindedAt(OffsetDateTime.now().minusDays(1));
+        assignment.setRemindedAt(Instant.now().minus(1, ChronoUnit.DAYS));
 
         var candidateResult = new ExamCandidateResult();
         candidateResult.setId(candidateResultId);

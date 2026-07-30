@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.subscription;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,7 +53,7 @@ public class CreatePlanUseCase implements IUseCase<CreatePlanCommand, Subscripti
             input.popular(),
             PlanStatus.ACTIVE,
             1,
-            OffsetDateTime.now(),
+            Instant.now(),
             userContextPort.getCurrentAuthenticatedUserId()
         );
         var savedPlan = subscriptionPlanRepository.save(plan);

@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.examgrading;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 
 import org.springframework.stereotype.Service;
@@ -32,7 +32,7 @@ public class ExportExamScoresUseCase implements IUseCase<ExportExamScoresQuery, 
     /** Ký tự mở đầu ô mà Excel/LibreOffice diễn giải thành công thức. */
     private static final String FORMULA_TRIGGERS = "=+-@\t\r";
     private static final DateTimeFormatter LOCAL_TIME_FORMAT =
-        DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy").withZone(DateMapper.APP_ZONE);
+        DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy").withZone(DateMapper.DEFAULT_INPUT_ZONE);
     private static final String HEADER = String.join(",",
         "Mã bài", "Họ tên", "Email", "Lớp", "Kỳ thi", "Ca thi", "Điểm", "Xếp loại",
         "Trạng thái", "Vòng chấm cuối", "Kết luận", "Người chấm", "Thời điểm công bố");
@@ -101,7 +101,7 @@ public class ExportExamScoresUseCase implements IUseCase<ExportExamScoresQuery, 
      * mail. Không giữ biến thể in ISO thô: hai cột thời gian hai định dạng trong cùng
      * một file là thứ người đọc không có cách nào tự nhận ra.
      */
-    private String localTime(OffsetDateTime value) {
+    private String localTime(Instant value) {
         return value == null ? "" : LOCAL_TIME_FORMAT.format(value);
     }
 

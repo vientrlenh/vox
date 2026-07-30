@@ -6,7 +6,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -45,7 +46,7 @@ public class CreateFrameworkCriterionBandsUseCaseTests {
     private final UUID versionId = UUID.randomUUID();
     private final UUID criterionId = UUID.randomUUID();
     private final UUID userId = UUID.randomUUID();
-    private final OffsetDateTime now = OffsetDateTime.now();
+    private final Instant now = Instant.now();
 
     @BeforeEach
     void setUp() {
@@ -58,7 +59,7 @@ public class CreateFrameworkCriterionBandsUseCaseTests {
                 frameworkVersionRepository, frameworkCriterionRepository,
                 frameworkCriterionBandRepository, frameworkResultBandRepository, userContextPort);
 
-        var version = new FrameworkVersion(versionId, frameworkId, "V1_0", "Version 1.0", "Desc", 1, now, now.plusDays(30),
+        var version = new FrameworkVersion(versionId, frameworkId, "V1_0", "Version 1.0", "Desc", 1, now, now.plus(30, ChronoUnit.DAYS),
                 FrameworkVersionStatus.DRAFT, now, now, userId, userId);
         when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.of(version));
 
@@ -104,7 +105,7 @@ public class CreateFrameworkCriterionBandsUseCaseTests {
 
     @Test
     void should_throw_when_version_not_draft() {
-        var activeVersion = new FrameworkVersion(versionId, frameworkId, "V1_0", "Version 1.0", "Desc", 1, now, now.plusDays(30),
+        var activeVersion = new FrameworkVersion(versionId, frameworkId, "V1_0", "Version 1.0", "Desc", 1, now, now.plus(30, ChronoUnit.DAYS),
                 FrameworkVersionStatus.PUBLISHED, now, now, userId, userId);
         when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.of(activeVersion));
         var command = new CreateFrameworkCriterionBandsCommand(frameworkId, versionId, criterionId, List.of(bandItem("rb1")));

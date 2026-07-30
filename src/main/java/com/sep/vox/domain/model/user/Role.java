@@ -1,6 +1,6 @@
 package com.sep.vox.domain.model.user;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import com.sep.vox.domain.valueobject.RoleCode;
@@ -10,8 +10,8 @@ public class Role {
     private UUID id;
     private RoleCode code;
     private String name;
-    private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
     private UUID createdBy;
     private UUID updatedBy;
 
@@ -19,7 +19,7 @@ public class Role {
     public Role() {
     }
 
-    public Role(UUID id, RoleCode code, String name, OffsetDateTime createdAt, OffsetDateTime updatedAt,
+    public Role(UUID id, RoleCode code, String name, Instant createdAt, Instant updatedAt,
             UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.code = code;
@@ -30,7 +30,7 @@ public class Role {
         this.updatedBy = updatedBy;
     }
 
-    public Role(RoleCode code, String name, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+    public Role(RoleCode code, String name, Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.code = code;
         this.name = name;
         this.createdAt = createdAt;
@@ -58,16 +58,16 @@ public class Role {
     public void setName(String name) {
         this.name = name;
     }
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
     public UUID getCreatedBy() {

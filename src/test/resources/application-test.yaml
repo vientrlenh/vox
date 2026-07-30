@@ -3,10 +3,10 @@ spring:
         database-platform: org.hibernate.dialect.H2Dialect
         hibernate:
             ddl-auto: create-drop
-        show-sql: true
+        show-sql: false
         properties:
             hibernate:
-                format-sql: true
+                format-sql: false
     datasource:
         hikari:
             maximum-pool-size: 2
@@ -15,6 +15,7 @@ spring:
     mail:
         username: test@example.com
         password: test-password
+
 jwt:
     secret: test-access-secret-oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
     stream: 

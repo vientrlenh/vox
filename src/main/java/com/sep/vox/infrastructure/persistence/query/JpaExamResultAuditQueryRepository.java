@@ -2,7 +2,7 @@ package com.sep.vox.infrastructure.persistence.query;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -55,7 +55,7 @@ public class JpaExamResultAuditQueryRepository implements ExamResultAuditQueryRe
                 row.get(7, UUID.class),
                 row.get(8, String.class),
                 row.get(9, String.class),
-                row.get(10, OffsetDateTime.class)
+                row.get(10, Instant.class)
             ));
         }
         return result;

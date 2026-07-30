@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.question;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -141,7 +141,7 @@ public class UpdateQuestionStatusUseCase implements IUseCase<UpdateQuestionStatu
             default -> throw new IllegalStateException("Action không hợp lệ");
         }
 
-        question.setUpdatedAt(OffsetDateTime.now());
+        question.setUpdatedAt(Instant.now());
         question.setUpdatedBy(currentUserId);
         var saved = questionRepository.save(question);
         return QuestionDtoMapper.toQuestionDto(saved);

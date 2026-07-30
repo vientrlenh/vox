@@ -1,7 +1,7 @@
 package com.sep.vox.domain.model.exam;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -29,12 +29,12 @@ public class ExamGradingAssignment {
     private GradingOutcome outcome;
     /** Tổng điểm của bài lúc được giao — mốc so lệch sau khi chấm. */
     private BigDecimal scoreBefore;
-    private OffsetDateTime assignedAt;
+    private Instant assignedAt;
     private UUID assignedBy;
-    private OffsetDateTime completedAt;
-    private OffsetDateTime deadlineAt;
+    private Instant completedAt;
+    private Instant deadlineAt;
     /** Đã gửi mail nhắc hạn lúc nào; null = chưa nhắc. Chống nhắc trùng. */
-    private OffsetDateTime remindedAt;
+    private Instant remindedAt;
     /** Bắt buộc khi outcome là INVALIDATED / CLEARED_INVALID / DECLINED. */
     private String reason;
     private UUID activeResultId;
@@ -44,8 +44,8 @@ public class ExamGradingAssignment {
 
     public ExamGradingAssignment(UUID id, UUID candidateResultId, UUID teacherId, GradingRoundType roundType,
             UUID appealId, GradingAssignmentStatus status, GradingOutcome outcome, BigDecimal scoreBefore,
-            OffsetDateTime assignedAt, UUID assignedBy, OffsetDateTime completedAt, OffsetDateTime deadlineAt,
-            OffsetDateTime remindedAt, String reason, UUID activeResultId, Integer version) {
+            Instant assignedAt, UUID assignedBy, Instant completedAt, Instant deadlineAt,
+            Instant remindedAt, String reason, UUID activeResultId, Integer version) {
         this.id = id;
         this.candidateResultId = candidateResultId;
         this.teacherId = teacherId;
@@ -69,8 +69,8 @@ public class ExamGradingAssignment {
      * chỗ duy nhất dựng bất biến "một phân công mở / bài", nên đừng tự new rồi set tay.
      */
     public static ExamGradingAssignment open(UUID candidateResultId, UUID teacherId, GradingRoundType roundType,
-            UUID appealId, BigDecimal scoreBefore, OffsetDateTime assignedAt, UUID assignedBy,
-            OffsetDateTime deadlineAt) {
+            UUID appealId, BigDecimal scoreBefore, Instant assignedAt, UUID assignedBy,
+            Instant deadlineAt) {
         var assignment = new ExamGradingAssignment();
         assignment.candidateResultId = candidateResultId;
         assignment.teacherId = teacherId;
@@ -94,7 +94,7 @@ public class ExamGradingAssignment {
      * Đóng phân công kèm kết luận. Nhả {@code activeResultId} về null để bài nhận
      * được vòng tiếp theo mà unique index vẫn giữ nguyên ý nghĩa.
      */
-    public void complete(GradingOutcome outcome, String reason, OffsetDateTime at) {
+    public void complete(GradingOutcome outcome, String reason, Instant at) {
         this.status = GradingAssignmentStatus.COMPLETED;
         this.outcome = outcome;
         this.reason = reason;
@@ -102,7 +102,7 @@ public class ExamGradingAssignment {
         this.activeResultId = null;
     }
 
-    public boolean isOverdue(OffsetDateTime now) {
+    public boolean isOverdue(Instant now) {
         return !isCompleted() && deadlineAt != null && deadlineAt.isBefore(now);
     }
 
@@ -170,11 +170,11 @@ public class ExamGradingAssignment {
         this.scoreBefore = scoreBefore;
     }
 
-    public OffsetDateTime getAssignedAt() {
+    public Instant getAssignedAt() {
         return assignedAt;
     }
 
-    public void setAssignedAt(OffsetDateTime assignedAt) {
+    public void setAssignedAt(Instant assignedAt) {
         this.assignedAt = assignedAt;
     }
 
@@ -186,27 +186,27 @@ public class ExamGradingAssignment {
         this.assignedBy = assignedBy;
     }
 
-    public OffsetDateTime getCompletedAt() {
+    public Instant getCompletedAt() {
         return completedAt;
     }
 
-    public void setCompletedAt(OffsetDateTime completedAt) {
+    public void setCompletedAt(Instant completedAt) {
         this.completedAt = completedAt;
     }
 
-    public OffsetDateTime getDeadlineAt() {
+    public Instant getDeadlineAt() {
         return deadlineAt;
     }
 
-    public void setDeadlineAt(OffsetDateTime deadlineAt) {
+    public void setDeadlineAt(Instant deadlineAt) {
         this.deadlineAt = deadlineAt;
     }
 
-    public OffsetDateTime getRemindedAt() {
+    public Instant getRemindedAt() {
         return remindedAt;
     }
 
-    public void setRemindedAt(OffsetDateTime remindedAt) {
+    public void setRemindedAt(Instant remindedAt) {
         this.remindedAt = remindedAt;
     }
 

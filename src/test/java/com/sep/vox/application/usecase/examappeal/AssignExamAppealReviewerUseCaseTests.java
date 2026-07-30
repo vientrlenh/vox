@@ -8,6 +8,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -78,7 +79,7 @@ class AssignExamAppealReviewerUseCaseTests {
         appeal = new ExamResultAppeal();
         appeal.setId(appealId);
         appeal.setStatus(ExamAppealStatus.APPROVED);
-        appeal.setDeadline(java.time.OffsetDateTime.now().plusDays(5));
+        appeal.setDeadline(java.time.Instant.now().plus(5, ChronoUnit.DAYS));
 
         candidateResult = new ExamCandidateResult();
         candidateResult.setId(candidateResultId);
@@ -170,7 +171,7 @@ class AssignExamAppealReviewerUseCaseTests {
     void should_reject_when_the_paper_is_already_being_graded_in_another_round() {
         when(examGradingAssignmentRepository.findOpenByCandidateResultId(candidateResultId))
             .thenReturn(Optional.of(ExamGradingAssignment.open(candidateResultId, UUID.randomUUID(),
-                GradingRoundType.SPOT_CHECK, null, null, java.time.OffsetDateTime.now(), adminId, null)));
+                GradingRoundType.SPOT_CHECK, null, null, java.time.Instant.now(), adminId, null)));
 
         // Hai người cùng ghi điểm một bài là nguồn gốc của review BE-4.
         assertThatThrownBy(() -> useCase.execute(command(freshTeacher, null)))

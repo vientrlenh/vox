@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.command;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public record RecordAnswerTurnCommand(
@@ -14,6 +14,6 @@ public record RecordAnswerTurnCommand(
     String transcript,
     Integer durationSeconds,
     Integer wordCount,
-    OffsetDateTime answeredAt
+    Instant answeredAt
 ) {
 }

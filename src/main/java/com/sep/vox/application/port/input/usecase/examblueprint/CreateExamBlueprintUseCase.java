@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examblueprint;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -61,7 +61,7 @@ public class CreateExamBlueprintUseCase implements IUseCase<CreateExamBlueprintC
             }
         }
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var blueprint = new ExamBlueprint(
             currentSchoolId,
             command.languageId(),

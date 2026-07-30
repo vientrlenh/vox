@@ -1,7 +1,7 @@
 package com.sep.vox.domain.dto;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public record RubricResultBandDto(
@@ -13,8 +13,8 @@ public record RubricResultBandDto(
         BigDecimal scoreMin,
         BigDecimal scoreMax,
         int order,
-        OffsetDateTime createdAt,
-        OffsetDateTime updatedAt,
+        Instant createdAt,
+        Instant updatedAt,
         UUID createdBy,
         UUID updatedBy
 ) {}

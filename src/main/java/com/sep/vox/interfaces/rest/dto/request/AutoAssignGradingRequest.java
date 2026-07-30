@@ -1,6 +1,6 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -33,7 +33,7 @@ public record AutoAssignGradingRequest(
 
     List<UUID> candidateResultIds,
 
-    OffsetDateTime deadlineAt,
+    Instant deadlineAt,
 
     @NotEmpty(message = "Phải chọn ít nhất một giáo viên để phân công")
     List<UUID> teacherIds

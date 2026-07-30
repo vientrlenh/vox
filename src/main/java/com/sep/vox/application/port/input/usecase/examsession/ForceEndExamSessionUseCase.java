@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examsession;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,7 +71,7 @@ public class ForceEndExamSessionUseCase implements IUseCase<ForceEndExamSessionC
             throw new IllegalStateException("Chỉ có thể buộc kết thúc phiên thi đang diễn ra hoặc đã chấm xong");
         }
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var currentUserId = moderationAccessService.getCurrentUserId();
         var normalizedReason = StringNormalization.trimAndCollapseSpaces(input.reason());
 

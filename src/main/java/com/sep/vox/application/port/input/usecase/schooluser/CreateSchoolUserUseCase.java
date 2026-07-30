@@ -1,13 +1,13 @@
 package com.sep.vox.application.port.input.usecase.schooluser;
 
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
+import java.time.Instant;
 import java.util.List;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.event.UserCreatedPayloadV1;
 import com.sep.vox.application.exception.DuplicatedException;
@@ -68,7 +68,7 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
     @Override
     @Transactional
     public CreateSchoolUserResponse execute(CreateSchoolUserCommand input) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var callerId = userContextPort.getCurrentAuthenticatedUserId();
 
         var caller = userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)
@@ -118,12 +118,12 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
             if (!command.startDate().isBefore(command.endDate())) {
                 throw new IllegalArgumentException("Ngày bắt đầu phải trước ngày kết thúc");
             }
-            var startDate = command.startDate().atStartOfDay(ZoneOffset.UTC).toOffsetDateTime();
-            var endDate = command.endDate().atStartOfDay(ZoneOffset.UTC).toOffsetDateTime();
+            var startDate = command.startDate().atStartOfDay(DateMapper.DEFAULT_INPUT_ZONE).toInstant();
+            var endDate = command.endDate().atStartOfDay(DateMapper.DEFAULT_INPUT_ZONE).toInstant();
             saveSchoolUser(SchoolUser.create(savedUser.getId(), command.schoolId(), startDate, endDate));
         } else {
             var startDate = command.startDate() != null
-                ? command.startDate().atStartOfDay(ZoneOffset.UTC).toOffsetDateTime()
+                ? command.startDate().atStartOfDay(DateMapper.DEFAULT_INPUT_ZONE).toInstant()
                 : now;
             saveSchoolUser(SchoolUser.create(savedUser.getId(), command.schoolId(), startDate, null));
         }

@@ -26,7 +26,7 @@ import com.sep.vox.domain.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -102,7 +102,7 @@ public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<Create
         UUID schoolId = commands.get(0).schoolId();
         if (!schoolUser.getSchoolId().equals(schoolId)) throw new ForbiddenException("BẢO MẬT: Không thể tạo Policy cho trường khác.");
 
-        OffsetDateTime now = OffsetDateTime.now();
+        Instant now = Instant.now();
         List<AssessmentPolicy> policiesToSave = new ArrayList<>();
         Map<VersionScopeKey, Integer> nextVersionByScope = new HashMap<>();
         Set<RubricScopeKey> rubricScopesClaimed = new HashSet<>();

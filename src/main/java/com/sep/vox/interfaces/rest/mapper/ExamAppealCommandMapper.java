@@ -2,6 +2,7 @@ package com.sep.vox.interfaces.rest.mapper;
 
 import java.util.UUID;
 
+import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.input.command.ApproveExamAppealCommand;
 import com.sep.vox.application.port.input.command.AssignExamAppealReviewerCommand;
 import com.sep.vox.application.port.input.command.CreateExamAppealCommand;
@@ -25,7 +26,10 @@ public final class ExamAppealCommandMapper {
     }
 
     public static ApproveExamAppealCommand fromRequest(UUID appealId, ApproveExamAppealRequest request) {
-        return new ApproveExamAppealCommand(appealId, request.deadline());
+        return new ApproveExamAppealCommand(
+            appealId, 
+            DateMapper.toInstant(request.deadline())
+        );
     }
 
     public static RejectExamAppealCommand fromRequest(UUID appealId, RejectExamAppealRequest request) {

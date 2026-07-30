@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examgrading;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 
 import org.springframework.stereotype.Service;
@@ -78,7 +78,7 @@ public class RegradeResultUseCase implements IUseCase<SubmitGradingCommand, Grad
         // Nộp là chốt COMPLETED, nên bắt buộc phủ đủ mọi phần — nộp thiếu rồi chốt
         // sẽ khóa cứng phần chưa chấm (bài COMPLETED không gỡ được).
         var resolvedItems = gradingItemScoreResolver.resolve(context, command, true);
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
 
         // Gỡ cờ nghi vấn: giáo viên đã xem và kết luận không vi phạm.
         var session = context.session();

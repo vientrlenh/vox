@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.query;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public record ViewSchoolAssessmentPoliciesQuery(
@@ -8,8 +8,8 @@ public record ViewSchoolAssessmentPoliciesQuery(
         String status,
         UUID languageId,
         UUID rubricVersionId,
-        OffsetDateTime effectiveFrom,
-        OffsetDateTime effectiveTo,
+        Instant effectiveFrom,
+        Instant effectiveTo,
         int page,
         int size
 ) {}

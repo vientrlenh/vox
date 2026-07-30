@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.command;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public record UpdateFrameworkVersionCommand(
@@ -9,6 +9,6 @@ public record UpdateFrameworkVersionCommand(
     String code,
     String name,
     String description,
-    OffsetDateTime effectiveFrom,
-    OffsetDateTime effectiveTo
+    Instant effectiveFrom,
+    Instant effectiveTo
 ) {}

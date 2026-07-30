@@ -1,6 +1,6 @@
 package com.sep.vox.domain.repository;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -27,7 +27,7 @@ public interface SchoolClassRepository {
     SchoolClass save(SchoolClass schoolClass);
     int updateMutableFields(UUID id, UUID schoolId, String name, boolean nameProvided,
             String description, boolean descriptionProvided, SchoolClassStatus status, boolean statusProvided,
-            OffsetDateTime updatedAt, UUID updatedBy);
+            Instant updatedAt, UUID updatedBy);
     void deleteById(UUID id);
     List<SchoolClass> findBySchoolIdIn(Collection<UUID> schoolIds, int pageNumber, int size);
 
@@ -38,5 +38,5 @@ public interface SchoolClassRepository {
     boolean existsBySchoolIdAndStatus(UUID schoolId, String status);
 
     /** Xóa mềm (ARCHIVED) tất cả lớp thuộc một năm học, bỏ qua lớp đã ARCHIVED. Trả về số dòng bị ảnh hưởng. */
-    int archiveByGradeId(UUID schoolGradeId, OffsetDateTime updatedAt, UUID updatedBy);
+    int archiveByGradeId(UUID schoolGradeId, Instant updatedAt, UUID updatedBy);
 }

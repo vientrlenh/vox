@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examgrading;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.EnumSet;
@@ -133,7 +133,7 @@ public class BulkFinalizeExamResultsUseCase
                     + "Hãy xử lý nốt, hoặc xác nhận công bố theo điểm AI hiện có.");
         }
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var histories = new ArrayList<ExamResultStatusHistory>();
         var released = new ArrayList<ExamCandidateResult>();
 
@@ -181,7 +181,7 @@ public class BulkFinalizeExamResultsUseCase
      * trên bài {@code RELEASED} và vòng {@code REMEDIATION} trên bài {@code INVALID} vẫn
      * còn nguyên việc để làm — đóng chúng là xoá một quyết định chưa được đưa ra.
      */
-    private void closeSettledAssignments(List<ExamCandidateResult> released, OffsetDateTime now) {
+    private void closeSettledAssignments(List<ExamCandidateResult> released, Instant now) {
         if (released.isEmpty()) {
             return;
         }

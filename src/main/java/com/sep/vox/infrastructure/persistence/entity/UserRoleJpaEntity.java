@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
@@ -39,11 +39,11 @@ public class UserRoleJpaEntity {
 
     @Column(name = "created_at", nullable = false, updatable = false)
     @CreationTimestamp
-    private OffsetDateTime createdAt;
+    private Instant createdAt;
 
     protected UserRoleJpaEntity() {}
 
-    public UserRoleJpaEntity(UUID id, UUID userId, UUID roleId, OffsetDateTime createdAt) {
+    public UserRoleJpaEntity(UUID id, UUID userId, UUID roleId, Instant createdAt) {
         this.id = id;
         this.userId = userId;
         this.roleId = roleId;
@@ -74,11 +74,11 @@ public class UserRoleJpaEntity {
         this.roleId = roleId;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 

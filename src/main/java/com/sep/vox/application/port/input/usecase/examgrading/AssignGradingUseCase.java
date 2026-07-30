@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examgrading;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -130,7 +130,7 @@ public class AssignGradingUseCase implements IUseCase<AssignGradingCommand, List
                 examGradingQueryRepository.findTeacherIdsInSchool(schoolId, teacherIds));
         }
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var assignments = new ArrayList<ExamGradingAssignment>();
         for (var item : items) {
             var result = resultsById.get(item.candidateResultId());
@@ -184,8 +184,8 @@ public class AssignGradingUseCase implements IUseCase<AssignGradingCommand, List
         return roundType;
     }
 
-    private OffsetDateTime validateDeadline(OffsetDateTime deadlineAt) {
-        if (deadlineAt != null && deadlineAt.isBefore(OffsetDateTime.now())) {
+    private Instant validateDeadline(Instant deadlineAt) {
+        if (deadlineAt != null && deadlineAt.isBefore(Instant.now())) {
             throw new IllegalArgumentException("Hạn chấm phải ở tương lai.");
         }
         return deadlineAt;

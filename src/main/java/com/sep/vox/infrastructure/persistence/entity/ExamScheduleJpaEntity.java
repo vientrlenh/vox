@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -36,10 +36,10 @@ public class ExamScheduleJpaEntity {
     private UUID schoolRoomId;
 
     @Column(name = "start_date", nullable = false)
-    private OffsetDateTime startDate;
+    private Instant startDate;
 
     @Column(name = "end_date", nullable = false)
-    private OffsetDateTime endDate;
+    private Instant endDate;
 
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
@@ -53,10 +53,10 @@ public class ExamScheduleJpaEntity {
     private UUID movedToScheduleId;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private OffsetDateTime updatedAt;
+    private Instant updatedAt;
 
     @Column(name = "created_by", updatable = false)
     private UUID createdBy;
@@ -66,9 +66,9 @@ public class ExamScheduleJpaEntity {
 
     protected ExamScheduleJpaEntity() {}
 
-    public ExamScheduleJpaEntity(UUID id, UUID examId, UUID schoolRoomId, OffsetDateTime startDate,
-            OffsetDateTime endDate, String status, UUID movedToScheduleId, OffsetDateTime createdAt,
-            OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+    public ExamScheduleJpaEntity(UUID id, UUID examId, UUID schoolRoomId, Instant startDate,
+            Instant endDate, String status, UUID movedToScheduleId, Instant createdAt,
+            Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.examId = examId;
         this.schoolRoomId = schoolRoomId;
@@ -106,19 +106,19 @@ public class ExamScheduleJpaEntity {
         this.schoolRoomId = schoolRoomId;
     }
 
-    public OffsetDateTime getStartDate() {
+    public Instant getStartDate() {
         return startDate;
     }
 
-    public void setStartDate(OffsetDateTime startDate) {
+    public void setStartDate(Instant startDate) {
         this.startDate = startDate;
     }
 
-    public OffsetDateTime getEndDate() {
+    public Instant getEndDate() {
         return endDate;
     }
 
-    public void setEndDate(OffsetDateTime endDate) {
+    public void setEndDate(Instant endDate) {
         this.endDate = endDate;
     }
 
@@ -138,19 +138,19 @@ public class ExamScheduleJpaEntity {
         this.movedToScheduleId = movedToScheduleId;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 

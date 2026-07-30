@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.command;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import com.sep.vox.domain.model.exam.ExamRecordingAssemblyStatus;
@@ -13,7 +13,7 @@ public record RecordRecordingPartChangedCommand(
     ExamRecordingAssemblyStatus status,
     String objectKey,
     Long durationSecs,
-    OffsetDateTime occurredAt,
+    Instant occurredAt,
     String source
 ) {
 }

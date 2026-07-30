@@ -1,7 +1,7 @@
 package com.sep.vox.domain.model.rubric;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 
@@ -14,22 +14,22 @@ public class RubricVersion {
     private String name;
     private String description;
     private RubricStatus status;
-    private OffsetDateTime effectiveFrom;
-    private OffsetDateTime effectiveTo;
+    private Instant effectiveFrom;
+    private Instant effectiveTo;
     private BigDecimal scoringScaleMin;
     private BigDecimal scoringScaleMax;
     private RubricTotalScoreMethod totalScoreMethod;
-    private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
     private UUID createdBy;
     private UUID updatedBy;
 
     public RubricVersion() {}
 
     public RubricVersion(UUID id, UUID rubricId, int version, String code, String name, String description,
-            RubricStatus status, OffsetDateTime effectiveFrom, OffsetDateTime effectiveTo, BigDecimal scoringScaleMin,
-            BigDecimal scoringScaleMax, RubricTotalScoreMethod totalScoreMethod, OffsetDateTime createdAt,
-            OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            RubricStatus status, Instant effectiveFrom, Instant effectiveTo, BigDecimal scoringScaleMin,
+            BigDecimal scoringScaleMax, RubricTotalScoreMethod totalScoreMethod, Instant createdAt,
+            Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.rubricId = rubricId;
         this.version = version;
@@ -49,9 +49,9 @@ public class RubricVersion {
     }
 
     public RubricVersion(UUID rubricId, int version, String code, String name, String description, RubricStatus status,
-            OffsetDateTime effectiveFrom, OffsetDateTime effectiveTo, BigDecimal scoringScaleMin,
-            BigDecimal scoringScaleMax, RubricTotalScoreMethod totalScoreMethod, OffsetDateTime createdAt,
-            OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            Instant effectiveFrom, Instant effectiveTo, BigDecimal scoringScaleMin,
+            BigDecimal scoringScaleMax, RubricTotalScoreMethod totalScoreMethod, Instant createdAt,
+            Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.rubricId = rubricId;
         this.version = version;
         this.code = code;
@@ -125,19 +125,19 @@ public class RubricVersion {
         this.status = status;
     }
 
-    public OffsetDateTime getEffectiveFrom() {
+    public Instant getEffectiveFrom() {
         return effectiveFrom;
     }
 
-    public void setEffectiveFrom(OffsetDateTime effectiveFrom) {
+    public void setEffectiveFrom(Instant effectiveFrom) {
         this.effectiveFrom = effectiveFrom;
     }
 
-    public OffsetDateTime getEffectiveTo() {
+    public Instant getEffectiveTo() {
         return effectiveTo;
     }
 
-    public void setEffectiveTo(OffsetDateTime effectiveTo) {
+    public void setEffectiveTo(Instant effectiveTo) {
         this.effectiveTo = effectiveTo;
     }
 
@@ -165,19 +165,19 @@ public class RubricVersion {
         this.totalScoreMethod = totalScoreMethod;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 

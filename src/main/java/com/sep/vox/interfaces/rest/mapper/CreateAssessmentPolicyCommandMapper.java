@@ -23,8 +23,8 @@ public class CreateAssessmentPolicyCommandMapper {
                 request.targetFrameworkBandId(),
                 request.passingScore(),
                 request.strictness(),
-                DateMapper.toOffsetDateTime(request.effectiveFrom()),
-                DateMapper.toOffsetDateTime(request.effectiveTo())
+                DateMapper.toInstant(request.effectiveFrom()),
+                DateMapper.toInstant(request.effectiveTo())
         );
     }
 
@@ -46,8 +46,8 @@ public class CreateAssessmentPolicyCommandMapper {
                 request.targetFrameworkBandId(),
                 request.passingScore(),
                 request.strictness(),
-                DateMapper.toOffsetDateTime(request.effectiveFrom()),
-                DateMapper.toOffsetDateTime(request.effectiveTo())
+                DateMapper.toInstant(request.effectiveFrom()),
+                DateMapper.toInstant(request.effectiveTo())
         );
     }
 

@@ -8,7 +8,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -42,7 +44,7 @@ class RecalculateExamTimeDurationServiceTests {
     private final UUID examId = UUID.randomUUID();
     private final UUID paperId = UUID.randomUUID();
     private final UUID questionId = UUID.randomUUID();
-    private final OffsetDateTime start = OffsetDateTime.parse("2026-07-10T08:00:00+07:00");
+    private final Instant start = OffsetDateTime.parse("2026-07-10T08:00:00+07:00").toInstant();
 
     @BeforeEach
     void setUp() {
@@ -61,7 +63,7 @@ class RecalculateExamTimeDurationServiceTests {
         givenExamWithPaperDuration(ExamKind.CENTRALIZED, 3600);
         // Ca thi chỉ dài 30 phút, đề vừa tính ra 60 phút.
         when(examScheduleRepository.findByExamId(examId))
-            .thenReturn(List.of(schedule(ExamScheduleStatus.PUBLISHED, start, start.plusMinutes(30))));
+            .thenReturn(List.of(schedule(ExamScheduleStatus.PUBLISHED, start, start.plus(30, ChronoUnit.MINUTES))));
 
         assertThatThrownBy(() -> service.recalculate(examId))
             .isInstanceOf(IllegalStateException.class)
@@ -73,7 +75,7 @@ class RecalculateExamTimeDurationServiceTests {
     void should_point_at_open_close_window_for_class_test() {
         givenExamWithPaperDuration(ExamKind.CLASS_TEST, 3600);
         when(examScheduleRepository.findByExamId(examId))
-            .thenReturn(List.of(schedule(ExamScheduleStatus.PUBLISHED, start, start.plusMinutes(30))));
+            .thenReturn(List.of(schedule(ExamScheduleStatus.PUBLISHED, start, start.plus(30, ChronoUnit.MINUTES))));
 
         assertThatThrownBy(() -> service.recalculate(examId))
             .isInstanceOf(IllegalStateException.class)
@@ -84,9 +86,9 @@ class RecalculateExamTimeDurationServiceTests {
     void should_ignore_completed_and_cancelled_schedules() {
         givenExamWithPaperDuration(ExamKind.CENTRALIZED, 3600);
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(
-            schedule(ExamScheduleStatus.COMPLETED, start, start.plusMinutes(30)),
-            schedule(ExamScheduleStatus.CANCELLED, start, start.plusMinutes(30)),
-            schedule(ExamScheduleStatus.MOVED, start, start.plusMinutes(30))));
+            schedule(ExamScheduleStatus.COMPLETED, start, start.plus(30, ChronoUnit.MINUTES)),
+            schedule(ExamScheduleStatus.CANCELLED, start, start.plus(30, ChronoUnit.MINUTES)),
+            schedule(ExamScheduleStatus.MOVED, start, start.plus(30, ChronoUnit.MINUTES))));
 
         service.recalculate(examId);
 
@@ -109,7 +111,7 @@ class RecalculateExamTimeDurationServiceTests {
         var exam = givenExamWithPaperDuration(ExamKind.CENTRALIZED, 600);
         exam.setExamTimeDurationSecond(3600);
         when(examScheduleRepository.findByExamId(examId))
-            .thenReturn(List.of(schedule(ExamScheduleStatus.PUBLISHED, start, start.plusMinutes(30))));
+            .thenReturn(List.of(schedule(ExamScheduleStatus.PUBLISHED, start, start.plus(30, ChronoUnit.MINUTES))));
 
         service.recalculate(examId);
 
@@ -158,7 +160,7 @@ class RecalculateExamTimeDurationServiceTests {
         return exam;
     }
 
-    private ExamSchedule schedule(ExamScheduleStatus status, OffsetDateTime from, OffsetDateTime to) {
+    private ExamSchedule schedule(ExamScheduleStatus status, Instant from, Instant to) {
         var schedule = new ExamSchedule();
         schedule.setId(UUID.randomUUID());
         schedule.setExamId(examId);

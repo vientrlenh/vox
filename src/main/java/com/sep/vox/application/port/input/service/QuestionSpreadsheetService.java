@@ -2,7 +2,7 @@ package com.sep.vox.application.port.input.service;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -16,6 +16,7 @@ import org.apache.poi.ss.util.CellRangeAddressList;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 
+import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -240,7 +241,7 @@ public class QuestionSpreadsheetService {
     }
 
     public String exportFileName() {
-        return "questions-export-" + OffsetDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss")) + ".xlsx";
+        return "questions-export-" + Instant.now().atZone(DateMapper.DEFAULT_INPUT_ZONE).format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss")) + ".xlsx";
     }
 
     public String templateFileName() {

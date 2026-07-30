@@ -10,7 +10,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -110,7 +111,7 @@ class GradingActionSupportTests {
     private GradingContext context(
             GradingRoundType roundType, ExamCandidateResult result, UUID linkedAppealId) {
         var assignment = ExamGradingAssignment.open(candidateResultId, teacherId, roundType, linkedAppealId,
-            result.getTotalScore(), OffsetDateTime.now(), UUID.randomUUID(), null);
+            result.getTotalScore(), Instant.now(), UUID.randomUUID(), null);
         assignment.setId(assignmentId);
         return new GradingContext(assignment, result, new ExamSession(), UUID.randomUUID(), "IELTS Mock");
     }
@@ -163,7 +164,7 @@ class GradingActionSupportTests {
     void should_reject_a_completed_assignment() {
         var result = result(ExamCandidateResultStatus.PENDING_REVIEW, "6.00");
         var context = context(GradingRoundType.INITIAL, result);
-        context.assignment().complete(GradingOutcome.UPHELD, null, OffsetDateTime.now());
+        context.assignment().complete(GradingOutcome.UPHELD, null, Instant.now());
         when(examGradingAccessService.load(assignmentId)).thenReturn(context);
 
         assertThatThrownBy(() -> support.prepare(assignmentId, GradingOutcome.UPHELD, null))
@@ -336,7 +337,7 @@ class GradingActionSupportTests {
     @Test
     void should_clear_the_finalized_mark_when_a_result_returns_to_pending_review() {
         var result = result(ExamCandidateResultStatus.INVALID, "0.00");
-        result.setFinalizedAt(OffsetDateTime.now().minusDays(1));
+        result.setFinalizedAt(Instant.now().minus(1, ChronoUnit.DAYS));
         given(GradingRoundType.REMEDIATION, result);
         var prepared = support.prepare(assignmentId, GradingOutcome.CLEARED_INVALID, "Không vi phạm");
 

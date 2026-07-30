@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -40,7 +40,7 @@ public interface SpringDataImportSessionRepository extends JpaRepository<ImportS
     int markImporting(@Param("id") UUID id,
                     @Param("type") String type,
                     @Param("confirmedMapping") String confirmedMapping,
-                    @Param("now") OffsetDateTime now,
+                    @Param("now") Instant now,
                     @Param("updatedBy") UUID updatedBy);
 
     @Modifying
@@ -58,7 +58,7 @@ public interface SpringDataImportSessionRepository extends JpaRepository<ImportS
     int markQueued(@Param("id") UUID id,
                     @Param("type") String type,
                     @Param("confirmedMapping") String confirmedMapping,
-                    @Param("now") OffsetDateTime now,
+                    @Param("now") Instant now,
                     @Param("updatedBy") UUID updatedBy);
 
 
@@ -84,8 +84,8 @@ public interface SpringDataImportSessionRepository extends JpaRepository<ImportS
     """)
     int markClaimed(@Param("ids") Collection<UUID> ids, 
                     @Param("worker") UUID worker, 
-                    @Param("now") OffsetDateTime now, 
-                    @Param("leaseUntil") OffsetDateTime leaseUntil);
+                    @Param("now") Instant now, 
+                    @Param("leaseUntil") Instant leaseUntil);
 
     
     @Modifying
@@ -94,7 +94,7 @@ public interface SpringDataImportSessionRepository extends JpaRepository<ImportS
             SET i.leaseExpiresAt = :leaseUntil 
         WHERE i.id = :id
     """)
-    void extendLease(@Param("id") UUID id, @Param("leaseUntil") OffsetDateTime leaseUntil); 
+    void extendLease(@Param("id") UUID id, @Param("leaseUntil") Instant leaseUntil); 
 
     @Modifying
     @Query(value = """
@@ -109,5 +109,5 @@ public interface SpringDataImportSessionRepository extends JpaRepository<ImportS
                 updated_at = :now
         WHERE status = 'IMPORTING' AND lease_expires_at < :now
     """, nativeQuery = true)
-    int requeueExpiredLeases(@Param("now") OffsetDateTime now, @Param("maxAttempts") int maxAttempts);
+    int requeueExpiredLeases(@Param("now") Instant now, @Param("maxAttempts") int maxAttempts);
 }

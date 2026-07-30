@@ -12,7 +12,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -100,7 +100,7 @@ public class AssignGradingUseCaseTests {
 
     private ExamGradingAssignment existingAssignment(UUID candidateResultId) {
         var assignment = ExamGradingAssignment.open(candidateResultId, UUID.randomUUID(),
-            GradingRoundType.INITIAL, null, null, OffsetDateTime.now(), adminId, null);
+            GradingRoundType.INITIAL, null, null, Instant.now(), adminId, null);
         assignment.setId(UUID.randomUUID());
         return assignment;
     }

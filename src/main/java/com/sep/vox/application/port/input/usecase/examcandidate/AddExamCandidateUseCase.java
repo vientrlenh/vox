@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examcandidate;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -76,7 +76,7 @@ public class AddExamCandidateUseCase implements IUseCase<AddExamCandidateCommand
         }
 
         var candidate = ExamCandidate.createFresh(exam.getId(), input.studentId(), currentUserId,
-            OffsetDateTime.now());
+            Instant.now());
         return ExamCandidateDtoMapper.toDto(examCandidateRepository.save(candidate));
     }
 

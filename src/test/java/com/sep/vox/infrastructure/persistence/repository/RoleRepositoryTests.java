@@ -2,7 +2,7 @@ package com.sep.vox.infrastructure.persistence.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -85,7 +85,7 @@ class RoleRepositoryTests extends ContainerTestConfig {
     }
 
     private static Role newRole(String code, String name) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         return new Role(
             new RoleCode(code),
             name,

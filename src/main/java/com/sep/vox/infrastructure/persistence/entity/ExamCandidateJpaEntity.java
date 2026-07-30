@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -50,13 +50,13 @@ public class ExamCandidateJpaEntity {
     private String status;
 
     @Column(name = "assigned_at", nullable = false, updatable = false)
-    private OffsetDateTime assignedAt;
+    private Instant assignedAt;
 
     @Column(name = "updated_at", nullable = false)
-    private OffsetDateTime updatedAt;
+    private Instant updatedAt;
 
     @Column(name = "blocked_at")
-    private OffsetDateTime blockedAt;
+    private Instant blockedAt;
 
     @Column(name = "assigned_by", updatable = false)
     private UUID assignedBy;
@@ -67,7 +67,7 @@ public class ExamCandidateJpaEntity {
     protected ExamCandidateJpaEntity() {}
 
     public ExamCandidateJpaEntity(UUID id, UUID examId, UUID studentId, UUID assignedPaperId, UUID scheduleId,
-            String status, OffsetDateTime assignedAt, OffsetDateTime updatedAt, OffsetDateTime blockedAt, UUID assignedBy, UUID updatedBy) {
+            String status, Instant assignedAt, Instant updatedAt, Instant blockedAt, UUID assignedBy, UUID updatedBy) {
         this.id = id;
         this.examId = examId;
         this.studentId = studentId;
@@ -129,27 +129,27 @@ public class ExamCandidateJpaEntity {
         this.status = status;
     }
 
-    public OffsetDateTime getAssignedAt() {
+    public Instant getAssignedAt() {
         return assignedAt;
     }
 
-    public void setAssignedAt(OffsetDateTime assignedAt) {
+    public void setAssignedAt(Instant assignedAt) {
         this.assignedAt = assignedAt;
     }
 
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 
-    public OffsetDateTime getBlockedAt() {
+    public Instant getBlockedAt() {
         return blockedAt;
     }
 
-    public void setBlockedAt(OffsetDateTime blockedAt) {
+    public void setBlockedAt(Instant blockedAt) {
         this.blockedAt = blockedAt;
     }
 

@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.examblueprint;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -98,9 +98,9 @@ public class UpdateExamBlueprintVersionUseCase implements IUseCase<UpdateExamBlu
         if (command.description() != null) {
             version.setDescription(command.description());
         }
-        version.setEffectiveFrom(command.effectiveFrom() == null ? version.getEffectiveFrom() : OffsetDateTime.parse(command.effectiveFrom()));
+        version.setEffectiveFrom(command.effectiveFrom() == null ? version.getEffectiveFrom() : Instant.parse(command.effectiveFrom()));
         version.setEffectiveTo(parseDateTime(command.effectiveTo()));
-        version.setUpdatedAt(OffsetDateTime.now());
+        version.setUpdatedAt(Instant.now());
         version.setUpdatedBy(currentUserId);
         var savedVersion = examBlueprintVersionRepository.save(version);
 
@@ -261,7 +261,7 @@ public class UpdateExamBlueprintVersionUseCase implements IUseCase<UpdateExamBlu
             CreateExamBlueprintSectionCommand command,
             Map<UUID, ExamBlueprintSection> existingSectionsById,
             UUID currentUserId) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         if (command.id() == null) {
             return new ExamBlueprintSection(
                 versionId,
@@ -301,7 +301,7 @@ public class UpdateExamBlueprintVersionUseCase implements IUseCase<UpdateExamBlu
             CreateExamBlueprintSlotCommand command,
             Map<UUID, ExamBlueprintSlot> existingSlots,
             UUID currentUserId) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         if (command.id() == null) {
             return new ExamBlueprintSlot(
                 sectionId,
@@ -370,8 +370,8 @@ public class UpdateExamBlueprintVersionUseCase implements IUseCase<UpdateExamBlu
         return value == null ? BigDecimal.ONE : value;
     }
 
-    private OffsetDateTime parseDateTime(String value) {
-        return value == null ? null : OffsetDateTime.parse(value);
+    private Instant parseDateTime(String value) {
+        return value == null ? null : Instant.parse(value);
     }
 
     private QuestionSelectionSpec selectionSpecOf(CreateQuestionSelectionSpecCommand input) {

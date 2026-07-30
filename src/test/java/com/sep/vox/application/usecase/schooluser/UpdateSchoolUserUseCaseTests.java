@@ -9,7 +9,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -220,7 +221,7 @@ public class UpdateSchoolUserUseCaseTests {
     }
 
     private User user(UUID id, String phone) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         return new User(id, new Email("user@school.edu.vn"), "hash",
             new Phone(phone), new FullName("Nguyen Van A"), null,
             new DateOfBirth(LocalDate.of(2005, 1, 15)), "123 Street", null,
@@ -228,7 +229,7 @@ public class UpdateSchoolUserUseCaseTests {
     }
 
     private SchoolUser schoolUser(UUID userSchoolId, UUID userId) {
-        var now = OffsetDateTime.now();
-        return new SchoolUser(userSchoolId, userId, now, now.plusYears(100));
+        var now = Instant.now();
+        return new SchoolUser(userSchoolId, userId, now, now.plus(36500, ChronoUnit.DAYS));
     }
 }

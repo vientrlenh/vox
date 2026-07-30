@@ -1,6 +1,6 @@
 package com.sep.vox.domain.model.scoringrule;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import com.sep.vox.domain.valueobject.scoringruleaction.ScoringRuleActionParams;
@@ -22,8 +22,8 @@ public class ScoringRule {
     private ScoringRuleSeverity severity;
     private boolean stopProcessing;
     private boolean isActive;
-    private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
     private UUID createdBy;
     private UUID updatedBy;
     
@@ -33,7 +33,7 @@ public class ScoringRule {
     public ScoringRule(UUID id, UUID policyId, String code, String name, String description,
             ScoringRuleConditionType conditionType, ScoringRuleConditionParams conditionParams,
             ScoringRuleActionType actionType, ScoringRuleActionParams actionParams, int priority, ScoringRuleSeverity severity, boolean stopProcessing, boolean isActive,
-            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.policyId = policyId;
         this.code = code;
@@ -56,7 +56,7 @@ public class ScoringRule {
     public ScoringRule(UUID policyId, String code, String name, String description,
             ScoringRuleConditionType conditionType, ScoringRuleConditionParams conditionParams,
             ScoringRuleActionType actionType, ScoringRuleActionParams actionParams, int priority, ScoringRuleSeverity severity, boolean stopProcessing, boolean isActive,
-            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.policyId = policyId;
         this.code = code;
         this.name = name;
@@ -180,19 +180,19 @@ public class ScoringRule {
         this.isActive = isActive;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 

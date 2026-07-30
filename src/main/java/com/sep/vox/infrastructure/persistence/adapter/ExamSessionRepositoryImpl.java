@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -70,14 +70,14 @@ public class ExamSessionRepositoryImpl implements ExamSessionRepository {
     }
 
     @Override
-    public List<ExamSession> findDeferredGradingCandidates(OffsetDateTime now) {
+    public List<ExamSession> findDeferredGradingCandidates(Instant now) {
         return springDataExamSessionRepository.findDeferredGradingCandidates(now).stream()
             .map(ExamSessionMapper::toDomain)
             .toList();
     }
 
     @Override
-    public List<ExamSession> findPastScheduleEndCandidates(OffsetDateTime threshold) {
+    public List<ExamSession> findPastScheduleEndCandidates(Instant threshold) {
         return springDataExamSessionRepository.findPastScheduleEndCandidates(threshold).stream()
             .map(ExamSessionMapper::toDomain)
             .toList();
@@ -123,7 +123,7 @@ public class ExamSessionRepositoryImpl implements ExamSessionRepository {
     }
 
     @Override
-    public List<ExamSession> findActiveByIdInAndSchoolId(Collection<UUID> ids, OffsetDateTime now, UUID schoolId) {
+    public List<ExamSession> findActiveByIdInAndSchoolId(Collection<UUID> ids, Instant now, UUID schoolId) {
         return springDataExamSessionRepository.findActiveByIdInAndSchoolId(ids, now, schoolId)
             .stream()
             .map(ExamSessionMapper::toDomain)

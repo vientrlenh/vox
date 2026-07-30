@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.question;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -76,7 +76,7 @@ public class DeleteQuestionUseCase implements IUseCase<DeleteQuestionCommand, De
 
         if (usedInExam) {
             question.setStatus(QuestionStatus.ARCHIVED);
-            question.setUpdatedAt(OffsetDateTime.now());
+            question.setUpdatedAt(Instant.now());
             question.setUpdatedBy(currentUserId);
             questionRepository.save(question);
             return new DeleteQuestionResponse(false, true);

@@ -1,7 +1,7 @@
 package com.sep.vox.application.query.dto;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -25,7 +25,7 @@ public record GradingTaskDetailInfo(
     BigDecimal currentTotalScore,
     /** Điểm lúc được giao — mốc để giáo viên biết mình đang sửa từ đâu. */
     BigDecimal scoreBefore,
-    OffsetDateTime deadlineAt,
+    Instant deadlineAt,
     boolean overdue,
     /** Cờ chỉ-đọc do BE quyết: chỉ true khi phân công còn ASSIGNED và bài đúng vòng. */
     boolean editable,

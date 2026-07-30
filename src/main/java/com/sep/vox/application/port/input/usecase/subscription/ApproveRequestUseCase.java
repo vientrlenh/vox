@@ -1,10 +1,12 @@
 package com.sep.vox.application.port.input.usecase.subscription;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.LocalDate;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.ApproveRequestCommand;
@@ -71,7 +73,7 @@ public class ApproveRequestUseCase implements IUseCase<ApproveRequestCommand, Su
         var plan = subscriptionPlanRepository.findById(request.getRequestedPlanId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
 
         // one ACTIVE subscription per school
         schoolSubscriptionRepository.findActiveBySchoolId(request.getSchoolId()).ifPresent(current -> {
@@ -79,7 +81,7 @@ public class ApproveRequestUseCase implements IUseCase<ApproveRequestCommand, Su
             schoolSubscriptionRepository.save(current);
         });
 
-        var startDate = now.toLocalDate();
+        var startDate = LocalDate.ofInstant(now, DateMapper.DEFAULT_INPUT_ZONE);
         var subscription = new SchoolSubscription(
             request.getSchoolId(),
             plan.getId(),

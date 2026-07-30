@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -43,11 +43,11 @@ public class TokenPurchaseJpaEntity {
     private String status;
 
     @Column(name = "purchased_at", nullable = false, updatable = false)
-    private OffsetDateTime purchasedAt;
+    private Instant purchasedAt;
 
     protected TokenPurchaseJpaEntity() {}
 
-    public TokenPurchaseJpaEntity(UUID id, UUID subscriptionId, BigDecimal totalAmount, String status, OffsetDateTime purchasedAt) {
+    public TokenPurchaseJpaEntity(UUID id, UUID subscriptionId, BigDecimal totalAmount, String status, Instant purchasedAt) {
         this.id = id;
         this.subscriptionId = subscriptionId;
         this.totalAmount = totalAmount;
@@ -87,11 +87,11 @@ public class TokenPurchaseJpaEntity {
         this.status = status;
     }
 
-    public OffsetDateTime getPurchasedAt() {
+    public Instant getPurchasedAt() {
         return purchasedAt;
     }
 
-    public void setPurchasedAt(OffsetDateTime purchasedAt) {
+    public void setPurchasedAt(Instant purchasedAt) {
         this.purchasedAt = purchasedAt;
     }
 }

@@ -7,6 +7,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -73,7 +74,7 @@ class GradingAssignmentEmailListenerTests {
             teacherId,
             "Kỳ thi giữa kỳ",
             GradingRoundType.INITIAL.name(),
-            OffsetDateTime.parse("2026-08-01T10:00:00Z")
+            OffsetDateTime.parse("2026-08-01T10:00:00Z").toInstant()
         );
     }
 

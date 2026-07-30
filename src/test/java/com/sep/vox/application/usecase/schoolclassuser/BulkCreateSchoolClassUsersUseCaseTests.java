@@ -11,7 +11,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -152,7 +153,7 @@ class BulkCreateSchoolClassUsersUseCaseTests {
         var existingUserId = UUID.randomUUID();
         mockValidContext(existingUserId);
         when(schoolClassUserRepository.findByUserIdInAndSchoolClassIdIn(anyCollection(), anyCollection()))
-            .thenReturn(List.of(new SchoolClassUser(existingUserId, classId, true, OffsetDateTime.now(), null, currentUserId)));
+            .thenReturn(List.of(new SchoolClassUser(existingUserId, classId, true, Instant.now(), null, currentUserId)));
 
         var response = useCase.execute(
             new BulkCreateSchoolClassUsersCommand(schoolId, classId, List.of(existingUserId)));
@@ -169,8 +170,8 @@ class BulkCreateSchoolClassUsersUseCaseTests {
         var membershipId = UUID.randomUUID();
         mockValidContext(returningUserId);
         var leftMembership = new SchoolClassUser(
-            membershipId, returningUserId, classId, false, OffsetDateTime.now().minusDays(5),
-            OffsetDateTime.now().minusDays(1), UUID.randomUUID());
+            membershipId, returningUserId, classId, false, Instant.now().minus(5, ChronoUnit.DAYS),
+            Instant.now().minus(1, ChronoUnit.DAYS), UUID.randomUUID());
         when(schoolClassUserRepository.findByUserIdInAndSchoolClassIdIn(anyCollection(), anyCollection()))
             .thenReturn(List.of(leftMembership));
         mockSaveAllEchoesInput();

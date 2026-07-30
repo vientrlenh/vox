@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -72,7 +72,7 @@ public class ExamGradingAssignmentRepositoryImpl implements ExamGradingAssignmen
     }
 
     @Override
-    public List<ExamGradingAssignment> findOverdue(OffsetDateTime now) {
+    public List<ExamGradingAssignment> findOverdue(Instant now) {
         return springDataExamGradingAssignmentRepository.findOverdue(now).stream()
             .map(ExamGradingAssignmentMapper::toDomain)
             .toList();
@@ -80,7 +80,7 @@ public class ExamGradingAssignmentRepositoryImpl implements ExamGradingAssignmen
 
     @Override
     public List<ExamGradingAssignment> findOverdueInSchool(
-            OffsetDateTime now, UUID schoolId, UUID examId, int limit) {
+            Instant now, UUID schoolId, UUID examId, int limit) {
         return springDataExamGradingAssignmentRepository
             .findOverdueInSchool(now, schoolId, examId, PageRequest.of(0, limit)).stream()
             .map(ExamGradingAssignmentMapper::toDomain)
@@ -88,7 +88,7 @@ public class ExamGradingAssignmentRepositoryImpl implements ExamGradingAssignmen
     }
 
     @Override
-    public List<ExamGradingAssignment> findDueForReminder(OffsetDateTime threshold) {
+    public List<ExamGradingAssignment> findDueForReminder(Instant threshold) {
         return springDataExamGradingAssignmentRepository.findDueForReminder(threshold).stream()
             .map(ExamGradingAssignmentMapper::toDomain)
             .toList();

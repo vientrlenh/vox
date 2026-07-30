@@ -17,7 +17,7 @@ import com.sep.vox.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 @Service
@@ -101,7 +101,7 @@ public class UpdateSchoolUseCase implements IUseCase<UpdateSchoolCommand, UUID> 
                 domain,
                 address,
                 command.studentCount(),
-                OffsetDateTime.now(),
+                Instant.now(),
                 currentUserId
         );
 

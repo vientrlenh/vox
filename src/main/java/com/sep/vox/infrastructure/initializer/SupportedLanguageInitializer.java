@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.initializer;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +33,7 @@ public class SupportedLanguageInitializer implements ApplicationRunner {
             LOGGER.info("Supported language already exist in database. Skip initialize");
             return;
         }
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var english = new SupportedLanguage(
             new LanguageCode(ENGLISH_CODE), 
             "Tiếng Anh", 

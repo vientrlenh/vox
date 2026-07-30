@@ -1,7 +1,7 @@
 package com.sep.vox.domain.dto;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public record RubricCriterionDto(
@@ -17,8 +17,8 @@ public record RubricCriterionDto(
         BigDecimal maxScore,
         int order,
         boolean isRequired,
-        OffsetDateTime createdAt,
-        OffsetDateTime updatedAt,
+        Instant createdAt,
+        Instant updatedAt,
         UUID createdBy,
         UUID updatedBy
 ) {}

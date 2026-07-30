@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examcandidate;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -72,7 +72,7 @@ public class UnblockExamCandidateUseCase implements IUseCase<UnblockExamCandidat
             throw new IllegalStateException("Kỳ thi đã công bố kết quả, không thể thay đổi nữa");
         }
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         candidate.setBlockedAt(null);
         candidate.setUpdatedAt(now);
         candidate.setUpdatedBy(moderationAccessService.getCurrentUserId());

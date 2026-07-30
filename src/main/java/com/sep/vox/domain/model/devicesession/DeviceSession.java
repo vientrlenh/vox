@@ -1,6 +1,6 @@
 package com.sep.vox.domain.model.devicesession;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class DeviceSession {
@@ -11,12 +11,12 @@ public class DeviceSession {
     private SessionPlatform platform;
     private String ipAddress;
     private String userAgent;
-    private OffsetDateTime revokedAt;
+    private Instant revokedAt;
 
     public DeviceSession() {}
 
     public DeviceSession(UUID id, UUID userId, String deviceId, String deviceName, SessionPlatform platform,
-            String ipAddress, String userAgent, OffsetDateTime revokedAt) {
+            String ipAddress, String userAgent, Instant revokedAt) {
         this.id = id;
         this.userId = userId;
         this.deviceId = deviceId;
@@ -28,7 +28,7 @@ public class DeviceSession {
     }
 
     public DeviceSession(UUID userId, String deviceId, String deviceName, SessionPlatform platform, String ipAddress,
-            String userAgent, OffsetDateTime revokedAt) {
+            String userAgent, Instant revokedAt) {
         this.userId = userId;
         this.deviceId = deviceId;
         this.deviceName = deviceName;
@@ -94,11 +94,11 @@ public class DeviceSession {
         this.userAgent = userAgent;
     }
 
-    public OffsetDateTime getRevokedAt() {
+    public Instant getRevokedAt() {
         return revokedAt;
     }
 
-    public void setRevokedAt(OffsetDateTime revokedAt) {
+    public void setRevokedAt(Instant revokedAt) {
         this.revokedAt = revokedAt;
     }
 

@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.scoringrule;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -133,7 +133,7 @@ public class UpdateSchoolScoringRuleUseCase implements IUseCase<UpdateSchoolScor
         rule.setSeverity(command.severity());
         rule.setStopProcessing(command.stopProcessing());
         rule.setActive(command.isActive());
-        rule.setUpdatedAt(OffsetDateTime.now());
+        rule.setUpdatedAt(Instant.now());
         rule.setUpdatedBy(currentUserId);
 
         return scoringRuleRepository.save(rule).getId();

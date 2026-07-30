@@ -1,7 +1,7 @@
 package com.sep.vox.domain.model.school;
 
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class SchoolGrade {
@@ -13,15 +13,15 @@ public class SchoolGrade {
     private LocalDate startDate;
     private LocalDate endDate;
     private SchoolGradeStatus status;
-    private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
     private UUID createdBy;
     private UUID updatedBy;
 
     public SchoolGrade() {}
 
     public SchoolGrade(UUID id, UUID schoolGradeLevelId, String code, String name, String description, LocalDate startDate, LocalDate endDate, SchoolGradeStatus status,
-            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.schoolGradeLevelId = schoolGradeLevelId;
         this.code = code;
@@ -36,8 +36,8 @@ public class SchoolGrade {
         this.updatedBy = updatedBy;
     }
 
-    public SchoolGrade(UUID schoolGradeLevelId, String code, String name, String description, LocalDate startDate, LocalDate endDate, SchoolGradeStatus status, OffsetDateTime createdAt,
-            OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+    public SchoolGrade(UUID schoolGradeLevelId, String code, String name, String description, LocalDate startDate, LocalDate endDate, SchoolGradeStatus status, Instant createdAt,
+            Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.schoolGradeLevelId = schoolGradeLevelId;
         this.code = code;
         this.name = name;
@@ -91,19 +91,19 @@ public class SchoolGrade {
         this.status = status;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 

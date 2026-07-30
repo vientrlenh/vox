@@ -38,7 +38,7 @@ public class UserGraphQlDataLoaderConfig {
             Mono.fromSupplier(() -> userRepository.findByIdIn(userIds)
                 .stream()
                 .map(UserDtoMapper::toUserDto)
-                .collect(Collectors.toMap(UserDto::id, user -> user)))
+                .collect(Collectors.toMap(user -> user.id(), user -> user)))
         );
 
         registry.<UserRolesKey, List<RoleDto>>forName("rolesByUser")

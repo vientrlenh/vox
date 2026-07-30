@@ -77,8 +77,8 @@ public class AutoFillExamCandidatesUseCase
             .filter(schedule -> ASSIGNABLE_STATUSES.contains(schedule.getStatus()))
             .filter(schedule -> requestedIds == null || requestedIds.contains(schedule.getId()))
             .sorted(Comparator
-                .comparing(ExamSchedule::getStartDate, Comparator.nullsLast(Comparator.naturalOrder()))
-                .thenComparing(ExamSchedule::getId))
+                .comparing((ExamSchedule schedule) -> schedule.getStartDate(), Comparator.nullsLast(Comparator.naturalOrder()))
+                .thenComparing(schedule -> schedule.getId()))
             .toList();
 
         // BƯỚC 1 — Khoá TRƯỚC toàn bộ ca mục tiêu theo thứ tự ổn định, CHƯA đụng candidate.

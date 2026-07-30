@@ -24,7 +24,6 @@ import com.sep.vox.domain.model.subscription.InvoiceSourceType;
 import com.sep.vox.domain.model.subscription.InvoiceStatus;
 import com.sep.vox.domain.model.subscription.PaymentMethod;
 import com.sep.vox.domain.model.subscription.PurchaseStatus;
-import com.sep.vox.domain.model.subscription.SubscriptionQuota;
 import com.sep.vox.domain.model.subscription.SubscriptionStatus;
 import com.sep.vox.domain.model.subscription.TokenPurchase;
 import com.sep.vox.domain.model.subscription.TokenPurchaseItem;
@@ -85,7 +84,7 @@ public class BuyTokensUseCase implements IUseCase<BuyTokensCommand, TokenPurchas
 
         var planQuotas = planQuotaRepository.findAllByPlanId(subscription.getPlanId());
         var subscriptionQuotas = subscriptionQuotaRepository.findAllBySubscriptionId(subscription.getId()).stream()
-            .collect(Collectors.toMap(SubscriptionQuota::getQuotaType, Function.identity()));
+            .collect(Collectors.toMap(quota -> quota.getQuotaType(), Function.identity()));
         var now = OffsetDateTime.now();
         var total = BigDecimal.ZERO;
 

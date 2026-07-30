@@ -4,6 +4,7 @@ import java.util.UUID;
 
 public record FlagExamSessionCommand(
     UUID sessionId,
+    boolean flagged,
     String reason
 ) {
 }

@@ -135,7 +135,10 @@ public class GetExamSessionPaperUseCase implements IUseCase<ViewExamSessionPaper
         var schedule = candidate.getScheduleId() == null
             ? null
             : examScheduleRepository.findById(candidate.getScheduleId()).orElse(null);
-        var durationSeconds = estimateDurationSeconds(paperQuestions);
+        var calculatedDurationSeconds = estimateDurationSeconds(paperQuestions);
+        var durationSeconds = paper.getTimeDurationSeconds() == null
+            ? calculatedDurationSeconds
+            : paper.getTimeDurationSeconds();
         return new StudentExamPaperResponse(
             exam.getId(),
             session.getPaperId(),
@@ -149,6 +152,8 @@ public class GetExamSessionPaperUseCase implements IUseCase<ViewExamSessionPaper
             schedule == null
                 ? (exam.getCloseAt() == null ? null : exam.getCloseAt().toString())
                 : (schedule.getEndDate() == null ? null : schedule.getEndDate().toString()),
+            session.getStartedAt() == null ? null : session.getStartedAt().toString(),
+            session.getRemainingSeconds(),
             paperQuestions
         );
     }
@@ -163,7 +168,7 @@ public class GetExamSessionPaperUseCase implements IUseCase<ViewExamSessionPaper
 
     private static int estimateDurationSeconds(java.util.List<StudentExamPaperQuestionResponse> paperQuestions) {
         return paperQuestions.stream()
-            .map(StudentExamPaperQuestionResponse::question)
+            .map(r -> r.question())
             .mapToInt(question -> question.preparationTimeSeconds() + question.maxResponseSeconds())
             .sum();
     }

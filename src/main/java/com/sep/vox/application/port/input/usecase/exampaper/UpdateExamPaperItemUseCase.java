@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateExamPaperItemCommand;
+import com.sep.vox.application.port.input.service.ExamTimeQuotaGuardService;
 import com.sep.vox.application.port.input.service.RecalculateExamTimeDurationService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.usecase.exam.ExamQuestionSecureLockService;
@@ -41,6 +42,7 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
     private final QuestionCollaboratorRepository questionCollaboratorRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final ExamQuestionSecureLockService examQuestionSecureLockService;
+    private final ExamTimeQuotaGuardService examTimeQuotaGuardService;
     private final RecalculateExamTimeDurationService recalculateExamTimeDurationService;
     private final UserContextPort userContextPort;
 
@@ -53,6 +55,7 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
             QuestionCollaboratorRepository questionCollaboratorRepository,
             SchoolUserRepository schoolUserRepository,
             ExamQuestionSecureLockService examQuestionSecureLockService,
+            ExamTimeQuotaGuardService examTimeQuotaGuardService,
             RecalculateExamTimeDurationService recalculateExamTimeDurationService,
             UserContextPort userContextPort) {
         this.examRepository = examRepository;
@@ -63,6 +66,7 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
         this.questionCollaboratorRepository = questionCollaboratorRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.examQuestionSecureLockService = examQuestionSecureLockService;
+        this.examTimeQuotaGuardService = examTimeQuotaGuardService;
         this.recalculateExamTimeDurationService = recalculateExamTimeDurationService;
         this.userContextPort = userContextPort;
     }
@@ -118,6 +122,13 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
             }
         }
 
+        var candidateDurationSeconds = calculatePaperDurationAfterQuestionChange(paper.getId(), item.getId(), question);
+        examTimeQuotaGuardService.requireWithinPlan(
+            exam.getSchoolId(),
+            candidateDurationSeconds,
+            "Mã đề " + paper.getCode()
+        );
+
         item.setQuestionId(question.getId());
         var savedItem = examPaperItemRepository.save(item);
 
@@ -137,5 +148,26 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
 
         recalculateExamTimeDurationService.recalculate(paper.getExamId());
         return ExamPaperItemDtoMapper.toDto(savedItem);
+    }
+
+    private int calculatePaperDurationAfterQuestionChange(
+            java.util.UUID paperId,
+            java.util.UUID itemId,
+            com.sep.vox.domain.model.question.Question replacementQuestion) {
+        var totalSeconds = 0;
+        for (var candidateItem : examPaperItemRepository.findByPaperId(paperId)) {
+            if (candidateItem.getId().equals(itemId)) {
+                totalSeconds += replacementQuestion.getPreparationTimeSeconds() + replacementQuestion.getMaxResponseSeconds();
+                continue;
+            }
+            if (candidateItem.getQuestionId() == null) {
+                continue;
+            }
+            var question = questionRepository.findById(candidateItem.getQuestionId()).orElse(null);
+            if (question != null) {
+                totalSeconds += question.getPreparationTimeSeconds() + question.getMaxResponseSeconds();
+            }
+        }
+        return totalSeconds;
     }
 }

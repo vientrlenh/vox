@@ -128,7 +128,7 @@ public class ExamController {
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<ExamDto>> update(
-            @PathVariable UUID id,
+            @PathVariable("id") UUID id,
             @Valid @RequestBody UpdateExamRequest request) {
         var data = updateExamUseCase.execute(UpdateExamCommandMapper.fromRequest(id, request));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật bài kiểm tra thành công", data));
@@ -137,7 +137,7 @@ public class ExamController {
     @PatchMapping("/{id}/blueprint")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<ExamDto>> attachBlueprint(
-            @PathVariable UUID id,
+            @PathVariable("id") UUID id,
             @Valid @RequestBody AttachExamBlueprintRequest request) {
         var data = attachExamBlueprintUseCase.execute(AttachExamBlueprintCommandMapper.fromRequest(id, request));
         return ResponseEntity.ok(ApiResponse.success("Gắn blueprint vào bài kiểm tra thành công", data));
@@ -146,7 +146,7 @@ public class ExamController {
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<ExamDto>> updateStatus(
-            @PathVariable UUID id,
+            @PathVariable("id") UUID id,
             @Valid @RequestBody UpdateExamStatusRequest request) {
         var data = updateExamStatusUseCase.execute(UpdateExamStatusCommandMapper.fromRequest(id, request));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái bài kiểm tra thành công", data));
@@ -155,7 +155,7 @@ public class ExamController {
     @PatchMapping("/{id}/delivery-mode")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<ExamDto>> updateDeliveryMode(
-            @PathVariable UUID id,
+            @PathVariable("id") UUID id,
             @Valid @RequestBody UpdateExamDeliveryModeRequest request) {
         var data = updateExamDeliveryModeUseCase.execute(UpdateExamDeliveryModeCommandMapper.fromRequest(id, request));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật hình thức làm bài thành công", data));
@@ -171,7 +171,7 @@ public class ExamController {
     @PostMapping("/{examId}/members")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<ExamMemberDto>> createMember(
-            @PathVariable UUID examId,
+            @PathVariable("examId") UUID examId,
             @Valid @RequestBody CreateExamMemberRequest request) {
         var data = createExamMemberUseCase.execute(CreateExamMemberCommandMapper.fromRequest(examId, request));
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -181,8 +181,8 @@ public class ExamController {
     @PutMapping("/{examId}/members/{memberId}")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<ExamMemberDto>> updateMember(
-            @PathVariable UUID examId,
-            @PathVariable UUID memberId,
+            @PathVariable("examId") UUID examId,
+            @PathVariable("memberId") UUID memberId,
             @Valid @RequestBody UpdateExamMemberRequest request) {
         var data = updateExamMemberUseCase.execute(UpdateExamMemberCommandMapper.fromRequest(examId, memberId, request));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật collaborator cho bài kiểm tra thành công", data));
@@ -191,8 +191,8 @@ public class ExamController {
     @DeleteMapping("/{examId}/members/{memberId}")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteMember(
-            @PathVariable UUID examId,
-            @PathVariable UUID memberId) {
+            @PathVariable("examId") UUID examId,
+            @PathVariable("memberId") UUID memberId) {
         deleteExamMemberUseCase.execute(new DeleteExamMemberCommand(examId, memberId));
         return ResponseEntity.ok(ApiResponse.success("Xóa collaborator khỏi bài kiểm tra thành công"));
     }
@@ -200,7 +200,7 @@ public class ExamController {
     @PatchMapping("/{examId}/secure-pool/status")
     @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<ApiResponse<ExamSecurePoolDto>> updateSecurePoolStatus(
-            @PathVariable UUID examId,
+            @PathVariable("examId") UUID examId,
             @Valid @RequestBody UpdateExamSecurePoolStatusRequest request) {
         var data = updateExamSecurePoolStatusUseCase.execute(
             UpdateExamSecurePoolStatusCommandMapper.fromRequest(examId, request)
@@ -219,7 +219,7 @@ public class ExamController {
     @PostMapping("/{examId}/otp/verify")
     @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<ApiResponse<?>> verifyExamOtp(
-            @PathVariable UUID examId,
+            @PathVariable("examId") UUID examId,
             @Valid @RequestBody VerifyExamOtpRequest request) {
         var data = verifyExamScheduleOtpUseCase.execute(new VerifyExamScheduleOtpCommand(examId, request.otp()));
         return ResponseEntity.ok(ApiResponse.success("Xác thực OTP thành công", data));
@@ -227,7 +227,7 @@ public class ExamController {
 
     @PostMapping("/{examId}/class-test/start")
     @PreAuthorize("hasRole('STUDENT')")
-    public ResponseEntity<ApiResponse<?>> startClassTest(@PathVariable UUID examId) {
+    public ResponseEntity<ApiResponse<?>> startClassTest(@PathVariable("examId") UUID examId) {
         var data = startClassTestSessionUseCase.execute(new StartClassTestSessionCommand(examId));
         return ResponseEntity.ok(ApiResponse.success("Bắt đầu bài kiểm tra thành công", data));
     }

@@ -53,6 +53,12 @@ public class PayOSService implements PayOSPort {
 
     @Override
     public PaymentLinkResult createPaymentLink(long orderCode, BigDecimal amount, String description) {
+        return createPaymentLink(orderCode, amount, description, returnUrl, cancelUrl);
+    }
+
+    @Override
+    public PaymentLinkResult createPaymentLink(
+            long orderCode, BigDecimal amount, String description, String returnUrl, String cancelUrl) {
         var paymentLinkRequest = CreatePaymentLinkRequest.builder()
             .orderCode(orderCode)
             .amount(amount.longValueExact())

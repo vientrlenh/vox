@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.sep.vox.domain.model.exam.ExamRequiredStreamType;
 import com.sep.vox.domain.model.exam.ExamSession;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
 
@@ -21,7 +22,27 @@ public interface ExamSessionRepository {
     boolean existsById(UUID id);
     ExamSession save(ExamSession session);
     void deleteById(UUID id);
-    Optional<ExamSession> findByIdAndInProgress(UUID id);
+    /**
+     * Phiên thi đang ở một trong các trạng thái {@link ExamSessionStatus#RESUMABLE}.
+     */
+    Optional<ExamSession> findByIdAndResumable(UUID id);
     Optional<ExamSession> findActiveByExamIdAndCandidateId(UUID examId, UUID candidateId);
     List<ExamSession> findActiveByIdInAndSchoolId(Collection<UUID> ids, OffsetDateTime now, UUID schoolId);
+
+    /** Atomic conditional transition: only succeeds if current status equals {@code from}. Returns false if another writer already moved it. */
+    boolean tryTransitionStatus(UUID sessionId, ExamSessionStatus from, ExamSessionStatus to);
+
+    /**
+     * Chốt loại stream cho phiên thi nếu chưa chốt.
+     *
+     * @return 1 nếu ghi được, 0 nếu phiên thi đã chốt loại stream từ trước.
+     */
+    int lockChosenStreamType(UUID id, ExamRequiredStreamType chosenStreamType);
+
+    /**
+     * Ghi checkpoint đồng hồ đếm ngược, chỉ khi giá trị mới nhỏ hơn giá trị đang có.
+     *
+     * @return 1 nếu ghi được, 0 nếu bị từ chối vì không nhỏ hơn.
+     */
+    int checkpointRemainingSeconds(UUID id, int remainingSeconds);
 }

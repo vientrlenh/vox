@@ -10,13 +10,18 @@ public record ExamAttemptEvaluationRequestedExternalEvent(
     String answerId,
     String questionId,
     Payload payload
-) {
+) implements HasPartitionKey {
     public ExamAttemptEvaluationRequestedExternalEvent(
             String examAttemptId,
             String answerId,
             String questionId,
             Payload payload) {
         this("ExamAttemptEvaluationRequested", 1, examAttemptId, answerId, questionId, payload);
+    }
+
+    @Override
+    public String partitionKey() {
+        return answerId();
     }
 
     public record Payload(
@@ -61,6 +66,10 @@ public record ExamAttemptEvaluationRequestedExternalEvent(
         String frameworkCode,
         String frameworkCriterionName,
         String frameworkCriterionDescription,
+        String targetBandId,
+        String targetBandCode,
+        String targetBandLabel,
+        Boolean targetBandOnly,
         Double rubricWeight,
         Double rubricMinScore,
         Double rubricMaxScore,
@@ -75,7 +84,8 @@ public record ExamAttemptEvaluationRequestedExternalEvent(
         Double scoreMax,
         String descriptor,
         List<String> positiveSignals,
-        List<String> negativeSignals
+        List<String> negativeSignals,
+        Integer order
     ) {
     }
 

@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.rubricschool;
 
+import com.sep.vox.domain.service.rubric.ScoreRangeValidator;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
@@ -20,6 +21,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.HashSet;
 import java.util.List;
@@ -115,6 +117,13 @@ public class CreateSchoolRubricCriterionUseCase implements IUseCase<CreateSchool
             if (cCmd.minScore().compareTo(cCmd.maxScore()) > 0) {
                 throw new IllegalArgumentException("Tiêu chí '" + safeCode + "': Điểm sàn không được lớn hơn điểm trần.");
             }
+            if (cCmd.weight() != null && cCmd.weight().compareTo(BigDecimal.ZERO) < 0) {
+                throw new IllegalArgumentException("Tiêu chí '" + safeCode + "': Trọng số (weight) không được là số âm.");
+            }
+
+            // Validate nằm trong thang điểm tổng của RubricVersion
+            ScoreRangeValidator.assertWithinScale(version.getScoringScaleMin(), version.getScoringScaleMax(),
+                    cCmd.minScore(), cCmd.maxScore(), safeName);
 
             // TẠO VALUE OBJECT CHO EXAMPLES (Đã fix lỗi .values())
             RubricCriterionExamples examplesVO = null;

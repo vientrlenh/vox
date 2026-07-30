@@ -21,7 +21,9 @@ public final class CreateExamCommandMapper {
             request.maxAttempt(),
             request.examTimeDurationSecond(),
             request.resultDecisionMethod(),
-            request.requiresOtp()
+            request.requiresOtp(), 
+            request.requiredStreamTypes(), 
+            request.streamTypePermission()
         );
     }
 }

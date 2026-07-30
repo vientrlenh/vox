@@ -80,7 +80,7 @@ public class AssignExamPapersUseCase implements IUseCase<AssignExamPapersCommand
             .map(assignment -> assignment.candidateId())
             .collect(Collectors.toCollection(HashSet::new));
         var candidatesById = examCandidateRepository.findByIdInAndExamId(candidateIds, exam.getId()).stream()
-            .collect(Collectors.toMap(ExamCandidate::getId, Function.identity()));
+            .collect(Collectors.toMap(candidate -> candidate.getId(), Function.identity()));
 
         // Validate all-or-nothing: mọi cặp phải hợp lệ trước khi ghi bất kỳ thứ gì.
         for (var assignment : input.assignments()) {

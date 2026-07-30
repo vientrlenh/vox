@@ -19,9 +19,9 @@ public record ConfidenceCaseSignals(
     BigDecimal cPfBranch,
     BigDecimal cGrammar,
     BigDecimal cVocabulary,
-    BigDecimal cDiscourse,
+    BigDecimal cCoherence,
     BigDecimal grammarScoreDelta,
     BigDecimal vocabularyScoreDelta,
-    BigDecimal discourseScoreDelta
+    BigDecimal coherenceScoreDelta
 ) {
 }

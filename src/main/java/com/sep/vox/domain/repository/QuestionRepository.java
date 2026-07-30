@@ -1,5 +1,6 @@
 package com.sep.vox.domain.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -13,6 +14,11 @@ import com.sep.vox.domain.model.question.QuestionType;
 public interface QuestionRepository {
     Question save(Question question);
     Optional<Question> findById(UUID id);
+    /**
+     * Lookup thẳng theo id, KHÔNG check quyền — chỉ dùng ở những nơi quyền xem đã được
+     * xác nhận qua parent (vd: đã pass hasAccess của blueprint/exam chứa câu hỏi này rồi).
+     */
+    List<Question> findByIdIn(Collection<UUID> ids);
     PageResult<Question> findAccessible(
         UUID currentUserId,
         UUID currentSchoolId,

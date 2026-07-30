@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.exam.ExamBlueprintSection;
@@ -14,6 +16,8 @@ import com.sep.vox.infrastructure.persistence.repository.SpringDataExamBlueprint
 
 @Repository
 public class ExamBlueprintSectionRepositoryImpl implements ExamBlueprintSectionRepository {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ExamBlueprintSectionRepositoryImpl.class);
 
     private final SpringDataExamBlueprintSectionRepository springDataExamBlueprintSectionRepository;
 
@@ -45,9 +49,13 @@ public class ExamBlueprintSectionRepositoryImpl implements ExamBlueprintSectionR
         if (blueprintVersionIds.isEmpty()) {
             return List.of();
         }
-        return springDataExamBlueprintSectionRepository.findByBlueprintVersionIdInOrderByOrderAsc(blueprintVersionIds).stream()
+        var startedAt = System.nanoTime();
+        var result = springDataExamBlueprintSectionRepository.findByBlueprintVersionIdInOrderByOrderAsc(blueprintVersionIds).stream()
             .map(ExamBlueprintSectionMapper::toDomain)
             .toList();
+        LOGGER.info("[blueprint-perf] repo ExamBlueprintSectionRepositoryImpl.findByBlueprintVersionIdIn versionIds={} tookMs={}",
+            blueprintVersionIds.size(), (System.nanoTime() - startedAt) / 1_000_000);
+        return result;
     }
 
     @Override

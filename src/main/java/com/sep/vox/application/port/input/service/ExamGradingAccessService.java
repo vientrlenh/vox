@@ -107,15 +107,7 @@ public class ExamGradingAccessService {
 
     /** School admin cùng trường với bài thi. Dùng cho gán / đổi / gỡ phân công. */
     public void authorizeSchoolAdmin(UUID schoolId, UUID currentUserId) {
-        if (userContextPort.isSystemAdmin()) {
-            return;
-        }
-        var isSchoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
-            .map(schoolUser -> schoolUser.getSchoolId())
-            .orElse(null);
-        if (isSchoolAdmin && currentSchoolId != null && currentSchoolId.equals(schoolId)) {
+        if (isSchoolAdminOfSchool(schoolId, currentUserId)) {
             return;
         }
         throw new ForbiddenException("BẢO MẬT: Bạn không có quyền phân công chấm bài của trường này.");
@@ -124,12 +116,29 @@ public class ExamGradingAccessService {
     /**
      * Chính giáo viên được gán bài này. Đây là chốt phân quyền duy nhất cho mọi
      * thao tác chấm — kể cả gỡ cờ và đánh INVALID.
+     *
+     * <p>School admin KHÔNG được đi cửa này: quyền chấm đến từ chính dòng phân công,
+     * và vòng chấm ({@code roundType}) — thứ quyết định hành động nào hợp lệ và bài
+     * được chuyển sang trạng thái nào — cũng nằm ở đó. Nhà trường muốn chấm thì tự
+     * gán qua {@code authorizeSchoolAdmin}, để lại một dòng phân công có vòng rõ ràng.
      */
     public void authorizeAssignedTeacher(GradingContext context, UUID currentUserId) {
         var assignment = context.assignment();
         if (assignment == null || !currentUserId.equals(assignment.getTeacherId())) {
             throw new ForbiddenException("BẢO MẬT: Bạn không được phân công chấm bài thi này.");
         }
+    }
+
+    private boolean isSchoolAdminOfSchool(UUID schoolId, UUID currentUserId) {
+        if (userContextPort.isSystemAdmin()) {
+            return true;
+        }
+        var isSchoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
+        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+            .map(schoolUser -> schoolUser.getSchoolId())
+            .orElse(null);
+        return isSchoolAdmin && currentSchoolId != null && currentSchoolId.equals(schoolId);
     }
 
     /** Trường của người đang đăng nhập — mọi màn phân công đều bị giới hạn trong đó. */

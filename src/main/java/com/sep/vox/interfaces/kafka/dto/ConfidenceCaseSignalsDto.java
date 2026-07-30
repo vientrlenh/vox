@@ -1,5 +1,7 @@
 package com.sep.vox.interfaces.kafka.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+
 public record ConfidenceCaseSignalsDto(
     Double cAsrLog,
     Double qSnr,
@@ -13,9 +15,11 @@ public record ConfidenceCaseSignalsDto(
     Double cPfBranch,
     Double cGrammar,
     Double cVocabulary,
-    Double cDiscourse,
+    @JsonAlias("cDiscourse")
+    Double cCoherence,
     Double grammarScoreDelta,
     Double vocabularyScoreDelta,
-    Double discourseScoreDelta
+    @JsonAlias("discourseScoreDelta")
+    Double coherenceScoreDelta
 ) {
 }

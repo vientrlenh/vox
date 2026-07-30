@@ -22,23 +22,20 @@ import org.springframework.transaction.TransactionStatus;
 
 import com.sep.vox.application.port.input.service.ImportCommitResult;
 import com.sep.vox.application.port.input.service.SchoolUserImportCommitHandler;
-import com.sep.vox.application.port.output.EventPublisherPort;
-import com.sep.vox.application.port.output.PasswordSetUpTokenPort;
-import com.sep.vox.application.response.output.GeneratedPasswordSetUpToken;
 import com.sep.vox.application.support.FakeJsonSerializationPort;
 import com.sep.vox.domain.model.importfile.ImportRow;
 import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
-import com.sep.vox.domain.model.passwordsetuptoken.PasswordSetUpToken;
+import com.sep.vox.domain.model.outbox.Outbox;
 import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.Role;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserRole;
 import com.sep.vox.domain.model.user.UserStatus;
-import com.sep.vox.domain.repository.PasswordSetUpTokenRepository;
+import com.sep.vox.domain.repository.OutboxRepository;
 import com.sep.vox.domain.repository.RoleRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -54,9 +51,7 @@ class SchoolUserImportCommitHandlerTests {
     private RoleRepository roleRepository;
     private SchoolUserRepository schoolUserRepository;
     private SchoolRepository schoolRepository;
-    private PasswordSetUpTokenPort passwordSetUpTokenPort;
-    private PasswordSetUpTokenRepository passwordSetUpTokenRepository;
-    private EventPublisherPort eventPublisherPort;
+    private OutboxRepository outboxRepository;
     private FakeJsonSerializationPort jsonSerializationPort;
     private PlatformTransactionManager txManager;
     private SchoolUserImportCommitHandler handler;
@@ -68,9 +63,7 @@ class SchoolUserImportCommitHandlerTests {
         roleRepository = mock(RoleRepository.class);
         schoolUserRepository = mock(SchoolUserRepository.class);
         schoolRepository = mock(SchoolRepository.class);
-        passwordSetUpTokenPort = mock(PasswordSetUpTokenPort.class);
-        passwordSetUpTokenRepository = mock(PasswordSetUpTokenRepository.class);
-        eventPublisherPort = mock(EventPublisherPort.class);
+        outboxRepository = mock(OutboxRepository.class);
         jsonSerializationPort = new FakeJsonSerializationPort();
         txManager = mock(PlatformTransactionManager.class);
         when(txManager.getTransaction(any())).thenReturn(mock(TransactionStatus.class));
@@ -80,9 +73,7 @@ class SchoolUserImportCommitHandlerTests {
             roleRepository,
             schoolUserRepository,
             schoolRepository,
-            passwordSetUpTokenPort,
-            passwordSetUpTokenRepository,
-            eventPublisherPort,
+            outboxRepository,
             jsonSerializationPort,
             txManager
         );
@@ -104,8 +95,6 @@ class SchoolUserImportCommitHandlerTests {
         when(userRepository.save(any())).thenReturn(savedUser);
         when(userRoleRepository.save(any(UserRole.class))).thenAnswer(inv -> inv.getArgument(0));
         when(schoolUserRepository.save(any(SchoolUser.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(passwordSetUpTokenPort.generateToken()).thenReturn(new GeneratedPasswordSetUpToken("rawToken", "hashedToken"));
-        when(passwordSetUpTokenRepository.save(any(PasswordSetUpToken.class))).thenAnswer(inv -> inv.getArgument(0));
 
         ImportCommitResult result = handler.commit(session(sessionId, schoolId, createdBy), rows);
 
@@ -114,7 +103,7 @@ class SchoolUserImportCommitHandlerTests {
         assertThat(result.invalid()).isZero();
         verify(userRepository).save(any(User.class));
         verify(schoolUserRepository).save(any(SchoolUser.class));
-        verify(eventPublisherPort).publish(any());
+        verify(outboxRepository).save(any(Outbox.class));
         assertThat(rows.get(0).getStatus()).isEqualTo(ImportRowStatus.IMPORTED);
     }
 
@@ -134,14 +123,12 @@ class SchoolUserImportCommitHandlerTests {
         when(userRepository.save(any())).thenReturn(savedUser);
         when(userRoleRepository.save(any(UserRole.class))).thenAnswer(inv -> inv.getArgument(0));
         when(schoolUserRepository.save(any(SchoolUser.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(passwordSetUpTokenPort.generateToken()).thenReturn(new GeneratedPasswordSetUpToken("rawToken", "hashedToken"));
-        when(passwordSetUpTokenRepository.save(any(PasswordSetUpToken.class))).thenAnswer(inv -> inv.getArgument(0));
 
         ImportCommitResult result = handler.commit(session(sessionId, schoolId, createdBy), rows);
 
         assertThat(result.created()).isEqualTo(1L);
         verify(schoolUserRepository).save(any(SchoolUser.class));
-        verify(eventPublisherPort).publish(any());
+        verify(outboxRepository).save(any(Outbox.class));
     }
 
     @Test
@@ -167,7 +154,7 @@ class SchoolUserImportCommitHandlerTests {
         assertThat(result.updated()).isEqualTo(1L);
         assertThat(result.invalid()).isZero();
         verify(userRepository).save(existingUser);
-        verify(eventPublisherPort, never()).publish(any());
+        verify(outboxRepository, never()).save(any(Outbox.class));
         verify(schoolUserRepository).save(any(SchoolUser.class));
     }
 
@@ -200,7 +187,7 @@ class SchoolUserImportCommitHandlerTests {
         assertThat(existingSchoolUser.getStartDate()).isEqualTo(OffsetDateTime.parse("2025-09-01T00:00:00Z"));
         assertThat(existingSchoolUser.getEndDate()).isEqualTo(OffsetDateTime.parse("2026-06-30T00:00:00Z"));
         verify(schoolUserRepository).save(existingSchoolUser);
-        verify(eventPublisherPort, never()).publish(any());
+        verify(outboxRepository, never()).save(any(Outbox.class));
     }
 
     @Test
@@ -225,7 +212,7 @@ class SchoolUserImportCommitHandlerTests {
         assertThat(result.created()).isZero();
         assertThat(result.updated()).isEqualTo(1L);
         verify(schoolUserRepository).save(any(SchoolUser.class));
-        verify(eventPublisherPort, never()).publish(any());
+        verify(outboxRepository, never()).save(any(Outbox.class));
     }
 
     @Test
@@ -285,8 +272,6 @@ class SchoolUserImportCommitHandlerTests {
         when(userRepository.save(any())).thenReturn(savedUser);
         when(userRoleRepository.save(any(UserRole.class))).thenAnswer(inv -> inv.getArgument(0));
         when(schoolUserRepository.save(any(SchoolUser.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(passwordSetUpTokenPort.generateToken()).thenReturn(new GeneratedPasswordSetUpToken("raw", "hash"));
-        when(passwordSetUpTokenRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         ImportCommitResult result = handler.commit(session(sessionId, schoolId, createdBy), rows);
 
@@ -341,8 +326,6 @@ class SchoolUserImportCommitHandlerTests {
         when(userRepository.save(any())).thenReturn(savedUser);
         when(userRoleRepository.save(any(UserRole.class))).thenAnswer(inv -> inv.getArgument(0));
         when(schoolUserRepository.save(any(SchoolUser.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(passwordSetUpTokenPort.generateToken()).thenReturn(new GeneratedPasswordSetUpToken("raw", "hash"));
-        when(passwordSetUpTokenRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         ImportCommitResult result = handler.commit(session(sessionId, schoolId, createdBy), rows);
 
@@ -382,7 +365,7 @@ class SchoolUserImportCommitHandlerTests {
         verify(userRepository, never()).save(any());
         verify(userRoleRepository, never()).save(any(UserRole.class));
         verify(schoolUserRepository, never()).save(any(SchoolUser.class));
-        verify(eventPublisherPort, never()).publish(any());
+        verify(outboxRepository, never()).save(any(Outbox.class));
     }
 
     @Test
@@ -406,8 +389,6 @@ class SchoolUserImportCommitHandlerTests {
             .thenReturn(savedUser);
         when(userRoleRepository.save(any(UserRole.class))).thenAnswer(inv -> inv.getArgument(0));
         when(schoolUserRepository.save(any(SchoolUser.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(passwordSetUpTokenPort.generateToken()).thenReturn(new GeneratedPasswordSetUpToken("raw", "hash"));
-        when(passwordSetUpTokenRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         ImportCommitResult result = handler.commit(session(sessionId, schoolId, createdBy), rows);
 
@@ -443,8 +424,6 @@ class SchoolUserImportCommitHandlerTests {
         when(userRepository.save(any())).thenReturn(savedUser);
         when(userRoleRepository.save(any(UserRole.class))).thenAnswer(inv -> inv.getArgument(0));
         when(schoolUserRepository.save(any(SchoolUser.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(passwordSetUpTokenPort.generateToken()).thenReturn(new GeneratedPasswordSetUpToken("raw", "hash"));
-        when(passwordSetUpTokenRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         ImportCommitResult result = handler.commit(session(sessionId, schoolId, createdBy), rows);
 

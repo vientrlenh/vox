@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
+import java.util.List;
 import java.util.UUID;
 
 import com.sep.vox.domain.model.exam.ResultDecisionMethod;
@@ -33,6 +34,10 @@ public record CreateExamRequest(
 
     ResultDecisionMethod resultDecisionMethod,
 
-    Boolean requiresOtp
+    Boolean requiresOtp, 
+
+    List<String> requiredStreamTypes, 
+
+    String streamTypePermission
 ) {
 }

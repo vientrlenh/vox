@@ -49,10 +49,10 @@ public class ExamAppealController {
     @QueryMapping(name = "appeals")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<AppealSummaryInfo> appeals(
-            @Argument("status") String status,
-            @Argument("keyword") String keyword,
-            @Argument("page") Integer page,
-            @Argument("size") Integer size) {
+            @Argument(name = "status") String status,
+            @Argument(name = "keyword") String keyword,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
         return viewExamAppealsUseCase.execute(new SearchExamAppealsQuery(
             status, keyword, page == null ? 0 : page, size == null ? 20 : size));
     }
@@ -65,15 +65,15 @@ public class ExamAppealController {
 
     @QueryMapping(name = "appeal")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public AppealDetailInfo appeal(@Argument("id") UUID id) {
+    public AppealDetailInfo appeal(@Argument(name = "id") UUID id) {
         return viewExamAppealDetailUseCase.execute(id);
     }
 
     @QueryMapping(name = "appealReviewers")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public List<AppealReviewerLiteInfo> appealReviewers(
-            @Argument("appealId") UUID appealId,
-            @Argument("keyword") String keyword) {
+            @Argument(name = "appealId") UUID appealId,
+            @Argument(name = "keyword") String keyword) {
         return viewAssignableReviewersUseCase.execute(new ViewAssignableReviewersQuery(appealId, keyword));
     }
 }

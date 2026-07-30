@@ -310,12 +310,6 @@ public class FileProcessingService implements FileProcessingPort {
                     "order", List.of("order", "thứ tự", "thu tu", "số thứ tự")
             );
 
-            case RUBRIC_CRITERION_BAND -> Map.of(
-                    "code", List.of("code", "mã mức độ", "ma muc do", "band code", "mã tiêu chí"),
-                    "scoreMin", List.of("scoreMin", "score min", "điểm tối thiểu", "diem toi thieu", "điểm thấp nhất", "min"),
-                    "scoreMax", List.of("scoreMax", "score max", "điểm tối đa", "diem toi da", "điểm cao nhất", "max")
-            );
-
             case RUBRIC_RESULT_BAND -> Map.of(
                     "code", List.of("code", "mã xếp loại", "ma xep loai", "mã kết quả", "ma ket qua"),
                     "name", List.of("name", "tên xếp loại", "ten xep loai", "tên kết quả", "ten ket qua"),

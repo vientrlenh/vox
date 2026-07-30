@@ -129,7 +129,7 @@ public class AssignGradingUseCaseTests {
 
         assertThat(assignmentIds).hasSize(2);
         var saved = captureSaved();
-        assertThat(saved).extracting(ExamGradingAssignment::getCandidateResultId)
+        assertThat(saved).extracting(grading -> grading.getCandidateResultId())
             .containsExactlyInAnyOrder(firstResultId, secondResultId);
         assertThat(saved).allSatisfy(assignment -> {
             assertThat(assignment.getTeacherId()).isEqualTo(teacherId);

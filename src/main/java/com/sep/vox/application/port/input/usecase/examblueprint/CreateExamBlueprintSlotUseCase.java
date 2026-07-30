@@ -12,6 +12,7 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreateExamBlueprintSlotItemCommand;
 import com.sep.vox.application.port.input.command.CreateQuestionSelectionSpecCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
+import com.sep.vox.application.port.input.service.RecalculateBlueprintVersionTimeLimitService;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.ExamBlueprintSlotDto;
 import com.sep.vox.domain.mapper.ExamBlueprintSlotDtoMapper;
@@ -38,6 +39,7 @@ public class CreateExamBlueprintSlotUseCase implements IUseCase<CreateExamBluepr
     private final ExamBlueprintRepository examBlueprintRepository;
     private final QuestionRepository questionRepository;
     private final SchoolUserRepository schoolUserRepository;
+    private final RecalculateBlueprintVersionTimeLimitService recalculateBlueprintVersionTimeLimitService;
     private final UserContextPort userContextPort;
 
     public CreateExamBlueprintSlotUseCase(
@@ -47,6 +49,7 @@ public class CreateExamBlueprintSlotUseCase implements IUseCase<CreateExamBluepr
             ExamBlueprintRepository examBlueprintRepository,
             QuestionRepository questionRepository,
             SchoolUserRepository schoolUserRepository,
+            RecalculateBlueprintVersionTimeLimitService recalculateBlueprintVersionTimeLimitService,
             UserContextPort userContextPort) {
         this.examBlueprintSectionRepository = examBlueprintSectionRepository;
         this.examBlueprintSlotRepository = examBlueprintSlotRepository;
@@ -54,6 +57,7 @@ public class CreateExamBlueprintSlotUseCase implements IUseCase<CreateExamBluepr
         this.examBlueprintRepository = examBlueprintRepository;
         this.questionRepository = questionRepository;
         this.schoolUserRepository = schoolUserRepository;
+        this.recalculateBlueprintVersionTimeLimitService = recalculateBlueprintVersionTimeLimitService;
         this.userContextPort = userContextPort;
     }
 
@@ -102,7 +106,9 @@ public class CreateExamBlueprintSlotUseCase implements IUseCase<CreateExamBluepr
             currentUserId,
             currentUserId
         );
-        return ExamBlueprintSlotDtoMapper.toDto(examBlueprintSlotRepository.save(slot));
+        var savedSlot = examBlueprintSlotRepository.save(slot);
+        recalculateBlueprintVersionTimeLimitService.recalculate(version.getId());
+        return ExamBlueprintSlotDtoMapper.toDto(savedSlot);
     }
 
     private void validateSlot(CreateExamBlueprintSlotItemCommand command) {

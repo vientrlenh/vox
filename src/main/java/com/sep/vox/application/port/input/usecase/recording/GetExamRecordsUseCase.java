@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.recording;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
@@ -19,6 +20,7 @@ import com.sep.vox.domain.repository.ExamRecordingRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleProctorRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;
+import com.sep.vox.domain.service.recording.RecordingPrecedence;
 
 @Service
 public class GetExamRecordsUseCase implements IUseCase<GetExamRecordsQuery, List<ExamRecordingDto>> {
@@ -84,12 +86,26 @@ public class GetExamRecordsUseCase implements IUseCase<GetExamRecordsQuery, List
         }
 
         var streamTypeFilter = parseStreamTypeFilter(input.streamType());
-        
-        var records = examRecordingRepository.findByExamSessionId(session.getId());
+
+        var records = examRecordingRepository.findByExamSessionId(session.getId()).stream()
+            .filter(r -> streamTypeFilter == null || r.getStreamType() == streamTypeFilter)
+            .toList();
+
+        // Mỗi nguồn ingest giữ hàng riêng, nên một streamType có thể có nhiều bản ghi. Trả về tất
+        // cả và chỉ đánh dấu bản chuẩn, thay vì lọc bớt: bản WebRTC là bản duy nhất không đi qua
+        // máy thí sinh, nên khi có tranh chấp nó phải với tới được chứ không thể biến mất khỏi
+        // API. Việc chọn giữa chúng là của người kiểm tra.
+        var canonicalIds = records.stream()
+            .collect(Collectors.groupingBy(
+                record -> record.getStreamType(),
+                Collectors.maxBy(RecordingPrecedence.CANONICAL_ORDER)))
+            .values().stream()
+            .flatMap(o -> o.stream())
+            .map(record -> record.getId())
+            .collect(Collectors.toSet());
 
         return records.stream()
-            .filter(r -> streamTypeFilter == null || r.getStreamType() == streamTypeFilter)
-            .map(ExamRecordingDtoMapper::toDto)
+            .map(r -> ExamRecordingDtoMapper.toDto(r, canonicalIds.contains(r.getId())))
             .toList();
     }
     

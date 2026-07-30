@@ -20,25 +20,21 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.query.ViewExamSchedulesQuery;
 import com.sep.vox.application.port.input.usecase.examschedule.ViewExamSchedulesUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.dto.UserRoleInfo;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamSchedule;
 import com.sep.vox.domain.model.exam.ExamScheduleStatus;
-import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
+import com.sep.vox.domain.repository.ExamScheduleProctorRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
-import com.sep.vox.domain.repository.SchoolUserRepository;
 
 class ViewExamSchedulesUseCaseTests {
 
     private ExamRepository examRepository;
     private ExamScheduleRepository examScheduleRepository;
     private ExamMemberRepository examMemberRepository;
-    private SchoolUserRepository schoolUserRepository;
-    private UserRoleQueryRepository userRoleQueryRepository;
+    private ExamScheduleProctorRepository examScheduleProctorRepository;
     private UserContextPort userContextPort;
     private ViewExamSchedulesUseCase useCase;
 
@@ -53,18 +49,12 @@ class ViewExamSchedulesUseCaseTests {
         examRepository = mock(ExamRepository.class);
         examScheduleRepository = mock(ExamScheduleRepository.class);
         examMemberRepository = mock(ExamMemberRepository.class);
-        schoolUserRepository = mock(SchoolUserRepository.class);
-        userRoleQueryRepository = mock(UserRoleQueryRepository.class);
+        examScheduleProctorRepository = mock(ExamScheduleProctorRepository.class);
         userContextPort = mock(UserContextPort.class);
         useCase = new ViewExamSchedulesUseCase(
-            examRepository, examScheduleRepository, examMemberRepository,
-            schoolUserRepository, userRoleQueryRepository, userContextPort);
+            examRepository, examScheduleRepository, examMemberRepository, examScheduleProctorRepository, userContextPort);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        when(schoolUserRepository.findByUserId(userId)).thenReturn(Optional.empty());
-        when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId)).thenReturn(List.of());
-        when(examMemberRepository.existsByExamIdAndUserIdAndRole(examId, userId, ExamMemberRole.CHAIR))
-            .thenReturn(true);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam()));
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(
             schedule(base, ExamScheduleStatus.DRAFT),
@@ -75,40 +65,54 @@ class ViewExamSchedulesUseCaseTests {
 
     @Test
     void should_return_all_schedules_when_no_filter() {
+        givenTeacherChair();
+
         var result = useCase.execute(new ViewExamSchedulesQuery(examId, null, null, null));
+
         assertThat(result).hasSize(3);
     }
 
     @Test
     void should_filter_by_status() {
+        givenTeacherChair();
+
         var result = useCase.execute(new ViewExamSchedulesQuery(examId, ExamScheduleStatus.DRAFT, null, null));
+
         assertThat(result).hasSize(2);
         assertThat(result).allMatch(s -> "DRAFT".equals(s.status()));
     }
 
     @Test
     void should_filter_by_start_date_lower_bound() {
+        givenTeacherChair();
+
         var result = useCase.execute(new ViewExamSchedulesQuery(examId, null, base.plusDays(2), null));
+
         assertThat(result).hasSize(2);
     }
 
     @Test
     void should_filter_by_end_date_upper_bound() {
+        givenTeacherChair();
+
         var result = useCase.execute(new ViewExamSchedulesQuery(examId, null, null, base.plusDays(2)));
+
         assertThat(result).hasSize(2);
     }
 
     @Test
     void should_filter_by_start_and_end_window() {
+        givenTeacherChair();
+
         var result = useCase.execute(
             new ViewExamSchedulesQuery(examId, null, base.plusDays(2), base.plusDays(2)));
+
         assertThat(result).hasSize(1);
     }
 
     @Test
     void should_list_school_wide_when_exam_id_null_and_school_admin() {
-        when(schoolUserRepository.findByUserId(userId)).thenReturn(Optional.of(schoolUser()));
-        when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId)).thenReturn(List.of(schoolAdminRole()));
+        givenSchoolAdmin(schoolId);
         when(examScheduleRepository.findBySchoolId(schoolId)).thenReturn(List.of(
             schedule(base, ExamScheduleStatus.DRAFT),
             schedule(base.plusDays(2), ExamScheduleStatus.PUBLISHED)
@@ -124,8 +128,7 @@ class ViewExamSchedulesUseCaseTests {
 
     @Test
     void should_reject_school_wide_when_not_school_admin() {
-        when(schoolUserRepository.findByUserId(userId)).thenReturn(Optional.of(schoolUser()));
-        when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId)).thenReturn(List.of());
+        when(userContextPort.isSchoolAdmin()).thenReturn(false);
 
         assertThatThrownBy(() -> useCase.execute(new ViewExamSchedulesQuery(null, null, null, null)))
             .isInstanceOf(ForbiddenException.class);
@@ -133,8 +136,7 @@ class ViewExamSchedulesUseCaseTests {
 
     @Test
     void should_reject_school_wide_when_school_admin_has_no_school() {
-        when(schoolUserRepository.findByUserId(userId)).thenReturn(Optional.empty());
-        when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId)).thenReturn(List.of(schoolAdminRole()));
+        givenSchoolAdmin(null);
 
         assertThatThrownBy(() -> useCase.execute(new ViewExamSchedulesQuery(null, null, null, null)))
             .isInstanceOf(ForbiddenException.class);
@@ -151,19 +153,22 @@ class ViewExamSchedulesUseCaseTests {
         return s;
     }
 
-    private UserRoleInfo schoolAdminRole() {
-        return new UserRoleInfo(UUID.randomUUID(), userId, UUID.randomUUID(), OffsetDateTime.now(),
-            "SCHOOL_ADMIN", "School Admin");
-    }
-
-    private SchoolUser schoolUser() {
-        return new SchoolUser(schoolId, userId, OffsetDateTime.now(), null);
-    }
-
     private Exam exam() {
         var exam = new Exam();
         exam.setId(examId);
         exam.setSchoolId(schoolId);
         return exam;
+    }
+
+    private void givenTeacherChair() {
+        when(userContextPort.isTeacher()).thenReturn(true);
+        when(examMemberRepository.existsByExamIdAndUserIdAndRole(
+            examId, userId, ExamMemberRole.CHAIR
+        )).thenReturn(true);
+    }
+
+    private void givenSchoolAdmin(UUID currentSchoolId) {
+        when(userContextPort.isSchoolAdmin()).thenReturn(true);
+        when(userContextPort.getCurrentSchoolId()).thenReturn(currentSchoolId);
     }
 }

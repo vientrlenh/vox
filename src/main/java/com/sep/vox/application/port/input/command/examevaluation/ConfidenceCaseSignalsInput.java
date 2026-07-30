@@ -13,9 +13,9 @@ public record ConfidenceCaseSignalsInput(
     Double cPfBranch,
     Double cGrammar,
     Double cVocabulary,
-    Double cDiscourse,
+    Double cCoherence,
     Double grammarScoreDelta,
     Double vocabularyScoreDelta,
-    Double discourseScoreDelta
+    Double coherenceScoreDelta
 ) {
 }

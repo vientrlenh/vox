@@ -9,6 +9,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
 import com.sep.vox.application.event.ExternalEventTopic;
+import com.sep.vox.application.event.HasPartitionKey;
 import com.sep.vox.application.port.output.ExternalEventPublisherPort;
 import com.sep.vox.infrastructure.exception.InfrastructureException;
 
@@ -31,9 +32,10 @@ public class KafkaEventProducerAdapter implements ExternalEventPublisherPort {
 
         var topic = resolveTopic(event);
         var eventType = event.getClass().getSimpleName();
+        var key = event instanceof HasPartitionKey keyed ? keyed.partitionKey() : eventType;
         LOGGER.info("Publishing event {} to kafka", eventType);
         try {
-            kafkaTemplate.send(topic, eventType, event).get();
+            kafkaTemplate.send(topic, key, event).get();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             LOGGER.error("Interrupted when sending event: {}", e);

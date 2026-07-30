@@ -131,7 +131,7 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
     }
     private void rebalanceSectionWeights(UUID paperId, OffsetDateTime now, UUID currentUserId) {
         var sections = examPaperSectionRepository.findByPaperId(paperId).stream()
-            .sorted(Comparator.comparingInt(com.sep.vox.domain.model.exam.ExamPaperSection::getOrder))
+            .sorted(Comparator.comparingInt(section -> section.getOrder()))
             .toList();
         var weights = distributeEqualWeights(sections.size());
         for (int i = 0; i < sections.size(); i++) {

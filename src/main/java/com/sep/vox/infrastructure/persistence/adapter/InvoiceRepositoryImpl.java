@@ -28,6 +28,11 @@ public class InvoiceRepositoryImpl implements InvoiceRepository {
     }
 
     @Override
+    public Optional<Invoice> findByIdForUpdate(UUID id) {
+        return springDataInvoiceRepository.findWithLockById(id).map(InvoiceMapper::toDomain);
+    }
+
+    @Override
     public Invoice save(Invoice invoice) {
         var entity = InvoiceMapper.toJpa(invoice);
         var saved = springDataInvoiceRepository.save(entity);

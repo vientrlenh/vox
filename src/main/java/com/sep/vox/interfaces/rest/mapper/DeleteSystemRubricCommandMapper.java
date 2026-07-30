@@ -24,10 +24,4 @@ public class DeleteSystemRubricCommandMapper {
     public static DeleteSystemRubricResultBandCommand resultBandFromRequest(UUID versionId, UUID resultBandId) {
         return new DeleteSystemRubricResultBandCommand(versionId, resultBandId);
     }
-
-
-    //4. Cho Criterion ResultBand
-    public static DeleteSystemRubricCriterionBandCommand criterionBandFromRequest(UUID versionId, UUID criterionId, UUID bandId) {
-        return new DeleteSystemRubricCriterionBandCommand(versionId, criterionId, bandId);
-    }
 }

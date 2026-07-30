@@ -29,7 +29,6 @@ public class DeleteSchoolRubricVersionUseCase implements IUseCase<DeleteSchoolRu
     private final UserContextPort userContextPort;
     private final SchoolRepository schoolRepository;
     private final SchoolUserRepository schoolUserRepository;
-    private final RubricCriterionBandRepository rubricCriterionBandRepository; // BỔ SUNG ĐỂ DỌN RÁC
 
     public DeleteSchoolRubricVersionUseCase(
             RubricVersionRepository rubricVersionRepository,
@@ -39,8 +38,7 @@ public class DeleteSchoolRubricVersionUseCase implements IUseCase<DeleteSchoolRu
             UserRepository userRepository,
             UserContextPort userContextPort,
             SchoolRepository schoolRepository,
-            SchoolUserRepository schoolUserRepository,
-            RubricCriterionBandRepository rubricCriterionBandRepository) { // BỔ SUNG
+            SchoolUserRepository schoolUserRepository) {
         this.rubricVersionRepository = rubricVersionRepository;
         this.rubricRepository = rubricRepository;
         this.rubricCriterionRepository = rubricCriterionRepository;
@@ -49,7 +47,6 @@ public class DeleteSchoolRubricVersionUseCase implements IUseCase<DeleteSchoolRu
         this.userContextPort = userContextPort;
         this.schoolRepository = schoolRepository;
         this.schoolUserRepository = schoolUserRepository;
-        this.rubricCriterionBandRepository = rubricCriterionBandRepository;
     }
 
     @Override
@@ -94,7 +91,6 @@ public class DeleteSchoolRubricVersionUseCase implements IUseCase<DeleteSchoolRu
             throw new IllegalStateException("Chỉ có thể xóa phiên bản đang ở trạng thái DRAFT. Vui lòng dùng chức năng Lưu trữ (Archive) nếu phiên bản đã PUBLISHED.");
         }
 
-        rubricCriterionBandRepository.deleteByRubricVersionId(version.getId());
         rubricCriterionRepository.deleteByRubricVersionId(version.getId());
         rubricResultBandRepository.deleteByRubricVersionId(version.getId());
         rubricVersionRepository.deleteById(version.getId());

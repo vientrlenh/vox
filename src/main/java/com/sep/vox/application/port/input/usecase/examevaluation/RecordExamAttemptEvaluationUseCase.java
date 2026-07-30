@@ -2,7 +2,7 @@ package com.sep.vox.application.port.input.usecase.examevaluation;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -448,8 +448,8 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
             .allMatch(item -> examItemEvaluationRepository.findLatestByResponseId(item.getId()).isPresent());
     }
 
-    private OffsetDateTime parseEvaluatedAt(String value) {
-        return value == null || value.isBlank() ? OffsetDateTime.now() : OffsetDateTime.parse(value);
+    private Instant parseEvaluatedAt(String value) {
+        return value == null || value.isBlank() ? Instant.now() : Instant.parse(value);
     }
 
     private String normalizeCode(String value) {

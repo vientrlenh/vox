@@ -1,6 +1,6 @@
 package com.sep.vox.domain.repository;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +30,6 @@ public interface ExamCandidateRepository {
     boolean existsByScheduleIdAndStudentId(UUID scheduleId, UUID studentId);
     boolean existsByExamIdAndScheduleIdIsNotNull(UUID examId);
     Optional<ExamCandidate> findByScheduleIdAndStudentId(UUID scheduleId, UUID studentId);
-    List<ExamCandidate> findActiveCandidates(UUID studentId, OffsetDateTime now);
+    List<ExamCandidate> findActiveCandidates(UUID studentId, Instant now);
 }
 

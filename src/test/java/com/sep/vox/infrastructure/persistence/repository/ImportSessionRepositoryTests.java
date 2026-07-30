@@ -2,7 +2,8 @@ package com.sep.vox.infrastructure.persistence.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -42,7 +43,7 @@ class ImportSessionRepositoryTests extends ContainerTestConfig {
     }
 
     private static ImportSession session(ImportSessionStatus status) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var userId = UUID.randomUUID();
         return new ImportSession(
             UUID.randomUUID(),
@@ -59,7 +60,7 @@ class ImportSessionRepositoryTests extends ContainerTestConfig {
             "User cancelled",
             status,
             null,
-            now.plusDays(1), 
+            now.plus(1, ChronoUnit.DAYS), 
             null, 
             null, 
             null, 

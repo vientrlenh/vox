@@ -1,6 +1,6 @@
 package com.sep.vox.domain.mapper;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 
 import com.sep.vox.domain.common.PageResult;
@@ -47,7 +47,7 @@ public final class SchoolGradeLevelDtoMapper {
         return status == null ? null : status.name();
     }
 
-    private static String valueOf(OffsetDateTime dateTime) {
+    private static String valueOf(Instant dateTime) {
         return dateTime == null ? null : dateTime.toString();
     }
 }

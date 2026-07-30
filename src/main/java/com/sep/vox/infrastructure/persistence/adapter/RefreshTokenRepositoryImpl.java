@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -55,7 +55,7 @@ public class RefreshTokenRepositoryImpl implements RefreshTokenRepository {
     }
 
     @Override
-    public int markUsedAndReplacedBy(UUID oldTokenId, UUID newTokenId, OffsetDateTime now) {
+    public int markUsedAndReplacedBy(UUID oldTokenId, UUID newTokenId, Instant now) {
         return springDataRefreshTokenRepository.markUsedAndReplacedBy(oldTokenId, newTokenId, now);
     }
     

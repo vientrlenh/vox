@@ -1,6 +1,6 @@
 package com.sep.vox.application.query.dto;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public record ProctorCandidateSummary(
@@ -9,7 +9,7 @@ public record ProctorCandidateSummary(
     String studentName,
     String studentEmail,
     String status,
-    OffsetDateTime blockedAt,
+    Instant blockedAt,
     UUID sessionId,
     String sessionStatus,
     boolean sessionFlagged

@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.registration;
 
 import java.time.Duration;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -161,7 +161,7 @@ public class RegisterFromSchoolDirectoryUseCase implements IUseCase<RegisterFrom
     }
 
     private void saveRegisterFormWithDocuments(RegisterFromSchoolDirectoryCommand command, RegisterFormVerificationMethod method) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var registerForm = RegisterForm.fromDirectoryWithDocuments(
             command.schoolDirectoryId(), 
             method, 

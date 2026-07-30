@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
 import java.time.Duration;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.EnumSet;
 import java.util.UUID;
 
@@ -73,7 +73,7 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
             throw new IllegalStateException("Bài kiểm tra này yêu cầu xác thực OTP, vui lòng dùng luồng xác thực OTP");
         }
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         if (candidate.getBlockedAt() != null) {
             throw new IllegalStateException("Bạn đã bị buộc kết thúc bài thi này, không thể vào lại");
         }
@@ -141,14 +141,14 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
             .count();
     }
 
-    private boolean isExamClosedForEntry(com.sep.vox.domain.model.exam.Exam exam, OffsetDateTime now) {
+    private boolean isExamClosedForEntry(com.sep.vox.domain.model.exam.Exam exam, Instant now) {
         return exam.getStatus() != ExamStatus.IN_PROGRESS
             || exam.getStatus() == ExamStatus.CLOSED
             || exam.getStatus() == ExamStatus.CANCELLED
             || (exam.getCloseAt() != null && exam.getCloseAt().isBefore(now));
     }
 
-    private ExamEntryTicketResponse buildEntryTicket(ExamSession session, OffsetDateTime now, OffsetDateTime scheduleEndAt) {
+    private ExamEntryTicketResponse buildEntryTicket(ExamSession session, Instant now, Instant scheduleEndAt) {
         return new ExamEntryTicketResponse(
             session.getId(),
             UUID.randomUUID().toString(),

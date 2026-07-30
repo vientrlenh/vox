@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -77,7 +77,7 @@ public class CreateExamMemberUseCase implements IUseCase<CreateExamMemberCommand
             exam.getId(),
             command.userId(),
             ExamMemberRole.valueOf(command.role()),
-            OffsetDateTime.now(),
+            Instant.now(),
             currentUserId
         );
         return ExamMemberDtoMapper.toDto(examMemberRepository.save(member));

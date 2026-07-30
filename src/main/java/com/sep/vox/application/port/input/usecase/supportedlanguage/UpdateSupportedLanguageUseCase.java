@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.supportedlanguage;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -40,7 +40,7 @@ public class UpdateSupportedLanguageUseCase implements IUseCase<UpdateSupportedL
         validateCommand(command);
         validateUniqueCode(command);
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         try {

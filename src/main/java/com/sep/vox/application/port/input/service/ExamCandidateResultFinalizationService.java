@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.service;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -45,7 +45,7 @@ public class ExamCandidateResultFinalizationService {
             return;
         }
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         result.setStatus(ExamCandidateResultStatus.INVALID);
         result.setTotalScore(BigDecimal.ZERO.setScale(2));
         result.setUpdatedAt(now);
@@ -61,7 +61,7 @@ public class ExamCandidateResultFinalizationService {
      * RELEASED, "hồi sinh" bài đã bị vô hiệu. REJECTED không đốt lượt phúc khảo (chỉ PUBLISHED
      * mới tính) nên không ảnh hưởng hạn mức nếu về sau kết quả được khôi phục.
      */
-    private void closeOpenAppeals(UUID candidateResultId, UUID actingUserId, OffsetDateTime now) {
+    private void closeOpenAppeals(UUID candidateResultId, UUID actingUserId, Instant now) {
         if (candidateResultId == null) {
             return;
         }

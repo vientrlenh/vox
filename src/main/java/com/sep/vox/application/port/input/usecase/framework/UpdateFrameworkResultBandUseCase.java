@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.dao.DataIntegrityViolationException;
@@ -79,7 +79,7 @@ public class UpdateFrameworkResultBandUseCase
         band.setLabel(StringNormalization.trimAndCollapseSpaces(command.label()));
         band.setDescription(StringNormalization.trimAndCollapseSpaces(command.description()));
         band.setOrder(command.order());
-        band.setUpdatedAt(OffsetDateTime.now());
+        band.setUpdatedAt(Instant.now());
         band.setUpdatedBy(userContextPort.getCurrentAuthenticatedUserId());
     }
 }

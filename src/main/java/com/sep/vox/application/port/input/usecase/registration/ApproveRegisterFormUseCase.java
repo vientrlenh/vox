@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.registration;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -44,7 +44,7 @@ public class ApproveRegisterFormUseCase implements IUseCase<ApproveRegisterFormC
     @Transactional
     public Void execute(ApproveRegisterFormCommand input) {
         var command = normalize(input);
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         var registerForm = registerFormRepository.findById(command.registerFormId())
@@ -77,7 +77,7 @@ public class ApproveRegisterFormUseCase implements IUseCase<ApproveRegisterFormC
         return null;
     }
 
-    private SchoolDirectory resolveSchoolDirectory(RegisterForm registerForm, ApproveRegisterFormCommand command, UUID currentUserId, OffsetDateTime now) {
+    private SchoolDirectory resolveSchoolDirectory(RegisterForm registerForm, ApproveRegisterFormCommand command, UUID currentUserId, Instant now) {
         // Đơn từ danh mục: trường đã có entry sẵn -> dùng lại, xác minh nếu chưa
         if (registerForm.getSchoolDirectoryId() != null) {
             var directory = schoolDirectoryRepository.findById(registerForm.getSchoolDirectoryId())

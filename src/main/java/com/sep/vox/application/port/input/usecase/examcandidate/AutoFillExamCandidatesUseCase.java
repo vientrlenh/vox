@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examcandidate;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -93,7 +93,7 @@ public class AutoFillExamCandidatesUseCase
         }
 
         // BƯỚC 2 — Chỉ sau khi đã giữ hết lock ca mới lấy candidate chưa gán và rải đều (round-robin).
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var unassigned = examCandidateRepository
             .findByExamIdAndScheduleIdIsNullOrderByAssignedAtAsc(exam.getId());
         if (unassigned.isEmpty()) {

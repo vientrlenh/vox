@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -47,7 +47,7 @@ public interface SpringDataRubricResultBandRepository extends JpaRepository<Rubr
             @Param("scoreMin") BigDecimal scoreMin,
             @Param("scoreMax") BigDecimal scoreMax,
             @Param("order") Integer order,
-            @Param("updatedAt") OffsetDateTime updatedAt,
+            @Param("updatedAt") Instant updatedAt,
             @Param("updatedBy") UUID updatedBy
     );
 

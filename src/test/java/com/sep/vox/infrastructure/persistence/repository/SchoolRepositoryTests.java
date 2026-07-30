@@ -2,7 +2,7 @@ package com.sep.vox.infrastructure.persistence.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -101,7 +101,7 @@ class SchoolRepositoryTests extends ContainerTestConfig {
     }
 
     private static School newSchool(String code, String name, String domain, String email, String phone) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         return new School(
             new SchoolCode(code),
             name,

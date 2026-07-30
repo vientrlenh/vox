@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examitemresponse;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Locale;
 
 import org.springframework.stereotype.Service;
@@ -49,7 +49,7 @@ public class RecordAnswerTurnUseCase implements IUseCase<RecordAnswerTurnCommand
             throw new NotFoundException("Không tìm thấy phiên thi cho turn đã ghi nhận");
         }
 
-        var answeredAt = input.answeredAt() == null ? OffsetDateTime.now() : input.answeredAt();
+        var answeredAt = input.answeredAt() == null ? Instant.now() : input.answeredAt();
         var response = examItemResponseRepository.findById(input.answerId())
             .orElseGet(() -> new ExamItemResponse(
                 input.answerId(),

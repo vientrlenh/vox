@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -22,5 +22,5 @@ public interface SpringDataDeviceSessionRepository extends JpaRepository<DeviceS
         WHERE d.id = :id 
             AND d.revokedAt IS NULL
     """)
-    int revokeDeviceSession(@Param("id") UUID id, @Param("now") OffsetDateTime now);
+    int revokeDeviceSession(@Param("id") UUID id, @Param("now") Instant now);
 }

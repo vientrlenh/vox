@@ -10,7 +10,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -67,7 +67,7 @@ class UpdateSupportedLanguageUseCaseTests {
             eq(true),
             eq(false),
             eq(true),
-            any(OffsetDateTime.class),
+            any(Instant.class),
             eq(userId)
         )).thenReturn(1);
 
@@ -84,7 +84,7 @@ class UpdateSupportedLanguageUseCaseTests {
             eq(true),
             eq(false),
             eq(true),
-            any(OffsetDateTime.class),
+            any(Instant.class),
             eq(userId)
         );
     }
@@ -105,7 +105,7 @@ class UpdateSupportedLanguageUseCaseTests {
             eq(true),
             isNull(),
             eq(false),
-            any(OffsetDateTime.class),
+            any(Instant.class),
             eq(userId)
         )).thenReturn(1);
 
@@ -121,7 +121,7 @@ class UpdateSupportedLanguageUseCaseTests {
             eq(true),
             isNull(),
             eq(false),
-            any(OffsetDateTime.class),
+            any(Instant.class),
             eq(userId)
         );
     }
@@ -158,7 +158,7 @@ class UpdateSupportedLanguageUseCaseTests {
             eq(false),
             isNull(),
             eq(false),
-            any(OffsetDateTime.class),
+            any(Instant.class),
             eq(userId)
         )).thenReturn(1);
 
@@ -231,7 +231,7 @@ class UpdateSupportedLanguageUseCaseTests {
             eq(false),
             isNull(),
             eq(false),
-            any(OffsetDateTime.class),
+            any(Instant.class),
             eq(userId)
         )).thenReturn(0);
 
@@ -257,7 +257,7 @@ class UpdateSupportedLanguageUseCaseTests {
             eq(false),
             isNull(),
             eq(false),
-            any(OffsetDateTime.class),
+            any(Instant.class),
             eq(userId)
         )).thenThrow(new DataIntegrityViolationException("duplicate"));
 
@@ -267,7 +267,7 @@ class UpdateSupportedLanguageUseCaseTests {
     }
 
     private static SupportedLanguage language(UUID id, String code, String name, String description, boolean active) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         return new SupportedLanguage(
             id,
             new LanguageCode(code),

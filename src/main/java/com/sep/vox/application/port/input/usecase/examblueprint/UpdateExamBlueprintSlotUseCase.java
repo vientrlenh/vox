@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.examblueprint;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -94,7 +94,7 @@ public class UpdateExamBlueprintSlotUseCase implements IUseCase<UpdateExamBluepr
         slot.setSlotType(ExamBlueprintSlotType.valueOf(command.slotType()));
         slot.setFixedQuestionId(command.fixedQuestionId());
         slot.setSelectionSpec(selectionSpecOf(command.selectionSpec()));
-        slot.setUpdatedAt(OffsetDateTime.now());
+        slot.setUpdatedAt(Instant.now());
         slot.setUpdatedBy(currentUserId);
 
         var savedSlot = examBlueprintSlotRepository.save(slot);

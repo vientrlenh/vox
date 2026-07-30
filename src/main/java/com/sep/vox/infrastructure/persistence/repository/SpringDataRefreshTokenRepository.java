@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -32,5 +32,5 @@ public interface SpringDataRefreshTokenRepository extends JpaRepository<RefreshT
             AND r.usedAt IS NULL 
             AND r.expiredAt > :now
     """)
-    int markUsedAndReplacedBy(@Param("oldTokenId") UUID oldTokenId, @Param("newTokenId") UUID newTokenId, @Param("now") OffsetDateTime now);
+    int markUsedAndReplacedBy(@Param("oldTokenId") UUID oldTokenId, @Param("newTokenId") UUID newTokenId, @Param("now") Instant now);
 }

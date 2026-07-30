@@ -7,7 +7,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -44,7 +45,7 @@ public class CreateSystemRubricResultBandsUseCaseTests {
     private final UUID rubricId = UUID.randomUUID();
     private final UUID versionId = UUID.randomUUID();
     private final UUID userId = UUID.randomUUID();
-    private final OffsetDateTime now = OffsetDateTime.now();
+    private final Instant now = Instant.now();
 
     @BeforeEach
     void setUp() {
@@ -58,7 +59,7 @@ public class CreateSystemRubricResultBandsUseCaseTests {
                 userContextPort, userRepository);
 
         var version = new RubricVersion(versionId, rubricId, 1, "V1", "Version 1", "Desc", RubricStatus.DRAFT,
-                now, now.plusDays(30), BigDecimal.valueOf(0), BigDecimal.valueOf(10),
+                now, now.plus(30, ChronoUnit.DAYS), BigDecimal.valueOf(0), BigDecimal.valueOf(10),
                 RubricTotalScoreMethod.WEIGHTED_AVERAGE, now, now, userId, userId);
         when(rubricVersionRepository.findById(versionId)).thenReturn(Optional.of(version));
 
@@ -106,7 +107,7 @@ public class CreateSystemRubricResultBandsUseCaseTests {
     @Test
     void should_throw_when_version_not_draft() {
         var publishedVersion = new RubricVersion(versionId, rubricId, 1, "V1", "Version 1", "Desc",
-                RubricStatus.PUBLISHED, now, now.plusDays(30), BigDecimal.valueOf(0), BigDecimal.valueOf(10),
+                RubricStatus.PUBLISHED, now, now.plus(30, ChronoUnit.DAYS), BigDecimal.valueOf(0), BigDecimal.valueOf(10),
                 RubricTotalScoreMethod.WEIGHTED_AVERAGE, now, now, userId, userId);
         when(rubricVersionRepository.findById(versionId)).thenReturn(Optional.of(publishedVersion));
 

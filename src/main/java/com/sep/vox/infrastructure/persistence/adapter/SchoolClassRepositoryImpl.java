@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
 import com.sep.vox.infrastructure.persistence.entity.SchoolClassJpaEntity;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
@@ -145,7 +145,7 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
     @Override
     public int updateMutableFields(UUID id, UUID schoolId, String name, boolean nameProvided,
             String description, boolean descriptionProvided, SchoolClassStatus status, boolean statusProvided,
-            OffsetDateTime updatedAt, UUID updatedBy) {
+            Instant updatedAt, UUID updatedBy) {
         return springDataSchoolClassRepository.updateMutableFields(
             id,
             schoolId,
@@ -189,7 +189,7 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
     }
 
     @Override
-    public int archiveByGradeId(UUID schoolGradeId, OffsetDateTime updatedAt, UUID updatedBy) {
+    public int archiveByGradeId(UUID schoolGradeId, Instant updatedAt, UUID updatedBy) {
         return springDataSchoolClassRepository.archiveByGradeId(schoolGradeId, updatedAt, updatedBy);
     }
 

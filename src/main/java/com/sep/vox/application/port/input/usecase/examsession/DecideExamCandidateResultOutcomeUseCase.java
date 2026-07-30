@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examsession;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -71,7 +71,7 @@ public class DecideExamCandidateResultOutcomeUseCase
             throw new IllegalArgumentException("Quyết định không hợp lệ, chỉ chấp nhận PASSED hoặc FAILED");
         }
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         result.setStatus(input.decision());
         result.setUpdatedAt(now);
         result.setUpdatedBy(moderationAccessService.getCurrentUserId());

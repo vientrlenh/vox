@@ -11,7 +11,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -130,7 +130,7 @@ public class SubmitGradingUseCaseTests {
     private GradingContext contextWith(
             GradingAssignmentStatus assignmentStatus, ExamCandidateResultStatus resultStatus, boolean flagged) {
         var assignment = new ExamGradingAssignment(
-            assignmentId, candidateResultId, teacherId, assignmentStatus, OffsetDateTime.now(), null, null);
+            assignmentId, candidateResultId, teacherId, assignmentStatus, Instant.now(), null, null);
 
         var candidateResult = new ExamCandidateResult();
         candidateResult.setId(candidateResultId);

@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -58,7 +58,7 @@ public class UpdateExamSecurePoolStatusUseCase implements IUseCase<UpdateExamSec
             throw new IllegalStateException("Secure pool không ở trạng thái có thể release thủ công");
         }
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         pool.setStatus(ExamSecurePoolStatus.RELEASED);
         pool.setReleasedAt(now);
         pool.setReleasedBy(currentUserId);

@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -57,7 +57,7 @@ public interface SpringDataSchoolGradeLevelRepository extends JpaRepository<Scho
         @Param("name") String name,
         @Param("description") String description,
         @Param("order") Integer order,
-        @Param("updatedAt") OffsetDateTime updatedAt,
+        @Param("updatedAt") Instant updatedAt,
         @Param("updatedBy") UUID updatedBy
     );
 }

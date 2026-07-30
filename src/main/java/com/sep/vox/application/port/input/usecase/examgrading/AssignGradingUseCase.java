@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examgrading;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -122,7 +122,7 @@ public class AssignGradingUseCase implements IUseCase<AssignGradingCommand, List
                 examGradingQueryRepository.findTeacherIdsInSchool(schoolId, teacherIds));
         }
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var assignments = new ArrayList<ExamGradingAssignment>();
         for (var item : items) {
             var result = resultsById.get(item.candidateResultId());

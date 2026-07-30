@@ -19,7 +19,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 @Service
@@ -92,7 +92,7 @@ public class CreateSchoolGradeLevelUseCase implements IUseCase<CreateSchoolGrade
     }
 
     private UUID saveNewGradeLevel(CreateSchoolGradeLevelCommand command, String code, UUID creatorId) {
-        OffsetDateTime now = OffsetDateTime.now();
+        Instant now = Instant.now();
         SchoolGradeLevel newGradeLevel = new SchoolGradeLevel(
                 command.schoolId(),
                 code,

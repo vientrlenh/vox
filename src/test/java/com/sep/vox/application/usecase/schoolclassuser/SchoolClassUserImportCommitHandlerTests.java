@@ -7,7 +7,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -100,7 +101,7 @@ class SchoolClassUserImportCommitHandlerTests {
         var schoolClass = activeSchoolClass(classId, schoolId, "ENG-01");
         var inactiveMembership = new SchoolClassUser(
             UUID.randomUUID(), student.getId(), classId,
-            false, OffsetDateTime.now().minusDays(30), OffsetDateTime.now().minusDays(10), UUID.randomUUID()
+            false, Instant.now().minus(30, ChronoUnit.DAYS), Instant.now().minus(10, ChronoUnit.DAYS), UUID.randomUUID()
         );
         var rows = List.of(row(sessionId, 1L, Map.of("Email", "student@example.com", "Mã lớp", "ENG-01")));
 
@@ -132,7 +133,7 @@ class SchoolClassUserImportCommitHandlerTests {
         var schoolClass = activeSchoolClass(classId, schoolId, "ENG-01");
         var activeMembership = new SchoolClassUser(
             UUID.randomUUID(), student.getId(), classId,
-            true, OffsetDateTime.now().minusDays(10), null, originalAssigner
+            true, Instant.now().minus(10, ChronoUnit.DAYS), null, originalAssigner
         );
         var rows = List.of(row(sessionId, 1L, Map.of("Email", "student@example.com", "Mã lớp", "ENG-01")));
 
@@ -292,7 +293,7 @@ class SchoolClassUserImportCommitHandlerTests {
         var existingClass = activeSchoolClass(existingClassId, schoolId, "EXT-01");
         var existingMembership = new SchoolClassUser(
             UUID.randomUUID(), existingStudent.getId(), existingClassId,
-            false, OffsetDateTime.now().minusDays(5), OffsetDateTime.now().minusDays(1), UUID.randomUUID()
+            false, Instant.now().minus(5, ChronoUnit.DAYS), Instant.now().minus(1, ChronoUnit.DAYS), UUID.randomUUID()
         );
         var rows = List.of(
             row(sessionId, 1L, Map.of("Email", "new@example.com", "Mã lớp", "NEW-01")),
@@ -325,8 +326,8 @@ class SchoolClassUserImportCommitHandlerTests {
             id, schoolId, ImportType.SCHOOL_CLASS_USER, "class-users.csv", "[]", "{}",
             jsonSerializationPort.toJson(Map.of("Email", "email", "Mã lớp", "classCode")),
             0L, 0L, 0L, 0L, 0L, null, ImportSessionStatus.IMPORTING, null,
-            OffsetDateTime.now().plusDays(1), null, null, null, 0,
-            OffsetDateTime.now(), OffsetDateTime.now(),
+            Instant.now().plus(1, ChronoUnit.DAYS), null, null, null, 0,
+            Instant.now(), Instant.now(),
             createdBy, createdBy
         );
     }

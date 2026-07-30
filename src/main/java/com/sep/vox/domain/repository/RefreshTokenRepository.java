@@ -1,6 +1,6 @@
 package com.sep.vox.domain.repository;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -13,5 +13,5 @@ public interface RefreshTokenRepository {
     RefreshToken save(RefreshToken token);
     Optional<RefreshToken> findByTokenHash(String tokenHash);
     Optional<RefreshToken> findByTokenHashForUpdate(String token);
-    int markUsedAndReplacedBy(UUID oldTokenId, UUID newTokenId, OffsetDateTime now);
+    int markUsedAndReplacedBy(UUID oldTokenId, UUID newTokenId, Instant now);
 }

@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examgrading;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -72,7 +72,7 @@ public class AutoAssignGradingUseCase implements IUseCase<AutoAssignGradingComma
         }
 
         var loads = currentLoads(teacherIds);
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var assignments = new ArrayList<ExamGradingAssignment>();
         for (var candidateResultId : candidateResultIds) {
             var target = leastLoadedIndex(loads);

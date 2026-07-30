@@ -3,7 +3,7 @@ package com.sep.vox.infrastructure.persistence.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
 
@@ -56,7 +56,7 @@ class SchoolGradeRepositoryTests extends ContainerTestConfig {
     }
 
     private SchoolGradeLevelJpaEntity persistGradeLevel(UUID schoolId, String code, int order) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var level = new SchoolGradeLevelJpaEntity(
             null,
             schoolId,
@@ -77,7 +77,7 @@ class SchoolGradeRepositoryTests extends ContainerTestConfig {
     }
 
     private static SchoolGrade newSchoolGrade(UUID schoolGradeLevelId, String code, String name) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         return new SchoolGrade(
             schoolGradeLevelId,
             code,

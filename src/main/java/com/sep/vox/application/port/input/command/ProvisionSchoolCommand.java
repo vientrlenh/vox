@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.command;
 
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public record ProvisionSchoolCommand(
@@ -18,7 +18,7 @@ public record ProvisionSchoolCommand(
     String contactAddress, 
     String avatarUrl, 
     UUID createdUserId, 
-    OffsetDateTime now
+    Instant now
 ) {
     
 }

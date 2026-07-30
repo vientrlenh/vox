@@ -15,7 +15,7 @@ import com.sep.vox.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -76,7 +76,7 @@ public class DeleteSchoolRoomUseCase implements IUseCase<DeleteSchoolRoomCommand
 
         room.setActive(false); // Chuyển trạng thái thành false
         room.setUpdatedBy(currentUserId); // Ghi nhận ID của người vừa bấm nút xóa
-        room.setUpdatedAt(OffsetDateTime.now()); // Thời điểm bị xóa
+        room.setUpdatedAt(Instant.now()); // Thời điểm bị xóa
 
         // 4. LƯU LẠI VÀO DB
         schoolRoomRepository.save(room);

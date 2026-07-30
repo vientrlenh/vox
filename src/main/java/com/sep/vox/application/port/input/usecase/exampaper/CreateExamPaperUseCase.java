@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.exampaper;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -138,7 +138,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
 
         validateVersionWeights(sections, slotsBySectionId);
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var variant = examPaperRepository.nextVariant(exam.getId());
         var paper = examPaperRepository.save(new ExamPaper(
             exam.getId(),
@@ -241,7 +241,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
             "Mã đề sao chép " + sourcePaper.getCode()
         );
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var variant = examPaperRepository.nextVariant(exam.getId());
         var paper = examPaperRepository.save(new ExamPaper(
             exam.getId(),

@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.questionbank;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -54,7 +54,7 @@ public class UpdateQuestionBankUseCase implements IUseCase<UpdateQuestionBankCom
             questionBank.setName(command.name());
         }
         questionBank.setDescription(command.description());
-        questionBank.setUpdatedAt(OffsetDateTime.now());
+        questionBank.setUpdatedAt(Instant.now());
         questionBank.setUpdatedBy(currentUserId);
 
         var saved = questionBankRepository.save(questionBank);

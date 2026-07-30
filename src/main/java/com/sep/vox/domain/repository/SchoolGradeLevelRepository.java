@@ -4,7 +4,7 @@ import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.school.SchoolGradeLevel;
 import com.sep.vox.domain.model.school.SchoolGradeLevelStatus;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -21,7 +21,7 @@ public interface SchoolGradeLevelRepository {
     List<SchoolGradeLevel> findByIdIn(Collection<UUID> ids);
     SchoolGradeLevel save(SchoolGradeLevel gradeLevel);
     int updateSchoolGradeLevelAtomic(UUID id, String name, String description, Integer order,
-            OffsetDateTime updatedAt, UUID updatedBy);
+            Instant updatedAt, UUID updatedBy);
     boolean existsBySchoolIdAndCode(UUID schoolId, String code);
     boolean existsBySchoolIdAndOrder(UUID schoolId, int order);
     void deleteById(UUID id);

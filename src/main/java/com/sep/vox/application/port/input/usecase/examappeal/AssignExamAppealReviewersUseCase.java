@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examappeal;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.UUID;
@@ -65,7 +65,7 @@ public class AssignExamAppealReviewersUseCase implements IUseCase<AssignExamAppe
             throw new DuplicatedException("Không được phân công trùng giám khảo.");
         }
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var reviewers = new ArrayList<ExamAppealReviewer>();
         for (var reviewerId : reviewerIds) {
             if (reviewerId.equals(context.studentId())) {

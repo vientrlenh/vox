@@ -6,18 +6,11 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
-
-import com.sep.vox.infrastructure.persistence.entity.ExamSessionJpaEntity;
 
 public interface SpringDataExamSessionRepository extends JpaRepository<ExamSessionJpaEntity, UUID> {
     Optional<ExamSessionJpaEntity> findTopByExamIdAndCandidateIdOrderByStartedAtDesc(UUID examId, UUID candidateId);
@@ -44,7 +37,7 @@ public interface SpringDataExamSessionRepository extends JpaRepository<ExamSessi
           AND s.status NOT IN ('GRADING', 'GRADED', 'GRADING_FAILED')
         ORDER BY s.startedAt ASC
     """)
-    List<ExamSessionJpaEntity> findDeferredGradingCandidates(@Param("now") java.time.OffsetDateTime now);
+    List<ExamSessionJpaEntity> findDeferredGradingCandidates(@Param("now") java.time.Instant now);
 
     @Query("""
         SELECT s
@@ -56,7 +49,7 @@ public interface SpringDataExamSessionRepository extends JpaRepository<ExamSessi
           AND c.status = 'ATTENDED'
         ORDER BY sch.endDate ASC, s.startedAt ASC
     """)
-    List<ExamSessionJpaEntity> findPastScheduleEndCandidates(@Param("threshold") java.time.OffsetDateTime threshold);
+    List<ExamSessionJpaEntity> findPastScheduleEndCandidates(@Param("threshold") java.time.Instant threshold);
     Optional<ExamSessionJpaEntity> findByExamIdAndCandidateIdAndStatus(UUID examId, UUID candidateId, String status);
     Optional<ExamSessionJpaEntity> findByIdAndStatusIn(UUID id, Collection<String> statuses);
 
@@ -71,7 +64,7 @@ public interface SpringDataExamSessionRepository extends JpaRepository<ExamSessi
             AND s.status = 'IN_PROGRESS' 
             AND e.schoolId = :schoolId
     """)
-    List<ExamSessionJpaEntity> findActiveByIdInAndSchoolId(@Param("ids") Collection<UUID> ids, @Param("now") OffsetDateTime now, @Param("schoolId") UUID schoolId);
+    List<ExamSessionJpaEntity> findActiveByIdInAndSchoolId(@Param("ids") Collection<UUID> ids, @Param("now") Instant now, @Param("schoolId") UUID schoolId);
 
     @Modifying
     @Query("UPDATE ExamSessionJpaEntity s SET s.status = :to WHERE s.id = :id AND s.status = :from")

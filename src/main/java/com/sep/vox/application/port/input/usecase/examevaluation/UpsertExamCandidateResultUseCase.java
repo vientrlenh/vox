@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examevaluation;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -67,7 +67,7 @@ public class UpsertExamCandidateResultUseCase {
         var calculated = examSessionResultCalculator.calculate(sessionId);
         var existing = examCandidateResultRepository.findBySessionId(sessionId).orElse(null);
         var result = existing == null ? new ExamCandidateResult() : existing;
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var resolvedStatus = status != null
             ? status
             : resolveDefaultStatus(sessionId, calculated.candidateId(), calculated.anyRequiresHumanReview());

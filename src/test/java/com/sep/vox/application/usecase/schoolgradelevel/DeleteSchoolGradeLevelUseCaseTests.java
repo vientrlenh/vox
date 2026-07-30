@@ -9,7 +9,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -119,7 +119,7 @@ class DeleteSchoolGradeLevelUseCaseTests {
     }
 
     private SchoolGradeLevel gradeLevel(SchoolGradeLevelStatus status) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         return new SchoolGradeLevel(
             gradeLevelId, schoolId, "K1", "Khối 1", "desc", 1, status, now, now,
             UUID.randomUUID(), UUID.randomUUID()

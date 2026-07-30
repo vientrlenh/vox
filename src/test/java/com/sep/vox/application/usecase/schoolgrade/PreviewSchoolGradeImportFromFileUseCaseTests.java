@@ -11,6 +11,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.nio.charset.StandardCharsets;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -153,7 +154,7 @@ class PreviewSchoolGradeImportFromFileUseCaseTests {
         user.setStatus(status);
         when(schoolUserRepository.findByUserId(id)).thenReturn(
             schoolId != null
-                ? Optional.of(new SchoolUser(schoolId, id, java.time.OffsetDateTime.now(), java.time.OffsetDateTime.now().plusYears(100)))
+                ? Optional.of(new SchoolUser(schoolId, id, java.time.Instant.now(), java.time.Instant.now().plus(36500, ChronoUnit.DAYS)))
                 : Optional.empty()
         );
         return user;

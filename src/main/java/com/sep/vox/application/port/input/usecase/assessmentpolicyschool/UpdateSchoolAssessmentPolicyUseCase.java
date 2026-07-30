@@ -20,7 +20,7 @@ import com.sep.vox.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 @Service
@@ -100,7 +100,7 @@ public class UpdateSchoolAssessmentPolicyUseCase implements IUseCase<UpdateAsses
         }
 
         // 7. Cập nhật các field nghiệp vụ (không đổi frameworkVersionId/rubricVersionId/languageId/scope)
-        OffsetDateTime now = OffsetDateTime.now();
+        Instant now = Instant.now();
         AssessmentPolicyStrictness strictness = command.strictness() != null ? command.strictness() : AssessmentPolicyStrictness.STANDARD;
 
         policy.setTargetFrameworkBandId(command.targetFrameworkBandId());

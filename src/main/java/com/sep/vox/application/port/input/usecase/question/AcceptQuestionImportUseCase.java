@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.question;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -48,7 +48,7 @@ public class AcceptQuestionImportUseCase implements IUseCase<AcceptQuestionImpor
     public Void execute(AcceptQuestionImportCommand input) {
         validateCommand(input);
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         var session = importSessionRepository.findById(input.importSessionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên import với id: " + input.importSessionId()));

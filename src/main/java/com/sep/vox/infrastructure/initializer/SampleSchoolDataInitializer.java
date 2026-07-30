@@ -21,6 +21,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.output.PasswordEncoderPort;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStatus;
@@ -966,7 +967,11 @@ public class SampleSchoolDataInitializer implements ApplicationRunner {
             }
             return;
         }
-        var endDate = membershipYears == null ? null : now.plus(membershipYears, ChronoUnit.YEARS);
+        // Instant.plus không nhận đơn vị YEARS/MONTHS (không phải khoảng thời gian chính xác nếu
+        // không có lịch), nên phải quy về múi giờ trước khi cộng theo năm.
+        var endDate = membershipYears == null
+            ? null
+            : now.atZone(DateMapper.DEFAULT_INPUT_ZONE).plusYears(membershipYears).toInstant();
         identity.schoolUserRepository().save(SchoolUser.create(userId, schoolId, now, endDate));
     }
 
@@ -1086,11 +1091,14 @@ public class SampleSchoolDataInitializer implements ApplicationRunner {
             createdBy
         ));
 
+        // Dẫn xuất từ now thay vì gọi LocalDate.now(): LocalDate.now() đọc múi giờ của JVM, và hai
+        // lần gọi riêng biệt còn có thể vắt qua nửa đêm nên ra hai ngày gốc khác nhau.
+        var subscriptionStart = LocalDate.ofInstant(now, DateMapper.DEFAULT_INPUT_ZONE);
         var subscription = subscriptions.schoolSubscriptionRepository().save(new SchoolSubscription(
             schoolId,
             plan.getId(),
-            LocalDate.now().minusDays(30),
-            LocalDate.now().plusDays(335),
+            subscriptionStart.minusDays(30),
+            subscriptionStart.plusDays(335),
             SubscriptionStatus.ACTIVE,
             new BigDecimal("24000000"),
             null,
@@ -1133,7 +1141,7 @@ public class SampleSchoolDataInitializer implements ApplicationRunner {
             "Khung năng lực ngoại ngữ 6 bậc - phiên bản 1",
             "Phiên bản seed cho kỹ năng nói, năm chỉ số đánh giá.",
             1,
-            now.minus(1, ChronoUnit.MONTHS),
+            now.atZone(DateMapper.DEFAULT_INPUT_ZONE).minusMonths(1).toInstant(),
             null,
             FrameworkVersionStatus.PUBLISHED,
             now, now, createdBy, createdBy
@@ -1272,7 +1280,7 @@ public class SampleSchoolDataInitializer implements ApplicationRunner {
             "Khung chấm nói - phiên bản 1",
             "Thang 0-10, tổng điểm theo trung bình có trọng số.",
             RubricStatus.PUBLISHED,
-            now.minus(1, ChronoUnit.MONTHS),
+            now.atZone(DateMapper.DEFAULT_INPUT_ZONE).minusMonths(1).toInstant(),
             null,
             new BigDecimal("0.00"),
             new BigDecimal("10.00"),
@@ -1356,7 +1364,7 @@ public class SampleSchoolDataInitializer implements ApplicationRunner {
             seed.strictness(),
             1,
             AssessmentPolicyStatus.PUBLISHED,
-            now.minus(7, ChronoUnit.MONTHS),
+            now.atZone(DateMapper.DEFAULT_INPUT_ZONE).minusMonths(7).toInstant(),
             null,
             now, now, createdBy, createdBy
         ));

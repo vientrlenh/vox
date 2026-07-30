@@ -20,7 +20,7 @@ import com.sep.vox.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 @Service
@@ -87,7 +87,7 @@ public class ArchiveSchoolRubricVersionUseCase implements IUseCase<ArchiveSchool
         }
 
         // 4. Lưu trạng thái mới
-        OffsetDateTime now = OffsetDateTime.now();
+        Instant now = Instant.now();
         version.setStatus(RubricStatus.ARCHIVED);
         // Không cho effectiveTo lùi về trước effectiveFrom nếu version chưa tới ngày hiệu lực
         version.setEffectiveTo(now.isBefore(version.getEffectiveFrom()) ? version.getEffectiveFrom() : now);

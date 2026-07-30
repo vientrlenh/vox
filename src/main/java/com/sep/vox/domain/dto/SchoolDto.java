@@ -1,6 +1,6 @@
 package com.sep.vox.domain.dto;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public record SchoolDto(
@@ -14,8 +14,8 @@ public record SchoolDto(
     String address,
     int studentCount,
     boolean isActive, 
-    OffsetDateTime createdAt, 
-    OffsetDateTime updatedAt
+    Instant createdAt, 
+    Instant updatedAt
 ) {
     
 }

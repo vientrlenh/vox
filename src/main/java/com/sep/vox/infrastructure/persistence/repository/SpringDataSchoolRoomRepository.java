@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -41,7 +41,7 @@ public interface SpringDataSchoolRoomRepository extends JpaRepository<SchoolRoom
             @Param("id") UUID id,
             @Param("name") String name,
             @Param("description") String description,
-            @Param("updatedAt") OffsetDateTime updatedAt,
+            @Param("updatedAt") Instant updatedAt,
             @Param("updatedBy") UUID updatedBy
     );
 }

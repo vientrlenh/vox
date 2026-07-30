@@ -7,7 +7,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -172,7 +173,7 @@ class AcceptSchoolUserImportUseCaseTests {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(userRepository.findById(currentUserId)).thenReturn(Optional.of(admin));
         when(schoolUserRepository.findByUserId(currentUserId))
-            .thenReturn(Optional.of(new SchoolUser(schoolId, currentUserId, OffsetDateTime.now(), null)));
+            .thenReturn(Optional.of(new SchoolUser(schoolId, currentUserId, Instant.now(), null)));
         var inactiveSchool = new School();
         inactiveSchool.setId(schoolId);
         inactiveSchool.setActive(false);
@@ -202,7 +203,7 @@ class AcceptSchoolUserImportUseCaseTests {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(userRepository.findById(currentUserId)).thenReturn(Optional.of(admin));
         when(schoolUserRepository.findByUserId(currentUserId))
-            .thenReturn(Optional.of(new SchoolUser(schoolId, currentUserId, OffsetDateTime.now(), null)));
+            .thenReturn(Optional.of(new SchoolUser(schoolId, currentUserId, Instant.now(), null)));
         var school = new School();
         school.setId(schoolId);
         school.setActive(true);
@@ -225,8 +226,8 @@ class AcceptSchoolUserImportUseCaseTests {
         return new ImportSession(
             id, schoolId, ImportType.USER, "users.csv", "[]", "{}", null,
             0L, 0L, 0L, 0L, 2L, null, ImportSessionStatus.PREVIEWED, null,
-            OffsetDateTime.now().plusDays(1), null, null, null, 0,
-            OffsetDateTime.now(), OffsetDateTime.now(),
+            Instant.now().plus(1, ChronoUnit.DAYS), null, null, null, 0,
+            Instant.now(), Instant.now(),
             UUID.randomUUID(), UUID.randomUUID()
         );
     }
@@ -235,8 +236,8 @@ class AcceptSchoolUserImportUseCaseTests {
         return new ImportSession(
             id, schoolId, type, "users.csv", "[]", "{}", null,
             0L, 0L, 0L, 0L, 2L, null, ImportSessionStatus.PREVIEWED, null,
-            OffsetDateTime.now().plusDays(1), null, null, null, 0,
-            OffsetDateTime.now(), OffsetDateTime.now(),
+            Instant.now().plus(1, ChronoUnit.DAYS), null, null, null, 0,
+            Instant.now(), Instant.now(),
             UUID.randomUUID(), UUID.randomUUID()
         );
     }
@@ -245,8 +246,8 @@ class AcceptSchoolUserImportUseCaseTests {
         return new ImportSession(
             id, schoolId, ImportType.USER, "users.csv", "[]", "{}", null,
             0L, 0L, 0L, 0L, 2L, null, status, null,
-            OffsetDateTime.now().plusDays(1), null, null, null, 0,
-            OffsetDateTime.now(), OffsetDateTime.now(),
+            Instant.now().plus(1, ChronoUnit.DAYS), null, null, null, 0,
+            Instant.now(), Instant.now(),
             UUID.randomUUID(), UUID.randomUUID()
         );
     }
@@ -255,8 +256,8 @@ class AcceptSchoolUserImportUseCaseTests {
         return new ImportSession(
             id, schoolId, ImportType.USER, "users.csv", "[]", "{}", null,
             0L, 0L, 0L, 0L, 2L, null, ImportSessionStatus.PREVIEWED, null,
-            OffsetDateTime.now().minusHours(1), null, null, null, 0,
-            OffsetDateTime.now(), OffsetDateTime.now(),
+            Instant.now().minus(1, ChronoUnit.HOURS), null, null, null, 0,
+            Instant.now(), Instant.now(),
             UUID.randomUUID(), UUID.randomUUID()
         );
     }

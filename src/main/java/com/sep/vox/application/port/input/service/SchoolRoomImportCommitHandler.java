@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.service;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -134,7 +134,7 @@ public class SchoolRoomImportCommitHandler implements ImportCommitHandler {
     }
 
     private void createRoom(Map<String, String> data, UUID schoolId, UUID currentUserId) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         schoolRoomRepository.save(new SchoolRoom(
                 schoolId,
                 data.get("code"),
@@ -148,7 +148,7 @@ public class SchoolRoomImportCommitHandler implements ImportCommitHandler {
     }
 
     private void updateRoom(SchoolRoom existing, Map<String, String> data, UUID currentUserId) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         existing.setName(data.get("name"));
         existing.setDescription(data.get("description"));
         existing.setUpdatedAt(now);

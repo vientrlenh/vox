@@ -9,12 +9,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public final class DateMapper {
-
-    private static final Logger log = LoggerFactory.getLogger(DateMapper.class);
 
     private DateMapper() {
     }
@@ -57,7 +52,7 @@ public final class DateMapper {
         for (var formatter : INPUT_LOCALDATE_FORMATTERS) {
             try {
                 return LocalDate.parse(stripped, formatter);
-            } catch (DateTimeParseException ignored) {
+            } catch (DateTimeParseException e) {
                 // Thử pattern kế tiếp.
             }
         }
@@ -111,9 +106,6 @@ public final class DateMapper {
             throw new IllegalArgumentException(
                     "Thời gian phải kèm múi giờ, ví dụ 2026-07-28T09:30:00+07:00 hoặc 2026-07-28T02:30:00Z");
         }
-        log.warn("Nhận thời gian không kèm múi giờ: \"{}\". Tạm giải nghĩa theo {} thành {}. "
-                        + "Client cần chuyển sang ISO-8601 có offset; nhánh tương thích này sẽ bị xóa.",
-                raw, DEFAULT_INPUT_ZONE, fallback);
         return fallback;
     }
 
@@ -145,7 +137,7 @@ public final class DateMapper {
 
         try {
             return OffsetDateTime.parse(raw).toInstant();
-        } catch (DateTimeParseException notSelfDescribing) {
+        } catch (DateTimeParseException e) {
             // Ô không mang offset -> giải nghĩa theo zone được truyền vào.
         }
 
@@ -165,13 +157,13 @@ public final class DateMapper {
     private static Instant resolveWithoutOffset(String raw, ZoneId zone) {
         try {
             return LocalDateTime.parse(raw).atZone(zone).toInstant();
-        } catch (DateTimeParseException notALocalDateTime) {
+        } catch (DateTimeParseException e) {
             // Thử dạng chỉ có ngày.
         }
         try {
             var date = toLocalDate(raw);
             return date == null ? null : date.atStartOfDay(zone).toInstant();
-        } catch (IllegalArgumentException notADate) {
+        } catch (IllegalArgumentException e) {
             return null;
         }
     }

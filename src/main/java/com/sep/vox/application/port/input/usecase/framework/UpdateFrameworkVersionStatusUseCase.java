@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -79,7 +79,7 @@ public class UpdateFrameworkVersionStatusUseCase implements IUseCase<UpdateFrame
         }
     }
 
-    private void validateNoConflictingPublished(UUID frameworkId, UUID versionId, OffsetDateTime effectiveFrom, OffsetDateTime effectiveTo) {
+    private void validateNoConflictingPublished(UUID frameworkId, UUID versionId, Instant effectiveFrom, Instant effectiveTo) {
         var published = frameworkVersionRepository.findByFrameworkIdAndStatus(frameworkId, FrameworkVersionStatus.PUBLISHED);
         boolean hasConflict = published.stream()
             .filter(v -> !v.getId().equals(versionId))
@@ -89,11 +89,11 @@ public class UpdateFrameworkVersionStatusUseCase implements IUseCase<UpdateFrame
         }
     }
 
-    private boolean rangesOverlap(OffsetDateTime from1, OffsetDateTime to1, OffsetDateTime from2, OffsetDateTime to2) {
-        OffsetDateTime start1 = from1 != null ? from1 : OffsetDateTime.MIN;
-        OffsetDateTime start2 = from2 != null ? from2 : OffsetDateTime.MIN;
-        OffsetDateTime end1 = to1 != null ? to1 : OffsetDateTime.MAX;
-        OffsetDateTime end2 = to2 != null ? to2 : OffsetDateTime.MAX;
+    private boolean rangesOverlap(Instant from1, Instant to1, Instant from2, Instant to2) {
+        Instant start1 = from1 != null ? from1 : Instant.MIN;
+        Instant start2 = from2 != null ? from2 : Instant.MIN;
+        Instant end1 = to1 != null ? to1 : Instant.MAX;
+        Instant end2 = to2 != null ? to2 : Instant.MAX;
         return start1.isBefore(end2) && start2.isBefore(end1);
     }
 }

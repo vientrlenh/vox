@@ -2,7 +2,7 @@ package com.sep.vox.application.port.input.service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.UUID;
 
@@ -63,7 +63,7 @@ public class ZeroScoreExamResultService {
     public ExamCandidateResult releaseZeroForEmptySession(UUID sessionId) {
         var session = examSessionRepository.findById(sessionId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên thi"));
-        return releaseZeroForSession(session, OffsetDateTime.now());
+        return releaseZeroForSession(session, Instant.now());
     }
 
     @Transactional
@@ -71,7 +71,7 @@ public class ZeroScoreExamResultService {
         var exam = examRepository.findById(examId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
         var policy = resolvePolicy(exam);
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var fallbackPaperId = examPaperRepository.findByExamId(examId).stream()
             .findFirst()
             .map(paper -> paper.getId())
@@ -120,13 +120,13 @@ public class ZeroScoreExamResultService {
         }
     }
 
-    private ExamCandidateResult releaseZeroForSession(ExamSession session, OffsetDateTime now) {
+    private ExamCandidateResult releaseZeroForSession(ExamSession session, Instant now) {
         var exam = examRepository.findById(session.getExamId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
         return releaseZeroForSession(session, resolvePolicy(exam), now);
     }
 
-    private ExamCandidateResult releaseZeroForSession(ExamSession session, AssessmentPolicy policy, OffsetDateTime now) {
+    private ExamCandidateResult releaseZeroForSession(ExamSession session, AssessmentPolicy policy, Instant now) {
         var existing = examCandidateResultRepository.findBySessionId(session.getId()).orElse(null);
         var result = existing == null ? new ExamCandidateResult() : existing;
         var rubricBand = resolveRubricBandForZero(policy);

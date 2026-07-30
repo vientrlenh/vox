@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examitemresponse;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.Locale;
 
@@ -66,7 +66,7 @@ public class UpdateExamItemResponseTurnUseCase
         return ExamItemResponseResponseMapper.toTurnResponse(saved);
     }
 
-    public static OffsetDateTime parseAnsweredAt(String answeredAt) {
+    public static Instant parseAnsweredAt(String answeredAt) {
         if (answeredAt == null) {
             return null;
         }
@@ -75,7 +75,7 @@ public class UpdateExamItemResponseTurnUseCase
         }
 
         try {
-            return OffsetDateTime.parse(answeredAt.trim());
+            return Instant.parse(answeredAt.trim());
         } catch (DateTimeParseException ex) {
             throw new IllegalArgumentException("answeredAt không đúng định dạng ISO-8601");
         }

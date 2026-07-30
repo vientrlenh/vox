@@ -21,7 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.*;
 
 @Service
@@ -74,7 +74,7 @@ public class CreateSystemRubricResultBandsUseCase implements IUseCase<CreateSyst
             throw new ForbiddenException("Rubric này thuộc về Trường học. System Admin không có quyền can thiệp.");
         }
 
-        OffsetDateTime now = OffsetDateTime.now();
+        Instant now = Instant.now();
 
         // Bộ nhớ tạm để kiểm tra trùng lặp dữ liệu đầu vào (O(1) lookup)
         Set<String> uniqueCodes = new HashSet<>();

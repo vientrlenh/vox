@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -160,7 +160,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         validateInputMode(command);
         validateOpenClose(command.openAt(), command.closeAt());
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         if (command.existingBlueprintId() != null && command.existingBlueprintVersionId() != null) {
             return executeWithExistingBlueprint(command, schoolClass, currentUserId, now);
         }
@@ -171,7 +171,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             CreateClassTestCommand command,
             SchoolClass schoolClass,
             UUID currentUserId,
-            OffsetDateTime now) {
+            Instant now) {
         // Chế độ "câu hỏi trực tiếp": không tạo blueprint ẩn nào — thao tác thẳng trên ExamPaperSection/ExamPaperItem
         // để bài trên lớp thực sự tự do, không phụ thuộc lớp blueprint khi không dùng blueprint dùng chung.
         validateDirectQuestionDurationWithinPlan(command, schoolClass, currentUserId);
@@ -218,7 +218,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             CreateClassTestCommand command,
             SchoolClass schoolClass,
             UUID currentUserId,
-            OffsetDateTime now) {
+            Instant now) {
         var blueprint = examBlueprintRepository.findById(command.existingBlueprintId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy blueprint"));
         if (!blueprint.getSchoolId().equals(schoolClass.getSchoolId())) {
@@ -384,7 +384,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             SchoolClass schoolClass,
             CreateClassTestCommand command,
             UUID currentUserId,
-            OffsetDateTime now) {
+            Instant now) {
         var code = "CT-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase();
         var openAt = parseDateTime(command.openAt());
         var closeAt = parseDateTime(command.closeAt());
@@ -421,7 +421,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         ));
     }
 
-    private ExamPaper createPaper(Exam exam, UUID blueprintVersionId, OffsetDateTime now, UUID currentUserId) {
+    private ExamPaper createPaper(Exam exam, UUID blueprintVersionId, Instant now, UUID currentUserId) {
         return examPaperRepository.save(new ExamPaper(
             exam.getId(),
             blueprintVersionId,
@@ -436,7 +436,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         ));
     }
 
-    private ExamSchedule createDraftSchedule(Exam exam, UUID currentUserId, OffsetDateTime now) {
+    private ExamSchedule createDraftSchedule(Exam exam, UUID currentUserId, Instant now) {
         if (exam.getOpenAt() == null || exam.getCloseAt() == null) {
             throw new IllegalStateException("Bài kiểm tra trên lớp phải có thời gian mở bài và đóng bài");
         }
@@ -452,7 +452,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         return examScheduleRepository.save(schedule);
     }
 
-    private ExamPaperSection createPaperSection(ExamPaper paper, ExamBlueprintSection section, OffsetDateTime now, UUID currentUserId) {
+    private ExamPaperSection createPaperSection(ExamPaper paper, ExamBlueprintSection section, Instant now, UUID currentUserId) {
         return examPaperSectionRepository.save(new ExamPaperSection(
             paper.getId(),
             section.getOrder(),
@@ -559,7 +559,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             UUID scheduleId,
             UUID schoolClassId,
             UUID currentUserId,
-            OffsetDateTime now) {
+            Instant now) {
         var roster = schoolClassUserRepository.findBySchoolClassId(schoolClassId, 1, MAX_CLASS_ROSTER_SIZE).content();
         var candidates = new ArrayList<ExamCandidate>();
         for (var classUser : roster) {
@@ -591,12 +591,12 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         if (openAt == null || openAt.isBlank() || closeAt == null || closeAt.isBlank()) {
             throw new IllegalStateException("Bài kiểm tra trên lớp phải có thời gian mở bài và đóng bài");
         }
-        if (!OffsetDateTime.parse(openAt).isBefore(OffsetDateTime.parse(closeAt))) {
+        if (!Instant.parse(openAt).isBefore(Instant.parse(closeAt))) {
             throw new IllegalStateException("Thời gian mở bài phải nhỏ hơn thời gian đóng bài");
         }
     }
 
-    private OffsetDateTime parseDateTime(String value) {
-        return value == null ? null : OffsetDateTime.parse(value);
+    private Instant parseDateTime(String value) {
+        return value == null ? null : Instant.parse(value);
     }
 }

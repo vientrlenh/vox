@@ -6,7 +6,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -25,7 +26,7 @@ public class ViewFrameworkVersionDetailsUseCaseTests {
 
     private FrameworkVersionRepository frameworkVersionRepository;
     private ViewFrameworkVersionDetailsUseCase useCase;
-    private OffsetDateTime now = OffsetDateTime.now();
+    private Instant now = Instant.now();
 
     @BeforeEach
     void setUp() {
@@ -47,7 +48,7 @@ public class ViewFrameworkVersionDetailsUseCaseTests {
         version.setVersion(1);
         version.setStatus(FrameworkVersionStatus.PUBLISHED);
         version.setEffectiveFrom(now);
-        version.setEffectiveTo(now.plusDays(365));
+        version.setEffectiveTo(now.plus(365, ChronoUnit.DAYS));
 
         when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.of(version));
 

@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.stream;
 
 import java.time.Duration;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -61,7 +61,7 @@ public class IssueMonitorTokenUseCase implements IUseCase<IssueMonitorTokenComma
     public String execute(IssueMonitorTokenCommand input) {
         var userId = userContextPort.getCurrentAuthenticatedUserId();
         var schoolId = userContextPort.getCurrentSchoolId();
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
 
         var exam = examRepository.findById(input.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy kỳ thi"));

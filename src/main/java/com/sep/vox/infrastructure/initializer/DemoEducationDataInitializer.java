@@ -4,8 +4,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,6 +18,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.output.PasswordEncoderPort;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStatus;
@@ -461,7 +460,9 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
             teacherIds.add(teacher.getId());
         }
 
-        var endDate = now.plusYears(3);
+        // Instant.plus không nhận đơn vị YEARS/MONTHS (không phải khoảng thời gian chính xác nếu
+        // không có lịch), nên phải quy về múi giờ trước khi cộng theo năm.
+        var endDate = now.atZone(DateMapper.DEFAULT_INPUT_ZONE).plusYears(3).toInstant();
         var studentIds = new ArrayList<UUID>();
         var studentNames = currentStudentNames();
         for (var studentIndex = 0; studentIndex < STUDENTS_PER_SCHOOL; studentIndex++) {
@@ -559,7 +560,7 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
     }
 
     private void seedSchoolSubscription(School school, SubscriptionPlan plan, Instant now) {
-        var startDate = LocalDate.ofInstant(now, ZoneId.of("UTC"));
+        var startDate = LocalDate.ofInstant(now, DateMapper.DEFAULT_INPUT_ZONE);
         var subscription = schoolSubscriptionRepository.save(new SchoolSubscription(
             school.getId(),
             plan.getId(),
@@ -727,8 +728,8 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
             UUID createdBy,
             Instant now) {
         var schoolCode = school.getCode().value();
-        var joinedAt = now.minus(2, ChronoUnit.YEARS);
-        var leftAt = now.minus(1, ChronoUnit.MONTHS);
+        var joinedAt = now.atZone(DateMapper.DEFAULT_INPUT_ZONE).minusYears(2).toInstant();
+        var leftAt = now.atZone(DateMapper.DEFAULT_INPUT_ZONE).minusMonths(1).toInstant();
         var studentIds = new ArrayList<UUID>();
         var studentNames = historicalStudentNames();
         for (var studentIndex = 0; studentIndex < HISTORICAL_STUDENTS_PER_SCHOOL; studentIndex++) {
@@ -797,16 +798,17 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
                 );
 
                 var teacherId = teacherIds.get((yearIndex * 3 + gradeOffset) % teacherIds.size());
-                ensureClassMembership(teacherId, schoolClass.getId(), false, gradeStart.atStartOfDay().atOffset(ZoneOffset.UTC),
-                    gradeEnd.plusDays(1).atStartOfDay().atOffset(ZoneOffset.UTC), schoolAdminId);
+                var joinedAt = gradeStart.atStartOfDay(DateMapper.DEFAULT_INPUT_ZONE).toInstant();
+                var leftAt = gradeEnd.plusDays(1).atStartOfDay(DateMapper.DEFAULT_INPUT_ZONE).toInstant();
+                ensureClassMembership(teacherId, schoolClass.getId(), false, joinedAt, leftAt, schoolAdminId);
                 for (var studentSlot = 0; studentSlot < 2; studentSlot++) {
                     var studentIndex = (gradeOffset * 2 + studentSlot + yearIndex * 2) % historicalStudentIds.size();
                     ensureClassMembership(
                         historicalStudentIds.get(studentIndex),
                         schoolClass.getId(),
                         false,
-                        gradeStart.atStartOfDay().atOffset(now.getOffset()),
-                        gradeEnd.plusDays(1).atStartOfDay().atOffset(now.getOffset()),
+                        joinedAt,
+                        leftAt,
                         schoolAdminId
                     );
                 }
@@ -933,7 +935,7 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
             "VSTEP Speaking 1.0",
             "Phiên bản dùng cho đánh giá nói theo định hướng VSTEP",
             1,
-            now.minus(1, ChronoUnit.YEARS),
+            now.atZone(DateMapper.DEFAULT_INPUT_ZONE).minusYears(1).toInstant(),
             null,
             FrameworkVersionStatus.PUBLISHED,
             now,
@@ -1034,10 +1036,10 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
             RubricVersion currentVersion = null;
             for (var versionSeed : rubricSeed.versions()) {
                 var effectiveFrom = versionSeed.status() == RubricStatus.ARCHIVED
-                    ? now.minusYears(2)
-                    : now.minusDays(1);
+                    ? now.atZone(DateMapper.DEFAULT_INPUT_ZONE).minusYears(2).toInstant()
+                    : now.minus(1, ChronoUnit.DAYS);
                 var effectiveTo = versionSeed.status() == RubricStatus.ARCHIVED
-                    ? now.minusDays(2)
+                    ? now.minus(2, ChronoUnit.DAYS)
                     : null;
                 var version = new RubricVersion(
                     rubric.getId(),
@@ -1084,7 +1086,7 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
                 rubricSeed.strictness(),
                 1,
                 AssessmentPolicyStatus.PUBLISHED,
-                now.minusDays(1),
+                now.minus(1, ChronoUnit.DAYS),
                 null,
                 now,
                 now,

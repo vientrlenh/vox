@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.importfile;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -52,7 +52,7 @@ public class RejectImportSessionUseCase implements IUseCase<RejectImportSessionC
             throw new IllegalArgumentException("Phiên import không được để trống");
         }
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         var currentUser = findCurrentUser(currentUserId);
         var schoolId = getSchoolId(currentUser);
@@ -103,7 +103,7 @@ public class RejectImportSessionUseCase implements IUseCase<RejectImportSessionC
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên import"));
     }
 
-    private void validateSession(ImportSession session, UUID schoolId, OffsetDateTime now, UUID currentUserId) {
+    private void validateSession(ImportSession session, UUID schoolId, Instant now, UUID currentUserId) {
         if (!Objects.equals(session.getSchoolId(), schoolId)) {
             throw new IllegalArgumentException("Phiên import không thuộc trường hiện tại");
         }

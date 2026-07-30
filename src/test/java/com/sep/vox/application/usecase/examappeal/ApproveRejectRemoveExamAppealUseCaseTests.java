@@ -8,7 +8,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -89,7 +90,7 @@ public class ApproveRejectRemoveExamAppealUseCaseTests {
     void should_approve_and_set_deadline_and_approved_at() {
         var context = context(ExamAppealStatus.PENDING);
         when(examAppealAccessService.load(appealId)).thenReturn(context);
-        var deadline = OffsetDateTime.now().plusDays(7);
+        var deadline = Instant.now().plus(7, ChronoUnit.DAYS);
 
         approveUseCase.execute(new ApproveExamAppealCommand(appealId, deadline));
 
@@ -103,7 +104,7 @@ public class ApproveRejectRemoveExamAppealUseCaseTests {
         when(examAppealAccessService.load(appealId)).thenReturn(context(ExamAppealStatus.PENDING));
 
         assertThatThrownBy(() -> approveUseCase.execute(
-            new ApproveExamAppealCommand(appealId, OffsetDateTime.now().minusDays(1))))
+            new ApproveExamAppealCommand(appealId, Instant.now().minus(1, ChronoUnit.DAYS))))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("tương lai");
 
@@ -115,7 +116,7 @@ public class ApproveRejectRemoveExamAppealUseCaseTests {
         when(examAppealAccessService.load(appealId)).thenReturn(context(ExamAppealStatus.GRADING));
 
         assertThatThrownBy(() -> approveUseCase.execute(
-            new ApproveExamAppealCommand(appealId, OffsetDateTime.now().plusDays(7))))
+            new ApproveExamAppealCommand(appealId, Instant.now().plus(7, ChronoUnit.DAYS))))
             .isInstanceOf(IllegalStateException.class);
     }
 

@@ -1,7 +1,5 @@
 package com.sep.vox.interfaces.graphql.controller;
 
-import java.time.OffsetDateTime;
-import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -16,6 +14,7 @@ import org.springframework.stereotype.Controller;
 
 import graphql.schema.DataFetchingEnvironment;
 
+import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.input.query.ViewExamSchedulesQuery;
 import com.sep.vox.application.port.input.usecase.examschedule.UpdateExamScheduleUseCase;
 import com.sep.vox.application.port.input.usecase.examschedule.ViewExamSchedulesUseCase;
@@ -57,18 +56,13 @@ public class ExamScheduleController {
             @Argument(name = "startDate") String startDate,
             @Argument(name = "endDate") String endDate) {
         return viewExamSchedulesUseCase.execute(
-            new ViewExamSchedulesQuery(examId, status, parseOffset(startDate), parseOffset(endDate)));
-    }
-
-    private static OffsetDateTime parseOffset(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        try {
-            return OffsetDateTime.parse(value);
-        } catch (DateTimeParseException ex) {
-            throw new IllegalArgumentException("Định dạng thời gian không hợp lệ");
-        }
+            new ViewExamSchedulesQuery(
+                examId, 
+                status, 
+                DateMapper.toInstant(startDate), 
+                DateMapper.toInstant(endDate)
+            )
+        );
     }
 
     @SchemaMapping(typeName = "ExamSchedule", field = "room")

@@ -10,7 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -83,8 +83,8 @@ class DeleteSchoolGradeUseCaseTests {
         useCase.execute(new DeleteSchoolGradeCommand(schoolId, gradeId));
 
         // Vô hiệu hóa membership + archive lớp thuộc năm học
-        verify(schoolClassUserRepository).deactivateByGradeId(eq(gradeId), any(OffsetDateTime.class));
-        verify(schoolClassRepository).archiveByGradeId(eq(gradeId), any(OffsetDateTime.class), eq(currentUserId));
+        verify(schoolClassUserRepository).deactivateByGradeId(eq(gradeId), any(Instant.class));
+        verify(schoolClassRepository).archiveByGradeId(eq(gradeId), any(Instant.class), eq(currentUserId));
 
         // Archive chính năm học (xóa mềm), không hard-delete
         var captor = ArgumentCaptor.forClass(SchoolGrade.class);
@@ -107,7 +107,7 @@ class DeleteSchoolGradeUseCaseTests {
     }
 
     private SchoolGrade grade(SchoolGradeStatus status) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         return new SchoolGrade(
             gradeId, gradeLevelId, "NH2024", "Năm học 2024", "desc",
             LocalDate.of(2024, 9, 1), LocalDate.of(2025, 6, 30), status,
@@ -116,7 +116,7 @@ class DeleteSchoolGradeUseCaseTests {
     }
 
     private SchoolGradeLevel gradeLevel() {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         return new SchoolGradeLevel(
             gradeLevelId, schoolId, "K1", "Khối 1", "desc", 1, SchoolGradeLevelStatus.ACTIVE, now, now,
             UUID.randomUUID(), UUID.randomUUID()

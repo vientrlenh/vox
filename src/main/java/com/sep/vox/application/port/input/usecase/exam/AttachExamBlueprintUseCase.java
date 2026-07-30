@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -133,7 +133,7 @@ public class AttachExamBlueprintUseCase implements IUseCase<AttachExamBlueprintC
             exam.setBlueprintVersionId(input.blueprintVersionId());
         }
 
-        exam.setUpdatedAt(OffsetDateTime.now());
+        exam.setUpdatedAt(Instant.now());
         exam.setUpdatedBy(currentUserId);
         return ExamDtoMapper.toDto(examRepository.save(exam));
     }
@@ -150,7 +150,7 @@ public class AttachExamBlueprintUseCase implements IUseCase<AttachExamBlueprintC
             UUID schoolId,
             UUID examLanguageId,
             UUID currentUserId) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var name = StringNormalization.trimAndCollapseSpaces(command.name());
         if (name == null || name.isBlank()) {
             throw new IllegalStateException("Tên blueprint là bắt buộc");

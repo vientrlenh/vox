@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -66,7 +66,7 @@ public class DeleteExamUseCase implements IUseCase<DeleteExamCommand, DeleteExam
         var hasPapers = exam.getKind() == ExamKind.CENTRALIZED && examPaperRepository.existsByExamId(exam.getId());
         if (hasPapers || hasSubmittedSessions) {
             exam.setStatus(ExamStatus.CANCELLED);
-            exam.setUpdatedAt(OffsetDateTime.now());
+            exam.setUpdatedAt(Instant.now());
             exam.setUpdatedBy(currentUserId);
             examRepository.save(exam);
             return new DeleteExamResponse(false, true);

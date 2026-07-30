@@ -70,7 +70,6 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
     public ImportType supportedType() {
         return ImportType.ASSESSMENT_POLICY;
     }
-
     // schoolGradeLevelId: Khối (tĩnh, không gắn năm học) | schoolGradeId: Khối năm học (khối trong 1 năm học cụ thể)
     // rubricVersionId nằm trong key vì trùng scope nhưng khác Rubric Version vẫn được phép (giống CreateSchoolAssessmentPolicyUseCase)
     private record ScopeKey(UUID schoolId, UUID languageId, UUID frameworkVersionId,

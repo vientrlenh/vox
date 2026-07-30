@@ -10,17 +10,8 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-/**
- * Đối chiếu schema do Flyway dựng với toàn bộ entity mapping.
- *
- * <p>Ba property dưới đây được khai tường minh thay vì dựa vào file cấu hình, vì thứ tự ưu tiên
- * giữa {@code application.yaml} và {@code application-test.yaml} đang không rõ ràng:
- * {@code application-test.yaml} khai {@code create-drop} và {@code H2Dialect}, nhưng thực tế chạy
- * lại là {@code validate} với Postgres dialect (do {@code spring.jpa.properties.*} ở file chính
- * được merge lên trên giá trị suy ra từ {@code database-platform}). Nếu test này chạy với
- * {@code create-drop} thì nó vẫn xanh nhưng mất hoàn toàn tác dụng.
- */
 @SpringBootTest(properties = {
+    "spring.datasource.url=jdbc:postgresql://localhost:5433/vox-schema-test",
     "spring.jpa.hibernate.ddl-auto=validate",
     "spring.flyway.enabled=true",
     "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect"

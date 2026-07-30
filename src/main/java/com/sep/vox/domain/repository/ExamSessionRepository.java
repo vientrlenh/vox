@@ -29,6 +29,9 @@ public interface ExamSessionRepository {
     Optional<ExamSession> findActiveByExamIdAndCandidateId(UUID examId, UUID candidateId);
     List<ExamSession> findActiveByIdInAndSchoolId(Collection<UUID> ids, OffsetDateTime now, UUID schoolId);
 
+    /** Atomic conditional transition: only succeeds if current status equals {@code from}. Returns false if another writer already moved it. */
+    boolean tryTransitionStatus(UUID sessionId, ExamSessionStatus from, ExamSessionStatus to);
+
     /**
      * Chốt loại stream cho phiên thi nếu chưa chốt.
      *

@@ -61,7 +61,6 @@ public class ExamSessionController {
             UpdateExamSessionRemainingTimeUseCase updateExamSessionRemainingTimeUseCase) {
         this.createExamSessionUseCase = createExamSessionUseCase;
         this.completeExamSessionGradingUseCase = completeExamSessionGradingUseCase;
-
         this.updateExamSessionStatusUseCase = updateExamSessionStatusUseCase;
         this.getExamSessionPaperUseCase = getExamSessionPaperUseCase;
         this.deleteExamSessionUseCase = deleteExamSessionUseCase;
@@ -75,12 +74,12 @@ public class ExamSessionController {
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER', 'STUDENT')")
     public ResponseEntity<ApiResponse<?>> create(@Valid @RequestBody CreateExamSessionRequest request) {
         var data = createExamSessionUseCase.execute(new CreateExamSessionCommand(
-            request.examId(),
-            request.candidateId(),
-            request.paperId()
+                request.examId(),
+                request.candidateId(),
+                request.paperId()
         ));
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(ApiResponse.success("Tao phien thi thanh cong", data));
+                .body(ApiResponse.success("Tao phien thi thanh cong", data));
     }
 
     @PatchMapping("/{id}")
@@ -89,8 +88,8 @@ public class ExamSessionController {
             @PathVariable("id") UUID id,
             @Valid @RequestBody UpdateExamSessionRequest request) {
         var data = updateExamSessionStatusUseCase.execute(new UpdateExamSessionStatusCommand(
-            id,
-            ExamSessionStatus.valueOf(request.status().trim().toUpperCase())
+                id,
+                ExamSessionStatus.valueOf(request.status().trim().toUpperCase())
         ));
         return ResponseEntity.ok(ApiResponse.success("Cap nhat trang thai phien thi thanh cong", data));
     }
@@ -144,15 +143,15 @@ public class ExamSessionController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
-    public ResponseEntity<ApiResponse<?>> delete(@PathVariable("id") UUID id) {
+    public ResponseEntity<ApiResponse<?>> delete(@PathVariable UUID id) {
         deleteExamSessionUseCase.execute(id);
         return ResponseEntity.ok(ApiResponse.success("Xoa phien thi thanh cong", null));
     }
 
-    @PostMapping("/{sessionId}/complete-grading")
+     @PostMapping("/{sessionId}/complete-grading")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public ResponseEntity<ApiResponse<Void>> completeGrading(@PathVariable("sessionId") UUID sessionId) {
+    public ResponseEntity<ApiResponse<Void>> completeGrading(@PathVariable UUID sessionId) {
         completeExamSessionGradingUseCase.execute(new CompleteExamSessionGradingCommand(sessionId));
         return ResponseEntity.ok(ApiResponse.success("Ghi nhận hoàn tất chấm bài thành công"));
-    }
+}
 }

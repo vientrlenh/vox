@@ -129,4 +129,9 @@ public class ExamSessionRepositoryImpl implements ExamSessionRepository {
             .map(ExamSessionMapper::toDomain)
             .toList();
     }
+
+    @Override
+    public boolean tryTransitionStatus(UUID sessionId, ExamSessionStatus from, ExamSessionStatus to) {
+        return springDataExamSessionRepository.tryTransitionStatus(sessionId, from.name(), to.name()) > 0;
+    }
 }

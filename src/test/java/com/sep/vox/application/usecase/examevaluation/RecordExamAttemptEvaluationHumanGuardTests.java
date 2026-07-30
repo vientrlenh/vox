@@ -22,9 +22,9 @@ import org.springframework.transaction.support.SimpleTransactionStatus;
 
 import com.sep.vox.application.port.input.command.examevaluation.RecordExamAttemptEvaluationCommand;
 import com.sep.vox.application.port.input.service.ConfidenceReviewCalculator;
+import com.sep.vox.application.port.input.usecase.exam.CompleteExamSessionGradingUseCase;
 import com.sep.vox.application.port.input.usecase.examevaluation.RecordExamAttemptEvaluationUseCase;
 import com.sep.vox.application.port.input.usecase.examevaluation.UpsertExamCandidateResultUseCase;
-import com.sep.vox.application.port.input.usecase.examsession.UpdateExamSessionStatusUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
 import com.sep.vox.domain.model.exam.Exam;
@@ -66,7 +66,7 @@ public class RecordExamAttemptEvaluationHumanGuardTests {
     private AssessmentPolicyRepository assessmentPolicyRepository;
     private RubricVersionRepository rubricVersionRepository;
     private UpsertExamCandidateResultUseCase upsertExamCandidateResultUseCase;
-    private UpdateExamSessionStatusUseCase updateExamSessionStatusUseCase;
+    private CompleteExamSessionGradingUseCase completeExamSessionGradingUseCase;
     private JsonSerializationPort jsonSerializationPort;
     private RecordExamAttemptEvaluationUseCase useCase;
 
@@ -89,7 +89,7 @@ public class RecordExamAttemptEvaluationHumanGuardTests {
         assessmentPolicyRepository = mock(AssessmentPolicyRepository.class);
         rubricVersionRepository = mock(RubricVersionRepository.class);
         upsertExamCandidateResultUseCase = mock(UpsertExamCandidateResultUseCase.class);
-        updateExamSessionStatusUseCase = mock(UpdateExamSessionStatusUseCase.class);
+        completeExamSessionGradingUseCase = mock(CompleteExamSessionGradingUseCase.class);
         jsonSerializationPort = mock(JsonSerializationPort.class);
 
         var transactionManager = mock(PlatformTransactionManager.class);
@@ -100,7 +100,7 @@ public class RecordExamAttemptEvaluationHumanGuardTests {
             examItemResponseRepository, examItemEvaluationRepository, examItemCriterionScoreRepository,
             examItemEvaluationTurnRepository, rubricCriterionRepository, examSessionRepository, examRepository,
             assessmentPolicyRepository, rubricVersionRepository, upsertExamCandidateResultUseCase,
-            updateExamSessionStatusUseCase,
+            completeExamSessionGradingUseCase,
             transactionManager, jsonSerializationPort, new ConfidenceReviewCalculator());
 
         when(examItemResponseRepository.findById(responseId)).thenReturn(Optional.of(

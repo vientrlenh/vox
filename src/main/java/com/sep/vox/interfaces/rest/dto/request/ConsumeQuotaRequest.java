@@ -11,6 +11,7 @@ public record ConsumeQuotaRequest(
     @NotNull UUID subscriptionId,
     @NotNull UUID examSessionId,
     @NotNull QuotaType quotaType,
-    @NotNull @Positive Integer amount
+    @NotNull @Positive Integer amount,
+    UUID userId
 ) {
 }

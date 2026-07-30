@@ -189,7 +189,7 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
                 RubricCriterionExamples examplesObj = null;
                 if (errors.isEmpty() && examplesStr != null && !examplesStr.isBlank()) {
                     try {
-                        List<String> rawExamples = Arrays.stream(examplesStr.split("[,;]"))
+                        List<String> rawExamples = Arrays.stream(examplesStr.split(";"))
                                 .map(s -> s.trim())
                                 .filter(s -> !s.isBlank())
                                 .toList();

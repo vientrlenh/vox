@@ -5,7 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
@@ -113,7 +114,7 @@ public class ViewSchoolUsersUseCaseTests {
     }
 
     private SchoolUser schoolUser(UUID id, UUID userSchoolId, UUID userId) {
-        var now = OffsetDateTime.now();
-        return new SchoolUser(id, userSchoolId, userId, now, now.plusYears(1));
+        var now = Instant.now();
+        return new SchoolUser(id, userSchoolId, userId, now, now.plus(365, ChronoUnit.DAYS));
     }
 }

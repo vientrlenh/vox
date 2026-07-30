@@ -9,7 +9,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -90,7 +91,7 @@ public class CreateSchoolUserUseCaseTests {
         when(userRepository.findByEmail("student@school.edu.vn")).thenReturn(Optional.empty());
         when(userRepository.findByPhone("0987654321")).thenReturn(Optional.empty());
         when(userRepository.save(any(User.class))).thenReturn(savedUser);
-        when(userRoleRepository.save(any(UserRole.class))).thenReturn(new UserRole(savedUser.getId(), studentRole.getId(), OffsetDateTime.now()));
+        when(userRoleRepository.save(any(UserRole.class))).thenReturn(new UserRole(savedUser.getId(), studentRole.getId(), Instant.now()));
 
         assertThrows(IllegalArgumentException.class, () -> createSchoolUserUseCase.execute(command));
         verify(schoolUserRepository, never()).save(any(SchoolUser.class));
@@ -106,7 +107,7 @@ public class CreateSchoolUserUseCaseTests {
             "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT",
             LocalDate.of(2023, 1, 1), LocalDate.of(2029, 1, 1)
         );
-        var schoolUser = new SchoolUser(schoolId, savedUser.getId(), OffsetDateTime.now(), OffsetDateTime.now().plusYears(100));
+        var schoolUser = new SchoolUser(schoolId, savedUser.getId(), Instant.now(), Instant.now().plus(36500, ChronoUnit.DAYS));
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
         when(userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(Optional.of(caller));
@@ -114,7 +115,7 @@ public class CreateSchoolUserUseCaseTests {
         when(userRepository.findByEmail("student@school.edu.vn")).thenReturn(Optional.empty());
         when(userRepository.findByPhone("0987654321")).thenReturn(Optional.empty());
         when(userRepository.save(any(User.class))).thenReturn(savedUser);
-        when(userRoleRepository.save(any(UserRole.class))).thenReturn(new UserRole(savedUser.getId(), studentRole.getId(), OffsetDateTime.now()));
+        when(userRoleRepository.save(any(UserRole.class))).thenReturn(new UserRole(savedUser.getId(), studentRole.getId(), Instant.now()));
         when(schoolUserRepository.save(any(SchoolUser.class))).thenReturn(schoolUser);
         var result = createSchoolUserUseCase.execute(command);
 
@@ -140,7 +141,7 @@ public class CreateSchoolUserUseCaseTests {
         when(userRepository.findByEmail("student@school.edu.vn")).thenReturn(Optional.empty());
         when(userRepository.findByPhone("0987654321")).thenReturn(Optional.empty());
         when(userRepository.save(any(User.class))).thenReturn(savedUser);
-        when(userRoleRepository.save(any(UserRole.class))).thenReturn(new UserRole(savedUser.getId(), studentRole.getId(), OffsetDateTime.now()));
+        when(userRoleRepository.save(any(UserRole.class))).thenReturn(new UserRole(savedUser.getId(), studentRole.getId(), Instant.now()));
 
         assertThrows(IllegalArgumentException.class, () -> createSchoolUserUseCase.execute(command));
         verify(schoolUserRepository, never()).save(any(SchoolUser.class));
@@ -183,7 +184,7 @@ public class CreateSchoolUserUseCaseTests {
         when(userRepository.findByEmail("teacher@school.edu.vn")).thenReturn(Optional.empty());
         when(userRepository.findByPhone("0987654322")).thenReturn(Optional.empty());
         when(userRepository.save(any(User.class))).thenReturn(savedUser);
-        when(userRoleRepository.save(any(UserRole.class))).thenReturn(new UserRole(savedUser.getId(), teacherRole.getId(), OffsetDateTime.now()));
+        when(userRoleRepository.save(any(UserRole.class))).thenReturn(new UserRole(savedUser.getId(), teacherRole.getId(), Instant.now()));
         var result = createSchoolUserUseCase.execute(command);
 
         assertThat(result.id()).isEqualTo(savedUser.getId());
@@ -296,19 +297,19 @@ public class CreateSchoolUserUseCaseTests {
     }
 
     private User callerUser(UUID id, UUID userSchoolId, UserStatus status) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var user = new User(id, new Email("admin@school.edu.vn"), "hash",
             new Phone("0900000000"), new FullName("Admin User"), null,
             new DateOfBirth(LocalDate.of(1980, 1, 1)), "Admin Street", null,
             status, now, now, id, id);
         when(schoolUserRepository.findByUserId(id)).thenReturn(Optional.of(
-            new SchoolUser(userSchoolId, id, now, now.plusYears(100))
+            new SchoolUser(userSchoolId, id, now, now.plus(36500, ChronoUnit.DAYS))
         ));
         return user;
     }
 
     private User savedUser(UUID userSchoolId) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var id = UUID.randomUUID();
         return new User(id, new Email("student@school.edu.vn"), "__PASSWORD_NOT_SET__",
             new Phone("0987654321"), new FullName("Nguyen Van A"), null,
@@ -317,7 +318,7 @@ public class CreateSchoolUserUseCaseTests {
     }
 
     private Role role(String code) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var systemId = UUID.randomUUID();
         return new Role(UUID.randomUUID(), new RoleCode(code), code, now, now, systemId, systemId);
     }

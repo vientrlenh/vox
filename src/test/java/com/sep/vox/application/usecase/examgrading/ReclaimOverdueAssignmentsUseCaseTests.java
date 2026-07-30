@@ -12,7 +12,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -82,10 +83,10 @@ class ReclaimOverdueAssignmentsUseCaseTests {
     }
 
     private ExamGradingAssignment overdue(GradingRoundType roundType, UUID linkedAppealId) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var assignment = ExamGradingAssignment.open(
             candidateResultId, UUID.randomUUID(), roundType, linkedAppealId, null,
-            now.minusDays(3), adminId, now.minusDays(1));
+            now.minus(3, ChronoUnit.DAYS), adminId, now.minus(1, ChronoUnit.DAYS));
         assignment.setId(UUID.randomUUID());
         return assignment;
     }

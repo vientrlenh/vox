@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
@@ -30,7 +30,7 @@ public interface SpringDataRegisterFormRepository extends JpaRepository<Register
         WHERE r.id = :id 
         AND r.status = 'PENDING'
             """)
-    int updateApprovedRegisterForm(@Param("id") UUID id, @Param("updatedBy") UUID updatedBy, @Param("now") OffsetDateTime now);
+    int updateApprovedRegisterForm(@Param("id") UUID id, @Param("updatedBy") UUID updatedBy, @Param("now") Instant now);
 
     @Modifying
     @Query("""
@@ -42,7 +42,7 @@ public interface SpringDataRegisterFormRepository extends JpaRepository<Register
         WHERE r.id = :id 
         AND r.status = 'PENDING'
     """)
-    int updateRejectedRegisterForm(@Param("id") UUID id, @Param("updatedBy") UUID updatedBy, @Param("reason") String reason, @Param("now") OffsetDateTime now);
+    int updateRejectedRegisterForm(@Param("id") UUID id, @Param("updatedBy") UUID updatedBy, @Param("reason") String reason, @Param("now") Instant now);
 
     boolean existsBySchoolDirectoryIdAndStatusIn(UUID schoolDirectoryId, Collection<String> statuses);
     boolean existsByContactEmailAndStatus(String contactEmail, String status);

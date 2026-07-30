@@ -3,7 +3,7 @@ package com.sep.vox.infrastructure.persistence.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
 
@@ -64,7 +64,7 @@ class SchoolClassUserRepositoryTests extends ContainerTestConfig {
         var assignedBy = UUID.randomUUID();
 
         var saved = schoolClassUserRepository.save(
-            new SchoolClassUser(userId, schoolClassId, true, OffsetDateTime.now(), null, assignedBy)
+            new SchoolClassUser(userId, schoolClassId, true, Instant.now(), null, assignedBy)
         );
 
         assertThat(saved.getUserId()).isEqualTo(userId);
@@ -78,7 +78,7 @@ class SchoolClassUserRepositoryTests extends ContainerTestConfig {
         var userId = UUID.randomUUID();
         var schoolClassId = UUID.randomUUID();
         schoolClassUserRepository.save(
-            new SchoolClassUser(userId, schoolClassId, true, OffsetDateTime.now(), null, UUID.randomUUID())
+            new SchoolClassUser(userId, schoolClassId, true, Instant.now(), null, UUID.randomUUID())
         );
 
         var found = schoolClassUserRepository.findByUserIdAndSchoolClassId(userId, schoolClassId);
@@ -95,13 +95,13 @@ class SchoolClassUserRepositoryTests extends ContainerTestConfig {
         var classId = UUID.randomUUID();
         var anotherClassId = UUID.randomUUID();
         schoolClassUserRepository.save(
-            new SchoolClassUser(userId, classId, true, OffsetDateTime.now(), null, UUID.randomUUID())
+            new SchoolClassUser(userId, classId, true, Instant.now(), null, UUID.randomUUID())
         );
         schoolClassUserRepository.save(
-            new SchoolClassUser(anotherUserId, anotherClassId, true, OffsetDateTime.now(), null, UUID.randomUUID())
+            new SchoolClassUser(anotherUserId, anotherClassId, true, Instant.now(), null, UUID.randomUUID())
         );
         schoolClassUserRepository.save(
-            new SchoolClassUser(UUID.randomUUID(), UUID.randomUUID(), true, OffsetDateTime.now(), null, UUID.randomUUID())
+            new SchoolClassUser(UUID.randomUUID(), UUID.randomUUID(), true, Instant.now(), null, UUID.randomUUID())
         );
 
         var found = schoolClassUserRepository.findByUserIdInAndSchoolClassIdIn(
@@ -121,13 +121,13 @@ class SchoolClassUserRepositoryTests extends ContainerTestConfig {
         var classId = UUID.randomUUID();
         var anotherClassId = UUID.randomUUID();
         schoolClassUserRepository.save(
-            new SchoolClassUser(userId, classId, true, OffsetDateTime.now(), null, UUID.randomUUID())
+            new SchoolClassUser(userId, classId, true, Instant.now(), null, UUID.randomUUID())
         );
         schoolClassUserRepository.save(
-            new SchoolClassUser(userId, anotherClassId, true, OffsetDateTime.now(), null, UUID.randomUUID())
+            new SchoolClassUser(userId, anotherClassId, true, Instant.now(), null, UUID.randomUUID())
         );
         schoolClassUserRepository.save(
-            new SchoolClassUser(UUID.randomUUID(), UUID.randomUUID(), true, OffsetDateTime.now(), null, UUID.randomUUID())
+            new SchoolClassUser(UUID.randomUUID(), UUID.randomUUID(), true, Instant.now(), null, UUID.randomUUID())
         );
 
         var found = schoolClassUserRepository.findByUserId(userId);
@@ -144,13 +144,13 @@ class SchoolClassUserRepositoryTests extends ContainerTestConfig {
         var userId = UUID.randomUUID();
         var anotherUserId = UUID.randomUUID();
         schoolClassUserRepository.save(
-            new SchoolClassUser(userId, schoolClassId, true, OffsetDateTime.now(), null, UUID.randomUUID())
+            new SchoolClassUser(userId, schoolClassId, true, Instant.now(), null, UUID.randomUUID())
         );
         schoolClassUserRepository.save(
-            new SchoolClassUser(anotherUserId, schoolClassId, true, OffsetDateTime.now(), null, UUID.randomUUID())
+            new SchoolClassUser(anotherUserId, schoolClassId, true, Instant.now(), null, UUID.randomUUID())
         );
         schoolClassUserRepository.save(
-            new SchoolClassUser(UUID.randomUUID(), UUID.randomUUID(), true, OffsetDateTime.now(), null, UUID.randomUUID())
+            new SchoolClassUser(UUID.randomUUID(), UUID.randomUUID(), true, Instant.now(), null, UUID.randomUUID())
         );
 
         var found = schoolClassUserRepository.findBySchoolClassId(schoolClassId, 1, 2);
@@ -162,7 +162,7 @@ class SchoolClassUserRepositoryTests extends ContainerTestConfig {
     void whenExistsBySchoolClassId_thenReturnsWhetherMembershipExists() {
         var schoolClassId = UUID.randomUUID();
         schoolClassUserRepository.save(
-            new SchoolClassUser(UUID.randomUUID(), schoolClassId, true, OffsetDateTime.now(), null, UUID.randomUUID())
+            new SchoolClassUser(UUID.randomUUID(), schoolClassId, true, Instant.now(), null, UUID.randomUUID())
         );
 
         assertThat(schoolClassUserRepository.existsBySchoolClassId(schoolClassId)).isTrue();
@@ -228,7 +228,7 @@ class SchoolClassUserRepositoryTests extends ContainerTestConfig {
     void whenCountActiveBySchoolClassIdIn_thenCountsOnlyActiveMembers() {
         var schoolClassId = UUID.randomUUID();
         var emptyClassId = UUID.randomUUID();
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         schoolClassUserRepository.save(new SchoolClassUser(UUID.randomUUID(), schoolClassId, true, now, null, UUID.randomUUID()));
         schoolClassUserRepository.save(new SchoolClassUser(UUID.randomUUID(), schoolClassId, true, now, null, UUID.randomUUID()));
         schoolClassUserRepository.save(new SchoolClassUser(UUID.randomUUID(), schoolClassId, false, now, now, UUID.randomUUID()));
@@ -248,22 +248,22 @@ class SchoolClassUserRepositoryTests extends ContainerTestConfig {
     private UUID joinClass(UUID schoolClassId, String email, String phone, String fullName) {
         var user = userRepository.save(newUser(email, phone, fullName));
         schoolClassUserRepository.save(
-            new SchoolClassUser(user.getId(), schoolClassId, true, OffsetDateTime.now(), null, UUID.randomUUID())
+            new SchoolClassUser(user.getId(), schoolClassId, true, Instant.now(), null, UUID.randomUUID())
         );
         return user.getId();
     }
 
     private void grantRole(UUID userId, UUID roleId) {
-        userRoleRepository.save(new UserRole(userId, roleId, OffsetDateTime.now()));
+        userRoleRepository.save(new UserRole(userId, roleId, Instant.now()));
     }
 
     private static Role newRole(String code, String name) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         return new Role(new RoleCode(code), name, now, now, UUID.randomUUID(), UUID.randomUUID());
     }
 
     private static User newUser(String email, String phone, String fullName) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         return new User(
             new Email(email),
             "password-hash",

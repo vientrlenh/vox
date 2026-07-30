@@ -15,7 +15,7 @@ import com.sep.vox.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -70,7 +70,7 @@ public class UpdateSchoolStatusUseCase implements IUseCase<UpdateSchoolStatusCom
         // 4. Thay đổi trạng thái
         school.setActive(command.isActive());
         school.setUpdatedBy(currentUserId);
-        school.setUpdatedAt(OffsetDateTime.now());
+        school.setUpdatedAt(Instant.now());
 
         // 5. Lưu DB
         School updatedSchool = schoolRepository.save(school);

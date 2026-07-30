@@ -7,7 +7,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -136,7 +136,7 @@ class ViewSchoolGradeDetailsUseCaseTests {
     }
 
     private SchoolGrade grade() {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         return new SchoolGrade(
             gradeId, gradeLevelId, "NH2024", "Năm học 2024", "desc",
             LocalDate.of(2024, 9, 1), LocalDate.of(2025, 6, 30), SchoolGradeStatus.ACTIVE,
@@ -145,7 +145,7 @@ class ViewSchoolGradeDetailsUseCaseTests {
     }
 
     private SchoolGradeLevel gradeLevel(UUID ownerSchoolId) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         return new SchoolGradeLevel(
             gradeLevelId, ownerSchoolId, "K1", "Khối 1", "desc", 1, SchoolGradeLevelStatus.ACTIVE, now, now,
             UUID.randomUUID(), UUID.randomUUID()

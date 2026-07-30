@@ -1,6 +1,6 @@
 package com.sep.vox.domain.mapper;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import com.sep.vox.domain.dto.ExamSecurePoolDto;
 import com.sep.vox.domain.model.exam.ExamSecurePool;
@@ -22,7 +22,7 @@ public final class ExamSecurePoolDtoMapper {
         );
     }
 
-    private static String valueOf(OffsetDateTime value) {
+    private static String valueOf(Instant value) {
         return value == null ? null : value.toString();
     }
 }

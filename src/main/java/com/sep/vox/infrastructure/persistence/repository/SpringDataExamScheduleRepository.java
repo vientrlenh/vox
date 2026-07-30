@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -30,7 +30,7 @@ public interface SpringDataExamScheduleRepository extends JpaRepository<ExamSche
       """)
   List<ExamScheduleJpaEntity> findByExamIdAndInSchedule(
       @Param("examId") UUID examId,
-      @Param("now") OffsetDateTime now);
+      @Param("now") Instant now);
 
   @Query("""
       SELECT s FROM ExamScheduleJpaEntity s
@@ -52,8 +52,8 @@ public interface SpringDataExamScheduleRepository extends JpaRepository<ExamSche
       """)
   long countOverlapping(
       @Param("schoolRoomId") UUID schoolRoomId,
-      @Param("start") OffsetDateTime start,
-      @Param("end") OffsetDateTime end,
+      @Param("start") Instant start,
+      @Param("end") Instant end,
       @Param("excludeScheduleId") UUID excludeScheduleId);
 
   @Modifying
@@ -69,9 +69,9 @@ public interface SpringDataExamScheduleRepository extends JpaRepository<ExamSche
   int updateAtomic(
       @Param("id") UUID id,
       @Param("schoolRoomId") UUID schoolRoomId,
-      @Param("start") OffsetDateTime start,
-      @Param("end") OffsetDateTime end,
-      @Param("now") OffsetDateTime now,
+      @Param("start") Instant start,
+      @Param("end") Instant end,
+      @Param("now") Instant now,
       @Param("updatedBy") UUID updatedBy);
 
   @Query("""
@@ -81,7 +81,7 @@ public interface SpringDataExamScheduleRepository extends JpaRepository<ExamSche
         AND s.endDate > :now
         AND s.status = 'PUBLISHED'
       """)
-  Optional<ExamScheduleJpaEntity> findByIdAndInSchedule(@Param("id") UUID id, @Param("now") OffsetDateTime now);
+  Optional<ExamScheduleJpaEntity> findByIdAndInSchedule(@Param("id") UUID id, @Param("now") Instant now);
 
   @Query("""
       SELECT s FROM ExamScheduleJpaEntity s
@@ -91,7 +91,7 @@ public interface SpringDataExamScheduleRepository extends JpaRepository<ExamSche
         AND s.status = 'PUBLISHED'
       """)
   List<ExamScheduleJpaEntity> findByIdInAndInSchedule(@Param("ids") Collection<UUID> ids,
-      @Param("now") OffsetDateTime now);
+      @Param("now") Instant now);
 
   @Query("""
       SELECT s FROM ExamScheduleJpaEntity s 
@@ -104,5 +104,5 @@ public interface SpringDataExamScheduleRepository extends JpaRepository<ExamSche
         AND e.schoolId = :schoolId 
       """)
   List<ExamScheduleJpaEntity> findByIdInAndInScheduleAndSchoolId(@Param("ids") Collection<UUID> ids,
-      @Param("now") OffsetDateTime now, @Param("schoolId") UUID schoolId);
+      @Param("now") Instant now, @Param("schoolId") UUID schoolId);
 }

@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examgrading;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -40,7 +40,7 @@ public class SetGradingDeadlineUseCase implements IUseCase<SetGradingDeadlineCom
         if (assignmentIds.isEmpty()) {
             throw new IllegalArgumentException("Phải chọn ít nhất một phân công để đặt hạn.");
         }
-        if (command.deadlineAt() != null && command.deadlineAt().isBefore(OffsetDateTime.now())) {
+        if (command.deadlineAt() != null && command.deadlineAt().isBefore(Instant.now())) {
             throw new IllegalArgumentException("Hạn chấm phải ở tương lai.");
         }
 

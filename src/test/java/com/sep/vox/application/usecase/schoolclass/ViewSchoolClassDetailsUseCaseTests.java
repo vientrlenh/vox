@@ -8,7 +8,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -169,7 +170,7 @@ class ViewSchoolClassDetailsUseCaseTests {
             name,
             "Repository test class",
             UUID.randomUUID(),
-            OffsetDateTime.now()
+            Instant.now()
         );
         schoolClass.setId(id);
         return schoolClass;
@@ -181,7 +182,7 @@ class ViewSchoolClassDetailsUseCaseTests {
         TestSchoolUserRepository.remember(id, schoolId);
         user.setStatus(status);
         when(schoolUserRepository.findByUserId(id)).thenReturn(
-            schoolId != null ? Optional.of(new SchoolUser(schoolId, id, java.time.OffsetDateTime.now(), java.time.OffsetDateTime.now().plusYears(100))) : Optional.empty()
+            schoolId != null ? Optional.of(new SchoolUser(schoolId, id, java.time.Instant.now(), java.time.Instant.now().plus(36500, ChronoUnit.DAYS))) : Optional.empty()
         );
         return user;
     }

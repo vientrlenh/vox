@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -44,7 +44,7 @@ public class AssessmentPolicyRepositoryImpl implements AssessmentPolicyRepositor
 
     @Override
     public PageResult<AssessmentPolicy> findAllSystemWide(String status, UUID languageId, UUID rubricVersionId,
-            OffsetDateTime effectiveFrom, OffsetDateTime effectiveTo, int page, int size) {
+            Instant effectiveFrom, Instant effectiveTo, int page, int size) {
         var pageable = PageRequest.of(page - 1, size);
         var result = springDataAssessmentPolicyRepository.findBySchoolIdIsNullAndStatus(status, languageId, rubricVersionId, effectiveFrom, effectiveTo, pageable);
         return new PageResult<>(
@@ -58,7 +58,7 @@ public class AssessmentPolicyRepositoryImpl implements AssessmentPolicyRepositor
 
     @Override
     public PageResult<AssessmentPolicy> findAllBySchoolId(UUID schoolId, String status, UUID languageId, UUID rubricVersionId,
-            OffsetDateTime effectiveFrom, OffsetDateTime effectiveTo, int page, int size) {
+            Instant effectiveFrom, Instant effectiveTo, int page, int size) {
         var pageable = PageRequest.of(page - 1, size);
         var result = springDataAssessmentPolicyRepository.findBySchoolIdAndStatus(schoolId, status, languageId, rubricVersionId, effectiveFrom, effectiveTo, pageable);
         return new PageResult<>(
@@ -72,7 +72,7 @@ public class AssessmentPolicyRepositoryImpl implements AssessmentPolicyRepositor
 
     @Override
     public Optional<AssessmentPolicy> findActivePolicy(UUID schoolId, UUID languageId, UUID classId, UUID gradeId,
-            UUID gradeLevelId, OffsetDateTime atTime) {
+            UUID gradeLevelId, Instant atTime) {
         return springDataAssessmentPolicyRepository.findCandidatePolicies(schoolId, languageId, classId, gradeId, gradeLevelId, atTime, PageRequest.ofSize(1))
                 .stream()
                 .findFirst()

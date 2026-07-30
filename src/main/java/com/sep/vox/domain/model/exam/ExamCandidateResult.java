@@ -1,7 +1,7 @@
 package com.sep.vox.domain.model.exam;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class ExamCandidateResult {
@@ -17,10 +17,10 @@ public class ExamCandidateResult {
     private UUID rubricResultBandId;
     private BigDecimal totalScore;
     private ExamCandidateResultStatus status;
-    private OffsetDateTime releasedAt;
-    private OffsetDateTime finalizedAt;
-    private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
+    private Instant releasedAt;
+    private Instant finalizedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
     private UUID createdBy;
     private UUID updatedBy;
 
@@ -28,8 +28,8 @@ public class ExamCandidateResult {
 
     public ExamCandidateResult(UUID id, UUID examId, UUID candidateId, UUID sessionId, UUID assessmentPolicyId,
             int policyVersion, UUID rubricVersionId, UUID frameworkVersionId, UUID targetFrameworkBandId, UUID rubricResultBandId, 
-            BigDecimal totalScore, ExamCandidateResultStatus status, OffsetDateTime releasedAt,
-            OffsetDateTime finalizedAt, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy,
+            BigDecimal totalScore, ExamCandidateResultStatus status, Instant releasedAt,
+            Instant finalizedAt, Instant createdAt, Instant updatedAt, UUID createdBy,
             UUID updatedBy) {
         this.id = id;
         this.examId = examId;
@@ -53,8 +53,8 @@ public class ExamCandidateResult {
 
     public ExamCandidateResult(UUID examId, UUID candidateId, UUID sessionId, UUID assessmentPolicyId,
             int policyVersion, UUID rubricVersionId, UUID frameworkVersionId, UUID targetFrameworkBandId, UUID rubricResultBandId, 
-            BigDecimal totalScore, ExamCandidateResultStatus status, OffsetDateTime releasedAt,
-            OffsetDateTime finalizedAt, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy,
+            BigDecimal totalScore, ExamCandidateResultStatus status, Instant releasedAt,
+            Instant finalizedAt, Instant createdAt, Instant updatedAt, UUID createdBy,
             UUID updatedBy) {
         this.examId = examId;
         this.candidateId = candidateId;
@@ -163,35 +163,35 @@ public class ExamCandidateResult {
         this.status = status;
     }
 
-    public OffsetDateTime getReleasedAt() {
+    public Instant getReleasedAt() {
         return releasedAt;
     }
 
-    public void setReleasedAt(OffsetDateTime releasedAt) {
+    public void setReleasedAt(Instant releasedAt) {
         this.releasedAt = releasedAt;
     }
 
-    public OffsetDateTime getFinalizedAt() {
+    public Instant getFinalizedAt() {
         return finalizedAt;
     }
 
-    public void setFinalizedAt(OffsetDateTime finalizedAt) {
+    public void setFinalizedAt(Instant finalizedAt) {
         this.finalizedAt = finalizedAt;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 

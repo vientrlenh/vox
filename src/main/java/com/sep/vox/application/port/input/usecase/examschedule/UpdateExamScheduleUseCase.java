@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examschedule;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -72,8 +72,8 @@ public class UpdateExamScheduleUseCase implements IUseCase<UpdateExamScheduleCom
 
         // Giá trị hiệu dụng: dùng giá trị mới nếu được cung cấp, ngược lại giữ giá trị hiện tại.
         UUID effectiveRoomId = input.schoolRoomId() != null ? input.schoolRoomId() : schedule.getSchoolRoomId();
-        OffsetDateTime effectiveStart = input.startDate() != null ? input.startDate() : schedule.getStartDate();
-        OffsetDateTime effectiveEnd = input.endDate() != null ? input.endDate() : schedule.getEndDate();
+        Instant effectiveStart = input.startDate() != null ? input.startDate() : schedule.getStartDate();
+        Instant effectiveEnd = input.endDate() != null ? input.endDate() : schedule.getEndDate();
 
         if (!effectiveEnd.isAfter(effectiveStart)) {
             throw new IllegalArgumentException("Thời gian kết thúc phải sau thời gian bắt đầu");
@@ -100,7 +100,7 @@ public class UpdateExamScheduleUseCase implements IUseCase<UpdateExamScheduleCom
             throw new DuplicatedException("Phòng học đã có ca thi khác trong khoảng thời gian này");
         }
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         if (isClassTest) {
             schedule.setSchoolRoomId(effectiveRoomId);
             schedule.setStartDate(effectiveStart);

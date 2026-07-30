@@ -10,7 +10,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -175,7 +175,7 @@ class ViewExamDirectoryUseCasesTests {
     private SchoolClass schoolClass() {
         var schoolClass = SchoolClass.create(
             schoolId, UUID.randomUUID(), UUID.randomUUID(), "ENG-01", "English 01", null,
-            UUID.randomUUID(), OffsetDateTime.now());
+            UUID.randomUUID(), Instant.now());
         schoolClass.setId(UUID.randomUUID());
         return schoolClass;
     }

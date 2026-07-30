@@ -15,7 +15,7 @@ import com.sep.vox.domain.repository.RubricVersionRepository;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -62,7 +62,7 @@ public class RubricVersionImportCommitHandler implements ImportCommitHandler {
         List<RubricVersion> versionsToSave = new ArrayList<>();
         long importedCount = 0;
         long invalidCount = 0;
-        OffsetDateTime now = OffsetDateTime.now();
+        Instant now = Instant.now();
 
         // Chống trùng số Version ngay trong cùng một file Excel đầu vào
         Set<Integer> versionsInThisFile = new HashSet<>();
@@ -141,15 +141,15 @@ public class RubricVersionImportCommitHandler implements ImportCommitHandler {
                     }
                 }
 
-                OffsetDateTime effectiveFrom = now;
-                OffsetDateTime effectiveTo = null;
+                Instant effectiveFrom = now;
+                Instant effectiveTo = null;
                 if (errors.isEmpty()) {
                     try {
                         if (fromStr != null && !fromStr.isBlank()) {
-                            effectiveFrom = DateMapper.toOffsetDateTime(fromStr.trim());
+                            effectiveFrom = DateMapper.toImportedInstant(fromStr.trim(), DateMapper.DEFAULT_INPUT_ZONE);
                         }
                         if (toStr != null && !toStr.isBlank()) {
-                            effectiveTo = DateMapper.toOffsetDateTime(toStr.trim());
+                            effectiveTo = DateMapper.toImportedInstant(toStr.trim(), DateMapper.DEFAULT_INPUT_ZONE);
                         }
 
                         if (effectiveFrom == null) effectiveFrom = now;

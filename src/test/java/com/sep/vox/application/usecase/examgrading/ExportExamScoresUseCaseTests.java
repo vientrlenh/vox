@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -48,10 +49,10 @@ class ExportExamScoresUseCaseTests {
         when(examGradingQueryRepository.findScoreRows(any(), any(), any())).thenReturn(List.of());
     }
 
-    private void givenRow(String studentName, OffsetDateTime releasedAt) {
+    private void givenRow(String studentName, Instant releasedAt) {
         when(examGradingQueryRepository.findScoreRows(schoolId, examId, null)).thenReturn(List.of(
             new ExamScoreRowInfo(UUID.randomUUID(), studentName, "hs@example.com", "12A1",
-                "IELTS Mock", OffsetDateTime.parse("2026-07-12T08:00:00+07:00"),
+                "IELTS Mock", OffsetDateTime.parse("2026-07-12T08:00:00+07:00").toInstant(),
                 new BigDecimal("7.50"), "B2", "RELEASED",
                 "INITIAL", "UPHELD", "Cô Lan", releasedAt)));
     }
@@ -123,7 +124,7 @@ class ExportExamScoresUseCaseTests {
 
     @Test
     void should_print_the_release_time_in_vietnam_time_too() {
-        givenRow("Nguyễn Văn A", OffsetDateTime.parse("2026-07-20T03:30:00Z"));
+        givenRow("Nguyễn Văn A", OffsetDateTime.parse("2026-07-20T03:30:00Z").toInstant());
 
         // Cùng một file, cùng một người đọc: "Thời điểm công bố" không được là ISO thô
         // giờ UTC trong khi "Ca thi" đã là giờ VN.

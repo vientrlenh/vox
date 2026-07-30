@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examcandidate;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
 
@@ -69,7 +69,7 @@ public class AssignExamCandidateScheduleUseCase
             throw new NotFoundException("Không tìm thấy thí sinh");
         }
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
 
         // Bỏ gán khỏi ca luôn được phép, kể cả khi thí sinh đã không có ca (no-op).
         if (input.scheduleId() == null) {

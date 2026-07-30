@@ -19,7 +19,7 @@ import com.sep.vox.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 @Service
@@ -92,7 +92,7 @@ public class DeleteSchoolGradeUseCase implements IUseCase<DeleteSchoolGradeComma
         //    - Xóa mềm (ARCHIVED) toàn bộ lớp thuộc năm học.
         //    - Xóa mềm (ARCHIVED) chính năm học.
         //    Toàn bộ đều là xóa mềm để giữ lại tham chiếu (bài thi/điểm...).
-        OffsetDateTime now = OffsetDateTime.now();
+        Instant now = Instant.now();
         schoolClassUserRepository.deactivateByGradeId(grade.getId(), now);
         schoolClassRepository.archiveByGradeId(grade.getId(), now, currentUserId);
 

@@ -9,7 +9,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -163,13 +164,13 @@ public class DeleteSchoolUserUseCaseTests {
 
         // Membership bị kết thúc: endDate không còn ở tương lai xa (100 năm) mà <= hiện tại + biên nhỏ
         verify(schoolUserRepository).save(argThat(su ->
-            su.getEndDate() != null && su.getEndDate().isBefore(OffsetDateTime.now().plusMinutes(1))));
+            su.getEndDate() != null && su.getEndDate().isBefore(Instant.now().plus(1, ChronoUnit.MINUTES))));
     }
 
     private User user(UUID id, UUID userSchoolId, UserStatus status) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         when(schoolUserRepository.findByUserId(id)).thenReturn(Optional.of(
-            new SchoolUser(userSchoolId, id, now, now.plusYears(100))
+            new SchoolUser(userSchoolId, id, now, now.plus(36500, ChronoUnit.DAYS))
         ));
         return new User(id, new Email("user@school.edu.vn"), "hash",
             new Phone("0987654321"), new FullName("Nguyen Van A"), null,

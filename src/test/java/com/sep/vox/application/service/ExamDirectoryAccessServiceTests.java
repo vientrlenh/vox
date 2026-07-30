@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -68,7 +68,7 @@ class ExamDirectoryAccessServiceTests {
         var classId = UUID.randomUUID();
         var schoolClass = SchoolClass.create(
             schoolId, UUID.randomUUID(), UUID.randomUUID(), "ENG-01", "English 01", null,
-            UUID.randomUUID(), OffsetDateTime.now());
+            UUID.randomUUID(), Instant.now());
         schoolClass.setId(classId);
         when(schoolClassRepository.findByUserId(schoolId, callerId, null, SchoolClassStatus.ACTIVE, 1, 200))
             .thenReturn(new PageResult<>(List.of(schoolClass), 1, 200, 1, 1));
@@ -170,7 +170,7 @@ class ExamDirectoryAccessServiceTests {
     private void givenCallerRoles(String... roleCodes) {
         var roles = java.util.Arrays.stream(roleCodes)
             .map(code -> new UserRoleInfo(
-                UUID.randomUUID(), callerId, UUID.randomUUID(), OffsetDateTime.now(), code, code))
+                UUID.randomUUID(), callerId, UUID.randomUUID(), Instant.now(), code, code))
             .toList();
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(callerId)).thenReturn(List.copyOf(roles));
     }

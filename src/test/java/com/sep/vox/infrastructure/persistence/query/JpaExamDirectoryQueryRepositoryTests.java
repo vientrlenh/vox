@@ -3,6 +3,7 @@ package com.sep.vox.infrastructure.persistence.query;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.LocalDate;
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -52,7 +53,7 @@ class JpaExamDirectoryQueryRepositoryTests extends ContainerTestConfig {
     private UUID gradeLevelId;
     private UUID studentRoleId;
     private UUID teacherRoleId;
-    private OffsetDateTime now;
+    private Instant now;
 
     // Id do DB sinh (@Generated(INSERT), insertable=false) nên fixture phải persist với
     // id null rồi đọc lại — truyền id sẵn bị coi là detached.
@@ -65,7 +66,7 @@ class JpaExamDirectoryQueryRepositoryTests extends ContainerTestConfig {
     @BeforeEach
     void setUp() {
         schoolId = UUID.randomUUID();
-        now = OffsetDateTime.parse("2026-07-29T09:00:00+07:00");
+        now = OffsetDateTime.parse("2026-07-29T09:00:00+07:00").toInstant();
         gradeLevelId = persisted(new SchoolGradeLevelJpaEntity(
             null, schoolId, "K10-" + suffix(), "Khối 10", null, 1, "ACTIVE", now, now, null, null)).getId();
         studentRoleId = roleId("STUDENT");

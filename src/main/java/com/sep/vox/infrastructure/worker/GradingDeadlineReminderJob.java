@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.worker;
 
 import java.time.Duration;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +44,7 @@ public class GradingDeadlineReminderJob {
     public void remind() {
         // Ngưỡng chốt MỘT lần cho cả lượt: tính lại mỗi lô sẽ làm cửa sổ trôi dần và
         // kéo vào những phân công chưa tới lúc nhắc.
-        var threshold = OffsetDateTime.now().plus(Duration.ofHours(REMIND_BEFORE_HOURS));
+        var threshold = Instant.now().plus(Duration.ofHours(REMIND_BEFORE_HOURS));
         var total = 0;
 
         for (var pass = 0; pass < MAX_PASSES_PER_RUN; pass++) {

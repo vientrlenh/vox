@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.schooldirectory;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -46,7 +46,7 @@ public class AcceptSchoolDirectoryImportUseCase
     public Void execute(AcceptSchoolDirectoryImportCommand input) {
         validateCommand(input);
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         var session = findSession(input.importSessionId());
@@ -76,7 +76,7 @@ public class AcceptSchoolDirectoryImportUseCase
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên import"));
     }
 
-    private void validateSession(ImportSession session, OffsetDateTime now) {
+    private void validateSession(ImportSession session, Instant now) {
         if (session.getType() != ImportType.SCHOOL_DIRECTORY) {
             throw new IllegalArgumentException("Phiên import không phải là import danh mục trường");
         }

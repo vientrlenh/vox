@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -30,18 +30,18 @@ public class PasswordSetUpTokenJpaEntity {
     private String tokenHash;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "expired_at", nullable = false, updatable = false)
-    private OffsetDateTime expiredAt;
+    private Instant expiredAt;
 
     @Column(name = "used_at")
-    private OffsetDateTime usedAt;
+    private Instant usedAt;
 
     protected PasswordSetUpTokenJpaEntity() { }
 
-    public PasswordSetUpTokenJpaEntity(UUID id, UUID userId, String tokenHash, OffsetDateTime createdAt,
-            OffsetDateTime expiredAt, OffsetDateTime usedAt) {
+    public PasswordSetUpTokenJpaEntity(UUID id, UUID userId, String tokenHash, Instant createdAt,
+            Instant expiredAt, Instant usedAt) {
         this.id = id;
         this.userId = userId;
         this.tokenHash = tokenHash;
@@ -50,8 +50,8 @@ public class PasswordSetUpTokenJpaEntity {
         this.usedAt = usedAt;
     }
 
-    public PasswordSetUpTokenJpaEntity(UUID userId, String tokenHash, OffsetDateTime createdAt,
-            OffsetDateTime expiredAt, OffsetDateTime usedAt) {
+    public PasswordSetUpTokenJpaEntity(UUID userId, String tokenHash, Instant createdAt,
+            Instant expiredAt, Instant usedAt) {
         this.userId = userId;
         this.tokenHash = tokenHash;
         this.createdAt = createdAt;
@@ -83,27 +83,27 @@ public class PasswordSetUpTokenJpaEntity {
         this.tokenHash = tokenHash;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getExpiredAt() {
+    public Instant getExpiredAt() {
         return expiredAt;
     }
 
-    public void setExpiredAt(OffsetDateTime expiredAt) {
+    public void setExpiredAt(Instant expiredAt) {
         this.expiredAt = expiredAt;
     }
 
-    public OffsetDateTime getUsedAt() {
+    public Instant getUsedAt() {
         return usedAt;
     }
 
-    public void setUsedAt(OffsetDateTime usedAt) {
+    public void setUsedAt(Instant usedAt) {
         this.usedAt = usedAt;
     }
 

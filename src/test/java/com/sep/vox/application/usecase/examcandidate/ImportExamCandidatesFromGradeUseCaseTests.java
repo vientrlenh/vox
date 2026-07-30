@@ -10,7 +10,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -171,7 +171,7 @@ class ImportExamCandidatesFromGradeUseCaseTests {
     }
 
     private SchoolClassUser classUser(UUID studentId, UUID classId, boolean active) {
-        return new SchoolClassUser(UUID.randomUUID(), studentId, classId, active, OffsetDateTime.now(), null, userId);
+        return new SchoolClassUser(UUID.randomUUID(), studentId, classId, active, Instant.now(), null, userId);
     }
 
     private SchoolClass schoolClass(UUID id) {

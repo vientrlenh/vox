@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.auth;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -62,7 +62,7 @@ public class LoginUseCase implements IUseCase<LoginCommand, LoginResponse> {
     @Transactional
     public LoginResponse execute(LoginCommand input) {
         var command = normalize(input);
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
 
         var userId = authenticationManagerPort.setAuthenticationAndGetUserId(command.login(), command.password());
         var user = userRepository.findById(userId)
@@ -123,7 +123,7 @@ public class LoginUseCase implements IUseCase<LoginCommand, LoginResponse> {
         return deviceSessionRepository.save(deviceSession);
     }
 
-    private void createRefreshToken(DeviceSession deviceSession, GeneratedSessionToken sessionToken, OffsetDateTime now) {
+    private void createRefreshToken(DeviceSession deviceSession, GeneratedSessionToken sessionToken, Instant now) {
         var refreshToken = RefreshToken.createFresh(deviceSession.getId(), sessionToken.hashedToken(), now);
         refreshTokenRepository.save(refreshToken);
     }

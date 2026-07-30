@@ -28,7 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -103,7 +103,7 @@ public class CreateSystemRubricCriteriaUseCase implements IUseCase<CreateSystemR
         }
 
 
-        OffsetDateTime now = OffsetDateTime.now();
+        Instant now = Instant.now();
 
         // 4. Lặp và xử lý danh sách tiêu chí (CÓ CHỐNG TRÙNG LẶP NỘI BỘ)
         Set<String> uniqueCodes = new HashSet<>();

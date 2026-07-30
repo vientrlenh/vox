@@ -3,7 +3,7 @@ package com.sep.vox.infrastructure.persistence.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
 
@@ -31,7 +31,7 @@ import com.sep.vox.infrastructure.persistence.entity.UserRoleJpaEntity;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class SchoolUserRepositoryTests extends ContainerTestConfig {
 
-    private static final OffsetDateTime NOW = OffsetDateTime.now();
+    private static final Instant NOW = Instant.now();
 
     @Autowired
     private SchoolUserRepository schoolUserRepository;
@@ -53,9 +53,9 @@ class SchoolUserRepositoryTests extends ContainerTestConfig {
         var schoolId = UUID.randomUUID();
         var userId = UUID.randomUUID();
         var anotherUserId = UUID.randomUUID();
-        schoolUserRepository.save(new SchoolUser(schoolId, userId, OffsetDateTime.now(), null));
-        schoolUserRepository.save(new SchoolUser(schoolId, anotherUserId, OffsetDateTime.now(), null));
-        schoolUserRepository.save(new SchoolUser(UUID.randomUUID(), UUID.randomUUID(), OffsetDateTime.now(), null));
+        schoolUserRepository.save(new SchoolUser(schoolId, userId, Instant.now(), null));
+        schoolUserRepository.save(new SchoolUser(schoolId, anotherUserId, Instant.now(), null));
+        schoolUserRepository.save(new SchoolUser(UUID.randomUUID(), UUID.randomUUID(), Instant.now(), null));
 
         var found = schoolUserRepository.findByUserIdIn(Set.of(userId, anotherUserId, UUID.randomUUID()));
 

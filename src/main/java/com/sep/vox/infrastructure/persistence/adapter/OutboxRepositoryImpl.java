@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
 import java.time.Duration;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -37,7 +37,7 @@ public class OutboxRepositoryImpl implements OutboxRepository {
     @Override
     @Transactional
     public List<Outbox> claimPendingEvents(int size) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var rows = springDataOutboxRepository.lockPendingEvents(now, size);
         if (rows.isEmpty()) {
             return List.of();
@@ -50,7 +50,7 @@ public class OutboxRepositoryImpl implements OutboxRepository {
 
     @Override
     @Transactional
-    public void markPublished(UUID id, OffsetDateTime publishedAt) {
+    public void markPublished(UUID id, Instant publishedAt) {
         springDataOutboxRepository.markPublished(id, publishedAt);
     }
 
@@ -64,13 +64,13 @@ public class OutboxRepositoryImpl implements OutboxRepository {
         }
 
         var backoff = BASE_BACKOFF.multipliedBy(1L << currentRetryCount); // 30s, 60s, 120s
-        springDataOutboxRepository.markFailed(id, OutboxStatus.PENDING.name(), lastError, OffsetDateTime.now().plus(backoff));
+        springDataOutboxRepository.markFailed(id, OutboxStatus.PENDING.name(), lastError, Instant.now().plus(backoff));
     }
 
     @Override
     @Transactional
     public int releaseExpiredLeases() {
-        return springDataOutboxRepository.releaseExpiredLeases(OffsetDateTime.now());
+        return springDataOutboxRepository.releaseExpiredLeases(Instant.now());
     }
 
     

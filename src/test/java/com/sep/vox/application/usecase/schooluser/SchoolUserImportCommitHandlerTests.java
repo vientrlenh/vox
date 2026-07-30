@@ -7,7 +7,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -168,8 +169,8 @@ class SchoolUserImportCommitHandlerTests {
         var role = role("STUDENT");
         var existingSchoolUser = new SchoolUser(
             UUID.randomUUID(), schoolId, existingUserId,
-            OffsetDateTime.parse("2024-09-01T00:00:00Z"),
-            OffsetDateTime.parse("2025-06-30T00:00:00Z")
+            Instant.parse("2024-09-01T00:00:00Z"),
+            Instant.parse("2025-06-30T00:00:00Z")
         );
         var rows = List.of(row(sessionId, 1L, studentData("student@example.com")));
 
@@ -184,8 +185,11 @@ class SchoolUserImportCommitHandlerTests {
 
         assertThat(result.created()).isZero();
         assertThat(result.updated()).isEqualTo(1L);
-        assertThat(existingSchoolUser.getStartDate()).isEqualTo(OffsetDateTime.parse("2025-09-01T00:00:00Z"));
-        assertThat(existingSchoolUser.getEndDate()).isEqualTo(OffsetDateTime.parse("2026-06-30T00:00:00Z"));
+        // Ô Excel chỉ có ngày nên được diễn giải là nửa đêm theo giờ Việt Nam (+07), không phải nửa
+        // đêm UTC: 2025-09-01 00:00+07 == 2025-08-31T17:00Z. Cố tình ghi thẳng mốc UTC ở đây thay vì
+        // dựng lại bằng DEFAULT_INPUT_ZONE, để nếu ai đó đổi múi giờ diễn giải thì test này phải đỏ.
+        assertThat(existingSchoolUser.getStartDate()).isEqualTo(Instant.parse("2025-08-31T17:00:00Z"));
+        assertThat(existingSchoolUser.getEndDate()).isEqualTo(Instant.parse("2026-06-29T17:00:00Z"));
         verify(schoolUserRepository).save(existingSchoolUser);
         verify(outboxRepository, never()).save(any(Outbox.class));
     }
@@ -226,8 +230,8 @@ class SchoolUserImportCommitHandlerTests {
         var role = role("STUDENT");
         var otherSchoolUser = new SchoolUser(
             UUID.randomUUID(), otherSchoolId, existingUserId,
-            OffsetDateTime.parse("2024-09-01T00:00:00Z"),
-            OffsetDateTime.parse("2025-06-30T00:00:00Z")
+            Instant.parse("2024-09-01T00:00:00Z"),
+            Instant.parse("2025-06-30T00:00:00Z")
         );
         var rows = List.of(row(sessionId, 1L, studentData("student@example.com")));
 
@@ -247,8 +251,8 @@ class SchoolUserImportCommitHandlerTests {
         assertThat(rows.get(0).getErrorsJson()).contains("trường khác");
         verify(userRepository, never()).save(any());
         verify(schoolUserRepository, never()).save(any(SchoolUser.class));
-        assertThat(otherSchoolUser.getStartDate()).isEqualTo(OffsetDateTime.parse("2024-09-01T00:00:00Z"));
-        assertThat(otherSchoolUser.getEndDate()).isEqualTo(OffsetDateTime.parse("2025-06-30T00:00:00Z"));
+        assertThat(otherSchoolUser.getStartDate()).isEqualTo(Instant.parse("2024-09-01T00:00:00Z"));
+        assertThat(otherSchoolUser.getEndDate()).isEqualTo(Instant.parse("2025-06-30T00:00:00Z"));
     }
 
     @Test
@@ -445,8 +449,8 @@ class SchoolUserImportCommitHandlerTests {
             id, schoolId, ImportType.USER, "users.csv", "[]", "{}",
             jsonSerializationPort.toJson(mapping()),
             0L, 0L, 0L, 0L, 0L, null, ImportSessionStatus.IMPORTING, null,
-            OffsetDateTime.now().plusDays(1), null, null, null, 0,
-            OffsetDateTime.now(), OffsetDateTime.now(),
+            Instant.now().plus(1, ChronoUnit.DAYS), null, null, null, 0,
+            Instant.now(), Instant.now(),
             createdBy, createdBy
         );
     }

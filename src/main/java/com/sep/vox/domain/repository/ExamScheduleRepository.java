@@ -1,6 +1,6 @@
 package com.sep.vox.domain.repository;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -31,16 +31,16 @@ public interface ExamScheduleRepository {
      * Có ca thi nào (DRAFT/PUBLISHED) trùng phòng và giao thời gian với khoảng [start, end) hay không.
      * {@code excludeScheduleId} (nếu khác null) được loại khỏi phép kiểm tra (dùng khi sửa chính ca đó).
      */
-    boolean existsOverlapping(UUID schoolRoomId, OffsetDateTime start, OffsetDateTime end, UUID excludeScheduleId);
+    boolean existsOverlapping(UUID schoolRoomId, Instant start, Instant end, UUID excludeScheduleId);
 
     /**
      * Cập nhật nguyên tử phòng/giờ của ca thi. Chỉ áp dụng khi ca đang ở DRAFT (WHERE ... status='DRAFT').
      * Trả về số dòng bị ảnh hưởng.
      */
-    int updateAtomic(UUID id, UUID schoolRoomId, OffsetDateTime start, OffsetDateTime end,
-            OffsetDateTime now, UUID updatedBy);
-    List<ExamSchedule> findByExamIdAndInSchedule(UUID examId, OffsetDateTime now);
-    List<ExamSchedule> findByIdInAndInSchedule(Collection<UUID> ids, OffsetDateTime now);
-    Optional<ExamSchedule> findByIdAndInSchedule(UUID id, OffsetDateTime now);
-    List<ExamSchedule> findByIdInAndInScheduleAndSchoolId(Collection<UUID> ids, OffsetDateTime now, UUID schoolId);
+    int updateAtomic(UUID id, UUID schoolRoomId, Instant start, Instant end,
+            Instant now, UUID updatedBy);
+    List<ExamSchedule> findByExamIdAndInSchedule(UUID examId, Instant now);
+    List<ExamSchedule> findByIdInAndInSchedule(Collection<UUID> ids, Instant now);
+    Optional<ExamSchedule> findByIdAndInSchedule(UUID id, Instant now);
+    List<ExamSchedule> findByIdInAndInScheduleAndSchoolId(Collection<UUID> ids, Instant now, UUID schoolId);
 }

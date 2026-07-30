@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.examschedule;
 
 import java.time.Duration;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -57,7 +57,7 @@ public class GetExamScheduleOtpUseCase implements IUseCase<GetExamScheduleOtpQue
 
     @Override
     public GetExamScheduleOtpResponse execute(GetExamScheduleOtpQuery input) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var userId = userContextPort.getCurrentAuthenticatedUserId();
         var schedule = examScheduleRepository.findByIdAndInSchedule(input.scheduleId(), now)
             .orElseThrow(() -> new NotFoundException("Lịch thi yêu cầu không tìm thấy hoặc đã hết hạn"));

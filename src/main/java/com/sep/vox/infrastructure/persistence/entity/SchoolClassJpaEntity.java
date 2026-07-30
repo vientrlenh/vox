@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -59,10 +59,10 @@ public class SchoolClassJpaEntity {
     private String status;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private OffsetDateTime updatedAt;
+    private Instant updatedAt;
 
     @Column(name = "created_by", nullable = false, updatable = false)
     private UUID createdBy;
@@ -72,8 +72,8 @@ public class SchoolClassJpaEntity {
 
     protected SchoolClassJpaEntity() {}
 
-    public SchoolClassJpaEntity(UUID id, UUID schoolId, UUID languageId, UUID schoolGradeId, String code, String name, String description, String status, OffsetDateTime createdAt,
-            OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+    public SchoolClassJpaEntity(UUID id, UUID schoolId, UUID languageId, UUID schoolGradeId, String code, String name, String description, String status, Instant createdAt,
+            Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.schoolId = schoolId;
         this.languageId = languageId;
@@ -88,8 +88,8 @@ public class SchoolClassJpaEntity {
         this.updatedBy = updatedBy;
     }
 
-    public SchoolClassJpaEntity(UUID schoolId, UUID languageId, UUID schoolGradeId, String code, String name, String description, String status, OffsetDateTime createdAt,
-            OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+    public SchoolClassJpaEntity(UUID schoolId, UUID languageId, UUID schoolGradeId, String code, String name, String description, String status, Instant createdAt,
+            Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.schoolId = schoolId;
         this.languageId = languageId;
         this.schoolGradeId = schoolGradeId;
@@ -144,19 +144,19 @@ public class SchoolClassJpaEntity {
     }
 
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 

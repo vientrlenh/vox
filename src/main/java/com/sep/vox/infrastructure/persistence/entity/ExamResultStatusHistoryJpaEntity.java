@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -70,13 +70,13 @@ public class ExamResultStatusHistoryJpaEntity {
     private String reason;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
+    private Instant createdAt;
 
     protected ExamResultStatusHistoryJpaEntity() {}
 
     public ExamResultStatusHistoryJpaEntity(UUID id, UUID candidateResultId, String fromStatus, String toStatus,
             BigDecimal scoreBefore, BigDecimal scoreAfter, String source, UUID actorId, String reason,
-            OffsetDateTime createdAt) {
+            Instant createdAt) {
         this.id = id;
         this.candidateResultId = candidateResultId;
         this.fromStatus = fromStatus;
@@ -161,11 +161,11 @@ public class ExamResultStatusHistoryJpaEntity {
         this.reason = reason;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 }

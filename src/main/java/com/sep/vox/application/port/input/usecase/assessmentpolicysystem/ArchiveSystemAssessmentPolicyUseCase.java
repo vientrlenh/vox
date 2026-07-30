@@ -15,7 +15,7 @@ import com.sep.vox.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 @Service
@@ -58,7 +58,7 @@ public class ArchiveSystemAssessmentPolicyUseCase implements IUseCase<ArchiveSys
         }
 
         // 4. Lưu trạng thái mới
-        OffsetDateTime now = OffsetDateTime.now();
+        Instant now = Instant.now();
         policy.setStatus(AssessmentPolicyStatus.ARCHIVED);
         // Không cho effectiveTo lùi về trước effectiveFrom nếu policy chưa tới ngày hiệu lực
         policy.setEffectiveTo(now.isBefore(policy.getEffectiveFrom()) ? policy.getEffectiveFrom() : now);

@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examappeal;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -105,7 +105,7 @@ public class AssignExamAppealReviewerUseCase implements IUseCase<AssignExamAppea
             appeal.setReviewerOverrideReason(overrideReason);
         }
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var deadlineAt = command.deadlineAt() == null ? appeal.getDeadline() : command.deadlineAt();
         if (deadlineAt != null && deadlineAt.isBefore(now)) {
             throw new IllegalArgumentException("Hạn chấm phải ở tương lai.");

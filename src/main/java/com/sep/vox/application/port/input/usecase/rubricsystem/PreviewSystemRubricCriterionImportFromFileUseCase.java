@@ -21,7 +21,8 @@ import com.sep.vox.domain.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.IntStream;
@@ -93,8 +94,8 @@ public class PreviewSystemRubricCriterionImportFromFileUseCase implements IUseCa
             throw new IllegalArgumentException("File tải lên rỗng hoặc không có dữ liệu hợp lệ.");
         }
 
-        OffsetDateTime now = OffsetDateTime.now();
-        OffsetDateTime expiresAt = now.plusDays(1);
+        Instant now = Instant.now();
+        Instant expiresAt = now.plus(1, ChronoUnit.DAYS);
 
         // Tạo Session (Ghim rubricVersionId vào importedEntityId)
         ImportSession session = new ImportSession(

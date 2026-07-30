@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.service;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -262,7 +262,7 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
     }
 
     private void createQuestion(Map<String, String> data, ImportContext importContext, UUID currentUserId) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var question = new Question(
             importContext.questionBank().getId(),
             importContext.questionTopic().getId(),

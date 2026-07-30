@@ -8,7 +8,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -47,8 +49,8 @@ class UpdateExamUseCaseTests {
     private final UUID examId = UUID.randomUUID();
     private final UUID schoolId = UUID.randomUUID();
 
-    private final OffsetDateTime open = OffsetDateTime.parse("2026-07-10T08:00:00+07:00");
-    private final OffsetDateTime close = OffsetDateTime.parse("2026-07-10T11:00:00+07:00");
+    private final Instant open = OffsetDateTime.parse("2026-07-10T08:00:00+07:00").toInstant();
+    private final Instant close = OffsetDateTime.parse("2026-07-10T11:00:00+07:00").toInstant();
 
     @BeforeEach
     void setUp() {
@@ -79,7 +81,7 @@ class UpdateExamUseCaseTests {
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
 
         // Thu khung xuống 1 tiếng trong khi thời gian làm bài là 3 tiếng.
-        assertThatThrownBy(() -> useCase.execute(command(open.toString(), open.plusHours(1).toString())))
+        assertThatThrownBy(() -> useCase.execute(command(open.toString(), open.plus(1, ChronoUnit.HOURS).toString())))
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("thời gian đóng bài");
         verify(examScheduleRepository, never()).save(any());
@@ -92,7 +94,7 @@ class UpdateExamUseCaseTests {
         // khung quá ngắn không được phép bị chặn (nhất quán với nhánh kỳ thi thường).
         var exam = classTest(3 * 3600);
         exam.setOpenAt(open);
-        exam.setCloseAt(open.plusHours(1));
+        exam.setCloseAt(open.plus(1, ChronoUnit.HOURS));
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
 
         useCase.execute(new UpdateExamCommand(
@@ -109,10 +111,10 @@ class UpdateExamUseCaseTests {
         var schedule = schedule(ExamScheduleStatus.PUBLISHED, open, close);
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(schedule));
 
-        useCase.execute(command(open.toString(), close.plusHours(1).toString()));
+        useCase.execute(command(open.toString(), close.plus(1, ChronoUnit.HOURS).toString()));
 
         assertThat(schedule.getStartDate()).isEqualTo(open);
-        assertThat(schedule.getEndDate()).isEqualTo(close.plusHours(1));
+        assertThat(schedule.getEndDate()).isEqualTo(close.plus(1, ChronoUnit.HOURS));
         verify(examScheduleRepository).save(schedule);
     }
 
@@ -127,7 +129,7 @@ class UpdateExamUseCaseTests {
 
         // Dời khung kỳ thi sang ngày hôm sau, ca thi cũ rơi ra ngoài.
         assertThatThrownBy(() -> useCase.execute(
-                command(open.plusDays(1).toString(), close.plusDays(1).toString())))
+                command(open.plus(1, ChronoUnit.DAYS).toString(), close.plus(1, ChronoUnit.DAYS).toString())))
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("nằm ngoài");
         verify(examRepository, never()).save(any());
@@ -141,7 +143,7 @@ class UpdateExamUseCaseTests {
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
         // Ca thi dài 1 tiếng, đặt thời gian làm bài thành 2 tiếng.
         when(examScheduleRepository.findByExamId(examId))
-            .thenReturn(List.of(schedule(ExamScheduleStatus.DRAFT, open, open.plusHours(1))));
+            .thenReturn(List.of(schedule(ExamScheduleStatus.DRAFT, open, open.plus(1, ChronoUnit.HOURS))));
 
         assertThatThrownBy(() -> useCase.execute(new UpdateExamCommand(
                 examId, null, null, null, null, null, null, 2 * 3600, null, null)))
@@ -159,7 +161,7 @@ class UpdateExamUseCaseTests {
             schedule(ExamScheduleStatus.CANCELLED, open, close),
             schedule(ExamScheduleStatus.MOVED, open, close)));
 
-        var result = useCase.execute(command(open.plusDays(1).toString(), close.plusDays(1).toString()));
+        var result = useCase.execute(command(open.plus(1, ChronoUnit.DAYS).toString(), close.plus(1, ChronoUnit.DAYS).toString()));
 
         assertThat(result).isNotNull();
         verify(examRepository).save(any(Exam.class));
@@ -195,7 +197,7 @@ class UpdateExamUseCaseTests {
         when(schoolUser.getSchoolId()).thenReturn(schoolId);
         when(schoolUserRepository.findByUserId(userId)).thenReturn(Optional.of(schoolUser));
         var role = new UserRoleInfo(
-            UUID.randomUUID(), userId, UUID.randomUUID(), OffsetDateTime.now(), "SCHOOL_ADMIN", "Quản trị trường");
+            UUID.randomUUID(), userId, UUID.randomUUID(), Instant.now(), "SCHOOL_ADMIN", "Quản trị trường");
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId)).thenReturn(List.of(role));
         return exam;
     }
@@ -209,7 +211,7 @@ class UpdateExamUseCaseTests {
         return exam;
     }
 
-    private ExamSchedule schedule(ExamScheduleStatus status, OffsetDateTime start, OffsetDateTime end) {
+    private ExamSchedule schedule(ExamScheduleStatus status, Instant start, Instant end) {
         var schedule = new ExamSchedule();
         schedule.setId(UUID.randomUUID());
         schedule.setExamId(examId);

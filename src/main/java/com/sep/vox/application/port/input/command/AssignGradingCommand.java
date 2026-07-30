@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.command;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -16,7 +16,7 @@ import java.util.UUID;
  */
 public record AssignGradingCommand(
     String roundType,
-    OffsetDateTime deadlineAt,
+    Instant deadlineAt,
     List<AssignmentItem> assignments
 ) {
     public record AssignmentItem(

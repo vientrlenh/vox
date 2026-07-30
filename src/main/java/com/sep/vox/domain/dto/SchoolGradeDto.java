@@ -1,7 +1,7 @@
 package com.sep.vox.domain.dto;
 
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public record SchoolGradeDto(
@@ -13,7 +13,7 @@ public record SchoolGradeDto(
     LocalDate startDate,
     LocalDate endDate,
     String status,
-    OffsetDateTime createdAt,
-    OffsetDateTime updatedAt
+    Instant createdAt,
+    Instant updatedAt
 ) {
 }

@@ -1,8 +1,10 @@
 package com.sep.vox.infrastructure.initializer;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
+import java.time.temporal.ChronoField;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -19,6 +21,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.output.PasswordEncoderPort;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStatus;
@@ -834,7 +837,7 @@ public class SampleSchoolDataInitializer implements ApplicationRunner {
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var roleIds = new RoleIds(
             requireRoleId(SCHOOL_ADMIN_ROLE_CODE),
             requireRoleId(TEACHER_ROLE_CODE),
@@ -898,7 +901,7 @@ public class SampleSchoolDataInitializer implements ApplicationRunner {
     // Trường, nhân sự, phòng
     // ---------------------------------------------------------------------------------
 
-    private School findOrCreateSchool(UUID auditUserId, OffsetDateTime now) {
+    private School findOrCreateSchool(UUID auditUserId, Instant now) {
         return identity.schoolRepository().findByCode(SAMPLE_SCHOOL_CODE)
             .orElseGet(() -> identity.schoolRepository().save(School.create(
                 SAMPLE_SCHOOL_CODE,
@@ -920,7 +923,7 @@ public class SampleSchoolDataInitializer implements ApplicationRunner {
             UUID roleId,
             String passwordHash,
             UUID auditUserId,
-            OffsetDateTime now,
+            Instant now,
             Integer membershipYears) {
         var user = identity.userRepository().findByEmail(seed.email())
             .orElseGet(() -> createUser(seed, passwordHash, auditUserId, now));
@@ -929,7 +932,7 @@ public class SampleSchoolDataInitializer implements ApplicationRunner {
         return user.getId();
     }
 
-    private User createUser(MemberSeed seed, String passwordHash, UUID auditUserId, OffsetDateTime now) {
+    private User createUser(MemberSeed seed, String passwordHash, UUID auditUserId, Instant now) {
         if (identity.userRepository().existsByPhone(seed.phone())) {
             throw new IllegalStateException("Số điện thoại đã được dùng, không thể seed: " + seed.phone());
         }
@@ -950,13 +953,13 @@ public class SampleSchoolDataInitializer implements ApplicationRunner {
         ));
     }
 
-    private void ensureRole(UUID userId, UUID roleId, OffsetDateTime now) {
+    private void ensureRole(UUID userId, UUID roleId, Instant now) {
         if (identity.userRoleRepository().findByUserIdAndRoleId(userId, roleId).isEmpty()) {
             identity.userRoleRepository().save(new UserRole(userId, roleId, now));
         }
     }
 
-    private void ensureSchoolMembership(UUID userId, UUID schoolId, OffsetDateTime now, Integer membershipYears) {
+    private void ensureSchoolMembership(UUID userId, UUID schoolId, Instant now, Integer membershipYears) {
         var existing = identity.schoolUserRepository().findByUserId(userId);
         if (existing.isPresent()) {
             if (!existing.get().getSchoolId().equals(schoolId)) {
@@ -964,11 +967,15 @@ public class SampleSchoolDataInitializer implements ApplicationRunner {
             }
             return;
         }
-        var endDate = membershipYears == null ? null : now.plusYears(membershipYears);
+        // Instant.plus không nhận đơn vị YEARS/MONTHS (không phải khoảng thời gian chính xác nếu
+        // không có lịch), nên phải quy về múi giờ trước khi cộng theo năm.
+        var endDate = membershipYears == null
+            ? null
+            : now.atZone(DateMapper.DEFAULT_INPUT_ZONE).plusYears(membershipYears).toInstant();
         identity.schoolUserRepository().save(SchoolUser.create(userId, schoolId, now, endDate));
     }
 
-    private List<SchoolRoom> seedRooms(UUID schoolId, UUID createdBy, OffsetDateTime now) {
+    private List<SchoolRoom> seedRooms(UUID schoolId, UUID createdBy, Instant now) {
         return ROOMS.stream()
             .map(room -> structure.schoolRoomRepository().save(new SchoolRoom(
                 schoolId, room.code(), room.name(), room.description(), true, now, now, createdBy, createdBy)))
@@ -979,7 +986,7 @@ public class SampleSchoolDataInitializer implements ApplicationRunner {
     // Khối, năm học, lớp, học sinh
     // ---------------------------------------------------------------------------------
 
-    private SchoolGradeLevel seedGradeLevel(UUID schoolId, GradeLevelSeed seed, UUID createdBy, OffsetDateTime now) {
+    private SchoolGradeLevel seedGradeLevel(UUID schoolId, GradeLevelSeed seed, UUID createdBy, Instant now) {
         return structure.schoolGradeLevelRepository().save(new SchoolGradeLevel(
             schoolId,
             seed.code(),
@@ -991,7 +998,7 @@ public class SampleSchoolDataInitializer implements ApplicationRunner {
         ));
     }
 
-    private SchoolGrade seedGrade(UUID gradeLevelId, GradeLevelSeed seed, UUID createdBy, OffsetDateTime now) {
+    private SchoolGrade seedGrade(UUID gradeLevelId, GradeLevelSeed seed, UUID createdBy, Instant now) {
         return structure.schoolGradeRepository().save(new SchoolGrade(
             gradeLevelId,
             seed.code() + "-" + ACADEMIC_YEAR,
@@ -1012,7 +1019,7 @@ public class SampleSchoolDataInitializer implements ApplicationRunner {
             UUID studentRoleId,
             String passwordHash,
             UUID createdBy,
-            OffsetDateTime now) {
+            Instant now) {
         var studentIds = new ArrayList<UUID>();
         for (var classIndex = 0; classIndex < CLASSES_PER_GRADE_LEVEL; classIndex++) {
             var classSuffix = (char) ('A' + classIndex);
@@ -1069,7 +1076,7 @@ public class SampleSchoolDataInitializer implements ApplicationRunner {
      * {@code UpdateExamStatusUseCase.validatePlanLimits}: thời lượng bài thi (giây) ×
      * số thí sinh × maxAttempt, cộng dồn cho cả ba kỳ thi.
      */
-    private void seedSubscription(UUID schoolId, UUID createdBy, OffsetDateTime now) {
+    private void seedSubscription(UUID schoolId, UUID createdBy, Instant now) {
         var plan = subscriptions.subscriptionPlanRepository().save(new SubscriptionPlan(
             "Gói Trường THPT - Mẫu",
             "Gói seed cho môi trường phát triển",
@@ -1084,11 +1091,14 @@ public class SampleSchoolDataInitializer implements ApplicationRunner {
             createdBy
         ));
 
+        // Dẫn xuất từ now thay vì gọi LocalDate.now(): LocalDate.now() đọc múi giờ của JVM, và hai
+        // lần gọi riêng biệt còn có thể vắt qua nửa đêm nên ra hai ngày gốc khác nhau.
+        var subscriptionStart = LocalDate.ofInstant(now, DateMapper.DEFAULT_INPUT_ZONE);
         var subscription = subscriptions.schoolSubscriptionRepository().save(new SchoolSubscription(
             schoolId,
             plan.getId(),
-            LocalDate.now().minusDays(30),
-            LocalDate.now().plusDays(335),
+            subscriptionStart.minusDays(30),
+            subscriptionStart.plusDays(335),
             SubscriptionStatus.ACTIVE,
             new BigDecimal("24000000"),
             null,
@@ -1111,7 +1121,7 @@ public class SampleSchoolDataInitializer implements ApplicationRunner {
     // Khung năng lực
     // ---------------------------------------------------------------------------------
 
-    private SeededFrameworkVersion seedFramework(UUID createdBy, OffsetDateTime now) {
+    private SeededFrameworkVersion seedFramework(UUID createdBy, Instant now) {
         var framework = assessment.frameworkRepository().findByCode(FRAMEWORK_CODE)
             .orElseGet(() -> assessment.frameworkRepository().save(new Framework(
                 new FrameworkCode(FRAMEWORK_CODE),
@@ -1131,7 +1141,7 @@ public class SampleSchoolDataInitializer implements ApplicationRunner {
             "Khung năng lực ngoại ngữ 6 bậc - phiên bản 1",
             "Phiên bản seed cho kỹ năng nói, năm chỉ số đánh giá.",
             1,
-            now.minusMonths(1),
+            now.atZone(DateMapper.DEFAULT_INPUT_ZONE).minusMonths(1).toInstant(),
             null,
             FrameworkVersionStatus.PUBLISHED,
             now, now, createdBy, createdBy
@@ -1237,7 +1247,7 @@ public class SampleSchoolDataInitializer implements ApplicationRunner {
             SupportedLanguage language,
             SeededFrameworkVersion frameworkVersion,
             UUID createdBy,
-            OffsetDateTime now) {
+            Instant now) {
         var existingVersion = assessment.rubricVersionRepository().findByCode(RUBRIC_VERSION_CODE);
         if (existingVersion.isPresent()) {
             var version = existingVersion.get();
@@ -1270,7 +1280,7 @@ public class SampleSchoolDataInitializer implements ApplicationRunner {
             "Khung chấm nói - phiên bản 1",
             "Thang 0-10, tổng điểm theo trung bình có trọng số.",
             RubricStatus.PUBLISHED,
-            now.minusMonths(1),
+            now.atZone(DateMapper.DEFAULT_INPUT_ZONE).minusMonths(1).toInstant(),
             null,
             new BigDecimal("0.00"),
             new BigDecimal("10.00"),
@@ -1333,7 +1343,7 @@ public class SampleSchoolDataInitializer implements ApplicationRunner {
             UUID rubricVersionId,
             GradeLevelSeed seed,
             UUID createdBy,
-            OffsetDateTime now) {
+            Instant now) {
         var targetBandId = frameworkVersion.bandIdsByCode().get(seed.targetBandCode());
         if (targetBandId == null) {
             throw new IllegalStateException("Bậc mục tiêu " + seed.targetBandCode() + " không tồn tại trong khung");
@@ -1354,13 +1364,13 @@ public class SampleSchoolDataInitializer implements ApplicationRunner {
             seed.strictness(),
             1,
             AssessmentPolicyStatus.PUBLISHED,
-            now.minusDays(7),
+            now.atZone(DateMapper.DEFAULT_INPUT_ZONE).minusMonths(7).toInstant(),
             null,
             now, now, createdBy, createdBy
         ));
     }
 
-    private void seedScoringRules(UUID policyId, GradeLevelSeed seed, UUID createdBy, OffsetDateTime now) {
+    private void seedScoringRules(UUID policyId, GradeLevelSeed seed, UUID createdBy, Instant now) {
         var rules = SCORING_RULES_BY_GRADE_LEVEL.get(seed.code());
         if (rules == null) {
             return;
@@ -1388,7 +1398,7 @@ public class SampleSchoolDataInitializer implements ApplicationRunner {
     // Ngân hàng câu hỏi
     // ---------------------------------------------------------------------------------
 
-    private QuestionBank seedQuestionBank(UUID schoolId, SupportedLanguage language, UUID createdBy, OffsetDateTime now) {
+    private QuestionBank seedQuestionBank(UUID schoolId, SupportedLanguage language, UUID createdBy, Instant now) {
         return questions.questionBankRepository().save(new QuestionBank(
             language.getId(),
             schoolId,
@@ -1405,7 +1415,7 @@ public class SampleSchoolDataInitializer implements ApplicationRunner {
             UUID questionBankId,
             GradeLevelSeed gradeLevelSeed,
             List<UUID> teacherIds,
-            OffsetDateTime now) {
+            Instant now) {
         var authorId = teacherIds.get(gradeLevelSeed.order() % teacherIds.size());
         var topic = questions.questionTopicRepository().save(new QuestionTopic(
             questionBankId,
@@ -1472,7 +1482,7 @@ public class SampleSchoolDataInitializer implements ApplicationRunner {
             List<UUID> teacherIds,
             List<SchoolRoom> rooms,
             UUID schoolAdminId,
-            OffsetDateTime now) {
+            Instant now) {
         var blueprint = seedBlueprint(schoolId, languageId, gradeLevelId, gradeLevelSeed, schoolAdminId, now);
         var exam = exams.examRepository().save(new Exam(
             blueprint.blueprintId(),
@@ -1489,7 +1499,7 @@ public class SampleSchoolDataInitializer implements ApplicationRunner {
             EXAM_DURATION_SECONDS,
             ResultDecisionMethod.HIGHEST,
             gradeLevelSeed.examStart(now),
-            gradeLevelSeed.examStart(now).plusHours(4),
+            gradeLevelSeed.examStart(now).plus(4, ChronoUnit.HOURS),
             assessmentPolicyId,
             true,
             // Thứ tự tham số của constructor này không theo nhóm: createdAt nằm TRƯỚC hai
@@ -1529,7 +1539,7 @@ public class SampleSchoolDataInitializer implements ApplicationRunner {
             UUID gradeLevelId,
             GradeLevelSeed gradeLevelSeed,
             UUID createdBy,
-            OffsetDateTime now) {
+            Instant now) {
         var blueprint = exams.examBlueprintRepository().save(new ExamBlueprint(
             schoolId,
             languageId,
@@ -1548,7 +1558,7 @@ public class SampleSchoolDataInitializer implements ApplicationRunner {
             "Phiên bản 1 của khung đề thi nói " + gradeLevelSeed.name(),
             ExamBlueprintVersionStatus.PUBLISHED,
             EXAM_DURATION_SECONDS,
-            now.minusDays(14),
+            now.minus(14, ChronoUnit.DAYS),
             null,
             now, now, createdBy, createdBy
         ));
@@ -1610,7 +1620,7 @@ public class SampleSchoolDataInitializer implements ApplicationRunner {
             SeededBlueprint blueprint,
             List<UUID> questionIds,
             UUID createdBy,
-            OffsetDateTime now) {
+            Instant now) {
         var requiredQuestions = blueprint.totalSlots() * PAPER_VARIANTS;
         if (questionIds.size() < requiredQuestions) {
             throw new IllegalStateException(
@@ -1671,18 +1681,18 @@ public class SampleSchoolDataInitializer implements ApplicationRunner {
             List<SchoolRoom> rooms,
             List<UUID> teacherIds,
             UUID createdBy,
-            OffsetDateTime now) {
+            Instant now) {
         var examStart = gradeLevelSeed.examStart(now);
         var scheduleIds = new ArrayList<UUID>(SCHEDULES_PER_EXAM);
 
         for (var slot = 0; slot < SCHEDULES_PER_EXAM; slot++) {
             var room = rooms.get(slot % rooms.size());
-            var start = examStart.plusMinutes(slot * 90L);
+            var start = examStart.plus(slot * 90L, ChronoUnit.MINUTES);
             var schedule = exams.examScheduleRepository().save(new ExamSchedule(
                 examId,
                 room.getId(),
                 start,
-                start.plusMinutes(60),
+                start.plus(60, ChronoUnit.MINUTES),
                 ExamScheduleStatus.PUBLISHED,
                 null,
                 now, now, createdBy, createdBy
@@ -1711,7 +1721,7 @@ public class SampleSchoolDataInitializer implements ApplicationRunner {
             List<UUID> paperIds,
             List<UUID> scheduleIds,
             UUID createdBy,
-            OffsetDateTime now) {
+            Instant now) {
         var candidates = new ArrayList<ExamCandidate>(studentIds.size());
         for (var index = 0; index < studentIds.size(); index++) {
             var candidate = ExamCandidate.createFresh(examId, studentIds.get(index), createdBy, now);
@@ -1822,8 +1832,8 @@ public class SampleSchoolDataInitializer implements ApplicationRunner {
         }
 
         /** Mỗi khối thi một ngày riêng để hai ca của các khối không tranh cùng một phòng. */
-        private OffsetDateTime examStart(OffsetDateTime now) {
-            return now.plusDays(6L + order()).withHour(8).withMinute(0).withSecond(0).withNano(0);
+        private Instant examStart(Instant now) {
+            return now.plus(6L + order(), ChronoUnit.DAYS).with(ChronoField.HOUR_OF_DAY, 8);
         }
     }
 

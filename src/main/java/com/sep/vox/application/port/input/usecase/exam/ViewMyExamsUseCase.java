@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -55,7 +55,7 @@ public class ViewMyExamsUseCase implements IUseCase<Void, List<StudentExamSummar
 
     @Override
     public List<StudentExamSummaryResponse> execute(Void input) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var studentId = userContextPort.getCurrentAuthenticatedUserId();
         var candidates = examCandidateRepository.findByStudentId(studentId);
         var attemptsByCandidateId = groupAttemptsByCandidateId(candidates);
@@ -148,7 +148,7 @@ public class ViewMyExamsUseCase implements IUseCase<Void, List<StudentExamSummar
             Exam exam,
             ExamCandidate candidate,
             ExamSchedule schedule,
-            OffsetDateTime now,
+            Instant now,
             int attemptsUsed) {
         if (candidate.getBlockedAt() != null) {
             return new EntryAvailability(false, "Bạn đã bị buộc kết thúc bài thi này, không thể vào lại");

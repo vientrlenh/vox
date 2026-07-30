@@ -1,6 +1,6 @@
 package com.sep.vox.domain.dto;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 
@@ -21,7 +21,7 @@ public record ScoringRuleDto(
         String severity,
         boolean stopProcessing,
         boolean isActive,
-        OffsetDateTime createdAt,
-        OffsetDateTime updatedAt
+        Instant createdAt,
+        Instant updatedAt
 ) {
 }

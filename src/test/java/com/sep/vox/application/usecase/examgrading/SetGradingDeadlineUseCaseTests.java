@@ -11,7 +11,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
@@ -56,23 +57,23 @@ class SetGradingDeadlineUseCaseTests {
 
     private ExamGradingAssignment given(UUID assignmentSchoolId) {
         var assignment = ExamGradingAssignment.open(UUID.randomUUID(), UUID.randomUUID(),
-            GradingRoundType.INITIAL, null, null, OffsetDateTime.now().minusDays(2),
-            adminId, OffsetDateTime.now().minusDays(1));
+            GradingRoundType.INITIAL, null, null, Instant.now().minus(2, ChronoUnit.DAYS),
+            adminId, Instant.now().minus(1, ChronoUnit.DAYS));
         assignment.setId(UUID.randomUUID());
-        assignment.setRemindedAt(OffsetDateTime.now().minusHours(6));
+        assignment.setRemindedAt(Instant.now().minus(6, ChronoUnit.HOURS));
         when(examGradingAccessService.load(assignment.getId())).thenReturn(new GradingContext(
             assignment, new ExamCandidateResult(), new ExamSession(), assignmentSchoolId, "IELTS Mock"));
         return assignment;
     }
 
-    private SetGradingDeadlineCommand command(List<UUID> ids, OffsetDateTime deadline) {
+    private SetGradingDeadlineCommand command(List<UUID> ids, Instant deadline) {
         return new SetGradingDeadlineCommand(ids, deadline);
     }
 
     @Test
     void should_set_the_deadline_and_reset_the_reminder_mark() {
         var assignment = given(schoolId);
-        var newDeadline = OffsetDateTime.now().plusDays(3);
+        var newDeadline = Instant.now().plus(3, ChronoUnit.DAYS);
 
         useCase.execute(command(List.of(assignment.getId()), newDeadline));
 
@@ -96,7 +97,7 @@ class SetGradingDeadlineUseCaseTests {
         var assignment = given(schoolId);
 
         assertThatThrownBy(() -> useCase.execute(
-            command(List.of(assignment.getId()), OffsetDateTime.now().minusHours(1))))
+            command(List.of(assignment.getId()), Instant.now().minus(1, ChronoUnit.HOURS))))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("tương lai");
 
@@ -105,7 +106,7 @@ class SetGradingDeadlineUseCaseTests {
 
     @Test
     void should_reject_an_empty_selection() {
-        assertThatThrownBy(() -> useCase.execute(command(List.of(), OffsetDateTime.now().plusDays(1))))
+        assertThatThrownBy(() -> useCase.execute(command(List.of(), Instant.now().plus(1, ChronoUnit.DAYS))))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("ít nhất một");
     }
@@ -114,10 +115,10 @@ class SetGradingDeadlineUseCaseTests {
     void should_validate_every_row_before_writing_any_of_them() {
         var open = given(schoolId);
         var closed = given(schoolId);
-        closed.complete(GradingOutcome.UPHELD, null, OffsetDateTime.now());
+        closed.complete(GradingOutcome.UPHELD, null, Instant.now());
 
         assertThatThrownBy(() -> useCase.execute(
-            command(List.of(open.getId(), closed.getId()), OffsetDateTime.now().plusDays(2))))
+            command(List.of(open.getId(), closed.getId()), Instant.now().plus(2, ChronoUnit.DAYS))))
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("đã chốt");
 
@@ -131,7 +132,7 @@ class SetGradingDeadlineUseCaseTests {
         var first = given(schoolId);
         var second = given(schoolId);
 
-        useCase.execute(command(List.of(first.getId(), second.getId()), OffsetDateTime.now().plusDays(2)));
+        useCase.execute(command(List.of(first.getId(), second.getId()), Instant.now().plus(2, ChronoUnit.DAYS)));
 
         verify(examGradingAccessService, times(1)).authorizeSchoolAdmin(schoolId, adminId);
     }
@@ -144,7 +145,7 @@ class SetGradingDeadlineUseCaseTests {
             .authorizeSchoolAdmin(any(), any());
 
         assertThatThrownBy(() -> useCase.execute(
-            command(List.of(assignment.getId()), OffsetDateTime.now().plusDays(2))))
+            command(List.of(assignment.getId()), Instant.now().plus(2, ChronoUnit.DAYS))))
             .isInstanceOf(ForbiddenException.class);
 
         verify(examGradingAssignmentRepository, never()).saveAll(anyList());

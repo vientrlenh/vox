@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -40,10 +40,10 @@ public class FrameworkCriterionBandJpaEntity {
     private String negativeSignalsJson;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private OffsetDateTime updatedAt;
+    private Instant updatedAt;
 
     @Column(name = "created_by", updatable = false)
     private UUID createdBy;
@@ -54,8 +54,8 @@ public class FrameworkCriterionBandJpaEntity {
     protected FrameworkCriterionBandJpaEntity() {}
 
     public FrameworkCriterionBandJpaEntity(UUID id, UUID frameworkCriterionId, UUID frameworkResultBandId,
-            String descriptor, String positiveSignalsJson, String negativeSignalsJson, OffsetDateTime createdAt,
-            OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            String descriptor, String positiveSignalsJson, String negativeSignalsJson, Instant createdAt,
+            Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.frameworkCriterionId = frameworkCriterionId;
         this.frameworkResultBandId = frameworkResultBandId;
@@ -80,10 +80,10 @@ public class FrameworkCriterionBandJpaEntity {
     public void setPositiveSignalsJson(String positiveSignalsJson) { this.positiveSignalsJson = positiveSignalsJson; }
     public String getNegativeSignalsJson() { return negativeSignalsJson; }
     public void setNegativeSignalsJson(String negativeSignalsJson) { this.negativeSignalsJson = negativeSignalsJson; }
-    public OffsetDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(OffsetDateTime createdAt) { this.createdAt = createdAt; }
-    public OffsetDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(OffsetDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public Instant getCreatedAt() { return createdAt; }
+    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
+    public Instant getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
     public UUID getCreatedBy() { return createdBy; }
     public void setCreatedBy(UUID createdBy) { this.createdBy = createdBy; }
     public UUID getUpdatedBy() { return updatedBy; }

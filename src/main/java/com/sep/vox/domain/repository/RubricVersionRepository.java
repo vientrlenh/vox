@@ -1,7 +1,7 @@
 package com.sep.vox.domain.repository;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -29,10 +29,10 @@ public interface RubricVersionRepository {
 
     List<RubricVersion> saveAll(List<RubricVersion> rubricVersions);
 
-    void updateRubricVersionAtomic(UUID id, String code, String name, String description, OffsetDateTime effectiveFrom,
-                                   OffsetDateTime effectiveTo, BigDecimal scoringScaleMin,
+    void updateRubricVersionAtomic(UUID id, String code, String name, String description, Instant effectiveFrom,
+                                   Instant effectiveTo, BigDecimal scoringScaleMin,
                                    BigDecimal scoringScaleMax, String totalScoreMethod,
-                                   OffsetDateTime updatedAt, UUID updatedBy);
+                                   Instant updatedAt, UUID updatedBy);
 
     PageResult<RubricVersion> findAllByRubricIdAndStatus(UUID rubricId, String status, int page, int size);
 

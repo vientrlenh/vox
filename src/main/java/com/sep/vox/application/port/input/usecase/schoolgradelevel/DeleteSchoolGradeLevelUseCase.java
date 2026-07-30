@@ -18,7 +18,7 @@ import com.sep.vox.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 @Service
@@ -88,7 +88,7 @@ public class DeleteSchoolGradeLevelUseCase implements IUseCase<DeleteSchoolGrade
 
         // 5. Xóa mềm: chuyển sang INACTIVE.
         gradeLevel.setStatus(SchoolGradeLevelStatus.INACTIVE);
-        gradeLevel.setUpdatedAt(OffsetDateTime.now());
+        gradeLevel.setUpdatedAt(Instant.now());
         gradeLevel.setUpdatedBy(currentUserId);
         schoolGradeLevelRepository.save(gradeLevel);
 

@@ -9,7 +9,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -49,8 +50,8 @@ class CreateExamScheduleUseCaseTests {
     private final UUID examId = UUID.randomUUID();
     private final UUID schoolId = UUID.randomUUID();
     private final UUID roomId = UUID.randomUUID();
-    private final OffsetDateTime start = OffsetDateTime.parse("2026-07-10T08:00:00+07:00");
-    private final OffsetDateTime end = OffsetDateTime.parse("2026-07-10T10:00:00+07:00");
+    private final Instant start = Instant.parse("2026-07-10T08:00:00+07:00");
+    private final Instant end = Instant.parse("2026-07-10T10:00:00+07:00");
 
     @BeforeEach
     void setUp() {
@@ -149,7 +150,7 @@ class CreateExamScheduleUseCaseTests {
     @Test
     void should_reject_when_schedule_starts_before_exam_open() {
         var exam = exam();
-        exam.setOpenAt(start.plusMinutes(1));
+        exam.setOpenAt(start.plus(1, ChronoUnit.MINUTES));
         exam.setCloseAt(end);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
         var room = room(schoolId);
@@ -165,7 +166,7 @@ class CreateExamScheduleUseCaseTests {
     void should_reject_when_schedule_ends_after_exam_close() {
         var exam = exam();
         exam.setOpenAt(start);
-        exam.setCloseAt(end.minusMinutes(1));
+        exam.setCloseAt(end.minus(1, ChronoUnit.MINUTES));
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
         var room = room(schoolId);
         when(schoolRoomRepository.findById(roomId)).thenReturn(Optional.of(room));

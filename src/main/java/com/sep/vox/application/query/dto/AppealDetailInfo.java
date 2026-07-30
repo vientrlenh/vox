@@ -1,7 +1,7 @@
 package com.sep.vox.application.query.dto;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -12,15 +12,15 @@ public record AppealDetailInfo(
     String examName,
     BigDecimal originalScore,
     String status,
-    OffsetDateTime requestedAt,
-    OffsetDateTime deadline,
+    Instant requestedAt,
+    Instant deadline,
     String reason,
     String notes,
     String decisionNote,
     BigDecimal finalScore,
-    OffsetDateTime approvedAt,
-    OffsetDateTime resolvedAt,
-    OffsetDateTime withdrawnAt,
+    Instant approvedAt,
+    Instant resolvedAt,
+    Instant withdrawnAt,
     /** Lý do admin giao cho người đã từng chấm bài này; null khi không override. */
     String reviewerOverrideReason,
     /** Các phần thi được phúc khảo, mỗi phần kèm điểm gốc và lượt nói của riêng nó. */

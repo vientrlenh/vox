@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.schoolclassuser;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -70,7 +70,7 @@ public class BulkCreateSchoolClassUsersUseCase
     @Transactional
     public BulkCreateSchoolClassUsersResponse execute(BulkCreateSchoolClassUsersCommand input) {
         var requestedUserIds = validateCommand(input);
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         var currentUser = findCurrentUser(currentUserId);
         var schoolId = getSchoolId(currentUser);

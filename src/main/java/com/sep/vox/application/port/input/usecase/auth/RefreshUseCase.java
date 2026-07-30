@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.auth;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -58,7 +58,7 @@ public class RefreshUseCase implements IUseCase<RefreshCommand, RefreshResponse>
         var refreshToken = refreshTokenRepository.findByTokenHashForUpdate(tokenHash)
             .orElseThrow(() -> new UnauthorizedException("Token yêu cầu không hợp lệ"));
         
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var deviceSession = deviceSessionRepository.findById(refreshToken.getSessionId())
             .orElseThrow(() -> new UnauthorizedException("Token yêu cầu không hợp lệ"));
 
@@ -86,7 +86,7 @@ public class RefreshUseCase implements IUseCase<RefreshCommand, RefreshResponse>
 
 
 
-    private void validateValidRequest(RefreshToken refreshToken, DeviceSession deviceSession, OffsetDateTime now, RefreshCommand command) {
+    private void validateValidRequest(RefreshToken refreshToken, DeviceSession deviceSession, Instant now, RefreshCommand command) {
         if (refreshToken.isExpired(now)) {
             throw new UnauthorizedException("Token yêu cầu không hợp lệ");
         }
@@ -106,12 +106,12 @@ public class RefreshUseCase implements IUseCase<RefreshCommand, RefreshResponse>
         }
     }
 
-    private RefreshToken createNewRefreshToken(GeneratedSessionToken newToken, DeviceSession deviceSession, RefreshToken refreshToken, OffsetDateTime now) {
+    private RefreshToken createNewRefreshToken(GeneratedSessionToken newToken, DeviceSession deviceSession, RefreshToken refreshToken, Instant now) {
         var newRefreshToken = RefreshToken.createFresh(deviceSession.getId(), newToken.hashedToken(), now);
         return refreshTokenRepository.save(newRefreshToken);
     }
 
-    private void markOldTokenAsUsed(UUID oldTokenId, UUID newTokenId, UUID sessionId, OffsetDateTime now) {
+    private void markOldTokenAsUsed(UUID oldTokenId, UUID newTokenId, UUID sessionId, Instant now) {
         var updatedRow = refreshTokenRepository.markUsedAndReplacedBy(oldTokenId, newTokenId, now);
         if (updatedRow == 0) {
             sessionManagerPort.revoke(sessionId, now);

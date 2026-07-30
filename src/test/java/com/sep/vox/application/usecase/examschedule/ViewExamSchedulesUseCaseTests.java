@@ -7,8 +7,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -42,7 +44,7 @@ class ViewExamSchedulesUseCaseTests {
     private final UUID examId = UUID.randomUUID();
     private final UUID schoolId = UUID.randomUUID();
 
-    private final OffsetDateTime base = OffsetDateTime.of(2026, 7, 10, 9, 0, 0, 0, ZoneOffset.UTC);
+    private final Instant base = OffsetDateTime.of(2026, 7, 10, 9, 0, 0, 0, ZoneOffset.UTC).toInstant();
 
     @BeforeEach
     void setUp() {
@@ -58,8 +60,8 @@ class ViewExamSchedulesUseCaseTests {
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam()));
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(
             schedule(base, ExamScheduleStatus.DRAFT),
-            schedule(base.plusDays(2), ExamScheduleStatus.PUBLISHED),
-            schedule(base.plusDays(4), ExamScheduleStatus.DRAFT)
+            schedule(base.plus(2, ChronoUnit.DAYS), ExamScheduleStatus.PUBLISHED),
+            schedule(base.plus(4, ChronoUnit.DAYS), ExamScheduleStatus.DRAFT)
         ));
     }
 
@@ -86,7 +88,7 @@ class ViewExamSchedulesUseCaseTests {
     void should_filter_by_start_date_lower_bound() {
         givenTeacherChair();
 
-        var result = useCase.execute(new ViewExamSchedulesQuery(examId, null, base.plusDays(2), null));
+        var result = useCase.execute(new ViewExamSchedulesQuery(examId, null, base.plus(2, ChronoUnit.DAYS), null));
 
         assertThat(result).hasSize(2);
     }
@@ -95,7 +97,7 @@ class ViewExamSchedulesUseCaseTests {
     void should_filter_by_end_date_upper_bound() {
         givenTeacherChair();
 
-        var result = useCase.execute(new ViewExamSchedulesQuery(examId, null, null, base.plusDays(2)));
+        var result = useCase.execute(new ViewExamSchedulesQuery(examId, null, null, base.plus(2, ChronoUnit.DAYS)));
 
         assertThat(result).hasSize(2);
     }
@@ -105,7 +107,7 @@ class ViewExamSchedulesUseCaseTests {
         givenTeacherChair();
 
         var result = useCase.execute(
-            new ViewExamSchedulesQuery(examId, null, base.plusDays(2), base.plusDays(2)));
+            new ViewExamSchedulesQuery(examId, null, base.plus(2, ChronoUnit.DAYS), base.plus(2, ChronoUnit.DAYS)));
 
         assertThat(result).hasSize(1);
     }
@@ -115,7 +117,7 @@ class ViewExamSchedulesUseCaseTests {
         givenSchoolAdmin(schoolId);
         when(examScheduleRepository.findBySchoolId(schoolId)).thenReturn(List.of(
             schedule(base, ExamScheduleStatus.DRAFT),
-            schedule(base.plusDays(2), ExamScheduleStatus.PUBLISHED)
+            schedule(base.plus(2, ChronoUnit.DAYS), ExamScheduleStatus.PUBLISHED)
         ));
 
         var result = useCase.execute(
@@ -142,13 +144,13 @@ class ViewExamSchedulesUseCaseTests {
             .isInstanceOf(ForbiddenException.class);
     }
 
-    private ExamSchedule schedule(OffsetDateTime startDate, ExamScheduleStatus status) {
+    private ExamSchedule schedule(Instant startDate, ExamScheduleStatus status) {
         var s = new ExamSchedule();
         s.setId(UUID.randomUUID());
         s.setExamId(examId);
         s.setSchoolRoomId(UUID.randomUUID());
         s.setStartDate(startDate);
-        s.setEndDate(startDate.plusHours(2));
+        s.setEndDate(startDate.plus(2, ChronoUnit.HOURS));
         s.setStatus(status);
         return s;
     }

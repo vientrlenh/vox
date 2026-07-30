@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.query;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -100,7 +100,7 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             GradingAssignmentFilter filter, int page, int size) {
         var normalizedPage = Math.max(page, 0);
         var normalizedSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
 
         var rows = applyFilters(em.createQuery("""
             SELECT cr.id, u.fullName, e.name, cr.status, cr.totalScore, s.flagged, cr.updatedAt
@@ -197,7 +197,7 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
         """;
 
     private <T> jakarta.persistence.TypedQuery<T> applyFilters(
-            jakarta.persistence.TypedQuery<T> query, GradingAssignmentFilter filter, OffsetDateTime now) {
+            jakarta.persistence.TypedQuery<T> query, GradingAssignmentFilter filter, Instant now) {
         return query
             .setParameter("schoolId", filter.schoolId())
             .setParameter("examId", filter.examId())
@@ -217,9 +217,9 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
 
     private record DisplayAssignment(
         UUID id, UUID teacherId, String teacherName, String roundType, String status, String outcome,
-        OffsetDateTime assignedAt, OffsetDateTime completedAt, OffsetDateTime deadlineAt, boolean open
+        Instant assignedAt, Instant completedAt, Instant deadlineAt, boolean open
     ) {
-        boolean isOverdue(OffsetDateTime now) {
+        boolean isOverdue(Instant now) {
             return open && deadlineAt != null && deadlineAt.isBefore(now);
         }
     }
@@ -253,9 +253,9 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
                 row.get(4, String.class),
                 row.get(5, String.class),
                 row.get(6, String.class),
-                row.get(7, OffsetDateTime.class),
-                row.get(8, OffsetDateTime.class),
-                row.get(9, OffsetDateTime.class),
+                row.get(7, Instant.class),
+                row.get(8, Instant.class),
+                row.get(9, Instant.class),
                 row.get(10, UUID.class) != null
             );
             var existing = map.get(candidateResultId);
@@ -305,7 +305,7 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
 
     @Override
     public GradingStatsInfo stats(UUID schoolId, UUID examId, UUID scheduleId) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
 
         var statusRows = em.createQuery("""
             SELECT cr.status, COUNT(cr)
@@ -428,7 +428,7 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             UUID teacherId, String status, String roundType, int page, int size) {
         var normalizedPage = Math.max(page, 0);
         var normalizedSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
 
         // Không join sang candidate/user: giáo viên chấm ẩn danh, dữ liệu học sinh
         // không được rời khỏi read model này.
@@ -458,7 +458,7 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
         for (var row : rows) {
             var candidateResultId = row.get(1, UUID.class);
             var assignmentStatus = row.get(4, String.class);
-            var deadlineAt = row.get(9, OffsetDateTime.class);
+            var deadlineAt = row.get(9, Instant.class);
             content.add(new GradingTaskInfo(
                 row.get(0, UUID.class),
                 candidateResultId,
@@ -470,7 +470,7 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
                 row.get(5, String.class),
                 row.get(6, BigDecimal.class),
                 Boolean.TRUE.equals(row.get(7, Boolean.class)),
-                row.get(8, OffsetDateTime.class),
+                row.get(8, Instant.class),
                 deadlineAt,
                 isOverdue(assignmentStatus, deadlineAt, now)
             ));
@@ -491,7 +491,7 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
         return new PageResult<>(content, normalizedPage, normalizedSize, total, totalPages);
     }
 
-    private boolean isOverdue(String assignmentStatus, OffsetDateTime deadlineAt, OffsetDateTime now) {
+    private boolean isOverdue(String assignmentStatus, Instant deadlineAt, Instant now) {
         return GradingAssignmentStatus.ASSIGNED.name().equals(assignmentStatus)
             && deadlineAt != null && deadlineAt.isBefore(now);
     }
@@ -544,8 +544,8 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
         var roundType = row.get(3, String.class);
         var assignmentStatus = row.get(4, String.class);
         var resultStatus = row.get(5, String.class);
-        var deadlineAt = row.get(10, OffsetDateTime.class);
-        var now = OffsetDateTime.now();
+        var deadlineAt = row.get(10, Instant.class);
+        var now = Instant.now();
 
         // Cờ chỉ-đọc và danh sách nút do BE quyết, FE không tự suy: luật vòng × hành
         // động nằm ở GradingRoundPolicy, suy lại ở FE là sớm muộn hai bên lệch nhau.
@@ -1044,14 +1044,14 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
                 row.get(2, String.class),
                 classNames.get(candidateResultId),
                 row.get(3, String.class),
-                row.get(4, OffsetDateTime.class),
+                row.get(4, Instant.class),
                 row.get(5, BigDecimal.class),
                 row.get(6, String.class),
                 row.get(7, String.class),
                 lastRound == null ? null : lastRound.roundType(),
                 lastRound == null ? null : lastRound.outcome(),
                 lastRound == null ? null : lastRound.teacherName(),
-                row.get(8, OffsetDateTime.class)
+                row.get(8, Instant.class)
             ));
         }
         return result;

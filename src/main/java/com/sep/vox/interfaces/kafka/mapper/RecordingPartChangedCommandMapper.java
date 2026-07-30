@@ -1,9 +1,9 @@
 package com.sep.vox.interfaces.kafka.mapper;
 
-import java.time.OffsetDateTime;
 import java.util.Locale;
 import java.util.UUID;
 
+import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.input.command.RecordRecordingPartChangedCommand;
 import com.sep.vox.domain.model.exam.ExamRecordingAssemblyStatus;
 import com.sep.vox.domain.model.exam.ExamRequiredStreamType;
@@ -22,7 +22,7 @@ public final class RecordingPartChangedCommandMapper {
             toStatus(dto.status()),
             dto.objectKey(),
             dto.durationSecs(),
-            OffsetDateTime.parse(dto.occurredAt()),
+            DateMapper.toInstant(dto.occurredAt()),
             toSource(dto.source())
         );
     }
@@ -48,9 +48,7 @@ public final class RecordingPartChangedCommandMapper {
         return type;
     }
 
-    // vox-streaming publishes "UPLOADING" khi upload session vừa được tạo (chưa có gì để assemble).
-    // Map về PROCESSING vì ExamRecordingAssemblyStatus (và CHECK constraint của bảng) không có giá
-    // trị UPLOADING riêng -- PROCESSING là trạng thái "đang ghi/chưa có kết quả cuối" chung nhất.
+
     private static ExamRecordingAssemblyStatus toStatus(String raw) {
         if ("UPLOADING".equalsIgnoreCase(raw)) {
             return ExamRecordingAssemblyStatus.PROCESSING;

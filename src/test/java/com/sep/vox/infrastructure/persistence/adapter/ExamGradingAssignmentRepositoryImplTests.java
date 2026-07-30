@@ -2,7 +2,7 @@ package com.sep.vox.infrastructure.persistence.adapter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -52,7 +52,7 @@ class ExamGradingAssignmentRepositoryImplTests extends ContainerTestConfig {
 
     private final UUID candidateResultId = UUID.randomUUID();
     private final UUID teacherId = UUID.randomUUID();
-    private final OffsetDateTime now = OffsetDateTime.now();
+    private final Instant now = Instant.now();
 
     private ExamGradingAssignment givenOpenRound(GradingRoundType roundType) {
         repository.save(ExamGradingAssignment.open(

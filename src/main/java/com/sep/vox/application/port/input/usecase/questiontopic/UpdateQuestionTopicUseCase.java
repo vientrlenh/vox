@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.questiontopic;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -66,7 +66,7 @@ public class UpdateQuestionTopicUseCase implements IUseCase<UpdateQuestionTopicC
             topic.setName(command.name());
         }
         topic.setDescription(command.description());
-        topic.setUpdatedAt(OffsetDateTime.now());
+        topic.setUpdatedAt(Instant.now());
         topic.setUpdatedBy(currentUserId);
 
         var saved = questionTopicRepository.save(topic);

@@ -1,6 +1,6 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -19,7 +19,7 @@ public record AssignGradingRequest(
     @NotBlank(message = "Phải chọn vòng chấm")
     String roundType,
 
-    OffsetDateTime deadlineAt,
+    Instant deadlineAt,
 
     @NotEmpty(message = "Phải chọn ít nhất một bài thi để phân công")
     @Valid

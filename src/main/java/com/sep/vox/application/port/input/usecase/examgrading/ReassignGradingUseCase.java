@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examgrading;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -69,7 +69,7 @@ public class ReassignGradingUseCase implements IUseCase<ReassignGradingCommand, 
         // bây giờ, và hàng đợi của họ sắp theo mốc đó.
         assignment.setTeacherId(command.teacherId());
         assignment.setAssignedBy(currentUserId);
-        assignment.setAssignedAt(OffsetDateTime.now());
+        assignment.setAssignedAt(Instant.now());
         // Hạn cũ nhưng người mới: nếu không xoá dấu đã-nhắc thì findDueForReminder
         // (lọc reminded_at IS NULL) bỏ qua dòng này mãi mãi và người mới không bao giờ
         // nhận mail nhắc hạn. Cùng lý lẽ với SetGradingDeadlineUseCase khi đổi hạn.

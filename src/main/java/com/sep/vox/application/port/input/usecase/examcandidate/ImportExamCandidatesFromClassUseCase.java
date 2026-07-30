@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examcandidate;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -70,7 +70,7 @@ public class ImportExamCandidatesFromClassUseCase
             throw new ForbiddenException("Bạn không phụ trách lớp học này");
         }
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         // findBySchoolClassId là 1-based (PageRequest.of(page - 1, size)) → trang đầu là 1, KHÔNG phải 0.
         var roster = schoolClassUserRepository.findBySchoolClassId(
             schoolClass.getId(), 1, MAX_CLASS_ROSTER_SIZE).content();

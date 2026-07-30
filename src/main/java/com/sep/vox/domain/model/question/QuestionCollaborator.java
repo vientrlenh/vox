@@ -1,6 +1,6 @@
 package com.sep.vox.domain.model.question;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class QuestionCollaborator {
@@ -8,12 +8,12 @@ public class QuestionCollaborator {
     private UUID userId;
     private UUID questionId;
     private QuestionCollaboratorPermission permission;
-    private OffsetDateTime assignedAt;
+    private Instant assignedAt;
 
     public QuestionCollaborator() {}
 
     public QuestionCollaborator(UUID id, UUID userId, UUID questionId, QuestionCollaboratorPermission permission,
-            OffsetDateTime assignedAt) {
+            Instant assignedAt) {
         this.id = id;
         this.userId = userId;
         this.questionId = questionId;
@@ -53,11 +53,11 @@ public class QuestionCollaborator {
         this.permission = permission;
     }
 
-    public OffsetDateTime getAssignedAt() {
+    public Instant getAssignedAt() {
         return assignedAt;
     }
 
-    public void setAssignedAt(OffsetDateTime assignedAt) {
+    public void setAssignedAt(Instant assignedAt) {
         this.assignedAt = assignedAt;
     }
 

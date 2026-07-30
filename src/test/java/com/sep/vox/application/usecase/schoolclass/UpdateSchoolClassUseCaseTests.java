@@ -11,7 +11,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -73,7 +74,7 @@ class UpdateSchoolClassUseCaseTests {
             eq(false),
             eq(null),
             eq(false),
-            any(OffsetDateTime.class),
+            any(Instant.class),
             eq(userId)
         )).thenReturn(1);
 
@@ -89,7 +90,7 @@ class UpdateSchoolClassUseCaseTests {
             eq(false),
             eq(null),
             eq(false),
-            any(OffsetDateTime.class),
+            any(Instant.class),
             eq(userId)
         );
     }
@@ -109,7 +110,7 @@ class UpdateSchoolClassUseCaseTests {
             eq(false),
             eq(SchoolClassStatus.INACTIVE),
             eq(true),
-            any(OffsetDateTime.class),
+            any(Instant.class),
             eq(userId)
         )).thenReturn(1);
 
@@ -133,7 +134,7 @@ class UpdateSchoolClassUseCaseTests {
             eq(true),
             eq(null),
             eq(false),
-            any(OffsetDateTime.class),
+            any(Instant.class),
             eq(userId)
         )).thenReturn(1);
 
@@ -167,7 +168,7 @@ class UpdateSchoolClassUseCaseTests {
             eq(false),
             eq(null),
             eq(false),
-            any(OffsetDateTime.class),
+            any(Instant.class),
             eq(userId)
         )).thenReturn(0);
 
@@ -282,7 +283,7 @@ class UpdateSchoolClassUseCaseTests {
         TestSchoolUserRepository.remember(id, schoolId);
         user.setStatus(status);
         when(schoolUserRepository.findByUserId(id)).thenReturn(
-            schoolId != null ? Optional.of(new SchoolUser(schoolId, id, java.time.OffsetDateTime.now(), java.time.OffsetDateTime.now().plusYears(100))) : Optional.empty()
+            schoolId != null ? Optional.of(new SchoolUser(schoolId, id, java.time.Instant.now(), java.time.Instant.now().plus(36500, ChronoUnit.DAYS))) : Optional.empty()
         );
         return user;
     }

@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.schoolgradelevel;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -86,7 +86,7 @@ public class UpdateSchoolGradeLevelUseCase implements IUseCase<UpdateSchoolGrade
                     name,
                     description,
                     command.order(),
-                    OffsetDateTime.now(),
+                    Instant.now(),
                     currentUserId
             );
         } catch (DataIntegrityViolationException e) {

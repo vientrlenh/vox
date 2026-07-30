@@ -11,7 +11,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -62,7 +62,7 @@ public class SetUpPasswordUseCaseTests {
         var user = inactiveUser(userId);
 
         when(passwordSetUpTokenPort.hash("raw-token")).thenReturn("hashed-token");
-        when(passwordSetUpTokenRepository.updateUsedToken(eq(userId), eq("hashed-token"), any(OffsetDateTime.class)))
+        when(passwordSetUpTokenRepository.updateUsedToken(eq(userId), eq("hashed-token"), any(Instant.class)))
             .thenReturn(1);
         when(passwordEncoderPort.hash("new-password")).thenReturn("hashed-password");
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
@@ -73,7 +73,7 @@ public class SetUpPasswordUseCaseTests {
         assertThat(result).isNull();
         verify(passwordSetUpTokenPort).hash("raw-token");
 
-        var tokenUsedAtCaptor = ArgumentCaptor.forClass(OffsetDateTime.class);
+        var tokenUsedAtCaptor = ArgumentCaptor.forClass(Instant.class);
         verify(passwordSetUpTokenRepository).updateUsedToken(
             eq(userId),
             eq("hashed-token"),
@@ -99,7 +99,7 @@ public class SetUpPasswordUseCaseTests {
         var command = new SetUpPasswordCommand(userId, "raw-token", "new-password");
 
         when(passwordSetUpTokenPort.hash("raw-token")).thenReturn("hashed-token");
-        when(passwordSetUpTokenRepository.updateUsedToken(eq(userId), eq("hashed-token"), any(OffsetDateTime.class)))
+        when(passwordSetUpTokenRepository.updateUsedToken(eq(userId), eq("hashed-token"), any(Instant.class)))
             .thenReturn(0);
 
         assertThrows(IllegalArgumentException.class, () -> setUpPasswordUseCase.execute(command));
@@ -108,7 +108,7 @@ public class SetUpPasswordUseCaseTests {
         verify(passwordSetUpTokenRepository).updateUsedToken(
             eq(userId),
             eq("hashed-token"),
-            any(OffsetDateTime.class)
+            any(Instant.class)
         );
         verifyNoInteractions(passwordEncoderPort, userRepository);
     }
@@ -119,7 +119,7 @@ public class SetUpPasswordUseCaseTests {
         var command = new SetUpPasswordCommand(userId, "raw-token", "new-password");
 
         when(passwordSetUpTokenPort.hash("raw-token")).thenReturn("hashed-token");
-        when(passwordSetUpTokenRepository.updateUsedToken(eq(userId), eq("hashed-token"), any(OffsetDateTime.class)))
+        when(passwordSetUpTokenRepository.updateUsedToken(eq(userId), eq("hashed-token"), any(Instant.class)))
             .thenReturn(1);
         when(passwordEncoderPort.hash("new-password")).thenReturn("hashed-password");
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
@@ -130,7 +130,7 @@ public class SetUpPasswordUseCaseTests {
         verify(passwordSetUpTokenRepository).updateUsedToken(
             eq(userId),
             eq("hashed-token"),
-            any(OffsetDateTime.class)
+            any(Instant.class)
         );
         verify(passwordEncoderPort).hash("new-password");
         verify(userRepository).findById(userId);
@@ -138,7 +138,7 @@ public class SetUpPasswordUseCaseTests {
     }
 
     private User inactiveUser(UUID userId) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         return new User(
             userId,
             new Email("admin@example.com"),

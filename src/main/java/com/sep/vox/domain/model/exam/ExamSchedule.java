@@ -1,25 +1,25 @@
 package com.sep.vox.domain.model.exam;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class ExamSchedule {
     private UUID id;
     private UUID examId;
     private UUID schoolRoomId;
-    private OffsetDateTime startDate;
-    private OffsetDateTime endDate;
+    private Instant startDate;
+    private Instant endDate;
     private ExamScheduleStatus status;
     private UUID movedToScheduleId;
-    private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
     private UUID createdBy;
     private UUID updatedBy;
 
     public ExamSchedule() {}
 
-    public ExamSchedule(UUID id, UUID examId, UUID schoolRoomId, OffsetDateTime startDate, OffsetDateTime endDate,
-            ExamScheduleStatus status, UUID movedToScheduleId, OffsetDateTime createdAt, OffsetDateTime updatedAt,
+    public ExamSchedule(UUID id, UUID examId, UUID schoolRoomId, Instant startDate, Instant endDate,
+            ExamScheduleStatus status, UUID movedToScheduleId, Instant createdAt, Instant updatedAt,
             UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.examId = examId;
@@ -34,8 +34,8 @@ public class ExamSchedule {
         this.updatedBy = updatedBy;
     }
 
-    public ExamSchedule(UUID examId, UUID schoolRoomId, OffsetDateTime startDate, OffsetDateTime endDate,
-            ExamScheduleStatus status, UUID movedToScheduleId, OffsetDateTime createdAt, OffsetDateTime updatedAt,
+    public ExamSchedule(UUID examId, UUID schoolRoomId, Instant startDate, Instant endDate,
+            ExamScheduleStatus status, UUID movedToScheduleId, Instant createdAt, Instant updatedAt,
             UUID createdBy, UUID updatedBy) {
         this.examId = examId;
         this.schoolRoomId = schoolRoomId;
@@ -52,8 +52,8 @@ public class ExamSchedule {
     /**
      * Tạo mới một ca thi ở trạng thái DRAFT (id do DB sinh).
      */
-    public static ExamSchedule createFresh(UUID examId, UUID schoolRoomId, OffsetDateTime startDate,
-            OffsetDateTime endDate, UUID createdBy, OffsetDateTime now) {
+    public static ExamSchedule createFresh(UUID examId, UUID schoolRoomId, Instant startDate,
+            Instant endDate, UUID createdBy, Instant now) {
         return new ExamSchedule(examId, schoolRoomId, startDate, endDate,
                 ExamScheduleStatus.DRAFT, null, now, now, createdBy, createdBy);
     }
@@ -89,19 +89,19 @@ public class ExamSchedule {
         this.schoolRoomId = schoolRoomId;
     }
 
-    public OffsetDateTime getStartDate() {
+    public Instant getStartDate() {
         return startDate;
     }
 
-    public void setStartDate(OffsetDateTime startDate) {
+    public void setStartDate(Instant startDate) {
         this.startDate = startDate;
     }
 
-    public OffsetDateTime getEndDate() {
+    public Instant getEndDate() {
         return endDate;
     }
 
-    public void setEndDate(OffsetDateTime endDate) {
+    public void setEndDate(Instant endDate) {
         this.endDate = endDate;
     }
 
@@ -121,19 +121,19 @@ public class ExamSchedule {
         this.movedToScheduleId = movedToScheduleId;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 

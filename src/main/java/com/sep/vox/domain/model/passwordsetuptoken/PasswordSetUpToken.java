@@ -1,6 +1,7 @@
 package com.sep.vox.domain.model.passwordsetuptoken;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 public class PasswordSetUpToken {
@@ -9,13 +10,13 @@ public class PasswordSetUpToken {
     private UUID id;
     private UUID userId;
     private String tokenHash;
-    private OffsetDateTime createdAt;
-    private OffsetDateTime expiredAt;
-    private OffsetDateTime usedAt;
+    private Instant createdAt;
+    private Instant expiredAt;
+    private Instant usedAt;
 
     public PasswordSetUpToken() {}
 
-    public PasswordSetUpToken(UUID id, UUID userId, String tokenHash, OffsetDateTime createdAt, OffsetDateTime expiredAt, OffsetDateTime usedAt) {
+    public PasswordSetUpToken(UUID id, UUID userId, String tokenHash, Instant createdAt, Instant expiredAt, Instant usedAt) {
         this.id = id;
         this.userId = userId;
         this.tokenHash = tokenHash;
@@ -24,7 +25,7 @@ public class PasswordSetUpToken {
         this.usedAt = usedAt;
     }
 
-    public PasswordSetUpToken(UUID userId, String tokenHash, OffsetDateTime createdAt, OffsetDateTime expiredAt, OffsetDateTime usedAt) {
+    public PasswordSetUpToken(UUID userId, String tokenHash, Instant createdAt, Instant expiredAt, Instant usedAt) {
         this.userId = userId;
         this.tokenHash = tokenHash;
         this.createdAt = createdAt;
@@ -56,37 +57,37 @@ public class PasswordSetUpToken {
         this.tokenHash = tokenHash;
     }
 
-    public OffsetDateTime getExpiredAt() {
+    public Instant getExpiredAt() {
         return expiredAt;
     }
 
-    public void setExpiredAt(OffsetDateTime expiredAt) {
+    public void setExpiredAt(Instant expiredAt) {
         this.expiredAt = expiredAt;
     }
 
-    public OffsetDateTime getUsedAt() {
+    public Instant getUsedAt() {
         return usedAt;
     }
 
-    public void setUsedAt(OffsetDateTime usedAt) {
+    public void setUsedAt(Instant usedAt) {
         this.usedAt = usedAt;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
     public static PasswordSetUpToken create(UUID userId, String tokenHash) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         return new PasswordSetUpToken(
             userId, 
             tokenHash, 
             now, 
-            now.plusDays(DAYS_UNTIL_EXPIRED), 
+            now.plus(DAYS_UNTIL_EXPIRED, ChronoUnit.DAYS), 
             null
         );
     }

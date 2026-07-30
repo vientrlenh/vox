@@ -9,7 +9,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -96,7 +96,7 @@ class ViewResultStatusHistoryUseCaseTests {
         when(examResultAuditQueryRepository.findHistory(candidateResultId)).thenReturn(List.of(
             new ResultStatusHistoryInfo(UUID.randomUUID(), candidateResultId,
                 "PENDING_REVIEW", "RELEASED", null, null,
-                "TEACHER_INITIAL", teacherId, "Cô Lan", "AI chấm đúng", OffsetDateTime.now())));
+                "TEACHER_INITIAL", teacherId, "Cô Lan", "AI chấm đúng", Instant.now())));
     }
 
     private void loggedInAs(UUID userId) {
@@ -105,7 +105,7 @@ class ViewResultStatusHistoryUseCaseTests {
 
     private void givenOpenAssignmentFor(UUID assignedTeacherId) {
         var assignment = ExamGradingAssignment.open(candidateResultId, assignedTeacherId,
-            GradingRoundType.APPEAL, null, null, OffsetDateTime.now(), UUID.randomUUID(), null);
+            GradingRoundType.APPEAL, null, null, Instant.now(), UUID.randomUUID(), null);
         assignment.setId(UUID.randomUUID());
         when(examGradingAssignmentRepository.findOpenByCandidateResultId(candidateResultId))
             .thenReturn(Optional.of(assignment));

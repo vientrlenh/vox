@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.dao.DataIntegrityViolationException;
@@ -80,7 +80,7 @@ public class UpdateFrameworkCriterionUseCase
         criterion.setName(StringNormalization.trimAndCollapseSpaces(command.name()));
         criterion.setDescription(StringNormalization.trimAndCollapseSpaces(command.description()));
         criterion.setOrder(command.order());
-        criterion.setUpdatedAt(OffsetDateTime.now());
+        criterion.setUpdatedAt(Instant.now());
         criterion.setUpdatedBy(userContextPort.getCurrentAuthenticatedUserId());
     }
 }

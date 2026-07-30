@@ -8,7 +8,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -68,7 +70,7 @@ class UpdateExamStatusUseCaseTests {
     private final UUID subscriptionId = UUID.randomUUID();
     private final UUID planId = UUID.randomUUID();
 
-    private final OffsetDateTime open = OffsetDateTime.parse("2026-07-10T08:00:00+07:00");
+    private final Instant open = OffsetDateTime.parse("2026-07-10T08:00:00+07:00").toInstant();
 
     @BeforeEach
     void setUp() {
@@ -110,7 +112,7 @@ class UpdateExamStatusUseCaseTests {
     @Test
     void should_reject_schedule_action_when_class_test_window_shorter_than_exam_time() {
         // Khung mở/đóng 30 phút, thời gian làm bài đã tính ra 60 phút.
-        var exam = classTest(3600, open, open.plusMinutes(30));
+        var exam = classTest(3600, open, open.plus(30, ChronoUnit.MINUTES));
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
 
         assertThatThrownBy(() -> useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null)))
@@ -121,9 +123,9 @@ class UpdateExamStatusUseCaseTests {
 
     @Test
     void should_publish_class_test_schedules_when_window_valid() {
-        var exam = classTest(3600, open, open.plusHours(2));
+        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
-        var schedule = schedule(ExamScheduleStatus.DRAFT, open, open.plusHours(2));
+        var schedule = schedule(ExamScheduleStatus.DRAFT, open, open.plus(2, ChronoUnit.HOURS));
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(schedule));
 
         var result = useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null));
@@ -153,7 +155,7 @@ class UpdateExamStatusUseCaseTests {
             .thenReturn(Optional.of(quota));
     }
 
-    private Exam classTest(Integer examTimeDurationSecond, OffsetDateTime openAt, OffsetDateTime closeAt) {
+    private Exam classTest(Integer examTimeDurationSecond, Instant openAt, Instant closeAt) {
         var exam = new Exam();
         exam.setId(examId);
         exam.setSchoolId(schoolId);
@@ -166,7 +168,7 @@ class UpdateExamStatusUseCaseTests {
         return exam;
     }
 
-    private ExamSchedule schedule(ExamScheduleStatus status, OffsetDateTime from, OffsetDateTime to) {
+    private ExamSchedule schedule(ExamScheduleStatus status, Instant from, Instant to) {
         var schedule = new ExamSchedule();
         schedule.setId(UUID.randomUUID());
         schedule.setExamId(examId);

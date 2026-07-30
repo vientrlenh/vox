@@ -1,6 +1,6 @@
 package com.sep.vox.application.query.dto;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public record SchoolUserInfo(
@@ -11,10 +11,10 @@ public record SchoolUserInfo(
     String roleCode,
     String status,
     UUID schoolId,
-    OffsetDateTime createdAt,
+    Instant createdAt,
     UUID userId,
-    OffsetDateTime startDate,
-    OffsetDateTime endDate
+    Instant startDate,
+    Instant endDate
 ) {
 
 }

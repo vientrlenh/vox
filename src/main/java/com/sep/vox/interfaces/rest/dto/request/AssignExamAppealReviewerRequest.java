@@ -1,6 +1,6 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import jakarta.validation.constraints.NotNull;
@@ -20,6 +20,6 @@ public record AssignExamAppealReviewerRequest(
     @Size(max = 1024, message = "Lý do tối đa 1024 ký tự")
     String overrideReason,
 
-    OffsetDateTime deadlineAt
+    Instant deadlineAt
 ) {
 }

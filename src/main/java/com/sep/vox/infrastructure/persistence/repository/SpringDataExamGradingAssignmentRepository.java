@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -36,7 +36,7 @@ public interface SpringDataExamGradingAssignmentRepository
         WHERE ga.status = 'ASSIGNED' AND ga.deadlineAt IS NOT NULL AND ga.deadlineAt < :now
         ORDER BY ga.deadlineAt ASC
     """)
-    List<ExamGradingAssignmentJpaEntity> findOverdue(@Param("now") OffsetDateTime now);
+    List<ExamGradingAssignmentJpaEntity> findOverdue(@Param("now") Instant now);
 
     /**
      * Quá hạn TRONG một trường (và một kỳ thi nếu có). Thu hồi hàng loạt đi lối này
@@ -58,7 +58,7 @@ public interface SpringDataExamGradingAssignmentRepository
         ORDER BY ga.deadlineAt ASC
     """)
     List<ExamGradingAssignmentJpaEntity> findOverdueInSchool(
-        @Param("now") OffsetDateTime now,
+        @Param("now") Instant now,
         @Param("schoolId") UUID schoolId,
         @Param("examId") UUID examId,
         Pageable pageable);
@@ -80,7 +80,7 @@ public interface SpringDataExamGradingAssignmentRepository
         LIMIT 200
         FOR UPDATE SKIP LOCKED
     """, nativeQuery = true)
-    List<ExamGradingAssignmentJpaEntity> findDueForReminder(@Param("threshold") OffsetDateTime threshold);
+    List<ExamGradingAssignmentJpaEntity> findDueForReminder(@Param("threshold") Instant threshold);
 
     void deleteByCandidateResultIdIn(Collection<UUID> candidateResultIds);
 }

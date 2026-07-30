@@ -1,6 +1,6 @@
 package com.sep.vox.domain.model.framework;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import com.sep.vox.domain.valueobject.framework.FrameworkCriterionSignals;
@@ -12,15 +12,15 @@ public class FrameworkCriterionBand {
     private String descriptor;
     private FrameworkCriterionSignals positiveSignals;
     private FrameworkCriterionSignals negativeSignals;
-    private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
     private UUID createdBy;
     private UUID updatedBy;
 
     public FrameworkCriterionBand() {}
 
     public FrameworkCriterionBand(UUID id, UUID frameworkCriterionId, UUID frameworkResultBandId, String descriptor,
-            FrameworkCriterionSignals positiveSignals, FrameworkCriterionSignals negativeSignals, OffsetDateTime createdAt, OffsetDateTime updatedAt,
+            FrameworkCriterionSignals positiveSignals, FrameworkCriterionSignals negativeSignals, Instant createdAt, Instant updatedAt,
             UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.frameworkCriterionId = frameworkCriterionId;
@@ -35,7 +35,7 @@ public class FrameworkCriterionBand {
     }
 
     public FrameworkCriterionBand(UUID frameworkCriterionId, UUID frameworkResultBandId, String descriptor,
-            FrameworkCriterionSignals positiveSignals, FrameworkCriterionSignals negativeSignals, OffsetDateTime createdAt, OffsetDateTime updatedAt,
+            FrameworkCriterionSignals positiveSignals, FrameworkCriterionSignals negativeSignals, Instant createdAt, Instant updatedAt,
             UUID createdBy, UUID updatedBy) {
         this.frameworkCriterionId = frameworkCriterionId;
         this.frameworkResultBandId = frameworkResultBandId;
@@ -96,19 +96,19 @@ public class FrameworkCriterionBand {
         this.negativeSignals = negativeSignals;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 

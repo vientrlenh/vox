@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.scoringrule;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -103,7 +103,7 @@ public class CreateSystemScoringRuleUseCase implements IUseCase<CreateScoringRul
         validateCriterionReferences(policy.getRubricVersionId(), policy.getFrameworkVersionId(), conditionParams, actionParams);
 
         // 7. Tạo mới và lưu
-        OffsetDateTime now = OffsetDateTime.now();
+        Instant now = Instant.now();
         ScoringRule rule = new ScoringRule(
                 command.policyId(),
                 safeCode,

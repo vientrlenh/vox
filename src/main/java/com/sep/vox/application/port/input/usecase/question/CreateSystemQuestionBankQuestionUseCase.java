@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.question;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
@@ -104,7 +104,7 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
         validateResponseDurationRange(command);
         validateAssetOrders(command.assets());
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var sharing = command.sharing() == null ? QuestionSharing.PRIVATE : QuestionSharing.valueOf(command.sharing());
         var question = new Question(
             command.questionBankId(),

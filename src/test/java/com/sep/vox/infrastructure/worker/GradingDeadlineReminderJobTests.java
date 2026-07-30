@@ -8,7 +8,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,7 +51,7 @@ class GradingDeadlineReminderJobTests {
     @Test
     void should_use_one_threshold_for_the_whole_run() {
         when(batch.remindOnce(any())).thenReturn(1, 1, 0);
-        var threshold = ArgumentCaptor.forClass(OffsetDateTime.class);
+        var threshold = ArgumentCaptor.forClass(Instant.class);
 
         job.remind();
 

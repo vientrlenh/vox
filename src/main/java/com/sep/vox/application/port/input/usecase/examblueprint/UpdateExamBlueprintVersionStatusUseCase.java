@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.examblueprint;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -104,7 +104,7 @@ public class UpdateExamBlueprintVersionStatusUseCase
             default -> throw new IllegalStateException("Action không hợp lệ");
         }
 
-        version.setUpdatedAt(OffsetDateTime.now());
+        version.setUpdatedAt(Instant.now());
         version.setUpdatedBy(currentUserId);
         var saved = examBlueprintVersionRepository.save(version);
 

@@ -1,6 +1,6 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -13,6 +13,6 @@ public record ReclaimOverdueAssignmentsRequest(
     UUID examId,
     List<UUID> assignmentIds,
     List<UUID> reassignToTeacherIds,
-    OffsetDateTime newDeadlineAt
+    Instant newDeadlineAt
 ) {
 }

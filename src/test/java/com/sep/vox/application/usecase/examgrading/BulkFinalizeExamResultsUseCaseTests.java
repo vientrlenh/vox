@@ -9,7 +9,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -232,7 +233,7 @@ class BulkFinalizeExamResultsUseCaseTests {
         // mốc công bố: cửa sổ phúc khảo tính từ mốc đó.
         givenPreview(pendingBlocked());
         var pending = result(ExamCandidateResultStatus.PENDING_REVIEW);
-        var originalReleasedAt = OffsetDateTime.now().minusDays(3);
+        var originalReleasedAt = Instant.now().minus(3, ChronoUnit.DAYS);
         pending.setReleasedAt(originalReleasedAt);
         givenResults(pending);
 
@@ -264,7 +265,7 @@ class BulkFinalizeExamResultsUseCaseTests {
         var pending = result(ExamCandidateResultStatus.PENDING_REVIEW);
         givenResults(pending);
         var open = ExamGradingAssignment.open(pending.getId(), UUID.randomUUID(),
-            GradingRoundType.INITIAL, null, null, OffsetDateTime.now(), adminId, null);
+            GradingRoundType.INITIAL, null, null, Instant.now(), adminId, null);
         when(examGradingAssignmentRepository.findOpenByCandidateResultIdIn(anyCollection()))
             .thenReturn(List.of(open));
 

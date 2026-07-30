@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -23,7 +23,7 @@ public interface SpringDataOutboxRepository extends JpaRepository<OutboxJpaEntit
         FOR UPDATE SKIP LOCKED
     """, nativeQuery = true)
     List<OutboxJpaEntity> lockPendingEvents(
-        @Param("now") OffsetDateTime now, 
+        @Param("now") Instant now, 
         @Param("size") int size
     );
 
@@ -36,7 +36,7 @@ public interface SpringDataOutboxRepository extends JpaRepository<OutboxJpaEntit
     """)
     int markProcessing(
         @Param("ids") Collection<UUID> ids, 
-        @Param("leaseExpiresAt") OffsetDateTime leaseExpiresAt
+        @Param("leaseExpiresAt") Instant leaseExpiresAt
     );
 
 
@@ -48,7 +48,7 @@ public interface SpringDataOutboxRepository extends JpaRepository<OutboxJpaEntit
     """)
     int markPublished(
         @Param("id") UUID id, 
-        @Param("publishedAt") OffsetDateTime publishedAt
+        @Param("publishedAt") Instant publishedAt
     );
 
 
@@ -65,7 +65,7 @@ public interface SpringDataOutboxRepository extends JpaRepository<OutboxJpaEntit
         @Param("id") UUID id, 
         @Param("status") String status, 
         @Param("lastError") String lastError, 
-        @Param("nextRetryAt") OffsetDateTime nextRetryAt
+        @Param("nextRetryAt") Instant nextRetryAt
     );
 
 
@@ -78,6 +78,6 @@ public interface SpringDataOutboxRepository extends JpaRepository<OutboxJpaEntit
             AND o.nextRetryAt <= :now 
     """)
     int releaseExpiredLeases(
-        @Param("now") OffsetDateTime now
+        @Param("now") Instant now
     );
 }

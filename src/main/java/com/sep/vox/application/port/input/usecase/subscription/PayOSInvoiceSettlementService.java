@@ -1,6 +1,8 @@
 package com.sep.vox.application.port.input.usecase.subscription;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -8,6 +10,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.domain.model.subscription.FinancialEvent;
 import com.sep.vox.domain.model.subscription.FinancialEventType;
@@ -91,7 +94,7 @@ public class PayOSInvoiceSettlementService {
             return;
         }
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         if (!success) {
             invoice.setStatus(failureStatus);
             if (failureStatus == InvoiceStatus.CANCELLED) {
@@ -117,7 +120,7 @@ public class PayOSInvoiceSettlementService {
         invoiceRepository.save(invoice);
     }
 
-    private SchoolSubscription approveSubscriptionRequest(UUID requestId, OffsetDateTime now) {
+    private SchoolSubscription approveSubscriptionRequest(UUID requestId, Instant now) {
         var request = subscriptionRequestRepository.findById(requestId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy yêu cầu"));
         if (request.getStatus() != RequestStatus.PENDING) {
@@ -133,12 +136,12 @@ public class PayOSInvoiceSettlementService {
             schoolSubscriptionRepository.save(current);
         });
 
-        var startDate = now.toLocalDate();
+        var startDate = LocalDate.ofInstant(now, DateMapper.DEFAULT_INPUT_ZONE);
         var savedSubscription = schoolSubscriptionRepository.save(new SchoolSubscription(
             request.getSchoolId(),
             plan.getId(),
             startDate,
-            startDate.plusDays(plan.getValidityDays()),
+            startDate.plus(plan.getValidityDays(), ChronoUnit.DAYS),
             SubscriptionStatus.ACTIVE,
             request.getAmount(),
             null,
@@ -169,7 +172,7 @@ public class PayOSInvoiceSettlementService {
         return savedSubscription;
     }
 
-    private SchoolSubscription renewSubscription(UUID subscriptionId, OffsetDateTime now) {
+    private SchoolSubscription renewSubscription(UUID subscriptionId, Instant now) {
         var current = schoolSubscriptionRepository.findById(subscriptionId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói đăng ký"));
         if (current.getStatus() != SubscriptionStatus.ACTIVE) {
@@ -183,7 +186,7 @@ public class PayOSInvoiceSettlementService {
         current.setStatus(SubscriptionStatus.EXPIRED);
         schoolSubscriptionRepository.save(current);
 
-        var startDate = now.toLocalDate();
+        var startDate = LocalDate.ofInstant(now, DateMapper.DEFAULT_INPUT_ZONE);
         var savedSubscription = schoolSubscriptionRepository.save(new SchoolSubscription(
             current.getSchoolId(),
             plan.getId(),
@@ -212,7 +215,7 @@ public class PayOSInvoiceSettlementService {
         return savedSubscription;
     }
 
-    private void finalizeTokenPurchase(UUID purchaseId, UUID subscriptionId, OffsetDateTime now) {
+    private void finalizeTokenPurchase(UUID purchaseId, UUID subscriptionId, Instant now) {
         var purchase = tokenPurchaseRepository.findById(purchaseId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn mua token"));
         if (purchase.getStatus() != PurchaseStatus.PENDING) {

@@ -1,6 +1,6 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -14,6 +14,6 @@ public record SetGradingDeadlineRequest(
     @NotEmpty(message = "Phải chọn ít nhất một phân công để đặt hạn")
     List<UUID> assignmentIds,
 
-    OffsetDateTime deadlineAt
+    Instant deadlineAt
 ) {
 }

@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.input.query.ViewSchoolAssessmentPoliciesQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolAssessmentPolicyDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewSystemAssessmentPoliciesQuery;
@@ -33,8 +34,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import graphql.schema.DataFetchingEnvironment;
 
-import java.time.OffsetDateTime;
-import java.time.format.DateTimeParseException;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -78,8 +77,10 @@ public class AssessmentPolicyController {
             @Argument(name = "size") Integer size) {
         int validPage = (page != null && page > 0) ? page : 1;
         int validSize = (size != null && size > 0) ? size : 10;
-        return viewSystemAssessmentPoliciesUseCase.execute(new ViewSystemAssessmentPoliciesQuery(status, languageId, rubricVersionId,
-                parseOffset(effectiveFrom), parseOffset(effectiveTo), validPage, validSize));
+        return viewSystemAssessmentPoliciesUseCase
+                .execute(new ViewSystemAssessmentPoliciesQuery(status, languageId, rubricVersionId,
+                        DateMapper.toInstant(effectiveFrom),
+                        DateMapper.toInstant(effectiveTo), validPage, validSize));
     }
 
     @QueryMapping(name = "viewSchoolAssessmentPolicies")
@@ -95,8 +96,11 @@ public class AssessmentPolicyController {
             @Argument(name = "size") Integer size) {
         int validPage = (page != null && page > 0) ? page : 1;
         int validSize = (size != null && size > 0) ? size : 10;
-        return viewSchoolAssessmentPoliciesUseCase.execute(new ViewSchoolAssessmentPoliciesQuery(schoolId, status, languageId, rubricVersionId,
-                parseOffset(effectiveFrom), parseOffset(effectiveTo), validPage, validSize));
+        return viewSchoolAssessmentPoliciesUseCase
+                .execute(new ViewSchoolAssessmentPoliciesQuery(schoolId, status, languageId, rubricVersionId,
+                        DateMapper.toInstant(effectiveFrom),
+                        DateMapper.toInstant(effectiveTo),
+                        validPage, validSize));
     }
 
     @QueryMapping(name = "viewTeacherAssessmentPolicies")
@@ -110,19 +114,13 @@ public class AssessmentPolicyController {
             @Argument(name = "size") Integer size) {
         int validPage = (page != null && page > 0) ? page : 1;
         int validSize = (size != null && size > 0) ? size : 10;
-        return viewTeacherAssessmentPoliciesUseCase.execute(new ViewTeacherAssessmentPoliciesQuery(languageId, rubricVersionId,
-                parseOffset(effectiveFrom), parseOffset(effectiveTo), validPage, validSize));
-    }
-
-    private static OffsetDateTime parseOffset(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        try {
-            return OffsetDateTime.parse(value);
-        } catch (DateTimeParseException ex) {
-            throw new IllegalArgumentException("Định dạng thời gian không hợp lệ");
-        }
+        return viewTeacherAssessmentPoliciesUseCase.execute(new ViewTeacherAssessmentPoliciesQuery(
+                languageId,
+                rubricVersionId,
+                DateMapper.toInstant(effectiveFrom),
+                DateMapper.toInstant(effectiveTo),
+                validPage,
+                validSize));
     }
 
     @QueryMapping(name = "viewSystemAssessmentPolicy")
@@ -136,7 +134,8 @@ public class AssessmentPolicyController {
     public AssessmentPolicyDto viewSchoolAssessmentPolicy(
             @Argument(name = "schoolId") UUID schoolId,
             @Argument(name = "policyId") UUID policyId) {
-        return viewSchoolAssessmentPolicyDetailsUseCase.execute(new ViewSchoolAssessmentPolicyDetailsQuery(schoolId, policyId));
+        return viewSchoolAssessmentPolicyDetailsUseCase
+                .execute(new ViewSchoolAssessmentPolicyDetailsQuery(schoolId, policyId));
     }
 
     @SchemaMapping(typeName = "AssessmentPolicy", field = "school")
@@ -149,7 +148,8 @@ public class AssessmentPolicyController {
     }
 
     @SchemaMapping(typeName = "AssessmentPolicy", field = "schoolGradeLevel")
-    public CompletableFuture<SchoolGradeLevelDto> getSchoolGradeLevel(AssessmentPolicyDto policy, DataFetchingEnvironment env) {
+    public CompletableFuture<SchoolGradeLevelDto> getSchoolGradeLevel(AssessmentPolicyDto policy,
+            DataFetchingEnvironment env) {
         if (policy.schoolGradeLevelId() == null) {
             return CompletableFuture.completedFuture(null);
         }
@@ -176,25 +176,29 @@ public class AssessmentPolicyController {
     }
 
     @SchemaMapping(typeName = "AssessmentPolicy", field = "language")
-    public CompletableFuture<SupportedLanguageDto> getLanguage(AssessmentPolicyDto policy, DataFetchingEnvironment env) {
+    public CompletableFuture<SupportedLanguageDto> getLanguage(AssessmentPolicyDto policy,
+            DataFetchingEnvironment env) {
         DataLoader<UUID, SupportedLanguageDto> loader = env.getDataLoader("supportedLanguageDataLoader");
         return loader.load(policy.languageId());
     }
 
     @SchemaMapping(typeName = "AssessmentPolicy", field = "frameworkVersion")
-    public CompletableFuture<FrameworkVersionDto> getFrameworkVersion(AssessmentPolicyDto policy, DataFetchingEnvironment env) {
+    public CompletableFuture<FrameworkVersionDto> getFrameworkVersion(AssessmentPolicyDto policy,
+            DataFetchingEnvironment env) {
         DataLoader<UUID, FrameworkVersionDto> loader = env.getDataLoader("frameworkVersionDataLoader");
         return loader.load(policy.frameworkVersionId());
     }
 
     @SchemaMapping(typeName = "AssessmentPolicy", field = "rubricVersion")
-    public CompletableFuture<RubricVersionDto> getRubricVersion(AssessmentPolicyDto policy, DataFetchingEnvironment env) {
+    public CompletableFuture<RubricVersionDto> getRubricVersion(AssessmentPolicyDto policy,
+            DataFetchingEnvironment env) {
         DataLoader<UUID, RubricVersionDto> loader = env.getDataLoader("rubricVersionDataLoader");
         return loader.load(policy.rubricVersionId());
     }
 
     @SchemaMapping(typeName = "AssessmentPolicy", field = "targetFrameworkBand")
-    public CompletableFuture<FrameworkResultBandDto> getTargetFrameworkBand(AssessmentPolicyDto policy, DataFetchingEnvironment env) {
+    public CompletableFuture<FrameworkResultBandDto> getTargetFrameworkBand(AssessmentPolicyDto policy,
+            DataFetchingEnvironment env) {
         DataLoader<UUID, FrameworkResultBandDto> loader = env.getDataLoader("frameworkResultBandDataLoader");
         return loader.load(policy.targetFrameworkBandId());
     }

@@ -1,6 +1,6 @@
 package com.sep.vox.domain.mapper;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 
 import com.sep.vox.domain.dto.SubscriptionRequestDto;
@@ -30,7 +30,7 @@ public final class SubscriptionRequestDtoMapper {
         return domains.stream().map(SubscriptionRequestDtoMapper::toDto).toList();
     }
 
-    private static String valueOf(OffsetDateTime value) {
+    private static String valueOf(Instant value) {
         return value == null ? null : value.toString();
     }
 }

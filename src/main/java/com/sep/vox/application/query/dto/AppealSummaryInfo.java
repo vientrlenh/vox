@@ -1,7 +1,7 @@
 package com.sep.vox.application.query.dto;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -14,8 +14,8 @@ public record AppealSummaryInfo(
     List<String> partLabels,
     BigDecimal originalScore,
     String status,
-    OffsetDateTime requestedAt,
-    OffsetDateTime deadline,
+    Instant requestedAt,
+    Instant deadline,
     /** Người chấm duy nhất; null khi chưa phân công. */
     String reviewerName,
     /** ASSIGNED | COMPLETED; null khi chưa phân công. */

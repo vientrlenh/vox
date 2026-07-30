@@ -17,7 +17,7 @@ import com.sep.vox.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -63,7 +63,7 @@ public class AddSystemRubricVersionsUseCase implements IUseCase<AddSystemRubricV
                 .collect(Collectors.toSet());
 
         Set<Integer> incomingVersions = new HashSet<>();
-        OffsetDateTime now = OffsetDateTime.now();
+        Instant now = Instant.now();
 
         // 4. Map và Validate từng version
         List<RubricVersion> newVersions = command.versions().stream().map(vCmd -> {
@@ -90,7 +90,7 @@ public class AddSystemRubricVersionsUseCase implements IUseCase<AddSystemRubricV
             }
 
             // Check ngày tháng
-            OffsetDateTime validFrom = vCmd.effectiveFrom() != null ? vCmd.effectiveFrom() : now;
+            Instant validFrom = vCmd.effectiveFrom() != null ? vCmd.effectiveFrom() : now;
             if (vCmd.effectiveTo() != null && vCmd.effectiveTo().isBefore(validFrom)) {
                 throw new IllegalArgumentException("Version " + vCmd.version() + ": Ngày kết thúc không được nằm trước ngày bắt đầu.");
             }

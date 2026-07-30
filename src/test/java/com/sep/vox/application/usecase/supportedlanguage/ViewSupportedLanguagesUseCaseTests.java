@@ -5,7 +5,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -60,7 +60,7 @@ class ViewSupportedLanguagesUseCaseTests {
     }
 
     private static SupportedLanguage language(String code, String name, boolean active) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         return new SupportedLanguage(
             UUID.randomUUID(),
             new LanguageCode(code),

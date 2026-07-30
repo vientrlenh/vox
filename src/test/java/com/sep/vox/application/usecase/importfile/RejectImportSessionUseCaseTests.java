@@ -9,7 +9,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -64,7 +65,7 @@ class RejectImportSessionUseCaseTests {
         var userId = UUID.randomUUID();
         var schoolId = UUID.randomUUID();
         var sessionId = UUID.randomUUID();
-        var session = session(sessionId, schoolId, ImportSessionStatus.PREVIEWED, OffsetDateTime.now().plusDays(1));
+        var session = session(sessionId, schoolId, ImportSessionStatus.PREVIEWED, Instant.now().plus(1, ChronoUnit.DAYS));
 
         mockActiveContext(userId, schoolId);
         when(importSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
@@ -86,7 +87,7 @@ class RejectImportSessionUseCaseTests {
         var userId = UUID.randomUUID();
         var schoolId = UUID.randomUUID();
         var sessionId = UUID.randomUUID();
-        var session = session(sessionId, schoolId, ImportSessionStatus.PREVIEWED, OffsetDateTime.now().plusDays(1));
+        var session = session(sessionId, schoolId, ImportSessionStatus.PREVIEWED, Instant.now().plus(1, ChronoUnit.DAYS));
 
         mockActiveContext(userId, schoolId);
         when(importSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
@@ -106,7 +107,7 @@ class RejectImportSessionUseCaseTests {
 
         mockActiveContext(userId, schoolId);
         when(importSessionRepository.findById(sessionId))
-            .thenReturn(Optional.of(session(sessionId, UUID.randomUUID(), ImportSessionStatus.PREVIEWED, OffsetDateTime.now().plusDays(1))));
+            .thenReturn(Optional.of(session(sessionId, UUID.randomUUID(), ImportSessionStatus.PREVIEWED, Instant.now().plus(1, ChronoUnit.DAYS))));
 
         assertThrows(IllegalArgumentException.class, () -> useCase.execute(new RejectImportSessionCommand(sessionId, null)));
     }
@@ -131,7 +132,7 @@ class RejectImportSessionUseCaseTests {
 
         mockActiveContext(userId, schoolId);
         when(importSessionRepository.findById(sessionId))
-            .thenReturn(Optional.of(session(sessionId, schoolId, ImportSessionStatus.COMPLETED, OffsetDateTime.now().plusDays(1))));
+            .thenReturn(Optional.of(session(sessionId, schoolId, ImportSessionStatus.COMPLETED, Instant.now().plus(1, ChronoUnit.DAYS))));
 
         assertThrows(IllegalStateException.class, () -> useCase.execute(new RejectImportSessionCommand(sessionId, null)));
     }
@@ -141,7 +142,7 @@ class RejectImportSessionUseCaseTests {
         var userId = UUID.randomUUID();
         var schoolId = UUID.randomUUID();
         var sessionId = UUID.randomUUID();
-        var session = session(sessionId, schoolId, ImportSessionStatus.PREVIEWED, OffsetDateTime.now().minusMinutes(1));
+        var session = session(sessionId, schoolId, ImportSessionStatus.PREVIEWED, Instant.now().minus(1, ChronoUnit.MINUTES));
 
         mockActiveContext(userId, schoolId);
         when(importSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
@@ -200,7 +201,7 @@ class RejectImportSessionUseCaseTests {
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(school(schoolId, true)));
     }
 
-    private static ImportSession session(UUID id, UUID schoolId, ImportSessionStatus status, OffsetDateTime expiresAt) {
+    private static ImportSession session(UUID id, UUID schoolId, ImportSessionStatus status, Instant expiresAt) {
         return new ImportSession(
             id,
             schoolId,
@@ -222,8 +223,8 @@ class RejectImportSessionUseCaseTests {
             null, 
             null, 
             0, 
-            OffsetDateTime.now(),
-            OffsetDateTime.now(),
+            Instant.now(),
+            Instant.now(),
             UUID.randomUUID(),
             UUID.randomUUID()
         );
@@ -235,7 +236,7 @@ class RejectImportSessionUseCaseTests {
         TestSchoolUserRepository.remember(id, schoolId);
         user.setStatus(status);
         when(schoolUserRepository.findByUserId(id)).thenReturn(
-            schoolId != null ? Optional.of(new SchoolUser(schoolId, id, java.time.OffsetDateTime.now(), java.time.OffsetDateTime.now().plusYears(100))) : Optional.empty()
+            schoolId != null ? Optional.of(new SchoolUser(schoolId, id, java.time.Instant.now(), java.time.Instant.now().plus(36500, ChronoUnit.DAYS))) : Optional.empty()
         );
         return user;
     }

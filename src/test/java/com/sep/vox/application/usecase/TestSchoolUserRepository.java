@@ -1,6 +1,6 @@
 package com.sep.vox.application.usecase;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -33,7 +33,7 @@ public class TestSchoolUserRepository implements SchoolUserRepository {
     @Override
     public Optional<SchoolUser> findByUserId(UUID userId) {
         return Optional.ofNullable(SCHOOLS_BY_USER.get(userId))
-            .map(schoolId -> new SchoolUser(schoolId, userId, OffsetDateTime.now(), null));
+            .map(schoolId -> new SchoolUser(schoolId, userId, Instant.now(), null));
     }
 
     @Override

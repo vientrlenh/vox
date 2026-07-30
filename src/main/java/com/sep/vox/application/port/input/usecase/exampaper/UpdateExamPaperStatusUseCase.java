@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.exampaper;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -104,7 +104,7 @@ public class UpdateExamPaperStatusUseCase implements IUseCase<UpdateExamPaperSta
             default -> throw new IllegalStateException("Action không hợp lệ");
         }
 
-        paper.setUpdatedAt(OffsetDateTime.now());
+        paper.setUpdatedAt(Instant.now());
         paper.setUpdatedBy(currentUserId);
         return ExamPaperDtoMapper.toDto(examPaperRepository.save(paper));
     }

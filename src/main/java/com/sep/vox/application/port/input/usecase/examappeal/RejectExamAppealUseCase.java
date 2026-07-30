@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examappeal;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -50,7 +50,7 @@ public class RejectExamAppealUseCase implements IUseCase<RejectExamAppealCommand
             throw new IllegalArgumentException("Phải nêu lý do từ chối đơn phúc khảo.");
         }
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         appeal.setStatus(ExamAppealStatus.REJECTED);
         appeal.setDecisionNote(command.reason());
         appeal.setResolvedBy(currentUserId);

@@ -10,7 +10,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -128,8 +129,8 @@ class AcceptSchoolGradeImportUseCaseTests {
         return new ImportSession(
             sessionId, schoolId, type, "grades.csv", "[]", "{}", null,
             0L, 0L, 0L, 0L, 0L, null, status, null,
-            OffsetDateTime.now().plusDays(1), null, null, null, 0,
-            OffsetDateTime.now(), OffsetDateTime.now(), userId, userId
+            Instant.now().plus(1, ChronoUnit.DAYS), null, null, null, 0,
+            Instant.now(), Instant.now(), userId, userId
         );
     }
 
@@ -139,7 +140,7 @@ class AcceptSchoolGradeImportUseCaseTests {
         TestSchoolUserRepository.remember(id, userSchoolId);
         user.setStatus(UserStatus.ACTIVE);
         when(schoolUserRepository.findByUserId(id)).thenReturn(
-            Optional.of(new SchoolUser(userSchoolId, id, OffsetDateTime.now(), OffsetDateTime.now().plusYears(100)))
+            Optional.of(new SchoolUser(userSchoolId, id, Instant.now(), Instant.now().plus(36500, ChronoUnit.DAYS)))
         );
         return user;
     }

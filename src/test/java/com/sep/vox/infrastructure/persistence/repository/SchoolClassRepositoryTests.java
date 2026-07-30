@@ -2,7 +2,8 @@ package com.sep.vox.infrastructure.persistence.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Set;
 import java.util.UUID;
 
@@ -205,7 +206,7 @@ class SchoolClassRepositoryTests extends ContainerTestConfig {
         var schoolId = UUID.randomUUID();
         var updatedBy = UUID.randomUUID();
         var saved = schoolClassRepository.save(newSchoolClass(schoolId, "ENG-UPD", "English Old"));
-        var updatedAt = OffsetDateTime.now().plusMinutes(1);
+        var updatedAt = Instant.now().plus(1, ChronoUnit.DAYS);
 
         var updatedRows = schoolClassRepository.updateMutableFields(
             saved.getId(),
@@ -247,7 +248,7 @@ class SchoolClassRepositoryTests extends ContainerTestConfig {
             false,
             null,
             false,
-            OffsetDateTime.now().plusMinutes(1),
+            Instant.now().plus(1, ChronoUnit.MINUTES),
             updatedBy
         );
 
@@ -274,7 +275,7 @@ class SchoolClassRepositoryTests extends ContainerTestConfig {
             true,
             null,
             false,
-            OffsetDateTime.now().plusMinutes(1),
+            Instant.now().plus(1, ChronoUnit.MINUTES),
             UUID.randomUUID()
         );
 
@@ -300,7 +301,7 @@ class SchoolClassRepositoryTests extends ContainerTestConfig {
             false,
             SchoolClassStatus.ARCHIVED,
             true,
-            OffsetDateTime.now().plusMinutes(1),
+            Instant.now().plus(1, ChronoUnit.MINUTES),
             UUID.randomUUID()
         );
 
@@ -326,7 +327,7 @@ class SchoolClassRepositoryTests extends ContainerTestConfig {
             true,
             SchoolClassStatus.INACTIVE,
             true,
-            OffsetDateTime.now().plusMinutes(1),
+            Instant.now().plus(1, ChronoUnit.MINUTES),
             UUID.randomUUID()
         );
 
@@ -347,10 +348,10 @@ class SchoolClassRepositoryTests extends ContainerTestConfig {
         var leftClass = schoolClassRepository.save(newSchoolClass(schoolId, "MATH-CU-01", "Math CU 01"));
         var otherUserClass = schoolClassRepository.save(newSchoolClass(schoolId, "SCI-CU-01", "Science CU 01"));
         var otherSchoolClass = schoolClassRepository.save(newSchoolClass(otherSchoolId, "ENG-CU-02", "Other School CU"));
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
 
         schoolClassUserRepository.save(new SchoolClassUser(userId, activeClass.getId(), true, now, null, UUID.randomUUID()));
-        schoolClassUserRepository.save(new SchoolClassUser(userId, leftClass.getId(), false, now, now.plusDays(1), UUID.randomUUID()));
+        schoolClassUserRepository.save(new SchoolClassUser(userId, leftClass.getId(), false, now, now.plus(1, ChronoUnit.DAYS), UUID.randomUUID()));
         schoolClassUserRepository.save(new SchoolClassUser(UUID.randomUUID(), otherUserClass.getId(), true, now, null, UUID.randomUUID()));
         schoolClassUserRepository.save(new SchoolClassUser(userId, otherSchoolClass.getId(), true, now, null, UUID.randomUUID()));
 
@@ -389,7 +390,7 @@ class SchoolClassRepositoryTests extends ContainerTestConfig {
         var userId = UUID.randomUUID();
         var activeClass = schoolClassRepository.save(newSchoolClass(schoolId, UUID.randomUUID(), UUID.randomUUID(), "ENG-CU-ACT", "Active CU", SchoolClassStatus.ACTIVE));
         var archivedClass = schoolClassRepository.save(newSchoolClass(schoolId, UUID.randomUUID(), UUID.randomUUID(), "ENG-CU-ARCH", "Archived CU", SchoolClassStatus.ARCHIVED));
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         schoolClassUserRepository.save(new SchoolClassUser(userId, activeClass.getId(), true, now, null, UUID.randomUUID()));
         schoolClassUserRepository.save(new SchoolClassUser(userId, archivedClass.getId(), true, now, null, UUID.randomUUID()));
 
@@ -426,7 +427,7 @@ class SchoolClassRepositoryTests extends ContainerTestConfig {
         var englishByCode = schoolClassRepository.save(newSchoolClass(schoolId, "ENG-SEARCH-01", "Lop giao tiep"));
         var englishByName = schoolClassRepository.save(newSchoolClass(schoolId, "KH-SEARCH-02", "English nang cao"));
         var unrelated = schoolClassRepository.save(newSchoolClass(schoolId, "MATH-SEARCH-03", "Toan hoc"));
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         schoolClassUserRepository.save(new SchoolClassUser(userId, englishByCode.getId(), true, now, null, UUID.randomUUID()));
         schoolClassUserRepository.save(new SchoolClassUser(userId, englishByName.getId(), true, now, null, UUID.randomUUID()));
         schoolClassUserRepository.save(new SchoolClassUser(userId, unrelated.getId(), true, now, null, UUID.randomUUID()));
@@ -445,7 +446,7 @@ class SchoolClassRepositoryTests extends ContainerTestConfig {
         var userId = UUID.randomUUID();
         var schoolClass = schoolClassRepository.save(newSchoolClass(schoolId, "ENG-BLANK-01", "Blank search"));
         schoolClassUserRepository.save(
-            new SchoolClassUser(userId, schoolClass.getId(), true, OffsetDateTime.now(), null, UUID.randomUUID())
+            new SchoolClassUser(userId, schoolClass.getId(), true, Instant.now(), null, UUID.randomUUID())
         );
 
         var found = schoolClassRepository.findByUserId(schoolId, userId, "   ", null, 1, 20);
@@ -460,7 +461,7 @@ class SchoolClassRepositoryTests extends ContainerTestConfig {
     void whenFindByUserIdWithSearch_thenPageNumberIsOneBased() {
         var schoolId = UUID.randomUUID();
         var userId = UUID.randomUUID();
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         for (var index = 1; index <= 3; index++) {
             var schoolClass = schoolClassRepository.save(
                 newSchoolClass(schoolId, "ENG-PAGE-0" + index, "Paged English " + index)
@@ -490,7 +491,7 @@ class SchoolClassRepositoryTests extends ContainerTestConfig {
 
     private static SchoolClass newSchoolClass(UUID schoolId, UUID languageId, UUID gradeId, String code, String name,
             SchoolClassStatus status) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var userId = UUID.randomUUID();
         return new SchoolClass(
             schoolId,

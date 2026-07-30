@@ -1,12 +1,12 @@
 package com.sep.vox.application.port.input.command;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public record UpdateExamScheduleCommand(
     UUID id,
     UUID schoolRoomId,
-    OffsetDateTime startDate,
-    OffsetDateTime endDate
+    Instant startDate,
+    Instant endDate
 ) {
 }

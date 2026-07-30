@@ -1,13 +1,13 @@
 package com.sep.vox.application.query.dto;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public record UserRoleInfo(
     UUID id,
     UUID userId,
     UUID roleId,
-    OffsetDateTime createdAt,
+    Instant createdAt,
     String roleCode,
     String roleName
 ) {

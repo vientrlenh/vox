@@ -2,7 +2,8 @@ package com.sep.vox.infrastructure.persistence.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -76,7 +77,7 @@ class PasswordSetUpTokenRepositoryTests extends ContainerTestConfig {
         passwordSetUpTokenRepository.save(newToken(userId, tokenHash));
         entityManager.flush();
 
-        var usedAt = OffsetDateTime.now();
+        var usedAt = Instant.now();
         var updated = passwordSetUpTokenRepository.updateUsedToken(userId, tokenHash, usedAt);
         entityManager.clear();
 
@@ -90,9 +91,9 @@ class PasswordSetUpTokenRepositoryTests extends ContainerTestConfig {
     void whenUpdateUsedTokenForExpiredToken_thenDoesNotUpdate() {
         var userId = UUID.randomUUID();
         var tokenHash = "expired-update-token";
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         passwordSetUpTokenRepository.save(
-            new PasswordSetUpToken(userId, tokenHash, now.minusDays(3), now.minusDays(1), null)
+            new PasswordSetUpToken(userId, tokenHash, now.minus(3, ChronoUnit.DAYS), now.minus(1, ChronoUnit.DAYS), null)
         );
         entityManager.flush();
 
@@ -102,12 +103,12 @@ class PasswordSetUpTokenRepositoryTests extends ContainerTestConfig {
     }
 
     private static PasswordSetUpToken newToken(UUID userId, String tokenHash) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         return new PasswordSetUpToken(
             userId,
             tokenHash,
             now,
-            now.plusDays(2),
+            now.plus(2, ChronoUnit.DAYS),
             null
         );
     }

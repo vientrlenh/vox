@@ -7,7 +7,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -35,7 +36,7 @@ public class CreateFrameworkVersionUseCaseTests {
 
     private UUID frameworkId = UUID.randomUUID();
     private UUID userId = UUID.randomUUID();
-    private OffsetDateTime now = OffsetDateTime.now();
+    private Instant now = Instant.now();
 
     @BeforeEach
     void setUp() {
@@ -48,7 +49,7 @@ public class CreateFrameworkVersionUseCaseTests {
     @Test
     void should_create_framework_version_when_framework_exists() {
         var command = new CreateFrameworkVersionCommand(
-            frameworkId, "V1_0", "Version 1.0", "Initial version", 1, now, now.plusDays(30)
+            frameworkId, "V1_0", "Version 1.0", "Initial version", 1, now, now.plus(30, ChronoUnit.DAYS)
         );
 
         var framework = new Framework(
@@ -74,7 +75,7 @@ public class CreateFrameworkVersionUseCaseTests {
     @Test
     void should_throw_not_found_when_framework_does_not_exist() {
         var command = new CreateFrameworkVersionCommand(
-            frameworkId, "V1_0", "Version 1.0", "Initial version", 1, now, now.plusDays(30)
+            frameworkId, "V1_0", "Version 1.0", "Initial version", 1, now, now.plus(30, ChronoUnit.DAYS)
         );
 
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.empty());
@@ -85,7 +86,7 @@ public class CreateFrameworkVersionUseCaseTests {
     @Test
     void should_throw_duplicated_when_version_number_exists() {
         var command = new CreateFrameworkVersionCommand(
-            frameworkId, "V1_0", "Version 1.0", "Initial version", 1, now, now.plusDays(30)
+            frameworkId, "V1_0", "Version 1.0", "Initial version", 1, now, now.plus(30, ChronoUnit.DAYS)
         );
 
         var framework = new Framework(

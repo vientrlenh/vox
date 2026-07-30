@@ -2,7 +2,7 @@ package com.sep.vox.infrastructure.persistence.entity;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -53,15 +53,15 @@ public class SchoolSubscriptionJpaEntity {
     private BigDecimal pricePaidSnapshot;
 
     @Column(name = "cancelled_at")
-    private OffsetDateTime cancelledAt;
+    private Instant cancelledAt;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
+    private Instant createdAt;
 
     protected SchoolSubscriptionJpaEntity() {}
 
     public SchoolSubscriptionJpaEntity(UUID id, UUID schoolId, UUID planId, LocalDate startDate, LocalDate endDate,
-            String status, BigDecimal pricePaidSnapshot, OffsetDateTime cancelledAt, OffsetDateTime createdAt) {
+            String status, BigDecimal pricePaidSnapshot, Instant cancelledAt, Instant createdAt) {
         this.id = id;
         this.schoolId = schoolId;
         this.planId = planId;
@@ -129,19 +129,19 @@ public class SchoolSubscriptionJpaEntity {
         this.pricePaidSnapshot = pricePaidSnapshot;
     }
 
-    public OffsetDateTime getCancelledAt() {
+    public Instant getCancelledAt() {
         return cancelledAt;
     }
 
-    public void setCancelledAt(OffsetDateTime cancelledAt) {
+    public void setCancelledAt(Instant cancelledAt) {
         this.cancelledAt = cancelledAt;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 }

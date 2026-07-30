@@ -1,7 +1,7 @@
 package com.sep.vox.domain.model.subscription;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class TokenPurchase {
@@ -9,11 +9,11 @@ public class TokenPurchase {
     private UUID subscriptionId;
     private BigDecimal totalAmount;
     private PurchaseStatus status;
-    private OffsetDateTime purchasedAt;
+    private Instant purchasedAt;
 
     public TokenPurchase() {}
 
-    public TokenPurchase(UUID id, UUID subscriptionId, BigDecimal totalAmount, PurchaseStatus status, OffsetDateTime purchasedAt) {
+    public TokenPurchase(UUID id, UUID subscriptionId, BigDecimal totalAmount, PurchaseStatus status, Instant purchasedAt) {
         this.id = id;
         this.subscriptionId = subscriptionId;
         this.totalAmount = totalAmount;
@@ -21,7 +21,7 @@ public class TokenPurchase {
         this.purchasedAt = purchasedAt;
     }
 
-    public TokenPurchase(UUID subscriptionId, BigDecimal totalAmount, PurchaseStatus status, OffsetDateTime purchasedAt) {
+    public TokenPurchase(UUID subscriptionId, BigDecimal totalAmount, PurchaseStatus status, Instant purchasedAt) {
         this.subscriptionId = subscriptionId;
         this.totalAmount = totalAmount;
         this.status = status;
@@ -60,11 +60,11 @@ public class TokenPurchase {
         this.status = status;
     }
 
-    public OffsetDateTime getPurchasedAt() {
+    public Instant getPurchasedAt() {
         return purchasedAt;
     }
 
-    public void setPurchasedAt(OffsetDateTime purchasedAt) {
+    public void setPurchasedAt(Instant purchasedAt) {
         this.purchasedAt = purchasedAt;
     }
 }

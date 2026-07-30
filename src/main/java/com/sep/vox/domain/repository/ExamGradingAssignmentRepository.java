@@ -1,6 +1,6 @@
 package com.sep.vox.domain.repository;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -29,7 +29,7 @@ public interface ExamGradingAssignmentRepository {
     List<ExamGradingAssignment> findByAppealId(UUID appealId);
 
     /** Phân công còn mở đã quá hạn — nguồn của job nhắc và của thu hồi hàng loạt. */
-    List<ExamGradingAssignment> findOverdue(OffsetDateTime now);
+    List<ExamGradingAssignment> findOverdue(Instant now);
 
     /**
      * Quá hạn trong phạm vi một trường (và một kỳ thi nếu {@code examId != null}), cũ
@@ -37,10 +37,10 @@ public interface ExamGradingAssignmentRepository {
      * chạm dữ liệu trường khác và để một lượt không ôm cả trường vào một transaction ghi.
      */
     List<ExamGradingAssignment> findOverdueInSchool(
-        OffsetDateTime now, UUID schoolId, UUID examId, int limit);
+        Instant now, UUID schoolId, UUID examId, int limit);
 
     /** Quá hạn và chưa từng gửi mail nhắc. Chống nhắc trùng bằng {@code reminded_at}. */
-    List<ExamGradingAssignment> findDueForReminder(OffsetDateTime threshold);
+    List<ExamGradingAssignment> findDueForReminder(Instant threshold);
 
     ExamGradingAssignment save(ExamGradingAssignment assignment);
 

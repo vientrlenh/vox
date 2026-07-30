@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -46,7 +46,7 @@ public interface SpringDataRubricCriterionRepository extends JpaRepository<Rubri
             @Param("maxScore") BigDecimal maxScore,
             @Param("order") Integer order,
             @Param("isRequired") Boolean isRequired,
-            @Param("updatedAt") OffsetDateTime updatedAt,
+            @Param("updatedAt") Instant updatedAt,
             @Param("updatedBy") UUID updatedBy
     );
 

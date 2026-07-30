@@ -1,7 +1,7 @@
 package com.sep.vox.domain.model.exam;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -25,13 +25,13 @@ public class ExamResultStatusHistory {
     /** null khi hệ thống tự đổi (AI chấm xong, job chốt sổ). */
     private UUID actorId;
     private String reason;
-    private OffsetDateTime createdAt;
+    private Instant createdAt;
 
     public ExamResultStatusHistory() {}
 
     public ExamResultStatusHistory(UUID id, UUID candidateResultId, ExamCandidateResultStatus fromStatus,
             ExamCandidateResultStatus toStatus, BigDecimal scoreBefore, BigDecimal scoreAfter,
-            ResultStatusChangeSource source, UUID actorId, String reason, OffsetDateTime createdAt) {
+            ResultStatusChangeSource source, UUID actorId, String reason, Instant createdAt) {
         this.id = id;
         this.candidateResultId = candidateResultId;
         this.fromStatus = fromStatus;
@@ -46,7 +46,7 @@ public class ExamResultStatusHistory {
 
     public ExamResultStatusHistory(UUID candidateResultId, ExamCandidateResultStatus fromStatus,
             ExamCandidateResultStatus toStatus, BigDecimal scoreBefore, BigDecimal scoreAfter,
-            ResultStatusChangeSource source, UUID actorId, String reason, OffsetDateTime createdAt) {
+            ResultStatusChangeSource source, UUID actorId, String reason, Instant createdAt) {
         this.candidateResultId = candidateResultId;
         this.fromStatus = fromStatus;
         this.toStatus = toStatus;
@@ -135,11 +135,11 @@ public class ExamResultStatusHistory {
         this.reason = reason;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 }

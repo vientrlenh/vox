@@ -5,10 +5,12 @@
 -- DROP bảng/constraint đã bỏ, thay đổi CHECK constraint, và backfill cho các cột
 -- NOT NULL thêm vào bảng đã có dữ liệu.
 --
--- Ngoài delta của grading rework, file này còn vá hai chỗ V1 vốn đã lạc hậu so với
--- chính nhánh default: bảng subscription_quota_user_allocations và check constraint
--- chk_import_sessions_type_valid (thiếu SCHOOL_ROOM, RUBRIC_RESULT_BAND). Không vá thì
--- ddl-auto: validate chặn app khởi động.
+-- Ngoài delta của grading rework, file này còn vá một chỗ V1 vốn đã lạc hậu so với
+-- chính nhánh default: check constraint chk_import_sessions_type_valid (thiếu
+-- SCHOOL_ROOM, RUBRIC_RESULT_BAND). Không vá thì ddl-auto: validate chặn app khởi động.
+--
+-- Bảng subscription_quota_user_allocations từng được vá ở đây, nay đã do
+-- V2__subscription_quota.sql của nhánh default tạo nên phần đó được bỏ đi.
 
 -- ---------------------------------------------------------------------------
 -- 1. exam_grading_assignments: một bảng cho cả bốn vòng chấm
@@ -117,24 +119,6 @@ drop table if exists exam_appeal_reviewers;
 -- ---------------------------------------------------------------------------
 -- 5. Vá chỗ V1 lạc hậu so với default (không liên quan grading rework)
 -- ---------------------------------------------------------------------------
-
-create table if not exists subscription_quota_user_allocations (
-    id UUID DEFAULT uuidv7() not null,
-    allocated_quantity integer not null,
-    quota_type varchar(20) not null
-        constraint chk_subscription_quota_user_allocations_quota_type_valid
-        check (quota_type IN ('CLASS_TEST', 'PRACTICE')),
-    subscription_id uuid not null,
-    used_quantity integer not null,
-    user_id uuid not null,
-    primary key (id)
-);
-
-alter table if exists subscription_quota_user_allocations
-    drop constraint if exists uk_subscription_quota_user_allocations_subscription_quota_user;
-alter table if exists subscription_quota_user_allocations
-    add constraint uk_subscription_quota_user_allocations_subscription_quota_user
-    unique (subscription_id, quota_type, user_id);
 
 -- V1 thiếu SCHOOL_ROOM và RUBRIC_RESULT_BAND; RUBRIC_CRITERION_BAND đã bị bỏ ở 048c2295.
 alter table if exists import_sessions drop constraint if exists chk_import_sessions_type_valid;

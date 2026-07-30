@@ -12,7 +12,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -116,7 +116,7 @@ class RegradeResultUseCaseTests {
         current.setTotalScore(new BigDecimal("6.00"));
 
         var assignment = ExamGradingAssignment.open(candidateResultId, teacherId, roundType, null,
-            current.getTotalScore(), OffsetDateTime.now(), UUID.randomUUID(), null);
+            current.getTotalScore(), Instant.now(), UUID.randomUUID(), null);
         assignment.setId(assignmentId);
         var context = new GradingContext(assignment, current, session, UUID.randomUUID(), "IELTS Mock");
 

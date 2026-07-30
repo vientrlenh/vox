@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examappeal;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -37,7 +37,7 @@ public class ApproveExamAppealUseCase implements IUseCase<ApproveExamAppealComma
             throw new IllegalStateException("Chỉ có thể duyệt đơn phúc khảo đang ở trạng thái Chờ duyệt.");
         }
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         if (command.deadline() == null) {
             throw new IllegalArgumentException("Phải đặt hạn xử lý cho đơn phúc khảo.");
         }

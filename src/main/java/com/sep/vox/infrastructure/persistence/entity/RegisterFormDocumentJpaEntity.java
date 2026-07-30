@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -37,11 +37,11 @@ public class RegisterFormDocumentJpaEntity {
     private String url;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
+    private Instant createdAt;
 
     protected RegisterFormDocumentJpaEntity() {}
 
-    public RegisterFormDocumentJpaEntity(UUID id, UUID registerFormId, String url, OffsetDateTime createdAt) {
+    public RegisterFormDocumentJpaEntity(UUID id, UUID registerFormId, String url, Instant createdAt) {
         this.id = id;
         this.registerFormId = registerFormId;
         this.url = url;
@@ -72,11 +72,11 @@ public class RegisterFormDocumentJpaEntity {
         this.url = url;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 

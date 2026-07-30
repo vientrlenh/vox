@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.question;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -90,7 +90,7 @@ public class CreateQuestionCollaboratorUseCase implements IUseCase<CreateQuestio
         collaborator.setQuestionId(question.getId());
         collaborator.setUserId(command.userId());
         collaborator.setPermission(QuestionCollaboratorPermission.valueOf(command.permission()));
-        collaborator.setAssignedAt(OffsetDateTime.now());
+        collaborator.setAssignedAt(Instant.now());
 
         var saved = questionCollaboratorRepository.save(collaborator);
         return QuestionCollaboratorDtoMapper.toDto(saved);

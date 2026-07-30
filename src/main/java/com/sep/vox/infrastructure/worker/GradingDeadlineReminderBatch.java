@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.worker;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -53,12 +53,12 @@ public class GradingDeadlineReminderBatch {
      * @return số phân công đã xử lý; {@code 0} nghĩa là hết tồn đọng
      */
     @Transactional
-    public int remindOnce(OffsetDateTime threshold) {
+    public int remindOnce(Instant threshold) {
         var due = examGradingAssignmentRepository.findDueForReminder(threshold);
         if (due.isEmpty()) {
             return 0;
         }
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
 
         // Nạp kết quả + kỳ thi theo lô: một lô có thể tới vài trăm dòng, gọi lẻ từng
         // dòng là N+1 ngay trong background.

@@ -1,6 +1,6 @@
 package com.sep.vox.domain.model.exam;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class ExamPaper {
@@ -11,15 +11,15 @@ public class ExamPaper {
     private int variant;
     private ExamPaperStatus status;
     private Integer timeDurationSeconds;
-    private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
     private UUID createdBy;
     private UUID updatedBy;
 
     public ExamPaper() {}
 
-    public ExamPaper(UUID id, UUID examId, UUID blueprintVersionId, String code, int variant, ExamPaperStatus status, Integer timeDurationSeconds, OffsetDateTime createdAt,
-            OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+    public ExamPaper(UUID id, UUID examId, UUID blueprintVersionId, String code, int variant, ExamPaperStatus status, Integer timeDurationSeconds, Instant createdAt,
+            Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.examId = examId;
         this.blueprintVersionId = blueprintVersionId;
@@ -33,8 +33,8 @@ public class ExamPaper {
         this.updatedBy = updatedBy;
     }
 
-    public ExamPaper(UUID examId, UUID blueprintVersionId, String code, int variant, ExamPaperStatus status, Integer timeDurationSeconds, OffsetDateTime createdAt,
-            OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+    public ExamPaper(UUID examId, UUID blueprintVersionId, String code, int variant, ExamPaperStatus status, Integer timeDurationSeconds, Instant createdAt,
+            Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.examId = examId;
         this.blueprintVersionId = blueprintVersionId;
         this.code = code;
@@ -103,19 +103,19 @@ public class ExamPaper {
         this.timeDurationSeconds = timeDurationSeconds;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 

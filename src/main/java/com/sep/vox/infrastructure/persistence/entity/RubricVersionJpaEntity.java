@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -63,10 +63,10 @@ public class RubricVersionJpaEntity {
     private String status;
 
     @Column(name = "effective_from", nullable = false)
-    private OffsetDateTime effectiveFrom;
+    private Instant effectiveFrom;
 
     @Column(name = "effective_to")
-    private OffsetDateTime effectiveTo;
+    private Instant effectiveTo;
 
     @Column(name = "scoring_scale_min", nullable = false, precision = 6, scale = 2)
     private BigDecimal scoringScaleMin;
@@ -80,10 +80,10 @@ public class RubricVersionJpaEntity {
     private String totalScoreMethod;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private OffsetDateTime updatedAt;
+    private Instant updatedAt;
 
     @Column(name = "created_by", updatable = false)
     private UUID createdBy;
@@ -93,9 +93,9 @@ public class RubricVersionJpaEntity {
 
     protected RubricVersionJpaEntity() {}
 
-    public RubricVersionJpaEntity(UUID id, UUID rubricId, int version, String code, String name, String description, String status, OffsetDateTime effectiveFrom,
-            OffsetDateTime effectiveTo, BigDecimal scoringScaleMin, BigDecimal scoringScaleMax, String totalScoreMethod,
-            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+    public RubricVersionJpaEntity(UUID id, UUID rubricId, int version, String code, String name, String description, String status, Instant effectiveFrom,
+            Instant effectiveTo, BigDecimal scoringScaleMin, BigDecimal scoringScaleMax, String totalScoreMethod,
+            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.rubricId = rubricId;
         this.code = code;
@@ -114,9 +114,9 @@ public class RubricVersionJpaEntity {
         this.updatedBy = updatedBy;
     }
 
-    public RubricVersionJpaEntity(UUID rubricId, int version, String code, String name, String description, String status, OffsetDateTime effectiveFrom,
-            OffsetDateTime effectiveTo, BigDecimal scoringScaleMin, BigDecimal scoringScaleMax, String totalScoreMethod,
-            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+    public RubricVersionJpaEntity(UUID rubricId, int version, String code, String name, String description, String status, Instant effectiveFrom,
+            Instant effectiveTo, BigDecimal scoringScaleMin, BigDecimal scoringScaleMax, String totalScoreMethod,
+            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.rubricId = rubricId;
         this.code = code;
         this.name = name;
@@ -166,19 +166,19 @@ public class RubricVersionJpaEntity {
         this.status = status;
     }
 
-    public OffsetDateTime getEffectiveFrom() {
+    public Instant getEffectiveFrom() {
         return effectiveFrom;
     }
 
-    public void setEffectiveFrom(OffsetDateTime effectiveFrom) {
+    public void setEffectiveFrom(Instant effectiveFrom) {
         this.effectiveFrom = effectiveFrom;
     }
 
-    public OffsetDateTime getEffectiveTo() {
+    public Instant getEffectiveTo() {
         return effectiveTo;
     }
 
-    public void setEffectiveTo(OffsetDateTime effectiveTo) {
+    public void setEffectiveTo(Instant effectiveTo) {
         this.effectiveTo = effectiveTo;
     }
 
@@ -206,19 +206,19 @@ public class RubricVersionJpaEntity {
         this.totalScoreMethod = totalScoreMethod;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 

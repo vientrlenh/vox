@@ -1,7 +1,7 @@
 package com.sep.vox.application.query.dto;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -21,6 +21,6 @@ public record ResultStatusHistoryInfo(
     UUID actorId,
     String actorName,
     String reason,
-    OffsetDateTime createdAt
+    Instant createdAt
 ) {
 }

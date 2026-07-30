@@ -18,7 +18,6 @@ import com.sep.vox.application.port.input.service.GradingSampleSelector;
 import com.sep.vox.application.port.input.service.RoundRobinLoadBalancer;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.query.repository.ExamGradingQueryRepository;
-import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.exam.ExamGradingAssignment;
 import com.sep.vox.domain.model.exam.GradingRoundPolicy;
 import com.sep.vox.domain.model.exam.GradingRoundType;
@@ -89,7 +88,7 @@ public class AutoAssignGradingUseCase implements IUseCase<AutoAssignGradingComma
         }
 
         var eligibleStatuses = GradingRoundPolicy.assignableStatuses(roundType).stream()
-            .map(ExamCandidateResultStatus::name)
+            .map(candidateResultStatus -> candidateResultStatus.name())
             .toList();
         var candidates = examGradingQueryRepository.findAssignableResultIds(
             schoolId, command.examId(), command.scheduleId(), eligibleStatuses);

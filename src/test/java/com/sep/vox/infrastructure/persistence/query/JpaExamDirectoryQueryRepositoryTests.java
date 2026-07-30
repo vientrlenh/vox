@@ -16,7 +16,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.config.ContainerTestConfig;
-import com.sep.vox.application.query.dto.ExamDirectoryUserInfo;
 import com.sep.vox.infrastructure.persistence.entity.RoleJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.SchoolClassJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.SchoolClassUserJpaEntity;
@@ -84,7 +83,7 @@ class JpaExamDirectoryQueryRepositoryTests extends ContainerTestConfig {
         var page = repository.findUsersByClassIds(List.of(class1, class2), "STUDENT", null, 1, 20);
 
         assertThat(page.totalElements()).isEqualTo(1);
-        assertThat(page.content()).extracting(ExamDirectoryUserInfo::userId).containsExactly(student);
+        assertThat(page.content()).extracting(user -> user.userId()).containsExactly(student);
     }
 
     @Test
@@ -100,7 +99,7 @@ class JpaExamDirectoryQueryRepositoryTests extends ContainerTestConfig {
 
         var page = repository.findUsersByClassIds(List.of(mine), "STUDENT", null, 1, 20);
 
-        assertThat(page.content()).extracting(ExamDirectoryUserInfo::userId).containsExactly(active);
+        assertThat(page.content()).extracting(user -> user.userId()).containsExactly(active);
     }
 
     @Test
@@ -124,9 +123,9 @@ class JpaExamDirectoryQueryRepositoryTests extends ContainerTestConfig {
         var searched = repository.findUsersBySchoolId(schoolId, "STUDENT", "BINH", 1, 20);
         var missed = repository.findUsersBySchoolId(schoolId, "STUDENT", "cuong", 1, 20);
 
-        assertThat(students.content()).extracting(ExamDirectoryUserInfo::userId).containsExactly(student);
-        assertThat(teachers.content()).extracting(ExamDirectoryUserInfo::userId).containsExactly(teacher);
-        assertThat(searched.content()).extracting(ExamDirectoryUserInfo::userId).containsExactly(student);
+        assertThat(students.content()).extracting(user -> user.userId()).containsExactly(student);
+        assertThat(teachers.content()).extracting(user -> user.userId()).containsExactly(teacher);
+        assertThat(searched.content()).extracting(user -> user.userId()).containsExactly(student);
         assertThat(missed.content()).isEmpty();
     }
 

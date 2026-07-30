@@ -1,5 +1,6 @@
 package com.sep.vox.application.usecase.examsession;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.mock;
@@ -7,6 +8,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -140,9 +142,9 @@ public class DeleteExamSessionUseCaseTests {
 
         useCase.execute(sessionId);
 
-        var itemCaptor = ArgumentCaptor.forClass(java.util.Collection.class);
+        ArgumentCaptor<Collection<UUID>> itemCaptor = ArgumentCaptor.captor();
         verify(examResultAppealItemRepository).deleteByAppealIdIn(itemCaptor.capture());
-        org.assertj.core.api.Assertions.assertThat(itemCaptor.getValue()).containsExactly(appealId);
+        assertThat(itemCaptor.getValue()).containsExactly(appealId);
 
         verify(examResultAppealRepository).deleteByIdIn(List.of(appealId));
         verify(examCandidateResultRepository).deleteBySessionId(sessionId);

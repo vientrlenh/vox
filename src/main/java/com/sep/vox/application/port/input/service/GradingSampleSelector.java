@@ -85,7 +85,7 @@ public class GradingSampleSelector {
     private List<UUID> riskBased(List<UUID> candidates, Integer percent, List<GradingRiskInfo> riskInfos) {
         var infoById = riskInfos == null ? java.util.Map.<UUID, GradingRiskInfo>of()
             : riskInfos.stream().collect(Collectors.toMap(
-                GradingRiskInfo::candidateResultId, Function.identity(), (left, right) -> left));
+                riskInfo -> riskInfo.candidateResultId(), Function.identity(), (left, right) -> left));
 
         var ranked = new ArrayList<>(candidates);
         ranked.sort(Comparator

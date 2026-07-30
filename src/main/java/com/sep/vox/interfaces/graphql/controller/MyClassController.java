@@ -115,7 +115,7 @@ public class MyClassController {
     public CompletableFuture<List<String>> myClassMemberUserRoleCodes(UserDto user, DataFetchingEnvironment env) {
         DataLoader<UserRolesKey, List<RoleDto>> loader = env.getDataLoader("rolesByUser");
         return loader.load(new UserRolesKey(user.id()))
-            .thenApply(roles -> roles.stream().map(RoleDto::code).toList());
+            .thenApply(roles -> roles.stream().map(role -> role.code()).toList());
     }
 
     private static void requireValidPaging(Integer page, Integer size) {

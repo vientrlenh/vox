@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.dao.DataIntegrityViolationException;
@@ -82,12 +81,14 @@ public class BulkCreateSchoolClassUsersUseCase
 
         // Nạp theo lô để số truy vấn không tăng theo số người dùng được chọn.
         var usersById = userRepository.findByIdIn(requestedUserIds).stream()
-            .collect(Collectors.toMap(User::getId, Function.identity(), (first, second) -> first));
+            .collect(Collectors.toMap(user -> user.getId(), user -> user, (first, second) -> first));
         var schoolIdsByUserId = schoolUserRepository.findByUserIdIn(requestedUserIds).stream()
-            .collect(Collectors.toMap(SchoolUser::getUserId, SchoolUser::getSchoolId, (first, second) -> first));
+            .collect(Collectors.toMap(
+                schoolUser -> schoolUser.getUserId(), schoolUser -> schoolUser.getSchoolId(), (first, second) -> first));
         var membershipsByUserId = schoolClassUserRepository
             .findByUserIdInAndSchoolClassIdIn(requestedUserIds, List.of(input.classId())).stream()
-            .collect(Collectors.toMap(SchoolClassUser::getUserId, Function.identity(), (first, second) -> first));
+            .collect(Collectors.toMap(
+                membership -> membership.getUserId(), membership -> membership, (first, second) -> first));
 
         var addedUserIds = new ArrayList<UUID>();
         var failed = new ArrayList<BulkCreateSchoolClassUserFailure>();

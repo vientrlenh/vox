@@ -1,22 +1,20 @@
 package com.sep.vox.application.usecase.examappeal;
 
+import java.time.OffsetDateTime;
+import java.util.UUID;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
-import java.util.UUID;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-
 import com.sep.vox.application.event.ExamAppealRejectedEvent;
-import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.ApproveExamAppealCommand;
 import com.sep.vox.application.port.input.command.RejectExamAppealCommand;
 import com.sep.vox.application.port.input.service.ExamAppealAccessService;

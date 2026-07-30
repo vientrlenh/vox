@@ -34,7 +34,6 @@ import com.sep.vox.application.query.repository.ExamGradingQueryRepository;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.exam.GradingAssignmentStatus;
-import com.sep.vox.domain.model.exam.GradingOutcome;
 import com.sep.vox.domain.model.exam.GradingRoundPolicy;
 import com.sep.vox.domain.model.exam.GradingRoundType;
 
@@ -79,7 +78,7 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
     /** Trạng thái bài còn có thể nhận một vòng chấm — luật lấy từ domain, không chép cứng. */
     private static final List<String> ASSIGNABLE_STATUS_NAMES = GradingRoundPolicy.allAssignableStatuses()
         .stream()
-        .map(Enum::name)
+        .map(status -> status.name())
         .toList();
 
     @PersistenceContext
@@ -554,7 +553,7 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
         var editable = !GradingAssignmentStatus.COMPLETED.name().equals(assignmentStatus)
             && GradingRoundPolicy.isAssignable(round, ExamCandidateResultStatus.valueOf(resultStatus));
         var allowedOutcomes = editable
-            ? GradingRoundPolicy.allowedOutcomes(round).stream().map(GradingOutcome::name).sorted().toList()
+            ? GradingRoundPolicy.allowedOutcomes(round).stream().map(outcome -> outcome.name()).sorted().toList()
             : List.<String>of();
 
         return Optional.of(new GradingTaskDetailInfo(

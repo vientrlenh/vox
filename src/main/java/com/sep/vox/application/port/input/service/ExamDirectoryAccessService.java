@@ -12,7 +12,6 @@ import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
-import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
@@ -105,7 +104,7 @@ public class ExamDirectoryAccessService {
             .findByUserId(scope.schoolId(), scope.callerId(), null, SchoolClassStatus.ACTIVE, 1, MAX_CLASSES)
             .content()
             .stream()
-            .map(SchoolClass::getId)
+            .map(schoolClass -> schoolClass.getId())
             .toList();
     }
 }

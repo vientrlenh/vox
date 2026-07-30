@@ -31,7 +31,10 @@ class RoundRobinLoadBalancerTests {
 
     private Map<UUID, Long> countByAssignee(List<UUID> picked) {
         var counts = new java.util.HashMap<UUID, Long>();
-        picked.forEach(assignee -> counts.merge(assignee, 1L, Long::sum));
+        for (var assignee : picked) {
+            var current = counts.get(assignee);
+            counts.put(assignee, current == null ? 1L : current + 1L);
+        }
         return counts;
     }
 

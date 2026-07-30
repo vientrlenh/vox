@@ -197,8 +197,10 @@ public class BulkFinalizeExamResultsUseCase
     private Map<ExamCandidateResultStatus, Integer> countBlocking(List<ExamCandidateResult> results) {
         var counts = new EnumMap<ExamCandidateResultStatus, Integer>(ExamCandidateResultStatus.class);
         for (var result : results) {
-            if (BLOCKING_STATUSES.contains(result.getStatus())) {
-                counts.merge(result.getStatus(), 1, Integer::sum);
+            var status = result.getStatus();
+            if (BLOCKING_STATUSES.contains(status)) {
+                var current = counts.get(status);
+                counts.put(status, current == null ? 1 : current + 1);
             }
         }
         return counts;

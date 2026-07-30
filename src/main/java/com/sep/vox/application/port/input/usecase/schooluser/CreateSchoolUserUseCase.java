@@ -9,21 +9,23 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.event.SchoolUserPasswordSetUpEmailRequestedEvent;
+import com.sep.vox.application.event.UserCreatedPayloadV1;
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreateSchoolUserCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.EventPublisherPort;
-import com.sep.vox.application.port.output.PasswordSetUpTokenPort;
+import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.schooluser.CreateSchoolUserResponse;
-import com.sep.vox.domain.model.passwordsetuptoken.PasswordSetUpToken;
+import com.sep.vox.domain.common.AggregateTypeConstant;
+import com.sep.vox.domain.common.EventTypeConstant;
+import com.sep.vox.domain.common.UserTypeConstant;
+import com.sep.vox.domain.model.outbox.Outbox;
 import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserRole;
 import com.sep.vox.domain.model.user.UserStatus;
-import com.sep.vox.domain.repository.PasswordSetUpTokenRepository;
+import com.sep.vox.domain.repository.OutboxRepository;
 import com.sep.vox.domain.repository.RoleRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -41,9 +43,8 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
     private final UserRoleRepository userRoleRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final SchoolRepository schoolRepository;
-    private final PasswordSetUpTokenPort passwordSetUpTokenPort;
-    private final PasswordSetUpTokenRepository passwordSetUpTokenRepository;
-    private final EventPublisherPort eventPublisherPort;
+    private final OutboxRepository outboxRepository;
+    private final JsonSerializationPort jsonSerializationPort;
 
     public CreateSchoolUserUseCase(
             UserContextPort userContextPort,
@@ -52,18 +53,16 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
             UserRoleRepository userRoleRepository,
             SchoolUserRepository schoolUserRepository,
             SchoolRepository schoolRepository,
-            PasswordSetUpTokenPort passwordSetUpTokenPort,
-            PasswordSetUpTokenRepository passwordSetUpTokenRepository,
-            EventPublisherPort eventPublisherPort) {
+            OutboxRepository outboxRepository,
+            JsonSerializationPort jsonSerializationPort) {
         this.userContextPort = userContextPort;
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.userRoleRepository = userRoleRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.schoolRepository = schoolRepository;
-        this.passwordSetUpTokenPort = passwordSetUpTokenPort;
-        this.passwordSetUpTokenRepository = passwordSetUpTokenRepository;
-        this.eventPublisherPort = eventPublisherPort;
+        this.outboxRepository = outboxRepository;
+        this.jsonSerializationPort = jsonSerializationPort;
     }
 
     @Override
@@ -129,14 +128,22 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
             saveSchoolUser(SchoolUser.create(savedUser.getId(), command.schoolId(), startDate, null));
         }
 
-        var generatedPasswordSetUpToken = passwordSetUpTokenPort.generateToken();
-        passwordSetUpTokenRepository.save(PasswordSetUpToken.create(savedUser.getId(), generatedPasswordSetUpToken.hashedToken()));
-        eventPublisherPort.publish(new SchoolUserPasswordSetUpEmailRequestedEvent(
+        // Ghi outbox trong cùng transaction với việc tạo user: user tồn tại thì event
+        // chắc chắn tồn tại. Token đặt mật khẩu do consumer sinh ngay trước khi gửi mail,
+        // để nó không nằm plaintext trong bảng outboxes lẫn trong topic Kafka.
+        var event = new UserCreatedPayloadV1(
+            savedUser.getId(),
             command.email(),
             command.fullName(),
             school.getName(),
+            UserTypeConstant.SCHOOL_USER
+        );
+        outboxRepository.save(Outbox.create(
+            AggregateTypeConstant.USER,
             savedUser.getId(),
-            generatedPasswordSetUpToken.rawToken()
+            EventTypeConstant.USER_CREATED,
+            jsonSerializationPort.toJson(event),
+            now
         ));
 
         return new CreateSchoolUserResponse(savedUser.getId());

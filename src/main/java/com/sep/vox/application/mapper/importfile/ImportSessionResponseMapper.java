@@ -1,6 +1,6 @@
 package com.sep.vox.application.mapper.importfile;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -92,7 +92,7 @@ public class ImportSessionResponseMapper {
         return status == null ? null : status.name();
     }
 
-    private String valueOf(OffsetDateTime dateTime) {
+    private String valueOf(Instant dateTime) {
         return dateTime == null ? null : dateTime.toString();
     }
 }

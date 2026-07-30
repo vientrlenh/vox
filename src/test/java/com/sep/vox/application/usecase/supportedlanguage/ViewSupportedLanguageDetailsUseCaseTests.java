@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -67,7 +67,7 @@ class ViewSupportedLanguageDetailsUseCaseTests {
     }
 
     private static SupportedLanguage language(UUID id, boolean active) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         return new SupportedLanguage(
             id,
             new LanguageCode("EN"),

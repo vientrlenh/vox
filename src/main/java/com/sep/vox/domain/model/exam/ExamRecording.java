@@ -1,6 +1,6 @@
 package com.sep.vox.domain.model.exam;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class ExamRecording {
@@ -14,14 +14,14 @@ public class ExamRecording {
     private Long sizeBytes;
     private Integer durationSeconds;
     private String source;
-    private OffsetDateTime createdAt;
-    private OffsetDateTime assembledAt;
+    private Instant createdAt;
+    private Instant assembledAt;
 
     public ExamRecording() {}
 
     public ExamRecording(UUID id, UUID examSessionId, UUID candidateId, ExamRequiredStreamType streamType,
             String bucket, String s3Key, ExamRecordingAssemblyStatus status, Long sizeBytes, Integer durationSeconds, String source,
-            OffsetDateTime createdAt, OffsetDateTime assembledAt) {
+            Instant createdAt, Instant assembledAt) {
         this.id = id;
         this.examSessionId = examSessionId;
         this.candidateId = candidateId;
@@ -38,7 +38,7 @@ public class ExamRecording {
 
     public ExamRecording(UUID examSessionId, UUID candidateId, ExamRequiredStreamType streamType, String bucket,
             String s3Key, ExamRecordingAssemblyStatus status, Long sizeBytes, Integer durationSeconds, String source,
-            OffsetDateTime createdAt, OffsetDateTime assembledAt) {
+            Instant createdAt, Instant assembledAt) {
         this.examSessionId = examSessionId;
         this.candidateId = candidateId;
         this.streamType = streamType;
@@ -124,19 +124,19 @@ public class ExamRecording {
         this.durationSeconds = durationSeconds;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getAssembledAt() {
+    public Instant getAssembledAt() {
         return assembledAt;
     }
 
-    public void setAssembledAt(OffsetDateTime assembledAt) {
+    public void setAssembledAt(Instant assembledAt) {
         this.assembledAt = assembledAt;
     }
 

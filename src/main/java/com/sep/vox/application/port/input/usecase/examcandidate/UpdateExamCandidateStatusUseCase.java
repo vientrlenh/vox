@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.examcandidate;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -70,8 +71,8 @@ public class UpdateExamCandidateStatusUseCase implements IUseCase<UpdateExamCand
 
         var schedule = examScheduleRepository.findById(candidate.getScheduleId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ca thi của thí sinh"));
-        var now = OffsetDateTime.now();
-        var windowStart = schedule.getStartDate().minusMinutes(30);
+        var now = Instant.now();
+        var windowStart = schedule.getStartDate().minus(30, ChronoUnit.MINUTES);
         var windowEnd = schedule.getEndDate();
         if (now.isBefore(windowStart) || now.isAfter(windowEnd)) {
             throw new IllegalStateException("Chỉ được điểm danh trong khoảng 30 phút trước đến khi kết thúc ca thi");

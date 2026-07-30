@@ -1,6 +1,6 @@
 package com.sep.vox.domain.model.exam;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class ExamBlueprint {
@@ -12,15 +12,15 @@ public class ExamBlueprint {
     private String name;
     private String description;
     private boolean isActive;
-    private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
     private UUID createdBy;
     private UUID updatedBy;
 
     public ExamBlueprint() {}
 
     public ExamBlueprint(UUID id, UUID schoolId, UUID languageId, UUID schoolGradeLevelId, String code, String name,
-            String description, boolean isActive, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy,
+            String description, boolean isActive, Instant createdAt, Instant updatedAt, UUID createdBy,
             UUID updatedBy) {
         this.id = id;
         this.schoolId = schoolId;
@@ -37,7 +37,7 @@ public class ExamBlueprint {
     }
 
     public ExamBlueprint(UUID schoolId, UUID languageId, UUID schoolGradeLevelId, String code, String name,
-            String description, boolean isActive, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy,
+            String description, boolean isActive, Instant createdAt, Instant updatedAt, UUID createdBy,
             UUID updatedBy) {
         this.schoolId = schoolId;
         this.languageId = languageId;
@@ -116,19 +116,19 @@ public class ExamBlueprint {
         this.isActive = isActive;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 

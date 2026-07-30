@@ -1,6 +1,6 @@
 package com.sep.vox.application.query.dto;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public record ProctorScheduleSummary(
@@ -9,8 +9,8 @@ public record ProctorScheduleSummary(
     String examName,
     UUID schoolRoomId,
     String roomName,
-    OffsetDateTime startDate,
-    OffsetDateTime endDate,
+    Instant startDate,
+    Instant endDate,
     String status
 ) {
 }

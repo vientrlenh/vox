@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.HashMap;
 
@@ -148,7 +148,7 @@ public class GetExamSessionPaperUseCase implements IUseCase<ViewExamSessionPaper
             durationSeconds,
             durationMinutesOf(durationSeconds),
             StudentExamViewSupport.examDateOf(schedule, exam.getOpenAt()),
-            StudentExamViewSupport.statusOf(schedule, OffsetDateTime.now()),
+            StudentExamViewSupport.statusOf(schedule, Instant.now()),
             schedule == null
                 ? (exam.getCloseAt() == null ? null : exam.getCloseAt().toString())
                 : (schedule.getEndDate() == null ? null : schedule.getEndDate().toString()),

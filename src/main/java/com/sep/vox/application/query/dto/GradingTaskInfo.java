@@ -1,6 +1,6 @@
 package com.sep.vox.application.query.dto;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 /** Hàng đợi của giáo viên. Ẩn danh: không có tên/ID học sinh. */
@@ -12,6 +12,6 @@ public record GradingTaskInfo(
     int partCount,
     String status,
     boolean flagged,
-    OffsetDateTime assignedAt
+    Instant assignedAt
 ) {
 }

@@ -21,7 +21,8 @@ import com.sep.vox.domain.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.IntStream;
@@ -78,8 +79,8 @@ public class PreviewSchoolRubricVersionImportFromFileUseCase implements IUseCase
             throw new IllegalArgumentException("File tải lên trống hoặc không chứa dữ liệu.");
         }
 
-        OffsetDateTime now = OffsetDateTime.now();
-        OffsetDateTime expiresAt = now.plusDays(1);
+        Instant now = Instant.now();
+        Instant expiresAt = now.plus(1, ChronoUnit.DAYS);
 
         // Lưu thông tin kèm trường schoolId đầy đủ
         ImportSession session = new ImportSession(

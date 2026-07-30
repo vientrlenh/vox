@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.initializer;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +44,7 @@ public class RoleInitializer implements ApplicationRunner {
     }
 
     private Role studentRole() {
-        var initializedAt = OffsetDateTime.now();
+        var initializedAt = Instant.now();
         return new Role(
             new RoleCode(STUDENT_CODE), 
             "Học sinh", 
@@ -56,7 +56,7 @@ public class RoleInitializer implements ApplicationRunner {
     }
 
     private Role teacherRole() {
-        var initializedAt = OffsetDateTime.now();
+        var initializedAt = Instant.now();
         return new Role(
             new RoleCode(TEACHER_CODE),
             "Giáo viên",
@@ -68,7 +68,7 @@ public class RoleInitializer implements ApplicationRunner {
     }
 
     private Role schoolAdminRole() {
-        var initializedAt = OffsetDateTime.now();
+        var initializedAt = Instant.now();
         return new Role(
             new RoleCode(SCHOOL_ADMIN_CODE),
             "Quản trị nhà trường",
@@ -80,7 +80,7 @@ public class RoleInitializer implements ApplicationRunner {
     }
 
     private Role systemAdminRole() {
-        var initializedAt = OffsetDateTime.now();
+        var initializedAt = Instant.now();
         return new Role(
             new RoleCode(SYSTEM_ADMIN_CODE), 
             "Quản trị hệ thống", 

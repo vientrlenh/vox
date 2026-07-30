@@ -7,7 +7,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -101,7 +102,7 @@ class SchoolClassImportCommitHandlerTests {
         var newLanguageId = UUID.randomUUID();
         var oldGradeId = UUID.randomUUID();
         var newGradeId = UUID.randomUUID();
-        var createdAt = OffsetDateTime.now().minusDays(10);
+        var createdAt = Instant.now().minus(10, ChronoUnit.DAYS);
         var existingClass = new SchoolClass(
             existingClassId, schoolId, oldLanguageId, oldGradeId,
             new ClassCode("ENG-01"), "English Old", "Old description",
@@ -220,8 +221,8 @@ class SchoolClassImportCommitHandlerTests {
             id, schoolId, ImportType.SCHOOL_CLASS, "classes.csv", "[]", "{}",
             jsonSerializationPort.toJson(mapping),
             0L, 0L, 0L, 0L, 0L, null, ImportSessionStatus.IMPORTING, null,
-            OffsetDateTime.now().plusDays(1), null, null, null, 0,
-            OffsetDateTime.now(), OffsetDateTime.now(),
+            Instant.now().plus(1, ChronoUnit.DAYS), null, null, null, 0,
+            Instant.now(), Instant.now(),
             createdBy, createdBy
         );
     }

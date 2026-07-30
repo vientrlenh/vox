@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -141,7 +141,7 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
             .sorted((a, b) -> Integer.compare(a.getOrder(), b.getOrder()))
             .toList();
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var commonCount = Math.min(existingPaperSections.size(), input.sections().size());
         var sectionWeights = ClassTestSectionWeightPolicy.resolveRequestedWeights(input.sections());
 
@@ -179,7 +179,7 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
             List<ClassTestQuestionCommand> questions,
             UUID examId,
             UUID currentUserId,
-            OffsetDateTime now) {
+            Instant now) {
         for (var item : examPaperItemRepository.findBySectionId(paperSection.getId())) {
             examPaperItemRepository.deleteById(item.getId());
         }
@@ -215,7 +215,7 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
             int order,
             UUID examId,
             UUID currentUserId,
-            OffsetDateTime now) {
+            Instant now) {
         var paperSection = examPaperSectionRepository.save(new ExamPaperSection(
             paper.getId(),
             order,

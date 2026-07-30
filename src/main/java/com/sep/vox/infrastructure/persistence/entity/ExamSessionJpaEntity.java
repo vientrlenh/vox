@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -37,10 +37,10 @@ public class ExamSessionJpaEntity {
     private UUID paperId;
 
     @Column(name = "started_at", nullable = false, updatable = false)
-    private OffsetDateTime startedAt;
+    private Instant startedAt;
 
     @Column(name = "submitted_at")
-    private OffsetDateTime submittedAt;
+    private Instant submittedAt;
 
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
@@ -70,8 +70,8 @@ public class ExamSessionJpaEntity {
 
     protected ExamSessionJpaEntity() {}
 
-    public ExamSessionJpaEntity(UUID id, UUID examId, UUID candidateId, UUID paperId, OffsetDateTime startedAt,
-            OffsetDateTime submittedAt, String status, boolean flagged, String flagReason) {
+    public ExamSessionJpaEntity(UUID id, UUID examId, UUID candidateId, UUID paperId, Instant startedAt,
+            Instant submittedAt, String status, boolean flagged, String flagReason) {
         this.id = id;
         this.examId = examId;
         this.candidateId = candidateId;
@@ -115,19 +115,19 @@ public class ExamSessionJpaEntity {
         this.paperId = paperId;
     }
 
-    public OffsetDateTime getStartedAt() {
+    public Instant getStartedAt() {
         return startedAt;
     }
 
-    public void setStartedAt(OffsetDateTime startedAt) {
+    public void setStartedAt(Instant startedAt) {
         this.startedAt = startedAt;
     }
 
-    public OffsetDateTime getSubmittedAt() {
+    public Instant getSubmittedAt() {
         return submittedAt;
     }
 
-    public void setSubmittedAt(OffsetDateTime submittedAt) {
+    public void setSubmittedAt(Instant submittedAt) {
         this.submittedAt = submittedAt;
     }
 

@@ -1,6 +1,6 @@
 package com.sep.vox.domain.model.exam;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class ExamItemResponseTurn {
@@ -13,15 +13,15 @@ public class ExamItemResponseTurn {
     private String transcript;
     private Integer durationSeconds;
     private Integer wordCount;
-    private OffsetDateTime answeredAt;
-    private OffsetDateTime createdAt;
+    private Instant answeredAt;
+    private Instant createdAt;
 
     public ExamItemResponseTurn() {
     }
 
     public ExamItemResponseTurn(UUID id, UUID examItemResponseId, int turnOrder, TurnType turnType, String promptText,
-            String audioUrl, String transcript, Integer durationSeconds, Integer wordCount, OffsetDateTime answeredAt,
-            OffsetDateTime createdAt) {
+            String audioUrl, String transcript, Integer durationSeconds, Integer wordCount, Instant answeredAt,
+            Instant createdAt) {
         this.id = id;
         this.examItemResponseId = examItemResponseId;
         this.turnOrder = turnOrder;
@@ -36,8 +36,8 @@ public class ExamItemResponseTurn {
     }
 
     public ExamItemResponseTurn(UUID examItemResponseId, int turnOrder, TurnType turnType, String promptText,
-            String audioUrl, String transcript, Integer durationSeconds, Integer wordCount, OffsetDateTime answeredAt,
-            OffsetDateTime createdAt) {
+            String audioUrl, String transcript, Integer durationSeconds, Integer wordCount, Instant answeredAt,
+            Instant createdAt) {
         this(null, examItemResponseId, turnOrder, turnType, promptText, audioUrl, transcript, durationSeconds,
             wordCount, answeredAt, createdAt);
     }
@@ -114,19 +114,19 @@ public class ExamItemResponseTurn {
         this.wordCount = wordCount;
     }
 
-    public OffsetDateTime getAnsweredAt() {
+    public Instant getAnsweredAt() {
         return answeredAt;
     }
 
-    public void setAnsweredAt(OffsetDateTime answeredAt) {
+    public void setAnsweredAt(Instant answeredAt) {
         this.answeredAt = answeredAt;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 }

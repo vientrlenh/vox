@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -37,14 +37,14 @@ public class QuestionBankGradeJpaEntity {
     private UUID schoolGradeId;
 
     @Column(name = "attached_at", nullable = false, updatable = false)
-    private OffsetDateTime attachedAt;
+    private Instant attachedAt;
 
     @Column(name = "attached_by", updatable = false)
     private UUID attachedBy;
 
     protected QuestionBankGradeJpaEntity() {}
 
-    public QuestionBankGradeJpaEntity(UUID id, UUID questionBankId, UUID schoolGradeId, OffsetDateTime attachedAt,
+    public QuestionBankGradeJpaEntity(UUID id, UUID questionBankId, UUID schoolGradeId, Instant attachedAt,
             UUID attachedBy) {
         this.id = id;
         this.questionBankId = questionBankId;
@@ -77,11 +77,11 @@ public class QuestionBankGradeJpaEntity {
         this.schoolGradeId = schoolGradeId;
     }
 
-    public OffsetDateTime getAttachedAt() {
+    public Instant getAttachedAt() {
         return attachedAt;
     }
 
-    public void setAttachedAt(OffsetDateTime attachedAt) {
+    public void setAttachedAt(Instant attachedAt) {
         this.attachedAt = attachedAt;
     }
 

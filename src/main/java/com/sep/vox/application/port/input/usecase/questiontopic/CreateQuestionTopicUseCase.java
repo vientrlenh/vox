@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.questiontopic;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -62,7 +62,7 @@ public class CreateQuestionTopicUseCase implements IUseCase<CreateQuestionTopicC
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var topic = new QuestionTopic(
             command.questionBankId(),
             command.code(),

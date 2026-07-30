@@ -21,7 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.*;
 
 @Service
@@ -91,7 +91,7 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
             throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");
         }
 
-        OffsetDateTime now = OffsetDateTime.now();
+        Instant now = Instant.now();
 
         // Khởi tạo Set để chống trùng lặp dữ liệu nội bộ
         Set<String> uniqueCodes = new HashSet<>();

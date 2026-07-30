@@ -1,10 +1,12 @@
 package com.sep.vox.application.port.input.usecase.subscription;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.LocalDate;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.RenewSubscriptionCommand;
@@ -65,11 +67,11 @@ public class RenewSubscriptionUseCase implements IUseCase<RenewSubscriptionComma
         var plan = subscriptionPlanRepository.findById(current.getPlanId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         current.setStatus(SubscriptionStatus.EXPIRED);
         schoolSubscriptionRepository.save(current);
 
-        var startDate = now.toLocalDate();
+        var startDate = LocalDate.ofInstant(now, DateMapper.DEFAULT_INPUT_ZONE);
         var renewed = new SchoolSubscription(
             input.schoolId(),
             plan.getId(),

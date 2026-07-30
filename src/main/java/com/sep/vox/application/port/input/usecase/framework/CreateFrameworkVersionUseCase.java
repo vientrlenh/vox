@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -42,7 +42,7 @@ public class CreateFrameworkVersionUseCase implements IUseCase<CreateFrameworkVe
         if (command.effectiveTo() != null && command.effectiveTo().isBefore(command.effectiveFrom())) {
             throw new IllegalArgumentException("Ngày hết hiệu lực phải sau ngày hiệu lực");
         }
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         frameworkRepository.findById(command.frameworkId())

@@ -1,6 +1,6 @@
 package com.sep.vox.interfaces.kafka.consumer;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.UUID;
 
@@ -128,13 +128,13 @@ public class AnswerTurnsRecordedConsumer {
         }
     }
 
-    private OffsetDateTime parseAnsweredAt(String value) {
+    private Instant parseAnsweredAt(String value) {
         if (value == null || value.isBlank()) {
             return null;
         }
 
         try {
-            return OffsetDateTime.parse(value.trim());
+            return Instant.parse(value.trim());
         } catch (DateTimeParseException ex) {
             throw new IllegalArgumentException("answeredAt không đúng định dạng ISO-8601");
         }

@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.worker;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +34,7 @@ public class DeferredExamSessionGradingJob {
 
     @Scheduled(fixedDelay = 60000)
     public void run() {
-        for (var session : examSessionRepository.findDeferredGradingCandidates(OffsetDateTime.now())) {
+        for (var session : examSessionRepository.findDeferredGradingCandidates(Instant.now())) {
             try {
                 var current = session;
                 if (current.getStatus() == ExamSessionStatus.IN_PROGRESS || current.getStatus() == ExamSessionStatus.INTERRUPTED) {

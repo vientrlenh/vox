@@ -1,7 +1,8 @@
 package com.sep.vox.infrastructure.security;
 
 import java.nio.charset.StandardCharsets;
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -25,7 +26,7 @@ public class JwtStreamTokenProvider implements StreamTokenProvider {
 
     @Override
     public String generateStreamToken(String userId, String candidateId, String scheduleId, String examId, String sessionId,
-            List<String> streamTypes, OffsetDateTime windowStart, OffsetDateTime windowEnd) {
+            List<String> streamTypes, Instant windowStart, Instant windowEnd) {
         var claims = new HashMap<String, Object>();
         claims.put("candidateId", candidateId);
         claims.put("scheduleId", scheduleId);
@@ -38,20 +39,20 @@ public class JwtStreamTokenProvider implements StreamTokenProvider {
                 .claims(claims)
                 .subject(userId)
                 .issuedAt(new Date())
-                .notBefore(Date.from(windowStart.toInstant()))
-                .expiration(Date.from(windowEnd.toInstant()))
+                .notBefore(Date.from(windowStart))
+                .expiration(Date.from(windowEnd))
                 .signWith(getSecretKey(secret))
                 .compact();
     }
 
-    public String generateMonitorToken(String userId, String schoolId, String examId, String monitorScope, List<String> scheduleIds, List<String> roles, OffsetDateTime windowStart, OffsetDateTime windowEnd) {
+    public String generateMonitorToken(String userId, String schoolId, String examId, String monitorScope, List<String> scheduleIds, List<String> roles, Instant windowStart, Instant windowEnd) {
 
         // Hạn của ca thi, tách khỏi expiresAt của token
         // Giúp trả lời "bao lâu thì dữ liệu đã ghi vẫn còn đẩy lên được service streaming"
         // Dùng để đặt hạn upload credentials. Giúp nới thời gian cứu dữ liệu upload record
-        var scheduleEndAt = windowEnd.toInstant().getEpochSecond();
+        var scheduleEndAt = windowEnd.getEpochSecond();
 
-        var tokenExpiry = windowEnd.isBefore(OffsetDateTime.now().plusMinutes(15)) ? windowEnd : OffsetDateTime.now().plusMinutes(15);
+        var tokenExpiry = windowEnd.isBefore(Instant.now().plus(15, ChronoUnit.MINUTES)) ? windowEnd : Instant.now().plus(15, ChronoUnit.MINUTES);
         var claims = new HashMap<String, Object>();
         claims.put("userId", userId);
         claims.put("schoolId", schoolId);
@@ -66,8 +67,8 @@ public class JwtStreamTokenProvider implements StreamTokenProvider {
             .subject(userId)
             .id(UUID.randomUUID().toString())
             .issuedAt(new Date())
-            .notBefore(Date.from(windowStart.toInstant()))
-            .expiration(Date.from(tokenExpiry.toInstant()))
+            .notBefore(Date.from(windowStart))
+            .expiration(Date.from(tokenExpiry))
             .signWith(getSecretKey(secret))
             .compact();
     }

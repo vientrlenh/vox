@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.question;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -105,8 +106,8 @@ public class PreviewQuestionImportFromFileUseCase
         }
 
         var parsed = fileProcessingPort.parse(input.file(), ImportType.QUESTION);
-        var now = OffsetDateTime.now();
-        var expiresAt = now.plusDays(SESSION_EXPIRY_DAYS);
+        var now = Instant.now();
+        var expiresAt = now.plus(SESSION_EXPIRY_DAYS, ChronoUnit.DAYS);
         var savedSession = importSessionRepository.save(new ImportSession(
             questionBank.getOwnerType() == QuestionBankOwnerType.SCHOOL ? questionBank.getSchoolId() : null,
             ImportType.QUESTION,

@@ -6,7 +6,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -116,7 +116,7 @@ class ViewSchoolGradeLevelDetailsUseCaseTests {
     }
 
     private SchoolGradeLevel newGradeLevel(UUID ownerSchoolId) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         return new SchoolGradeLevel(
             gradeLevelId, ownerSchoolId, "K1", "Khối 1", "desc", 1,
             SchoolGradeLevelStatus.ACTIVE, now, now, UUID.randomUUID(), UUID.randomUUID()

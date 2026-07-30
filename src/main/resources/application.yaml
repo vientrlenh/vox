@@ -192,6 +192,8 @@ server:
   forward-headers-strategy: framework
 
 app:
+  data-initializer: 
+    enabled: ${DATA_INITIALIZER:true}
   frontend:
     password-setup-url: ${PASSWORD_SETUP_URL}
     oauth2-url: ${OAUTH2_URL}

@@ -1,6 +1,6 @@
 package com.sep.vox.domain.model.exam;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -16,14 +16,14 @@ public class ExamGradingAssignment {
     private UUID candidateResultId;
     private UUID teacherId;
     private GradingAssignmentStatus status;
-    private OffsetDateTime assignedAt;
+    private Instant assignedAt;
     private UUID assignedBy;
-    private OffsetDateTime completedAt;
+    private Instant completedAt;
 
     public ExamGradingAssignment() {}
 
     public ExamGradingAssignment(UUID id, UUID candidateResultId, UUID teacherId, GradingAssignmentStatus status,
-            OffsetDateTime assignedAt, UUID assignedBy, OffsetDateTime completedAt) {
+            Instant assignedAt, UUID assignedBy, Instant completedAt) {
         this.id = id;
         this.candidateResultId = candidateResultId;
         this.teacherId = teacherId;
@@ -34,7 +34,7 @@ public class ExamGradingAssignment {
     }
 
     public ExamGradingAssignment(UUID candidateResultId, UUID teacherId, GradingAssignmentStatus status,
-            OffsetDateTime assignedAt, UUID assignedBy, OffsetDateTime completedAt) {
+            Instant assignedAt, UUID assignedBy, Instant completedAt) {
         this.candidateResultId = candidateResultId;
         this.teacherId = teacherId;
         this.status = status;
@@ -80,11 +80,11 @@ public class ExamGradingAssignment {
         this.status = status;
     }
 
-    public OffsetDateTime getAssignedAt() {
+    public Instant getAssignedAt() {
         return assignedAt;
     }
 
-    public void setAssignedAt(OffsetDateTime assignedAt) {
+    public void setAssignedAt(Instant assignedAt) {
         this.assignedAt = assignedAt;
     }
 
@@ -96,11 +96,11 @@ public class ExamGradingAssignment {
         this.assignedBy = assignedBy;
     }
 
-    public OffsetDateTime getCompletedAt() {
+    public Instant getCompletedAt() {
         return completedAt;
     }
 
-    public void setCompletedAt(OffsetDateTime completedAt) {
+    public void setCompletedAt(Instant completedAt) {
         this.completedAt = completedAt;
     }
 }

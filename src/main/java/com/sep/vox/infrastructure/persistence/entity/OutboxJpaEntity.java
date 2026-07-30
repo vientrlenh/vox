@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -56,13 +56,13 @@ public class OutboxJpaEntity {
     private int retryCount;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "published_at")
-    private OffsetDateTime publishedAt;
+    private Instant publishedAt;
 
     @Column(name = "next_retry_at")
-    private OffsetDateTime nextRetryAt;
+    private Instant nextRetryAt;
 
     @Column(name = "last_error", columnDefinition = "TEXT")
     private String lastError;
@@ -70,8 +70,8 @@ public class OutboxJpaEntity {
     protected OutboxJpaEntity() {}
 
     public OutboxJpaEntity(UUID id, String aggregateType, UUID aggregateId, String eventType, String payload,
-            String status, int retryCount, OffsetDateTime createdAt, OffsetDateTime publishedAt,
-            OffsetDateTime nextRetryAt, String lastError) {
+            String status, int retryCount, Instant createdAt, Instant publishedAt,
+            Instant nextRetryAt, String lastError) {
         this.id = id;
         this.aggregateType = aggregateType;
         this.aggregateId = aggregateId;
@@ -141,27 +141,27 @@ public class OutboxJpaEntity {
         this.retryCount = retryCount;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getPublishedAt() {
+    public Instant getPublishedAt() {
         return publishedAt;
     }
 
-    public void setPublishedAt(OffsetDateTime publishedAt) {
+    public void setPublishedAt(Instant publishedAt) {
         this.publishedAt = publishedAt;
     }
 
-    public OffsetDateTime getNextRetryAt() {
+    public Instant getNextRetryAt() {
         return nextRetryAt;
     }
 
-    public void setNextRetryAt(OffsetDateTime nextRetryAt) {
+    public void setNextRetryAt(Instant nextRetryAt) {
         this.nextRetryAt = nextRetryAt;
     }
 

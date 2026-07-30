@@ -1,6 +1,6 @@
 package com.sep.vox.domain.model.framework;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class FrameworkCriterion {
@@ -10,15 +10,15 @@ public class FrameworkCriterion {
     private String name;
     private String description;
     private int order;
-    private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
     private UUID createdBy;
     private UUID updatedBy;
 
     public FrameworkCriterion() {}
 
     public FrameworkCriterion(UUID id, UUID frameworkVersionId, String code, String name, String description, int order, 
-            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.frameworkVersionId = frameworkVersionId;
         this.code = code;
@@ -32,7 +32,7 @@ public class FrameworkCriterion {
     }
 
     public FrameworkCriterion(UUID frameworkVersionId, String code, String name, String description, int order, 
-            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.frameworkVersionId = frameworkVersionId;
         this.code = code;
         this.name = name;
@@ -84,19 +84,19 @@ public class FrameworkCriterion {
         this.description = description;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 

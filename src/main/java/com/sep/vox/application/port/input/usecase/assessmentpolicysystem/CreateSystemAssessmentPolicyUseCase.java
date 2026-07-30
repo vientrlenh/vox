@@ -21,7 +21,7 @@ import com.sep.vox.domain.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -74,7 +74,7 @@ public class CreateSystemAssessmentPolicyUseCase implements IUseCase<List<Create
         User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản đã bị khóa.");
 
-        OffsetDateTime now = OffsetDateTime.now();
+        Instant now = Instant.now();
         List<AssessmentPolicy> policiesToSave = new ArrayList<>();
         Map<VersionScopeKey, Integer> nextVersionByScope = new HashMap<>();
 

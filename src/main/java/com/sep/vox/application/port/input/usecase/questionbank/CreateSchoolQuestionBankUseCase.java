@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.questionbank;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,7 +39,7 @@ public class CreateSchoolQuestionBankUseCase implements IUseCase<CreateSchoolQue
         var schoolUser = schoolUserRepository.findByUserId(currentUserId)
             .orElseThrow(() -> new ForbiddenException("Quyền truy cập không hợp lệ"));
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var questionBank = QuestionBank.create(
             command.languageId(), 
             schoolUser.getSchoolId(), 

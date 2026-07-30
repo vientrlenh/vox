@@ -10,7 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -161,7 +161,7 @@ class ViewSchoolGradeLevelsUseCaseTests {
     }
 
     private SchoolGradeLevel newGradeLevel(String code, String name, int order, SchoolGradeLevelStatus status) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         return new SchoolGradeLevel(
             UUID.randomUUID(), schoolId, code, name, "desc", order, status, now, now,
             UUID.randomUUID(), UUID.randomUUID()

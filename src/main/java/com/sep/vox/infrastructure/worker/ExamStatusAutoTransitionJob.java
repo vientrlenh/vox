@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.worker;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +38,7 @@ public class ExamStatusAutoTransitionJob {
 
     @Scheduled(fixedDelay = 60000)
     public void run() {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
 
         for (var exam : examRepository.findByStatusAndOpenAtBefore(ExamStatus.SCHEDULED, now)) {
             if (exam.getKind() != ExamKind.CLASS_TEST) {

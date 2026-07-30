@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -107,7 +107,7 @@ public class SchoolRepositoryImpl implements SchoolRepository {
     @Override
     public int updateSchoolAtomic(UUID id, String name, String description, String phone,
                                   String email, String domain, String address, Integer studentCount,
-                                  OffsetDateTime now, UUID updatedBy) {
+                                  Instant now, UUID updatedBy) {
         return springDataSchoolRepository.updateSchoolAtomic(
                 id, name, description, phone, email, domain, address, studentCount, now, updatedBy
         );

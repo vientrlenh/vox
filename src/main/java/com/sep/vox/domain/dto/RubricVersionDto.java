@@ -1,7 +1,7 @@
 package com.sep.vox.domain.dto;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public record RubricVersionDto(
@@ -12,8 +12,8 @@ public record RubricVersionDto(
         String name,
         String description,
         String status,
-        OffsetDateTime effectiveFrom,
-        OffsetDateTime effectiveTo,
+        Instant effectiveFrom,
+        Instant effectiveTo,
         BigDecimal scoringScaleMin,
         BigDecimal scoringScaleMax,
         String totalScoreMethod

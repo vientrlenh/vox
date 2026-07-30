@@ -12,7 +12,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -120,7 +120,7 @@ public class PreviewGradingUseCaseTests {
 
     private GradingContext context() {
         var assignment = new ExamGradingAssignment(assignmentId, candidateResultId, teacherId,
-            GradingAssignmentStatus.ASSIGNED, OffsetDateTime.now(), null, null);
+            GradingAssignmentStatus.ASSIGNED, Instant.now(), null, null);
 
         var candidateResult = new ExamCandidateResult();
         candidateResult.setId(candidateResultId);

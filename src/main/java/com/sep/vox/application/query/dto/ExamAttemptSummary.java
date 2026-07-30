@@ -1,7 +1,7 @@
 package com.sep.vox.application.query.dto;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import com.sep.vox.domain.model.exam.ExamCandidateStatus;
@@ -13,8 +13,8 @@ public record ExamAttemptSummary(
     UUID examId,
     ExamCandidateStatus candidateStatus,
     UUID sessionId,
-    OffsetDateTime startedAt,
-    OffsetDateTime submittedAt,
+    Instant startedAt,
+    Instant submittedAt,
     ExamSessionStatus status,
     boolean flagged,
     String flagReason,
@@ -35,8 +35,8 @@ public record ExamAttemptSummary(
             UUID examId,
             String candidateStatus,
             UUID sessionId,
-            OffsetDateTime startedAt,
-            OffsetDateTime submittedAt,
+            Instant startedAt,
+            Instant submittedAt,
             String status,
             Boolean flagged,
             String flagReason,

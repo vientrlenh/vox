@@ -2,7 +2,7 @@ package com.sep.vox.infrastructure.persistence.query;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -79,14 +79,14 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
         var countsByAppeal = reviewerCountsByAppealIds(appealIds);
         var classNamesByAppeal = classNamesByAppealIds(appealIds);
         var partLabelsByAppeal = partLabelsByAppealIds(appealIds);
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
 
         var content = new ArrayList<AppealSummaryInfo>();
         for (var row : rows) {
             var appealId = row.get(0, UUID.class);
             var counts = countsByAppeal.getOrDefault(appealId, new int[] { 0, 0 });
             var status0 = row.get(4, String.class);
-            var deadline = row.get(6, OffsetDateTime.class);
+            var deadline = row.get(6, Instant.class);
             content.add(new AppealSummaryInfo(
                 appealId,
                 row.get(1, String.class),
@@ -95,7 +95,7 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
                 partLabelsByAppeal.getOrDefault(appealId, List.of()),
                 row.get(3, BigDecimal.class),
                 status0,
-                row.get(5, OffsetDateTime.class),
+                row.get(5, Instant.class),
                 deadline,
                 counts[0],
                 counts[1],
@@ -262,7 +262,7 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
         }
         var row = rows.get(0);
         var status = row.get(4, String.class);
-        var deadline = row.get(6, OffsetDateTime.class);
+        var deadline = row.get(6, Instant.class);
 
         return Optional.of(new AppealDetailInfo(
             row.get(0, UUID.class),
@@ -271,17 +271,17 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
             row.get(2, String.class),
             row.get(3, BigDecimal.class),
             status,
-            row.get(5, OffsetDateTime.class),
+            row.get(5, Instant.class),
             deadline,
             row.get(7, String.class),
             row.get(8, String.class),
             row.get(9, String.class),
             row.get(10, BigDecimal.class),
-            row.get(11, OffsetDateTime.class),
-            row.get(12, OffsetDateTime.class),
+            row.get(11, Instant.class),
+            row.get(12, Instant.class),
             appealItems(appealId),
             reviewers(appealId, true),
-            isOverdue(deadline, status, OffsetDateTime.now()),
+            isOverdue(deadline, status, Instant.now()),
             row.get(13, BigDecimal.class),
             row.get(14, BigDecimal.class)
         ));
@@ -468,8 +468,8 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
                 row.get(2, String.class),
                 status,
                 ExamAppealReviewerStatus.SUBMITTED.name().equals(status),
-                row.get(4, OffsetDateTime.class),
-                row.get(5, OffsetDateTime.class),
+                row.get(4, Instant.class),
+                row.get(5, Instant.class),
                 averageSuggestedScore(items),
                 items
             ));
@@ -557,11 +557,11 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
 
         var partLabelsByAppeal = partLabelsByAppealIds(
             rows.stream().map(row -> row.get(0, UUID.class)).toList());
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var content = new ArrayList<AppealTaskInfo>();
         for (var row : rows) {
             var appealId = row.get(0, UUID.class);
-            var deadline = row.get(2, OffsetDateTime.class);
+            var deadline = row.get(2, Instant.class);
             var myStatus = row.get(3, String.class);
             var overdue = deadline != null && deadline.isBefore(now)
                 && ExamAppealReviewerStatus.ASSIGNED.name().equals(myStatus);
@@ -690,7 +690,7 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
         return map;
     }
 
-    private boolean isOverdue(OffsetDateTime deadline, String status, OffsetDateTime now) {
+    private boolean isOverdue(Instant deadline, String status, Instant now) {
         return deadline != null && deadline.isBefore(now) && IN_PROGRESS_STATUSES.contains(status);
     }
 }

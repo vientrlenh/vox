@@ -19,7 +19,7 @@ import com.sep.vox.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 @Service
@@ -87,7 +87,7 @@ public class AcceptSystemRubricResultBandImportUseCase implements IUseCase<Accep
         // Bước 4: Chuyển trạng thái sang hàng chờ xử lý ngầm (QUEUED)
         session.setStatus(ImportSessionStatus.QUEUED);
         session.setAttempts(0); // Reset số lần nạp lại lỗi về 0 để worker bốc việc chạy ngay
-        session.setUpdatedAt(OffsetDateTime.now());
+        session.setUpdatedAt(Instant.now());
         session.setUpdatedBy(currentUserId);
 
         importSessionRepository.save(session);

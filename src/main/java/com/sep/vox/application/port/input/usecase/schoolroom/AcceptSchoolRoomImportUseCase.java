@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.schoolroom;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -59,7 +59,7 @@ public class AcceptSchoolRoomImportUseCase implements IUseCase<AcceptSchoolRoomI
     public Void execute(AcceptSchoolRoomImportCommand input) {
         validateCommand(input);
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         var currentUser = findCurrentUser(currentUserId);
         var schoolId = getSchoolId(currentUser);
@@ -116,7 +116,7 @@ public class AcceptSchoolRoomImportUseCase implements IUseCase<AcceptSchoolRoomI
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên import"));
     }
 
-    private void validateSession(ImportSession session, UUID schoolId, OffsetDateTime now) {
+    private void validateSession(ImportSession session, UUID schoolId, Instant now) {
         if (session.getType() != ImportType.SCHOOL_ROOM) {
             throw new IllegalArgumentException("Phiên import không phải là import phòng học");
         }

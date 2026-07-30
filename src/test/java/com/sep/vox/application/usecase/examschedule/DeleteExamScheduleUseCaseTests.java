@@ -8,7 +8,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -102,8 +102,8 @@ class DeleteExamScheduleUseCaseTests {
         schedule.setId(scheduleId);
         schedule.setExamId(examId);
         schedule.setSchoolRoomId(UUID.randomUUID());
-        schedule.setStartDate(OffsetDateTime.parse("2026-07-10T08:00:00+07:00"));
-        schedule.setEndDate(OffsetDateTime.parse("2026-07-10T10:00:00+07:00"));
+        schedule.setStartDate(Instant.parse("2026-07-10T08:00:00+07:00"));
+        schedule.setEndDate(Instant.parse("2026-07-10T10:00:00+07:00"));
         schedule.setStatus(ExamScheduleStatus.DRAFT);
         return schedule;
     }

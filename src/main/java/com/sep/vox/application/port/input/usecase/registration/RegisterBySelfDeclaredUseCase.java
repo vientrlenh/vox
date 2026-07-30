@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.registration;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -69,7 +69,7 @@ public class RegisterBySelfDeclaredUseCase implements IUseCase<RegisterBySelfDec
             throw new IllegalArgumentException("Cần gửi tài liệu để xác thực");
         }
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var registerForm = RegisterForm.selfDeclared(
             command.schoolName(), 
             command.schoolDomain(), 

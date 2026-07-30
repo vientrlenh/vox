@@ -9,7 +9,7 @@ import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolGradeLe
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository; // Quan trọng: Phải có dòng này
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
@@ -106,7 +106,7 @@ public class SchoolGradeLevelRepositoryImpl implements SchoolGradeLevelRepositor
 
     @Override
     public int updateSchoolGradeLevelAtomic(UUID id, String name, String description, Integer order,
-            OffsetDateTime updatedAt, UUID updatedBy) {
+            Instant updatedAt, UUID updatedBy) {
         return schoolGradeLevelRepository.updateSchoolGradeLevelAtomic(id, name, description, order, updatedAt, updatedBy);
     }
 

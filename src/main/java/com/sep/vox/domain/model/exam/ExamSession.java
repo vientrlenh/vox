@@ -1,6 +1,6 @@
 package com.sep.vox.domain.model.exam;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class ExamSession {
@@ -8,8 +8,8 @@ public class ExamSession {
     private UUID examId;
     private UUID candidateId;
     private UUID paperId;
-    private OffsetDateTime startedAt;
-    private OffsetDateTime submittedAt;
+    private Instant startedAt;
+    private Instant submittedAt;
     private ExamSessionStatus status;
     private boolean flagged;
     private String flagReason;
@@ -43,8 +43,8 @@ public class ExamSession {
 
     public ExamSession() {}
 
-    public ExamSession(UUID id, UUID examId, UUID candidateId, UUID paperId, OffsetDateTime startedAt,
-            OffsetDateTime submittedAt, ExamSessionStatus status, boolean flagged, String flagReason) {
+    public ExamSession(UUID id, UUID examId, UUID candidateId, UUID paperId, Instant startedAt,
+            Instant submittedAt, ExamSessionStatus status, boolean flagged, String flagReason) {
         this.id = id;
         this.examId = examId;
         this.candidateId = candidateId;
@@ -56,8 +56,8 @@ public class ExamSession {
         this.flagReason = flagReason;
     }
 
-    public ExamSession(UUID examId, UUID candidateId, UUID paperId, OffsetDateTime startedAt,
-            OffsetDateTime submittedAt, ExamSessionStatus status, boolean flagged, String flagReason) {
+    public ExamSession(UUID examId, UUID candidateId, UUID paperId, Instant startedAt,
+            Instant submittedAt, ExamSessionStatus status, boolean flagged, String flagReason) {
         this.examId = examId;
         this.candidateId = candidateId;
         this.paperId = paperId;
@@ -100,19 +100,19 @@ public class ExamSession {
         this.paperId = paperId;
     }
 
-    public OffsetDateTime getStartedAt() {
+    public Instant getStartedAt() {
         return startedAt;
     }
 
-    public void setStartedAt(OffsetDateTime startedAt) {
+    public void setStartedAt(Instant startedAt) {
         this.startedAt = startedAt;
     }
 
-    public OffsetDateTime getSubmittedAt() {
+    public Instant getSubmittedAt() {
         return submittedAt;
     }
 
-    public void setSubmittedAt(OffsetDateTime submittedAt) {
+    public void setSubmittedAt(Instant submittedAt) {
         this.submittedAt = submittedAt;
     }
 

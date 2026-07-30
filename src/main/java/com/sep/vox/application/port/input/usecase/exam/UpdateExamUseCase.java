@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -76,10 +76,10 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
             exam.setDescription(command.description());
         }
         if (command.openAt() != null) {
-            exam.setOpenAt(OffsetDateTime.parse(command.openAt()));
+            exam.setOpenAt(Instant.parse(command.openAt()));
         }
         if (command.closeAt() != null) {
-            exam.setCloseAt(OffsetDateTime.parse(command.closeAt()));
+            exam.setCloseAt(Instant.parse(command.closeAt()));
         }
         if (command.assessmentPolicyId() != null) {
             exam.setAssessmentPolicyId(command.assessmentPolicyId());
@@ -101,7 +101,7 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
         } else {
             validateOpenClose(exam.getOpenAt(), exam.getCloseAt());
         }
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         if (exam.getKind() == ExamKind.CLASS_TEST && (command.openAt() != null || command.closeAt() != null)) {
             syncClassTestDraftSchedules(exam, currentUserId, now);
         }
@@ -110,7 +110,7 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
         return ExamDtoMapper.toDto(examRepository.save(exam));
     }
 
-    private void syncClassTestDraftSchedules(com.sep.vox.domain.model.exam.Exam exam, java.util.UUID currentUserId, OffsetDateTime now) {
+    private void syncClassTestDraftSchedules(com.sep.vox.domain.model.exam.Exam exam, java.util.UUID currentUserId, Instant now) {
         for (var schedule : examScheduleRepository.findByExamId(exam.getId())) {
             if (schedule.getStatus() == ExamScheduleStatus.DRAFT || schedule.getStatus() == ExamScheduleStatus.PUBLISHED) {
                 schedule.setStartDate(exam.getOpenAt());
@@ -158,7 +158,7 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
         }
     }
 
-    private void validateOpenClose(OffsetDateTime openAt, OffsetDateTime closeAt) {
+    private void validateOpenClose(Instant openAt, Instant closeAt) {
         if (openAt == null || closeAt == null) {
             return;
         }
@@ -167,7 +167,7 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
         }
     }
 
-    private void requireClassTestScheduleWindow(OffsetDateTime openAt, OffsetDateTime closeAt) {
+    private void requireClassTestScheduleWindow(Instant openAt, Instant closeAt) {
         if (openAt == null || closeAt == null) {
             throw new IllegalStateException("Bài kiểm tra trên lớp phải có thời gian mở bài và đóng bài");
         }

@@ -10,7 +10,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -66,7 +67,7 @@ class UpdateSchoolClassUserStatusUseCaseTests {
         var targetUserId = UUID.randomUUID();
         var schoolId = UUID.randomUUID();
         var classId = UUID.randomUUID();
-        var membership = membership(targetUserId, classId, false, OffsetDateTime.now().minusDays(1), currentUserId);
+        var membership = membership(targetUserId, classId, false, Instant.now().minus(1, ChronoUnit.DAYS), currentUserId);
         mockValidContext(currentUserId, schoolId, classId, targetUserId);
         when(schoolClassUserRepository.findByUserIdAndSchoolClassId(targetUserId, classId)).thenReturn(Optional.of(membership));
 
@@ -104,7 +105,7 @@ class UpdateSchoolClassUserStatusUseCaseTests {
         var targetUserId = UUID.randomUUID();
         var schoolId = UUID.randomUUID();
         var classId = UUID.randomUUID();
-        var leftAt = OffsetDateTime.now().minusDays(1);
+        var leftAt = Instant.now().minus(1, ChronoUnit.DAYS);
         var membership = membership(targetUserId, classId, false, leftAt, currentUserId);
         mockValidContext(currentUserId, schoolId, classId, targetUserId);
         when(schoolClassUserRepository.findByUserIdAndSchoolClassId(targetUserId, classId)).thenReturn(Optional.of(membership));
@@ -139,8 +140,8 @@ class UpdateSchoolClassUserStatusUseCaseTests {
         when(userRepository.findById(targetUserId)).thenReturn(Optional.of(activeUser(targetUserId, schoolId)));
     }
 
-    private static SchoolClassUser membership(UUID userId, UUID classId, boolean isActive, OffsetDateTime leftAt, UUID assignedBy) {
-        var membership = new SchoolClassUser(userId, classId, isActive, OffsetDateTime.now().minusDays(2), leftAt, assignedBy);
+    private static SchoolClassUser membership(UUID userId, UUID classId, boolean isActive, Instant leftAt, UUID assignedBy) {
+        var membership = new SchoolClassUser(userId, classId, isActive, Instant.now().minus(2, ChronoUnit.DAYS), leftAt, assignedBy);
         membership.setId(UUID.randomUUID());
         return membership;
     }

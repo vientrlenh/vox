@@ -15,8 +15,8 @@ public class UpdateAssessmentPolicyGraphQLMapper {
                 input.targetFrameworkBandId(),
                 input.passingScore(),
                 input.strictness(),
-                DateMapper.toOffsetDateTime(input.effectiveFrom()),
-                DateMapper.toOffsetDateTime(input.effectiveTo())
+                DateMapper.toInstant(input.effectiveFrom()),
+                DateMapper.toInstant(input.effectiveTo())
         );
     }
 
@@ -27,8 +27,8 @@ public class UpdateAssessmentPolicyGraphQLMapper {
                 input.targetFrameworkBandId(),
                 input.passingScore(),
                 input.strictness(),
-                DateMapper.toOffsetDateTime(input.effectiveFrom()),
-                DateMapper.toOffsetDateTime(input.effectiveTo())
+                DateMapper.toInstant(input.effectiveFrom()),
+                DateMapper.toInstant(input.effectiveTo())
         );
     }
 }

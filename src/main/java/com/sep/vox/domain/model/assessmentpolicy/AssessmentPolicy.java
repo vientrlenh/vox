@@ -1,7 +1,7 @@
 package com.sep.vox.domain.model.assessmentpolicy;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 
@@ -19,10 +19,10 @@ public class AssessmentPolicy {
     private AssessmentPolicyStrictness strictness;
     private int version;
     private AssessmentPolicyStatus status;
-    private OffsetDateTime effectiveFrom;
-    private OffsetDateTime effectiveTo;
-    private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
+    private Instant effectiveFrom;
+    private Instant effectiveTo;
+    private Instant createdAt;
+    private Instant updatedAt;
     private UUID createdBy;
     private UUID updatedBy;
 
@@ -31,8 +31,8 @@ public class AssessmentPolicy {
     public AssessmentPolicy(UUID id, UUID schoolId, UUID schoolGradeLevelId, UUID schoolGradeId, UUID schoolClassId,
             UUID languageId, UUID frameworkVersionId, UUID rubricVersionId, UUID targetFrameworkBandId,
             BigDecimal passingScore, AssessmentPolicyStrictness strictness, int version,
-            AssessmentPolicyStatus status, OffsetDateTime effectiveFrom, OffsetDateTime effectiveTo,
-            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            AssessmentPolicyStatus status, Instant effectiveFrom, Instant effectiveTo,
+            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.schoolId = schoolId;
         this.schoolGradeLevelId = schoolGradeLevelId;
@@ -57,8 +57,8 @@ public class AssessmentPolicy {
     public AssessmentPolicy(UUID schoolId, UUID schoolGradeLevelId, UUID schoolGradeId, UUID schoolClassId,
             UUID languageId, UUID frameworkVersionId, UUID rubricVersionId, UUID targetFrameworkBandId,
             BigDecimal passingScore, AssessmentPolicyStrictness strictness, int version,
-            AssessmentPolicyStatus status, OffsetDateTime effectiveFrom, OffsetDateTime effectiveTo,
-            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            AssessmentPolicyStatus status, Instant effectiveFrom, Instant effectiveTo,
+            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.schoolId = schoolId;
         this.schoolGradeLevelId = schoolGradeLevelId;
         this.schoolGradeId = schoolGradeId;
@@ -183,35 +183,35 @@ public class AssessmentPolicy {
         this.status = status;
     }
 
-    public OffsetDateTime getEffectiveFrom() {
+    public Instant getEffectiveFrom() {
         return effectiveFrom;
     }
 
-    public void setEffectiveFrom(OffsetDateTime effectiveFrom) {
+    public void setEffectiveFrom(Instant effectiveFrom) {
         this.effectiveFrom = effectiveFrom;
     }
 
-    public OffsetDateTime getEffectiveTo() {
+    public Instant getEffectiveTo() {
         return effectiveTo;
     }
 
-    public void setEffectiveTo(OffsetDateTime effectiveTo) {
+    public void setEffectiveTo(Instant effectiveTo) {
         this.effectiveTo = effectiveTo;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 
@@ -236,7 +236,7 @@ public class AssessmentPolicy {
     }
 
     // có dùng được cho exam không
-    public boolean isSelectableAt(OffsetDateTime examOpenAt) {
+    public boolean isSelectableAt(Instant examOpenAt) {
         return isPublished() && !effectiveFrom.isAfter(examOpenAt) && (effectiveTo == null || !effectiveTo.isBefore(examOpenAt));
     }
 

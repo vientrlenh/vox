@@ -5,7 +5,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -35,7 +36,7 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
 
     private UUID frameworkId = UUID.randomUUID();
     private UUID versionId = UUID.randomUUID();
-    private OffsetDateTime now = OffsetDateTime.now();
+    private Instant now = Instant.now();
 
     @BeforeEach
     void setUp() {
@@ -62,7 +63,7 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
         version.setId(versionId);
         version.setFrameworkId(frameworkId);
         version.setEffectiveFrom(now);
-        version.setEffectiveTo(now.plusDays(30));
+        version.setEffectiveTo(now.plus(30, ChronoUnit.DAYS));
         version.setStatus(FrameworkVersionStatus.DRAFT);
 
         when(frameworkRepository.findFrameworkByIdForUpdate(frameworkId)).thenReturn(Optional.of(framework));
@@ -92,7 +93,7 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
         version.setId(versionId);
         version.setFrameworkId(frameworkId);
         version.setEffectiveFrom(now);
-        version.setEffectiveTo(now.plusDays(30));
+        version.setEffectiveTo(now.plus(30, ChronoUnit.DAYS));
         version.setStatus(FrameworkVersionStatus.DRAFT);
 
         when(frameworkRepository.findFrameworkByIdForUpdate(frameworkId)).thenReturn(Optional.of(framework));
@@ -116,7 +117,7 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
         version.setId(versionId);
         version.setFrameworkId(frameworkId);
         version.setEffectiveFrom(now);
-        version.setEffectiveTo(now.plusDays(30));
+        version.setEffectiveTo(now.plus(30, ChronoUnit.DAYS));
         version.setStatus(FrameworkVersionStatus.DRAFT);
 
         when(frameworkRepository.findFrameworkByIdForUpdate(frameworkId)).thenReturn(Optional.of(framework));
@@ -214,14 +215,14 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
         version.setId(versionId);
         version.setFrameworkId(frameworkId);
         version.setEffectiveFrom(now);
-        version.setEffectiveTo(now.plusDays(30));
+        version.setEffectiveTo(now.plus(30, ChronoUnit.DAYS));
         version.setStatus(FrameworkVersionStatus.DRAFT);
 
         var publishedVersion = new FrameworkVersion();
         publishedVersion.setId(UUID.randomUUID());
         publishedVersion.setFrameworkId(frameworkId);
-        publishedVersion.setEffectiveFrom(now.plusDays(15));
-        publishedVersion.setEffectiveTo(now.plusDays(45));
+        publishedVersion.setEffectiveFrom(now.plus(15, ChronoUnit.DAYS));
+        publishedVersion.setEffectiveTo(now.plus(45, ChronoUnit.DAYS));
         publishedVersion.setStatus(FrameworkVersionStatus.PUBLISHED);
 
         when(frameworkRepository.findFrameworkByIdForUpdate(frameworkId)).thenReturn(Optional.of(framework));
@@ -269,14 +270,14 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
         version.setId(versionId);
         version.setFrameworkId(frameworkId);
         version.setEffectiveFrom(now);
-        version.setEffectiveTo(now.plusDays(10));
+        version.setEffectiveTo(now.plus(10, ChronoUnit.DAYS));
         version.setStatus(FrameworkVersionStatus.DRAFT);
 
         var publishedVersion = new FrameworkVersion();
         publishedVersion.setId(UUID.randomUUID());
         publishedVersion.setFrameworkId(frameworkId);
-        publishedVersion.setEffectiveFrom(now.plusDays(20));
-        publishedVersion.setEffectiveTo(now.plusDays(40));
+        publishedVersion.setEffectiveFrom(now.plus(20, ChronoUnit.DAYS));
+        publishedVersion.setEffectiveTo(now.plus(40, ChronoUnit.DAYS));
         publishedVersion.setStatus(FrameworkVersionStatus.PUBLISHED);
 
         when(frameworkRepository.findFrameworkByIdForUpdate(frameworkId)).thenReturn(Optional.of(framework));

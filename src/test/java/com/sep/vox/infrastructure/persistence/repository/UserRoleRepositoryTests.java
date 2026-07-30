@@ -2,7 +2,7 @@ package com.sep.vox.infrastructure.persistence.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -33,7 +33,7 @@ class UserRoleRepositoryTests extends ContainerTestConfig {
         var userId = UUID.randomUUID();
         var roleId = UUID.randomUUID();
 
-        var saved = userRoleRepository.save(new UserRole(userId, roleId, OffsetDateTime.now()));
+        var saved = userRoleRepository.save(new UserRole(userId, roleId, Instant.now()));
 
         assertThat(saved.getUserId()).isEqualTo(userId);
         assertThat(saved.getRoleId()).isEqualTo(roleId);
@@ -44,7 +44,7 @@ class UserRoleRepositoryTests extends ContainerTestConfig {
     void whenFindByUserIdAndRoleId_thenReturnsMatchingUserRole() {
         var userId = UUID.randomUUID();
         var roleId = UUID.randomUUID();
-        userRoleRepository.save(new UserRole(userId, roleId, OffsetDateTime.now()));
+        userRoleRepository.save(new UserRole(userId, roleId, Instant.now()));
 
         var found = userRoleRepository.findByUserIdAndRoleId(userId, roleId);
 
@@ -59,9 +59,9 @@ class UserRoleRepositoryTests extends ContainerTestConfig {
         var otherUserId = UUID.randomUUID();
         var roleId = UUID.randomUUID();
         var anotherRoleId = UUID.randomUUID();
-        userRoleRepository.save(new UserRole(userId, roleId, OffsetDateTime.now()));
-        userRoleRepository.save(new UserRole(userId, anotherRoleId, OffsetDateTime.now()));
-        userRoleRepository.save(new UserRole(otherUserId, UUID.randomUUID(), OffsetDateTime.now()));
+        userRoleRepository.save(new UserRole(userId, roleId, Instant.now()));
+        userRoleRepository.save(new UserRole(userId, anotherRoleId, Instant.now()));
+        userRoleRepository.save(new UserRole(otherUserId, UUID.randomUUID(), Instant.now()));
 
         var found = userRoleRepository.findByUserId(userId);
 
@@ -76,9 +76,9 @@ class UserRoleRepositoryTests extends ContainerTestConfig {
         var roleId = UUID.randomUUID();
         var userId = UUID.randomUUID();
         var anotherUserId = UUID.randomUUID();
-        userRoleRepository.save(new UserRole(userId, roleId, OffsetDateTime.now()));
-        userRoleRepository.save(new UserRole(anotherUserId, roleId, OffsetDateTime.now()));
-        userRoleRepository.save(new UserRole(UUID.randomUUID(), UUID.randomUUID(), OffsetDateTime.now()));
+        userRoleRepository.save(new UserRole(userId, roleId, Instant.now()));
+        userRoleRepository.save(new UserRole(anotherUserId, roleId, Instant.now()));
+        userRoleRepository.save(new UserRole(UUID.randomUUID(), UUID.randomUUID(), Instant.now()));
 
         var found = userRoleRepository.findByRoleId(roleId);
 
@@ -91,7 +91,7 @@ class UserRoleRepositoryTests extends ContainerTestConfig {
     @Test
     void whenExistsByRoleId_thenReturnsTrueOnlyForExistingRole() {
         var roleId = UUID.randomUUID();
-        userRoleRepository.save(new UserRole(UUID.randomUUID(), roleId, OffsetDateTime.now()));
+        userRoleRepository.save(new UserRole(UUID.randomUUID(), roleId, Instant.now()));
 
         assertThat(userRoleRepository.existsByRoleId(roleId)).isTrue();
         assertThat(userRoleRepository.existsByRoleId(UUID.randomUUID())).isFalse();

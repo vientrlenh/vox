@@ -1,19 +1,19 @@
 package com.sep.vox.domain.model.school;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class SchoolUser {
     private UUID id;
     private UUID schoolId;
     private UUID userId; 
-    private OffsetDateTime startDate;
-    private OffsetDateTime endDate;
+    private Instant startDate;
+    private Instant endDate;
 
     
     public SchoolUser() {}
 
-    public SchoolUser(UUID id, UUID schoolId, UUID userId, OffsetDateTime startDate, OffsetDateTime endDate) {
+    public SchoolUser(UUID id, UUID schoolId, UUID userId, Instant startDate, Instant endDate) {
         this.id = id;
         this.schoolId = schoolId;
         this.userId = userId;
@@ -21,7 +21,7 @@ public class SchoolUser {
         this.endDate = endDate;
     }
 
-    public SchoolUser(UUID schoolId, UUID userId, OffsetDateTime startDate, OffsetDateTime endDate) {
+    public SchoolUser(UUID schoolId, UUID userId, Instant startDate, Instant endDate) {
         this.schoolId = schoolId;
         this.userId = userId;
         this.startDate = startDate;
@@ -53,23 +53,23 @@ public class SchoolUser {
         this.userId = userId;
     }
 
-    public OffsetDateTime getStartDate() {
+    public Instant getStartDate() {
         return startDate;
     }
 
-    public void setStartDate(OffsetDateTime startDate) {
+    public void setStartDate(Instant startDate) {
         this.startDate = startDate;
     }
 
-    public OffsetDateTime getEndDate() {
+    public Instant getEndDate() {
         return endDate;
     }
 
-    public void setEndDate(OffsetDateTime endDate) {
+    public void setEndDate(Instant endDate) {
         this.endDate = endDate;
     }
 
-    public static SchoolUser create(UUID userId, UUID schoolId, OffsetDateTime now, OffsetDateTime endDate) {
+    public static SchoolUser create(UUID userId, UUID schoolId, Instant now, Instant endDate) {
         return new SchoolUser(
             schoolId, 
             userId, 

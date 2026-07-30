@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.command;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -15,7 +15,7 @@ public record AddSystemRubricVersionsCommand(
             BigDecimal scoringScaleMin,
             BigDecimal scoringScaleMax,
             String totalScoreMethod,
-            OffsetDateTime effectiveFrom,
-            OffsetDateTime effectiveTo
+            Instant effectiveFrom,
+            Instant effectiveTo
     ) {}
 }

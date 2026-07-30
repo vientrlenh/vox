@@ -15,7 +15,7 @@ import com.sep.vox.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 @Service
@@ -61,7 +61,7 @@ public class AcceptSystemAssessmentPolicyImportUseCase implements IUseCase<Accep
 
         session.setStatus(ImportSessionStatus.QUEUED);
         session.setAttempts(0);
-        session.setUpdatedAt(OffsetDateTime.now());
+        session.setUpdatedAt(Instant.now());
         session.setUpdatedBy(currentUserId);
 
         importSessionRepository.save(session);

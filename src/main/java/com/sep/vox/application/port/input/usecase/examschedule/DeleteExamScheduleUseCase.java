@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examschedule;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -66,7 +66,7 @@ public class DeleteExamScheduleUseCase implements IUseCase<DeleteExamScheduleCom
         }
 
         schedule.setStatus(ExamScheduleStatus.DELETED);
-        schedule.setUpdatedAt(OffsetDateTime.now());
+        schedule.setUpdatedAt(Instant.now());
         schedule.setUpdatedBy(currentUserId);
         examScheduleRepository.save(schedule);
         return schedule.getId();

@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -80,7 +80,7 @@ public class UpdateExamDeliveryModeUseCase implements IUseCase<UpdateExamDeliver
         }
 
         exam.setDeliveryMode(deliveryMode);
-        exam.setUpdatedAt(OffsetDateTime.now());
+        exam.setUpdatedAt(Instant.now());
         exam.setUpdatedBy(currentUserId);
 
         var saved = examRepository.save(exam);

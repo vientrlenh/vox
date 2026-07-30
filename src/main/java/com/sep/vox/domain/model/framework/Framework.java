@@ -1,6 +1,6 @@
 package com.sep.vox.domain.model.framework;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import com.sep.vox.domain.valueobject.FrameworkCode;
@@ -11,14 +11,14 @@ public class Framework {
     private String name;
     private String description;
     private boolean isActive;
-    private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
     private UUID createdBy;
     private UUID updatedBy;
 
     public Framework() {}
 
-    public Framework(UUID id, FrameworkCode code, String name, String description, boolean isActive, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+    public Framework(UUID id, FrameworkCode code, String name, String description, boolean isActive, Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.code = code;
         this.name = name;
@@ -31,7 +31,7 @@ public class Framework {
     }
 
     public Framework(FrameworkCode code, String name, String description, boolean isActive,
-            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.code = code;
         this.name = name;
         this.description = description;
@@ -82,19 +82,19 @@ public class Framework {
         this.isActive = isActive;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 

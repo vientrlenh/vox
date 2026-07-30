@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -47,10 +47,10 @@ public class ExamBlueprintJpaEntity {
     private boolean isActive;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private OffsetDateTime updatedAt;
+    private Instant updatedAt;
 
     @Column(name = "created_by", updatable = false)
     private UUID createdBy;
@@ -61,7 +61,7 @@ public class ExamBlueprintJpaEntity {
     protected ExamBlueprintJpaEntity() {}
 
     public ExamBlueprintJpaEntity(UUID id, UUID schoolId, UUID languageId, UUID schoolGradeLevelId, String code,
-            String name, String description, boolean isActive, OffsetDateTime createdAt, OffsetDateTime updatedAt,
+            String name, String description, boolean isActive, Instant createdAt, Instant updatedAt,
             UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.schoolId = schoolId;
@@ -141,19 +141,19 @@ public class ExamBlueprintJpaEntity {
         this.isActive = isActive;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 

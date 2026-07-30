@@ -2,7 +2,7 @@ package com.sep.vox.infrastructure.event.internal.consumer;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -162,7 +162,7 @@ public class UserCreatedEventConsumer {
 
     private void markProcessed(UUID eventId) {
         try {
-            processedEventRepository.save(new ProcessedEvent(eventId, CONSUMER_GROUP, OffsetDateTime.now()));
+            processedEventRepository.save(new ProcessedEvent(eventId, CONSUMER_GROUP, Instant.now()));
         } catch (DataIntegrityViolationException e) {
             LOGGER.warn("This event was already marked by another instance: eventId={}", eventId);
         }

@@ -1,21 +1,22 @@
 package com.sep.vox.domain.model.refreshtoken;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 public class RefreshToken {
     private UUID id;
     private UUID sessionId;
     private String tokenHash;
-    private OffsetDateTime issuedAt;
-    private OffsetDateTime expiredAt;
-    private OffsetDateTime usedAt;
+    private Instant issuedAt;
+    private Instant expiredAt;
+    private Instant usedAt;
     private UUID replacedBy;
 
     public RefreshToken() {}
 
-    public RefreshToken(UUID id, UUID sessionId, String tokenHash, OffsetDateTime issuedAt, OffsetDateTime expiredAt,
-            OffsetDateTime usedAt, UUID replacedBy) {
+    public RefreshToken(UUID id, UUID sessionId, String tokenHash, Instant issuedAt, Instant expiredAt,
+            Instant usedAt, UUID replacedBy) {
         this.id = id;
         this.sessionId = sessionId;
         this.tokenHash = tokenHash;
@@ -25,8 +26,8 @@ public class RefreshToken {
         this.replacedBy = replacedBy;
     }
 
-    public RefreshToken(UUID sessionId, String tokenHash, OffsetDateTime issuedAt, OffsetDateTime expiredAt,
-            OffsetDateTime usedAt, UUID replacedBy) {
+    public RefreshToken(UUID sessionId, String tokenHash, Instant issuedAt, Instant expiredAt,
+            Instant usedAt, UUID replacedBy) {
         this.sessionId = sessionId;
         this.tokenHash = tokenHash;
         this.issuedAt = issuedAt;
@@ -59,27 +60,27 @@ public class RefreshToken {
         this.tokenHash = tokenHash;
     }
 
-    public OffsetDateTime getIssuedAt() {
+    public Instant getIssuedAt() {
         return issuedAt;
     }
 
-    public void setIssuedAt(OffsetDateTime issuedAt) {
+    public void setIssuedAt(Instant issuedAt) {
         this.issuedAt = issuedAt;
     }
 
-    public OffsetDateTime getExpiredAt() {
+    public Instant getExpiredAt() {
         return expiredAt;
     }
 
-    public void setExpiredAt(OffsetDateTime expiredAt) {
+    public void setExpiredAt(Instant expiredAt) {
         this.expiredAt = expiredAt;
     }
 
-    public OffsetDateTime getUsedAt() {
+    public Instant getUsedAt() {
         return usedAt;
     }
 
-    public void setUsedAt(OffsetDateTime usedAt) {
+    public void setUsedAt(Instant usedAt) {
         this.usedAt = usedAt;
     }
 
@@ -93,12 +94,12 @@ public class RefreshToken {
 
     private static final int DAY_TILL_EXPIRES = 7;
 
-    public static RefreshToken createFresh(UUID sessionId, String tokenHash, OffsetDateTime now) {
+    public static RefreshToken createFresh(UUID sessionId, String tokenHash, Instant now) {
         return new RefreshToken(
             sessionId, 
             tokenHash, 
             now,
-            now.plusDays(DAY_TILL_EXPIRES), 
+            now.plus(DAY_TILL_EXPIRES, ChronoUnit.DAYS), 
             null, 
             null
         );
@@ -108,7 +109,7 @@ public class RefreshToken {
         return this.usedAt != null;
     }
 
-    public boolean isExpired(OffsetDateTime now) {
+    public boolean isExpired(Instant now) {
         return this.expiredAt.isBefore(now);
     }
 }

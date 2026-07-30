@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.schoolgradelevel;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -59,7 +59,7 @@ public class AcceptSchoolGradeLevelImportUseCase implements IUseCase<AcceptSchoo
     public Void execute(AcceptSchoolGradeLevelImportCommand input) {
         validateCommand(input);
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         var currentUser = findCurrentUser(currentUserId);
         var schoolId = getSchoolId(currentUser);
@@ -116,7 +116,7 @@ public class AcceptSchoolGradeLevelImportUseCase implements IUseCase<AcceptSchoo
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên import"));
     }
 
-    private void validateSession(ImportSession session, UUID schoolId, OffsetDateTime now) {
+    private void validateSession(ImportSession session, UUID schoolId, Instant now) {
         if (session.getType() != ImportType.SCHOOL_GRADE_LEVEL) {
             throw new IllegalArgumentException("Phiên import không phải là import khối học");
         }

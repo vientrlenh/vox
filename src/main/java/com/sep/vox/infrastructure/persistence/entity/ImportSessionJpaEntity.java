@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -83,25 +83,25 @@ public class ImportSessionJpaEntity {
     private UUID importedEntityId;
 
     @Column(name = "expires_at", nullable = false) 
-    private OffsetDateTime expiresAt;
+    private Instant expiresAt;
 
     @Column(name = "claimed_at")
-    private OffsetDateTime claimedAt;
+    private Instant claimedAt;
 
     @Column(name = "claimed_by")
     private UUID claimedBy; 
 
     @Column(name = "lease_expires_at")
-    private OffsetDateTime leaseExpiresAt;
+    private Instant leaseExpiresAt;
 
     @Column(name = "attempts", nullable = false)
     private int attempts;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private OffsetDateTime updatedAt;
+    private Instant updatedAt;
 
     @Column(name = "created_by", nullable = false, updatable = false)
     private UUID createdBy;
@@ -114,8 +114,8 @@ public class ImportSessionJpaEntity {
     public ImportSessionJpaEntity(UUID id, UUID schoolId, String type, String fileName, String originalHeadersJson,
             String suggestedMappingJson, String confirmedMappingJson, long validRows, long invalidRows,
             long importedRows, long skippedRows, long totalRows, String failureReason, String status,
-            UUID importedEntityId, OffsetDateTime expiresAt, OffsetDateTime claimedAt, UUID claimedBy,
-            OffsetDateTime leaseExpiresAt, int attempts, OffsetDateTime createdAt, OffsetDateTime updatedAt,
+            UUID importedEntityId, Instant expiresAt, Instant claimedAt, UUID claimedBy,
+            Instant leaseExpiresAt, int attempts, Instant createdAt, Instant updatedAt,
             UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.schoolId = schoolId;
@@ -263,27 +263,27 @@ public class ImportSessionJpaEntity {
         this.importedEntityId = importedEntityId;
     }
 
-    public OffsetDateTime getExpiresAt() {
+    public Instant getExpiresAt() {
         return expiresAt;
     }
 
-    public void setExpiresAt(OffsetDateTime expiresAt) {
+    public void setExpiresAt(Instant expiresAt) {
         this.expiresAt = expiresAt;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 
@@ -303,11 +303,11 @@ public class ImportSessionJpaEntity {
         this.updatedBy = updatedBy;
     }
 
-    public OffsetDateTime getClaimedAt() {
+    public Instant getClaimedAt() {
         return claimedAt;
     }
 
-    public void setClaimedAt(OffsetDateTime claimedAt) {
+    public void setClaimedAt(Instant claimedAt) {
         this.claimedAt = claimedAt;
     }
 
@@ -319,11 +319,11 @@ public class ImportSessionJpaEntity {
         this.claimedBy = claimedBy;
     }
 
-    public OffsetDateTime getLeaseExpiresAt() {
+    public Instant getLeaseExpiresAt() {
         return leaseExpiresAt;
     }
 
-    public void setLeaseExpiresAt(OffsetDateTime leaseExpiresAt) {
+    public void setLeaseExpiresAt(Instant leaseExpiresAt) {
         this.leaseExpiresAt = leaseExpiresAt;
     }
 

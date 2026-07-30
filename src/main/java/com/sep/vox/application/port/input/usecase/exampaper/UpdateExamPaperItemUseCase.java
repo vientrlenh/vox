@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.exampaper;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -142,7 +142,7 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
         if (paper.getStatus() == ExamPaperStatus.APPROVED) {
             paper.setStatus(ExamPaperStatus.IN_REVIEW);
         }
-        paper.setUpdatedAt(OffsetDateTime.now());
+        paper.setUpdatedAt(Instant.now());
         paper.setUpdatedBy(currentUserId);
         examPaperRepository.save(paper);
 

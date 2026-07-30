@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examschedule;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -79,7 +79,7 @@ public class CreateExamScheduleUseCase implements IUseCase<CreateExamScheduleCom
 
         var schedule = ExamSchedule.createFresh(
             exam.getId(), input.schoolRoomId(), input.startDate(), input.endDate(),
-            currentUserId, OffsetDateTime.now());
+            currentUserId, Instant.now());
         return ExamScheduleDtoMapper.toDto(examScheduleRepository.save(schedule));
     }
 

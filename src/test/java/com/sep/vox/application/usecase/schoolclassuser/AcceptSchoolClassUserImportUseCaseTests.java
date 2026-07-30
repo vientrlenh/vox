@@ -7,7 +7,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -207,7 +208,7 @@ class AcceptSchoolClassUserImportUseCaseTests {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(userRepository.findById(currentUserId)).thenReturn(Optional.of(user));
         when(schoolUserRepository.findByUserId(currentUserId))
-            .thenReturn(Optional.of(new SchoolUser(schoolId, currentUserId, OffsetDateTime.now(), null)));
+            .thenReturn(Optional.of(new SchoolUser(schoolId, currentUserId, Instant.now(), null)));
         var school = new School();
         school.setId(schoolId);
         school.setActive(schoolActive);
@@ -223,27 +224,27 @@ class AcceptSchoolClassUserImportUseCaseTests {
     }
 
     private static ImportSession session(UUID id, UUID schoolId) {
-        return buildSession(id, schoolId, ImportType.SCHOOL_CLASS_USER, ImportSessionStatus.PREVIEWED, OffsetDateTime.now().plusDays(1));
+        return buildSession(id, schoolId, ImportType.SCHOOL_CLASS_USER, ImportSessionStatus.PREVIEWED, Instant.now().plus(1, ChronoUnit.DAYS));
     }
 
     private static ImportSession sessionWithType(UUID id, UUID schoolId, ImportType type) {
-        return buildSession(id, schoolId, type, ImportSessionStatus.PREVIEWED, OffsetDateTime.now().plusDays(1));
+        return buildSession(id, schoolId, type, ImportSessionStatus.PREVIEWED, Instant.now().plus(1, ChronoUnit.DAYS));
     }
 
     private static ImportSession sessionWithStatus(UUID id, UUID schoolId, ImportSessionStatus status) {
-        return buildSession(id, schoolId, ImportType.SCHOOL_CLASS_USER, status, OffsetDateTime.now().plusDays(1));
+        return buildSession(id, schoolId, ImportType.SCHOOL_CLASS_USER, status, Instant.now().plus(1, ChronoUnit.DAYS));
     }
 
     private static ImportSession expiredSession(UUID id, UUID schoolId) {
-        return buildSession(id, schoolId, ImportType.SCHOOL_CLASS_USER, ImportSessionStatus.PREVIEWED, OffsetDateTime.now().minusHours(1));
+        return buildSession(id, schoolId, ImportType.SCHOOL_CLASS_USER, ImportSessionStatus.PREVIEWED, Instant.now().minus(1, ChronoUnit.HOURS));
     }
 
-    private static ImportSession buildSession(UUID id, UUID schoolId, ImportType type, ImportSessionStatus status, OffsetDateTime expiresAt) {
+    private static ImportSession buildSession(UUID id, UUID schoolId, ImportType type, ImportSessionStatus status, Instant expiresAt) {
         return new ImportSession(
             id, schoolId, type, "class-users.csv", "[]", "{}", null,
             0L, 0L, 0L, 0L, 2L, null, status, null,
             expiresAt, null, null, null, 0,
-            OffsetDateTime.now(), OffsetDateTime.now(),
+            Instant.now(), Instant.now(),
             UUID.randomUUID(), UUID.randomUUID()
         );
     }

@@ -1,8 +1,8 @@
 package com.sep.vox.application.port.input.usecase.subscription;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
-import java.time.Year;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.BuyTokensCommand;
@@ -85,7 +86,7 @@ public class BuyTokensUseCase implements IUseCase<BuyTokensCommand, TokenPurchas
         var planQuotas = planQuotaRepository.findAllByPlanId(subscription.getPlanId());
         var subscriptionQuotas = subscriptionQuotaRepository.findAllBySubscriptionId(subscription.getId()).stream()
             .collect(Collectors.toMap(quota -> quota.getQuotaType(), Function.identity()));
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var total = BigDecimal.ZERO;
 
         var purchase = tokenPurchaseRepository.save(new TokenPurchase(subscription.getId(), BigDecimal.ZERO, PurchaseStatus.PAID, now));
@@ -112,14 +113,18 @@ public class BuyTokensUseCase implements IUseCase<BuyTokensCommand, TokenPurchas
         purchase.setTotalAmount(total);
         var savedPurchase = tokenPurchaseRepository.save(purchase);
 
+        // Năm trong số hóa đơn phải lấy từ chính invoiceDate, không phải Year.now(): Year.now() đọc
+        // múi giờ của JVM, nên trên server UTC một hóa đơn tạo lúc 06:00 ngày 01/01 giờ VN sẽ mang
+        // số INV-2025-... nhưng ngày 2026-01-01.
+        var invoiceDate = LocalDate.ofInstant(now, DateMapper.DEFAULT_INPUT_ZONE);
         invoiceRepository.save(new Invoice(
             // TODO: add a DB sequence about the invoice sequence
-            "INV-" + Year.now() + "-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase(),
+            "INV-" + invoiceDate.getYear() + "-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase(),
             input.schoolId(),
             subscription.getId(),
             InvoiceSourceType.TOKEN_PURCHASE,
             savedPurchase.getId(),
-            now.toLocalDate(),
+            invoiceDate,
             total,
             InvoiceStatus.PAID,
             null,

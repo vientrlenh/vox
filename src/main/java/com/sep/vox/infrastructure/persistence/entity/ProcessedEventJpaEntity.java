@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -36,11 +36,11 @@ public class ProcessedEventJpaEntity {
     private String consumerGroup;
 
     @Column(name = "processed_at", nullable = false, updatable = false)
-    private OffsetDateTime processedAt;
+    private Instant processedAt;
 
     protected ProcessedEventJpaEntity() {}
 
-    public ProcessedEventJpaEntity(UUID id, UUID eventId, String consumerGroup, OffsetDateTime processedAt) {
+    public ProcessedEventJpaEntity(UUID id, UUID eventId, String consumerGroup, Instant processedAt) {
         this.id = id;
         this.eventId = eventId;
         this.consumerGroup = consumerGroup;
@@ -71,11 +71,11 @@ public class ProcessedEventJpaEntity {
         this.consumerGroup = consumerGroup;
     }
 
-    public OffsetDateTime getProcessedAt() {
+    public Instant getProcessedAt() {
         return processedAt;
     }
 
-    public void setProcessedAt(OffsetDateTime processedAt) {
+    public void setProcessedAt(Instant processedAt) {
         this.processedAt = processedAt;
     }
 

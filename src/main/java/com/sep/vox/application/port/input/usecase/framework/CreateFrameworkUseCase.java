@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -34,7 +34,7 @@ public class CreateFrameworkUseCase implements IUseCase<CreateFrameworkCommand, 
         var code = StringNormalization.normalizeCode(input.code());
         var name = StringNormalization.trimAndCollapseSpaces(input.name());
         var description = StringNormalization.trimAndCollapseSpaces(input.description());
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var userId = userContextPort.getCurrentAuthenticatedUserId();
 
         var framework = new Framework(

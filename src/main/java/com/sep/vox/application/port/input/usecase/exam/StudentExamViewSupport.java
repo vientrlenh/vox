@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
 import java.time.Duration;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamKind;
@@ -20,7 +20,7 @@ final class StudentExamViewSupport {
         return exam.getKind().name().replace('_', ' ');
     }
 
-    static String statusOf(Exam exam, ExamSchedule schedule, OffsetDateTime now) {
+    static String statusOf(Exam exam, ExamSchedule schedule, Instant now) {
         if (exam != null && exam.getKind() == ExamKind.CLASS_TEST) {
             if (exam.getStatus() == ExamStatus.IN_PROGRESS) {
                 return "in_progress";
@@ -43,7 +43,7 @@ final class StudentExamViewSupport {
         return "completed";
     }
 
-    static String statusOf(ExamSchedule schedule, OffsetDateTime now) {
+    static String statusOf(ExamSchedule schedule, Instant now) {
         return statusOf(null, schedule, now);
     }
 
@@ -54,7 +54,7 @@ final class StudentExamViewSupport {
         return Math.max(1, Math.toIntExact(Duration.between(schedule.getStartDate(), schedule.getEndDate()).toMinutes()));
     }
 
-    static String examDateOf(ExamSchedule schedule, OffsetDateTime fallback) {
+    static String examDateOf(ExamSchedule schedule, Instant fallback) {
         if (schedule != null && schedule.getStartDate() != null) {
             return schedule.getStartDate().toString();
         }

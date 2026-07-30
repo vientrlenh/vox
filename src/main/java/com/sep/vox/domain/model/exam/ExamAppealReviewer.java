@@ -1,6 +1,6 @@
 package com.sep.vox.domain.model.exam;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -13,14 +13,14 @@ public class ExamAppealReviewer {
     private UUID appealId;
     private UUID reviewerId;
     private ExamAppealReviewerStatus status;
-    private OffsetDateTime assignedAt;
+    private Instant assignedAt;
     private UUID assignedBy;
-    private OffsetDateTime submittedAt;
+    private Instant submittedAt;
 
     public ExamAppealReviewer() {}
 
     public ExamAppealReviewer(UUID id, UUID appealId, UUID reviewerId, ExamAppealReviewerStatus status,
-            OffsetDateTime assignedAt, UUID assignedBy, OffsetDateTime submittedAt) {
+            Instant assignedAt, UUID assignedBy, Instant submittedAt) {
         this.id = id;
         this.appealId = appealId;
         this.reviewerId = reviewerId;
@@ -31,7 +31,7 @@ public class ExamAppealReviewer {
     }
 
     public ExamAppealReviewer(UUID appealId, UUID reviewerId, ExamAppealReviewerStatus status,
-            OffsetDateTime assignedAt, UUID assignedBy, OffsetDateTime submittedAt) {
+            Instant assignedAt, UUID assignedBy, Instant submittedAt) {
         this.appealId = appealId;
         this.reviewerId = reviewerId;
         this.status = status;
@@ -72,11 +72,11 @@ public class ExamAppealReviewer {
         this.status = status;
     }
 
-    public OffsetDateTime getAssignedAt() {
+    public Instant getAssignedAt() {
         return assignedAt;
     }
 
-    public void setAssignedAt(OffsetDateTime assignedAt) {
+    public void setAssignedAt(Instant assignedAt) {
         this.assignedAt = assignedAt;
     }
 
@@ -88,11 +88,11 @@ public class ExamAppealReviewer {
         this.assignedBy = assignedBy;
     }
 
-    public OffsetDateTime getSubmittedAt() {
+    public Instant getSubmittedAt() {
         return submittedAt;
     }
 
-    public void setSubmittedAt(OffsetDateTime submittedAt) {
+    public void setSubmittedAt(Instant submittedAt) {
         this.submittedAt = submittedAt;
     }
 }

@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -43,7 +43,7 @@ public class DeviceSessionRepositoryImpl implements DeviceSessionRepository {
     }
 
     @Override
-    public int revokeDeviceSession(UUID id, OffsetDateTime now) {
+    public int revokeDeviceSession(UUID id, Instant now) {
         return springDataDeviceSessionRepository.revokeDeviceSession(id, now);
     }
 

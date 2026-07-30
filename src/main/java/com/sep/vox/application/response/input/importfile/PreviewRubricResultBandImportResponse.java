@@ -1,6 +1,6 @@
 package com.sep.vox.application.response.input.importfile;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -12,6 +12,6 @@ public record PreviewRubricResultBandImportResponse(
         Map<String, String> suggestedMapping,    // Gợi ý cấu hình khớp cột (Cột Excel -> Field hệ thống)
         List<Map<String, String>> sampleRows,    // Data xem trước của vài dòng đầu (Để UI hiển thị bảng Preview)
         long totalRows,                          // Tổng số dòng dữ liệu đọc được
-        OffsetDateTime expiresAt                 // Hạn sử dụng của Session này
+        Instant expiresAt                 // Hạn sử dụng của Session này
 ) {
 }

@@ -2,6 +2,7 @@ package com.sep.vox.interfaces.rest.mapper;
 
 import java.util.UUID;
 
+import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.input.command.CreateExamScheduleCommand;
 import com.sep.vox.interfaces.rest.dto.request.CreateExamScheduleRequest;
 
@@ -14,8 +15,8 @@ public final class CreateExamScheduleCommandMapper {
         return new CreateExamScheduleCommand(
             examId,
             request.schoolRoomId(),
-            request.startDate(),
-            request.endDate()
+            DateMapper.toInstant(request.startDate()),
+            DateMapper.toInstant(request.endDate())
         );
     }
 }

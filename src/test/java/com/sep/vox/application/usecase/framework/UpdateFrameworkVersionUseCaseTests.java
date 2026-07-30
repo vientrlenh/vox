@@ -6,7 +6,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -34,7 +35,7 @@ public class UpdateFrameworkVersionUseCaseTests {
     private final UUID frameworkId = UUID.randomUUID();
     private final UUID versionId = UUID.randomUUID();
     private final UUID userId = UUID.randomUUID();
-    private final OffsetDateTime now = OffsetDateTime.now();
+    private final Instant now = Instant.now();
 
     @BeforeEach
     void setUp() {
@@ -48,7 +49,7 @@ public class UpdateFrameworkVersionUseCaseTests {
     void should_update_draft_version() {
         var command = new UpdateFrameworkVersionCommand(
             frameworkId, versionId, "V2_0", "Version 2.0", "Updated",
-            now, now.plusDays(365)
+            now, now.plus(365, ChronoUnit.DAYS)
         );
 
         var framework = new Framework(
@@ -73,7 +74,7 @@ public class UpdateFrameworkVersionUseCaseTests {
     void should_throw_when_framework_not_found() {
         var command = new UpdateFrameworkVersionCommand(
             frameworkId, versionId, "V2_0", "Version 2.0", "Updated",
-            now, now.plusDays(365)
+            now, now.plus(365, ChronoUnit.DAYS)
         );
 
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.empty());
@@ -85,7 +86,7 @@ public class UpdateFrameworkVersionUseCaseTests {
     void should_throw_when_version_not_found() {
         var command = new UpdateFrameworkVersionCommand(
             frameworkId, versionId, "V2_0", "Version 2.0", "Updated",
-            now, now.plusDays(365)
+            now, now.plus(365, ChronoUnit.DAYS)
         );
 
         var framework = new Framework(
@@ -104,7 +105,7 @@ public class UpdateFrameworkVersionUseCaseTests {
         var otherFrameworkId = UUID.randomUUID();
         var command = new UpdateFrameworkVersionCommand(
             frameworkId, versionId, "V2_0", "Version 2.0", "Updated",
-            now, now.plusDays(365)
+            now, now.plus(365, ChronoUnit.DAYS)
         );
 
         var framework = new Framework(
@@ -125,7 +126,7 @@ public class UpdateFrameworkVersionUseCaseTests {
     void should_throw_when_version_not_draft() {
         var command = new UpdateFrameworkVersionCommand(
             frameworkId, versionId, "V2_0", "Version 2.0", "Updated",
-            now, now.plusDays(365)
+            now, now.plus(365, ChronoUnit.DAYS)
         );
 
         var framework = new Framework(

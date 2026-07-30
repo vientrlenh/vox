@@ -7,7 +7,6 @@ import org.springframework.test.context.ActiveProfiles;
 
 import com.sep.vox.config.ContainerTestConfig;
 
-
 @SpringBootTest
 @ActiveProfiles("test")
 @AutoConfigureTestGrpcTransport

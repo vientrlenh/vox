@@ -3,7 +3,8 @@ package com.sep.vox.application.usecase.auth;
 import com.sep.vox.application.usecase.TestSchoolUserRepository;
 
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -90,7 +91,7 @@ class RefreshUseCaseTests {
             UUID.randomUUID(),
             userId,
             roleId,
-            OffsetDateTime.now(),
+            Instant.now(),
             "SCHOOL_ADMIN",
             "School admin"
         ));
@@ -104,7 +105,7 @@ class RefreshUseCaseTests {
             .thenReturn(new GeneratedSessionToken("new-refresh-token", "new-token-hash"));
         when(refreshTokenRepository.save(any(RefreshToken.class)))
             .thenReturn(savedNewToken);
-        when(refreshTokenRepository.markUsedAndReplacedBy(any(UUID.class), any(UUID.class), any(OffsetDateTime.class)))
+        when(refreshTokenRepository.markUsedAndReplacedBy(any(UUID.class), any(UUID.class), any(Instant.class)))
             .thenReturn(1);
         when(userRepository.findById(userId))
             .thenReturn(Optional.of(user));
@@ -121,7 +122,7 @@ class RefreshUseCaseTests {
         verify(refreshTokenRepository).findByTokenHashForUpdate("old-token-hash");
         verify(deviceSessionRepository).findById(sessionId);
         verify(refreshTokenRepository).save(any(RefreshToken.class));
-        verify(refreshTokenRepository).markUsedAndReplacedBy(any(UUID.class), any(UUID.class), any(OffsetDateTime.class));
+        verify(refreshTokenRepository).markUsedAndReplacedBy(any(UUID.class), any(UUID.class), any(Instant.class));
         verify(userRepository).findById(userId);
         verify(userRoleQueryRepository).findByUserIdWithRoleInfo(userId);
         verify(authTokenPort).generateJwtToken(userId.toString(), schoolId, "test@example.com", List.of("SCHOOL_ADMIN"));
@@ -193,7 +194,7 @@ class RefreshUseCaseTests {
             () -> refreshUseCase.execute(new RefreshCommand("old-refresh-token", "device-1"))
         );
 
-        verify(sessionManagerPort).revoke(eq(sessionId), any(OffsetDateTime.class));
+        verify(sessionManagerPort).revoke(eq(sessionId), any(Instant.class));
     }
 
     @Test
@@ -211,7 +212,7 @@ class RefreshUseCaseTests {
             () -> refreshUseCase.execute(new RefreshCommand("old-refresh-token", "different-device"))
         );
 
-        verify(sessionManagerPort).revoke(eq(sessionId), any(OffsetDateTime.class));
+        verify(sessionManagerPort).revoke(eq(sessionId), any(Instant.class));
     }
 
     @Test
@@ -247,7 +248,7 @@ class RefreshUseCaseTests {
             .thenReturn(new GeneratedSessionToken("new-refresh-token", "new-token-hash"));
         when(refreshTokenRepository.save(any(RefreshToken.class)))
             .thenReturn(savedNewToken);
-        when(refreshTokenRepository.markUsedAndReplacedBy(any(UUID.class), any(UUID.class), any(OffsetDateTime.class)))
+        when(refreshTokenRepository.markUsedAndReplacedBy(any(UUID.class), any(UUID.class), any(Instant.class)))
             .thenReturn(0);
 
         assertThrows(
@@ -255,7 +256,7 @@ class RefreshUseCaseTests {
             () -> refreshUseCase.execute(new RefreshCommand("old-refresh-token", "device-1"))
         );
 
-        verify(sessionManagerPort).revoke(eq(sessionId), any(OffsetDateTime.class));
+        verify(sessionManagerPort).revoke(eq(sessionId), any(Instant.class));
     }
 
     private static DeviceSession activeSession(UUID sessionId, String deviceId) {
@@ -288,8 +289,8 @@ class RefreshUseCaseTests {
             "Ho Chi Minh City",
             null,
             UserStatus.ACTIVE,
-            OffsetDateTime.now(),
-            OffsetDateTime.now(),
+            Instant.now(),
+            Instant.now(),
             null,
             null
         );
@@ -304,44 +305,44 @@ class RefreshUseCaseTests {
             SessionPlatform.WEB,
             "203.0.113.10",
             "JUnit User Agent",
-            OffsetDateTime.now()
+            Instant.now()
         );
     }
 
     private static RefreshToken activeRefreshToken(UUID tokenId, UUID sessionId, String tokenHash) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         return new RefreshToken(
             tokenId,
             sessionId,
             tokenHash,
             now,
-            now.plusDays(7),
+            now.plus(7, ChronoUnit.DAYS),
             null,
             null
         );
     }
 
     private static RefreshToken expiredRefreshToken(UUID tokenId, UUID sessionId, String tokenHash) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         return new RefreshToken(
             tokenId,
             sessionId,
             tokenHash,
-            now.minusDays(8),
-            now.minusDays(1),
+            now.minus(8, ChronoUnit.DAYS),
+            now.minus(1, ChronoUnit.DAYS),
             null,
             null
         );
     }
 
     private static RefreshToken usedRefreshToken(UUID tokenId, UUID sessionId, String tokenHash) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         return new RefreshToken(
             tokenId,
             sessionId,
             tokenHash,
-            now.minusDays(1),
-            now.plusDays(6),
+            now.minus(1, ChronoUnit.DAYS),
+            now.plus(6, ChronoUnit.DAYS),
             now,
             UUID.randomUUID()
         );

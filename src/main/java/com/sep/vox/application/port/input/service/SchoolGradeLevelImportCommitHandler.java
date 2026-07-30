@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.service;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -136,7 +136,7 @@ public class SchoolGradeLevelImportCommitHandler implements ImportCommitHandler 
     }
 
     private void createGradeLevel(Map<String, String> data, int order, UUID schoolId, UUID currentUserId) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         schoolGradeLevelRepository.save(new SchoolGradeLevel(
                 schoolId,
                 data.get("code"),
@@ -151,7 +151,7 @@ public class SchoolGradeLevelImportCommitHandler implements ImportCommitHandler 
     }
 
     private void updateGradeLevel(SchoolGradeLevel existing, Map<String, String> data, int order, UUID currentUserId) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         existing.setName(data.get("name"));
         existing.setDescription(data.get("description"));
         existing.setOrder(order);

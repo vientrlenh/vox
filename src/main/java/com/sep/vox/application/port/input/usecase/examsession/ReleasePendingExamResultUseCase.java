@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examsession;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -62,7 +62,7 @@ public class ReleasePendingExamResultUseCase implements IUseCase<ReleasePendingE
             throw new IllegalStateException("Kết quả này không còn ở trạng thái chờ duyệt");
         }
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         result.setStatus(ExamCandidateResultStatus.RELEASED);
         result.setReleasedAt(now);
         result.setUpdatedAt(now);

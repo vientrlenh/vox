@@ -2,7 +2,7 @@ package com.sep.vox.infrastructure.persistence.entity;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -76,13 +76,13 @@ public class InvoiceJpaEntity {
     private String checkoutUrl;
 
     @Column(name = "paid_at")
-    private OffsetDateTime paidAt;
+    private Instant paidAt;
 
     protected InvoiceJpaEntity() {}
 
     public InvoiceJpaEntity(UUID id, String invoiceNumber, UUID schoolId, UUID subscriptionId, String sourceType, UUID sourceId,
             LocalDate issueDate, BigDecimal amount, String status, Long payosOrderCode, String paymentLinkId,
-            String checkoutUrl, OffsetDateTime paidAt) {
+            String checkoutUrl, Instant paidAt) {
         this.id = id;
         this.invoiceNumber = invoiceNumber;
         this.schoolId = schoolId;
@@ -194,11 +194,11 @@ public class InvoiceJpaEntity {
         this.checkoutUrl = checkoutUrl;
     }
 
-    public OffsetDateTime getPaidAt() {
+    public Instant getPaidAt() {
         return paidAt;
     }
 
-    public void setPaidAt(OffsetDateTime paidAt) {
+    public void setPaidAt(Instant paidAt) {
         this.paidAt = paidAt;
     }
 }

@@ -3,7 +3,7 @@ package com.sep.vox.infrastructure.persistence.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
@@ -124,7 +124,7 @@ public class UserRepositoryTests extends ContainerTestConfig {
     }
 
     private static User newUser(String email, String phone, UserStatus status) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         return new User(
             new Email(email),
             "password-hash",

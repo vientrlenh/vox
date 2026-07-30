@@ -1,24 +1,24 @@
 package com.sep.vox.domain.model.user;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class UserRole {
     private UUID id;
     private UUID userId;
     private UUID roleId;
-    private OffsetDateTime createdAt;
+    private Instant createdAt;
 
     public UserRole() {}
 
-    public UserRole(UUID id, UUID userId, UUID roleId, OffsetDateTime createdAt) {
+    public UserRole(UUID id, UUID userId, UUID roleId, Instant createdAt) {
         this.id = id;
         this.userId = userId;
         this.roleId = roleId;
         this.createdAt = createdAt;
     }
 
-    public UserRole(UUID userId, UUID roleId, OffsetDateTime createdAt) {
+    public UserRole(UUID userId, UUID roleId, Instant createdAt) {
         this.userId = userId;
         this.roleId = roleId;
         this.createdAt = createdAt;
@@ -48,11 +48,11 @@ public class UserRole {
         this.roleId = roleId;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 

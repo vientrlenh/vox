@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.service;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -120,7 +120,7 @@ public class SchoolDirectoryImportCommitHandler implements ImportCommitHandler {
     }
 
     private void createDirectory(Map<String, String> data, UUID currentUserId) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         schoolDirectoryRepository.save(SchoolDirectory.createByImport(
                 data.get("code"),
                 data.get("name"),
@@ -134,7 +134,7 @@ public class SchoolDirectoryImportCommitHandler implements ImportCommitHandler {
     }
 
     private void updateDirectory(SchoolDirectory existing, Map<String, String> data, UUID currentUserId) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         existing.applyImportUpdate(
                 data.get("name"),
                 data.get("provinceCode"),

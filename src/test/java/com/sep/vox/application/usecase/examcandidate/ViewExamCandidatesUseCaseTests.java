@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -134,8 +134,8 @@ class ViewExamCandidatesUseCaseTests {
         c.setStudentId(UUID.randomUUID());
         c.setScheduleId(scheduleId);
         c.setStatus(status);
-        c.setAssignedAt(OffsetDateTime.now());
-        c.setUpdatedAt(OffsetDateTime.now());
+        c.setAssignedAt(Instant.now());
+        c.setUpdatedAt(Instant.now());
         return c;
     }
 

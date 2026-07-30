@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.schooldirectory;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -35,7 +35,7 @@ public class VerifySchoolDirectoryUseCase implements IUseCase<VerifySchoolDirect
             throw new IllegalStateException("Danh mục truờng đã được kiểm duyệt");
         }
 
-        directory.verify(userId, OffsetDateTime.now());
+        directory.verify(userId, Instant.now());
         var updated = schoolDirectoryRepository.save(directory);
         return updated.getId();
     }

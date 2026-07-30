@@ -23,7 +23,7 @@ import vn.payos.exception.WebhookException;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkRequest;
 
 // Tự tính chữ ký thay vì gọi payOSClient.webhooks().verify(...) vì SDK payos-java 2.0.1 bind Map
-// sang WebhookData (có field OffsetDateTime) bằng ObjectMapper nội bộ không có JavaTimeModule,
+// sang WebhookData (có field Instant) bằng ObjectMapper nội bộ không có JavaTimeModule,
 // luôn ném InvalidDefinitionException với mọi webhook thật (có transactionDateTime).
 @Service
 public class PayOSService implements PayOSPort {

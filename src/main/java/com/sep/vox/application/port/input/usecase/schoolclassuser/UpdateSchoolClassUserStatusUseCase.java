@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.schoolclassuser;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -93,7 +93,7 @@ public class UpdateSchoolClassUserStatusUseCase implements IUseCase<UpdateSchool
 
     private void deactivate(SchoolClassUser membership) {
         if (membership.isActive()) {
-            membership.deactivate(OffsetDateTime.now());
+            membership.deactivate(Instant.now());
             schoolClassUserRepository.save(membership);
         }
     }

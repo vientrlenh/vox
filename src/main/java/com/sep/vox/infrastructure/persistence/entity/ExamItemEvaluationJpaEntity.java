@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -104,7 +104,7 @@ public class ExamItemEvaluationJpaEntity {
     private String status;
 
     @Column(name = "evaluated_at", nullable = false)
-    private OffsetDateTime evaluatedAt;
+    private Instant evaluatedAt;
 
     protected ExamItemEvaluationJpaEntity() {}
 
@@ -112,7 +112,7 @@ public class ExamItemEvaluationJpaEntity {
             String gradedByModel, Integer sampleCount, UUID reviewerId, BigDecimal rawItemScore, BigDecimal itemScore,
             BigDecimal overallConfidence, boolean requiresHumanReview, String reviewReasonCode, boolean markedInvalid,
             boolean requiresRetake, String signals, String validityJson, String feedbackSummary, String suggestions, String promptVersion,
-            String status, OffsetDateTime evaluatedAt) {
+            String status, Instant evaluatedAt) {
         this.id = id;
         this.responseId = responseId;
         this.paperItemId = paperItemId;
@@ -264,11 +264,11 @@ public class ExamItemEvaluationJpaEntity {
         this.status = status;
     }
 
-    public OffsetDateTime getEvaluatedAt() {
+    public Instant getEvaluatedAt() {
         return evaluatedAt;
     }
 
-    public void setEvaluatedAt(OffsetDateTime evaluatedAt) {
+    public void setEvaluatedAt(Instant evaluatedAt) {
         this.evaluatedAt = evaluatedAt;
     }
 

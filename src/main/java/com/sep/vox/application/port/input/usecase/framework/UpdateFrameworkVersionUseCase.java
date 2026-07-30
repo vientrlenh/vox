@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -52,7 +52,7 @@ public class UpdateFrameworkVersionUseCase implements IUseCase<UpdateFrameworkVe
             StringNormalization.trimAndCollapseSpaces(input.description()),
             version.getVersion(), input.effectiveFrom(), input.effectiveTo(),
             version.getStatus(), 
-            version.getCreatedAt(), OffsetDateTime.now(),
+            version.getCreatedAt(), Instant.now(),
             version.getCreatedBy(), userContextPort.getCurrentAuthenticatedUserId());
     }
 

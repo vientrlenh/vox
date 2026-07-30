@@ -10,7 +10,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -65,7 +65,7 @@ class UpdateSchoolGradeLevelUseCaseTests {
     void should_update_provided_fields_and_return_id() {
         grantAccess(schoolId);
         when(schoolGradeLevelRepository.updateSchoolGradeLevelAtomic(
-                eq(gradeLevelId), eq("Khối 1 mới"), eq("mô tả"), eq(2), any(OffsetDateTime.class), eq(currentUserId)))
+                eq(gradeLevelId), eq("Khối 1 mới"), eq("mô tả"), eq(2), any(Instant.class), eq(currentUserId)))
             .thenReturn(1);
 
         var result = useCase.execute(new UpdateSchoolGradeLevelCommand(
@@ -73,7 +73,7 @@ class UpdateSchoolGradeLevelUseCaseTests {
 
         assertThat(result).isEqualTo(gradeLevelId);
         verify(schoolGradeLevelRepository).updateSchoolGradeLevelAtomic(
-            eq(gradeLevelId), eq("Khối 1 mới"), eq("mô tả"), eq(2), any(OffsetDateTime.class), eq(currentUserId));
+            eq(gradeLevelId), eq("Khối 1 mới"), eq("mô tả"), eq(2), any(Instant.class), eq(currentUserId));
     }
 
     @Test
@@ -82,14 +82,14 @@ class UpdateSchoolGradeLevelUseCaseTests {
         var nameCaptor = ArgumentCaptor.forClass(String.class);
         var orderCaptor = ArgumentCaptor.forClass(Integer.class);
         when(schoolGradeLevelRepository.updateSchoolGradeLevelAtomic(
-                eq(gradeLevelId), any(), any(), any(), any(OffsetDateTime.class), eq(currentUserId)))
+                eq(gradeLevelId), any(), any(), any(), any(Instant.class), eq(currentUserId)))
             .thenReturn(1);
 
         useCase.execute(new UpdateSchoolGradeLevelCommand(schoolId, gradeLevelId, null, null, 5));
 
         verify(schoolGradeLevelRepository).updateSchoolGradeLevelAtomic(
             eq(gradeLevelId), nameCaptor.capture(), isNull(), orderCaptor.capture(),
-            any(OffsetDateTime.class), eq(currentUserId));
+            any(Instant.class), eq(currentUserId));
         assertThat(nameCaptor.getValue()).isNull();
         assertThat(orderCaptor.getValue()).isEqualTo(5);
     }
@@ -189,7 +189,7 @@ class UpdateSchoolGradeLevelUseCaseTests {
     }
 
     private SchoolGradeLevel newGradeLevel(UUID ownerSchoolId) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         return new SchoolGradeLevel(
             gradeLevelId, ownerSchoolId, "K1", "Khối 1", "desc", 1,
             SchoolGradeLevelStatus.ACTIVE, now, now, UUID.randomUUID(), UUID.randomUUID()

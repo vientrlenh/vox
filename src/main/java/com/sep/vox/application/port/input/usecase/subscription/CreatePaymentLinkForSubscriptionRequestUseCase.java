@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.subscription;
 
-import java.time.OffsetDateTime;
-import java.time.Year;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreatePaymentLinkForSubscriptionRequestCommand;
@@ -76,9 +77,13 @@ public class CreatePaymentLinkForSubscriptionRequestUseCase
                 .orElse(null)
             : null;
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
+        // Năm trong số hóa đơn phải lấy từ chính invoiceDate, không phải Year.now(): Year.now() đọc
+        // múi giờ của JVM, nên trên server UTC một hóa đơn tạo lúc 06:00 ngày 01/01 giờ VN sẽ mang
+        // số INV-2025-... nhưng ngày 2026-01-01.
+        var invoiceDate = LocalDate.ofInstant(now, DateMapper.DEFAULT_INPUT_ZONE);
         var orderCode = System.currentTimeMillis() * 1000 + ThreadLocalRandom.current().nextInt(1000);
-        var invoiceNumber = "INV-" + Year.now() + "-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        var invoiceNumber = "INV-" + invoiceDate.getYear() + "-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
 
         var invoice = invoiceRepository.save(new Invoice(
             invoiceNumber,
@@ -86,7 +91,7 @@ public class CreatePaymentLinkForSubscriptionRequestUseCase
             existingSubscriptionId,
             InvoiceSourceType.SUBSCRIPTION_REQUEST,
             request.getId(),
-            now.toLocalDate(),
+            invoiceDate,
             request.getAmount(),
             InvoiceStatus.PENDING,
             orderCode,

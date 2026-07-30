@@ -1,6 +1,6 @@
 package com.sep.vox.domain.model.school;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class SchoolGradeLevel {
@@ -11,15 +11,15 @@ public class SchoolGradeLevel {
     private String description;
     private int order;
     private SchoolGradeLevelStatus status;
-    private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
     private UUID createdBy;
     private UUID updatedBy;
 
     public SchoolGradeLevel() {}
 
     public SchoolGradeLevel(UUID id, UUID schoolId, String code, String name, String description, int order, 
-            SchoolGradeLevelStatus status, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy,
+            SchoolGradeLevelStatus status, Instant createdAt, Instant updatedAt, UUID createdBy,
             UUID updatedBy) {
         this.id = id;
         this.schoolId = schoolId;
@@ -35,7 +35,7 @@ public class SchoolGradeLevel {
     }
 
     public SchoolGradeLevel(UUID schoolId, String code, String name, String description, int order, SchoolGradeLevelStatus status,
-            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.schoolId = schoolId;
         this.code = code;
         this.name = name;
@@ -96,19 +96,19 @@ public class SchoolGradeLevel {
         this.status = status;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 

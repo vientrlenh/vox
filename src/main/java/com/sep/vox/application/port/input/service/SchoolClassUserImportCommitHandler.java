@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.service;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -132,7 +132,7 @@ public class SchoolClassUserImportCommitHandler implements ImportCommitHandler {
                 continue;
             }
 
-            var now = OffsetDateTime.now();
+            var now = Instant.now();
             var user = validation.user();
             var schoolClass = validation.schoolClass();
             var key = membershipKey(user.getId(), schoolClass.getId());

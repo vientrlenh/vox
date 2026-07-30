@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -46,12 +46,12 @@ public class QuestionCollaboratorJpaEntity {
     private String permission;
 
     @Column(name = "assigned_at", nullable = false, updatable = false)
-    private OffsetDateTime assignedAt;
+    private Instant assignedAt;
 
     protected QuestionCollaboratorJpaEntity() {
     }
 
-    public QuestionCollaboratorJpaEntity(UUID id, UUID userId, UUID questionId, String permission, OffsetDateTime assignedAt) {
+    public QuestionCollaboratorJpaEntity(UUID id, UUID userId, UUID questionId, String permission, Instant assignedAt) {
         this.id = id;
         this.userId = userId;
         this.questionId = questionId;
@@ -91,11 +91,11 @@ public class QuestionCollaboratorJpaEntity {
         this.permission = permission;
     }
 
-    public OffsetDateTime getAssignedAt() {
+    public Instant getAssignedAt() {
         return assignedAt;
     }
 
-    public void setAssignedAt(OffsetDateTime assignedAt) {
+    public void setAssignedAt(Instant assignedAt) {
         this.assignedAt = assignedAt;
     }
 }

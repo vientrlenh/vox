@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examcandidate;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
@@ -92,7 +92,7 @@ public class AssignExamPapersUseCase implements IUseCase<AssignExamPapersCommand
             }
         }
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var toSave = new ArrayList<ExamCandidate>();
         Set<UUID> handled = new HashSet<>();
         for (var assignment : input.assignments()) {

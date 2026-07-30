@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examsession;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
@@ -229,7 +229,7 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
             : assessmentPolicyRepository.findById(exam.getAssessmentPolicyId()).orElse(null);
         var existing = examCandidateResultRepository.findBySessionId(session.getId()).orElse(null);
         var result = existing == null ? new ExamCandidateResult() : existing;
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
 
         result.setExamId(session.getExamId());
         result.setCandidateId(session.getCandidateId());

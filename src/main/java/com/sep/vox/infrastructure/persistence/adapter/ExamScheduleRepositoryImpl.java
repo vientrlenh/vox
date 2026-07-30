@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -66,18 +66,18 @@ public class ExamScheduleRepositoryImpl implements ExamScheduleRepository {
     }
 
     @Override
-    public boolean existsOverlapping(UUID schoolRoomId, OffsetDateTime start, OffsetDateTime end, UUID excludeScheduleId) {
+    public boolean existsOverlapping(UUID schoolRoomId, Instant start, Instant end, UUID excludeScheduleId) {
         return springDataExamScheduleRepository.countOverlapping(schoolRoomId, start, end, excludeScheduleId) > 0;
     }
 
     @Override
-    public int updateAtomic(UUID id, UUID schoolRoomId, OffsetDateTime start, OffsetDateTime end,
-            OffsetDateTime now, UUID updatedBy) {
+    public int updateAtomic(UUID id, UUID schoolRoomId, Instant start, Instant end,
+            Instant now, UUID updatedBy) {
         return springDataExamScheduleRepository.updateAtomic(id, schoolRoomId, start, end, now, updatedBy);
     }
     
     @Override
-    public List<ExamSchedule> findByExamIdAndInSchedule(UUID examId, OffsetDateTime now) {
+    public List<ExamSchedule> findByExamIdAndInSchedule(UUID examId, Instant now) {
         return springDataExamScheduleRepository.findByExamIdAndInSchedule(examId, now)
             .stream()
             .map(ExamScheduleMapper::toDomain)
@@ -85,7 +85,7 @@ public class ExamScheduleRepositoryImpl implements ExamScheduleRepository {
     }
 
     @Override
-    public List<ExamSchedule> findByIdInAndInSchedule(Collection<UUID> ids, OffsetDateTime now) {
+    public List<ExamSchedule> findByIdInAndInSchedule(Collection<UUID> ids, Instant now) {
         return springDataExamScheduleRepository.findByIdInAndInSchedule(ids, now)
             .stream()
             .map(ExamScheduleMapper::toDomain)
@@ -93,13 +93,13 @@ public class ExamScheduleRepositoryImpl implements ExamScheduleRepository {
     }
 
     @Override
-    public Optional<ExamSchedule> findByIdAndInSchedule(UUID id, OffsetDateTime now) {
+    public Optional<ExamSchedule> findByIdAndInSchedule(UUID id, Instant now) {
         return springDataExamScheduleRepository.findByIdAndInSchedule(id, now)
             .map(ExamScheduleMapper::toDomain);
     }
 
     @Override
-    public List<ExamSchedule> findByIdInAndInScheduleAndSchoolId(Collection<UUID> ids, OffsetDateTime now,
+    public List<ExamSchedule> findByIdInAndInScheduleAndSchoolId(Collection<UUID> ids, Instant now,
             UUID schoolId) {
         return springDataExamScheduleRepository.findByIdInAndInScheduleAndSchoolId(ids, now, schoolId)
                 .stream()

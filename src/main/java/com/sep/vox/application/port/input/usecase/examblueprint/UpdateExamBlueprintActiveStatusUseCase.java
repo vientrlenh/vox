@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examblueprint;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,7 +47,7 @@ public class UpdateExamBlueprintActiveStatusUseCase
         }
 
         blueprint.setActive(input.isActive());
-        blueprint.setUpdatedAt(OffsetDateTime.now());
+        blueprint.setUpdatedAt(Instant.now());
         blueprint.setUpdatedBy(currentUserId);
         return ExamBlueprintDtoMapper.toDto(examBlueprintRepository.save(blueprint));
     }

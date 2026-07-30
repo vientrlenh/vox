@@ -10,7 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Optional;
@@ -138,7 +138,7 @@ public class SubmitExamAppealReportUseCaseTests {
         reviewer.setAppealId(appealId);
         reviewer.setReviewerId(teacherId);
         reviewer.setStatus(ExamAppealReviewerStatus.ASSIGNED);
-        reviewer.setAssignedAt(OffsetDateTime.now());
+        reviewer.setAssignedAt(Instant.now());
         return reviewer;
     }
 

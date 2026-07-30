@@ -2,7 +2,7 @@ package com.sep.vox.application.port.input.usecase.examappeal;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -116,7 +116,7 @@ public class SubmitExamAppealReportUseCase implements IUseCase<SubmitExamAppealR
             suggestedScores.put(report.appealItemId(), validateAndAverage(report.scores(), criteria));
         }
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var criterionScores = new ArrayList<ExamItemCriterionScore>();
         var reviewerItems = new ArrayList<ExamAppealReviewerItem>();
         for (var report : reports) {

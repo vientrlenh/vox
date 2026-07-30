@@ -24,7 +24,7 @@ import com.sep.vox.domain.repository.*;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -91,7 +91,7 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
         static final BandIds EMPTY = new BandIds(null);
     }
 
-    private record EffectivePeriod(OffsetDateTime from, OffsetDateTime to) {
+    private record EffectivePeriod(Instant from, Instant to) {
         static final EffectivePeriod EMPTY = new EffectivePeriod(null, null);
     }
 
@@ -132,7 +132,7 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
         List<AssessmentPolicy> policiesToSave = new ArrayList<>();
         long importedCount = 0;
         long invalidCount = 0;
-        OffsetDateTime now = OffsetDateTime.now();
+        Instant now = Instant.now();
 
         Set<ScopeKey> scopesClaimedInFile = new HashSet<>();
         Map<VersionScopeKey, Integer> nextVersionByScope = new HashMap<>();
@@ -519,9 +519,10 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
 
     private static EffectivePeriod parseEffectivePeriod(String effectiveFromStr, String effectiveToStr, List<Map<String, String>> errors) {
         try {
-            OffsetDateTime effectiveFrom = DateMapper.toOffsetDateTime(effectiveFromStr.trim());
-            OffsetDateTime effectiveTo = (effectiveToStr != null && !effectiveToStr.isBlank())
-                    ? DateMapper.toOffsetDateTime(effectiveToStr.trim())
+            Instant effectiveFrom = DateMapper.toImportedInstant(
+                    effectiveFromStr.trim(), DateMapper.DEFAULT_INPUT_ZONE);
+            Instant effectiveTo = (effectiveToStr != null && !effectiveToStr.isBlank())
+                    ? DateMapper.toImportedInstant(effectiveToStr.trim(), DateMapper.DEFAULT_INPUT_ZONE)
                     : null;
             if (effectiveTo != null && effectiveTo.isBefore(effectiveFrom)) {
                 errors.add(error("effectiveTo", "Ngày kết thúc không được trước ngày bắt đầu."));

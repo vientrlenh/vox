@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
@@ -115,12 +115,12 @@ public class RubricVersionRepositoryImpl implements RubricVersionRepository {
             String code,
             String name,
             String description,
-            OffsetDateTime effectiveFrom,
-            OffsetDateTime effectiveTo,
+            Instant effectiveFrom,
+            Instant effectiveTo,
             BigDecimal scoringScaleMin,
             BigDecimal scoringScaleMax,
             String totalScoreMethod,
-            OffsetDateTime updatedAt,
+            Instant updatedAt,
             UUID updatedBy) {
         // SpringDataRubricVersionRepository.updateRubricVersionAtomic khai báo tham số theo thứ tự (id, name, code, ...)
         springDataRubricVersionRepository.updateRubricVersionAtomic(

@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -53,12 +53,12 @@ public class DeviceSessionJpaEntity {
     private String userAgent;
 
     @Column(name = "revoked_at")
-    private OffsetDateTime revokedAt;
+    private Instant revokedAt;
 
     protected DeviceSessionJpaEntity() {}
 
     public DeviceSessionJpaEntity(UUID id, UUID userId, String deviceId, String deviceName, String platform,
-            String ipAddress, String userAgent, OffsetDateTime revokedAt) {
+            String ipAddress, String userAgent, Instant revokedAt) {
         this.id = id;
         this.userId = userId;
         this.deviceId = deviceId;
@@ -70,7 +70,7 @@ public class DeviceSessionJpaEntity {
     }
 
     public DeviceSessionJpaEntity(UUID userId, String deviceId, String deviceName, String platform, String ipAddress,
-            String userAgent, OffsetDateTime revokedAt) {
+            String userAgent, Instant revokedAt) {
         this.userId = userId;
         this.deviceId = deviceId;
         this.deviceName = deviceName;
@@ -136,11 +136,11 @@ public class DeviceSessionJpaEntity {
         this.userAgent = userAgent;
     }
 
-    public OffsetDateTime getRevokedAt() {
+    public Instant getRevokedAt() {
         return revokedAt;
     }
 
-    public void setRevokedAt(OffsetDateTime revokedAt) {
+    public void setRevokedAt(Instant revokedAt) {
         this.revokedAt = revokedAt;
     }
 

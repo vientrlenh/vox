@@ -1,7 +1,7 @@
 package com.sep.vox.domain.model.exam;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class ExamResultAppeal {
@@ -9,23 +9,23 @@ public class ExamResultAppeal {
     private UUID candidateResultId;
     private UUID requestedBy;
     private String reason;
-    private OffsetDateTime requestedAt;
+    private Instant requestedAt;
     private ExamAppealStatus status;
     private BigDecimal scoreBefore;
     private BigDecimal scoreAfter;
     private UUID resolvedBy;
-    private OffsetDateTime resolvedAt;
+    private Instant resolvedAt;
     private String notes;
-    private OffsetDateTime deadline;
-    private OffsetDateTime approvedAt;
+    private Instant deadline;
+    private Instant approvedAt;
     private String decisionNote;
 
     public ExamResultAppeal() {}
 
     public ExamResultAppeal(UUID id, UUID candidateResultId, UUID requestedBy, String reason,
-            OffsetDateTime requestedAt, ExamAppealStatus status, BigDecimal scoreBefore, BigDecimal scoreAfter,
-            UUID resolvedBy, OffsetDateTime resolvedAt, String notes, OffsetDateTime deadline,
-            OffsetDateTime approvedAt, String decisionNote) {
+            Instant requestedAt, ExamAppealStatus status, BigDecimal scoreBefore, BigDecimal scoreAfter,
+            UUID resolvedBy, Instant resolvedAt, String notes, Instant deadline,
+            Instant approvedAt, String decisionNote) {
         this.id = id;
         this.candidateResultId = candidateResultId;
         this.requestedBy = requestedBy;
@@ -42,9 +42,9 @@ public class ExamResultAppeal {
         this.decisionNote = decisionNote;
     }
 
-    public ExamResultAppeal(UUID candidateResultId, UUID requestedBy, String reason, OffsetDateTime requestedAt,
+    public ExamResultAppeal(UUID candidateResultId, UUID requestedBy, String reason, Instant requestedAt,
             ExamAppealStatus status, BigDecimal scoreBefore, BigDecimal scoreAfter, UUID resolvedBy,
-            OffsetDateTime resolvedAt, String notes, OffsetDateTime deadline, OffsetDateTime approvedAt,
+            Instant resolvedAt, String notes, Instant deadline, Instant approvedAt,
             String decisionNote) {
         this.candidateResultId = candidateResultId;
         this.requestedBy = requestedBy;
@@ -93,11 +93,11 @@ public class ExamResultAppeal {
         this.reason = reason;
     }
 
-    public OffsetDateTime getRequestedAt() {
+    public Instant getRequestedAt() {
         return requestedAt;
     }
 
-    public void setRequestedAt(OffsetDateTime requestedAt) {
+    public void setRequestedAt(Instant requestedAt) {
         this.requestedAt = requestedAt;
     }
 
@@ -133,11 +133,11 @@ public class ExamResultAppeal {
         this.resolvedBy = resolvedBy;
     }
 
-    public OffsetDateTime getResolvedAt() {
+    public Instant getResolvedAt() {
         return resolvedAt;
     }
 
-    public void setResolvedAt(OffsetDateTime resolvedAt) {
+    public void setResolvedAt(Instant resolvedAt) {
         this.resolvedAt = resolvedAt;
     }
 
@@ -149,19 +149,19 @@ public class ExamResultAppeal {
         this.notes = notes;
     }
 
-    public OffsetDateTime getDeadline() {
+    public Instant getDeadline() {
         return deadline;
     }
 
-    public void setDeadline(OffsetDateTime deadline) {
+    public void setDeadline(Instant deadline) {
         this.deadline = deadline;
     }
 
-    public OffsetDateTime getApprovedAt() {
+    public Instant getApprovedAt() {
         return approvedAt;
     }
 
-    public void setApprovedAt(OffsetDateTime approvedAt) {
+    public void setApprovedAt(Instant approvedAt) {
         this.approvedAt = approvedAt;
     }
 

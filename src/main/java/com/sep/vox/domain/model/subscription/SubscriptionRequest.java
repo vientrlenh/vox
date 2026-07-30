@@ -1,7 +1,7 @@
 package com.sep.vox.domain.model.subscription;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class SubscriptionRequest {
@@ -12,14 +12,14 @@ public class SubscriptionRequest {
     private UUID requestedPlanId;
     private BigDecimal amount;
     private RequestStatus status;
-    private OffsetDateTime submittedAt;
+    private Instant submittedAt;
     private UUID reviewedBy;
-    private OffsetDateTime reviewedAt;
+    private Instant reviewedAt;
 
     public SubscriptionRequest() {}
 
     public SubscriptionRequest(UUID id, UUID schoolId, RequestType requestType, UUID currentPlanId, UUID requestedPlanId,
-            BigDecimal amount, RequestStatus status, OffsetDateTime submittedAt, UUID reviewedBy, OffsetDateTime reviewedAt) {
+            BigDecimal amount, RequestStatus status, Instant submittedAt, UUID reviewedBy, Instant reviewedAt) {
         this.id = id;
         this.schoolId = schoolId;
         this.requestType = requestType;
@@ -33,7 +33,7 @@ public class SubscriptionRequest {
     }
 
     public SubscriptionRequest(UUID schoolId, RequestType requestType, UUID currentPlanId, UUID requestedPlanId,
-            BigDecimal amount, RequestStatus status, OffsetDateTime submittedAt, UUID reviewedBy, OffsetDateTime reviewedAt) {
+            BigDecimal amount, RequestStatus status, Instant submittedAt, UUID reviewedBy, Instant reviewedAt) {
         this.schoolId = schoolId;
         this.requestType = requestType;
         this.currentPlanId = currentPlanId;
@@ -101,11 +101,11 @@ public class SubscriptionRequest {
         this.status = status;
     }
 
-    public OffsetDateTime getSubmittedAt() {
+    public Instant getSubmittedAt() {
         return submittedAt;
     }
 
-    public void setSubmittedAt(OffsetDateTime submittedAt) {
+    public void setSubmittedAt(Instant submittedAt) {
         this.submittedAt = submittedAt;
     }
 
@@ -117,11 +117,11 @@ public class SubscriptionRequest {
         this.reviewedBy = reviewedBy;
     }
 
-    public OffsetDateTime getReviewedAt() {
+    public Instant getReviewedAt() {
         return reviewedAt;
     }
 
-    public void setReviewedAt(OffsetDateTime reviewedAt) {
+    public void setReviewedAt(Instant reviewedAt) {
         this.reviewedAt = reviewedAt;
     }
 }

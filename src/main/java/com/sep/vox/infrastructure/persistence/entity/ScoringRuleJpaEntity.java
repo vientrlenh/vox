@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -84,10 +84,10 @@ public class ScoringRuleJpaEntity {
     private boolean isActive;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private OffsetDateTime updatedAt;
+    private Instant updatedAt;
 
     @Column(name = "created_by", updatable = false)
     private UUID createdBy;
@@ -101,7 +101,7 @@ public class ScoringRuleJpaEntity {
 
     public ScoringRuleJpaEntity(UUID id, UUID policyId, String code, String name, String description,
             String conditionType, String conditionParamsJson, String actionType, String actionParamsJson, int priority,
-            String severity, boolean stopProcessing, boolean isActive, OffsetDateTime createdAt, OffsetDateTime updatedAt,
+            String severity, boolean stopProcessing, boolean isActive, Instant createdAt, Instant updatedAt,
             UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.policyId = policyId;
@@ -125,7 +125,7 @@ public class ScoringRuleJpaEntity {
 
     public ScoringRuleJpaEntity(UUID policyId, String code, String name, String description, String conditionType,
             String conditionParamsJson, String actionType, String actionParamsJson, int priority, String severity,
-            boolean stopProcessing, boolean isActive, OffsetDateTime createdAt, OffsetDateTime updatedAt,
+            boolean stopProcessing, boolean isActive, Instant createdAt, Instant updatedAt,
             UUID createdBy, UUID updatedBy) {
         this.policyId = policyId;
         this.code = code;
@@ -276,22 +276,22 @@ public class ScoringRuleJpaEntity {
     }
 
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
 
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
 
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 

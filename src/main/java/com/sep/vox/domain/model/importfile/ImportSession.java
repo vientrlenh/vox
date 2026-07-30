@@ -1,6 +1,6 @@
 package com.sep.vox.domain.model.importfile;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class ImportSession {
@@ -19,13 +19,13 @@ public class ImportSession {
     private String failureReason;
     private ImportSessionStatus status;
     private UUID importedEntityId;
-    private OffsetDateTime expiresAt;
-    private OffsetDateTime claimedAt;
+    private Instant expiresAt;
+    private Instant claimedAt;
     private UUID claimedBy;
-    private OffsetDateTime leaseExpiresAt;
+    private Instant leaseExpiresAt;
     private int attempts;
-    private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
     private UUID createdBy;
     private UUID updatedBy;
 
@@ -34,8 +34,8 @@ public class ImportSession {
     public ImportSession(UUID id, UUID schoolId, ImportType type, String fileName, String originalHeadersJson,
             String suggestedMappingJson, String confirmedMappingJson, long validRows, long invalidRows,
             long importedRows, long skippedRows, long totalRows, String failureReason, ImportSessionStatus status,
-            UUID importedEntityId, OffsetDateTime expiresAt, OffsetDateTime claimedAt, UUID claimedBy,
-            OffsetDateTime leaseExpiresAt, int attempts, OffsetDateTime createdAt, OffsetDateTime updatedAt,
+            UUID importedEntityId, Instant expiresAt, Instant claimedAt, UUID claimedBy,
+            Instant leaseExpiresAt, int attempts, Instant createdAt, Instant updatedAt,
             UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.schoolId = schoolId;
@@ -66,8 +66,8 @@ public class ImportSession {
     public ImportSession(UUID schoolId, ImportType type, String fileName, String originalHeadersJson,
             String suggestedMappingJson, String confirmedMappingJson, long validRows, long invalidRows,
             long importedRows, long skippedRows, long totalRows, String failureReason, ImportSessionStatus status,
-            UUID importedEntityId, OffsetDateTime expiresAt, OffsetDateTime claimedAt, UUID claimedBy,
-            OffsetDateTime leaseExpiresAt, int attempts, OffsetDateTime createdAt, OffsetDateTime updatedAt,
+            UUID importedEntityId, Instant expiresAt, Instant claimedAt, UUID claimedBy,
+            Instant leaseExpiresAt, int attempts, Instant createdAt, Instant updatedAt,
             UUID createdBy, UUID updatedBy) {
         this.schoolId = schoolId;
         this.type = type;
@@ -214,19 +214,19 @@ public class ImportSession {
         this.importedEntityId = importedEntityId;
     }
 
-    public OffsetDateTime getExpiresAt() {
+    public Instant getExpiresAt() {
         return expiresAt;
     }
 
-    public void setExpiresAt(OffsetDateTime expiresAt) {
+    public void setExpiresAt(Instant expiresAt) {
         this.expiresAt = expiresAt;
     }
 
-    public OffsetDateTime getClaimedAt() {
+    public Instant getClaimedAt() {
         return claimedAt;
     }
 
-    public void setClaimedAt(OffsetDateTime claimedAt) {
+    public void setClaimedAt(Instant claimedAt) {
         this.claimedAt = claimedAt;
     }
 
@@ -238,11 +238,11 @@ public class ImportSession {
         this.claimedBy = claimedBy;
     }
 
-    public OffsetDateTime getLeaseExpiresAt() {
+    public Instant getLeaseExpiresAt() {
         return leaseExpiresAt;
     }
 
-    public void setLeaseExpiresAt(OffsetDateTime leaseExpiresAt) {
+    public void setLeaseExpiresAt(Instant leaseExpiresAt) {
         this.leaseExpiresAt = leaseExpiresAt;
     }
 
@@ -254,19 +254,19 @@ public class ImportSession {
         this.attempts = attempts;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 

@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -55,16 +55,16 @@ public class ExamBlueprintVersionJpaEntity {
     private Integer totalTimeLimitSeconds;
 
     @Column(name = "effective_from", nullable = false)
-    private OffsetDateTime effectiveFrom;
+    private Instant effectiveFrom;
 
     @Column(name = "effective_to")
-    private OffsetDateTime effectiveTo;
+    private Instant effectiveTo;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private OffsetDateTime updatedAt;
+    private Instant updatedAt;
 
     @Column(name = "created_by", updatable = false)
     private UUID createdBy;
@@ -75,8 +75,8 @@ public class ExamBlueprintVersionJpaEntity {
     protected ExamBlueprintVersionJpaEntity() {}
 
     public ExamBlueprintVersionJpaEntity(UUID id, UUID blueprintId, int version, String code, String description,
-            String status, Integer totalTimeLimitSeconds, OffsetDateTime effectiveFrom, OffsetDateTime effectiveTo,
-            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            String status, Integer totalTimeLimitSeconds, Instant effectiveFrom, Instant effectiveTo,
+            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.blueprintId = blueprintId;
         this.version = version;
@@ -148,35 +148,35 @@ public class ExamBlueprintVersionJpaEntity {
         this.totalTimeLimitSeconds = totalTimeLimitSeconds;
     }
 
-    public OffsetDateTime getEffectiveFrom() {
+    public Instant getEffectiveFrom() {
         return effectiveFrom;
     }
 
-    public void setEffectiveFrom(OffsetDateTime effectiveFrom) {
+    public void setEffectiveFrom(Instant effectiveFrom) {
         this.effectiveFrom = effectiveFrom;
     }
 
-    public OffsetDateTime getEffectiveTo() {
+    public Instant getEffectiveTo() {
         return effectiveTo;
     }
 
-    public void setEffectiveTo(OffsetDateTime effectiveTo) {
+    public void setEffectiveTo(Instant effectiveTo) {
         this.effectiveTo = effectiveTo;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 

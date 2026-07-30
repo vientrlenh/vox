@@ -1,6 +1,6 @@
 package com.sep.vox.domain.model.framework;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class FrameworkVersion {
@@ -10,19 +10,19 @@ public class FrameworkVersion {
     private String name;
     private String description;
     private int version;
-    private OffsetDateTime effectiveFrom;
-    private OffsetDateTime effectiveTo;
+    private Instant effectiveFrom;
+    private Instant effectiveTo;
     private FrameworkVersionStatus status;
-    private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
     private UUID createdBy;
     private UUID updatedBy;
 
     public FrameworkVersion() {}
 
     public FrameworkVersion(UUID id, UUID frameworkId, String code, String name, String description, int version,
-            OffsetDateTime effectiveFrom, OffsetDateTime effectiveTo, FrameworkVersionStatus status, OffsetDateTime createdAt,
-            OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            Instant effectiveFrom, Instant effectiveTo, FrameworkVersionStatus status, Instant createdAt,
+            Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.frameworkId = frameworkId;
         this.code = code;
@@ -39,8 +39,8 @@ public class FrameworkVersion {
     }
 
     public FrameworkVersion(UUID frameworkId, String code, String name, String description, int version,
-            OffsetDateTime effectiveFrom, OffsetDateTime effectiveTo, FrameworkVersionStatus status, OffsetDateTime createdAt,
-            OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            Instant effectiveFrom, Instant effectiveTo, FrameworkVersionStatus status, Instant createdAt,
+            Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.frameworkId = frameworkId;
         this.code = code;
         this.name = name;
@@ -103,35 +103,35 @@ public class FrameworkVersion {
         this.version = version;
     }
 
-    public OffsetDateTime getEffectiveFrom() {
+    public Instant getEffectiveFrom() {
         return effectiveFrom;
     }
 
-    public void setEffectiveFrom(OffsetDateTime effectiveFrom) {
+    public void setEffectiveFrom(Instant effectiveFrom) {
         this.effectiveFrom = effectiveFrom;
     }
 
-    public OffsetDateTime getEffectiveTo() {
+    public Instant getEffectiveTo() {
         return effectiveTo;
     }
 
-    public void setEffectiveTo(OffsetDateTime effectiveTo) {
+    public void setEffectiveTo(Instant effectiveTo) {
         this.effectiveTo = effectiveTo;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 

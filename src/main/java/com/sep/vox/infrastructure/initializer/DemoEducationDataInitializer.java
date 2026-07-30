@@ -2,8 +2,11 @@ package com.sep.vox.infrastructure.initializer;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -44,6 +47,7 @@ import com.sep.vox.domain.model.rubric.RubricOwnerType;
 import com.sep.vox.domain.model.rubric.RubricResultBand;
 import com.sep.vox.domain.model.rubric.RubricStatus;
 import com.sep.vox.domain.model.rubric.RubricTotalScoreMethod;
+import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
@@ -226,7 +230,7 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
             return;
         }
         if (schoolRepository.existsByCode(DEMO_SCHOOL_CODE)) {
-            var now = OffsetDateTime.now();
+            var now = Instant.now();
             var hashedPassword = passwordEncoderPort.hash(password);
             replaceLegacyLinearResultBands();
             backfillDemoPlanTimeLimits();
@@ -244,7 +248,7 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
             return;
         }
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var hashedPassword = passwordEncoderPort.hash(password);
         var seededBy = resolveSeederUserId();
 
@@ -329,7 +333,7 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
         if (school == null) {
             return;
         }
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var rubrics = rubricRepository.findAllByOwnerTypeAndSchoolId(
             RubricOwnerType.SCHOOL,
             school.getId(),
@@ -399,7 +403,7 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
         return null;
     }
 
-    private School createSchool(SchoolSeed seed, UUID createdBy, OffsetDateTime now) {
+    private School createSchool(SchoolSeed seed, UUID createdBy, Instant now) {
         return schoolRepository.save(School.create(
             seed.code(),
             seed.name(),
@@ -422,7 +426,7 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
             UUID studentRoleId,
             String hashedPassword,
             UUID createdBy,
-            OffsetDateTime now) {
+            Instant now) {
         var schoolCode = school.getCode().value();
         var schoolAdmin = saveMember(
             emailOf("admin" + schoolIndex, schoolCode),
@@ -479,7 +483,7 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
         return new MemberSeedResult(schoolAdmin.getId(), List.copyOf(teacherIds), List.copyOf(studentIds));
     }
 
-    private List<SubscriptionPlan> seedSubscriptionPlans(UUID createdBy, OffsetDateTime now) {
+    private List<SubscriptionPlan> seedSubscriptionPlans(UUID createdBy, Instant now) {
         var planSeeds = List.of(
             new SubscriptionPlanSeed(
                 "Khởi đầu",
@@ -554,8 +558,8 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
         return List.copyOf(plans);
     }
 
-    private void seedSchoolSubscription(School school, SubscriptionPlan plan, OffsetDateTime now) {
-        var startDate = now.toLocalDate();
+    private void seedSchoolSubscription(School school, SubscriptionPlan plan, Instant now) {
+        var startDate = LocalDate.ofInstant(now, ZoneId.of("UTC"));
         var subscription = schoolSubscriptionRepository.save(new SchoolSubscription(
             school.getId(),
             plan.getId(),
@@ -580,7 +584,7 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
             School school,
             SupportedLanguage language,
             MemberSeedResult members,
-            OffsetDateTime now) {
+            Instant now) {
         var schoolAdminId = members.schoolAdminId();
         var gradeLevels = new ArrayList<SchoolGradeLevel>();
         var schoolGrades = new ArrayList<SchoolGrade>();
@@ -653,7 +657,7 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
         return new SchoolStructureSeed(List.copyOf(gradeLevels), List.copyOf(schoolGrades));
     }
 
-    private void backfillHistoricalDemoClasses(OffsetDateTime now, String hashedPassword) {
+    private void backfillHistoricalDemoClasses(Instant now, String hashedPassword) {
         var schoolAdminRole = roleRepository.findByCode("SCHOOL_ADMIN").orElse(null);
         var teacherRole = roleRepository.findByCode("TEACHER").orElse(null);
         var studentRole = roleRepository.findByCode("STUDENT").orElse(null);
@@ -721,10 +725,10 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
             UUID studentRoleId,
             String hashedPassword,
             UUID createdBy,
-            OffsetDateTime now) {
+            Instant now) {
         var schoolCode = school.getCode().value();
-        var joinedAt = now.minusYears(2);
-        var leftAt = now.minusMonths(1);
+        var joinedAt = now.minus(2, ChronoUnit.YEARS);
+        var leftAt = now.minus(1, ChronoUnit.MONTHS);
         var studentIds = new ArrayList<UUID>();
         var studentNames = historicalStudentNames();
         for (var studentIndex = 0; studentIndex < HISTORICAL_STUDENTS_PER_SCHOOL; studentIndex++) {
@@ -761,7 +765,7 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
             UUID schoolAdminId,
             List<UUID> teacherIds,
             List<UUID> historicalStudentIds,
-            OffsetDateTime now) {
+            Instant now) {
         var historicalStartYears = List.of(2024, 2025);
         for (var yearIndex = 0; yearIndex < historicalStartYears.size(); yearIndex++) {
             var startYear = historicalStartYears.get(yearIndex);
@@ -793,8 +797,8 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
                 );
 
                 var teacherId = teacherIds.get((yearIndex * 3 + gradeOffset) % teacherIds.size());
-                ensureClassMembership(teacherId, schoolClass.getId(), false, gradeStart.atStartOfDay().atOffset(now.getOffset()),
-                    gradeEnd.plusDays(1).atStartOfDay().atOffset(now.getOffset()), schoolAdminId);
+                ensureClassMembership(teacherId, schoolClass.getId(), false, gradeStart.atStartOfDay().atOffset(ZoneOffset.UTC),
+                    gradeEnd.plusDays(1).atStartOfDay().atOffset(ZoneOffset.UTC), schoolAdminId);
                 for (var studentSlot = 0; studentSlot < 2; studentSlot++) {
                     var studentIndex = (gradeOffset * 2 + studentSlot + yearIndex * 2) % historicalStudentIds.size();
                     ensureClassMembership(
@@ -810,7 +814,7 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
         }
     }
 
-    private SchoolGradeLevel ensureGradeLevel(School school, int gradeNumber, UUID schoolAdminId, OffsetDateTime now) {
+    private SchoolGradeLevel ensureGradeLevel(School school, int gradeNumber, UUID schoolAdminId, Instant now) {
         var code = "KHOI_" + gradeNumber;
         return schoolGradeLevelRepository.findBySchoolIdAndCode(school.getId(), code)
             .orElseGet(() -> schoolGradeLevelRepository.save(new SchoolGradeLevel(
@@ -835,7 +839,7 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
             LocalDate startDate,
             LocalDate endDate,
             UUID schoolAdminId,
-            OffsetDateTime now) {
+            Instant now) {
         var code = "NH_" + startYear + "_" + endYear;
         return schoolGradeRepository.findBySchoolGradeLevelIdAndCode(gradeLevel.getId(), code)
             .orElseGet(() -> schoolGradeRepository.save(new SchoolGrade(
@@ -860,7 +864,7 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
             String classCode,
             String className,
             UUID schoolAdminId,
-            OffsetDateTime now) {
+            Instant now) {
         return schoolClassRepository.findBySchoolIdAndCode(school.getId(), classCode)
             .orElseGet(() -> {
                 var schoolClass = SchoolClass.create(
@@ -882,8 +886,8 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
             UUID userId,
             UUID schoolClassId,
             boolean active,
-            OffsetDateTime joinedAt,
-            OffsetDateTime leftAt,
+            Instant joinedAt,
+            Instant leftAt,
             UUID assignedBy) {
         if (schoolClassUserRepository.findByUserIdAndSchoolClassId(userId, schoolClassId).isPresent()) {
             return;
@@ -898,21 +902,21 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
         ));
     }
 
-    private void ensureUserRole(UUID userId, UUID roleId, OffsetDateTime assignedAt) {
+    private void ensureUserRole(UUID userId, UUID roleId, Instant assignedAt) {
         if (userRoleRepository.findByUserIdAndRoleId(userId, roleId).isPresent()) {
             return;
         }
         userRoleRepository.save(new UserRole(userId, roleId, assignedAt));
     }
 
-    private void ensureSchoolUser(UUID userId, UUID schoolId, OffsetDateTime joinedAt, OffsetDateTime leftAt) {
+    private void ensureSchoolUser(UUID userId, UUID schoolId, Instant joinedAt, Instant leftAt) {
         if (schoolUserRepository.findBySchoolIdAndUserId(schoolId, userId).isPresent()) {
             return;
         }
         schoolUserRepository.save(SchoolUser.create(userId, schoolId, joinedAt, leftAt));
     }
 
-    private VstepFrameworkSeed seedVstepFramework(UUID createdBy, OffsetDateTime now) {
+    private VstepFrameworkSeed seedVstepFramework(UUID createdBy, Instant now) {
         var framework = frameworkRepository.save(new Framework(
             new FrameworkCode("VSTEP"),
             "Khung đánh giá nói VSTEP",
@@ -929,7 +933,7 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
             "VSTEP Speaking 1.0",
             "Phiên bản dùng cho đánh giá nói theo định hướng VSTEP",
             1,
-            now.minusYears(1),
+            now.minus(1, ChronoUnit.YEARS),
             null,
             FrameworkVersionStatus.PUBLISHED,
             now,
@@ -1015,7 +1019,7 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
             UUID schoolAdminId,
             VstepFrameworkSeed vstep,
             List<SchoolRubricSeed> rubricSeeds,
-            OffsetDateTime now) {
+            Instant now) {
         for (var rubricSeed : rubricSeeds) {
             var rubric = rubricRepository.save(new Rubric(
                 language.getId(),
@@ -1027,7 +1031,7 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
                 school.getId()
             ));
 
-            com.sep.vox.domain.model.rubric.RubricVersion currentVersion = null;
+            RubricVersion currentVersion = null;
             for (var versionSeed : rubricSeed.versions()) {
                 var effectiveFrom = versionSeed.status() == RubricStatus.ARCHIVED
                     ? now.minusYears(2)
@@ -1035,7 +1039,7 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
                 var effectiveTo = versionSeed.status() == RubricStatus.ARCHIVED
                     ? now.minusDays(2)
                     : null;
-                var version = new com.sep.vox.domain.model.rubric.RubricVersion(
+                var version = new RubricVersion(
                     rubric.getId(),
                     versionSeed.version(),
                     rubric.getCode() + "_V" + versionSeed.version(),
@@ -1095,7 +1099,7 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
             SchoolRubricVersionSeed versionSeed,
             VstepFrameworkSeed vstep,
             UUID schoolAdminId,
-            OffsetDateTime now) {
+            Instant now) {
         for (var criterionSeed : criterionSeeds()) {
             var frameworkCriterion = vstep.criteria().stream()
                 .filter(item -> item.getCode().equals(criterionSeed.frameworkCode()))
@@ -1148,7 +1152,7 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
             UUID schoolAdminId,
             UUID teacherOneId,
             UUID teacherTwoId,
-            OffsetDateTime now) {
+            Instant now) {
         var bank = questionBankRepository.save(new QuestionBank(
             language.getId(),
             school.getId(),
@@ -1301,7 +1305,7 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
         ));
     }
 
-    private void seedSystemQuestionBanks(SupportedLanguage language, UUID systemAdminId, OffsetDateTime now) {
+    private void seedSystemQuestionBanks(SupportedLanguage language, UUID systemAdminId, Instant now) {
         var speakingBank = questionBankRepository.save(new QuestionBank(
             language.getId(),
             null,
@@ -1756,8 +1760,8 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
             UUID roleId,
             UUID schoolId,
             UUID createdBy,
-            OffsetDateTime now,
-            OffsetDateTime endDate) {
+            Instant now,
+            Instant endDate) {
         var user = new User(
             new Email(email),
             hashedPassword,

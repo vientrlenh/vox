@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -69,16 +69,16 @@ public class ExamCandidateResultJpaEntity {
     private String status;
 
     @Column(name = "released_at")
-    private OffsetDateTime releasedAt;
+    private Instant releasedAt;
 
     @Column(name = "finalized_at")
-    private OffsetDateTime finalizedAt;
+    private Instant finalizedAt;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private OffsetDateTime updatedAt;
+    private Instant updatedAt;
 
     @Column(name = "created_by", updatable = false)
     private UUID createdBy;
@@ -90,7 +90,7 @@ public class ExamCandidateResultJpaEntity {
 
     public ExamCandidateResultJpaEntity(UUID id, UUID examId, UUID candidateId, UUID sessionId, UUID assessmentPolicyId,
         int policyVersion, UUID rubricVersionId, UUID frameworkVersionId, UUID targetFrameworkBandId, UUID rubricResultBandId, BigDecimal totalScore, String status,
-        OffsetDateTime releasedAt, OffsetDateTime finalizedAt, OffsetDateTime createdAt, OffsetDateTime updatedAt,
+        Instant releasedAt, Instant finalizedAt, Instant createdAt, Instant updatedAt,
         UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.examId = examId;
@@ -192,35 +192,35 @@ public class ExamCandidateResultJpaEntity {
         this.status = status;
     }
 
-    public OffsetDateTime getReleasedAt() {
+    public Instant getReleasedAt() {
         return releasedAt;
     }
 
-    public void setReleasedAt(OffsetDateTime releasedAt) {
+    public void setReleasedAt(Instant releasedAt) {
         this.releasedAt = releasedAt;
     }
 
-    public OffsetDateTime getFinalizedAt() {
+    public Instant getFinalizedAt() {
         return finalizedAt;
     }
 
-    public void setFinalizedAt(OffsetDateTime finalizedAt) {
+    public void setFinalizedAt(Instant finalizedAt) {
         this.finalizedAt = finalizedAt;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 

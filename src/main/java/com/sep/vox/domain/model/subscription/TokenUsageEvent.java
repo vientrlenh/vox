@@ -1,6 +1,6 @@
 package com.sep.vox.domain.model.subscription;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class TokenUsageEvent {
@@ -9,12 +9,12 @@ public class TokenUsageEvent {
     private UUID examSessionId;
     private QuotaType quotaType;
     private Integer tokensConsumed;
-    private OffsetDateTime occurredAt;
+    private Instant occurredAt;
 
     public TokenUsageEvent() {}
 
     public TokenUsageEvent(UUID id, UUID subscriptionId, UUID examSessionId, QuotaType quotaType,
-            Integer tokensConsumed, OffsetDateTime occurredAt) {
+            Integer tokensConsumed, Instant occurredAt) {
         this.id = id;
         this.subscriptionId = subscriptionId;
         this.examSessionId = examSessionId;
@@ -24,7 +24,7 @@ public class TokenUsageEvent {
     }
 
     public TokenUsageEvent(UUID subscriptionId, UUID examSessionId, QuotaType quotaType,
-            Integer tokensConsumed, OffsetDateTime occurredAt) {
+            Integer tokensConsumed, Instant occurredAt) {
         this.subscriptionId = subscriptionId;
         this.examSessionId = examSessionId;
         this.quotaType = quotaType;
@@ -72,11 +72,11 @@ public class TokenUsageEvent {
         this.tokensConsumed = tokensConsumed;
     }
 
-    public OffsetDateTime getOccurredAt() {
+    public Instant getOccurredAt() {
         return occurredAt;
     }
 
-    public void setOccurredAt(OffsetDateTime occurredAt) {
+    public void setOccurredAt(Instant occurredAt) {
         this.occurredAt = occurredAt;
     }
 }

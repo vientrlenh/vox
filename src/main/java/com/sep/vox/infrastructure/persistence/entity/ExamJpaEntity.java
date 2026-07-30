@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -125,10 +125,10 @@ public class ExamJpaEntity {
     private String streamTypePermission;
 
     @Column(name = "open_at")
-    private OffsetDateTime openAt;
+    private Instant openAt;
 
     @Column(name = "close_at")
-    private OffsetDateTime closeAt;
+    private Instant closeAt;
 
     @Column(name = "assessment_policy_id")
     private UUID assessmentPolicyId;
@@ -137,10 +137,10 @@ public class ExamJpaEntity {
     private boolean requiresOtp;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private OffsetDateTime updatedAt;
+    private Instant updatedAt;
 
     @Column(name = "created_by", updatable = false)
     private UUID createdBy;
@@ -152,8 +152,8 @@ public class ExamJpaEntity {
 
     public ExamJpaEntity(UUID id, UUID blueprintId, UUID blueprintVersionId, String code, String name, String description, UUID schoolId, UUID languageId,
             String kind, String deliveryMode, String status, Integer maxAttempt, Integer examTimeDurationSecond, String resultDecisionMethod, String requiredStreamType, String streamTypePermission,
-            OffsetDateTime openAt, OffsetDateTime closeAt, UUID assessmentPolicyId,boolean requiresOtp,
-            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            Instant openAt, Instant closeAt, UUID assessmentPolicyId,boolean requiresOtp,
+            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.blueprintId = blueprintId;
         this.blueprintVersionId = blueprintVersionId;
@@ -276,19 +276,19 @@ public class ExamJpaEntity {
         this.resultDecisionMethod = resultDecisionMethod;
     }
 
-    public OffsetDateTime getOpenAt() {
+    public Instant getOpenAt() {
         return openAt;
     }
 
-    public void setOpenAt(OffsetDateTime openAt) {
+    public void setOpenAt(Instant openAt) {
         this.openAt = openAt;
     }
 
-    public OffsetDateTime getCloseAt() {
+    public Instant getCloseAt() {
         return closeAt;
     }
 
-    public void setCloseAt(OffsetDateTime closeAt) {
+    public void setCloseAt(Instant closeAt) {
         this.closeAt = closeAt;
     }
 
@@ -300,19 +300,19 @@ public class ExamJpaEntity {
         this.assessmentPolicyId = assessmentPolicyId;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 

@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -67,7 +67,7 @@ public class ExamItemRuleHitJpaEntity {
     private int appliedOrder;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "created_by", updatable = false)
     private UUID createdBy; 
@@ -76,7 +76,7 @@ public class ExamItemRuleHitJpaEntity {
 
     public ExamItemRuleHitJpaEntity(UUID id, UUID evaluationId, UUID scoringRuleId, String ruleCode,
             String conditionType, BigDecimal observedValue, BigDecimal threshold, String actionType,
-            String effectSummary, String severity, String reasonCode, int appliedOrder, OffsetDateTime createdAt,
+            String effectSummary, String severity, String reasonCode, int appliedOrder, Instant createdAt,
             UUID createdBy) {
         this.id = id;
         this.evaluationId = evaluationId;
@@ -190,11 +190,11 @@ public class ExamItemRuleHitJpaEntity {
         this.appliedOrder = appliedOrder;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 

@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -48,14 +48,14 @@ public class ExamMemberJpaEntity {
     private String role;
 
     @Column(name = "granted_at", nullable = false)
-    private OffsetDateTime grantedAt;
+    private Instant grantedAt;
 
     @Column(name = "granted_by")
     private UUID grantedBy;
 
     protected ExamMemberJpaEntity() {}
 
-    public ExamMemberJpaEntity(UUID id, UUID examId, UUID userId, String role, OffsetDateTime grantedAt,
+    public ExamMemberJpaEntity(UUID id, UUID examId, UUID userId, String role, Instant grantedAt,
             UUID grantedBy) {
         this.id = id;
         this.examId = examId;
@@ -97,11 +97,11 @@ public class ExamMemberJpaEntity {
         this.role = role;
     }
 
-    public OffsetDateTime getGrantedAt() {
+    public Instant getGrantedAt() {
         return grantedAt;
     }
 
-    public void setGrantedAt(OffsetDateTime grantedAt) {
+    public void setGrantedAt(Instant grantedAt) {
         this.grantedAt = grantedAt;
     }
 

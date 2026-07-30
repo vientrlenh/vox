@@ -1,7 +1,7 @@
 package com.sep.vox.domain.model.rubric;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import com.sep.vox.domain.valueobject.rubric.RubricCriterionExamples;
@@ -20,8 +20,8 @@ public class RubricCriterion {
     private BigDecimal maxScore;
     private int order;
     private boolean isRequired;
-    private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
     private UUID createdBy;
     private UUID updatedBy;
 
@@ -29,7 +29,7 @@ public class RubricCriterion {
 
     public RubricCriterion(UUID id, UUID rubricVersionId, UUID frameworkCriterionId, String code, String name,
             String description, RubricCriterionExamples examples, BigDecimal weight, BigDecimal minScore, BigDecimal maxScore, int order,
-            boolean isRequired, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            boolean isRequired, Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.rubricVersionId = rubricVersionId;
         this.frameworkCriterionId = frameworkCriterionId;
@@ -50,7 +50,7 @@ public class RubricCriterion {
 
     public RubricCriterion(UUID rubricVersionId, UUID frameworkCriterionId, String code, String name,
             String description, RubricCriterionExamples examples, BigDecimal weight, BigDecimal minScore, BigDecimal maxScore, int order,
-            boolean isRequired, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            boolean isRequired, Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.rubricVersionId = rubricVersionId;
         this.frameworkCriterionId = frameworkCriterionId;
         this.code = code;
@@ -164,19 +164,19 @@ public class RubricCriterion {
         this.isRequired = isRequired;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 

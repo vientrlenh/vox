@@ -1,6 +1,6 @@
 package com.sep.vox.domain.model.school;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class SchoolDirectory {
@@ -14,16 +14,16 @@ public class SchoolDirectory {
     private String address; 
     private SchoolDirectoryOrigin origin;
     private boolean verified;
-    private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
     private UUID createdBy;
     private UUID updatedBy;
 
     public SchoolDirectory() {}
 
     public SchoolDirectory(UUID id, String code, String name, String provinceCode, String provinceName,
-            String districtName, String domain, String address, SchoolDirectoryOrigin origin, boolean verified, OffsetDateTime createdAt,
-            OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            String districtName, String domain, String address, SchoolDirectoryOrigin origin, boolean verified, Instant createdAt,
+            Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.code = code;
         this.name = name;
@@ -41,7 +41,7 @@ public class SchoolDirectory {
     }
 
     public SchoolDirectory(String code, String name, String provinceCode, String provinceName, String districtName,
-            String domain, String address, SchoolDirectoryOrigin origin, boolean verified, OffsetDateTime createdAt, OffsetDateTime updatedAt,
+            String domain, String address, SchoolDirectoryOrigin origin, boolean verified, Instant createdAt, Instant updatedAt,
             UUID createdBy, UUID updatedBy) {
         this.code = code;
         this.name = name;
@@ -138,19 +138,19 @@ public class SchoolDirectory {
         this.verified = verified;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 
@@ -170,13 +170,13 @@ public class SchoolDirectory {
         this.updatedBy = updatedBy;
     } 
 
-    public void verify(UUID updatedBy, OffsetDateTime now) {
+    public void verify(UUID updatedBy, Instant now) {
         this.verified = true;
         this.updatedAt = now;
         this.updatedBy = updatedBy;
     }
 
-    public static SchoolDirectory createByAdmin(String code, String name, String provinceCode, String provinceName, String districtName, String domain, String address, OffsetDateTime now, UUID createdBy) {
+    public static SchoolDirectory createByAdmin(String code, String name, String provinceCode, String provinceName, String districtName, String domain, String address, Instant now, UUID createdBy) {
         return new SchoolDirectory(
             code, 
             name, 
@@ -193,7 +193,7 @@ public class SchoolDirectory {
         );
     }
 
-    public static SchoolDirectory createByUserSubmitted(String code, String name, String provinceCode, String provinceName, String districtName, String domain, String address, OffsetDateTime now, UUID createdBy) {
+    public static SchoolDirectory createByUserSubmitted(String code, String name, String provinceCode, String provinceName, String districtName, String domain, String address, Instant now, UUID createdBy) {
         return new SchoolDirectory(
             code, 
             name, 
@@ -211,7 +211,7 @@ public class SchoolDirectory {
         );
     }
 
-    public static SchoolDirectory createByImport(String code, String name, String provinceCode, String provinceName, String districtName, String domain, String address, OffsetDateTime now, UUID createdBy) {
+    public static SchoolDirectory createByImport(String code, String name, String provinceCode, String provinceName, String districtName, String domain, String address, Instant now, UUID createdBy) {
         return new SchoolDirectory(
             code,
             name,
@@ -230,7 +230,7 @@ public class SchoolDirectory {
     }
 
 
-    public void applyImportUpdate(String name, String provinceCode, String provinceName, String districtName, String domain, String address, UUID updatedBy, OffsetDateTime now) {
+    public void applyImportUpdate(String name, String provinceCode, String provinceName, String districtName, String domain, String address, UUID updatedBy, Instant now) {
         this.name = name;
         this.provinceCode = provinceCode;
         this.provinceName = provinceName;

@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -57,18 +57,18 @@ public class SubscriptionRequestJpaEntity {
     private String status;
 
     @Column(name = "submitted_at", nullable = false, updatable = false)
-    private OffsetDateTime submittedAt;
+    private Instant submittedAt;
 
     @Column(name = "reviewed_by")
     private UUID reviewedBy;
 
     @Column(name = "reviewed_at")
-    private OffsetDateTime reviewedAt;
+    private Instant reviewedAt;
 
     protected SubscriptionRequestJpaEntity() {}
 
     public SubscriptionRequestJpaEntity(UUID id, UUID schoolId, String requestType, UUID currentPlanId, UUID requestedPlanId,
-            BigDecimal amount, String status, OffsetDateTime submittedAt, UUID reviewedBy, OffsetDateTime reviewedAt) {
+            BigDecimal amount, String status, Instant submittedAt, UUID reviewedBy, Instant reviewedAt) {
         this.id = id;
         this.schoolId = schoolId;
         this.requestType = requestType;
@@ -137,11 +137,11 @@ public class SubscriptionRequestJpaEntity {
         this.status = status;
     }
 
-    public OffsetDateTime getSubmittedAt() {
+    public Instant getSubmittedAt() {
         return submittedAt;
     }
 
-    public void setSubmittedAt(OffsetDateTime submittedAt) {
+    public void setSubmittedAt(Instant submittedAt) {
         this.submittedAt = submittedAt;
     }
 
@@ -153,11 +153,11 @@ public class SubscriptionRequestJpaEntity {
         this.reviewedBy = reviewedBy;
     }
 
-    public OffsetDateTime getReviewedAt() {
+    public Instant getReviewedAt() {
         return reviewedAt;
     }
 
-    public void setReviewedAt(OffsetDateTime reviewedAt) {
+    public void setReviewedAt(Instant reviewedAt) {
         this.reviewedAt = reviewedAt;
     }
 }

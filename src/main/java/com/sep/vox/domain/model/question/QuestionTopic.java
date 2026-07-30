@@ -1,7 +1,7 @@
 package com.sep.vox.domain.model.question;
 
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class QuestionTopic {
@@ -11,15 +11,15 @@ public class QuestionTopic {
     private String name;
     private String description;
     private QuestionTopicStatus status;
-    private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
     private UUID createdBy;
     private UUID updatedBy;
 
     public QuestionTopic() {}
 
     public QuestionTopic(UUID id, UUID questionBankId, String code, String name, String description,
-            QuestionTopicStatus status, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy,
+            QuestionTopicStatus status, Instant createdAt, Instant updatedAt, UUID createdBy,
             UUID updatedBy) {
         this.id = id;
         this.questionBankId = questionBankId;
@@ -34,7 +34,7 @@ public class QuestionTopic {
     }
 
     public QuestionTopic(UUID questionBankId, String code, String name, String description, QuestionTopicStatus status,
-            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.questionBankId = questionBankId;
         this.code = code;
         this.name = name;
@@ -94,19 +94,19 @@ public class QuestionTopic {
         this.status = status;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 

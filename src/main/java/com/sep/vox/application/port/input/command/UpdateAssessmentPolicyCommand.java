@@ -3,7 +3,7 @@ package com.sep.vox.application.port.input.command;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStrictness;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public record UpdateAssessmentPolicyCommand(
@@ -12,6 +12,6 @@ public record UpdateAssessmentPolicyCommand(
         UUID targetFrameworkBandId,
         BigDecimal passingScore,
         AssessmentPolicyStrictness strictness,
-        OffsetDateTime effectiveFrom,
-        OffsetDateTime effectiveTo
+        Instant effectiveFrom,
+        Instant effectiveTo
 ) {}

@@ -1,6 +1,6 @@
 package com.sep.vox.domain.model.outbox;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -11,18 +11,18 @@ public class ProcessedEvent {
     private UUID id;
     private UUID eventId;
     private String consumerGroup;
-    private OffsetDateTime processedAt;
+    private Instant processedAt;
 
     public ProcessedEvent() {}
 
-    public ProcessedEvent(UUID id, UUID eventId, String consumerGroup, OffsetDateTime processedAt) {
+    public ProcessedEvent(UUID id, UUID eventId, String consumerGroup, Instant processedAt) {
         this.id = id;
         this.eventId = eventId;
         this.consumerGroup = consumerGroup;
         this.processedAt = processedAt;
     }
 
-    public ProcessedEvent(UUID eventId, String consumerGroup, OffsetDateTime processedAt) {
+    public ProcessedEvent(UUID eventId, String consumerGroup, Instant processedAt) {
         this.eventId = eventId;
         this.consumerGroup = consumerGroup;
         this.processedAt = processedAt;
@@ -52,11 +52,11 @@ public class ProcessedEvent {
         this.consumerGroup = consumerGroup;
     }
 
-    public OffsetDateTime getProcessedAt() {
+    public Instant getProcessedAt() {
         return processedAt;
     }
 
-    public void setProcessedAt(OffsetDateTime processedAt) {
+    public void setProcessedAt(Instant processedAt) {
         this.processedAt = processedAt;
     }
 

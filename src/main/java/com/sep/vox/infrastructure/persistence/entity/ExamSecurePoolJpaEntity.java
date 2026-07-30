@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -47,19 +47,19 @@ public class ExamSecurePoolJpaEntity {
     private String releaseMode;
 
     @Column(name = "embargo_until")
-    private OffsetDateTime embargoUntil;
+    private Instant embargoUntil;
 
     @Column(name = "released_at")
-    private OffsetDateTime releasedAt;
+    private Instant releasedAt;
 
     @Column(name = "released_by")
     private UUID releasedBy;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private OffsetDateTime updatedAt;
+    private Instant updatedAt;
 
     @Column(name = "created_by", updatable = false)
     private UUID createdBy;
@@ -70,8 +70,8 @@ public class ExamSecurePoolJpaEntity {
     protected ExamSecurePoolJpaEntity() {}
 
     public ExamSecurePoolJpaEntity(UUID id, UUID examId, String status, String releaseMode,
-            OffsetDateTime embargoUntil, OffsetDateTime releasedAt, UUID releasedBy, OffsetDateTime createdAt,
-            OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            Instant embargoUntil, Instant releasedAt, UUID releasedBy, Instant createdAt,
+            Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.examId = examId;
         this.status = status;
@@ -117,19 +117,19 @@ public class ExamSecurePoolJpaEntity {
         this.releaseMode = releaseMode;
     }
 
-    public OffsetDateTime getEmbargoUntil() {
+    public Instant getEmbargoUntil() {
         return embargoUntil;
     }
 
-    public void setEmbargoUntil(OffsetDateTime embargoUntil) {
+    public void setEmbargoUntil(Instant embargoUntil) {
         this.embargoUntil = embargoUntil;
     }
 
-    public OffsetDateTime getReleasedAt() {
+    public Instant getReleasedAt() {
         return releasedAt;
     }
 
-    public void setReleasedAt(OffsetDateTime releasedAt) {
+    public void setReleasedAt(Instant releasedAt) {
         this.releasedAt = releasedAt;
     }
 
@@ -141,19 +141,19 @@ public class ExamSecurePoolJpaEntity {
         this.releasedBy = releasedBy;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 

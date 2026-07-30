@@ -3,7 +3,6 @@ package com.sep.vox.application.port.input.usecase.examcandidate;
 import java.time.OffsetDateTime;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;

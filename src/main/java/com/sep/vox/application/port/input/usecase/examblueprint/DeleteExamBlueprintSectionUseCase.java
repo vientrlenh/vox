@@ -7,6 +7,7 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.DeleteExamBlueprintSectionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
+import com.sep.vox.application.port.input.service.RecalculateBlueprintVersionTimeLimitService;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.exam.ExamBlueprintVersionStatus;
 import com.sep.vox.domain.repository.ExamBlueprintRepository;
@@ -23,6 +24,7 @@ public class DeleteExamBlueprintSectionUseCase implements IUseCase<DeleteExamBlu
     private final ExamBlueprintVersionRepository examBlueprintVersionRepository;
     private final ExamBlueprintRepository examBlueprintRepository;
     private final SchoolUserRepository schoolUserRepository;
+    private final RecalculateBlueprintVersionTimeLimitService recalculateBlueprintVersionTimeLimitService;
     private final UserContextPort userContextPort;
 
     public DeleteExamBlueprintSectionUseCase(
@@ -31,12 +33,14 @@ public class DeleteExamBlueprintSectionUseCase implements IUseCase<DeleteExamBlu
             ExamBlueprintVersionRepository examBlueprintVersionRepository,
             ExamBlueprintRepository examBlueprintRepository,
             SchoolUserRepository schoolUserRepository,
+            RecalculateBlueprintVersionTimeLimitService recalculateBlueprintVersionTimeLimitService,
             UserContextPort userContextPort) {
         this.examBlueprintSectionRepository = examBlueprintSectionRepository;
         this.examBlueprintSlotRepository = examBlueprintSlotRepository;
         this.examBlueprintVersionRepository = examBlueprintVersionRepository;
         this.examBlueprintRepository = examBlueprintRepository;
         this.schoolUserRepository = schoolUserRepository;
+        this.recalculateBlueprintVersionTimeLimitService = recalculateBlueprintVersionTimeLimitService;
         this.userContextPort = userContextPort;
     }
 
@@ -66,6 +70,7 @@ public class DeleteExamBlueprintSectionUseCase implements IUseCase<DeleteExamBlu
             examBlueprintSlotRepository.deleteById(slot.getId());
         }
         examBlueprintSectionRepository.deleteById(section.getId());
+        recalculateBlueprintVersionTimeLimitService.recalculate(version.getId());
         return null;
     }
 }

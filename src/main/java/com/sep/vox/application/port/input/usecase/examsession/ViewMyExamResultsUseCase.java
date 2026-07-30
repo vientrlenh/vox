@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.examsession;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -72,6 +73,7 @@ public class ViewMyExamResultsUseCase implements IUseCase<Void, List<StudentExam
                 var rubricBand = result.getRubricResultBandId() == null
                     ? null
                     : rubricResultBandRepository.findById(result.getRubricResultBandId()).orElse(null);
+                var scoreVisible = isScoreVisible(session, result.getStatus());
 
                 return new StudentExamResultSummaryResponse(
                     candidate.getId(),
@@ -84,16 +86,16 @@ public class ViewMyExamResultsUseCase implements IUseCase<Void, List<StudentExam
                     session.isFlagged(),
                     session.getStartedAt() == null ? null : session.getStartedAt().toString(),
                     session.getSubmittedAt() == null ? null : session.getSubmittedAt().toString(),
-                    isScoreVisible(session, result.getStatus()) ? result.getTotalScore() : null,
+                    scoreVisible ? result.getTotalScore() : null,
                     result.getStatus().name(),
-                    isScoreVisible(session, result.getStatus()) ? result.getRubricResultBandId() : null,
-                    isScoreVisible(session, result.getStatus()) && rubricBand != null ? rubricBand.getCode() : null,
-                    isScoreVisible(session, result.getStatus()) && rubricBand != null ? rubricBand.getName() : null
+                    scoreVisible ? result.getRubricResultBandId() : null,
+                    scoreVisible && rubricBand != null ? rubricBand.getCode() : null,
+                    scoreVisible && rubricBand != null ? rubricBand.getName() : null
                 );
             })
-            .filter(java.util.Objects::nonNull)
+            .filter(Objects::nonNull)
             .sorted(Comparator.comparing(
-                StudentExamResultSummaryResponse::submittedAt,
+                (StudentExamResultSummaryResponse response) -> response.submittedAt(),
                 Comparator.nullsLast(Comparator.reverseOrder())
             ))
             .toList();

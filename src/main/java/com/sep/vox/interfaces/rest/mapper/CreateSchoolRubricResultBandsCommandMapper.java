@@ -13,7 +13,6 @@ public class CreateSchoolRubricResultBandsCommandMapper {
         List<CreateSchoolRubricResultBandsCommand.ResultBandItemCommand> bandCommands = request.resultBands()
                 .stream()
                 .map(b -> new CreateSchoolRubricResultBandsCommand.ResultBandItemCommand(
-                        b.frameworkResultBandId(),
                         b.code(),
                         b.name(),
                         b.description(),

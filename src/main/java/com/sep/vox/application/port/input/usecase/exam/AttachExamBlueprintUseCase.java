@@ -10,6 +10,7 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.AttachExamBlueprintCommand;
 import com.sep.vox.application.port.input.command.CreateBlueprintInlineCommand;
+import com.sep.vox.application.port.input.service.ExamTimeQuotaGuardService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.ExamDto;
@@ -33,6 +34,7 @@ public class AttachExamBlueprintUseCase implements IUseCase<AttachExamBlueprintC
     private final ExamMemberRepository examMemberRepository;
     private final ExamPaperRepository examPaperRepository;
     private final SchoolGradeLevelRepository schoolGradeLevelRepository;
+    private final ExamTimeQuotaGuardService examTimeQuotaGuardService;
     private final UserContextPort userContextPort;
 
     public AttachExamBlueprintUseCase(
@@ -42,6 +44,7 @@ public class AttachExamBlueprintUseCase implements IUseCase<AttachExamBlueprintC
             ExamMemberRepository examMemberRepository,
             ExamPaperRepository examPaperRepository,
             SchoolGradeLevelRepository schoolGradeLevelRepository,
+            ExamTimeQuotaGuardService examTimeQuotaGuardService,
             UserContextPort userContextPort) {
         this.examRepository = examRepository;
         this.examBlueprintRepository = examBlueprintRepository;
@@ -49,6 +52,7 @@ public class AttachExamBlueprintUseCase implements IUseCase<AttachExamBlueprintC
         this.examMemberRepository = examMemberRepository;
         this.examPaperRepository = examPaperRepository;
         this.schoolGradeLevelRepository = schoolGradeLevelRepository;
+        this.examTimeQuotaGuardService = examTimeQuotaGuardService;
         this.userContextPort = userContextPort;
     }
 
@@ -117,6 +121,11 @@ public class AttachExamBlueprintUseCase implements IUseCase<AttachExamBlueprintC
             if (version.getStatus() != ExamBlueprintVersionStatus.PUBLISHED) {
                 throw new IllegalStateException("Chỉ được chốt version đã PUBLISHED");
             }
+            examTimeQuotaGuardService.requireWithinPlan(
+                exam.getSchoolId(),
+                version.getTotalTimeLimitSeconds(),
+                "Phiên bản blueprint " + version.getCode()
+            );
 
             if (!input.blueprintVersionId().equals(exam.getBlueprintVersionId())) {
                 requireNoExistingPapers(exam.getId());

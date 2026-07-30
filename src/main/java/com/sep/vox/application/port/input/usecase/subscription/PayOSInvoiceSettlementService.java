@@ -78,8 +78,15 @@ public class PayOSInvoiceSettlementService {
 
     // failureStatus: dùng khi biết chính xác lý do (vd CANCELLED từ PaymentLinkRemoteStatus của PayOS),
     // thay vì luôn gộp chung thành FAILED.
+    //
+    // Lock lại invoice bằng SELECT ... FOR UPDATE trước khi check PENDING: invoice truyền vào có thể đã
+    // được load từ trước (không lock) nên nếu chỉ check trên object đó, 2 lời gọi settle() song song cho
+    // cùng 1 invoice (vd: FE gọi sync-status 2 lần do StrictMode, hoặc sync-status đua với webhook PayOS)
+    // đều có thể đọc thấy PENDING trước khi bên kia commit, dẫn tới chốt thanh toán trùng 2 lần.
     @Transactional
     public void settle(Invoice invoice, boolean success, InvoiceStatus failureStatus) {
+        invoice = invoiceRepository.findByIdForUpdate(invoice.getId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy hóa đơn"));
         if (invoice.getStatus() != InvoiceStatus.PENDING) {
             return;
         }
@@ -216,7 +223,7 @@ public class PayOSInvoiceSettlementService {
 
         var items = tokenPurchaseItemRepository.findAllByPurchaseId(purchase.getId());
         var subscriptionQuotas = subscriptionQuotaRepository.findAllBySubscriptionId(subscriptionId).stream()
-            .collect(Collectors.toMap(SubscriptionQuota::getQuotaType, Function.identity()));
+            .collect(Collectors.toMap(quota -> quota.getQuotaType(), Function.identity()));
         for (var item : items) {
             var subscriptionQuota = subscriptionQuotas.get(item.getQuotaType());
             if (subscriptionQuota == null) {

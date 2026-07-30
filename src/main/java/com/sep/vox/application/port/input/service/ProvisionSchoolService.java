@@ -1,21 +1,24 @@
 package com.sep.vox.application.port.input.service;
 
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.event.PasswordSetUpEmailRequestedEvent;
+import com.sep.vox.application.event.UserCreatedPayloadV1;
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.ProvisionSchoolCommand;
-import com.sep.vox.application.port.output.EventPublisherPort;
-import com.sep.vox.application.port.output.PasswordSetUpTokenPort;
-import com.sep.vox.domain.model.passwordsetuptoken.PasswordSetUpToken;
+import com.sep.vox.application.port.output.JsonSerializationPort;
+import com.sep.vox.domain.common.AggregateTypeConstant;
+import com.sep.vox.domain.common.EventTypeConstant;
+import com.sep.vox.domain.common.UserTypeConstant;
+import com.sep.vox.domain.model.outbox.Outbox;
 import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserRole;
-import com.sep.vox.domain.repository.PasswordSetUpTokenRepository;
+import com.sep.vox.domain.repository.OutboxRepository;
 import com.sep.vox.domain.repository.RoleRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -30,28 +33,25 @@ public class ProvisionSchoolService {
     private final SchoolRepository schoolRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleRepository userRoleRepository;
-    private final PasswordSetUpTokenRepository passwordSetUpTokenRepository;
-    private final PasswordSetUpTokenPort passwordSetUpTokenPort;
-    private final EventPublisherPort eventPublisherPort;
+    private final OutboxRepository outboxRepository;
+    private final JsonSerializationPort jsonSerializationPort;
 
     public ProvisionSchoolService(
-        UserRepository userRepository, 
-        RoleRepository roleRepository, 
-        SchoolRepository schoolRepository, 
-        SchoolUserRepository schoolUserRepository, 
+        UserRepository userRepository,
+        RoleRepository roleRepository,
+        SchoolRepository schoolRepository,
+        SchoolUserRepository schoolUserRepository,
         UserRoleRepository userRoleRepository,
-        PasswordSetUpTokenRepository passwordSetUpTokenRepository, 
-        PasswordSetUpTokenPort passwordSetUpTokenPort, 
-        EventPublisherPort eventPublisherPort
+        OutboxRepository outboxRepository,
+        JsonSerializationPort jsonSerializationPort
     ) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.schoolRepository = schoolRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.userRoleRepository = userRoleRepository;
-        this.passwordSetUpTokenRepository = passwordSetUpTokenRepository;
-        this.passwordSetUpTokenPort = passwordSetUpTokenPort;
-        this.eventPublisherPort = eventPublisherPort;
+        this.outboxRepository = outboxRepository;
+        this.jsonSerializationPort = jsonSerializationPort;
     }
 
     public void provision(ProvisionSchoolCommand command) {
@@ -81,17 +81,19 @@ public class ProvisionSchoolService {
         var schoolUser = SchoolUser.create(savedSchoolAdmin.getId(), savedSchool.getId(), command.now(), null);
         schoolUserRepository.save(schoolUser);
 
-        var passwordToken = passwordSetUpTokenPort.generateToken();
-        var passwordSetUpToken = PasswordSetUpToken.create(savedSchoolAdmin.getId(), passwordToken.hashedToken());
-        passwordSetUpTokenRepository.save(passwordSetUpToken);
-
-        eventPublisherPort.publish(new PasswordSetUpEmailRequestedEvent(
+        // Token đặt mật khẩu do consumer sinh ngay trước khi gửi mail, để nó không nằm
+        // plaintext trong bảng outboxes lẫn trong topic Kafka.
+        var event = new UserCreatedPayloadV1(
+            savedSchoolAdmin.getId(),
             command.contactEmail(),
             command.contactFullName(),
             command.schoolName(),
-            savedSchoolAdmin.getId(),
-            passwordToken.rawToken()
-        ));
+            UserTypeConstant.SCHOOL_ADMIN
+        );
+        var payload = jsonSerializationPort.toJson(event);
+        var outbox = Outbox.create(
+            AggregateTypeConstant.USER, savedSchoolAdmin.getId(), EventTypeConstant.USER_CREATED, payload, OffsetDateTime.now());
+        outboxRepository.save(outbox);
     }
 
     private School saveSchool(ProvisionSchoolCommand command) {

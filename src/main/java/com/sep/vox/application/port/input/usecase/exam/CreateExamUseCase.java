@@ -1,6 +1,8 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
 import java.time.OffsetDateTime;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -19,7 +21,9 @@ import com.sep.vox.domain.mapper.ExamDtoMapper;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamDeliveryMode;
 import com.sep.vox.domain.model.exam.ExamKind;
+import com.sep.vox.domain.model.exam.ExamRequiredStreamType;
 import com.sep.vox.domain.model.exam.ExamStatus;
+import com.sep.vox.domain.model.exam.ExamStreamTypePermission;
 import com.sep.vox.domain.model.exam.ResultDecisionMethod;
 import com.sep.vox.domain.repository.ExamBlueprintRepository;
 import com.sep.vox.domain.repository.ExamRepository;
@@ -27,6 +31,9 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
 public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
+
+    private static final List<String> PERMITTED_STREAM_TYPES = List.of("CAMERA", "SCREEN");
+    private static final List<String> PERMITTED_STREAM_PERMISSION = List.of("ALL", "ANY");
 
     private final ExamRepository examRepository;
     private final ExamBlueprintRepository examBlueprintRepository;
@@ -70,6 +77,8 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
             }
         }
 
+        var streamConfig = resolveStreamConfig(command.requiredStreamTypes(), command.streamTypePermission());
+
         validateOpenClose(command.openAt(), command.closeAt());
 
         var now = OffsetDateTime.now();
@@ -92,10 +101,8 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
             command.assessmentPolicyId(),
             command.requiresOtp() == null || command.requiresOtp(),
             now,
-            // requiredStreamType/streamTypePermission: chưa có input nào set khi tạo exam,
-            // DB cho phép cả 2 cùng NULL (chk_exams_required_stream_type_and_stream_type_permission_valid).
-            null,
-            null,
+            streamConfig.requiredStreamType(),
+            streamConfig.streamTypePermission(),
             now,
             currentUserId,
             currentUserId
@@ -116,7 +123,11 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
             input.maxAttempt(),
             input.examTimeDurationSecond(),
             input.resultDecisionMethod(),
-            input.requiresOtp()
+            input.requiresOtp(), 
+            input.requiredStreamTypes() == null ? null : input.requiredStreamTypes().stream()
+                .map(StringNormalization::normalizeCode)
+                .toList(), 
+            input.streamTypePermission() == null ? null : StringNormalization.normalizeCode(input.streamTypePermission())
         );
     }
 
@@ -138,5 +149,46 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
             return code;
         }
         return "EX-" + UUID.randomUUID().toString().replace("-", "").toUpperCase();
+    }
+
+    private StreamConfig resolveStreamConfig(List<String> rawTypes, String rawPermission) {
+        if (rawTypes == null || rawTypes.isEmpty()) {
+            if (rawPermission != null) {
+                throw new IllegalArgumentException("Không thể đặt quyền stream khi không yêu cầu stream nào");
+            }
+            return new StreamConfig(
+                null, 
+                null
+            );
+        }
+
+        var types = new LinkedHashSet<>(rawTypes);
+        if (types.contains(null) || !PERMITTED_STREAM_TYPES.containsAll(types)) {
+            throw new IllegalArgumentException("Các loại stream gửi yêu cầu không được hỗ trợ");
+        }
+
+        if (types.size() == 1) {
+            if (rawPermission != null) {
+                throw new IllegalArgumentException("Quyền stream chỉ áp dụng khi yêu cầu đồng thời cả hai loại stream");
+            }
+            return new StreamConfig(ExamRequiredStreamType.valueOf(types.iterator().next()), null);
+        }
+
+        if (rawPermission == null) {
+            throw new IllegalArgumentException("Quyền cho các stream là bắt buộc cho 2 loại đồng thời");
+        }
+        if (!PERMITTED_STREAM_PERMISSION.contains(rawPermission)) {
+            throw new IllegalArgumentException("Quyền cho các stream không hợp lệ");
+        }
+        return new StreamConfig(
+            ExamRequiredStreamType.CAMERA_AND_SCREEN, 
+            ExamStreamTypePermission.valueOf(rawPermission)
+        );
+    }
+
+    private record StreamConfig(
+        ExamRequiredStreamType requiredStreamType, 
+        ExamStreamTypePermission streamTypePermission
+    ) {
     }
 }

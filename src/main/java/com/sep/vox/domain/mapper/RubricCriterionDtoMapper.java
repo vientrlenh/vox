@@ -1,17 +1,17 @@
 package com.sep.vox.domain.mapper;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.RubricCriterionDto;
 import com.sep.vox.domain.model.rubric.RubricCriterion;
 import com.sep.vox.domain.valueobject.rubric.RubricCriterionExamples;
 
+import tools.jackson.databind.json.JsonMapper;
+
 import java.util.List;
 
 public class RubricCriterionDtoMapper {
 
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final JsonMapper JSON_MAPPER = new JsonMapper();
 
     public static RubricCriterionDto toDto(RubricCriterion criterion) {
         if (criterion == null) {
@@ -58,8 +58,8 @@ public class RubricCriterionDtoMapper {
             return null;
         }
         try {
-            return OBJECT_MAPPER.writeValueAsString(examples);
-        } catch (JsonProcessingException e) {
+            return JSON_MAPPER.writeValueAsString(examples);
+        } catch (Exception e) {
             throw new IllegalStateException("Lỗi serialize examplesJson", e);
         }
     }

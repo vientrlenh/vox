@@ -8,6 +8,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.dataloader.BatchLoaderEnvironment;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.graphql.execution.BatchLoaderRegistry;
 
@@ -41,6 +43,8 @@ import reactor.core.publisher.Mono;
 @Configuration
 public class QuestionGraphQlDataLoaderConfig {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(QuestionGraphQlDataLoaderConfig.class);
+
     public QuestionGraphQlDataLoaderConfig(
             BatchLoaderRegistry registry,
             QuestionBankRepository questionBankRepository,
@@ -58,14 +62,14 @@ public class QuestionGraphQlDataLoaderConfig {
             .registerMappedBatchLoader((Set<UUID> ids, BatchLoaderEnvironment env) ->
                 Mono.fromSupplier(() -> questionBankRepository.findByIdIn(ids).stream()
                     .map(QuestionBankDtoMapper::toDto)
-                    .collect(Collectors.toMap(QuestionBankDto::id, dto -> dto)))
+                    .collect(Collectors.toMap(bank -> bank.id(), dto -> dto)))
             );
 
         registry.<UUID, QuestionTopicDto>forName("questionTopicById")
             .registerMappedBatchLoader((Set<UUID> ids, BatchLoaderEnvironment env) ->
                 Mono.fromSupplier(() -> questionTopicRepository.findByIdIn(ids).stream()
                     .map(QuestionTopicDtoMapper::toDto)
-                    .collect(Collectors.toMap(QuestionTopicDto::id, dto -> dto)))
+                    .collect(Collectors.toMap(topic -> topic.id(), dto -> dto)))
             );
 
         registry.<UUID, List<QuestionAssetDto>>forName("questionAssetsByQuestionId")
@@ -75,7 +79,7 @@ public class QuestionGraphQlDataLoaderConfig {
                     questionIds.forEach(id -> result.put(id, List.of()));
                     questionAssetRepository.findByQuestionIdIn(questionIds).stream()
                         .map(QuestionAssetDtoMapper::toDto)
-                        .collect(Collectors.groupingBy(QuestionAssetDto::questionId))
+                        .collect(Collectors.groupingBy(asset -> asset.questionId()))
                         .forEach(result::put);
                     return result;
                 })
@@ -85,7 +89,7 @@ public class QuestionGraphQlDataLoaderConfig {
             .registerMappedBatchLoader((Set<UUID> questionIds, BatchLoaderEnvironment env) ->
                 Mono.fromSupplier(() -> questionEvaluationGuideRepository.findByQuestionIdIn(questionIds).stream()
                     .map(QuestionEvaluationGuideDtoMapper::toDto)
-                    .collect(Collectors.toMap(QuestionEvaluationGuideDto::questionId, dto -> dto)))
+                    .collect(Collectors.toMap(guide -> guide.questionId(), dto -> dto)))
             );
 
         registry.<UUID, List<QuestionCollaboratorDto>>forName("questionCollaboratorsByQuestionId")
@@ -95,7 +99,7 @@ public class QuestionGraphQlDataLoaderConfig {
                     questionIds.forEach(id -> result.put(id, List.of()));
                     questionCollaboratorRepository.findByQuestionIdIn(questionIds).stream()
                         .map(QuestionCollaboratorDtoMapper::toDto)
-                        .collect(Collectors.groupingBy(QuestionCollaboratorDto::questionId))
+                        .collect(Collectors.groupingBy(collaborator -> collaborator.questionId()))
                         .forEach(result::put);
                     return result;
                 })
@@ -108,7 +112,7 @@ public class QuestionGraphQlDataLoaderConfig {
                     bankIds.forEach(id -> result.put(id, List.of()));
                     questionBankGradeRepository.findByQuestionBankIdIn(bankIds).stream()
                         .map(QuestionBankGradeDtoMapper::toDto)
-                        .collect(Collectors.groupingBy(QuestionBankGradeDto::questionBankId))
+                        .collect(Collectors.groupingBy(grade -> grade.questionBankId()))
                         .forEach(result::put);
                     return result;
                 })
@@ -117,6 +121,7 @@ public class QuestionGraphQlDataLoaderConfig {
         registry.<UUID, QuestionDto>forName("questionByIdAccessible")
             .registerMappedBatchLoader((Set<UUID> ids, BatchLoaderEnvironment env) ->
                 Mono.fromSupplier(() -> {
+                    var startedAt = System.nanoTime();
                     var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
                     var systemAdmin = userContextPort.isSystemAdmin();
                     var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
@@ -124,10 +129,29 @@ public class QuestionGraphQlDataLoaderConfig {
                         .orElse(null);
                     var schoolAdmin = !systemAdmin && userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
                         .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
-                    return questionRepository.findAccessibleByIdIn(ids, currentUserId, currentSchoolId, systemAdmin, schoolAdmin)
+                    var result = questionRepository.findAccessibleByIdIn(ids, currentUserId, currentSchoolId, systemAdmin, schoolAdmin)
                         .stream()
                         .map(QuestionDtoMapper::toQuestionDto)
-                        .collect(Collectors.toMap(QuestionDto::id, dto -> dto));
+                        .collect(Collectors.toMap(question -> question.id(), dto -> dto));
+                    LOGGER.info("[blueprint-perf] loader=questionByIdAccessible batchSize={} tookMs={}",
+                        ids.size(), (System.nanoTime() - startedAt) / 1_000_000);
+                    return result;
+                })
+            );
+
+        // KHÔNG check quyền — chỉ dùng ở nơi quyền xem đã được xác nhận qua parent
+        // (vd: ExamBlueprintSlot.fixedQuestion, sau khi ViewExamBlueprintDetailsUseCase.hasAccess
+        // đã pass rồi). Tránh lặp lại OR-tree phân quyền của questionByIdAccessible.
+        registry.<UUID, QuestionDto>forName("questionByIdBasic")
+            .registerMappedBatchLoader((Set<UUID> ids, BatchLoaderEnvironment env) ->
+                Mono.fromSupplier(() -> {
+                    var startedAt = System.nanoTime();
+                    var result = questionRepository.findByIdIn(ids).stream()
+                        .map(QuestionDtoMapper::toQuestionDto)
+                        .collect(Collectors.toMap(question -> question.id(), dto -> dto));
+                    LOGGER.info("[blueprint-perf] loader=questionByIdBasic batchSize={} tookMs={}",
+                        ids.size(), (System.nanoTime() - startedAt) / 1_000_000);
+                    return result;
                 })
             );
     }

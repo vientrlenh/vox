@@ -54,6 +54,8 @@ public class ViewExamItemResponseEvaluationUseCase
                     item.getRubricCriterionId(),
                     criterion == null ? null : criterion.getCode(),
                     criterion == null ? null : criterion.getName(),
+                    criterion == null ? null : criterion.getMinScore(),
+                    criterion == null ? null : criterion.getMaxScore(),
                     item.getRawScore(),
                     item.getFinalScore(),
                     item.getRationale()

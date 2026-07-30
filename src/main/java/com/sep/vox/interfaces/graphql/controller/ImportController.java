@@ -43,10 +43,11 @@ public class ImportController {
     @QueryMapping(name = "importSessions")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<ImportSessionSummaryResponse> importSessions(
-            @Argument(name = "page") int page,
-            @Argument(name = "size") int size,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size,
             @Argument(name = "type") String type,
             @Argument(name = "status") String status) {
+        validatePage(page, size);
         return viewImportSessionsUseCase.execute(new ViewImportSessionsQuery(page, size, type, status));
     }
 
@@ -54,9 +55,16 @@ public class ImportController {
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER', 'SYSTEM_ADMIN')")
     public PageResult<ImportRowResponse> importRows(
             @Argument(name = "sessionId") UUID sessionId,
-            @Argument(name = "page") int page,
-            @Argument(name = "size") int size,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size,
             @Argument(name = "status") String status) {
+        validatePage(page, size);
         return viewImportRowsUseCase.execute(new ViewImportRowsQuery(sessionId, page, size, status));
+    }
+
+    private void validatePage(Integer page, Integer size) {
+        if (page == null || size == null || page <= 0 || size <= 0) {
+            throw new IllegalArgumentException("Số trang hoặc kích thuớc trang yêu cầu không hợp lệ");
+        }
     }
 }

@@ -99,8 +99,9 @@ public class RubricVersionImportCommitHandler implements ImportCommitHandler {
 
                 int versionNum = 0;
                 if (errors.isEmpty()) {
+                    var safeVersionStr = versionStr == null ? "" : versionStr.trim();
                     try {
-                        versionNum = Integer.parseInt(versionStr.trim());
+                        versionNum = Integer.parseInt(safeVersionStr);
                         if (versionNum <= 0) errors.add(error("version", "Version phải lớn hơn 0."));
 
                         if (!versionsInThisFile.add(versionNum)) {
@@ -119,9 +120,11 @@ public class RubricVersionImportCommitHandler implements ImportCommitHandler {
                 BigDecimal minScore = null;
                 BigDecimal maxScore = null;
                 if (errors.isEmpty()) {
+                    var safeMinStr = minStr == null ? "" : minStr.trim();
+                    var safeMaxStr = maxStr == null ? "" : maxStr.trim();
                     try {
-                        minScore = new BigDecimal(minStr.trim());
-                        maxScore = new BigDecimal(maxStr.trim());
+                        minScore = new BigDecimal(safeMinStr);
+                        maxScore = new BigDecimal(safeMaxStr);
                         if (minScore.compareTo(maxScore) > 0) errors.add(error("scoringScaleMin", "Điểm sàn không được lớn hơn điểm trần."));
                     } catch (NumberFormatException e) {
                         errors.add(error("scoringScaleMin", "Điểm sàn hoặc điểm trần không đúng định dạng số."));
@@ -130,8 +133,9 @@ public class RubricVersionImportCommitHandler implements ImportCommitHandler {
 
                 RubricTotalScoreMethod method = null;
                 if (errors.isEmpty()) {
+                    var safeMethodStr = methodStr == null ? "" : methodStr.trim();
                     try {
-                        method = RubricTotalScoreMethod.valueOf(methodStr.trim().toUpperCase());
+                        method = RubricTotalScoreMethod.valueOf(safeMethodStr.toUpperCase(Locale.ROOT));
                     } catch (Exception e) {
                         errors.add(error("totalScoreMethod", "Phương pháp tính điểm không hợp lệ (Chỉ nhận SUM hoặc WEIGHTED_AVERAGE)."));
                     }

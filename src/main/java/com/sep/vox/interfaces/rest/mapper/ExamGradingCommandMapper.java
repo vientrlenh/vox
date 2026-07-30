@@ -54,21 +54,22 @@ public final class ExamGradingCommandMapper {
         return new RemoveGradingAssignmentCommand(assignmentId);
     }
 
-    /** Dùng cho cả /grade lẫn /grade/preview — cùng body, cùng command. */
+    /** Dùng cho cả /regrade lẫn /regrade/preview — cùng body, cùng command. */
     public static SubmitGradingCommand fromRequest(UUID assignmentId, SubmitGradingRequest request) {
-        return new SubmitGradingCommand(
-            assignmentId,
-            request.items() == null ? List.of() : request.items().stream()
-                .map(item -> new SubmitGradingCommand.ItemGrade(
-                    item.paperItemId(),
-                    item.criterionScores() == null ? List.of() : item.criterionScores().stream()
-                        .map(score -> new SubmitGradingCommand.CriterionScoreItem(
-                            score.rubricCriterionId(), score.score(), score.rationale()))
-                        .toList(),
-                    item.feedbackSummary()
-                ))
-                .toList()
-        );
+        return new SubmitGradingCommand(assignmentId, toItemGrades(request));
+    }
+
+    private static List<SubmitGradingCommand.ItemGrade> toItemGrades(SubmitGradingRequest request) {
+        return request.items() == null ? List.of() : request.items().stream()
+            .map(item -> new SubmitGradingCommand.ItemGrade(
+                item.paperItemId(),
+                item.criterionScores() == null ? List.of() : item.criterionScores().stream()
+                    .map(score -> new SubmitGradingCommand.CriterionScoreItem(
+                        score.rubricCriterionId(), score.score(), score.rationale()))
+                    .toList(),
+                item.feedbackSummary()
+            ))
+            .toList();
     }
 
     public static SetGradingDeadlineCommand fromRequest(SetGradingDeadlineRequest request) {

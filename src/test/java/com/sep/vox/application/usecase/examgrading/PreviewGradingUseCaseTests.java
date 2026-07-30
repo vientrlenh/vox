@@ -15,6 +15,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -40,12 +41,15 @@ import com.sep.vox.domain.model.exam.ExamSession;
 import com.sep.vox.domain.model.exam.GradingOutcome;
 import com.sep.vox.domain.model.exam.GradingRoundType;
 import com.sep.vox.domain.model.rubric.RubricCriterion;
+import com.sep.vox.domain.model.rubric.RubricTotalScoreMethod;
+import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
 import com.sep.vox.domain.repository.ExamItemCriterionScoreRepository;
 import com.sep.vox.domain.repository.ExamItemEvaluationRepository;
 import com.sep.vox.domain.repository.ExamItemResponseRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;
 import com.sep.vox.domain.repository.RubricCriterionRepository;
+import com.sep.vox.domain.repository.RubricVersionRepository;
 
 public class PreviewGradingUseCaseTests {
 
@@ -53,6 +57,7 @@ public class PreviewGradingUseCaseTests {
     private ExamGradingAccessService examGradingAccessService;
     private ExamItemResponseRepository examItemResponseRepository;
     private RubricCriterionRepository rubricCriterionRepository;
+    private RubricVersionRepository rubricVersionRepository;
     private ExamItemEvaluationRepository examItemEvaluationRepository;
     private ExamItemCriterionScoreRepository examItemCriterionScoreRepository;
     private ExamSessionRepository examSessionRepository;
@@ -77,13 +82,15 @@ public class PreviewGradingUseCaseTests {
         examGradingAccessService = mock(ExamGradingAccessService.class);
         examItemResponseRepository = mock(ExamItemResponseRepository.class);
         rubricCriterionRepository = mock(RubricCriterionRepository.class);
+        rubricVersionRepository = mock(RubricVersionRepository.class);
         examItemEvaluationRepository = mock(ExamItemEvaluationRepository.class);
         examItemCriterionScoreRepository = mock(ExamItemCriterionScoreRepository.class);
         examSessionRepository = mock(ExamSessionRepository.class);
         examGradingAssignmentRepository = mock(ExamGradingAssignmentRepository.class);
         upsertExamCandidateResultUseCase = mock(UpsertExamCandidateResultUseCase.class);
 
-        resolver = new GradingItemScoreResolver(examItemResponseRepository, rubricCriterionRepository);
+        resolver = new GradingItemScoreResolver(
+            examItemResponseRepository, rubricCriterionRepository, rubricVersionRepository);
         useCase = new PreviewGradingUseCase(
             examSessionResultCalculator, examGradingAccessService, resolver);
 
@@ -94,6 +101,7 @@ public class PreviewGradingUseCaseTests {
         when(rubricCriterionRepository.findByRubricVersionId(rubricVersionId)).thenReturn(List.of(
             criterion(fluencyId, "FLU", "Trôi chảy", new BigDecimal("0.60")),
             criterion(pronunciationId, "PRO", "Phát âm", new BigDecimal("0.40"))));
+        when(rubricVersionRepository.findById(rubricVersionId)).thenReturn(Optional.of(rubricVersion()));
         when(examSessionResultCalculator.preview(eq(sessionId), any())).thenReturn(
             new PreviewedExamSessionResult(new BigDecimal("7.20"), "Trung cao cấp", List.of(), List.of()));
     }
@@ -101,6 +109,14 @@ public class PreviewGradingUseCaseTests {
     private RubricCriterion criterion(UUID id, String code, String name, BigDecimal weight) {
         return new RubricCriterion(id, rubricVersionId, null, code, name, null, null, weight,
             new BigDecimal("0.00"), new BigDecimal("9.00"), 1, true, null, null, null, null);
+    }
+
+    private RubricVersion rubricVersion() {
+        var version = new RubricVersion();
+        version.setTotalScoreMethod(RubricTotalScoreMethod.WEIGHTED_AVERAGE);
+        version.setScoringScaleMin(BigDecimal.ZERO);
+        version.setScoringScaleMax(BigDecimal.TEN);
+        return version;
     }
 
     private GradingContext context() {

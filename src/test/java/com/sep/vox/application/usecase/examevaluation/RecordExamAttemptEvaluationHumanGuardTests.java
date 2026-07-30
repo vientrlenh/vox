@@ -22,9 +22,9 @@ import org.springframework.transaction.support.SimpleTransactionStatus;
 
 import com.sep.vox.application.port.input.command.examevaluation.RecordExamAttemptEvaluationCommand;
 import com.sep.vox.application.port.input.service.ConfidenceReviewCalculator;
+import com.sep.vox.application.port.input.usecase.exam.CompleteExamSessionGradingUseCase;
 import com.sep.vox.application.port.input.usecase.examevaluation.RecordExamAttemptEvaluationUseCase;
 import com.sep.vox.application.port.input.usecase.examevaluation.UpsertExamCandidateResultUseCase;
-import com.sep.vox.application.port.input.usecase.examsession.UpdateExamSessionStatusUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
 import com.sep.vox.domain.model.exam.Exam;
@@ -41,6 +41,7 @@ import com.sep.vox.domain.repository.ExamItemResponseRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;
 import com.sep.vox.domain.repository.RubricCriterionRepository;
+import com.sep.vox.domain.repository.RubricVersionRepository;
 import com.sep.vox.interfaces.kafka.dto.ExamAttemptEvaluationCompletedEventDto;
 import com.sep.vox.interfaces.kafka.dto.ExamAttemptEvaluationCompletedPayloadDto;
 import com.sep.vox.interfaces.kafka.mapper.RecordExamAttemptEvaluationCommandMapper;
@@ -63,8 +64,9 @@ public class RecordExamAttemptEvaluationHumanGuardTests {
     private ExamSessionRepository examSessionRepository;
     private ExamRepository examRepository;
     private AssessmentPolicyRepository assessmentPolicyRepository;
+    private RubricVersionRepository rubricVersionRepository;
     private UpsertExamCandidateResultUseCase upsertExamCandidateResultUseCase;
-    private UpdateExamSessionStatusUseCase updateExamSessionStatusUseCase;
+    private CompleteExamSessionGradingUseCase completeExamSessionGradingUseCase;
     private JsonSerializationPort jsonSerializationPort;
     private RecordExamAttemptEvaluationUseCase useCase;
 
@@ -85,8 +87,9 @@ public class RecordExamAttemptEvaluationHumanGuardTests {
         examSessionRepository = mock(ExamSessionRepository.class);
         examRepository = mock(ExamRepository.class);
         assessmentPolicyRepository = mock(AssessmentPolicyRepository.class);
+        rubricVersionRepository = mock(RubricVersionRepository.class);
         upsertExamCandidateResultUseCase = mock(UpsertExamCandidateResultUseCase.class);
-        updateExamSessionStatusUseCase = mock(UpdateExamSessionStatusUseCase.class);
+        completeExamSessionGradingUseCase = mock(CompleteExamSessionGradingUseCase.class);
         jsonSerializationPort = mock(JsonSerializationPort.class);
 
         var transactionManager = mock(PlatformTransactionManager.class);
@@ -96,7 +99,8 @@ public class RecordExamAttemptEvaluationHumanGuardTests {
         useCase = new RecordExamAttemptEvaluationUseCase(
             examItemResponseRepository, examItemEvaluationRepository, examItemCriterionScoreRepository,
             examItemEvaluationTurnRepository, rubricCriterionRepository, examSessionRepository, examRepository,
-            assessmentPolicyRepository, upsertExamCandidateResultUseCase, updateExamSessionStatusUseCase,
+            assessmentPolicyRepository, rubricVersionRepository, upsertExamCandidateResultUseCase,
+            completeExamSessionGradingUseCase,
             transactionManager, jsonSerializationPort, new ConfidenceReviewCalculator());
 
         when(examItemResponseRepository.findById(responseId)).thenReturn(Optional.of(
@@ -119,6 +123,8 @@ public class RecordExamAttemptEvaluationHumanGuardTests {
         policy.setId(policyId);
         policy.setRubricVersionId(rubricVersionId);
         when(assessmentPolicyRepository.findById(policyId)).thenReturn(Optional.of(policy));
+        when(rubricVersionRepository.findById(rubricVersionId))
+            .thenReturn(Optional.of(new com.sep.vox.domain.model.rubric.RubricVersion()));
         when(rubricCriterionRepository.findByRubricVersionId(rubricVersionId)).thenReturn(List.of());
     }
 

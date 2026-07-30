@@ -47,10 +47,14 @@ public class RubricResultBandJpaEntity {
     @Column(name = "description", length = 2048)
     private String description;
 
-    @Column(name = "score_min", nullable = false, precision = 6, scale = 2)
+    // columnDefinition = "numeric" (không khai precision/scale): band boundary cần độ chính xác
+    // tuỳ ý (VD 3.999 để né overlap với band kế tiếp bắt đầu ở 4) -- một scale cố định dù rộng cỡ
+    // nào cũng chỉ dời trần lên, không triệt để; NUMERIC không giới hạn scale mới tránh lặp lại bug
+    // làm tròn khi lưu (xem RubricResultBandValidator -- "chạm biên cũng tính overlap").
+    @Column(name = "score_min", nullable = false, columnDefinition = "numeric")
     private BigDecimal scoreMin;
 
-    @Column(name = "score_max", nullable = false, precision = 6, scale = 2)
+    @Column(name = "score_max", nullable = false, columnDefinition = "numeric")
     private BigDecimal scoreMax;
 
     @Column(name = "result_order", nullable = false, check = {

@@ -8,6 +8,7 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
+import com.sep.vox.domain.model.exam.ExamRequiredStreamType;
 import com.sep.vox.domain.model.exam.ExamSession;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
@@ -49,7 +50,7 @@ public class ExamSessionRepositoryImpl implements ExamSessionRepository {
         if (statuses == null || statuses.isEmpty()) {
             return Optional.empty();
         }
-        var rawStatuses = statuses.stream().map(Enum::name).toList();
+        var rawStatuses = statuses.stream().map(s -> s.name()).toList();
         return springDataExamSessionRepository.findTopByCandidateIdAndStatusInOrderByStartedAtDesc(candidateId, rawStatuses)
             .map(ExamSessionMapper::toDomain);
     }
@@ -99,8 +100,9 @@ public class ExamSessionRepositoryImpl implements ExamSessionRepository {
     }
 
     @Override
-    public Optional<ExamSession> findByIdAndInProgress(UUID id) {
-        return springDataExamSessionRepository.findByIdAndStatus(id, ExamSessionStatus.IN_PROGRESS.name())
+    public Optional<ExamSession> findByIdAndResumable(UUID id) {
+        var rawStatuses = ExamSessionStatus.RESUMABLE.stream().map(s -> s.name()).toList();
+        return springDataExamSessionRepository.findByIdAndStatusIn(id, rawStatuses)
             .map(ExamSessionMapper::toDomain);
     }
 
@@ -111,10 +113,25 @@ public class ExamSessionRepositoryImpl implements ExamSessionRepository {
     }
 
     @Override
+    public int lockChosenStreamType(UUID id, ExamRequiredStreamType chosenStreamType) {
+        return springDataExamSessionRepository.lockChosenStreamType(id, chosenStreamType.name());
+    }
+
+    @Override
+    public int checkpointRemainingSeconds(UUID id, int remainingSeconds) {
+        return springDataExamSessionRepository.checkpointRemainingSeconds(id, remainingSeconds);
+    }
+
+    @Override
     public List<ExamSession> findActiveByIdInAndSchoolId(Collection<UUID> ids, OffsetDateTime now, UUID schoolId) {
         return springDataExamSessionRepository.findActiveByIdInAndSchoolId(ids, now, schoolId)
             .stream()
             .map(ExamSessionMapper::toDomain)
             .toList();
+    }
+
+    @Override
+    public boolean tryTransitionStatus(UUID sessionId, ExamSessionStatus from, ExamSessionStatus to) {
+        return springDataExamSessionRepository.tryTransitionStatus(sessionId, from.name(), to.name()) > 0;
     }
 }

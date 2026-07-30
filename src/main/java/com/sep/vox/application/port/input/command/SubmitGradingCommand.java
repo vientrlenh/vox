@@ -6,10 +6,13 @@ import java.util.UUID;
 
 /**
  * Giáo viên nộp điểm cho các phần thi của một bài. Cùng một command dùng cho cả
- * {@code /grade} (ghi & chốt) lẫn {@code /grade/preview} (chỉ tính thử) — hai
+ * {@code /regrade} (ghi & chốt) lẫn {@code /regrade/preview} (chỉ tính thử) — hai
  * đường phải nhận đúng một đầu vào thì tổng chúng trả về mới bằng nhau.
  *
  * <p>KHÔNG có điểm tổng: tổng luôn được dẫn xuất lại từ điểm tiêu chí.
+ *
+ * <p>Vào bằng {@code assignmentId}, không phải {@code candidateResultId}: quyền chấm
+ * đến từ chính dòng phân công, và vòng chấm ({@code roundType}) cũng nằm ở đó.
  */
 public record SubmitGradingCommand(
     UUID assignmentId,

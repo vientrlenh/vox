@@ -108,10 +108,11 @@ public class FrameworkController {
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public PageResult<FrameworkVersionDto> frameworkVersions(
             @Argument(name = "frameworkId") UUID frameworkId,
+            @Argument(name = "status") String status,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
         validatePage(page, size);
-        return viewFrameworkVersionsUseCase.execute(new ViewFrameworkVersionsQuery(frameworkId, page, size));
+        return viewFrameworkVersionsUseCase.execute(new ViewFrameworkVersionsQuery(frameworkId, status, page, size));
     }
 
     @QueryMapping(name = "frameworkVersion")
@@ -210,6 +211,6 @@ public class FrameworkController {
 
     private void validatePage(Integer page, Integer size) {
         if (page == null || size == null || page <= 0 || size <= 0)
-            throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ"); 
+            throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
     }
 }

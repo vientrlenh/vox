@@ -62,18 +62,18 @@ public class GradingController {
     @QueryMapping(name = "gradingAssignments")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<GradingAssignmentRowInfo> gradingAssignments(
-            @Argument("examId") UUID examId,
-            @Argument("scheduleId") UUID scheduleId,
-            @Argument("teacherId") UUID teacherId,
-            @Argument("resultStatus") String resultStatus,
-            @Argument("roundType") String roundType,
-            @Argument("status") String status,
-            @Argument("unassignedOnly") Boolean unassignedOnly,
-            @Argument("overdueOnly") Boolean overdueOnly,
-            @Argument("hasOpenAppeal") Boolean hasOpenAppeal,
-            @Argument("search") String search,
-            @Argument("page") Integer page,
-            @Argument("size") Integer size) {
+            @Argument(name = "examId") UUID examId,
+            @Argument(name = "scheduleId") UUID scheduleId,
+            @Argument(name = "teacherId") UUID teacherId,
+            @Argument(name = "resultStatus") String resultStatus,
+            @Argument(name = "roundType") String roundType,
+            @Argument(name = "status") String status,
+            @Argument(name = "unassignedOnly") Boolean unassignedOnly,
+            @Argument(name = "overdueOnly") Boolean overdueOnly,
+            @Argument(name = "hasOpenAppeal") Boolean hasOpenAppeal,
+            @Argument(name = "search") String search,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
         return viewGradingAssignmentsUseCase.execute(new SearchGradingAssignmentsQuery(
             examId, scheduleId, teacherId, resultStatus, roundType, status,
             Boolean.TRUE.equals(unassignedOnly), Boolean.TRUE.equals(overdueOnly), hasOpenAppeal, search,
@@ -83,31 +83,31 @@ public class GradingController {
     @QueryMapping(name = "gradingStats")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public GradingStatsInfo gradingStats(
-            @Argument("examId") UUID examId,
-            @Argument("scheduleId") UUID scheduleId) {
+            @Argument(name = "examId") UUID examId,
+            @Argument(name = "scheduleId") UUID scheduleId) {
         return viewGradingStatsUseCase.execute(new ViewGradingStatsQuery(examId, scheduleId));
     }
 
     @QueryMapping(name = "myGradingTasks")
     @PreAuthorize("hasRole('TEACHER')")
     public PageResult<GradingTaskInfo> myGradingTasks(
-            @Argument("status") String status,
-            @Argument("roundType") String roundType,
-            @Argument("page") Integer page,
-            @Argument("size") Integer size) {
+            @Argument(name = "status") String status,
+            @Argument(name = "roundType") String roundType,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
         return viewMyGradingTasksUseCase.execute(new ViewMyGradingTasksQuery(
             status, roundType, page == null ? 0 : page, size == null ? DEFAULT_PAGE_SIZE : size));
     }
 
     @QueryMapping(name = "gradingTaskDetail")
     @PreAuthorize("hasRole('TEACHER')")
-    public GradingTaskDetailInfo gradingTaskDetail(@Argument("assignmentId") UUID assignmentId) {
+    public GradingTaskDetailInfo gradingTaskDetail(@Argument(name = "assignmentId") UUID assignmentId) {
         return viewGradingTaskDetailUseCase.execute(assignmentId);
     }
 
     @QueryMapping(name = "assignableTeachers")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public List<AssignableTeacherInfo> assignableTeachers(@Argument("search") String search) {
+    public List<AssignableTeacherInfo> assignableTeachers(@Argument(name = "search") String search) {
         return viewAssignableTeachersUseCase.execute(new ViewAssignableTeachersQuery(search));
     }
 
@@ -118,13 +118,13 @@ public class GradingController {
     @QueryMapping(name = "resultStatusHistory")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER', 'STUDENT')")
     public List<ResultStatusHistoryInfo> resultStatusHistory(
-            @Argument("candidateResultId") UUID candidateResultId) {
+            @Argument(name = "candidateResultId") UUID candidateResultId) {
         return viewResultStatusHistoryUseCase.execute(candidateResultId);
     }
 
     @QueryMapping(name = "aiQualityReport")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public AiQualityReportInfo aiQualityReport(@Argument("examId") UUID examId) {
+    public AiQualityReportInfo aiQualityReport(@Argument(name = "examId") UUID examId) {
         return viewAiQualityReportUseCase.execute(new ViewAiQualityReportQuery(examId));
     }
 }

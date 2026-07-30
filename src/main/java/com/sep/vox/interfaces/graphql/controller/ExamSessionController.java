@@ -17,6 +17,7 @@ import com.sep.vox.application.port.input.command.ForceEndExamSessionCommand;
 import com.sep.vox.application.port.input.command.RetryGradingExamSessionCommand;
 import com.sep.vox.application.port.input.command.SubmitExamSessionCommand;
 import com.sep.vox.application.port.input.command.UnblockExamCandidateCommand;
+import com.sep.vox.application.port.input.query.GetExamRecordsQuery;
 import com.sep.vox.application.port.input.query.ViewExamItemResponseEvaluationQuery;
 import com.sep.vox.application.port.input.query.ViewExamItemResponseQuery;
 import com.sep.vox.application.port.input.query.ViewExamItemResponseTurnsQuery;
@@ -43,6 +44,7 @@ import com.sep.vox.application.response.input.examitemresponse.ExamSessionFollow
 import com.sep.vox.application.response.input.examsession.ExamCandidateResultResponse;
 import com.sep.vox.application.response.input.examsession.ExamSessionResponse;
 import com.sep.vox.application.response.input.examsession.StudentExamResultSummaryResponse;
+import com.sep.vox.domain.dto.ExamRecordingDto;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 
 
@@ -94,6 +96,13 @@ public class ExamSessionController {
         this.submitExamSessionUseCase = submitExamSessionUseCase;
         this.getExamRecordsUseCase = getExamRecordsUseCase;
 
+    }
+
+    @QueryMapping
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
+    public List<ExamRecordingDto> recordings(@Argument(name = "examSessionId") UUID examSessionId, @Argument(name = "streamType") String streamType) {
+        var query = new GetExamRecordsQuery(examSessionId, streamType);
+        return getExamRecordsUseCase.execute(query);
     }
 
     @QueryMapping
@@ -150,8 +159,9 @@ public class ExamSessionController {
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public UUID flagExamSession(
             @Argument(name = "sessionId") UUID sessionId,
+            @Argument(name = "flagged") boolean flagged,
             @Argument(name = "reason") String reason) {
-        return flagExamSessionUseCase.execute(new FlagExamSessionCommand(sessionId, reason));
+        return flagExamSessionUseCase.execute(new FlagExamSessionCommand(sessionId, flagged, reason));
     }
 
     @MutationMapping

@@ -44,3 +44,4 @@ out/
 AI/
 CLAUDE.md
 .DS_Store
+logs/

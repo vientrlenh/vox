@@ -25,7 +25,7 @@ import com.sep.vox.application.response.input.examgrading.GradingPreviewResponse
  *
  * <p>Là POST nhưng chỉ đọc: body quá lớn cho một GraphQL query. {@code readOnly}
  * là hàng rào cuối — validate và quy đổi điểm đi chung đường với
- * {@code SubmitGradingUseCase} nên tổng ở đây bằng đúng tổng khi nộp.
+ * {@code RegradeResultUseCase} nên tổng ở đây bằng đúng tổng khi nộp.
  */
 @Service
 public class PreviewGradingUseCase implements IUseCase<SubmitGradingCommand, GradingPreviewResponse> {

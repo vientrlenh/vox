@@ -31,7 +31,6 @@ public class UpdateQuestionAssetUseCase implements IUseCase<UpdateQuestionAssetC
     private final QuestionCollaboratorRepository questionCollaboratorRepository;
     private final QuestionAssetRepository questionAssetRepository;
     private final QuestionCloneService questionCloneService;
-    private final QuestionAssetAnalysisRequestPublisher questionAssetAnalysisRequestPublisher;
     private final UserContextPort userContextPort;
 
     public UpdateQuestionAssetUseCase(
@@ -40,14 +39,12 @@ public class UpdateQuestionAssetUseCase implements IUseCase<UpdateQuestionAssetC
             QuestionCollaboratorRepository questionCollaboratorRepository,
             QuestionAssetRepository questionAssetRepository,
             QuestionCloneService questionCloneService,
-            QuestionAssetAnalysisRequestPublisher questionAssetAnalysisRequestPublisher,
             UserContextPort userContextPort) {
         this.questionRepository = questionRepository;
         this.questionBankRepository = questionBankRepository;
         this.questionCollaboratorRepository = questionCollaboratorRepository;
         this.questionAssetRepository = questionAssetRepository;
         this.questionCloneService = questionCloneService;
-        this.questionAssetAnalysisRequestPublisher = questionAssetAnalysisRequestPublisher;
         this.userContextPort = userContextPort;
     }
 

@@ -18,7 +18,7 @@ class ConfidenceReviewCalculatorTests {
         var decision = calculator.compute(
             null,
             ExamKind.CLASS_TEST,
-            false,
+            null,
             false
         );
 
@@ -32,7 +32,7 @@ class ConfidenceReviewCalculatorTests {
         var decision = calculator.compute(
             signals(decimal("0.54"), null, null, null, null, null, null, null, null, null),
             ExamKind.CLASS_TEST,
-            false,
+            null,
             false
         );
 
@@ -45,7 +45,7 @@ class ConfidenceReviewCalculatorTests {
         var decision = calculator.compute(
             signals(decimal("0.70"), null, null, null, null, null, null, null, null, null),
             ExamKind.CLASS_TEST,
-            false,
+            null,
             false
         );
 
@@ -58,7 +58,7 @@ class ConfidenceReviewCalculatorTests {
         var decision = calculator.compute(
             signals(null, null, null, null, null, null, null, decimal("0.40"), decimal("0.40"), decimal("0.90")),
             ExamKind.CLASS_TEST,
-            false,
+            null,
             false
         );
 
@@ -72,13 +72,13 @@ class ConfidenceReviewCalculatorTests {
         var classTest = calculator.compute(
             signals(decimal("0.78"), null, null, null, null, null, null, null, null, null),
             ExamKind.CLASS_TEST,
-            false,
+            null,
             false
         );
         var centralized = calculator.compute(
             signals(decimal("0.78"), null, null, null, null, null, null, null, null, null),
             ExamKind.CENTRALIZED,
-            false,
+            null,
             false
         );
 
@@ -95,7 +95,7 @@ class ConfidenceReviewCalculatorTests {
             alignmentSignals(null, null, null, null, null, null,
                 decimal("0.75"), decimal("0.95"), decimal("0.90"), null, null, null, null),
             ExamKind.CLASS_TEST,
-            false,
+            null,
             false
         );
 
@@ -111,7 +111,7 @@ class ConfidenceReviewCalculatorTests {
             alignmentSignals(null, null, null, null, null, null,
                 decimal("0.85"), decimal("0.95"), decimal("0.90"), null, null, null, null),
             ExamKind.CLASS_TEST,
-            false,
+            null,
             false
         );
 
@@ -120,11 +120,39 @@ class ConfidenceReviewCalculatorTests {
     }
 
     @Test
+    void codeSwitchSkipsAlignmentReasonsWhenItExplainsObservedGap() {
+        var decision = calculator.compute(
+            alignmentSignals(null, null, null, null, null, null,
+                decimal("0.75"), decimal("0.80"), decimal("0.90"), null, null, null, null),
+            ExamKind.CLASS_TEST,
+            decimal("0.25"),
+            false
+        );
+
+        assertThat(decision.reviewReasons())
+            .doesNotContain("ALIGNMENT_MISCUE_HIGH", "ALIGNMENT_COVERAGE_LOW");
+    }
+
+    @Test
+    void codeSwitchKeepsAlignmentReasonsWhenItDoesNotExplainObservedGap() {
+        var decision = calculator.compute(
+            alignmentSignals(null, null, null, null, null, null,
+                decimal("0.60"), decimal("0.70"), decimal("0.90"), null, null, null, null),
+            ExamKind.CLASS_TEST,
+            decimal("0.10"),
+            false
+        );
+
+        assertThat(decision.reviewReasons())
+            .contains("ALIGNMENT_MISCUE_HIGH", "ALIGNMENT_COVERAGE_LOW");
+    }
+
+    @Test
     void moderateAudioDoesNotTriggerHardGate() {
         var decision = calculator.compute(
             signals(null, decimal("0.50"), decimal("0.90"), null, null, null, null, null, null, null),
             ExamKind.CLASS_TEST,
-            false,
+            null,
             false
         );
 

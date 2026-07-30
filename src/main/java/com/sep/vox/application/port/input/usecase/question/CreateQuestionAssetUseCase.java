@@ -29,7 +29,6 @@ public class CreateQuestionAssetUseCase implements IUseCase<CreateQuestionAssetM
     private final QuestionCollaboratorRepository questionCollaboratorRepository;
     private final QuestionAssetRepository questionAssetRepository;
     private final QuestionCloneService questionCloneService;
-    private final QuestionAssetAnalysisRequestPublisher questionAssetAnalysisRequestPublisher;
     private final UserContextPort userContextPort;
 
     public CreateQuestionAssetUseCase(
@@ -38,14 +37,12 @@ public class CreateQuestionAssetUseCase implements IUseCase<CreateQuestionAssetM
             QuestionCollaboratorRepository questionCollaboratorRepository,
             QuestionAssetRepository questionAssetRepository,
             QuestionCloneService questionCloneService,
-            QuestionAssetAnalysisRequestPublisher questionAssetAnalysisRequestPublisher,
             UserContextPort userContextPort) {
         this.questionRepository = questionRepository;
         this.questionBankRepository = questionBankRepository;
         this.questionCollaboratorRepository = questionCollaboratorRepository;
         this.questionAssetRepository = questionAssetRepository;
         this.questionCloneService = questionCloneService;
-        this.questionAssetAnalysisRequestPublisher = questionAssetAnalysisRequestPublisher;
         this.userContextPort = userContextPort;
     }
 

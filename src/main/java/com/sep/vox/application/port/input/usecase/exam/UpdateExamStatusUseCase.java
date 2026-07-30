@@ -2,7 +2,6 @@ package com.sep.vox.application.port.input.usecase.exam;
 
 import java.time.OffsetDateTime;
 
-import com.sep.vox.domain.model.school.SchoolUser;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -110,7 +109,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
         );
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
-            .map(SchoolUser::getSchoolId)
+            .map(user -> user.getSchoolId())
             .orElse(null);
         var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));

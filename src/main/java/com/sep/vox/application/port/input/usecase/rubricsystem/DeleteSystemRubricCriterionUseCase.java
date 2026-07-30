@@ -22,21 +22,18 @@ public class DeleteSystemRubricCriterionUseCase implements IUseCase<DeleteSystem
     private final RubricRepository rubricRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
-    private final RubricCriterionBandRepository rubricCriterionBandRepository; // BỔ SUNG
 
     public DeleteSystemRubricCriterionUseCase(
             RubricCriterionRepository rubricCriterionRepository,
             RubricVersionRepository rubricVersionRepository,
             RubricRepository rubricRepository,
             UserRepository userRepository,
-            UserContextPort userContextPort,
-            RubricCriterionBandRepository rubricCriterionBandRepository) { // BỔ SUNG
+            UserContextPort userContextPort) {
         this.rubricCriterionRepository = rubricCriterionRepository;
         this.rubricVersionRepository = rubricVersionRepository;
         this.rubricRepository = rubricRepository;
         this.userRepository = userRepository;
         this.userContextPort = userContextPort;
-        this.rubricCriterionBandRepository = rubricCriterionBandRepository;
     }
 
     @Override
@@ -68,10 +65,7 @@ public class DeleteSystemRubricCriterionUseCase implements IUseCase<DeleteSystem
             throw new IllegalArgumentException("Tiêu chí sai phiên bản.");
         }
 
-        // 5. CASCADE DELETE: Xóa dữ liệu nối (RubricCriterionBand) trước khi xóa Tiêu chí cha
-        rubricCriterionBandRepository.deleteByCriterionId(criterion.getId());
-
-        // 6. Xóa cứng Tiêu chí
+        // 5. Xóa cứng Tiêu chí
         rubricCriterionRepository.deleteById(criterion.getId());
 
         return null;

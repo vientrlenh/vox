@@ -61,7 +61,7 @@ class SetGradingDeadlineUseCaseTests {
             adminId, Instant.now().minus(1, ChronoUnit.DAYS));
         assignment.setId(UUID.randomUUID());
         assignment.setRemindedAt(Instant.now().minus(6, ChronoUnit.HOURS));
-        when(examGradingAccessService.load(assignment.getId())).thenReturn(new GradingContext(
+        when(examGradingAccessService.loadForUpdate(assignment.getId())).thenReturn(new GradingContext(
             assignment, new ExamCandidateResult(), new ExamSession(), assignmentSchoolId, "IELTS Mock"));
         return assignment;
     }

@@ -125,7 +125,7 @@ class GradingDecisionUseCasesTests {
             result.getTotalScore(), Instant.now().minus(4, ChronoUnit.DAYS), adminId,
             Instant.now().minus(1, ChronoUnit.DAYS));
         assignment.setId(assignmentId);
-        when(examGradingAccessService.load(assignmentId)).thenReturn(
+        when(examGradingAccessService.loadForUpdate(assignmentId)).thenReturn(
             new GradingContext(assignment, result, session, UUID.randomUUID(), "IELTS Mock"));
         return result;
     }
@@ -211,7 +211,7 @@ class GradingDecisionUseCasesTests {
 
         // Bài không đổi trạng thái — nó chỉ quay về hàng chưa giao.
         assertThat(result.getStatus()).isEqualTo(ExamCandidateResultStatus.PENDING_REVIEW);
-        var assignment = examGradingAccessService.load(assignmentId).assignment();
+        var assignment = examGradingAccessService.loadForUpdate(assignmentId).assignment();
         assertThat(assignment.isCompleted()).isTrue();
         assertThat(assignment.getOutcome()).isEqualTo(GradingOutcome.DECLINED);
         assertThat(assignment.getActiveResultId()).isNull();

@@ -31,6 +31,12 @@ public class ExamGradingAssignmentRepositoryImpl implements ExamGradingAssignmen
     }
 
     @Override
+    public Optional<ExamGradingAssignment> findByIdForUpdate(UUID id) {
+        return springDataExamGradingAssignmentRepository.findByIdForUpdate(id)
+            .map(ExamGradingAssignmentMapper::toDomain);
+    }
+
+    @Override
     public Optional<ExamGradingAssignment> findOpenByCandidateResultId(UUID candidateResultId) {
         return springDataExamGradingAssignmentRepository.findByActiveResultId(candidateResultId)
             .map(ExamGradingAssignmentMapper::toDomain);
@@ -95,16 +101,12 @@ public class ExamGradingAssignmentRepositoryImpl implements ExamGradingAssignmen
     }
 
     /**
-     * Flush ngay, không đợi cuối transaction. Hai lý do, cả hai đều là lỗi thật nếu bỏ:
+     * Flush ngay, không đợi cuối transaction — bỏ đi là lỗi thật, không phải tối ưu.
      *
-     * <ol>
-     *   <li>Unique index trên {@code active_result_id} nhạy với THỨ TỰ ghi. Hibernate
-     *       mặc định flush INSERT trước UPDATE, nên "đóng vòng cũ rồi mở vòng mới cho
-     *       cùng một bài" (chính là {@code CLEAR_INVALID}) sẽ chèn dòng mới trước khi
-     *       nhả {@code active_result_id} của dòng cũ -> vi phạm unique.
-     *   <li>{@code @Version} chỉ báo xung đột lúc flush. Flush sớm cho lỗi nổ ra đúng
-     *       chỗ gọi, thay vì nổ ở commit khi đã không còn ngữ cảnh để dịch sang tiếng Việt.
-     * </ol>
+     * <p>Unique index trên {@code active_result_id} nhạy với THỨ TỰ ghi. Hibernate mặc
+     * định flush INSERT trước UPDATE, nên "đóng vòng cũ rồi mở vòng mới cho cùng một
+     * bài" (chính là {@code CLEAR_INVALID}) sẽ chèn dòng mới trước khi nhả
+     * {@code active_result_id} của dòng cũ -> vi phạm unique.
      */
     @Override
     public ExamGradingAssignment save(ExamGradingAssignment assignment) {

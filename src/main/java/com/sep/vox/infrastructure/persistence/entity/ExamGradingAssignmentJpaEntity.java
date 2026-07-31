@@ -13,7 +13,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
-import jakarta.persistence.Version;
 
 /**
  * Một bảng cho cả bốn vòng chấm ({@code round_type}).
@@ -22,10 +21,11 @@ import jakarta.persistence.Version;
  * {@code active_result_id}, KHÔNG phải trên {@code candidate_result_id}: cột active
  * bằng chính bài khi ASSIGNED và {@code NULL} khi COMPLETED, mà Postgres coi các NULL
  * là khác nhau — nên một unique index <em>thường</em> cho đúng ngữ nghĩa của partial
- * index {@code WHERE status='ASSIGNED'}, thứ mà {@code ddl-auto: update} không tạo được.
+ * index {@code WHERE status='ASSIGNED'}.
  *
- * <p>{@code @Version} chặn double-submit: hai request cùng đọc dòng ASSIGNED rồi cùng
- * ghi thì người sau nhận {@code OptimisticLockException} thay vì chấm đè.
+ * <p>Index đó chỉ canh chiều MỞ phân công. Chiều đóng/sửa được canh bằng khoá bi quan
+ * ở {@code findByIdForUpdate} — xem
+ * {@code ExamGradingAccessService#loadForUpdate}.
  */
 @Entity
 @Table(name = "exam_grading_assignments", indexes = {
@@ -107,16 +107,12 @@ public class ExamGradingAssignmentJpaEntity {
     @Column(name = "active_result_id")
     private UUID activeResultId;
 
-    @Version
-    @Column(name = "version", nullable = false)
-    private int version;
-
     protected ExamGradingAssignmentJpaEntity() {}
 
     public ExamGradingAssignmentJpaEntity(UUID id, UUID candidateResultId, UUID teacherId, String roundType,
             UUID appealId, String status, String outcome, BigDecimal scoreBefore, Instant assignedAt,
             UUID assignedBy, Instant completedAt, Instant deadlineAt, Instant remindedAt,
-            String reason, UUID activeResultId, int version) {
+            String reason, UUID activeResultId) {
         this.id = id;
         this.candidateResultId = candidateResultId;
         this.teacherId = teacherId;
@@ -132,7 +128,6 @@ public class ExamGradingAssignmentJpaEntity {
         this.remindedAt = remindedAt;
         this.reason = reason;
         this.activeResultId = activeResultId;
-        this.version = version;
     }
 
     public UUID getId() {
@@ -253,13 +248,5 @@ public class ExamGradingAssignmentJpaEntity {
 
     public void setActiveResultId(UUID activeResultId) {
         this.activeResultId = activeResultId;
-    }
-
-    public int getVersion() {
-        return version;
-    }
-
-    public void setVersion(int version) {
-        this.version = version;
     }
 }

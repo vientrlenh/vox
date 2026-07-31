@@ -67,7 +67,7 @@ class ReassignGradingUseCaseTests {
 
         var candidateResult = new ExamCandidateResult();
         candidateResult.setId(candidateResultId);
-        when(examGradingAccessService.load(assignment.getId())).thenReturn(new GradingContext(
+        when(examGradingAccessService.loadForUpdate(assignment.getId())).thenReturn(new GradingContext(
             assignment, candidateResult, new ExamSession(), schoolId, "IELTS Mock"));
         return assignment;
     }

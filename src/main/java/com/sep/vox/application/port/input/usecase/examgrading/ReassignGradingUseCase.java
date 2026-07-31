@@ -42,7 +42,10 @@ public class ReassignGradingUseCase implements IUseCase<ReassignGradingCommand, 
     @Transactional
     public UUID execute(ReassignGradingCommand command) {
         var currentUserId = examGradingAccessService.requireActiveUserId();
-        var context = examGradingAccessService.load(command.assignmentId());
+        // Khoá: nếu không, giáo viên nộp xong đúng lúc admin bấm đổi người thì bản ghi
+        // đè lên sẽ mang ảnh chụp cũ (ASSIGNED, chưa có outcome) và làm bài đã chấm
+        // sống lại thành chưa chấm.
+        var context = examGradingAccessService.loadForUpdate(command.assignmentId());
         examGradingAccessService.authorizeSchoolAdmin(context.schoolId(), currentUserId);
 
         var assignment = context.assignment();

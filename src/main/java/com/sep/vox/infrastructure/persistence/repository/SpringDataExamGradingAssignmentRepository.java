@@ -8,13 +8,28 @@ import java.util.UUID;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.sep.vox.infrastructure.persistence.entity.ExamGradingAssignmentJpaEntity;
 
+import jakarta.persistence.LockModeType;
+
 public interface SpringDataExamGradingAssignmentRepository
         extends JpaRepository<ExamGradingAssignmentJpaEntity, UUID> {
+
+    /**
+     * Đọc kèm khoá ghi cho các luồng SỬA phân công.
+     *
+     * <p>Domain được map ra POJO detached nên {@code save} là {@code merge} ghi đè TOÀN
+     * BỘ cột — không có dirty checking để phát hiện ai đó vừa đổi dòng này. Khoá ở đây
+     * là thứ buộc hai luồng cùng sửa một phân công phải nối đuôi nhau, nhờ đó các kiểm
+     * tra kiểu {@code isCompleted()} đọc được trạng thái mới nhất thay vì ảnh chụp cũ.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT ga FROM ExamGradingAssignmentJpaEntity ga WHERE ga.id = :id")
+    Optional<ExamGradingAssignmentJpaEntity> findByIdForUpdate(@Param("id") UUID id);
 
     /**
      * Dòng đang mở của một bài. Lọc bằng {@code active_result_id} chứ không bằng

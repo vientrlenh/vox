@@ -46,9 +46,15 @@ public class SetGradingDeadlineUseCase implements IUseCase<SetGradingDeadlineCom
 
         // Validate hết rồi mới ghi, và phân quyền một lần cho mỗi trường phân biệt —
         // cùng khuôn với AssignGradingUseCase.
+        //
+        // Khoá theo THỨ TỰ ID đã sắp, không theo thứ tự client gửi lên: đây là khoá
+        // theo lô, nên hai admin gửi hai danh sách giao nhau theo thứ tự ngược nhau sẽ
+        // khoá chéo và deadlock. Sắp trước cho mọi transaction đi cùng một chiều.
+        // Thứ tự đầu vào không ảnh hưởng kết quả trả về nên sắp lại là vô hại.
+        var lockOrderedIds = assignmentIds.stream().sorted().toList();
         var contexts = new ArrayList<ExamGradingAccessService.GradingContext>();
-        for (var assignmentId : assignmentIds) {
-            var context = examGradingAccessService.load(assignmentId);
+        for (var assignmentId : lockOrderedIds) {
+            var context = examGradingAccessService.loadForUpdate(assignmentId);
             if (context.assignment().isCompleted()) {
                 throw new IllegalStateException("Không thể đặt hạn cho phân công đã chốt.");
             }

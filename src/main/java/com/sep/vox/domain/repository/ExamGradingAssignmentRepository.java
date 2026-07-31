@@ -12,6 +12,13 @@ public interface ExamGradingAssignmentRepository {
     Optional<ExamGradingAssignment> findById(UUID id);
 
     /**
+     * Như {@link #findById} nhưng khoá dòng để ghi, khoá giữ tới hết transaction. Chỉ
+     * gọi TRONG một transaction ghi — dùng cho các luồng đọc-sửa-ghi trên cùng một phân
+     * công (chấm bài, đổi giáo viên, đặt hạn) để chúng nối đuôi nhau thay vì ghi đè nhau.
+     */
+    Optional<ExamGradingAssignment> findByIdForUpdate(UUID id);
+
+    /**
      * Phân công đang mở của một bài. Một bài tối đa một dòng mở — DB enforce bằng
      * unique index trên {@code active_result_id}; các dòng đã đóng của vòng trước
      * mang {@code active_result_id = NULL} nên không lọt vào đây.

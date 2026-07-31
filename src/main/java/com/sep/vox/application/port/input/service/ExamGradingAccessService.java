@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.service;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
@@ -84,6 +85,25 @@ public class ExamGradingAccessService {
     @Transactional(readOnly = true)
     public GradingContext load(UUID assignmentId) {
         var assignment = examGradingAssignmentRepository.findById(assignmentId)
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy phân công chấm bài."));
+        return loadFromCandidateResult(assignment, assignment.getCandidateResultId());
+    }
+
+    /**
+     * Như {@link #load} nhưng khoá dòng phân công để ghi.
+     *
+     * <p>Dùng cho mọi luồng đọc-sửa-ghi trên một phân công. Không có khoá, hai request
+     * cùng đọc một dòng ASSIGNED sẽ cùng vượt qua các kiểm tra kiểu {@code isCompleted()}
+     * rồi cùng ghi — mà {@code save} ở đây là {@code merge} trên POJO detached nên ghi đè
+     * trọn cả dòng. Khoá cho luồng sau chờ, đọc lại trạng thái đã cập nhật, và ném đúng
+     * thông báo nghiệp vụ thay vì lặng lẽ chấm đè.
+     *
+     * <p>{@code MANDATORY} vì khoá chỉ có nghĩa khi nằm trong transaction ghi của use
+     * case: nếu tự mở transaction riêng, khoá sẽ nhả ngay khi hàm này trả về.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public GradingContext loadForUpdate(UUID assignmentId) {
+        var assignment = examGradingAssignmentRepository.findByIdForUpdate(assignmentId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phân công chấm bài."));
         return loadFromCandidateResult(assignment, assignment.getCandidateResultId());
     }

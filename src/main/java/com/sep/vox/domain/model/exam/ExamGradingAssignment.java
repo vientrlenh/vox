@@ -38,14 +38,13 @@ public class ExamGradingAssignment {
     /** Bắt buộc khi outcome là INVALIDATED / CLEARED_INVALID / DECLINED. */
     private String reason;
     private UUID activeResultId;
-    private Integer version;
 
     public ExamGradingAssignment() {}
 
     public ExamGradingAssignment(UUID id, UUID candidateResultId, UUID teacherId, GradingRoundType roundType,
             UUID appealId, GradingAssignmentStatus status, GradingOutcome outcome, BigDecimal scoreBefore,
             Instant assignedAt, UUID assignedBy, Instant completedAt, Instant deadlineAt,
-            Instant remindedAt, String reason, UUID activeResultId, Integer version) {
+            Instant remindedAt, String reason, UUID activeResultId) {
         this.id = id;
         this.candidateResultId = candidateResultId;
         this.teacherId = teacherId;
@@ -61,7 +60,6 @@ public class ExamGradingAssignment {
         this.remindedAt = remindedAt;
         this.reason = reason;
         this.activeResultId = activeResultId;
-        this.version = version;
     }
 
     /**
@@ -224,13 +222,5 @@ public class ExamGradingAssignment {
 
     public void setActiveResultId(UUID activeResultId) {
         this.activeResultId = activeResultId;
-    }
-
-    public Integer getVersion() {
-        return version;
-    }
-
-    public void setVersion(Integer version) {
-        this.version = version;
     }
 }

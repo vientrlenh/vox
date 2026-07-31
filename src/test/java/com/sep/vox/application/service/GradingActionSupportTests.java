@@ -121,7 +121,7 @@ class GradingActionSupportTests {
 
     /** Vòng phúc khảo có đơn đi kèm; đơn đang ở GRADING vì giáo viên đang cầm bài. */
     private ExamResultAppeal givenAppealRound(ExamCandidateResult result) {
-        when(examGradingAccessService.load(assignmentId))
+        when(examGradingAccessService.loadForUpdate(assignmentId))
             .thenReturn(context(GradingRoundType.APPEAL, result, appealId));
         var appeal = new ExamResultAppeal();
         appeal.setId(appealId);
@@ -132,7 +132,7 @@ class GradingActionSupportTests {
     }
 
     private void given(GradingRoundType roundType, ExamCandidateResult result) {
-        when(examGradingAccessService.load(assignmentId)).thenReturn(context(roundType, result));
+        when(examGradingAccessService.loadForUpdate(assignmentId)).thenReturn(context(roundType, result));
     }
 
     private ExamResultStatusHistory captureHistory() {
@@ -168,7 +168,7 @@ class GradingActionSupportTests {
         var result = result(ExamCandidateResultStatus.PENDING_REVIEW, "6.00");
         var context = context(GradingRoundType.INITIAL, result);
         context.assignment().complete(GradingOutcome.UPHELD, null, Instant.now());
-        when(examGradingAccessService.load(assignmentId)).thenReturn(context);
+        when(examGradingAccessService.loadForUpdate(assignmentId)).thenReturn(context);
 
         assertThatThrownBy(() -> support.prepare(assignmentId, GradingOutcome.UPHELD, null))
             .isInstanceOf(IllegalStateException.class)

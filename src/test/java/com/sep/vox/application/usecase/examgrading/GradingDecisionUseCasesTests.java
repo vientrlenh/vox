@@ -18,9 +18,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import com.sep.vox.application.event.ExamResultInvalidClearedEvent;
-import com.sep.vox.application.event.ExamResultInvalidatedEvent;
-import com.sep.vox.application.event.GradingAssignmentDeclinedEvent;
+import com.sep.vox.application.event.ExamResultInvalidClearedPayloadV1;
+import com.sep.vox.application.event.ExamResultInvalidatedPayloadV1;
+import com.sep.vox.application.event.GradingAssignmentDeclinedPayloadV1;
 import com.sep.vox.application.port.input.command.GradingDecisionCommand;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService.GradingContext;
@@ -30,7 +30,7 @@ import com.sep.vox.application.port.input.usecase.examgrading.ClearInvalidResult
 import com.sep.vox.application.port.input.usecase.examgrading.DeclineGradingAssignmentUseCase;
 import com.sep.vox.application.port.input.usecase.examgrading.InvalidateResultUseCase;
 import com.sep.vox.application.port.input.usecase.examgrading.UpholdResultUseCase;
-import com.sep.vox.application.port.output.EventPublisherPort;
+import com.sep.vox.domain.common.EventTypeConstant;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
@@ -41,6 +41,8 @@ import com.sep.vox.domain.model.exam.GradingRoundType;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
+import com.sep.vox.domain.repository.OutboxRepository;
+import com.sep.vox.support.OutboxTestSupport;
 import com.sep.vox.domain.repository.ExamResultAppealRepository;
 import com.sep.vox.domain.repository.ExamResultStatusHistoryRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;
@@ -57,7 +59,7 @@ class GradingDecisionUseCasesTests {
     private ExamCandidateRepository examCandidateRepository;
     private ExamGradingAssignmentRepository examGradingAssignmentRepository;
     private ExamSessionRepository examSessionRepository;
-    private EventPublisherPort eventPublisherPort;
+    private OutboxRepository outboxRepository;
     private GradingActionSupport support;
 
     private UpholdResultUseCase uphold;
@@ -82,7 +84,8 @@ class GradingDecisionUseCasesTests {
         examCandidateRepository = mock(ExamCandidateRepository.class);
         examGradingAssignmentRepository = mock(ExamGradingAssignmentRepository.class);
         examSessionRepository = mock(ExamSessionRepository.class);
-        eventPublisherPort = mock(EventPublisherPort.class);
+        outboxRepository = mock(OutboxRepository.class);
+        var jsonSerializationPort = OutboxTestSupport.jsonSerializationPort();
 
         support = new GradingActionSupport(
             examGradingAccessService,
@@ -91,13 +94,15 @@ class GradingDecisionUseCasesTests {
             examGradingAssignmentRepository,
             mock(ExamResultAppealRepository.class),
             new ResultStatusHistoryRecorder(mock(ExamResultStatusHistoryRepository.class)),
-            eventPublisherPort);
+            outboxRepository,
+            jsonSerializationPort);
 
         uphold = new UpholdResultUseCase(support, examSessionRepository);
-        invalidate = new InvalidateResultUseCase(support, eventPublisherPort);
-        decline = new DeclineGradingAssignmentUseCase(support, eventPublisherPort);
+        invalidate = new InvalidateResultUseCase(support, outboxRepository, jsonSerializationPort);
+        decline = new DeclineGradingAssignmentUseCase(support, outboxRepository, jsonSerializationPort);
         clearInvalid = new ClearInvalidResultUseCase(
-            support, examCandidateRepository, examGradingAssignmentRepository, eventPublisherPort);
+            support, examCandidateRepository, examGradingAssignmentRepository,
+            outboxRepository, jsonSerializationPort);
 
         session = new ExamSession();
         candidate = new ExamCandidate();
@@ -129,14 +134,8 @@ class GradingDecisionUseCasesTests {
         return new GradingDecisionCommand(assignmentId, reason);
     }
 
-    private <T> T captureEvent(Class<T> type) {
-        var captor = ArgumentCaptor.forClass(Object.class);
-        verify(eventPublisherPort, org.mockito.Mockito.atLeastOnce()).publish(captor.capture());
-        return captor.getAllValues().stream()
-            .filter(type::isInstance)
-            .map(type::cast)
-            .findFirst()
-            .orElseThrow(() -> new AssertionError("Không có sự kiện " + type.getSimpleName()));
+    private <T> T capturePayload(String eventType, Class<T> type) {
+        return OutboxTestSupport.capturePayload(outboxRepository, eventType, type);
     }
 
     // ---- UPHOLD -------------------------------------------------------------
@@ -185,9 +184,10 @@ class GradingDecisionUseCasesTests {
 
         assertThat(result.getStatus()).isEqualTo(ExamCandidateResultStatus.INVALID);
         assertThat(result.getFinalizedAt()).isNotNull();
-        var event = captureEvent(ExamResultInvalidatedEvent.class);
-        assertThat(event.studentId()).isEqualTo(studentId);
-        assertThat(event.reason()).isEqualTo("Gian lận: đọc bài mẫu");
+        var payload = capturePayload(
+            EventTypeConstant.EXAM_RESULT_INVALIDATED, ExamResultInvalidatedPayloadV1.class);
+        assertThat(payload.studentId()).isEqualTo(studentId);
+        assertThat(payload.reason()).isEqualTo("Gian lận: đọc bài mẫu");
     }
 
     @Test
@@ -223,10 +223,11 @@ class GradingDecisionUseCasesTests {
 
         decline.execute(command("Quá tải"));
 
-        var event = captureEvent(GradingAssignmentDeclinedEvent.class);
-        assertThat(event.assignedBy()).isEqualTo(adminId);
-        assertThat(event.teacherId()).isEqualTo(teacherId);
-        assertThat(event.reason()).isEqualTo("Quá tải");
+        var payload = capturePayload(
+            EventTypeConstant.GRADING_ASSIGNMENT_DECLINED, GradingAssignmentDeclinedPayloadV1.class);
+        assertThat(payload.assignedBy()).isEqualTo(adminId);
+        assertThat(payload.teacherId()).isEqualTo(teacherId);
+        assertThat(payload.reason()).isEqualTo("Quá tải");
     }
 
     // ---- CLEAR_INVALID ------------------------------------------------------
@@ -241,7 +242,8 @@ class GradingDecisionUseCasesTests {
         assertThat(result.getStatus()).isEqualTo(ExamCandidateResultStatus.PENDING_REVIEW);
         // Không gỡ chặn thì mọi lần tính lại điểm sau này sẽ kéo bài về INVALID.
         assertThat(candidate.getBlockedAt()).isNull();
-        captureEvent(ExamResultInvalidClearedEvent.class);
+        capturePayload(
+            EventTypeConstant.EXAM_RESULT_INVALID_CLEARED, ExamResultInvalidClearedPayloadV1.class);
     }
 
     @Test

@@ -8,21 +8,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.sep.vox.application.event.ExamAppealRejectedEvent;
+import com.sep.vox.application.event.ExamAppealRejectedPayloadV1;
 import com.sep.vox.application.port.input.command.ApproveExamAppealCommand;
 import com.sep.vox.application.port.input.command.RejectExamAppealCommand;
 import com.sep.vox.application.port.input.service.ExamAppealAccessService;
 import com.sep.vox.application.port.input.service.ExamAppealAccessService.AppealContext;
 import com.sep.vox.application.port.input.usecase.examappeal.ApproveExamAppealUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.RejectExamAppealUseCase;
-import com.sep.vox.application.port.output.EventPublisherPort;
+import com.sep.vox.domain.common.EventTypeConstant;
 import com.sep.vox.domain.model.exam.ExamAppealStatus;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
@@ -30,13 +29,15 @@ import com.sep.vox.domain.model.exam.ExamResultAppeal;
 import com.sep.vox.domain.model.exam.ExamSession;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.ExamResultAppealRepository;
+import com.sep.vox.domain.repository.OutboxRepository;
+import com.sep.vox.support.OutboxTestSupport;
 
 public class ApproveRejectExamAppealUseCaseTests {
 
     private ExamResultAppealRepository examResultAppealRepository;
     private ExamCandidateResultRepository examCandidateResultRepository;
     private ExamAppealAccessService examAppealAccessService;
-    private EventPublisherPort eventPublisherPort;
+    private OutboxRepository outboxRepository;
 
     private ApproveExamAppealUseCase approveUseCase;
     private RejectExamAppealUseCase rejectUseCase;
@@ -50,11 +51,12 @@ public class ApproveRejectExamAppealUseCaseTests {
         examResultAppealRepository = mock(ExamResultAppealRepository.class);
         examCandidateResultRepository = mock(ExamCandidateResultRepository.class);
         examAppealAccessService = mock(ExamAppealAccessService.class);
-        eventPublisherPort = mock(EventPublisherPort.class);
+        outboxRepository = mock(OutboxRepository.class);
 
         approveUseCase = new ApproveExamAppealUseCase(examResultAppealRepository, examAppealAccessService);
         rejectUseCase = new RejectExamAppealUseCase(
-            examResultAppealRepository, examCandidateResultRepository, examAppealAccessService, eventPublisherPort);
+            examResultAppealRepository, examCandidateResultRepository, examAppealAccessService,
+            outboxRepository, OutboxTestSupport.jsonSerializationPort());
 
         when(examAppealAccessService.requireActiveUserId()).thenReturn(adminId);
     }
@@ -122,15 +124,15 @@ public class ApproveRejectExamAppealUseCaseTests {
     }
 
     @Test
-    void should_publish_rejected_event_to_notify_student() {
+    void should_write_rejected_event_to_outbox_to_notify_student() {
         when(examAppealAccessService.load(appealId)).thenReturn(context(ExamAppealStatus.PENDING));
 
         rejectUseCase.execute(new RejectExamAppealCommand(appealId, "Không đủ căn cứ"));
 
-        var captor = ArgumentCaptor.forClass(ExamAppealRejectedEvent.class);
-        verify(eventPublisherPort).publish(captor.capture());
-        assertThat(captor.getValue().studentId()).isEqualTo(studentId);
-        assertThat(captor.getValue().reason()).isEqualTo("Không đủ căn cứ");
+        var payload = OutboxTestSupport.capturePayload(
+            outboxRepository, EventTypeConstant.EXAM_APPEAL_REJECTED, ExamAppealRejectedPayloadV1.class);
+        assertThat(payload.studentId()).isEqualTo(studentId);
+        assertThat(payload.reason()).isEqualTo("Không đủ căn cứ");
     }
 
     @Test
@@ -142,7 +144,7 @@ public class ApproveRejectExamAppealUseCaseTests {
             .hasMessageContaining("lý do");
 
         verify(examResultAppealRepository, never()).save(any());
-        verify(eventPublisherPort, never()).publish(any());
+        verify(outboxRepository, never()).save(any());
     }
 
     @Test

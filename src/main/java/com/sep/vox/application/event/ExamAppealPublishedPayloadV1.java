@@ -3,11 +3,13 @@ package com.sep.vox.application.event;
 import java.math.BigDecimal;
 import java.util.UUID;
 
-public record ExamAppealPublishedEvent(
+/** Kết quả phúc khảo đã công bố cho học sinh. */
+public record ExamAppealPublishedPayloadV1(
     UUID appealId,
     UUID studentId,
     String examName,
     BigDecimal scoreBefore,
     BigDecimal scoreAfter
 ) {
+
 }

@@ -6,22 +6,26 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.event.ExamAppealApprovedEvent;
+import com.sep.vox.application.event.ExamAppealApprovedPayloadV1;
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.port.input.command.AssignExamAppealReviewerCommand;
 import com.sep.vox.application.port.input.service.ExamAppealAccessService;
 import com.sep.vox.application.port.input.service.ResultStatusHistoryRecorder;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.EventPublisherPort;
+import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.query.repository.ExamGradingQueryRepository;
+import com.sep.vox.domain.common.AggregateTypeConstant;
+import com.sep.vox.domain.common.EventTypeConstant;
 import com.sep.vox.domain.model.exam.ExamAppealStatus;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.exam.ExamGradingAssignment;
 import com.sep.vox.domain.model.exam.GradingRoundType;
 import com.sep.vox.domain.model.exam.ResultStatusChangeSource;
+import com.sep.vox.domain.model.outbox.Outbox;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
 import com.sep.vox.domain.repository.ExamResultAppealRepository;
+import com.sep.vox.domain.repository.OutboxRepository;
 
 /**
  * Giao MỘT giáo viên chấm phúc khảo. Đơn chuyển {@code APPROVED -> GRADING}.
@@ -47,7 +51,8 @@ public class AssignExamAppealReviewerUseCase implements IUseCase<AssignExamAppea
     private final ExamGradingQueryRepository examGradingQueryRepository;
     private final ExamAppealAccessService examAppealAccessService;
     private final ResultStatusHistoryRecorder resultStatusHistoryRecorder;
-    private final EventPublisherPort eventPublisherPort;
+    private final OutboxRepository outboxRepository;
+    private final JsonSerializationPort jsonSerializationPort;
 
     public AssignExamAppealReviewerUseCase(
             ExamResultAppealRepository examResultAppealRepository,
@@ -56,14 +61,16 @@ public class AssignExamAppealReviewerUseCase implements IUseCase<AssignExamAppea
             ExamGradingQueryRepository examGradingQueryRepository,
             ExamAppealAccessService examAppealAccessService,
             ResultStatusHistoryRecorder resultStatusHistoryRecorder,
-            EventPublisherPort eventPublisherPort) {
+            OutboxRepository outboxRepository,
+            JsonSerializationPort jsonSerializationPort) {
         this.examResultAppealRepository = examResultAppealRepository;
         this.examGradingAssignmentRepository = examGradingAssignmentRepository;
         this.examCandidateResultRepository = examCandidateResultRepository;
         this.examGradingQueryRepository = examGradingQueryRepository;
         this.examAppealAccessService = examAppealAccessService;
         this.resultStatusHistoryRecorder = resultStatusHistoryRecorder;
-        this.eventPublisherPort = eventPublisherPort;
+        this.outboxRepository = outboxRepository;
+        this.jsonSerializationPort = jsonSerializationPort;
     }
 
     @Override
@@ -134,9 +141,17 @@ public class AssignExamAppealReviewerUseCase implements IUseCase<AssignExamAppea
             before, candidateResult, ResultStatusChangeSource.TEACHER_APPEAL, currentUserId, overrideReason);
 
         // Học sinh biết đơn đã được nhận và đang được chấm lại — mốc thông tin quan
-        // trọng nhất giữa lúc nộp đơn và lúc có kết quả.
-        eventPublisherPort.publish(new ExamAppealApprovedEvent(
-            appeal.getId(), context.studentId(), context.examName(), deadlineAt));
+        // trọng nhất giữa lúc nộp đơn và lúc có kết quả. Ghi outbox trong chính
+        // transaction phân công để mail và phân công cùng sống hoặc cùng chết.
+        var payload = new ExamAppealApprovedPayloadV1(
+            appeal.getId(), context.studentId(), context.examName(), deadlineAt);
+        outboxRepository.save(Outbox.create(
+            AggregateTypeConstant.EXAM_RESULT_APPEAL,
+            appeal.getId(),
+            EventTypeConstant.EXAM_APPEAL_APPROVED,
+            jsonSerializationPort.toJson(payload),
+            now
+        ));
 
         return assignment.getId();
     }

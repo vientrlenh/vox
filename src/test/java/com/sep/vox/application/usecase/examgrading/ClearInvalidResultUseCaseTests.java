@@ -16,13 +16,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import com.sep.vox.application.event.ExamResultInvalidClearedEvent;
+import com.sep.vox.application.event.ExamResultInvalidClearedPayloadV1;
 import com.sep.vox.application.port.input.command.GradingDecisionCommand;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService.GradingContext;
 import com.sep.vox.application.port.input.service.GradingActionSupport;
 import com.sep.vox.application.port.input.service.GradingActionSupport.PreparedAction;
 import com.sep.vox.application.port.input.usecase.examgrading.ClearInvalidResultUseCase;
-import com.sep.vox.application.port.output.EventPublisherPort;
+import com.sep.vox.domain.common.EventTypeConstant;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
@@ -32,6 +32,8 @@ import com.sep.vox.domain.model.exam.GradingOutcome;
 import com.sep.vox.domain.model.exam.GradingRoundType;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
+import com.sep.vox.domain.repository.OutboxRepository;
+import com.sep.vox.support.OutboxTestSupport;
 
 /**
  * Hành động phức tạp nhất trong bốn: nó vừa gỡ chặn thí sinh, vừa đổi trạng thái bài,
@@ -42,7 +44,7 @@ class ClearInvalidResultUseCaseTests {
     private GradingActionSupport gradingActionSupport;
     private ExamCandidateRepository examCandidateRepository;
     private ExamGradingAssignmentRepository examGradingAssignmentRepository;
-    private EventPublisherPort eventPublisherPort;
+    private OutboxRepository outboxRepository;
     private ClearInvalidResultUseCase useCase;
 
     private final UUID teacherId = UUID.randomUUID();
@@ -59,9 +61,9 @@ class ClearInvalidResultUseCaseTests {
         gradingActionSupport = mock(GradingActionSupport.class);
         examCandidateRepository = mock(ExamCandidateRepository.class);
         examGradingAssignmentRepository = mock(ExamGradingAssignmentRepository.class);
-        eventPublisherPort = mock(EventPublisherPort.class);
+        outboxRepository = mock(OutboxRepository.class);
         useCase = new ClearInvalidResultUseCase(gradingActionSupport, examCandidateRepository,
-            examGradingAssignmentRepository, eventPublisherPort);
+            examGradingAssignmentRepository, outboxRepository, OutboxTestSupport.jsonSerializationPort());
 
         result = new ExamCandidateResult();
         result.setId(candidateResultId);
@@ -138,10 +140,10 @@ class ClearInvalidResultUseCaseTests {
     void should_notify_the_student_that_the_paper_is_restored() {
         useCase.execute(command());
 
-        var captor = ArgumentCaptor.forClass(ExamResultInvalidClearedEvent.class);
-        verify(eventPublisherPort).publish(captor.capture());
-        assertThat(captor.getValue().studentId()).isEqualTo(studentId);
-        assertThat(captor.getValue().reason()).isEqualTo("Xem lại video, không có vi phạm");
+        var payload = OutboxTestSupport.capturePayload(outboxRepository,
+            EventTypeConstant.EXAM_RESULT_INVALID_CLEARED, ExamResultInvalidClearedPayloadV1.class);
+        assertThat(payload.studentId()).isEqualTo(studentId);
+        assertThat(payload.reason()).isEqualTo("Xem lại video, không có vi phạm");
     }
 
     @Test

@@ -1,15 +1,21 @@
 package com.sep.vox.application.port.input.usecase.examgrading;
 
+import java.time.Instant;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.event.ExamResultInvalidatedEvent;
+import com.sep.vox.application.event.ExamResultInvalidatedPayloadV1;
 import com.sep.vox.application.port.input.command.GradingDecisionCommand;
 import com.sep.vox.application.port.input.service.GradingActionSupport;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.EventPublisherPort;
+import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.response.input.examgrading.GradingActionResponse;
+import com.sep.vox.domain.common.AggregateTypeConstant;
+import com.sep.vox.domain.common.EventTypeConstant;
 import com.sep.vox.domain.model.exam.GradingOutcome;
+import com.sep.vox.domain.model.outbox.Outbox;
+import com.sep.vox.domain.repository.OutboxRepository;
 
 /**
  * Giáo viên kết luận bài là vi phạm thật -> result INVALID, không nhập điểm.
@@ -30,13 +36,16 @@ import com.sep.vox.domain.model.exam.GradingOutcome;
 public class InvalidateResultUseCase implements IUseCase<GradingDecisionCommand, GradingActionResponse> {
 
     private final GradingActionSupport gradingActionSupport;
-    private final EventPublisherPort eventPublisherPort;
+    private final OutboxRepository outboxRepository;
+    private final JsonSerializationPort jsonSerializationPort;
 
     public InvalidateResultUseCase(
             GradingActionSupport gradingActionSupport,
-            EventPublisherPort eventPublisherPort) {
+            OutboxRepository outboxRepository,
+            JsonSerializationPort jsonSerializationPort) {
         this.gradingActionSupport = gradingActionSupport;
-        this.eventPublisherPort = eventPublisherPort;
+        this.outboxRepository = outboxRepository;
+        this.jsonSerializationPort = jsonSerializationPort;
     }
 
     @Override
@@ -50,8 +59,15 @@ public class InvalidateResultUseCase implements IUseCase<GradingDecisionCommand,
 
         var studentId = gradingActionSupport.resolveStudentId(result);
         if (studentId != null) {
-            eventPublisherPort.publish(new ExamResultInvalidatedEvent(
-                result.getId(), studentId, prepared.context().examName(), prepared.reason()));
+            var payload = new ExamResultInvalidatedPayloadV1(
+                result.getId(), studentId, prepared.context().examName(), prepared.reason());
+            outboxRepository.save(Outbox.create(
+                AggregateTypeConstant.EXAM_CANDIDATE_RESULT,
+                result.getId(),
+                EventTypeConstant.EXAM_RESULT_INVALIDATED,
+                jsonSerializationPort.toJson(payload),
+                Instant.now()
+            ));
         }
 
         return new GradingActionResponse(

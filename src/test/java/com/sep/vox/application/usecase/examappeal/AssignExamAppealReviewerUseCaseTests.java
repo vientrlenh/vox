@@ -23,7 +23,8 @@ import com.sep.vox.application.port.input.service.ExamAppealAccessService;
 import com.sep.vox.application.port.input.service.ExamAppealAccessService.AppealContext;
 import com.sep.vox.application.port.input.service.ResultStatusHistoryRecorder;
 import com.sep.vox.application.port.input.usecase.examappeal.AssignExamAppealReviewerUseCase;
-import com.sep.vox.application.port.output.EventPublisherPort;
+import com.sep.vox.domain.repository.OutboxRepository;
+import com.sep.vox.support.OutboxTestSupport;
 import com.sep.vox.application.query.repository.ExamGradingQueryRepository;
 import com.sep.vox.domain.model.exam.ExamAppealStatus;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
@@ -47,7 +48,7 @@ class AssignExamAppealReviewerUseCaseTests {
     private ExamCandidateResultRepository examCandidateResultRepository;
     private ExamGradingQueryRepository examGradingQueryRepository;
     private ExamAppealAccessService examAppealAccessService;
-    private EventPublisherPort eventPublisherPort;
+    private OutboxRepository outboxRepository;
     private AssignExamAppealReviewerUseCase useCase;
 
     private final UUID appealId = UUID.randomUUID();
@@ -68,13 +69,13 @@ class AssignExamAppealReviewerUseCaseTests {
         examCandidateResultRepository = mock(ExamCandidateResultRepository.class);
         examGradingQueryRepository = mock(ExamGradingQueryRepository.class);
         examAppealAccessService = mock(ExamAppealAccessService.class);
-        eventPublisherPort = mock(EventPublisherPort.class);
+        outboxRepository = mock(OutboxRepository.class);
         useCase = new AssignExamAppealReviewerUseCase(
             examResultAppealRepository, examGradingAssignmentRepository, examCandidateResultRepository,
             examGradingQueryRepository, examAppealAccessService,
             new ResultStatusHistoryRecorder(mock(
                 com.sep.vox.domain.repository.ExamResultStatusHistoryRepository.class)),
-            eventPublisherPort);
+            outboxRepository, OutboxTestSupport.jsonSerializationPort());
 
         appeal = new ExamResultAppeal();
         appeal.setId(appealId);

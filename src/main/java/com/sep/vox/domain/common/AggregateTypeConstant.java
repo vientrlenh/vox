@@ -6,4 +6,7 @@ public final class AggregateTypeConstant {
     
     public static final String REGISTER_FORM = "RegisterForm";
     public static final String USER = "User";
+    public static final String EXAM_RESULT_APPEAL = "ExamResultAppeal";
+    public static final String EXAM_CANDIDATE_RESULT = "ExamCandidateResult";
+    public static final String EXAM_GRADING_ASSIGNMENT = "ExamGradingAssignment";
 }

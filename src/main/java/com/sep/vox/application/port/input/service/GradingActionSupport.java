@@ -88,7 +88,9 @@ public class GradingActionSupport {
     @Transactional(propagation = Propagation.MANDATORY)
     public PreparedAction prepare(UUID assignmentId, GradingOutcome outcome, String reason) {
         var currentUserId = examGradingAccessService.requireActiveUserId();
-        var context = examGradingAccessService.load(assignmentId);
+        // Khoá ngay từ đây: mọi kiểm tra bên dưới đều đọc-rồi-quyết-định, nên chúng chỉ
+        // đúng nếu không ai chen vào giữa lúc đọc và lúc finish() ghi.
+        var context = examGradingAccessService.loadForUpdate(assignmentId);
         examGradingAccessService.authorizeAssignedTeacher(context, currentUserId);
 
         var assignment = context.assignment();

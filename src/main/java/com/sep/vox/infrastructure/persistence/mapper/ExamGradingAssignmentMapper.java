@@ -29,15 +29,10 @@ public final class ExamGradingAssignmentMapper {
             entity.getDeadlineAt(),
             entity.getRemindedAt(),
             entity.getReason(),
-            entity.getActiveResultId(),
-            entity.getVersion()
+            entity.getActiveResultId()
         );
     }
 
-    /**
-     * Version phải đi theo suốt vòng đọc → sửa → ghi: đây là thứ duy nhất chặn hai
-     * request cùng nộp điểm cho một phân công. Dòng mới chưa có version thì để 0.
-     */
     public static ExamGradingAssignmentJpaEntity toJpa(ExamGradingAssignment assignment) {
         if (assignment == null) {
             return null;
@@ -57,8 +52,7 @@ public final class ExamGradingAssignmentMapper {
             assignment.getDeadlineAt(),
             assignment.getRemindedAt(),
             assignment.getReason(),
-            assignment.getActiveResultId(),
-            assignment.getVersion() == null ? 0 : assignment.getVersion()
+            assignment.getActiveResultId()
         );
     }
 

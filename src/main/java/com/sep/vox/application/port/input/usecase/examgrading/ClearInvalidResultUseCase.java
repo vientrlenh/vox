@@ -5,18 +5,22 @@ import java.time.Instant;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.event.ExamResultInvalidClearedEvent;
+import com.sep.vox.application.event.ExamResultInvalidClearedPayloadV1;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.GradingDecisionCommand;
 import com.sep.vox.application.port.input.service.GradingActionSupport;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.EventPublisherPort;
+import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.response.input.examgrading.GradingActionResponse;
+import com.sep.vox.domain.common.AggregateTypeConstant;
+import com.sep.vox.domain.common.EventTypeConstant;
 import com.sep.vox.domain.model.exam.ExamGradingAssignment;
 import com.sep.vox.domain.model.exam.GradingOutcome;
 import com.sep.vox.domain.model.exam.GradingRoundType;
+import com.sep.vox.domain.model.outbox.Outbox;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
+import com.sep.vox.domain.repository.OutboxRepository;
 
 /**
  * Giáo viên soi lại bài bị vô hiệu và kết luận KHÔNG vi phạm: bài về PENDING_REVIEW,
@@ -41,17 +45,20 @@ public class ClearInvalidResultUseCase implements IUseCase<GradingDecisionComman
     private final GradingActionSupport gradingActionSupport;
     private final ExamCandidateRepository examCandidateRepository;
     private final ExamGradingAssignmentRepository examGradingAssignmentRepository;
-    private final EventPublisherPort eventPublisherPort;
+    private final OutboxRepository outboxRepository;
+    private final JsonSerializationPort jsonSerializationPort;
 
     public ClearInvalidResultUseCase(
             GradingActionSupport gradingActionSupport,
             ExamCandidateRepository examCandidateRepository,
             ExamGradingAssignmentRepository examGradingAssignmentRepository,
-            EventPublisherPort eventPublisherPort) {
+            OutboxRepository outboxRepository,
+            JsonSerializationPort jsonSerializationPort) {
         this.gradingActionSupport = gradingActionSupport;
         this.examCandidateRepository = examCandidateRepository;
         this.examGradingAssignmentRepository = examGradingAssignmentRepository;
-        this.eventPublisherPort = eventPublisherPort;
+        this.outboxRepository = outboxRepository;
+        this.jsonSerializationPort = jsonSerializationPort;
     }
 
     @Override
@@ -94,8 +101,15 @@ public class ClearInvalidResultUseCase implements IUseCase<GradingDecisionComman
 
         var studentId = gradingActionSupport.resolveStudentId(result);
         if (studentId != null) {
-            eventPublisherPort.publish(new ExamResultInvalidClearedEvent(
-                result.getId(), studentId, prepared.context().examName(), prepared.reason()));
+            var payload = new ExamResultInvalidClearedPayloadV1(
+                result.getId(), studentId, prepared.context().examName(), prepared.reason());
+            outboxRepository.save(Outbox.create(
+                AggregateTypeConstant.EXAM_CANDIDATE_RESULT,
+                result.getId(),
+                EventTypeConstant.EXAM_RESULT_INVALID_CLEARED,
+                jsonSerializationPort.toJson(payload),
+                now
+            ));
         }
 
         return new GradingActionResponse(

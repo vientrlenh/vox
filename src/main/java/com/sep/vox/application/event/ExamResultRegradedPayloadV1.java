@@ -11,7 +11,7 @@ import java.util.UUID;
  *
  * @param roundType vòng đã sinh ra thay đổi — mail nói rõ do hậu kiểm hay phúc khảo
  */
-public record ExamResultRegradedEvent(
+public record ExamResultRegradedPayloadV1(
     UUID candidateResultId,
     UUID studentId,
     String examName,
@@ -19,4 +19,5 @@ public record ExamResultRegradedEvent(
     BigDecimal scoreBefore,
     BigDecimal scoreAfter
 ) {
+
 }

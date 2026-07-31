@@ -229,13 +229,32 @@ app:
           topic: 
             register-form-rejected: ${KAFKA_REGISTER_FORM_REJECTED_TOPIC:vox.register-form-rejected.v1}
             user-created: ${KAFKA_USER_CREATED_TOPIC:vox.user-created.v1}
+            exam-appeal: ${KAFKA_EXAM_APPEAL_TOPIC:vox.exam-appeal.v1}
+            exam-result-lifecycle: ${KAFKA_EXAM_RESULT_LIFECYCLE_TOPIC:vox.exam-result-lifecycle.v1}
+            grading-assignment: ${KAFKA_GRADING_ASSIGNMENT_TOPIC:vox.grading-assignment.v1}
           group-id: ${KAFKA_EMAIL_GROUP_ID:vox-email}
   recording:
     bucket: ${RECORDING_S3_BUCKET:}
-  outbox: 
-    topics: 
+  outbox:
+    # Nhiều eventType trỏ chung một topic là có chủ ý: consumer phân nhánh bằng header
+    # eventType, nên gom theo nhóm nghiệp vụ mà mỗi loại vẫn giữ payload riêng.
+    # Thiếu một key ở đây so với EventTypeConstant.all() là app không khởi động được.
+    topics:
       "[RegisterFormRejected]": ${KAFKA_REGISTER_FORM_REJECTED_TOPIC:vox.register-form-rejected.v1}
       "[UserCreated]": ${KAFKA_USER_CREATED_TOPIC:vox.user-created.v1}
+
+      "[ExamAppealPublished]": ${KAFKA_EXAM_APPEAL_TOPIC:vox.exam-appeal.v1}
+      "[ExamAppealRejected]": ${KAFKA_EXAM_APPEAL_TOPIC:vox.exam-appeal.v1}
+      "[ExamAppealApproved]": ${KAFKA_EXAM_APPEAL_TOPIC:vox.exam-appeal.v1}
+
+      "[ExamResultReleased]": ${KAFKA_EXAM_RESULT_LIFECYCLE_TOPIC:vox.exam-result-lifecycle.v1}
+      "[ExamResultRegraded]": ${KAFKA_EXAM_RESULT_LIFECYCLE_TOPIC:vox.exam-result-lifecycle.v1}
+      "[ExamResultInvalidated]": ${KAFKA_EXAM_RESULT_LIFECYCLE_TOPIC:vox.exam-result-lifecycle.v1}
+      "[ExamResultInvalidCleared]": ${KAFKA_EXAM_RESULT_LIFECYCLE_TOPIC:vox.exam-result-lifecycle.v1}
+      "[ExamResultOutcomeDecided]": ${KAFKA_EXAM_RESULT_LIFECYCLE_TOPIC:vox.exam-result-lifecycle.v1}
+
+      "[GradingDeadlineReminder]": ${KAFKA_GRADING_ASSIGNMENT_TOPIC:vox.grading-assignment.v1}
+      "[GradingAssignmentDeclined]": ${KAFKA_GRADING_ASSIGNMENT_TOPIC:vox.grading-assignment.v1}
     
 
 

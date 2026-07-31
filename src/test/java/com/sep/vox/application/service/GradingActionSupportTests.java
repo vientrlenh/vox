@@ -19,13 +19,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import com.sep.vox.application.event.ExamResultRegradedEvent;
-import com.sep.vox.application.event.ExamResultReleasedEvent;
+import com.sep.vox.application.event.ExamResultRegradedPayloadV1;
+import com.sep.vox.application.event.ExamResultReleasedPayloadV1;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService.GradingContext;
 import com.sep.vox.application.port.input.service.GradingActionSupport;
 import com.sep.vox.application.port.input.service.ResultStatusHistoryRecorder;
-import com.sep.vox.application.port.output.EventPublisherPort;
+import com.sep.vox.domain.common.EventTypeConstant;
 import com.sep.vox.domain.model.exam.ExamAppealStatus;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
@@ -43,6 +43,8 @@ import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
 import com.sep.vox.domain.repository.ExamResultAppealRepository;
 import com.sep.vox.domain.repository.ExamResultStatusHistoryRepository;
+import com.sep.vox.domain.repository.OutboxRepository;
+import com.sep.vox.support.OutboxTestSupport;
 
 /**
  * Phần dùng chung của bốn hành động: kiểm luật ở đầu, và đổi trạng thái + audit +
@@ -57,7 +59,7 @@ class GradingActionSupportTests {
     private ExamGradingAssignmentRepository examGradingAssignmentRepository;
     private ExamResultAppealRepository examResultAppealRepository;
     private ExamResultStatusHistoryRepository examResultStatusHistoryRepository;
-    private EventPublisherPort eventPublisherPort;
+    private OutboxRepository outboxRepository;
     private GradingActionSupport support;
 
     private final UUID teacherId = UUID.randomUUID();
@@ -75,7 +77,7 @@ class GradingActionSupportTests {
         examGradingAssignmentRepository = mock(ExamGradingAssignmentRepository.class);
         examResultAppealRepository = mock(ExamResultAppealRepository.class);
         examResultStatusHistoryRepository = mock(ExamResultStatusHistoryRepository.class);
-        eventPublisherPort = mock(EventPublisherPort.class);
+        outboxRepository = mock(OutboxRepository.class);
 
         // Recorder dùng bản THẬT: "có ghi audit không" là chính thứ đang kiểm.
         support = new GradingActionSupport(
@@ -85,7 +87,8 @@ class GradingActionSupportTests {
             examGradingAssignmentRepository,
             examResultAppealRepository,
             new ResultStatusHistoryRecorder(examResultStatusHistoryRepository),
-            eventPublisherPort);
+            outboxRepository,
+            OutboxTestSupport.jsonSerializationPort());
 
         when(examGradingAccessService.requireActiveUserId()).thenReturn(teacherId);
 
@@ -208,10 +211,9 @@ class GradingActionSupportTests {
 
         support.finish(prepared, result);
 
-        var captor = ArgumentCaptor.forClass(Object.class);
-        verify(eventPublisherPort).publish(captor.capture());
-        assertThat(captor.getValue()).isInstanceOf(ExamResultReleasedEvent.class);
-        assertThat(((ExamResultReleasedEvent) captor.getValue()).studentId()).isEqualTo(studentId);
+        var payload = OutboxTestSupport.capturePayload(
+            outboxRepository, EventTypeConstant.EXAM_RESULT_RELEASED, ExamResultReleasedPayloadV1.class);
+        assertThat(payload.studentId()).isEqualTo(studentId);
     }
 
     @Test
@@ -224,7 +226,7 @@ class GradingActionSupportTests {
 
         // Hậu kiểm giữ nguyên điểm: làm phiền học sinh bằng "điểm vừa thay đổi" là sai.
         assertThat(result.getStatus()).isEqualTo(ExamCandidateResultStatus.RELEASED);
-        verify(eventPublisherPort, never()).publish(any());
+        verify(outboxRepository, never()).save(any());
     }
 
     @Test
@@ -236,12 +238,10 @@ class GradingActionSupportTests {
 
         support.finish(prepared, result);
 
-        var captor = ArgumentCaptor.forClass(Object.class);
-        verify(eventPublisherPort).publish(captor.capture());
-        assertThat(captor.getValue()).isInstanceOf(ExamResultRegradedEvent.class);
-        var event = (ExamResultRegradedEvent) captor.getValue();
-        assertThat(event.scoreBefore()).isEqualByComparingTo("6.00");
-        assertThat(event.scoreAfter()).isEqualByComparingTo("7.50");
+        var payload = OutboxTestSupport.capturePayload(
+            outboxRepository, EventTypeConstant.EXAM_RESULT_REGRADED, ExamResultRegradedPayloadV1.class);
+        assertThat(payload.scoreBefore()).isEqualByComparingTo("6.00");
+        assertThat(payload.scoreAfter()).isEqualByComparingTo("7.50");
     }
 
     @Test

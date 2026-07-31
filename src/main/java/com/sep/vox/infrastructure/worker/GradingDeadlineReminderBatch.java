@@ -7,11 +7,15 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.event.GradingDeadlineReminderEvent;
-import com.sep.vox.application.port.output.EventPublisherPort;
+import com.sep.vox.application.event.GradingDeadlineReminderPayloadV1;
+import com.sep.vox.application.port.output.JsonSerializationPort;
+import com.sep.vox.domain.common.AggregateTypeConstant;
+import com.sep.vox.domain.common.EventTypeConstant;
+import com.sep.vox.domain.model.outbox.Outbox;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
 import com.sep.vox.domain.repository.ExamRepository;
+import com.sep.vox.domain.repository.OutboxRepository;
 
 /**
  * MỘT lô nhắc hạn, trong MỘT transaction.
@@ -33,22 +37,27 @@ public class GradingDeadlineReminderBatch {
     private final ExamGradingAssignmentRepository examGradingAssignmentRepository;
     private final ExamCandidateResultRepository examCandidateResultRepository;
     private final ExamRepository examRepository;
-    private final EventPublisherPort eventPublisherPort;
+    private final OutboxRepository outboxRepository;
+    private final JsonSerializationPort jsonSerializationPort;
 
     public GradingDeadlineReminderBatch(
             ExamGradingAssignmentRepository examGradingAssignmentRepository,
             ExamCandidateResultRepository examCandidateResultRepository,
             ExamRepository examRepository,
-            EventPublisherPort eventPublisherPort) {
+            OutboxRepository outboxRepository,
+            JsonSerializationPort jsonSerializationPort) {
         this.examGradingAssignmentRepository = examGradingAssignmentRepository;
         this.examCandidateResultRepository = examCandidateResultRepository;
         this.examRepository = examRepository;
-        this.eventPublisherPort = eventPublisherPort;
+        this.outboxRepository = outboxRepository;
+        this.jsonSerializationPort = jsonSerializationPort;
     }
 
     /**
-     * Đánh dấu {@code reminded_at} TRƯỚC khi phát sự kiện — listener gửi mail chạy sau
-     * commit, nếu đánh dấu sau thì một lần rollback là gửi lại từ đầu.
+     * {@code reminded_at} và dòng outbox cùng nằm trong MỘT transaction, nên thứ tự ghi
+     * không còn quan trọng: hoặc cả hai cùng commit, hoặc cả hai cùng mất và lô sau nhắc
+     * lại. Trước đây mail gửi sau commit nên phải đánh dấu trước, và đổi lại là một lỗi
+     * SMTP làm mất luôn lượt nhắc của phân công đó.
      *
      * @return số phân công đã xử lý; {@code 0} nghĩa là hết tồn đọng
      */
@@ -77,12 +86,19 @@ public class GradingDeadlineReminderBatch {
 
             var result = resultsById.get(assignment.getCandidateResultId());
             var examName = result == null ? null : examNamesById.get(result.getExamId());
-            eventPublisherPort.publish(new GradingDeadlineReminderEvent(
+            var payload = new GradingDeadlineReminderPayloadV1(
                 assignment.getId(),
                 assignment.getTeacherId(),
                 examName,
                 assignment.getRoundType() == null ? null : assignment.getRoundType().name(),
                 assignment.getDeadlineAt()
+            );
+            outboxRepository.save(Outbox.create(
+                AggregateTypeConstant.EXAM_GRADING_ASSIGNMENT,
+                assignment.getId(),
+                EventTypeConstant.GRADING_DEADLINE_REMINDER,
+                jsonSerializationPort.toJson(payload),
+                now
             ));
         }
         return due.size();

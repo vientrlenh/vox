@@ -7,12 +7,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.event.ExamAppealPublishedEvent;
-import com.sep.vox.application.event.ExamResultRegradedEvent;
-import com.sep.vox.application.event.ExamResultReleasedEvent;
+import com.sep.vox.application.event.ExamAppealPublishedPayloadV1;
+import com.sep.vox.application.event.ExamResultRegradedPayloadV1;
+import com.sep.vox.application.event.ExamResultReleasedPayloadV1;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService.GradingContext;
-import com.sep.vox.application.port.output.EventPublisherPort;
+import com.sep.vox.application.port.output.JsonSerializationPort;
+import com.sep.vox.domain.common.AggregateTypeConstant;
+import com.sep.vox.domain.common.EventTypeConstant;
 import com.sep.vox.domain.model.exam.ExamAppealStatus;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
@@ -22,8 +24,10 @@ import com.sep.vox.domain.model.exam.GradingRoundType;
 import com.sep.vox.domain.model.exam.ResultStatusChangeSource;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
+import com.sep.vox.domain.model.outbox.Outbox;
 import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
 import com.sep.vox.domain.repository.ExamResultAppealRepository;
+import com.sep.vox.domain.repository.OutboxRepository;
 
 /**
  * Phần dùng chung của bốn hành động chấm bài: mở đầu (phân quyền + kiểm luật vòng ×
@@ -42,7 +46,8 @@ public class GradingActionSupport {
     private final ExamGradingAssignmentRepository examGradingAssignmentRepository;
     private final ExamResultAppealRepository examResultAppealRepository;
     private final ResultStatusHistoryRecorder resultStatusHistoryRecorder;
-    private final EventPublisherPort eventPublisherPort;
+    private final OutboxRepository outboxRepository;
+    private final JsonSerializationPort jsonSerializationPort;
 
     public GradingActionSupport(
             ExamGradingAccessService examGradingAccessService,
@@ -51,14 +56,16 @@ public class GradingActionSupport {
             ExamGradingAssignmentRepository examGradingAssignmentRepository,
             ExamResultAppealRepository examResultAppealRepository,
             ResultStatusHistoryRecorder resultStatusHistoryRecorder,
-            EventPublisherPort eventPublisherPort) {
+            OutboxRepository outboxRepository,
+            JsonSerializationPort jsonSerializationPort) {
         this.examGradingAccessService = examGradingAccessService;
         this.examCandidateResultRepository = examCandidateResultRepository;
         this.examCandidateRepository = examCandidateRepository;
         this.examGradingAssignmentRepository = examGradingAssignmentRepository;
         this.examResultAppealRepository = examResultAppealRepository;
         this.resultStatusHistoryRecorder = resultStatusHistoryRecorder;
-        this.eventPublisherPort = eventPublisherPort;
+        this.outboxRepository = outboxRepository;
+        this.jsonSerializationPort = jsonSerializationPort;
     }
 
     /** Ngữ cảnh đã qua mọi kiểm tra, kèm ảnh chụp trạng thái trước khi thao tác. */
@@ -164,7 +171,7 @@ public class GradingActionSupport {
         if (prepared.roundType() == GradingRoundType.APPEAL) {
             publishAppeal(prepared, result, now);
         }
-        publishScoreEvents(prepared, result);
+        publishScoreEvents(prepared, result, now);
     }
 
     /**
@@ -198,13 +205,19 @@ public class GradingActionSupport {
 
         var studentId = resolveStudentId(result);
         if (studentId != null) {
-            eventPublisherPort.publish(new ExamAppealPublishedEvent(
+            saveOutbox(
+                AggregateTypeConstant.EXAM_RESULT_APPEAL,
                 appeal.getId(),
-                studentId,
-                prepared.context().examName(),
-                appeal.getScoreBefore(),
-                result.getTotalScore()
-            ));
+                EventTypeConstant.EXAM_APPEAL_PUBLISHED,
+                new ExamAppealPublishedPayloadV1(
+                    appeal.getId(),
+                    studentId,
+                    prepared.context().examName(),
+                    appeal.getScoreBefore(),
+                    result.getTotalScore()
+                ),
+                now
+            );
         }
     }
 
@@ -213,7 +226,7 @@ public class GradingActionSupport {
      * công bố nay đổi. Hậu kiểm giữ nguyên điểm thì KHÔNG phát gì — làm phiền học sinh
      * bằng thông báo "điểm vừa thay đổi" trong khi nó không đổi là sai.
      */
-    private void publishScoreEvents(PreparedAction prepared, ExamCandidateResult result) {
+    private void publishScoreEvents(PreparedAction prepared, ExamCandidateResult result, Instant now) {
         var studentId = resolveStudentId(result);
         if (studentId == null) {
             return;
@@ -223,8 +236,14 @@ public class GradingActionSupport {
         var nowPublished = result.getStatus() == ExamCandidateResultStatus.RELEASED;
 
         if (nowPublished && !wasPublished) {
-            eventPublisherPort.publish(new ExamResultReleasedEvent(
-                result.getId(), studentId, examName, result.getTotalScore()));
+            saveOutbox(
+                AggregateTypeConstant.EXAM_CANDIDATE_RESULT,
+                result.getId(),
+                EventTypeConstant.EXAM_RESULT_RELEASED,
+                new ExamResultReleasedPayloadV1(
+                    result.getId(), studentId, examName, result.getTotalScore()),
+                now
+            );
             return;
         }
         var scoreChanged = prepared.before().totalScore() == null
@@ -232,15 +251,35 @@ public class GradingActionSupport {
             : result.getTotalScore() != null
                 && prepared.before().totalScore().compareTo(result.getTotalScore()) != 0;
         if (wasPublished && scoreChanged) {
-            eventPublisherPort.publish(new ExamResultRegradedEvent(
+            saveOutbox(
+                AggregateTypeConstant.EXAM_CANDIDATE_RESULT,
                 result.getId(),
-                studentId,
-                examName,
-                prepared.roundType().name(),
-                prepared.before().totalScore(),
-                result.getTotalScore()
-            ));
+                EventTypeConstant.EXAM_RESULT_REGRADED,
+                new ExamResultRegradedPayloadV1(
+                    result.getId(),
+                    studentId,
+                    examName,
+                    prepared.roundType().name(),
+                    prepared.before().totalScore(),
+                    result.getTotalScore()
+                ),
+                now
+            );
         }
+    }
+
+    /**
+     * Ghi vào outbox trong CHÍNH transaction đang đổi trạng thái bài: mail và dữ liệu
+     * cùng sống hoặc cùng chết, không còn cảnh commit xong rồi mất mail vì SMTP lỗi.
+     */
+    private void saveOutbox(String aggregateType, UUID aggregateId, String eventType, Object payload, Instant now) {
+        outboxRepository.save(Outbox.create(
+            aggregateType,
+            aggregateId,
+            eventType,
+            jsonSerializationPort.toJson(payload),
+            now
+        ));
     }
 
     /** Học sinh nhận mail là {@code ExamCandidate.studentId}, không phải candidateId. */

@@ -6,20 +6,24 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.event.ExamResultOutcomeDecidedEvent;
+import com.sep.vox.application.event.ExamResultOutcomeDecidedPayloadV1;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.DecideExamCandidateResultOutcomeCommand;
 import com.sep.vox.application.port.input.service.ExamSessionModerationAccessService;
 import com.sep.vox.application.port.input.service.ResultStatusHistoryRecorder;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.EventPublisherPort;
+import com.sep.vox.application.port.output.JsonSerializationPort;
+import com.sep.vox.domain.common.AggregateTypeConstant;
+import com.sep.vox.domain.common.EventTypeConstant;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.model.exam.ResultStatusChangeSource;
+import com.sep.vox.domain.model.outbox.Outbox;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;
+import com.sep.vox.domain.repository.OutboxRepository;
 
 /**
  * G.3 addendum: khi assessmentPolicy không có passingScore, finalizeForPublish chốt kết quả
@@ -38,7 +42,8 @@ public class DecideExamCandidateResultOutcomeUseCase
     private final ExamRepository examRepository;
     private final ExamSessionModerationAccessService moderationAccessService;
     private final ResultStatusHistoryRecorder resultStatusHistoryRecorder;
-    private final EventPublisherPort eventPublisherPort;
+    private final OutboxRepository outboxRepository;
+    private final JsonSerializationPort jsonSerializationPort;
 
     public DecideExamCandidateResultOutcomeUseCase(
             ExamCandidateResultRepository examCandidateResultRepository,
@@ -47,14 +52,16 @@ public class DecideExamCandidateResultOutcomeUseCase
             ExamRepository examRepository,
             ExamSessionModerationAccessService moderationAccessService,
             ResultStatusHistoryRecorder resultStatusHistoryRecorder,
-            EventPublisherPort eventPublisherPort) {
+            OutboxRepository outboxRepository,
+            JsonSerializationPort jsonSerializationPort) {
         this.examCandidateResultRepository = examCandidateResultRepository;
         this.examSessionRepository = examSessionRepository;
         this.examCandidateRepository = examCandidateRepository;
         this.examRepository = examRepository;
         this.moderationAccessService = moderationAccessService;
         this.resultStatusHistoryRecorder = resultStatusHistoryRecorder;
-        this.eventPublisherPort = eventPublisherPort;
+        this.outboxRepository = outboxRepository;
+        this.jsonSerializationPort = jsonSerializationPort;
     }
 
     @Override
@@ -93,9 +100,16 @@ public class DecideExamCandidateResultOutcomeUseCase
         // cuối cùng của bài, mà trước đây học sinh không được báo gì.
         resultStatusHistoryRecorder.record(
             before, result, ResultStatusChangeSource.EXAM_PUBLISH, actorId, null);
-        eventPublisherPort.publish(new ExamResultOutcomeDecidedEvent(
+        var payload = new ExamResultOutcomeDecidedPayloadV1(
             result.getId(), candidate.getStudentId(), exam.getName(),
-            input.decision().name(), result.getTotalScore()));
+            input.decision().name(), result.getTotalScore());
+        outboxRepository.save(Outbox.create(
+            AggregateTypeConstant.EXAM_CANDIDATE_RESULT,
+            result.getId(),
+            EventTypeConstant.EXAM_RESULT_OUTCOME_DECIDED,
+            jsonSerializationPort.toJson(payload),
+            now
+        ));
         return result.getId();
     }
 }

@@ -10,10 +10,11 @@ import java.util.UUID;
  * chấm" có thể cách nhau nhiều ngày, và tin đáng gửi cho học sinh là tin thứ hai —
  * nó kèm được hạn xử lý cụ thể.
  */
-public record ExamAppealApprovedEvent(
+public record ExamAppealApprovedPayloadV1(
     UUID appealId,
     UUID studentId,
     String examName,
     Instant deadline
 ) {
+
 }

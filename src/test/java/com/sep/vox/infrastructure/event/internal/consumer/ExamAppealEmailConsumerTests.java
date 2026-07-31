@@ -41,7 +41,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class ExamAppealEmailConsumerTests {
 
-    private static final String CONSUMER_GROUP = "exam-appeal-email";
+    // private static final String CONSUMER_GROUP = "exam-appeal-email";
 
     private UserRepository userRepository;
     private MailSendingPort mailSendingPort;

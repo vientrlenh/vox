@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -35,7 +35,7 @@ public interface SpringDataSchoolClassUserRepository extends JpaRepository<Schoo
         """)
     int deactivateByGradeId(
         @Param("schoolGradeId") UUID schoolGradeId,
-        @Param("leftAt") OffsetDateTime leftAt
+        @Param("leftAt") Instant leftAt
     );
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
@@ -48,6 +48,6 @@ public interface SpringDataSchoolClassUserRepository extends JpaRepository<Schoo
         """)
     int deactivateBySchoolClassId(
         @Param("schoolClassId") UUID schoolClassId,
-        @Param("leftAt") OffsetDateTime leftAt
+        @Param("leftAt") Instant leftAt
     );
 }

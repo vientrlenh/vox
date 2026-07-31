@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -94,7 +94,7 @@ public class UpdateFrameworkCriterionBandUseCase
         if (hasSignals(command.negativeSignals())) 
             band.setNegativeSignals(command.negativeSignals());
 
-        band.setUpdatedAt(OffsetDateTime.now());
+        band.setUpdatedAt(Instant.now());
         band.setUpdatedBy(userContextPort.getCurrentAuthenticatedUserId());
     }
 

@@ -1,7 +1,7 @@
 package com.sep.vox.domain.model.user;
 
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import com.sep.vox.domain.valueobject.DateOfBirth;
@@ -20,8 +20,8 @@ public class User {
     private String address;
     private String avatarUrl;
     private UserStatus status;
-    private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
     private UUID createdBy;
     private UUID updatedBy;
 
@@ -29,7 +29,7 @@ public class User {
 
     public User(UUID id, Email email, String passwordHash, Phone phone,
             FullName fullName, Gender gender, DateOfBirth dateOfBirth, String address, String avatarUrl, UserStatus status,
-            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.email = email;
         this.passwordHash = passwordHash;
@@ -48,7 +48,7 @@ public class User {
 
     public User(Email email, String passwordHash, Phone phone,
             FullName fullName, Gender gender, DateOfBirth dateOfBirth, String address, String avatarUrl, UserStatus status,
-            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.email = email;
         this.passwordHash = passwordHash;
         this.phone = phone;
@@ -144,19 +144,19 @@ public class User {
         this.address = address;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
     
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 
@@ -170,7 +170,7 @@ public class User {
 
 
 
-    public void updatePasswordAndActivate(String passwordHash, OffsetDateTime now) {
+    public void updatePasswordAndActivate(String passwordHash, Instant now) {
         this.passwordHash = passwordHash;
         this.status = UserStatus.ACTIVE;
         this.updatedAt = now;
@@ -179,7 +179,7 @@ public class User {
     private static final String PASSWORD_NOT_SET = "__PASSWORD_NOT_SET__";
 
     
-    public static User createSchoolAdmin(String email, String phone, String fullName, LocalDate dateOfBirth, String address, String avatarUrl, UUID createdUserId, OffsetDateTime now) {
+    public static User createSchoolAdmin(String email, String phone, String fullName, LocalDate dateOfBirth, String address, String avatarUrl, UUID createdUserId, Instant now) {
         return new User(
             new Email(email), 
             PASSWORD_NOT_SET, 
@@ -205,7 +205,7 @@ public class User {
         this.avatarUrl = avatarUrl;
     }
 
-    public static User create(String email, String phone, String fullName, LocalDate dateOfBirth, String address, String avatarUrl, UUID createdBy, OffsetDateTime now) {
+    public static User create(String email, String phone, String fullName, LocalDate dateOfBirth, String address, String avatarUrl, UUID createdBy, Instant now) {
         return new User(
             new Email(email),
             PASSWORD_NOT_SET,
@@ -223,7 +223,7 @@ public class User {
         );
     }
 
-    public void softDelete(UUID updatedBy, OffsetDateTime now) {
+    public void softDelete(UUID updatedBy, Instant now) {
         this.status = UserStatus.DISABLED;
         this.updatedBy = updatedBy;
         this.updatedAt = now;

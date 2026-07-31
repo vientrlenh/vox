@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -70,7 +70,7 @@ public class RubricResultBandRepositoryImpl implements RubricResultBandRepositor
     }
 
     @Override
-    public void updateResultBandAtomic(UUID id, String code, String name, String description, BigDecimal scoreMin, BigDecimal scoreMax, Integer order, OffsetDateTime updatedAt, UUID updatedBy) {
+    public void updateResultBandAtomic(UUID id, String code, String name, String description, BigDecimal scoreMin, BigDecimal scoreMax, Integer order, Instant updatedAt, UUID updatedBy) {
         springDataRubricResultBandRepository.updateResultBandAtomic(id, code, name, description, scoreMin, scoreMax, order, updatedAt, updatedBy);
     }
 

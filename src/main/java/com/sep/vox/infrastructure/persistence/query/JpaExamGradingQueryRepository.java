@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.query;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -108,8 +108,8 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
                 row.get(6, UUID.class),
                 row.get(7, String.class),
                 row.get(8, String.class),
-                row.get(9, OffsetDateTime.class),
-                row.get(10, OffsetDateTime.class)
+                row.get(9, Instant.class),
+                row.get(10, Instant.class)
             ));
         }
 
@@ -249,7 +249,7 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
                 partCounts.getOrDefault(candidateResultId, 0),
                 row.get(3, String.class),
                 Boolean.TRUE.equals(row.get(4, Boolean.class)),
-                row.get(5, OffsetDateTime.class)
+                row.get(5, Instant.class)
             ));
         }
 

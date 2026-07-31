@@ -1,7 +1,7 @@
 package com.sep.vox.domain.model.exam;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import com.sep.vox.domain.model.scoringrule.ScoringRuleActionType;
@@ -21,7 +21,7 @@ public class ExamItemRuleHit {
     private ScoringRuleSeverity severity;
     private String reasonCode;
     private int appliedOrder;
-    private OffsetDateTime createdAt;
+    private Instant createdAt;
     private UUID createdBy;
 
     public ExamItemRuleHit() {}
@@ -29,7 +29,7 @@ public class ExamItemRuleHit {
     public ExamItemRuleHit(UUID id, UUID evaluationId, UUID scoringRuleId, String ruleCode,
             ScoringRuleConditionType conditionType, BigDecimal observedValue, BigDecimal threshold,
             ScoringRuleActionType actionType, String effectSummary, ScoringRuleSeverity severity, String reasonCode,
-            int appliedOrder, OffsetDateTime createdAt, UUID createdBy) {
+            int appliedOrder, Instant createdAt, UUID createdBy) {
         this.id = id;
         this.evaluationId = evaluationId;
         this.scoringRuleId = scoringRuleId;
@@ -49,7 +49,7 @@ public class ExamItemRuleHit {
     public ExamItemRuleHit(UUID evaluationId, UUID scoringRuleId, String ruleCode,
             ScoringRuleConditionType conditionType, BigDecimal observedValue, BigDecimal threshold,
             ScoringRuleActionType actionType, String effectSummary, ScoringRuleSeverity severity, String reasonCode,
-            int appliedOrder, OffsetDateTime createdAt, UUID createdBy) {
+            int appliedOrder, Instant createdAt, UUID createdBy) {
         this.evaluationId = evaluationId;
         this.scoringRuleId = scoringRuleId;
         this.ruleCode = ruleCode;
@@ -161,11 +161,11 @@ public class ExamItemRuleHit {
         this.appliedOrder = appliedOrder;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 

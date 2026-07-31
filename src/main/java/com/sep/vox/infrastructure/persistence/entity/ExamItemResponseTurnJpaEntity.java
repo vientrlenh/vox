@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import jakarta.persistence.CheckConstraint;
@@ -61,17 +61,17 @@ public class ExamItemResponseTurnJpaEntity {
     private Integer wordCount;
 
     @Column(name = "answered_at")
-    private OffsetDateTime answeredAt;
+    private Instant answeredAt;
 
     @Column(name = "created_at", nullable = false)
-    private OffsetDateTime createdAt;
+    private Instant createdAt;
 
     protected ExamItemResponseTurnJpaEntity() {
     }
 
     public ExamItemResponseTurnJpaEntity(UUID id, UUID examItemResponseId, int turnOrder, String turnType,
             String promptText, String audioUrl, String transcript, Integer durationSeconds, Integer wordCount,
-            OffsetDateTime answeredAt, OffsetDateTime createdAt) {
+            Instant answeredAt, Instant createdAt) {
         this.id = id;
         this.examItemResponseId = examItemResponseId;
         this.turnOrder = turnOrder;
@@ -157,19 +157,19 @@ public class ExamItemResponseTurnJpaEntity {
         this.wordCount = wordCount;
     }
 
-    public OffsetDateTime getAnsweredAt() {
+    public Instant getAnsweredAt() {
         return answeredAt;
     }
 
-    public void setAnsweredAt(OffsetDateTime answeredAt) {
+    public void setAnsweredAt(Instant answeredAt) {
         this.answeredAt = answeredAt;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 }

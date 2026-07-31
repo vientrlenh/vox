@@ -1,8 +1,7 @@
 package com.sep.vox.application.port.input.service;
 
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -175,14 +174,14 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
     }
 
     private UUID createUser(Map<String, String> data, Role role, UUID schoolId, String schoolName, UUID currentUserId) {
-        var ts = OffsetDateTime.now();
+        var ts = Instant.now();
         var user = User.create(data.get("email"), data.get("phone"), data.get("fullName"),
                 parseDate(data.get("dateOfBirth")), data.get("address"), null, currentUserId, ts);
         var savedUser = userRepository.save(user);
         userRoleRepository.save(new UserRole(savedUser.getId(), role.getId(), ts));
         if (SchoolRoleCodes.STUDENT.equals(role.getCode().value())) {
-            var startOffset = parseDate(data.get("startDate")).atStartOfDay(ZoneOffset.UTC).toOffsetDateTime();
-            var endOffset = parseDate(data.get("endDate")).atStartOfDay(ZoneOffset.UTC).toOffsetDateTime();
+            var startOffset = parseDate(data.get("startDate")).atStartOfDay(DateMapper.DEFAULT_INPUT_ZONE).toInstant();
+            var endOffset = parseDate(data.get("endDate")).atStartOfDay(DateMapper.DEFAULT_INPUT_ZONE).toInstant();
             schoolUserRepository.save(SchoolUser.create(savedUser.getId(), schoolId, startOffset, endOffset));
         } else if (SchoolRoleCodes.TEACHER.equals(role.getCode().value())) {
             schoolUserRepository.save(SchoolUser.create(savedUser.getId(), schoolId, ts, null));
@@ -211,7 +210,7 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
 
     private UUID updateUser(User existing, Map<String, String> data, UUID schoolId,
             Map<UUID, SchoolUser> membershipsByUserId, String roleCode, UUID currentUserId) {
-        var ts = OffsetDateTime.now();
+        var ts = Instant.now();
         existing.setFullName(new FullName(data.get("fullName")));
         existing.setPhone(new Phone(data.get("phone")));
         existing.setDateOfBirth(new DateOfBirth(parseDate(data.get("dateOfBirth"))));
@@ -220,8 +219,8 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
         existing.setUpdatedBy(currentUserId);
         userRepository.save(existing);
         if (SchoolRoleCodes.STUDENT.equals(roleCode)) {
-            var startOffset = parseDate(data.get("startDate")).atStartOfDay(ZoneOffset.UTC).toOffsetDateTime();
-            var endOffset = parseDate(data.get("endDate")).atStartOfDay(ZoneOffset.UTC).toOffsetDateTime();
+            var startOffset = parseDate(data.get("startDate")).atStartOfDay(DateMapper.DEFAULT_INPUT_ZONE).toInstant();
+            var endOffset = parseDate(data.get("endDate")).atStartOfDay(DateMapper.DEFAULT_INPUT_ZONE).toInstant();
             var schoolUser = membershipsByUserId.get(existing.getId());
             if (schoolUser != null) {
                 schoolUser.setStartDate(startOffset);

@@ -19,7 +19,7 @@ import com.sep.vox.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 @Service
@@ -79,7 +79,7 @@ public class PublishSystemAssessmentPolicyUseCase implements IUseCase<PublishSys
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy Phiên bản Rubric liên kết."));
 
         // 5. Lưu trạng thái mới
-        OffsetDateTime now = OffsetDateTime.now();
+        Instant now = Instant.now();
         policy.setStatus(AssessmentPolicyStatus.PUBLISHED);
         policy.setUpdatedAt(now);
         policy.setUpdatedBy(currentUserId);

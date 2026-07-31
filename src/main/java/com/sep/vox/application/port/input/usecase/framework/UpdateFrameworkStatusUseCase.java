@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -39,7 +39,7 @@ public class UpdateFrameworkStatusUseCase implements IUseCase<UpdateFrameworkAct
 
     private void updateFrameworkStatus(UpdateFrameworkActiveStatusCommand input, Framework framework) {
         framework.setActive(input.isActive());
-        framework.setUpdatedAt(OffsetDateTime.now());
+        framework.setUpdatedAt(Instant.now());
         framework.setUpdatedBy(userContextPort.getCurrentAuthenticatedUserId());
     }
 }

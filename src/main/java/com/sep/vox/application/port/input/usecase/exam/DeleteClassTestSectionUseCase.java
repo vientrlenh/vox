@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -98,7 +98,7 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
         }
         examPaperSectionRepository.deleteById(paperSection.getId());
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var remainingPaperSections = allPaperSections.stream().filter(item -> !item.getId().equals(paperSection.getId())).toList();
         for (int i = 0; i < remainingPaperSections.size(); i++) {
             var remaining = remainingPaperSections.get(i);
@@ -129,7 +129,7 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
                 "Bài đang dùng blueprint dùng chung, không thể sửa câu hỏi trực tiếp — dùng \"Đổi blueprint khác\" ở tab Blueprint để thay đổi cấu trúc");
         }
     }
-    private void rebalanceSectionWeights(UUID paperId, OffsetDateTime now, UUID currentUserId) {
+    private void rebalanceSectionWeights(UUID paperId, Instant now, UUID currentUserId) {
         var sections = examPaperSectionRepository.findByPaperId(paperId).stream()
             .sorted(Comparator.comparingInt(section -> section.getOrder()))
             .toList();
@@ -143,7 +143,7 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
         }
     }
 
-    private void normalizeSectionWeights(List<com.sep.vox.domain.model.exam.ExamPaperSection> sections, OffsetDateTime now, UUID currentUserId) {
+    private void normalizeSectionWeights(List<com.sep.vox.domain.model.exam.ExamPaperSection> sections, Instant now, UUID currentUserId) {
         var weights = ClassTestSectionWeightPolicy.normalizeStoredWeights(sections);
         for (int i = 0; i < sections.size(); i++) {
             var section = sections.get(i);

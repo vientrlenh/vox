@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.schoolclass;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -80,7 +80,7 @@ public class DeleteSchoolClassUseCase implements IUseCase<DeleteSchoolClassComma
         }
 
         // Xóa mềm: archive lớp và deactivate toàn bộ thành viên đang active trong cùng transaction.
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         schoolClassUserRepository.deactivateBySchoolClassId(input.id(), now);
         schoolClass.setStatus(SchoolClassStatus.ARCHIVED);
         schoolClass.setUpdatedAt(now);

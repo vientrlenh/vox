@@ -1,6 +1,6 @@
 package com.sep.vox.domain.mapper;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 
 import com.sep.vox.domain.common.PageResult;
@@ -53,7 +53,7 @@ public class QuestionDtoMapper {
         );
     }
 
-    private static String valueOf(OffsetDateTime date) {
+    private static String valueOf(Instant date) {
         return date == null ? null : date.toString();
     }
 

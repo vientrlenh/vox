@@ -1,6 +1,6 @@
 package com.sep.vox.domain.model.question;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class QuestionBank {
@@ -12,15 +12,15 @@ public class QuestionBank {
     private String description;
     private QuestionBankOwnerType ownerType;
     private QuestionBankStatus status;
-    private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
     private UUID createdBy;
     private UUID updatedBy;
 
     public QuestionBank() {}
 
     public QuestionBank(UUID id, UUID languageId, UUID schoolId, String code, String name, String description, QuestionBankOwnerType ownerType, QuestionBankStatus status,
-            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.languageId = languageId;
         this.schoolId = schoolId;
@@ -37,7 +37,7 @@ public class QuestionBank {
 
     public QuestionBank(UUID languageId, UUID schoolId, String code, String name, String description, 
             QuestionBankOwnerType ownerType, QuestionBankStatus status, 
-            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.languageId = languageId;
         this.schoolId = schoolId;
         this.code = code;
@@ -84,19 +84,19 @@ public class QuestionBank {
     }
 
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 
@@ -149,7 +149,7 @@ public class QuestionBank {
     }
 
     public static QuestionBank create(UUID languageId, UUID schoolId, String code, String name, String description, QuestionBankOwnerType ownerType, 
-    OffsetDateTime now, UUID createdBy) {
+    Instant now, UUID createdBy) {
         return new QuestionBank(
             languageId, 
             schoolId, 

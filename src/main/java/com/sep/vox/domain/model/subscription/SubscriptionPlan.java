@@ -1,7 +1,7 @@
 package com.sep.vox.domain.model.subscription;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class SubscriptionPlan {
@@ -15,14 +15,14 @@ public class SubscriptionPlan {
     private boolean popular;
     private PlanStatus status;
     private Integer version;
-    private OffsetDateTime createdAt;
+    private Instant createdAt;
     private UUID createdBy;
 
     public SubscriptionPlan() {}
 
     public SubscriptionPlan(UUID id, String name, String tagline, BigDecimal pricePerYear, Integer validityDays,
             Integer maxTimePerAttemptMin, Integer maxStudentCount, boolean popular, PlanStatus status, Integer version,
-            OffsetDateTime createdAt, UUID createdBy) {
+            Instant createdAt, UUID createdBy) {
         this.id = id;
         this.name = name;
         this.tagline = tagline;
@@ -39,7 +39,7 @@ public class SubscriptionPlan {
 
     public SubscriptionPlan(String name, String tagline, BigDecimal pricePerYear, Integer validityDays,
             Integer maxTimePerAttemptMin, Integer maxStudentCount, boolean popular, PlanStatus status, Integer version,
-            OffsetDateTime createdAt, UUID createdBy) {
+            Instant createdAt, UUID createdBy) {
         this.name = name;
         this.tagline = tagline;
         this.pricePerYear = pricePerYear;
@@ -133,11 +133,11 @@ public class SubscriptionPlan {
         this.version = version;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 

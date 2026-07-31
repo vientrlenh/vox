@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.auth;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,7 +31,7 @@ public class SetUpPasswordUseCase implements IUseCase<SetUpPasswordCommand, Void
     @Override
     @Transactional
     public Void execute(SetUpPasswordCommand input) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var hashedToken = passwordSetUpTokenPort.hash(input.token());
         
         var updatedTokenRows = passwordSetUpTokenRepository.updateUsedToken(input.userId(), hashedToken, now);

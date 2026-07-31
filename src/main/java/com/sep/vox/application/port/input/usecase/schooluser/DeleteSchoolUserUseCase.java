@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.schooluser;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,7 +29,7 @@ public class DeleteSchoolUserUseCase implements IUseCase<DeleteSchoolUserCommand
     @Override
     @Transactional
     public Void execute(DeleteSchoolUserCommand input) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var callerId = userContextPort.getCurrentAuthenticatedUserId();
 
         userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)

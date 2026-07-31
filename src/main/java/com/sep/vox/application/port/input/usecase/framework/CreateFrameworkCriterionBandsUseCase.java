@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -53,7 +53,7 @@ public class CreateFrameworkCriterionBandsUseCase
     @Transactional
     public List<UUID> execute(CreateFrameworkCriterionBandsCommand command) {
         UUID userId = userContextPort.getCurrentAuthenticatedUserId();
-        OffsetDateTime now = OffsetDateTime.now();
+        Instant now = Instant.now();
 
         FrameworkVersion version = getVersion(command);
         FrameworkCriterion criterion = getCriterion(command);

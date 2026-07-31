@@ -9,7 +9,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -84,11 +85,11 @@ class IssueStudentStreamTokenUseCaseTests {
         candidate.setStudentId(userId);
         candidate.setScheduleId(scheduleId);
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var schedule = new ExamSchedule();
         schedule.setId(scheduleId);
-        schedule.setStartDate(now.minusHours(1));
-        schedule.setEndDate(now.plusHours(1));
+        schedule.setStartDate(now.minus(1, ChronoUnit.HOURS));
+        schedule.setEndDate(now.plus(1, ChronoUnit.HOURS));
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(examSessionRepository.findByIdAndResumable(sessionId)).thenReturn(Optional.of(session));

@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -33,7 +33,7 @@ public class ExamQuestionSecureLockService {
             UUID examId,
             ExamSecurePoolReleaseMode releaseModeIfCreating,
             UUID currentUserId) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var pool = examSecurePoolRepository.findByExamId(examId)
             .orElseGet(() -> examSecurePoolRepository.save(new ExamSecurePool(
                 examId,
@@ -67,7 +67,7 @@ public class ExamQuestionSecureLockService {
         question.setLocked(false);
         question.setConfidentiality(QuestionConfidentiality.RELEASED);
         question.setSecurePoolId(null);
-        question.setUpdatedAt(OffsetDateTime.now());
+        question.setUpdatedAt(Instant.now());
         question.setUpdatedBy(currentUserId);
         questionRepository.save(question);
     }
@@ -80,7 +80,7 @@ public class ExamQuestionSecureLockService {
                 || pool.getStatus() != ExamSecurePoolStatus.SEALED) {
             return;
         }
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         pool.setStatus(ExamSecurePoolStatus.RELEASED);
         pool.setReleasedAt(now);
         pool.setUpdatedAt(now);

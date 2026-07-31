@@ -1,6 +1,6 @@
 package com.sep.vox.domain.model.outbox;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class Outbox {
@@ -11,16 +11,16 @@ public class Outbox {
     private String payload;
     private OutboxStatus status;
     private int retryCount;
-    private OffsetDateTime createdAt;
-    private OffsetDateTime publishedAt;
-    private OffsetDateTime nextRetryAt;
+    private Instant createdAt;
+    private Instant publishedAt;
+    private Instant nextRetryAt;
     private String lastError;
 
     public Outbox() {}
 
     public Outbox(UUID id, String aggregateType, UUID aggregateId, String eventType, String payload,
-            OutboxStatus status, int retryCount, OffsetDateTime createdAt, OffsetDateTime publishedAt,
-            OffsetDateTime nextRetryAt, String lastError) {
+            OutboxStatus status, int retryCount, Instant createdAt, Instant publishedAt,
+            Instant nextRetryAt, String lastError) {
         this.id = id;
         this.aggregateType = aggregateType;
         this.aggregateId = aggregateId;
@@ -35,7 +35,7 @@ public class Outbox {
     }
 
     public Outbox(String aggregateType, UUID aggregateId, String eventType, String payload, OutboxStatus status,
-            int retryCount, OffsetDateTime createdAt, OffsetDateTime publishedAt, OffsetDateTime nextRetryAt,
+            int retryCount, Instant createdAt, Instant publishedAt, Instant nextRetryAt,
             String lastError) {
         this.aggregateType = aggregateType;
         this.aggregateId = aggregateId;
@@ -105,27 +105,27 @@ public class Outbox {
         this.retryCount = retryCount;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getPublishedAt() {
+    public Instant getPublishedAt() {
         return publishedAt;
     }
 
-    public void setPublishedAt(OffsetDateTime publishedAt) {
+    public void setPublishedAt(Instant publishedAt) {
         this.publishedAt = publishedAt;
     }
 
-    public OffsetDateTime getNextRetryAt() {
+    public Instant getNextRetryAt() {
         return nextRetryAt;
     }
 
-    public void setNextRetryAt(OffsetDateTime nextRetryAt) {
+    public void setNextRetryAt(Instant nextRetryAt) {
         this.nextRetryAt = nextRetryAt;
     }
 
@@ -137,7 +137,7 @@ public class Outbox {
         this.lastError = lastError;
     }
 
-    public static Outbox create(String aggregateType, UUID aggregateId, String eventType, String payload, OffsetDateTime now) {
+    public static Outbox create(String aggregateType, UUID aggregateId, String eventType, String payload, Instant now) {
         return new Outbox(
             aggregateType, 
             aggregateId, 

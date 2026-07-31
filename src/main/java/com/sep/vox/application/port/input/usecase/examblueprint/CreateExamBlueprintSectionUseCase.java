@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.examblueprint;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -69,7 +69,7 @@ public class CreateExamBlueprintSectionUseCase implements IUseCase<CreateExamBlu
             throw new IllegalStateException("Thứ tự section đã tồn tại trong version này");
         }
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var section = new ExamBlueprintSection(
             version.getId(),
             command.order(),

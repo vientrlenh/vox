@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.NavigableMap;
 import java.util.TreeMap;
@@ -18,7 +18,7 @@ public class RubricResultBandValidatorTests {
 
     private RubricResultBand band(String name, double min, double max) {
         return new RubricResultBand(UUID.randomUUID(), UUID.randomUUID(), name.toUpperCase(), name, null,
-                BigDecimal.valueOf(min), BigDecimal.valueOf(max), 1, OffsetDateTime.now(), OffsetDateTime.now(),
+                BigDecimal.valueOf(min), BigDecimal.valueOf(max), 1, Instant.now(), Instant.now(),
                 UUID.randomUUID(), UUID.randomUUID());
     }
 

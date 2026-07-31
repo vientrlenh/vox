@@ -20,7 +20,7 @@ import com.sep.vox.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -73,7 +73,7 @@ public class PublishSystemAssessmentPoliciesByRubricVersionUseCase
         }
 
         // 4. Kiểm tra và publish từng policy (rollback toàn bộ nếu có 1 policy không hợp lệ)
-        OffsetDateTime now = OffsetDateTime.now();
+        Instant now = Instant.now();
         for (AssessmentPolicy policy : draftPolicies) {
             FrameworkVersion frameworkVersion = frameworkVersionRepository.findById(policy.getFrameworkVersionId())
                     .orElseThrow(() -> new NotFoundException("Không tìm thấy Phiên bản Khung tiêu chuẩn (Framework Version) liên kết."));

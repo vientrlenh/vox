@@ -2,7 +2,8 @@ package com.sep.vox.infrastructure.persistence.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -81,12 +82,12 @@ class RefreshTokenRepositoryTests extends ContainerTestConfig {
     }
 
     private static RefreshToken newRefreshToken(UUID sessionId, String tokenHash) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         return new RefreshToken(
             sessionId,
             tokenHash,
             now,
-            now.plusDays(7),
+            now.plus(7, ChronoUnit.DAYS),
             null,
             null
         );

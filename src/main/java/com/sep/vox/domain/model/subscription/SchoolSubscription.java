@@ -2,7 +2,7 @@ package com.sep.vox.domain.model.subscription;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class SchoolSubscription {
@@ -13,13 +13,13 @@ public class SchoolSubscription {
     private LocalDate endDate;
     private SubscriptionStatus status;
     private BigDecimal pricePaidSnapshot;
-    private OffsetDateTime cancelledAt;
-    private OffsetDateTime createdAt;
+    private Instant cancelledAt;
+    private Instant createdAt;
 
     public SchoolSubscription() {}
 
     public SchoolSubscription(UUID id, UUID schoolId, UUID planId, LocalDate startDate, LocalDate endDate,
-            SubscriptionStatus status, BigDecimal pricePaidSnapshot, OffsetDateTime cancelledAt, OffsetDateTime createdAt) {
+            SubscriptionStatus status, BigDecimal pricePaidSnapshot, Instant cancelledAt, Instant createdAt) {
         this.id = id;
         this.schoolId = schoolId;
         this.planId = planId;
@@ -32,7 +32,7 @@ public class SchoolSubscription {
     }
 
     public SchoolSubscription(UUID schoolId, UUID planId, LocalDate startDate, LocalDate endDate,
-            SubscriptionStatus status, BigDecimal pricePaidSnapshot, OffsetDateTime cancelledAt, OffsetDateTime createdAt) {
+            SubscriptionStatus status, BigDecimal pricePaidSnapshot, Instant cancelledAt, Instant createdAt) {
         this.schoolId = schoolId;
         this.planId = planId;
         this.startDate = startDate;
@@ -99,19 +99,19 @@ public class SchoolSubscription {
         this.pricePaidSnapshot = pricePaidSnapshot;
     }
 
-    public OffsetDateTime getCancelledAt() {
+    public Instant getCancelledAt() {
         return cancelledAt;
     }
 
-    public void setCancelledAt(OffsetDateTime cancelledAt) {
+    public void setCancelledAt(Instant cancelledAt) {
         this.cancelledAt = cancelledAt;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 }

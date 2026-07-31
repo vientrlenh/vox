@@ -6,7 +6,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -61,7 +61,7 @@ class CreateSchoolGradeUseCaseTests {
 
     @Test
     void should_create_grade_with_active_status() {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var gradeLevel = new SchoolGradeLevel(
             gradeLevelId, schoolId, "K1", "Khối 1", "desc", 1, SchoolGradeLevelStatus.ACTIVE, now, now,
             UUID.randomUUID(), UUID.randomUUID());

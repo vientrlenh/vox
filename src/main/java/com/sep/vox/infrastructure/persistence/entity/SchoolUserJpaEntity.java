@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -44,15 +44,15 @@ public class SchoolUserJpaEntity {
     private UUID userId;
 
     @Column(name = "start_date", nullable = false)
-    private OffsetDateTime startDate;
+    private Instant startDate;
 
     @Column(name = "end_date")
-    private OffsetDateTime endDate;
+    private Instant endDate;
 
     protected SchoolUserJpaEntity() {}
 
-    public SchoolUserJpaEntity(UUID id, UUID schoolId, UUID userId, OffsetDateTime startDate,
-            OffsetDateTime endDate) {
+    public SchoolUserJpaEntity(UUID id, UUID schoolId, UUID userId, Instant startDate,
+            Instant endDate) {
         this.id = id;
 
         this.schoolId = schoolId;
@@ -86,19 +86,19 @@ public class SchoolUserJpaEntity {
         this.userId = userId;
     }
 
-    public OffsetDateTime getStartDate() {
+    public Instant getStartDate() {
         return startDate;
     }
 
-    public void setStartDate(OffsetDateTime startDate) {
+    public void setStartDate(Instant startDate) {
         this.startDate = startDate;
     }
 
-    public OffsetDateTime getEndDate() {
+    public Instant getEndDate() {
         return endDate;
     }
 
-    public void setEndDate(OffsetDateTime endDate) {
+    public void setEndDate(Instant endDate) {
         this.endDate = endDate;
     }
 

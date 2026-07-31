@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -52,10 +52,10 @@ public class FrameworkVersionJpaEntity {
     private int version;
 
     @Column(name = "effective_from", nullable = false)
-    private OffsetDateTime effectiveFrom;
+    private Instant effectiveFrom;
 
     @Column(name = "effective_to")
-    private OffsetDateTime effectiveTo;
+    private Instant effectiveTo;
 
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
@@ -66,10 +66,10 @@ public class FrameworkVersionJpaEntity {
     private String status;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private OffsetDateTime updatedAt;
+    private Instant updatedAt;
 
     @Column(name = "created_by", updatable = false)
     private UUID createdBy;
@@ -80,8 +80,8 @@ public class FrameworkVersionJpaEntity {
     protected FrameworkVersionJpaEntity() {}
 
     public FrameworkVersionJpaEntity(UUID id, UUID frameworkId, String code, String name, String description,
-            int version, OffsetDateTime effectiveFrom, OffsetDateTime effectiveTo, String status,
-            OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            int version, Instant effectiveFrom, Instant effectiveTo, String status,
+            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.frameworkId = frameworkId;
         this.code = code;
@@ -109,16 +109,16 @@ public class FrameworkVersionJpaEntity {
     public void setDescription(String description) { this.description = description; }
     public int getVersion() { return version; }
     public void setVersion(int version) { this.version = version; }
-    public OffsetDateTime getEffectiveFrom() { return effectiveFrom; }
-    public void setEffectiveFrom(OffsetDateTime effectiveFrom) { this.effectiveFrom = effectiveFrom; }
-    public OffsetDateTime getEffectiveTo() { return effectiveTo; }
-    public void setEffectiveTo(OffsetDateTime effectiveTo) { this.effectiveTo = effectiveTo; }
+    public Instant getEffectiveFrom() { return effectiveFrom; }
+    public void setEffectiveFrom(Instant effectiveFrom) { this.effectiveFrom = effectiveFrom; }
+    public Instant getEffectiveTo() { return effectiveTo; }
+    public void setEffectiveTo(Instant effectiveTo) { this.effectiveTo = effectiveTo; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
-    public OffsetDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(OffsetDateTime createdAt) { this.createdAt = createdAt; }
-    public OffsetDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(OffsetDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public Instant getCreatedAt() { return createdAt; }
+    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
+    public Instant getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
     public UUID getCreatedBy() { return createdBy; }
     public void setCreatedBy(UUID createdBy) { this.createdBy = createdBy; }
     public UUID getUpdatedBy() { return updatedBy; }

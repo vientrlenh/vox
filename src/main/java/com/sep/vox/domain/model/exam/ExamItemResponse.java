@@ -1,6 +1,6 @@
 package com.sep.vox.domain.model.exam;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class ExamItemResponse {
@@ -11,12 +11,12 @@ public class ExamItemResponse {
     private Integer durationSeconds;
     private String transcript; 
     private String terminationReason;
-    private OffsetDateTime submittedAt; 
+    private Instant submittedAt;
 
     public ExamItemResponse() {}
 
     public ExamItemResponse(UUID id, UUID sessionId, UUID paperItemId, String audioUrl, Integer durationSeconds,
-            String transcript, String terminationReason, OffsetDateTime submittedAt) {
+            String transcript, String terminationReason, Instant submittedAt) {
         this.id = id;
         this.sessionId = sessionId;
         this.paperItemId = paperItemId;
@@ -28,7 +28,7 @@ public class ExamItemResponse {
     }
 
     public ExamItemResponse(UUID sessionId, UUID paperItemId, String audioUrl, Integer durationSeconds,
-            String transcript, String terminationReason, OffsetDateTime submittedAt) {
+            String transcript, String terminationReason, Instant submittedAt) {
         this.sessionId = sessionId;
         this.paperItemId = paperItemId;
         this.audioUrl = audioUrl;
@@ -94,11 +94,11 @@ public class ExamItemResponse {
         this.terminationReason = terminationReason;
     }
 
-    public OffsetDateTime getSubmittedAt() {
+    public Instant getSubmittedAt() {
         return submittedAt;
     }
 
-    public void setSubmittedAt(OffsetDateTime submittedAt) {
+    public void setSubmittedAt(Instant submittedAt) {
         this.submittedAt = submittedAt;
     }
 

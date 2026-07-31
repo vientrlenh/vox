@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examgrading;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 
 import org.springframework.stereotype.Service;
@@ -91,7 +91,7 @@ public class SubmitGradingUseCase implements IUseCase<SubmitGradingCommand, Subm
         // Nộp là chốt COMPLETED, nên bắt buộc phủ đủ mọi phần — nộp thiếu rồi chốt
         // sẽ khóa cứng phần chưa chấm (bài COMPLETED không gỡ được).
         var resolvedItems = gradingItemScoreResolver.resolve(context, command, true);
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
 
         // Gỡ cờ nghi vấn (Mô hình A): giáo viên đã xem và kết luận không vi phạm.
         // Giữ nguyên flagReason để còn tra lại vì sao bài từng bị đánh dấu.

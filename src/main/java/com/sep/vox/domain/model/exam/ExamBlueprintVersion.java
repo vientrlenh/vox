@@ -1,6 +1,6 @@
 package com.sep.vox.domain.model.exam;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class ExamBlueprintVersion {
@@ -11,18 +11,18 @@ public class ExamBlueprintVersion {
     private String description;
     private ExamBlueprintVersionStatus status;
     private Integer totalTimeLimitSeconds;
-    private OffsetDateTime effectiveFrom;
-    private OffsetDateTime effectiveTo;
-    private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
+    private Instant effectiveFrom;
+    private Instant effectiveTo;
+    private Instant createdAt;
+    private Instant updatedAt;
     private UUID createdBy;
     private UUID updatedBy;
     
     public ExamBlueprintVersion() {}
 
     public ExamBlueprintVersion(UUID id, UUID blueprintId, int version, String code, String description,
-            ExamBlueprintVersionStatus status, Integer totalTimeLimitSeconds, OffsetDateTime effectiveFrom,
-            OffsetDateTime effectiveTo, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy,
+            ExamBlueprintVersionStatus status, Integer totalTimeLimitSeconds, Instant effectiveFrom,
+            Instant effectiveTo, Instant createdAt, Instant updatedAt, UUID createdBy,
             UUID updatedBy) {
         this.id = id;
         this.blueprintId = blueprintId;
@@ -40,8 +40,8 @@ public class ExamBlueprintVersion {
     }
 
     public ExamBlueprintVersion(UUID blueprintId, int version, String code, String description,
-            ExamBlueprintVersionStatus status, Integer totalTimeLimitSeconds, OffsetDateTime effectiveFrom,
-            OffsetDateTime effectiveTo, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID createdBy,
+            ExamBlueprintVersionStatus status, Integer totalTimeLimitSeconds, Instant effectiveFrom,
+            Instant effectiveTo, Instant createdAt, Instant updatedAt, UUID createdBy,
             UUID updatedBy) {
         this.blueprintId = blueprintId;
         this.version = version;
@@ -113,35 +113,35 @@ public class ExamBlueprintVersion {
         this.totalTimeLimitSeconds = totalTimeLimitSeconds;
     }
 
-    public OffsetDateTime getEffectiveFrom() {
+    public Instant getEffectiveFrom() {
         return effectiveFrom;
     }
 
-    public void setEffectiveFrom(OffsetDateTime effectiveFrom) {
+    public void setEffectiveFrom(Instant effectiveFrom) {
         this.effectiveFrom = effectiveFrom;
     }
 
-    public OffsetDateTime getEffectiveTo() {
+    public Instant getEffectiveTo() {
         return effectiveTo;
     }
 
-    public void setEffectiveTo(OffsetDateTime effectiveTo) {
+    public void setEffectiveTo(Instant effectiveTo) {
         this.effectiveTo = effectiveTo;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 

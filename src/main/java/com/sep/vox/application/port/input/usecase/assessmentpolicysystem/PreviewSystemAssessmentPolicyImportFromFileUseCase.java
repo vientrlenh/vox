@@ -20,7 +20,8 @@ import com.sep.vox.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.IntStream;
@@ -65,8 +66,8 @@ public class PreviewSystemAssessmentPolicyImportFromFileUseCase implements IUseC
             throw new IllegalArgumentException("File tải lên trống hoặc không chứa dòng dữ liệu hợp lệ.");
         }
 
-        OffsetDateTime now = OffsetDateTime.now();
-        OffsetDateTime expiresAt = now.plusDays(1);
+        Instant now = Instant.now();
+        Instant expiresAt = now.plus(1, ChronoUnit.DAYS);
 
         ImportSession session = new ImportSession(
                 null,

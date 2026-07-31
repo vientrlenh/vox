@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.subscription;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -60,7 +60,7 @@ public class SubmitRequestUseCase implements IUseCase<SubmitRequestCommand, Subs
             );
         }
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var request = new SubscriptionRequest(
             input.schoolId(),
             input.requestType(),

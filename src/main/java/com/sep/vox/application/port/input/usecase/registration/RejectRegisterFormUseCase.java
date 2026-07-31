@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.registration;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,7 +39,7 @@ public class RejectRegisterFormUseCase implements IUseCase<RejectRegisterFormCom
     @Transactional
     public Void execute(RejectRegisterFormCommand input) {
         var command = normalize(input);
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         var registerForm = registerFormRepository.findById(command.registerFormId())

@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -61,7 +61,7 @@ public class SubscriptionPlanJpaEntity {
     private Integer version;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "created_by", updatable = false)
     private UUID createdBy;
@@ -70,7 +70,7 @@ public class SubscriptionPlanJpaEntity {
 
     public SubscriptionPlanJpaEntity(UUID id, String name, String tagline, BigDecimal pricePerYear, Integer validityDays,
             Integer maxTimePerAttemptMin, Integer maxStudentCount, boolean popular, String status, Integer version,
-            OffsetDateTime createdAt, UUID createdBy) {
+            Instant createdAt, UUID createdBy) {
         this.id = id;
         this.name = name;
         this.tagline = tagline;
@@ -165,11 +165,11 @@ public class SubscriptionPlanJpaEntity {
         this.version = version;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 

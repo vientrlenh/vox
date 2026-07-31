@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.service;
 
 import java.time.Duration;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -20,7 +20,7 @@ public class ImportQueueService {
 
     @Transactional
     public List<UUID> claimQueued(UUID worker, int limit, Duration lease) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var ids = importSessionRepository.lockQueueIds(limit);
         if (!ids.isEmpty()) {
             importSessionRepository.markClaimed(ids, worker, now, now.plus(lease));
@@ -30,11 +30,11 @@ public class ImportQueueService {
 
     @Transactional
     public void heartbeat(UUID sessionId, Duration lease) {
-        importSessionRepository.extendLease(sessionId, OffsetDateTime.now().plus(lease));
+        importSessionRepository.extendLease(sessionId, Instant.now().plus(lease));
     }
 
     @Transactional
     public int requeueExpired(int maxAttempts) {
-        return importSessionRepository.requeueExpiredLeases(OffsetDateTime.now(), maxAttempts);
+        return importSessionRepository.requeueExpiredLeases(Instant.now(), maxAttempts);
     }
 }

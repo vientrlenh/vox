@@ -1,7 +1,7 @@
 package com.sep.vox.domain.model.registerform;
 
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -32,11 +32,11 @@ public class RegisterForm {
     private String position;
     private StudentCount studentCount;
     private RegisterFormVerificationMethod verificationMethod;
-    private OffsetDateTime verifiedAt;
+    private Instant verifiedAt;
     private String rejectedReason;
     private RegisterFormStatus status;
-    private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
     private UUID reviewedBy;
 
     public RegisterForm() {
@@ -46,8 +46,8 @@ public class RegisterForm {
             String schoolDistrict, String schoolProvince, String schoolAddress, FullName contactFullName,
             IdentityNumber identityNumber, Phone contactPhone, Email contactEmail, DateOfBirth dateOfBirth,
             String contactAddress, PostalCode postalCode, String position, StudentCount studentCount,
-            RegisterFormVerificationMethod verificationMethod, OffsetDateTime verifiedAt, String rejectedReason,
-            RegisterFormStatus status, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID reviewedBy) {
+            RegisterFormVerificationMethod verificationMethod, Instant verifiedAt, String rejectedReason,
+            RegisterFormStatus status, Instant createdAt, Instant updatedAt, UUID reviewedBy) {
         this.id = id;
         this.schoolDirectoryId = schoolDirectoryId;
         this.schoolName = schoolName;
@@ -77,8 +77,8 @@ public class RegisterForm {
             String schoolDistrict, String schoolProvince, String schoolAddress, FullName contactFullName,
             IdentityNumber identityNumber, Phone contactPhone, Email contactEmail, DateOfBirth dateOfBirth,
             String contactAddress, PostalCode postalCode, String position, StudentCount studentCount,
-            RegisterFormVerificationMethod verificationMethod, OffsetDateTime verifiedAt, String rejectedReason,
-            RegisterFormStatus status, OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID reviewedBy) {
+            RegisterFormVerificationMethod verificationMethod, Instant verifiedAt, String rejectedReason,
+            RegisterFormStatus status, Instant createdAt, Instant updatedAt, UUID reviewedBy) {
         this.schoolDirectoryId = schoolDirectoryId;
         this.schoolName = schoolName;
         this.schoolDomain = schoolDomain;
@@ -239,11 +239,11 @@ public class RegisterForm {
         this.verificationMethod = verificationMethod;
     }
 
-    public OffsetDateTime getVerifiedAt() {
+    public Instant getVerifiedAt() {
         return verifiedAt;
     }
 
-    public void setVerifiedAt(OffsetDateTime verifiedAt) {
+    public void setVerifiedAt(Instant verifiedAt) {
         this.verifiedAt = verifiedAt;
     }
 
@@ -263,19 +263,19 @@ public class RegisterForm {
         this.status = status;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 
@@ -300,7 +300,7 @@ public class RegisterForm {
         String postalCode, 
         String position, 
         int studentCount, 
-        OffsetDateTime now
+        Instant now
     ) {
         var form = new RegisterForm();
         form.schoolDirectoryId = require(schoolDirectoryId);
@@ -332,7 +332,7 @@ public class RegisterForm {
         String postalCode, 
         String position, 
         int studentCount, 
-        OffsetDateTime now
+        Instant now
     ) {
         var form = new RegisterForm();
         form.schoolDirectoryId = require(schoolDirectoryId);
@@ -367,7 +367,7 @@ public class RegisterForm {
         String postalCode, 
         String position, 
         int studentCount, 
-        OffsetDateTime now
+        Instant now
     ) {
         var form = new RegisterForm();
         form.verificationMethod = RegisterFormVerificationMethod.DOCUMENT;

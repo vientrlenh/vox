@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -90,7 +90,7 @@ public class UpdateClassTestSectionUseCase implements IUseCase<UpdateClassTestSe
         var paperSection = examPaperSectionRepository.findById(input.sectionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy section"));
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
 
         if (input.title() != null) {
             paperSection.setTitle(input.title());
@@ -155,7 +155,7 @@ public class UpdateClassTestSectionUseCase implements IUseCase<UpdateClassTestSe
             List<ClassTestQuestionCommand> questions,
             UUID examId,
             UUID currentUserId,
-            OffsetDateTime now) {
+            Instant now) {
         var existingItems = examPaperItemRepository.findBySectionId(paperSection.getId()).stream()
             .sorted((a, b) -> Integer.compare(a.getOrder(), b.getOrder()))
             .toList();

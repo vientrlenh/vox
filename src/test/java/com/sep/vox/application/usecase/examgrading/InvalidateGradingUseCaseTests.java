@@ -9,7 +9,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -54,7 +54,7 @@ public class InvalidateGradingUseCaseTests {
     private GradingContext given(
             GradingAssignmentStatus assignmentStatus, ExamCandidateResultStatus resultStatus, boolean flagged) {
         var assignment = new ExamGradingAssignment(
-            assignmentId, candidateResultId, teacherId, assignmentStatus, OffsetDateTime.now(), null, null);
+            assignmentId, candidateResultId, teacherId, assignmentStatus, Instant.now(), null, null);
 
         var candidateResult = new ExamCandidateResult();
         candidateResult.setId(candidateResultId);

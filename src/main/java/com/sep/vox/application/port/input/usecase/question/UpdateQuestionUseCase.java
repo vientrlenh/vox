@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.question;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -94,7 +94,7 @@ public class UpdateQuestionUseCase implements IUseCase<UpdateQuestionCommand, Up
             applyContentUpdates(question, command, currentUserId);
         }
 
-        question.setUpdatedAt(OffsetDateTime.now());
+        question.setUpdatedAt(Instant.now());
         question.setUpdatedBy(currentUserId);
         questionRepository.save(question);
 
@@ -113,7 +113,7 @@ public class UpdateQuestionUseCase implements IUseCase<UpdateQuestionCommand, Up
         if (question.getMinResponseSeconds() > question.getMaxResponseSeconds()) {
             throw new IllegalStateException("Thời gian trả lời tối thiểu không được lớn hơn thời gian trả lời tối đa");
         }
-        question.setUpdatedAt(OffsetDateTime.now());
+        question.setUpdatedAt(Instant.now());
         question.setUpdatedBy(currentUserId);
     }
 

@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.questionbank;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -66,7 +66,7 @@ public class CreateQuestionBankGradeUseCase implements IUseCase<CreateQuestionBa
         var grade = new QuestionBankGrade(
             questionBank.getId(),
             input.schoolGradeId(),
-            OffsetDateTime.now(),
+            Instant.now(),
             currentUserId
         );
         var saved = questionBankGradeRepository.save(grade);

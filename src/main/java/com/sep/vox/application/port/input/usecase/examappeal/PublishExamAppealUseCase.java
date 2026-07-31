@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examappeal;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -112,7 +112,7 @@ public class PublishExamAppealUseCase implements IUseCase<PublishExamAppealComma
             }
         }
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var scoreBefore = context.candidateResult().getTotalScore();
 
         // Bản AI và toàn bộ báo cáo giám khảo của MỌI part đang phúc khảo đều lùi về

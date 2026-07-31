@@ -1,7 +1,7 @@
 package com.sep.vox.domain.dto;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public record AssessmentPolicyDto(
@@ -18,8 +18,8 @@ public record AssessmentPolicyDto(
         String strictness,
         int version,
         String status,
-        OffsetDateTime effectiveFrom,
-        OffsetDateTime effectiveTo,
-        OffsetDateTime createdAt,
-        OffsetDateTime updatedAt
+        Instant effectiveFrom,
+        Instant effectiveTo,
+        Instant createdAt,
+        Instant updatedAt
 ) {}

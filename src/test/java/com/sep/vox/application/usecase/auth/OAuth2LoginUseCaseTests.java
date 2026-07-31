@@ -3,7 +3,7 @@ package com.sep.vox.application.usecase.auth;
 import com.sep.vox.application.usecase.TestSchoolUserRepository;
 
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -92,7 +92,7 @@ class OAuth2LoginUseCaseTests {
             UUID.randomUUID(),
             userId,
             roleId,
-            OffsetDateTime.now(),
+            Instant.now(),
             "STUDENT",
             "Student"
         ));
@@ -175,8 +175,8 @@ class OAuth2LoginUseCaseTests {
             "Ho Chi Minh City",
             null,
             UserStatus.ACTIVE,
-            OffsetDateTime.now(),
-            OffsetDateTime.now(),
+            Instant.now(),
+            Instant.now(),
             null,
             null
         );

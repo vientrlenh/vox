@@ -1,7 +1,7 @@
 package com.sep.vox.domain.model.exam;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class ExamBlueprintSection {
@@ -12,16 +12,16 @@ public class ExamBlueprintSection {
     private String instruction;
     private Integer sectionTimeLimitSeconds;
     private BigDecimal sectionWeight;
-    private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
     private UUID createdBy;
     private UUID updatedBy;
 
     public ExamBlueprintSection() {}
 
     public ExamBlueprintSection(UUID id, UUID blueprintVersionId, int order, String title, String instruction,
-            Integer sectionTimeLimitSeconds, BigDecimal sectionWeight, OffsetDateTime createdAt,
-            OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            Integer sectionTimeLimitSeconds, BigDecimal sectionWeight, Instant createdAt,
+            Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.blueprintVersionId = blueprintVersionId;
         this.order = order;
@@ -36,8 +36,8 @@ public class ExamBlueprintSection {
     }
 
     public ExamBlueprintSection(UUID blueprintVersionId, int order, String title, String instruction,
-            Integer sectionTimeLimitSeconds, BigDecimal sectionWeight, OffsetDateTime createdAt,
-            OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            Integer sectionTimeLimitSeconds, BigDecimal sectionWeight, Instant createdAt,
+            Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.blueprintVersionId = blueprintVersionId;
         this.order = order;
         this.title = title;
@@ -106,19 +106,19 @@ public class ExamBlueprintSection {
         this.sectionWeight = sectionWeight;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 

@@ -9,7 +9,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -90,7 +91,7 @@ class SchoolGradeImportCommitHandlerTests {
     @Test
     void should_update_existing_grade_when_code_exists() {
         var sessionId = UUID.randomUUID();
-        var createdAt = OffsetDateTime.now().minusDays(5);
+        var createdAt = Instant.now().minus(5, ChronoUnit.DAYS);
         var existing = new SchoolGrade(
             UUID.randomUUID(), levelId, "2024", "Năm cũ", "Mô tả cũ",
             LocalDate.of(2024, 1, 1), LocalDate.of(2024, 6, 1),
@@ -189,7 +190,7 @@ class SchoolGradeImportCommitHandlerTests {
     }
 
     private SchoolGradeLevel gradeLevel(String code) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         return new SchoolGradeLevel(levelId, schoolId, code, "Khối " + code, null, 1,
             SchoolGradeLevelStatus.ACTIVE, now, now, createdBy, createdBy);
     }
@@ -203,8 +204,8 @@ class SchoolGradeImportCommitHandlerTests {
             id, schoolId, ImportType.SCHOOL_GRADE, "grades.csv", "[]", "{}",
             jsonSerializationPort.toJson(mapping()),
             0L, 0L, 0L, 0L, 0L, null, ImportSessionStatus.IMPORTING, null,
-            OffsetDateTime.now().plusDays(1), null, null, null, 0,
-            OffsetDateTime.now(), OffsetDateTime.now(),
+            Instant.now().plus(1, ChronoUnit.DAYS), null, null, null, 0,
+            Instant.now(), Instant.now(),
             createdBy, createdBy
         );
     }

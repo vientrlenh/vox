@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examsession;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.springframework.stereotype.Service;
 
@@ -43,7 +43,7 @@ public class CreateExamSessionUseCase implements IUseCase<CreateExamSessionComma
         examPaperRepository.findById(input.paperId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy đề thi"));
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var session = new ExamSession(
             input.examId(),
             input.candidateId(),

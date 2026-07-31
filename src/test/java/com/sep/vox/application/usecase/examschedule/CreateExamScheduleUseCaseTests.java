@@ -9,7 +9,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -49,8 +49,8 @@ class CreateExamScheduleUseCaseTests {
     private final UUID examId = UUID.randomUUID();
     private final UUID schoolId = UUID.randomUUID();
     private final UUID roomId = UUID.randomUUID();
-    private final OffsetDateTime start = OffsetDateTime.parse("2026-07-10T08:00:00+07:00");
-    private final OffsetDateTime end = OffsetDateTime.parse("2026-07-10T10:00:00+07:00");
+    private final Instant start = Instant.parse("2026-07-10T08:00:00+07:00");
+    private final Instant end = Instant.parse("2026-07-10T10:00:00+07:00");
 
     @BeforeEach
     void setUp() {

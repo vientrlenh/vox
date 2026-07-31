@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
@@ -59,12 +59,12 @@ public class RegisterFormRepositoryImpl implements RegisterFormRepository {
     }
 
     @Override
-    public int updateApprovedRegisterForm(UUID id, UUID updatedBy, OffsetDateTime now) {
+    public int updateApprovedRegisterForm(UUID id, UUID updatedBy, Instant now) {
         return springDataRegisterFormRepository.updateApprovedRegisterForm(id, updatedBy, now);
     }
 
     @Override
-    public int updateRejectedRegisterForm(UUID id, UUID updatedBy, String reason, OffsetDateTime now) {
+    public int updateRejectedRegisterForm(UUID id, UUID updatedBy, String reason, Instant now) {
         return springDataRegisterFormRepository.updateRejectedRegisterForm(id, updatedBy, reason, now);
     }
 

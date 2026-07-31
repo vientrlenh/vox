@@ -95,7 +95,7 @@ public interface SpringDataSchoolClassRepository extends JpaRepository<SchoolCla
         @Param("descriptionProvided") boolean descriptionProvided,
         @Param("status") String status,
         @Param("statusProvided") boolean statusProvided,
-        @Param("updatedAt") java.time.OffsetDateTime updatedAt,
+        @Param("updatedAt") java.time.Instant updatedAt,
         @Param("updatedBy") UUID updatedBy
     );
 
@@ -144,7 +144,7 @@ public interface SpringDataSchoolClassRepository extends JpaRepository<SchoolCla
         """)
     int archiveByGradeId(
         @Param("schoolGradeId") UUID schoolGradeId,
-        @Param("updatedAt") java.time.OffsetDateTime updatedAt,
+        @Param("updatedAt") java.time.Instant updatedAt,
         @Param("updatedBy") UUID updatedBy
     );
 }

@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.worker;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -51,7 +51,7 @@ public class OutboxEventScheduler {
             var event = entry.getKey();
             try {
                 entry.getValue().join();
-                outboxRepository.markPublished(event.getId(), OffsetDateTime.now());
+                outboxRepository.markPublished(event.getId(), Instant.now());
             } catch (Exception e) {
                 LOGGER.error("Outbox event publish failed: eventId={}, eventType={}", event.getId(), event.getEventType(), e);
                 outboxRepository.markFailed(event.getId(), describe(e), event.getRetryCount());

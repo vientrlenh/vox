@@ -2,7 +2,7 @@ package com.sep.vox.application.port.input.usecase.exam;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -115,7 +115,7 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
             .orElseThrow(() -> new NotFoundException("Không tìm thấy đề thi"));
         var order = examPaperSectionRepository.findByPaperId(paper.getId()).size() + 1;
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var paperSection = examPaperSectionRepository.save(new ExamPaperSection(
             paper.getId(), order, input.title(), input.instruction(), null, input.weight(), now, now, currentUserId, currentUserId
         ));
@@ -171,7 +171,7 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
         return weights;
     }
 
-    private void rebalanceSectionWeights(UUID paperId, OffsetDateTime now, UUID currentUserId) {
+    private void rebalanceSectionWeights(UUID paperId, Instant now, UUID currentUserId) {
         var sections = examPaperSectionRepository.findByPaperId(paperId).stream()
             .sorted(Comparator.comparingInt(section -> section.getOrder()))
             .toList();

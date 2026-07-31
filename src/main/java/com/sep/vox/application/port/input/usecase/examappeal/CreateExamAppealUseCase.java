@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examappeal;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.UUID;
 import java.util.function.Function;
@@ -90,7 +90,7 @@ public class CreateExamAppealUseCase implements IUseCase<CreateExamAppealCommand
             throw new NotFoundException("Không tìm thấy câu trả lời của phần thi cần phúc khảo.");
         }
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var appeal = new ExamResultAppeal(
             command.candidateResultId(),
             currentUserId,

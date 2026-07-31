@@ -1,6 +1,6 @@
 package com.sep.vox.domain.model.school;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class SchoolClassUser {
@@ -8,14 +8,14 @@ public class SchoolClassUser {
     private UUID userId;
     private UUID schoolClassId;
     private boolean isActive;
-    private OffsetDateTime joinedAt;
-    private OffsetDateTime leftAt;
+    private Instant joinedAt;
+    private Instant leftAt;
     private UUID assignedBy;
 
     public SchoolClassUser() {}
 
-    public SchoolClassUser(UUID id, UUID userId, UUID schoolClassId, boolean isActive, OffsetDateTime joinedAt,
-            OffsetDateTime leftAt, UUID assignedBy) {
+    public SchoolClassUser(UUID id, UUID userId, UUID schoolClassId, boolean isActive, Instant joinedAt,
+            Instant leftAt, UUID assignedBy) {
         this.id = id;
         this.userId = userId;
         this.schoolClassId = schoolClassId;
@@ -25,8 +25,8 @@ public class SchoolClassUser {
         this.assignedBy = assignedBy;
     }
 
-    public SchoolClassUser(UUID userId, UUID schoolClassId, boolean isActive, OffsetDateTime joinedAt,
-            OffsetDateTime leftAt, UUID assignedBy) {
+    public SchoolClassUser(UUID userId, UUID schoolClassId, boolean isActive, Instant joinedAt,
+            Instant leftAt, UUID assignedBy) {
         this.userId = userId;
         this.schoolClassId = schoolClassId;
         this.isActive = isActive;
@@ -67,19 +67,19 @@ public class SchoolClassUser {
         this.isActive = isActive;
     }
 
-    public OffsetDateTime getJoinedAt() {
+    public Instant getJoinedAt() {
         return joinedAt;
     }
 
-    public void setJoinedAt(OffsetDateTime joinedAt) {
+    public void setJoinedAt(Instant joinedAt) {
         this.joinedAt = joinedAt;
     }
 
-    public OffsetDateTime getLeftAt() {
+    public Instant getLeftAt() {
         return leftAt;
     }
 
-    public void setLeftAt(OffsetDateTime leftAt) {
+    public void setLeftAt(Instant leftAt) {
         this.leftAt = leftAt;
     }
 
@@ -91,7 +91,7 @@ public class SchoolClassUser {
         this.assignedBy = assignedBy;
     }
 
-    public void deactivate(OffsetDateTime leftAt) {
+    public void deactivate(Instant leftAt) {
         this.isActive = false;
         this.leftAt = leftAt;
     }

@@ -24,7 +24,8 @@ import com.sep.vox.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.IntStream;
@@ -78,8 +79,8 @@ public class PreviewSystemRubricVersionImportFromFileUseCase implements IUseCase
             throw new IllegalArgumentException("File tải lên trống hoặc không chứa dòng dữ liệu hợp lệ.");
         }
 
-        OffsetDateTime now = OffsetDateTime.now();
-        OffsetDateTime expiresAt = now.plusDays(1); // Phiên hết hạn sau 1 ngày
+        Instant now = Instant.now();
+        Instant expiresAt = now.plus(1, ChronoUnit.DAYS); // Phiên hết hạn sau 1 ngày
 
         // 1. Tạo Session với ID = null để DB tự sinh UUIDv7
         ImportSession session = new ImportSession(

@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examsession;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.springframework.stereotype.Service;
 
@@ -45,7 +45,7 @@ public class UpdateExamSessionStatusUseCase implements IUseCase<UpdateExamSessio
         session.setStatus(input.status());
         if ((input.status() == ExamSessionStatus.SUBMITTED || input.status() == ExamSessionStatus.EXPIRED)
                 && session.getSubmittedAt() == null) {
-            session.setSubmittedAt(OffsetDateTime.now());
+            session.setSubmittedAt(Instant.now());
         }
 
         examSessionRepository.save(session);

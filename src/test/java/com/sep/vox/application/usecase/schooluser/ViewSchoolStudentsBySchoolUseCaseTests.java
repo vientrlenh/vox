@@ -6,7 +6,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -44,7 +44,7 @@ class ViewSchoolStudentsBySchoolUseCaseTests {
     @Test
     void execute_should_delegate_with_student_role_id() {
         var roleId = UUID.randomUUID();
-        var studentRole = new Role(roleId, new RoleCode(SchoolRoleCodes.STUDENT), "Student", OffsetDateTime.now(), OffsetDateTime.now(), null, null);
+        var studentRole = new Role(roleId, new RoleCode(SchoolRoleCodes.STUDENT), "Student", Instant.now(), Instant.now(), null, null);
         var page = new PageResult<SchoolUserDto>(List.of(), 1, 20, 0, 0);
 
         when(roleRepository.findByCode(SchoolRoleCodes.STUDENT)).thenReturn(Optional.of(studentRole));

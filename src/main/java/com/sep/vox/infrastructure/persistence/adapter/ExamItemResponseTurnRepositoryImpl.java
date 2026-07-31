@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -40,7 +40,7 @@ public class ExamItemResponseTurnRepositoryImpl implements ExamItemResponseTurnR
         }
 
         if (turn.getCreatedAt() == null) {
-            turn.setCreatedAt(OffsetDateTime.now());
+            turn.setCreatedAt(Instant.now());
         }
 
         var saved = springDataExamItemResponseTurnRepository.save(ExamItemResponseTurnMapper.toJpa(turn));

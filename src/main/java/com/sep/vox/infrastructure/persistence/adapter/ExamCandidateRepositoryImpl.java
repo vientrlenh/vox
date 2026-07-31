@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -157,7 +157,7 @@ public class ExamCandidateRepositoryImpl implements ExamCandidateRepository {
     }
 
     @Override
-    public List<ExamCandidate> findActiveCandidates(UUID studentId, OffsetDateTime now) {
+    public List<ExamCandidate> findActiveCandidates(UUID studentId, Instant now) {
         return springDataExamCandidateRepository.findActiveCandidate(studentId, now)
             .stream()
             .map(ExamCandidateMapper::toDomain)

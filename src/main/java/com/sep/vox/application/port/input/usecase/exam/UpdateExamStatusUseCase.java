@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -150,7 +150,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
             default -> throw new IllegalStateException("Action không hợp lệ");
         }
 
-        exam.setUpdatedAt(OffsetDateTime.now());
+        exam.setUpdatedAt(Instant.now());
         exam.setUpdatedBy(currentUserId);
         return ExamDtoMapper.toDto(examRepository.save(exam));
     }
@@ -226,7 +226,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
         if (schedules.isEmpty()) {
             throw new IllegalStateException("Bài kiểm tra trên lớp chưa có lịch");
         }
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         for (var schedule : schedules) {
             if (schedule.getStatus() == ExamScheduleStatus.DRAFT) {
                 schedule.setStatus(ExamScheduleStatus.PUBLISHED);
@@ -247,7 +247,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
     }
 
     private void requireClassTestCanStart(com.sep.vox.domain.model.exam.Exam exam) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         if (exam.getCloseAt() != null && !now.isBefore(exam.getCloseAt())) {
             throw new IllegalStateException("Bài kiểm tra trên lớp đã quá thời gian đóng bài");
         }
@@ -305,7 +305,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
     }
 
     private void lockClassTestPapers(java.util.UUID examId, java.util.UUID currentUserId) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         for (var paper : examPaperRepository.findByExamId(examId)) {
             if (paper.getStatus() != ExamPaperStatus.LOCKED) {
                 paper.setStatus(ExamPaperStatus.LOCKED);

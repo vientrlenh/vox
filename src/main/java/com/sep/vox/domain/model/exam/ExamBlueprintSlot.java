@@ -1,7 +1,7 @@
 package com.sep.vox.domain.model.exam;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import com.sep.vox.domain.valueobject.QuestionSelectionSpec;
@@ -17,8 +17,8 @@ public class ExamBlueprintSlot {
     private ExamBlueprintSlotType slotType; 
     private UUID fixedQuestionId; // set khi FIXED
     private QuestionSelectionSpec selectionSpec; // set khi SELECTION
-    private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
     private UUID createdBy;
     private UUID updatedBy;
 
@@ -26,8 +26,8 @@ public class ExamBlueprintSlot {
 
     public ExamBlueprintSlot(UUID id, UUID sectionId, UUID blueprintVersionId, int order, BigDecimal weight,
             Integer prepTimeSecondsOverride, Integer responseTimeSecondsOverride, ExamBlueprintSlotType slotType,
-            UUID fixedQuestionId, QuestionSelectionSpec selectionSpec, OffsetDateTime createdAt,
-            OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            UUID fixedQuestionId, QuestionSelectionSpec selectionSpec, Instant createdAt,
+            Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.sectionId = sectionId;
         this.blueprintVersionId = blueprintVersionId;
@@ -46,8 +46,8 @@ public class ExamBlueprintSlot {
 
     public ExamBlueprintSlot(UUID sectionId, UUID blueprintVersionId, int order, BigDecimal weight,
             Integer prepTimeSecondsOverride, Integer responseTimeSecondsOverride, ExamBlueprintSlotType slotType,
-            UUID fixedQuestionId, QuestionSelectionSpec selectionSpec, OffsetDateTime createdAt,
-            OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+            UUID fixedQuestionId, QuestionSelectionSpec selectionSpec, Instant createdAt,
+            Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.sectionId = sectionId;
         this.blueprintVersionId = blueprintVersionId;
         this.order = order;
@@ -143,19 +143,19 @@ public class ExamBlueprintSlot {
         this.selectionSpec = selectionSpec;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 

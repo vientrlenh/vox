@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -40,7 +40,7 @@ public class PasswordSetUpTokenRepositoryImpl implements PasswordSetUpTokenRepos
     }
 
     @Override
-    public int updateUsedToken(UUID userId, String tokenHash, OffsetDateTime now) {
+    public int updateUsedToken(UUID userId, String tokenHash, Instant now) {
         return springDataPasswordSetUpTokenRepository.updateUsedToken(userId, tokenHash, now);
     }
     

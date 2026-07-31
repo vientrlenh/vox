@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examgrading;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,7 +57,7 @@ public class InvalidateGradingUseCase implements IUseCase<InvalidateGradingComma
             throw new IllegalStateException("Bài thi này không còn ở trạng thái chờ chấm.");
         }
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var result = context.candidateResult();
         result.setStatus(ExamCandidateResultStatus.INVALID);
         result.setFinalizedAt(now);

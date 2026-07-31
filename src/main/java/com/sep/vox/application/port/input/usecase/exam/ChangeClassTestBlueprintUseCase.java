@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -121,7 +121,7 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
             validateExistingBlueprintDuration(input, exam);
         }
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var paper = examPaperRepository.findByExamId(exam.getId()).stream()
             .findFirst()
             .orElseThrow(() -> new NotFoundException("Không tìm thấy đề thi"));
@@ -181,7 +181,7 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
             Exam exam,
             ExamPaper paper,
             UUID currentUserId,
-            OffsetDateTime now) {
+            Instant now) {
         var blueprint = examBlueprintRepository.findById(input.blueprintId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy blueprint"));
         if (!blueprint.getSchoolId().equals(exam.getSchoolId())) {

@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.schooluser;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -41,7 +41,7 @@ public class UpdateSchoolUserUseCase implements IUseCase<UpdateSchoolUserCommand
             throw new IllegalArgumentException("Cần cung cấp ít nhất một trường để cập nhật");
         }
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var callerId = userContextPort.getCurrentAuthenticatedUserId();
 
         var caller = userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)

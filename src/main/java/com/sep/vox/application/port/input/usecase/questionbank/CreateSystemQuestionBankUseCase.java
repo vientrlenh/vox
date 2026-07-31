@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.questionbank;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,7 +41,7 @@ public class CreateSystemQuestionBankUseCase implements IUseCase<CreateSystemQue
             throw new IllegalStateException("Ngôn ngữ yêu cầu không tồn tại hoặc không hoạt động");
         }
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var questionBank = QuestionBank.create(
             command.languageId(), 
             null, 

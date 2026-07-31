@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.service;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -54,7 +54,7 @@ public class ImportCommitService {
                 e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()
             );
         }
-        session.setUpdatedAt(OffsetDateTime.now());
+        session.setUpdatedAt(Instant.now());
         importSessionRepository.save(session);
 
     }

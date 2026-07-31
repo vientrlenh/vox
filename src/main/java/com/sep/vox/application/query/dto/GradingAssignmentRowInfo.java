@@ -1,6 +1,6 @@
 package com.sep.vox.application.query.dto;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -21,7 +21,7 @@ public record GradingAssignmentRowInfo(
     UUID teacherId,
     String teacherName,
     String assignmentStatus,
-    OffsetDateTime assignedAt,
-    OffsetDateTime completedAt
+    Instant assignedAt,
+    Instant completedAt
 ) {
 }

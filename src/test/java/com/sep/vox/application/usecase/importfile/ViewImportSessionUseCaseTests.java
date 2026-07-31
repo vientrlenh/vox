@@ -7,7 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -121,13 +122,13 @@ class ViewImportSessionUseCaseTests {
             null,
             ImportSessionStatus.PREVIEWED,
             null,
-            OffsetDateTime.now().plusDays(1), 
+            Instant.now().plus(1, ChronoUnit.DAYS), 
             null, 
             null, 
             null, 
             0, 
-            OffsetDateTime.now(),
-            OffsetDateTime.now(),
+            Instant.now(),
+            Instant.now(),
             UUID.randomUUID(),
             UUID.randomUUID()
         );
@@ -139,7 +140,7 @@ class ViewImportSessionUseCaseTests {
         TestSchoolUserRepository.remember(id, schoolId);
         user.setStatus(UserStatus.ACTIVE);
         when(schoolUserRepository.findByUserId(id)).thenReturn(
-            schoolId != null ? Optional.of(new SchoolUser(schoolId, id, java.time.OffsetDateTime.now(), java.time.OffsetDateTime.now().plusYears(100))) : Optional.empty()
+            schoolId != null ? Optional.of(new SchoolUser(schoolId, id, java.time.Instant.now(), java.time.Instant.now().plus(36500, ChronoUnit.DAYS))) : Optional.empty()
         );
         return user;
     }
@@ -156,7 +157,7 @@ class ViewImportSessionUseCaseTests {
             UUID.randomUUID(),
             userId,
             UUID.randomUUID(),
-            OffsetDateTime.now(),
+            Instant.now(),
             "SCHOOL_ADMIN",
             "School Admin"
         );

@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.examblueprint;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.HashSet;
 
 import org.springframework.stereotype.Service;
@@ -87,7 +87,7 @@ public class CreateExamBlueprintVersionUseCase implements IUseCase<CreateExamBlu
 
         validateSections(command);
 
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var versionNumber = examBlueprintVersionRepository.nextVersionNumber(blueprint.getId());
         var version = new ExamBlueprintVersion(
             blueprint.getId(),
@@ -265,12 +265,12 @@ public class CreateExamBlueprintVersionUseCase implements IUseCase<CreateExamBlu
         return value == null ? BigDecimal.ONE : value;
     }
 
-    private OffsetDateTime effectiveFromOf(String value, OffsetDateTime defaultValue) {
-        return value == null ? defaultValue : OffsetDateTime.parse(value);
+    private Instant effectiveFromOf(String value, Instant defaultValue) {
+        return value == null ? defaultValue : Instant.parse(value);
     }
 
-    private OffsetDateTime parseDateTime(String value) {
-        return value == null ? null : OffsetDateTime.parse(value);
+    private Instant parseDateTime(String value) {
+        return value == null ? null : Instant.parse(value);
     }
 
     private QuestionSelectionSpec selectionSpecOf(CreateQuestionSelectionSpecCommand input) {

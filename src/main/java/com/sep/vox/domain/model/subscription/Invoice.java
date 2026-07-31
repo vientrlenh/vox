@@ -2,7 +2,7 @@ package com.sep.vox.domain.model.subscription;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class Invoice {
@@ -18,13 +18,13 @@ public class Invoice {
     private Long payosOrderCode;
     private String paymentLinkId;
     private String checkoutUrl;
-    private OffsetDateTime paidAt;
+    private Instant paidAt;
 
     public Invoice() {}
 
     public Invoice(UUID id, String invoiceNumber, UUID schoolId, UUID subscriptionId, InvoiceSourceType sourceType, UUID sourceId,
             LocalDate issueDate, BigDecimal amount, InvoiceStatus status, Long payosOrderCode, String paymentLinkId,
-            String checkoutUrl, OffsetDateTime paidAt) {
+            String checkoutUrl, Instant paidAt) {
         this.id = id;
         this.invoiceNumber = invoiceNumber;
         this.schoolId = schoolId;
@@ -42,7 +42,7 @@ public class Invoice {
 
     public Invoice(String invoiceNumber, UUID schoolId, UUID subscriptionId, InvoiceSourceType sourceType, UUID sourceId,
             LocalDate issueDate, BigDecimal amount, InvoiceStatus status, Long payosOrderCode, String paymentLinkId,
-            String checkoutUrl, OffsetDateTime paidAt) {
+            String checkoutUrl, Instant paidAt) {
         this.invoiceNumber = invoiceNumber;
         this.schoolId = schoolId;
         this.subscriptionId = subscriptionId;
@@ -153,11 +153,11 @@ public class Invoice {
         this.checkoutUrl = checkoutUrl;
     }
 
-    public OffsetDateTime getPaidAt() {
+    public Instant getPaidAt() {
         return paidAt;
     }
 
-    public void setPaidAt(OffsetDateTime paidAt) {
+    public void setPaidAt(Instant paidAt) {
         this.paidAt = paidAt;
     }
 }

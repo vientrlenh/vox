@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -45,12 +45,12 @@ public class TokenUsageEventJpaEntity {
     private Integer tokensConsumed;
 
     @Column(name = "occurred_at", nullable = false, updatable = false)
-    private OffsetDateTime occurredAt;
+    private Instant occurredAt;
 
     protected TokenUsageEventJpaEntity() {}
 
     public TokenUsageEventJpaEntity(UUID id, UUID subscriptionId, UUID examSessionId, String quotaType,
-            Integer tokensConsumed, OffsetDateTime occurredAt) {
+            Integer tokensConsumed, Instant occurredAt) {
         this.id = id;
         this.subscriptionId = subscriptionId;
         this.examSessionId = examSessionId;
@@ -99,11 +99,11 @@ public class TokenUsageEventJpaEntity {
         this.tokensConsumed = tokensConsumed;
     }
 
-    public OffsetDateTime getOccurredAt() {
+    public Instant getOccurredAt() {
         return occurredAt;
     }
 
-    public void setOccurredAt(OffsetDateTime occurredAt) {
+    public void setOccurredAt(Instant occurredAt) {
         this.occurredAt = occurredAt;
     }
 }

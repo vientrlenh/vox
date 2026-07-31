@@ -1,6 +1,6 @@
 package com.sep.vox.domain.model.supportedlanguage;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import com.sep.vox.domain.valueobject.LanguageCode;
@@ -11,16 +11,16 @@ public class SupportedLanguage {
     private String name;
     private String description;
     private boolean isActive;
-    private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
     private UUID createdBy;
     private UUID updatedBy;
     
     public SupportedLanguage() {
     }
 
-    public SupportedLanguage(UUID id, LanguageCode code, String name, String description, boolean isActive, OffsetDateTime createdAt,
-            OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+    public SupportedLanguage(UUID id, LanguageCode code, String name, String description, boolean isActive, Instant createdAt,
+            Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.code = code;
         this.name = name;
@@ -32,8 +32,8 @@ public class SupportedLanguage {
         this.updatedBy = updatedBy;
     }
 
-    public SupportedLanguage(LanguageCode code, String name, String description, boolean isActive, OffsetDateTime createdAt,
-            OffsetDateTime updatedAt, UUID createdBy, UUID updatedBy) {
+    public SupportedLanguage(LanguageCode code, String name, String description, boolean isActive, Instant createdAt,
+            Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.code = code;
         this.name = name;
         this.description = description;
@@ -76,19 +76,19 @@ public class SupportedLanguage {
         this.description = description;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 

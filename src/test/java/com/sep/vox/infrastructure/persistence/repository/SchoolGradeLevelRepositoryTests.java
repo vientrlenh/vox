@@ -3,7 +3,7 @@ package com.sep.vox.infrastructure.persistence.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -107,7 +107,7 @@ class SchoolGradeLevelRepositoryTests extends ContainerTestConfig {
         var level = persist(schoolId, "K1", "Khối 1", 1, "ACTIVE");
 
         var rows = schoolGradeLevelRepository.updateSchoolGradeLevelAtomic(
-            level.getId(), "Khối 1 mới", null, 9, OffsetDateTime.now(), UUID.randomUUID());
+            level.getId(), "Khối 1 mới", null, 9, Instant.now(), UUID.randomUUID());
         entityManager.clear(); // bulk update bỏ qua persistence context, cần clear để đọc lại từ DB
 
         assertThat(rows).isEqualTo(1);
@@ -123,7 +123,7 @@ class SchoolGradeLevelRepositoryTests extends ContainerTestConfig {
         persist(schoolId, "K1", "Khối 1", 1, "ACTIVE");
 
         var rows = schoolGradeLevelRepository.updateSchoolGradeLevelAtomic(
-            UUID.randomUUID(), "X", null, null, OffsetDateTime.now(), UUID.randomUUID());
+            UUID.randomUUID(), "X", null, null, Instant.now(), UUID.randomUUID());
 
         assertThat(rows).isZero();
     }
@@ -136,13 +136,13 @@ class SchoolGradeLevelRepositoryTests extends ContainerTestConfig {
 
         assertThatThrownBy(() -> {
             schoolGradeLevelRepository.updateSchoolGradeLevelAtomic(
-                second.getId(), null, null, 1, OffsetDateTime.now(), UUID.randomUUID());
+                second.getId(), null, null, 1, Instant.now(), UUID.randomUUID());
             entityManager.flush();
         }).isInstanceOf(DataIntegrityViolationException.class);
     }
 
     private SchoolGradeLevelJpaEntity persist(UUID schoolId, String code, String name, int order, String status) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var entity = new SchoolGradeLevelJpaEntity(
             null, schoolId, code, name, "Repository test grade level", order, status,
             now, now, UUID.randomUUID(), UUID.randomUUID()

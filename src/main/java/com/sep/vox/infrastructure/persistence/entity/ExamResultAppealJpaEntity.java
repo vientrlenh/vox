@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -42,7 +42,7 @@ public class ExamResultAppealJpaEntity {
     private String reason;
 
     @Column(name = "requested_at", nullable = false, updatable = false)
-    private OffsetDateTime requestedAt;
+    private Instant requestedAt;
 
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
@@ -62,17 +62,17 @@ public class ExamResultAppealJpaEntity {
     private UUID resolvedBy;
 
     @Column(name = "resolved_at")
-    private OffsetDateTime resolvedAt;
+    private Instant resolvedAt;
 
     @Column(name = "notes", length = 512)
     private String notes;
 
     /** Hạn xử lý đơn — school admin đặt ở bước duyệt. */
     @Column(name = "deadline")
-    private OffsetDateTime deadline;
+    private Instant deadline;
 
     @Column(name = "approved_at")
-    private OffsetDateTime approvedAt;
+    private Instant approvedAt;
 
     /** Lý do từ chối / ghi chú khi công bố — tách khỏi `reason` của học sinh. */
     @Column(name = "decision_note", length = 512)
@@ -81,9 +81,9 @@ public class ExamResultAppealJpaEntity {
     protected ExamResultAppealJpaEntity() {}
 
     public ExamResultAppealJpaEntity(UUID id, UUID candidateResultId, UUID requestedBy, String reason,
-            OffsetDateTime requestedAt, String status, BigDecimal scoreBefore,
-            BigDecimal scoreAfter, UUID resolvedBy, OffsetDateTime resolvedAt, String notes,
-            OffsetDateTime deadline, OffsetDateTime approvedAt, String decisionNote) {
+            Instant requestedAt, String status, BigDecimal scoreBefore,
+            BigDecimal scoreAfter, UUID resolvedBy, Instant resolvedAt, String notes,
+            Instant deadline, Instant approvedAt, String decisionNote) {
         this.id = id;
         this.candidateResultId = candidateResultId;
         this.requestedBy = requestedBy;
@@ -132,11 +132,11 @@ public class ExamResultAppealJpaEntity {
         this.reason = reason;
     }
 
-    public OffsetDateTime getRequestedAt() {
+    public Instant getRequestedAt() {
         return requestedAt;
     }
 
-    public void setRequestedAt(OffsetDateTime requestedAt) {
+    public void setRequestedAt(Instant requestedAt) {
         this.requestedAt = requestedAt;
     }
 
@@ -172,11 +172,11 @@ public class ExamResultAppealJpaEntity {
         this.resolvedBy = resolvedBy;
     }
 
-    public OffsetDateTime getResolvedAt() {
+    public Instant getResolvedAt() {
         return resolvedAt;
     }
 
-    public void setResolvedAt(OffsetDateTime resolvedAt) {
+    public void setResolvedAt(Instant resolvedAt) {
         this.resolvedAt = resolvedAt;
     }
 
@@ -188,19 +188,19 @@ public class ExamResultAppealJpaEntity {
         this.notes = notes;
     }
 
-    public OffsetDateTime getDeadline() {
+    public Instant getDeadline() {
         return deadline;
     }
 
-    public void setDeadline(OffsetDateTime deadline) {
+    public void setDeadline(Instant deadline) {
         this.deadline = deadline;
     }
 
-    public OffsetDateTime getApprovedAt() {
+    public Instant getApprovedAt() {
         return approvedAt;
     }
 
-    public void setApprovedAt(OffsetDateTime approvedAt) {
+    public void setApprovedAt(Instant approvedAt) {
         this.approvedAt = approvedAt;
     }
 

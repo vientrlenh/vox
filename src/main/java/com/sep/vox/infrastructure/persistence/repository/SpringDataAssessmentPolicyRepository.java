@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -35,8 +35,8 @@ public interface SpringDataAssessmentPolicyRepository extends JpaRepository<Asse
             AND (p.effectiveFrom <= COALESCE(:effectiveTo, p.effectiveFrom))
     """)
     Page<AssessmentPolicyJpaEntity> findBySchoolIdIsNullAndStatus(@Param("status") String status, @Param("languageId") UUID languageId,
-            @Param("rubricVersionId") UUID rubricVersionId, @Param("effectiveFrom") OffsetDateTime effectiveFrom,
-            @Param("effectiveTo") OffsetDateTime effectiveTo, Pageable pageable);
+            @Param("rubricVersionId") UUID rubricVersionId, @Param("effectiveFrom") Instant effectiveFrom,
+            @Param("effectiveTo") Instant effectiveTo, Pageable pageable);
 
     @Query("""
         SELECT p FROM AssessmentPolicyJpaEntity p
@@ -49,7 +49,7 @@ public interface SpringDataAssessmentPolicyRepository extends JpaRepository<Asse
     """)
     Page<AssessmentPolicyJpaEntity> findBySchoolIdAndStatus(@Param("schoolId") UUID schoolId, @Param("status") String status,
             @Param("languageId") UUID languageId, @Param("rubricVersionId") UUID rubricVersionId,
-            @Param("effectiveFrom") OffsetDateTime effectiveFrom, @Param("effectiveTo") OffsetDateTime effectiveTo,
+            @Param("effectiveFrom") Instant effectiveFrom, @Param("effectiveTo") Instant effectiveTo,
             Pageable pageable);
 
 
@@ -79,7 +79,7 @@ public interface SpringDataAssessmentPolicyRepository extends JpaRepository<Asse
         @Param("classId") UUID classId, 
         @Param("gradeId") UUID gradeId, 
         @Param("gradeLevelId") UUID gradeLevelId, 
-        @Param("atTime") OffsetDateTime atTime, 
+        @Param("atTime") Instant atTime, 
         Pageable pageable
     );
 

@@ -10,7 +10,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -129,7 +130,7 @@ class CreateSchoolClassUseCaseTests {
         when(supportedLanguageRepository.findById(languageId)).thenReturn(Optional.of(activeLanguage(languageId)));
         when(schoolGradeRepository.findById(gradeId)).thenReturn(Optional.of(grade));
         when(schoolClassRepository.findBySchoolIdAndCode(schoolId, "ENG-01"))
-            .thenReturn(Optional.of(SchoolClass.create(schoolId, languageId, gradeId, "ENG-01", "Existing", null, userId, OffsetDateTime.now())));
+            .thenReturn(Optional.of(SchoolClass.create(schoolId, languageId, gradeId, "ENG-01", "Existing", null, userId, Instant.now())));
 
         assertThrows(DuplicatedException.class, () -> useCase.execute(command));
 
@@ -204,7 +205,7 @@ class CreateSchoolClassUseCaseTests {
         TestSchoolUserRepository.remember(id, schoolId);
         user.setStatus(status);
         when(schoolUserRepository.findByUserId(id)).thenReturn(
-            schoolId != null ? Optional.of(new SchoolUser(schoolId, id, java.time.OffsetDateTime.now(), java.time.OffsetDateTime.now().plusYears(100))) : Optional.empty()
+            schoolId != null ? Optional.of(new SchoolUser(schoolId, id, java.time.Instant.now(), java.time.Instant.now().plus(36500, ChronoUnit.DAYS))) : Optional.empty()
         );
         return user;
     }

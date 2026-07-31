@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -40,18 +40,18 @@ public class SchoolClassUserJpaEntity {
     private boolean isActive;
 
     @Column(name = "joined_at", nullable = false, updatable = false)
-    private OffsetDateTime joinedAt;
+    private Instant joinedAt;
 
     @Column(name = "left_at")
-    private OffsetDateTime leftAt;
+    private Instant leftAt;
 
     @Column(name = "assigned_by", nullable = false, updatable = false)
     private UUID assignedBy;
 
     protected SchoolClassUserJpaEntity() {}
 
-    public SchoolClassUserJpaEntity(UUID id, UUID userId, UUID schoolClassId, boolean isActive, OffsetDateTime joinedAt,
-            OffsetDateTime leftAt, UUID assignedBy) {
+    public SchoolClassUserJpaEntity(UUID id, UUID userId, UUID schoolClassId, boolean isActive, Instant joinedAt,
+            Instant leftAt, UUID assignedBy) {
         this.id = id;
         this.userId = userId;
         this.schoolClassId = schoolClassId;
@@ -61,8 +61,8 @@ public class SchoolClassUserJpaEntity {
         this.assignedBy = assignedBy;
     }
 
-    public SchoolClassUserJpaEntity(UUID userId, UUID schoolClassId, boolean isActive, OffsetDateTime joinedAt,
-            OffsetDateTime leftAt, UUID assignedBy) {
+    public SchoolClassUserJpaEntity(UUID userId, UUID schoolClassId, boolean isActive, Instant joinedAt,
+            Instant leftAt, UUID assignedBy) {
         this.userId = userId;
         this.schoolClassId = schoolClassId;
         this.isActive = isActive;
@@ -103,19 +103,19 @@ public class SchoolClassUserJpaEntity {
         this.isActive = isActive;
     }
 
-    public OffsetDateTime getJoinedAt() {
+    public Instant getJoinedAt() {
         return joinedAt;
     }
 
-    public void setJoinedAt(OffsetDateTime joinedAt) {
+    public void setJoinedAt(Instant joinedAt) {
         this.joinedAt = joinedAt;
     }
 
-    public OffsetDateTime getLeftAt() {
+    public Instant getLeftAt() {
         return leftAt;
     }
 
-    public void setLeftAt(OffsetDateTime leftAt) {
+    public void setLeftAt(Instant leftAt) {
         this.leftAt = leftAt;
     }
 

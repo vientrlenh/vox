@@ -3,7 +3,7 @@ package com.sep.vox.infrastructure.persistence.repository;
 import java.util.Collection;
 import java.util.List;
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -101,7 +101,7 @@ public interface SpringDataSchoolGradeRepository extends JpaRepository<SchoolGra
             @Param("description") String description,
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate,
-            @Param("updatedAt") OffsetDateTime updatedAt,
+            @Param("updatedAt") Instant updatedAt,
             @Param("updatedBy") UUID updatedBy
     );
 

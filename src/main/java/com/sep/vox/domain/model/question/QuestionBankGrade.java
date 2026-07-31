@@ -1,18 +1,18 @@
 package com.sep.vox.domain.model.question;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class QuestionBankGrade {
     private UUID id;
     private UUID questionBankId;
     private UUID schoolGradeId;
-    private OffsetDateTime attachedAt;
+    private Instant attachedAt;
     private UUID attachedBy;
 
     public QuestionBankGrade() {}
 
-    public QuestionBankGrade(UUID id, UUID questionBankId, UUID schoolGradeId, OffsetDateTime attachedAt,
+    public QuestionBankGrade(UUID id, UUID questionBankId, UUID schoolGradeId, Instant attachedAt,
             UUID attachedBy) {
         this.id = id;
         this.questionBankId = questionBankId;
@@ -21,7 +21,7 @@ public class QuestionBankGrade {
         this.attachedBy = attachedBy;
     }
 
-    public QuestionBankGrade(UUID questionBankId, UUID schoolGradeId, OffsetDateTime attachedAt, UUID attachedBy) {
+    public QuestionBankGrade(UUID questionBankId, UUID schoolGradeId, Instant attachedAt, UUID attachedBy) {
         this.questionBankId = questionBankId;
         this.schoolGradeId = schoolGradeId;
         this.attachedAt = attachedAt;
@@ -52,11 +52,11 @@ public class QuestionBankGrade {
         this.schoolGradeId = schoolGradeId;
     }
 
-    public OffsetDateTime getAttachedAt() {
+    public Instant getAttachedAt() {
         return attachedAt;
     }
 
-    public void setAttachedAt(OffsetDateTime attachedAt) {
+    public void setAttachedAt(Instant attachedAt) {
         this.attachedAt = attachedAt;
     }
 

@@ -5,6 +5,7 @@ import java.time.Instant;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.common.ExamScheduleWindowMessages;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
@@ -98,8 +99,14 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
         }
         if (exam.getKind() == ExamKind.CLASS_TEST) {
             requireClassTestScheduleWindow(exam.getOpenAt(), exam.getCloseAt());
+            // Khung mở/đóng sẽ được đồng bộ thẳng xuống ca thi ở dưới, nên phải đủ dài cho bài làm.
+            if (touchesScheduleTiming(command)
+                    && exam.isScheduleWindowShorterThanExamTime(exam.getOpenAt(), exam.getCloseAt())) {
+                throw new IllegalStateException(ExamScheduleWindowMessages.schedulesNoLongerFit(1, exam));
+            }
         } else {
             validateOpenClose(exam.getOpenAt(), exam.getCloseAt());
+            requireExistingSchedulesStillFit(exam, command);
         }
         var now = Instant.now();
         if (exam.getKind() == ExamKind.CLASS_TEST && (command.openAt() != null || command.closeAt() != null)) {
@@ -157,6 +164,47 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
             throw new IllegalStateException("Không thể cập nhật bài kiểm tra khi đã có bài nộp");
         }
     }
+
+    /**
+     * Kỳ thi thường: ca thi là lịch độc lập (có phòng, giám thị, thí sinh đã gán) nên không được tự
+     * dời theo kỳ thi -- thay vào đó chặn nếu khung giờ hoặc thời gian làm bài mới làm ca thi đã lên
+     * lịch không còn hợp lệ. Chỉ xét ca còn sẽ diễn ra; COMPLETED/MOVED/CANCELLED là quá khứ
+     * (findByExamId đã loại DELETED sẵn).
+     */
+    /**
+     * Chỉ kiểm lại bất biến ca thi khi thao tác thực sự đụng tới thời gian; sửa tên/mô tả không được
+     * bị chặn chỉ vì dữ liệu sẵn có đang lệch.
+     */
+    private boolean touchesScheduleTiming(UpdateExamCommand command) {
+        return command.openAt() != null
+            || command.closeAt() != null
+            || command.examTimeDurationSecond() != null;
+    }
+
+    private void requireExistingSchedulesStillFit(com.sep.vox.domain.model.exam.Exam exam, UpdateExamCommand command) {
+        if (!touchesScheduleTiming(command)) {
+            return;
+        }
+        var activeSchedules = examScheduleRepository.findByExamId(exam.getId()).stream()
+            .filter(schedule -> schedule.getStatus() == ExamScheduleStatus.DRAFT
+                || schedule.getStatus() == ExamScheduleStatus.PUBLISHED)
+            .toList();
+
+        var outsideCount = activeSchedules.stream()
+            .filter(schedule -> exam.isScheduleWindowOutsideExamWindow(schedule.getStartDate(), schedule.getEndDate()))
+            .count();
+        if (outsideCount > 0) {
+            throw new IllegalStateException(ExamScheduleWindowMessages.schedulesOutsideNewWindow((int) outsideCount));
+        }
+
+        var tooShortCount = activeSchedules.stream()
+            .filter(schedule -> exam.isScheduleWindowShorterThanExamTime(schedule.getStartDate(), schedule.getEndDate()))
+            .count();
+        if (tooShortCount > 0) {
+            throw new IllegalStateException(ExamScheduleWindowMessages.schedulesNoLongerFit((int) tooShortCount, exam));
+        }
+    }
+
 
     private void validateOpenClose(Instant openAt, Instant closeAt) {
         if (openAt == null || closeAt == null) {

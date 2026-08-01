@@ -32,6 +32,7 @@ import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.exam.ExamGradingAssignment;
 import com.sep.vox.domain.model.exam.GradingAssignmentStatus;
+import com.sep.vox.domain.model.exam.GradingRoundType;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
 import com.sep.vox.domain.repository.ExamRepository;
@@ -71,7 +72,7 @@ public class AssignGradingUseCaseTests {
             result(firstResultId, ExamCandidateResultStatus.PENDING_REVIEW),
             result(secondResultId, ExamCandidateResultStatus.PENDING_REVIEW)));
         when(examRepository.findByIdIn(anyCollection())).thenReturn(List.of(exam()));
-        when(examGradingAssignmentRepository.findByCandidateResultIdIn(anyCollection())).thenReturn(List.of());
+        when(examGradingAssignmentRepository.findOpenByCandidateResultIdIn(anyCollection())).thenReturn(List.of());
         when(examGradingQueryRepository.findTeacherIdsInSchool(eq(schoolId), anyCollection()))
             .thenReturn(Set.of(teacherId));
         when(examGradingAssignmentRepository.saveAll(anyList())).thenAnswer(invocation -> {
@@ -98,13 +99,18 @@ public class AssignGradingUseCaseTests {
     }
 
     private ExamGradingAssignment existingAssignment(UUID candidateResultId) {
-        return new ExamGradingAssignment(
-            UUID.randomUUID(), candidateResultId, UUID.randomUUID(), GradingAssignmentStatus.ASSIGNED,
-            Instant.now(), adminId, null);
+        var assignment = ExamGradingAssignment.open(candidateResultId, UUID.randomUUID(),
+            GradingRoundType.INITIAL, null, null, Instant.now(), adminId, null);
+        assignment.setId(UUID.randomUUID());
+        return assignment;
     }
 
     private AssignGradingCommand command(UUID... candidateResultIds) {
-        return new AssignGradingCommand(List.of(candidateResultIds).stream()
+        return command(GradingRoundType.INITIAL, candidateResultIds);
+    }
+
+    private AssignGradingCommand command(GradingRoundType roundType, UUID... candidateResultIds) {
+        return new AssignGradingCommand(roundType.name(), null, List.of(candidateResultIds).stream()
             .map(id -> new AssignGradingCommand.AssignmentItem(id, teacherId))
             .toList());
     }
@@ -140,7 +146,7 @@ public class AssignGradingUseCaseTests {
         // Không N+1: mỗi lookup đúng một lần cho cả lô, không nhân theo số bài.
         verify(examCandidateResultRepository, times(1)).findByIdIn(anyCollection());
         verify(examRepository, times(1)).findByIdIn(anyCollection());
-        verify(examGradingAssignmentRepository, times(1)).findByCandidateResultIdIn(anyCollection());
+        verify(examGradingAssignmentRepository, times(1)).findOpenByCandidateResultIdIn(anyCollection());
         verify(examGradingQueryRepository, times(1)).findTeacherIdsInSchool(eq(schoolId), anyCollection());
         // Phân quyền chạy một lần cho trường duy nhất, không lặp theo bài.
         verify(examGradingAccessService, times(1)).authorizeSchoolAdmin(eq(schoolId), eq(adminId));
@@ -148,13 +154,13 @@ public class AssignGradingUseCaseTests {
 
     @Test
     void should_reject_when_a_result_already_has_an_assignment() {
-        when(examGradingAssignmentRepository.findByCandidateResultIdIn(anyCollection()))
+        when(examGradingAssignmentRepository.findOpenByCandidateResultIdIn(anyCollection()))
             .thenReturn(List.of(existingAssignment(secondResultId)));
 
         // Một bài, một giáo viên. Unique index là chốt cuối; đây là lỗi đọc được.
         assertThatThrownBy(() -> useCase.execute(command(firstResultId, secondResultId)))
             .isInstanceOf(DuplicatedException.class)
-            .hasMessageContaining("đã được phân công");
+            .hasMessageContaining("đang được một giáo viên chấm");
 
         verify(examGradingAssignmentRepository, never()).saveAll(anyList());
     }
@@ -169,17 +175,56 @@ public class AssignGradingUseCaseTests {
     }
 
     @Test
-    void should_reject_assigning_a_result_that_is_not_pending_review() {
+    void should_reject_a_result_whose_status_does_not_match_the_round() {
         when(examCandidateResultRepository.findByIdIn(anyCollection())).thenReturn(List.of(
             result(firstResultId, ExamCandidateResultStatus.PENDING_REVIEW),
             result(secondResultId, ExamCandidateResultStatus.RELEASED)));
 
+        // Vòng INITIAL chỉ nhận bài PENDING_REVIEW; bài RELEASED thuộc vòng SPOT_CHECK.
         assertThatThrownBy(() -> useCase.execute(command(firstResultId, secondResultId)))
             .isInstanceOf(IllegalStateException.class)
-            .hasMessageContaining("đang chờ chấm");
+            .hasMessageContaining("INITIAL");
 
         // Bài đầu hợp lệ vẫn không được ghi: validate hết rồi mới persist.
         verify(examGradingAssignmentRepository, never()).saveAll(anyList());
+    }
+
+    @Test
+    void should_assign_released_results_to_a_spot_check_round() {
+        when(examCandidateResultRepository.findByIdIn(anyCollection())).thenReturn(List.of(
+            result(firstResultId, ExamCandidateResultStatus.RELEASED)));
+
+        useCase.execute(command(GradingRoundType.SPOT_CHECK, firstResultId));
+
+        // Hậu kiểm là vòng dành cho bài ĐÃ công bố — bản cũ không giao được bài này.
+        assertThat(captureSaved()).singleElement()
+            .satisfies(assignment ->
+                assertThat(assignment.getRoundType()).isEqualTo(GradingRoundType.SPOT_CHECK));
+    }
+
+    @Test
+    void should_refuse_to_assign_the_appeal_round_here() {
+        // Vòng phúc khảo gắn với một đơn cụ thể và có luật xung đột lợi ích riêng,
+        // nên nó chỉ được giao từ màn đơn phúc khảo.
+        assertThatThrownBy(() -> useCase.execute(command(GradingRoundType.APPEAL, firstResultId)))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("phúc khảo");
+
+        verify(examGradingAssignmentRepository, never()).saveAll(anyList());
+    }
+
+    @Test
+    void should_snapshot_the_current_score_when_assigning() {
+        var released = result(firstResultId, ExamCandidateResultStatus.RELEASED);
+        released.setTotalScore(new java.math.BigDecimal("6.50"));
+        when(examCandidateResultRepository.findByIdIn(anyCollection())).thenReturn(List.of(released));
+
+        useCase.execute(command(GradingRoundType.SPOT_CHECK, firstResultId));
+
+        // scoreBefore chụp lúc GIAO: lấy sau thì chính giáo viên đã sửa mất mốc so lệch.
+        assertThat(captureSaved()).singleElement()
+            .satisfies(assignment ->
+                assertThat(assignment.getScoreBefore()).isEqualByComparingTo("6.50"));
     }
 
     @Test
@@ -191,8 +236,9 @@ public class AssignGradingUseCaseTests {
         when(examCandidateResultRepository.findByIdIn(anyCollection()))
             .thenReturn(List.of(result(firstResultId, ExamCandidateResultStatus.PENDING_REVIEW)));
 
-        assertThatThrownBy(() -> useCase.execute(new AssignGradingCommand(List.of(
-            new AssignGradingCommand.AssignmentItem(firstResultId, outsider)))))
+        assertThatThrownBy(() -> useCase.execute(new AssignGradingCommand(
+            GradingRoundType.INITIAL.name(), null, List.of(
+                new AssignGradingCommand.AssignmentItem(firstResultId, outsider)))))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("cùng trường");
 
@@ -214,7 +260,8 @@ public class AssignGradingUseCaseTests {
 
     @Test
     void should_reject_an_empty_batch() {
-        assertThatThrownBy(() -> useCase.execute(new AssignGradingCommand(List.of())))
+        assertThatThrownBy(() -> useCase.execute(
+            new AssignGradingCommand(GradingRoundType.INITIAL.name(), null, List.of())))
             .isInstanceOf(IllegalArgumentException.class);
 
         verify(examGradingAssignmentRepository, never()).saveAll(any());

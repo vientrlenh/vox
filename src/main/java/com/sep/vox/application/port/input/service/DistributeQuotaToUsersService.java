@@ -5,7 +5,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -17,14 +16,12 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.QuotaUserAllocationSummaryDto;
 import com.sep.vox.domain.mapper.SubscriptionQuotaDtoMapper;
 import com.sep.vox.domain.mapper.SubscriptionQuotaUserAllocationDtoMapper;
-import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.subscription.DistributionMode;
 import com.sep.vox.domain.model.subscription.QuotaType;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.model.subscription.SubscriptionQuota;
 import com.sep.vox.domain.model.subscription.SubscriptionQuotaUserAllocation;
 import com.sep.vox.domain.model.user.Role;
-import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.RoleRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
@@ -77,9 +74,10 @@ public class DistributeQuotaToUsersService {
 
         var existing = fetchExistingAllocationsByUserId(subscription.getId(), quotaType);
 
+        var totalAllocated = orZero(pool.getTotalAllocated());
         var targetAmounts = mode == DistributionMode.AUTO
-            ? computeAutoSplit(eligibleUserIds, pool.getTotalAllocated(), existing)
-            : computeManualAmounts(allocations, eligibleUserIds, existing, pool.getTotalAllocated());
+            ? computeAutoSplit(eligibleUserIds, totalAllocated, existing)
+            : computeManualAmounts(allocations, eligibleUserIds, existing, totalAllocated);
 
         targetAmounts.forEach((userId, amount) ->
             subscriptionQuotaUserAllocationRepository.upsertAllocation(subscription.getId(), quotaType, userId, amount));
@@ -108,7 +106,7 @@ public class DistributeQuotaToUsersService {
         for (int i = 0; i < count; i++) {
             var userId = eligibleUserIds.get(i);
             var amount = base + (i < remainder ? 1 : 0);
-            var used = existing.containsKey(userId) ? existing.get(userId).getUsedQuantity() : 0;
+            var used = usedQuantityOrZero(existing.get(userId));
             if (amount < used) {
                 throw new IllegalArgumentException(
                     "Không thể chia đều vì có người dùng đã sử dụng vượt mức chia mới, hãy dùng chế độ thủ công");
@@ -137,17 +135,17 @@ public class DistributeQuotaToUsersService {
             if (item.amount() == null || item.amount() < 0) {
                 throw new IllegalArgumentException("Số lượng phân bổ không hợp lệ");
             }
-            var used = existing.containsKey(item.userId()) ? existing.get(item.userId()).getUsedQuantity() : 0;
+            var used = usedQuantityOrZero(existing.get(item.userId()));
             if (item.amount() < used) {
                 throw new IllegalArgumentException("Không thể đặt hạn mức nhỏ hơn số lượng đã sử dụng");
             }
             result.put(item.userId(), item.amount());
         }
 
-        var sumInRequest = result.values().stream().mapToInt(Integer::intValue).sum();
+        var sumInRequest = result.values().stream().mapToInt(amount -> orZero(amount)).sum();
         var sumOthers = existing.entrySet().stream()
             .filter(e -> !result.containsKey(e.getKey()))
-            .mapToInt(e -> e.getValue().getAllocatedQuantity())
+            .mapToInt(e -> orZero(e.getValue().getAllocatedQuantity()))
             .sum();
         if (sumInRequest + sumOthers > totalAllocated) {
             throw new IllegalArgumentException("Tổng hạn mức phân bổ vượt quá hạn mức của trường");
@@ -156,11 +154,22 @@ public class DistributeQuotaToUsersService {
         return result;
     }
 
+    private static int usedQuantityOrZero(SubscriptionQuotaUserAllocation allocation) {
+        if (allocation == null || allocation.getUsedQuantity() == null) {
+            return 0;
+        }
+        return allocation.getUsedQuantity();
+    }
+
+    private static int orZero(Integer value) {
+        return value != null ? value : 0;
+    }
+
     private QuotaUserAllocationSummaryDto buildSummary(UUID subscriptionId, QuotaType quotaType,
             SubscriptionQuota pool, List<UUID> eligibleUserIds) {
         var existing = fetchExistingAllocationsByUserId(subscriptionId, quotaType);
         var names = userRepository.findByIdIn(eligibleUserIds).stream()
-            .collect(Collectors.toMap(User::getId, u -> u.getFullName().value()));
+            .collect(Collectors.toMap(u -> u.getId(), u -> u.getFullName().value()));
 
         var allocationDtos = eligibleUserIds.stream()
             .map(userId -> {
@@ -175,12 +184,13 @@ public class DistributeQuotaToUsersService {
 
     private Map<UUID, SubscriptionQuotaUserAllocation> fetchExistingAllocationsByUserId(UUID subscriptionId, QuotaType quotaType) {
         return subscriptionQuotaUserAllocationRepository.findAllBySubscriptionIdAndQuotaType(subscriptionId, quotaType).stream()
-            .collect(Collectors.toMap(SubscriptionQuotaUserAllocation::getUserId, Function.identity()));
+            .collect(Collectors.toMap(allocation -> allocation.getUserId(), allocation -> allocation));
     }
 
     private List<UUID> fetchEligibleUserIds(UUID schoolId, UUID roleId) {
-        var page = schoolUserRepository.findBySchoolId(schoolId, null, roleId, UserStatus.ACTIVE.name(), 1, MAX_ELIGIBLE_USERS_PAGE_SIZE);
-        return page.content().stream().map(SchoolUser::getUserId).sorted().toList();
+        var page = schoolUserRepository.findBySchoolId(
+            schoolId, null, roleId, UserStatus.ACTIVE.name(), null, false, 1, MAX_ELIGIBLE_USERS_PAGE_SIZE);
+        return page.content().stream().map(schoolUser -> schoolUser.getUserId()).sorted().toList();
     }
 
     private void requireSchoolAdminAccess(UUID schoolId) {

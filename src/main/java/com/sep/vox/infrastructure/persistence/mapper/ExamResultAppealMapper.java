@@ -26,7 +26,9 @@ public final class ExamResultAppealMapper {
             entity.getNotes(),
             entity.getDeadline(),
             entity.getApprovedAt(),
-            entity.getDecisionNote()
+            entity.getDecisionNote(),
+            entity.getWithdrawnAt(),
+            entity.getReviewerOverrideReason()
         );
     }
 
@@ -48,7 +50,9 @@ public final class ExamResultAppealMapper {
             appeal.getNotes(),
             appeal.getDeadline(),
             appeal.getApprovedAt(),
-            appeal.getDecisionNote()
+            appeal.getDecisionNote(),
+            appeal.getWithdrawnAt(),
+            appeal.getReviewerOverrideReason()
         );
     }
 

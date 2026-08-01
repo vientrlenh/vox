@@ -6,7 +6,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.AuthenticationException;
@@ -42,7 +41,6 @@ public class GlobalExceptionHandler {
     private static final String AUTHENTICATION_ERROR = "BAD_CREDENTIALS";
     private static final String AUTHORIZATION_ERROR = "ACCESS_DENIED";
     private static final String USER_DISABLED_ERROR = "USER_DISABLED";
-    private static final String VERSION_MISMATCHED_ERROR = "VERSION_MISMATCHED";
 
     @ExceptionHandler(DuplicatedException.class)
     public ResponseEntity<ErrorResponse> handleDuplicate(DuplicatedException e) {
@@ -132,12 +130,5 @@ public class GlobalExceptionHandler {
     private ResponseEntity<ErrorResponse> handleDisabled(DisabledException e) {
         var error = new ErrorResponse(USER_DISABLED_ERROR, e.getMessage());
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
-    }
-
-
-    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
-    public ResponseEntity<ErrorResponse> handleOptimisticLock(ObjectOptimisticLockingFailureException e) {
-        var error = new ErrorResponse(VERSION_MISMATCHED_ERROR, "Dữ liệu đã được cập nhật bởi một yêu cầu khác. Vui lòng thử lại sau");
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 }

@@ -16,8 +16,10 @@ public record AppealSummaryInfo(
     String status,
     Instant requestedAt,
     Instant deadline,
-    int reviewerCount,
-    int doneCount,
+    /** Người chấm duy nhất; null khi chưa phân công. */
+    String reviewerName,
+    /** ASSIGNED | COMPLETED; null khi chưa phân công. */
+    String reviewerStatus,
     boolean overdue
 ) {
 }

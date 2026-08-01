@@ -28,6 +28,6 @@ public class ViewGradingStatsUseCase implements IUseCase<ViewGradingStatsQuery, 
     public GradingStatsInfo execute(ViewGradingStatsQuery input) {
         var currentUserId = examGradingAccessService.requireActiveUserId();
         var schoolId = examGradingAccessService.requireCurrentSchoolId(currentUserId);
-        return examGradingQueryRepository.countByStatus(schoolId, input.examId(), input.scheduleId());
+        return examGradingQueryRepository.stats(schoolId, input.examId(), input.scheduleId());
     }
 }

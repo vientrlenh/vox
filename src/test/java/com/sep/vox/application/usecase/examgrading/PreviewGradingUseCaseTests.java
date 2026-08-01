@@ -31,14 +31,15 @@ import com.sep.vox.application.port.input.usecase.examevaluation.ExamSessionResu
 import com.sep.vox.application.port.input.usecase.examevaluation.ExamSessionResultCalculator.PreviewedExamSessionResult;
 import com.sep.vox.application.port.input.usecase.examevaluation.UpsertExamCandidateResultUseCase;
 import com.sep.vox.application.port.input.usecase.examgrading.PreviewGradingUseCase;
-import com.sep.vox.application.port.input.usecase.examgrading.SubmitGradingUseCase;
+import com.sep.vox.application.port.input.usecase.examgrading.RegradeResultUseCase;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.exam.ExamGradingAssignment;
 import com.sep.vox.domain.model.exam.ExamItemEvaluation;
 import com.sep.vox.domain.model.exam.ExamItemResponse;
 import com.sep.vox.domain.model.exam.ExamSession;
-import com.sep.vox.domain.model.exam.GradingAssignmentStatus;
+import com.sep.vox.domain.model.exam.GradingOutcome;
+import com.sep.vox.domain.model.exam.GradingRoundType;
 import com.sep.vox.domain.model.rubric.RubricCriterion;
 import com.sep.vox.domain.model.rubric.RubricTotalScoreMethod;
 import com.sep.vox.domain.model.rubric.RubricVersion;
@@ -94,7 +95,7 @@ public class PreviewGradingUseCaseTests {
             examSessionResultCalculator, examGradingAccessService, resolver);
 
         when(examGradingAccessService.requireActiveUserId()).thenReturn(teacherId);
-        when(examGradingAccessService.loadForGrading(assignmentId, null)).thenReturn(context());
+        when(examGradingAccessService.load(assignmentId)).thenReturn(context());
         when(examItemResponseRepository.findBySessionId(sessionId)).thenReturn(List.of(
             new ExamItemResponse(responseId, sessionId, paperItemId, null, null, null, null, null)));
         when(rubricCriterionRepository.findByRubricVersionId(rubricVersionId)).thenReturn(List.of(
@@ -119,8 +120,9 @@ public class PreviewGradingUseCaseTests {
     }
 
     private GradingContext context() {
-        var assignment = new ExamGradingAssignment(assignmentId, candidateResultId, teacherId,
-            GradingAssignmentStatus.ASSIGNED, Instant.now(), null, null);
+        var assignment = ExamGradingAssignment.open(candidateResultId, teacherId,
+            GradingRoundType.INITIAL, null, null, Instant.now(), null, null);
+        assignment.setId(assignmentId);
 
         var candidateResult = new ExamCandidateResult();
         candidateResult.setId(candidateResultId);
@@ -135,7 +137,7 @@ public class PreviewGradingUseCaseTests {
     }
 
     private SubmitGradingCommand command(String fluency, String pronunciation) {
-        return new SubmitGradingCommand(assignmentId, null, List.of(
+        return new SubmitGradingCommand(assignmentId, List.of(
             new SubmitGradingCommand.ItemGrade(paperItemId, List.of(
                 new SubmitGradingCommand.CriterionScoreItem(fluencyId, new BigDecimal(fluency), null),
                 new SubmitGradingCommand.CriterionScoreItem(pronunciationId, new BigDecimal(pronunciation), null)
@@ -176,9 +178,17 @@ public class PreviewGradingUseCaseTests {
         useCase.execute(command("8.00", "6.00"));
         var previewedItemScore = captureOverrides().get(responseId);
 
-        var submitUseCase = new SubmitGradingUseCase(
-            examGradingAssignmentRepository, examItemEvaluationRepository, examItemCriterionScoreRepository,
-            examSessionRepository, upsertExamCandidateResultUseCase, examGradingAccessService, resolver);
+        // GradingActionSupport được mock: phần phân quyền / audit / đóng phân công đã
+        // có test riêng, ở đây chỉ cần đúng ĐƯỜNG ĐIỂM đi qua cùng một resolver.
+        var gradingActionSupport = mock(com.sep.vox.application.port.input.service.GradingActionSupport.class);
+        var context = context();
+        when(gradingActionSupport.prepare(any(), any(), any())).thenReturn(
+            new com.sep.vox.application.port.input.service.GradingActionSupport.PreparedAction(
+                context, teacherId, GradingRoundType.INITIAL, GradingOutcome.REGRADED, null, null));
+
+        var regradeUseCase = new RegradeResultUseCase(
+            gradingActionSupport, resolver, examItemEvaluationRepository, examItemCriterionScoreRepository,
+            examSessionRepository, upsertExamCandidateResultUseCase);
         when(examItemEvaluationRepository.findByResponseIdIn(anyList())).thenReturn(List.of());
         when(examItemEvaluationRepository.save(any())).thenAnswer(invocation -> {
             var evaluation = (ExamItemEvaluation) invocation.getArgument(0);
@@ -188,9 +198,9 @@ public class PreviewGradingUseCaseTests {
         var recalculated = new ExamCandidateResult();
         recalculated.setStatus(ExamCandidateResultStatus.RELEASED);
         recalculated.setTotalScore(new BigDecimal("7.20"));
-        when(upsertExamCandidateResultUseCase.execute(sessionId)).thenReturn(recalculated);
+        when(upsertExamCandidateResultUseCase.execute(eq(sessionId), any())).thenReturn(recalculated);
 
-        submitUseCase.execute(command("8.00", "6.00"));
+        regradeUseCase.execute(command("8.00", "6.00"));
 
         var captor = ArgumentCaptor.forClass(ExamItemEvaluation.class);
         verify(examItemEvaluationRepository).save(captor.capture());
@@ -200,7 +210,7 @@ public class PreviewGradingUseCaseTests {
     @Test
     void should_reject_when_teacher_is_not_the_assigned_one() {
         org.mockito.Mockito.doThrow(new ForbiddenException("BẢO MẬT"))
-            .when(examGradingAccessService).authorizeGrader(any(), eq(teacherId));
+            .when(examGradingAccessService).authorizeAssignedTeacher(any(), eq(teacherId));
 
         assertThatThrownBy(() -> useCase.execute(command("8.00", "6.00")))
             .isInstanceOf(ForbiddenException.class);

@@ -1,9 +1,13 @@
 package com.sep.vox.application.usecase.examcandidate;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
@@ -16,23 +20,22 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.command.ImportExamCandidatesFromClassCommand;
+import com.sep.vox.application.port.input.service.ExamDirectoryAccessService;
+import com.sep.vox.application.port.input.service.ExamDirectoryAccessService.ExamDirectoryScope;
 import com.sep.vox.application.port.input.usecase.examcandidate.ImportExamCandidatesFromClassUseCase;
-import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
-import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassUser;
 import com.sep.vox.domain.model.user.SchoolRoleCodes;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
-import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
-import com.sep.vox.domain.repository.SchoolUserRepository;
 
 class ImportExamCandidatesFromClassUseCaseTests {
 
@@ -40,10 +43,8 @@ class ImportExamCandidatesFromClassUseCaseTests {
     private ExamCandidateRepository examCandidateRepository;
     private SchoolClassRepository schoolClassRepository;
     private SchoolClassUserRepository schoolClassUserRepository;
-    private ExamMemberRepository examMemberRepository;
-    private SchoolUserRepository schoolUserRepository;
     private UserRoleQueryRepository userRoleQueryRepository;
-    private UserContextPort userContextPort;
+    private ExamDirectoryAccessService examDirectoryAccessService;
     private ImportExamCandidatesFromClassUseCase useCase;
 
     private final UUID userId = UUID.randomUUID();
@@ -62,21 +63,49 @@ class ImportExamCandidatesFromClassUseCaseTests {
         examCandidateRepository = mock(ExamCandidateRepository.class);
         schoolClassRepository = mock(SchoolClassRepository.class);
         schoolClassUserRepository = mock(SchoolClassUserRepository.class);
-        examMemberRepository = mock(ExamMemberRepository.class);
-        schoolUserRepository = mock(SchoolUserRepository.class);
         userRoleQueryRepository = mock(UserRoleQueryRepository.class);
-        userContextPort = mock(UserContextPort.class);
+        examDirectoryAccessService = mock(ExamDirectoryAccessService.class);
         useCase = new ImportExamCandidatesFromClassUseCase(
             examRepository, examCandidateRepository, schoolClassRepository, schoolClassUserRepository,
-            examMemberRepository, schoolUserRepository, userRoleQueryRepository, userContextPort);
+            userRoleQueryRepository, examDirectoryAccessService);
 
-        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        when(schoolUserRepository.findByUserId(userId)).thenReturn(Optional.empty());
-        when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId)).thenReturn(List.of());
-        when(examMemberRepository.existsByExamIdAndUserIdAndRole(examId, userId, ExamMemberRole.CHAIR))
-            .thenReturn(true);
-        when(examRepository.findById(examId)).thenReturn(Optional.of(exam()));
+        var exam = exam();
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        when(examDirectoryAccessService.resolve(exam))
+            .thenReturn(new ExamDirectoryScope(userId, schoolId, true));
         when(schoolClassRepository.findById(classId)).thenReturn(Optional.of(schoolClass()));
+    }
+
+    @Test
+    void should_reject_class_test_chair_importing_a_class_they_do_not_teach() {
+        when(examDirectoryAccessService.resolve(any(Exam.class)))
+            .thenReturn(new ExamDirectoryScope(userId, schoolId, false));
+        when(examDirectoryAccessService.callerClassIds(any())).thenReturn(List.of(UUID.randomUUID()));
+
+        assertThatThrownBy(() -> useCase.execute(new ImportExamCandidatesFromClassCommand(examId, classId)))
+            .isInstanceOf(ForbiddenException.class)
+            .hasMessage("Bạn không phụ trách lớp học này");
+        verify(examCandidateRepository, never()).saveAll(anyCollection());
+    }
+
+    @Test
+    void should_allow_class_test_chair_importing_their_own_class() {
+        when(examDirectoryAccessService.resolve(any(Exam.class)))
+            .thenReturn(new ExamDirectoryScope(userId, schoolId, false));
+        when(examDirectoryAccessService.callerClassIds(any())).thenReturn(List.of(classId));
+        when(schoolClassUserRepository.findBySchoolClassId(classId, 1, 1000))
+            .thenReturn(new PageResult<>(List.of(classUser(activeStudent, true)), 1, 1000, 1, 1));
+        when(userRoleQueryRepository.findUserIdsByRoleCode(anyCollection(), eq(SchoolRoleCodes.STUDENT)))
+            .thenReturn(Set.of(activeStudent));
+        when(examCandidateRepository.findStudentIdsByExamId(examId)).thenReturn(Set.of());
+        when(examCandidateRepository.saveAll(anyCollection())).thenAnswer(inv -> {
+            Collection<ExamCandidate> arg = inv.getArgument(0);
+            return arg.stream().peek(c -> c.setId(UUID.randomUUID())).toList();
+        });
+
+        var result = useCase.execute(new ImportExamCandidatesFromClassCommand(examId, classId));
+
+        assertThat(result).hasSize(1);
     }
 
     @Test

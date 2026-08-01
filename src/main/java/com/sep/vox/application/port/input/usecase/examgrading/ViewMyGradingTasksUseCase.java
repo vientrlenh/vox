@@ -33,6 +33,6 @@ public class ViewMyGradingTasksUseCase
     public PageResult<GradingTaskInfo> execute(ViewMyGradingTasksQuery input) {
         var currentUserId = examGradingAccessService.requireActiveUserId();
         return examGradingQueryRepository.findTasksByTeacherId(
-            currentUserId, input.status(), input.page(), input.size());
+            currentUserId, input.status(), input.roundType(), input.page(), input.size());
     }
 }

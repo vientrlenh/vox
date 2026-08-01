@@ -13,16 +13,13 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import com.sep.vox.application.port.input.query.SearchExamAppealsQuery;
-import com.sep.vox.application.port.input.query.ViewMyAppealTasksQuery;
-import com.sep.vox.application.port.input.usecase.examappeal.ViewAppealTaskDetailUseCase;
+import com.sep.vox.application.port.input.query.ViewAssignableReviewersQuery;
 import com.sep.vox.application.port.input.usecase.examappeal.ViewAssignableReviewersUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.ViewExamAppealDetailUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.ViewExamAppealStatsUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.ViewExamAppealsUseCase;
-import com.sep.vox.application.port.input.usecase.examappeal.ViewMyAppealTasksUseCase;
 import com.sep.vox.application.query.dto.AppealReviewerLiteInfo;
 import com.sep.vox.application.query.dto.AppealStatsInfo;
-import com.sep.vox.application.query.dto.AppealTaskDetailInfo;
 import com.sep.vox.domain.common.PageResult;
 
 public class ExamAppealControllerTests {
@@ -30,8 +27,6 @@ public class ExamAppealControllerTests {
     private ViewExamAppealsUseCase viewExamAppealsUseCase;
     private ViewExamAppealStatsUseCase viewExamAppealStatsUseCase;
     private ViewExamAppealDetailUseCase viewExamAppealDetailUseCase;
-    private ViewMyAppealTasksUseCase viewMyAppealTasksUseCase;
-    private ViewAppealTaskDetailUseCase viewAppealTaskDetailUseCase;
     private ViewAssignableReviewersUseCase viewAssignableReviewersUseCase;
     private ExamAppealController controller;
 
@@ -40,15 +35,11 @@ public class ExamAppealControllerTests {
         viewExamAppealsUseCase = mock(ViewExamAppealsUseCase.class);
         viewExamAppealStatsUseCase = mock(ViewExamAppealStatsUseCase.class);
         viewExamAppealDetailUseCase = mock(ViewExamAppealDetailUseCase.class);
-        viewMyAppealTasksUseCase = mock(ViewMyAppealTasksUseCase.class);
-        viewAppealTaskDetailUseCase = mock(ViewAppealTaskDetailUseCase.class);
         viewAssignableReviewersUseCase = mock(ViewAssignableReviewersUseCase.class);
         controller = new ExamAppealController(
             viewExamAppealsUseCase,
             viewExamAppealStatsUseCase,
             viewExamAppealDetailUseCase,
-            viewMyAppealTasksUseCase,
-            viewAppealTaskDetailUseCase,
             viewAssignableReviewersUseCase
         );
     }
@@ -82,49 +73,40 @@ public class ExamAppealControllerTests {
 
     @Test
     void should_return_stats_from_use_case() {
-        when(viewExamAppealStatsUseCase.execute()).thenReturn(new AppealStatsInfo(3, 2, 5, 1));
+        when(viewExamAppealStatsUseCase.execute()).thenReturn(new AppealStatsInfo(3, 2, 5, 1, 4));
 
         var stats = controller.appealStats();
 
         assertThat(stats.pending()).isEqualTo(3);
         assertThat(stats.processing()).isEqualTo(2);
+        assertThat(stats.withdrawn()).isEqualTo(4);
     }
 
     @Test
-    void should_resolve_my_tasks_for_the_authenticated_reviewer() {
-        when(viewMyAppealTasksUseCase.execute(any()))
-            .thenReturn(new PageResult<>(List.of(), 0, 20, 0, 0));
-
-        controller.myAppealTasks("ASSIGNED", 0, 20);
-
-        var captor = ArgumentCaptor.forClass(ViewMyAppealTasksQuery.class);
-        org.mockito.Mockito.verify(viewMyAppealTasksUseCase).execute(captor.capture());
-        // reviewerId lấy từ token trong use case, không phải tham số GraphQL.
-        assertThat(captor.getValue().status()).isEqualTo("ASSIGNED");
-    }
-
-    @Test
-    void should_not_expose_other_reviewers_reports_in_task_detail() {
+    void should_pass_appeal_id_when_listing_reviewers() {
         var appealId = UUID.randomUUID();
-        var detail = new AppealTaskDetailInfo(appealId, List.of(), List.of(), List.of());
-        when(viewAppealTaskDetailUseCase.execute(appealId)).thenReturn(detail);
+        when(viewAssignableReviewersUseCase.execute(any())).thenReturn(List.of());
 
-        var result = controller.appealTaskDetail(appealId);
+        controller.appealReviewers(appealId, "Lan");
 
-        // AppealTaskDetailInfo cố tình không có trường reviewers[]: chấm mù.
-        assertThat(result.appealId()).isEqualTo(appealId);
-        assertThat(result.myReport()).isEmpty();
+        // appealId là bắt buộc để tính cờ xung đột lợi ích — thiếu nó thì ai cũng
+        // hiện conflicted = false và admin sẽ giao nhầm người đã từng chấm bài.
+        var captor = ArgumentCaptor.forClass(ViewAssignableReviewersQuery.class);
+        org.mockito.Mockito.verify(viewAssignableReviewersUseCase).execute(captor.capture());
+        assertThat(captor.getValue().appealId()).isEqualTo(appealId);
+        assertThat(captor.getValue().keyword()).isEqualTo("Lan");
     }
 
     @Test
-    void should_return_reviewers_with_current_load() {
+    void should_return_reviewers_with_load_and_conflict_flag() {
         var reviewerId = UUID.randomUUID();
-        when(viewAssignableReviewersUseCase.execute("Lan"))
-            .thenReturn(List.of(new AppealReviewerLiteInfo(reviewerId, "Nguyễn Thị Lan", 3)));
+        when(viewAssignableReviewersUseCase.execute(any()))
+            .thenReturn(List.of(new AppealReviewerLiteInfo(reviewerId, "Nguyễn Thị Lan", 3, true)));
 
-        var result = controller.appealReviewers("Lan");
+        var result = controller.appealReviewers(UUID.randomUUID(), "Lan");
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).load()).isEqualTo(3);
+        assertThat(result.get(0).conflicted()).isTrue();
     }
 }

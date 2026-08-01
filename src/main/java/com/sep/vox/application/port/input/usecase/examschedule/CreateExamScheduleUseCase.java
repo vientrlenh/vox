@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.common.ExamScheduleWindowMessages;
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
@@ -65,6 +66,12 @@ public class CreateExamScheduleUseCase implements IUseCase<CreateExamScheduleCom
         }
         if (!input.endDate().isAfter(input.startDate())) {
             throw new IllegalArgumentException("Thời gian kết thúc phải sau thời gian bắt đầu");
+        }
+        if (exam.isScheduleWindowShorterThanExamTime(input.startDate(), input.endDate())) {
+            throw new IllegalArgumentException(ExamScheduleWindowMessages.tooShortForExamTime(exam));
+        }
+        if (exam.isScheduleWindowOutsideExamWindow(input.startDate(), input.endDate())) {
+            throw new IllegalArgumentException(ExamScheduleWindowMessages.outsideExamWindow(exam));
         }
 
         SchoolRoom room = schoolRoomRepository.findById(input.schoolRoomId())

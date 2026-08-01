@@ -25,7 +25,7 @@ import com.sep.vox.domain.repository.RubricVersionRepository;
 /**
  * Validate + quy đổi điểm tiêu chí thành điểm phần thi.
  *
- * <p>Tách riêng vì {@code SubmitGradingUseCase} và {@code PreviewGradingUseCase}
+ * <p>Tách riêng vì {@code RegradeResultUseCase} và {@code PreviewGradingUseCase}
  * BẮT BUỘC đi qua đúng một đường: nếu preview và submit tính khác nhau dù chỉ ở
  * chỗ làm tròn, con số giáo viên thấy trước khi bấm Nộp sẽ không phải con số học
  * sinh nhận — đó chính là lý do endpoint preview tồn tại.

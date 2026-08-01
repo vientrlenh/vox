@@ -8,14 +8,17 @@ import com.sep.vox.application.query.dto.AppealDetailInfo;
 import com.sep.vox.application.query.dto.AppealReviewerLiteInfo;
 import com.sep.vox.application.query.dto.AppealStatsInfo;
 import com.sep.vox.application.query.dto.AppealSummaryInfo;
-import com.sep.vox.application.query.dto.AppealTaskDetailInfo;
-import com.sep.vox.application.query.dto.AppealTaskInfo;
 import com.sep.vox.domain.common.PageResult;
 
 /**
  * Read side cho phúc khảo. Toàn bộ đều là join xuyên aggregate
- * (appeal x candidate_result x users x exams x paper_items x evaluations), nên đi
+ * (appeal × candidate_result × users × exams × paper_items × evaluations), nên đi
  * lối query repository thay vì domain repository.
+ *
+ * <p>Sau rework KHÔNG còn hàng đợi riêng của giám khảo: vòng phúc khảo là một dòng
+ * {@code exam_grading_assignments} như ba vòng kia, nên giáo viên xem nó ở
+ * {@code myGradingTasks} và chấm ở {@code gradingTaskDetail}. Repository này chỉ còn
+ * phục vụ màn điều phối của school admin.
  *
  * <p>Phân trang 0-based, đồng bộ với {@code JpaSchoolUserQueryRepository}.
  */
@@ -27,9 +30,11 @@ public interface ExamAppealQueryRepository {
 
     Optional<AppealDetailInfo> findDetailById(UUID appealId, UUID schoolId);
 
-    PageResult<AppealTaskInfo> findTasksByReviewerId(UUID reviewerId, String status, int page, int size);
-
-    Optional<AppealTaskDetailInfo> findTaskDetail(UUID appealId, UUID reviewerId);
-
-    List<AppealReviewerLiteInfo> findAssignableReviewers(UUID schoolId, String keyword);
+    /**
+     * Ứng viên chấm phúc khảo cho MỘT đơn cụ thể, kèm cờ xung đột lợi ích.
+     *
+     * <p>Cần {@code appealId} chứ không chỉ {@code schoolId} như bản cũ: xung đột được
+     * tính theo <em>bài thi của đơn đó</em>, không phải theo trường.
+     */
+    List<AppealReviewerLiteInfo> findAssignableReviewers(UUID schoolId, UUID appealId, String keyword);
 }

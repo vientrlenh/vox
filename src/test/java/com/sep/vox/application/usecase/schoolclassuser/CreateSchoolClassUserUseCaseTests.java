@@ -210,7 +210,7 @@ class CreateSchoolClassUserUseCaseTests {
     }
 
     @Test
-    void create_should_throw_when_target_user_is_inactive() {
+    void create_should_add_target_user_who_has_not_set_password_yet() {
         var currentUserId = UUID.randomUUID();
         var targetUserId = UUID.randomUUID();
         var schoolId = UUID.randomUUID();
@@ -222,6 +222,47 @@ class CreateSchoolClassUserUseCaseTests {
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(schoolClassRepository.findById(classId)).thenReturn(Optional.of(activeSchoolClass(classId, schoolId)));
         when(userRepository.findById(targetUserId)).thenReturn(Optional.of(user(targetUserId, schoolId, UserStatus.INACTIVE)));
+        when(schoolClassUserRepository.findByUserIdAndSchoolClassId(targetUserId, classId)).thenReturn(Optional.empty());
+        when(schoolClassUserRepository.save(any(SchoolClassUser.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = useCase.execute(command);
+
+        assertThat(response).isNotNull();
+        verify(schoolClassUserRepository).save(any(SchoolClassUser.class));
+    }
+
+    @Test
+    void create_should_throw_when_target_user_is_locked() {
+        var currentUserId = UUID.randomUUID();
+        var targetUserId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var classId = UUID.randomUUID();
+        var command = new CreateSchoolClassUserCommand(schoolId, classId, targetUserId);
+
+        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
+        when(userRepository.findById(currentUserId)).thenReturn(Optional.of(activeUser(currentUserId, schoolId)));
+        when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
+        when(schoolClassRepository.findById(classId)).thenReturn(Optional.of(activeSchoolClass(classId, schoolId)));
+        when(userRepository.findById(targetUserId)).thenReturn(Optional.of(user(targetUserId, schoolId, UserStatus.LOCKED)));
+
+        assertThrows(IllegalStateException.class, () -> useCase.execute(command));
+
+        verifyNoInteractions(schoolClassUserRepository);
+    }
+
+    @Test
+    void create_should_throw_when_target_user_is_disabled() {
+        var currentUserId = UUID.randomUUID();
+        var targetUserId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var classId = UUID.randomUUID();
+        var command = new CreateSchoolClassUserCommand(schoolId, classId, targetUserId);
+
+        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
+        when(userRepository.findById(currentUserId)).thenReturn(Optional.of(activeUser(currentUserId, schoolId)));
+        when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
+        when(schoolClassRepository.findById(classId)).thenReturn(Optional.of(activeSchoolClass(classId, schoolId)));
+        when(userRepository.findById(targetUserId)).thenReturn(Optional.of(user(targetUserId, schoolId, UserStatus.DISABLED)));
 
         assertThrows(IllegalStateException.class, () -> useCase.execute(command));
 

@@ -27,7 +27,6 @@ import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.model.school.SchoolClassUser;
 import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
-import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -244,8 +243,8 @@ public class SchoolClassUserImportCommitHandler implements ImportCommitHandler {
             if (user == null) {
                 errors.add(error("email", "Không tìm thấy người dùng"));
             } else {
-                if (user.getStatus() != UserStatus.ACTIVE) {
-                    errors.add(error("email", "Người dùng không hoạt động"));
+                if (!user.canBeAssignedToSchoolClass()) {
+                    errors.add(error("email", "Người dùng đã bị khoá hoặc vô hiệu hoá"));
                 }
                 var schoolUser = schoolUsersByUserId.get(user.getId());
                 if (schoolUser == null || !Objects.equals(schoolUser.getSchoolId(), schoolId)) {

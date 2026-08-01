@@ -118,18 +118,49 @@ class BulkCreateSchoolClassUsersUseCaseTests {
     }
 
     @Test
-    void bulk_create_should_report_failure_when_user_is_inactive() {
-        var inactiveUserId = UUID.randomUUID();
+    void bulk_create_should_add_user_who_has_not_set_password_yet() {
+        var pendingUserId = UUID.randomUUID();
         mockContext();
-        mockTargetUsers(user(inactiveUserId, schoolId, UserStatus.INACTIVE));
+        mockTargetUsers(user(pendingUserId, schoolId, UserStatus.INACTIVE));
+        mockNoExistingMemberships();
+        mockSaveAllEchoesInput();
+
+        var response = useCase.execute(
+            new BulkCreateSchoolClassUsersCommand(schoolId, classId, List.of(pendingUserId)));
+
+        assertThat(response.addedUserIds()).containsExactly(pendingUserId);
+        assertThat(response.failed()).isEmpty();
+    }
+
+    @Test
+    void bulk_create_should_report_failure_when_user_is_locked() {
+        var lockedUserId = UUID.randomUUID();
+        mockContext();
+        mockTargetUsers(user(lockedUserId, schoolId, UserStatus.LOCKED));
         mockNoExistingMemberships();
 
         var response = useCase.execute(
-            new BulkCreateSchoolClassUsersCommand(schoolId, classId, List.of(inactiveUserId)));
+            new BulkCreateSchoolClassUsersCommand(schoolId, classId, List.of(lockedUserId)));
 
         assertThat(response.addedUserIds()).isEmpty();
         assertThat(response.failed())
-            .containsExactly(new BulkCreateSchoolClassUserFailure(inactiveUserId, "Người dùng không hoạt động"));
+            .containsExactly(new BulkCreateSchoolClassUserFailure(lockedUserId, "Người dùng đã bị khoá hoặc vô hiệu hoá"));
+        verify(schoolClassUserRepository, never()).saveAll(anyCollection());
+    }
+
+    @Test
+    void bulk_create_should_report_failure_when_user_is_disabled() {
+        var disabledUserId = UUID.randomUUID();
+        mockContext();
+        mockTargetUsers(user(disabledUserId, schoolId, UserStatus.DISABLED));
+        mockNoExistingMemberships();
+
+        var response = useCase.execute(
+            new BulkCreateSchoolClassUsersCommand(schoolId, classId, List.of(disabledUserId)));
+
+        assertThat(response.addedUserIds()).isEmpty();
+        assertThat(response.failed())
+            .containsExactly(new BulkCreateSchoolClassUserFailure(disabledUserId, "Người dùng đã bị khoá hoặc vô hiệu hoá"));
         verify(schoolClassUserRepository, never()).saveAll(anyCollection());
     }
 

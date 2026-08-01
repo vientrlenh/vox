@@ -171,14 +171,55 @@ class SchoolClassUserImportCommitHandlerTests {
     }
 
     @Test
-    void should_mark_invalid_when_user_inactive() {
+    void should_import_user_who_has_not_set_password_yet() {
         var schoolId = UUID.randomUUID();
         var createdBy = UUID.randomUUID();
         var sessionId = UUID.randomUUID();
-        var inactiveUser = user(UUID.randomUUID(), schoolId, "inactive@example.com", UserStatus.INACTIVE);
-        var rows = List.of(row(sessionId, 1L, Map.of("Email", "inactive@example.com", "Mã lớp", "ENG-01")));
+        var pendingUser = user(UUID.randomUUID(), schoolId, "pending@example.com", UserStatus.INACTIVE);
+        var rows = List.of(row(sessionId, 1L, Map.of("Email", "pending@example.com", "Mã lớp", "ENG-01")));
 
-        when(userRepository.findByEmailIn(Set.of("inactive@example.com"))).thenReturn(List.of(inactiveUser));
+        when(userRepository.findByEmailIn(Set.of("pending@example.com"))).thenReturn(List.of(pendingUser));
+        when(schoolClassRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("ENG-01"))).thenReturn(List.of(activeSchoolClass(UUID.randomUUID(), schoolId, "ENG-01")));
+        when(schoolClassUserRepository.findByUserIdInAndSchoolClassIdIn(any(), any())).thenReturn(List.of());
+        when(schoolClassUserRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var result = handler.commit(session(sessionId, schoolId, createdBy), rows);
+
+        assertThat(result.created()).isEqualTo(1L);
+        assertThat(result.invalid()).isZero();
+        assertThat(rows.get(0).getStatus()).isEqualTo(ImportRowStatus.IMPORTED);
+        verify(schoolClassUserRepository).save(any(SchoolClassUser.class));
+    }
+
+    @Test
+    void should_mark_invalid_when_user_locked() {
+        var schoolId = UUID.randomUUID();
+        var createdBy = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var lockedUser = user(UUID.randomUUID(), schoolId, "locked@example.com", UserStatus.LOCKED);
+        var rows = List.of(row(sessionId, 1L, Map.of("Email", "locked@example.com", "Mã lớp", "ENG-01")));
+
+        when(userRepository.findByEmailIn(Set.of("locked@example.com"))).thenReturn(List.of(lockedUser));
+        when(schoolClassRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("ENG-01"))).thenReturn(List.of(activeSchoolClass(UUID.randomUUID(), schoolId, "ENG-01")));
+        when(schoolClassUserRepository.findByUserIdInAndSchoolClassIdIn(any(), any())).thenReturn(List.of());
+
+        var result = handler.commit(session(sessionId, schoolId, createdBy), rows);
+
+        assertThat(result.invalid()).isEqualTo(1L);
+        assertThat(rows.get(0).getStatus()).isEqualTo(ImportRowStatus.INVALID);
+        assertThat(rows.get(0).getErrorsJson()).contains("email");
+        verify(schoolClassUserRepository, never()).save(any());
+    }
+
+    @Test
+    void should_mark_invalid_when_user_disabled() {
+        var schoolId = UUID.randomUUID();
+        var createdBy = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var disabledUser = user(UUID.randomUUID(), schoolId, "disabled@example.com", UserStatus.DISABLED);
+        var rows = List.of(row(sessionId, 1L, Map.of("Email", "disabled@example.com", "Mã lớp", "ENG-01")));
+
+        when(userRepository.findByEmailIn(Set.of("disabled@example.com"))).thenReturn(List.of(disabledUser));
         when(schoolClassRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("ENG-01"))).thenReturn(List.of(activeSchoolClass(UUID.randomUUID(), schoolId, "ENG-01")));
         when(schoolClassUserRepository.findByUserIdInAndSchoolClassIdIn(any(), any())).thenReturn(List.of());
 

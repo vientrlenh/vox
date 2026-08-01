@@ -189,7 +189,7 @@ public class DistributeQuotaToUsersService {
 
     private List<UUID> fetchEligibleUserIds(UUID schoolId, UUID roleId) {
         var page = schoolUserRepository.findBySchoolId(
-            schoolId, null, roleId, UserStatus.ACTIVE.name(), null, 1, MAX_ELIGIBLE_USERS_PAGE_SIZE);
+            schoolId, null, roleId, UserStatus.ACTIVE.name(), null, false, 1, MAX_ELIGIBLE_USERS_PAGE_SIZE);
         return page.content().stream().map(schoolUser -> schoolUser.getUserId()).sorted().toList();
     }
 

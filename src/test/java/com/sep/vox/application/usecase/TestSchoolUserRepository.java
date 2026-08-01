@@ -60,7 +60,7 @@ public class TestSchoolUserRepository implements SchoolUserRepository {
 
     @Override
     public PageResult<SchoolUser> findBySchoolId(UUID schoolId, String search, UUID roleId, String status,
-            UUID excludeClassId, int page, int size) {
+            UUID excludeClassId, boolean excludeAdminRoles, int page, int size) {
         throw new UnsupportedOperationException("Unimplemented method 'findBySchoolId'");
     }
 

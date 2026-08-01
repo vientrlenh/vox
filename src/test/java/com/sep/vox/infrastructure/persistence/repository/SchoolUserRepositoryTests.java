@@ -74,17 +74,52 @@ class SchoolUserRepositoryTests extends ContainerTestConfig {
 
         var studentId = saveMember(schoolId, studentRoleId, "student@school.vn", "0900000001", "Nguyễn Văn Học", "ACTIVE");
         var teacherId = saveMember(schoolId, teacherRoleId, "teacher@school.vn", "0900000002", "Trần Thị Viên", "ACTIVE");
-        // Admin: thuộc trường -> không còn bị ẩn khi không lọc theo roleId
+        // Admin: thuộc trường -> vẫn hiện khi không bật excludeAdminRoles
         var adminId = saveMember(schoolId, adminRoleId, "admin@school.vn", "0900000003", "Quản Trị", "ACTIVE");
         // Học sinh DISABLED -> bị ẩn mặc định
         saveMember(schoolId, studentRoleId, "disabled@school.vn", "0900000004", "Lê Văn Khóa", "DISABLED");
 
-        var result = schoolUserRepository.findBySchoolId(schoolId, null, null, null, null, 1, 20);
+        var result = schoolUserRepository.findBySchoolId(schoolId, null, null, null, null, false, 1, 20);
 
         assertThat(result.totalElements()).isEqualTo(3);
         assertThat(result.content())
             .extracting(user -> user.getUserId())
             .containsExactlyInAnyOrder(studentId, teacherId, adminId);
+    }
+
+    @Test
+    void search_should_exclude_admins_when_exclude_admin_roles_is_requested() {
+        var schoolId = UUID.randomUUID();
+        var studentRoleId = saveRole("STUDENT");
+        var teacherRoleId = saveRole("TEACHER");
+        var schoolAdminRoleId = saveRole("SCHOOL_ADMIN");
+        var systemAdminRoleId = saveRole("SYSTEM_ADMIN");
+
+        var studentId = saveMember(schoolId, studentRoleId, "student@school.vn", "0900000001", "Nguyễn Văn Học", "ACTIVE");
+        var teacherId = saveMember(schoolId, teacherRoleId, "teacher@school.vn", "0900000002", "Trần Thị Viên", "ACTIVE");
+        saveMember(schoolId, schoolAdminRoleId, "admin@school.vn", "0900000003", "Quản Trị Trường", "ACTIVE");
+        saveMember(schoolId, systemAdminRoleId, "sysadmin@school.vn", "0900000004", "Quản Trị Hệ Thống", "ACTIVE");
+
+        var result = schoolUserRepository.findBySchoolId(schoolId, null, null, null, null, true, 1, 20);
+
+        assertThat(result.totalElements()).isEqualTo(2);
+        assertThat(result.content())
+            .extracting(user -> user.getUserId())
+            .containsExactlyInAnyOrder(studentId, teacherId);
+    }
+
+    @Test
+    void search_should_return_members_who_have_not_set_password_yet() {
+        var schoolId = UUID.randomUUID();
+        var studentRoleId = saveRole("STUDENT");
+        var pendingId = saveMember(schoolId, studentRoleId, "pending@school.vn", "0900000001", "Chưa Kích Hoạt", "INACTIVE");
+        var activeId = saveMember(schoolId, studentRoleId, "active@school.vn", "0900000002", "Đã Kích Hoạt", "ACTIVE");
+
+        var result = schoolUserRepository.findBySchoolId(schoolId, null, null, null, null, true, 1, 20);
+
+        assertThat(result.content())
+            .extracting(user -> user.getUserId())
+            .containsExactlyInAnyOrder(pendingId, activeId);
     }
 
     @Test
@@ -95,7 +130,7 @@ class SchoolUserRepositoryTests extends ContainerTestConfig {
         saveMember(schoolId, studentRoleId, "student@school.vn", "0900000001", "Nguyễn Văn Học", "ACTIVE");
         var teacherId = saveMember(schoolId, teacherRoleId, "teacher@school.vn", "0900000002", "Trần Thị Viên", "ACTIVE");
 
-        var result = schoolUserRepository.findBySchoolId(schoolId, null, teacherRoleId, null, null, 1, 20);
+        var result = schoolUserRepository.findBySchoolId(schoolId, null, teacherRoleId, null, null, true, 1, 20);
 
         assertThat(result.content())
             .extracting(user -> user.getUserId())
@@ -109,11 +144,11 @@ class SchoolUserRepositoryTests extends ContainerTestConfig {
         var studentId = saveMember(schoolId, studentRoleId, "an.nguyen@school.vn", "0911111111", "Nguyễn Văn An", "ACTIVE");
         saveMember(schoolId, studentRoleId, "binh.tran@school.vn", "0922222222", "Trần Thị Bình", "ACTIVE");
 
-        assertThat(schoolUserRepository.findBySchoolId(schoolId, "an.nguyen", null, null, null, 1, 20).content())
+        assertThat(schoolUserRepository.findBySchoolId(schoolId, "an.nguyen", null, null, null, true, 1, 20).content())
             .extracting(user -> user.getUserId()).containsExactly(studentId);
-        assertThat(schoolUserRepository.findBySchoolId(schoolId, "0911111111", null, null, null, 1, 20).content())
+        assertThat(schoolUserRepository.findBySchoolId(schoolId, "0911111111", null, null, null, true, 1, 20).content())
             .extracting(user -> user.getUserId()).containsExactly(studentId);
-        assertThat(schoolUserRepository.findBySchoolId(schoolId, "văn an", null, null, null, 1, 20).content())
+        assertThat(schoolUserRepository.findBySchoolId(schoolId, "văn an", null, null, null, true, 1, 20).content())
             .extracting(user -> user.getUserId()).containsExactly(studentId);
     }
 
@@ -124,7 +159,7 @@ class SchoolUserRepositoryTests extends ContainerTestConfig {
         saveMember(schoolId, studentRoleId, "active@school.vn", "0900000001", "Người Hoạt Động", "ACTIVE");
         var disabledId = saveMember(schoolId, studentRoleId, "disabled@school.vn", "0900000002", "Người Khóa", "DISABLED");
 
-        var result = schoolUserRepository.findBySchoolId(schoolId, null, null, "DISABLED", null, 1, 20);
+        var result = schoolUserRepository.findBySchoolId(schoolId, null, null, "DISABLED", null, true, 1, 20);
 
         assertThat(result.content())
             .extracting(user -> user.getUserId())
@@ -145,7 +180,7 @@ class SchoolUserRepositoryTests extends ContainerTestConfig {
         springDataSchoolClassUserRepository.saveAndFlush(
             new SchoolClassUserJpaEntity(leftId, classId, false, NOW, NOW, leftId));
 
-        var result = schoolUserRepository.findBySchoolId(schoolId, null, null, null, classId, 1, 20);
+        var result = schoolUserRepository.findBySchoolId(schoolId, null, null, null, classId, true, 1, 20);
 
         assertThat(result.totalElements()).isEqualTo(2);
         assertThat(result.content())

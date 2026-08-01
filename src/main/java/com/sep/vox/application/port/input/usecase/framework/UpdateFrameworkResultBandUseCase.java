@@ -1,7 +1,9 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
 import java.time.Instant;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -72,6 +74,30 @@ public class UpdateFrameworkResultBandUseCase
 
         if (!band.getFrameworkVersionId().equals(command.versionId()))
             throw new IllegalArgumentException("Mức kết quả không thuộc phiên bản này");
+
+        String safeCode = StringNormalization.normalizeCode(command.code());
+        String safeLabel = StringNormalization.trimAndCollapseSpaces(command.label());
+        if (frameworkResultBandRepository.existsByFrameworkVersionIdAndCodeAndIdNot(command.versionId(), safeCode, command.bandId())) {
+            throw new IllegalStateException("Mã kết quả đã tồn tại");
+        }
+        if (frameworkResultBandRepository.existsByFrameworkVersionIdAndLabelAndIdNot(command.versionId(), safeLabel, command.bandId())) {
+            throw new IllegalStateException("Nhãn kết quả đã tồn tại");
+        }
+
+        Set<Integer> otherOrders = frameworkResultBandRepository.findByFrameworkVersionId(command.versionId())
+                .stream()
+                .filter(frb -> !frb.getId().equals(command.bandId()))
+                .map(frb -> frb.getOrder())
+                .collect(Collectors.toSet());
+        if (!otherOrders.add(command.order())) {
+            throw new IllegalArgumentException("Thứ tự mức kết quả bị trùng lặp: " + command.order());
+        }
+        int expectedOrder = otherOrders.size();
+        for (int i = 1; i <= expectedOrder; i++) {
+            if (!otherOrders.contains(i)) {
+                throw new IllegalArgumentException("Thứ tự mức kết quả phải tăng dần liên tục từ 1, không được bỏ số");
+            }
+        }
     }
 
     private void updateResultBand(UpdateFrameworkResultBandCommand command, FrameworkResultBand band) {

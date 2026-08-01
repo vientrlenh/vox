@@ -125,6 +125,69 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
      * <p>Một đơn có thể có nhiều dòng qua thời gian (người đầu trả lại, admin giao
      * người khác), nên giữ dòng MỚI NHẤT.
      */
+    @Override
+    public PageResult<AppealSummaryInfo> searchAppealsByStudentId(
+            UUID studentId, String status, int page, int size) {
+        var normalizedPage = Math.max(page, 0);
+        var normalizedSize = Math.max(size, 1);
+        var rows = em.createQuery("""
+            SELECT a.id, u.fullName, e.name, a.scoreBefore, a.status, a.requestedAt, a.deadline
+            FROM ExamResultAppealJpaEntity a
+            JOIN ExamCandidateResultJpaEntity cr ON cr.id = a.candidateResultId
+            JOIN ExamJpaEntity e ON e.id = cr.examId
+            JOIN ExamCandidateJpaEntity c ON c.id = cr.candidateId
+            JOIN UserJpaEntity u ON u.id = c.studentId
+            WHERE c.studentId = :studentId
+            AND (:status IS NULL OR a.status = :status)
+            ORDER BY a.requestedAt DESC
+        """, Tuple.class)
+            .setParameter("studentId", studentId)
+            .setParameter("status", status)
+            .setFirstResult(normalizedPage * normalizedSize)
+            .setMaxResults(normalizedSize)
+            .getResultList();
+
+        var appealIds = rows.stream().map(row -> row.get(0, UUID.class)).toList();
+        var reviewersByAppeal = reviewersByAppealIds(appealIds);
+        var classNamesByAppeal = classNamesByAppealIds(appealIds);
+        var partLabelsByAppeal = partLabelsByAppealIds(appealIds);
+        var now = Instant.now();
+        var content = new ArrayList<AppealSummaryInfo>();
+        for (var row : rows) {
+            var appealId = row.get(0, UUID.class);
+            var reviewer = reviewersByAppeal.get(appealId);
+            var appealStatus = row.get(4, String.class);
+            var deadline = row.get(6, Instant.class);
+            content.add(new AppealSummaryInfo(
+                appealId,
+                row.get(1, String.class),
+                classNamesByAppeal.get(appealId),
+                row.get(2, String.class),
+                partLabelsByAppeal.getOrDefault(appealId, List.of()),
+                row.get(3, BigDecimal.class),
+                appealStatus,
+                row.get(5, Instant.class),
+                deadline,
+                reviewer == null ? null : reviewer.reviewerName(),
+                reviewer == null ? null : reviewer.status(),
+                isOverdue(deadline, appealStatus, now)
+            ));
+        }
+
+        var total = em.createQuery("""
+            SELECT COUNT(a) FROM ExamResultAppealJpaEntity a
+            JOIN ExamCandidateResultJpaEntity cr ON cr.id = a.candidateResultId
+            JOIN ExamCandidateJpaEntity c ON c.id = cr.candidateId
+            WHERE c.studentId = :studentId
+            AND (:status IS NULL OR a.status = :status)
+        """, Long.class)
+            .setParameter("studentId", studentId)
+            .setParameter("status", status)
+            .getSingleResult();
+        var totalPages = (int) Math.ceil((double) total / normalizedSize);
+        return new PageResult<>(content, normalizedPage, normalizedSize, total, totalPages);
+    }
+
     private Map<UUID, AppealReviewerInfo> reviewersByAppealIds(List<UUID> appealIds) {
         if (appealIds.isEmpty()) {
             return Map.of();
@@ -311,6 +374,54 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
      * <p>Hai lookup evaluation khác nhau là cố ý: điểm đối chiếu lấy từ bản chấm
      * đang có hiệu lực, còn lượt nói phải lấy từ bản AI vì chỉ bản AI mới có turn.
      */
+    @Override
+    public Optional<AppealDetailInfo> findStudentDetailById(UUID appealId, UUID studentId) {
+        var rows = em.createQuery("""
+            SELECT a.id, u.fullName, e.name, a.scoreBefore, a.status, a.requestedAt, a.deadline,
+                   a.reason, a.notes, a.decisionNote, a.scoreAfter, a.approvedAt, a.resolvedAt,
+                   rv.scoringScaleMin, rv.scoringScaleMax, a.withdrawnAt, a.reviewerOverrideReason
+            FROM ExamResultAppealJpaEntity a
+            JOIN ExamCandidateResultJpaEntity cr ON cr.id = a.candidateResultId
+            JOIN ExamJpaEntity e ON e.id = cr.examId
+            JOIN ExamCandidateJpaEntity c ON c.id = cr.candidateId
+            JOIN UserJpaEntity u ON u.id = c.studentId
+            JOIN RubricVersionJpaEntity rv ON rv.id = cr.rubricVersionId
+            WHERE a.id = :appealId AND c.studentId = :studentId
+        """, Tuple.class)
+            .setParameter("appealId", appealId)
+            .setParameter("studentId", studentId)
+            .getResultList();
+        if (rows.isEmpty()) {
+            return Optional.empty();
+        }
+        var row = rows.get(0);
+        var status = row.get(4, String.class);
+        var deadline = row.get(6, Instant.class);
+        return Optional.of(new AppealDetailInfo(
+            row.get(0, UUID.class),
+            row.get(1, String.class),
+            className(appealId),
+            row.get(2, String.class),
+            row.get(3, BigDecimal.class),
+            status,
+            row.get(5, Instant.class),
+            deadline,
+            row.get(7, String.class),
+            row.get(8, String.class),
+            row.get(9, String.class),
+            row.get(10, BigDecimal.class),
+            row.get(11, Instant.class),
+            row.get(12, Instant.class),
+            row.get(15, Instant.class),
+            row.get(16, String.class),
+            appealItems(appealId),
+            reviewersByAppealIds(List.of(appealId)).get(appealId),
+            isOverdue(deadline, status, Instant.now()),
+            row.get(13, BigDecimal.class),
+            row.get(14, BigDecimal.class)
+        ));
+    }
+
     private List<AppealItemInfo> appealItems(UUID appealId) {
         var rows = em.createQuery("""
             SELECT ai.id, ai.paperItemId, ai.responseId, sec.title, ai.finalScore

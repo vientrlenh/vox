@@ -40,6 +40,9 @@ public interface ExamGradingQueryRepository {
     PageResult<GradingTaskInfo> findTasksByTeacherId(
         UUID teacherId, String status, String roundType, int page, int size);
 
+    PageResult<GradingTaskInfo> findTasksByTeacherIdAndExamId(
+        UUID teacherId, UUID examId, String status, String roundType, int page, int size);
+
     /** Màn chấm. Trả empty nếu người gọi không phải giáo viên được gán bài này. */
     Optional<GradingTaskDetailInfo> findTaskDetail(UUID assignmentId, UUID teacherId);
 

@@ -18,6 +18,8 @@ import com.sep.vox.application.port.input.usecase.examappeal.ViewAssignableRevie
 import com.sep.vox.application.port.input.usecase.examappeal.ViewExamAppealDetailUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.ViewExamAppealStatsUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.ViewExamAppealsUseCase;
+import com.sep.vox.application.port.input.usecase.examappeal.ViewMyAppealDetailUseCase;
+import com.sep.vox.application.port.input.usecase.examappeal.ViewMyAppealsUseCase;
 import com.sep.vox.application.query.dto.AppealReviewerLiteInfo;
 import com.sep.vox.application.query.dto.AppealStatsInfo;
 import com.sep.vox.domain.common.PageResult;
@@ -28,6 +30,8 @@ public class ExamAppealControllerTests {
     private ViewExamAppealStatsUseCase viewExamAppealStatsUseCase;
     private ViewExamAppealDetailUseCase viewExamAppealDetailUseCase;
     private ViewAssignableReviewersUseCase viewAssignableReviewersUseCase;
+    private ViewMyAppealsUseCase viewMyAppealsUseCase;
+    private ViewMyAppealDetailUseCase viewMyAppealDetailUseCase;
     private ExamAppealController controller;
 
     @BeforeEach
@@ -36,11 +40,15 @@ public class ExamAppealControllerTests {
         viewExamAppealStatsUseCase = mock(ViewExamAppealStatsUseCase.class);
         viewExamAppealDetailUseCase = mock(ViewExamAppealDetailUseCase.class);
         viewAssignableReviewersUseCase = mock(ViewAssignableReviewersUseCase.class);
+        viewMyAppealsUseCase = mock(ViewMyAppealsUseCase.class);
+        viewMyAppealDetailUseCase = mock(ViewMyAppealDetailUseCase.class);
         controller = new ExamAppealController(
             viewExamAppealsUseCase,
             viewExamAppealStatsUseCase,
             viewExamAppealDetailUseCase,
-            viewAssignableReviewersUseCase
+            viewAssignableReviewersUseCase,
+            viewMyAppealsUseCase,
+            viewMyAppealDetailUseCase
         );
     }
 

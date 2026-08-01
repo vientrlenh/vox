@@ -26,9 +26,14 @@ public interface ExamAppealQueryRepository {
 
     PageResult<AppealSummaryInfo> searchAppeals(UUID schoolId, String status, String keyword, int page, int size);
 
+    PageResult<AppealSummaryInfo> searchAppealsByStudentId(
+        UUID studentId, String status, int page, int size);
+
     AppealStatsInfo countByStatus(UUID schoolId);
 
     Optional<AppealDetailInfo> findDetailById(UUID appealId, UUID schoolId);
+
+    Optional<AppealDetailInfo> findStudentDetailById(UUID appealId, UUID studentId);
 
     /**
      * Ứng viên chấm phúc khảo cho MỘT đơn cụ thể, kèm cờ xung đột lợi ích.

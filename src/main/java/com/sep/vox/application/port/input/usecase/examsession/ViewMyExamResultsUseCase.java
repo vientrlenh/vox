@@ -80,6 +80,7 @@ public class ViewMyExamResultsUseCase implements IUseCase<Void, List<StudentExam
                     exam.getId(),
                     exam.getCode(),
                     exam.getName(),
+                    exam.getKind().name(),
                     session.getId(),
                     session.getPaperId(),
                     session.getStatus().name(),

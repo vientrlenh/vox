@@ -25,7 +25,7 @@ import com.sep.vox.application.response.input.examgrading.GradingPreviewResponse
  *
  * <p>Là POST nhưng chỉ đọc: body quá lớn cho một GraphQL query. {@code readOnly}
  * là hàng rào cuối — validate và quy đổi điểm đi chung đường với
- * {@code SubmitGradingUseCase} nên tổng ở đây bằng đúng tổng khi nộp.
+ * {@code RegradeResultUseCase} nên tổng ở đây bằng đúng tổng khi nộp.
  */
 @Service
 public class PreviewGradingUseCase implements IUseCase<SubmitGradingCommand, GradingPreviewResponse> {
@@ -47,8 +47,8 @@ public class PreviewGradingUseCase implements IUseCase<SubmitGradingCommand, Gra
     @Transactional(readOnly = true)
     public GradingPreviewResponse execute(SubmitGradingCommand command) {
         var currentUserId = examGradingAccessService.requireActiveUserId();
-        var context = examGradingAccessService.loadForGrading(command.assignmentId(), command.candidateResultId());
-        examGradingAccessService.authorizeGrader(context, currentUserId);
+        var context = examGradingAccessService.load(command.assignmentId());
+        examGradingAccessService.authorizeAssignedTeacher(context, currentUserId);
 
         // Preview cho phép chấm dở để xem tổng chạy dần — KHÔNG bắt phủ đủ như /grade.
         var resolvedItems = gradingItemScoreResolver.resolve(context, command, false);

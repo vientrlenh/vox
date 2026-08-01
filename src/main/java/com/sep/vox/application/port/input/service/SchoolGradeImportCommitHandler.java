@@ -156,7 +156,10 @@ public class SchoolGradeImportCommitHandler implements ImportCommitHandler {
                 data.get("description"),
                 startDate,
                 endDate,
-                SchoolGradeStatus.INACTIVE,
+                // Cùng trạng thái với thêm tay (CreateSchoolGradeUseCase): năm học INACTIVE bị
+                // CreateSchoolClassUseCase / SchoolClassImportCommitHandler từ chối, mà không có
+                // API nào bật lại được nên bản ghi import sẽ kẹt vĩnh viễn.
+                SchoolGradeStatus.ACTIVE,
                 now,
                 now,
                 currentUserId,

@@ -613,8 +613,8 @@ extend type Mutation {
     flagExamSession(sessionId: ID!, flagged: Boolean!, reason: String): ID!
     forceEndExamSession(sessionId: ID!, reason: String!): ID!
     unblockExamCandidate(candidateId: ID!, reason: String!): ID!
-    reviewFlaggedExamResult(candidateResultId: ID!, decision: ExamCandidateResultStatus!): ID!
-    releasePendingExamResult(sessionId: ID!): ID!
+    # reviewFlaggedExamResult / releasePendingExamResult đã bị gỡ: người quyết là GIÁO VIÊN
+    # ĐANG CẦM BÀI, qua REST /api/v1/grading-assignments/{id}/uphold | /regrade | /invalidate.
     # Chỉ áp dụng khi kết quả đang FINAL (kỳ thi đã RESULTS_PUBLISHED nhưng assessmentPolicy
     # không có passingScore) -- nhà trường tự chốt PASSED hoặc FAILED thủ công.
     decideExamCandidateResultOutcome(candidateResultId: ID!, decision: ExamCandidateResultStatus!): ID!

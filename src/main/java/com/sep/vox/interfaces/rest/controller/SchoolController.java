@@ -33,6 +33,7 @@ import com.sep.vox.application.port.input.usecase.schoolclass.CreateSchoolClassU
 import com.sep.vox.application.port.input.usecase.schoolclass.DeleteSchoolClassUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.PreviewSchoolClassImportFromFileUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclassuser.AcceptSchoolClassUserImportUseCase;
+import com.sep.vox.application.port.input.usecase.schoolclassuser.BulkCreateSchoolClassUsersUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclassuser.CreateSchoolClassUserUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclassuser.DeleteSchoolClassUserUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclassuser.PreviewSchoolClassUserImportFromFileUseCase;
@@ -65,6 +66,7 @@ import com.sep.vox.application.response.input.importfile.PreviewSchoolClassImpor
 import com.sep.vox.application.response.input.importfile.PreviewSchoolClassUserImportResponse;
 import com.sep.vox.application.response.input.importfile.PreviewSchoolUserImportResponse;
 import com.sep.vox.application.response.input.schoolclass.CreateSchoolClassResponse;
+import com.sep.vox.application.response.input.schoolclassuser.BulkCreateSchoolClassUsersResponse;
 import com.sep.vox.application.response.input.schoolclassuser.CreateSchoolClassUserResponse;
 import com.sep.vox.application.response.input.schoolclassuser.UpdateSchoolClassUserStatusResponse;
 import com.sep.vox.application.response.input.schooldirectory.CreateSchoolDirectoryResponse;
@@ -79,6 +81,7 @@ import com.sep.vox.interfaces.rest.dto.request.AcceptSchoolGradeImportRequest;
 import com.sep.vox.interfaces.rest.dto.request.AcceptSchoolGradeLevelImportRequest;
 import com.sep.vox.interfaces.rest.dto.request.AcceptSchoolUserImportRequest;
 import com.sep.vox.interfaces.rest.dto.request.AddSchoolRoomRequest;
+import com.sep.vox.interfaces.rest.dto.request.BulkCreateSchoolClassUsersRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolClassRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolClassUserRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolDirectoryRequest;
@@ -94,6 +97,7 @@ import com.sep.vox.interfaces.rest.mapper.AcceptSchoolGradeImportCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.AcceptSchoolGradeLevelImportCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.AcceptSchoolUserImportCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.AddSchoolRoomCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.BulkCreateSchoolClassUsersCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateSchoolClassCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateSchoolClassUserCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateSchoolDirectoryCommandMapper;
@@ -117,6 +121,7 @@ public class SchoolController {
 
     private final CreateSchoolClassUseCase createSchoolClassUseCase;
     private final CreateSchoolClassUserUseCase createSchoolClassUserUseCase;
+    private final BulkCreateSchoolClassUsersUseCase bulkCreateSchoolClassUsersUseCase;
     private final DeleteSchoolClassUseCase deleteSchoolClassUseCase;
     private final DeleteSchoolClassUserUseCase deleteSchoolClassUserUseCase;
     private final UpdateSchoolClassUserStatusUseCase updateSchoolClassUserStatusUseCase;
@@ -160,8 +165,9 @@ public class SchoolController {
     private final VerifySchoolDirectoryUseCase verifySchoolDirectoryUseCase;
 
     public SchoolController(CreateSchoolClassUseCase createSchoolClassUseCase, 
-                        CreateSchoolClassUserUseCase createSchoolClassUserUseCase, 
-                        DeleteSchoolClassUseCase deleteSchoolClassUseCase, 
+                        CreateSchoolClassUserUseCase createSchoolClassUserUseCase,
+                        BulkCreateSchoolClassUsersUseCase bulkCreateSchoolClassUsersUseCase,
+                        DeleteSchoolClassUseCase deleteSchoolClassUseCase,
                         DeleteSchoolClassUserUseCase deleteSchoolClassUserUseCase, 
                         UpdateSchoolClassUserStatusUseCase updateSchoolClassUserStatusUseCase, 
                         PreviewSchoolClassImportFromFileUseCase previewSchoolClassImportFromFileUseCase, 
@@ -190,6 +196,7 @@ public class SchoolController {
                     ) {
         this.createSchoolClassUseCase = createSchoolClassUseCase;
         this.createSchoolClassUserUseCase = createSchoolClassUserUseCase;
+        this.bulkCreateSchoolClassUsersUseCase = bulkCreateSchoolClassUsersUseCase;
         this.deleteSchoolClassUseCase = deleteSchoolClassUseCase;
         this.deleteSchoolClassUserUseCase = deleteSchoolClassUserUseCase;
         this.updateSchoolClassUserStatusUseCase = updateSchoolClassUserStatusUseCase;
@@ -273,6 +280,18 @@ public class SchoolController {
         var data = createSchoolClassUserUseCase.execute(command);
         var response = ApiResponse.success("Thêm người dùng vào lớp học thành công", data);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping("/{schoolId}/classes/{classId}/users/bulk")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public ResponseEntity<ApiResponse<BulkCreateSchoolClassUsersResponse>> createClassUsersBulk(
+            @PathVariable("schoolId") UUID schoolId,
+            @PathVariable("classId") UUID classId,
+            @Valid @RequestBody BulkCreateSchoolClassUsersRequest request) {
+        var command = BulkCreateSchoolClassUsersCommandMapper.fromRequest(schoolId, classId, request);
+        var data = bulkCreateSchoolClassUsersUseCase.execute(command);
+        var response = ApiResponse.success("Thêm người dùng vào lớp học thành công", data);
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{schoolId}/classes/{classId}/users/{userId}")

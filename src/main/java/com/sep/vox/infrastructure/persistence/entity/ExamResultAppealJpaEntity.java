@@ -47,7 +47,7 @@ public class ExamResultAppealJpaEntity {
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
             name = "chk_exam_result_appeals_status_valid",
-            constraint = "status IN ('PENDING', 'APPROVED', 'GRADING', 'COMPARING', 'PUBLISHED', 'REJECTED')"
+            constraint = "status IN ('PENDING', 'APPROVED', 'GRADING', 'PUBLISHED', 'REJECTED', 'WITHDRAWN')"
         )
     })
     private String status;
@@ -78,12 +78,25 @@ public class ExamResultAppealJpaEntity {
     @Column(name = "decision_note", length = 512)
     private String decisionNote;
 
+    /** Học sinh tự rút đơn lúc nào; lượt phúc khảo được hoàn lại. */
+    @Column(name = "withdrawn_at")
+    private Instant withdrawnAt;
+
+    /**
+     * Lý do admin cố tình giao cho người ĐÃ TỪNG chấm bài này. Bắt buộc khi override
+     * luật xung đột lợi ích — trường nhỏ không đủ giáo viên là có thật, nhưng phải
+     * để lại dấu vết.
+     */
+    @Column(name = "reviewer_override_reason", columnDefinition = "TEXT")
+    private String reviewerOverrideReason;
+
     protected ExamResultAppealJpaEntity() {}
 
     public ExamResultAppealJpaEntity(UUID id, UUID candidateResultId, UUID requestedBy, String reason,
             Instant requestedAt, String status, BigDecimal scoreBefore,
             BigDecimal scoreAfter, UUID resolvedBy, Instant resolvedAt, String notes,
-            Instant deadline, Instant approvedAt, String decisionNote) {
+            Instant deadline, Instant approvedAt, String decisionNote,
+            Instant withdrawnAt, String reviewerOverrideReason) {
         this.id = id;
         this.candidateResultId = candidateResultId;
         this.requestedBy = requestedBy;
@@ -98,6 +111,8 @@ public class ExamResultAppealJpaEntity {
         this.deadline = deadline;
         this.approvedAt = approvedAt;
         this.decisionNote = decisionNote;
+        this.withdrawnAt = withdrawnAt;
+        this.reviewerOverrideReason = reviewerOverrideReason;
     }
 
     public UUID getId() {
@@ -210,5 +225,21 @@ public class ExamResultAppealJpaEntity {
 
     public void setDecisionNote(String decisionNote) {
         this.decisionNote = decisionNote;
+    }
+
+    public Instant getWithdrawnAt() {
+        return withdrawnAt;
+    }
+
+    public void setWithdrawnAt(Instant withdrawnAt) {
+        this.withdrawnAt = withdrawnAt;
+    }
+
+    public String getReviewerOverrideReason() {
+        return reviewerOverrideReason;
+    }
+
+    public void setReviewerOverrideReason(String reviewerOverrideReason) {
+        this.reviewerOverrideReason = reviewerOverrideReason;
     }
 }

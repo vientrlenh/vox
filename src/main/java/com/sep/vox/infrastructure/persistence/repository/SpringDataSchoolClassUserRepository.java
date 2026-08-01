@@ -23,6 +23,39 @@ public interface SpringDataSchoolClassUserRepository extends JpaRepository<Schoo
     Page<SchoolClassUserJpaEntity> findBySchoolClassId(UUID schoolClassId, Pageable pageable);
     boolean existsBySchoolClassId(UUID schoolClassId);
 
+    // Lọc vai trò bằng EXISTS chứ không JOIN role: user mang nhiều vai trò sẽ bị
+    // nhân dòng nếu JOIN, làm sai cả nội dung trang lẫn totalElements.
+    @Query("""
+        SELECT scu
+        FROM SchoolClassUserJpaEntity scu
+        JOIN UserJpaEntity u ON u.id = scu.userId
+        WHERE scu.schoolClassId = :schoolClassId
+            AND (:searchPattern IS NULL
+                OR LOWER(u.fullName) LIKE :searchPattern
+                OR LOWER(u.email) LIKE :searchPattern)
+            AND (:roleCode IS NULL OR EXISTS (
+                SELECT 1
+                FROM UserRoleJpaEntity ur
+                JOIN RoleJpaEntity r ON r.id = ur.roleId
+                WHERE ur.userId = u.id
+                    AND r.code = :roleCode))
+        ORDER BY u.fullName ASC, scu.id ASC
+        """)
+    Page<SchoolClassUserJpaEntity> findBySchoolClassIdWithFilters(
+        @Param("schoolClassId") UUID schoolClassId,
+        @Param("roleCode") String roleCode,
+        @Param("searchPattern") String searchPattern,
+        Pageable pageable);
+
+    @Query("""
+        SELECT scu.schoolClassId, COUNT(scu.id)
+        FROM SchoolClassUserJpaEntity scu
+        WHERE scu.schoolClassId IN :schoolClassIds
+            AND scu.isActive = true
+        GROUP BY scu.schoolClassId
+        """)
+    List<Object[]> countActiveBySchoolClassIdIn(@Param("schoolClassIds") Collection<UUID> schoolClassIds);
+
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
         UPDATE SchoolClassUserJpaEntity m

@@ -5,9 +5,13 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.common.ExamScheduleWindowMessages;
+import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamScheduleStatus;
 import com.sep.vox.domain.repository.ExamPaperItemRepository;
 import com.sep.vox.domain.repository.ExamPaperRepository;
 import com.sep.vox.domain.repository.ExamRepository;
+import com.sep.vox.domain.repository.ExamScheduleRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 
 /**
@@ -22,16 +26,19 @@ public class RecalculateExamTimeDurationService {
     private final ExamPaperRepository examPaperRepository;
     private final ExamPaperItemRepository examPaperItemRepository;
     private final QuestionRepository questionRepository;
+    private final ExamScheduleRepository examScheduleRepository;
 
     public RecalculateExamTimeDurationService(
             ExamRepository examRepository,
             ExamPaperRepository examPaperRepository,
             ExamPaperItemRepository examPaperItemRepository,
-            QuestionRepository questionRepository) {
+            QuestionRepository questionRepository,
+            ExamScheduleRepository examScheduleRepository) {
         this.examRepository = examRepository;
         this.examPaperRepository = examPaperRepository;
         this.examPaperItemRepository = examPaperItemRepository;
         this.questionRepository = questionRepository;
+        this.examScheduleRepository = examScheduleRepository;
     }
 
     @Transactional
@@ -68,6 +75,25 @@ public class RecalculateExamTimeDurationService {
         }
 
         exam.setExamTimeDurationSecond(maxDuration);
+        requireActiveSchedulesStillFit(exam);
         examRepository.save(exam);
+    }
+
+    /**
+     * Thời gian làm bài tăng lên có thể khiến ca thi đã lên lịch không còn đủ dài. Chặn tại đây thay vì
+     * để lọt: mọi caller đều @Transactional nên thao tác sửa đề bị rollback, dữ liệu không bao giờ rơi
+     * vào trạng thái ca thi ngắn hơn đề. Chỉ xét ca còn sẽ diễn ra (findByExamId đã loại DELETED).
+     */
+    private void requireActiveSchedulesStillFit(Exam exam) {
+        var tooShortCount = examScheduleRepository.findByExamId(exam.getId()).stream()
+            .filter(schedule -> schedule.getStatus() == ExamScheduleStatus.DRAFT
+                || schedule.getStatus() == ExamScheduleStatus.PUBLISHED)
+            .filter(schedule -> exam.isScheduleWindowShorterThanExamTime(
+                schedule.getStartDate(), schedule.getEndDate()))
+            .count();
+        if (tooShortCount > 0) {
+            throw new IllegalStateException(
+                ExamScheduleWindowMessages.schedulesNoLongerFit((int) tooShortCount, exam));
+        }
     }
 }

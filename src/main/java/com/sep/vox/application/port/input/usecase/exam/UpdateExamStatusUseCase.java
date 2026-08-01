@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.ExamCandidateStatusSupport;
+import com.sep.vox.application.common.ExamScheduleWindowMessages;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
@@ -243,6 +244,12 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
         }
         if (!exam.getOpenAt().isBefore(exam.getCloseAt())) {
             throw new IllegalStateException("Thời gian mở bài phải nhỏ hơn thời gian đóng bài");
+        }
+        // Ca thi của bài trên lớp bám đúng khung mở/đóng, nên khung phải đủ cho thời gian làm bài.
+        // Đặt ở đây (không phải CreateClassTestUseCase.createDraftSchedule) vì lúc tạo ca thi thì
+        // examTimeDurationSecond còn là giá trị thô người dùng nhập, chưa qua recalculate.
+        if (exam.isScheduleWindowShorterThanExamTime(exam.getOpenAt(), exam.getCloseAt())) {
+            throw new IllegalStateException(ExamScheduleWindowMessages.schedulesNoLongerFit(1, exam));
         }
     }
 

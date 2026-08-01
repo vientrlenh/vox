@@ -1,22 +1,23 @@
+"""
+COMPARING đã bị bỏ cùng bước admin công bố: chỉ còn MỘT người chấm, và người đó nộp
+điểm là công bố luôn. WITHDRAWN là học sinh tự rút khi đơn còn PENDING.
+"""
 enum AppealStatus {
     PENDING
     APPROVED
     GRADING
-    COMPARING
     PUBLISHED
     REJECTED
-}
-
-enum AppealReviewerStatus {
-    ASSIGNED
-    SUBMITTED
+    WITHDRAWN
 }
 
 type AppealStats {
     pending: Int!
-    processing: Int!   # APPROVED + GRADING + COMPARING
+    processing: Int!   # APPROVED + GRADING
     published: Int!
     rejected: Int!
+    "Học sinh tự rút — tách khỏi rejected vì đó là quyết định của học sinh"
+    withdrawn: Int!
 }
 
 type AppealCriterionScore {
@@ -25,15 +26,6 @@ type AppealCriterionScore {
     label: String!
     score: Float!
     rationale: String
-}
-
-type AppealCriterionMeta {
-    id: ID!
-    code: String!
-    label: String!
-    description: String
-    minScore: Float!
-    maxScore: Float!
 }
 
 "Một lượt hỏi-đáp trong bài nói. Mỗi lượt có audio/transcript riêng."
@@ -63,26 +55,22 @@ type AppealItem {
     finalScore: Float
 }
 
-"Báo cáo chấm lại của một giám khảo cho một phần thi."
-type AppealReviewerItem {
-    appealItemId: ID!
-    partLabel: String
-    suggestedScore: Float!
-    note: String
-    scores: [AppealCriterionScore!]!
-}
-
+"""
+Người chấm phúc khảo — chỉ MỘT người, và dữ liệu đến từ dòng phân công vòng APPEAL
+(bảng exam_appeal_reviewers đã bị bỏ).
+"""
 type AppealReviewer {
+    assignmentId: ID!
     reviewerId: ID!
-    reviewerName: String!
-    status: AppealReviewerStatus!
-    done: Boolean!
-    assignedAt: String!
-    submittedAt: String
-    "Trung bình điểm đề xuất của các phần; null khi chưa nộp"
-    suggestedScore: Float
-    "Rỗng khi giám khảo chưa nộp báo cáo"
-    items: [AppealReviewerItem!]!
+    reviewerName: String
+    "ASSIGNED | COMPLETED"
+    status: GradingAssignmentStatus!
+    "UPHELD | REGRADED | DECLINED; null khi chưa nộp"
+    outcome: GradingOutcome
+    assignedAt: String
+    completedAt: String
+    deadlineAt: String
+    overdue: Boolean!
 }
 
 type AppealSummary {
@@ -96,8 +84,9 @@ type AppealSummary {
     status: AppealStatus!
     requestedAt: String!
     deadline: String
-    reviewerCount: Int!
-    doneCount: Int!
+    "Người chấm duy nhất; null khi chưa phân công"
+    reviewerName: String
+    reviewerStatus: GradingAssignmentStatus
     "Đơn còn đang xử lý và đã quá hạn deadline"
     overdue: Boolean!
 }
@@ -126,54 +115,31 @@ type AppealDetail {
     finalScore: Float
     approvedAt: String
     resolvedAt: String
-    "Các phần thi được phúc khảo, mỗi phần kèm điểm AI gốc và lượt nói riêng"
+    withdrawnAt: String
+    "Lý do admin giao cho người đã từng chấm bài này; null khi không override"
+    reviewerOverrideReason: String
+    "Các phần thi được phúc khảo, mỗi phần kèm điểm gốc và lượt nói riêng"
     items: [AppealItem!]!
-    reviewers: [AppealReviewer!]!
+    "Chỉ MỘT người chấm; null khi chưa phân công"
+    reviewer: AppealReviewer
     "Đơn còn đang xử lý và đã quá hạn deadline"
     overdue: Boolean!
-    "Thang điểm rubric — khoảng BE validate partScore khi công bố"
+    "Thang điểm rubric — khoảng BE validate điểm tiêu chí khi chấm lại"
     scoringScaleMin: Float!
     scoringScaleMax: Float!
 }
 
-"Góc nhìn giám khảo"
-type AppealTask {
-    appealId: ID!
-    examName: String!
-    partLabels: [String!]!
-    deadline: String
-    myStatus: AppealReviewerStatus!
-    "Việc chưa nộp và đã quá hạn deadline"
-    overdue: Boolean!
-}
-
-type AppealTaskPage {
-    content: [AppealTask!]!
-    page: Int!
-    size: Int!
-    totalElements: Int!
-    totalPages: Int!
-}
-
 """
-Màn chấm lại của giám khảo. Có baselineScores để tham chiếu, nhưng KHÔNG có báo cáo
-của giám khảo khác — tránh thiên lệch.
+Ứng viên cho picker phân công. Người xung đột lợi ích KHÔNG bị lọc bỏ mà mang cờ
+`conflicted` — admin cần thấy họ để hiểu vì sao lựa chọn hẹp, và vẫn override được.
 """
-type AppealTaskDetail {
-    appealId: ID!
-    "Các phần thi phải chấm lại, mỗi phần kèm lượt nói và điểm đối chiếu riêng"
-    items: [AppealItem!]!
-    criteria: [AppealCriterionMeta!]!
-    "Báo cáo của chính mình theo từng phần; rỗng nếu chưa nộp"
-    myReport: [AppealReviewerItem!]!
-}
-
-"Ứng viên cho picker phân công"
 type AppealReviewerLite {
     id: ID!
     name: String!
-    "Số việc chấm lại đang giữ (status = ASSIGNED)"
+    "Số phân công đang mở đang giữ, gộp cả bốn vòng"
     load: Int!
+    "Đã từng ghi điểm tay cho chính bài này"
+    conflicted: Boolean!
 }
 
 extend type Query {
@@ -184,10 +150,10 @@ extend type Query {
 
     appeal(id: ID!): AppealDetail!
 
-    "Việc chấm lại của giám khảo đang đăng nhập. Phân trang 0-based."
-    myAppealTasks(status: AppealReviewerStatus, page: Int = 0, size: Int = 20): AppealTaskPage!
-
-    appealTaskDetail(appealId: ID!): AppealTaskDetail!
-
-    appealReviewers(keyword: String): [AppealReviewerLite!]!
+    """
+    Ứng viên chấm phúc khảo cho một đơn. `appealId` là bắt buộc về mặt nghiệp vụ —
+    cờ `conflicted` tính theo bài thi của đơn đó, bỏ trống thì mọi người đều hiện
+    `conflicted: false`.
+    """
+    appealReviewers(appealId: ID, keyword: String): [AppealReviewerLite!]!
 }

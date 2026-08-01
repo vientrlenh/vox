@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.service;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
@@ -88,26 +89,30 @@ public class ExamGradingAccessService {
         return loadFromCandidateResult(assignment, assignment.getCandidateResultId());
     }
 
-    @Transactional(readOnly = true)
-    public GradingContext loadByCandidateResultId(UUID candidateResultId) {
-        var assignment = examGradingAssignmentRepository.findByCandidateResultId(candidateResultId).orElse(null);
-        return loadFromCandidateResult(assignment, candidateResultId);
+    /**
+     * Như {@link #load} nhưng khoá dòng phân công để ghi.
+     *
+     * <p>Dùng cho mọi luồng đọc-sửa-ghi trên một phân công. Không có khoá, hai request
+     * cùng đọc một dòng ASSIGNED sẽ cùng vượt qua các kiểm tra kiểu {@code isCompleted()}
+     * rồi cùng ghi — mà {@code save} ở đây là {@code merge} trên POJO detached nên ghi đè
+     * trọn cả dòng. Khoá cho luồng sau chờ, đọc lại trạng thái đã cập nhật, và ném đúng
+     * thông báo nghiệp vụ thay vì lặng lẽ chấm đè.
+     *
+     * <p>{@code MANDATORY} vì khoá chỉ có nghĩa khi nằm trong transaction ghi của use
+     * case: nếu tự mở transaction riêng, khoá sẽ nhả ngay khi hàm này trả về.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public GradingContext loadForUpdate(UUID assignmentId) {
+        var assignment = examGradingAssignmentRepository.findByIdForUpdate(assignmentId)
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy phân công chấm bài."));
+        return loadFromCandidateResult(assignment, assignment.getCandidateResultId());
     }
 
-    /**
-     * Điểm vào chung cho mọi thao tác chấm: {@code assignmentId} cho luồng giáo
-     * viên (đã có phân công), {@code candidateResultId} cho luồng nhà trường chấm
-     * trực tiếp (có thể chưa có phân công nào). Đúng một trong hai phải khác null.
-     */
     @Transactional(readOnly = true)
-    public GradingContext loadForGrading(UUID assignmentId, UUID candidateResultId) {
-        if (assignmentId != null) {
-            return load(assignmentId);
-        }
-        if (candidateResultId != null) {
-            return loadByCandidateResultId(candidateResultId);
-        }
-        throw new NotFoundException("Thiếu assignmentId hoặc candidateResultId để chấm bài.");
+    public GradingContext loadByCandidateResultId(UUID candidateResultId) {
+        var assignment = examGradingAssignmentRepository.findOpenByCandidateResultId(candidateResultId)
+            .orElse(null);
+        return loadFromCandidateResult(assignment, candidateResultId);
     }
 
     private GradingContext loadFromCandidateResult(ExamGradingAssignment assignment, UUID candidateResultId) {
@@ -129,21 +134,19 @@ public class ExamGradingAccessService {
     }
 
     /**
-     * Chốt phân quyền cho mọi thao tác chấm — kể cả gỡ cờ và đánh INVALID. Cho qua
-     * khi: (a) chính giáo viên được gán bài này, HOẶC (b) SCHOOL_ADMIN cùng trường
-     * với kỳ thi — nhà trường luôn xem/chấm/chỉnh lại được bất kỳ bài PENDING_REVIEW
-     * nào của trường mình, kể cả bài chưa có phân công hoặc đang gán cho giáo viên
-     * khác (không cần tự gán trước).
+     * Chính giáo viên được gán bài này. Đây là chốt phân quyền duy nhất cho mọi
+     * thao tác chấm — kể cả gỡ cờ và đánh INVALID.
+     *
+     * <p>School admin KHÔNG được đi cửa này: quyền chấm đến từ chính dòng phân công,
+     * và vòng chấm ({@code roundType}) — thứ quyết định hành động nào hợp lệ và bài
+     * được chuyển sang trạng thái nào — cũng nằm ở đó. Nhà trường muốn chấm thì tự
+     * gán qua {@code authorizeSchoolAdmin}, để lại một dòng phân công có vòng rõ ràng.
      */
-    public void authorizeGrader(GradingContext context, UUID currentUserId) {
+    public void authorizeAssignedTeacher(GradingContext context, UUID currentUserId) {
         var assignment = context.assignment();
-        if (assignment != null && currentUserId.equals(assignment.getTeacherId())) {
-            return;
+        if (assignment == null || !currentUserId.equals(assignment.getTeacherId())) {
+            throw new ForbiddenException("BẢO MẬT: Bạn không được phân công chấm bài thi này.");
         }
-        if (isSchoolAdminOfSchool(context.schoolId(), currentUserId)) {
-            return;
-        }
-        throw new ForbiddenException("BẢO MẬT: Bạn không được phân công chấm bài thi này.");
     }
 
     private boolean isSchoolAdminOfSchool(UUID schoolId, UUID currentUserId) {

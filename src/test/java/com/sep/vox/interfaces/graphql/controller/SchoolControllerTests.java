@@ -361,7 +361,7 @@ class SchoolControllerTests {
         var page = new PageResult<>(List.of(response), 1, 20, 1, 1);
         when(viewSchoolUsersBySchoolUseCase.execute(new ViewSchoolUsersBySchoolQuery(schoolId, 1, 20, null, null, null))).thenReturn(page);
 
-        var result = controller.schoolUsersBySchool(schoolId, 1, 20, null, null, null);
+        var result = controller.schoolUsersBySchool(schoolId, 1, 20, null, null, null, null, null);
 
         assertThat(result).isEqualTo(page);
         assertThat(result.content()).containsExactly(response);
@@ -435,7 +435,7 @@ class SchoolControllerTests {
 
     @Test
     void school_users_by_school_field_should_reject_invalid_paging() {
-        assertThatThrownBy(() -> controller.schoolUsersBySchool(schoolId, 0, 20, null, null, null))
+        assertThatThrownBy(() -> controller.schoolUsersBySchool(schoolId, 0, 20, null, null, null, null, null))
             .isInstanceOf(IllegalStateException.class)
             .hasMessage("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
     }

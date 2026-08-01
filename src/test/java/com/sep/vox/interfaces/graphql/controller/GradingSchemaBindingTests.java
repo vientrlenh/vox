@@ -17,6 +17,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import com.sep.vox.application.query.dto.AiQualityReportInfo;
 import com.sep.vox.application.query.dto.AssignableTeacherInfo;
 import com.sep.vox.application.query.dto.GradingAssignmentRowInfo;
 import com.sep.vox.application.query.dto.GradingCriterionMetaInfo;
@@ -26,6 +27,7 @@ import com.sep.vox.application.query.dto.GradingTaskDetailInfo;
 import com.sep.vox.application.query.dto.GradingTaskInfo;
 import com.sep.vox.application.query.dto.GradingTaskItemInfo;
 import com.sep.vox.application.query.dto.GradingTurnInfo;
+import com.sep.vox.application.query.dto.ResultStatusHistoryInfo;
 
 /**
  * Spring GraphQL nối field với property theo TÊN. Lệch một chữ thì field đó trả
@@ -46,6 +48,8 @@ class GradingSchemaBindingTests {
     static Stream<Arguments> typesBackedByDto() {
         return Stream.of(
             Arguments.of("GradingStats", GradingStatsInfo.class),
+            Arguments.of("GradingTeacherProgress", GradingStatsInfo.TeacherProgress.class),
+            Arguments.of("GradingResultStatusCount", GradingStatsInfo.ResultStatusCount.class),
             Arguments.of("GradingTurn", GradingTurnInfo.class),
             Arguments.of("GradingCriterionScore", GradingCriterionScoreInfo.class),
             Arguments.of("GradingCriterionMeta", GradingCriterionMetaInfo.class),
@@ -53,7 +57,10 @@ class GradingSchemaBindingTests {
             Arguments.of("GradingTaskDetail", GradingTaskDetailInfo.class),
             Arguments.of("GradingTask", GradingTaskInfo.class),
             Arguments.of("GradingAssignmentRow", GradingAssignmentRowInfo.class),
-            Arguments.of("AssignableTeacher", AssignableTeacherInfo.class)
+            Arguments.of("AssignableTeacher", AssignableTeacherInfo.class),
+            Arguments.of("ResultStatusHistoryEntry", ResultStatusHistoryInfo.class),
+            Arguments.of("AiQualityReport", AiQualityReportInfo.class),
+            Arguments.of("AiQualityByTeacher", AiQualityReportInfo.ByTeacher.class)
         );
     }
 

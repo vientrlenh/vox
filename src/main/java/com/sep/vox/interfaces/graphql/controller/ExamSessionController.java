@@ -14,8 +14,6 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.DecideExamCandidateResultOutcomeCommand;
 import com.sep.vox.application.port.input.command.FlagExamSessionCommand;
 import com.sep.vox.application.port.input.command.ForceEndExamSessionCommand;
-import com.sep.vox.application.port.input.command.ReleasePendingExamResultCommand;
-import com.sep.vox.application.port.input.command.ReviewFlaggedExamResultCommand;
 import com.sep.vox.application.port.input.command.RetryGradingExamSessionCommand;
 import com.sep.vox.application.port.input.command.SubmitExamSessionCommand;
 import com.sep.vox.application.port.input.command.UnblockExamCandidateCommand;
@@ -34,8 +32,6 @@ import com.sep.vox.application.port.input.usecase.examitemresponse.ViewExamSessi
 import com.sep.vox.application.port.input.usecase.examsession.DecideExamCandidateResultOutcomeUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.FlagExamSessionUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.ForceEndExamSessionUseCase;
-import com.sep.vox.application.port.input.usecase.examsession.ReleasePendingExamResultUseCase;
-import com.sep.vox.application.port.input.usecase.examsession.ReviewFlaggedExamResultUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.RetryGradingExamSessionUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.SubmitExamSessionUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.ViewExamSessionResultUseCase;
@@ -65,8 +61,6 @@ public class ExamSessionController {
     private final FlagExamSessionUseCase flagExamSessionUseCase;
     private final ForceEndExamSessionUseCase forceEndExamSessionUseCase;
     private final UnblockExamCandidateUseCase unblockExamCandidateUseCase;
-    private final ReviewFlaggedExamResultUseCase reviewFlaggedExamResultUseCase;
-    private final ReleasePendingExamResultUseCase releasePendingExamResultUseCase;
     private final DecideExamCandidateResultOutcomeUseCase decideExamCandidateResultOutcomeUseCase;
     private final RetryGradingExamSessionUseCase retryGradingExamSessionUseCase;
     private final SubmitExamSessionUseCase submitExamSessionUseCase;
@@ -84,8 +78,6 @@ public class ExamSessionController {
             FlagExamSessionUseCase flagExamSessionUseCase,
             ForceEndExamSessionUseCase forceEndExamSessionUseCase,
             UnblockExamCandidateUseCase unblockExamCandidateUseCase,
-            ReviewFlaggedExamResultUseCase reviewFlaggedExamResultUseCase,
-            ReleasePendingExamResultUseCase releasePendingExamResultUseCase,
             DecideExamCandidateResultOutcomeUseCase decideExamCandidateResultOutcomeUseCase,
             RetryGradingExamSessionUseCase retryGradingExamSessionUseCase,
             SubmitExamSessionUseCase submitExamSessionUseCase,GetExamRecordsUseCase getExamRecordsUseCase) {
@@ -99,8 +91,6 @@ public class ExamSessionController {
         this.flagExamSessionUseCase = flagExamSessionUseCase;
         this.forceEndExamSessionUseCase = forceEndExamSessionUseCase;
         this.unblockExamCandidateUseCase = unblockExamCandidateUseCase;
-        this.reviewFlaggedExamResultUseCase = reviewFlaggedExamResultUseCase;
-        this.releasePendingExamResultUseCase = releasePendingExamResultUseCase;
         this.decideExamCandidateResultOutcomeUseCase = decideExamCandidateResultOutcomeUseCase;
         this.retryGradingExamSessionUseCase = retryGradingExamSessionUseCase;
         this.submitExamSessionUseCase = submitExamSessionUseCase;
@@ -190,19 +180,10 @@ public class ExamSessionController {
         return unblockExamCandidateUseCase.execute(new UnblockExamCandidateCommand(candidateId, reason)).id();
     }
 
-    @MutationMapping
-    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
-    public UUID reviewFlaggedExamResult(
-            @Argument(name = "candidateResultId") UUID candidateResultId,
-            @Argument(name = "decision") ExamCandidateResultStatus decision) {
-        return reviewFlaggedExamResultUseCase.execute(new ReviewFlaggedExamResultCommand(candidateResultId, decision));
-    }
-
-    @MutationMapping
-    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
-    public UUID releasePendingExamResult(@Argument(name = "sessionId") UUID sessionId) {
-        return releasePendingExamResultUseCase.execute(new ReleasePendingExamResultCommand(sessionId));
-    }
+    // reviewFlaggedExamResult / releasePendingExamResult đã bị gỡ khỏi quyền admin:
+    // người quyết là GIÁO VIÊN ĐANG CẦM BÀI, qua /uphold, /regrade, /invalidate của
+    // GradingAssignmentController. Admin đi duyệt lại từng bài là nút cổ chai không
+    // tạo giá trị — xem AI/claude/plans.md 2026-07-26.
 
     @MutationMapping
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")

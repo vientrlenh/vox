@@ -18,13 +18,19 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateFrameworkVersionStatusCommand;
 import com.sep.vox.application.port.input.usecase.framework.UpdateFrameworkVersionStatusUseCase;
 import com.sep.vox.domain.model.framework.Framework;
+import com.sep.vox.domain.model.framework.FrameworkCriterion;
+import com.sep.vox.domain.model.framework.FrameworkCriterionBand;
 import com.sep.vox.domain.model.framework.FrameworkVersion;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
+import com.sep.vox.domain.repository.FrameworkCriterionBandRepository;
 import com.sep.vox.domain.repository.FrameworkCriterionRepository;
 import com.sep.vox.domain.repository.FrameworkRepository;
 import com.sep.vox.domain.repository.FrameworkResultBandRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
 import com.sep.vox.domain.valueobject.FrameworkCode;
+import com.sep.vox.domain.valueobject.framework.FrameworkCriterionSignal;
+import com.sep.vox.domain.valueobject.framework.FrameworkCriterionSignalImportance;
+import com.sep.vox.domain.valueobject.framework.FrameworkCriterionSignals;
 
 public class UpdateFrameworkVersionStatusUseCaseTests {
 
@@ -32,6 +38,7 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
     private FrameworkVersionRepository frameworkVersionRepository;
     private FrameworkCriterionRepository frameworkCriterionRepository;
     private FrameworkResultBandRepository frameworkResultBandRepository;
+    private FrameworkCriterionBandRepository frameworkCriterionBandRepository;
     private UpdateFrameworkVersionStatusUseCase useCase;
 
     private UUID frameworkId = UUID.randomUUID();
@@ -44,9 +51,11 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
         frameworkVersionRepository = mock(FrameworkVersionRepository.class);
         frameworkCriterionRepository = mock(FrameworkCriterionRepository.class);
         frameworkResultBandRepository = mock(FrameworkResultBandRepository.class);
+        frameworkCriterionBandRepository = mock(FrameworkCriterionBandRepository.class);
         useCase = new UpdateFrameworkVersionStatusUseCase(
             frameworkRepository, frameworkVersionRepository,
-            frameworkCriterionRepository, frameworkResultBandRepository);
+            frameworkCriterionRepository, frameworkResultBandRepository,
+            frameworkCriterionBandRepository);
     }
 
     @Test
@@ -68,8 +77,22 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
 
         when(frameworkRepository.findFrameworkByIdForUpdate(frameworkId)).thenReturn(Optional.of(framework));
         when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.of(version));
+        var criterion = new FrameworkCriterion(
+            UUID.randomUUID(), versionId, "FLU", "Fluency", "Description", 1, now, now, null, null
+        );
+        var signals = new FrameworkCriterionSignals(List.of(
+            new FrameworkCriterionSignal("S1", "desc", FrameworkCriterionSignalImportance.HIGH, null)
+        ));
+        var band = new FrameworkCriterionBand(
+            UUID.randomUUID(), criterion.getId(), UUID.randomUUID(), "descriptor",
+            signals, signals, now, now, null, null
+        );
+
         when(frameworkCriterionRepository.existsByFrameworkVersionId(versionId)).thenReturn(true);
         when(frameworkResultBandRepository.existsByFrameworkVersionId(versionId)).thenReturn(true);
+        when(frameworkCriterionRepository.findByFrameworkVersionId(versionId)).thenReturn(List.of(criterion));
+        when(frameworkCriterionBandRepository.findByFrameworkCriterionIdIn(List.of(criterion.getId())))
+            .thenReturn(List.of(band));
         when(frameworkVersionRepository.findByFrameworkIdAndStatus(frameworkId, FrameworkVersionStatus.PUBLISHED))
             .thenReturn(List.of());
         when(frameworkVersionRepository.updateStatus(versionId, FrameworkVersionStatus.PUBLISHED)).thenReturn(1);
@@ -77,6 +100,75 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
         useCase.execute(command);
 
         verify(frameworkVersionRepository).updateStatus(versionId, FrameworkVersionStatus.PUBLISHED);
+    }
+
+    @Test
+    void should_throw_when_criterion_has_no_bands() {
+        var command = new UpdateFrameworkVersionStatusCommand(
+            frameworkId, versionId, FrameworkVersionStatus.PUBLISHED
+        );
+
+        var framework = new Framework(
+            frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
+            true, now, now, null, null
+        );
+        var version = new FrameworkVersion();
+        version.setId(versionId);
+        version.setFrameworkId(frameworkId);
+        version.setEffectiveFrom(now);
+        version.setEffectiveTo(now.plus(30, ChronoUnit.DAYS));
+        version.setStatus(FrameworkVersionStatus.DRAFT);
+
+        var criterion = new FrameworkCriterion(
+            UUID.randomUUID(), versionId, "FLU", "Fluency", "Description", 1, now, now, null, null
+        );
+
+        when(frameworkRepository.findFrameworkByIdForUpdate(frameworkId)).thenReturn(Optional.of(framework));
+        when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.of(version));
+        when(frameworkCriterionRepository.existsByFrameworkVersionId(versionId)).thenReturn(true);
+        when(frameworkResultBandRepository.existsByFrameworkVersionId(versionId)).thenReturn(true);
+        when(frameworkCriterionRepository.findByFrameworkVersionId(versionId)).thenReturn(List.of(criterion));
+        when(frameworkCriterionBandRepository.findByFrameworkCriterionIdIn(List.of(criterion.getId())))
+            .thenReturn(List.of());
+
+        assertThrows(IllegalStateException.class, () -> useCase.execute(command));
+    }
+
+    @Test
+    void should_throw_when_criterion_band_missing_signals() {
+        var command = new UpdateFrameworkVersionStatusCommand(
+            frameworkId, versionId, FrameworkVersionStatus.PUBLISHED
+        );
+
+        var framework = new Framework(
+            frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
+            true, now, now, null, null
+        );
+        var version = new FrameworkVersion();
+        version.setId(versionId);
+        version.setFrameworkId(frameworkId);
+        version.setEffectiveFrom(now);
+        version.setEffectiveTo(now.plus(30, ChronoUnit.DAYS));
+        version.setStatus(FrameworkVersionStatus.DRAFT);
+
+        var criterion = new FrameworkCriterion(
+            UUID.randomUUID(), versionId, "FLU", "Fluency", "Description", 1, now, now, null, null
+        );
+        var emptySignals = new FrameworkCriterionSignals(List.of());
+        var band = new FrameworkCriterionBand(
+            UUID.randomUUID(), criterion.getId(), UUID.randomUUID(), "descriptor",
+            emptySignals, emptySignals, now, now, null, null
+        );
+
+        when(frameworkRepository.findFrameworkByIdForUpdate(frameworkId)).thenReturn(Optional.of(framework));
+        when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.of(version));
+        when(frameworkCriterionRepository.existsByFrameworkVersionId(versionId)).thenReturn(true);
+        when(frameworkResultBandRepository.existsByFrameworkVersionId(versionId)).thenReturn(true);
+        when(frameworkCriterionRepository.findByFrameworkVersionId(versionId)).thenReturn(List.of(criterion));
+        when(frameworkCriterionBandRepository.findByFrameworkCriterionIdIn(List.of(criterion.getId())))
+            .thenReturn(List.of(band));
+
+        assertThrows(IllegalStateException.class, () -> useCase.execute(command));
     }
 
     @Test

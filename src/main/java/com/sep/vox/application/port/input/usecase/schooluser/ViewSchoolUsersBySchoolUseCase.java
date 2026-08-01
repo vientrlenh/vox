@@ -1,11 +1,13 @@
 package com.sep.vox.application.port.input.usecase.schooluser;
 
 
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.common.RoleConstant;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
@@ -23,6 +25,9 @@ import com.sep.vox.domain.repository.UserRepository;
 
 @Service
 public class ViewSchoolUsersBySchoolUseCase implements IUseCase<ViewSchoolUsersBySchoolQuery, PageResult<SchoolUserDto>> {
+
+    private static final Set<String> ADMIN_ROLE_CODES =
+        Set.of(RoleConstant.SCHOOL_ADMIN_ROLE, RoleConstant.SYSTEM_ADMIN_ROLE);
 
     private final UserContextPort userContextPort;
     private final UserRepository userRepository;
@@ -66,11 +71,26 @@ public class ViewSchoolUsersBySchoolUseCase implements IUseCase<ViewSchoolUsersB
             roleId,
             status,
             input.excludeClassId(),
+            !isAdminRoleFilter(roleId),
             input.page(),
             input.size()
         );
 
         return SchoolUserDtoMapper.toSchoolUserPageDto(schoolUsersPage);
+    }
+
+    /**
+     * Danh sách người dùng của trường luôn ẩn tài khoản quản trị (các màn hình dùng nó — xếp lớp,
+     * chọn giáo viên/học sinh — không thao tác trên quản trị viên). Chỉ khi client lọc đúng vai trò
+     * quản trị thì mới trả về họ.
+     */
+    private boolean isAdminRoleFilter(UUID roleId) {
+        if (roleId == null) {
+            return false;
+        }
+        return roleRepository.findById(roleId)
+            .map(role -> ADMIN_ROLE_CODES.contains(role.getCode().value()))
+            .orElse(false);
     }
 
     /**

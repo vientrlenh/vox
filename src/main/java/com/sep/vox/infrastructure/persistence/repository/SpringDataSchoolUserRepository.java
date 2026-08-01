@@ -51,6 +51,11 @@ public interface SpringDataSchoolUserRepository extends JpaRepository<SchoolUser
     Optional<SchoolUserJpaEntity> findBySchoolIdAndUserId(UUID schoolId, UUID userId);
     boolean existsBySchoolIdAndUserId(UUID schoolId, UUID userId);
 
+    /**
+     * {@code excludeAdminRoles} loại quản trị viên (SCHOOL_ADMIN/SYSTEM_ADMIN) khỏi kết quả: các
+     * màn hình chọn người dùng của trường (xếp lớp, danh sách giáo viên/học sinh) không bao giờ
+     * thao tác trên tài khoản quản trị.
+     */
     @Query(value = """
         SELECT su FROM SchoolUserJpaEntity su
         JOIN UserJpaEntity u ON u.id = su.userId
@@ -62,6 +67,11 @@ public interface SpringDataSchoolUserRepository extends JpaRepository<SchoolUser
                 SELECT 1 FROM UserRoleJpaEntity ur
                 WHERE ur.userId = u.id
                     AND ur.roleId = :roleId))
+            AND (:excludeAdminRoles = FALSE OR NOT EXISTS (
+                SELECT 1 FROM UserRoleJpaEntity adminUserRole
+                JOIN RoleJpaEntity adminRole ON adminRole.id = adminUserRole.roleId
+                WHERE adminUserRole.userId = u.id
+                    AND adminRole.code IN ('SCHOOL_ADMIN', 'SYSTEM_ADMIN')))
             AND (:excludeClassId IS NULL OR NOT EXISTS (
                 SELECT 1 FROM SchoolClassUserJpaEntity scu
                 WHERE scu.userId = u.id
@@ -80,6 +90,11 @@ public interface SpringDataSchoolUserRepository extends JpaRepository<SchoolUser
                 SELECT 1 FROM UserRoleJpaEntity ur
                 WHERE ur.userId = u.id
                     AND ur.roleId = :roleId))
+            AND (:excludeAdminRoles = FALSE OR NOT EXISTS (
+                SELECT 1 FROM UserRoleJpaEntity adminUserRole
+                JOIN RoleJpaEntity adminRole ON adminRole.id = adminUserRole.roleId
+                WHERE adminUserRole.userId = u.id
+                    AND adminRole.code IN ('SCHOOL_ADMIN', 'SYSTEM_ADMIN')))
             AND (:excludeClassId IS NULL OR NOT EXISTS (
                 SELECT 1 FROM SchoolClassUserJpaEntity scu
                 WHERE scu.userId = u.id
@@ -93,5 +108,6 @@ public interface SpringDataSchoolUserRepository extends JpaRepository<SchoolUser
         @Param("roleId") UUID roleId,
         @Param("status") String status,
         @Param("excludeClassId") UUID excludeClassId,
+        @Param("excludeAdminRoles") boolean excludeAdminRoles,
         Pageable pageable);
 }

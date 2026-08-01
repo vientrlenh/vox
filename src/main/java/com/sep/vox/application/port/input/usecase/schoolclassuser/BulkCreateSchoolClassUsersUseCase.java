@@ -135,8 +135,8 @@ public class BulkCreateSchoolClassUsersUseCase
         if (targetUser == null) {
             return "Không tìm thấy người dùng";
         }
-        if (targetUser.getStatus() != UserStatus.ACTIVE) {
-            return "Người dùng không hoạt động";
+        if (!targetUser.canBeAssignedToSchoolClass()) {
+            return "Người dùng đã bị khoá hoặc vô hiệu hoá";
         }
         if (!Objects.equals(schoolIdsByUserId.get(userId), schoolId)) {
             return "Người dùng không thuộc trường hiện tại";

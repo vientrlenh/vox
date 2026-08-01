@@ -22,6 +22,7 @@ import com.sep.vox.domain.model.framework.FrameworkVersion;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
 import com.sep.vox.domain.repository.FrameworkCriterionRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
+import com.sep.vox.domain.valueobject.framework.FrameworkCriterionCode;
 
 @Service
 public class CreateFrameworkCriteriaUseCase
@@ -87,6 +88,9 @@ public class CreateFrameworkCriteriaUseCase
                 .stream().map(fc ->fc.getOrder()).collect(Collectors.toCollection(HashSet::new));
         for (var criterionCmd : command.criteria()) {
             String safeCode = StringNormalization.normalizeCode(criterionCmd.code());
+            if (!FrameworkCriterionCode.ALLOWED_CODES.contains(safeCode)) {
+                throw new IllegalArgumentException("Mã tiêu chí không hợp lệ: " + safeCode);
+            }
             if (!requestCodes.add(safeCode)) {
                 throw new IllegalArgumentException("Dữ liệu gửi lên bị trùng lặp mã tiêu chí: " + safeCode);
             }

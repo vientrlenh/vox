@@ -20,6 +20,7 @@ import com.sep.vox.domain.repository.FrameworkCriterionRepository;
 import com.sep.vox.domain.repository.FrameworkRepository;
 import com.sep.vox.domain.repository.FrameworkResultBandRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
+import com.sep.vox.domain.valueobject.framework.FrameworkCriterionCode;
 
 @Service
 public class UpdateFrameworkVersionStatusUseCase implements IUseCase<UpdateFrameworkVersionStatusCommand, UUID> {
@@ -90,6 +91,13 @@ public class UpdateFrameworkVersionStatusUseCase implements IUseCase<UpdateFrame
 
     private void validateEveryCriterionHasBandsWithSignals(UUID versionId) {
         List<FrameworkCriterion> criteria = frameworkCriterionRepository.findByFrameworkVersionId(versionId);
+
+        var presentCodes = criteria.stream().map(fc -> fc.getCode()).collect(Collectors.toSet());
+        if (!presentCodes.equals(FrameworkCriterionCode.ALLOWED_CODES)) {
+            throw new IllegalStateException(
+                    "Phiên bản framework phải có đầy đủ và chỉ có 5 tiêu chí: " + FrameworkCriterionCode.ALLOWED_CODES);
+        }
+
         List<UUID> criterionIds = criteria.stream().map(fc -> fc.getId()).collect(Collectors.toList());
         List<FrameworkCriterionBand> bands = frameworkCriterionBandRepository.findByFrameworkCriterionIdIn(criterionIds);
 

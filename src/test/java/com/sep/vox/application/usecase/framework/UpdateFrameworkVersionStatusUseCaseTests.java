@@ -7,9 +7,11 @@ import static org.mockito.Mockito.when;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -58,6 +60,27 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
             frameworkCriterionBandRepository);
     }
 
+    private List<FrameworkCriterion> buildValidCriteria() {
+        List<String> codes = List.of("PRONUNCIATION", "FLUENCY", "GRAMMAR", "VOCABULARY", "COHERENCE");
+        List<FrameworkCriterion> criteria = new ArrayList<>();
+        int order = 1;
+        for (String code : codes) {
+            criteria.add(new FrameworkCriterion(
+                    UUID.randomUUID(), versionId, code, code, "Description", order++, now, now, null, null));
+        }
+        return criteria;
+    }
+
+    private List<FrameworkCriterionBand> buildValidBands(List<FrameworkCriterion> criteria) {
+        var signals = new FrameworkCriterionSignals(List.of(
+                new FrameworkCriterionSignal("S1", "desc", FrameworkCriterionSignalImportance.HIGH, null)));
+        return criteria.stream()
+                .map(criterion -> new FrameworkCriterionBand(
+                        UUID.randomUUID(), criterion.getId(), UUID.randomUUID(), "descriptor",
+                        signals, signals, now, now, null, null))
+                .collect(Collectors.toList());
+    }
+
     @Test
     void should_publish_version_when_no_conflict() {
         var command = new UpdateFrameworkVersionStatusCommand(
@@ -77,22 +100,14 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
 
         when(frameworkRepository.findFrameworkByIdForUpdate(frameworkId)).thenReturn(Optional.of(framework));
         when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.of(version));
-        var criterion = new FrameworkCriterion(
-            UUID.randomUUID(), versionId, "FLU", "Fluency", "Description", 1, now, now, null, null
-        );
-        var signals = new FrameworkCriterionSignals(List.of(
-            new FrameworkCriterionSignal("S1", "desc", FrameworkCriterionSignalImportance.HIGH, null)
-        ));
-        var band = new FrameworkCriterionBand(
-            UUID.randomUUID(), criterion.getId(), UUID.randomUUID(), "descriptor",
-            signals, signals, now, now, null, null
-        );
+        List<FrameworkCriterion> criteria = buildValidCriteria();
+        List<FrameworkCriterionBand> bands = buildValidBands(criteria);
+        List<UUID> criterionIds = criteria.stream().map(fc -> fc.getId()).collect(Collectors.toList());
 
         when(frameworkCriterionRepository.existsByFrameworkVersionId(versionId)).thenReturn(true);
         when(frameworkResultBandRepository.existsByFrameworkVersionId(versionId)).thenReturn(true);
-        when(frameworkCriterionRepository.findByFrameworkVersionId(versionId)).thenReturn(List.of(criterion));
-        when(frameworkCriterionBandRepository.findByFrameworkCriterionIdIn(List.of(criterion.getId())))
-            .thenReturn(List.of(band));
+        when(frameworkCriterionRepository.findByFrameworkVersionId(versionId)).thenReturn(criteria);
+        when(frameworkCriterionBandRepository.findByFrameworkCriterionIdIn(criterionIds)).thenReturn(bands);
         when(frameworkVersionRepository.findByFrameworkIdAndStatus(frameworkId, FrameworkVersionStatus.PUBLISHED))
             .thenReturn(List.of());
         when(frameworkVersionRepository.updateStatus(versionId, FrameworkVersionStatus.PUBLISHED)).thenReturn(1);
@@ -119,17 +134,18 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
         version.setEffectiveTo(now.plus(30, ChronoUnit.DAYS));
         version.setStatus(FrameworkVersionStatus.DRAFT);
 
-        var criterion = new FrameworkCriterion(
-            UUID.randomUUID(), versionId, "FLU", "Fluency", "Description", 1, now, now, null, null
-        );
+        List<FrameworkCriterion> criteria = buildValidCriteria();
+        List<FrameworkCriterionBand> bands = buildValidBands(criteria).stream()
+            .filter(band -> !band.getFrameworkCriterionId().equals(criteria.get(0).getId()))
+            .collect(Collectors.toList());
+        List<UUID> criterionIds = criteria.stream().map(fc -> fc.getId()).collect(Collectors.toList());
 
         when(frameworkRepository.findFrameworkByIdForUpdate(frameworkId)).thenReturn(Optional.of(framework));
         when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.of(version));
         when(frameworkCriterionRepository.existsByFrameworkVersionId(versionId)).thenReturn(true);
         when(frameworkResultBandRepository.existsByFrameworkVersionId(versionId)).thenReturn(true);
-        when(frameworkCriterionRepository.findByFrameworkVersionId(versionId)).thenReturn(List.of(criterion));
-        when(frameworkCriterionBandRepository.findByFrameworkCriterionIdIn(List.of(criterion.getId())))
-            .thenReturn(List.of());
+        when(frameworkCriterionRepository.findByFrameworkVersionId(versionId)).thenReturn(criteria);
+        when(frameworkCriterionBandRepository.findByFrameworkCriterionIdIn(criterionIds)).thenReturn(bands);
 
         assertThrows(IllegalStateException.class, () -> useCase.execute(command));
     }
@@ -151,22 +167,22 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
         version.setEffectiveTo(now.plus(30, ChronoUnit.DAYS));
         version.setStatus(FrameworkVersionStatus.DRAFT);
 
-        var criterion = new FrameworkCriterion(
-            UUID.randomUUID(), versionId, "FLU", "Fluency", "Description", 1, now, now, null, null
-        );
+        List<FrameworkCriterion> criteria = buildValidCriteria();
         var emptySignals = new FrameworkCriterionSignals(List.of());
-        var band = new FrameworkCriterionBand(
-            UUID.randomUUID(), criterion.getId(), UUID.randomUUID(), "descriptor",
-            emptySignals, emptySignals, now, now, null, null
-        );
+        List<FrameworkCriterionBand> bands = buildValidBands(criteria).stream()
+            .map(band -> band.getFrameworkCriterionId().equals(criteria.get(0).getId())
+                ? new FrameworkCriterionBand(band.getId(), band.getFrameworkCriterionId(), band.getFrameworkResultBandId(),
+                    band.getDescriptor(), emptySignals, emptySignals, now, now, null, null)
+                : band)
+            .collect(Collectors.toList());
+        List<UUID> criterionIds = criteria.stream().map(fc -> fc.getId()).collect(Collectors.toList());
 
         when(frameworkRepository.findFrameworkByIdForUpdate(frameworkId)).thenReturn(Optional.of(framework));
         when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.of(version));
         when(frameworkCriterionRepository.existsByFrameworkVersionId(versionId)).thenReturn(true);
         when(frameworkResultBandRepository.existsByFrameworkVersionId(versionId)).thenReturn(true);
-        when(frameworkCriterionRepository.findByFrameworkVersionId(versionId)).thenReturn(List.of(criterion));
-        when(frameworkCriterionBandRepository.findByFrameworkCriterionIdIn(List.of(criterion.getId())))
-            .thenReturn(List.of(band));
+        when(frameworkCriterionRepository.findByFrameworkVersionId(versionId)).thenReturn(criteria);
+        when(frameworkCriterionBandRepository.findByFrameworkCriterionIdIn(criterionIds)).thenReturn(bands);
 
         assertThrows(IllegalStateException.class, () -> useCase.execute(command));
     }
@@ -372,10 +388,16 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
         publishedVersion.setEffectiveTo(now.plus(40, ChronoUnit.DAYS));
         publishedVersion.setStatus(FrameworkVersionStatus.PUBLISHED);
 
+        List<FrameworkCriterion> criteria = buildValidCriteria();
+        List<FrameworkCriterionBand> bands = buildValidBands(criteria);
+        List<UUID> criterionIds = criteria.stream().map(fc -> fc.getId()).collect(Collectors.toList());
+
         when(frameworkRepository.findFrameworkByIdForUpdate(frameworkId)).thenReturn(Optional.of(framework));
         when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.of(version));
         when(frameworkCriterionRepository.existsByFrameworkVersionId(versionId)).thenReturn(true);
         when(frameworkResultBandRepository.existsByFrameworkVersionId(versionId)).thenReturn(true);
+        when(frameworkCriterionRepository.findByFrameworkVersionId(versionId)).thenReturn(criteria);
+        when(frameworkCriterionBandRepository.findByFrameworkCriterionIdIn(criterionIds)).thenReturn(bands);
         when(frameworkVersionRepository.findByFrameworkIdAndStatus(frameworkId, FrameworkVersionStatus.PUBLISHED))
             .thenReturn(List.of(publishedVersion));
         when(frameworkVersionRepository.updateStatus(versionId, FrameworkVersionStatus.PUBLISHED)).thenReturn(1);

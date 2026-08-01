@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -113,6 +114,84 @@ class CreateExamScheduleUseCaseTests {
         assertThatThrownBy(() -> useCase.execute(new CreateExamScheduleCommand(examId, roomId, start, end)))
             .isInstanceOf(DuplicatedException.class);
         verify(examScheduleRepository, never()).save(any());
+    }
+
+    @Test
+    void should_reject_when_window_shorter_than_exam_time_duration() {
+        var exam = exam();
+        // Ca thi dài 2 tiếng (start..end) nhưng thời gian làm bài là 3 tiếng.
+        exam.setExamTimeDurationSecond(3 * 3600);
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        var room = room(schoolId);
+        when(schoolRoomRepository.findById(roomId)).thenReturn(Optional.of(room));
+
+        assertThatThrownBy(() -> useCase.execute(new CreateExamScheduleCommand(examId, roomId, start, end)))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("thời gian làm bài");
+        verify(examScheduleRepository, never()).save(any());
+    }
+
+    @Test
+    void should_accept_when_window_equals_exam_time_duration() {
+        var exam = exam();
+        exam.setExamTimeDurationSecond(2 * 3600);
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        var room = room(schoolId);
+        when(schoolRoomRepository.findById(roomId)).thenReturn(Optional.of(room));
+        when(examScheduleRepository.existsOverlapping(roomId, start, end, null)).thenReturn(false);
+        when(examScheduleRepository.save(any(ExamSchedule.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        var result = useCase.execute(new CreateExamScheduleCommand(examId, roomId, start, end));
+
+        assertThat(result.status()).isEqualTo(ExamScheduleStatus.DRAFT.name());
+        verify(examScheduleRepository).save(any(ExamSchedule.class));
+    }
+
+    @Test
+    void should_reject_when_schedule_starts_before_exam_open() {
+        var exam = exam();
+        exam.setOpenAt(start.plus(1, ChronoUnit.MINUTES));
+        exam.setCloseAt(end);
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        var room = room(schoolId);
+        when(schoolRoomRepository.findById(roomId)).thenReturn(Optional.of(room));
+
+        assertThatThrownBy(() -> useCase.execute(new CreateExamScheduleCommand(examId, roomId, start, end)))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("mở và đóng");
+        verify(examScheduleRepository, never()).save(any());
+    }
+
+    @Test
+    void should_reject_when_schedule_ends_after_exam_close() {
+        var exam = exam();
+        exam.setOpenAt(start);
+        exam.setCloseAt(end.minus(1, ChronoUnit.MINUTES));
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        var room = room(schoolId);
+        when(schoolRoomRepository.findById(roomId)).thenReturn(Optional.of(room));
+
+        assertThatThrownBy(() -> useCase.execute(new CreateExamScheduleCommand(examId, roomId, start, end)))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("mở và đóng");
+        verify(examScheduleRepository, never()).save(any());
+    }
+
+    @Test
+    void should_accept_when_schedule_exactly_fills_exam_window() {
+        var exam = exam();
+        exam.setOpenAt(start);
+        exam.setCloseAt(end);
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        var room = room(schoolId);
+        when(schoolRoomRepository.findById(roomId)).thenReturn(Optional.of(room));
+        when(examScheduleRepository.existsOverlapping(roomId, start, end, null)).thenReturn(false);
+        when(examScheduleRepository.save(any(ExamSchedule.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        var result = useCase.execute(new CreateExamScheduleCommand(examId, roomId, start, end));
+
+        assertThat(result.status()).isEqualTo(ExamScheduleStatus.DRAFT.name());
+        verify(examScheduleRepository).save(any(ExamSchedule.class));
     }
 
     private Exam exam() {

@@ -6,15 +6,19 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.event.ExamAppealRejectedEvent;
+import com.sep.vox.application.event.ExamAppealRejectedPayloadV1;
 import com.sep.vox.application.port.input.command.RejectExamAppealCommand;
 import com.sep.vox.application.port.input.service.ExamAppealAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.EventPublisherPort;
+import com.sep.vox.application.port.output.JsonSerializationPort;
+import com.sep.vox.domain.common.AggregateTypeConstant;
+import com.sep.vox.domain.common.EventTypeConstant;
 import com.sep.vox.domain.model.exam.ExamAppealStatus;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
+import com.sep.vox.domain.model.outbox.Outbox;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.ExamResultAppealRepository;
+import com.sep.vox.domain.repository.OutboxRepository;
 
 @Service
 public class RejectExamAppealUseCase implements IUseCase<RejectExamAppealCommand, UUID> {
@@ -22,17 +26,20 @@ public class RejectExamAppealUseCase implements IUseCase<RejectExamAppealCommand
     private final ExamResultAppealRepository examResultAppealRepository;
     private final ExamCandidateResultRepository examCandidateResultRepository;
     private final ExamAppealAccessService examAppealAccessService;
-    private final EventPublisherPort eventPublisherPort;
+    private final OutboxRepository outboxRepository;
+    private final JsonSerializationPort jsonSerializationPort;
 
     public RejectExamAppealUseCase(
             ExamResultAppealRepository examResultAppealRepository,
             ExamCandidateResultRepository examCandidateResultRepository,
             ExamAppealAccessService examAppealAccessService,
-            EventPublisherPort eventPublisherPort) {
+            OutboxRepository outboxRepository,
+            JsonSerializationPort jsonSerializationPort) {
         this.examResultAppealRepository = examResultAppealRepository;
         this.examCandidateResultRepository = examCandidateResultRepository;
         this.examAppealAccessService = examAppealAccessService;
-        this.eventPublisherPort = eventPublisherPort;
+        this.outboxRepository = outboxRepository;
+        this.jsonSerializationPort = jsonSerializationPort;
     }
 
     @Override
@@ -64,11 +71,20 @@ public class RejectExamAppealUseCase implements IUseCase<RejectExamAppealCommand
         candidateResult.setUpdatedBy(currentUserId);
         examCandidateResultRepository.save(candidateResult);
 
-        eventPublisherPort.publish(new ExamAppealRejectedEvent(
+        // Ghi outbox trong chính transaction này: mail báo học sinh và quyết định từ chối
+        // cùng sống hoặc cùng chết, không còn cảnh commit xong rồi mất mail vì SMTP lỗi.
+        var payload = new ExamAppealRejectedPayloadV1(
             appeal.getId(),
             context.studentId(),
             context.examName(),
             command.reason()
+        );
+        outboxRepository.save(Outbox.create(
+            AggregateTypeConstant.EXAM_RESULT_APPEAL,
+            appeal.getId(),
+            EventTypeConstant.EXAM_APPEAL_REJECTED,
+            jsonSerializationPort.toJson(payload),
+            now
         ));
 
         return appeal.getId();

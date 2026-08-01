@@ -23,26 +23,24 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.command.ImportExamCandidatesFromGradeCommand;
+import com.sep.vox.application.port.input.service.ExamDirectoryAccessService;
+import com.sep.vox.application.port.input.service.ExamDirectoryAccessService.ExamDirectoryScope;
 import com.sep.vox.application.port.input.usecase.examcandidate.ImportExamCandidatesFromGradeUseCase;
-import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
-import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassUser;
 import com.sep.vox.domain.model.school.SchoolGrade;
 import com.sep.vox.domain.model.school.SchoolGradeLevel;
 import com.sep.vox.domain.model.user.SchoolRoleCodes;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
-import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.domain.repository.SchoolGradeLevelRepository;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
-import com.sep.vox.domain.repository.SchoolUserRepository;
 
 class ImportExamCandidatesFromGradeUseCaseTests {
 
@@ -55,10 +53,8 @@ class ImportExamCandidatesFromGradeUseCaseTests {
     private SchoolGradeLevelRepository schoolGradeLevelRepository;
     private SchoolClassRepository schoolClassRepository;
     private SchoolClassUserRepository schoolClassUserRepository;
-    private ExamMemberRepository examMemberRepository;
-    private SchoolUserRepository schoolUserRepository;
     private UserRoleQueryRepository userRoleQueryRepository;
-    private UserContextPort userContextPort;
+    private ExamDirectoryAccessService examDirectoryAccessService;
     private ImportExamCandidatesFromGradeUseCase useCase;
 
     private final UUID userId = UUID.randomUUID();
@@ -84,23 +80,31 @@ class ImportExamCandidatesFromGradeUseCaseTests {
         schoolGradeLevelRepository = mock(SchoolGradeLevelRepository.class);
         schoolClassRepository = mock(SchoolClassRepository.class);
         schoolClassUserRepository = mock(SchoolClassUserRepository.class);
-        examMemberRepository = mock(ExamMemberRepository.class);
-        schoolUserRepository = mock(SchoolUserRepository.class);
         userRoleQueryRepository = mock(UserRoleQueryRepository.class);
-        userContextPort = mock(UserContextPort.class);
+        examDirectoryAccessService = mock(ExamDirectoryAccessService.class);
         useCase = new ImportExamCandidatesFromGradeUseCase(
             examRepository, examCandidateRepository, schoolGradeRepository, schoolGradeLevelRepository,
-            schoolClassRepository, schoolClassUserRepository, examMemberRepository, schoolUserRepository,
-            userRoleQueryRepository, userContextPort);
+            schoolClassRepository, schoolClassUserRepository, userRoleQueryRepository,
+            examDirectoryAccessService);
 
-        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        when(schoolUserRepository.findByUserId(userId)).thenReturn(Optional.empty());
-        when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId)).thenReturn(List.of());
-        when(examMemberRepository.existsByExamIdAndUserIdAndRole(examId, userId, ExamMemberRole.CHAIR))
-            .thenReturn(true);
-        when(examRepository.findById(examId)).thenReturn(Optional.of(exam()));
+        var exam = exam();
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        when(examDirectoryAccessService.resolve(exam))
+            .thenReturn(new ExamDirectoryScope(userId, schoolId, true));
         when(schoolGradeRepository.findById(gradeId)).thenReturn(Optional.of(grade(gradeLevelId)));
         when(schoolGradeLevelRepository.findById(gradeLevelId)).thenReturn(Optional.of(gradeLevel(schoolId)));
+    }
+
+    @Test
+    void should_reject_grade_import_for_class_test_chair() {
+        // Nhập theo niên khóa gom mọi lớp của niên khóa — vượt phạm vi chủ tịch bài trên lớp.
+        when(examDirectoryAccessService.resolve(any(Exam.class)))
+            .thenReturn(new ExamDirectoryScope(userId, schoolId, false));
+
+        assertThatThrownBy(() -> useCase.execute(new ImportExamCandidatesFromGradeCommand(examId, gradeId)))
+            .isInstanceOf(ForbiddenException.class)
+            .hasMessage("Bài kiểm tra trên lớp không hỗ trợ nhập thí sinh theo niên khóa");
+        verify(examCandidateRepository, never()).saveAll(anyCollection());
     }
 
     @Test

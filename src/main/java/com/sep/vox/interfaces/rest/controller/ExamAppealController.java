@@ -5,7 +5,6 @@ import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -13,24 +12,28 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.sep.vox.application.port.input.usecase.examappeal.ApproveExamAppealUseCase;
-import com.sep.vox.application.port.input.usecase.examappeal.AssignExamAppealReviewersUseCase;
+import com.sep.vox.application.port.input.usecase.examappeal.AssignExamAppealReviewerUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.CreateExamAppealUseCase;
-import com.sep.vox.application.port.input.usecase.examappeal.PublishExamAppealUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.RejectExamAppealUseCase;
-import com.sep.vox.application.port.input.usecase.examappeal.RemoveExamAppealReviewerUseCase;
-import com.sep.vox.application.port.input.usecase.examappeal.SubmitExamAppealReportUseCase;
+import com.sep.vox.application.port.input.usecase.examappeal.WithdrawExamAppealUseCase;
 import com.sep.vox.interfaces.rest.dto.request.ApproveExamAppealRequest;
-import com.sep.vox.interfaces.rest.dto.request.AssignExamAppealReviewersRequest;
+import com.sep.vox.interfaces.rest.dto.request.AssignExamAppealReviewerRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateExamAppealRequest;
-import com.sep.vox.interfaces.rest.dto.request.PublishExamAppealRequest;
 import com.sep.vox.interfaces.rest.dto.request.RejectExamAppealRequest;
-import com.sep.vox.interfaces.rest.dto.request.SubmitExamAppealReportRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 import com.sep.vox.interfaces.rest.mapper.ExamAppealCommandMapper;
 
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 
+/**
+ * Admin chỉ còn ĐIỀU PHỐI đơn: duyệt / từ chối / giao người chấm.
+ *
+ * <p>Hai endpoint cũ đã bị gỡ: {@code /reviewers/me/report} và {@code /publish}.
+ * Người chấm phúc khảo nay dùng chung màn chấm với ba vòng còn lại
+ * ({@code /api/v1/grading-assignments/{id}/uphold|regrade}), và nộp là công bố luôn —
+ * không còn bước admin đối chiếu rồi bấm publish.
+ */
 @RestController
 @RequestMapping("/api/v1/exam-appeals")
 public class ExamAppealController {
@@ -38,26 +41,20 @@ public class ExamAppealController {
     private final CreateExamAppealUseCase createExamAppealUseCase;
     private final ApproveExamAppealUseCase approveExamAppealUseCase;
     private final RejectExamAppealUseCase rejectExamAppealUseCase;
-    private final AssignExamAppealReviewersUseCase assignExamAppealReviewersUseCase;
-    private final RemoveExamAppealReviewerUseCase removeExamAppealReviewerUseCase;
-    private final SubmitExamAppealReportUseCase submitExamAppealReportUseCase;
-    private final PublishExamAppealUseCase publishExamAppealUseCase;
+    private final AssignExamAppealReviewerUseCase assignExamAppealReviewerUseCase;
+    private final WithdrawExamAppealUseCase withdrawExamAppealUseCase;
 
     public ExamAppealController(
             CreateExamAppealUseCase createExamAppealUseCase,
             ApproveExamAppealUseCase approveExamAppealUseCase,
             RejectExamAppealUseCase rejectExamAppealUseCase,
-            AssignExamAppealReviewersUseCase assignExamAppealReviewersUseCase,
-            RemoveExamAppealReviewerUseCase removeExamAppealReviewerUseCase,
-            SubmitExamAppealReportUseCase submitExamAppealReportUseCase,
-            PublishExamAppealUseCase publishExamAppealUseCase) {
+            AssignExamAppealReviewerUseCase assignExamAppealReviewerUseCase,
+            WithdrawExamAppealUseCase withdrawExamAppealUseCase) {
         this.createExamAppealUseCase = createExamAppealUseCase;
         this.approveExamAppealUseCase = approveExamAppealUseCase;
         this.rejectExamAppealUseCase = rejectExamAppealUseCase;
-        this.assignExamAppealReviewersUseCase = assignExamAppealReviewersUseCase;
-        this.removeExamAppealReviewerUseCase = removeExamAppealReviewerUseCase;
-        this.submitExamAppealReportUseCase = submitExamAppealReportUseCase;
-        this.publishExamAppealUseCase = publishExamAppealUseCase;
+        this.assignExamAppealReviewerUseCase = assignExamAppealReviewerUseCase;
+        this.withdrawExamAppealUseCase = withdrawExamAppealUseCase;
     }
 
     @Operation(summary = "Học sinh nộp đơn phúc khảo cho một hoặc nhiều phần thi")
@@ -69,6 +66,14 @@ public class ExamAppealController {
         var appealId = createExamAppealUseCase.execute(command);
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Gửi đơn phúc khảo thành công!", appealId));
+    }
+
+    @Operation(summary = "Học sinh rút đơn phúc khảo khi đơn còn chờ duyệt. Lượt phúc khảo được hoàn lại.")
+    @PostMapping("/{appealId}/withdraw")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<ApiResponse<UUID>> withdrawAppeal(@PathVariable("appealId") UUID appealId) {
+        return ResponseEntity.ok(
+            ApiResponse.success("Rút đơn phúc khảo thành công!", withdrawExamAppealUseCase.execute(appealId)));
     }
 
     @Operation(summary = "Duyệt đơn phúc khảo và đặt hạn xử lý")
@@ -93,48 +98,15 @@ public class ExamAppealController {
         return ResponseEntity.ok(ApiResponse.success("Từ chối đơn phúc khảo thành công!", responseId));
     }
 
-    @Operation(summary = "Phân công giám khảo chấm lại (1-5 người)")
-    @PostMapping("/{appealId}/reviewers")
+    @Operation(summary = "Giao MỘT giáo viên chấm phúc khảo. Người đã từng chấm bài này bị từ chối, "
+        + "trừ khi truyền `overrideReason` — lý do đó được ghi lại trên đơn.")
+    @PostMapping("/{appealId}/reviewer")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<UUID>> assignReviewers(
+    public ResponseEntity<ApiResponse<UUID>> assignReviewer(
             @PathVariable("appealId") UUID appealId,
-            @Valid @RequestBody AssignExamAppealReviewersRequest request) {
+            @Valid @RequestBody AssignExamAppealReviewerRequest request) {
         var command = ExamAppealCommandMapper.fromRequest(appealId, request);
-        var responseId = assignExamAppealReviewersUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Phân công giám khảo thành công!", responseId));
-    }
-
-    @Operation(summary = "Gỡ giám khảo chưa nộp báo cáo khỏi đơn phúc khảo")
-    @DeleteMapping("/{appealId}/reviewers/{reviewerId}")
-    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<UUID>> removeReviewer(
-            @PathVariable("appealId") UUID appealId,
-            @PathVariable("reviewerId") UUID reviewerId) {
-        var command = ExamAppealCommandMapper.fromRequest(appealId, reviewerId);
-        var responseId = removeExamAppealReviewerUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Gỡ giám khảo thành công!", responseId));
-    }
-
-    @Operation(summary = "Giám khảo nộp báo cáo chấm lại cho toàn bộ phần thi của đơn")
-    @PostMapping("/{appealId}/reviewers/me/report")
-    @PreAuthorize("hasRole('TEACHER')")
-    public ResponseEntity<ApiResponse<UUID>> submitReport(
-            @PathVariable("appealId") UUID appealId,
-            @Valid @RequestBody SubmitExamAppealReportRequest request) {
-        var command = ExamAppealCommandMapper.fromRequest(appealId, request);
-        var responseId = submitExamAppealReportUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Nộp báo cáo chấm lại thành công!", responseId));
-    }
-
-    @Operation(summary = "Công bố kết quả phúc khảo. `partScore` là điểm cho từng phần thi được phúc khảo, "
-        + "không phải điểm tổng — hệ thống tự tính lại tổng và xếp loại từ các điểm này.")
-    @PostMapping("/{appealId}/publish")
-    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<UUID>> publishAppeal(
-            @PathVariable("appealId") UUID appealId,
-            @Valid @RequestBody PublishExamAppealRequest request) {
-        var command = ExamAppealCommandMapper.fromRequest(appealId, request);
-        var responseId = publishExamAppealUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Công bố kết quả phúc khảo thành công!", responseId));
+        var assignmentId = assignExamAppealReviewerUseCase.execute(command);
+        return ResponseEntity.ok(ApiResponse.success("Phân công người chấm phúc khảo thành công!", assignmentId));
     }
 }

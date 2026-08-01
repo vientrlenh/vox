@@ -170,6 +170,15 @@ public class User {
 
 
 
+    /**
+     * Người dùng do trường import/tạo tay nằm ở trạng thái INACTIVE cho tới khi họ tự đặt mật khẩu
+     * qua mail mời, nhưng trường vẫn phải xếp lớp cho họ ngay từ đầu năm. Vì vậy chỉ tài khoản đã
+     * bị khoá hoặc vô hiệu hoá mới không được thêm vào lớp.
+     */
+    public boolean canBeAssignedToSchoolClass() {
+        return status != UserStatus.DISABLED && status != UserStatus.LOCKED;
+    }
+
     public void updatePasswordAndActivate(String passwordHash, Instant now) {
         this.passwordHash = passwordHash;
         this.status = UserStatus.ACTIVE;

@@ -156,8 +156,8 @@ public class CreateSchoolClassUserUseCase implements IUseCase<CreateSchoolClassU
     private void validateTargetUser(UUID userId, UUID schoolId) {
         var targetUser = userRepository.findById(userId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
-        if (targetUser.getStatus() != UserStatus.ACTIVE) {
-            throw new IllegalStateException("Người dùng không hoạt động");
+        if (!targetUser.canBeAssignedToSchoolClass()) {
+            throw new IllegalStateException("Người dùng đã bị khoá hoặc vô hiệu hoá");
         }
         SchoolUser targetSchoolUser = schoolUserRepository.findByUserId(targetUser.getId()).orElse(null);
         if (!Objects.equals(targetSchoolUser != null ? targetSchoolUser.getSchoolId() : null, schoolId)) {

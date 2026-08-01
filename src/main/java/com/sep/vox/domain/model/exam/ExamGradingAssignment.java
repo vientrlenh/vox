@@ -1,51 +1,107 @@
 package com.sep.vox.domain.model.exam;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Phân công một giáo viên chấm tay một bài nộp ({@link ExamCandidateResult}).
+ * Phân công một giáo viên chấm tay một bài nộp ({@link ExamCandidateResult}) trong
+ * một {@link GradingRoundType vòng chấm}.
  *
- * <p>Một bài chỉ có đúng một giáo viên — uniqueness nằm ở DB trên
- * {@code candidate_result_id}, không phải cặp (bài, giáo viên) như
- * {@link ExamAppealReviewer}. Điểm không nằm ở đây: nó đi thẳng vào
- * {@link ExamItemEvaluation} theo từng phần thi, nên dòng này chỉ giữ trạng thái.
+ * <p>Một bảng cho cả bốn vòng: chấm lần đầu, hậu kiểm, soi lại bài vô hiệu và phúc
+ * khảo. Mỗi bài chỉ có <em>một</em> phân công đang mở tại một thời điểm, nhưng có thể
+ * có nhiều dòng đã đóng qua các vòng — bất biến đó nằm ở DB qua unique index trên
+ * {@link #activeResultId} (bằng {@code candidateResultId} khi ASSIGNED, {@code null}
+ * khi COMPLETED; Postgres coi các NULL là khác nhau).
+ *
+ * <p>Điểm không nằm ở đây: nó đi thẳng vào {@link ExamItemEvaluation} theo từng phần
+ * thi. Dòng này giữ trạng thái, kết luận ({@link GradingOutcome}) và điểm trước khi
+ * chấm để đo độ lệch.
  */
 public class ExamGradingAssignment {
     private UUID id;
     private UUID candidateResultId;
     private UUID teacherId;
+    private GradingRoundType roundType;
+    /** Chỉ có giá trị khi {@code roundType = APPEAL}. */
+    private UUID appealId;
     private GradingAssignmentStatus status;
+    private GradingOutcome outcome;
+    /** Tổng điểm của bài lúc được giao — mốc so lệch sau khi chấm. */
+    private BigDecimal scoreBefore;
     private Instant assignedAt;
     private UUID assignedBy;
     private Instant completedAt;
+    private Instant deadlineAt;
+    /** Đã gửi mail nhắc hạn lúc nào; null = chưa nhắc. Chống nhắc trùng. */
+    private Instant remindedAt;
+    /** Bắt buộc khi outcome là INVALIDATED / CLEARED_INVALID / DECLINED. */
+    private String reason;
+    private UUID activeResultId;
 
     public ExamGradingAssignment() {}
 
-    public ExamGradingAssignment(UUID id, UUID candidateResultId, UUID teacherId, GradingAssignmentStatus status,
-            Instant assignedAt, UUID assignedBy, Instant completedAt) {
+    public ExamGradingAssignment(UUID id, UUID candidateResultId, UUID teacherId, GradingRoundType roundType,
+            UUID appealId, GradingAssignmentStatus status, GradingOutcome outcome, BigDecimal scoreBefore,
+            Instant assignedAt, UUID assignedBy, Instant completedAt, Instant deadlineAt,
+            Instant remindedAt, String reason, UUID activeResultId) {
         this.id = id;
         this.candidateResultId = candidateResultId;
         this.teacherId = teacherId;
+        this.roundType = roundType;
+        this.appealId = appealId;
         this.status = status;
+        this.outcome = outcome;
+        this.scoreBefore = scoreBefore;
         this.assignedAt = assignedAt;
         this.assignedBy = assignedBy;
         this.completedAt = completedAt;
+        this.deadlineAt = deadlineAt;
+        this.remindedAt = remindedAt;
+        this.reason = reason;
+        this.activeResultId = activeResultId;
     }
 
-    public ExamGradingAssignment(UUID candidateResultId, UUID teacherId, GradingAssignmentStatus status,
-            Instant assignedAt, UUID assignedBy, Instant completedAt) {
-        this.candidateResultId = candidateResultId;
-        this.teacherId = teacherId;
-        this.status = status;
-        this.assignedAt = assignedAt;
-        this.assignedBy = assignedBy;
-        this.completedAt = completedAt;
+    /**
+     * Mở một vòng chấm mới. {@code activeResultId} được set bằng chính bài — đây là
+     * chỗ duy nhất dựng bất biến "một phân công mở / bài", nên đừng tự new rồi set tay.
+     */
+    public static ExamGradingAssignment open(UUID candidateResultId, UUID teacherId, GradingRoundType roundType,
+            UUID appealId, BigDecimal scoreBefore, Instant assignedAt, UUID assignedBy,
+            Instant deadlineAt) {
+        var assignment = new ExamGradingAssignment();
+        assignment.candidateResultId = candidateResultId;
+        assignment.teacherId = teacherId;
+        assignment.roundType = roundType;
+        assignment.appealId = appealId;
+        assignment.status = GradingAssignmentStatus.ASSIGNED;
+        assignment.scoreBefore = scoreBefore;
+        assignment.assignedAt = assignedAt;
+        assignment.assignedBy = assignedBy;
+        assignment.deadlineAt = deadlineAt;
+        assignment.activeResultId = candidateResultId;
+        return assignment;
     }
 
     /** Đã chốt thì không được gỡ, đổi giáo viên hay chấm lại. */
     public boolean isCompleted() {
         return status == GradingAssignmentStatus.COMPLETED;
+    }
+
+    /**
+     * Đóng phân công kèm kết luận. Nhả {@code activeResultId} về null để bài nhận
+     * được vòng tiếp theo mà unique index vẫn giữ nguyên ý nghĩa.
+     */
+    public void complete(GradingOutcome outcome, String reason, Instant at) {
+        this.status = GradingAssignmentStatus.COMPLETED;
+        this.outcome = outcome;
+        this.reason = reason;
+        this.completedAt = at;
+        this.activeResultId = null;
+    }
+
+    public boolean isOverdue(Instant now) {
+        return !isCompleted() && deadlineAt != null && deadlineAt.isBefore(now);
     }
 
     public UUID getId() {
@@ -72,12 +128,44 @@ public class ExamGradingAssignment {
         this.teacherId = teacherId;
     }
 
+    public GradingRoundType getRoundType() {
+        return roundType;
+    }
+
+    public void setRoundType(GradingRoundType roundType) {
+        this.roundType = roundType;
+    }
+
+    public UUID getAppealId() {
+        return appealId;
+    }
+
+    public void setAppealId(UUID appealId) {
+        this.appealId = appealId;
+    }
+
     public GradingAssignmentStatus getStatus() {
         return status;
     }
 
     public void setStatus(GradingAssignmentStatus status) {
         this.status = status;
+    }
+
+    public GradingOutcome getOutcome() {
+        return outcome;
+    }
+
+    public void setOutcome(GradingOutcome outcome) {
+        this.outcome = outcome;
+    }
+
+    public BigDecimal getScoreBefore() {
+        return scoreBefore;
+    }
+
+    public void setScoreBefore(BigDecimal scoreBefore) {
+        this.scoreBefore = scoreBefore;
     }
 
     public Instant getAssignedAt() {
@@ -102,5 +190,37 @@ public class ExamGradingAssignment {
 
     public void setCompletedAt(Instant completedAt) {
         this.completedAt = completedAt;
+    }
+
+    public Instant getDeadlineAt() {
+        return deadlineAt;
+    }
+
+    public void setDeadlineAt(Instant deadlineAt) {
+        this.deadlineAt = deadlineAt;
+    }
+
+    public Instant getRemindedAt() {
+        return remindedAt;
+    }
+
+    public void setRemindedAt(Instant remindedAt) {
+        this.remindedAt = remindedAt;
+    }
+
+    public String getReason() {
+        return reason;
+    }
+
+    public void setReason(String reason) {
+        this.reason = reason;
+    }
+
+    public UUID getActiveResultId() {
+        return activeResultId;
+    }
+
+    public void setActiveResultId(UUID activeResultId) {
+        this.activeResultId = activeResultId;
     }
 }

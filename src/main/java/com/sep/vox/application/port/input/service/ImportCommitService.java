@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.domain.model.importfile.ImportRow;
 import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
 import com.sep.vox.domain.repository.ImportRowRepository;
@@ -40,7 +41,6 @@ public class ImportCommitService {
         var rows = importRowRepository.findBySessionId(sessionId);
         try {
             var result = handler.commit(session, rows);
-            importRowRepository.saveAll(rows);
             session.setImportedRows(result.created());
             session.setSkippedRows(result.skipped());
             session.setInvalidRows(result.invalid());
@@ -54,9 +54,21 @@ public class ImportCommitService {
                 e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()
             );
         }
+        // Lưu trạng thái dòng ở CẢ hai nhánh: handler xử lý từng dòng trong transaction
+        // riêng, nên khi nó lỗi giữa đường thì những dòng đã xong vẫn phải giữ được kết quả
+        // thay vì quay hết về PENDING.
+        saveRowsQuietly(rows);
         session.setUpdatedAt(Instant.now());
         importSessionRepository.save(session);
 
+    }
+
+    private void saveRowsQuietly(List<ImportRow> rows) {
+        try {
+            importRowRepository.saveAll(rows);
+        } catch (Exception e) {
+            log.error("Không lưu được trạng thái các dòng import", e);
+        }
     }
 
 }

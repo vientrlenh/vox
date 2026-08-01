@@ -19,6 +19,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionStatus;
@@ -86,6 +87,22 @@ class SchoolGradeImportCommitHandlerTests {
         assertThat(rows.get(1).getStatus()).isEqualTo(ImportRowStatus.INVALID);
         assertThat(rows.get(1).getErrorsJson()).contains("code");
         verify(schoolGradeRepository).save(any(SchoolGrade.class));
+    }
+
+    @Test
+    void should_create_grade_with_active_status() {
+        var sessionId = UUID.randomUUID();
+        var rows = List.of(row(sessionId, 1L, data("K10", "2024", "Năm 2024", "2024-09-05", "2025-05-30")));
+
+        when(schoolGradeLevelRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("K10"))).thenReturn(List.of(gradeLevel("K10")));
+        when(schoolGradeRepository.findBySchoolGradeLevelIdAndCode(eq(levelId), any())).thenReturn(Optional.empty());
+        when(schoolGradeRepository.save(any(SchoolGrade.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        handler.commit(session(sessionId), rows);
+
+        var captor = ArgumentCaptor.forClass(SchoolGrade.class);
+        verify(schoolGradeRepository).save(captor.capture());
+        assertThat(captor.getValue().getStatus()).isEqualTo(SchoolGradeStatus.ACTIVE);
     }
 
     @Test

@@ -19,13 +19,18 @@ public class ExamResultAppeal {
     private Instant deadline;
     private Instant approvedAt;
     private String decisionNote;
+    /** Học sinh tự rút đơn lúc nào; lượt phúc khảo được hoàn lại. */
+    private Instant withdrawnAt;
+    /** Lý do admin giao cho người đã từng chấm bài này (override xung đột lợi ích). */
+    private String reviewerOverrideReason;
 
     public ExamResultAppeal() {}
 
     public ExamResultAppeal(UUID id, UUID candidateResultId, UUID requestedBy, String reason,
             Instant requestedAt, ExamAppealStatus status, BigDecimal scoreBefore, BigDecimal scoreAfter,
             UUID resolvedBy, Instant resolvedAt, String notes, Instant deadline,
-            Instant approvedAt, String decisionNote) {
+            Instant approvedAt, String decisionNote, Instant withdrawnAt,
+            String reviewerOverrideReason) {
         this.id = id;
         this.candidateResultId = candidateResultId;
         this.requestedBy = requestedBy;
@@ -40,12 +45,14 @@ public class ExamResultAppeal {
         this.deadline = deadline;
         this.approvedAt = approvedAt;
         this.decisionNote = decisionNote;
+        this.withdrawnAt = withdrawnAt;
+        this.reviewerOverrideReason = reviewerOverrideReason;
     }
 
     public ExamResultAppeal(UUID candidateResultId, UUID requestedBy, String reason, Instant requestedAt,
             ExamAppealStatus status, BigDecimal scoreBefore, BigDecimal scoreAfter, UUID resolvedBy,
             Instant resolvedAt, String notes, Instant deadline, Instant approvedAt,
-            String decisionNote) {
+            String decisionNote, Instant withdrawnAt, String reviewerOverrideReason) {
         this.candidateResultId = candidateResultId;
         this.requestedBy = requestedBy;
         this.reason = reason;
@@ -59,6 +66,20 @@ public class ExamResultAppeal {
         this.deadline = deadline;
         this.approvedAt = approvedAt;
         this.decisionNote = decisionNote;
+        this.withdrawnAt = withdrawnAt;
+        this.reviewerOverrideReason = reviewerOverrideReason;
+    }
+
+    /** Đơn còn đang chiếm chỗ — chặn học sinh nộp đơn thứ hai cho cùng một bài. */
+    public boolean isOpen() {
+        return status == ExamAppealStatus.PENDING
+            || status == ExamAppealStatus.APPROVED
+            || status == ExamAppealStatus.GRADING;
+    }
+
+    /** Đơn đã quá hạn xử lý mà chưa xong. */
+    public boolean isOverdue(Instant now) {
+        return isOpen() && deadline != null && deadline.isBefore(now);
     }
 
     public UUID getId() {
@@ -171,5 +192,21 @@ public class ExamResultAppeal {
 
     public void setDecisionNote(String decisionNote) {
         this.decisionNote = decisionNote;
+    }
+
+    public Instant getWithdrawnAt() {
+        return withdrawnAt;
+    }
+
+    public void setWithdrawnAt(Instant withdrawnAt) {
+        this.withdrawnAt = withdrawnAt;
+    }
+
+    public String getReviewerOverrideReason() {
+        return reviewerOverrideReason;
+    }
+
+    public void setReviewerOverrideReason(String reviewerOverrideReason) {
+        this.reviewerOverrideReason = reviewerOverrideReason;
     }
 }

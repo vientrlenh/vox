@@ -426,6 +426,12 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
     @Override
     public PageResult<GradingTaskInfo> findTasksByTeacherId(
             UUID teacherId, String status, String roundType, int page, int size) {
+        return findTasksByTeacherIdAndExamId(teacherId, null, status, roundType, page, size);
+    }
+
+    @Override
+    public PageResult<GradingTaskInfo> findTasksByTeacherIdAndExamId(
+            UUID teacherId, UUID examId, String status, String roundType, int page, int size) {
         var normalizedPage = Math.max(page, 0);
         var normalizedSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
         var now = Instant.now();
@@ -440,11 +446,13 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             JOIN ExamSessionJpaEntity s ON s.id = cr.sessionId
             JOIN ExamJpaEntity e ON e.id = cr.examId
             WHERE ga.teacherId = :teacherId
+            AND (:examId IS NULL OR cr.examId = :examId)
             AND (:status IS NULL OR ga.status = :status)
             AND (:roundType IS NULL OR ga.roundType = :roundType)
             ORDER BY ga.status ASC, ga.deadlineAt ASC NULLS LAST, ga.assignedAt DESC
         """, Tuple.class)
             .setParameter("teacherId", teacherId)
+            .setParameter("examId", examId)
             .setParameter("status", status)
             .setParameter("roundType", roundType)
             .setFirstResult(normalizedPage * normalizedSize)
@@ -478,11 +486,14 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
 
         var total = em.createQuery("""
             SELECT COUNT(ga) FROM ExamGradingAssignmentJpaEntity ga
+            JOIN ExamCandidateResultJpaEntity cr ON cr.id = ga.candidateResultId
             WHERE ga.teacherId = :teacherId
+            AND (:examId IS NULL OR cr.examId = :examId)
             AND (:status IS NULL OR ga.status = :status)
             AND (:roundType IS NULL OR ga.roundType = :roundType)
         """, Long.class)
             .setParameter("teacherId", teacherId)
+            .setParameter("examId", examId)
             .setParameter("status", status)
             .setParameter("roundType", roundType)
             .getSingleResult();

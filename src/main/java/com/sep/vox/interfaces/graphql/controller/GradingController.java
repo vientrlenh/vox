@@ -13,12 +13,14 @@ import com.sep.vox.application.port.input.query.ViewAiQualityReportQuery;
 import com.sep.vox.application.port.input.query.ViewAssignableTeachersQuery;
 import com.sep.vox.application.port.input.query.ViewGradingStatsQuery;
 import com.sep.vox.application.port.input.query.ViewMyGradingTasksQuery;
+import com.sep.vox.application.port.input.query.ViewMyClassTestGradingTasksQuery;
 import com.sep.vox.application.port.input.usecase.examgrading.ViewAiQualityReportUseCase;
 import com.sep.vox.application.port.input.usecase.examgrading.ViewAssignableTeachersUseCase;
 import com.sep.vox.application.port.input.usecase.examgrading.ViewGradingAssignmentsUseCase;
 import com.sep.vox.application.port.input.usecase.examgrading.ViewGradingStatsUseCase;
 import com.sep.vox.application.port.input.usecase.examgrading.ViewGradingTaskDetailUseCase;
 import com.sep.vox.application.port.input.usecase.examgrading.ViewMyGradingTasksUseCase;
+import com.sep.vox.application.port.input.usecase.examgrading.ViewMyClassTestGradingTasksUseCase;
 import com.sep.vox.application.port.input.usecase.examgrading.ViewResultStatusHistoryUseCase;
 import com.sep.vox.application.query.dto.AiQualityReportInfo;
 import com.sep.vox.application.query.dto.AssignableTeacherInfo;
@@ -37,6 +39,7 @@ public class GradingController {
     private final ViewGradingAssignmentsUseCase viewGradingAssignmentsUseCase;
     private final ViewGradingStatsUseCase viewGradingStatsUseCase;
     private final ViewMyGradingTasksUseCase viewMyGradingTasksUseCase;
+    private final ViewMyClassTestGradingTasksUseCase viewMyClassTestGradingTasksUseCase;
     private final ViewGradingTaskDetailUseCase viewGradingTaskDetailUseCase;
     private final ViewAssignableTeachersUseCase viewAssignableTeachersUseCase;
     private final ViewResultStatusHistoryUseCase viewResultStatusHistoryUseCase;
@@ -46,6 +49,7 @@ public class GradingController {
             ViewGradingAssignmentsUseCase viewGradingAssignmentsUseCase,
             ViewGradingStatsUseCase viewGradingStatsUseCase,
             ViewMyGradingTasksUseCase viewMyGradingTasksUseCase,
+            ViewMyClassTestGradingTasksUseCase viewMyClassTestGradingTasksUseCase,
             ViewGradingTaskDetailUseCase viewGradingTaskDetailUseCase,
             ViewAssignableTeachersUseCase viewAssignableTeachersUseCase,
             ViewResultStatusHistoryUseCase viewResultStatusHistoryUseCase,
@@ -53,6 +57,7 @@ public class GradingController {
         this.viewGradingAssignmentsUseCase = viewGradingAssignmentsUseCase;
         this.viewGradingStatsUseCase = viewGradingStatsUseCase;
         this.viewMyGradingTasksUseCase = viewMyGradingTasksUseCase;
+        this.viewMyClassTestGradingTasksUseCase = viewMyClassTestGradingTasksUseCase;
         this.viewGradingTaskDetailUseCase = viewGradingTaskDetailUseCase;
         this.viewAssignableTeachersUseCase = viewAssignableTeachersUseCase;
         this.viewResultStatusHistoryUseCase = viewResultStatusHistoryUseCase;
@@ -97,6 +102,21 @@ public class GradingController {
             @Argument(name = "size") Integer size) {
         return viewMyGradingTasksUseCase.execute(new ViewMyGradingTasksQuery(
             status, roundType, page == null ? 0 : page, size == null ? DEFAULT_PAGE_SIZE : size));
+    }
+
+    @QueryMapping(name = "myClassTestGradingTasks")
+    @PreAuthorize("hasRole('TEACHER')")
+    public PageResult<GradingTaskInfo> myClassTestGradingTasks(
+            @Argument(name = "examId") UUID examId,
+            @Argument(name = "status") String status,
+            @Argument(name = "roundType") String roundType,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
+        return viewMyClassTestGradingTasksUseCase.execute(new ViewMyClassTestGradingTasksQuery(
+            examId, status, roundType,
+            page == null ? 0 : page,
+            size == null ? DEFAULT_PAGE_SIZE : size
+        ));
     }
 
     @QueryMapping(name = "gradingTaskDetail")

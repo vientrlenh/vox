@@ -18,6 +18,7 @@ import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.input.query.ViewExamSchedulesQuery;
 import com.sep.vox.application.port.input.usecase.examschedule.UpdateExamScheduleUseCase;
 import com.sep.vox.application.port.input.usecase.examschedule.ViewExamSchedulesUseCase;
+import com.sep.vox.application.port.input.usecase.examschedule.ViewMyExamSchedulesUseCase;
 import com.sep.vox.domain.dto.ExamScheduleDto;
 import com.sep.vox.domain.dto.ExamScheduleProctorDto;
 import com.sep.vox.domain.dto.SchoolRoomFromDto;
@@ -33,19 +34,37 @@ import com.sep.vox.interfaces.graphql.mapper.UpdateExamScheduleCommandMapper;
 public class ExamScheduleController {
 
     private final ViewExamSchedulesUseCase viewExamSchedulesUseCase;
+    private final ViewMyExamSchedulesUseCase viewMyExamSchedulesUseCase;
     private final UpdateExamScheduleUseCase updateExamScheduleUseCase;
     private final ExamScheduleProctorRepository examScheduleProctorRepository;
     private final ExamCandidateRepository examCandidateRepository;
 
     public ExamScheduleController(
             ViewExamSchedulesUseCase viewExamSchedulesUseCase,
+            ViewMyExamSchedulesUseCase viewMyExamSchedulesUseCase,
             UpdateExamScheduleUseCase updateExamScheduleUseCase,
             ExamScheduleProctorRepository examScheduleProctorRepository,
             ExamCandidateRepository examCandidateRepository) {
         this.viewExamSchedulesUseCase = viewExamSchedulesUseCase;
+        this.viewMyExamSchedulesUseCase = viewMyExamSchedulesUseCase;
         this.updateExamScheduleUseCase = updateExamScheduleUseCase;
         this.examScheduleProctorRepository = examScheduleProctorRepository;
         this.examCandidateRepository = examCandidateRepository;
+    }
+
+    @QueryMapping(name = "myExamSchedules")
+    @PreAuthorize("hasRole('STUDENT')")
+    public List<ExamScheduleDto> myExamSchedules(
+            @Argument(name = "examId") UUID examId,
+            @Argument(name = "status") ExamScheduleStatus status,
+            @Argument(name = "startDate") String startDate,
+            @Argument(name = "endDate") String endDate) {
+        return viewMyExamSchedulesUseCase.execute(new ViewExamSchedulesQuery(
+            examId,
+            status,
+            DateMapper.toInstant(startDate),
+            DateMapper.toInstant(endDate)
+        ));
     }
 
     @QueryMapping(name = "examSchedules")

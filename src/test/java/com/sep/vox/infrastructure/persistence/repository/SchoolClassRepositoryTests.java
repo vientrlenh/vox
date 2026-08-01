@@ -420,6 +420,71 @@ class SchoolClassRepositoryTests extends ContainerTestConfig {
             .containsExactly("ENG-IN-ACT");
     }
 
+    @Test
+    void whenFindByUserIdWithSearch_thenMatchesCodeOrNameAcrossWholeDataset() {
+        var schoolId = UUID.randomUUID();
+        var userId = UUID.randomUUID();
+        var englishByCode = schoolClassRepository.save(newSchoolClass(schoolId, "ENG-SEARCH-01", "Lop giao tiep"));
+        var englishByName = schoolClassRepository.save(newSchoolClass(schoolId, "KH-SEARCH-02", "English nang cao"));
+        var unrelated = schoolClassRepository.save(newSchoolClass(schoolId, "MATH-SEARCH-03", "Toan hoc"));
+        var now = Instant.now();
+        schoolClassUserRepository.save(new SchoolClassUser(userId, englishByCode.getId(), true, now, null, UUID.randomUUID()));
+        schoolClassUserRepository.save(new SchoolClassUser(userId, englishByName.getId(), true, now, null, UUID.randomUUID()));
+        schoolClassUserRepository.save(new SchoolClassUser(userId, unrelated.getId(), true, now, null, UUID.randomUUID()));
+
+        var found = schoolClassRepository.findByUserId(schoolId, userId, "eng", null, 1, 20);
+
+        assertThat(found.content())
+            .extracting(schoolClass -> schoolClass.getId())
+            .containsExactlyInAnyOrder(englishByCode.getId(), englishByName.getId());
+        assertThat(found.totalElements()).isEqualTo(2);
+    }
+
+    @Test
+    void whenFindByUserIdWithBlankSearch_thenBehavesLikeNoSearch() {
+        var schoolId = UUID.randomUUID();
+        var userId = UUID.randomUUID();
+        var schoolClass = schoolClassRepository.save(newSchoolClass(schoolId, "ENG-BLANK-01", "Blank search"));
+        schoolClassUserRepository.save(
+            new SchoolClassUser(userId, schoolClass.getId(), true, Instant.now(), null, UUID.randomUUID())
+        );
+
+        var found = schoolClassRepository.findByUserId(schoolId, userId, "   ", null, 1, 20);
+
+        assertThat(found.content())
+            .extracting(sc -> sc.getId())
+            .containsExactly(schoolClass.getId());
+    }
+
+    /** page là 1-based: trang 2 phải bỏ qua đúng `size` phần tử đầu, không phải 2*size. */
+    @Test
+    void whenFindByUserIdWithSearch_thenPageNumberIsOneBased() {
+        var schoolId = UUID.randomUUID();
+        var userId = UUID.randomUUID();
+        var now = Instant.now();
+        for (var index = 1; index <= 3; index++) {
+            var schoolClass = schoolClassRepository.save(
+                newSchoolClass(schoolId, "ENG-PAGE-0" + index, "Paged English " + index)
+            );
+            schoolClassUserRepository.save(
+                new SchoolClassUser(userId, schoolClass.getId(), true, now, null, UUID.randomUUID())
+            );
+        }
+
+        var firstPage = schoolClassRepository.findByUserId(schoolId, userId, "eng-page", null, 1, 2);
+        var secondPage = schoolClassRepository.findByUserId(schoolId, userId, "eng-page", null, 2, 2);
+
+        assertThat(firstPage.page()).isEqualTo(1);
+        assertThat(firstPage.content()).hasSize(2);
+        assertThat(secondPage.page()).isEqualTo(2);
+        assertThat(secondPage.content()).hasSize(1);
+        assertThat(secondPage.totalElements()).isEqualTo(3);
+        assertThat(secondPage.totalPages()).isEqualTo(2);
+        assertThat(firstPage.content())
+            .extracting(sc -> sc.getId())
+            .doesNotContain(secondPage.content().getFirst().getId());
+    }
+
     private static SchoolClass newSchoolClass(UUID schoolId, String code, String name) {
         return newSchoolClass(schoolId, UUID.randomUUID(), UUID.randomUUID(), code, name, SchoolClassStatus.ACTIVE);
     }

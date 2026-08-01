@@ -214,11 +214,14 @@ public class SchoolController {
             @Argument(name = "size") Integer size,
             @Argument(name = "search") String search,
             @Argument(name = "roleId") UUID roleId,
-            @Argument(name = "status") String status) {
+            @Argument(name = "roleCode") String roleCode,
+            @Argument(name = "status") String status,
+            @Argument(name = "excludeClassId") UUID excludeClassId) {
         if (page == null || size == null || page <= 0 || size <= 0) {
             throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
         }
-        return viewSchoolUsersBySchoolUseCase.execute(new ViewSchoolUsersBySchoolQuery(schoolId, page, size, search, roleId, status));
+        return viewSchoolUsersBySchoolUseCase.execute(new ViewSchoolUsersBySchoolQuery(
+            schoolId, page, size, search, roleId, roleCode, status, excludeClassId));
     }
 
     @QueryMapping(name = "schoolUsersForRequester")

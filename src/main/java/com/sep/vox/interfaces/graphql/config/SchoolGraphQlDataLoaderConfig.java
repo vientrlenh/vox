@@ -26,6 +26,7 @@ import com.sep.vox.domain.mapper.SchoolUserDtoMapper;
 import com.sep.vox.domain.mapper.SupportedLanguageDtoMapper;
 import com.sep.vox.domain.mapper.UserDtoMapper;
 import com.sep.vox.domain.repository.SchoolClassRepository;
+import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -43,8 +44,9 @@ public class SchoolGraphQlDataLoaderConfig {
             SchoolRepository schoolRepository,
             SchoolGradeRepository schoolGradeRepository,
             SupportedLanguageRepository supportedLanguageRepository,
-            UserRepository userRepository, 
-            SchoolUserRepository schoolUserRepository) {
+            UserRepository userRepository,
+            SchoolUserRepository schoolUserRepository,
+            SchoolClassUserRepository schoolClassUserRepository) {
 
         registry.<SchoolClassesKey, List<SchoolClassDto>>forName("schoolClassesBySchool")
         .registerMappedBatchLoader((Set<SchoolClassesKey> keys, BatchLoaderEnvironment env) ->
@@ -155,6 +157,19 @@ public class SchoolGraphQlDataLoaderConfig {
                 .stream()
                 .map(UserDtoMapper::toUserDto)
                 .collect(Collectors.toMap(u -> u.id(), user -> user)))
+        );
+
+        // MyClass.activeMemberCount là Int! nên loader phải trả entry cho MỌI key:
+        // lớp chưa có thành viên không xuất hiện trong kết quả GROUP BY, thiếu key
+        // thì GraphQL nhận null và văng lỗi non-null.
+        registry.<UUID, Integer>forName("activeMemberCountByClass")
+        .registerMappedBatchLoader((Set<UUID> classIds, BatchLoaderEnvironment env) ->
+            Mono.fromSupplier(() -> {
+                var counts = schoolClassUserRepository.countActiveBySchoolClassIdIn(classIds);
+                Map<UUID, Integer> result = new HashMap<>();
+                classIds.forEach(classId -> result.put(classId, counts.getOrDefault(classId, 0)));
+                return result;
+            })
         );
 
         registry.<UUID, UserDto>forName("userBySchoolUser")

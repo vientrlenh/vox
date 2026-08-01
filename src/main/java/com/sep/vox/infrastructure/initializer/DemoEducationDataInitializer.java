@@ -712,7 +712,7 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
     }
 
     private List<UUID> findSchoolUserIdsByRole(UUID schoolId, UUID roleId, int limit) {
-        return schoolUserRepository.findBySchoolId(schoolId, null, roleId, "ACTIVE", 1, 100)
+        return schoolUserRepository.findBySchoolId(schoolId, null, roleId, "ACTIVE", null, false, 1, 100)
             .content()
             .stream()
             .map(schoolUser -> schoolUser.getUserId())

@@ -15,7 +15,10 @@ type ImportRowError {
 
 type ImportSession {
     id: ID!
-    schoolId: ID!
+    # Phiên import phạm vi hệ thống (System Admin tạo) không gắn trường nào, nên
+    # schoolId phải nullable - nếu khai ID! thì null-bubbling sẽ làm cả
+    # ImportSession trả về null.
+    schoolId: ID
     type: String!
     fileName: String!
     originalHeaders: [String!]!
@@ -36,7 +39,7 @@ type ImportSession {
 
 type ImportSessionSummary {
     id: ID!
-    schoolId: ID!
+    schoolId: ID
     type: String!
     fileName: String!
     totalRows: Int!

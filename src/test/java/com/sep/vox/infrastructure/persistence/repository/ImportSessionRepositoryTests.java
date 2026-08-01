@@ -7,6 +7,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
@@ -42,12 +44,28 @@ class ImportSessionRepositoryTests extends ContainerTestConfig {
         assertThat(found.get().getStatus()).isEqualTo(ImportSessionStatus.CANCELLED);
     }
 
+    @ParameterizedTest
+    @EnumSource(ImportType.class)
+    void should_persist_every_import_type(ImportType type) {
+        var session = session(ImportSessionStatus.PREVIEWED, type);
+
+        var saved = importSessionRepository.save(session);
+        var found = importSessionRepository.findById(saved.getId());
+
+        assertThat(found).isPresent();
+        assertThat(found.get().getType()).isEqualTo(type);
+    }
+
     private static ImportSession session(ImportSessionStatus status) {
+        return session(status, ImportType.SCHOOL_CLASS);
+    }
+
+    private static ImportSession session(ImportSessionStatus status, ImportType type) {
         var now = Instant.now();
         var userId = UUID.randomUUID();
         return new ImportSession(
             UUID.randomUUID(),
-            ImportType.SCHOOL_CLASS,
+            type,
             "classes.csv",
             "[]",
             "{}",

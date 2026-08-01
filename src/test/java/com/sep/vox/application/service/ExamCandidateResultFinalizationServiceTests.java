@@ -76,7 +76,7 @@ class ExamCandidateResultFinalizationServiceTests {
     void should_close_open_appeals_when_result_is_invalidated() {
         when(examCandidateResultRepository.findBySessionId(sessionId))
             .thenReturn(Optional.of(releasedResult()));
-        var openAppeal = appeal(ExamAppealStatus.COMPARING);
+        var openAppeal = appeal(ExamAppealStatus.GRADING);
         when(examResultAppealRepository.findByCandidateResultId(resultId))
             .thenReturn(List.of(openAppeal));
 

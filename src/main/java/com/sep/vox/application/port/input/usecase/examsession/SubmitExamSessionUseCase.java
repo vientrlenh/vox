@@ -11,8 +11,8 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.event.ExamAttemptEvaluationRequestedExternalEvent;
 import com.sep.vox.application.common.ExamCandidateStatusSupport;
+import com.sep.vox.application.event.ExamAttemptEvaluationRequestedExternalEvent;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.SubmitExamSessionCommand;
 import com.sep.vox.application.port.input.service.ZeroScoreExamResultService;
@@ -33,8 +33,8 @@ import com.sep.vox.domain.repository.ExamSessionRepository;
 import com.sep.vox.domain.repository.FrameworkCriterionBandRepository;
 import com.sep.vox.domain.repository.FrameworkCriterionRepository;
 import com.sep.vox.domain.repository.FrameworkResultBandRepository;
-import com.sep.vox.domain.repository.QuestionEvaluationGuideRepository;
 import com.sep.vox.domain.repository.QuestionAssetRepository;
+import com.sep.vox.domain.repository.QuestionEvaluationGuideRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.QuestionTopicRepository;
 import com.sep.vox.domain.repository.RubricCriterionRepository;
@@ -107,12 +107,21 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
         // GRADED chỉ được chấp nhận ở đây cho đúng 1 trường hợp: G.4 - session từng bị đánh
         // dấu vi phạm oan (INVALID, chưa từng có ExamItemEvaluation), đã dỡ cấm, được
         // RetryGradingExamSessionUseCase gọi lại để AI chấm thật lần đầu.
-        if (session.getStatus() != ExamSessionStatus.SUBMITTED
-                && session.getStatus() != ExamSessionStatus.EXPIRED
-                && session.getStatus() != ExamSessionStatus.GRADING_FAILED
-                && session.getStatus() != ExamSessionStatus.GRADED) {
+        var fromStatus = session.getStatus();
+        if (fromStatus != ExamSessionStatus.SUBMITTED
+                && fromStatus != ExamSessionStatus.EXPIRED
+                && fromStatus != ExamSessionStatus.GRADING_FAILED
+                && fromStatus != ExamSessionStatus.GRADED) {
             throw new IllegalStateException("chỉ được gửi chấm khi phiên thi đã nộp hoặc hết giờ");
         }
+
+       
+        boolean claimed = examSessionRepository.tryTransitionStatus(
+            session.getId(), fromStatus, ExamSessionStatus.GRADING);
+        if (!claimed) {
+            return null;
+        }
+        session.setStatus(ExamSessionStatus.GRADING);
 
         var candidate = examCandidateRepository.findById(session.getCandidateId())
             .orElseThrow(() -> new NotFoundException("không thể tìm thấy thí sinh của phiên thi"));
@@ -124,16 +133,12 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
             return null;
         }
         if (exam.getKind() == ExamKind.CENTRALIZED && !ExamCandidateStatusSupport.isAttended(candidate.getStatus())) {
-            session.setStatus(ExamSessionStatus.GRADING);
-            session = examSessionRepository.save(session);
             zeroScoreExamResultService.releaseZeroForEmptySession(session.getId());
             session.setStatus(ExamSessionStatus.GRADED);
             examSessionRepository.save(session);
             return null;
         }
         if (responses.isEmpty()) {
-            session.setStatus(ExamSessionStatus.GRADING);
-            session = examSessionRepository.save(session);
             zeroScoreExamResultService.releaseZeroForEmptySession(session.getId());
             session.setStatus(ExamSessionStatus.GRADED);
             examSessionRepository.save(session);
@@ -216,8 +221,6 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
             externalEventPublisherPort.publish(event);
         }
 
-        session.setStatus(ExamSessionStatus.GRADING);
-        examSessionRepository.save(session);
         return null;
     }
 
@@ -251,8 +254,6 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
         result.setUpdatedBy(null);
         examCandidateResultRepository.save(result);
 
-        session.setStatus(ExamSessionStatus.GRADING);
-        examSessionRepository.save(session);
         session.setStatus(ExamSessionStatus.GRADED);
         examSessionRepository.save(session);
     }

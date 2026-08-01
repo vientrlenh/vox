@@ -1,0 +1,66 @@
+# ==================================================================
+# Lớp học của giáo viên (chỉ đọc)
+#
+# Các type dưới đây chỉ được sinh ra từ ba root query TEACHER-gated ở cuối file,
+# không type nào khác trỏ tới chúng. Nhờ vậy chúng không thừa hưởng các field
+# resolver của `SchoolClass` / `SchoolClassUser` (vốn gated ở SCHOOL_ADMIN và
+# chạm tới được từ nhiều nhánh khác trong graph).
+# ==================================================================
+
+type MyClass {
+    id: ID!
+    schoolId: ID!
+    languageId: ID!
+    schoolGradeId: ID!
+    code: String!
+    name: String!
+    description: String
+    status: String!
+    createdAt: String
+    updatedAt: String
+    schoolGrade: SchoolGrade
+    language: SupportedLanguage
+    activeMemberCount: Int!
+}
+
+type MyClassPage {
+    content: [MyClass!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+type MyClassMember {
+    id: ID!
+    userId: ID!
+    schoolClassId: ID!
+    isActive: Boolean!
+    joinedAt: String
+    leftAt: String
+    user: MyClassMemberUser
+}
+
+# Cố tình phơi roleCodes dạng scalar thay vì lồng type `Role`: giữ MyClassMember
+# là nhánh lá, không mở thêm cạnh nào trong graph cho role TEACHER.
+type MyClassMemberUser {
+    id: ID!
+    fullName: String
+    email: String
+    phone: String
+    roleCodes: [String!]!
+}
+
+type MyClassMemberPage {
+    content: [MyClassMember!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+extend type Query {
+    myClasses(schoolId: ID!, search: String, status: String, page: Int! = 1, size: Int! = 10): MyClassPage!
+    myClass(id: ID!): MyClass
+    myClassMembers(schoolClassId: ID!, roleCode: String, search: String, page: Int! = 1, size: Int! = 20): MyClassMemberPage!
+}

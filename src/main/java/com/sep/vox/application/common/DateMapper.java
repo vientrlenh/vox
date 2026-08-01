@@ -32,12 +32,27 @@ public final class DateMapper {
             DateTimeFormatter.ofPattern("dd-MM-yyyy");
 
     /**
-     * Múi giờ dùng để giải nghĩa những input <b>không</b> mang offset.
+     * Múi giờ nghiệp vụ của hệ thống. Dùng cho hai việc:
+     *
+     * <ul>
+     *   <li><b>Giải nghĩa input không mang offset</b> — xem {@link #toInstant(String)} và
+     *       {@link #toImportedInstant(String, ZoneId)}.
+     *   <li><b>Hiển thị thời gian cho người dùng</b> (mail, CSV, chuỗi ngày). Một {@link Instant}
+     *       tự nó <b>không</b> format ra được — nó không mang múi giờ nào cả, nên chỗ format bắt
+     *       buộc phải cấp một zone. Đừng cấp bằng múi giờ mặc định của JVM: hiện nó đúng chỉ vì
+     *       {@code Dockerfile} đặt {@code TZ=Asia/Ho_Chi_Minh} và {@code build.gradle} đặt
+     *       {@code user.timezone} cho task {@code test} — đổi một trong hai chỗ đó là giờ hiển thị
+     *       lệch mà không có test nào đỏ. Gắn zone tường minh thì không phụ thuộc vào chúng.
+     * </ul>
      *
      * <p>Cố tình để {@code public}: mọi chỗ cần nó phải truyền tay vào
-     * {@link #toImportedInstant(String, ZoneId)}, để lựa chọn múi giờ hiện ra ở call site chứ không
-     * nằm ẩn trong bộ parse. Khi {@code School} có cột múi giờ riêng, grep hằng này là ra đúng danh
-     * sách những chỗ phải đổi sang múi giờ của trường.
+     * {@link #toImportedInstant(String, ZoneId)} hoặc {@code DateTimeFormatter.withZone(...)}, để
+     * lựa chọn múi giờ hiện ra ở call site chứ không nằm ẩn trong bộ parse/format. Khi
+     * {@code School} có cột múi giờ riêng, grep hằng này là ra đúng danh sách những chỗ phải đổi
+     * sang múi giờ của trường.
+     *
+     * <p>Lưu ý khi xoá nhánh tương thích trong {@link #toInstant(String)}: hằng này <b>không</b>
+     * biến mất theo, vì đường import và đường hiển thị vẫn cần nó.
      *
      * <p>Dùng {@link ZoneId} thay vì {@code ZoneOffset.ofHours(7)} vì {@code atStartOfDay} cần
      * ZoneId, và offset cứng sẽ sai ở những vùng có giờ mùa hè.

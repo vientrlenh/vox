@@ -1,0 +1,71 @@
+# ==================================================================
+# Danh bạ nguồn thí sinh / giám thị của một kỳ thi (chỉ đọc)
+#
+# Các type dưới đây chỉ được sinh ra từ bốn root query ở cuối file, không type nào
+# khác trỏ tới chúng. Nhờ vậy chúng không thừa hưởng field resolver của `SchoolClass`
+# / `SchoolUser` / `SchoolGrade` (vốn gated ở SCHOOL_ADMIN và chạm tới được từ nhiều
+# nhánh khác trong graph). Cùng lý do đã ghi ở `myclass.graphqls`.
+#
+# Mọi field đều là scalar — cố tình giữ đây là nhánh lá, không mở thêm cạnh nào
+# trong graph cho vai trò TEACHER.
+#
+# Phân quyền thật nằm ở `ExamDirectoryAccessService`, không ở @PreAuthorize:
+# school admin cùng trường HOẶC chủ tịch (CHAIR) của kỳ thi. Chủ tịch bài trên lớp
+# chỉ thấy lớp/học sinh của chính mình và không có đường theo niên khóa.
+# ==================================================================
+
+type ExamDirectoryClass {
+    id: ID!
+    schoolId: ID!
+    languageId: ID!
+    schoolGradeId: ID!
+    code: String!
+    name: String!
+    description: String
+    status: String!
+}
+
+type ExamDirectoryGrade {
+    id: ID!
+    code: String!
+    name: String!
+    status: String!
+}
+
+type ExamDirectoryUser {
+    userId: ID!
+    fullName: String
+    email: String
+    status: String!
+}
+
+type ExamDirectoryClassPage {
+    content: [ExamDirectoryClass!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+type ExamDirectoryGradePage {
+    content: [ExamDirectoryGrade!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+type ExamDirectoryUserPage {
+    content: [ExamDirectoryUser!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+extend type Query {
+    examDirectoryClasses(examId: ID!, search: String, page: Int! = 1, size: Int! = 20): ExamDirectoryClassPage!
+    examDirectoryGrades(examId: ID!, search: String, page: Int! = 1, size: Int! = 20): ExamDirectoryGradePage!
+    examDirectoryStudents(examId: ID!, search: String, page: Int! = 1, size: Int! = 20): ExamDirectoryUserPage!
+    examDirectoryProctors(examId: ID!, search: String, page: Int! = 1, size: Int! = 20): ExamDirectoryUserPage!
+}

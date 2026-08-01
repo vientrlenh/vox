@@ -1,5 +1,6 @@
 package com.sep.vox.domain.model.exam;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -93,6 +94,32 @@ public class Exam {
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
         this.updatedBy = updatedBy;
+    }
+
+    /**
+     * H.1: một ca thi phải đủ dài để thí sinh làm hết đề, tức là (end - start) >= examTimeDurationSecond.
+     * Khi kỳ thi chưa tính được thời gian làm bài (chưa có mã đề/câu hỏi nên null hoặc 0) thì chưa ràng buộc.
+     */
+    public boolean isScheduleWindowShorterThanExamTime(Instant start, Instant end) {
+        if (examTimeDurationSecond == null || examTimeDurationSecond <= 0 || start == null || end == null) {
+            return false;
+        }
+        return Duration.between(start, end).getSeconds() < examTimeDurationSecond;
+    }
+
+    /**
+     * Ca thi phải nằm trọn trong khung mở/đóng của kỳ thi: openAt <= start && end <= closeAt.
+     * Hai cận kiểm tra độc lập nhau vì kỳ thi thường được phép chưa set openAt/closeAt
+     * (chỉ CLASS_TEST mới bắt buộc có, xem UpdateExamStatusUseCase.requireClassTestScheduleWindow).
+     */
+    public boolean isScheduleWindowOutsideExamWindow(Instant start, Instant end) {
+        if (start == null || end == null) {
+            return false;
+        }
+        if (openAt != null && start.isBefore(openAt)) {
+            return true;
+        }
+        return closeAt != null && end.isAfter(closeAt);
     }
 
     public UUID getId() {

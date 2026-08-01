@@ -1,10 +1,12 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.exam.ExamGradingAssignment;
@@ -29,14 +31,33 @@ public class ExamGradingAssignmentRepositoryImpl implements ExamGradingAssignmen
     }
 
     @Override
-    public Optional<ExamGradingAssignment> findByCandidateResultId(UUID candidateResultId) {
-        return springDataExamGradingAssignmentRepository.findByCandidateResultId(candidateResultId)
+    public Optional<ExamGradingAssignment> findByIdForUpdate(UUID id) {
+        return springDataExamGradingAssignmentRepository.findByIdForUpdate(id)
             .map(ExamGradingAssignmentMapper::toDomain);
     }
 
     @Override
-    public boolean existsByCandidateResultId(UUID candidateResultId) {
-        return springDataExamGradingAssignmentRepository.existsByCandidateResultId(candidateResultId);
+    public Optional<ExamGradingAssignment> findOpenByCandidateResultId(UUID candidateResultId) {
+        return springDataExamGradingAssignmentRepository.findByActiveResultId(candidateResultId)
+            .map(ExamGradingAssignmentMapper::toDomain);
+    }
+
+    @Override
+    public List<ExamGradingAssignment> findOpenByCandidateResultIdIn(Collection<UUID> candidateResultIds) {
+        if (candidateResultIds.isEmpty()) {
+            return List.of();
+        }
+        return springDataExamGradingAssignmentRepository.findByActiveResultIdIn(candidateResultIds).stream()
+            .map(ExamGradingAssignmentMapper::toDomain)
+            .toList();
+    }
+
+    @Override
+    public List<ExamGradingAssignment> findByCandidateResultIdOrderByAssignedAtDesc(UUID candidateResultId) {
+        return springDataExamGradingAssignmentRepository
+            .findByCandidateResultIdOrderByAssignedAtDesc(candidateResultId).stream()
+            .map(ExamGradingAssignmentMapper::toDomain)
+            .toList();
     }
 
     @Override
@@ -50,15 +71,54 @@ public class ExamGradingAssignmentRepositoryImpl implements ExamGradingAssignmen
     }
 
     @Override
+    public List<ExamGradingAssignment> findByAppealId(UUID appealId) {
+        return springDataExamGradingAssignmentRepository.findByAppealId(appealId).stream()
+            .map(ExamGradingAssignmentMapper::toDomain)
+            .toList();
+    }
+
+    @Override
+    public List<ExamGradingAssignment> findOverdue(Instant now) {
+        return springDataExamGradingAssignmentRepository.findOverdue(now).stream()
+            .map(ExamGradingAssignmentMapper::toDomain)
+            .toList();
+    }
+
+    @Override
+    public List<ExamGradingAssignment> findOverdueInSchool(
+            Instant now, UUID schoolId, UUID examId, int limit) {
+        return springDataExamGradingAssignmentRepository
+            .findOverdueInSchool(now, schoolId, examId, PageRequest.of(0, limit)).stream()
+            .map(ExamGradingAssignmentMapper::toDomain)
+            .toList();
+    }
+
+    @Override
+    public List<ExamGradingAssignment> findDueForReminder(Instant threshold) {
+        return springDataExamGradingAssignmentRepository.findDueForReminder(threshold).stream()
+            .map(ExamGradingAssignmentMapper::toDomain)
+            .toList();
+    }
+
+    /**
+     * Flush ngay, không đợi cuối transaction — bỏ đi là lỗi thật, không phải tối ưu.
+     *
+     * <p>Unique index trên {@code active_result_id} nhạy với THỨ TỰ ghi. Hibernate mặc
+     * định flush INSERT trước UPDATE, nên "đóng vòng cũ rồi mở vòng mới cho cùng một
+     * bài" (chính là {@code CLEAR_INVALID}) sẽ chèn dòng mới trước khi nhả
+     * {@code active_result_id} của dòng cũ -> vi phạm unique.
+     */
+    @Override
     public ExamGradingAssignment save(ExamGradingAssignment assignment) {
-        var saved = springDataExamGradingAssignmentRepository.save(ExamGradingAssignmentMapper.toJpa(assignment));
+        var saved = springDataExamGradingAssignmentRepository.saveAndFlush(
+            ExamGradingAssignmentMapper.toJpa(assignment));
         return ExamGradingAssignmentMapper.toDomain(saved);
     }
 
     @Override
     public List<ExamGradingAssignment> saveAll(List<ExamGradingAssignment> assignments) {
         var entities = assignments.stream().map(ExamGradingAssignmentMapper::toJpa).toList();
-        return springDataExamGradingAssignmentRepository.saveAll(entities).stream()
+        return springDataExamGradingAssignmentRepository.saveAllAndFlush(entities).stream()
             .map(ExamGradingAssignmentMapper::toDomain)
             .toList();
     }
@@ -66,5 +126,13 @@ public class ExamGradingAssignmentRepositoryImpl implements ExamGradingAssignmen
     @Override
     public void deleteById(UUID id) {
         springDataExamGradingAssignmentRepository.deleteById(id);
+    }
+
+    @Override
+    public void deleteByCandidateResultIdIn(Collection<UUID> candidateResultIds) {
+        if (candidateResultIds.isEmpty()) {
+            return;
+        }
+        springDataExamGradingAssignmentRepository.deleteByCandidateResultIdIn(candidateResultIds);
     }
 }

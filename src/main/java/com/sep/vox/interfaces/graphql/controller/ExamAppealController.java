@@ -9,43 +9,40 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 
 import com.sep.vox.application.port.input.query.SearchExamAppealsQuery;
-import com.sep.vox.application.port.input.query.ViewMyAppealTasksQuery;
-import com.sep.vox.application.port.input.usecase.examappeal.ViewAppealTaskDetailUseCase;
+import com.sep.vox.application.port.input.query.ViewAssignableReviewersQuery;
 import com.sep.vox.application.port.input.usecase.examappeal.ViewAssignableReviewersUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.ViewExamAppealDetailUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.ViewExamAppealStatsUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.ViewExamAppealsUseCase;
-import com.sep.vox.application.port.input.usecase.examappeal.ViewMyAppealTasksUseCase;
 import com.sep.vox.application.query.dto.AppealDetailInfo;
 import com.sep.vox.application.query.dto.AppealReviewerLiteInfo;
 import com.sep.vox.application.query.dto.AppealStatsInfo;
 import com.sep.vox.application.query.dto.AppealSummaryInfo;
-import com.sep.vox.application.query.dto.AppealTaskDetailInfo;
-import com.sep.vox.application.query.dto.AppealTaskInfo;
 import com.sep.vox.domain.common.PageResult;
 
+/**
+ * Chỉ còn góc nhìn của school admin.
+ *
+ * <p>{@code myAppealTasks} / {@code appealTaskDetail} đã bị gỡ: vòng phúc khảo giờ là
+ * một dòng phân công như ba vòng kia, nên giáo viên xem ở {@code myGradingTasks} và
+ * chấm ở {@code gradingTaskDetail} — đúng mục tiêu "một hàng đợi duy nhất".
+ */
 @Controller("graphqlExamAppealController")
 public class ExamAppealController {
 
     private final ViewExamAppealsUseCase viewExamAppealsUseCase;
     private final ViewExamAppealStatsUseCase viewExamAppealStatsUseCase;
     private final ViewExamAppealDetailUseCase viewExamAppealDetailUseCase;
-    private final ViewMyAppealTasksUseCase viewMyAppealTasksUseCase;
-    private final ViewAppealTaskDetailUseCase viewAppealTaskDetailUseCase;
     private final ViewAssignableReviewersUseCase viewAssignableReviewersUseCase;
 
     public ExamAppealController(
             ViewExamAppealsUseCase viewExamAppealsUseCase,
             ViewExamAppealStatsUseCase viewExamAppealStatsUseCase,
             ViewExamAppealDetailUseCase viewExamAppealDetailUseCase,
-            ViewMyAppealTasksUseCase viewMyAppealTasksUseCase,
-            ViewAppealTaskDetailUseCase viewAppealTaskDetailUseCase,
             ViewAssignableReviewersUseCase viewAssignableReviewersUseCase) {
         this.viewExamAppealsUseCase = viewExamAppealsUseCase;
         this.viewExamAppealStatsUseCase = viewExamAppealStatsUseCase;
         this.viewExamAppealDetailUseCase = viewExamAppealDetailUseCase;
-        this.viewMyAppealTasksUseCase = viewMyAppealTasksUseCase;
-        this.viewAppealTaskDetailUseCase = viewAppealTaskDetailUseCase;
         this.viewAssignableReviewersUseCase = viewAssignableReviewersUseCase;
     }
 
@@ -72,25 +69,11 @@ public class ExamAppealController {
         return viewExamAppealDetailUseCase.execute(id);
     }
 
-    @QueryMapping(name = "myAppealTasks")
-    @PreAuthorize("hasRole('TEACHER')")
-    public PageResult<AppealTaskInfo> myAppealTasks(
-            @Argument(name = "status") String status,
-            @Argument(name = "page") Integer page,
-            @Argument(name = "size") Integer size) {
-        return viewMyAppealTasksUseCase.execute(new ViewMyAppealTasksQuery(
-            status, page == null ? 0 : page, size == null ? 20 : size));
-    }
-
-    @QueryMapping(name = "appealTaskDetail")
-    @PreAuthorize("hasRole('TEACHER')")
-    public AppealTaskDetailInfo appealTaskDetail(@Argument(name = "appealId") UUID appealId) {
-        return viewAppealTaskDetailUseCase.execute(appealId);
-    }
-
     @QueryMapping(name = "appealReviewers")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public List<AppealReviewerLiteInfo> appealReviewers(@Argument(name = "keyword") String keyword) {
-        return viewAssignableReviewersUseCase.execute(keyword);
+    public List<AppealReviewerLiteInfo> appealReviewers(
+            @Argument(name = "appealId") UUID appealId,
+            @Argument(name = "keyword") String keyword) {
+        return viewAssignableReviewersUseCase.execute(new ViewAssignableReviewersQuery(appealId, keyword));
     }
 }

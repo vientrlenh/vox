@@ -65,7 +65,7 @@ public class QuestionBankJpaEntity {
     })
     private String ownerType;
 
-    @Column(name = "status", nullable = false, updatable = false, check = {
+    @Column(name = "status", nullable = false, check = {
         @CheckConstraint(
             name = "chk_quesion_banks_status_valid", 
             constraint = "status IN ('DRAFT', 'PUBLISHED', 'ARCHIVED')"

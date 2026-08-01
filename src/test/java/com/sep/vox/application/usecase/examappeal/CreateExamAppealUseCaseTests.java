@@ -22,6 +22,7 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreateExamAppealCommand;
 import com.sep.vox.application.port.input.service.ExamAppealAccessService;
+import com.sep.vox.application.port.input.service.ResultStatusHistoryRecorder;
 import com.sep.vox.application.port.input.service.ExamAppealAccessService.AppealContext;
 import com.sep.vox.application.port.input.usecase.examappeal.CreateExamAppealUseCase;
 import com.sep.vox.domain.model.exam.ExamAppealStatus;
@@ -32,6 +33,7 @@ import com.sep.vox.domain.model.exam.ExamResultAppeal;
 import com.sep.vox.domain.model.exam.ExamResultAppealItem;
 import com.sep.vox.domain.model.exam.ExamSession;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
+import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
 import com.sep.vox.domain.repository.ExamItemResponseRepository;
 import com.sep.vox.domain.repository.ExamResultAppealItemRepository;
 import com.sep.vox.domain.repository.ExamResultAppealRepository;
@@ -66,7 +68,9 @@ public class CreateExamAppealUseCaseTests {
             examResultAppealItemRepository,
             examCandidateResultRepository,
             examItemResponseRepository,
-            examAppealAccessService
+            mock(ExamGradingAssignmentRepository.class),
+            examAppealAccessService,
+            mock(ResultStatusHistoryRecorder.class)
         );
 
         when(examAppealAccessService.requireActiveUserId()).thenReturn(studentId);

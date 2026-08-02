@@ -678,9 +678,14 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             var sectionId = row.get(3, UUID.class);
             var current = currentEvaluations.get(responseId);
             var ai = aiEvaluations.get(responseId);
-            var orderInSection = sectionId == null
-                ? 1
-                : seenPerSection.merge(sectionId, 1, Integer::sum);
+            int orderInSection;
+            if (sectionId == null) {
+                orderInSection = 1;
+            } else {
+                var seen = seenPerSection.get(sectionId);
+                orderInSection = seen == null ? 1 : seen + 1;
+                seenPerSection.put(sectionId, orderInSection);
+            }
             result.add(new GradingTaskItemInfo(
                 row.get(1, UUID.class),
                 responseId,

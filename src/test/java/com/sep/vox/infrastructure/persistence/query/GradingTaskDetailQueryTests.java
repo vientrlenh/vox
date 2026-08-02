@@ -15,7 +15,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.query.dto.GradingTaskDetailInfo;
-import com.sep.vox.application.query.dto.GradingTaskItemInfo;
 import com.sep.vox.application.query.repository.ExamGradingQueryRepository;
 import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.infrastructure.persistence.entity.ExamCandidateResultJpaEntity;
@@ -71,7 +70,7 @@ class GradingTaskDetailQueryTests extends ContainerTestConfig {
     private UUID criterionId;
 
     @BeforeEach
-    void seed() {
+    void setUp() {
         var paperId = UUID.randomUUID();
         var rubricVersionId = UUID.randomUUID();
 
@@ -128,9 +127,9 @@ class GradingTaskDetailQueryTests extends ContainerTestConfig {
         var items = detail().items();
 
         assertThat(items).hasSize(3);
-        assertThat(items).extracting(GradingTaskItemInfo::partLabel)
+        assertThat(items).extracting(item -> item.partLabel())
             .containsExactly("Part 1", "Part 1", "Part 2");
-        assertThat(items).extracting(GradingTaskItemInfo::orderInSection)
+        assertThat(items).extracting(item -> item.orderInSection())
             .containsExactly(1, 2, 1);
         assertThat(items.get(0).sectionId())
             .isEqualTo(items.get(1).sectionId())

@@ -4,13 +4,35 @@ extend type Query {
     myInterestProfile: InterestProfile!
     mySavedTopics: [PracticeTopicOffer!]!
     myPracticeDashboardStats: PracticeDashboardStats!
+    "Hỏi lại kết quả dựng đề đã khởi động bởi buildPracticePaper (xem PracticePaperDraft)."
+    practicePaperDraft(draftId: ID!): PracticePaperDraft!
 }
 
 extend type Mutation {
-    buildPracticePaper(input: StartPracticeSessionInput!): PracticePaper!
+    """
+    Khởi động dựng đề. Trả về NGAY: nếu kho câu hỏi đã có câu phù hợp thì
+    status=READY kèm luôn paper; nếu phải nhờ AI sinh câu mới (chậm) thì
+    status=PREPARING và client hỏi lại bằng practicePaperDraft(draftId).
+    """
+    buildPracticePaper(input: StartPracticeSessionInput!): PracticePaperDraft!
     pickRandomTopic: PracticeTopicOffer!
     saveTopic(topicId: ID!): Boolean!
     unsaveTopic(topicId: ID!): Boolean!
+}
+
+type PracticePaperDraft {
+    draftId: ID!
+    status: PracticePaperDraftStatus!
+    "Chỉ có khi status=FAILED -- thông báo đọc được để hiện thẳng cho học sinh."
+    reason: String
+    "Chỉ có khi status=READY."
+    paper: PracticePaper
+}
+
+enum PracticePaperDraftStatus {
+    PREPARING
+    READY
+    FAILED
 }
 
 input StartPracticeSessionInput {

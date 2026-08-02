@@ -119,6 +119,39 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
             .toList();
     }
 
+    /** Số thẻ đứng đầu bảng xếp hạng được coi là "trong tầm ngắm" -- chủ đề ngoài ngưỡng này
+     * chỉ có thể lọt vào lô chào qua ε-greedy (xem execute()). */
+    private static final int TOP_RANK_WINDOW = 10;
+
+    /**
+     * Chủ đề này có nằm NGOÀI top-{@value #TOP_RANK_WINDOW} theo Final(t) không.
+     *
+     * Dùng để suy ra phiên có phải do thăm dò hệ thống đẩy hay không, thay vì phải NHỚ slot
+     * epsilon nào đã chào cho ai: nhớ thì cần một map sống mãi trong RAM (rò theo số học sinh ×
+     * số chủ đề) hoặc phải thêm TTL/LRU với đủ thứ bug đi kèm (mất state sau restart, evict
+     * nhầm lúc học sinh còn đang chọn). Xếp hạng vốn tất định nên tính lại rẻ hơn và không sai.
+     */
+    @Transactional(readOnly = true)
+    public boolean isOutsideTopRanked(UUID studentId, UUID topicId) {
+        var goal = currentGoal(studentId);
+        if ("EXAM_PREP".equals(goal)) {
+            // Đường EXAM_PREP không chạy ε-greedy (chỉ bucket FOR_YOU của pool AI-sinh mới có).
+            return false;
+        }
+        var ranked = classicRanked(studentId, goal, "FOR_YOU", null).stream()
+            .sorted(Comparator.comparingDouble(RankedTopic::score).reversed())
+            .toList();
+        var position = -1;
+        for (var index = 0; index < ranked.size(); index++) {
+            if (ranked.get(index).id().equals(topicId)) {
+                position = index;
+                break;
+            }
+        }
+        // Không tìm thấy (chủ đề vừa bị tắt/đổi) -> không dám kết luận là thăm dò.
+        return position >= TOP_RANK_WINDOW;
+    }
+
     private static int clampPercent(double score) {
         return Math.max(0, Math.min(100, (int) Math.round(score * 100)));
     }
@@ -127,13 +160,13 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
         if (weakCriterionLabel != null) {
             return "Còn nhiều câu luyện đúng kỹ năng bạn đang yếu (" + weakCriterionLabel + ")";
         }
-        if (topic.curriculum() >= topic.interest() && topic.curriculum() >= topic.bank()) {
+        // Chỉ nói "khớp chương trình học" khi topic THẬT SỰ thuộc GDPT2018 -- mọi
+        // trường hợp khác (interest/bank chỉ là tín hiệu xếp hạng nội bộ, không đủ
+        // chắc chắn để tuyên bố lý do cụ thể) dùng nhãn trung tính.
+        if (topic.curriculum() >= 1.0) {
             return "Khớp chương trình học của bạn";
         }
-        if (topic.bank() >= topic.interest()) {
-            return "Bạn chưa luyện nhiều với chủ đề này";
-        }
-        return "Phù hợp sở thích của bạn";
+        return "Gợi ý cho bạn";
     }
 
     private static double scoreFor(String bucket, String goal, double interest, double bank, double curriculum) {

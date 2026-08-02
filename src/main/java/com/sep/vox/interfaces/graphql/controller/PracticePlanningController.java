@@ -2,6 +2,7 @@ package com.sep.vox.interfaces.graphql.controller;
 
 import static com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.InterestProfile;
 import static com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.PracticePaper;
+import static com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.PracticePaperDraft;
 import static com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.PracticeTopicOffer;
 import static com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.TopicSearchResult;
 import static com.sep.vox.application.response.input.practicesession.PracticeSessionResponses.PracticeDashboardStats;
@@ -10,6 +11,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.task.AsyncTaskExecutor;
 
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
@@ -21,6 +26,8 @@ import com.sep.vox.application.port.input.command.BuildPracticePaperCommand;
 import com.sep.vox.application.port.input.command.SaveTopicCommand;
 import com.sep.vox.application.port.input.command.UnsaveTopicCommand;
 import com.sep.vox.application.port.input.query.SearchPracticeTopicsQuery;
+import com.sep.vox.application.port.input.service.PracticePaperDraftService;
+import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.port.input.query.ViewPracticeTopicOffersQuery;
 import com.sep.vox.application.port.input.query.ViewSynchronousTopicOffersQuery;
 import com.sep.vox.application.port.input.usecase.practiceplanning.BuildPracticePaperUseCase;
@@ -48,6 +55,9 @@ public class PracticePlanningController {
     private final ViewSynchronousTopicOffersUseCase viewSynchronousTopicOffersUseCase;
     private final ViewMySavedTopicsUseCase viewMySavedTopicsUseCase;
     private final ViewPracticeDashboardStatsUseCase viewPracticeDashboardStatsUseCase;
+    private final PracticePaperDraftService practicePaperDraftService;
+    private final UserContextPort userContextPort;
+    private final AsyncTaskExecutor practiceGenerationExecutor;
 
     public PracticePlanningController(
             ViewPracticeTopicOffersUseCase viewPracticeTopicOffersUseCase,
@@ -59,7 +69,13 @@ public class PracticePlanningController {
             UnsaveTopicUseCase unsaveTopicUseCase,
             ViewSynchronousTopicOffersUseCase viewSynchronousTopicOffersUseCase,
             ViewMySavedTopicsUseCase viewMySavedTopicsUseCase,
-            ViewPracticeDashboardStatsUseCase viewPracticeDashboardStatsUseCase) {
+            ViewPracticeDashboardStatsUseCase viewPracticeDashboardStatsUseCase,
+            PracticePaperDraftService practicePaperDraftService,
+            UserContextPort userContextPort,
+            @Qualifier("practiceGenerationExecutor") AsyncTaskExecutor practiceGenerationExecutor) {
+        this.practicePaperDraftService = practicePaperDraftService;
+        this.userContextPort = userContextPort;
+        this.practiceGenerationExecutor = practiceGenerationExecutor;
         this.viewPracticeTopicOffersUseCase = viewPracticeTopicOffersUseCase;
         this.searchPracticeTopicsUseCase = searchPracticeTopicsUseCase;
         this.viewMyInterestProfileUseCase = viewMyInterestProfileUseCase;
@@ -72,26 +88,37 @@ public class PracticePlanningController {
         this.viewSynchronousTopicOffersUseCase = viewSynchronousTopicOffersUseCase;
     }
 
+    /**
+     * Trả {@code CompletableFuture} chứ không chạy thẳng trên thread request: khi kết quả
+     * xếp hạng mỏng (&lt;3), nhánh viewSynchronousTopicOffers sẽ nhờ AI đề xuất chủ đề mới --
+     * một cuộc gọi LLM chậm. Chạy async khiến servlet chuyển sang chế độ bất đồng bộ, lúc đó
+     * OSIV nhả EntityManager + connection DB thay vì giữ tới hết request.
+     */
     @QueryMapping
     @PreAuthorize("hasRole('STUDENT')")
-    public List<PracticeTopicOffer> practiceTopicOffers(
+    public CompletableFuture<List<PracticeTopicOffer>> practiceTopicOffers(
             @Argument("excludeTopicIds") List<UUID> excludeTopicIds,
             @Argument("round") Integer round,
             @Argument("bucket") String bucket) {
-        var offers = new ArrayList<>(viewPracticeTopicOffersUseCase.execute(
-            new ViewPracticeTopicOffersQuery(
-                excludeTopicIds,
-                round == null ? 1 : Math.max(1, Math.min(round, 3)),
-                bucket == null ? "FOR_YOU" : bucket
-            )
-        ));
-        if (offers.size() < 3) {
-            offers.addAll(viewSynchronousTopicOffersUseCase.execute(
-                new ViewSynchronousTopicOffersQuery(3 - offers.size())
-            ));
-            Collections.shuffle(offers);
-        }
-        return offers;
+        return CompletableFuture.supplyAsync(
+            () -> {
+                var offers = new ArrayList<>(viewPracticeTopicOffersUseCase.execute(
+                    new ViewPracticeTopicOffersQuery(
+                        excludeTopicIds,
+                        round == null ? 1 : Math.max(1, Math.min(round, 3)),
+                        bucket == null ? "FOR_YOU" : bucket
+                    )
+                ));
+                if (offers.size() < 3) {
+                    offers.addAll(viewSynchronousTopicOffersUseCase.execute(
+                        new ViewSynchronousTopicOffersQuery(3 - offers.size())
+                    ));
+                    Collections.shuffle(offers);
+                }
+                return (List<PracticeTopicOffer>) offers;
+            },
+            practiceGenerationExecutor
+        );
     }
 
     @QueryMapping
@@ -118,16 +145,35 @@ public class PracticePlanningController {
         return viewPracticeDashboardStatsUseCase.execute(null);
     }
 
+    /**
+     * Pha 1 của dựng đề 2 pha: khởi động rồi trả về ngay (READY nếu kho có sẵn câu, PREPARING
+     * nếu phải nhờ AI sinh). Việc dựng chạy trên executor riêng nên thread request + connection
+     * DB được trả về sớm thay vì bị giữ suốt 10-20s chờ LLM.
+     */
     @MutationMapping
     @PreAuthorize("hasRole('STUDENT')")
-    public PracticePaper buildPracticePaper(@Argument("input") StartPracticeSessionInput input) {
-        return buildPracticePaperUseCase.execute(new BuildPracticePaperCommand(
+    public PracticePaperDraft buildPracticePaper(@Argument("input") StartPracticeSessionInput input) {
+        var command = new BuildPracticePaperCommand(
             input.topicId(),
             input.origin(),
             input.fromSubAttribute(),
             input.offeredTopicIds(),
             input.previousOfferedTopicIds()
-        ));
+        );
+        return practicePaperDraftService.start(
+            userContextPort.getCurrentAuthenticatedUserId(),
+            () -> buildPracticePaperUseCase.execute(command)
+        );
+    }
+
+    /** Pha 2: client hỏi lại kết quả dựng đề đã khởi động ở pha 1. */
+    @QueryMapping
+    @PreAuthorize("hasRole('STUDENT')")
+    public PracticePaperDraft practicePaperDraft(@Argument("draftId") UUID draftId) {
+        return practicePaperDraftService.get(
+            userContextPort.getCurrentAuthenticatedUserId(),
+            draftId
+        );
     }
 
     @MutationMapping

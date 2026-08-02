@@ -1,0 +1,114 @@
+package com.sep.vox.application.port.input.service;
+
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.UUID;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.sep.vox.application.port.output.JsonSerializationPort;
+import com.sep.vox.domain.model.personalization.PracticePaperItem;
+import com.sep.vox.domain.model.personalization.PracticeQuestion;
+import com.sep.vox.domain.repository.personalization.LearnerProfileRepository;
+import com.sep.vox.domain.repository.personalization.PracticePaperItemRepository;
+import com.sep.vox.domain.repository.personalization.PracticePaperRepository;
+import com.sep.vox.domain.repository.personalization.StudentQuestionExposureRepository;
+
+/**
+ * Ghi PracticePaper + PracticePaperItem + exposure -- tách riêng khỏi
+ * BuildPracticePaperUseCase để @Transactional chỉ bọc đúng phần ghi DB, không
+ * bọc luôn phần gọi ra ngoài (Python agents) phía trước nó. Là bean riêng
+ * (không phải method private/protected cùng class) vì self-invocation bỏ qua
+ * proxy AOP của Spring -- @Transactional trên method cùng class sẽ bị lờ đi
+ * nếu gọi qua this.
+ */
+@Service
+public class PracticePaperPersistenceService {
+
+    private final PracticePaperRepository paperRepository;
+    private final PracticePaperItemRepository paperItemRepository;
+    private final StudentQuestionExposureRepository studentQuestionExposureRepository;
+    private final LearnerProfileRepository learnerProfileRepository;
+    private final JsonSerializationPort jsonSerializationPort;
+
+    public PracticePaperPersistenceService(
+            PracticePaperRepository paperRepository,
+            PracticePaperItemRepository paperItemRepository,
+            StudentQuestionExposureRepository studentQuestionExposureRepository,
+            LearnerProfileRepository learnerProfileRepository,
+            JsonSerializationPort jsonSerializationPort) {
+        this.paperRepository = paperRepository;
+        this.paperItemRepository = paperItemRepository;
+        this.studentQuestionExposureRepository = studentQuestionExposureRepository;
+        this.learnerProfileRepository = learnerProfileRepository;
+        this.jsonSerializationPort = jsonSerializationPort;
+    }
+
+    @Transactional
+    public com.sep.vox.domain.model.personalization.PracticePaper persist(
+            UUID studentId,
+            UUID topicId,
+            String origin,
+            List<UUID> offeredTopicIds,
+            List<UUID> previousOfferedTopicIds,
+            PracticeQuestion question,
+            PracticeQuestionSelectionService.NextQuestionSelection selection) {
+        var paper = createPaper(
+            studentId, topicId, origin, offeredTopicIds, previousOfferedTopicIds, question
+        );
+        saveItemAndExposure(studentId, paper.id(), selection);
+        return paper;
+    }
+
+    private String currentGoal(UUID studentId) {
+        return learnerProfileRepository.findCurrent(studentId)
+            .map(profile -> profile.goalType() == null ? "ABILITY_IMPROVEMENT" : profile.goalType())
+            .orElse("ABILITY_IMPROVEMENT");
+    }
+
+    private com.sep.vox.domain.model.personalization.PracticePaper createPaper(
+            UUID studentId,
+            UUID topicId,
+            String origin,
+            List<UUID> offeredTopicIds,
+            List<UUID> previousOfferedTopicIds,
+            PracticeQuestion question) {
+        var resolvedOrigin = origin == null ? "SELECTED" : origin;
+        var now = OffsetDateTime.now();
+        return paperRepository.save(new com.sep.vox.domain.model.personalization.PracticePaper(
+            UUID.randomUUID(),
+            studentId,
+            topicId,
+            resolvedOrigin,
+            currentGoal(studentId),
+            jsonSerializationPort.toJson(
+                offeredTopicIds == null ? List.of() : offeredTopicIds
+            ),
+            jsonSerializationPort.toJson(
+                previousOfferedTopicIds == null ? List.of() : previousOfferedTopicIds
+            ),
+            question.plannedSeconds(),
+            question.spokenSeconds(),
+            now.plusMinutes(10),
+            "RESERVED",
+            now
+        ));
+    }
+
+    private void saveItemAndExposure(
+            UUID studentId,
+            UUID paperId,
+            PracticeQuestionSelectionService.NextQuestionSelection selection) {
+        paperItemRepository.save(new PracticePaperItem(
+            UUID.randomUUID(),
+            paperId,
+            selection.question().id(),
+            selection.slot(),
+            selection.criterion(),
+            selection.subAttribute(),
+            selection.targetRank()
+        ));
+        studentQuestionExposureRepository.recordExposure(studentId, selection.question().id());
+    }
+}

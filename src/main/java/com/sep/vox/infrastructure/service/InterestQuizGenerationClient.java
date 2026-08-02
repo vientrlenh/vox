@@ -45,10 +45,19 @@ public class InterestQuizGenerationClient {
         this.generateUri = URI.create(base + "/internal/practice-generation/interest-quiz-items");
     }
 
-    public List<InterestQuizSeedItem> generate(int maxItems, List<String> existingStatements) {
+    /**
+     * @param dimensions danh mục chiều sở thích hiện hành (đọc từ interest_dimension). Gửi
+     *                   xuống thay vì để Python gắn cứng, nhờ vậy SYSTEM_ADMIN thêm chiều mới
+     *                   là có hiệu lực ngay, không phải deploy lại service Python.
+     */
+    public List<InterestQuizSeedItem> generate(
+            int maxItems,
+            List<String> existingStatements,
+            List<String> dimensions) {
         var body = new LinkedHashMap<String, Object>();
         body.put("max_items", maxItems);
         body.put("existing_statements", existingStatements);
+        body.put("dimensions", dimensions);
         try {
             var request = HttpRequest.newBuilder(generateUri)
                 .timeout(Duration.ofSeconds(45))

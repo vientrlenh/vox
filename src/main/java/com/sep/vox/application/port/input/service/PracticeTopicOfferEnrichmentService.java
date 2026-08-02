@@ -99,6 +99,23 @@ public class PracticeTopicOfferEnrichmentService {
         return values.isEmpty() ? 3 : values.get(0);
     }
 
+    /**
+     * Trần độ dài MỘT phiên theo bậc năng lực (thiết kế gói 6 mục 4.1: BAC_1-2 → 720s,
+     * BAC_3 → 900s, BAC_4+ → 1200s).
+     *
+     * Khác bản chất với hạn mức subscription ({@link #minutesForStudent}): cái kia là giới hạn
+     * THƯƠNG MẠI (trường mua bao nhiêu), cái này là giới hạn SƯ PHẠM (bậc này ngồi luyện liên
+     * tục bao lâu là hợp lý). Phải áp CẢ HAI, lấy cái nhỏ hơn -- chỉ có hạn mức gói thì học
+     * sinh mới bắt đầu vẫn có thể bị đẩy vào phiên 20 phút.
+     */
+    public int sessionSecondsCapForStudent(UUID studentId) {
+        var band = studentRankSignal(studentId).base();
+        if (band <= 2) {
+            return 720;
+        }
+        return band == 3 ? 900 : 1200;
+    }
+
     /** Số phút mỗi lượt luyện theo đúng gói subscription đang hoạt động -- 0 nếu không có gói. */
     public int minutesForStudent(UUID studentId) {
         var minutes = schoolSubscriptionRepository.findMaxTimePerAttemptMinForUser(studentId);

@@ -71,6 +71,7 @@ public interface SpringDataPracticeTopicRepository
           ON exposure.student_id = :studentId
          AND exposure.practice_question_id = question.id
         WHERE topic.active = true
+          AND topic.source IS DISTINCT FROM 'EXAM_QUESTION_BANK'
         GROUP BY topic.id, topic.name, topic.interest_dimension,
                  topic.curriculum_group, topic_score.score,
                  topic_score.sessions_mentioned,
@@ -130,6 +131,7 @@ public interface SpringDataPracticeTopicRepository
           ON exposure.student_id = :studentId
          AND exposure.practice_question_id = question.id
         WHERE topic.active = true
+          AND topic.source IS DISTINCT FROM 'EXAM_QUESTION_BANK'
         GROUP BY topic.id, topic.name, topic.interest_dimension,
                  topic.curriculum_group, topic_score.score,
                  topic_score.sessions_mentioned,

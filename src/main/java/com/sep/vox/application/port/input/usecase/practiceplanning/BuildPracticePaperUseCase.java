@@ -1,32 +1,25 @@
 package com.sep.vox.application.port.input.usecase.practiceplanning;
 
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.QuotaExceededException;
 import com.sep.vox.application.mapper.practiceplanning.PracticePlanningResponseMapper;
 import com.sep.vox.application.port.input.command.BuildPracticePaperCommand;
+import com.sep.vox.application.port.input.service.PracticePaperPersistenceService;
 import com.sep.vox.application.port.input.service.PracticeQuestionSelectionService;
 import com.sep.vox.application.port.input.service.PracticeTopicOfferEnrichmentService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.PracticePaper;
 import com.sep.vox.domain.mapper.PracticePaperDtoMapper;
-import com.sep.vox.domain.model.personalization.PracticePaperItem;
-import com.sep.vox.domain.model.personalization.PracticeQuestion;
 import com.sep.vox.domain.model.personalization.PracticeTopic;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
-import com.sep.vox.domain.repository.personalization.LearnerProfileRepository;
-import com.sep.vox.domain.repository.personalization.PracticePaperItemRepository;
 import com.sep.vox.domain.repository.personalization.PracticePaperRepository;
 import com.sep.vox.domain.repository.personalization.PracticeTopicRepository;
-import com.sep.vox.domain.repository.personalization.StudentQuestionExposureRepository;
 
 /**
  * Dựng đề luyện -- CHỈ câu MAIN đầu tiên (đúng README mục 4.1: vào phiên khi có 1 câu phù hợp
@@ -38,46 +31,49 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
 
     private final PracticeTopicRepository topicRepository;
     private final PracticePaperRepository paperRepository;
-    private final PracticePaperItemRepository paperItemRepository;
-    private final StudentQuestionExposureRepository studentQuestionExposureRepository;
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
-    private final LearnerProfileRepository learnerProfileRepository;
     private final PracticeTopicOfferEnrichmentService enrichmentService;
     private final PracticeQuestionSelectionService selectionService;
-    private final JsonSerializationPort jsonSerializationPort;
+    private final PracticePaperPersistenceService persistenceService;
     private final UserContextPort userContextPort;
+    private final ViewPracticeTopicOffersUseCase viewPracticeTopicOffersUseCase;
 
     public BuildPracticePaperUseCase(
             PracticeTopicRepository topicRepository,
             PracticePaperRepository paperRepository,
-            PracticePaperItemRepository paperItemRepository,
-            StudentQuestionExposureRepository studentQuestionExposureRepository,
             SchoolSubscriptionRepository schoolSubscriptionRepository,
-            LearnerProfileRepository learnerProfileRepository,
             PracticeTopicOfferEnrichmentService enrichmentService,
             PracticeQuestionSelectionService selectionService,
-            JsonSerializationPort jsonSerializationPort,
-            UserContextPort userContextPort) {
+            PracticePaperPersistenceService persistenceService,
+            UserContextPort userContextPort,
+            ViewPracticeTopicOffersUseCase viewPracticeTopicOffersUseCase) {
+        this.viewPracticeTopicOffersUseCase = viewPracticeTopicOffersUseCase;
         this.topicRepository = topicRepository;
         this.paperRepository = paperRepository;
-        this.paperItemRepository = paperItemRepository;
-        this.studentQuestionExposureRepository = studentQuestionExposureRepository;
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
-        this.learnerProfileRepository = learnerProfileRepository;
         this.enrichmentService = enrichmentService;
         this.selectionService = selectionService;
-        this.jsonSerializationPort = jsonSerializationPort;
+        this.persistenceService = persistenceService;
         this.userContextPort = userContextPort;
     }
 
     @Override
-    @Transactional
     public PracticePaper execute(BuildPracticePaperCommand input) {
         var studentId = userContextPort.getCurrentAuthenticatedUserId();
         var topic = requireTopic(input.topicId());
         var quotaRemaining = remainingPracticeQuota(studentId);
         var focus = selectionService.resolveFocus(studentId, input.fromSubAttribute());
         var baseRank = estimatedBaseRank(studentId, input.topicId());
+        // Deliberately NOT wrapped in a Spring transaction: resolveNextQuestion can call out
+        // to the Python agents service (diversity check, and -- on a thin/new topic -- live
+        // LLM question generation, which alone can take 10+ seconds). Holding a HikariCP
+        // connection open for that whole external call starves the pool under load; confirmed
+        // via HikariCP's own leak-detector firing on this exact method. Each individual
+        // repository call below still gets its own short-lived transaction from Spring Data's
+        // repository proxy, so no atomicity is lost here -- only the final paper/item/exposure
+        // write (persistenceService.persist, a separate bean so @Transactional actually applies
+        // -- self-invocation within this class would bypass the AOP proxy) needs a real
+        // transaction, scoped separately there.
         var selection = selectionService
             .resolveNextQuestion(topic, studentId, focus, baseRank, List.of())
             .orElseThrow(() -> new NotFoundException("Chủ đề chưa có câu luyện phù hợp."));
@@ -85,18 +81,39 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
         if (quotaRemaining < question.spokenSeconds()) {
             throw new QuotaExceededException("Hạn mức PRACTICE không đủ cho một câu trọn vẹn.");
         }
-        var paper = createPaper(
+        var paper = persistenceService.persist(
             studentId,
             input.topicId(),
-            input.origin(),
+            resolveOrigin(studentId, input),
             input.offeredTopicIds(),
             input.previousOfferedTopicIds(),
-            question
+            question,
+            selection
         );
-        saveItemAndExposure(studentId, paper.id(), selection);
         return PracticePlanningResponseMapper.toResponse(
             PracticePaperDtoMapper.toDto(paper, List.of(question))
         );
+    }
+
+    /**
+     * Lối vào thật của phiên. Client chỉ biết "học sinh bấm một thẻ" nên gửi SELECTED, nhưng
+     * thẻ đó có thể là slot ε-greedy do HỆ THỐNG tráo vào lô chào -- ghi SELECTED cho nó là
+     * dương giả (0.95 như tự chọn, xem InterestVectorService.recordSessionOutcome), và làm
+     * van thăm dò §2.7 không bao giờ đóng vì không phiếu nào mang origin EPSILON.
+     *
+     * Suy ra bằng cách xếp hạng lại thay vì nhớ slot nào đã chào cho ai: xem
+     * ViewPracticeTopicOffersUseCase.isOutsideTopRanked để biết vì sao không dùng cache.
+     */
+    private String resolveOrigin(UUID studentId, BuildPracticePaperCommand input) {
+        var origin = input.origin() == null ? "SELECTED" : input.origin();
+        var cameFromOfferBatch = input.offeredTopicIds() != null
+            && input.offeredTopicIds().contains(input.topicId());
+        if (!"SELECTED".equals(origin) || !cameFromOfferBatch) {
+            return origin;
+        }
+        return viewPracticeTopicOffersUseCase.isOutsideTopRanked(studentId, input.topicId())
+            ? "EPSILON"
+            : origin;
     }
 
     private int remainingPracticeQuota(UUID studentId) {
@@ -108,57 +125,6 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
     private int estimatedBaseRank(UUID studentId, UUID topicId) {
         var signal = enrichmentService.studentRankSignal(studentId);
         return enrichmentService.rankForTopic(studentId, topicId, signal);
-    }
-
-    private String currentGoal(UUID studentId) {
-        return learnerProfileRepository.findCurrent(studentId)
-            .map(profile -> profile.goalType() == null ? "ABILITY_IMPROVEMENT" : profile.goalType())
-            .orElse("ABILITY_IMPROVEMENT");
-    }
-
-    private com.sep.vox.domain.model.personalization.PracticePaper createPaper(
-            UUID studentId,
-            UUID topicId,
-            String origin,
-            List<UUID> offeredTopicIds,
-            List<UUID> previousOfferedTopicIds,
-            PracticeQuestion question) {
-        var resolvedOrigin = origin == null ? "SELECTED" : origin;
-        var now = OffsetDateTime.now();
-        return paperRepository.save(new com.sep.vox.domain.model.personalization.PracticePaper(
-            UUID.randomUUID(),
-            studentId,
-            topicId,
-            resolvedOrigin,
-            currentGoal(studentId),
-            jsonSerializationPort.toJson(
-                offeredTopicIds == null ? List.of() : offeredTopicIds
-            ),
-            jsonSerializationPort.toJson(
-                previousOfferedTopicIds == null ? List.of() : previousOfferedTopicIds
-            ),
-            question.plannedSeconds(),
-            question.spokenSeconds(),
-            now.plusMinutes(10),
-            "RESERVED",
-            now
-        ));
-    }
-
-    private void saveItemAndExposure(
-            UUID studentId,
-            UUID paperId,
-            PracticeQuestionSelectionService.NextQuestionSelection selection) {
-        paperItemRepository.save(new PracticePaperItem(
-            UUID.randomUUID(),
-            paperId,
-            selection.question().id(),
-            selection.slot(),
-            selection.criterion(),
-            selection.subAttribute(),
-            selection.targetRank()
-        ));
-        studentQuestionExposureRepository.recordExposure(studentId, selection.question().id());
     }
 
     private PracticeTopic requireTopic(UUID topicId) {

@@ -25,16 +25,19 @@ public class LearnerProfileCommandService {
     private final InterestQuizItemRepository quizItemRepository;
     private final DimensionInterestScoreRepository dimensionScoreRepository;
     private final JsonSerializationPort jsonSerialization;
+    private final InterestQuizScorer interestQuizScorer;
 
     public LearnerProfileCommandService(
             LearnerProfileRepository repository,
             InterestQuizItemRepository quizItemRepository,
             DimensionInterestScoreRepository dimensionScoreRepository,
-            JsonSerializationPort jsonSerialization) {
+            JsonSerializationPort jsonSerialization,
+            InterestQuizScorer interestQuizScorer) {
         this.repository = repository;
         this.quizItemRepository = quizItemRepository;
         this.dimensionScoreRepository = dimensionScoreRepository;
         this.jsonSerialization = jsonSerialization;
+        this.interestQuizScorer = interestQuizScorer;
     }
 
     public void submitQuiz(UUID studentId, List<QuizAnswer> answers) {
@@ -83,7 +86,7 @@ public class LearnerProfileCommandService {
         );
         dimensionScoreRepository.replaceScores(
             saved.id(),
-            InterestQuizScorer.normalize(raw)
+            interestQuizScorer.normalize(raw)
         );
     }
 

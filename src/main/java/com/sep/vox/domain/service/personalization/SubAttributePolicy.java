@@ -45,7 +45,9 @@ public final class SubAttributePolicy {
             return null;
         }
         var allowed = SUB_ATTRIBUTES.get(criterion);
-        return allowed != null && allowed.contains(proposedSubAttribute)
+        return allowed != null
+                && proposedSubAttribute != null
+                && allowed.contains(proposedSubAttribute)
             ? proposedSubAttribute
             : null;
     }

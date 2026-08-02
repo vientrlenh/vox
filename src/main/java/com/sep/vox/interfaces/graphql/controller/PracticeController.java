@@ -6,7 +6,10 @@ import static com.sep.vox.application.response.input.practiceinsights.PracticeIn
 
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
@@ -51,6 +54,7 @@ public class PracticeController {
     private final SubmitFlsaSelfReportUseCase submitFlsaSelfReportUseCase;
     private final SetPracticeGoalUseCase setPracticeGoalUseCase;
     private final SetInterestAutoUpdateUseCase setInterestAutoUpdateUseCase;
+    private final AsyncTaskExecutor practiceGenerationExecutor;
 
     public PracticeController(
             ViewMyWeaknessProfileUseCase viewMyWeaknessProfileUseCase,
@@ -63,7 +67,9 @@ public class PracticeController {
             SubmitInterestQuizUseCase submitInterestQuizUseCase,
             SubmitFlsaSelfReportUseCase submitFlsaSelfReportUseCase,
             SetPracticeGoalUseCase setPracticeGoalUseCase,
-            SetInterestAutoUpdateUseCase setInterestAutoUpdateUseCase) {
+            SetInterestAutoUpdateUseCase setInterestAutoUpdateUseCase,
+            @Qualifier("practiceGenerationExecutor") AsyncTaskExecutor practiceGenerationExecutor) {
+        this.practiceGenerationExecutor = practiceGenerationExecutor;
         this.viewMyWeaknessProfileUseCase = viewMyWeaknessProfileUseCase;
         this.viewMyPracticeProgressUseCase = viewMyPracticeProgressUseCase;
         this.viewStudentWeaknessProfileUseCase = viewStudentWeaknessProfileUseCase;
@@ -117,10 +123,18 @@ public class PracticeController {
         return viewLearnerProfileUseCase.execute(null);
     }
 
+    /**
+     * Async vì use case này có thể phải nhờ AI sinh bộ quiz sở thích riêng cho học sinh
+     * (10-20s). Chạy trên executor riêng khiến servlet vào chế độ bất đồng bộ, lúc đó OSIV
+     * nhả EntityManager + connection DB thay vì giữ tới hết request.
+     */
     @QueryMapping
     @PreAuthorize("hasRole('STUDENT')")
-    public List<InterestQuizItem> interestQuizItems() {
-        return viewInterestQuizItemsUseCase.execute(null);
+    public CompletableFuture<List<InterestQuizItem>> interestQuizItems() {
+        return CompletableFuture.supplyAsync(
+            () -> viewInterestQuizItemsUseCase.execute(null),
+            practiceGenerationExecutor
+        );
     }
 
     @MutationMapping

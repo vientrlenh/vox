@@ -20,6 +20,8 @@ import com.sep.vox.application.response.input.practiceplanning.PracticePlanningR
 import com.sep.vox.application.response.input.topicsuggestion.TopicSuggestionResponses.TopicFromKeywordResult;
 import com.sep.vox.domain.model.personalization.PracticeTopic;
 import com.sep.vox.domain.model.personalization.TopicSuggestion;
+import com.sep.vox.domain.model.personalization.InterestDimension;
+import com.sep.vox.domain.repository.personalization.InterestDimensionRepository;
 import com.sep.vox.domain.repository.personalization.LearnerProfileRepository;
 import com.sep.vox.domain.repository.personalization.PracticeTopicRepository;
 import com.sep.vox.domain.repository.personalization.TopicSuggestionRepository;
@@ -51,6 +53,8 @@ public class TopicSuggestionService {
     private final LearnerProfileRepository learnerProfileRepository;
     private final TopicGenerationClient generationClient;
     private final PracticeTopicOfferEnrichmentService enrichmentService;
+    private final KeywordTopicPersistenceService keywordTopicPersistenceService;
+    private final InterestDimensionRepository interestDimensionRepository;
 
     public TopicSuggestionService(
             TopicSuggestionRepository topicSuggestionRepository,
@@ -58,13 +62,17 @@ public class TopicSuggestionService {
             InterestVectorService interestVectorService,
             LearnerProfileRepository learnerProfileRepository,
             TopicGenerationClient generationClient,
-            PracticeTopicOfferEnrichmentService enrichmentService) {
+            PracticeTopicOfferEnrichmentService enrichmentService,
+            KeywordTopicPersistenceService keywordTopicPersistenceService,
+            InterestDimensionRepository interestDimensionRepository) {
+        this.interestDimensionRepository = interestDimensionRepository;
         this.topicSuggestionRepository = topicSuggestionRepository;
         this.practiceTopicRepository = practiceTopicRepository;
         this.interestVectorService = interestVectorService;
         this.learnerProfileRepository = learnerProfileRepository;
         this.generationClient = generationClient;
         this.enrichmentService = enrichmentService;
+        this.keywordTopicPersistenceService = keywordTopicPersistenceService;
     }
 
     @Transactional
@@ -111,7 +119,10 @@ public class TopicSuggestionService {
         return true;
     }
 
-    @Transactional
+    // Not @Transactional -- generationClient.propose() is a slow synchronous LLM call to the
+    // Python agents service; see PracticeQuestionGenerationService.generateAndStore for the
+    // same fix + rationale (HikariCP connection-pool starvation under load). Each repository
+    // call here self-transacts via Spring Data's proxy.
     public TopicFromKeywordResult generateFromKeyword(UUID studentId, String keyword) {
         var normalized = normalize(keyword);
         if (normalized.isBlank()) {
@@ -148,7 +159,8 @@ public class TopicSuggestionService {
             rejectedTopicNames(studentId),
             practiceTopicRepository.findExhaustedTopicNames(studentId),
             true,
-            1
+            1,
+            dimensionCodes()
         );
         if (proposals.isEmpty()) {
             recordKeywordRequest(studentId, keyword, "REJECTED_UNSUITABLE");
@@ -166,14 +178,20 @@ public class TopicSuggestionService {
                 "MATCHED_EXISTING"
             );
         }
-        var topicId = createTopic(
-            proposal.name(), proposal.interestDimension(), proposal.curriculumGroup(),
-            "USER_GENERATED"
+        // Tạo topic + ghi nhận lượt hạn mức phải atomic với nhau -- tách sang bean
+        // riêng có @Transactional (xem KeywordTopicPersistenceService), KHÔNG bọc
+        // transaction quanh cả hàm này vì generationClient.propose() ở trên là
+        // cuộc gọi LLM chậm.
+        var topicId = keywordTopicPersistenceService.createTopicAndRecordRequest(
+            studentId,
+            keyword,
+            proposal.name(),
+            proposal.interestDimension(),
+            proposal.curriculumGroup()
         );
         generationClient.index(
             topicId.toString(), proposal.name(), proposal.reasonText(), true, null, "ACTIVE"
         );
-        recordKeywordRequest(studentId, keyword, "CREATED");
         return new TopicFromKeywordResult(
             offerFor(
                 studentId, topicId, proposal.name(), proposal.interestDimension(), false,
@@ -183,7 +201,7 @@ public class TopicSuggestionService {
         );
     }
 
-    @Transactional
+    // Not @Transactional -- same reason as generateFromKeyword above.
     public int refreshSuggestions(UUID studentId) {
         var pending = topicSuggestionRepository.countByStudentIdAndStatus(studentId, "PENDING");
         if (pending >= 2) {
@@ -216,7 +234,8 @@ public class TopicSuggestionService {
             rejectedTopicNames(studentId),
             practiceTopicRepository.findExhaustedTopicNames(studentId),
             false,
-            Math.min(3, availableSlots)
+            Math.min(3, availableSlots),
+            dimensionCodes()
         );
         var created = 0;
         for (var proposal : proposals) {
@@ -266,7 +285,9 @@ public class TopicSuggestionService {
             .toList();
     }
 
-    @Transactional
+    // Not @Transactional -- same reason as generateFromKeyword above. This one is the hottest
+    // path (called synchronously from practiceTopicOffers whenever ranked offers are thin), so
+    // it's the most load-bearing fix of the three.
     public List<PracticeTopicOffer> synchronousOffers(UUID studentId, int requestedCount) {
         if (requestedCount <= 0 || "EXAM_PREP".equals(currentGoal(studentId))) {
             return List.of();
@@ -279,7 +300,8 @@ public class TopicSuggestionService {
             rejectedTopicNames(studentId),
             practiceTopicRepository.findExhaustedTopicNames(studentId),
             false,
-            Math.min(3, requestedCount)
+            Math.min(3, requestedCount),
+            dimensionCodes()
         );
         var result = new ArrayList<PracticeTopicOffer>();
         for (var proposal : proposals) {
@@ -301,6 +323,15 @@ public class TopicSuggestionService {
             ));
         }
         return result;
+    }
+
+    /** Danh mục chiều sở thích hiện hành, gửi xuống Python để ràng buộc đầu ra của LLM.
+     * Gồm CẢ chiều hệ thống (ACADEMIC_EXAM) vì đây là gán nhãn cho chủ đề, không phải hỏi
+     * học sinh -- khác với quiz, nơi chỉ dùng chiều quiz_eligible. */
+    private List<String> dimensionCodes() {
+        return interestDimensionRepository.findActive().stream()
+            .map(InterestDimension::code)
+            .toList();
     }
 
     public static double confidenceForSessionCount(int count) {

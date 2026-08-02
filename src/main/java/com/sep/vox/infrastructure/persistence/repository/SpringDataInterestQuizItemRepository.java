@@ -16,5 +16,11 @@ public interface SpringDataInterestQuizItemRepository
 
     List<InterestQuizItemJpaEntity> findTop7ByStudentIdAndActiveTrueOrderById(UUID studentId);
 
+    // Lấy nguyên kho (giới hạn mềm bằng Top50) chứ không phải Top7: bộ chọn cân bằng cần
+    // nhiều ứng viên hơn số câu sẽ hỏi thì mới chọn được bộ phủ đều các chiều.
+    List<InterestQuizItemJpaEntity> findTop50ByActiveTrueOrderById();
+
+    List<InterestQuizItemJpaEntity> findTop50ByStudentIdAndActiveTrueOrderById(UUID studentId);
+
     boolean existsByStudentId(UUID studentId);
 }

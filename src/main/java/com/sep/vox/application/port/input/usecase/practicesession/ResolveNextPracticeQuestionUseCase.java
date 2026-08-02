@@ -2,27 +2,34 @@ package com.sep.vox.application.port.input.usecase.practicesession;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.service.PracticeQuestionSelectionService;
 import com.sep.vox.application.port.input.service.PracticeTopicOfferEnrichmentService;
-import com.sep.vox.domain.model.personalization.PracticePaperItem;
+import com.sep.vox.application.port.input.service.ResolveNextPracticeQuestionClaimService;
+import com.sep.vox.application.port.input.service.ResolveNextPracticeQuestionPersistenceService;
 import com.sep.vox.domain.model.personalization.PracticeQuestion;
-import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
-import com.sep.vox.domain.repository.personalization.PracticeItemResponseRepository;
-import com.sep.vox.domain.repository.personalization.PracticePaperItemRepository;
-import com.sep.vox.domain.repository.personalization.PracticeQuestionRepository;
-import com.sep.vox.domain.repository.personalization.PracticeSessionRepository;
-import com.sep.vox.domain.repository.personalization.PracticeTopicRepository;
-import com.sep.vox.domain.repository.personalization.StudentQuestionExposureRepository;
 
 /**
  * Resolve ĐÚNG 1 câu MAIN tiếp theo trong lúc phiên luyện đang chạy -- gọi từ Python (nội bộ,
  * PracticeInternalSecretFilter bảo vệ) khi decision.should_continue == False. Xem gói 11 mục
  * 2.4 bước 4.
+ *
+ * KHÔNG @Transactional ở tầng này: selectionService.resolveNextQuestion (gọi trong doExecute)
+ * có thể gọi LLM sinh câu hỏi trực tiếp (bậc 4, 10-20s) khi topic còn thưa câu -- giữ 1
+ * transaction/connection DB mở suốt lúc đó từng gây HikariCP cạn pool dưới tải thật (xem
+ * BuildPracticePaperUseCase, cùng lớp bug, sửa cùng đợt).
+ *
+ * Việc serialize các lời gọi trùng cho CÙNG 1 session (Python's timeout-retry-8s racing lần gọi
+ * gốc vẫn đang chạy, xem practice_session_client.py) trước đây dựa vào SELECT ... FOR UPDATE giữ
+ * suốt cả method -- giờ thay bằng khoá JVM keyed theo sessionId, giữ đúng phạm vi tương đương
+ * (đủ vì Python luôn retry vào lại đúng instance vox-app này) nhưng không chiếm connection DB khi
+ * đang chờ mạng. Transaction thật (FOR UPDATE + đọc, rồi ghi) được tách thành 2 bean riêng
+ * (ResolveNextPracticeQuestionClaimService / ...PersistenceService) bao quanh đúng phần DB, với
+ * cuộc gọi LLM chậm nằm GIỮA, ngoài mọi transaction.
  */
 @Service
 public class ResolveNextPracticeQuestionUseCase {
@@ -51,102 +58,62 @@ public class ResolveNextPracticeQuestionUseCase {
         }
     }
 
-    private final PracticeSessionRepository practiceSessionRepository;
-    private final PracticeTopicRepository topicRepository;
-    private final PracticeQuestionRepository questionRepository;
-    private final PracticePaperItemRepository paperItemRepository;
-    private final PracticeItemResponseRepository practiceItemResponseRepository;
-    private final StudentQuestionExposureRepository studentQuestionExposureRepository;
-    private final SchoolSubscriptionRepository schoolSubscriptionRepository;
+    // Không dọn dẹp entry cũ: ở quy mô hiện tại (demo, vài chục phiên đồng thời) số sessionId
+    // phân biệt trong suốt vòng đời app là nhỏ, không đáng để thêm logic dọn có nguy cơ race
+    // (xoá đúng lúc 1 luồng khác vừa lấy lock cũ từ map).
+    private final ConcurrentHashMap<UUID, ReentrantLock> sessionLocks = new ConcurrentHashMap<>();
+
+    private final ResolveNextPracticeQuestionClaimService claimService;
     private final PracticeQuestionSelectionService selectionService;
     private final PracticeTopicOfferEnrichmentService enrichmentService;
+    private final ResolveNextPracticeQuestionPersistenceService persistenceService;
 
     public ResolveNextPracticeQuestionUseCase(
-            PracticeSessionRepository practiceSessionRepository,
-            PracticeTopicRepository topicRepository,
-            PracticeQuestionRepository questionRepository,
-            PracticePaperItemRepository paperItemRepository,
-            PracticeItemResponseRepository practiceItemResponseRepository,
-            StudentQuestionExposureRepository studentQuestionExposureRepository,
-            SchoolSubscriptionRepository schoolSubscriptionRepository,
+            ResolveNextPracticeQuestionClaimService claimService,
             PracticeQuestionSelectionService selectionService,
-            PracticeTopicOfferEnrichmentService enrichmentService) {
-        this.practiceSessionRepository = practiceSessionRepository;
-        this.topicRepository = topicRepository;
-        this.questionRepository = questionRepository;
-        this.paperItemRepository = paperItemRepository;
-        this.practiceItemResponseRepository = practiceItemResponseRepository;
-        this.studentQuestionExposureRepository = studentQuestionExposureRepository;
-        this.schoolSubscriptionRepository = schoolSubscriptionRepository;
+            PracticeTopicOfferEnrichmentService enrichmentService,
+            ResolveNextPracticeQuestionPersistenceService persistenceService) {
+        this.claimService = claimService;
         this.selectionService = selectionService;
         this.enrichmentService = enrichmentService;
+        this.persistenceService = persistenceService;
     }
 
-    @Transactional
     public Result execute(UUID sessionId) {
-        // FOR UPDATE: serializes concurrent calls for the SAME session (e.g. Python's
-        // timeout-retry racing the original still-in-flight request, see
-        // practice_session_client.py) -- the second call blocks until the first commits,
-        // then the idempotency check below sees its committed item instead of both
-        // independently selecting/inserting a new one.
-        var session = practiceSessionRepository.findByIdForUpdate(sessionId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên luyện."));
-        if (!"IN_PROGRESS".equals(session.status())) {
-            throw new IllegalStateException("Phiên luyện không còn hoạt động.");
+        var lock = sessionLocks.computeIfAbsent(sessionId, ignored -> new ReentrantLock());
+        lock.lock();
+        try {
+            return doExecute(sessionId);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    private Result doExecute(UUID sessionId) {
+        var claim = claimService.claim(sessionId);
+        if (claim.idempotentQuestion() != null) {
+            return Result.ok(toPayload(claim.idempotentQuestion(), claim.idempotentSlot()));
+        }
+        if (claim.earlyExitReason() != null) {
+            return Result.noMoreQuestions(claim.earlyExitReason());
         }
 
-        var alreadyChosenIds = paperItemRepository.findQuestionIdsForPaper(session.practicePaperId());
-        if (!alreadyChosenIds.isEmpty()) {
-            var latestQuestionId = alreadyChosenIds.getLast();
-            // The latest item was already resolved/committed by THIS call (or an earlier one
-            // that timed out on Python's side before the response arrived, see infra/
-            // practice_session_client.py's 8s timeout) but the student never got to answer it
-            // -- a retry must return the SAME item, not pick a fresh one, or the timed-out
-            // original leaves an orphaned paper item nothing will ever answer/grade.
-            if (!practiceItemResponseRepository.existsResponse(sessionId, latestQuestionId)) {
-                var latestQuestion = questionRepository.findById(latestQuestionId)
-                    .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi luyện."));
-                return Result.ok(toPayload(latestQuestion, alreadyChosenIds.size()));
-            }
-        }
-
-        var usedSeconds = paperItemRepository.sumPlannedSecondsForPaper(session.practicePaperId());
-        var maxMinutes = schoolSubscriptionRepository
-            .findMaxTimePerAttemptMinForUser(session.studentId());
-        var maxSeconds = maxMinutes == null ? 0 : maxMinutes * 60;
-        if (usedSeconds >= maxSeconds) {
-            return Result.noMoreQuestions("budget_exhausted");
-        }
-
-        var topic = topicRepository.findTopicById(session.chosenPracticeTopicId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy chủ đề luyện tập."));
-        var focus = selectionService.resolveFocus(session.studentId(), null);
-        var signal = enrichmentService.studentRankSignal(session.studentId());
-        var baseRank = enrichmentService.rankForTopic(session.studentId(), topic.id(), signal);
-        var alreadyChosen = questionRepository.findByIds(alreadyChosenIds);
+        var signal = enrichmentService.studentRankSignal(claim.studentId());
+        var baseRank = enrichmentService.rankForTopic(claim.studentId(), claim.topic().id(), signal);
 
         var selection = selectionService
-            .resolveNextQuestion(topic, session.studentId(), focus, baseRank, alreadyChosen)
+            .resolveNextQuestion(claim.topic(), claim.studentId(), claim.focus(), baseRank, claim.alreadyChosen())
             .orElse(null);
         if (selection == null) {
             return Result.noMoreQuestions("pool_exhausted");
         }
 
         var question = selection.question();
-        if (usedSeconds + question.plannedSeconds() > maxSeconds) {
+        if (claim.usedSeconds() + question.plannedSeconds() > claim.maxSeconds()) {
             return Result.noMoreQuestions("budget_exhausted");
         }
-        paperItemRepository.save(new PracticePaperItem(
-            UUID.randomUUID(),
-            session.practicePaperId(),
-            question.id(),
-            selection.slot(),
-            selection.criterion(),
-            selection.subAttribute(),
-            selection.targetRank()
-        ));
-        studentQuestionExposureRepository.recordExposure(session.studentId(), question.id());
 
+        persistenceService.persist(claim.studentId(), claim.practicePaperId(), selection);
         return Result.ok(toPayload(question, selection.slot()));
     }
 

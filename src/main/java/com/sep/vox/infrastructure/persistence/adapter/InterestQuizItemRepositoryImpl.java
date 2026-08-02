@@ -44,6 +44,20 @@ public class InterestQuizItemRepositoryImpl
     }
 
     @Override
+    public List<InterestQuizSeedItem> findAllActiveQuizItems() {
+        return repository.findTop50ByActiveTrueOrderById().stream()
+            .map(this::toDomain)
+            .toList();
+    }
+
+    @Override
+    public List<InterestQuizSeedItem> findAllActiveQuizItemsForStudent(UUID studentId) {
+        return repository.findTop50ByStudentIdAndActiveTrueOrderById(studentId).stream()
+            .map(this::toDomain)
+            .toList();
+    }
+
+    @Override
     public boolean hasQuizItemsForStudent(UUID studentId) {
         return repository.existsByStudentId(studentId);
     }

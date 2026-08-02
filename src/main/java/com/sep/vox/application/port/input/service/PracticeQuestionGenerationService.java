@@ -7,7 +7,6 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.domain.model.personalization.PracticeQuestion;
@@ -36,7 +35,13 @@ public class PracticeQuestionGenerationService {
         this.generationClient = generationClient;
     }
 
-    @Transactional
+    // Deliberately NOT @Transactional -- generationClient.generate() is a slow synchronous
+    // HTTP call to the Python agents service (LLM generation, can take 10-20s). Wrapping this
+    // in a transaction holds a HikariCP connection for that whole wait, starving the pool
+    // under concurrent load (confirmed: caused the leak-detector to fire on an unrelated
+    // simple SELECT elsewhere while this was in flight). Each repository call below
+    // (saveGenerated, findTopicById via topicDetails) still gets its own short-lived
+    // transaction from Spring Data's repository proxy -- no atomicity is lost.
     public int generateAndStore(
             UUID topicId,
             String criterionCode,

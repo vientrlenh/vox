@@ -13,6 +13,11 @@ public interface InterestQuizItemRepository {
     /** Bộ câu sinh riêng cho đúng học sinh này, nếu đã có -- xem hasQuizItemsForStudent. */
     List<InterestQuizSeedItem> findActiveQuizItemsForStudent(UUID studentId, int limit);
 
+    /** Cả kho (giới hạn mềm) để bộ chọn cân bằng có đủ ứng viên -- xem InterestQuizItemSelector. */
+    List<InterestQuizSeedItem> findAllActiveQuizItems();
+
+    List<InterestQuizSeedItem> findAllActiveQuizItemsForStudent(UUID studentId);
+
     boolean hasQuizItemsForStudent(UUID studentId);
 
     Optional<InterestQuizSeedItem> findActiveQuizItem(UUID itemId);

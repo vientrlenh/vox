@@ -48,6 +48,11 @@ public class TopicGenerationClient {
         );
     }
 
+    /**
+     * @param dimensions danh mục chiều sở thích hiện hành (đọc từ interest_dimension) -- gửi
+     *                   xuống để Python ràng buộc đầu ra theo đúng danh mục đang có, thay vì
+     *                   gắn cứng và phải deploy lại mỗi lần admin thêm chiều mới.
+     */
     public List<TopicProposal> propose(
             UUID studentId,
             List<KeywordEvidence> keywordEvidence,
@@ -56,9 +61,11 @@ public class TopicGenerationClient {
             List<String> rejectedTopics,
             List<String> exhaustedTopics,
             boolean searchKeyword,
-            int maxProposals) {
+            int maxProposals,
+            List<String> dimensions) {
         var body = new LinkedHashMap<String, Object>();
         body.put("student_id", studentId.toString());
+        body.put("dimensions", dimensions);
         body.put(
             "keyword_evidence",
             keywordEvidence.stream()

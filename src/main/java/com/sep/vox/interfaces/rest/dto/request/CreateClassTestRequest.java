@@ -25,6 +25,9 @@ public record CreateClassTestRequest(
     @NotBlank(message = "Thời gian đóng bài là bắt buộc")
     String closeAt,
 
+    @NotNull(message = "Bộ tiêu chí đánh giá là bắt buộc")
+    UUID assessmentPolicyId,
+
     @Valid
     List<ClassTestSectionRequest> sections,
 

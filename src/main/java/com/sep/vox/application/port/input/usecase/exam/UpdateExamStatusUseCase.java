@@ -13,6 +13,7 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.PlanLimitExceededException;
 import com.sep.vox.application.port.input.command.UpdateExamStatusCommand;
 import com.sep.vox.application.port.input.service.ExamCandidateResultFinalizationService;
+import com.sep.vox.application.port.input.service.ClassTestGradingAssignmentService;
 import com.sep.vox.application.port.input.service.ZeroScoreExamResultService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -61,6 +62,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final SubscriptionQuotaRepository subscriptionQuotaRepository;
     private final UserContextPort userContextPort;
+    private final ClassTestGradingAssignmentService classTestGradingAssignmentService;
 
     public UpdateExamStatusUseCase(
             ExamRepository examRepository,
@@ -79,7 +81,8 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
             SchoolSubscriptionRepository schoolSubscriptionRepository,
             SubscriptionPlanRepository subscriptionPlanRepository,
             SubscriptionQuotaRepository subscriptionQuotaRepository,
-            UserContextPort userContextPort) {
+            UserContextPort userContextPort,
+            ClassTestGradingAssignmentService classTestGradingAssignmentService) {
         this.examRepository = examRepository;
         this.examMemberRepository = examMemberRepository;
         this.examPaperRepository = examPaperRepository;
@@ -97,6 +100,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
         this.subscriptionPlanRepository = subscriptionPlanRepository;
         this.subscriptionQuotaRepository = subscriptionQuotaRepository;
         this.userContextPort = userContextPort;
+        this.classTestGradingAssignmentService = classTestGradingAssignmentService;
     }
 
     @Override
@@ -140,6 +144,9 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
                 requireTransition(exam, ExamStatus.IN_PROGRESS, ExamStatus.CLOSED);
                 examQuestionSecureLockService.releaseIfAutoAfterClose(exam.getId());
                 zeroScoreExamResultService.ensureZeroResultsForMissingOrEmptyAttempts(exam.getId());
+                // Quét bù SAU khi đã bù kết quả điểm 0: bài trên lớp không có ai điều phối
+                // chấm, nên đóng bài là chốt cuối để giáo viên chủ bài nhận hết phần còn lại.
+                classTestGradingAssignmentService.ensureAssignmentsForExam(exam.getId());
             }
             case "PUBLISH_RESULTS" -> {
                 zeroScoreExamResultService.ensureZeroResultsForMissingOrEmptyAttempts(exam.getId());

@@ -45,7 +45,7 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
 
     @Override
     public PageResult<AppealSummaryInfo> searchAppeals(
-            UUID schoolId, String status, String keyword, int page, int size) {
+            UUID schoolId, UUID examId, String status, String keyword, int page, int size) {
         var normalizedPage = Math.max(page, 0);
         var normalizedSize = Math.max(size, 1);
         var normalizedKeyword = keyword == null || keyword.isBlank() ? null : "%" + keyword.trim().toLowerCase() + "%";
@@ -60,11 +60,13 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
             JOIN ExamCandidateJpaEntity c ON c.id = cr.candidateId
             JOIN UserJpaEntity u ON u.id = c.studentId
             WHERE e.schoolId = :schoolId
+            AND (:examId IS NULL OR cr.examId = :examId)
             AND (:status IS NULL OR a.status = :status)
             AND (:keyword IS NULL OR LOWER(u.fullName) LIKE :keyword OR LOWER(e.name) LIKE :keyword)
             ORDER BY a.requestedAt DESC
         """, Tuple.class)
             .setParameter("schoolId", schoolId)
+            .setParameter("examId", examId)
             .setParameter("status", status)
             .setParameter("keyword", normalizedKeyword)
             .setFirstResult(normalizedPage * normalizedSize)
@@ -106,10 +108,12 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
             JOIN ExamCandidateJpaEntity c ON c.id = cr.candidateId
             JOIN UserJpaEntity u ON u.id = c.studentId
             WHERE e.schoolId = :schoolId
+            AND (:examId IS NULL OR cr.examId = :examId)
             AND (:status IS NULL OR a.status = :status)
             AND (:keyword IS NULL OR LOWER(u.fullName) LIKE :keyword OR LOWER(e.name) LIKE :keyword)
         """, Long.class)
             .setParameter("schoolId", schoolId)
+            .setParameter("examId", examId)
             .setParameter("status", status)
             .setParameter("keyword", normalizedKeyword)
             .getSingleResult();

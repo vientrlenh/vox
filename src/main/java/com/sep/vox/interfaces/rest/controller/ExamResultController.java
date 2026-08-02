@@ -53,7 +53,7 @@ public class ExamResultController {
     @Operation(summary = "Xem trước việc chốt sổ kỳ thi: còn bao nhiêu bài chưa chấm, "
         + "đang chấm dở, và đơn phúc khảo chưa xong. KHÔNG ghi gì.")
     @GetMapping("/finalize/preview")
-    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<BulkFinalizePreviewInfo>> previewFinalize(
             @RequestParam("examId") UUID examId) {
         return ResponseEntity.ok(
@@ -64,7 +64,7 @@ public class ExamResultController {
         + "đang có, để kỳ thi publish được. Nếu còn bài dở, phải bật `releasePendingWithAiScores` "
         + "để xác nhận. Bài đang phúc khảo chặn cứng; bài RELEASED/INVALID giữ nguyên.")
     @PostMapping("/finalize")
-    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<Integer>> finalizeResults(
             @Valid @RequestBody BulkFinalizeExamResultsRequest request) {
         var command = new BulkFinalizeExamResultsCommand(
@@ -76,7 +76,7 @@ public class ExamResultController {
     @Operation(summary = "Xuất bảng điểm ra CSV (UTF-8 có BOM để Excel đọc đúng tiếng Việt). "
         + "Phải truyền ít nhất một trong `examId` / `scheduleId`.")
     @GetMapping(value = "/export", produces = "text/csv")
-    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<byte[]> exportScores(
             @RequestParam(value = "examId", required = false) UUID examId,
             @RequestParam(value = "scheduleId", required = false) UUID scheduleId) {

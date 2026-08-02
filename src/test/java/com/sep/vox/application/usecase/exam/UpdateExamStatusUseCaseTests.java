@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.port.input.command.UpdateExamStatusCommand;
 import com.sep.vox.application.port.input.service.ExamCandidateResultFinalizationService;
+import com.sep.vox.application.port.input.service.ClassTestGradingAssignmentService;
 import com.sep.vox.application.port.input.service.ZeroScoreExamResultService;
 import com.sep.vox.application.port.input.usecase.exam.ExamQuestionSecureLockService;
 import com.sep.vox.application.port.input.usecase.exam.UpdateExamStatusUseCase;
@@ -100,7 +101,8 @@ class UpdateExamStatusUseCaseTests {
             schoolSubscriptionRepository,
             subscriptionPlanRepository,
             subscriptionQuotaRepository,
-            userContextPort);
+            userContextPort,
+            mock(ClassTestGradingAssignmentService.class));
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(examMemberRepository.existsByExamIdAndUserIdAndRole(examId, userId, ExamMemberRole.CHAIR))

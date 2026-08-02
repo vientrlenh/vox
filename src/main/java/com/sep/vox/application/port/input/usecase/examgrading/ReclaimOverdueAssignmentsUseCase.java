@@ -208,12 +208,29 @@ public class ReclaimOverdueAssignmentsUseCase
      * chắc còn việc, mà không phải chạy thêm câu COUNT trên cùng vị ngữ. Danh sách chỉ
      * định thì admin đã tự chọn nên không áp trần.
      */
+    private List<ExamGradingAssignment> excludeClassTest(List<ExamGradingAssignment> assignments) {
+        if (assignments.isEmpty()) {
+            return assignments;
+        }
+        var classTestResultIds = examGradingAccessService.classTestResultIds(
+            assignments.stream().map(assignment -> assignment.getCandidateResultId()).toList());
+        if (classTestResultIds.isEmpty()) {
+            return assignments;
+        }
+        return assignments.stream()
+            .filter(assignment -> !classTestResultIds.contains(assignment.getCandidateResultId()))
+            .toList();
+    }
+
     private OverdueBatch selectOverdue(
             ReclaimOverdueAssignmentsCommand command, UUID schoolId, UUID currentUserId, Instant now) {
         var assignmentIds = command.assignmentIds() == null ? List.<UUID>of() : command.assignmentIds();
         if (assignmentIds.isEmpty()) {
             var found = examGradingAssignmentRepository.findOverdueInSchool(
                 now, schoolId, command.examId(), MAX_RECLAIM_BATCH + 1);
+            // Nhánh "thu hồi cả trường": LỌC BỎ bài trên lớp chứ không ném. Ném ở đây là
+            // một bài trên lớp quá hạn chặn đứng nút thu hồi của cả trường.
+            found = excludeClassTest(found);
             return found.size() > MAX_RECLAIM_BATCH
                 ? new OverdueBatch(found.subList(0, MAX_RECLAIM_BATCH), true)
                 : new OverdueBatch(found, false);
@@ -228,6 +245,10 @@ public class ReclaimOverdueAssignmentsUseCase
             }
             selected.add(context.assignment());
         }
+        // Ngược lại với nhánh trên: admin tick đích danh từng dòng, nên im lặng bỏ qua
+        // là để họ tưởng đã thu hồi. Ở đây phải nói thẳng.
+        examGradingAccessService.rejectClassTestCoordination(
+            selected.stream().map(assignment -> assignment.getCandidateResultId()).toList());
         return new OverdueBatch(selected, false);
     }
 }

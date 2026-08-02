@@ -146,8 +146,22 @@ extend type Query {
     "Danh sách đơn phúc khảo của trường. Phân trang 0-based."
     appeals(status: AppealStatus, keyword: String, page: Int = 0, size: Int = 20): AppealSummaryPage!
 
+    """
+    Đơn phúc khảo của MỘT bài kiểm tra trên lớp, cho chính giáo viên tạo bài. Tách khỏi
+    `appeals` vì màn đó quét toàn trường -- nới nó ra là mở dữ liệu phúc khảo của cả
+    trường cho một giáo viên.
+    """
+    classTestAppeals(
+        examId: ID!,
+        status: AppealStatus,
+        keyword: String,
+        page: Int = 0,
+        size: Int = 20
+    ): AppealSummaryPage!
+
     appealStats: AppealStats!
 
+    "Chốt quyền nằm trong use case: school admin cùng trường, hoặc giáo viên tạo bài kiểm tra trên lớp đó."
     appeal(id: ID!): AppealDetail!
 
     """

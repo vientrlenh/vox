@@ -29,13 +29,21 @@ public class ViewExamAppealDetailUseCase implements IUseCase<UUID, AppealDetailI
         this.examAppealAccessService = examAppealAccessService;
     }
 
+    /**
+     * ⚠️ Chốt quyền nằm Ở ĐÂY, không ở {@code @PreAuthorize} của controller. Bề mặt
+     * GraphQL đã nới sang {@code TEACHER} để giáo viên tạo bài kiểm tra trên lớp đọc
+     * được đơn của bài mình — nếu chỉ lọc theo trường như trước thì MỌI giáo viên đọc
+     * được MỌI đơn phúc khảo của trường.
+     */
     @Override
     @Transactional(readOnly = true)
     public AppealDetailInfo execute(UUID appealId) {
         var currentUserId = examAppealAccessService.requireActiveUserId();
+        var context = examAppealAccessService.load(appealId);
+        examAppealAccessService.authorizeSchoolAdminOrClassTestChair(context, currentUserId);
         var schoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
-            .orElseThrow(() -> new ForbiddenException("Tài khoản không thuộc trường học nào."));
+            .orElse(context.schoolId());
         return examAppealQueryRepository.findDetailById(appealId, schoolId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn phúc khảo."));
     }

@@ -33,6 +33,7 @@ import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.TurnType;
 import com.sep.vox.domain.model.rubric.RubricCriterion;
 import com.sep.vox.domain.model.rubric.RubricTotalScoreMethod;
+import com.sep.vox.application.port.input.service.ClassTestGradingAssignmentService;
 import com.sep.vox.application.port.input.service.ConfidenceReviewCalculator;
 import com.sep.vox.domain.valueobject.ConfidenceCaseSignals;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
@@ -62,6 +63,7 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
     private final JsonSerializationPort jsonSerializationPort;
     private final TransactionTemplate phaseOneTransactionTemplate;
     private final ConfidenceReviewCalculator confidenceReviewCalculator;
+    private final ClassTestGradingAssignmentService classTestGradingAssignmentService;
 
     public RecordExamAttemptEvaluationUseCase(
             ExamItemResponseRepository examItemResponseRepository,
@@ -77,7 +79,8 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
             CompleteExamSessionGradingUseCase completeExamSessionGradingUseCase,
             PlatformTransactionManager transactionManager,
             JsonSerializationPort jsonSerializationPort,
-            ConfidenceReviewCalculator confidenceReviewCalculator) {
+            ConfidenceReviewCalculator confidenceReviewCalculator,
+            ClassTestGradingAssignmentService classTestGradingAssignmentService) {
         this.examItemResponseRepository = examItemResponseRepository;
         this.examItemEvaluationRepository = examItemEvaluationRepository;
         this.examItemCriterionScoreRepository = examItemCriterionScoreRepository;
@@ -93,6 +96,7 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
         this.phaseOneTransactionTemplate = new TransactionTemplate(transactionManager);
         this.phaseOneTransactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         this.confidenceReviewCalculator = confidenceReviewCalculator;
+        this.classTestGradingAssignmentService = classTestGradingAssignmentService;
     }
 
     @Override
@@ -100,7 +104,10 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
         var persisted = persistEvaluation(input);
 
         if (allResponsesHaveEvaluations(persisted.sessionId())) {
-            upsertExamCandidateResultUseCase.execute(persisted.sessionId());
+            var result = upsertExamCandidateResultUseCase.execute(persisted.sessionId());
+            // Bài trên lớp: mở luôn phân công cho giáo viên chủ bài, để họ chấm được
+            // ngay khi học sinh vừa nộp thay vì chờ đóng bài. No-op với kỳ thi tập trung.
+            classTestGradingAssignmentService.ensureAssignmentForResult(result);
             completeExamSessionGradingUseCase.execute(
                 new CompleteExamSessionGradingCommand(persisted.sessionId())
             );

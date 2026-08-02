@@ -11,6 +11,7 @@ public record CreateClassTestCommand(
     String description,
     String openAt,
     String closeAt,
+    UUID assessmentPolicyId,
     List<ClassTestSectionCommand> sections,
     UUID existingBlueprintId,
     UUID existingBlueprintVersionId,

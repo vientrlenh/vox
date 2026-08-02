@@ -78,7 +78,7 @@ public class ExamAppealController {
 
     @Operation(summary = "Duyệt đơn phúc khảo và đặt hạn xử lý")
     @PostMapping("/{appealId}/approve")
-    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<UUID>> approveAppeal(
             @PathVariable("appealId") UUID appealId,
             @Valid @RequestBody ApproveExamAppealRequest request) {
@@ -89,7 +89,7 @@ public class ExamAppealController {
 
     @Operation(summary = "Từ chối đơn phúc khảo (bắt buộc nêu lý do)")
     @PostMapping("/{appealId}/reject")
-    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<UUID>> rejectAppeal(
             @PathVariable("appealId") UUID appealId,
             @Valid @RequestBody RejectExamAppealRequest request) {
@@ -101,7 +101,7 @@ public class ExamAppealController {
     @Operation(summary = "Giao MỘT giáo viên chấm phúc khảo. Người đã từng chấm bài này bị từ chối, "
         + "trừ khi truyền `overrideReason` — lý do đó được ghi lại trên đơn.")
     @PostMapping("/{appealId}/reviewer")
-    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<UUID>> assignReviewer(
             @PathVariable("appealId") UUID appealId,
             @Valid @RequestBody AssignExamAppealReviewerRequest request) {

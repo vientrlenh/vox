@@ -75,6 +75,9 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
      */
     private static final int MAX_PAGE_SIZE = 100;
 
+    /** So khớp với {@code ExamKind.CLASS_TEST}; JPQL trả enum về dạng String. */
+    private static final String CLASS_TEST_KIND = "CLASS_TEST";
+
     /** Trạng thái bài còn có thể nhận một vòng chấm — luật lấy từ domain, không chép cứng. */
     private static final List<String> ASSIGNABLE_STATUS_NAMES = GradingRoundPolicy.allAssignableStatuses()
         .stream()
@@ -280,6 +283,30 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
     }
 
     /** Tên lớp của nhiều bài trong 1 query; giữ giá trị đầu tiên mỗi bài (tránh N+1). */
+    /**
+     * Tên học sinh theo lô. Chỉ gọi cho bài kiểm tra TRÊN LỚP — kỳ thi tập trung giữ
+     * nguyên chấm ẩn danh, và đó là bảo đảm công bằng chứ không phải chi tiết dư.
+     */
+    private Map<UUID, String> studentNamesByCandidateResultIds(List<UUID> candidateResultIds) {
+        if (candidateResultIds.isEmpty()) {
+            return Map.of();
+        }
+        var rows = em.createQuery("""
+            SELECT cr.id, u.fullName
+            FROM ExamCandidateResultJpaEntity cr
+            JOIN ExamCandidateJpaEntity c ON c.id = cr.candidateId
+            JOIN UserJpaEntity u ON u.id = c.studentId
+            WHERE cr.id IN (:candidateResultIds)
+        """, Tuple.class)
+            .setParameter("candidateResultIds", candidateResultIds)
+            .getResultList();
+        var map = new HashMap<UUID, String>();
+        for (var row : rows) {
+            map.putIfAbsent(row.get(0, UUID.class), row.get(1, String.class));
+        }
+        return map;
+    }
+
     private Map<UUID, String> classNamesByCandidateResultIds(List<UUID> candidateResultIds) {
         if (candidateResultIds.isEmpty()) {
             return Map.of();
@@ -436,11 +463,13 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
         var normalizedSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
         var now = Instant.now();
 
-        // Không join sang candidate/user: giáo viên chấm ẩn danh, dữ liệu học sinh
-        // không được rời khỏi read model này.
+        // Ẩn danh là luật của kỳ thi TẬP TRUNG, không phải luật chung: ở đó dữ liệu học
+        // sinh không được rời khỏi read model này. Bài kiểm tra trên lớp thì ngược lại —
+        // người chấm chính là giáo viên dạy lớp đó. Nên chỉ lấy thêm e.kind ở đây rồi
+        // nạp danh tính theo lô cho ĐÚNG những dòng CLASS_TEST (xem bên dưới).
         var rows = em.createQuery("""
             SELECT ga.id, cr.id, e.name, ga.roundType, ga.status, cr.status, cr.totalScore,
-                   s.flagged, ga.assignedAt, ga.deadlineAt
+                   s.flagged, ga.assignedAt, ga.deadlineAt, e.kind
             FROM ExamGradingAssignmentJpaEntity ga
             JOIN ExamCandidateResultJpaEntity cr ON cr.id = ga.candidateResultId
             JOIN ExamSessionJpaEntity s ON s.id = cr.sessionId
@@ -462,6 +491,15 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
         var partCounts = partCountsByCandidateResultIds(
             rows.stream().map(row -> row.get(1, UUID.class)).toList());
 
+        // Hai query phụ, và CHỈ chạy khi trang có dòng của bài kiểm tra trên lớp — số
+        // query vẫn cố định theo trang, không N+1.
+        var classTestResultIds = rows.stream()
+            .filter(row -> CLASS_TEST_KIND.equals(row.get(10, String.class)))
+            .map(row -> row.get(1, UUID.class))
+            .toList();
+        var studentNames = studentNamesByCandidateResultIds(classTestResultIds);
+        var classNames = classNamesByCandidateResultIds(classTestResultIds);
+
         var content = new ArrayList<GradingTaskInfo>();
         for (var row : rows) {
             var candidateResultId = row.get(1, UUID.class);
@@ -480,7 +518,9 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
                 Boolean.TRUE.equals(row.get(7, Boolean.class)),
                 row.get(8, Instant.class),
                 deadlineAt,
-                isOverdue(assignmentStatus, deadlineAt, now)
+                isOverdue(assignmentStatus, deadlineAt, now),
+                studentNames.get(candidateResultId),
+                classNames.get(candidateResultId)
             ));
         }
 
@@ -536,7 +576,8 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
         // quyền. Không được để query phần thi nào chạy trước khi nó trả về dòng.
         var rows = em.createQuery("""
             SELECT ga.id, cr.id, e.name, ga.roundType, ga.status, cr.status, s.flagged, s.flagReason,
-                   cr.totalScore, ga.scoreBefore, ga.deadlineAt, cr.rubricVersionId, cr.sessionId, ap.reason
+                   cr.totalScore, ga.scoreBefore, ga.deadlineAt, cr.rubricVersionId, cr.sessionId, ap.reason,
+                   e.kind
             FROM ExamGradingAssignmentJpaEntity ga
             JOIN ExamCandidateResultJpaEntity cr ON cr.id = ga.candidateResultId
             JOIN ExamSessionJpaEntity s ON s.id = cr.sessionId
@@ -556,6 +597,7 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
         var assignmentStatus = row.get(4, String.class);
         var resultStatus = row.get(5, String.class);
         var deadlineAt = row.get(10, Instant.class);
+        var isClassTest = CLASS_TEST_KIND.equals(row.get(14, String.class));
         var now = Instant.now();
 
         // Cờ chỉ-đọc và danh sách nút do BE quyết, FE không tự suy: luật vòng × hành
@@ -585,7 +627,10 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             allowedOutcomes,
             row.get(13, String.class),
             taskItems(row.get(12, UUID.class)),
-            criteria(row.get(11, UUID.class))
+            criteria(row.get(11, UUID.class)),
+            // Kỳ thi tập trung giữ nguyên chấm ẩn danh — hai lookup dưới đây không chạy.
+            isClassTest ? studentNamesByCandidateResultIds(List.of(candidateResultId)).get(candidateResultId) : null,
+            isClassTest ? classNamesByCandidateResultIds(List.of(candidateResultId)).get(candidateResultId) : null
         ));
     }
 

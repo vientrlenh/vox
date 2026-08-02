@@ -49,6 +49,8 @@ import com.sep.vox.domain.repository.ExamBlueprintRepository;
 import com.sep.vox.domain.repository.ExamBlueprintSectionRepository;
 import com.sep.vox.domain.repository.ExamBlueprintSlotRepository;
 import com.sep.vox.domain.repository.ExamBlueprintVersionRepository;
+import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStatus;
+import com.sep.vox.domain.repository.AssessmentPolicyRepository;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamPaperItemRepository;
@@ -86,6 +88,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
     private final ExamScheduleRepository examScheduleRepository;
     private final ExamMemberRepository examMemberRepository;
     private final ExamCandidateRepository examCandidateRepository;
+    private final AssessmentPolicyRepository assessmentPolicyRepository;
     private final ExamQuestionSecureLockService examQuestionSecureLockService;
     private final UpdateExamStatusUseCase updateExamStatusUseCase;
     private final ExamTimeQuotaGuardService examTimeQuotaGuardService;
@@ -109,6 +112,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             ExamScheduleRepository examScheduleRepository,
             ExamMemberRepository examMemberRepository,
             ExamCandidateRepository examCandidateRepository,
+            AssessmentPolicyRepository assessmentPolicyRepository,
             ExamQuestionSecureLockService examQuestionSecureLockService,
             UpdateExamStatusUseCase updateExamStatusUseCase,
             ExamTimeQuotaGuardService examTimeQuotaGuardService,
@@ -130,6 +134,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         this.examScheduleRepository = examScheduleRepository;
         this.examMemberRepository = examMemberRepository;
         this.examCandidateRepository = examCandidateRepository;
+        this.assessmentPolicyRepository = assessmentPolicyRepository;
         this.examQuestionSecureLockService = examQuestionSecureLockService;
         this.updateExamStatusUseCase = updateExamStatusUseCase;
         this.examTimeQuotaGuardService = examTimeQuotaGuardService;
@@ -157,6 +162,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
+        validateAssessmentPolicy(command.assessmentPolicyId(), schoolClass.getSchoolId());
         validateInputMode(command);
         validateOpenClose(command.openAt(), command.closeAt());
 
@@ -289,6 +295,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             StringNormalization.trimAndCollapseSpaces(input.description()),
             input.openAt(),
             input.closeAt(),
+            input.assessmentPolicyId(),
             input.sections() == null ? List.of() : input.sections().stream()
                 .map(section -> new ClassTestSectionCommand(
                     StringNormalization.trimAndCollapseSpaces(section.title()),
@@ -303,6 +310,29 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             input.examTimeDurationSecond(),
             input.resultDecisionMethod()
         );
+    }
+
+    /**
+     * Chốt policy NGAY LÚC TẠO, không để trôi sang bước sửa: bài không gắn policy thì
+     * {@code ExamSessionResultCalculator} ném ngay khi tính kết quả, tức là không sinh
+     * được {@code ExamCandidateResult} nào — mà đó mới là thứ phân công chấm trỏ vào.
+     * Bài trên lớp lại tự chuyển sang SCHEDULED/IN_PROGRESS ngay sau khi tạo, nên cửa
+     * sổ để gắn policy sau gần như không tồn tại.
+     *
+     * <p>Policy hệ thống ({@code schoolId = null}) dùng được cho mọi trường.
+     */
+    private void validateAssessmentPolicy(UUID assessmentPolicyId, UUID schoolId) {
+        if (assessmentPolicyId == null) {
+            throw new IllegalArgumentException("Bộ tiêu chí đánh giá là bắt buộc");
+        }
+        var policy = assessmentPolicyRepository.findById(assessmentPolicyId)
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ tiêu chí đánh giá"));
+        if (policy.getStatus() != AssessmentPolicyStatus.PUBLISHED) {
+            throw new IllegalStateException("Chỉ được dùng bộ tiêu chí đã xuất bản");
+        }
+        if (policy.getSchoolId() != null && !policy.getSchoolId().equals(schoolId)) {
+            throw new ForbiddenException("Bộ tiêu chí không thuộc trường của bạn");
+        }
     }
 
     private void validateInputMode(CreateClassTestCommand command) {
@@ -408,7 +438,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             command.resultDecisionMethod() == null ? ResultDecisionMethod.HIGHEST : command.resultDecisionMethod(),
             openAt,
             closeAt,
-            null,
+            command.assessmentPolicyId(),
             false,
             now,
             // requiredStreamType/streamTypePermission: chưa có input nào set khi tạo exam,

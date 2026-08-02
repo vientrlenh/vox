@@ -6,7 +6,12 @@ import java.util.UUID;
 
 /**
  * Hàng đợi của giáo viên — MỘT danh sách cho cả bốn vòng, phân biệt bằng
- * {@code roundType}. Ẩn danh: không có tên/ID học sinh.
+ * {@code roundType}.
+ *
+ * <p><strong>Ẩn danh là luật của kỳ thi {@code CENTRALIZED}</strong>, không phải luật
+ * chung: ở đó {@code studentName}/{@code className} luôn {@code null} để bảo đảm chấm
+ * mù. Bài kiểm tra trên lớp thì ngược lại — người chấm chính là giáo viên dạy lớp đó,
+ * họ cần biết đang chấm ai. Xem {@code JpaExamGradingQueryRepository}.
  */
 public record GradingTaskInfo(
     UUID assignmentId,
@@ -22,6 +27,10 @@ public record GradingTaskInfo(
     boolean flagged,
     Instant assignedAt,
     Instant deadlineAt,
-    boolean overdue
+    boolean overdue,
+    /** Chỉ có giá trị với bài kiểm tra trên lớp; kỳ thi tập trung luôn null. */
+    String studentName,
+    /** Chỉ có giá trị với bài kiểm tra trên lớp; kỳ thi tập trung luôn null. */
+    String className
 ) {
 }

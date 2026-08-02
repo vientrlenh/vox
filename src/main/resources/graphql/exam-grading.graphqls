@@ -155,7 +155,10 @@ type GradingTaskItem {
 }
 
 """
-Màn chấm của giáo viên. KHÔNG có tên/ID học sinh — giáo viên chấm ẩn danh.
+Màn chấm của giáo viên.
+
+Kỳ thi tập trung chấm ẩn danh (`studentName`/`className` = null). Bài kiểm tra trên lớp
+thì có, vì người chấm chính là giáo viên dạy lớp đó.
 """
 type GradingTaskDetail {
     assignmentId: ID!
@@ -188,9 +191,16 @@ type GradingTaskDetail {
     appealReason: String
     items: [GradingTaskItem!]!
     criteria: [GradingCriterionMeta!]!
+    """
+    Tên học sinh. CHỈ có với bài kiểm tra trên lớp; kỳ thi tập trung luôn null vì chấm
+    ẩn danh là bảo đảm công bằng. FE render có điều kiện, không cần cờ bật/tắt riêng.
+    """
+    studentName: String
+    "Lớp của học sinh. Cùng luật với studentName."
+    className: String
 }
 
-"Hàng đợi của giáo viên — MỘT danh sách cho cả bốn vòng. Ẩn danh: không có tên/ID học sinh."
+"Hàng đợi của giáo viên — MỘT danh sách cho cả bốn vòng. Kỳ thi tập trung chấm ẩn danh."
 type GradingTask {
     assignmentId: ID!
     candidateResultId: ID!
@@ -207,6 +217,13 @@ type GradingTask {
     assignedAt: String
     deadlineAt: String
     overdue: Boolean!
+    """
+    Tên học sinh. CHỈ có với bài kiểm tra trên lớp; kỳ thi tập trung luôn null vì chấm
+    ẩn danh là bảo đảm công bằng. FE render có điều kiện, không cần cờ bật/tắt riêng.
+    """
+    studentName: String
+    "Lớp của học sinh. Cùng luật với studentName."
+    className: String
 }
 
 type GradingTaskPage {
@@ -339,6 +356,13 @@ extend type Query {
     ): GradingAssignmentRowPage!
 
     gradingStats(examId: ID, scheduleId: ID): GradingStats!
+
+    """
+    Tiến độ chấm của MỘT bài kiểm tra trên lớp, cho chính giáo viên tạo bài. Tách khỏi
+    `gradingStats` vì ở đó `examId` rỗng nghĩa là toàn trường -- nới quyền chỗ đó là để
+    một giáo viên đọc được tiến độ chấm của cả trường.
+    """
+    classTestGradingStats(examId: ID!): GradingStats!
 
     "Hàng đợi bài của giáo viên đang đăng nhập, cả bốn vòng. Phân trang 0-based."
     myGradingTasks(

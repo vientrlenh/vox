@@ -47,7 +47,7 @@ public class RejectExamAppealUseCase implements IUseCase<RejectExamAppealCommand
     public UUID execute(RejectExamAppealCommand command) {
         var currentUserId = examAppealAccessService.requireActiveUserId();
         var context = examAppealAccessService.load(command.appealId());
-        examAppealAccessService.authorizeSchoolAdmin(context, currentUserId);
+        examAppealAccessService.authorizeSchoolAdminOrClassTestChair(context, currentUserId);
 
         var appeal = context.appeal();
         if (appeal.getStatus() != ExamAppealStatus.PENDING) {

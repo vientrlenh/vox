@@ -52,7 +52,10 @@ public class ExportExamScoresUseCase implements IUseCase<ExportExamScoresQuery, 
     public String execute(ExportExamScoresQuery input) {
         var currentUserId = examGradingAccessService.requireActiveUserId();
         var schoolId = examGradingAccessService.requireCurrentSchoolId(currentUserId);
-        examGradingAccessService.authorizeSchoolAdmin(schoolId, currentUserId);
+        // Giáo viên tạo bài kiểm tra trên lớp xuất được bảng điểm của ĐÚNG bài mình —
+        // phạm vi đóng bằng examId, nên không rò dữ liệu kỳ thi khác của trường.
+        examGradingAccessService.authorizeSchoolAdminOrClassTestChair(
+            schoolId, input.examId(), currentUserId);
 
         // Không phạm vi = xuất mọi kỳ thi của cả trường: hàng chục nghìn dòng dựng
         // trong RAM, kèm ba query không phân trang với mệnh đề IN khổng lồ. Bắt chọn

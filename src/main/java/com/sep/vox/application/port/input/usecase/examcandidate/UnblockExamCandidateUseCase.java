@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.RetryGradingExamSessionCommand;
 import com.sep.vox.application.port.input.command.UnblockExamCandidateCommand;
+import com.sep.vox.application.port.input.service.ClassTestGradingAssignmentService;
 import com.sep.vox.application.port.input.service.ExamSessionModerationAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.usecase.examevaluation.UpsertExamCandidateResultUseCase;
@@ -35,6 +36,7 @@ public class UnblockExamCandidateUseCase implements IUseCase<UnblockExamCandidat
     private final UpsertExamCandidateResultUseCase upsertExamCandidateResultUseCase;
     private final RetryGradingExamSessionUseCase retryGradingExamSessionUseCase;
     private final ExamSessionModerationAccessService moderationAccessService;
+    private final ClassTestGradingAssignmentService classTestGradingAssignmentService;
 
     public UnblockExamCandidateUseCase(
             ExamCandidateRepository examCandidateRepository,
@@ -45,7 +47,8 @@ public class UnblockExamCandidateUseCase implements IUseCase<UnblockExamCandidat
             ExamItemEvaluationRepository examItemEvaluationRepository,
             UpsertExamCandidateResultUseCase upsertExamCandidateResultUseCase,
             RetryGradingExamSessionUseCase retryGradingExamSessionUseCase,
-            ExamSessionModerationAccessService moderationAccessService) {
+            ExamSessionModerationAccessService moderationAccessService,
+            ClassTestGradingAssignmentService classTestGradingAssignmentService) {
         this.examCandidateRepository = examCandidateRepository;
         this.examRepository = examRepository;
         this.examSessionRepository = examSessionRepository;
@@ -55,6 +58,7 @@ public class UnblockExamCandidateUseCase implements IUseCase<UnblockExamCandidat
         this.upsertExamCandidateResultUseCase = upsertExamCandidateResultUseCase;
         this.retryGradingExamSessionUseCase = retryGradingExamSessionUseCase;
         this.moderationAccessService = moderationAccessService;
+        this.classTestGradingAssignmentService = classTestGradingAssignmentService;
     }
 
     @Override
@@ -100,7 +104,10 @@ public class UnblockExamCandidateUseCase implements IUseCase<UnblockExamCandidat
                 .toList();
             var hasEvaluations = !examItemEvaluationRepository.findByResponseIdIn(responseIds).isEmpty();
             if (hasEvaluations) {
-                upsertExamCandidateResultUseCase.execute(session.getId());
+                var recalculated = upsertExamCandidateResultUseCase.execute(session.getId());
+                // Gỡ chặn có thể kéo bài từ INVALID về PENDING_REVIEW — bài trên lớp cần
+                // một phân công mới thì giáo viên chủ bài mới chấm lại được.
+                classTestGradingAssignmentService.ensureAssignmentForResult(recalculated);
             } else {
                 retryGradingExamSessionUseCase.execute(new RetryGradingExamSessionCommand(session.getId()));
             }

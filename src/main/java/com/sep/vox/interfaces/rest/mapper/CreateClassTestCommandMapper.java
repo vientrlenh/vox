@@ -16,6 +16,7 @@ public final class CreateClassTestCommandMapper {
             request.description(),
             request.openAt(),
             request.closeAt(),
+            request.assessmentPolicyId(),
             request.sections() == null ? null : request.sections().stream()
                 .map(section -> new ClassTestSectionCommand(
                     section.title(),

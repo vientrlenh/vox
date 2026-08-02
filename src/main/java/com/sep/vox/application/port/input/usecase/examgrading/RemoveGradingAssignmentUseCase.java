@@ -42,6 +42,7 @@ public class RemoveGradingAssignmentUseCase implements IUseCase<RemoveGradingAss
         var currentUserId = examGradingAccessService.requireActiveUserId();
         var context = examGradingAccessService.load(command.assignmentId());
         examGradingAccessService.authorizeSchoolAdmin(context.schoolId(), currentUserId);
+        examGradingAccessService.rejectClassTestCoordination(context.candidateResult().getId());
 
         var assignment = context.assignment();
         // Đã chấm xong thì điểm đã ghi và bài đã công bố — xoá dòng phân công lúc

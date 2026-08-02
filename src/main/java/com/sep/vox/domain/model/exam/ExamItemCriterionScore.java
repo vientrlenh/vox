@@ -10,26 +10,39 @@ public class ExamItemCriterionScore {
     private BigDecimal rawScore;
     private BigDecimal finalScore;
     private String rationale;
+    private String matchedBandCode;
 
     public ExamItemCriterionScore() {}
 
     public ExamItemCriterionScore(UUID id, UUID evaluationId, UUID rubricCriterionId, BigDecimal rawScore,
             BigDecimal finalScore, String rationale) {
+        this(id, evaluationId, rubricCriterionId, rawScore, finalScore, rationale, null);
+    }
+
+    public ExamItemCriterionScore(UUID id, UUID evaluationId, UUID rubricCriterionId, BigDecimal rawScore,
+            BigDecimal finalScore, String rationale, String matchedBandCode) {
         this.id = id;
         this.evaluationId = evaluationId;
         this.rubricCriterionId = rubricCriterionId;
         this.rawScore = rawScore;
         this.finalScore = finalScore;
         this.rationale = rationale;
+        this.matchedBandCode = matchedBandCode;
     }
 
     public ExamItemCriterionScore(UUID evaluationId, UUID rubricCriterionId, BigDecimal rawScore, BigDecimal finalScore,
             String rationale) {
+        this(evaluationId, rubricCriterionId, rawScore, finalScore, rationale, null);
+    }
+
+    public ExamItemCriterionScore(UUID evaluationId, UUID rubricCriterionId, BigDecimal rawScore, BigDecimal finalScore,
+            String rationale, String matchedBandCode) {
         this.evaluationId = evaluationId;
         this.rubricCriterionId = rubricCriterionId;
         this.rawScore = rawScore;
         this.finalScore = finalScore;
         this.rationale = rationale;
+        this.matchedBandCode = matchedBandCode;
     }
 
     public UUID getId() {
@@ -80,5 +93,11 @@ public class ExamItemCriterionScore {
         this.rationale = rationale;
     }
 
-    
+    public String getMatchedBandCode() {
+        return matchedBandCode;
+    }
+
+    public void setMatchedBandCode(String matchedBandCode) {
+        this.matchedBandCode = matchedBandCode;
+    }
 }

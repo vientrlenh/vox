@@ -290,7 +290,8 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
                         criterion.getId(),
                         score,
                         score,
-                        entry.getValue().note()
+                        entry.getValue().note(),
+                        entry.getValue().matchedBandCode()
                     );
                 })
                 .filter(item -> item != null)

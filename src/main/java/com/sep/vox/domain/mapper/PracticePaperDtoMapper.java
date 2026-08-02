@@ -1,0 +1,65 @@
+package com.sep.vox.domain.mapper;
+
+import java.util.List;
+
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.json.JsonMapper;
+
+import com.sep.vox.domain.dto.personalization.PracticePaperDto;
+import com.sep.vox.domain.dto.personalization.PracticePaperQuestionDto;
+import com.sep.vox.domain.model.personalization.PracticePaper;
+import com.sep.vox.domain.model.personalization.PracticeQuestion;
+
+public final class PracticePaperDtoMapper {
+
+    private static final JsonMapper JSON_MAPPER = new JsonMapper();
+
+    private PracticePaperDtoMapper() {
+    }
+
+    public static PracticePaperDto toDto(
+            PracticePaper paper,
+            List<PracticeQuestion> questions) {
+        var responseQuestions = java.util.stream.IntStream
+            .range(0, questions.size())
+            .mapToObj(index -> toDto(questions.get(index), index + 1))
+            .toList();
+        return new PracticePaperDto(
+            paper.id(),
+            paper.practiceTopicId(),
+            paper.origin(),
+            paper.plannedSeconds(),
+            paper.reservedQuotaSeconds(),
+            responseQuestions
+        );
+    }
+
+    private static PracticePaperQuestionDto toDto(
+            PracticeQuestion question,
+            int slot) {
+        return new PracticePaperQuestionDto(
+            question.id(),
+            slot,
+            question.questionText(),
+            question.targetCriterionCode(),
+            question.targetSubAttribute(),
+            question.difficultyRank(),
+            question.preparationTimeSeconds(),
+            question.maxResponseSeconds(),
+            question.maxFollowupSeconds(),
+            parseIdeas(question.suggestedIdeasJson())
+        );
+    }
+
+    private static List<String> parseIdeas(String value) {
+        if (value == null || value.isBlank()) {
+            return List.of();
+        }
+        try {
+            return JSON_MAPPER.readValue(value, new TypeReference<>() {
+            });
+        } catch (Exception exception) {
+            return List.of();
+        }
+    }
+}

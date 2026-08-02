@@ -1,0 +1,29 @@
+extend type Mutation {
+    respondToTopicSuggestion(suggestionId: ID!, accept: Boolean!): Boolean!
+    generateTopicFromKeyword(keyword: String!): TopicFromKeywordResult!
+}
+
+extend type InterestProfile {
+    suggestions: [TopicSuggestion!]!
+}
+
+type TopicSuggestion {
+    id: ID!
+    suggestedTopicName: String!
+    interestDimension: String!
+    confidence: Float!
+    reasonText: String!
+    status: String!
+}
+
+type TopicFromKeywordResult {
+    topic: PracticeTopicOffer
+    outcome: TopicFromKeywordOutcome!
+}
+
+enum TopicFromKeywordOutcome {
+    CREATED
+    MATCHED_EXISTING
+    REJECTED_UNSUITABLE
+    OUT_OF_EXAM_SCOPE
+}

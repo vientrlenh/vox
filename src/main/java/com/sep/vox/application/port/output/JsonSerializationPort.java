@@ -11,4 +11,7 @@ public interface JsonSerializationPort {
     List<String> toStringList(String json);
 
     List<Map<String, String>> toStringMapList(String json);
+
+    /** Đọc mảng chuỗi ở field :field trong 1 object JSON, vd {"current":[...]}. */
+    List<String> toStringListField(String json, String field);
 }

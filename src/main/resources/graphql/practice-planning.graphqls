@@ -1,0 +1,92 @@
+extend type Query {
+    practiceTopicOffers(excludeTopicIds: [ID!], round: Int = 1, bucket: TopicOfferBucket = FOR_YOU): [PracticeTopicOffer!]!
+    searchPracticeTopics(keyword: String!): TopicSearchResult!
+    myInterestProfile: InterestProfile!
+    mySavedTopics: [PracticeTopicOffer!]!
+    myPracticeDashboardStats: PracticeDashboardStats!
+}
+
+extend type Mutation {
+    buildPracticePaper(input: StartPracticeSessionInput!): PracticePaper!
+    pickRandomTopic: PracticeTopicOffer!
+    saveTopic(topicId: ID!): Boolean!
+    unsaveTopic(topicId: ID!): Boolean!
+}
+
+input StartPracticeSessionInput {
+    topicId: ID!
+    origin: String!
+    fromSubAttribute: String
+    offeredTopicIds: [ID!]
+    previousOfferedTopicIds: [ID!]
+}
+
+type PracticeTopicOffer {
+    topicId: ID!
+    name: String!
+    dimension: String!
+    savedByMe: Boolean!
+    matchPercent: Int
+    minutes: Int!
+    level: TopicLevel!
+    rationale: String
+    reasons: [String!]!
+    focusTags: [String!]!
+}
+
+enum TopicLevel {
+    BEGINNER
+    INTERMEDIATE
+    ADVANCED
+}
+
+enum TopicOfferBucket {
+    FOR_YOU
+    BY_GOAL
+    BY_WEAKNESS
+}
+
+type PracticeDashboardStats {
+    sessionsDone: Int!
+    averageScore: Float!
+    streakDays: Int!
+}
+
+type TopicSearchResult {
+    topics: [PracticeTopicOffer!]!
+    canGenerate: Boolean!
+}
+
+type TopicInterest {
+    topicId: ID!
+    name: String!
+    score: Float!
+    sessionsMentioned: Int!
+    lastMentionedAt: String
+}
+
+type InterestProfile {
+    topics: [TopicInterest!]!
+}
+
+type PracticePaper {
+    id: ID!
+    topicId: ID!
+    origin: String!
+    plannedSeconds: Int!
+    reservedQuotaSeconds: Int!
+    questions: [PracticePaperQuestion!]!
+}
+
+type PracticePaperQuestion {
+    questionId: ID!
+    slot: Int!
+    questionText: String!
+    criterionCode: String!
+    subAttribute: String
+    difficultyRank: Int!
+    preparationTimeSeconds: Int!
+    maxResponseSeconds: Int!
+    maxFollowupSeconds: Int!
+    suggestedIdeas: [String!]!
+}

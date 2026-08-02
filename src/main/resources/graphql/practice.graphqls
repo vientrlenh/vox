@@ -1,0 +1,95 @@
+extend type Query {
+    myWeaknessProfile: WeaknessProfile!
+    myPracticeProgress(criterionCode: String, days: Int = 90): [CriterionProgressPoint!]!
+    studentWeaknessProfile(studentId: ID!): WeaknessProfile!
+    studentPracticeProgress(studentId: ID!): [CriterionProgressPoint!]!
+    classPracticeOverview(classId: ID!): ClassPracticeOverview!
+    myLearnerProfile: LearnerProfile
+    interestQuizItems: [InterestQuizItem!]!
+}
+
+extend type Mutation {
+    submitInterestQuiz(input: SubmitInterestQuizInput!): LearnerProfile!
+    submitFlsaSelfReport(answers: [Int!]!): LearnerProfile!
+    setPracticeGoal(goalType: PracticeGoalType!): LearnerProfile!
+    setInterestAutoUpdate(enabled: Boolean!): LearnerProfile!
+}
+
+type WeaknessProfile {
+    criteria: [CriterionWeakness!]!
+    subAttributes: [SubAttributeWeakness!]!
+    sessionsAnalysed: Int!
+    nearlyFixed: Int!
+    newlyFound: Int!
+}
+
+type CriterionWeakness {
+    criterionCode: String!
+    criterionName: String!
+    weakness: Float!
+    observationCount: Int!
+    reliable: Boolean!
+}
+
+type SubAttributeWeakness {
+    criterionCode: String!
+    subAttribute: String!
+    occurrenceCount: Int!
+    severity: String!
+    practiceable: Boolean!
+}
+
+type CriterionProgressPoint {
+    criterionCode: String!
+    date: String!
+    value: Float!
+    source: String!
+}
+
+type ClassPracticeOverview {
+    classId: ID!
+    studentCount: Int!
+    activeStudentCount: Int!
+    rows: [ClassPracticeRow!]!
+}
+
+type ClassPracticeRow {
+    studentId: ID!
+    fullName: String!
+    sessionCount: Int!
+    totalPracticeSeconds: Int!
+    lastPracticedAt: String
+    averageScore: Float
+    weakestCriterionCode: String
+}
+
+enum PracticeGoalType {
+    EXAM_PREP
+    ABILITY_IMPROVEMENT
+}
+
+input InterestQuizAnswerInput {
+    itemId: ID!
+    mostStatementIndex: Int!
+    leastStatementIndex: Int!
+}
+
+input SubmitInterestQuizInput {
+    answers: [InterestQuizAnswerInput!]!
+}
+
+type InterestQuizItem {
+    id: ID!
+    statements: [String!]!
+}
+
+type LearnerProfile {
+    goalType: PracticeGoalType!
+    flsaScore: Float
+    targetFrameworkBandCode: String!
+    targetFrameworkBandLabel: String!
+    targetBandAttainmentPercent: Float
+    estimatedFrameworkBandCode: String
+    interestAutoUpdateEnabled: Boolean!
+    quizCompletedAt: String
+}

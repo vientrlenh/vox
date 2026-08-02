@@ -7,11 +7,13 @@ import java.util.stream.Collectors;
 import com.sep.vox.application.port.input.command.examevaluation.ConfidenceCaseSignalsInput;
 import com.sep.vox.application.port.input.command.examevaluation.CriterionScoreInput;
 import com.sep.vox.application.port.input.command.examevaluation.EvaluationSignalsInput;
+import com.sep.vox.application.port.input.command.examevaluation.PhonemeFeedbackInput;
 import com.sep.vox.application.port.input.command.examevaluation.PronunciationOverallInput;
 import com.sep.vox.application.port.input.command.examevaluation.RecordExamAttemptEvaluationCommand;
 import com.sep.vox.application.port.input.command.examevaluation.RecordExamAttemptEvaluationPayloadInput;
 import com.sep.vox.application.port.input.command.examevaluation.TurnDetailInput;
 import com.sep.vox.application.port.input.command.examevaluation.ValidityResultInput;
+import com.sep.vox.application.port.input.command.examevaluation.WordFeedbackInput;
 import com.sep.vox.interfaces.kafka.dto.ConfidenceCaseSignalsDto;
 import com.sep.vox.interfaces.kafka.dto.CriterionScoreDto;
 import com.sep.vox.interfaces.kafka.dto.EvaluationSignalsDto;
@@ -84,7 +86,11 @@ public final class RecordExamAttemptEvaluationCommandMapper {
             dto.source(),
             dto.subscores(),
             dto.note(),
-            dto.suggestion()
+            dto.suggestion(),
+            dto.weaknessLabels(),
+            dto.evidenceSpans(),
+            dto.recommendationTag(),
+            dto.matchedBandCode()
         );
     }
 
@@ -175,8 +181,48 @@ public final class RecordExamAttemptEvaluationCommandMapper {
             dto.durationSeconds(),
             dto.asrConfidence(),
             toPronunciationOverall(dto.pronunciationOverall()),
-            toObjectList(dto.wordFeedback())
+            toWordFeedback(dto.wordFeedback())
         );
+    }
+
+    private static List<WordFeedbackInput> toWordFeedback(List<tools.jackson.databind.JsonNode> values) {
+        if (values == null) {
+            return null;
+        }
+        return values.stream()
+            .filter(value -> value != null && value.isObject())
+            .map(value -> new WordFeedbackInput(
+                textOrNull(value.get("word")),
+                doubleOrNull(value.get("accuracyScore")),
+                booleanOrNull(value.get("hasCriticalIssue")),
+                toPhonemes(value.get("phonemes"))
+            ))
+            .toList();
+    }
+
+    private static List<PhonemeFeedbackInput> toPhonemes(tools.jackson.databind.JsonNode values) {
+        if (values == null || !values.isArray()) {
+            return List.of();
+        }
+        return java.util.stream.StreamSupport.stream(values.spliterator(), false)
+            .filter(value -> value != null && value.isObject())
+            .map(value -> new PhonemeFeedbackInput(
+                textOrNull(value.get("phoneme")),
+                doubleOrNull(value.get("accuracyScore"))
+            ))
+            .toList();
+    }
+
+    private static String textOrNull(tools.jackson.databind.JsonNode value) {
+        return value == null || value.isNull() ? null : value.asString();
+    }
+
+    private static Double doubleOrNull(tools.jackson.databind.JsonNode value) {
+        return value == null || !value.isNumber() ? null : value.asDouble();
+    }
+
+    private static Boolean booleanOrNull(tools.jackson.databind.JsonNode value) {
+        return value == null || !value.isBoolean() ? null : value.asBoolean();
     }
 
     private static PronunciationOverallInput toPronunciationOverall(PronunciationOverallDto dto) {

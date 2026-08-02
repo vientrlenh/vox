@@ -193,9 +193,40 @@ server:
   shutdown: graceful
   forward-headers-strategy: framework
 
+practice:
+  internal:
+    secret: ${PRACTICE_INTERNAL_SECRET:}
+
 app:
-  data-initializer: 
+  data-initializer:
     enabled: ${DATA_INITIALIZER:true}
+  personalization:
+    generation:
+      paper-target-question-count: ${PERSONALIZATION_PAPER_TARGET_QUESTION_COUNT:4}
+      online-budget: ${PERSONALIZATION_ONLINE_GENERATION_BUDGET:20s}
+    pronunciation-accuracy-threshold: ${PERSONALIZATION_PRONUNCIATION_ACCURACY_THRESHOLD:60}
+    fluency-slow-rate-words-per-minute: ${PERSONALIZATION_FLUENCY_SLOW_RATE_WPM:60}
+    fluency-long-pause-ratio: ${PERSONALIZATION_FLUENCY_LONG_PAUSE_RATIO:0.35}
+    weakness:
+      alpha: ${PERSONALIZATION_WEAKNESS_ALPHA:0.2}
+      shrinkage:
+        pronunciation: ${PERSONALIZATION_WEAKNESS_K_PRONUNCIATION:3}
+        fluency: ${PERSONALIZATION_WEAKNESS_K_FLUENCY:4}
+        grammar: ${PERSONALIZATION_WEAKNESS_K_GRAMMAR:5}
+        vocabulary: ${PERSONALIZATION_WEAKNESS_K_VOCABULARY:5}
+        coherence: ${PERSONALIZATION_WEAKNESS_K_COHERENCE:7}
+      reliable-observation-count: ${PERSONALIZATION_WEAKNESS_RELIABLE_COUNT:3}
+      minimum-criteria-per-evaluation: ${PERSONALIZATION_WEAKNESS_MIN_CRITERIA:3}
+      minimum-class-prior-students: ${PERSONALIZATION_WEAKNESS_MIN_CLASS_STUDENTS:10}
+      observation-window-days: ${PERSONALIZATION_WEAKNESS_WINDOW_DAYS:60}
+      recent-window-days: ${PERSONALIZATION_WEAKNESS_RECENT_WINDOW_DAYS:14}
+      minimum-sub-attribute-frequency: ${PERSONALIZATION_WEAKNESS_MIN_SUB_ATTRIBUTE_FREQ:3}
+      frequency-weight: ${PERSONALIZATION_WEAKNESS_FREQUENCY_WEIGHT:0.6}
+      recent-frequency-weight: ${PERSONALIZATION_WEAKNESS_RECENT_WEIGHT:0.4}
+      stale-after-hours: ${PERSONALIZATION_WEAKNESS_STALE_HOURS:24}
+      batch-size: ${PERSONALIZATION_WEAKNESS_BATCH_SIZE:200}
+      refresh-delay-ms: ${PERSONALIZATION_WEAKNESS_REFRESH_DELAY_MS:60000}
+      refresh-initial-delay-ms: ${PERSONALIZATION_WEAKNESS_REFRESH_INITIAL_DELAY_MS:60000}
   frontend:
     password-setup-url: ${PASSWORD_SETUP_URL}
     oauth2-url: ${OAUTH2_URL}
@@ -214,6 +245,10 @@ app:
           topic:
             exam-attempt-evaluation-completed: ${KAFKA_EXAM_EVALUATION_COMPLETED_TOPIC:exam-attempt-evaluation-completed}
           group-id: ${KAFKA_EXAM_EVALUATION_GROUP_ID:vox-exam-evaluation}
+        practice-evaluation:
+          topic:
+            practice-attempt-evaluation-completed: ${KAFKA_PRACTICE_EVALUATION_COMPLETED_TOPIC:practice-attempt-evaluation-completed}
+          group-id: ${KAFKA_PRACTICE_EVALUATION_GROUP_ID:vox-practice-evaluation}
         question-asset-analysis:
           topic:
             question-asset-analysis-completed: ${KAFKA_QUESTION_ASSET_ANALYSIS_COMPLETED_TOPIC:question-asset-analysis-completed}

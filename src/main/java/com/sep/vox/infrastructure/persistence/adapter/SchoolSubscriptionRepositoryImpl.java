@@ -66,4 +66,25 @@ public class SchoolSubscriptionRepositoryImpl implements SchoolSubscriptionRepos
             result.getTotalPages()
         );
     }
+
+    @Override
+    public Optional<UUID> findActiveSubscriptionIdForUser(UUID userId) {
+        return springDataSchoolSubscriptionRepository.findActiveSubscriptionIdForUser(userId);
+    }
+
+    @Override
+    public int findPracticeQuotaRemaining(UUID userId) {
+        return springDataSchoolSubscriptionRepository.findPracticeQuotaRemaining(userId)
+            .stream()
+            .findFirst()
+            .orElse(0);
+    }
+
+    @Override
+    public Integer findMaxTimePerAttemptMinForUser(UUID userId) {
+        return springDataSchoolSubscriptionRepository.findMaxTimePerAttemptMinForUser(userId)
+            .stream()
+            .findFirst()
+            .orElse(null);
+    }
 }

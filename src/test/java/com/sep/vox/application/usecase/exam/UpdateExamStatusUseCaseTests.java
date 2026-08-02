@@ -100,7 +100,8 @@ class UpdateExamStatusUseCaseTests {
             schoolSubscriptionRepository,
             subscriptionPlanRepository,
             subscriptionQuotaRepository,
-            userContextPort);
+            userContextPort,
+            mock(com.sep.vox.application.port.output.EventPublisherPort.class));
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(examMemberRepository.existsByExamIdAndUserIdAndRole(examId, userId, ExamMemberRole.CHAIR))

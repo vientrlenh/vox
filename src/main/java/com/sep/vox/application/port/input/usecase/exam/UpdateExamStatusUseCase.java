@@ -11,10 +11,12 @@ import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.PlanLimitExceededException;
+import com.sep.vox.application.event.ExamResultsPublishedEvent;
 import com.sep.vox.application.port.input.command.UpdateExamStatusCommand;
 import com.sep.vox.application.port.input.service.ExamCandidateResultFinalizationService;
 import com.sep.vox.application.port.input.service.ZeroScoreExamResultService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
+import com.sep.vox.application.port.output.EventPublisherPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.ExamDto;
@@ -61,6 +63,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final SubscriptionQuotaRepository subscriptionQuotaRepository;
     private final UserContextPort userContextPort;
+    private final EventPublisherPort eventPublisherPort;
 
     public UpdateExamStatusUseCase(
             ExamRepository examRepository,
@@ -79,7 +82,8 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
             SchoolSubscriptionRepository schoolSubscriptionRepository,
             SubscriptionPlanRepository subscriptionPlanRepository,
             SubscriptionQuotaRepository subscriptionQuotaRepository,
-            UserContextPort userContextPort) {
+            UserContextPort userContextPort,
+            EventPublisherPort eventPublisherPort) {
         this.examRepository = examRepository;
         this.examMemberRepository = examMemberRepository;
         this.examPaperRepository = examPaperRepository;
@@ -97,6 +101,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
         this.subscriptionPlanRepository = subscriptionPlanRepository;
         this.subscriptionQuotaRepository = subscriptionQuotaRepository;
         this.userContextPort = userContextPort;
+        this.eventPublisherPort = eventPublisherPort;
     }
 
     @Override
@@ -146,6 +151,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
                 requirePublishReadiness(exam.getId());
                 requireTransition(exam, ExamStatus.CLOSED, ExamStatus.RESULTS_PUBLISHED);
                 finalizePassFailForExam(exam);
+                eventPublisherPort.publish(new ExamResultsPublishedEvent(exam.getId()));
             }
             case "CANCEL" -> exam.setStatus(ExamStatus.CANCELLED);
             default -> throw new IllegalStateException("Action không hợp lệ");

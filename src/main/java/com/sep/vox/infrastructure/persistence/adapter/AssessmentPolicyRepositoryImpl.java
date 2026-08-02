@@ -135,4 +135,11 @@ public class AssessmentPolicyRepositoryImpl implements AssessmentPolicyRepositor
     public void deleteById(UUID id) {
         springDataAssessmentPolicyRepository.deleteById(id);
     }
+
+    @Override
+    public List<CurrentPolicy> findCurrentPolicyForStudent(UUID studentId) {
+        return springDataAssessmentPolicyRepository.findCurrentPolicyForStudent(studentId).stream()
+            .map(row -> new CurrentPolicy(row.getRubricVersionId(), row.getTargetFrameworkBandId()))
+            .toList();
+    }
 }

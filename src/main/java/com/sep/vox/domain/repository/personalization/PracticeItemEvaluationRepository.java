@@ -1,0 +1,24 @@
+package com.sep.vox.domain.repository.personalization;
+
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+import java.util.UUID;
+
+public interface PracticeItemEvaluationRepository {
+
+    /** Ghi hoặc cập nhật kết quả chấm cho 1 response -- trả về id bản ghi evaluation. */
+    UUID upsert(
+        UUID practiceResponseId,
+        double itemScore,
+        boolean markedInvalid,
+        OffsetDateTime evaluatedAt
+    );
+
+    int countCompletedBySessionId(UUID sessionId);
+
+    Double findLastValidNormalizedScore(UUID sessionId);
+
+    BigDecimal findAverageItemScoreBySessionId(UUID sessionId);
+
+    java.util.List<Double> findNormalizedScoresChronological(UUID studentId);
+}

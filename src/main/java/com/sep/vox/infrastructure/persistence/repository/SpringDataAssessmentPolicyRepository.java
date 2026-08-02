@@ -10,12 +10,35 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import com.sep.vox.application.query.dto.CurrentPolicyInfo;
 import com.sep.vox.infrastructure.persistence.entity.AssessmentPolicyJpaEntity;
 
 public interface SpringDataAssessmentPolicyRepository extends JpaRepository<AssessmentPolicyJpaEntity, UUID> {
     boolean existsByFrameworkVersionId(UUID frameworkVersionId);
 
     boolean existsBySchoolClassId(UUID schoolClassId);
+
+    @Query(value = """
+        SELECT policy.rubric_version_id AS rubricVersionId,
+               policy.target_framework_band_id AS targetFrameworkBandId
+        FROM school_class_users membership
+        JOIN school_classes class ON class.id = membership.school_class_id
+        JOIN assessment_policies policy
+          ON policy.status = 'PUBLISHED'
+         AND policy.effective_from <= CURRENT_TIMESTAMP
+         AND (policy.effective_to IS NULL OR policy.effective_to >= CURRENT_TIMESTAMP)
+         AND (policy.school_id IS NULL OR policy.school_id = class.school_id)
+         AND (policy.school_grade_id IS NULL OR policy.school_grade_id = class.school_grade_id)
+         AND (policy.school_class_id IS NULL OR policy.school_class_id = class.id)
+        WHERE membership.user_id = :studentId
+          AND membership.is_active = true
+        ORDER BY (policy.school_class_id IS NOT NULL) DESC,
+                 (policy.school_grade_id IS NOT NULL) DESC,
+                 (policy.school_id IS NOT NULL) DESC,
+                 policy.version DESC
+        LIMIT 1
+        """, nativeQuery = true)
+    List<CurrentPolicyInfo> findCurrentPolicyForStudent(@Param("studentId") UUID studentId);
 
     boolean existsByRubricVersionIdAndStatus(UUID rubricVersionId, String status);
 

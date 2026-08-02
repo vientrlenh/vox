@@ -52,4 +52,10 @@ public interface AssessmentPolicyRepository {
     List<AssessmentPolicy> findDraftBySchoolIdAndRubricVersionId(UUID schoolId, UUID rubricVersionId);
 
     void deleteById(UUID id);
+
+    record CurrentPolicy(UUID rubricVersionId, UUID targetFrameworkBandId) {
+    }
+
+    // Chính sách chấm đang hiệu lực cho 1 học sinh (dùng khi bắt đầu phiên luyện tập)
+    List<CurrentPolicy> findCurrentPolicyForStudent(UUID studentId);
 }

@@ -1,0 +1,99 @@
+extend type Query {
+    practiceSession(sessionId: ID!): PracticeSession
+    myPracticeHistory(limit: Int = 20): [PracticeSession!]!
+    studentPracticeSessionDetail(sessionId: ID!): TeacherPracticeSessionDetail!
+}
+
+extend type Mutation {
+    startPracticeSession(paperId: ID!): PracticeSession!
+    submitPracticeTurn(input: SubmitPracticeTurnInput!): SubmitTurnResult!
+    heartbeatPracticeSession(sessionId: ID!): Boolean!
+    endPracticeSession(input: EndPracticeSessionInput!): PracticeSession!
+}
+
+input TurnCorrectionInput {
+    category: String!
+    originalText: String!
+    correctedText: String!
+    explanation: String!
+    correctAudioUrl: String
+    confidence: Float!
+}
+
+input SubmitPracticeTurnInput {
+    sessionId: ID!
+    questionId: ID!
+    turnOrder: Int!
+    turnType: String!
+    promptText: String
+    audioUrl: String!
+    transcript: String!
+    durationSeconds: Int!
+    wordFeedbackJson: String
+    turnScore: Float
+    questionComplete: Boolean!
+    corrections: [TurnCorrectionInput!]
+}
+
+input EndPracticeSessionInput {
+    sessionId: ID!
+    helpRequestCount: Int!
+    longPauseCount: Int!
+}
+
+type PracticeSession {
+    id: ID!
+    paperId: ID!
+    topicId: ID!
+    topicName: String!
+    origin: String!
+    status: String!
+    abandonDiagnosis: String
+    overallScore: Float
+    gradedSeconds: Int!
+    startedAt: String!
+    endedAt: String
+}
+
+type TurnCorrection {
+    category: String!
+    originalText: String!
+    correctedText: String!
+    explanation: String!
+    correctAudioUrl: String
+}
+
+type SubmitTurnResult {
+    responseId: ID!
+    turnId: ID!
+    remainingGradedSeconds: Int!
+    evaluationQueued: Boolean!
+    corrections: [TurnCorrection!]!
+}
+
+type CriterionScore {
+    criterionCode: String!
+    score: Float
+    matchedBandCode: String
+}
+
+type TeacherPracticeTurnView {
+    turnOrder: Int!
+    transcript: String!
+    audioUrl: String!
+    wordFeedbackJson: String
+    turnScore: Float
+    corrections: [TurnCorrection!]!
+}
+
+type TeacherPracticeSessionDetail {
+    sessionId: ID!
+    topicName: String!
+    startedAt: String!
+    durationSeconds: Int!
+    itemCount: Int!
+    overallScore: Float
+    criterionScores: [CriterionScore!]!
+    completed: Boolean!
+    turns: [TeacherPracticeTurnView!]!
+}

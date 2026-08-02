@@ -52,7 +52,10 @@ public class GradingItemScoreResolver {
         UUID responseId,
         BigDecimal itemScore,
         String feedbackSummary,
-        List<SubmitGradingCommand.CriterionScoreItem> criterionScores
+        List<SubmitGradingCommand.CriterionScoreItem> criterionScores,
+        // RubricCriterion tuong ung criterionScores -- dung de bao HumanGradingSubmittedEvent
+        // (suy nhan diem yeu tu feedbackSummary), khong tham gia tinh diem.
+        List<RubricCriterion> criteria
     ) {
     }
 
@@ -105,7 +108,12 @@ public class GradingItemScoreResolver {
                 itemScore(item.criterionScores(), criteria, rubricVersion.getTotalScoreMethod(),
                     rubricVersion.getScoringScaleMin(), rubricVersion.getScoringScaleMax()),
                 item.feedbackSummary(),
-                item.criterionScores()
+                item.criterionScores(),
+                item.criterionScores().stream()
+                    .map(score -> criteria.get(score.rubricCriterionId()))
+                    .filter(java.util.Objects::nonNull)
+                    .distinct()
+                    .toList()
             ));
         }
         return resolved;

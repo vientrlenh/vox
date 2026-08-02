@@ -120,6 +120,11 @@ public class ExamCandidateRepositoryImpl implements ExamCandidateRepository {
     }
 
     @Override
+    public List<UUID> findUnblockedStudentIdsByExamId(UUID examId) {
+        return springDataExamCandidateRepository.findDistinctUnblockedStudentIdsByExamId(examId);
+    }
+
+    @Override
     public List<ExamCandidate> findByExamIdAndScheduleIdIsNullOrderByAssignedAtAsc(UUID examId) {
         return springDataExamCandidateRepository.findByExamIdAndScheduleIdIsNullOrderByAssignedAtAsc(examId).stream()
             .map(ExamCandidateMapper::toDomain)

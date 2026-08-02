@@ -38,9 +38,9 @@ public class InterestQuizItemSelector {
     public List<InterestQuizSeedItem> select(List<InterestQuizSeedItem> pool, int count) {
         var eligible = Set.copyOf(interestQuizScorer.quizDimensionCodes());
         var usable = pool.stream()
-            .filter(item -> item.dimensionPerStatement() != null
-                && item.dimensionPerStatement().size() == 3
-                && eligible.containsAll(item.dimensionPerStatement()))
+            .filter(item -> item.getDimensionPerStatement() != null
+                && item.getDimensionPerStatement().size() == 3
+                && eligible.containsAll(item.getDimensionPerStatement()))
             .toList();
         if (usable.size() <= count) {
             return usable;
@@ -61,7 +61,7 @@ public class InterestQuizItemSelector {
             }
             remaining.remove(best);
             selected.add(best);
-            for (var dimension : best.dimensionPerStatement()) {
+            for (var dimension : best.getDimensionPerStatement()) {
                 coverage.merge(dimension, 1, Integer::sum);
             }
         }
@@ -74,7 +74,7 @@ public class InterestQuizItemSelector {
             InterestQuizSeedItem item,
             java.util.Map<String, Integer> coverage) {
         var score = 0.0;
-        for (var dimension : item.dimensionPerStatement()) {
+        for (var dimension : item.getDimensionPerStatement()) {
             score += 1.0 / (1 + coverage.getOrDefault(dimension, 0));
         }
         return score;

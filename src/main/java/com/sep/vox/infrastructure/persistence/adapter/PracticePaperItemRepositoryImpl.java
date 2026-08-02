@@ -22,13 +22,13 @@ public class PracticePaperItemRepositoryImpl implements PracticePaperItemReposit
     @Override
     public void save(PracticePaperItem item) {
         repository.save(new PracticePaperItemJpaEntity(
-            item.id(),
-            item.practicePaperId(),
-            item.practiceQuestionId(),
-            item.slotOrder(),
-            item.targetCriterionCode(),
-            item.targetSubAttribute(),
-            item.targetDifficultyRank()
+            item.getId(),
+            item.getPracticePaperId(),
+            item.getPracticeQuestionId(),
+            item.getSlotOrder(),
+            item.getTargetCriterionCode(),
+            item.getTargetSubAttribute(),
+            item.getTargetDifficultyRank()
         ));
     }
 

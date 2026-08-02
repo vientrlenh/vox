@@ -55,10 +55,10 @@ public class GradingDiagnosticsInferenceJob {
                     observedAt
                 );
                 var alreadyExists = weaknessObservationRepository.existsForKey(
-                    observation.sourceEvaluationId(),
-                    observation.frameworkCriterionId(),
-                    observation.subAttribute(),
-                    observation.evidenceSpan()
+                    observation.getSourceEvaluationId(),
+                    observation.getFrameworkCriterionId(),
+                    observation.getSubAttribute(),
+                    observation.getEvidenceSpan()
                 );
                 if (!alreadyExists) {
                     weaknessObservationRepository.save(observation);

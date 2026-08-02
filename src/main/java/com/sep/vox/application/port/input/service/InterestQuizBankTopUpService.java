@@ -64,7 +64,7 @@ public class InterestQuizBankTopUpService {
         var pool = quizItemRepository.findAllActiveQuizItems();
         var coverage = new HashMap<String, Integer>();
         for (var item : pool) {
-            for (var dimension : item.dimensionPerStatement()) {
+            for (var dimension : item.getDimensionPerStatement()) {
                 coverage.merge(dimension, 1, Integer::sum);
             }
         }
@@ -80,7 +80,7 @@ public class InterestQuizBankTopUpService {
             underCovered
         );
         var existingStatements = pool.stream()
-            .flatMap(item -> item.statements().stream())
+            .flatMap(item -> item.getStatements().stream())
             .toList();
         // Vẫn gửi TOÀN BỘ danh mục chứ không chỉ chiều thiếu: mỗi triplet bắt buộc dùng 3
         // chiều KHÁC NHAU, nên nếu chỉ đưa 1 chiều thiếu thì không dựng nổi triplet nào.
@@ -90,7 +90,7 @@ public class InterestQuizBankTopUpService {
             dimensions
         );
         var usable = generated.stream()
-            .filter(item -> item.dimensionPerStatement().stream().anyMatch(underCovered::contains))
+            .filter(item -> item.getDimensionPerStatement().stream().anyMatch(underCovered::contains))
             .toList();
         if (usable.isEmpty()) {
             return 0;

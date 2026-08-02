@@ -26,13 +26,13 @@ public class PracticeSessionCleanupService {
     public int cleanupStaleSessions(OffsetDateTime staleBefore) {
         var stale = practiceSessionRepository.findStaleInProgress(staleBefore);
         for (var session : stale) {
-            var completed = practiceItemEvaluationRepository.countCompletedBySessionId(session.id());
-            var score = practiceItemEvaluationRepository.findLastValidNormalizedScore(session.id());
+            var completed = practiceItemEvaluationRepository.countCompletedBySessionId(session.getId());
+            var score = practiceItemEvaluationRepository.findLastValidNormalizedScore(session.getId());
             var diagnosis = completed > 0 ? null : SessionDiagnosisPolicy.diagnose(score, 0, 0);
             practiceSessionRepository.save(session.closedAsStale(
                 completed > 0 ? "COMPLETED" : "ABANDONED",
                 diagnosis,
-                session.lastHeartbeatAt()
+                session.getLastHeartbeatAt()
             ));
         }
         return stale.size();

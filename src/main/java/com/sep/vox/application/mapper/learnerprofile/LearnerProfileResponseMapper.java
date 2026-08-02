@@ -31,7 +31,7 @@ public final class LearnerProfileResponseMapper {
     public static List<InterestQuizItem> toResponse(
             List<InterestQuizSeedItem> items) {
         return items.stream()
-            .map(item -> new InterestQuizItem(item.id(), item.statements()))
+            .map(item -> new InterestQuizItem(item.getId(), item.getStatements()))
             .toList();
     }
 }

@@ -110,7 +110,7 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
                     topic.saved(),
                     clampPercent(topic.score()),
                     minutes,
-                    enrichmentService.levelLabel(rank),
+                    enrichmentService.levelLabel(rank, signal.bandCount()),
                     rationale,
                     List.of(rationale),
                     focusTags
@@ -240,7 +240,7 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
 
     private UUID materializeExamTopic(QuestionTopicInfo row) {
         return practiceTopicRepository.findBySourceQuestionTopicId(row.getId())
-            .map(PracticeTopic::id)
+            .map(PracticeTopic::getId)
             .orElseGet(() -> practiceTopicRepository.save(new PracticeTopic(
                 null,
                 row.getName(),
@@ -252,7 +252,7 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
                 true,
                 OffsetDateTime.now(),
                 row.getId()
-            )).id());
+            )).getId());
     }
 
     private boolean explorationAllowed(UUID studentId) {
@@ -261,7 +261,7 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
 
     private String currentGoal(UUID studentId) {
         return learnerProfileRepository.findCurrent(studentId)
-            .map(profile -> profile.goalType() == null ? "ABILITY_IMPROVEMENT" : profile.goalType())
+            .map(profile -> profile.getGoalType() == null ? "ABILITY_IMPROVEMENT" : profile.getGoalType())
             .orElse("ABILITY_IMPROVEMENT");
     }
 

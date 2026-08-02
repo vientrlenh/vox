@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.query.repository.PracticeSessionQueryRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
+import com.sep.vox.domain.model.framework.FrameworkResultBand;
 import com.sep.vox.domain.repository.personalization.LearnerProfileRepository;
 import com.sep.vox.domain.repository.personalization.LearnerWeaknessSnapshotRepository;
 import com.sep.vox.domain.repository.personalization.PracticeItemEvaluationRepository;
@@ -22,6 +23,10 @@ import com.sep.vox.domain.repository.personalization.PracticeItemEvaluationRepos
 public class PracticeTopicOfferEnrichmentService {
 
     private static final Set<String> BAD_ABANDON_DIAGNOSES = Set.of("TOO_HARD", "UNKNOWN");
+
+    /** Dùng khi học sinh chưa gắn với chính sách chấm nào -- giữ nguyên hành vi cũ cho dữ
+     * liệu chưa cấu hình, không phải vì hệ thống mặc định là VSTEP. */
+    private static final int DEFAULT_BAND_COUNT = 6;
 
     private static final Map<String, String> CRITERION_LABELS = Map.of(
         "GRAMMAR", "Ngữ pháp",
@@ -50,7 +55,10 @@ public class PracticeTopicOfferEnrichmentService {
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
     }
 
-    public record RankSignal(int base, int scoreAdjustment) {
+    /** @param bandCount số bậc của thang đang áp -- nằm ở đây thay vì query lại trong
+     * rankForTopic/levelLabel, vì hai hàm đó chạy MỘT LẦN MỖI CHỦ ĐỀ trong vòng lặp xếp hạng
+     * (query lại là N+1). studentRankSignal vốn đã tính đúng 1 lần mỗi request. */
+    public record RankSignal(int base, int scoreAdjustment, int bandCount) {
     }
 
     /** Phần student-level của ước lượng bậc -- tính 1 lần/request, không lặp lại theo từng topic. */
@@ -72,7 +80,7 @@ public class PracticeTopicOfferEnrichmentService {
             }
             adjustment = performance >= 0.75 ? 1 : performance <= 0.45 ? -1 : 0;
         }
-        return new RankSignal(base, adjustment);
+        return new RankSignal(base, adjustment, frameworkBandCount(studentId));
     }
 
     /** Phần topic-specific -- 1 query rẻ mỗi topic, không lặp lại phần student-level ở trên. */
@@ -81,14 +89,39 @@ public class PracticeTopicOfferEnrichmentService {
         var adjustment = !diagnoses.isEmpty() && BAD_ABANDON_DIAGNOSES.contains(diagnoses.get(0))
             ? -1
             : signal.scoreAdjustment();
-        return Math.max(1, Math.min(6, signal.base() + adjustment));
+        return Math.max(1, Math.min(signal.bandCount(), signal.base() + adjustment));
     }
 
-    public String levelLabel(int rank) {
-        if (rank <= 2) {
+    /**
+     * Số bậc của thang năng lực đang áp cho học sinh. Mặc định {@value #DEFAULT_BAND_COUNT}
+     * khi chưa có chính sách chấm nào -- không phải vì VSTEP, mà vì đó là giá trị an toàn
+     * giữ nguyên hành vi cũ cho dữ liệu chưa cấu hình.
+     */
+    public int frameworkBandCount(UUID studentId) {
+        var values = learnerProfileRepository.findFrameworkBandCount(studentId);
+        return values.isEmpty() || values.get(0) == null || values.get(0) < 1
+            ? DEFAULT_BAND_COUNT
+            : values.get(0);
+    }
+
+    /** Cả thang bậc kèm mô tả, để gửi xuống Python dựng ladder trong prompt chấm câu hỏi.
+     * Rỗng thì Python tự lùi về ladder mặc định của nó. */
+    public List<FrameworkResultBand> frameworkBandLadder(UUID studentId) {
+        return learnerProfileRepository.findFrameworkBandLadder(studentId);
+    }
+
+    /**
+     * Nhãn mức độ hiển thị trên thẻ chủ đề. Chia thang thành 3 phần THEO TỈ LỆ thay vì cắt
+     * cứng ở bậc 2/4 -- với 6 bậc cho ra đúng kết quả cũ (1,2 → BEGINNER · 3,4 →
+     * INTERMEDIATE · 5,6 → ADVANCED), với 9 bậc thì tự giãn thành 1-3 / 4-6 / 7-9.
+     */
+    public String levelLabel(int rank, int bandCount) {
+        var safeBandCount = Math.max(1, bandCount);
+        var ratio = (double) rank / safeBandCount;
+        if (ratio <= 1.0 / 3) {
             return "BEGINNER";
         }
-        if (rank <= 4) {
+        if (ratio <= 2.0 / 3) {
             return "INTERMEDIATE";
         }
         return "ADVANCED";
@@ -96,7 +129,11 @@ public class PracticeTopicOfferEnrichmentService {
 
     private int policyBandOrder(UUID studentId) {
         var values = learnerProfileRepository.findPolicyTargetBandOrder(studentId);
-        return values.isEmpty() ? 3 : values.get(0);
+        // Chưa có chính sách -> lấy GIỮA thang, không phải hằng số 3: với 6 bậc vẫn ra 3 như
+        // trước, với 9 bậc ra 5 (đúng nghĩa "giữa") thay vì lệch xuống dưới.
+        return values.isEmpty()
+            ? (frameworkBandCount(studentId) + 1) / 2
+            : values.get(0);
     }
 
     /**
@@ -110,10 +147,13 @@ public class PracticeTopicOfferEnrichmentService {
      */
     public int sessionSecondsCapForStudent(UUID studentId) {
         var band = studentRankSignal(studentId).base();
-        if (band <= 2) {
+        // Chia theo TỈ LỆ vị trí trên thang, không cắt cứng ở bậc 2/3: với 6 bậc cho ra đúng
+        // 720/720/900/1200/1200/1200 như trước, với thang khác thì tự giãn theo.
+        var ratio = (double) band / Math.max(1, frameworkBandCount(studentId));
+        if (ratio <= 1.0 / 3) {
             return 720;
         }
-        return band == 3 ? 900 : 1200;
+        return ratio <= 1.0 / 2 ? 900 : 1200;
     }
 
     /** Số phút mỗi lượt luyện theo đúng gói subscription đang hoạt động -- 0 nếu không có gói. */

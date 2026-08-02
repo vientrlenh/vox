@@ -60,8 +60,13 @@ public interface SpringDataPracticeQuestionRepository
           AND NOT EXISTS (
               SELECT 1
               FROM student_question_exposure exposure
+              -- So sánh theo result_band_order (SỐ), không nối chuỗi 'BAC_' || rank rồi so
+              -- sánh chuỗi như trước. Cách cũ dính cứng cách đặt mã của VSTEP: đổi sang CEFR
+              -- (A1..C2) là so 'BAC_3' với 'B1' -- vô nghĩa mà KHÔNG nổ, chỉ lặng lẽ trả sai
+              -- tập câu hỏi. Và ngay với VSTEP nó cũng sai sẵn nếu có ≥10 bậc, vì theo thứ tự
+              -- chuỗi thì 'BAC_10' < 'BAC_9'.
               LEFT JOIN LATERAL (
-                  SELECT MAX(score.matched_band_code) AS best_band
+                  SELECT MAX(band.result_band_order) AS best_band_order
                   FROM practice_item_response response
                   JOIN practice_item_evaluation evaluation
                     ON evaluation.practice_response_id = response.id
@@ -71,6 +76,11 @@ public interface SpringDataPracticeQuestionRepository
                   JOIN rubric_criterions rc
                     ON rc.id = score.rubric_criterion_id
                    AND UPPER(rc.code) = UPPER(question.target_criterion_code)
+                  JOIN framework_criteria fc
+                    ON fc.id = rc.framework_criterion_id
+                  JOIN framework_result_bands band
+                    ON band.framework_version_id = fc.framework_version_id
+                   AND band.code = score.matched_band_code
                   WHERE response.practice_question_id = exposure.practice_question_id
                     AND response.practice_session_id IN (
                         SELECT id FROM practice_session WHERE student_id = exposure.student_id
@@ -79,8 +89,8 @@ public interface SpringDataPracticeQuestionRepository
               WHERE exposure.student_id = :studentId
                 AND exposure.practice_question_id = question.id
                 AND (
-                      target_score.best_band IS NULL
-                   OR target_score.best_band >= 'BAC_' || question.difficulty_rank
+                      target_score.best_band_order IS NULL
+                   OR target_score.best_band_order >= question.difficulty_rank
                    OR exposure.seen_at > :cooldownCutoff
                 )
           )
@@ -103,8 +113,13 @@ public interface SpringDataPracticeQuestionRepository
           AND NOT EXISTS (
               SELECT 1
               FROM student_question_exposure exposure
+              -- So sánh theo result_band_order (SỐ), không nối chuỗi 'BAC_' || rank rồi so
+              -- sánh chuỗi như trước. Cách cũ dính cứng cách đặt mã của VSTEP: đổi sang CEFR
+              -- (A1..C2) là so 'BAC_3' với 'B1' -- vô nghĩa mà KHÔNG nổ, chỉ lặng lẽ trả sai
+              -- tập câu hỏi. Và ngay với VSTEP nó cũng sai sẵn nếu có ≥10 bậc, vì theo thứ tự
+              -- chuỗi thì 'BAC_10' < 'BAC_9'.
               LEFT JOIN LATERAL (
-                  SELECT MAX(score.matched_band_code) AS best_band
+                  SELECT MAX(band.result_band_order) AS best_band_order
                   FROM practice_item_response response
                   JOIN practice_item_evaluation evaluation
                     ON evaluation.practice_response_id = response.id
@@ -114,6 +129,11 @@ public interface SpringDataPracticeQuestionRepository
                   JOIN rubric_criterions rc
                     ON rc.id = score.rubric_criterion_id
                    AND UPPER(rc.code) = UPPER(question.target_criterion_code)
+                  JOIN framework_criteria fc
+                    ON fc.id = rc.framework_criterion_id
+                  JOIN framework_result_bands band
+                    ON band.framework_version_id = fc.framework_version_id
+                   AND band.code = score.matched_band_code
                   WHERE response.practice_question_id = exposure.practice_question_id
                     AND response.practice_session_id IN (
                         SELECT id FROM practice_session WHERE student_id = exposure.student_id
@@ -122,8 +142,8 @@ public interface SpringDataPracticeQuestionRepository
               WHERE exposure.student_id = :studentId
                 AND exposure.practice_question_id = question.id
                 AND (
-                      target_score.best_band IS NULL
-                   OR target_score.best_band >= 'BAC_' || question.difficulty_rank
+                      target_score.best_band_order IS NULL
+                   OR target_score.best_band_order >= question.difficulty_rank
                    OR exposure.seen_at > :cooldownCutoff
                 )
           )

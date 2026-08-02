@@ -89,52 +89,52 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
      */
     @Transactional
     public SubmitTurnResult execute(UUID studentId, SubmitPracticeTurn turn) {
-        requireOwnedInProgress(turn.sessionId(), studentId);
+        requireOwnedInProgress(turn.getSessionId(), studentId);
         var responseId = practiceItemResponseRepository.upsertResponse(
-            turn.sessionId(),
-            turn.questionId(),
-            turn.audioUrl(),
-            turn.transcript()
+            turn.getSessionId(),
+            turn.getQuestionId(),
+            turn.getAudioUrl(),
+            turn.getTranscript()
         );
         var turnId = practiceResponseTurnRepository.save(
             responseId,
-            turn.turnOrder(),
-            turn.turnType(),
-            turn.promptText(),
-            turn.audioUrl(),
-            turn.transcript(),
-            Math.max(0, turn.durationSeconds()),
-            turn.wordFeedbackJson(),
-            turn.turnScore()
+            turn.getTurnOrder(),
+            turn.getTurnType(),
+            turn.getPromptText(),
+            turn.getAudioUrl(),
+            turn.getTranscript(),
+            Math.max(0, turn.getDurationSeconds()),
+            turn.getWordFeedbackJson(),
+            turn.getTurnScore()
         );
-        var corrections = storeCorrections(turnId, turn.corrections());
-        if (turn.durationSeconds() > 0) {
+        var corrections = storeCorrections(turnId, turn.getCorrections());
+        if (turn.getDurationSeconds() > 0) {
             consumeQuotaUseCase.execute(new ConsumeQuotaCommand(
                 activeSubscriptionId(studentId),
-                turn.sessionId(),
+                turn.getSessionId(),
                 QuotaType.PRACTICE,
-                turn.durationSeconds(),
+                turn.getDurationSeconds(),
                 studentId
             ));
-            var session = practiceSessionRepository.findById(turn.sessionId())
+            var session = practiceSessionRepository.findById(turn.getSessionId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên luyện."));
             practiceSessionRepository.save(session.withGradedSecondsAndHeartbeat(
-                session.gradedSeconds() + turn.durationSeconds(),
+                session.getGradedSeconds() + turn.getDurationSeconds(),
                 OffsetDateTime.now()
             ));
         }
         var result = new SubmitTurnResultDto(
             responseId,
             turnId,
-            practiceResponseTurnRepository.findRemainingQuestionSeconds(turn.sessionId(), turn.questionId()),
-            turn.questionComplete(),
+            practiceResponseTurnRepository.findRemainingQuestionSeconds(turn.getSessionId(), turn.getQuestionId()),
+            turn.isQuestionComplete(),
             corrections
         );
         if (result.evaluationQueued()) {
             eventPublisher.publish(buildEvaluationRequestEvent(
-                turn.sessionId(),
+                turn.getSessionId(),
                 result.responseId(),
-                turn.questionId()
+                turn.getQuestionId()
             ));
         }
         return PracticeSessionResponseMapper.toResponse(result);
@@ -154,23 +154,23 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
     private List<TurnCorrectionDto> storeCorrections(UUID turnId, List<TurnCorrectionSubmission> inputs) {
         var result = new ArrayList<TurnCorrectionDto>();
         for (var correction : inputs == null ? List.<TurnCorrectionSubmission>of() : inputs) {
-            if (correction.confidence() < 0.8 || result.size() >= 3) {
+            if (correction.getConfidence() < 0.8 || result.size() >= 3) {
                 continue;
             }
             turnCorrectionRepository.save(
                 turnId,
-                correction.category(),
-                correction.originalText(),
-                correction.correctedText(),
-                correction.explanation(),
-                correction.correctAudioUrl()
+                correction.getCategory(),
+                correction.getOriginalText(),
+                correction.getCorrectedText(),
+                correction.getExplanation(),
+                correction.getCorrectAudioUrl()
             );
             result.add(new TurnCorrectionDto(
-                correction.category(),
-                correction.originalText(),
-                correction.correctedText(),
-                correction.explanation(),
-                correction.correctAudioUrl()
+                correction.getCategory(),
+                correction.getOriginalText(),
+                correction.getCorrectedText(),
+                correction.getExplanation(),
+                correction.getCorrectAudioUrl()
             ));
         }
         return result;

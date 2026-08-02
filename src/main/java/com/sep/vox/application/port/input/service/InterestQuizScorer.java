@@ -33,7 +33,7 @@ public class InterestQuizScorer {
     /** Các chiều được đem ra hỏi trong quiz -- không gồm chiều hệ thống như ACADEMIC_EXAM. */
     public List<String> quizDimensionCodes() {
         return dimensionRepository.findQuizEligible().stream()
-            .map(InterestDimension::code)
+            .map(InterestDimension::getCode)
             .toList();
     }
 

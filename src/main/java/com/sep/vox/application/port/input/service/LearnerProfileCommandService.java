@@ -48,17 +48,17 @@ public class LearnerProfileCommandService {
         }
         var raw = new HashMap<String, Integer>();
         for (var answer : answers) {
-            if (answer.mostStatementIndex()
-                    == answer.leastStatementIndex()) {
+            if (answer.getMostStatementIndex()
+                    == answer.getLeastStatementIndex()) {
                 throw new IllegalArgumentException(
                     "Lựa chọn giống nhất và ít giống nhất phải khác nhau"
                 );
             }
-            var item = quizItemRepository.findActiveQuizItem(answer.itemId())
+            var item = quizItemRepository.findActiveQuizItem(answer.getItemId())
                 .orElseThrow(() -> new NotFoundException(
                     "Không tìm thấy item quiz sở thích"
                 ));
-            var dimensions = item.dimensionPerStatement();
+            var dimensions = item.getDimensionPerStatement();
             if (dimensions.size() != 3
                     || dimensions.stream().distinct().count() != 3) {
                 throw new IllegalStateException(
@@ -66,12 +66,12 @@ public class LearnerProfileCommandService {
                 );
             }
             raw.merge(
-                dimensionAt(dimensions, answer.mostStatementIndex()),
+                dimensionAt(dimensions, answer.getMostStatementIndex()),
                 1,
                 Integer::sum
             );
             raw.merge(
-                dimensionAt(dimensions, answer.leastStatementIndex()),
+                dimensionAt(dimensions, answer.getLeastStatementIndex()),
                 -1,
                 Integer::sum
             );
@@ -85,7 +85,7 @@ public class LearnerProfileCommandService {
             OffsetDateTime.now()
         );
         dimensionScoreRepository.replaceScores(
-            saved.id(),
+            saved.getId(),
             interestQuizScorer.normalize(raw)
         );
     }
@@ -156,21 +156,21 @@ public class LearnerProfileCommandService {
         if (previous == null) {
             next = new LearnerProfile(
                 null,
-                next.studentId(),
+                next.getStudentId(),
                 1,
-                next.goalType(),
-                next.targetExam(),
-                next.targetDate(),
-                next.flsaScore(),
-                next.flsaRawAnswersJson(),
-                next.autoUpdateInterest(),
-                next.quizCompletedAt(),
-                next.recordedAt()
+                next.getGoalType(),
+                next.getTargetExam(),
+                next.getTargetDate(),
+                next.getFlsaScore(),
+                next.getFlsaRawAnswersJson(),
+                next.isAutoUpdateInterest(),
+                next.getQuizCompletedAt(),
+                next.getRecordedAt()
             );
         }
         var saved = repository.save(next);
         if (previous != null) {
-            dimensionScoreRepository.copyScores(previous.id(), saved.id());
+            dimensionScoreRepository.copyScores(previous.getId(), saved.getId());
         }
         return saved;
     }

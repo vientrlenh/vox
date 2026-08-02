@@ -70,10 +70,10 @@ class WeaknessObservationRepositoryTests extends ContainerTestConfig {
      * check-then-save mà UseCase gọi thật sự dùng, vì adapter không còn insert-ignore hàng loạt. */
     private boolean saveIfAbsent(WeaknessObservation observation) {
         var exists = repository.existsForKey(
-            observation.sourceEvaluationId(),
-            observation.frameworkCriterionId(),
-            observation.subAttribute(),
-            observation.evidenceSpan()
+            observation.getSourceEvaluationId(),
+            observation.getFrameworkCriterionId(),
+            observation.getSubAttribute(),
+            observation.getEvidenceSpan()
         );
         if (!exists) {
             repository.save(observation);

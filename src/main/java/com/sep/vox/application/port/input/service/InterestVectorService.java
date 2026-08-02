@@ -98,14 +98,14 @@ public class InterestVectorService {
         var last = new HashMap<UUID, OffsetDateTime>();
         for (var event : events) {
             scores.compute(
-                event.topicId(),
-                (key, value) -> 0.3 * event.signal() + 0.7 * (value == null ? 0.5 : value)
+                event.getTopicId(),
+                (key, value) -> 0.3 * event.getSignal() + 0.7 * (value == null ? 0.5 : value)
             );
-            if (event.sessionId() != null) {
-                sessions.computeIfAbsent(event.topicId(), ignored -> new HashSet<>())
-                    .add(event.sessionId());
+            if (event.getSessionId() != null) {
+                sessions.computeIfAbsent(event.getTopicId(), ignored -> new HashSet<>())
+                    .add(event.getSessionId());
             }
-            last.put(event.topicId(), event.occurredAt());
+            last.put(event.getTopicId(), event.getOccurredAt());
         }
         var newScores = new ArrayList<TopicInterestScoreEntry>();
         for (var entry : scores.entrySet()) {
@@ -140,18 +140,18 @@ public class InterestVectorService {
         if (profile == null) {
             return;
         }
-        var profileId = profile.id();
+        var profileId = profile.getId();
         dimensionScoreRepository.primeBaselineFromScoreWhereMissing(profileId);
         var dimensions = topicRepository.findAllTopicDimensions();
         var scores = new HashMap<>(dimensionScoreRepository.findByLearnerProfile(profileId));
         for (var event : events) {
-            var dimension = dimensions.get(event.topicId());
+            var dimension = dimensions.get(event.getTopicId());
             if (dimension == null) {
                 continue;
             }
             scores.compute(
                 dimension,
-                (key, value) -> 0.1 * event.signal() + 0.9 * (value == null ? 0.5 : value)
+                (key, value) -> 0.1 * event.getSignal() + 0.9 * (value == null ? 0.5 : value)
             );
         }
         for (var entry : scores.entrySet()) {

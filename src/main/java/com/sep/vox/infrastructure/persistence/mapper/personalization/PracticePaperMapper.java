@@ -27,18 +27,18 @@ public final class PracticePaperMapper {
 
     public static PracticePaperJpaEntity toJpa(PracticePaper paper) {
         return new PracticePaperJpaEntity(
-            paper.id(),
-            paper.studentId(),
-            paper.practiceTopicId(),
-            paper.origin(),
-            paper.goalAtBuild(),
-            paper.offeredTopicIdsJson(),
-            paper.previousOfferedTopicIdsJson(),
-            paper.plannedSeconds(),
-            paper.reservedQuotaSeconds(),
-            paper.expiresAt(),
-            paper.status(),
-            paper.createdAt()
+            paper.getId(),
+            paper.getStudentId(),
+            paper.getPracticeTopicId(),
+            paper.getOrigin(),
+            paper.getGoalAtBuild(),
+            paper.getOfferedTopicIdsJson(),
+            paper.getPreviousOfferedTopicIdsJson(),
+            paper.getPlannedSeconds(),
+            paper.getReservedQuotaSeconds(),
+            paper.getExpiresAt(),
+            paper.getStatus(),
+            paper.getCreatedAt()
         );
     }
 }

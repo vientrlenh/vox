@@ -87,27 +87,27 @@ public class TopicSuggestionService {
         if (!accept) {
             generationClient.index(
                 "rejected:" + suggestionId,
-                suggestion.suggestedTopicName(),
-                suggestion.suggestedTopicName(),
+                suggestion.getSuggestedTopicName(),
+                suggestion.getSuggestedTopicName(),
                 false,
                 studentId,
                 "REJECTED"
             );
             return true;
         }
-        var topicId = findExact(suggestion.suggestedTopicName());
+        var topicId = findExact(suggestion.getSuggestedTopicName());
         if (topicId == null) {
             topicId = createTopic(
-                suggestion.suggestedTopicName(),
-                suggestion.interestDimension(),
-                suggestion.curriculumGroup(),
+                suggestion.getSuggestedTopicName(),
+                suggestion.getInterestDimension(),
+                suggestion.getCurriculumGroup(),
                 "SUGGESTED"
             );
         }
         generationClient.index(
             topicId.toString(),
-            suggestion.suggestedTopicName(),
-            suggestion.suggestedTopicName(),
+            suggestion.getSuggestedTopicName(),
+            suggestion.getSuggestedTopicName(),
             true,
             null,
             "ACTIVE"
@@ -133,8 +133,8 @@ public class TopicSuggestionService {
             recordKeywordRequest(studentId, keyword, "MATCHED_EXISTING");
             return new TopicFromKeywordResult(
                 offerFor(
-                    studentId, existingTopic.id(), existingTopic.name(),
-                    existingTopic.interestDimension(), false, null, null
+                    studentId, existingTopic.getId(), existingTopic.getName(),
+                    existingTopic.getInterestDimension(), false, null, null
                 ),
                 "MATCHED_EXISTING"
             );
@@ -172,8 +172,8 @@ public class TopicSuggestionService {
             recordKeywordRequest(studentId, keyword, "MATCHED_EXISTING");
             return new TopicFromKeywordResult(
                 offerFor(
-                    studentId, duplicateTopic.id(), duplicateTopic.name(),
-                    duplicateTopic.interestDimension(), false, null, null
+                    studentId, duplicateTopic.getId(), duplicateTopic.getName(),
+                    duplicateTopic.getInterestDimension(), false, null, null
                 ),
                 "MATCHED_EXISTING"
             );
@@ -275,12 +275,12 @@ public class TopicSuggestionService {
         return topicSuggestionRepository.findPendingByStudentId(studentId).stream()
             .map(suggestion -> new com.sep.vox.application.response.input.topicsuggestion
                 .TopicSuggestionResponses.TopicSuggestion(
-                suggestion.id(),
-                suggestion.suggestedTopicName(),
-                suggestion.interestDimension(),
-                suggestion.confidence().doubleValue(),
-                suggestion.reasonText(),
-                suggestion.status()
+                suggestion.getId(),
+                suggestion.getSuggestedTopicName(),
+                suggestion.getInterestDimension(),
+                suggestion.getConfidence().doubleValue(),
+                suggestion.getReasonText(),
+                suggestion.getStatus()
             ))
             .toList();
     }
@@ -330,7 +330,7 @@ public class TopicSuggestionService {
      * học sinh -- khác với quiz, nơi chỉ dùng chiều quiz_eligible. */
     private List<String> dimensionCodes() {
         return interestDimensionRepository.findActive().stream()
-            .map(InterestDimension::code)
+            .map(InterestDimension::getCode)
             .toList();
     }
 
@@ -373,8 +373,8 @@ public class TopicSuggestionService {
 
     private PracticeTopic findNearExistingTopic(String normalized) {
         return practiceTopicRepository.findAllActive().stream()
-            .filter(topic -> normalize(topic.name()).equals(normalized)
-                || tokenSimilarity(topic.name(), normalized) >= 0.90)
+            .filter(topic -> normalize(topic.getName()).equals(normalized)
+                || tokenSimilarity(topic.getName(), normalized) >= 0.90)
             .findFirst()
             .orElse(null);
     }
@@ -391,7 +391,7 @@ public class TopicSuggestionService {
             savedByMe,
             matchPercent,
             enrichmentService.minutesForStudent(studentId),
-            enrichmentService.levelLabel(rank),
+            enrichmentService.levelLabel(rank, signal.bandCount()),
             rationale,
             rationale == null ? List.of() : List.of(rationale),
             enrichmentService.focusTagsForStudent(studentId)
@@ -400,13 +400,13 @@ public class TopicSuggestionService {
 
     private boolean nearRejected(UUID studentId, String normalized) {
         return topicSuggestionRepository.findByStudentIdAndStatus(studentId, "REJECTED").stream()
-            .map(TopicSuggestion::suggestedTopicName)
+            .map(TopicSuggestion::getSuggestedTopicName)
             .anyMatch(value -> tokenSimilarity(value, normalized) >= 0.90);
     }
 
     private UUID findExact(String name) {
         return practiceTopicRepository.findByNormalizedName(normalize(name))
-            .map(PracticeTopic::id)
+            .map(PracticeTopic::getId)
             .orElse(null);
     }
 
@@ -424,7 +424,7 @@ public class TopicSuggestionService {
             OffsetDateTime.now(),
             null
         ));
-        return saved.id();
+        return saved.getId();
     }
 
     private int weeklyRequestCount(UUID studentId) {
@@ -450,13 +450,13 @@ public class TopicSuggestionService {
 
     private List<String> topicNames() {
         return practiceTopicRepository.findAllActiveOrderByName().stream()
-            .map(PracticeTopic::name)
+            .map(PracticeTopic::getName)
             .toList();
     }
 
     private List<String> rejectedTopicNames(UUID studentId) {
         return topicSuggestionRepository.findByStudentIdAndStatus(studentId, "REJECTED").stream()
-            .map(TopicSuggestion::suggestedTopicName)
+            .map(TopicSuggestion::getSuggestedTopicName)
             .toList();
     }
 
@@ -466,7 +466,7 @@ public class TopicSuggestionService {
 
     private String currentGoal(UUID studentId) {
         return learnerProfileRepository.findCurrent(studentId)
-            .map(profile -> profile.goalType() == null ? "ABILITY_IMPROVEMENT" : profile.goalType())
+            .map(profile -> profile.getGoalType() == null ? "ABILITY_IMPROVEMENT" : profile.getGoalType())
             .orElse("ABILITY_IMPROVEMENT");
     }
 
@@ -486,17 +486,17 @@ public class TopicSuggestionService {
 
     private TopicSuggestion withResponse(TopicSuggestion suggestion, String status) {
         return new TopicSuggestion(
-            suggestion.id(),
-            suggestion.studentId(),
-            suggestion.suggestedTopicName(),
-            suggestion.keyword(),
-            suggestion.interestDimension(),
-            suggestion.curriculumGroup(),
-            suggestion.confidence(),
-            suggestion.reasonText(),
-            suggestion.evidenceJson(),
+            suggestion.getId(),
+            suggestion.getStudentId(),
+            suggestion.getSuggestedTopicName(),
+            suggestion.getKeyword(),
+            suggestion.getInterestDimension(),
+            suggestion.getCurriculumGroup(),
+            suggestion.getConfidence(),
+            suggestion.getReasonText(),
+            suggestion.getEvidenceJson(),
             status,
-            suggestion.createdAt(),
+            suggestion.getCreatedAt(),
             OffsetDateTime.now()
         );
     }

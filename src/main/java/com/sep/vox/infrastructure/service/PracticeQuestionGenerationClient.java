@@ -13,6 +13,8 @@ import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.sep.vox.domain.model.framework.FrameworkResultBand;
+
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -42,13 +44,21 @@ public class PracticeQuestionGenerationClient {
         );
     }
 
+    /**
+     * @param bandCount  số bậc của thang đang áp -- Python dùng để ánh xạ difficulty_rank ra
+     *                   đúng thang, thay vì mặc định 6 bậc kiểu VSTEP.
+     * @param bandLadder mô tả từng bậc, để prompt chấm nói đúng thang của trường. Rỗng thì
+     *                   Python tự lùi về ladder mặc định của nó.
+     */
     public List<GeneratedQuestion> generate(
             TopicDetails topic,
             String criterionCode,
             String subAttribute,
             int targetRank,
             int count,
-            Duration timeout) {
+            Duration timeout,
+            int bandCount,
+            List<FrameworkResultBand> bandLadder) {
         try {
             var payload = new java.util.LinkedHashMap<String, Object>();
             payload.put("topic_id", topic.id().toString());
@@ -59,6 +69,18 @@ public class PracticeQuestionGenerationClient {
             payload.put("target_sub_attribute", subAttribute);
             payload.put("target_rank", targetRank);
             payload.put("count", Math.min(3, count));
+            payload.put("band_count", bandCount);
+            payload.put(
+                "band_ladder",
+                (bandLadder == null ? List.<FrameworkResultBand>of() : bandLadder).stream()
+                    .map(rung -> Map.of(
+                        "order", rung.getOrder(),
+                        "code", rung.getCode() == null ? "" : rung.getCode(),
+                        "description",
+                        rung.getDescription() == null ? "" : rung.getDescription()
+                    ))
+                    .toList()
+            );
             var request = HttpRequest.newBuilder(generationEndpoint)
                 .timeout(timeout)
                 .header("Content-Type", "application/json")

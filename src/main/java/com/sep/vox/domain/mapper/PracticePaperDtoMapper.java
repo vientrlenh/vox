@@ -25,11 +25,11 @@ public final class PracticePaperDtoMapper {
             .mapToObj(index -> toDto(questions.get(index), index + 1))
             .toList();
         return new PracticePaperDto(
-            paper.id(),
-            paper.practiceTopicId(),
-            paper.origin(),
-            paper.plannedSeconds(),
-            paper.reservedQuotaSeconds(),
+            paper.getId(),
+            paper.getPracticeTopicId(),
+            paper.getOrigin(),
+            paper.getPlannedSeconds(),
+            paper.getReservedQuotaSeconds(),
             responseQuestions
         );
     }
@@ -38,16 +38,16 @@ public final class PracticePaperDtoMapper {
             PracticeQuestion question,
             int slot) {
         return new PracticePaperQuestionDto(
-            question.id(),
+            question.getId(),
             slot,
-            question.questionText(),
-            question.targetCriterionCode(),
-            question.targetSubAttribute(),
-            question.difficultyRank(),
-            question.preparationTimeSeconds(),
-            question.maxResponseSeconds(),
-            question.maxFollowupSeconds(),
-            parseIdeas(question.suggestedIdeasJson())
+            question.getQuestionText(),
+            question.getTargetCriterionCode(),
+            question.getTargetSubAttribute(),
+            question.getDifficultyRank(),
+            question.getPreparationTimeSeconds(),
+            question.getMaxResponseSeconds(),
+            question.getMaxFollowupSeconds(),
+            parseIdeas(question.getSuggestedIdeasJson())
         );
     }
 

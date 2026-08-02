@@ -77,19 +77,19 @@ public class ManageInterestDimensionUseCase {
         // Mã là khoá và đã được gán vào practice_topic/dimension_interest_score -- không cho
         // đổi, chỉ sửa phần hiển thị và cờ. Muốn đổi mã thì tạo mới rồi tắt cái cũ.
         var saved = toResponse(repository.save(new InterestDimension(
-            existing.code(),
-            input.label() == null ? existing.label() : input.label().strip(),
-            input.description() == null ? existing.description() : input.description().strip(),
-            input.active() == null ? existing.active() : input.active(),
-            input.quizEligible() == null ? existing.quizEligible() : input.quizEligible(),
-            input.displayOrder() == null ? existing.displayOrder() : input.displayOrder(),
-            existing.createdAt(),
+            existing.getCode(),
+            input.label() == null ? existing.getLabel() : input.label().strip(),
+            input.description() == null ? existing.getDescription() : input.description().strip(),
+            input.active() == null ? existing.isActive() : input.active(),
+            input.quizEligible() == null ? existing.isQuizEligible() : input.quizEligible(),
+            input.displayOrder() == null ? existing.getDisplayOrder() : input.displayOrder(),
+            existing.getCreatedAt(),
             null
         )));
         // Bật lại một chiều từng tắt cũng cần kiểm tra phủ: trong lúc nó tắt, kho có thể đã
         // được sinh thêm mà bỏ qua chiều này.
         var becameUsable = saved.active() && saved.quizEligible()
-            && (!existing.active() || !existing.quizEligible());
+            && (!existing.isActive() || !existing.isQuizEligible());
         if (becameUsable) {
             quizBankTopUpService.topUpAsync();
         }
@@ -127,14 +127,14 @@ public class ManageInterestDimensionUseCase {
 
     private static InterestDimensionResponse toResponse(InterestDimension dimension) {
         return new InterestDimensionResponse(
-            dimension.code(),
-            dimension.label(),
-            dimension.description(),
-            dimension.active(),
-            dimension.quizEligible(),
-            dimension.displayOrder(),
-            dimension.createdAt() == null ? null : dimension.createdAt().toString(),
-            dimension.updatedAt() == null ? null : dimension.updatedAt().toString()
+            dimension.getCode(),
+            dimension.getLabel(),
+            dimension.getDescription(),
+            dimension.isActive(),
+            dimension.isQuizEligible(),
+            dimension.getDisplayOrder(),
+            dimension.getCreatedAt() == null ? null : dimension.getCreatedAt().toString(),
+            dimension.getUpdatedAt() == null ? null : dimension.getUpdatedAt().toString()
         );
     }
 }

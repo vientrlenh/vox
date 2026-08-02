@@ -65,7 +65,7 @@ public class PracticeSessionInternalController {
             @RequestBody TurnRequest request) {
         var studentId = practiceSessionRepository.findById(sessionId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên luyện."))
-            .studentId();
+            .getStudentId();
         var turn = new SubmitPracticeTurn(
             sessionId,
             request.questionId(),

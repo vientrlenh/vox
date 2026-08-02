@@ -57,13 +57,13 @@ public class PracticePaperPersistenceService {
         var paper = createPaper(
             studentId, topicId, origin, offeredTopicIds, previousOfferedTopicIds, question
         );
-        saveItemAndExposure(studentId, paper.id(), selection);
+        saveItemAndExposure(studentId, paper.getId(), selection);
         return paper;
     }
 
     private String currentGoal(UUID studentId) {
         return learnerProfileRepository.findCurrent(studentId)
-            .map(profile -> profile.goalType() == null ? "ABILITY_IMPROVEMENT" : profile.goalType())
+            .map(profile -> profile.getGoalType() == null ? "ABILITY_IMPROVEMENT" : profile.getGoalType())
             .orElse("ABILITY_IMPROVEMENT");
     }
 
@@ -103,12 +103,12 @@ public class PracticePaperPersistenceService {
         paperItemRepository.save(new PracticePaperItem(
             UUID.randomUUID(),
             paperId,
-            selection.question().id(),
+            selection.question().getId(),
             selection.slot(),
             selection.criterion(),
             selection.subAttribute(),
             selection.targetRank()
         ));
-        studentQuestionExposureRepository.recordExposure(studentId, selection.question().id());
+        studentQuestionExposureRepository.recordExposure(studentId, selection.question().getId());
     }
 }

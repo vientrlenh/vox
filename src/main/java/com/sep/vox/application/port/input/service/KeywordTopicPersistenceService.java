@@ -69,6 +69,6 @@ public class KeywordTopicPersistenceService {
             now,
             null
         ));
-        return saved.id();
+        return saved.getId();
     }
 }

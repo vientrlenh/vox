@@ -35,25 +35,25 @@ public final class PracticeSessionMapper {
     public static PracticeSessionJpaEntity toJpa(
             PracticeSession session) {
         var entity = new PracticeSessionJpaEntity(
-            session.id(),
-            session.studentId(),
-            session.practicePaperId(),
-            session.rubricVersionId(),
-            session.targetFrameworkBandId(),
-            session.chosenPracticeTopicId(),
-            session.targetSubAttributesJson(),
-            session.origin(),
-            session.offeredTopicIdsJson(),
-            session.startedAt(),
-            session.lastHeartbeatAt(),
-            session.gradedSeconds(),
-            session.status(),
-            session.helpRequestCount(),
-            session.longPauseCount()
+            session.getId(),
+            session.getStudentId(),
+            session.getPracticePaperId(),
+            session.getRubricVersionId(),
+            session.getTargetFrameworkBandId(),
+            session.getChosenPracticeTopicId(),
+            session.getTargetSubAttributesJson(),
+            session.getOrigin(),
+            session.getOfferedTopicIdsJson(),
+            session.getStartedAt(),
+            session.getLastHeartbeatAt(),
+            session.getGradedSeconds(),
+            session.getStatus(),
+            session.getHelpRequestCount(),
+            session.getLongPauseCount()
         );
-        entity.setOverallScore(session.overallScore());
-        entity.setEndedAt(session.endedAt());
-        entity.setAbandonDiagnosis(session.abandonDiagnosis());
+        entity.setOverallScore(session.getOverallScore());
+        entity.setEndedAt(session.getEndedAt());
+        entity.setAbandonDiagnosis(session.getAbandonDiagnosis());
         return entity;
     }
 }

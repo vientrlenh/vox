@@ -34,22 +34,22 @@ public final class PracticeQuestionMapper {
     public static PracticeQuestionJpaEntity toJpa(
             PracticeQuestion question) {
         return new PracticeQuestionJpaEntity(
-            question.practiceTopicId(),
-            question.questionText(),
-            question.targetCriterionCode(),
-            question.targetSubAttribute(),
-            question.difficultyRank(),
-            question.difficultyFeaturesJson(),
-            question.evaluationGuideJson(),
-            question.suggestedIdeasJson(),
-            question.preparationTimeSeconds(),
-            question.maxResponseSeconds(),
-            question.maxFollowupSeconds(),
-            question.vstepPart(),
-            question.source(),
-            question.usageCount(),
-            question.active(),
-            question.createdAt()
+            question.getPracticeTopicId(),
+            question.getQuestionText(),
+            question.getTargetCriterionCode(),
+            question.getTargetSubAttribute(),
+            question.getDifficultyRank(),
+            question.getDifficultyFeaturesJson(),
+            question.getEvaluationGuideJson(),
+            question.getSuggestedIdeasJson(),
+            question.getPreparationTimeSeconds(),
+            question.getMaxResponseSeconds(),
+            question.getMaxFollowupSeconds(),
+            question.getVstepPart(),
+            question.getSource(),
+            question.getUsageCount(),
+            question.isActive(),
+            question.getCreatedAt()
         );
     }
 }

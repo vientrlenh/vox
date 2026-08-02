@@ -45,14 +45,14 @@ class WeaknessVectorCalculatorTests {
         assertThat(result.snapshots()).hasSize(5);
         assertThat(result.snapshots())
             .allSatisfy(snapshot -> {
-                assertThat(snapshot.observationCount()).isEqualTo(4);
-                assertThat(snapshot.reliable()).isTrue();
+                assertThat(snapshot.getObservationCount()).isEqualTo(4);
+                assertThat(snapshot.isReliable()).isTrue();
             });
         assertThat(result.relativeObservations().stream()
             .map(WeaknessVectorCalculator.RelativeObservation::evaluationId)
             .distinct())
             .hasSize(4);
-        for (var evaluationId : scores.stream().map(WeaknessScoreObservation::evaluationId).distinct().toList()) {
+        for (var evaluationId : scores.stream().map(WeaknessScoreObservation::getEvaluationId).distinct().toList()) {
             var relativeSum = result.relativeObservations().stream()
                 .filter(item -> item.evaluationId().equals(evaluationId))
                 .mapToDouble(WeaknessVectorCalculator.RelativeObservation::relativeScore)
@@ -70,9 +70,15 @@ class WeaknessVectorCalculatorTests {
         var first = calculator.calculate(scores, Set.of(studentId), List.of(), now, settings);
         var second = calculator.calculate(scores, Set.of(studentId), List.of(), now, settings);
 
-        assertThat(second.snapshots()).isEqualTo(first.snapshots());
+        // So theo GIA TRI tung field, khong dua vao equals(): model domain o day theo dung
+        // convention cua domain/model/exam va framework -- class thuong, khong override
+        // equals/hashCode -- nen isEqualTo() se thanh so sanh tham chieu va luon sai.
+        // Y nghia can khang dinh van y nguyen: tinh lai lan hai ra dung cung bo gia tri.
         assertThat(second.snapshots())
-            .allSatisfy(snapshot -> assertThat(snapshot.observationCount()).isEqualTo(4));
+            .usingRecursiveComparison()
+            .isEqualTo(first.snapshots());
+        assertThat(second.snapshots())
+            .allSatisfy(snapshot -> assertThat(snapshot.getObservationCount()).isEqualTo(4));
     }
 
     @Test
@@ -88,10 +94,10 @@ class WeaknessVectorCalculatorTests {
         var studentId = UUID.randomUUID();
         var scores = fourEvaluations(studentId);
         var criterionId = scores.stream()
-            .filter(score -> score.criterionCode().equals("GRAMMAR"))
+            .filter(score -> score.getCriterionCode().equals("GRAMMAR"))
             .findFirst()
             .orElseThrow()
-            .frameworkCriterionId();
+            .getFrameworkCriterionId();
         var frequencies = List.of(
             new WeaknessFrequency(studentId, criterionId, "tense_control", 6, 3),
             new WeaknessFrequency(studentId, criterionId, "article_use", 3, 3),
@@ -107,10 +113,10 @@ class WeaknessVectorCalculatorTests {
         );
 
         assertThat(result.priorities())
-            .extracting(item -> item.subAttribute())
+            .extracting(item -> item.getSubAttribute())
             .containsExactlyInAnyOrder("tense_control", "article_use");
         assertThat(result.priorities())
-            .allSatisfy(item -> assertThat(item.practiceable()).isFalse());
+            .allSatisfy(item -> assertThat(item.isPracticeable()).isFalse());
     }
 
     private List<WeaknessScoreObservation> fourEvaluations(UUID studentId) {

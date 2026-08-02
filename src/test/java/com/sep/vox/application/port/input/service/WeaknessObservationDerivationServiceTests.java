@@ -68,7 +68,7 @@ class WeaknessObservationDerivationServiceTests {
         );
 
         assertThat(observations)
-            .extracting(item -> item.subAttribute() + ":" + item.evidenceSpan())
+            .extracting(item -> item.getSubAttribute() + ":" + item.getEvidenceSpan())
             .containsExactlyInAnyOrder(
                 "tense_control:I go yesterday",
                 "phoneme_s:cats",
@@ -77,8 +77,8 @@ class WeaknessObservationDerivationServiceTests {
                 "long_pause:"
             );
         assertThat(observations)
-            .allMatch(item -> item.studentId().equals(studentId))
-            .allMatch(item -> item.sourceEvaluationId().equals(evaluationId));
+            .allMatch(item -> item.getStudentId().equals(studentId))
+            .allMatch(item -> item.getSourceEvaluationId().equals(evaluationId));
     }
 
     @Test

@@ -25,15 +25,15 @@ public final class PracticeTopicMapper {
 
     public static PracticeTopicJpaEntity toJpa(PracticeTopic topic) {
         return new PracticeTopicJpaEntity(
-            topic.name(),
-            topic.normalizedName(),
-            topic.description(),
-            topic.source(),
-            topic.interestDimension(),
-            topic.curriculumGroup(),
-            topic.active(),
-            topic.createdAt(),
-            topic.sourceQuestionTopicId()
+            topic.getName(),
+            topic.getNormalizedName(),
+            topic.getDescription(),
+            topic.getSource(),
+            topic.getInterestDimension(),
+            topic.getCurriculumGroup(),
+            topic.isActive(),
+            topic.getCreatedAt(),
+            topic.getSourceQuestionTopicId()
         );
     }
 }

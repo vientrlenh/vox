@@ -82,26 +82,26 @@ public class ResolveNextPracticeQuestionClaimService {
         // ResolveNextPracticeQuestionUseCase mới là thứ serialize xuyên suốt cuộc gọi ngoài chậm.
         var session = practiceSessionRepository.findByIdForUpdate(sessionId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên luyện."));
-        if (!"IN_PROGRESS".equals(session.status())) {
+        if (!"IN_PROGRESS".equals(session.getStatus())) {
             throw new IllegalStateException("Phiên luyện không còn hoạt động.");
         }
 
-        var alreadyChosenIds = paperItemRepository.findQuestionIdsForPaper(session.practicePaperId());
+        var alreadyChosenIds = paperItemRepository.findQuestionIdsForPaper(session.getPracticePaperId());
         if (!alreadyChosenIds.isEmpty()) {
             var latestQuestionId = alreadyChosenIds.getLast();
             if (!practiceItemResponseRepository.existsResponse(sessionId, latestQuestionId)) {
                 var latestQuestion = questionRepository.findById(latestQuestionId)
                     .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi luyện."));
                 return new Claim(
-                    session.studentId(), session.practicePaperId(), null, null, null, 0, 0,
+                    session.getStudentId(), session.getPracticePaperId(), null, null, null, 0, 0,
                     latestQuestion, alreadyChosenIds.size(), null
                 );
             }
         }
 
-        var usedSeconds = paperItemRepository.sumPlannedSecondsForPaper(session.practicePaperId());
+        var usedSeconds = paperItemRepository.sumPlannedSecondsForPaper(session.getPracticePaperId());
         var maxMinutes = schoolSubscriptionRepository
-            .findMaxTimePerAttemptMinForUser(session.studentId());
+            .findMaxTimePerAttemptMinForUser(session.getStudentId());
         var quotaSeconds = maxMinutes == null ? 0 : maxMinutes * 60;
         // HAI ngân sách (thiết kế gói 6 mục 4.1), lấy cái chặt hơn:
         //   quota      = trường mua bao nhiêu giây, tiêu dần QUA NHIỀU phiên
@@ -111,22 +111,22 @@ public class ResolveNextPracticeQuestionClaimService {
         // không phải một phiên 30 phút quá sức.
         var maxSeconds = Math.min(
             quotaSeconds,
-            enrichmentService.sessionSecondsCapForStudent(session.studentId())
+            enrichmentService.sessionSecondsCapForStudent(session.getStudentId())
         );
         if (usedSeconds >= maxSeconds) {
             return new Claim(
-                session.studentId(), session.practicePaperId(), null, null, null, 0, 0,
+                session.getStudentId(), session.getPracticePaperId(), null, null, null, 0, 0,
                 null, 0, "budget_exhausted"
             );
         }
 
-        var topic = topicRepository.findTopicById(session.chosenPracticeTopicId())
+        var topic = topicRepository.findTopicById(session.getChosenPracticeTopicId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy chủ đề luyện tập."));
-        var focus = selectionService.resolveFocus(session.studentId(), null);
+        var focus = selectionService.resolveFocus(session.getStudentId(), null);
         var alreadyChosen = questionRepository.findByIds(alreadyChosenIds);
 
         return new Claim(
-            session.studentId(), session.practicePaperId(), topic, focus, alreadyChosen,
+            session.getStudentId(), session.getPracticePaperId(), topic, focus, alreadyChosen,
             usedSeconds, maxSeconds, null, 0, null
         );
     }

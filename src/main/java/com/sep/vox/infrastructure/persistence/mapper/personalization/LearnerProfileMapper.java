@@ -26,16 +26,16 @@ public final class LearnerProfileMapper {
 
     public static LearnerProfileJpaEntity toJpa(LearnerProfile profile) {
         return new LearnerProfileJpaEntity(
-            profile.studentId(),
-            profile.version(),
-            profile.goalType(),
-            profile.targetExam(),
-            profile.targetDate(),
-            profile.flsaScore(),
-            profile.flsaRawAnswersJson(),
-            profile.autoUpdateInterest(),
-            profile.quizCompletedAt(),
-            profile.recordedAt()
+            profile.getStudentId(),
+            profile.getVersion(),
+            profile.getGoalType(),
+            profile.getTargetExam(),
+            profile.getTargetDate(),
+            profile.getFlsaScore(),
+            profile.getFlsaRawAnswersJson(),
+            profile.isAutoUpdateInterest(),
+            profile.getQuizCompletedAt(),
+            profile.getRecordedAt()
         );
     }
 }

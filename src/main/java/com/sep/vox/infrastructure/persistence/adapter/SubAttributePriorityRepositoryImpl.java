@@ -32,15 +32,15 @@ public class SubAttributePriorityRepositoryImpl implements SubAttributePriorityR
         repository.deleteByStudentIdIn(studentIds);
         repository.saveAll(priorities.stream()
             .map(item -> new SubAttributePriorityJpaEntity(
-                item.id(),
-                item.studentId(),
-                item.frameworkCriterionId(),
-                item.subAttribute(),
-                item.frequency(),
-                item.recentFrequency(),
-                item.priority(),
-                item.practiceable(),
-                item.computedAt()
+                item.getId(),
+                item.getStudentId(),
+                item.getFrameworkCriterionId(),
+                item.getSubAttribute(),
+                item.getFrequency(),
+                item.getRecentFrequency(),
+                item.getPriority(),
+                item.isPracticeable(),
+                item.getComputedAt()
             ))
             .toList());
     }

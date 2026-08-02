@@ -51,7 +51,8 @@ public class SearchPracticeTopicsUseCase implements IUseCase<SearchPracticeTopic
                 null,
                 minutes,
                 enrichmentService.levelLabel(
-                    enrichmentService.rankForTopic(studentId, row.getId(), signal)
+                    enrichmentService.rankForTopic(studentId, row.getId(), signal),
+                    signal.bandCount()
                 ),
                 null,
                 List.of(),

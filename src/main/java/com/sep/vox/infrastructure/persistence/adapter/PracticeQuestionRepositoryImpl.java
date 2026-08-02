@@ -81,19 +81,19 @@ public class PracticeQuestionRepositoryImpl implements PracticeQuestionRepositor
     @Override
     public void saveGenerated(PracticeQuestion question) {
         repository.insertGeneratedQuestion(
-            question.id(),
-            question.practiceTopicId(),
-            question.questionText(),
-            question.targetCriterionCode(),
-            question.targetSubAttribute(),
-            question.difficultyRank(),
-            question.difficultyFeaturesJson(),
-            question.evaluationGuideJson(),
-            question.suggestedIdeasJson(),
-            question.preparationTimeSeconds(),
-            question.maxResponseSeconds(),
-            question.maxFollowupSeconds(),
-            question.vstepPart()
+            question.getId(),
+            question.getPracticeTopicId(),
+            question.getQuestionText(),
+            question.getTargetCriterionCode(),
+            question.getTargetSubAttribute(),
+            question.getDifficultyRank(),
+            question.getDifficultyFeaturesJson(),
+            question.getEvaluationGuideJson(),
+            question.getSuggestedIdeasJson(),
+            question.getPreparationTimeSeconds(),
+            question.getMaxResponseSeconds(),
+            question.getMaxFollowupSeconds(),
+            question.getVstepPart()
         );
     }
 

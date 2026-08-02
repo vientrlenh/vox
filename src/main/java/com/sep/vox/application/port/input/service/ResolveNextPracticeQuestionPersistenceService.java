@@ -32,12 +32,12 @@ public class ResolveNextPracticeQuestionPersistenceService {
         paperItemRepository.save(new PracticePaperItem(
             UUID.randomUUID(),
             practicePaperId,
-            selection.question().id(),
+            selection.question().getId(),
             selection.slot(),
             selection.criterion(),
             selection.subAttribute(),
             selection.targetRank()
         ));
-        studentQuestionExposureRepository.recordExposure(studentId, selection.question().id());
+        studentQuestionExposureRepository.recordExposure(studentId, selection.question().getId());
     }
 }

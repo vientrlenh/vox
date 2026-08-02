@@ -77,9 +77,9 @@ public class InterestQuizItemRepositoryImpl
         var now = OffsetDateTime.now();
         repository.saveAll(items.stream()
             .map(item -> new InterestQuizItemJpaEntity(
-                jsonSerialization.toJson(item.dimensionPerStatement()),
-                jsonSerialization.toJson(item.statements()),
-                item.note(),
+                jsonSerialization.toJson(item.getDimensionPerStatement()),
+                jsonSerialization.toJson(item.getStatements()),
+                item.getNote(),
                 true,
                 null,
                 now
@@ -92,9 +92,9 @@ public class InterestQuizItemRepositoryImpl
         var now = OffsetDateTime.now();
         repository.saveAll(items.stream()
             .map(item -> new InterestQuizItemJpaEntity(
-                jsonSerialization.toJson(item.dimensionPerStatement()),
-                jsonSerialization.toJson(item.statements()),
-                item.note(),
+                jsonSerialization.toJson(item.getDimensionPerStatement()),
+                jsonSerialization.toJson(item.getStatements()),
+                item.getNote(),
                 true,
                 studentId,
                 now

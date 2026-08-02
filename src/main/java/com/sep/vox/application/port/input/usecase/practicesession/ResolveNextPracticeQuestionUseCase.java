@@ -99,7 +99,7 @@ public class ResolveNextPracticeQuestionUseCase {
         }
 
         var signal = enrichmentService.studentRankSignal(claim.studentId());
-        var baseRank = enrichmentService.rankForTopic(claim.studentId(), claim.topic().id(), signal);
+        var baseRank = enrichmentService.rankForTopic(claim.studentId(), claim.topic().getId(), signal);
 
         var selection = selectionService
             .resolveNextQuestion(claim.topic(), claim.studentId(), claim.focus(), baseRank, claim.alreadyChosen())
@@ -119,16 +119,16 @@ public class ResolveNextPracticeQuestionUseCase {
 
     private QuestionPayload toPayload(PracticeQuestion question, int slot) {
         return new QuestionPayload(
-            question.id(),
+            question.getId(),
             slot,
-            question.questionText(),
-            question.targetCriterionCode(),
-            question.targetSubAttribute(),
-            question.difficultyRank(),
-            question.preparationTimeSeconds(),
-            question.maxResponseSeconds(),
-            question.maxFollowupSeconds(),
-            parseIdeas(question.suggestedIdeasJson())
+            question.getQuestionText(),
+            question.getTargetCriterionCode(),
+            question.getTargetSubAttribute(),
+            question.getDifficultyRank(),
+            question.getPreparationTimeSeconds(),
+            question.getMaxResponseSeconds(),
+            question.getMaxFollowupSeconds(),
+            parseIdeas(question.getSuggestedIdeasJson())
         );
     }
 

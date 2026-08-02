@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.service;
 
 import java.time.Duration;
+import java.util.List;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -9,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.domain.model.framework.FrameworkResultBand;
 import com.sep.vox.domain.model.personalization.PracticeQuestion;
 import com.sep.vox.domain.repository.personalization.PracticeQuestionRepository;
 import com.sep.vox.domain.repository.personalization.PracticeTopicRepository;
@@ -42,20 +44,29 @@ public class PracticeQuestionGenerationService {
     // simple SELECT elsewhere while this was in flight). Each repository call below
     // (saveGenerated, findTopicById via topicDetails) still gets its own short-lived
     // transaction from Spring Data's repository proxy -- no atomicity is lost.
+    /**
+     * @param bandCount số bậc của thang đang áp. Gửi xuống Python để nó ánh xạ
+     *                  {@code difficulty_rank} theo đúng thang đó và dựng ladder mô tả bậc từ
+     *                  dữ liệu thật, thay vì mặc định thang 6 bậc kiểu VSTEP.
+     */
     public int generateAndStore(
             UUID topicId,
             String criterionCode,
             String subAttribute,
             int targetRank,
             int count,
-            Duration timeout) {
+            Duration timeout,
+            int bandCount,
+            List<FrameworkResultBand> bandLadder) {
         var generated = generationClient.generate(
             topicDetails(topicId),
             criterionCode,
             SubAttributePolicy.plannedSubAttribute(criterionCode, subAttribute),
             targetRank,
             count,
-            timeout
+            timeout,
+            bandCount,
+            bandLadder
         );
         for (var question : generated) {
             practiceQuestionRepository.saveGenerated(toPracticeQuestion(question));
@@ -76,13 +87,13 @@ public class PracticeQuestionGenerationService {
 
     private TopicDetails topicDetails(UUID topicId) {
         var topic = practiceTopicRepository.findTopicById(topicId)
-            .filter(com.sep.vox.domain.model.personalization.PracticeTopic::active)
+            .filter(com.sep.vox.domain.model.personalization.PracticeTopic::isActive)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy chủ đề luyện tập."));
         return new TopicDetails(
-            topic.id(),
-            topic.name(),
-            topic.interestDimension(),
-            topic.curriculumGroup()
+            topic.getId(),
+            topic.getName(),
+            topic.getInterestDimension(),
+            topic.getCurriculumGroup()
         );
     }
 

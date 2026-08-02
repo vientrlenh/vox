@@ -44,6 +44,7 @@ public class PracticeQuestionSelectionService {
     private final PracticeGenerationProperties generationProperties;
     private final LearnerWeaknessSnapshotRepository weaknessRepository;
     private final SubAttributePriorityRepository priorityRepository;
+    private final PracticeTopicOfferEnrichmentService enrichmentService;
 
     public PracticeQuestionSelectionService(
             PracticeQuestionRepository questionRepository,
@@ -51,7 +52,9 @@ public class PracticeQuestionSelectionService {
             QuestionDiversityClient diversityClient,
             PracticeGenerationProperties generationProperties,
             LearnerWeaknessSnapshotRepository weaknessRepository,
-            SubAttributePriorityRepository priorityRepository) {
+            SubAttributePriorityRepository priorityRepository,
+            PracticeTopicOfferEnrichmentService enrichmentService) {
+        this.enrichmentService = enrichmentService;
         this.questionRepository = questionRepository;
         this.generationService = generationService;
         this.diversityClient = diversityClient;
@@ -110,17 +113,21 @@ public class PracticeQuestionSelectionService {
             criterion,
             slotIndex < 2 ? focus.primarySubAttribute() : focus.secondarySubAttribute()
         );
-        var slotRank = Math.min(6, targetRank + (slotIndex >= 3 ? 1 : 0));
-        var excludeIds = alreadyChosenInSession.stream().map(PracticeQuestion::id).toList();
+        // Trần bậc đọc từ framework đang áp, KHÔNG cứng 6: đổi trường sang thang khác (CEFR 6,
+        // IELTS 9) thì hằng số 6 kẹp sai mà không báo lỗi. Lấy MỘT lần rồi truyền xuống thang
+        // leo, tránh query lặp ở từng bậc.
+        var bandCount = enrichmentService.frameworkBandCount(studentId);
+        var slotRank = Math.min(bandCount, targetRank + (slotIndex >= 3 ? 1 : 0));
+        var excludeIds = alreadyChosenInSession.stream().map(PracticeQuestion::getId).toList();
 
         var candidates = ladderCandidatesForOneQuestion(
-            topic, studentId, criterion, subAttribute, slotRank, excludeIds
+            topic, studentId, criterion, subAttribute, slotRank, excludeIds, bandCount
         );
         if (candidates.isEmpty()) {
             return Optional.empty();
         }
         var chosen = pickOne(candidates, alreadyChosenInSession, criterion, subAttribute, slotRank);
-        chosen.ifPresent(question -> questionRepository.incrementUsageCount(question.id()));
+        chosen.ifPresent(question -> questionRepository.incrementUsageCount(question.getId()));
         return chosen.map(question -> new NextQuestionSelection(
             question, slotIndex + 1, criterion, subAttribute, slotRank
         ));
@@ -133,13 +140,13 @@ public class PracticeQuestionSelectionService {
             String subAttribute,
             int targetRank) {
         var similarities = diversityClient.maxSimilarities(
-            candidates.stream().map(PracticeQuestion::id).toList(),
-            alreadyChosen.stream().map(PracticeQuestion::id).toList()
+            candidates.stream().map(PracticeQuestion::getId).toList(),
+            alreadyChosen.stream().map(PracticeQuestion::getId).toList()
         );
         var previousReasoning = alreadyChosen.isEmpty() ? null : reasoningType(alreadyChosen.getLast());
         var ranked = candidates.stream()
             .filter(question -> alreadyChosen.isEmpty()
-                || similarities.getOrDefault(question.id(), 1.0) < 0.85)
+                || similarities.getOrDefault(question.getId(), 1.0) < 0.85)
             .filter(question -> previousReasoning == null
                 || !previousReasoning.equals(reasoningType(question)))
             .sorted(Comparator.comparingDouble(
@@ -158,12 +165,12 @@ public class PracticeQuestionSelectionService {
             String criterion,
             String subAttribute,
             int targetRank) {
-        var zpd = Math.max(0.0, 1 - Math.abs(question.difficultyRank() - targetRank) / 2.0);
-        var sub = subAttribute != null && subAttribute.equals(question.targetSubAttribute())
+        var zpd = Math.max(0.0, 1 - Math.abs(question.getDifficultyRank() - targetRank) / 2.0);
+        var sub = subAttribute != null && subAttribute.equals(question.getTargetSubAttribute())
             ? 1.0
             : 0.3;
-        var criterionMatch = criterion.equals(question.targetCriterionCode()) ? 1.0 : 0.4;
-        var fresh = 1 - Math.min(1.0, question.usageCount() / 50.0);
+        var criterionMatch = criterion.equals(question.getTargetCriterionCode()) ? 1.0 : 0.4;
+        var fresh = 1 - Math.min(1.0, question.getUsageCount() / 50.0);
         return 0.40 * zpd + 0.30 * sub + 0.20 * criterionMatch + 0.10 * fresh;
     }
 
@@ -173,28 +180,29 @@ public class PracticeQuestionSelectionService {
             String criterion,
             String subAttribute,
             int targetRank,
-            List<UUID> excludeIds) {
+            List<UUID> excludeIds,
+            int bandCount) {
         var selected = new LinkedHashMap<UUID, PracticeQuestion>();
 
-        questions(topic.id(), studentId, criterion, targetRank, targetRank)
+        questions(topic.getId(), studentId, criterion, targetRank, targetRank)
             .forEach(question -> putIfNotExcluded(selected, question, excludeIds));
 
         if (selected.size() < generationProperties.paperTargetQuestionCount()) {
             questions(
-                topic.id(),
+                topic.getId(),
                 studentId,
                 null,
                 Math.max(1, targetRank - 1),
-                Math.min(6, targetRank + 1)
+                Math.min(bandCount, targetRank + 1)
             ).forEach(question -> putIfNotExcluded(selected, question, excludeIds));
         }
 
         if (selected.size() < generationProperties.paperTargetQuestionCount()) {
             var neighborIds = diversityClient.neighborQuestionIds(
-                topic.name(),
+                topic.getName(),
                 criterion,
                 Math.max(1, targetRank - 1),
-                Math.min(6, targetRank + 1)
+                Math.min(bandCount, targetRank + 1)
             );
             questionRepository.findUnseenByIds(neighborIds, studentId)
                 .forEach(question -> putIfNotExcluded(selected, question, excludeIds));
@@ -213,19 +221,21 @@ public class PracticeQuestionSelectionService {
             );
             try {
                 generationService.generateAndStore(
-                    topic.id(),
+                    topic.getId(),
                     criterion,
                     subAttribute,
                     targetRank,
                     missing,
-                    generationProperties.onlineBudget()
+                    generationProperties.onlineBudget(),
+                    bandCount,
+                    enrichmentService.frameworkBandLadder(studentId)
                 );
                 questions(
-                    topic.id(),
+                    topic.getId(),
                     studentId,
                     criterion,
                     Math.max(1, targetRank - 1),
-                    Math.min(6, targetRank + 1)
+                    Math.min(bandCount, targetRank + 1)
                 ).forEach(question -> putIfNotExcluded(selected, question, excludeIds));
             } catch (RuntimeException exception) {
                 LOGGER.warn(
@@ -240,8 +250,8 @@ public class PracticeQuestionSelectionService {
 
     private static void putIfNotExcluded(
             LinkedHashMap<UUID, PracticeQuestion> selected, PracticeQuestion question, List<UUID> excludeIds) {
-        if (!excludeIds.contains(question.id())) {
-            selected.putIfAbsent(question.id(), question);
+        if (!excludeIds.contains(question.getId())) {
+            selected.putIfAbsent(question.getId(), question);
         }
     }
 
@@ -261,7 +271,7 @@ public class PracticeQuestionSelectionService {
     }
 
     private String reasoningType(PracticeQuestion question) {
-        var value = question.difficultyFeaturesJson();
+        var value = question.getDifficultyFeaturesJson();
         if (value == null || value.isBlank()) {
             return null;
         }

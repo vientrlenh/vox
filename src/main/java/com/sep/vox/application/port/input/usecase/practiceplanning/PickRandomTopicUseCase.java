@@ -43,7 +43,7 @@ public class PickRandomTopicUseCase implements IUseCase<Void, PracticeTopicOffer
             row.getSavedByMe(),
             null,
             enrichmentService.minutesForStudent(studentId),
-            enrichmentService.levelLabel(rank),
+            enrichmentService.levelLabel(rank, signal.bandCount()),
             null,
             List.of(),
             enrichmentService.focusTagsForStudent(studentId)

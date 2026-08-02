@@ -30,7 +30,7 @@ public class HeartbeatPracticeSessionUseCase implements IUseCase<HeartbeatPracti
         var session = practiceSessionRepository
             .findByIdAndStudentId(input.sessionId(), studentId)
             .orElse(null);
-        if (session == null || !"IN_PROGRESS".equals(session.status())) {
+        if (session == null || !"IN_PROGRESS".equals(session.getStatus())) {
             return false;
         }
         practiceSessionRepository.save(session.withLastHeartbeatAt(OffsetDateTime.now()));

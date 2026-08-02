@@ -70,7 +70,7 @@ public class ViewInterestQuizItemsUseCase implements IUseCase<Void, List<Interes
         }
 
         var existingStatements = sharedPool.stream()
-            .flatMap(item -> item.statements().stream())
+            .flatMap(item -> item.getStatements().stream())
             .toList();
         var generated = generationClient.generate(
             QUIZ_ITEM_COUNT,
@@ -101,10 +101,10 @@ public class ViewInterestQuizItemsUseCase implements IUseCase<Void, List<Interes
     private List<InterestQuizSeedItem> selectForStudent(UUID studentId) {
         var pool = new LinkedHashMap<UUID, InterestQuizSeedItem>();
         for (var item : quizItemRepository.findAllActiveQuizItemsForStudent(studentId)) {
-            pool.put(item.id(), item);
+            pool.put(item.getId(), item);
         }
         for (var item : quizItemRepository.findAllActiveQuizItems()) {
-            pool.putIfAbsent(item.id(), item);
+            pool.putIfAbsent(item.getId(), item);
         }
         return selectBalanced(List.copyOf(pool.values()));
     }

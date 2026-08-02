@@ -43,7 +43,7 @@ public class WeaknessVectorCalculator {
             List<WeaknessScoreObservation> scores,
             int minimumCriteriaPerEvaluation) {
         var byEvaluation = scores.stream().collect(Collectors.groupingBy(
-            score -> new EvaluationKey(score.sourceType(), score.evaluationId()),
+            score -> new EvaluationKey(score.getSourceType(), score.getEvaluationId()),
             LinkedHashMap::new,
             Collectors.toList()
         ));
@@ -64,15 +64,15 @@ public class WeaknessVectorCalculator {
             for (var score : normalized) {
                 var source = score.source();
                 relatives.add(new RelativeObservation(
-                    source.studentId(),
-                    source.frameworkCriterionId(),
-                    source.criterionCode().toUpperCase(Locale.ROOT),
+                    source.getStudentId(),
+                    source.getFrameworkCriterionId(),
+                    source.getCriterionCode().toUpperCase(Locale.ROOT),
                     score.value() - center,
-                    source.evaluatedAt(),
-                    source.sourceType(),
-                    source.evaluationId(),
-                    source.schoolClassId(),
-                    source.schoolGradeId()
+                    source.getEvaluatedAt(),
+                    source.getSourceType(),
+                    source.getEvaluationId(),
+                    source.getSchoolClassId(),
+                    source.getSchoolGradeId()
                 ));
             }
         }
@@ -198,49 +198,49 @@ public class WeaknessVectorCalculator {
             OffsetDateTime computedAt,
             WeaknessVectorSettings settings) {
         var snapshotByKey = snapshots.stream().collect(Collectors.toMap(
-            item -> new StudentCriterionKey(item.studentId(), item.frameworkCriterionId()),
+            item -> new StudentCriterionKey(item.getStudentId(), item.getFrameworkCriterionId()),
             Function.identity()
         ));
         var eligible = frequencies.stream()
-            .filter(item -> item.frequency() >= settings.minimumSubAttributeFrequency())
+            .filter(item -> item.getFrequency() >= settings.minimumSubAttributeFrequency())
             .toList();
         var maxima = eligible.stream().collect(Collectors.groupingBy(
-            item -> new StudentCriterionKey(item.studentId(), item.frameworkCriterionId()),
+            item -> new StudentCriterionKey(item.getStudentId(), item.getFrameworkCriterionId()),
             Collectors.collectingAndThen(
                 Collectors.toList(),
                 values -> new FrequencyMax(
-                    values.stream().mapToInt(WeaknessFrequency::frequency).max().orElse(1),
-                    values.stream().mapToInt(WeaknessFrequency::recentFrequency).max().orElse(0)
+                    values.stream().mapToInt(WeaknessFrequency::getFrequency).max().orElse(1),
+                    values.stream().mapToInt(WeaknessFrequency::getRecentFrequency).max().orElse(0)
                 )
             )
         ));
         var priorities = new ArrayList<SubAttributePriority>();
         for (var item : eligible) {
-            var key = new StudentCriterionKey(item.studentId(), item.frameworkCriterionId());
+            var key = new StudentCriterionKey(item.getStudentId(), item.getFrameworkCriterionId());
             var snapshot = snapshotByKey.get(key);
             if (snapshot == null) {
                 continue;
             }
             var max = maxima.get(key);
-            var normalizedFrequency = (double) item.frequency() / max.frequency();
+            var normalizedFrequency = (double) item.getFrequency() / max.frequency();
             var normalizedRecent = max.recentFrequency() == 0
                 ? 0.0
-                : (double) item.recentFrequency() / max.recentFrequency();
+                : (double) item.getRecentFrequency() / max.recentFrequency();
             var weightedFrequency = settings.frequencyWeight() * normalizedFrequency
                 + settings.recentFrequencyWeight() * normalizedRecent;
-            var priority = weightedFrequency * snapshot.weakness().doubleValue();
+            var priority = weightedFrequency * snapshot.getWeakness().doubleValue();
             priorities.add(new SubAttributePriority(
                 stableId(
                     "sub-attribute-priority",
-                    item.studentId(),
-                    item.frameworkCriterionId(),
-                    item.subAttribute()
+                    item.getStudentId(),
+                    item.getFrameworkCriterionId(),
+                    item.getSubAttribute()
                 ),
-                item.studentId(),
-                item.frameworkCriterionId(),
-                item.subAttribute(),
-                item.frequency(),
-                item.recentFrequency(),
+                item.getStudentId(),
+                item.getFrameworkCriterionId(),
+                item.getSubAttribute(),
+                item.getFrequency(),
+                item.getRecentFrequency(),
                 decimal(priority),
                 false,
                 computedAt
@@ -250,15 +250,15 @@ public class WeaknessVectorCalculator {
     }
 
     private boolean hasValidScale(WeaknessScoreObservation score) {
-        return score.finalScore() != null
-            && score.minScore() != null
-            && score.maxScore() != null
-            && score.maxScore().compareTo(score.minScore()) > 0;
+        return score.getFinalScore() != null
+            && score.getMinScore() != null
+            && score.getMaxScore() != null
+            && score.getMaxScore().compareTo(score.getMinScore()) > 0;
     }
 
     private double normalize(WeaknessScoreObservation score) {
-        return score.finalScore().subtract(score.minScore())
-            .divide(score.maxScore().subtract(score.minScore()), 12, RoundingMode.HALF_UP)
+        return score.getFinalScore().subtract(score.getMinScore())
+            .divide(score.getMaxScore().subtract(score.getMinScore()), 12, RoundingMode.HALF_UP)
             .doubleValue();
     }
 

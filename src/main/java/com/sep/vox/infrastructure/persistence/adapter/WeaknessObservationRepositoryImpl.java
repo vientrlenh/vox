@@ -40,15 +40,15 @@ public class WeaknessObservationRepositoryImpl implements WeaknessObservationRep
     @Override
     public void save(WeaknessObservation observation) {
         repository.save(new WeaknessObservationJpaEntity(
-            observation.id(),
-            observation.studentId(),
-            observation.sourceType().name(),
-            observation.sourceEvaluationId(),
-            observation.frameworkCriterionId(),
-            observation.criterionCode(),
-            observation.subAttribute(),
-            observation.evidenceSpan(),
-            observation.observedAt()
+            observation.getId(),
+            observation.getStudentId(),
+            observation.getSourceType().name(),
+            observation.getSourceEvaluationId(),
+            observation.getFrameworkCriterionId(),
+            observation.getCriterionCode(),
+            observation.getSubAttribute(),
+            observation.getEvidenceSpan(),
+            observation.getObservedAt()
         ));
     }
 

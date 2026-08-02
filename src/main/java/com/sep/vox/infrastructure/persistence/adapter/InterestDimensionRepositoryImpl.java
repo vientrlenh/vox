@@ -52,13 +52,13 @@ public class InterestDimensionRepositoryImpl implements InterestDimensionReposit
     public InterestDimension save(InterestDimension dimension) {
         var now = OffsetDateTime.now();
         var saved = repository.save(new InterestDimensionJpaEntity(
-            dimension.code(),
-            dimension.label(),
-            dimension.description(),
-            dimension.active(),
-            dimension.quizEligible(),
-            dimension.displayOrder(),
-            dimension.createdAt() == null ? now : dimension.createdAt(),
+            dimension.getCode(),
+            dimension.getLabel(),
+            dimension.getDescription(),
+            dimension.isActive(),
+            dimension.isQuizEligible(),
+            dimension.getDisplayOrder(),
+            dimension.getCreatedAt() == null ? now : dimension.getCreatedAt(),
             now
         ));
         return toDomain(saved);

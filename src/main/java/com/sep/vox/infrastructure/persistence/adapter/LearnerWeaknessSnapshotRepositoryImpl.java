@@ -32,14 +32,14 @@ public class LearnerWeaknessSnapshotRepositoryImpl implements LearnerWeaknessSna
         repository.deleteByStudentIdIn(studentIds);
         repository.saveAll(snapshots.stream()
             .map(item -> new LearnerWeaknessSnapshotJpaEntity(
-                item.id(),
-                item.studentId(),
-                item.frameworkCriterionId(),
-                item.relEstimate(),
-                item.weakness(),
-                item.observationCount(),
-                item.reliable(),
-                item.computedAt()
+                item.getId(),
+                item.getStudentId(),
+                item.getFrameworkCriterionId(),
+                item.getRelEstimate(),
+                item.getWeakness(),
+                item.getObservationCount(),
+                item.isReliable(),
+                item.getComputedAt()
             ))
             .toList());
     }

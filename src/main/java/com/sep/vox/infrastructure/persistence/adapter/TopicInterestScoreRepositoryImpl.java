@@ -35,10 +35,10 @@ public class TopicInterestScoreRepositoryImpl
             .map(entry -> new TopicInterestScoreJpaEntity(
                 UUID.randomUUID(),
                 studentId,
-                entry.topicId(),
-                BigDecimal.valueOf(entry.score()),
-                entry.sessionCount(),
-                entry.lastEventAt(),
+                entry.getTopicId(),
+                BigDecimal.valueOf(entry.getScore()),
+                entry.getSessionCount(),
+                entry.getLastEventAt(),
                 now
             ))
             .toList());

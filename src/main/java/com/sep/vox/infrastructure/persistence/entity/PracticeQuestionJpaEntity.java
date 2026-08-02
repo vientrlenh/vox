@@ -29,7 +29,7 @@ import jakarta.persistence.Table;
     check = {
         @CheckConstraint(
             name = "chk_practice_question_difficulty_rank",
-            constraint = "difficulty_rank BETWEEN 1 AND 6"
+            constraint = "difficulty_rank BETWEEN 1 AND 20"
         ),
         @CheckConstraint(
             name = "chk_practice_question_time_budgets",

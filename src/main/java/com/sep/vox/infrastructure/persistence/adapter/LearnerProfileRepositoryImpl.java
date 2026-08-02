@@ -6,8 +6,10 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
+import com.sep.vox.domain.model.framework.FrameworkResultBand;
 import com.sep.vox.domain.model.personalization.LearnerProfile;
 import com.sep.vox.domain.repository.personalization.LearnerProfileRepository;
+import com.sep.vox.infrastructure.persistence.mapper.FrameworkResultBandMapper;
 import com.sep.vox.infrastructure.persistence.mapper.personalization.LearnerProfileMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataLearnerProfileRepository;
 
@@ -51,5 +53,17 @@ public class LearnerProfileRepositoryImpl
     @Override
     public List<Integer> findPolicyTargetBandOrder(UUID studentId) {
         return profileRepository.findPolicyTargetBandOrder(studentId);
+    }
+
+    @Override
+    public List<Integer> findFrameworkBandCount(UUID studentId) {
+        return profileRepository.findFrameworkBandCount(studentId);
+    }
+
+    @Override
+    public List<FrameworkResultBand> findFrameworkBandLadder(UUID studentId) {
+        return profileRepository.findFrameworkBandLadder(studentId).stream()
+            .map(FrameworkResultBandMapper::toDomain)
+            .toList();
     }
 }

@@ -43,7 +43,8 @@ public class ViewMySavedTopicsUseCase implements IUseCase<Void, List<PracticeTop
                 null,
                 minutes,
                 enrichmentService.levelLabel(
-                    enrichmentService.rankForTopic(studentId, row.getId(), signal)
+                    enrichmentService.rankForTopic(studentId, row.getId(), signal),
+                    signal.bandCount()
                 ),
                 null,
                 List.of(),

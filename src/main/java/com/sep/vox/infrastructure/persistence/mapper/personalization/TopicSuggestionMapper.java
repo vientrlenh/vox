@@ -29,19 +29,19 @@ public final class TopicSuggestionMapper {
     public static TopicSuggestionJpaEntity toJpa(
             TopicSuggestion suggestion) {
         var entity = new TopicSuggestionJpaEntity(
-            suggestion.id(),
-            suggestion.studentId(),
-            suggestion.suggestedTopicName(),
-            suggestion.keyword(),
-            suggestion.interestDimension(),
-            suggestion.curriculumGroup(),
-            suggestion.confidence(),
-            suggestion.reasonText(),
-            suggestion.evidenceJson(),
-            suggestion.status(),
-            suggestion.createdAt()
+            suggestion.getId(),
+            suggestion.getStudentId(),
+            suggestion.getSuggestedTopicName(),
+            suggestion.getKeyword(),
+            suggestion.getInterestDimension(),
+            suggestion.getCurriculumGroup(),
+            suggestion.getConfidence(),
+            suggestion.getReasonText(),
+            suggestion.getEvidenceJson(),
+            suggestion.getStatus(),
+            suggestion.getCreatedAt()
         );
-        entity.setRespondedAt(suggestion.respondedAt());
+        entity.setRespondedAt(suggestion.getRespondedAt());
         return entity;
     }
 }

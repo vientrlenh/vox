@@ -129,7 +129,7 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
 
     private PracticeTopic requireTopic(UUID topicId) {
         return topicRepository.findTopicById(topicId)
-            .filter(PracticeTopic::active)
+            .filter(PracticeTopic::isActive)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy chủ đề luyện tập."));
     }
 }

@@ -599,7 +599,7 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
      */
     private List<GradingTaskItemInfo> taskItems(UUID sessionId) {
         var rows = em.createQuery("""
-            SELECT r.id, r.paperItemId, sec.title
+            SELECT r.id, r.paperItemId, sec.title, pi.sectionId
             FROM ExamItemResponseJpaEntity r
             LEFT JOIN ExamPaperItemJpaEntity pi ON pi.id = r.paperItemId
             LEFT JOIN ExamPaperSectionJpaEntity sec ON sec.id = pi.sectionId
@@ -614,30 +614,66 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
 
         var responseIds = rows.stream().map(row -> row.get(0, UUID.class)).filter(Objects::nonNull).toList();
         var currentEvaluations = currentEvaluationsByResponseIds(responseIds);
-        var aiEvaluationIds = aiEvaluationIdsByResponseIds(responseIds);
-        var scoresByEvaluation = criterionScoresByEvaluationIds(
-            currentEvaluations.values().stream().map(evaluation -> evaluation.id()).toList());
-        var turnsByEvaluation = turnsByEvaluationIds(List.copyOf(aiEvaluationIds.values()));
+        var aiEvaluations = aiEvaluationsByResponseIds(responseIds);
+        // Một lượt query cho CẢ HAI bản: hai lần gọi riêng chỉ tốn thêm round-trip mà
+        // vẫn phải group theo evaluationId y hệt.
+        var scoreEvaluationIds = new ArrayList<UUID>();
+        currentEvaluations.values().forEach(evaluation -> scoreEvaluationIds.add(evaluation.id()));
+        aiEvaluations.values().forEach(evaluation -> scoreEvaluationIds.add(evaluation.id()));
+        var scoresByEvaluation = criterionScoresByEvaluationIds(scoreEvaluationIds);
+        var turnsByEvaluation = turnsByEvaluationIds(
+            aiEvaluations.values().stream().map(evaluation -> evaluation.id()).toList());
 
+        // Số thứ tự câu trong section: rows đã sắp theo (sec.order, pi.order) nên chỉ
+        // cần đếm dồn theo sectionId. Câu không thuộc section nào tự thành câu 1.
+        var seenPerSection = new HashMap<UUID, Integer>();
         var result = new ArrayList<GradingTaskItemInfo>();
         for (var row : rows) {
             var responseId = row.get(0, UUID.class);
+            var sectionId = row.get(3, UUID.class);
             var current = currentEvaluations.get(responseId);
-            var aiEvaluationId = aiEvaluationIds.get(responseId);
+            var ai = aiEvaluations.get(responseId);
+            var orderInSection = sectionId == null
+                ? 1
+                : seenPerSection.merge(sectionId, 1, Integer::sum);
             result.add(new GradingTaskItemInfo(
                 row.get(1, UUID.class),
                 responseId,
                 row.get(2, String.class),
+                sectionId,
+                orderInSection,
                 current == null ? null : current.itemScore(),
                 current == null ? null : current.feedbackSummary(),
                 current == null ? List.of() : scoresByEvaluation.getOrDefault(current.id(), List.of()),
-                aiEvaluationId == null ? List.of() : turnsByEvaluation.getOrDefault(aiEvaluationId, List.of())
+                ai == null ? List.of() : turnsByEvaluation.getOrDefault(ai.id(), List.of()),
+                ai == null ? List.of() : scoresByEvaluation.getOrDefault(ai.id(), List.of()),
+                ai == null ? null : ai.overallConfidence(),
+                ai == null ? null : ai.feedbackSummary(),
+                ai != null && ai.requiresHumanReview(),
+                ai == null ? null : ai.reviewReasonCode(),
+                ai != null && ai.markedInvalid(),
+                ai != null && ai.requiresRetake(),
+                ai == null ? null : ai.signals(),
+                ai == null ? null : ai.validityJson()
             ));
         }
         return result;
     }
 
     private record CurrentEvaluation(UUID id, BigDecimal itemScore, String feedbackSummary) {
+    }
+
+    private record AiEvaluation(
+        UUID id,
+        BigDecimal overallConfidence,
+        String feedbackSummary,
+        boolean requiresHumanReview,
+        String reviewReasonCode,
+        boolean markedInvalid,
+        boolean requiresRetake,
+        String signals,
+        String validityJson
+    ) {
     }
 
     /**
@@ -672,25 +708,39 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
     }
 
     /**
-     * Bản AI của mỗi response — nguồn DUY NHẤT của lượt nói (audio/transcript), vì
-     * bản chấm tay không bao giờ sinh turn. Sau khi giáo viên nộp, bản AI mang
+     * Bản AI của mỗi response — nguồn DUY NHẤT của lượt nói (audio/transcript) và của
+     * mọi bằng chứng AI (signals, validity, word feedback), vì bản chấm tay không sinh
+     * turn và cũng không có các tín hiệu này. Sau khi giáo viên nộp, bản AI mang
      * SUPERSEDED nên query này cố tình không lọc theo status.
      */
-    private Map<UUID, UUID> aiEvaluationIdsByResponseIds(List<UUID> responseIds) {
+    private Map<UUID, AiEvaluation> aiEvaluationsByResponseIds(List<UUID> responseIds) {
         if (responseIds.isEmpty()) {
             return Map.of();
         }
         var rows = em.createQuery("""
-            SELECT ev.responseId, ev.id FROM ExamItemEvaluationJpaEntity ev
+            SELECT ev.responseId, ev.id, ev.overallConfidence, ev.feedbackSummary,
+                   ev.requiresHumanReview, ev.reviewReasonCode, ev.markedInvalid,
+                   ev.requiresRetake, ev.signals, ev.validityJson
+            FROM ExamItemEvaluationJpaEntity ev
             WHERE ev.responseId IN (:responseIds)
             AND ev.engineType IN ('AI_SINGLE', 'AI_ENSEMBLE')
             ORDER BY ev.responseId ASC, ev.evaluatedAt DESC
         """, Tuple.class)
             .setParameter("responseIds", responseIds)
             .getResultList();
-        var map = new LinkedHashMap<UUID, UUID>();
+        var map = new LinkedHashMap<UUID, AiEvaluation>();
         for (var row : rows) {
-            map.putIfAbsent(row.get(0, UUID.class), row.get(1, UUID.class));
+            map.putIfAbsent(row.get(0, UUID.class), new AiEvaluation(
+                row.get(1, UUID.class),
+                row.get(2, BigDecimal.class),
+                row.get(3, String.class),
+                Boolean.TRUE.equals(row.get(4, Boolean.class)),
+                row.get(5, String.class),
+                Boolean.TRUE.equals(row.get(6, Boolean.class)),
+                Boolean.TRUE.equals(row.get(7, Boolean.class)),
+                row.get(8, String.class),
+                row.get(9, String.class)
+            ));
         }
         return map;
     }
@@ -730,7 +780,8 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
         }
         var rows = em.createQuery("""
             SELECT t.evaluationId, t.id, t.turnOrder, t.turnType, t.promptText, t.audioUrl,
-                   t.transcript, t.durationSeconds
+                   t.transcript, t.durationSeconds, t.wordCount, t.asrConfidence,
+                   t.pronunciationOverall, t.wordFeedback
             FROM ExamItemEvaluationTurnJpaEntity t
             WHERE t.evaluationId IN (:evaluationIds)
             ORDER BY t.turnOrder ASC
@@ -747,7 +798,11 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
                     row.get(4, String.class),
                     row.get(5, String.class),
                     row.get(6, String.class),
-                    row.get(7, Integer.class)
+                    row.get(7, Integer.class),
+                    row.get(8, Integer.class),
+                    row.get(9, Double.class),
+                    row.get(10, String.class),
+                    row.get(11, String.class)
                 ));
         }
         return map;

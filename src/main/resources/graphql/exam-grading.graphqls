@@ -85,6 +85,12 @@ type GradingTurn {
     audioUrl: String
     transcript: String
     durationSeconds: Int
+    wordCount: Int
+    asrConfidence: Float
+    "JSON string — điểm phát âm tổng của lượt. FE tự parse, giống ExamItemEvaluationTurn."
+    pronunciationOverall: String
+    "JSON string — mảng WordFeedback (chip từng chữ + chi tiết phoneme)"
+    wordFeedback: String
 }
 
 type GradingCriterionScore {
@@ -111,17 +117,41 @@ type GradingCriterionMeta {
     required: Boolean!
 }
 
-"Một phần thi cần chấm."
+"""
+MỘT CÂU HỎI cần chấm, không phải một phần thi — một phần (section) có thể có nhiều câu.
+`partLabel` là tiêu đề section nên nhiều item dùng chung một nhãn; FE ghép thêm
+`orderInSection` để phân biệt.
+"""
 type GradingTaskItem {
     paperItemId: ID!
     responseId: ID!
     partLabel: String
+    "Section chứa câu này. Gộp câu theo ID này, KHÔNG theo partLabel — hai section có thể trùng tên."
+    sectionId: ID
+    "Thứ tự của câu trong section, bắt đầu từ 1"
+    orderInSection: Int!
     "Điểm của bản chấm đang có hiệu lực (lần đầu là điểm AI) — mốc để đối chiếu"
     currentItemScore: Float
     currentFeedbackSummary: String
     currentScores: [GradingCriterionScore!]!
     "Luôn lấy từ bản AI — chỉ bản AI mới sinh lượt nói"
     turns: [GradingTurn!]!
+    """
+    Điểm tiêu chí kèm rationale của BẢN AI. Khác `currentScores`: sau khi chấm tay,
+    bản đang hiệu lực là bản HUMAN nên rationale của AI biến mất khỏi `currentScores`,
+    trong khi giáo viên ở vòng phúc khảo vẫn cần đọc AI đã lập luận gì.
+    """
+    aiScores: [GradingCriterionScore!]!
+    aiOverallConfidence: Float
+    aiFeedbackSummary: String
+    aiRequiresHumanReview: Boolean!
+    aiReviewReasonCode: String
+    aiMarkedInvalid: Boolean!
+    aiRequiresRetake: Boolean!
+    "JSON string — EvaluationSignals (audioQuality, audioGateStatus, evidenceStatus, confidenceMode…)"
+    aiSignals: String
+    "JSON string — ValidityResult, chứa ruleResults[] cho khối Vi phạm quy tắc"
+    aiValidity: String
 }
 
 """

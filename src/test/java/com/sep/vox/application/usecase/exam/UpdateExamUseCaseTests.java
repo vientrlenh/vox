@@ -180,6 +180,45 @@ class UpdateExamUseCaseTests {
         verify(examRepository).save(any(Exam.class));
     }
 
+    // --- Kỳ thi đã bắt đầu thì khoá chỉnh sửa thông tin ---
+
+    @Test
+    void should_reject_updating_centralized_exam_after_it_started() {
+        var exam = centralized(null);
+        exam.setStatus(ExamStatus.IN_PROGRESS);
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+
+        assertThatThrownBy(() -> useCase.execute(new UpdateExamCommand(
+                examId, "Tên mới", null, null, null, null, null, null, null, null)))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("đã bắt đầu");
+        verify(examRepository, never()).save(any());
+    }
+
+    @Test
+    void should_reject_updating_centralized_exam_after_results_published() {
+        var exam = centralized(null);
+        exam.setStatus(ExamStatus.RESULTS_PUBLISHED);
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+
+        assertThatThrownBy(() -> useCase.execute(new UpdateExamCommand(
+                examId, "Tên mới", null, null, null, null, null, null, null, null)))
+            .isInstanceOf(IllegalStateException.class);
+        verify(examRepository, never()).save(any());
+    }
+
+    @Test
+    void should_allow_updating_centralized_exam_while_scheduled() {
+        var exam = centralized(null);
+        exam.setStatus(ExamStatus.SCHEDULED);
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+
+        useCase.execute(new UpdateExamCommand(
+            examId, "Tên mới", null, null, null, null, null, null, null, null));
+
+        verify(examRepository).save(exam);
+    }
+
     private UpdateExamCommand command(String openAt, String closeAt) {
         return new UpdateExamCommand(examId, null, null, openAt, closeAt, null, null, null, null, null);
     }

@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.common.ExamEditingGuard;
 import com.sep.vox.application.common.ExamScheduleWindowMessages;
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
@@ -61,6 +62,7 @@ public class UpdateExamScheduleUseCase implements IUseCase<UpdateExamScheduleCom
         var exam = examRepository.findById(schedule.getExamId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
         var currentUserId = authorize(exam);
+        ExamEditingGuard.requireScheduleEditable(exam);
 
         var isClassTest = exam.getKind() == ExamKind.CLASS_TEST;
         if (isClassTest && exam.getStatus() != ExamStatus.DRAFT && exam.getStatus() != ExamStatus.SCHEDULED) {

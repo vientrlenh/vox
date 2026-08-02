@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.common.ExamEditingGuard;
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
@@ -55,6 +56,7 @@ public class AddExamCandidateUseCase implements IUseCase<AddExamCandidateCommand
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
         var scope = examDirectoryAccessService.resolve(exam);
         var currentUserId = scope.callerId();
+        ExamEditingGuard.requireScheduleEditable(exam);
 
         // Thí sinh phải là school_user vai trò STUDENT cùng trường với bài kiểm tra.
         if (!schoolUserRepository.existsBySchoolIdAndUserId(exam.getSchoolId(), input.studentId())) {

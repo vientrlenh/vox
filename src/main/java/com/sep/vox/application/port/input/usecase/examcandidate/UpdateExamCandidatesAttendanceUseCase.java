@@ -59,6 +59,9 @@ public class UpdateExamCandidatesAttendanceUseCase
     public List<ExamCandidateDto> execute(UpdateExamCandidatesAttendanceCommand input) {
         var schedule = examScheduleRepository.findById(input.scheduleId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ca thi"));
+        if (schedule.getStatus() != null && !schedule.getStatus().allowsAttendance()) {
+            throw new IllegalStateException("Không thể điểm danh ca thi đã bị huỷ, dời hoặc xoá");
+        }
         var candidates = examCandidateRepository.findByScheduleId(schedule.getId());
         if (candidates.isEmpty()) {
             return List.of();

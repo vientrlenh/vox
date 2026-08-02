@@ -122,6 +122,19 @@ public class Exam {
         return closeAt != null && end.isAfter(closeAt);
     }
 
+    /**
+     * Từ lúc kỳ thi bắt đầu trở đi thì thông tin kỳ thi và lịch thi (ca thi, giám thị, thí sinh)
+     * bị khóa: thí sinh đã vào phòng nên mọi thay đổi đều làm lệch dữ liệu đang chạy. Các thao tác
+     * vận hành trong lúc thi (công bố/hoàn thành/huỷ ca, OTP, điểm danh, chấm bài) không nằm trong
+     * phạm vi khóa này.
+     */
+    public boolean isLockedForEditing() {
+        return status == ExamStatus.IN_PROGRESS
+            || status == ExamStatus.CLOSED
+            || status == ExamStatus.RESULTS_PUBLISHED
+            || status == ExamStatus.CANCELLED;
+    }
+
     public UUID getId() {
         return id;
     }

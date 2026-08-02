@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.common.ExamEditingGuard;
 import com.sep.vox.application.common.ExamScheduleWindowMessages;
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
@@ -60,6 +61,7 @@ public class CreateExamScheduleUseCase implements IUseCase<CreateExamScheduleCom
         var exam = examRepository.findById(input.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
         var currentUserId = authorize(exam);
+        ExamEditingGuard.requireScheduleEditable(exam);
 
         if (input.startDate() == null || input.endDate() == null) {
             throw new IllegalArgumentException("Thời gian bắt đầu và kết thúc là bắt buộc");

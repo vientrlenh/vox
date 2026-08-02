@@ -5,6 +5,7 @@ import java.time.Instant;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.common.ExamEditingGuard;
 import com.sep.vox.application.common.ExamScheduleWindowMessages;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
@@ -69,6 +70,9 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
                 && exam.getStatus() != ExamStatus.SCHEDULED) {
             throw new IllegalStateException("Chỉ được cập nhật bài kiểm tra trên lớp khi chưa bắt đầu");
         }
+        // Kỳ thi thường: thí sinh đã vào phòng thi nên mọi thay đổi thông tin đều làm lệch dữ liệu
+        // đang chạy (khung giờ, thời gian làm bài, cách chốt điểm).
+        ExamEditingGuard.requireExamEditable(exam);
 
         if (command.name() != null) {
             exam.setName(command.name());

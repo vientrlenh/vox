@@ -29,6 +29,12 @@ spring:
           inbound: 
             message:
               max-size: 8MB
+        vox-streaming: 
+          target: 0.0.0.0:9096
+          inbound: 
+            message: 
+              max-size: 10MB
+
 
   flyway: 
     enabled: true

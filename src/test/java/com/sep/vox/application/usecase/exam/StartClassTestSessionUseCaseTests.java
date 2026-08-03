@@ -24,10 +24,12 @@ import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamCandidateStatus;
 import com.sep.vox.domain.model.exam.ExamKind;
+import com.sep.vox.domain.model.exam.ExamRequiredStreamType;
 import com.sep.vox.domain.model.exam.ExamSchedule;
 import com.sep.vox.domain.model.exam.ExamSession;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
+import com.sep.vox.domain.model.exam.ExamStreamTypePermission;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.ExamRepository;
@@ -87,6 +89,34 @@ class StartClassTestSessionUseCaseTests {
 
         assertThat(result.attemptId()).isNotNull();
         assertThat(result.scheduleEndAt()).isNotNull();
+    }
+
+    /**
+     * Ứng dụng thi phải biết bài có giám sát hay không NGAY TỪ ticket: nếu nó cứ gọi
+     * /streams/student/token cho một bài không cấu hình stream thì
+     * {@code IssueStudentStreamTokenUseCase} trả 400 và học sinh đứng ngoài cửa, dù mọi điều kiện
+     * vào thi đều đã đạt.
+     */
+    @Test
+    void should_expose_stream_config_so_client_knows_a_token_is_needed() {
+        var exam = exam(false);
+        exam.setRequiredStreamType(ExamRequiredStreamType.CAMERA_AND_SCREEN);
+        exam.setStreamTypePermission(ExamStreamTypePermission.ANY);
+        when(examRepository.findById(EXAM_ID)).thenReturn(Optional.of(exam));
+
+        var result = useCase.execute(new StartClassTestSessionCommand(EXAM_ID));
+
+        assertThat(result.requiredStreamType()).isEqualTo("CAMERA_AND_SCREEN");
+        assertThat(result.streamTypePermission()).isEqualTo("ANY");
+    }
+
+    @Test
+    void should_expose_empty_stream_config_when_class_test_is_not_monitored() {
+        var result = useCase.execute(new StartClassTestSessionCommand(EXAM_ID));
+
+        assertThat(result.attemptId()).isNotNull();
+        assertThat(result.requiredStreamType()).isNull();
+        assertThat(result.streamTypePermission()).isNull();
     }
 
     @Test

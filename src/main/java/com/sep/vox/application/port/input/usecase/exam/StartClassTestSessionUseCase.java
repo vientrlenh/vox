@@ -18,7 +18,7 @@ import com.sep.vox.application.port.input.usecase.examsession.CreateExamSessionU
 import com.sep.vox.application.port.input.usecase.examsession.UpdateExamSessionStatusUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.exam.ExamEntryTicketResponse;
-import com.sep.vox.domain.model.exam.ExamKind;
+import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamSession;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
@@ -108,7 +108,7 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
                 );
                 resumableSession = examSessionRepository.findById(resumableSession.getId()).orElse(resumableSession);
             }
-            return buildEntryTicket(resumableSession, now, scheduleEndAt);
+            return buildEntryTicket(resumableSession.getId(), now, scheduleEndAt, exam);
         }
 
         if (exam.getMaxAttempt() != null) {
@@ -123,12 +123,7 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
             candidate.getId(),
             candidate.getAssignedPaperId()
         ));
-        return new ExamEntryTicketResponse(
-            session.id(),
-            UUID.randomUUID().toString(),
-            now.plus(ENTRY_TICKET_TTL).toString(),
-            scheduleEndAt == null ? null : scheduleEndAt.toString()
-        );
+        return buildEntryTicket(session.id(), now, scheduleEndAt, exam);
     }
 
     private ExamSession findResumableSession(UUID candidateId) {
@@ -148,19 +143,20 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
             .count();
     }
 
-    private boolean isExamClosedForEntry(com.sep.vox.domain.model.exam.Exam exam, Instant now) {
+    private boolean isExamClosedForEntry(Exam exam, Instant now) {
         return exam.getStatus() != ExamStatus.IN_PROGRESS
             || exam.getStatus() == ExamStatus.CLOSED
             || exam.getStatus() == ExamStatus.CANCELLED
             || (exam.getCloseAt() != null && exam.getCloseAt().isBefore(now));
     }
 
-    private ExamEntryTicketResponse buildEntryTicket(ExamSession session, Instant now, Instant scheduleEndAt) {
-        return new ExamEntryTicketResponse(
-            session.getId(),
+    private ExamEntryTicketResponse buildEntryTicket(UUID sessionId, Instant now, Instant scheduleEndAt, Exam exam) {
+        return ExamEntryTicketResponse.of(
+            sessionId,
             UUID.randomUUID().toString(),
             now.plus(ENTRY_TICKET_TTL).toString(),
-            scheduleEndAt == null ? null : scheduleEndAt.toString()
+            scheduleEndAt,
+            exam
         );
     }
 }

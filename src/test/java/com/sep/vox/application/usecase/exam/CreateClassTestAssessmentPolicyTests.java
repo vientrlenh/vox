@@ -1,10 +1,14 @@
 package com.sep.vox.application.usecase.exam;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -17,33 +21,25 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreateClassTestCommand;
 import com.sep.vox.application.port.input.service.ExamScheduleRoomValidator;
 import com.sep.vox.application.port.input.service.ExamStreamConfigResolver;
-import com.sep.vox.application.port.input.service.ExamTimeQuotaGuardService;
-import com.sep.vox.application.port.input.service.RecalculateExamTimeDurationService;
 import com.sep.vox.application.port.input.usecase.exam.CreateClassTestUseCase;
-import com.sep.vox.application.port.input.usecase.exam.ExamQuestionSecureLockService;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.UserRoleInfo;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStatus;
+import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamCandidate;
+import com.sep.vox.domain.model.exam.ExamSchedule;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.model.school.SchoolClassUser;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
-import com.sep.vox.domain.repository.ExamBlueprintRepository;
-import com.sep.vox.domain.repository.ExamBlueprintSectionRepository;
-import com.sep.vox.domain.repository.ExamBlueprintSlotRepository;
-import com.sep.vox.domain.repository.ExamBlueprintVersionRepository;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
-import com.sep.vox.domain.repository.ExamPaperItemRepository;
-import com.sep.vox.domain.repository.ExamPaperRepository;
-import com.sep.vox.domain.repository.ExamPaperSectionRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleProctorRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
-import com.sep.vox.domain.repository.QuestionCollaboratorRepository;
-import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.domain.valueobject.ClassCode;
@@ -75,29 +71,20 @@ class CreateClassTestAssessmentPolicyTests {
         userRoleQueryRepository = mock(UserRoleQueryRepository.class);
         assessmentPolicyRepository = mock(AssessmentPolicyRepository.class);
         userContextPort = mock(UserContextPort.class);
+        var examRepository = mock(ExamRepository.class);
+        var examScheduleRepository = mock(ExamScheduleRepository.class);
+        var examCandidateRepository = mock(ExamCandidateRepository.class);
 
         useCase = new CreateClassTestUseCase(
             schoolClassRepository,
             schoolClassUserRepository,
             userRoleQueryRepository,
-            mock(QuestionRepository.class),
-            mock(QuestionCollaboratorRepository.class),
-            mock(ExamBlueprintRepository.class),
-            mock(ExamBlueprintVersionRepository.class),
-            mock(ExamBlueprintSectionRepository.class),
-            mock(ExamBlueprintSlotRepository.class),
-            mock(ExamRepository.class),
-            mock(ExamPaperRepository.class),
-            mock(ExamPaperSectionRepository.class),
-            mock(ExamPaperItemRepository.class),
-            mock(ExamScheduleRepository.class),
+            examRepository,
+            examScheduleRepository,
             mock(ExamScheduleProctorRepository.class),
             mock(ExamMemberRepository.class),
-            mock(ExamCandidateRepository.class),
+            examCandidateRepository,
             assessmentPolicyRepository,
-            mock(ExamQuestionSecureLockService.class),
-            mock(ExamTimeQuotaGuardService.class),
-            mock(RecalculateExamTimeDurationService.class),
             new ExamStreamConfigResolver(),
             mock(ExamScheduleRoomValidator.class),
             userContextPort
@@ -110,6 +97,23 @@ class CreateClassTestAssessmentPolicyTests {
         when(schoolClassRepository.findById(CLASS_ID)).thenReturn(Optional.of(schoolClass()));
         when(schoolClassUserRepository.findByUserIdAndSchoolClassId(TEACHER_ID, CLASS_ID))
             .thenReturn(Optional.of(new SchoolClassUser(TEACHER_ID, CLASS_ID, true, Instant.now(), Instant.now(), TEACHER_ID)));
+
+        when(examRepository.save(any(Exam.class))).thenAnswer(inv -> {
+            Exam exam = inv.getArgument(0);
+            exam.setId(UUID.randomUUID());
+            return exam;
+        });
+        when(examScheduleRepository.save(any(ExamSchedule.class))).thenAnswer(inv -> {
+            ExamSchedule schedule = inv.getArgument(0);
+            schedule.setId(UUID.randomUUID());
+            return schedule;
+        });
+        when(examCandidateRepository.saveAll(anyCollection())).thenAnswer(inv -> {
+            Collection<ExamCandidate> arg = inv.getArgument(0);
+            return List.copyOf(arg);
+        });
+        when(schoolClassUserRepository.findBySchoolClassId(CLASS_ID, 1, 2000))
+            .thenReturn(new PageResult<>(List.of(), 1, 2000, 0, 0));
     }
 
     @Test
@@ -148,19 +152,15 @@ class CreateClassTestAssessmentPolicyTests {
             .hasMessageContaining("Bộ tiêu chí không thuộc trường của bạn");
     }
 
-    /**
-     * Policy hệ thống ({@code schoolId = null}) dùng được cho mọi trường — không được
-     * lọt vào nhánh "khác trường". Đi qua được chốt policy thì lỗi kế tiếp phải là lỗi
-     * của bước sau (thiếu sections lẫn blueprint), chứng minh chốt policy đã nhả.
-     */
+    /** Policy hệ thống ({@code schoolId = null}) dùng được cho mọi trường. */
     @Test
     void should_accept_system_wide_assessment_policy() {
         when(assessmentPolicyRepository.findById(POLICY_ID))
             .thenReturn(Optional.of(policy(null, AssessmentPolicyStatus.PUBLISHED)));
 
-        assertThatThrownBy(() -> useCase.execute(command(POLICY_ID)))
-            .isInstanceOf(IllegalStateException.class)
-            .hasMessageContaining("Phải cung cấp sections hoặc existing blueprint");
+        var result = useCase.execute(command(POLICY_ID));
+
+        assertThat(result.exam().assessmentPolicyId()).isEqualTo(POLICY_ID);
     }
 
     private CreateClassTestCommand command(UUID assessmentPolicyId) {
@@ -171,9 +171,6 @@ class CreateClassTestAssessmentPolicyTests {
             "2026-08-10T08:00:00Z",
             "2026-08-10T09:00:00Z",
             assessmentPolicyId,
-            List.of(),
-            null,
-            null,
             1,
             600,
             null,

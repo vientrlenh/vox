@@ -77,19 +77,21 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
         }
         requireNoAttachedBlueprint(exam);
 
-        var paper = examPaperRepository.findByExamId(exam.getId()).stream()
-            .findFirst()
+        // Suy mã đề từ chính section được xoá: bài trên lớp giờ có thể có nhiều mã đề, đoán "đề đầu
+        // tiên" là xoá nhầm section của mã đề khác.
+        var paperSection = examPaperSectionRepository.findById(input.sectionId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy section"));
+        var paper = examPaperRepository.findById(paperSection.getPaperId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy đề thi"));
+        if (!paper.getExamId().equals(exam.getId())) {
+            throw new NotFoundException("Không tìm thấy section");
+        }
         var allPaperSections = examPaperSectionRepository.findByPaperId(paper.getId()).stream()
             .sorted((a, b) -> Integer.compare(a.getOrder(), b.getOrder()))
             .toList();
         if (allPaperSections.size() <= 1) {
-            throw new IllegalStateException("Bài kiểm tra trên lớp phải có ít nhất 1 section");
+            throw new IllegalStateException("Mã đề phải có ít nhất 1 section");
         }
-        var paperSection = allPaperSections.stream()
-            .filter(candidate -> candidate.getId().equals(input.sectionId()))
-            .findFirst()
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy section"));
 
         var shouldRebalanceAfterDelete = ClassTestSectionWeightPolicy.looksAutoWeighted(allPaperSections);
 

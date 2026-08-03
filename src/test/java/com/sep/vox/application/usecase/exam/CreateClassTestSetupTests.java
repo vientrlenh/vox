@@ -3,14 +3,12 @@ package com.sep.vox.application.usecase.exam;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
@@ -21,15 +19,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import com.sep.vox.application.port.input.command.ClassTestQuestionCommand;
-import com.sep.vox.application.port.input.command.ClassTestSectionCommand;
 import com.sep.vox.application.port.input.command.CreateClassTestCommand;
 import com.sep.vox.application.port.input.service.ExamScheduleRoomValidator;
 import com.sep.vox.application.port.input.service.ExamStreamConfigResolver;
-import com.sep.vox.application.port.input.service.ExamTimeQuotaGuardService;
-import com.sep.vox.application.port.input.service.RecalculateExamTimeDurationService;
 import com.sep.vox.application.port.input.usecase.exam.CreateClassTestUseCase;
-import com.sep.vox.application.port.input.usecase.exam.ExamQuestionSecureLockService;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.UserRoleInfo;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
@@ -39,39 +32,27 @@ import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStatus;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamDeliveryMode;
-import com.sep.vox.domain.model.exam.ExamPaper;
 import com.sep.vox.domain.model.exam.ExamRequiredStreamType;
 import com.sep.vox.domain.model.exam.ExamSchedule;
 import com.sep.vox.domain.model.exam.ExamScheduleProctor;
 import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.model.exam.ExamStreamTypePermission;
-import com.sep.vox.domain.model.question.Question;
-import com.sep.vox.domain.model.question.QuestionSharing;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.model.school.SchoolClassUser;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
-import com.sep.vox.domain.repository.ExamBlueprintRepository;
-import com.sep.vox.domain.repository.ExamBlueprintSectionRepository;
-import com.sep.vox.domain.repository.ExamBlueprintSlotRepository;
-import com.sep.vox.domain.repository.ExamBlueprintVersionRepository;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
-import com.sep.vox.domain.repository.ExamPaperItemRepository;
-import com.sep.vox.domain.repository.ExamPaperRepository;
-import com.sep.vox.domain.repository.ExamPaperSectionRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleProctorRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
-import com.sep.vox.domain.repository.QuestionCollaboratorRepository;
-import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.domain.valueobject.ClassCode;
 
 /**
- * Bài kiểm tra trên lớp giờ đi cùng quy trình với kỳ thi tập trung: chọn lớp chỉ nạp học sinh vào
- * danh sách dự thi, còn phòng thi / xếp ca / lên lịch là các bước riêng sau đó.
+ * Bài kiểm tra trên lớp giờ đi cùng quy trình với kỳ thi tập trung: tạo bài chỉ dựng "vỏ" (chưa có
+ * mã đề nào), còn soạn đề / chọn phòng / xếp ca / lên lịch là các bước riêng sau đó.
  */
 class CreateClassTestSetupTests {
 
@@ -79,7 +60,6 @@ class CreateClassTestSetupTests {
     private static final UUID SCHOOL_ID = UUID.randomUUID();
     private static final UUID CLASS_ID = UUID.randomUUID();
     private static final UUID POLICY_ID = UUID.randomUUID();
-    private static final UUID QUESTION_ID = UUID.randomUUID();
     private static final UUID STUDENT_ID = UUID.randomUUID();
 
     private ExamRepository examRepository;
@@ -95,38 +75,23 @@ class CreateClassTestSetupTests {
         var schoolClassRepository = mock(SchoolClassRepository.class);
         schoolClassUserRepository = mock(SchoolClassUserRepository.class);
         userRoleQueryRepository = mock(UserRoleQueryRepository.class);
-        var questionRepository = mock(QuestionRepository.class);
         var assessmentPolicyRepository = mock(AssessmentPolicyRepository.class);
         var userContextPort = mock(UserContextPort.class);
         examRepository = mock(ExamRepository.class);
         examScheduleRepository = mock(ExamScheduleRepository.class);
         examScheduleProctorRepository = mock(ExamScheduleProctorRepository.class);
         examCandidateRepository = mock(ExamCandidateRepository.class);
-        var examPaperRepository = mock(ExamPaperRepository.class);
-        var examPaperSectionRepository = mock(ExamPaperSectionRepository.class);
 
         useCase = new CreateClassTestUseCase(
             schoolClassRepository,
             schoolClassUserRepository,
             userRoleQueryRepository,
-            questionRepository,
-            mock(QuestionCollaboratorRepository.class),
-            mock(ExamBlueprintRepository.class),
-            mock(ExamBlueprintVersionRepository.class),
-            mock(ExamBlueprintSectionRepository.class),
-            mock(ExamBlueprintSlotRepository.class),
             examRepository,
-            examPaperRepository,
-            examPaperSectionRepository,
-            mock(ExamPaperItemRepository.class),
             examScheduleRepository,
             examScheduleProctorRepository,
             mock(ExamMemberRepository.class),
             examCandidateRepository,
             assessmentPolicyRepository,
-            mock(ExamQuestionSecureLockService.class),
-            mock(ExamTimeQuotaGuardService.class),
-            mock(RecalculateExamTimeDurationService.class),
             new ExamStreamConfigResolver(),
             mock(ExamScheduleRoomValidator.class),
             userContextPort
@@ -141,28 +106,16 @@ class CreateClassTestSetupTests {
             .thenReturn(Optional.of(new SchoolClassUser(TEACHER_ID, CLASS_ID, true, Instant.now(), Instant.now(), TEACHER_ID)));
         when(assessmentPolicyRepository.findById(POLICY_ID))
             .thenReturn(Optional.of(policy()));
-        when(questionRepository.findAccessibleById(any(UUID.class), any(UUID.class), any(UUID.class), anyBoolean(), anyBoolean()))
-            .thenReturn(Optional.of(question()));
 
         when(examRepository.save(any(Exam.class))).thenAnswer(inv -> {
             Exam exam = inv.getArgument(0);
             exam.setId(UUID.randomUUID());
             return exam;
         });
-        when(examPaperRepository.save(any(ExamPaper.class))).thenAnswer(inv -> {
-            ExamPaper paper = inv.getArgument(0);
-            paper.setId(UUID.randomUUID());
-            return paper;
-        });
         when(examScheduleRepository.save(any(ExamSchedule.class))).thenAnswer(inv -> {
             ExamSchedule schedule = inv.getArgument(0);
             schedule.setId(UUID.randomUUID());
             return schedule;
-        });
-        when(examPaperSectionRepository.save(any())).thenAnswer(inv -> {
-            var section = inv.getArgument(0, com.sep.vox.domain.model.exam.ExamPaperSection.class);
-            section.setId(UUID.randomUUID());
-            return section;
         });
         when(examCandidateRepository.saveAll(anyCollection())).thenAnswer(inv -> {
             Collection<ExamCandidate> arg = inv.getArgument(0);
@@ -179,10 +132,19 @@ class CreateClassTestSetupTests {
     }
 
     @Test
-    void should_stop_at_draft_so_teacher_can_pick_room_and_schedule() {
+    void should_stop_at_draft_so_teacher_can_author_papers_and_schedule() {
         var result = useCase.execute(command(null, null, null, null));
 
         assertThat(result.exam().status()).isEqualTo(ExamStatus.DRAFT.name());
+    }
+
+    /** Soạn đề chuyển hẳn sang trang chi tiết, nên tạo bài không sinh mã đề nào. */
+    @Test
+    void should_not_create_any_paper_at_creation_time() {
+        var result = useCase.execute(command(null, null, null, null));
+
+        assertThat(result.exam().blueprintId()).isNull();
+        assertThat(result.exam().blueprintVersionId()).isNull();
     }
 
     @Test
@@ -315,14 +277,6 @@ class CreateClassTestSetupTests {
             "2026-08-10T08:00:00Z",
             "2026-08-10T09:00:00Z",
             POLICY_ID,
-            List.of(new ClassTestSectionCommand(
-                "Phần 1",
-                null,
-                BigDecimal.ONE,
-                List.of(new ClassTestQuestionCommand(QUESTION_ID, BigDecimal.ONE))
-            )),
-            null,
-            null,
             1,
             600,
             null,
@@ -347,15 +301,5 @@ class CreateClassTestSetupTests {
         policy.setSchoolId(SCHOOL_ID);
         policy.setStatus(AssessmentPolicyStatus.PUBLISHED);
         return policy;
-    }
-
-    private Question question() {
-        var question = new Question();
-        question.setId(QUESTION_ID);
-        question.setCreatedBy(TEACHER_ID);
-        question.setSharing(QuestionSharing.SCHOOL_SHARED);
-        question.setPreparationTimeSeconds(30);
-        question.setMaxResponseSeconds(60);
-        return question;
     }
 }

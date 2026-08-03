@@ -5,7 +5,6 @@ import java.util.UUID;
 
 import com.sep.vox.domain.model.exam.ResultDecisionMethod;
 
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -28,12 +27,6 @@ public record CreateClassTestRequest(
 
     @NotNull(message = "Bộ tiêu chí đánh giá là bắt buộc")
     UUID assessmentPolicyId,
-
-    @Valid
-    List<ClassTestSectionRequest> sections,
-
-    UUID existingBlueprintId,
-    UUID existingBlueprintVersionId,
 
     @Min(value = 1, message = "Số lượt thi tối đa phải lớn hơn 0")
     Integer maxAttempt,

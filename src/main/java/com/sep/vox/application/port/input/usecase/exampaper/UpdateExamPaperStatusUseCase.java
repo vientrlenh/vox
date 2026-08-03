@@ -17,6 +17,7 @@ import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.ExamPaperDto;
 import com.sep.vox.domain.mapper.ExamPaperDtoMapper;
 import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamPaper;
 import com.sep.vox.domain.model.exam.ExamPaperStatus;
@@ -93,12 +94,24 @@ public class UpdateExamPaperStatusUseCase implements IUseCase<UpdateExamPaperSta
                 requireTransition(paper, ExamPaperStatus.IN_REVIEW, ExamPaperStatus.DRAFT);
             }
             case "LOCK" -> {
-                requireChairOrAdminOverride(paper, exam.getSchoolId(), currentUserId);
                 requirePaperWithinPlan(exam, paper);
-                requireTransition(paper, ExamPaperStatus.APPROVED, ExamPaperStatus.LOCKED);
+                if (exam.getKind() == ExamKind.CLASS_TEST) {
+                    requireClassTestChair(paper, currentUserId);
+                    if (examPaperItemRepository.existsUnassignedItemByPaperId(paper.getId())) {
+                        throw new IllegalStateException("Mã đề còn ô câu hỏi chưa được gán, không thể khoá");
+                    }
+                    requireTransition(paper, ExamPaperStatus.DRAFT, ExamPaperStatus.LOCKED);
+                } else {
+                    requireChairOrAdminOverride(paper, exam.getSchoolId(), currentUserId);
+                    requireTransition(paper, ExamPaperStatus.APPROVED, ExamPaperStatus.LOCKED);
+                }
             }
             case "REOPEN" -> {
-                requireChairOrAdminOverride(paper, exam.getSchoolId(), currentUserId);
+                if (exam.getKind() == ExamKind.CLASS_TEST) {
+                    requireClassTestChair(paper, currentUserId);
+                } else {
+                    requireChairOrAdminOverride(paper, exam.getSchoolId(), currentUserId);
+                }
                 requireTransition(paper, ExamPaperStatus.LOCKED, ExamPaperStatus.DRAFT);
             }
             default -> throw new IllegalStateException("Action không hợp lệ");
@@ -132,6 +145,17 @@ public class UpdateExamPaperStatusUseCase implements IUseCase<UpdateExamPaperSta
             return;
         }
         throw new ForbiddenException("Quyền truy cập bị từ chối");
+    }
+
+    /**
+     * Bài trên lớp không có tách bạch tác giả/người duyệt: giáo viên tạo bài vừa là CHAIR vừa là
+     * người soạn mọi mã đề, nên {@code requireNotAuthor} sẽ khoá chết luồng này. Khoá đề ở đây là
+     * một bước DRAFT → LOCKED, chỉ để chốt nội dung trước khi phân đề cho học sinh.
+     */
+    private void requireClassTestChair(ExamPaper paper, UUID currentUserId) {
+        if (!examMemberRepository.existsByExamIdAndUserIdAndRole(paper.getExamId(), currentUserId, ExamMemberRole.CHAIR)) {
+            throw new ForbiddenException("Quyền truy cập bị từ chối");
+        }
     }
 
     private void requireChairOrAdminOverride(ExamPaper paper, UUID examSchoolId, UUID currentUserId) {

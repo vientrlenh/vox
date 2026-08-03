@@ -173,13 +173,8 @@ public class ViewMyExamsUseCase implements IUseCase<Void, List<StudentExamSummar
             return new EntryAvailability(false, "Bạn chưa được gán đề thi.");
         }
 
-        if (exam.getKind() == ExamKind.CLASS_TEST || !exam.isRequiresOtp()) {
-            if (exam.getStatus() != ExamStatus.IN_PROGRESS) {
-                return new EntryAvailability(false, "Bài kiểm tra chưa được giáo viên mở.");
-            }
-            return new EntryAvailability(true, null);
-        }
-
+        // Không còn nhánh tắt riêng cho bài trên lớp: bài trên lớp giờ cũng thi trong phòng có
+        // giám khảo và ca thi thật, nên đi chung đường kiểm tra với kỳ thi tập trung.
         if (!ExamCandidateStatusSupport.isAttended(candidate.getStatus())) {
             return new EntryAvailability(false, "Bạn chưa được điểm danh có mặt, vui lòng liên hệ giám thị.");
         }

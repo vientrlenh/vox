@@ -17,6 +17,11 @@ public record CreateClassTestCommand(
     UUID existingBlueprintVersionId,
     Integer maxAttempt,
     Integer examTimeDurationSecond,
-    ResultDecisionMethod resultDecisionMethod
+    ResultDecisionMethod resultDecisionMethod,
+    List<String> requiredStreamTypes,
+    String streamTypePermission,
+    String deliveryMode,
+    Boolean requiresOtp,
+    UUID schoolRoomId
 ) {
 }

@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.common.ExamDeliveryModeSupport;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateExamDeliveryModeCommand;
@@ -56,7 +57,7 @@ public class UpdateExamDeliveryModeUseCase implements IUseCase<UpdateExamDeliver
     @Override
     @Transactional
     public ExamDto execute(UpdateExamDeliveryModeCommand input) {
-        var deliveryMode = parseDeliveryMode(input.deliveryMode());
+        var deliveryMode = ExamDeliveryModeSupport.parse(input.deliveryMode());
 
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
@@ -85,14 +86,6 @@ public class UpdateExamDeliveryModeUseCase implements IUseCase<UpdateExamDeliver
 
         var saved = examRepository.save(exam);
         return ExamDtoMapper.toDto(saved, papersLocked(saved.getId()));
-    }
-
-    private ExamDeliveryMode parseDeliveryMode(String value) {
-        try {
-            return ExamDeliveryMode.valueOf(value);
-        } catch (IllegalArgumentException | NullPointerException e) {
-            throw new IllegalArgumentException("Hình thức làm bài không hợp lệ");
-        }
     }
 
     private void authorize(Exam exam, UUID currentUserId, UUID currentSchoolId, boolean schoolAdmin) {

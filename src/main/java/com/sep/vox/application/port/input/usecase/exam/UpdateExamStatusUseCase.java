@@ -37,6 +37,7 @@ import com.sep.vox.domain.repository.ExamPaperRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;
+import com.sep.vox.domain.repository.ExamScheduleProctorRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
@@ -49,6 +50,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
     private final ExamMemberRepository examMemberRepository;
     private final ExamPaperRepository examPaperRepository;
     private final ExamScheduleRepository examScheduleRepository;
+    private final ExamScheduleProctorRepository examScheduleProctorRepository;
     private final ExamCandidateRepository examCandidateRepository;
     private final ExamSessionRepository examSessionRepository;
     private final ExamCandidateResultRepository examCandidateResultRepository;
@@ -69,6 +71,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
             ExamMemberRepository examMemberRepository,
             ExamPaperRepository examPaperRepository,
             ExamScheduleRepository examScheduleRepository,
+            ExamScheduleProctorRepository examScheduleProctorRepository,
             ExamCandidateRepository examCandidateRepository,
             ExamSessionRepository examSessionRepository,
             ExamCandidateResultRepository examCandidateResultRepository,
@@ -87,6 +90,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
         this.examMemberRepository = examMemberRepository;
         this.examPaperRepository = examPaperRepository;
         this.examScheduleRepository = examScheduleRepository;
+        this.examScheduleProctorRepository = examScheduleProctorRepository;
         this.examCandidateRepository = examCandidateRepository;
         this.examSessionRepository = examSessionRepository;
         this.examCandidateResultRepository = examCandidateResultRepository;
@@ -228,12 +232,48 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
         }
     }
 
+    /**
+     * Bài kiểm tra trên lớp cũng thi trong phòng có giám khảo như kỳ thi tập trung, nên trước khi
+     * công bố lịch phải đủ: ca thi có phòng, có giám khảo, và mọi học sinh đã được xếp ca + có đề.
+     *
+     * <p>Chọn lớp lúc tạo chỉ nạp học sinh vào danh sách dự thi; xếp ca là bước riêng, nên nếu
+     * không chặn ở đây thì bài vẫn lên lịch được với cả lớp chưa có ca và không ai vào thi được.
+     */
+    private void requireClassTestScheduleReadiness(
+            com.sep.vox.domain.model.exam.Exam exam,
+            java.util.List<com.sep.vox.domain.model.exam.ExamSchedule> schedules) {
+        for (var schedule : schedules) {
+            if (schedule.getSchoolRoomId() == null) {
+                throw new IllegalStateException("Ca thi chưa được chọn phòng");
+            }
+            if (examScheduleProctorRepository.countByScheduleId(schedule.getId()) == 0) {
+                throw new IllegalStateException("Ca thi chưa có giám khảo");
+            }
+        }
+
+        var candidates = examCandidateRepository.findByExamId(exam.getId());
+        var withoutSchedule = candidates.stream()
+            .filter(candidate -> candidate.getScheduleId() == null)
+            .count();
+        if (withoutSchedule > 0) {
+            throw new IllegalStateException(
+                "Còn " + withoutSchedule + " học sinh chưa được xếp vào ca thi");
+        }
+        var withoutPaper = candidates.stream()
+            .filter(candidate -> candidate.getAssignedPaperId() == null)
+            .count();
+        if (withoutPaper > 0) {
+            throw new IllegalStateException("Còn " + withoutPaper + " học sinh chưa được gán đề");
+        }
+    }
+
     private void publishClassTestSchedules(com.sep.vox.domain.model.exam.Exam exam, java.util.UUID currentUserId) {
         requireClassTestScheduleWindow(exam);
         var schedules = examScheduleRepository.findByExamId(exam.getId());
         if (schedules.isEmpty()) {
             throw new IllegalStateException("Bài kiểm tra trên lớp chưa có lịch");
         }
+        requireClassTestScheduleReadiness(exam, schedules);
         var now = Instant.now();
         for (var schedule : schedules) {
             if (schedule.getStatus() == ExamScheduleStatus.DRAFT) {

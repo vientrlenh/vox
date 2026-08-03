@@ -29,7 +29,12 @@ public final class CreateClassTestCommandMapper {
             request.existingBlueprintVersionId(),
             request.maxAttempt(),
             request.examTimeDurationSecond(),
-            request.resultDecisionMethod()
+            request.resultDecisionMethod(),
+            request.requiredStreamTypes(),
+            request.streamTypePermission(),
+            request.deliveryMode(),
+            request.requiresOtp(),
+            request.schoolRoomId()
         );
     }
 }

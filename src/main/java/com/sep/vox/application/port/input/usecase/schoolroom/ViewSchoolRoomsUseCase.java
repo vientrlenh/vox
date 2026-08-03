@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.schoolroom;
 
 import com.sep.vox.application.port.input.query.ViewSchoolRoomsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
+import com.sep.vox.application.port.input.usecase.schoolclass.MyClassAccessGuard;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolRoomFromDto;
 import com.sep.vox.domain.mapper.SchoolRoomDtoMapper;
@@ -14,16 +15,23 @@ import org.springframework.transaction.annotation.Transactional;
 public class ViewSchoolRoomsUseCase implements IUseCase<ViewSchoolRoomsQuery, PageResult<SchoolRoomFromDto>> {
 
     private final SchoolRoomRepository schoolRoomRepository;
+    private final MyClassAccessGuard myClassAccessGuard;
 
-    public ViewSchoolRoomsUseCase(SchoolRoomRepository schoolRoomRepository) {
+    public ViewSchoolRoomsUseCase(
+            SchoolRoomRepository schoolRoomRepository,
+            MyClassAccessGuard myClassAccessGuard) {
         this.schoolRoomRepository = schoolRoomRepository;
+        this.myClassAccessGuard = myClassAccessGuard;
     }
 
     @Override
     @Transactional(readOnly = true)
     public PageResult<SchoolRoomFromDto> execute(ViewSchoolRoomsQuery query) {
+        // schoolId là tham số do client gửi lên, không phải suy ra từ token — phải chặn người gọi
+        // đọc phòng của trường khác. Bắt buộc từ khi query này mở cho cả TEACHER (giáo viên cần
+        // danh sách phòng để chọn phòng cho bài kiểm tra trên lớp).
+        myClassAccessGuard.requireSchoolMembership(query.schoolId());
 
-        // Cần đảm bảo bạn đã tạo hàm findAllBySchoolId(schoolId, pageRequest) trong SchoolRoomRepository
         PageResult<SchoolRoom> pageResult = schoolRoomRepository.findAllBySchoolId(
                 query.schoolId(),
                 query.page(), 

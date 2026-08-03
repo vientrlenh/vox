@@ -15,6 +15,7 @@ import com.sep.vox.application.common.ExamEditingGuard;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.AutoFillExamCandidatesCommand;
+import com.sep.vox.application.port.input.service.ClassTestPaperAutoAssigner;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
@@ -42,6 +43,7 @@ public class AutoFillExamCandidatesUseCase
     private final ExamCandidateRepository examCandidateRepository;
     private final ExamScheduleRepository examScheduleRepository;
     private final ExamMemberRepository examMemberRepository;
+    private final ClassTestPaperAutoAssigner classTestPaperAutoAssigner;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
@@ -51,6 +53,7 @@ public class AutoFillExamCandidatesUseCase
             ExamCandidateRepository examCandidateRepository,
             ExamScheduleRepository examScheduleRepository,
             ExamMemberRepository examMemberRepository,
+            ClassTestPaperAutoAssigner classTestPaperAutoAssigner,
             SchoolUserRepository schoolUserRepository,
             UserRoleQueryRepository userRoleQueryRepository,
             UserContextPort userContextPort) {
@@ -58,6 +61,7 @@ public class AutoFillExamCandidatesUseCase
         this.examCandidateRepository = examCandidateRepository;
         this.examScheduleRepository = examScheduleRepository;
         this.examMemberRepository = examMemberRepository;
+        this.classTestPaperAutoAssigner = classTestPaperAutoAssigner;
         this.schoolUserRepository = schoolUserRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
         this.userContextPort = userContextPort;
@@ -106,6 +110,8 @@ public class AutoFillExamCandidatesUseCase
         int i = 0;
         for (var candidate : unassigned) {
             candidate.assignToSchedule(lockedScheduleIds.get(i % lockedScheduleIds.size()), now, currentUserId);
+            // Bài kiểm tra trên lớp chỉ có một đề nên gán luôn, giáo viên không phải bấm thêm bước phân đề.
+            classTestPaperAutoAssigner.assignSinglePaperIfNeeded(exam, candidate, now, currentUserId);
             assigned.add(candidate);
             i++;
         }

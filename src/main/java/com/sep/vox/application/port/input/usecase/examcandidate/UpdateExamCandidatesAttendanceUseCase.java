@@ -17,9 +17,11 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.ExamCandidateDto;
 import com.sep.vox.domain.mapper.ExamCandidateDtoMapper;
+import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidateStatus;
-import com.sep.vox.domain.model.exam.ExamKind;
+import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
+import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleProctorRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
@@ -33,6 +35,7 @@ public class UpdateExamCandidatesAttendanceUseCase
     private final ExamRepository examRepository;
     private final ExamScheduleRepository examScheduleRepository;
     private final ExamScheduleProctorRepository examScheduleProctorRepository;
+    private final ExamMemberRepository examMemberRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
@@ -42,9 +45,11 @@ public class UpdateExamCandidatesAttendanceUseCase
             ExamRepository examRepository,
             ExamScheduleRepository examScheduleRepository,
             ExamScheduleProctorRepository examScheduleProctorRepository,
+            ExamMemberRepository examMemberRepository,
             SchoolUserRepository schoolUserRepository,
             UserRoleQueryRepository userRoleQueryRepository,
             UserContextPort userContextPort) {
+        this.examMemberRepository = examMemberRepository;
         this.examCandidateRepository = examCandidateRepository;
         this.examRepository = examRepository;
         this.examScheduleRepository = examScheduleRepository;
@@ -69,12 +74,9 @@ public class UpdateExamCandidatesAttendanceUseCase
 
         var exam = examRepository.findById(schedule.getExamId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy kỳ thi của ca thi"));
-        if (exam.getKind() != ExamKind.CENTRALIZED) {
-            throw new ForbiddenException("Chỉ hỗ trợ điểm danh cho kỳ thi tập trung");
-        }
 
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        if (!hasAttendanceAccess(schedule.getId(), exam.getSchoolId(), currentUserId)) {
+        if (!hasAttendanceAccess(exam, schedule.getId(), currentUserId)) {
             throw new ForbiddenException("Bạn không phải giám thị của ca thi này");
         }
 
@@ -117,8 +119,13 @@ public class UpdateExamCandidatesAttendanceUseCase
         return ExamCandidateDtoMapper.toDtoList(examCandidateRepository.saveAll(changed));
     }
 
-    private boolean hasAttendanceAccess(UUID scheduleId, UUID examSchoolId, UUID currentUserId) {
+    private boolean hasAttendanceAccess(Exam exam, UUID scheduleId, UUID currentUserId) {
         if (examScheduleProctorRepository.existsByScheduleIdAndTeacherId(scheduleId, currentUserId)) {
+            return true;
+        }
+        // CHAIR của bài kiểm tra cũng điểm danh được — đồng bộ với mọi chỗ authorize khác của bài
+        // trên lớp, nơi giáo viên chủ bài là CHAIR chứ không nhất thiết là giám thị của từng ca.
+        if (examMemberRepository.existsByExamIdAndUserIdAndRole(exam.getId(), currentUserId, ExamMemberRole.CHAIR)) {
             return true;
         }
 
@@ -127,6 +134,6 @@ public class UpdateExamCandidatesAttendanceUseCase
             .orElse(null);
         var isSchoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
-        return isSchoolAdmin && currentSchoolId != null && currentSchoolId.equals(examSchoolId);
+        return isSchoolAdmin && currentSchoolId != null && currentSchoolId.equals(exam.getSchoolId());
     }
 }

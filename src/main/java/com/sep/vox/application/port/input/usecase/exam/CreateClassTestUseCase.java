@@ -12,19 +12,21 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.common.ExamDeliveryModeSupport;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.ClassTestSectionCommand;
 import com.sep.vox.application.port.input.command.CreateClassTestCommand;
-import com.sep.vox.application.port.input.command.UpdateExamStatusCommand;
+import com.sep.vox.application.port.input.service.ExamScheduleRoomValidator;
+import com.sep.vox.application.port.input.service.ExamStreamConfigResolver;
 import com.sep.vox.application.port.input.service.ExamTimeQuotaGuardService;
 import com.sep.vox.application.port.input.service.RecalculateExamTimeDurationService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.input.exam.CreateClassTestResponse;
-import com.sep.vox.domain.dto.ExamDto;
+import com.sep.vox.domain.mapper.ExamDtoMapper;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamBlueprintSection;
 import com.sep.vox.domain.model.exam.ExamBlueprintSlot;
@@ -41,6 +43,7 @@ import com.sep.vox.domain.model.exam.ExamPaperItem;
 import com.sep.vox.domain.model.exam.ExamPaperSection;
 import com.sep.vox.domain.model.exam.ExamPaperStatus;
 import com.sep.vox.domain.model.exam.ExamSchedule;
+import com.sep.vox.domain.model.exam.ExamScheduleProctor;
 import com.sep.vox.domain.model.exam.ExamSecurePoolReleaseMode;
 import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.model.exam.ResultDecisionMethod;
@@ -57,6 +60,7 @@ import com.sep.vox.domain.repository.ExamPaperItemRepository;
 import com.sep.vox.domain.repository.ExamPaperRepository;
 import com.sep.vox.domain.repository.ExamPaperSectionRepository;
 import com.sep.vox.domain.repository.ExamRepository;
+import com.sep.vox.domain.repository.ExamScheduleProctorRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
@@ -86,13 +90,15 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
     private final ExamPaperSectionRepository examPaperSectionRepository;
     private final ExamPaperItemRepository examPaperItemRepository;
     private final ExamScheduleRepository examScheduleRepository;
+    private final ExamScheduleProctorRepository examScheduleProctorRepository;
     private final ExamMemberRepository examMemberRepository;
     private final ExamCandidateRepository examCandidateRepository;
     private final AssessmentPolicyRepository assessmentPolicyRepository;
     private final ExamQuestionSecureLockService examQuestionSecureLockService;
-    private final UpdateExamStatusUseCase updateExamStatusUseCase;
     private final ExamTimeQuotaGuardService examTimeQuotaGuardService;
     private final RecalculateExamTimeDurationService recalculateExamTimeDurationService;
+    private final ExamStreamConfigResolver examStreamConfigResolver;
+    private final ExamScheduleRoomValidator examScheduleRoomValidator;
     private final UserContextPort userContextPort;
 
     public CreateClassTestUseCase(
@@ -110,14 +116,19 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             ExamPaperSectionRepository examPaperSectionRepository,
             ExamPaperItemRepository examPaperItemRepository,
             ExamScheduleRepository examScheduleRepository,
+            ExamScheduleProctorRepository examScheduleProctorRepository,
             ExamMemberRepository examMemberRepository,
             ExamCandidateRepository examCandidateRepository,
             AssessmentPolicyRepository assessmentPolicyRepository,
             ExamQuestionSecureLockService examQuestionSecureLockService,
-            UpdateExamStatusUseCase updateExamStatusUseCase,
             ExamTimeQuotaGuardService examTimeQuotaGuardService,
             RecalculateExamTimeDurationService recalculateExamTimeDurationService,
+            ExamStreamConfigResolver examStreamConfigResolver,
+            ExamScheduleRoomValidator examScheduleRoomValidator,
             UserContextPort userContextPort) {
+        this.examScheduleProctorRepository = examScheduleProctorRepository;
+        this.examStreamConfigResolver = examStreamConfigResolver;
+        this.examScheduleRoomValidator = examScheduleRoomValidator;
         this.schoolClassRepository = schoolClassRepository;
         this.schoolClassUserRepository = schoolClassUserRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
@@ -136,7 +147,6 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         this.examCandidateRepository = examCandidateRepository;
         this.assessmentPolicyRepository = assessmentPolicyRepository;
         this.examQuestionSecureLockService = examQuestionSecureLockService;
-        this.updateExamStatusUseCase = updateExamStatusUseCase;
         this.examTimeQuotaGuardService = examTimeQuotaGuardService;
         this.recalculateExamTimeDurationService = recalculateExamTimeDurationService;
         this.userContextPort = userContextPort;
@@ -183,7 +193,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         validateDirectQuestionDurationWithinPlan(command, schoolClass, currentUserId);
         var exam = createExam(null, null, schoolClass, command, currentUserId, now);
         var paper = createPaper(exam, null, now, currentUserId);
-        var schedule = createDraftSchedule(exam, currentUserId, now);
+        var schedule = createDraftSchedule(exam, command.schoolRoomId(), currentUserId, now);
         var sectionWeights = ClassTestSectionWeightPolicy.resolveRequestedWeights(command.sections());
 
         for (int i = 0; i < command.sections().size(); i++) {
@@ -213,11 +223,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             createPaperItemsDirect(paperSection, questions, questionWeights, exam.getId(), currentUserId);
         }
 
-        examMemberRepository.save(new ExamMember(exam.getId(), currentUserId, ExamMemberRole.CHAIR, now, currentUserId));
-        var candidateCount = assignCandidates(exam, paper, schedule.getId(), schoolClass.getId(), currentUserId, now);
-        recalculateExamTimeDurationService.recalculate(exam.getId());
-        var examDto = scheduleAndMaybeStart(exam, command);
-        return new CreateClassTestResponse(examDto, paper.getId(), candidateCount);
+        return finishSetup(exam, paper, schedule, schoolClass, currentUserId, now);
     }
 
     private CreateClassTestResponse executeWithExistingBlueprint(
@@ -258,7 +264,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
 
         var exam = createExam(blueprint.getId(), version.getId(), schoolClass, command, currentUserId, now);
         var paper = createPaper(exam, version.getId(), now, currentUserId);
-        var schedule = createDraftSchedule(exam, currentUserId, now);
+        var schedule = createDraftSchedule(exam, command.schoolRoomId(), currentUserId, now);
 
         for (var section : sections) {
             var slots = slotsBySectionId.getOrDefault(section.getId(), List.of()).stream()
@@ -270,22 +276,31 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             createPaperItems(paperSection, slots, exam.getId(), currentUserId);
         }
 
-        examMemberRepository.save(new ExamMember(exam.getId(), currentUserId, ExamMemberRole.CHAIR, now, currentUserId));
-        var candidateCount = assignCandidates(exam, paper, schedule.getId(), schoolClass.getId(), currentUserId, now);
-        recalculateExamTimeDurationService.recalculate(exam.getId());
-        var examDto = scheduleAndMaybeStart(exam, command);
-        return new CreateClassTestResponse(examDto, paper.getId(), candidateCount);
+        return finishSetup(exam, paper, schedule, schoolClass, currentUserId, now);
     }
 
-    // Exam luôn được tạo ở DRAFT (xem createExam) rồi chuyển tiếp qua đúng pipeline SCHEDULE/START
-    // của UpdateExamStatusUseCase để validatePlanLimits (giới hạn học sinh/thời lượng/token GRADING
-    // theo subscription) thực sự chạy, thay vì set thẳng SCHEDULED/IN_PROGRESS lúc tạo như trước.
-    private ExamDto scheduleAndMaybeStart(Exam exam, CreateClassTestCommand command) {
-        var scheduled = updateExamStatusUseCase.execute(new UpdateExamStatusCommand(exam.getId(), "SCHEDULE", null));
-        if (command.openAt() != null) {
-            return scheduled;
-        }
-        return updateExamStatusUseCase.execute(new UpdateExamStatusCommand(exam.getId(), "START", null));
+    /**
+     * Các bước chung của hai nhánh tạo, chạy sau khi đề đã dựng xong.
+     *
+     * <p>Bài dừng lại ở DRAFT chứ không tự SCHEDULE như trước: giáo viên còn phải chọn phòng và xếp
+     * học sinh vào ca (chọn lớp chỉ nạp danh sách học sinh, chưa xếp ca), giống hệt kỳ thi tập
+     * trung. {@code validatePlanLimits} vì thế chạy lúc bấm SCHEDULE thay vì lúc tạo.
+     */
+    private CreateClassTestResponse finishSetup(
+            Exam exam,
+            ExamPaper paper,
+            ExamSchedule schedule,
+            SchoolClass schoolClass,
+            UUID currentUserId,
+            Instant now) {
+        examMemberRepository.save(new ExamMember(exam.getId(), currentUserId, ExamMemberRole.CHAIR, now, currentUserId));
+        // Giám khảo mặc định là chính giáo viên tạo bài; giáo viên có thể thêm/bớt sau qua
+        // endpoint proctor của ca thi. Không có guard nào cần chạy thêm: người gọi đã được xác nhận
+        // là TEACHER và là thành viên active của lớp ở đầu execute().
+        examScheduleProctorRepository.save(new ExamScheduleProctor(schedule.getId(), currentUserId));
+        var candidateCount = assignCandidates(exam, schoolClass.getId(), currentUserId, now);
+        recalculateExamTimeDurationService.recalculate(exam.getId());
+        return new CreateClassTestResponse(ExamDtoMapper.toDto(exam), paper.getId(), candidateCount);
     }
 
     private CreateClassTestCommand normalize(CreateClassTestCommand input) {
@@ -308,7 +323,14 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             input.existingBlueprintVersionId(),
             input.maxAttempt(),
             input.examTimeDurationSecond(),
-            input.resultDecisionMethod()
+            input.resultDecisionMethod(),
+            input.requiredStreamTypes() == null ? null : input.requiredStreamTypes().stream()
+                .map(StringNormalization::normalizeCode)
+                .toList(),
+            input.streamTypePermission() == null ? null : StringNormalization.normalizeCode(input.streamTypePermission()),
+            input.deliveryMode() == null ? null : StringNormalization.normalizeCode(input.deliveryMode()),
+            input.requiresOtp(),
+            input.schoolRoomId()
         );
     }
 
@@ -420,6 +442,8 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         var closeAt = parseDateTime(command.closeAt());
         Integer requestedMaxAttempt = command.maxAttempt();
         int maxAttempt = requestedMaxAttempt == null ? 1 : requestedMaxAttempt;
+        var streamConfig = examStreamConfigResolver.resolve(
+            command.requiredStreamTypes(), command.streamTypePermission());
         // Luôn tạo ở DRAFT — scheduleAndMaybeStart() sẽ chuyển tiếp qua SCHEDULE (và START nếu start ngay)
         // ngay sau khi exam được setup xong, để validatePlanLimits có cơ hội chạy trước khi vào SCHEDULED/IN_PROGRESS.
         return examRepository.save(new Exam(
@@ -431,7 +455,9 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             schoolClass.getSchoolId(),
             schoolClass.getLanguageId(),
             ExamKind.CLASS_TEST,
-            ExamDeliveryMode.STUDENT_DEVICE,
+            // Bài trên lớp thi ngay trong phòng, chỉ khác nhau ở máy dùng để làm bài: máy của nhà
+            // trường (LAB) hay máy học sinh mang theo (STUDENT_DEVICE — mặc định).
+            ExamDeliveryModeSupport.parseOrDefault(command.deliveryMode(), ExamDeliveryMode.STUDENT_DEVICE),
             ExamStatus.DRAFT,
             maxAttempt,
             command.examTimeDurationSecond(),
@@ -439,12 +465,13 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             openAt,
             closeAt,
             command.assessmentPolicyId(),
-            false,
+            // Bài trên lớp mặc định vào thẳng, giáo viên bật OTP nếu muốn siết như kỳ thi tập trung.
+            command.requiresOtp() != null && command.requiresOtp(),
             now,
-            // requiredStreamType/streamTypePermission: chưa có input nào set khi tạo exam,
-            // DB cho phép cả 2 cùng NULL (chk_exams_required_stream_type_and_stream_type_permission_valid).
-            null,
-            null,
+            // Cả hai cùng NULL nghĩa là không giám sát bằng stream — DB cho phép
+            // (chk_exams_required_stream_type_and_stream_type_permission_valid).
+            streamConfig.requiredStreamType(),
+            streamConfig.streamTypePermission(),
             now,
             currentUserId,
             currentUserId
@@ -466,14 +493,23 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         ));
     }
 
-    private ExamSchedule createDraftSchedule(Exam exam, UUID currentUserId, Instant now) {
+    /**
+     * Ca thi của bài trên lớp bám đúng khung mở/đóng bài. Phòng có thể để trống ở đây và chọn sau
+     * qua updateExamSchedule, nhưng {@code UpdateExamStatusUseCase} sẽ chặn SCHEDULE nếu vẫn thiếu:
+     * bài kiểm tra trên lớp cũng thi trong phòng, không cho làm ở nhà.
+     */
+    private ExamSchedule createDraftSchedule(Exam exam, UUID schoolRoomId, UUID currentUserId, Instant now) {
         if (exam.getOpenAt() == null || exam.getCloseAt() == null) {
             throw new IllegalStateException("Bài kiểm tra trên lớp phải có thời gian mở bài và đóng bài");
+        }
+        if (schoolRoomId != null) {
+            examScheduleRoomValidator.validateForNewSchedule(
+                schoolRoomId, exam, exam.getOpenAt(), exam.getCloseAt());
         }
 
         var schedule = ExamSchedule.createFresh(
             exam.getId(),
-            null,
+            schoolRoomId,
             exam.getOpenAt(),
             exam.getCloseAt(),
             currentUserId,
@@ -583,10 +619,13 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         }
     }
 
+    /**
+     * Nạp toàn bộ học sinh active của lớp vào danh sách dự thi, CHƯA xếp ca và CHƯA gán đề — giống
+     * hệt kỳ thi tập trung. Chọn lớp chỉ là bước "đưa vào tab học sinh"; xếp ca (và đề đi kèm) là
+     * bước riêng qua endpoint assign-schedule / auto-fill.
+     */
     private int assignCandidates(
             Exam exam,
-            ExamPaper paper,
-            UUID scheduleId,
             UUID schoolClassId,
             UUID currentUserId,
             Instant now) {
@@ -601,18 +640,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             if (!isStudent) {
                 continue;
             }
-            candidates.add(new ExamCandidate(
-                exam.getId(),
-                classUser.getUserId(),
-                paper.getId(),
-                scheduleId,
-                ExamCandidateStatus.ASSIGNED,
-                now,
-                now,
-                null,
-                currentUserId,
-                currentUserId
-            ));
+            candidates.add(ExamCandidate.createFresh(exam.getId(), classUser.getUserId(), currentUserId, now));
         }
         return examCandidateRepository.saveAll(candidates).size();
     }

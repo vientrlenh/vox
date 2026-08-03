@@ -8,6 +8,7 @@ import com.sep.vox.domain.model.exam.ResultDecisionMethod;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 
 public record CreateExamRequest(
     @NotBlank(message = "Mã bài kiểm tra là bắt buộc")
@@ -36,8 +37,12 @@ public record CreateExamRequest(
 
     Boolean requiresOtp, 
 
-    List<String> requiredStreamTypes, 
+    List<String> requiredStreamTypes,
 
-    String streamTypePermission
+    String streamTypePermission,
+
+    /** Thiết bị làm bài: LAB = thiết bị nhà trường, STUDENT_DEVICE = thiết bị thí sinh. Bỏ trống = LAB. */
+    @Pattern(regexp = "STUDENT_DEVICE|LAB", message = "Hình thức làm bài không hợp lệ")
+    String deliveryMode
 ) {
 }

@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.command.CreateExamScheduleCommand;
+import com.sep.vox.application.port.input.service.ExamScheduleRoomValidator;
 import com.sep.vox.application.port.input.usecase.examschedule.CreateExamScheduleUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
@@ -62,8 +63,12 @@ class CreateExamScheduleUseCaseTests {
         schoolUserRepository = mock(SchoolUserRepository.class);
         userRoleQueryRepository = mock(UserRoleQueryRepository.class);
         userContextPort = mock(UserContextPort.class);
+        // Validator thật chạy trên hai repository đã mock: luật kiểm tra phòng vẫn được test đúng
+        // như trước khi nó được tách ra khỏi use case.
         useCase = new CreateExamScheduleUseCase(
-            examRepository, examScheduleRepository, schoolRoomRepository, examMemberRepository,
+            examRepository, examScheduleRepository,
+            new ExamScheduleRoomValidator(schoolRoomRepository, examScheduleRepository),
+            examMemberRepository,
             schoolUserRepository, userRoleQueryRepository, userContextPort);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);

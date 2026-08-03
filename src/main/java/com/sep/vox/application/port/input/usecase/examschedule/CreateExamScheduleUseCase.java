@@ -8,10 +8,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.ExamEditingGuard;
 import com.sep.vox.application.common.ExamScheduleWindowMessages;
-import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreateExamScheduleCommand;
+import com.sep.vox.application.port.input.service.ExamScheduleRoomValidator;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
@@ -20,11 +20,9 @@ import com.sep.vox.domain.mapper.ExamScheduleDtoMapper;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamSchedule;
-import com.sep.vox.domain.model.school.SchoolRoom;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
-import com.sep.vox.domain.repository.SchoolRoomRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
@@ -32,7 +30,7 @@ public class CreateExamScheduleUseCase implements IUseCase<CreateExamScheduleCom
 
     private final ExamRepository examRepository;
     private final ExamScheduleRepository examScheduleRepository;
-    private final SchoolRoomRepository schoolRoomRepository;
+    private final ExamScheduleRoomValidator examScheduleRoomValidator;
     private final ExamMemberRepository examMemberRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
@@ -41,14 +39,14 @@ public class CreateExamScheduleUseCase implements IUseCase<CreateExamScheduleCom
     public CreateExamScheduleUseCase(
             ExamRepository examRepository,
             ExamScheduleRepository examScheduleRepository,
-            SchoolRoomRepository schoolRoomRepository,
+            ExamScheduleRoomValidator examScheduleRoomValidator,
             ExamMemberRepository examMemberRepository,
             SchoolUserRepository schoolUserRepository,
             UserRoleQueryRepository userRoleQueryRepository,
             UserContextPort userContextPort) {
         this.examRepository = examRepository;
         this.examScheduleRepository = examScheduleRepository;
-        this.schoolRoomRepository = schoolRoomRepository;
+        this.examScheduleRoomValidator = examScheduleRoomValidator;
         this.examMemberRepository = examMemberRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
@@ -76,15 +74,8 @@ public class CreateExamScheduleUseCase implements IUseCase<CreateExamScheduleCom
             throw new IllegalArgumentException(ExamScheduleWindowMessages.outsideExamWindow(exam));
         }
 
-        SchoolRoom room = schoolRoomRepository.findById(input.schoolRoomId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phòng học"));
-        if (!room.getSchoolId().equals(exam.getSchoolId())) {
-            throw new ForbiddenException("Phòng học không thuộc trường của bài kiểm tra");
-        }
-
-        if (examScheduleRepository.existsOverlapping(input.schoolRoomId(), input.startDate(), input.endDate(), null)) {
-            throw new DuplicatedException("Phòng học đã có ca thi khác trong khoảng thời gian này");
-        }
+        examScheduleRoomValidator.validateForNewSchedule(
+            input.schoolRoomId(), exam, input.startDate(), input.endDate());
 
         var schedule = ExamSchedule.createFresh(
             exam.getId(), input.schoolRoomId(), input.startDate(), input.endDate(),

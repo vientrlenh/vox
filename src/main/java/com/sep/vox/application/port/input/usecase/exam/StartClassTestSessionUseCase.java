@@ -69,7 +69,7 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
 
         var exam = examRepository.findById(input.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
-        if (exam.getKind() != ExamKind.CLASS_TEST && exam.isRequiresOtp()) {
+        if (exam.isRequiresOtp()) {
             throw new IllegalStateException("Bài kiểm tra này yêu cầu xác thực OTP, vui lòng dùng luồng xác thực OTP");
         }
 
@@ -80,18 +80,25 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
         if (ExamCandidateStatusSupport.isBlockedForEntry(candidate.getStatus())) {
             throw new IllegalStateException("Bạn không đủ điều kiện tham gia kỳ thi này");
         }
+        // Bài trên lớp cũng thi trong phòng có giám khảo, nên phải được điểm danh có mặt mới vào được.
+        if (!ExamCandidateStatusSupport.isAttended(candidate.getStatus())) {
+            throw new IllegalStateException("Bạn chưa được điểm danh có mặt, vui lòng liên hệ giám thị");
+        }
         if (isExamClosedForEntry(exam, now)) {
             throw new IllegalStateException("Bài kiểm tra hiện không mở để làm bài (trạng thái: " + exam.getStatus() + ")");
+        }
+        if (candidate.getScheduleId() == null) {
+            throw new IllegalStateException("Bạn chưa được xếp ca thi");
         }
         if (candidate.getAssignedPaperId() == null) {
             throw new IllegalStateException("Bạn chưa được gán đề bài kiểm tra");
         }
 
-        var scheduleEndAt = candidate.getScheduleId() == null
-            ? exam.getCloseAt()
-            : examScheduleRepository.findById(candidate.getScheduleId())
-                .map(schedule -> schedule.getEndDate())
-                .orElse(exam.getCloseAt());
+        // Lấy ca thi đang trong khung giờ, không fallback về closeAt của bài: đây đúng là điều kiện
+        // mà IssueStudentStreamTokenUseCase kiểm tra ngay sau đó khi phát token stream.
+        var schedule = examScheduleRepository.findByIdAndInSchedule(candidate.getScheduleId(), now)
+            .orElseThrow(() -> new NotFoundException("Ca thi không hợp lệ hoặc đã hết hạn"));
+        var scheduleEndAt = schedule.getEndDate();
 
         var resumableSession = findResumableSession(candidate.getId());
         if (resumableSession != null) {

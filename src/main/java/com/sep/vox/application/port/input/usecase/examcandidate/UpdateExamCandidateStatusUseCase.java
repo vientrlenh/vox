@@ -15,8 +15,10 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.ExamCandidateDto;
 import com.sep.vox.domain.mapper.ExamCandidateDtoMapper;
-import com.sep.vox.domain.model.exam.ExamKind;
+import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
+import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleProctorRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
@@ -29,6 +31,7 @@ public class UpdateExamCandidateStatusUseCase implements IUseCase<UpdateExamCand
     private final ExamRepository examRepository;
     private final ExamScheduleRepository examScheduleRepository;
     private final ExamScheduleProctorRepository examScheduleProctorRepository;
+    private final ExamMemberRepository examMemberRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
@@ -38,9 +41,11 @@ public class UpdateExamCandidateStatusUseCase implements IUseCase<UpdateExamCand
             ExamRepository examRepository,
             ExamScheduleRepository examScheduleRepository,
             ExamScheduleProctorRepository examScheduleProctorRepository,
+            ExamMemberRepository examMemberRepository,
             SchoolUserRepository schoolUserRepository,
             UserRoleQueryRepository userRoleQueryRepository,
             UserContextPort userContextPort) {
+        this.examMemberRepository = examMemberRepository;
         this.examCandidateRepository = examCandidateRepository;
         this.examRepository = examRepository;
         this.examScheduleRepository = examScheduleRepository;
@@ -57,15 +62,12 @@ public class UpdateExamCandidateStatusUseCase implements IUseCase<UpdateExamCand
             .orElseThrow(() -> new NotFoundException("Không tìm thấy thí sinh"));
         var exam = examRepository.findById(candidate.getExamId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy kỳ thi của thí sinh"));
-        if (exam.getKind() != ExamKind.CENTRALIZED) {
-            throw new ForbiddenException("Chỉ hỗ trợ điểm danh cho kỳ thi tập trung");
-        }
         if (candidate.getScheduleId() == null) {
             throw new IllegalStateException("Thí sinh chưa được xếp ca thi");
         }
 
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        if (!hasAttendanceAccess(candidate.getScheduleId(), exam.getSchoolId(), currentUserId)) {
+        if (!hasAttendanceAccess(exam, candidate.getScheduleId(), currentUserId)) {
             throw new ForbiddenException("Bạn không phải giám thị của ca thi này");
         }
 
@@ -84,8 +86,13 @@ public class UpdateExamCandidateStatusUseCase implements IUseCase<UpdateExamCand
         return ExamCandidateDtoMapper.toDto(examCandidateRepository.save(candidate));
     }
 
-    private boolean hasAttendanceAccess(UUID scheduleId, UUID examSchoolId, UUID currentUserId) {
+    private boolean hasAttendanceAccess(Exam exam, UUID scheduleId, UUID currentUserId) {
         if (examScheduleProctorRepository.existsByScheduleIdAndTeacherId(scheduleId, currentUserId)) {
+            return true;
+        }
+        // CHAIR của bài kiểm tra cũng điểm danh được — với bài trên lớp thì giáo viên chủ bài là
+        // CHAIR chứ không nhất thiết là giám thị được phân công cho từng ca.
+        if (examMemberRepository.existsByExamIdAndUserIdAndRole(exam.getId(), currentUserId, ExamMemberRole.CHAIR)) {
             return true;
         }
 
@@ -94,6 +101,6 @@ public class UpdateExamCandidateStatusUseCase implements IUseCase<UpdateExamCand
             .orElse(null);
         var isSchoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
-        return isSchoolAdmin && currentSchoolId != null && currentSchoolId.equals(examSchoolId);
+        return isSchoolAdmin && currentSchoolId != null && currentSchoolId.equals(exam.getSchoolId());
     }
 }

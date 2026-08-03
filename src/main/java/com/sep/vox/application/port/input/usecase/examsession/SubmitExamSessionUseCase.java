@@ -134,7 +134,8 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
             persistInvalidBlockedResult(session);
             return null;
         }
-        if (exam.getKind() == ExamKind.CENTRALIZED && !ExamCandidateStatusSupport.isAttended(candidate.getStatus())) {
+        // Áp dụng cho mọi loại bài: cổng vào thi đã chặn người chưa điểm danh, đây là lớp chốt thứ hai.
+        if (!ExamCandidateStatusSupport.isAttended(candidate.getStatus())) {
             zeroScoreExamResultService.releaseZeroForEmptySession(session.getId());
             session.setStatus(ExamSessionStatus.GRADED);
             examSessionRepository.save(session);

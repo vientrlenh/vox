@@ -74,7 +74,7 @@ public class VerifyExamScheduleOtpUseCase implements IUseCase<VerifyExamSchedule
 
         var exam = examRepository.findById(input.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
-        if (exam.getKind() == ExamKind.CLASS_TEST || !exam.isRequiresOtp()) {
+        if (!exam.isRequiresOtp()) {
             throw new IllegalStateException("Bài kiểm tra này không yêu cầu xác thực OTP, vui lòng dùng luồng bắt đầu trực tiếp");
         }
 

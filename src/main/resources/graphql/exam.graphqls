@@ -483,6 +483,33 @@ type ExamItemEvaluationTurn {
     wordFeedback: String
 }
 
+"""
+Bằng chứng của bản chấm AI, giữ lại kể cả khi giáo viên đã chấm lại (lúc đó bản AI mang
+SUPERSEDED). Điểm và rationale hiển thị vẫn là của bản đang có hiệu lực ở cấp trên — khối
+này chỉ là NGỮ CẢNH, không phải phán quyết. `null` khi bài chưa từng có bản AI.
+
+Báo cáo phúc khảo `UNDER_REVIEW` (chưa công bố) không bao giờ lọt vào đây.
+"""
+type ExamItemAiEvaluationContext {
+    evaluationId: ID!
+    engineType: String
+    gradedByModel: String
+    promptVersion: String
+    overallConfidence: Float
+    requiresHumanReview: Boolean!
+    reviewReasonCode: String
+    markedInvalid: Boolean!
+    requiresRetake: Boolean!
+    evaluatedAt: String
+    feedbackSummary: String
+    "JSON string — EvaluationSignals"
+    signals: String
+    "JSON string — ValidityResult"
+    validity: String
+    "JSON string"
+    suggestions: String
+}
+
 type ExamItemEvaluationDetails {
     id: ID!
     responseId: ID!
@@ -504,7 +531,9 @@ type ExamItemEvaluationDetails {
     validity: String
     suggestions: String
     criteria: [ExamItemCriterionScore!]!
+    "Luôn lấy từ bản AI — chỉ bản AI mới sinh lượt nói, bản chấm tay không có turn nào."
     turns: [ExamItemEvaluationTurn!]!
+    ai: ExamItemAiEvaluationContext
 }
 
 type StudentExamResultSummary {

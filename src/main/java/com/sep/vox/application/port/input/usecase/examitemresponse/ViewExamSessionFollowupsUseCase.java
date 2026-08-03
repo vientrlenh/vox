@@ -28,7 +28,7 @@ public class ViewExamSessionFollowupsUseCase
     @Override
     @Transactional(readOnly = true)
     public List<ExamSessionFollowupResponse> execute(ViewExamSessionFollowupsQuery input) {
-        examResultAccessService.getAuthorizedSession(input.sessionId());
+        examResultAccessService.requireCandidateVisibleSession(input.sessionId());
         return examItemResponseTurnRepository.countFollowupsBySessionId(input.sessionId()).stream()
             .map(row -> new ExamSessionFollowupResponse(
                 row.examItemResponseId(),

@@ -7,9 +7,12 @@ import com.sep.vox.application.port.input.query.ViewExamItemResponseEvaluationQu
 import com.sep.vox.application.port.input.service.ExamResultAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
+import com.sep.vox.application.response.input.examitemresponse.ExamItemAiEvaluationContextResponse;
 import com.sep.vox.application.response.input.examitemresponse.ExamItemCriterionScoreResponse;
 import com.sep.vox.application.response.input.examitemresponse.ExamItemEvaluationDetailsResponse;
 import com.sep.vox.application.response.input.examitemresponse.ExamItemEvaluationTurnResponse;
+import com.sep.vox.domain.model.exam.ExamEvaluationEngineType;
+import com.sep.vox.domain.model.exam.ExamItemEvaluation;
 import com.sep.vox.domain.repository.ExamItemCriterionScoreRepository;
 import com.sep.vox.domain.repository.ExamItemEvaluationRepository;
 import com.sep.vox.domain.repository.ExamItemEvaluationTurnRepository;
@@ -43,9 +46,18 @@ public class ViewExamItemResponseEvaluationUseCase
 
     @Override
     public ExamItemEvaluationDetailsResponse execute(ViewExamItemResponseEvaluationQuery input) {
-        examResultAccessService.getAuthorizedResponse(input.answerId());
+        examResultAccessService.requireCandidateVisibleResponse(input.answerId());
         var evaluation = examItemEvaluationRepository.findLatestByResponseId(input.answerId())
             .orElseThrow(() -> new NotFoundException("khong the tim thay evaluation cho cau tra loi"));
+
+        // Bản hiệu lực là bản chấm tay ⇒ mọi bằng chứng AI nằm ở bản AI đã bị SUPERSEDED,
+        // phải đi tìm riêng. Bản hiệu lực đã là AI thì chính nó — không tốn thêm query.
+        var aiEvaluation = evaluation.getEngineType() == ExamEvaluationEngineType.HUMAN
+            ? examItemEvaluationRepository.findLatestAiByResponseId(input.answerId()).orElse(null)
+            : evaluation;
+
+        // criteria vẫn theo bản hiệu lực: sau khi chấm lại thì đây là điểm và rationale của
+        // GIÁO VIÊN, đúng như thiết kế. Chỉ ngữ cảnh mới lấy từ bản AI.
         var criteria = examItemCriterionScoreRepository.findByEvaluationId(evaluation.getId()).stream()
             .map(item -> {
                 var criterion = rubricCriterionRepository.findById(item.getRubricCriterionId()).orElse(null);
@@ -62,7 +74,10 @@ public class ViewExamItemResponseEvaluationUseCase
                 );
             })
             .toList();
-        var turns = examItemEvaluationTurnRepository.findByEvaluationId(evaluation.getId()).stream()
+        // Turn chỉ tồn tại ở bản AI. Đọc theo bản hiệu lực là mất audio/transcript/nội dung
+        // câu hỏi ngay sau lần chấm lại đầu tiên — chính là lỗi đang sửa.
+        var turnSourceId = (aiEvaluation == null ? evaluation : aiEvaluation).getId();
+        var turns = examItemEvaluationTurnRepository.findByEvaluationId(turnSourceId).stream()
             .map(item -> new ExamItemEvaluationTurnResponse(
                 item.getId(),
                 item.getTurnOrder(),
@@ -99,7 +114,30 @@ public class ViewExamItemResponseEvaluationUseCase
             evaluation.getValidityJson(),
             evaluation.getSuggestionsJson(),
             criteria,
-            turns
+            turns,
+            toAiContext(aiEvaluation)
+        );
+    }
+
+    private ExamItemAiEvaluationContextResponse toAiContext(ExamItemEvaluation aiEvaluation) {
+        if (aiEvaluation == null) {
+            return null;
+        }
+        return new ExamItemAiEvaluationContextResponse(
+            aiEvaluation.getId(),
+            aiEvaluation.getEngineType().name(),
+            aiEvaluation.getGradedByModel(),
+            aiEvaluation.getPromptVersion(),
+            aiEvaluation.getOverallConfidence(),
+            aiEvaluation.isRequiresHumanReview(),
+            aiEvaluation.getReviewReasonCode(),
+            aiEvaluation.isMarkedInvalid(),
+            aiEvaluation.isRequiresRetake(),
+            aiEvaluation.getEvaluatedAt() == null ? null : aiEvaluation.getEvaluatedAt().toString(),
+            aiEvaluation.getFeedbackSummary(),
+            jsonSerializationPort.toJson(aiEvaluation.getSignals()),
+            aiEvaluation.getValidityJson(),
+            aiEvaluation.getSuggestionsJson()
         );
     }
 }

@@ -28,7 +28,7 @@ public class ViewExamItemResponseTurnsUseCase implements IUseCase<ViewExamItemRe
     @Override
     @Transactional(readOnly = true)
     public List<ExamItemResponseTurnResponse> execute(ViewExamItemResponseTurnsQuery input) {
-        examResultAccessService.getAuthorizedResponse(input.answerId());
+        examResultAccessService.requireCandidateVisibleResponse(input.answerId());
         return examItemResponseTurnRepository.findByExamItemResponseId(input.answerId()).stream()
             .map(ExamItemResponseResponseMapper::toTurnResponse)
             .toList();

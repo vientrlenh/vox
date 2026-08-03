@@ -27,6 +27,7 @@ import com.sep.vox.application.query.repository.ExamResultAuditQueryRepository;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
+import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.exam.ExamGradingAssignment;
 import com.sep.vox.domain.model.exam.GradingRoundType;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
@@ -51,6 +52,7 @@ class ViewResultStatusHistoryUseCaseTests {
     private ViewResultStatusHistoryUseCase useCase;
 
     private final UUID candidateResultId = UUID.randomUUID();
+    private ExamCandidateResult result;
     private final UUID candidateId = UUID.randomUUID();
     private final UUID studentId = UUID.randomUUID();
     private final UUID teacherId = UUID.randomUUID();
@@ -75,10 +77,11 @@ class ViewResultStatusHistoryUseCaseTests {
             examGradingAccessService,
             userContextPort);
 
-        var result = new ExamCandidateResult();
+        result = new ExamCandidateResult();
         result.setId(candidateResultId);
         result.setCandidateId(candidateId);
         result.setExamId(examId);
+        result.setStatus(ExamCandidateResultStatus.RELEASED);
         when(examCandidateResultRepository.findById(candidateResultId)).thenReturn(Optional.of(result));
 
         var candidate = new ExamCandidate();
@@ -123,6 +126,29 @@ class ViewResultStatusHistoryUseCaseTests {
         assertThat(useCase.execute(candidateResultId)).hasSize(1);
         // Chủ bài không phải đi qua nhánh phân quyền admin.
         verify(examGradingAccessService, never()).authorizeSchoolAdmin(any(), any());
+    }
+
+    /**
+     * Dòng thời gian mang scoreBefore/scoreAfter — với chính chủ nó chính là điểm, nên nó
+     * chịu đúng luật công bố như màn kết quả. Trả rỗng chứ không ném lỗi: đây là khối phụ
+     * trợ, ném lỗi sẽ làm hỏng cả trang chỉ vì một mục bên lề.
+     */
+    @Test
+    void should_hide_timeline_from_the_owning_student_until_the_result_is_concluded() {
+        result.setStatus(ExamCandidateResultStatus.PENDING_REVIEW);
+        loggedInAs(studentId);
+
+        assertThat(useCase.execute(candidateResultId)).isEmpty();
+    }
+
+    @Test
+    void should_still_show_the_timeline_to_the_assigned_teacher_while_pending_review() {
+        result.setStatus(ExamCandidateResultStatus.PENDING_REVIEW);
+        loggedInAs(teacherId);
+        givenOpenAssignmentFor(teacherId);
+        schoolAdminIsRefused();
+
+        assertThat(useCase.execute(candidateResultId)).hasSize(1);
     }
 
     @Test

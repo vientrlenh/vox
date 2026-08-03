@@ -48,6 +48,7 @@ public interface SpringDataExamSessionRepository extends JpaRepository<ExamSessi
         JOIN ExamScheduleJpaEntity sch ON sch.id = c.scheduleId
         WHERE sch.endDate < :threshold
           AND s.status IN ('IN_PROGRESS', 'INTERRUPTED')
+          AND s.status NOT IN ('GRADING', 'GRADED', 'GRADING_FAILED')
           AND c.status = 'ATTENDED'
         ORDER BY sch.endDate ASC, s.startedAt ASC
     """)

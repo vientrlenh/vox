@@ -27,6 +27,7 @@ import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamPaperRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
+import com.sep.vox.domain.model.exam.ExamSessionStatus;
 
 @Service
 public class ViewMyExamsUseCase implements IUseCase<Void, List<StudentExamSummaryResponse>> {
@@ -123,7 +124,13 @@ public class ViewMyExamsUseCase implements IUseCase<Void, List<StudentExamSummar
     }
 
     private boolean countsTowardAttemptLimit(ExamAttemptSummary attempt) {
-        return attempt.resultStatus() != ExamCandidateResultStatus.RETAKE_REQUIRED;
+        // Khớp đúng loại trừ của VerifyExamScheduleOtpUseCase.countUsedAttempts: session còn đang dở
+        // (IN_PROGRESS/INTERRUPTED) là phiên có thể vào lại tiếp tục, không phải một lượt đã dùng --
+        // thiếu điều kiện này khiến học sinh bị báo "hết lượt thi" ngay ở màn danh sách, trước khi
+        // kịp vào màn OTP để vào lại đúng phiên đang dở.
+        return attempt.status() != ExamSessionStatus.IN_PROGRESS
+            && attempt.status() != ExamSessionStatus.INTERRUPTED
+            && attempt.resultStatus() != ExamCandidateResultStatus.RETAKE_REQUIRED;
     }
 
     private List<StudentExamSessionSummaryResponse> toSessionSummaries(List<ExamAttemptSummary> attempts) {

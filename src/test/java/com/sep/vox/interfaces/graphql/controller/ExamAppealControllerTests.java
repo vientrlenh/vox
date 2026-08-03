@@ -18,6 +18,8 @@ import com.sep.vox.application.port.input.usecase.examappeal.ViewAssignableRevie
 import com.sep.vox.application.port.input.usecase.examappeal.ViewExamAppealDetailUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.ViewExamAppealStatsUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.ViewExamAppealsUseCase;
+import com.sep.vox.application.port.input.usecase.examappeal.ViewMyAppealDetailUseCase;
+import com.sep.vox.application.port.input.usecase.examappeal.ViewMyAppealsUseCase;
 import com.sep.vox.application.query.dto.AppealReviewerLiteInfo;
 import com.sep.vox.application.query.dto.AppealStatsInfo;
 import com.sep.vox.domain.common.PageResult;
@@ -28,6 +30,8 @@ public class ExamAppealControllerTests {
     private ViewExamAppealStatsUseCase viewExamAppealStatsUseCase;
     private ViewExamAppealDetailUseCase viewExamAppealDetailUseCase;
     private ViewAssignableReviewersUseCase viewAssignableReviewersUseCase;
+    private ViewMyAppealsUseCase viewMyAppealsUseCase;
+    private ViewMyAppealDetailUseCase viewMyAppealDetailUseCase;
     private ExamAppealController controller;
 
     @BeforeEach
@@ -36,18 +40,22 @@ public class ExamAppealControllerTests {
         viewExamAppealStatsUseCase = mock(ViewExamAppealStatsUseCase.class);
         viewExamAppealDetailUseCase = mock(ViewExamAppealDetailUseCase.class);
         viewAssignableReviewersUseCase = mock(ViewAssignableReviewersUseCase.class);
+        viewMyAppealsUseCase = mock(ViewMyAppealsUseCase.class);
+        viewMyAppealDetailUseCase = mock(ViewMyAppealDetailUseCase.class);
         controller = new ExamAppealController(
-            viewExamAppealsUseCase,
-            viewExamAppealStatsUseCase,
-            viewExamAppealDetailUseCase,
-            viewAssignableReviewersUseCase
+                viewExamAppealsUseCase,
+                viewExamAppealStatsUseCase,
+                viewExamAppealDetailUseCase,
+                viewAssignableReviewersUseCase,
+                viewMyAppealsUseCase,
+                viewMyAppealDetailUseCase
         );
     }
 
     @Test
     void should_default_paging_to_zero_based_first_page() {
         when(viewExamAppealsUseCase.execute(any()))
-            .thenReturn(new PageResult<>(List.of(), 0, 20, 0, 0));
+                .thenReturn(new PageResult<>(List.of(), 0, 20, 0, 0));
 
         controller.appeals(null, null, null, null);
 
@@ -60,7 +68,7 @@ public class ExamAppealControllerTests {
     @Test
     void should_pass_filters_through_to_use_case() {
         when(viewExamAppealsUseCase.execute(any()))
-            .thenReturn(new PageResult<>(List.of(), 1, 5, 0, 0));
+                .thenReturn(new PageResult<>(List.of(), 1, 5, 0, 0));
 
         controller.appeals("PENDING", "Nam", 1, 5);
 
@@ -101,7 +109,7 @@ public class ExamAppealControllerTests {
     void should_return_reviewers_with_load_and_conflict_flag() {
         var reviewerId = UUID.randomUUID();
         when(viewAssignableReviewersUseCase.execute(any()))
-            .thenReturn(List.of(new AppealReviewerLiteInfo(reviewerId, "Nguyễn Thị Lan", 3, true)));
+                .thenReturn(List.of(new AppealReviewerLiteInfo(reviewerId, "Nguyễn Thị Lan", 3, true)));
 
         var result = controller.appealReviewers(UUID.randomUUID(), "Lan");
 

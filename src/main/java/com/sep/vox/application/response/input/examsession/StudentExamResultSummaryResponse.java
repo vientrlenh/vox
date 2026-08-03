@@ -8,6 +8,7 @@ public record StudentExamResultSummaryResponse(
     UUID examId,
     String examCode,
     String examName,
+    String kind,
     UUID sessionId,
     UUID paperId,
     String sessionStatus,

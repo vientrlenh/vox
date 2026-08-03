@@ -6,8 +6,6 @@ import java.nio.charset.StandardCharsets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -18,6 +16,7 @@ import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.ClientDeviceCommand;
 import com.sep.vox.application.port.input.command.OAuth2LoginCommand;
 import com.sep.vox.application.port.input.usecase.auth.OAuth2LoginUseCase;
+import com.sep.vox.application.port.output.CookieManagerPort;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,12 +27,15 @@ import jakarta.servlet.http.HttpSession;
 public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccessHandler {
 
     private final OAuth2LoginUseCase oAuth2LoginUseCase;
+    private final CookieManagerPort cookieManagerPort;
 
-    public OAuth2AuthenticationSuccessHandler(OAuth2LoginUseCase oAuth2LoginUseCase) {
+    public OAuth2AuthenticationSuccessHandler(OAuth2LoginUseCase oAuth2LoginUseCase, CookieManagerPort cookieManagerPort) {
         this.oAuth2LoginUseCase = oAuth2LoginUseCase;
+        this.cookieManagerPort = cookieManagerPort;
     }
 
     private static final long REFRESH_TOKEN_COOKIE_TTL_SECONDS = 259200L;
+    private static final String REFRESH_TOKEN_KEY_NAME = "refresh_token";
     private static final Logger LOGGER = LoggerFactory.getLogger(OAuth2AuthenticationSuccessHandler.class);
 
     @Value("${app.frontend.oauth2-url}")
@@ -73,7 +75,7 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
             );
 
             var data = oAuth2LoginUseCase.execute(command);
-            setRefreshTokenCookie(response, data.refreshToken(), REFRESH_TOKEN_COOKIE_TTL_SECONDS);
+            cookieManagerPort.setCookie(response, REFRESH_TOKEN_KEY_NAME, data.refreshToken(), REFRESH_TOKEN_COOKIE_TTL_SECONDS);
             clearSession(session);
             redirect(response, returnUrl, "token", data.accessToken());
         } catch (IllegalArgumentException e) {
@@ -98,18 +100,6 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
 
         return request.getRemoteAddr();
     }
-
-    private void setRefreshTokenCookie(HttpServletResponse response, String value, long ttl) {
-        var cookie = ResponseCookie.from("refresh_token", value)
-            .httpOnly(true) 
-            .secure(false)
-            .path("/")
-            .maxAge(ttl)
-            .sameSite("Lax")
-            .build();
-        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
-    }
-    
 
     private void clearSession(HttpSession session) {
         session.removeAttribute("oauth2_device_id");

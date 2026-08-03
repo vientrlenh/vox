@@ -194,8 +194,9 @@ server:
   forward-headers-strategy: framework
 
 app:
-  data-initializer: 
-    enabled: ${DATA_INITIALIZER:true}
+  cookie:
+    secure: ${COOKIE_SECURE:false} # Local dev use false
+    same-site: ${COOKIE_SAME_SITE:Lax} # If using domain forward, make this as None
   frontend:
     password-setup-url: ${PASSWORD_SETUP_URL}
     oauth2-url: ${OAUTH2_URL}

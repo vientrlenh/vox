@@ -14,7 +14,6 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.springframework.http.HttpHeaders;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
@@ -23,17 +22,20 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import com.sep.vox.application.port.input.command.OAuth2LoginCommand;
 import com.sep.vox.application.port.input.usecase.auth.OAuth2LoginUseCase;
+import com.sep.vox.application.port.output.CookieManagerPort;
 import com.sep.vox.application.response.input.auth.LoginResponse;
 
 class OAuth2AuthenticationSuccessHandlerTests {
 
     private OAuth2LoginUseCase oAuth2LoginUseCase;
     private OAuth2AuthenticationSuccessHandler handler;
+    private CookieManagerPort cookieManagerPort;
 
     @BeforeEach
     void setUp() {
         oAuth2LoginUseCase = mock(OAuth2LoginUseCase.class);
-        handler = new OAuth2AuthenticationSuccessHandler(oAuth2LoginUseCase);
+        cookieManagerPort = mock(CookieManagerPort.class);
+        handler = new OAuth2AuthenticationSuccessHandler(oAuth2LoginUseCase, cookieManagerPort);
         ReflectionTestUtils.setField(handler, "returnUrl", "http://localhost:5173/oauth2-callback");
     }
 
@@ -69,10 +71,7 @@ class OAuth2AuthenticationSuccessHandlerTests {
         assertThat(command.device().deviceName()).isEqualTo("Chrome on Windows");
         assertThat(command.device().platform()).isEqualTo("WEB");
 
-        assertThat(response.getHeader(HttpHeaders.SET_COOKIE))
-            .contains("refresh_token=refresh-token")
-            .contains("HttpOnly")
-            .contains("SameSite=Lax");
+        verify(cookieManagerPort).setCookie(response, "refresh_token", "refresh-token", 259200L);
         assertThat(response.getRedirectedUrl())
             .isEqualTo("http://localhost:5173/oauth2-callback?token=access-token");
         assertThrows(IllegalStateException.class, () -> session.getAttribute("oauth2_device_id"));

@@ -151,6 +151,19 @@ extend type Query {
     appeal(id: ID!): AppealDetail!
 
     """
+    Danh sách đơn phúc khảo của học sinh đang đăng nhập. Dùng chung type AppealSummaryPage
+    với school admin -- FE (web/mobile) KHÔNG được hỏi/hiện reviewerName cho học sinh
+    (blind re-evaluation), nhưng chặn ở tầng UI thay vì tầng schema.
+    """
+    myAppeals(status: AppealStatus, page: Int = 0, size: Int = 20): AppealSummaryPage!
+
+    """
+    Chi tiết một đơn thuộc học sinh đang đăng nhập. Dùng chung type AppealDetail với school
+    admin -- cùng lưu ý như myAppeals, FE không được hỏi/hiện field reviewer.
+    """
+    myAppeal(id: ID!): AppealDetail!
+
+    """
     Ứng viên chấm phúc khảo cho một đơn. `appealId` là bắt buộc về mặt nghiệp vụ —
     cờ `conflicted` tính theo bài thi của đơn đó, bỏ trống thì mọi người đều hiện
     `conflicted: false`.

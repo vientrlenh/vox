@@ -319,6 +319,14 @@ extend type Query {
         size: Int = 20
     ): GradingTaskPage!
 
+    myClassTestGradingTasks(
+        examId: ID!,
+        status: GradingAssignmentStatus,
+        roundType: GradingRoundType,
+        page: Int = 0,
+        size: Int = 20
+    ): GradingTaskPage!
+
     gradingTaskDetail(assignmentId: ID!): GradingTaskDetail!
 
     "Dùng cho cả modal phân công tự động lẫn dropdown gán tay / đổi giáo viên."

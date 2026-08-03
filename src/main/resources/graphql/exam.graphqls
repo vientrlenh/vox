@@ -87,7 +87,7 @@ enum ExamSecurePoolReleaseMode {
 }
 
 enum ExamRecordingStreamType {
-    CAMERA 
+    CAMERA
     SCREEN
 }
 
@@ -512,6 +512,7 @@ type StudentExamResultSummary {
     examId: ID!
     examCode: String
     examName: String
+    kind: ExamKind!
     sessionId: ID
     paperId: ID
     sessionStatus: String
@@ -584,6 +585,7 @@ extend type Query {
     examBlueprintVersion(id: ID!): ExamBlueprintVersion
 
     examSchedules(examId: ID, status: ExamScheduleStatus, startDate: String, endDate: String): [ExamSchedule!]!
+    myExamSchedules(examId: ID, status: ExamScheduleStatus, startDate: String, endDate: String): [ExamSchedule!]!
 
     examCandidates(examId: ID!, scheduleId: ID, status: ExamCandidateStatus): [ExamCandidate!]!
 

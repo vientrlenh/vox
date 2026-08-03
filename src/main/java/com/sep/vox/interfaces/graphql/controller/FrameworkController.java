@@ -133,6 +133,13 @@ public class FrameworkController {
         return viewFrameworkVersionDetailsUseCase.execute(new ViewFrameworkVersionDetailsQuery(id));
     }
 
+    // Query gốc lấy chi tiết 1 FrameworkVersion cho School Admin (chỉ Version đã PUBLISHED)
+    @QueryMapping(name = "schoolFrameworkVersion")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public FrameworkVersionDto schoolFrameworkVersion(@Argument(name = "id") UUID id) {
+        return viewSchoolFrameworkVersionDetailsUseCase.execute(new ViewFrameworkVersionDetailsQuery(id));
+    }
+
     // Query gốc lấy danh sách FrameworkCriterion cho System Admin (không giới hạn trạng thái Version)
     @QueryMapping(name = "frameworkCriteria")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
@@ -173,13 +180,6 @@ public class FrameworkController {
             @Argument(name = "size") Integer size) {
         validatePage(page, size);
         return viewSchoolFrameworkVersionsUseCase.execute(new ViewFrameworkVersionsQuery(frameworkId, "PUBLISHED", page, size));
-    }
-
-    // Query gốc lấy chi tiết FrameworkVersion cho School Admin (chỉ Version đã PUBLISHED)
-    @QueryMapping(name = "schoolFrameworkVersion")
-    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public FrameworkVersionDto schoolFrameworkVersion(@Argument(name = "id") UUID id) {
-        return viewSchoolFrameworkVersionDetailsUseCase.execute(new ViewFrameworkVersionDetailsQuery(id));
     }
 
     @MutationMapping(name = "updateFrameworkVersion")

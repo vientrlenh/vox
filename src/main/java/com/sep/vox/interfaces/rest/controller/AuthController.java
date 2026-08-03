@@ -22,6 +22,7 @@ import com.sep.vox.application.port.input.usecase.registration.RegisterBySelfDec
 
 import com.sep.vox.application.port.input.usecase.registration.RegisterFromSchoolDirectoryUseCase;
 import com.sep.vox.application.port.input.usecase.registration.VerifyRegisterFormOtpUseCase;
+import com.sep.vox.application.port.output.CookieManagerPort;
 import com.sep.vox.application.response.input.auth.LoginResponse;
 import com.sep.vox.application.response.input.auth.RefreshResponse;
 import com.sep.vox.application.response.input.registration.RegisterFromSchoolDirectoryResponse;
@@ -44,7 +45,6 @@ import com.sep.vox.interfaces.rest.mapper.RegisterFromSchoolDirectoryCommandMapp
 import com.sep.vox.interfaces.rest.mapper.ResetPasswordCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.VerifyRegisterFormOtpCommandMapper;
 
-import com.sep.vox.interfaces.shared.HttpCookieProvider;
 import com.sep.vox.interfaces.shared.IpAddressReceiver;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -65,8 +65,9 @@ public class AuthController {
     private final ResetPasswordUseCase resetPasswordUseCase;
     private final RegisterBySelfDeclaredUseCase registerBySelfDeclaredUseCase;
     private final VerifyRegisterFormOtpUseCase verifyRegisterFormOtpUseCase;
+    private final CookieManagerPort cookieManagerPort;
 
-    public AuthController(LoginUseCase loginUseCase, RegisterFromSchoolDirectoryUseCase registerFromSchoolDirectoryUseCase, SetUpPasswordUseCase setUpPasswordUseCase, RefreshUseCase refreshUseCase, SendResetPasswordOtpUseCase sendResetPasswordOtpUseCase, ResetPasswordUseCase resetPasswordUseCase, RegisterBySelfDeclaredUseCase registerBySelfDeclaredUseCase, VerifyRegisterFormOtpUseCase verifyRegisterFormOtpUseCase) {
+    public AuthController(LoginUseCase loginUseCase, RegisterFromSchoolDirectoryUseCase registerFromSchoolDirectoryUseCase, SetUpPasswordUseCase setUpPasswordUseCase, RefreshUseCase refreshUseCase, SendResetPasswordOtpUseCase sendResetPasswordOtpUseCase, ResetPasswordUseCase resetPasswordUseCase, RegisterBySelfDeclaredUseCase registerBySelfDeclaredUseCase, VerifyRegisterFormOtpUseCase verifyRegisterFormOtpUseCase, CookieManagerPort cookieManagerPort) {
         this.loginUseCase = loginUseCase;
         this.registerFromSchoolDirectoryUseCase = registerFromSchoolDirectoryUseCase;
         this.setUpPasswordUseCase = setUpPasswordUseCase;
@@ -75,6 +76,7 @@ public class AuthController {
         this.resetPasswordUseCase = resetPasswordUseCase;
         this.registerBySelfDeclaredUseCase = registerBySelfDeclaredUseCase;
         this.verifyRegisterFormOtpUseCase = verifyRegisterFormOtpUseCase;
+        this.cookieManagerPort = cookieManagerPort;
     }
 
     private static final String REFRESH_TOKEN_COOKIE_KEY = "refresh_token";
@@ -87,7 +89,7 @@ public class AuthController {
 
         var command = LoginCommandMapper.fromRequest(request, ipAddress, userAgent);
         var data = loginUseCase.execute(command);
-        HttpCookieProvider.setCookie(servletResponse, REFRESH_TOKEN_COOKIE_KEY, data.refreshToken(), REFRESH_TOKEN_COOKIE_TTL_SECONDS);
+        cookieManagerPort.setCookie(servletResponse, REFRESH_TOKEN_COOKIE_KEY, data.refreshToken(), REFRESH_TOKEN_COOKIE_TTL_SECONDS);
 
         var response = ApiResponse.success("Đăng nhập thành công", new LoginResponse(data.accessToken(), null, data.roles()));
 
@@ -133,7 +135,7 @@ public class AuthController {
     public ResponseEntity<ApiResponse<RefreshResponse>> refresh(@Valid @RequestBody RefreshRequest request, @CookieValue(name = REFRESH_TOKEN_COOKIE_KEY, required = true) String token, HttpServletResponse servletResponse) {
         var command = RefreshCommandMapper.fromRequest(request, token);
         var data = refreshUseCase.execute(command);
-        HttpCookieProvider.setCookie(servletResponse, REFRESH_TOKEN_COOKIE_KEY, data.refreshToken(), REFRESH_TOKEN_COOKIE_TTL_SECONDS);
+        cookieManagerPort.setCookie(servletResponse, REFRESH_TOKEN_COOKIE_KEY, data.refreshToken(), REFRESH_TOKEN_COOKIE_TTL_SECONDS);
         var response = ApiResponse.success("Yêu cầu thành công", new RefreshResponse(
             data.accessToken(), null
         ));

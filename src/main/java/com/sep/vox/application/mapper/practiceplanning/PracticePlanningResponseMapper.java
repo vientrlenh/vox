@@ -52,6 +52,7 @@ public final class PracticePlanningResponseMapper {
             dto.origin(),
             dto.plannedSeconds(),
             dto.reservedQuotaSeconds(),
+            dto.sessionBudgetSeconds(),
             dto.questions().stream().map(PracticePlanningResponseMapper::toResponse).toList()
         );
     }
@@ -64,9 +65,8 @@ public final class PracticePlanningResponseMapper {
             dto.criterionCode(),
             dto.subAttribute(),
             dto.difficultyRank(),
-            dto.preparationTimeSeconds(),
             dto.maxResponseSeconds(),
-            dto.maxFollowupSeconds(),
+            dto.minResponseSeconds(),
             dto.suggestedIdeas()
         );
     }

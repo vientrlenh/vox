@@ -65,7 +65,10 @@ public final class RecordExamAttemptEvaluationCommandMapper {
         );
     }
 
-    private static Map<String, CriterionScoreInput> toCriteria(Map<String, CriterionScoreDto> criteria) {
+    // Mở gói (không còn private) để RecordPracticeAttemptEvaluationCommandMapper dùng
+    // lại: Python chấm bài luyện bằng ĐÚNG đồ thị chấm bài thi nên payload cùng hình
+    // dạng, chép sang một bản thứ hai là mở đường cho hai bản trôi lệch nhau.
+    static Map<String, CriterionScoreInput> toCriteria(Map<String, CriterionScoreDto> criteria) {
         if (criteria == null) {
             return null;
         }
@@ -94,7 +97,10 @@ public final class RecordExamAttemptEvaluationCommandMapper {
         );
     }
 
-    private static EvaluationSignalsInput toSignals(EvaluationSignalsDto dto) {
+    // Mở gói (không còn private) để RecordPracticeAttemptEvaluationCommandMapper dùng
+    // lại: Python chấm bài luyện bằng ĐÚNG đồ thị chấm bài thi nên payload cùng hình
+    // dạng, chép sang một bản thứ hai là mở đường cho hai bản trôi lệch nhau.
+    static EvaluationSignalsInput toSignals(EvaluationSignalsDto dto) {
         if (dto == null) {
             return null;
         }
@@ -159,7 +165,10 @@ public final class RecordExamAttemptEvaluationCommandMapper {
         );
     }
 
-    private static List<TurnDetailInput> toTurns(List<TurnDetailDto> turns) {
+    // Mở gói (không còn private) để RecordPracticeAttemptEvaluationCommandMapper dùng
+    // lại: Python chấm bài luyện bằng ĐÚNG đồ thị chấm bài thi nên payload cùng hình
+    // dạng, chép sang một bản thứ hai là mở đường cho hai bản trôi lệch nhau.
+    static List<TurnDetailInput> toTurns(List<TurnDetailDto> turns) {
         if (turns == null) {
             return null;
         }

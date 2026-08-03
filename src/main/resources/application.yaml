@@ -203,7 +203,12 @@ app:
   personalization:
     generation:
       paper-target-question-count: ${PERSONALIZATION_PAPER_TARGET_QUESTION_COUNT:4}
-      online-budget: ${PERSONALIZATION_ONLINE_GENERATION_BUDGET:20s}
+      # 45s chứ không 20s: đo thật đường online sau khi rút ngắn pipeline (chỉ còn 1 lượt
+      # LLM ở drafter) cho 15.0s / 16.9s / 18.4s -- biên với 20s chỉ 1.6-5s, một lần OpenAI
+      # chậm là timeout và cả việc dựng đề hỏng. Học sinh KHÔNG chờ đồng bộ ở đây: đề dựng
+      # nền rồi client hỏi lại trạng thái (PracticePaperDraftService), nên nới trần rẻ hơn
+      # nhiều so với hỏng cả lượt luyện.
+      online-budget: ${PERSONALIZATION_ONLINE_GENERATION_BUDGET:45s}
     pronunciation-accuracy-threshold: ${PERSONALIZATION_PRONUNCIATION_ACCURACY_THRESHOLD:60}
     fluency-slow-rate-words-per-minute: ${PERSONALIZATION_FLUENCY_SLOW_RATE_WPM:60}
     fluency-long-pause-ratio: ${PERSONALIZATION_FLUENCY_LONG_PAUSE_RATIO:0.35}

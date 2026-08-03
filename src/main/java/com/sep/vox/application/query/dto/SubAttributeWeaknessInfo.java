@@ -11,4 +11,7 @@ public interface SubAttributeWeaknessInfo {
     String getSeverity();
 
     boolean getPracticeable();
+
+    /** Phần trăm đổi nhịp so với cửa sổ trước; null khi mẫu quá nhỏ hoặc lỗi vừa mới xuất hiện. */
+    Double getTrendPercent();
 }

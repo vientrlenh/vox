@@ -87,6 +87,16 @@ public class PracticeQuestionSelectionService {
         );
     }
 
+    /**
+     * Sub-attribute yếu nhất của tiêu chí, hoặc null khi chưa có dữ liệu điểm yếu.
+     *
+     * <p>null ở đây nghĩa là "luyện tiêu chí này nói chung", KHÔNG phải thiếu sót -- bịa ra
+     * một sub-attribute khi chưa có bằng chứng là nói với học sinh rằng em yếu chỗ đó mà
+     * không có cơ sở. Bên sinh câu phải chịu được null (xem CandidateFilterNode).
+     *
+     * <p>Hiện nhánh null gần như luôn chạy, vì findPracticeablePrioritiesOrderedDesc lọc
+     * practiceable = true mà cột đó chưa có chỗ nào set true.
+     */
     private String firstSubAttribute(List<PracticeablePriority> priorities, String criterion) {
         return priorities.stream()
             .filter(entry -> entry.criterionCode().equals(criterion))
@@ -120,25 +130,56 @@ public class PracticeQuestionSelectionService {
         var slotRank = Math.min(bandCount, targetRank + (slotIndex >= 3 ? 1 : 0));
         var excludeIds = alreadyChosenInSession.stream().map(PracticeQuestion::getId).toList();
 
+        // Ba bậc đọc DB trước (rẻ), CHƯA sinh mới.
         var candidates = ladderCandidatesForOneQuestion(
             topic, studentId, criterion, subAttribute, slotRank, excludeIds, bandCount
         );
-        if (candidates.isEmpty()) {
+        // Ba nước, đắt dần. Điều kiện đi tiếp là KHÔNG CHỌN ĐƯỢC CÂU DÙNG ĐƯỢC -- không phải
+        // "thang leo không trả về dòng nào". Lẫn lộn hai thứ đó đã giết phiên luyện sau đúng
+        // một câu: thang leo trả về 1 câu, pickOne loại nó vì trùng kiểu lập luận với câu vừa
+        // hỏi (kho chủ đề có 12/14 câu cùng kiểu 'description'), thế là hết câu để hỏi trong
+        // khi bậc sinh không bao giờ chạy vì "đã tìm được 1 dòng rồi".
+        var chosen = pickOne(candidates, alreadyChosenInSession, criterion, subAttribute, slotRank, false);
+        if (chosen.isEmpty()) {
+            // Nới ĐÚNG luật đa dạng kiểu lập luận, GIỮ NGUYÊN luật gần-trùng-nội-dung. Hai luật
+            // này không cùng hạng: hỏi hai câu cùng kiểu lập luận chỉ là kém phong phú, còn hỏi
+            // lại một câu gần y hệt thì học sinh thấy rõ là bị lặp.
+            chosen = pickOne(candidates, alreadyChosenInSession, criterion, subAttribute, slotRank, true);
+        }
+        if (chosen.isEmpty()) {
+            // Chỉ tới đây mới trả giá LLM 10-40 giây với học sinh đang ngồi chờ -- khi kho thật
+            // sự không còn gì hỏi được, chứ không phải mỗi lần pool chưa đủ 4 câu như bản gốc.
+            var generated = generateThenReload(
+                topic, studentId, criterion, subAttribute, slotRank, excludeIds, bandCount
+            );
+            chosen = pickOne(generated, alreadyChosenInSession, criterion, subAttribute, slotRank, true);
+        }
+        if (chosen.isEmpty()) {
             return Optional.empty();
         }
-        var chosen = pickOne(candidates, alreadyChosenInSession, criterion, subAttribute, slotRank);
         chosen.ifPresent(question -> questionRepository.incrementUsageCount(question.getId()));
         return chosen.map(question -> new NextQuestionSelection(
             question, slotIndex + 1, criterion, subAttribute, slotRank
         ));
     }
 
+    /**
+     * @param relaxReasoning bỏ luật "không hỏi hai câu liền cùng kiểu lập luận". Chỉ bật ở nước
+     *     dự phòng của {@link #resolveNextQuestion}: luật đa dạng là thứ tốt-nếu-có, để nó kết
+     *     thúc buổi luyện khi hạn mức vẫn còn thì hại hơn nhiều so với hai câu hơi giống nhau.
+     *     Luật gần-trùng-nội-dung (0.85) KHÔNG bao giờ được nới -- hỏi lại một câu gần y hệt là
+     *     thứ học sinh nhận ra ngay.
+     */
     private Optional<PracticeQuestion> pickOne(
             List<PracticeQuestion> candidates,
             List<PracticeQuestion> alreadyChosen,
             String criterion,
             String subAttribute,
-            int targetRank) {
+            int targetRank,
+            boolean relaxReasoning) {
+        if (candidates.isEmpty()) {
+            return Optional.empty();
+        }
         var similarities = diversityClient.maxSimilarities(
             candidates.stream().map(PracticeQuestion::getId).toList(),
             alreadyChosen.stream().map(PracticeQuestion::getId).toList()
@@ -147,7 +188,8 @@ public class PracticeQuestionSelectionService {
         var ranked = candidates.stream()
             .filter(question -> alreadyChosen.isEmpty()
                 || similarities.getOrDefault(question.getId(), 1.0) < 0.85)
-            .filter(question -> previousReasoning == null
+            .filter(question -> relaxReasoning
+                || previousReasoning == null
                 || !previousReasoning.equals(reasoningType(question)))
             .sorted(Comparator.comparingDouble(
                 (PracticeQuestion question) -> quality(question, criterion, subAttribute, targetRank)
@@ -208,43 +250,43 @@ public class PracticeQuestionSelectionService {
                 .forEach(question -> putIfNotExcluded(selected, question, excludeIds));
         }
 
-        if (selected.size() < generationProperties.paperTargetQuestionCount()) {
-            // paperTargetQuestionCount (4) sizes the candidate POOL for pickOne's
-            // diversity/similarity filtering from the CHEAP bậc 1-3 DB reads -- bậc 4 is an
-            // LLM call, so generating up to that same count here (4 full questions synthesized
-            // just to pick 1) wastes cost on the common "new/thin topic" cold-start path.
-            // ONLINE_GENERATION_MAX_CANDIDATES caps just enough for pickOne to still have a
-            // real choice, since resolveNextQuestion only ever needs exactly 1 anyway.
-            var missing = Math.min(
-                ONLINE_GENERATION_MAX_CANDIDATES,
-                generationProperties.paperTargetQuestionCount() - selected.size()
-            );
-            try {
-                generationService.generateAndStore(
-                    topic.getId(),
-                    criterion,
-                    subAttribute,
-                    targetRank,
-                    missing,
-                    generationProperties.onlineBudget(),
-                    bandCount,
-                    enrichmentService.frameworkBandLadder(studentId)
-                );
-                questions(
-                    topic.getId(),
-                    studentId,
-                    criterion,
-                    Math.max(1, targetRank - 1),
-                    Math.min(bandCount, targetRank + 1)
-                ).forEach(question -> putIfNotExcluded(selected, question, excludeIds));
-            } catch (RuntimeException exception) {
-                LOGGER.warn(
-                    "Hết bậc sinh trực tiếp cho câu tiếp theo trong phiên.",
-                    exception
-                );
-            }
-        }
+        return List.copyOf(selected.values());
+    }
 
+    /**
+     * Bậc 4: nhờ LLM sinh câu mới rồi đọc lại kho. Tách khỏi ba bậc đọc DB ở trên vì điều kiện
+     * kích hoạt khác hẳn -- xem {@link #resolveNextQuestion}.
+     */
+    private List<PracticeQuestion> generateThenReload(
+            PracticeTopic topic,
+            UUID studentId,
+            String criterion,
+            String subAttribute,
+            int targetRank,
+            List<UUID> excludeIds,
+            int bandCount) {
+        var selected = new LinkedHashMap<UUID, PracticeQuestion>();
+        try {
+            generationService.generateAndStore(
+                topic.getId(),
+                criterion,
+                subAttribute,
+                targetRank,
+                ONLINE_GENERATION_MAX_CANDIDATES,
+                generationProperties.onlineBudget(),
+                bandCount,
+                enrichmentService.frameworkBandLadder(studentId)
+            );
+            questions(
+                topic.getId(),
+                studentId,
+                criterion,
+                Math.max(1, targetRank - 1),
+                Math.min(bandCount, targetRank + 1)
+            ).forEach(question -> putIfNotExcluded(selected, question, excludeIds));
+        } catch (RuntimeException exception) {
+            LOGGER.warn("Hết bậc sinh trực tiếp cho câu tiếp theo trong phiên.", exception);
+        }
         return List.copyOf(selected.values());
     }
 

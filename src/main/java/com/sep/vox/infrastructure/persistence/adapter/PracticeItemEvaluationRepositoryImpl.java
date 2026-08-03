@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
@@ -27,7 +27,7 @@ public class PracticeItemEvaluationRepositoryImpl implements PracticeItemEvaluat
             UUID practiceResponseId,
             double itemScore,
             boolean markedInvalid,
-            OffsetDateTime evaluatedAt) {
+            Instant evaluatedAt) {
         var existing = repository.findByPracticeResponseId(practiceResponseId).orElse(null);
         var scoreValue = BigDecimal.valueOf(itemScore);
         if (existing == null) {

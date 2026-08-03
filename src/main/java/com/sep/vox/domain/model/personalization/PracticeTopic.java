@@ -1,6 +1,6 @@
 package com.sep.vox.domain.model.personalization;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class PracticeTopic {
@@ -13,7 +13,7 @@ public class PracticeTopic {
     private String interestDimension;
     private String curriculumGroup;
     private boolean active;
-    private OffsetDateTime createdAt;
+    private Instant createdAt;
     private UUID sourceQuestionTopicId;
 
     public PracticeTopic() {
@@ -28,7 +28,7 @@ public class PracticeTopic {
             String interestDimension,
             String curriculumGroup,
             boolean active,
-            OffsetDateTime createdAt,
+            Instant createdAt,
             UUID sourceQuestionTopicId) {
         this.id = id;
         this.name = name;
@@ -106,11 +106,11 @@ public class PracticeTopic {
         this.active = active;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 

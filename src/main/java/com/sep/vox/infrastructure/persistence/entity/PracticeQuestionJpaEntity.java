@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -33,7 +33,8 @@ import jakarta.persistence.Table;
         ),
         @CheckConstraint(
             name = "chk_practice_question_time_budgets",
-            constraint = "preparation_time_seconds >= 0 AND max_response_seconds > 0 AND max_followup_seconds >= 0"
+            constraint = "min_response_seconds > 0 "
+                + "AND max_response_seconds > min_response_seconds"
         )
     }
 )
@@ -74,14 +75,15 @@ public class PracticeQuestionJpaEntity {
     @Column(name = "suggested_ideas_json", columnDefinition = "TEXT")
     private String suggestedIdeasJson;
 
-    @Column(name = "preparation_time_seconds", nullable = false)
-    private int preparationTimeSeconds;
+
+    @Column(name = "question_type", nullable = false, length = 24)
+    private String questionType;
 
     @Column(name = "max_response_seconds", nullable = false)
     private int maxResponseSeconds;
 
-    @Column(name = "max_followup_seconds", nullable = false)
-    private int maxFollowupSeconds;
+    @Column(name = "min_response_seconds", nullable = false)
+    private int minResponseSeconds;
 
     @Column(name = "vstep_part")
     private Integer vstepPart;
@@ -96,7 +98,7 @@ public class PracticeQuestionJpaEntity {
     private boolean active = true;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
+    private Instant createdAt;
 
     protected PracticeQuestionJpaEntity() {
     }
@@ -110,14 +112,14 @@ public class PracticeQuestionJpaEntity {
             String difficultyFeaturesJson,
             String evaluationGuideJson,
             String suggestedIdeasJson,
-            int preparationTimeSeconds,
+            String questionType,
             int maxResponseSeconds,
-            int maxFollowupSeconds,
+            int minResponseSeconds,
             Integer vstepPart,
             String source,
             int usageCount,
             boolean active,
-            OffsetDateTime createdAt) {
+            Instant createdAt) {
         this.practiceTopicId = practiceTopicId;
         this.questionText = questionText;
         this.targetCriterionCode = targetCriterionCode;
@@ -126,9 +128,9 @@ public class PracticeQuestionJpaEntity {
         this.difficultyFeaturesJson = difficultyFeaturesJson;
         this.evaluationGuideJson = evaluationGuideJson;
         this.suggestedIdeasJson = suggestedIdeasJson;
-        this.preparationTimeSeconds = preparationTimeSeconds;
+        this.questionType = questionType;
         this.maxResponseSeconds = maxResponseSeconds;
-        this.maxFollowupSeconds = maxFollowupSeconds;
+        this.minResponseSeconds = minResponseSeconds;
         this.vstepPart = vstepPart;
         this.source = source;
         this.usageCount = usageCount;
@@ -172,16 +174,16 @@ public class PracticeQuestionJpaEntity {
         return suggestedIdeasJson;
     }
 
-    public int getPreparationTimeSeconds() {
-        return preparationTimeSeconds;
+    public String getQuestionType() {
+        return questionType;
     }
 
     public int getMaxResponseSeconds() {
         return maxResponseSeconds;
     }
 
-    public int getMaxFollowupSeconds() {
-        return maxFollowupSeconds;
+    public int getMinResponseSeconds() {
+        return minResponseSeconds;
     }
 
     public Integer getVstepPart() {
@@ -204,7 +206,7 @@ public class PracticeQuestionJpaEntity {
         return active;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 }

@@ -1,5 +1,6 @@
 package com.sep.vox.application.query.dto;
 
+import java.time.Instant;
 import java.util.UUID;
 
 public interface TopicInterestRowInfo {
@@ -12,5 +13,6 @@ public interface TopicInterestRowInfo {
 
     int getSessionsMentioned();
 
-    java.time.OffsetDateTime getLastMentionedAt();
+    // Instant: xem chu thich trong SessionRowInfo -- projection khong doi duoc sang OffsetDateTime.
+    java.time.Instant getLastMentionedAt();
 }

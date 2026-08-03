@@ -1,6 +1,8 @@
 extend type Query {
     practiceSession(sessionId: ID!): PracticeSession
     myPracticeHistory(limit: Int = 20): [PracticeSession!]!
+    "Học sinh xem lại bài của CHÍNH MÌNH. Cùng nội dung với studentPracticeSessionDetail nhưng khác quyền -- bên kia dành cho giáo viên xem bài học sinh mình dạy."
+    myPracticeSessionDetail(sessionId: ID!): TeacherPracticeSessionDetail!
     studentPracticeSessionDetail(sessionId: ID!): TeacherPracticeSessionDetail!
 }
 
@@ -69,6 +71,12 @@ type SubmitTurnResult {
     remainingGradedSeconds: Int!
     evaluationQueued: Boolean!
     corrections: [TurnCorrection!]!
+    "Lượt này tiêu nốt hạn mức còn lại -- lượt VẪN được ghi và chấm, nhưng phiên phải đóng sau khi trả kết quả."
+    quotaExhausted: Boolean!
+    "Tổng số giây học sinh ĐÃ NÓI trong phiên, đã tính cả lượt này. Chỉ đếm khoảng VAD nghe thấy tiếng -- lúc AI nói hay học sinh nghĩ đều không tính."
+    sessionSpokenSeconds: Int!
+    "Trần nói của cả phiên (giây), cùng con số với PracticePaper.sessionBudgetSeconds."
+    sessionBudgetSeconds: Int!
 }
 
 type CriterionScore {

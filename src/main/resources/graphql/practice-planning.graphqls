@@ -97,6 +97,8 @@ type PracticePaper {
     origin: String!
     plannedSeconds: Int!
     reservedQuotaSeconds: Int!
+    "Trần nói của cả phiên (giây): chỗ hẹp hơn giữa hạn mức gói và trần bậc. Khác plannedSeconds ở trên -- cái kia là tổng dự trù của các câu trong ĐỀ này."
+    sessionBudgetSeconds: Int!
     questions: [PracticePaperQuestion!]!
 }
 
@@ -107,8 +109,7 @@ type PracticePaperQuestion {
     criterionCode: String!
     subAttribute: String
     difficultyRank: Int!
-    preparationTimeSeconds: Int!
     maxResponseSeconds: Int!
-    maxFollowupSeconds: Int!
+    minResponseSeconds: Int!
     suggestedIdeas: [String!]!
 }

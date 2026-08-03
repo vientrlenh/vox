@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.service;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -95,7 +95,7 @@ public class InterestVectorService {
         var events = eventRepository.findByStudent(studentId);
         var scores = new LinkedHashMap<UUID, Double>();
         var sessions = new HashMap<UUID, Set<UUID>>();
-        var last = new HashMap<UUID, OffsetDateTime>();
+        var last = new HashMap<UUID, Instant>();
         for (var event : events) {
             scores.compute(
                 event.getTopicId(),

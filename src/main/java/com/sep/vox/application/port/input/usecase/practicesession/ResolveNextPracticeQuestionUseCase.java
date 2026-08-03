@@ -41,20 +41,35 @@ public class ResolveNextPracticeQuestionUseCase {
         String criterionCode,
         String subAttribute,
         int difficultyRank,
-        int preparationTimeSeconds,
         int maxResponseSeconds,
-        int maxFollowupSeconds,
-        List<String> suggestedIdeas) {
+        int minResponseSeconds,
+        List<String> suggestedIdeas,
+        /**
+         * Câu CUỐI của phiên: ngân sách còn lại không đủ cho một câu cỡ bình thường, nên
+         * câu này đã được may đo vừa đúng phần còn lại. Trả lời xong là đóng phiên, không
+         * hỏi câu tiếp -- xem cách tính ở {@link #toPayload}.
+         */
+        boolean lastQuestion) {
     }
 
-    public record Result(String status, String reason, QuestionPayload question) {
+    /**
+     * {@code sessionSpokenSeconds}/{@code sessionBudgetSeconds}: cặp số cho thanh tiến độ trên
+     * máy học sinh. Đi kèm câu hỏi vì đây là thứ Python gửi xuống client NGAY khi phiên mở --
+     * lượt đầu chưa nộp nên chưa có SubmitTurnResult nào để lấy ngân sách từ đó.
+     */
+    public record Result(
+        String status,
+        String reason,
+        QuestionPayload question,
+        int sessionSpokenSeconds,
+        int sessionBudgetSeconds) {
 
-        static Result ok(QuestionPayload question) {
-            return new Result("ok", null, question);
+        static Result ok(QuestionPayload question, int spokenSeconds, int budgetSeconds) {
+            return new Result("ok", null, question, spokenSeconds, budgetSeconds);
         }
 
-        static Result noMoreQuestions(String reason) {
-            return new Result("no_more_questions", reason, null);
+        static Result noMoreQuestions(String reason, int spokenSeconds, int budgetSeconds) {
+            return new Result("no_more_questions", reason, null, spokenSeconds, budgetSeconds);
         }
     }
 
@@ -92,10 +107,20 @@ public class ResolveNextPracticeQuestionUseCase {
     private Result doExecute(UUID sessionId) {
         var claim = claimService.claim(sessionId);
         if (claim.idempotentQuestion() != null) {
-            return Result.ok(toPayload(claim.idempotentQuestion(), claim.idempotentSlot()));
+            return Result.ok(
+                toPayload(
+                    claim.idempotentQuestion(),
+                    claim.idempotentSlot(),
+                    claim.budgetSeconds() - claim.spokenSeconds()
+                ),
+                claim.spokenSeconds(),
+                claim.budgetSeconds()
+            );
         }
         if (claim.earlyExitReason() != null) {
-            return Result.noMoreQuestions(claim.earlyExitReason());
+            return Result.noMoreQuestions(
+                claim.earlyExitReason(), claim.spokenSeconds(), claim.budgetSeconds()
+            );
         }
 
         var signal = enrichmentService.studentRankSignal(claim.studentId());
@@ -105,19 +130,44 @@ public class ResolveNextPracticeQuestionUseCase {
             .resolveNextQuestion(claim.topic(), claim.studentId(), claim.focus(), baseRank, claim.alreadyChosen())
             .orElse(null);
         if (selection == null) {
-            return Result.noMoreQuestions("pool_exhausted");
+            return Result.noMoreQuestions(
+                "pool_exhausted", claim.spokenSeconds(), claim.budgetSeconds()
+            );
         }
 
+        // Không còn chốt ngân sách ở đây: nó đã chuyển lên ResolveNextPracticeQuestionClaimService,
+        // chạy TRƯỚC resolveNextQuestion. Đặt sau như cũ nghĩa là có thể sinh câu bằng LLM
+        // (10-40 giây) rồi vứt đi vì hết ngân sách.
         var question = selection.question();
-        if (claim.usedSeconds() + question.plannedSeconds() > claim.maxSeconds()) {
-            return Result.noMoreQuestions("budget_exhausted");
-        }
 
         persistenceService.persist(claim.studentId(), claim.practicePaperId(), selection);
-        return Result.ok(toPayload(question, selection.slot()));
+        return Result.ok(
+            toPayload(question, selection.slot(), claim.budgetSeconds() - claim.spokenSeconds()),
+            claim.spokenSeconds(),
+            claim.budgetSeconds()
+        );
     }
 
-    private QuestionPayload toPayload(PracticeQuestion question, int slot) {
+    /**
+     * May đo thời lượng câu hỏi theo ngân sách CÒN LẠI của phiên.
+     *
+     * Khi phần còn lại không đủ cho một câu cỡ bình thường, thay vì từ chối phát câu (bỏ
+     * phí phần thời gian đó) thì cắt câu cho vừa: trần = đúng số giây còn lại, sàn = một
+     * nửa. Học sinh vẫn nói được thêm một lượt trọn vẹn theo cỡ nhỏ hơn, rồi phiên đóng.
+     *
+     * KHÔNG ghi đè vào bản ghi câu hỏi trong kho -- câu hỏi dùng chung cho mọi học sinh,
+     * sửa nó là làm hỏng cho người khác. Chỉ đổi con số gửi xuống cho phiên NÀY.
+     */
+    private QuestionPayload toPayload(PracticeQuestion question, int slot, int remainingSeconds) {
+        // > 1 chứ không > 0: còn đúng 1 giây thì cắt ra sàn = trần = 1, mà sàn phải NHỎ HƠN
+        // trần -- bằng nhau thì SignalNode coi mọi câu trả lời là chưa đạt và hỏi mãi.
+        // Dưới ngưỡng đó cứ giữ nguyên số của câu; phiên sẽ đóng ở chốt ngân sách lần sau.
+        var last = remainingSeconds > 1 && remainingSeconds < question.getMaxResponseSeconds();
+        var maxSeconds = last ? remainingSeconds : question.getMaxResponseSeconds();
+        var minSeconds = Math.max(1, Math.min(
+            last ? remainingSeconds / 2 : question.getMinResponseSeconds(),
+            maxSeconds - 1
+        ));
         return new QuestionPayload(
             question.getId(),
             slot,
@@ -125,10 +175,10 @@ public class ResolveNextPracticeQuestionUseCase {
             question.getTargetCriterionCode(),
             question.getTargetSubAttribute(),
             question.getDifficultyRank(),
-            question.getPreparationTimeSeconds(),
-            question.getMaxResponseSeconds(),
-            question.getMaxFollowupSeconds(),
-            parseIdeas(question.getSuggestedIdeasJson())
+            maxSeconds,
+            minSeconds,
+            parseIdeas(question.getSuggestedIdeasJson()),
+            last
         );
     }
 

@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.service;
 
 import java.text.Normalizer;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -39,10 +39,17 @@ public class WeaknessObservationDerivationService {
         this.fluencyLongPauseRatio = fluencyLongPauseRatio;
     }
 
+    /**
+     * @param sourceType bài THI hay bài LUYỆN sinh ra quan sát này. Trước đây ghi cứng
+     *     EXAM ngay trong {@link #observation}, nên không dùng lại được cho nhánh luyện
+     *     -- mà nhánh luyện mới là nơi sinh ra phần lớn dữ liệu điểm yếu, vì học sinh
+     *     luyện hằng ngày còn thi thì thỉnh thoảng.
+     */
     public List<WeaknessObservation> derive(
             UUID studentId,
             UUID evaluationId,
-            OffsetDateTime observedAt,
+            WeaknessObservationSourceType sourceType,
+            Instant observedAt,
             boolean markedInvalid,
             boolean candidateBlocked,
             Map<String, CriterionScoreInput> criteria,
@@ -75,6 +82,7 @@ public class WeaknessObservationDerivationService {
                 observations.add(observation(
                     studentId,
                     evaluationId,
+                    sourceType,
                     criterion,
                     entry.getKey(),
                     label,
@@ -88,6 +96,7 @@ public class WeaknessObservationDerivationService {
             observations,
             studentId,
             evaluationId,
+            sourceType,
             observedAt,
             safeCriteria,
             rubricCriteriaByCode,
@@ -97,6 +106,7 @@ public class WeaknessObservationDerivationService {
             observations,
             studentId,
             evaluationId,
+            sourceType,
             observedAt,
             safeCriteria,
             rubricCriteriaByCode,
@@ -109,7 +119,8 @@ public class WeaknessObservationDerivationService {
             List<WeaknessObservation> observations,
             UUID studentId,
             UUID evaluationId,
-            OffsetDateTime observedAt,
+            WeaknessObservationSourceType sourceType,
+            Instant observedAt,
             Map<String, CriterionScoreInput> criteria,
             Map<String, RubricCriterion> rubricCriteriaByCode,
             List<TurnDetailInput> turns) {
@@ -135,6 +146,7 @@ public class WeaknessObservationDerivationService {
                     observations.add(observation(
                         studentId,
                         evaluationId,
+                        sourceType,
                         criterionEntry.criterion(),
                         criterionEntry.key(),
                         "phoneme_" + normalized,
@@ -150,7 +162,8 @@ public class WeaknessObservationDerivationService {
             List<WeaknessObservation> observations,
             UUID studentId,
             UUID evaluationId,
-            OffsetDateTime observedAt,
+            WeaknessObservationSourceType sourceType,
+            Instant observedAt,
             Map<String, CriterionScoreInput> criteria,
             Map<String, RubricCriterion> rubricCriteriaByCode,
             EvaluationSignalsInput signals) {
@@ -165,6 +178,7 @@ public class WeaknessObservationDerivationService {
             observations.add(observation(
                 studentId,
                 evaluationId,
+                sourceType,
                 criterionEntry.criterion(),
                 criterionEntry.key(),
                 "slow_rate",
@@ -176,6 +190,7 @@ public class WeaknessObservationDerivationService {
             observations.add(observation(
                 studentId,
                 evaluationId,
+                sourceType,
                 criterionEntry.criterion(),
                 criterionEntry.key(),
                 "long_pause",
@@ -203,14 +218,15 @@ public class WeaknessObservationDerivationService {
     private WeaknessObservation observation(
             UUID studentId,
             UUID evaluationId,
+            WeaknessObservationSourceType sourceType,
             RubricCriterion criterion,
             String criterionCode,
             String subAttribute,
             String evidence,
-            OffsetDateTime observedAt) {
+            Instant observedAt) {
         return new WeaknessObservation(
             studentId,
-            WeaknessObservationSourceType.EXAM,
+            sourceType,
             evaluationId,
             criterion.getFrameworkCriterionId(),
             truncate(criterionCode, 32),

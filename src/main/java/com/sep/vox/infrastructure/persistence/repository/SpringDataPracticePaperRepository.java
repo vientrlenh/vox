@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -21,7 +21,7 @@ public interface SpringDataPracticePaperRepository
         UUID id,
         UUID studentId,
         String status,
-        OffsetDateTime now
+        Instant now
     );
 
     @Query(value = """

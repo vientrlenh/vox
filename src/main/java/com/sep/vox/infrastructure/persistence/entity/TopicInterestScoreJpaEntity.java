@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import jakarta.persistence.Column;
@@ -42,10 +42,10 @@ public class TopicInterestScoreJpaEntity {
     private int sessionsMentioned;
 
     @Column(name = "last_mentioned_at")
-    private OffsetDateTime lastMentionedAt;
+    private Instant lastMentionedAt;
 
     @Column(name = "computed_at", nullable = false)
-    private OffsetDateTime computedAt;
+    private Instant computedAt;
 
     protected TopicInterestScoreJpaEntity() {
     }
@@ -56,8 +56,8 @@ public class TopicInterestScoreJpaEntity {
             UUID practiceTopicId,
             BigDecimal score,
             int sessionsMentioned,
-            OffsetDateTime lastMentionedAt,
-            OffsetDateTime computedAt) {
+            Instant lastMentionedAt,
+            Instant computedAt) {
         this.id = id;
         this.studentId = studentId;
         this.practiceTopicId = practiceTopicId;
@@ -87,11 +87,11 @@ public class TopicInterestScoreJpaEntity {
         return sessionsMentioned;
     }
 
-    public OffsetDateTime getLastMentionedAt() {
+    public Instant getLastMentionedAt() {
         return lastMentionedAt;
     }
 
-    public OffsetDateTime getComputedAt() {
+    public Instant getComputedAt() {
         return computedAt;
     }
 }

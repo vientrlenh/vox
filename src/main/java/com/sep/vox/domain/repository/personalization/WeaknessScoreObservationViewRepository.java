@@ -1,6 +1,6 @@
 package com.sep.vox.domain.repository.personalization;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -10,5 +10,5 @@ public interface WeaknessScoreObservationViewRepository {
 
     List<WeaknessScoreObservation> findAllValidScoreObservations();
 
-    List<UUID> findStudentsNeedingRefresh(OffsetDateTime staleBefore, int limit);
+    List<UUID> findStudentsNeedingRefresh(Instant staleBefore, int limit);
 }

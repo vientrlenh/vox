@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -44,7 +44,7 @@ public class InterestQuizItemJpaEntity {
     private UUID studentId;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
+    private Instant createdAt;
 
     protected InterestQuizItemJpaEntity() {
     }
@@ -55,7 +55,7 @@ public class InterestQuizItemJpaEntity {
             String desirabilityNote,
             boolean active,
             UUID studentId,
-            OffsetDateTime createdAt) {
+            Instant createdAt) {
         this.dimensionsJson = dimensionsJson;
         this.statementsJson = statementsJson;
         this.desirabilityNote = desirabilityNote;
@@ -88,7 +88,7 @@ public class InterestQuizItemJpaEntity {
         return studentId;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 }

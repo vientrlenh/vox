@@ -35,7 +35,19 @@ public final class PracticeSessionResponses {
             UUID turnId,
             int remainingGradedSeconds,
             boolean evaluationQueued,
-            List<TurnCorrection> corrections) {
+            List<TurnCorrection> corrections,
+            boolean quotaExhausted,
+            /**
+             * Tổng số giây học sinh ĐÃ NÓI trong phiên (đã cộng cả lượt này) và ngân sách nói
+             * của phiên. Client hiện "đã nói / ngân sách" từ hai số này.
+             *
+             * Cố ý KHÔNG phải thời gian trôi trên đồng hồ: quota chỉ trừ đúng khoảng VAD nghe
+             * thấy tiếng, nên lúc AI nói / học sinh nghĩ / chờ chấm đều không tính. Màn hình
+             * trước đây đếm đồng hồ suông nên trông như đang đếm hạn mức mà thật ra không liên
+             * quan gì tới hạn mức.
+             */
+            int sessionSpokenSeconds,
+            int sessionBudgetSeconds) {
     }
 
     public record TeacherPracticeTurnView(

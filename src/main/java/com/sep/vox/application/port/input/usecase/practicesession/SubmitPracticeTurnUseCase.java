@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.practicesession;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -13,9 +13,11 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.event.ExamAttemptEvaluationRequestedExternalEvent;
 import com.sep.vox.application.event.PracticeAttemptEvaluationRequestedExternalEvent;
 import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.QuotaExceededException;
 import com.sep.vox.application.mapper.practicesession.PracticeSessionResponseMapper;
 import com.sep.vox.application.port.input.command.ConsumeQuotaCommand;
 import com.sep.vox.application.port.input.command.SubmitPracticeTurnCommand;
+import com.sep.vox.application.port.input.service.PracticeTopicOfferEnrichmentService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ConsumeQuotaUseCase;
 import com.sep.vox.application.port.output.ExternalEventPublisherPort;
@@ -39,6 +41,9 @@ import com.sep.vox.domain.repository.personalization.TurnCorrectionRepository;
 @Service
 public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCommand, SubmitTurnResult> {
 
+    private static final org.slf4j.Logger LOGGER =
+        org.slf4j.LoggerFactory.getLogger(SubmitPracticeTurnUseCase.class);
+
     private final PracticeSessionRepository practiceSessionRepository;
     private final PracticeSessionQueryRepository practiceSessionQueryRepository;
     private final PracticeItemResponseRepository practiceItemResponseRepository;
@@ -46,6 +51,7 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
     private final TurnCorrectionRepository turnCorrectionRepository;
     private final PracticeQuestionRepository practiceQuestionRepository;
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
+    private final PracticeTopicOfferEnrichmentService enrichmentService;
     private final ConsumeQuotaUseCase consumeQuotaUseCase;
     private final ExternalEventPublisherPort eventPublisher;
     private final JsonSerializationPort jsonSerializationPort;
@@ -59,6 +65,7 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
             TurnCorrectionRepository turnCorrectionRepository,
             PracticeQuestionRepository practiceQuestionRepository,
             SchoolSubscriptionRepository schoolSubscriptionRepository,
+            PracticeTopicOfferEnrichmentService enrichmentService,
             ConsumeQuotaUseCase consumeQuotaUseCase,
             ExternalEventPublisherPort eventPublisher,
             JsonSerializationPort jsonSerializationPort,
@@ -70,6 +77,7 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
         this.turnCorrectionRepository = turnCorrectionRepository;
         this.practiceQuestionRepository = practiceQuestionRepository;
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
+        this.enrichmentService = enrichmentService;
         this.consumeQuotaUseCase = consumeQuotaUseCase;
         this.eventPublisher = eventPublisher;
         this.jsonSerializationPort = jsonSerializationPort;
@@ -108,27 +116,49 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
             turn.getTurnScore()
         );
         var corrections = storeCorrections(turnId, turn.getCorrections());
+        // Nạp phiên KỂ CẢ khi lượt này im lặng: client vẫn phải thấy đúng tổng "đã nói" trên
+        // thanh tiến độ, chứ không phải một ô trống mỗi lần học sinh bấm mic rồi không nói gì.
+        var session = practiceSessionRepository.findById(turn.getSessionId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên luyện."));
+        var spokenSeconds = session.getGradedSeconds();
+        var quotaExhausted = false;
         if (turn.getDurationSeconds() > 0) {
-            consumeQuotaUseCase.execute(new ConsumeQuotaCommand(
-                activeSubscriptionId(studentId),
-                turn.getSessionId(),
-                QuotaType.PRACTICE,
-                turn.getDurationSeconds(),
-                studentId
-            ));
-            var session = practiceSessionRepository.findById(turn.getSessionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên luyện."));
-            practiceSessionRepository.save(session.withGradedSecondsAndHeartbeat(
-                session.getGradedSeconds() + turn.getDurationSeconds(),
-                OffsetDateTime.now()
-            ));
+            try {
+                consumeQuotaUseCase.execute(new ConsumeQuotaCommand(
+                    activeSubscriptionId(studentId),
+                    turn.getSessionId(),
+                    QuotaType.PRACTICE,
+                    turn.getDurationSeconds(),
+                    studentId
+                ));
+            } catch (QuotaExceededException exception) {
+                // KHÔNG để lỗi thoát ra: method này @Transactional, nên ném lên là rollback
+                // luôn cả response/turn/corrections vừa lưu ở trên -- học sinh nói xong mà
+                // lượt biến mất, không được chấm, không vào hồ sơ điểm yếu.
+                //
+                // Đã nói thì phải được ghi. Hết hạn mức chỉ có nghĩa là phiên dừng SAU lượt
+                // này, nên báo bằng cờ để tầng gọi đóng phiên một cách tử tế.
+                LOGGER.info(
+                    "Hết hạn mức PRACTICE ở phiên {} -- vẫn ghi lượt {} rồi đóng phiên.",
+                    turn.getSessionId(),
+                    turn.getTurnOrder()
+                );
+                quotaExhausted = true;
+            }
+            spokenSeconds += turn.getDurationSeconds();
+            practiceSessionRepository.save(
+                session.withGradedSecondsAndHeartbeat(spokenSeconds, Instant.now())
+            );
         }
         var result = new SubmitTurnResultDto(
             responseId,
             turnId,
             practiceResponseTurnRepository.findRemainingQuestionSeconds(turn.getSessionId(), turn.getQuestionId()),
             turn.isQuestionComplete(),
-            corrections
+            corrections,
+            quotaExhausted,
+            spokenSeconds,
+            enrichmentService.sessionBudgetSecondsForStudent(studentId)
         );
         if (result.evaluationQueued()) {
             eventPublisher.publish(buildEvaluationRequestEvent(
@@ -151,10 +181,30 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói đang hoạt động."));
     }
 
+    /**
+     * Ngưỡng tin cậy chỉ áp cho những dòng sửa do LLM PHÁN ĐOÁN (ngữ pháp, dùng từ) -- ở đó
+     * điểm tin cậy nói lên model chắc tới đâu. Dòng phát âm thì khác hẳn: nó là SỐ ĐO của
+     * Azure (điểm chính xác từng âm vị), không tự xưng độ tin cậy nào cả nên luôn về 0.0 và bị
+     * ngưỡng này loại sạch. Kết quả là thẻ sửa lỗi lúc đang nói thì hiện lỗi phát âm (đi thẳng
+     * qua WebSocket), nhưng mở lại sau buổi thì chúng biến mất -- chưa từng được ghi xuống.
+     */
+    private static final String MEASURED_CATEGORY = "pronunciation";
+    private static final double MIN_JUDGED_CONFIDENCE = 0.8;
+
+    /**
+     * Trần số dòng lưu cho MỘT lượt. Rộng hơn con số 3 cũ vì trần này chỉ chi phối bản LƯU
+     * (để xem lại sau buổi), không chi phối thẻ hiện lúc đang nói -- thẻ đó do Python đẩy
+     * thẳng qua WebSocket, không đi qua đây. Xem lại thì càng đủ càng tốt; giữ trần chỉ để
+     * chặn ghi vô hạn.
+     */
+    private static final int MAX_STORED_CORRECTIONS = 8;
+
     private List<TurnCorrectionDto> storeCorrections(UUID turnId, List<TurnCorrectionSubmission> inputs) {
         var result = new ArrayList<TurnCorrectionDto>();
         for (var correction : inputs == null ? List.<TurnCorrectionSubmission>of() : inputs) {
-            if (correction.getConfidence() < 0.8 || result.size() >= 3) {
+            var measured = MEASURED_CATEGORY.equalsIgnoreCase(correction.getCategory());
+            if (result.size() >= MAX_STORED_CORRECTIONS
+                    || (!measured && correction.getConfidence() < MIN_JUDGED_CONFIDENCE)) {
                 continue;
             }
             turnCorrectionRepository.save(
@@ -195,18 +245,28 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
             .toList();
         var payload = new ExamAttemptEvaluationRequestedExternalEvent.Payload(
             question.questionText(),
-            "SPEAKING",
+            // Dạng bài THẬT (V13). Trước đây gửi "SPEAKING" -- không thuộc enum QuestionType
+            // bên Python nên bị validator nuốt về null trong im lặng, khiến
+            // get_expected_min_words rơi xuống nhánh mặc định và kỳ vọng ĐÚNG 10 TỪ cho mọi
+            // câu, kể cả câu 45 giây. Có dạng bài rồi thì nó chạy đúng nhánh: DESCRIPTION 45s
+            // kỳ vọng 35 từ chứ không phải 10.
+            question.questionType(),
             null,
             turns.stream().mapToInt(
                 ExamAttemptEvaluationRequestedExternalEvent.TurnInput::durationSeconds
             ).sum(),
-            0,
+            question.minResponseSeconds(),
             question.maxResponseSeconds(),
             null,
             question.topicName(),
             question.topicDescription(),
             evaluationGuide(question.evaluationGuideJson()),
-            "practice",
+            // mode: "unscripted" y như đường đề thi. Trước đây gửi "practice" -- nhầm TRỤC:
+            // SpeakingMode bên Python là scripted/unscripted (nói theo văn bản có sẵn hay nói
+            // tự do), không phải thi/luyện. Enum không có 'practice' nên
+            // SpeakingMode(request_payload.mode) ném ValueError, hỏng cả 3 lần retry rồi kết
+            // thúc bằng ExamAttemptEvaluationFailedEvent -- chuỗi chấm bài luyện chưa từng chạy.
+            "unscripted",
             null,
             "en-US",
             criteriaFrameworks(sessionId),

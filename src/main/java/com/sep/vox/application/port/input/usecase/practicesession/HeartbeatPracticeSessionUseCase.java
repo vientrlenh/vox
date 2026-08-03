@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.practicesession;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,7 +33,7 @@ public class HeartbeatPracticeSessionUseCase implements IUseCase<HeartbeatPracti
         if (session == null || !"IN_PROGRESS".equals(session.getStatus())) {
             return false;
         }
-        practiceSessionRepository.save(session.withLastHeartbeatAt(OffsetDateTime.now()));
+        practiceSessionRepository.save(session.withLastHeartbeatAt(Instant.now()));
         return true;
     }
 }

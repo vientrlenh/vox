@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -62,7 +62,7 @@ public class PracticeTopicJpaEntity {
     private boolean active = true;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "source_question_topic_id", updatable = false)
     private UUID sourceQuestionTopicId;
@@ -78,7 +78,7 @@ public class PracticeTopicJpaEntity {
             String interestDimension,
             String curriculumGroup,
             boolean active,
-            OffsetDateTime createdAt,
+            Instant createdAt,
             UUID sourceQuestionTopicId) {
         this.name = name;
         this.normalizedName = normalizedName;
@@ -123,7 +123,7 @@ public class PracticeTopicJpaEntity {
         return active;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 

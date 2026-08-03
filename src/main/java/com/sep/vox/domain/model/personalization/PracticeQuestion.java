@@ -1,6 +1,6 @@
 package com.sep.vox.domain.model.personalization;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class PracticeQuestion {
@@ -14,14 +14,14 @@ public class PracticeQuestion {
     private String difficultyFeaturesJson;
     private String evaluationGuideJson;
     private String suggestedIdeasJson;
-    private int preparationTimeSeconds;
+    private String questionType;
     private int maxResponseSeconds;
-    private int maxFollowupSeconds;
+    private int minResponseSeconds;
     private Integer vstepPart;
     private String source;
     private int usageCount;
     private boolean active;
-    private OffsetDateTime createdAt;
+    private Instant createdAt;
 
     public PracticeQuestion() {
     }
@@ -36,14 +36,14 @@ public class PracticeQuestion {
             String difficultyFeaturesJson,
             String evaluationGuideJson,
             String suggestedIdeasJson,
-            int preparationTimeSeconds,
+            String questionType,
             int maxResponseSeconds,
-            int maxFollowupSeconds,
+            int minResponseSeconds,
             Integer vstepPart,
             String source,
             int usageCount,
             boolean active,
-            OffsetDateTime createdAt) {
+            Instant createdAt) {
         this.id = id;
         this.practiceTopicId = practiceTopicId;
         this.questionText = questionText;
@@ -53,9 +53,9 @@ public class PracticeQuestion {
         this.difficultyFeaturesJson = difficultyFeaturesJson;
         this.evaluationGuideJson = evaluationGuideJson;
         this.suggestedIdeasJson = suggestedIdeasJson;
-        this.preparationTimeSeconds = preparationTimeSeconds;
+        this.questionType = questionType;
         this.maxResponseSeconds = maxResponseSeconds;
-        this.maxFollowupSeconds = maxFollowupSeconds;
+        this.minResponseSeconds = minResponseSeconds;
         this.vstepPart = vstepPart;
         this.source = source;
         this.usageCount = usageCount;
@@ -135,12 +135,13 @@ public class PracticeQuestion {
         this.suggestedIdeasJson = suggestedIdeasJson;
     }
 
-    public int getPreparationTimeSeconds() {
-        return preparationTimeSeconds;
+    /** SHORT_ANSWER | LONG_ANSWER | DESCRIPTION | OPINION -- xem migration V13. */
+    public String getQuestionType() {
+        return questionType;
     }
 
-    public void setPreparationTimeSeconds(int preparationTimeSeconds) {
-        this.preparationTimeSeconds = preparationTimeSeconds;
+    public void setQuestionType(String questionType) {
+        this.questionType = questionType;
     }
 
     public int getMaxResponseSeconds() {
@@ -151,12 +152,12 @@ public class PracticeQuestion {
         this.maxResponseSeconds = maxResponseSeconds;
     }
 
-    public int getMaxFollowupSeconds() {
-        return maxFollowupSeconds;
+    public int getMinResponseSeconds() {
+        return minResponseSeconds;
     }
 
-    public void setMaxFollowupSeconds(int maxFollowupSeconds) {
-        this.maxFollowupSeconds = maxFollowupSeconds;
+    public void setMinResponseSeconds(int minResponseSeconds) {
+        this.minResponseSeconds = minResponseSeconds;
     }
 
     public Integer getVstepPart() {
@@ -191,19 +192,25 @@ public class PracticeQuestion {
         this.active = active;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
+    /**
+     * Trần nói của CẢ câu, gồm cả chuỗi follow-up.
+     *
+     * Trước đây là {@code maxResponseSeconds + maxFollowupSeconds}, nhưng cột follow-up là cột
+     * chết (LLM tự điền mà prompt không hề mô tả, nên toàn kho bằng 0) -- tổng đó luôn bằng
+     * đúng maxResponseSeconds. Giờ nói thẳng ra thay vì cộng một số hạng luôn bằng 0.
+     *
+     * Follow-up không có ngân sách riêng vì SignalNode vốn đã cộng dồn giây qua mọi lượt của
+     * cùng một câu; cái nó thiếu là SÀN để biết khi nào đủ, và đó là {@link #getMinResponseSeconds()}.
+     */
     public int spokenSeconds() {
-        return maxResponseSeconds + maxFollowupSeconds;
-    }
-
-    public int plannedSeconds() {
-        return preparationTimeSeconds + spokenSeconds();
+        return maxResponseSeconds;
     }
 }

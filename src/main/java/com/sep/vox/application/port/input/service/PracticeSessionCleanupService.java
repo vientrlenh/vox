@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.service;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,7 +23,7 @@ public class PracticeSessionCleanupService {
     }
 
     @Transactional
-    public int cleanupStaleSessions(OffsetDateTime staleBefore) {
+    public int cleanupStaleSessions(Instant staleBefore) {
         var stale = practiceSessionRepository.findStaleInProgress(staleBefore);
         for (var session : stale) {
             var completed = practiceItemEvaluationRepository.countCompletedBySessionId(session.getId());

@@ -19,7 +19,8 @@ public final class PracticePaperDtoMapper {
 
     public static PracticePaperDto toDto(
             PracticePaper paper,
-            List<PracticeQuestion> questions) {
+            List<PracticeQuestion> questions,
+            int sessionBudgetSeconds) {
         var responseQuestions = java.util.stream.IntStream
             .range(0, questions.size())
             .mapToObj(index -> toDto(questions.get(index), index + 1))
@@ -30,6 +31,7 @@ public final class PracticePaperDtoMapper {
             paper.getOrigin(),
             paper.getPlannedSeconds(),
             paper.getReservedQuotaSeconds(),
+            sessionBudgetSeconds,
             responseQuestions
         );
     }
@@ -44,9 +46,8 @@ public final class PracticePaperDtoMapper {
             question.getTargetCriterionCode(),
             question.getTargetSubAttribute(),
             question.getDifficultyRank(),
-            question.getPreparationTimeSeconds(),
             question.getMaxResponseSeconds(),
-            question.getMaxFollowupSeconds(),
+            question.getMinResponseSeconds(),
             parseIdeas(question.getSuggestedIdeasJson())
         );
     }

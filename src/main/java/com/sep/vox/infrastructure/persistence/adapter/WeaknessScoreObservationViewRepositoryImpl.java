@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -41,7 +41,7 @@ public class WeaknessScoreObservationViewRepositoryImpl
     }
 
     @Override
-    public List<UUID> findStudentsNeedingRefresh(OffsetDateTime staleBefore, int limit) {
+    public List<UUID> findStudentsNeedingRefresh(Instant staleBefore, int limit) {
         return repository.findStudentsNeedingRefresh(staleBefore, limit);
     }
 }

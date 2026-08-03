@@ -1,6 +1,6 @@
 package com.sep.vox.domain.model.personalization;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class TopicInterestEvent {
@@ -8,7 +8,7 @@ public class TopicInterestEvent {
     private UUID topicId;
     private UUID sessionId;
     private double signal;
-    private OffsetDateTime occurredAt;
+    private Instant occurredAt;
 
     public TopicInterestEvent() {
     }
@@ -17,7 +17,7 @@ public class TopicInterestEvent {
             UUID topicId,
             UUID sessionId,
             double signal,
-            OffsetDateTime occurredAt) {
+            Instant occurredAt) {
         this.topicId = topicId;
         this.sessionId = sessionId;
         this.signal = signal;
@@ -48,11 +48,11 @@ public class TopicInterestEvent {
         this.signal = signal;
     }
 
-    public OffsetDateTime getOccurredAt() {
+    public Instant getOccurredAt() {
         return occurredAt;
     }
 
-    public void setOccurredAt(OffsetDateTime occurredAt) {
+    public void setOccurredAt(Instant occurredAt) {
         this.occurredAt = occurredAt;
     }
 }

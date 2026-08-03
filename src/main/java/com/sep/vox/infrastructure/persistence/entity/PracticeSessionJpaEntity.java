@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import jakarta.persistence.Column;
@@ -42,11 +42,11 @@ public class PracticeSessionJpaEntity {
     @Column(name = "overall_score", precision = 5, scale = 2)
     private BigDecimal overallScore;
     @Column(name = "started_at", nullable = false, updatable = false)
-    private OffsetDateTime startedAt;
+    private Instant startedAt;
     @Column(name = "ended_at")
-    private OffsetDateTime endedAt;
+    private Instant endedAt;
     @Column(name = "last_heartbeat_at")
-    private OffsetDateTime lastHeartbeatAt;
+    private Instant lastHeartbeatAt;
     @Column(name = "graded_seconds", nullable = false)
     private int gradedSeconds;
     @Column(name = "status", nullable = false, length = 16)
@@ -71,8 +71,8 @@ public class PracticeSessionJpaEntity {
             String targetSubAttributesJson,
             String origin,
             String offeredTopicIdsJson,
-            OffsetDateTime startedAt,
-            OffsetDateTime lastHeartbeatAt,
+            Instant startedAt,
+            Instant lastHeartbeatAt,
             int gradedSeconds,
             String status,
             int helpRequestCount,
@@ -138,23 +138,23 @@ public class PracticeSessionJpaEntity {
         this.overallScore = overallScore;
     }
 
-    public OffsetDateTime getStartedAt() {
+    public Instant getStartedAt() {
         return startedAt;
     }
 
-    public OffsetDateTime getEndedAt() {
+    public Instant getEndedAt() {
         return endedAt;
     }
 
-    public void setEndedAt(OffsetDateTime endedAt) {
+    public void setEndedAt(Instant endedAt) {
         this.endedAt = endedAt;
     }
 
-    public OffsetDateTime getLastHeartbeatAt() {
+    public Instant getLastHeartbeatAt() {
         return lastHeartbeatAt;
     }
 
-    public void setLastHeartbeatAt(OffsetDateTime lastHeartbeatAt) {
+    public void setLastHeartbeatAt(Instant lastHeartbeatAt) {
         this.lastHeartbeatAt = lastHeartbeatAt;
     }
 

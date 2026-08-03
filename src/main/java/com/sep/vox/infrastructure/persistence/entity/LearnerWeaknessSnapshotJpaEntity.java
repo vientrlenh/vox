@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import jakarta.persistence.Column;
@@ -48,7 +48,7 @@ public class LearnerWeaknessSnapshotJpaEntity {
     private boolean reliable;
 
     @Column(name = "computed_at", nullable = false)
-    private OffsetDateTime computedAt;
+    private Instant computedAt;
 
     protected LearnerWeaknessSnapshotJpaEntity() {
     }
@@ -61,7 +61,7 @@ public class LearnerWeaknessSnapshotJpaEntity {
             BigDecimal weakness,
             int observationCount,
             boolean reliable,
-            OffsetDateTime computedAt) {
+            Instant computedAt) {
         this.id = id;
         this.studentId = studentId;
         this.frameworkCriterionId = frameworkCriterionId;
@@ -100,7 +100,7 @@ public class LearnerWeaknessSnapshotJpaEntity {
         return reliable;
     }
 
-    public OffsetDateTime getComputedAt() {
+    public Instant getComputedAt() {
         return computedAt;
     }
 }

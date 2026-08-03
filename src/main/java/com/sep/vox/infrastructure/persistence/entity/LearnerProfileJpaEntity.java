@@ -2,7 +2,7 @@ package com.sep.vox.infrastructure.persistence.entity;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -61,10 +61,10 @@ public class LearnerProfileJpaEntity {
     private boolean autoUpdateInterest = true;
 
     @Column(name = "quiz_completed_at")
-    private OffsetDateTime quizCompletedAt;
+    private Instant quizCompletedAt;
 
     @Column(name = "recorded_at", nullable = false, updatable = false)
-    private OffsetDateTime recordedAt;
+    private Instant recordedAt;
 
     protected LearnerProfileJpaEntity() {
     }
@@ -78,8 +78,8 @@ public class LearnerProfileJpaEntity {
             BigDecimal flsaScore,
             String flsaRawAnswersJson,
             boolean autoUpdateInterest,
-            OffsetDateTime quizCompletedAt,
-            OffsetDateTime recordedAt) {
+            Instant quizCompletedAt,
+            Instant recordedAt) {
         this.studentId = studentId;
         this.version = version;
         this.goalType = goalType;
@@ -128,11 +128,11 @@ public class LearnerProfileJpaEntity {
         return autoUpdateInterest;
     }
 
-    public OffsetDateTime getQuizCompletedAt() {
+    public Instant getQuizCompletedAt() {
         return quizCompletedAt;
     }
 
-    public OffsetDateTime getRecordedAt() {
+    public Instant getRecordedAt() {
         return recordedAt;
     }
 }

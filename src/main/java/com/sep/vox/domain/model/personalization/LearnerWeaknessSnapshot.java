@@ -1,7 +1,7 @@
 package com.sep.vox.domain.model.personalization;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class LearnerWeaknessSnapshot {
@@ -13,7 +13,7 @@ public class LearnerWeaknessSnapshot {
     private BigDecimal weakness;
     private int observationCount;
     private boolean reliable;
-    private OffsetDateTime computedAt;
+    private Instant computedAt;
 
     public LearnerWeaknessSnapshot() {
     }
@@ -26,7 +26,7 @@ public class LearnerWeaknessSnapshot {
             BigDecimal weakness,
             int observationCount,
             boolean reliable,
-            OffsetDateTime computedAt) {
+            Instant computedAt) {
         this.id = id;
         this.studentId = studentId;
         this.frameworkCriterionId = frameworkCriterionId;
@@ -93,11 +93,11 @@ public class LearnerWeaknessSnapshot {
         this.reliable = reliable;
     }
 
-    public OffsetDateTime getComputedAt() {
+    public Instant getComputedAt() {
         return computedAt;
     }
 
-    public void setComputedAt(OffsetDateTime computedAt) {
+    public void setComputedAt(Instant computedAt) {
         this.computedAt = computedAt;
     }
 }

@@ -13,9 +13,10 @@ public interface SpringDataPracticePaperItemRepository
         extends JpaRepository<PracticePaperItemJpaEntity, UUID> {
 
     @Query(value = """
-        SELECT COALESCE(SUM(
-            question.preparation_time_seconds + question.max_response_seconds + question.max_followup_seconds
-        ), 0)
+        -- Ngân sách DỰ TRÙ của đề = tổng TRẦN nói của các câu. Không cộng min_response_seconds
+        -- (đó là sàn để biết khi nào trả lời đã đủ, không phải một khoản chi thêm); hai cột
+        -- max_followup_seconds và preparation_time_seconds cũ đã bỏ -- xem V11.
+        SELECT COALESCE(SUM(question.max_response_seconds), 0)
         FROM practice_paper_item item
         JOIN practice_question question ON question.id = item.practice_question_id
         WHERE item.practice_paper_id = :paperId

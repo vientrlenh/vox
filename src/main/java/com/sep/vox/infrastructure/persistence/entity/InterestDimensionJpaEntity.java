@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -31,10 +31,10 @@ public class InterestDimensionJpaEntity {
     private int displayOrder;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private OffsetDateTime updatedAt;
+    private Instant updatedAt;
 
     protected InterestDimensionJpaEntity() {
     }
@@ -46,8 +46,8 @@ public class InterestDimensionJpaEntity {
             boolean active,
             boolean quizEligible,
             int displayOrder,
-            OffsetDateTime createdAt,
-            OffsetDateTime updatedAt) {
+            Instant createdAt,
+            Instant updatedAt) {
         this.code = code;
         this.label = label;
         this.description = description;
@@ -82,11 +82,11 @@ public class InterestDimensionJpaEntity {
         return displayOrder;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 }

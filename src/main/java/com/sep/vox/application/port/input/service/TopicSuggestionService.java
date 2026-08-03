@@ -2,7 +2,7 @@ package com.sep.vox.application.port.input.service;
 
 import java.math.BigDecimal;
 import java.text.Normalizer;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -258,7 +258,7 @@ public class TopicSuggestionService {
                 proposal.reasonText(),
                 proposal.evidenceJson(),
                 "PENDING",
-                OffsetDateTime.now(),
+                Instant.now(),
                 null
             ));
             created++;
@@ -421,7 +421,7 @@ public class TopicSuggestionService {
             dimension,
             curriculumGroup == null ? "OUT_OF_CURRICULUM" : curriculumGroup,
             true,
-            OffsetDateTime.now(),
+            Instant.now(),
             null
         ));
         return saved.getId();
@@ -443,7 +443,7 @@ public class TopicSuggestionService {
             outcome,
             "{}",
             "REQUESTED",
-            OffsetDateTime.now(),
+            Instant.now(),
             null
         ));
     }
@@ -497,7 +497,7 @@ public class TopicSuggestionService {
             suggestion.getEvidenceJson(),
             status,
             suggestion.getCreatedAt(),
-            OffsetDateTime.now()
+            Instant.now()
         );
     }
 }

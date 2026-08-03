@@ -1,11 +1,13 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import java.time.OffsetDateTime;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.domain.model.personalization.PracticeQuestion;
 import com.sep.vox.domain.repository.personalization.PracticeQuestionRepository;
@@ -59,8 +61,8 @@ public class PracticeQuestionRepositoryImpl implements PracticeQuestionRepositor
     }
 
     // Gói 11 mục 3.3: câu chưa đạt band mục tiêu chỉ bị loại trong 24h kể từ lần gặp gần nhất.
-    private static OffsetDateTime cooldownCutoff() {
-        return OffsetDateTime.now().minusDays(1);
+    private static Instant cooldownCutoff() {
+        return Instant.now().minus(Duration.ofDays(1));
     }
 
     @Override
@@ -78,7 +80,19 @@ public class PracticeQuestionRepositoryImpl implements PracticeQuestionRepositor
         return PracticeQuestionMapper.toDomain(repository.save(PracticeQuestionMapper.toJpa(question)));
     }
 
+    /**
+     * Transaction NGẮN, đặt đúng ở đây chứ không ở tầng trên.
+     *
+     * <p>insertGeneratedQuestion là @Modifying nên Hibernate bắt buộc phải có transaction
+     * đang mở, nếu không thì ném TransactionRequiredException. Trước đây nó mượn tạm
+     * transaction của BuildPracticePaperUseCase; khi transaction đó bị gỡ (để không giữ
+     * connection HikariCP suốt 10-40 giây gọi LLM) thì lệnh ghi này mất chỗ dựa và hỏng.
+     *
+     * <p>Đặt ở tầng adapter là đúng: nó chỉ bao đúng một lệnh INSERT chạy SAU khi lời gọi
+     * LLM đã trả về, nên không kéo dài thời gian giữ connection.
+     */
     @Override
+    @Transactional
     public void saveGenerated(PracticeQuestion question) {
         repository.insertGeneratedQuestion(
             question.getId(),
@@ -90,14 +104,17 @@ public class PracticeQuestionRepositoryImpl implements PracticeQuestionRepositor
             question.getDifficultyFeaturesJson(),
             question.getEvaluationGuideJson(),
             question.getSuggestedIdeasJson(),
-            question.getPreparationTimeSeconds(),
             question.getMaxResponseSeconds(),
-            question.getMaxFollowupSeconds(),
+            question.getMinResponseSeconds(),
             question.getVstepPart()
         );
     }
 
+    /** Cũng là @Modifying như saveGenerated -- cần transaction riêng vì tầng gọi
+     * (resolveNextQuestion) cố ý chạy ngoài transaction. Chưa nổ lỗi chỉ vì luồng chết ở
+     * saveGenerated trước khi tới được đây. */
     @Override
+    @Transactional
     public void incrementUsageCount(UUID id) {
         repository.incrementUsageCount(id);
     }
@@ -108,6 +125,8 @@ public class PracticeQuestionRepositoryImpl implements PracticeQuestionRepositor
             .map(row -> new QuestionEvaluationInfo(
                 row.getQuestionText(),
                 row.getEvaluationGuideJson(),
+                row.getQuestionType(),
+                row.getMinResponseSeconds(),
                 row.getMaxResponseSeconds(),
                 row.getTopicName(),
                 row.getTopicDescription()

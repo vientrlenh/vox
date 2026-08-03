@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import jakarta.persistence.Column;
@@ -32,7 +32,7 @@ public class PracticeItemEvaluationJpaEntity {
     @Column(name = "marked_invalid", nullable = false)
     private boolean markedInvalid;
     @Column(name = "evaluated_at", nullable = false)
-    private OffsetDateTime evaluatedAt;
+    private Instant evaluatedAt;
 
     protected PracticeItemEvaluationJpaEntity() {
     }
@@ -42,7 +42,7 @@ public class PracticeItemEvaluationJpaEntity {
             UUID practiceResponseId,
             BigDecimal itemScore,
             boolean markedInvalid,
-            OffsetDateTime evaluatedAt) {
+            Instant evaluatedAt) {
         this.id = id;
         this.practiceResponseId = practiceResponseId;
         this.itemScore = itemScore;
@@ -74,11 +74,11 @@ public class PracticeItemEvaluationJpaEntity {
         this.markedInvalid = markedInvalid;
     }
 
-    public OffsetDateTime getEvaluatedAt() {
+    public Instant getEvaluatedAt() {
         return evaluatedAt;
     }
 
-    public void setEvaluatedAt(OffsetDateTime evaluatedAt) {
+    public void setEvaluatedAt(Instant evaluatedAt) {
         this.evaluatedAt = evaluatedAt;
     }
 }

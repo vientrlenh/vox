@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
@@ -30,10 +30,10 @@ public class StudentQuestionExposureRepositoryImpl implements StudentQuestionExp
                 UUID.randomUUID(),
                 studentId,
                 questionId,
-                OffsetDateTime.now()
+                Instant.now()
             ));
         } else {
-            exposure.setSeenAt(OffsetDateTime.now());
+            exposure.setSeenAt(Instant.now());
             repository.save(exposure);
         }
     }

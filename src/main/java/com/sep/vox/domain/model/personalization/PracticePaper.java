@@ -1,6 +1,6 @@
 package com.sep.vox.domain.model.personalization;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class PracticePaper {
@@ -14,9 +14,9 @@ public class PracticePaper {
     private String previousOfferedTopicIdsJson;
     private int plannedSeconds;
     private int reservedQuotaSeconds;
-    private OffsetDateTime expiresAt;
+    private Instant expiresAt;
     private String status;
-    private OffsetDateTime createdAt;
+    private Instant createdAt;
 
     public PracticePaper() {
     }
@@ -31,9 +31,9 @@ public class PracticePaper {
             String previousOfferedTopicIdsJson,
             int plannedSeconds,
             int reservedQuotaSeconds,
-            OffsetDateTime expiresAt,
+            Instant expiresAt,
             String status,
-            OffsetDateTime createdAt) {
+            Instant createdAt) {
         this.id = id;
         this.studentId = studentId;
         this.practiceTopicId = practiceTopicId;
@@ -120,11 +120,11 @@ public class PracticePaper {
         this.reservedQuotaSeconds = reservedQuotaSeconds;
     }
 
-    public OffsetDateTime getExpiresAt() {
+    public Instant getExpiresAt() {
         return expiresAt;
     }
 
-    public void setExpiresAt(OffsetDateTime expiresAt) {
+    public void setExpiresAt(Instant expiresAt) {
         this.expiresAt = expiresAt;
     }
 
@@ -136,11 +136,11 @@ public class PracticePaper {
         this.status = status;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 

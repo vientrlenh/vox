@@ -1,7 +1,7 @@
 package com.sep.vox.domain.model.personalization;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class PracticeSession {
@@ -16,9 +16,9 @@ public class PracticeSession {
     private String origin;
     private String offeredTopicIdsJson;
     private BigDecimal overallScore;
-    private OffsetDateTime startedAt;
-    private OffsetDateTime endedAt;
-    private OffsetDateTime lastHeartbeatAt;
+    private Instant startedAt;
+    private Instant endedAt;
+    private Instant lastHeartbeatAt;
     private int gradedSeconds;
     private String status;
     private String abandonDiagnosis;
@@ -39,9 +39,9 @@ public class PracticeSession {
             String origin,
             String offeredTopicIdsJson,
             BigDecimal overallScore,
-            OffsetDateTime startedAt,
-            OffsetDateTime endedAt,
-            OffsetDateTime lastHeartbeatAt,
+            Instant startedAt,
+            Instant endedAt,
+            Instant lastHeartbeatAt,
             int gradedSeconds,
             String status,
             String abandonDiagnosis,
@@ -147,27 +147,27 @@ public class PracticeSession {
         this.overallScore = overallScore;
     }
 
-    public OffsetDateTime getStartedAt() {
+    public Instant getStartedAt() {
         return startedAt;
     }
 
-    public void setStartedAt(OffsetDateTime startedAt) {
+    public void setStartedAt(Instant startedAt) {
         this.startedAt = startedAt;
     }
 
-    public OffsetDateTime getEndedAt() {
+    public Instant getEndedAt() {
         return endedAt;
     }
 
-    public void setEndedAt(OffsetDateTime endedAt) {
+    public void setEndedAt(Instant endedAt) {
         this.endedAt = endedAt;
     }
 
-    public OffsetDateTime getLastHeartbeatAt() {
+    public Instant getLastHeartbeatAt() {
         return lastHeartbeatAt;
     }
 
-    public void setLastHeartbeatAt(OffsetDateTime lastHeartbeatAt) {
+    public void setLastHeartbeatAt(Instant lastHeartbeatAt) {
         this.lastHeartbeatAt = lastHeartbeatAt;
     }
 
@@ -211,7 +211,7 @@ public class PracticeSession {
         this.longPauseCount = longPauseCount;
     }
 
-    public PracticeSession withLastHeartbeatAt(OffsetDateTime newLastHeartbeatAt) {
+    public PracticeSession withLastHeartbeatAt(Instant newLastHeartbeatAt) {
         return new PracticeSession(
             id, studentId, practicePaperId, rubricVersionId, targetFrameworkBandId,
             chosenPracticeTopicId, targetSubAttributesJson, origin, offeredTopicIdsJson,
@@ -220,7 +220,7 @@ public class PracticeSession {
         );
     }
 
-    public PracticeSession withGradedSecondsAndHeartbeat(int newGradedSeconds, OffsetDateTime newLastHeartbeatAt) {
+    public PracticeSession withGradedSecondsAndHeartbeat(int newGradedSeconds, Instant newLastHeartbeatAt) {
         return new PracticeSession(
             id, studentId, practicePaperId, rubricVersionId, targetFrameworkBandId,
             chosenPracticeTopicId, targetSubAttributesJson, origin, offeredTopicIdsJson,
@@ -234,7 +234,7 @@ public class PracticeSession {
             String newAbandonDiagnosis,
             int newHelpRequestCount,
             int newLongPauseCount,
-            OffsetDateTime newEndedAt,
+            Instant newEndedAt,
             BigDecimal newOverallScore) {
         return new PracticeSession(
             id, studentId, practicePaperId, rubricVersionId, targetFrameworkBandId,
@@ -244,7 +244,7 @@ public class PracticeSession {
         );
     }
 
-    public PracticeSession closedAsStale(String newStatus, String newAbandonDiagnosis, OffsetDateTime newEndedAt) {
+    public PracticeSession closedAsStale(String newStatus, String newAbandonDiagnosis, Instant newEndedAt) {
         return new PracticeSession(
             id, studentId, practicePaperId, rubricVersionId, targetFrameworkBandId,
             chosenPracticeTopicId, targetSubAttributesJson, origin, offeredTopicIdsJson,

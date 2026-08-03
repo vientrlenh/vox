@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import jakarta.persistence.Column;
@@ -40,7 +40,7 @@ public class TopicInterestEventJpaEntity {
     private BigDecimal signal;
 
     @Column(name = "occurred_at", nullable = false, updatable = false)
-    private OffsetDateTime occurredAt;
+    private Instant occurredAt;
 
     protected TopicInterestEventJpaEntity() {
     }
@@ -52,7 +52,7 @@ public class TopicInterestEventJpaEntity {
             UUID practiceSessionId,
             String eventType,
             BigDecimal signal,
-            OffsetDateTime occurredAt) {
+            Instant occurredAt) {
         this.id = id;
         this.studentId = studentId;
         this.practiceTopicId = practiceTopicId;
@@ -86,7 +86,7 @@ public class TopicInterestEventJpaEntity {
         return signal;
     }
 
-    public OffsetDateTime getOccurredAt() {
+    public Instant getOccurredAt() {
         return occurredAt;
     }
 }

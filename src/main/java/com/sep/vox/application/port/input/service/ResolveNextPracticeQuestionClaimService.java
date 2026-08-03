@@ -10,7 +10,6 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.query.dto.PracticeFocusInfo;
 import com.sep.vox.domain.model.personalization.PracticeQuestion;
 import com.sep.vox.domain.model.personalization.PracticeTopic;
-import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.personalization.PracticeItemResponseRepository;
 import com.sep.vox.domain.repository.personalization.PracticePaperItemRepository;
 import com.sep.vox.domain.repository.personalization.PracticeQuestionRepository;
@@ -33,7 +32,6 @@ public class ResolveNextPracticeQuestionClaimService {
     private final PracticeQuestionRepository questionRepository;
     private final PracticePaperItemRepository paperItemRepository;
     private final PracticeItemResponseRepository practiceItemResponseRepository;
-    private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final PracticeQuestionSelectionService selectionService;
     private final PracticeTopicOfferEnrichmentService enrichmentService;
 
@@ -43,7 +41,6 @@ public class ResolveNextPracticeQuestionClaimService {
             PracticeQuestionRepository questionRepository,
             PracticePaperItemRepository paperItemRepository,
             PracticeItemResponseRepository practiceItemResponseRepository,
-            SchoolSubscriptionRepository schoolSubscriptionRepository,
             PracticeQuestionSelectionService selectionService,
             PracticeTopicOfferEnrichmentService enrichmentService) {
         this.enrichmentService = enrichmentService;
@@ -52,7 +49,6 @@ public class ResolveNextPracticeQuestionClaimService {
         this.questionRepository = questionRepository;
         this.paperItemRepository = paperItemRepository;
         this.practiceItemResponseRepository = practiceItemResponseRepository;
-        this.schoolSubscriptionRepository = schoolSubscriptionRepository;
         this.selectionService = selectionService;
     }
 
@@ -69,12 +65,25 @@ public class ResolveNextPracticeQuestionClaimService {
         PracticeTopic topic,
         PracticeFocusInfo focus,
         List<PracticeQuestion> alreadyChosen,
-        int usedSeconds,
-        int maxSeconds,
         PracticeQuestion idempotentQuestion,
         int idempotentSlot,
-        String earlyExitReason) {
+        String earlyExitReason,
+        /**
+         * Cặp số cho thanh tiến độ "đã nói / ngân sách" trên máy học sinh. Khác {@code
+         * usedSeconds}/{@code maxSeconds} ngay bên trên ở CHỖ QUAN TRỌNG NHẤT: usedSeconds là
+         * ngân sách DỰ TRÙ của các câu đã phát ra đề (dùng để quyết có phát thêm câu nữa
+         * không), còn spokenSeconds là số giây học sinh THẬT SỰ nói (đúng thứ bị trừ quota).
+         * Trên dữ liệu thật hai số này lệch nhau rất xa -- 45 giây dự trù cho 16 giây nói.
+         */
+        int spokenSeconds,
+        int budgetSeconds) {
     }
+
+    /**
+     * Dưới ngưỡng này thì không phát câu mới nữa. Không phải "đủ cho một câu trọn vẹn" --
+     * chỉ là mốc dưới đó thì phát thêm câu là vô nghĩa: học sinh chưa kịp nói gì đã hết giờ.
+     */
+    private static final int MINIMUM_USEFUL_TURN_SECONDS = 10;
 
     @Transactional
     public Claim claim(UUID sessionId) {
@@ -86,6 +95,11 @@ public class ResolveNextPracticeQuestionClaimService {
             throw new IllegalStateException("Phiên luyện không còn hoạt động.");
         }
 
+        // Tính SỚM, trước cả nhánh idempotent: mọi nhánh trả về đều phải mang được cặp số cho
+        // thanh tiến độ, kể cả nhánh trả lại nguyên câu cũ sau một lần gọi bị timeout.
+        var spokenSeconds = session.getGradedSeconds();
+        var budgetSeconds = enrichmentService.sessionBudgetSecondsForStudent(session.getStudentId());
+
         var alreadyChosenIds = paperItemRepository.findQuestionIdsForPaper(session.getPracticePaperId());
         if (!alreadyChosenIds.isEmpty()) {
             var latestQuestionId = alreadyChosenIds.getLast();
@@ -93,30 +107,31 @@ public class ResolveNextPracticeQuestionClaimService {
                 var latestQuestion = questionRepository.findById(latestQuestionId)
                     .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi luyện."));
                 return new Claim(
-                    session.getStudentId(), session.getPracticePaperId(), null, null, null, 0, 0,
-                    latestQuestion, alreadyChosenIds.size(), null
+                    session.getStudentId(), session.getPracticePaperId(), null, null, null,
+                    latestQuestion, alreadyChosenIds.size(), null, spokenSeconds, budgetSeconds
                 );
             }
         }
 
-        var usedSeconds = paperItemRepository.sumPlannedSecondsForPaper(session.getPracticePaperId());
-        var maxMinutes = schoolSubscriptionRepository
-            .findMaxTimePerAttemptMinForUser(session.getStudentId());
-        var quotaSeconds = maxMinutes == null ? 0 : maxMinutes * 60;
-        // HAI ngân sách (thiết kế gói 6 mục 4.1), lấy cái chặt hơn:
-        //   quota      = trường mua bao nhiêu giây, tiêu dần QUA NHIỀU phiên
-        //   trần bậc   = MỘT phiên dài tối đa bao lâu là hợp sức bậc đó
-        // Trần bậc KHÔNG đốt quota: hết trần thì phiên dừng, phần quota còn lại vẫn nguyên
-        // cho phiên sau. Nên quota 30 phút ở bậc thấp thành nhiều phiên ngắn 12 phút, chứ
-        // không phải một phiên 30 phút quá sức.
-        var maxSeconds = Math.min(
-            quotaSeconds,
-            enrichmentService.sessionSecondsCapForStudent(session.getStudentId())
-        );
-        if (usedSeconds >= maxSeconds) {
+        // Còn đủ chỗ cho một lượt nói có nghĩa không? Đo bằng giây NÓI THẬT, không phải
+        // ngân sách dự trù của các câu đã phát.
+        //
+        // Bản trước so sumPlannedSecondsForPaper (tổng max_response_seconds) với trần.
+        // Trên dữ liệu thật dự trù cao hơn thực tế 40-70% (60 vs 29, 45 vs 27), nên phiên
+        // báo hết ngân sách khi quota còn dư gần nửa. Mà quota thì trừ theo giây nói thật
+        // (ConsumeQuotaUseCase ăn durationSeconds) -- hai đồng hồ đo hai đại lượng khác
+        // nhau thì sớm muộn cũng lệch.
+        //
+        // Chốt này nằm TRƯỚC lúc chọn/sinh câu, và đó là điểm chính: bản trước kiểm SAU
+        // khi resolveNextQuestion đã chạy, tức có thể trả 10-40 giây gọi LLM để sinh ra
+        // một câu rồi vứt đi vì hết ngân sách.
+        //
+        // Nói vượt ngưỡng giữa chừng không sao: cờ quotaExhausted lo phần đó -- lượt vẫn
+        // được ghi và chấm, phiên đóng tử tế sau khi trả kết quả.
+        if (spokenSeconds + MINIMUM_USEFUL_TURN_SECONDS > budgetSeconds) {
             return new Claim(
-                session.getStudentId(), session.getPracticePaperId(), null, null, null, 0, 0,
-                null, 0, "budget_exhausted"
+                session.getStudentId(), session.getPracticePaperId(), null, null, null,
+                null, 0, "budget_exhausted", spokenSeconds, budgetSeconds
             );
         }
 
@@ -127,7 +142,7 @@ public class ResolveNextPracticeQuestionClaimService {
 
         return new Claim(
             session.getStudentId(), session.getPracticePaperId(), topic, focus, alreadyChosen,
-            usedSeconds, maxSeconds, null, 0, null
+            null, 0, null, spokenSeconds, budgetSeconds
         );
     }
 }

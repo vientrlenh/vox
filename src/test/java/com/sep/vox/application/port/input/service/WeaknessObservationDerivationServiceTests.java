@@ -2,7 +2,8 @@ package com.sep.vox.application.port.input.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import com.sep.vox.application.common.DateMapper;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -22,7 +23,7 @@ class WeaknessObservationDerivationServiceTests {
     private WeaknessObservationDerivationService service;
     private UUID studentId;
     private UUID evaluationId;
-    private OffsetDateTime observedAt;
+    private Instant observedAt;
     private RubricCriterion grammar;
     private RubricCriterion pronunciation;
     private RubricCriterion fluency;
@@ -32,7 +33,7 @@ class WeaknessObservationDerivationServiceTests {
         service = new WeaknessObservationDerivationService(60, 60, 0.35);
         studentId = UUID.randomUUID();
         evaluationId = UUID.randomUUID();
-        observedAt = OffsetDateTime.now();
+        observedAt = Instant.now();
         grammar = criterion("GRAMMAR");
         pronunciation = criterion("PRONUNCIATION");
         fluency = criterion("FLUENCY");

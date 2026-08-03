@@ -1,7 +1,7 @@
 package com.sep.vox.domain.model.personalization;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class SubAttributePriority {
@@ -14,7 +14,7 @@ public class SubAttributePriority {
     private int recentFrequency;
     private BigDecimal priority;
     private boolean practiceable;
-    private OffsetDateTime computedAt;
+    private Instant computedAt;
 
     public SubAttributePriority() {
     }
@@ -28,7 +28,7 @@ public class SubAttributePriority {
             int recentFrequency,
             BigDecimal priority,
             boolean practiceable,
-            OffsetDateTime computedAt) {
+            Instant computedAt) {
         this.id = id;
         this.studentId = studentId;
         this.frameworkCriterionId = frameworkCriterionId;
@@ -104,11 +104,11 @@ public class SubAttributePriority {
         this.practiceable = practiceable;
     }
 
-    public OffsetDateTime getComputedAt() {
+    public Instant getComputedAt() {
         return computedAt;
     }
 
-    public void setComputedAt(OffsetDateTime computedAt) {
+    public void setComputedAt(Instant computedAt) {
         this.computedAt = computedAt;
     }
 }

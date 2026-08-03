@@ -10,9 +10,8 @@ public record PracticePaperQuestionDto(
     String criterionCode,
     String subAttribute,
     int difficultyRank,
-    int preparationTimeSeconds,
     int maxResponseSeconds,
-    int maxFollowupSeconds,
+    int minResponseSeconds,
     List<String> suggestedIdeas
 ) {
 }

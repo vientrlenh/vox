@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -49,7 +49,7 @@ public class PracticeSessionRepositoryImpl implements PracticeSessionRepository 
     }
 
     @Override
-    public List<PracticeSession> findStaleInProgress(OffsetDateTime staleBefore) {
+    public List<PracticeSession> findStaleInProgress(Instant staleBefore) {
         return repository.findStaleInProgressForUpdate(staleBefore).stream()
             .map(PracticeSessionMapper::toDomain)
             .toList();

@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import jakarta.persistence.Column;
@@ -42,9 +42,9 @@ public class TopicSuggestionJpaEntity {
     @Column(name = "status", nullable = false, length = 16)
     private String status;
     @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
+    private Instant createdAt;
     @Column(name = "responded_at")
-    private OffsetDateTime respondedAt;
+    private Instant respondedAt;
 
     protected TopicSuggestionJpaEntity() {
     }
@@ -60,7 +60,7 @@ public class TopicSuggestionJpaEntity {
             String reasonText,
             String evidenceJson,
             String status,
-            OffsetDateTime createdAt) {
+            Instant createdAt) {
         this.id = id;
         this.studentId = studentId;
         this.suggestedTopicName = suggestedTopicName;
@@ -118,15 +118,15 @@ public class TopicSuggestionJpaEntity {
         this.status = status;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public OffsetDateTime getRespondedAt() {
+    public Instant getRespondedAt() {
         return respondedAt;
     }
 
-    public void setRespondedAt(OffsetDateTime respondedAt) {
+    public void setRespondedAt(Instant respondedAt) {
         this.respondedAt = respondedAt;
     }
 }

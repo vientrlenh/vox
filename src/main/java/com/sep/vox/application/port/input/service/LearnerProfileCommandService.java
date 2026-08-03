@@ -2,7 +2,7 @@ package com.sep.vox.application.port.input.service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -82,7 +82,7 @@ public class LearnerProfileCommandService {
             null,
             null,
             null,
-            OffsetDateTime.now()
+            Instant.now()
         );
         dimensionScoreRepository.replaceScores(
             saved.getId(),
@@ -136,7 +136,7 @@ public class LearnerProfileCommandService {
             BigDecimal flsaScore,
             String flsaRawAnswersJson,
             Boolean autoUpdate,
-            OffsetDateTime quizCompletedAt) {
+            Instant quizCompletedAt) {
         var previous = repository.findCurrentForUpdate(studentId).orElse(null);
         var next = previous == null
             ? LearnerProfile.first(studentId).next(

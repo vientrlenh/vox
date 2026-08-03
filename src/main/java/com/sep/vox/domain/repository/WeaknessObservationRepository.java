@@ -1,6 +1,6 @@
 package com.sep.vox.domain.repository;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -20,7 +20,7 @@ public interface WeaknessObservationRepository {
 
     List<WeaknessFrequency> findWeaknessFrequencies(
         List<UUID> studentIds,
-        OffsetDateTime windowStart,
-        OffsetDateTime recentWindowStart
+        Instant windowStart,
+        Instant recentWindowStart
     );
 }

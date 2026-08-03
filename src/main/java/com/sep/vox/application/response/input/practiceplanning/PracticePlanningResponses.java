@@ -48,9 +48,8 @@ public final class PracticePlanningResponses {
             String criterionCode,
             String subAttribute,
             int difficultyRank,
-            int preparationTimeSeconds,
             int maxResponseSeconds,
-            int maxFollowupSeconds,
+            int minResponseSeconds,
             List<String> suggestedIdeas) {
     }
 
@@ -60,6 +59,8 @@ public final class PracticePlanningResponses {
             String origin,
             int plannedSeconds,
             int reservedQuotaSeconds,
+            /** Trần nói của cả phiên (giây) -- xem PracticePaperDto.sessionBudgetSeconds. */
+            int sessionBudgetSeconds,
             List<PracticePaperQuestion> questions) {
     }
 

@@ -41,7 +41,16 @@ public final class RecordPracticeAttemptEvaluationCommandMapper {
             signals == null ? null : decimalOrNull(signals.codeSwitchingRatio()),
             signals == null || signals.wordCount() == null ? 0 : signals.wordCount(),
             criteria,
-            payload == null ? null : payload.evaluatedAt()
+            payload == null ? null : payload.evaluatedAt(),
+            // Dùng lại đúng ba helper của mapper bài thi (cùng package) chứ không viết bản thứ
+            // hai: payload hai bên là cùng một hình dạng do Python phát ra từ cùng đồ thị chấm.
+            payload == null
+                ? null
+                : RecordExamAttemptEvaluationCommandMapper.toCriteria(payload.criteria()),
+            payload == null
+                ? null
+                : RecordExamAttemptEvaluationCommandMapper.toTurns(payload.turns()),
+            RecordExamAttemptEvaluationCommandMapper.toSignals(signals)
         );
     }
 

@@ -1,7 +1,7 @@
 package com.sep.vox.application.query.dto;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public interface WeaknessScoreObservationRow {
@@ -18,7 +18,9 @@ public interface WeaknessScoreObservationRow {
 
     BigDecimal getMaxScore();
 
-    OffsetDateTime getEvaluatedAt();
+    // Instant: xem chu thich trong SessionRowInfo. Domain model cung dung Instant nen map thang,
+    // khong con buoc doi kieu nao.
+    Instant getEvaluatedAt();
 
     String getSourceType();
 

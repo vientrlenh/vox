@@ -1,6 +1,6 @@
 package com.sep.vox.domain.model.personalization;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 public class InterestDimension {
 
@@ -10,8 +10,8 @@ public class InterestDimension {
     private boolean active;
     private boolean quizEligible;
     private int displayOrder;
-    private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
 
     public InterestDimension() {
     }
@@ -23,8 +23,8 @@ public class InterestDimension {
             boolean active,
             boolean quizEligible,
             int displayOrder,
-            OffsetDateTime createdAt,
-            OffsetDateTime updatedAt) {
+            Instant createdAt,
+            Instant updatedAt) {
         this.code = code;
         this.label = label;
         this.description = description;
@@ -83,19 +83,19 @@ public class InterestDimension {
         this.displayOrder = displayOrder;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 }

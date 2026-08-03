@@ -27,4 +27,12 @@ public interface SpringDataPracticeItemResponseRepository
         WHERE response.id = :responseId
         """, nativeQuery = true)
     UUID findRubricVersionIdByResponseId(@Param("responseId") UUID responseId);
+
+    @Query(value = """
+        SELECT session.student_id
+        FROM practice_item_response response
+        JOIN practice_session session ON session.id = response.practice_session_id
+        WHERE response.id = :responseId
+        """, nativeQuery = true)
+    UUID findStudentIdByResponseId(@Param("responseId") UUID responseId);
 }

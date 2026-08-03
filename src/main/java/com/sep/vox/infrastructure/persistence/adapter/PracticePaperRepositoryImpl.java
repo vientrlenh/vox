@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -21,7 +21,7 @@ public class PracticePaperRepositoryImpl implements PracticePaperRepository {
     }
 
     @Override
-    public Optional<PracticePaper> findReservedPaper(UUID paperId, UUID studentId, OffsetDateTime now) {
+    public Optional<PracticePaper> findReservedPaper(UUID paperId, UUID studentId, Instant now) {
         return repository
             .findByIdAndStudentIdAndStatusAndReservationExpiresAtAfter(paperId, studentId, "RESERVED", now)
             .map(PracticePaperMapper::toDomain);

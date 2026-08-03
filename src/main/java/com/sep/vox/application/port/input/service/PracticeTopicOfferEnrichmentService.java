@@ -156,6 +156,18 @@ public class PracticeTopicOfferEnrichmentService {
         return ratio <= 1.0 / 2 ? 900 : 1200;
     }
 
+    /**
+     * Ngân sách nói THẬT SỰ của một phiên: chỗ hẹp hơn giữa hạn mức gói và trần bậc.
+     *
+     * Trước đây công thức này viết thẳng trong {@code ResolveNextPracticeQuestionClaimService}
+     * -- nơi duy nhất cần nó. Giờ màn hình luyện cũng phải hiện "đã nói / ngân sách" nên có hai
+     * nơi cần cùng con số; để mỗi nơi tự tính lại là mở đường cho chúng lệch nhau, rồi thanh
+     * tiến độ trên máy học sinh nói một đằng còn phiên dừng một nẻo.
+     */
+    public int sessionBudgetSecondsForStudent(UUID studentId) {
+        return Math.min(minutesForStudent(studentId) * 60, sessionSecondsCapForStudent(studentId));
+    }
+
     /** Số phút mỗi lượt luyện theo đúng gói subscription đang hoạt động -- 0 nếu không có gói. */
     public int minutesForStudent(UUID studentId) {
         var minutes = schoolSubscriptionRepository.findMaxTimePerAttemptMinForUser(studentId);

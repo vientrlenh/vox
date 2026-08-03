@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -74,7 +74,7 @@ public class InterestQuizItemRepositoryImpl
         if (repository.count() > 0) {
             return;
         }
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         repository.saveAll(items.stream()
             .map(item -> new InterestQuizItemJpaEntity(
                 jsonSerialization.toJson(item.getDimensionPerStatement()),
@@ -89,7 +89,7 @@ public class InterestQuizItemRepositoryImpl
 
     @Override
     public void saveGeneratedForStudent(UUID studentId, List<InterestQuizSeedItem> items) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         repository.saveAll(items.stream()
             .map(item -> new InterestQuizItemJpaEntity(
                 jsonSerialization.toJson(item.getDimensionPerStatement()),

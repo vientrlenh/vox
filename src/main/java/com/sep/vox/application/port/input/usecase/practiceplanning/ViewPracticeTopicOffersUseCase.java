@@ -1,8 +1,7 @@
 package com.sep.vox.application.port.input.usecase.practiceplanning;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -94,7 +93,13 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
                 );
             }
         }
-        Collections.shuffle(selected);
+        // KHÔNG xáo thứ tự: client hiện `matchPercent` lấy đúng từ `score` vừa dùng để xếp
+        // hạng, nên xáo xong thì thẻ #1 không còn là thẻ khớp cao nhất -- người dùng thấy
+        // danh sách tự mâu thuẫn với chính con số nó in ra, và mỗi lần mở lại một thứ tự.
+        //
+        // Đa dạng vẫn còn nguyên, nhưng ở chỗ đúng của nó: slot epsilon phía trên thay thẻ
+        // CUỐI bằng một chủ đề ngoài top 10. Vì chủ đề đó xếp hạng thấp hơn nên nó vẫn nằm
+        // cuối danh sách, thứ tự theo % khớp giữ được tính đơn điệu.
         var minutes = enrichmentService.minutesForStudent(studentId);
         var focusTags = enrichmentService.focusTagsForStudent(studentId);
         var signal = enrichmentService.studentRankSignal(studentId);
@@ -160,10 +165,15 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
         if (weakCriterionLabel != null) {
             return "Còn nhiều câu luyện đúng kỹ năng bạn đang yếu (" + weakCriterionLabel + ")";
         }
-        // Chỉ nói "khớp chương trình học" khi topic THẬT SỰ thuộc GDPT2018 -- mọi
-        // trường hợp khác (interest/bank chỉ là tín hiệu xếp hạng nội bộ, không đủ
-        // chắc chắn để tuyên bố lý do cụ thể) dùng nhãn trung tính.
-        if (topic.curriculum() >= 1.0) {
+        // "Khớp chương trình học" CHỈ dành cho chủ đề lấy từ ngân hàng đề của trường.
+        //
+        // Trước đây điều kiện là curriculum() >= 1.0, tức curriculum_group = 'IN_GDPT2018'.
+        // Sai: đó là nhãn "hợp chương trình quốc gia" và chủ đề do AI sinh cũng mang nhãn
+        // đó, nên "Healthy Daily Habits"/"Managing Stress" (source = AI_SUGGESTED) hiện
+        // "Khớp chương trình học" -- nói với học sinh một điều không đúng.
+        //
+        // Mọi thứ không đến từ trường đều là gợi ý của hệ thống, dùng nhãn trung tính.
+        if (topic.fromSchool()) {
             return "Khớp chương trình học của bạn";
         }
         return "Gợi ý cho bạn";
@@ -198,7 +208,8 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
                     base * (1 - 0.4 * row.getRecency()),
                     interest,
                     bank,
-                    curriculum
+                    curriculum,
+                    false
                 );
             })
             .toList();
@@ -232,7 +243,8 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
                     base,
                     interest,
                     bank,
-                    curriculum
+                    curriculum,
+                    true
                 );
             })
             .toList();
@@ -250,7 +262,7 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
                 EXAM_TOPIC_INTEREST_DIMENSION,
                 EXAM_TOPIC_CURRICULUM_GROUP,
                 true,
-                OffsetDateTime.now(),
+                Instant.now(),
                 row.getId()
             )).getId());
     }
@@ -273,6 +285,19 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
         double score,
         double interest,
         double bank,
-        double curriculum) {
+        double curriculum,
+        /**
+         * Chủ đề này có LẤY TỪ NGÂN HÀNG ĐỀ CỦA TRƯỜNG không.
+         *
+         * <p>Không suy được từ {@code curriculum}: điểm đó bằng 1.0 khi
+         * {@code curriculum_group = 'IN_GDPT2018'}, mà đó chỉ là nhãn "hợp chương trình quốc
+         * gia" -- chủ đề do AI sinh cũng được gắn (ví dụ "Healthy Daily Habits"). Dùng nó để
+         * nói "khớp chương trình học" là nói sai với học sinh.
+         *
+         * <p>Phân biệt thật nằm ở nguồn: hai query của classicRanked đều lọc
+         * {@code source IS DISTINCT FROM 'EXAM_QUESTION_BANK'} nên chỉ trả chủ đề ngoài
+         * trường; chủ đề trường chỉ đi qua examTopicRanked.
+         */
+        boolean fromSchool) {
     }
 }

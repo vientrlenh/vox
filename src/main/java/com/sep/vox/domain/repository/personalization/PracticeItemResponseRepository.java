@@ -6,6 +6,9 @@ public interface PracticeItemResponseRepository {
 
     UUID findRubricVersionIdByResponseId(UUID practiceResponseId);
 
+    /** Học sinh sở hữu response này -- quan sát điểm yếu gắn theo học sinh, không theo phiên. */
+    UUID findStudentIdByResponseId(UUID practiceResponseId);
+
     /** Tìm response theo (session, câu hỏi); nếu chưa có thì tạo mới, nếu đã có thì nối thêm
      * transcript và cập nhật audioUrl -- trả về id response. */
     UUID upsertResponse(

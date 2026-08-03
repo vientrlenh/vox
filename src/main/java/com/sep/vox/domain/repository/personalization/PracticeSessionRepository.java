@@ -1,6 +1,6 @@
 package com.sep.vox.domain.repository.personalization;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -22,5 +22,5 @@ public interface PracticeSessionRepository {
 
     PracticeSession save(PracticeSession session);
 
-    List<PracticeSession> findStaleInProgress(OffsetDateTime staleBefore);
+    List<PracticeSession> findStaleInProgress(Instant staleBefore);
 }

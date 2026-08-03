@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
@@ -31,7 +31,7 @@ public class SavedTopicRepositoryImpl implements SavedTopicRepository {
             UUID.randomUUID(),
             studentId,
             topicId,
-            OffsetDateTime.now()
+            Instant.now()
         ));
     }
 

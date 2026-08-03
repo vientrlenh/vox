@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -30,7 +30,7 @@ public class TopicInterestScoreRepositoryImpl
             UUID studentId,
             List<TopicInterestScoreEntry> scores) {
         repository.deleteByStudentId(studentId);
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         repository.saveAll(scores.stream()
             .map(entry -> new TopicInterestScoreJpaEntity(
                 UUID.randomUUID(),

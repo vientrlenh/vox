@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.worker.personalization;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +40,7 @@ public class GradingDiagnosticsInferenceJob {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onHumanGradingSubmitted(HumanGradingSubmittedEvent event) {
         try {
-            var observedAt = OffsetDateTime.now();
+            var observedAt = Instant.now();
             var labels = gradingDiagnosticsClient.infer(event.items());
             var saved = 0;
             for (var label : labels) {

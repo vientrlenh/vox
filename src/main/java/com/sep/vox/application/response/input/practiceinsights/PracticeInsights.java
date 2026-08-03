@@ -31,7 +31,9 @@ public final class PracticeInsights {
         String subAttribute,
         int occurrenceCount,
         String severity,
-        boolean practiceable
+        boolean practiceable,
+        /** Đổi nhịp so với cửa sổ trước, %. null = mẫu quá nhỏ hoặc lỗi mới xuất hiện. */
+        Double trendPercent
     ) {
     }
 

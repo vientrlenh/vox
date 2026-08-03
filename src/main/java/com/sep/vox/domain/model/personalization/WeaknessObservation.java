@@ -1,6 +1,6 @@
 package com.sep.vox.domain.model.personalization;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class WeaknessObservation {
@@ -13,7 +13,7 @@ public class WeaknessObservation {
     private String criterionCode;
     private String subAttribute;
     private String evidenceSpan;
-    private OffsetDateTime observedAt;
+    private Instant observedAt;
 
     public WeaknessObservation() {
     }
@@ -27,7 +27,7 @@ public class WeaknessObservation {
             String criterionCode,
             String subAttribute,
             String evidenceSpan,
-            OffsetDateTime observedAt) {
+            Instant observedAt) {
         this.id = id;
         this.studentId = studentId;
         this.sourceType = sourceType;
@@ -103,11 +103,11 @@ public class WeaknessObservation {
         this.evidenceSpan = evidenceSpan;
     }
 
-    public OffsetDateTime getObservedAt() {
+    public Instant getObservedAt() {
         return observedAt;
     }
 
-    public void setObservedAt(OffsetDateTime observedAt) {
+    public void setObservedAt(Instant observedAt) {
         this.observedAt = observedAt;
     }
 
@@ -119,7 +119,7 @@ public class WeaknessObservation {
             String criterionCode,
             String subAttribute,
             String evidenceSpan,
-            OffsetDateTime observedAt) {
+            Instant observedAt) {
         this(
             UUID.randomUUID(),
             studentId,

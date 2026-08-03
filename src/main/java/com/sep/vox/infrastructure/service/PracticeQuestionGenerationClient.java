@@ -152,9 +152,9 @@ public class PracticeQuestionGenerationClient {
             item.path("difficulty_features").toString(),
             item.path("evaluation_guide").toString(),
             item.path("suggested_ideas").toString(),
-            item.path("preparation_time_seconds").asInt(),
+            item.path("question_type").asText("SHORT_ANSWER"),
             item.path("max_response_seconds").asInt(),
-            item.path("max_followup_seconds").asInt(),
+            item.path("min_response_seconds").asInt(),
             item.path("vstep_part").asInt(),
             item
         );
@@ -178,9 +178,10 @@ public class PracticeQuestionGenerationClient {
         String difficultyFeaturesJson,
         String evaluationGuideJson,
         String suggestedIdeasJson,
-        int preparationTimeSeconds,
+        /** SHORT_ANSWER | LONG_ANSWER | DESCRIPTION | OPINION -- xem migration V13. */
+        String questionType,
         int maxResponseSeconds,
-        int maxFollowupSeconds,
+        int minResponseSeconds,
         int vstepPart,
         JsonNode sourceJson
     ) {

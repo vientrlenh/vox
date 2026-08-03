@@ -1,7 +1,7 @@
 package com.sep.vox.domain.model.personalization;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class WeaknessScoreObservation {
@@ -12,7 +12,7 @@ public class WeaknessScoreObservation {
     private BigDecimal finalScore;
     private BigDecimal minScore;
     private BigDecimal maxScore;
-    private OffsetDateTime evaluatedAt;
+    private Instant evaluatedAt;
     private String sourceType;
     private UUID evaluationId;
     private UUID schoolClassId;
@@ -28,7 +28,7 @@ public class WeaknessScoreObservation {
             BigDecimal finalScore,
             BigDecimal minScore,
             BigDecimal maxScore,
-            OffsetDateTime evaluatedAt,
+            Instant evaluatedAt,
             String sourceType,
             UUID evaluationId,
             UUID schoolClassId,
@@ -94,11 +94,11 @@ public class WeaknessScoreObservation {
         this.maxScore = maxScore;
     }
 
-    public OffsetDateTime getEvaluatedAt() {
+    public Instant getEvaluatedAt() {
         return evaluatedAt;
     }
 
-    public void setEvaluatedAt(OffsetDateTime evaluatedAt) {
+    public void setEvaluatedAt(Instant evaluatedAt) {
         this.evaluatedAt = evaluatedAt;
     }
 

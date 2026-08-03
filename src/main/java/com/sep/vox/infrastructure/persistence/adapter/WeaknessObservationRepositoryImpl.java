@@ -1,6 +1,7 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import java.time.OffsetDateTime;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -55,8 +56,8 @@ public class WeaknessObservationRepositoryImpl implements WeaknessObservationRep
     @Override
     public List<WeaknessFrequency> findWeaknessFrequencies(
             List<UUID> studentIds,
-            OffsetDateTime windowStart,
-            OffsetDateTime recentWindowStart) {
+            Instant windowStart,
+            Instant recentWindowStart) {
         if (studentIds.isEmpty()) {
             return List.of();
         }

@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.service;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
@@ -42,7 +42,7 @@ public class WeaknessSnapshotRefreshService {
         this.settings = settings;
     }
 
-    public int refreshStaleBatch(OffsetDateTime now) {
+    public int refreshStaleBatch(Instant now) {
         var studentIds = scoreObservationView.findStudentsNeedingRefresh(
             now.minus(settings.staleAfter()),
             settings.batchSize()
@@ -51,7 +51,7 @@ public class WeaknessSnapshotRefreshService {
         return studentIds.size();
     }
 
-    public int refreshExam(UUID examId, OffsetDateTime now) {
+    public int refreshExam(UUID examId, Instant now) {
         var studentIds = examCandidateRepository.findUnblockedStudentIdsByExamId(examId);
         var refreshed = 0;
         for (var start = 0; start < studentIds.size(); start += settings.batchSize()) {
@@ -64,7 +64,7 @@ public class WeaknessSnapshotRefreshService {
     }
 
     @Transactional
-    public void refreshStudents(List<UUID> studentIds, OffsetDateTime now) {
+    public void refreshStudents(List<UUID> studentIds, Instant now) {
         if (studentIds.isEmpty()) {
             return;
         }

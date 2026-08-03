@@ -1,6 +1,7 @@
 package com.sep.vox.infrastructure.worker.personalization;
 
-import java.time.OffsetDateTime;
+import java.time.Duration;
+import java.time.Instant;
 
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -20,7 +21,7 @@ public class PracticeSessionHeartbeatCleanupJob {
     @Scheduled(fixedDelayString = "${app.practice.heartbeat-cleanup-ms:300000}")
     public void cleanup() {
         cleanupService.cleanupStaleSessions(
-            OffsetDateTime.now().minusMinutes(3)
+            Instant.now().minus(Duration.ofMinutes(3))
         );
     }
 }

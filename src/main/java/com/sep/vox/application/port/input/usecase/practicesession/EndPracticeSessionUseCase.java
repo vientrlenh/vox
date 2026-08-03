@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.practicesession;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -70,7 +70,7 @@ public class EndPracticeSessionUseCase implements IUseCase<EndPracticeSessionCom
             diagnosis,
             input.helpRequestCount(),
             input.longPauseCount(),
-            OffsetDateTime.now(),
+            Instant.now(),
             practiceItemEvaluationRepository.findAverageItemScoreBySessionId(sessionId)
         ));
         var row = practiceSessionQueryRepository.findSessionRowById(sessionId)

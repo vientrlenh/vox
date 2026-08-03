@@ -1,7 +1,7 @@
 package com.sep.vox.domain.model.personalization;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class TopicSuggestion {
@@ -16,8 +16,8 @@ public class TopicSuggestion {
     private String reasonText;
     private String evidenceJson;
     private String status;
-    private OffsetDateTime createdAt;
-    private OffsetDateTime respondedAt;
+    private Instant createdAt;
+    private Instant respondedAt;
 
     public TopicSuggestion() {
     }
@@ -33,8 +33,8 @@ public class TopicSuggestion {
             String reasonText,
             String evidenceJson,
             String status,
-            OffsetDateTime createdAt,
-            OffsetDateTime respondedAt) {
+            Instant createdAt,
+            Instant respondedAt) {
         this.id = id;
         this.studentId = studentId;
         this.suggestedTopicName = suggestedTopicName;
@@ -129,19 +129,19 @@ public class TopicSuggestion {
         this.status = status;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
-    public OffsetDateTime getRespondedAt() {
+    public Instant getRespondedAt() {
         return respondedAt;
     }
 
-    public void setRespondedAt(OffsetDateTime respondedAt) {
+    public void setRespondedAt(Instant respondedAt) {
         this.respondedAt = respondedAt;
     }
 }

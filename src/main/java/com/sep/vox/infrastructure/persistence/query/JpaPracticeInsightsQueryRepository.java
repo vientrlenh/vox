@@ -7,7 +7,8 @@ import static com.sep.vox.application.response.input.practiceinsights.PracticeIn
 import static com.sep.vox.application.response.input.practiceinsights.PracticeInsights.SubAttributeWeakness;
 import static com.sep.vox.application.response.input.practiceinsights.PracticeInsights.WeaknessProfile;
 
-import java.time.OffsetDateTime;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -27,6 +28,13 @@ public class JpaPracticeInsightsQueryRepository
     private final SpringDataPracticeInsightsQueryRepository practiceInsightsQueryRepository;
     private final WeaknessVectorSettings weaknessVectorSettings;
 
+    /**
+     * Dưới ngưỡng này ở cửa sổ TRƯỚC thì không hiện xu hướng. Học sinh luyện thưa mà chỉ
+     * có 1-2 lần làm nền thì thêm một lần nữa đã thành ±100% -- con số đúng về số học
+     * nhưng vô nghĩa về sư phạm.
+     */
+    private static final int MINIMUM_PRIOR_OCCURRENCES_FOR_TREND = 3;
+
     public JpaPracticeInsightsQueryRepository(
             SpringDataPracticeInsightsQueryRepository practiceInsightsQueryRepository,
             WeaknessVectorSettings weaknessVectorSettings) {
@@ -45,18 +53,28 @@ public class JpaPracticeInsightsQueryRepository
                 row.getReliable()
             ))
             .toList();
-        var subAttributes = practiceInsightsQueryRepository.findSubAttributeWeaknesses(studentId).stream()
+        // Cùng cửa sổ mà WeaknessVectorCalculator dùng để tính freq/recent_freq -- lấy
+        // nguồn khác là xu hướng nói một đằng còn số lần nói một nẻo.
+        var windowDays = (int) weaknessVectorSettings.observationWindow().toDays();
+        var recentDays = (int) weaknessVectorSettings.recentObservationWindow().toDays();
+        var subAttributes = practiceInsightsQueryRepository.findSubAttributeWeaknesses(
+                studentId,
+                windowDays,
+                recentDays,
+                MINIMUM_PRIOR_OCCURRENCES_FOR_TREND
+            ).stream()
             .map(row -> new SubAttributeWeakness(
                 row.getCriterionCode(),
                 row.getSubAttribute(),
                 row.getOccurrenceCount(),
                 row.getSeverity(),
-                row.getPracticeable()
+                row.getPracticeable(),
+                row.getTrendPercent()
             ))
             .toList();
         var sessionsAnalysed = practiceInsightsQueryRepository.countSessionsAnalysed(
             studentId,
-            OffsetDateTime.now().minus(weaknessVectorSettings.observationWindow())
+            Instant.now().minus(weaknessVectorSettings.observationWindow())
         );
         var trendCounts = practiceInsightsQueryRepository.findWeaknessTrendCounts(studentId);
         return new WeaknessProfile(
@@ -73,7 +91,7 @@ public class JpaPracticeInsightsQueryRepository
         var safeDays = Math.max(1, Math.min(days, 3650));
         return practiceInsightsQueryRepository.findProgress(
             studentId,
-            OffsetDateTime.now().minusDays(safeDays),
+            Instant.now().minus(Duration.ofDays(safeDays)),
             criterionCode
         ).stream()
             .map(row -> new CriterionProgressPoint(

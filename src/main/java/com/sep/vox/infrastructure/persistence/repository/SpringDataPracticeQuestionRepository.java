@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -19,6 +19,8 @@ public interface SpringDataPracticeQuestionRepository
     @Query(value = """
         SELECT question.question_text AS questionText,
                question.evaluation_guide_json AS evaluationGuideJson,
+               question.question_type AS questionType,
+               question.min_response_seconds AS minResponseSeconds,
                question.max_response_seconds AS maxResponseSeconds,
                topic.name AS topicName,
                topic.description AS topicDescription
@@ -102,7 +104,7 @@ public interface SpringDataPracticeQuestionRepository
         @Param("criterion") String criterion,
         @Param("rankMin") int rankMin,
         @Param("rankMax") int rankMax,
-        @Param("cooldownCutoff") OffsetDateTime cooldownCutoff
+        @Param("cooldownCutoff") Instant cooldownCutoff
     );
 
     @Query(value = """
@@ -152,7 +154,7 @@ public interface SpringDataPracticeQuestionRepository
     List<PracticeQuestionJpaEntity> findUnseenByIds(
         @Param("questionIds") List<UUID> questionIds,
         @Param("studentId") UUID studentId,
-        @Param("cooldownCutoff") OffsetDateTime cooldownCutoff
+        @Param("cooldownCutoff") Instant cooldownCutoff
     );
 
     @Modifying
@@ -171,13 +173,13 @@ public interface SpringDataPracticeQuestionRepository
             target_criterion_code, target_sub_attribute,
             difficulty_rank, difficulty_features_json,
             evaluation_guide_json, suggested_ideas_json,
-            preparation_time_seconds, max_response_seconds,
-            max_followup_seconds, vstep_part, source,
+            max_response_seconds, min_response_seconds,
+            vstep_part, source,
             usage_count, active, created_at
         ) VALUES (:id, :topicId, :questionText, :criterionCode, :subAttribute,
                   :difficultyRank, :difficultyFeaturesJson, :evaluationGuideJson,
-                  :suggestedIdeasJson, :preparationTimeSeconds, :maxResponseSeconds,
-                  :maxFollowupSeconds, :vstepPart, 'AI_GENERATED', 0, true, CURRENT_TIMESTAMP)
+                  :suggestedIdeasJson, :maxResponseSeconds, :minResponseSeconds,
+                  :vstepPart, 'AI_GENERATED', 0, true, CURRENT_TIMESTAMP)
         ON CONFLICT (id) DO NOTHING
         """, nativeQuery = true)
     void insertGeneratedQuestion(
@@ -190,9 +192,8 @@ public interface SpringDataPracticeQuestionRepository
         @Param("difficultyFeaturesJson") String difficultyFeaturesJson,
         @Param("evaluationGuideJson") String evaluationGuideJson,
         @Param("suggestedIdeasJson") String suggestedIdeasJson,
-        @Param("preparationTimeSeconds") int preparationTimeSeconds,
         @Param("maxResponseSeconds") int maxResponseSeconds,
-        @Param("maxFollowupSeconds") int maxFollowupSeconds,
+        @Param("minResponseSeconds") int minResponseSeconds,
         @Param("vstepPart") Integer vstepPart
     );
 }

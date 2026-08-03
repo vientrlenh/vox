@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -104,7 +104,7 @@ public interface SpringDataPracticeSessionRepository
             JOIN school_users teacher
               ON teacher.school_id = class.school_id
              AND teacher.user_id = :teacherId
-             AND teacher.end_date IS NULL
+             AND (teacher.end_date IS NULL OR teacher.end_date >= CURRENT_TIMESTAMP)
             WHERE session.id = :sessionId
         )
         """, nativeQuery = true)
@@ -117,7 +117,7 @@ public interface SpringDataPracticeSessionRepository
           AND last_heartbeat_at < :staleBefore
         FOR UPDATE SKIP LOCKED
         """, nativeQuery = true)
-    List<PracticeSessionJpaEntity> findStaleInProgressForUpdate(@Param("staleBefore") OffsetDateTime staleBefore);
+    List<PracticeSessionJpaEntity> findStaleInProgressForUpdate(@Param("staleBefore") Instant staleBefore);
 
     @Query(value = """
         SELECT rubric.id AS rubricCriterionId,

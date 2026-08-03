@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.service;
 
-import java.time.OffsetDateTime;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -25,6 +26,9 @@ import com.sep.vox.domain.repository.personalization.StudentQuestionExposureRepo
  */
 @Service
 public class PracticePaperPersistenceService {
+
+    /** Thời gian giữ chỗ quota cho một đề đã dựng nhưng chưa vào phiên. */
+    private static final Duration RESERVATION_WINDOW = Duration.ofMinutes(10);
 
     private final PracticePaperRepository paperRepository;
     private final PracticePaperItemRepository paperItemRepository;
@@ -75,7 +79,7 @@ public class PracticePaperPersistenceService {
             List<UUID> previousOfferedTopicIds,
             PracticeQuestion question) {
         var resolvedOrigin = origin == null ? "SELECTED" : origin;
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         return paperRepository.save(new com.sep.vox.domain.model.personalization.PracticePaper(
             UUID.randomUUID(),
             studentId,
@@ -88,9 +92,13 @@ public class PracticePaperPersistenceService {
             jsonSerializationPort.toJson(
                 previousOfferedTopicIds == null ? List.of() : previousOfferedTopicIds
             ),
-            question.plannedSeconds(),
+            // plannedSeconds cũ = preparationTimeSeconds + spokenSeconds; bỏ cột chuẩn bị (V11)
+            // thì hai con số trùng nhau, nên gộp về một tên thay vì giữ hai tên cho một giá trị.
             question.spokenSeconds(),
-            now.plusMinutes(10),
+            question.spokenSeconds(),
+            // Instant không có plusMinutes -- nó là mốc tuyệt đối, không mang lịch/múi giờ nên
+            // chỉ cộng được Duration. Ý nghĩa vẫn y hệt: giữ chỗ quota 10 phút.
+            now.plus(RESERVATION_WINDOW),
             "RESERVED",
             now
         ));

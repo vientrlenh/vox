@@ -4,7 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
 import java.time.Duration;
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import com.sep.vox.application.common.DateMapper;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -38,7 +39,7 @@ class WeaknessVectorCalculatorTests {
             scores,
             Set.of(studentId),
             List.of(),
-            OffsetDateTime.parse("2026-07-29T10:00:00+07:00"),
+            DateMapper.toInstant("2026-07-29T10:00:00+07:00"),
             settings
         );
 
@@ -65,7 +66,7 @@ class WeaknessVectorCalculatorTests {
     void should_be_idempotent_and_keep_history_across_rubric_versions() {
         var studentId = UUID.randomUUID();
         var scores = fourEvaluations(studentId);
-        var now = OffsetDateTime.parse("2026-07-29T10:00:00+07:00");
+        var now = DateMapper.toInstant("2026-07-29T10:00:00+07:00");
 
         var first = calculator.calculate(scores, Set.of(studentId), List.of(), now, settings);
         var second = calculator.calculate(scores, Set.of(studentId), List.of(), now, settings);
@@ -108,7 +109,7 @@ class WeaknessVectorCalculatorTests {
             scores,
             Set.of(studentId),
             frequencies,
-            OffsetDateTime.parse("2026-07-29T10:00:00+07:00"),
+            DateMapper.toInstant("2026-07-29T10:00:00+07:00"),
             settings
         );
 
@@ -134,7 +135,9 @@ class WeaknessVectorCalculatorTests {
                     BigDecimal.valueOf(40 + criterionIndex * 10 + evaluationIndex),
                     BigDecimal.ZERO,
                     BigDecimal.valueOf(100),
-                    OffsetDateTime.parse("2026-07-01T10:00:00+07:00").plusDays(evaluationIndex),
+                    // Instant cộng theo Duration, không có plusDays (nó không mang lịch).
+                    DateMapper.toInstant("2026-07-01T10:00:00+07:00")
+                        .plus(Duration.ofDays(evaluationIndex)),
                     "EXAM",
                     evaluationId,
                     null,

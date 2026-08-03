@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.service;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -39,7 +39,7 @@ public class StartPracticeSessionPersistenceService {
 
     @Transactional
     public PracticeSession persist(UUID studentId, UUID paperId) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var paper = practicePaperRepository
             .findReservedPaper(paperId, studentId, now)
             .orElseThrow(() -> new NotFoundException(

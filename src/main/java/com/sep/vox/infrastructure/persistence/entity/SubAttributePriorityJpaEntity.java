@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import jakarta.persistence.Column;
@@ -51,7 +51,7 @@ public class SubAttributePriorityJpaEntity {
     private boolean practiceable;
 
     @Column(name = "computed_at", nullable = false)
-    private OffsetDateTime computedAt;
+    private Instant computedAt;
 
     protected SubAttributePriorityJpaEntity() {
     }
@@ -65,7 +65,7 @@ public class SubAttributePriorityJpaEntity {
             int recentFrequency,
             BigDecimal priority,
             boolean practiceable,
-            OffsetDateTime computedAt) {
+            Instant computedAt) {
         this.id = id;
         this.studentId = studentId;
         this.frameworkCriterionId = frameworkCriterionId;
@@ -109,7 +109,7 @@ public class SubAttributePriorityJpaEntity {
         return practiceable;
     }
 
-    public OffsetDateTime getComputedAt() {
+    public Instant getComputedAt() {
         return computedAt;
     }
 }

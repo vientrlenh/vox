@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -36,7 +36,7 @@ public class TopicInterestEventRepositoryImpl
             sessionId,
             eventType,
             java.math.BigDecimal.valueOf(signal),
-            OffsetDateTime.now()
+            Instant.now()
         ));
     }
 

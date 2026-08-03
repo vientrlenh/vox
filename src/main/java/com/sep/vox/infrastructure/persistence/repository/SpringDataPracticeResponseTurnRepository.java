@@ -33,9 +33,11 @@ public interface SpringDataPracticeResponseTurnRepository
     List<PracticeResponseTurnJpaEntity> findBySessionIdOrderByTurnOrder(@Param("sessionId") UUID sessionId);
 
     @Query(value = """
+        -- Còn bao nhiêu giây nữa mới chạm TRẦN của câu này, tính trên tổng mọi lượt (câu chính
+        -- lẫn follow-up) -- nên trần phải là max_response_seconds đứng một mình, không cộng sàn.
         SELECT GREATEST(
             0,
-            question.max_response_seconds + question.max_followup_seconds
+            question.max_response_seconds
             - COALESCE(SUM(turn.duration_seconds), 0)
         )::int
         FROM practice_question question

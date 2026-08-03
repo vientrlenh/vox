@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import jakarta.persistence.Column;
@@ -48,13 +48,13 @@ public class PracticePaperJpaEntity {
     private int reservedQuotaSeconds;
 
     @Column(name = "reservation_expires_at", nullable = false, updatable = false)
-    private OffsetDateTime reservationExpiresAt;
+    private Instant reservationExpiresAt;
 
     @Column(name = "status", nullable = false, length = 24)
     private String status;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
+    private Instant createdAt;
 
     protected PracticePaperJpaEntity() {
     }
@@ -69,9 +69,9 @@ public class PracticePaperJpaEntity {
             String previousOfferedTopicIdsJson,
             int plannedSeconds,
             int reservedQuotaSeconds,
-            OffsetDateTime reservationExpiresAt,
+            Instant reservationExpiresAt,
             String status,
-            OffsetDateTime createdAt) {
+            Instant createdAt) {
         this.id = id;
         this.studentId = studentId;
         this.practiceTopicId = practiceTopicId;
@@ -122,7 +122,7 @@ public class PracticePaperJpaEntity {
         return reservedQuotaSeconds;
     }
 
-    public OffsetDateTime getReservationExpiresAt() {
+    public Instant getReservationExpiresAt() {
         return reservationExpiresAt;
     }
 
@@ -134,7 +134,7 @@ public class PracticePaperJpaEntity {
         this.status = status;
     }
 
-    public OffsetDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 }

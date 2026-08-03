@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -159,7 +159,7 @@ public interface SpringDataWeaknessScoreObservationViewRepository
         LIMIT :limit
         """, nativeQuery = true)
     List<UUID> findStudentsNeedingRefresh(
-        @Param("staleBefore") OffsetDateTime staleBefore,
+        @Param("staleBefore") Instant staleBefore,
         @Param("limit") int limit
     );
 }

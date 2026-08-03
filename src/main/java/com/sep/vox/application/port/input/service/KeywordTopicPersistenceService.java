@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.service;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -42,7 +42,7 @@ public class KeywordTopicPersistenceService {
             String topicName,
             String dimension,
             String curriculumGroup) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var saved = practiceTopicRepository.save(new PracticeTopic(
             null,
             topicName,

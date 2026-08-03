@@ -36,7 +36,10 @@ type SubAttributeWeakness {
     subAttribute: String!
     occurrenceCount: Int!
     severity: String!
+    "Việc sinh câu hỏi có nhắm được đúng nhãn này không. false với nhãn suy từ số đo (phoneme_z, slow_rate) -- vẫn đếm và vẫn hiện, chỉ không dùng để chọn đề."
     practiceable: Boolean!
+    "Đổi nhịp xuất hiện so với cửa sổ trước, tính bằng %. null khi mẫu quá nhỏ hoặc lỗi vừa mới phát hiện."
+    trendPercent: Float
 }
 
 type CriterionProgressPoint {

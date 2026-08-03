@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import jakarta.persistence.Column;
@@ -55,7 +55,7 @@ public class WeaknessObservationJpaEntity {
     private String evidenceSpan = "";
 
     @Column(name = "observed_at", nullable = false, updatable = false)
-    private OffsetDateTime observedAt;
+    private Instant observedAt;
 
     protected WeaknessObservationJpaEntity() {
     }
@@ -69,7 +69,7 @@ public class WeaknessObservationJpaEntity {
             String criterionCode,
             String subAttribute,
             String evidenceSpan,
-            OffsetDateTime observedAt) {
+            Instant observedAt) {
         this.id = id;
         this.studentId = studentId;
         this.sourceType = sourceType;
@@ -113,7 +113,7 @@ public class WeaknessObservationJpaEntity {
         return evidenceSpan;
     }
 
-    public OffsetDateTime getObservedAt() {
+    public Instant getObservedAt() {
         return observedAt;
     }
 }

@@ -112,12 +112,18 @@ public class JpaLearnerProfileQueryRepository
             .getSingleResult();
     }
 
+    /**
+     * Mã bậc ước lượng để HIỂN THỊ (bản song sinh của
+     * SpringDataLearnerProfileRepository.findEstimatedResultBandOrder, cái kia trả số để chọn
+     * độ khó câu hỏi). Hai bên phải giữ cùng quy tắc, nếu không màn hình và đề luyện sẽ nói
+     * hai bậc khác nhau -- gồm cả nhánh practice và trọng số thi gấp 3.
+     */
     private String findEstimatedBandCode(UUID studentId) {
         var rows = em.createNativeQuery("""
-            WITH observations AS (
+            WITH raw AS (
                 SELECT band.code,
                        band.result_band_order,
-                       COUNT(*) OVER () AS total
+                       3 AS weight
                 FROM exam_item_criterion_scores score
                 JOIN rubric_criterions criterion ON criterion.id = score.rubric_criterion_id
                 JOIN framework_criteria framework
@@ -133,12 +139,37 @@ public class JpaLearnerProfileQueryRepository
                   AND candidate.blocked_at IS NULL
                   AND evaluation.marked_invalid = false
                   AND score.matched_band_code IS NOT NULL
+                UNION ALL
+                SELECT band.code,
+                       band.result_band_order,
+                       1 AS weight
+                FROM practice_criterion_score pcs
+                JOIN rubric_criterions criterion ON criterion.id = pcs.rubric_criterion_id
+                JOIN framework_criteria framework
+                  ON framework.id = criterion.framework_criterion_id
+                JOIN framework_result_bands band
+                  ON band.framework_version_id = framework.framework_version_id
+                 AND band.code = pcs.matched_band_code
+                JOIN practice_item_evaluation pe ON pe.id = pcs.practice_evaluation_id
+                JOIN practice_item_response pr ON pr.id = pe.practice_response_id
+                JOIN practice_session ps ON ps.id = pr.practice_session_id
+                WHERE ps.student_id = :studentId
+                  AND pe.marked_invalid = false
+                  AND pcs.matched_band_code IS NOT NULL
+                  AND EXISTS (
+                      SELECT 1
+                      FROM practice_response_turn pt
+                      WHERE pt.practice_response_id = pr.id
+                  )
+            ),
+            observations AS (
+                SELECT code, result_band_order, weight, COUNT(*) OVER () AS total FROM raw
             )
             SELECT code
             FROM observations
             WHERE total >= 5
             GROUP BY code, result_band_order
-            ORDER BY COUNT(*) DESC, result_band_order DESC
+            ORDER BY SUM(weight) DESC, result_band_order DESC
             LIMIT 1
             """)
             .setParameter("studentId", studentId)

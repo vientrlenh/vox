@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -34,7 +34,7 @@ public interface SpringDataWeaknessObservationRepository
         """, nativeQuery = true)
     List<WeaknessFrequencyInfo> findWeaknessFrequencies(
         @Param("studentIds") List<UUID> studentIds,
-        @Param("windowStart") OffsetDateTime windowStart,
-        @Param("recentWindowStart") OffsetDateTime recentWindowStart
+        @Param("windowStart") Instant windowStart,
+        @Param("recentWindowStart") Instant recentWindowStart
     );
 }

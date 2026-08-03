@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import jakarta.persistence.Column;
@@ -35,7 +35,7 @@ public class StudentQuestionExposureJpaEntity {
     private UUID practiceQuestionId;
 
     @Column(name = "seen_at", nullable = false)
-    private OffsetDateTime seenAt;
+    private Instant seenAt;
 
     protected StudentQuestionExposureJpaEntity() {
     }
@@ -44,7 +44,7 @@ public class StudentQuestionExposureJpaEntity {
             UUID id,
             UUID studentId,
             UUID practiceQuestionId,
-            OffsetDateTime seenAt) {
+            Instant seenAt) {
         this.id = id;
         this.studentId = studentId;
         this.practiceQuestionId = practiceQuestionId;
@@ -63,11 +63,11 @@ public class StudentQuestionExposureJpaEntity {
         return practiceQuestionId;
     }
 
-    public OffsetDateTime getSeenAt() {
+    public Instant getSeenAt() {
         return seenAt;
     }
 
-    public void setSeenAt(OffsetDateTime seenAt) {
+    public void setSeenAt(Instant seenAt) {
         this.seenAt = seenAt;
     }
 }

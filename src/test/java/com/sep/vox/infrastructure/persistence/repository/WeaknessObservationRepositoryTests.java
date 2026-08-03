@@ -2,7 +2,8 @@ package com.sep.vox.infrastructure.persistence.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import com.sep.vox.application.common.DateMapper;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -103,7 +104,7 @@ class WeaknessObservationRepositoryTests extends ContainerTestConfig {
             "grammar",
             subAttribute,
             evidence,
-            OffsetDateTime.now()
+            Instant.now()
         );
     }
 

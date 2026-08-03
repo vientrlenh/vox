@@ -1,6 +1,6 @@
 package com.sep.vox.domain.model.personalization;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class TopicInterestScoreEntry {
@@ -8,7 +8,7 @@ public class TopicInterestScoreEntry {
     private UUID topicId;
     private double score;
     private int sessionCount;
-    private OffsetDateTime lastEventAt;
+    private Instant lastEventAt;
 
     public TopicInterestScoreEntry() {
     }
@@ -17,7 +17,7 @@ public class TopicInterestScoreEntry {
             UUID topicId,
             double score,
             int sessionCount,
-            OffsetDateTime lastEventAt) {
+            Instant lastEventAt) {
         this.topicId = topicId;
         this.score = score;
         this.sessionCount = sessionCount;
@@ -48,11 +48,11 @@ public class TopicInterestScoreEntry {
         this.sessionCount = sessionCount;
     }
 
-    public OffsetDateTime getLastEventAt() {
+    public Instant getLastEventAt() {
         return lastEventAt;
     }
 
-    public void setLastEventAt(OffsetDateTime lastEventAt) {
+    public void setLastEventAt(Instant lastEventAt) {
         this.lastEventAt = lastEventAt;
     }
 }

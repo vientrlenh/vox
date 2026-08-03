@@ -1,6 +1,6 @@
 package com.sep.vox.application.query.dto;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public interface SessionRowInfo {
@@ -25,7 +25,10 @@ public interface SessionRowInfo {
 
     String getOfferedTopicIdsJson();
 
-    OffsetDateTime getStartedAt();
+    // Instant chu khong OffsetDateTime: driver tra TIMESTAMPTZ ve duoi dang Instant, va
+    // projection cua Spring Data KHONG co converter Instant -> OffsetDateTime nen se nem
+    // UnsupportedOperationException ngay khi co dong du lieu dau tien.
+    Instant getStartedAt();
 
-    OffsetDateTime getEndedAt();
+    Instant getEndedAt();
 }

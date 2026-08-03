@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -50,7 +50,7 @@ public class InterestDimensionRepositoryImpl implements InterestDimensionReposit
 
     @Override
     public InterestDimension save(InterestDimension dimension) {
-        var now = OffsetDateTime.now();
+        var now = Instant.now();
         var saved = repository.save(new InterestDimensionJpaEntity(
             dimension.getCode(),
             dimension.getLabel(),

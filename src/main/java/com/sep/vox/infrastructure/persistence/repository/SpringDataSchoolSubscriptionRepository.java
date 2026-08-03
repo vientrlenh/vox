@@ -40,7 +40,7 @@ public interface SpringDataSchoolSubscriptionRepository extends JpaRepository<Sc
          AND subscription.status = 'ACTIVE'
          AND CURRENT_DATE BETWEEN subscription.start_date AND subscription.end_date
         WHERE school_user.user_id = :userId
-          AND school_user.end_date IS NULL
+          AND (school_user.end_date IS NULL OR school_user.end_date >= CURRENT_TIMESTAMP)
         ORDER BY subscription.end_date DESC
         LIMIT 1
         """, nativeQuery = true)
@@ -57,7 +57,7 @@ public interface SpringDataSchoolSubscriptionRepository extends JpaRepository<Sc
           ON quota.subscription_id = subscription.id
          AND quota.quota_type = 'PRACTICE'
         WHERE school_user.user_id = :userId
-          AND school_user.end_date IS NULL
+          AND (school_user.end_date IS NULL OR school_user.end_date >= CURRENT_TIMESTAMP)
         ORDER BY subscription.end_date DESC
         LIMIT 1
         """, nativeQuery = true)
@@ -73,7 +73,7 @@ public interface SpringDataSchoolSubscriptionRepository extends JpaRepository<Sc
         JOIN subscription_plan plan
           ON plan.id = subscription.plan_id
         WHERE school_user.user_id = :userId
-          AND school_user.end_date IS NULL
+          AND (school_user.end_date IS NULL OR school_user.end_date >= CURRENT_TIMESTAMP)
         ORDER BY subscription.end_date DESC
         LIMIT 1
         """, nativeQuery = true)

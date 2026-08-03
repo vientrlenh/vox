@@ -2,7 +2,7 @@ package com.sep.vox.domain.model.personalization;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public class LearnerProfile {
@@ -16,8 +16,8 @@ public class LearnerProfile {
     private BigDecimal flsaScore;
     private String flsaRawAnswersJson;
     private boolean autoUpdateInterest;
-    private OffsetDateTime quizCompletedAt;
-    private OffsetDateTime recordedAt;
+    private Instant quizCompletedAt;
+    private Instant recordedAt;
 
     public LearnerProfile() {
     }
@@ -32,8 +32,8 @@ public class LearnerProfile {
             BigDecimal flsaScore,
             String flsaRawAnswersJson,
             boolean autoUpdateInterest,
-            OffsetDateTime quizCompletedAt,
-            OffsetDateTime recordedAt) {
+            Instant quizCompletedAt,
+            Instant recordedAt) {
         this.id = id;
         this.studentId = studentId;
         this.version = version;
@@ -119,19 +119,19 @@ public class LearnerProfile {
         this.autoUpdateInterest = autoUpdateInterest;
     }
 
-    public OffsetDateTime getQuizCompletedAt() {
+    public Instant getQuizCompletedAt() {
         return quizCompletedAt;
     }
 
-    public void setQuizCompletedAt(OffsetDateTime quizCompletedAt) {
+    public void setQuizCompletedAt(Instant quizCompletedAt) {
         this.quizCompletedAt = quizCompletedAt;
     }
 
-    public OffsetDateTime getRecordedAt() {
+    public Instant getRecordedAt() {
         return recordedAt;
     }
 
-    public void setRecordedAt(OffsetDateTime recordedAt) {
+    public void setRecordedAt(Instant recordedAt) {
         this.recordedAt = recordedAt;
     }
 
@@ -147,7 +147,7 @@ public class LearnerProfile {
             null,
             true,
             null,
-            OffsetDateTime.now()
+            Instant.now()
         );
     }
 
@@ -156,7 +156,7 @@ public class LearnerProfile {
             BigDecimal nextFlsaScore,
             String nextFlsaRawAnswersJson,
             Boolean nextAutoUpdate,
-            OffsetDateTime nextQuizCompletedAt) {
+            Instant nextQuizCompletedAt) {
         return new LearnerProfile(
             null,
             studentId,
@@ -172,7 +172,7 @@ public class LearnerProfile {
             nextQuizCompletedAt != null
                 ? nextQuizCompletedAt
                 : quizCompletedAt,
-            OffsetDateTime.now()
+            Instant.now()
         );
     }
 }

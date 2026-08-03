@@ -59,7 +59,8 @@ public class SecurityConfig {
         "/api/v1/auth/**",
         "/api/v1/webhooks/payos/**",
         "/graphql",
-        "/graphiql/**"
+        "/graphiql/**",
+        "/internal/practice-sessions/**"
     };
 
     private static final List<String> CORS_ALLOWED_PATTERNS = List.of(

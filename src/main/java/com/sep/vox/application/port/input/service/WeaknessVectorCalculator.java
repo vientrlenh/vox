@@ -3,7 +3,7 @@ package com.sep.vox.application.port.input.service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 
 import com.sep.vox.domain.model.personalization.LearnerWeaknessSnapshot;
 import com.sep.vox.domain.model.personalization.SubAttributePriority;
+import com.sep.vox.domain.service.personalization.SubAttributePolicy;
 import com.sep.vox.domain.model.personalization.WeaknessFrequency;
 import com.sep.vox.domain.model.personalization.WeaknessScoreObservation;
 
@@ -31,7 +32,7 @@ public class WeaknessVectorCalculator {
             List<WeaknessScoreObservation> scores,
             Set<UUID> targetStudentIds,
             List<WeaknessFrequency> frequencies,
-            OffsetDateTime computedAt,
+            Instant computedAt,
             WeaknessVectorSettings settings) {
         var relatives = centerScores(scores, settings.minimumCriteriaPerEvaluation());
         var snapshots = calculateSnapshots(relatives, targetStudentIds, computedAt, settings);
@@ -87,7 +88,7 @@ public class WeaknessVectorCalculator {
     private List<LearnerWeaknessSnapshot> calculateSnapshots(
             List<RelativeObservation> relatives,
             Set<UUID> targetStudentIds,
-            OffsetDateTime computedAt,
+            Instant computedAt,
             WeaknessVectorSettings settings) {
         var classPriors = priorsByCohort(
             relatives,
@@ -195,7 +196,7 @@ public class WeaknessVectorCalculator {
     private List<SubAttributePriority> calculatePriorities(
             List<WeaknessFrequency> frequencies,
             List<LearnerWeaknessSnapshot> snapshots,
-            OffsetDateTime computedAt,
+            Instant computedAt,
             WeaknessVectorSettings settings) {
         var snapshotByKey = snapshots.stream().collect(Collectors.toMap(
             item -> new StudentCriterionKey(item.getStudentId(), item.getFrameworkCriterionId()),
@@ -242,7 +243,17 @@ public class WeaknessVectorCalculator {
                 item.getFrequency(),
                 item.getRecentFrequency(),
                 decimal(priority),
-                false,
+                // practiceable = "việc sinh câu hỏi có nhắm được đúng nhãn này không", chứ
+                // không phải "nhãn này có đáng luyện không". Trước đây ghi cứng false nên
+                // findPracticeablePrioritiesOrderedDesc luôn trả rỗng: hệ thống chỉ nhắm được
+                // tới TIÊU CHÍ (GRAMMAR/VOCABULARY/...), không bao giờ tới được "thì quá khứ
+                // đơn", dù đã đo đếm đầy đủ tần suất của nó.
+                //
+                // Phép thử là taxonomy đóng: nhãn nào prompt sinh câu hiểu được thì nhắm được.
+                // Nhãn suy ra từ số đo -- phoneme_z, slow_rate, long_pause -- KHÔNG thuộc tập
+                // đó, và đúng là không nhắm được: không thể ra đề "hãy nói sai âm /z/ ít lại".
+                // Chúng vẫn được đếm và vẫn hiện trên hồ sơ, chỉ là không dùng để chọn đề.
+                SubAttributePolicy.criterionForSubAttribute(item.getSubAttribute()) != null,
                 computedAt
             ));
         }
@@ -285,7 +296,7 @@ public class WeaknessVectorCalculator {
         UUID frameworkCriterionId,
         String criterionCode,
         double relativeScore,
-        OffsetDateTime evaluatedAt,
+        Instant evaluatedAt,
         String sourceType,
         UUID evaluationId,
         UUID schoolClassId,

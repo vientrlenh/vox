@@ -59,7 +59,10 @@ public final class PracticeSessionResponseMapper {
             dto.turnId(),
             dto.remainingGradedSeconds(),
             dto.evaluationQueued(),
-            dto.corrections().stream().map(PracticeSessionResponseMapper::toResponse).toList()
+            dto.corrections().stream().map(PracticeSessionResponseMapper::toResponse).toList(),
+            dto.quotaExhausted(),
+            dto.sessionSpokenSeconds(),
+            dto.sessionBudgetSeconds()
         );
     }
 

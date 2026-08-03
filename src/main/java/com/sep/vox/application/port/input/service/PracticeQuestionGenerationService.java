@@ -2,7 +2,7 @@ package com.sep.vox.application.port.input.service;
 
 import java.time.Duration;
 import java.util.List;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -68,6 +68,22 @@ public class PracticeQuestionGenerationService {
             bandCount,
             bandLadder
         );
+        if (generated.isEmpty()) {
+            // Python tra 200 kem mang rong la che do hong TE NHAT: vong lap ben duoi khong
+            // chay, khong exception, khong log -- roi caller bao "chu de chua co cau luyen
+            // phu hop" ma khong ai biet vi sao. Da mat nhieu gio truy nguoc dung ca nay
+            // (sub-attribute null bi CandidateFilterNode loai sach). Log ro tai day de lan
+            // sau nhin phat ra ngay.
+            LOGGER.warn(
+                "Pipeline sinh cau tra ve 0 cau (HTTP 2xx) cho topic={} criterion={} "
+                    + "subAttribute={} targetRank={} bandCount={} -- khong co gi de luu.",
+                topicId,
+                criterionCode,
+                subAttribute,
+                targetRank,
+                bandCount
+            );
+        }
         for (var question : generated) {
             practiceQuestionRepository.saveGenerated(toPracticeQuestion(question));
         }
@@ -108,14 +124,14 @@ public class PracticeQuestionGenerationService {
             question.difficultyFeaturesJson(),
             question.evaluationGuideJson(),
             question.suggestedIdeasJson(),
-            question.preparationTimeSeconds(),
+            question.questionType(),
             question.maxResponseSeconds(),
-            question.maxFollowupSeconds(),
+            question.minResponseSeconds(),
             question.vstepPart(),
             null,
             0,
             true,
-            OffsetDateTime.now()
+            Instant.now()
         );
     }
 }

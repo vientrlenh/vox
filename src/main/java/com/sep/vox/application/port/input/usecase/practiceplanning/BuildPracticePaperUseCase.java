@@ -91,7 +91,11 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
             selection
         );
         return PracticePlanningResponseMapper.toResponse(
-            PracticePaperDtoMapper.toDto(paper, List.of(question))
+            PracticePaperDtoMapper.toDto(
+                paper,
+                List.of(question),
+                enrichmentService.sessionBudgetSecondsForStudent(studentId)
+            )
         );
     }
 

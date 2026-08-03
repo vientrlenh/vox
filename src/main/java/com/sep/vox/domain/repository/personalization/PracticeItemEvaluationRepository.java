@@ -1,7 +1,7 @@
 package com.sep.vox.domain.repository.personalization;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public interface PracticeItemEvaluationRepository {
@@ -11,7 +11,7 @@ public interface PracticeItemEvaluationRepository {
         UUID practiceResponseId,
         double itemScore,
         boolean markedInvalid,
-        OffsetDateTime evaluatedAt
+        Instant evaluatedAt
     );
 
     int countCompletedBySessionId(UUID sessionId);

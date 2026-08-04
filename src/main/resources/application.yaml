@@ -29,6 +29,12 @@ spring:
           inbound: 
             message:
               max-size: 8MB
+        vox-streaming: 
+          target: 0.0.0.0:9096
+          inbound: 
+            message: 
+              max-size: 10MB
+
 
   flyway: 
     enabled: true
@@ -194,8 +200,9 @@ server:
   forward-headers-strategy: framework
 
 app:
-  data-initializer: 
-    enabled: ${DATA_INITIALIZER:true}
+  cookie:
+    secure: ${COOKIE_SECURE:false} # Local dev use false
+    same-site: ${COOKIE_SAME_SITE:Lax} # If using domain forward, make this as None
   frontend:
     password-setup-url: ${PASSWORD_SETUP_URL}
     oauth2-url: ${OAUTH2_URL}
@@ -272,5 +279,3 @@ payos:
   checksum-key: ${PAYOS_CHECKSUM_KEY:}
   return-url: ${PAYOS_RETURN_URL:}
   cancel-url: ${PAYOS_CANCEL_URL:}
-  system-admin-return-url: ${PAYOS_SYSTEM_ADMIN_RETURN_URL:}
-  system-admin-cancel-url: ${PAYOS_SYSTEM_ADMIN_CANCEL_URL:}

@@ -18,6 +18,7 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.CreateExamSessionUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.UpdateExamSessionStatusUseCase;
 import com.sep.vox.application.port.output.CacheManagerPort;
+import com.sep.vox.application.port.output.HealthCheckPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.exam.ExamEntryTicketResponse;
 import com.sep.vox.domain.model.exam.Exam;
@@ -44,6 +45,7 @@ public class VerifyExamScheduleOtpUseCase implements IUseCase<VerifyExamSchedule
     private final UserContextPort userContextPort;
     private final CreateExamSessionUseCase createExamSessionUseCase;
     private final UpdateExamSessionStatusUseCase updateExamSessionStatusUseCase;
+    private final HealthCheckPort healthCheckPort;
 
     public VerifyExamScheduleOtpUseCase(
             ExamCandidateRepository examCandidateRepository,
@@ -54,7 +56,7 @@ public class VerifyExamScheduleOtpUseCase implements IUseCase<VerifyExamSchedule
             CacheManagerPort cacheManagerPort,
             UserContextPort userContextPort,
             CreateExamSessionUseCase createExamSessionUseCase,
-            UpdateExamSessionStatusUseCase updateExamSessionStatusUseCase) {
+            UpdateExamSessionStatusUseCase updateExamSessionStatusUseCase, HealthCheckPort healthCheckPort) {
         this.examCandidateRepository = examCandidateRepository;
         this.examCandidateResultRepository = examCandidateResultRepository;
         this.examRepository = examRepository;
@@ -64,6 +66,7 @@ public class VerifyExamScheduleOtpUseCase implements IUseCase<VerifyExamSchedule
         this.userContextPort = userContextPort;
         this.createExamSessionUseCase = createExamSessionUseCase;
         this.updateExamSessionStatusUseCase = updateExamSessionStatusUseCase;
+        this.healthCheckPort = healthCheckPort;
     }
 
     @Override

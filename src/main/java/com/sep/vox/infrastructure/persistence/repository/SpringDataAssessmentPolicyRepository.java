@@ -31,7 +31,7 @@ public interface SpringDataAssessmentPolicyRepository extends JpaRepository<Asse
             AND (:status IS NULL OR p.status = :status)
             AND (:languageId IS NULL OR p.languageId = :languageId)
             AND (:rubricVersionId IS NULL OR p.rubricVersionId = :rubricVersionId)
-            AND (p.effectiveTo IS NULL OR p.effectiveTo >= COALESCE(:effectiveFrom, p.effectiveTo))
+            AND (p.effectiveFrom >= COALESCE(:effectiveFrom, p.effectiveFrom))
             AND (p.effectiveFrom <= COALESCE(:effectiveTo, p.effectiveFrom))
     """)
     Page<AssessmentPolicyJpaEntity> findBySchoolIdIsNullAndStatus(@Param("status") String status, @Param("languageId") UUID languageId,
@@ -44,7 +44,7 @@ public interface SpringDataAssessmentPolicyRepository extends JpaRepository<Asse
             AND (:status IS NULL OR p.status = :status)
             AND (:languageId IS NULL OR p.languageId = :languageId)
             AND (:rubricVersionId IS NULL OR p.rubricVersionId = :rubricVersionId)
-            AND (p.effectiveTo IS NULL OR p.effectiveTo >= COALESCE(:effectiveFrom, p.effectiveTo))
+            AND (p.effectiveFrom >= COALESCE(:effectiveFrom, p.effectiveFrom))
             AND (p.effectiveFrom <= COALESCE(:effectiveTo, p.effectiveFrom))
     """)
     Page<AssessmentPolicyJpaEntity> findBySchoolIdAndStatus(@Param("schoolId") UUID schoolId, @Param("status") String status,

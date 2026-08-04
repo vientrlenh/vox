@@ -17,12 +17,13 @@ public class SubscriptionPlan {
     private Integer version;
     private Instant createdAt;
     private UUID createdBy;
+    private UUID replacedByPlanId;
 
     public SubscriptionPlan() {}
 
     public SubscriptionPlan(UUID id, String name, String tagline, BigDecimal pricePerYear, Integer validityDays,
             Integer maxTimePerAttemptMin, Integer maxStudentCount, boolean popular, PlanStatus status, Integer version,
-            Instant createdAt, UUID createdBy) {
+            Instant createdAt, UUID createdBy, UUID replacedByPlanId) {
         this.id = id;
         this.name = name;
         this.tagline = tagline;
@@ -35,6 +36,7 @@ public class SubscriptionPlan {
         this.version = version;
         this.createdAt = createdAt;
         this.createdBy = createdBy;
+        this.replacedByPlanId = replacedByPlanId;
     }
 
     public SubscriptionPlan(String name, String tagline, BigDecimal pricePerYear, Integer validityDays,
@@ -147,5 +149,13 @@ public class SubscriptionPlan {
 
     public void setCreatedBy(UUID createdBy) {
         this.createdBy = createdBy;
+    }
+
+    public UUID getReplacedByPlanId() {
+        return replacedByPlanId;
+    }
+
+    public void setReplacedByPlanId(UUID replacedByPlanId) {
+        this.replacedByPlanId = replacedByPlanId;
     }
 }

@@ -78,11 +78,14 @@ public class InvoiceJpaEntity {
     @Column(name = "paid_at")
     private Instant paidAt;
 
+    @Column(name = "resolved_plan_id")
+    private UUID resolvedPlanId;
+
     protected InvoiceJpaEntity() {}
 
     public InvoiceJpaEntity(UUID id, String invoiceNumber, UUID schoolId, UUID subscriptionId, String sourceType, UUID sourceId,
             LocalDate issueDate, BigDecimal amount, String status, Long payosOrderCode, String paymentLinkId,
-            String checkoutUrl, Instant paidAt) {
+            String checkoutUrl, Instant paidAt, UUID resolvedPlanId) {
         this.id = id;
         this.invoiceNumber = invoiceNumber;
         this.schoolId = schoolId;
@@ -96,6 +99,7 @@ public class InvoiceJpaEntity {
         this.paymentLinkId = paymentLinkId;
         this.checkoutUrl = checkoutUrl;
         this.paidAt = paidAt;
+        this.resolvedPlanId = resolvedPlanId;
     }
 
     public UUID getId() {
@@ -200,5 +204,13 @@ public class InvoiceJpaEntity {
 
     public void setPaidAt(Instant paidAt) {
         this.paidAt = paidAt;
+    }
+
+    public UUID getResolvedPlanId() {
+        return resolvedPlanId;
+    }
+
+    public void setResolvedPlanId(UUID resolvedPlanId) {
+        this.resolvedPlanId = resolvedPlanId;
     }
 }

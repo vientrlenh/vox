@@ -31,6 +31,8 @@ public class SmtpEmailTemplateRenderService implements MailTemplatePort {
     /** Khung dùng chung cho các thông báo vòng đời điểm — xem javadoc ở MailTemplatePort. */
     private static final String RESULT_NOTIFICATION_TEMPLATE =
         "templates/email/result-notification.html";
+    private static final String INVOICE_PAID_TEMPLATE =
+        "templates/email/invoice-paid.html";
 
     @Override
     public String renderPasswordSetUpEmail(String schoolAdminName, String schoolName, String passwordSetupUrl,
@@ -174,6 +176,20 @@ public class SmtpEmailTemplateRenderService implements MailTemplatePort {
                 + "</strong> vừa được trả lại và đang chờ giao cho người khác.",
             "Chi tiết",
             "Giáo viên: " + escapeHtml(teacherName) + "<br>Lý do: " + escapeHtml(reason));
+    }
+
+    @Override
+    public String renderInvoicePaidEmail(
+            String schoolName, String invoiceNumber, String itemTitle, String itemsHtml,
+            String amountLabel, String paidAtLabel, String validUntilLabel) {
+        return loadTemplate(INVOICE_PAID_TEMPLATE)
+            .replace("{{schoolName}}", escapeHtml(schoolName))
+            .replace("{{invoiceNumber}}", escapeHtml(invoiceNumber))
+            .replace("{{itemTitle}}", escapeHtml(itemTitle))
+            .replace("{{itemsHtml}}", itemsHtml)
+            .replace("{{amountLabel}}", escapeHtml(amountLabel))
+            .replace("{{paidAtLabel}}", escapeHtml(paidAtLabel))
+            .replace("{{validUntilLabel}}", escapeHtml(validUntilLabel));
     }
 
     /**

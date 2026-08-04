@@ -8,6 +8,7 @@ import com.sep.vox.application.port.input.command.CompleteExamSessionGradingComm
 import com.sep.vox.application.port.input.command.ConsumeQuotaCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ConsumeQuotaUseCase;
+import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
 import com.sep.vox.domain.model.subscription.QuotaType;
 import com.sep.vox.domain.repository.ExamItemResponseRepository;
@@ -67,6 +68,11 @@ public class CompleteExamSessionGradingUseCase implements IUseCase<CompleteExamS
             consumeQuotaUseCase.execute(new ConsumeQuotaCommand(
                 subscription.getId(), session.getId(), QuotaType.GRADING, totalDurationSeconds, null
             ));
+            if (exam.getKind() == ExamKind.CLASS_TEST) {
+                consumeQuotaUseCase.execute(new ConsumeQuotaCommand(
+                    subscription.getId(), session.getId(), QuotaType.CLASS_TEST, totalDurationSeconds, exam.getCreatedBy()
+                ));
+            }
         }
         return null;
     }

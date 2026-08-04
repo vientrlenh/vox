@@ -87,7 +87,7 @@ enum ExamSecurePoolReleaseMode {
 }
 
 enum ExamRecordingStreamType {
-    CAMERA 
+    CAMERA
     SCREEN
 }
 

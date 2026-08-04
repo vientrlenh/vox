@@ -15,11 +15,13 @@ public class SchoolSubscription {
     private BigDecimal pricePaidSnapshot;
     private Instant cancelledAt;
     private Instant createdAt;
+    private Long version;
 
     public SchoolSubscription() {}
 
     public SchoolSubscription(UUID id, UUID schoolId, UUID planId, LocalDate startDate, LocalDate endDate,
-            SubscriptionStatus status, BigDecimal pricePaidSnapshot, Instant cancelledAt, Instant createdAt) {
+            SubscriptionStatus status, BigDecimal pricePaidSnapshot, Instant cancelledAt, Instant createdAt,
+            Long version) {
         this.id = id;
         this.schoolId = schoolId;
         this.planId = planId;
@@ -29,6 +31,7 @@ public class SchoolSubscription {
         this.pricePaidSnapshot = pricePaidSnapshot;
         this.cancelledAt = cancelledAt;
         this.createdAt = createdAt;
+        this.version = version;
     }
 
     public SchoolSubscription(UUID schoolId, UUID planId, LocalDate startDate, LocalDate endDate,
@@ -113,5 +116,13 @@ public class SchoolSubscription {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
     }
 }

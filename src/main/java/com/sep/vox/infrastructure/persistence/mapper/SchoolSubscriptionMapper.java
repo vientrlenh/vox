@@ -18,7 +18,8 @@ public final class SchoolSubscriptionMapper {
             SubscriptionStatus.valueOf(jpa.getStatus()),
             jpa.getPricePaidSnapshot(),
             jpa.getCancelledAt(),
-            jpa.getCreatedAt()
+            jpa.getCreatedAt(),
+            jpa.getVersion()
         );
     }
 
@@ -32,7 +33,8 @@ public final class SchoolSubscriptionMapper {
             domain.getStatus().name(),
             domain.getPricePaidSnapshot(),
             domain.getCancelledAt(),
-            domain.getCreatedAt()
+            domain.getCreatedAt(),
+            domain.getVersion()
         );
     }
 }

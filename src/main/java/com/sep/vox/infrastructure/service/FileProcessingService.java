@@ -287,7 +287,7 @@ public class FileProcessingService implements FileProcessingPort {
                     "address", List.of("address", "địa chỉ", "dia chi")
             );
             case RUBRIC_VERSION -> Map.of(
-                    "version", List.of("version", "version number", "phiên bản", "phien ban", "số version"),
+                    "version", List.of("version", "version number", "phiên bản", "phien ban", "số version","STT Version"),
                     "name", List.of("name", "version name", "tên phiên bản", "ten phien ban", "tên"),
                     "description", List.of("description", "note", "notes", "mô tả", "mo ta", "ghi chú", "ghi chu"),
                     "scoringScaleMin", List.of("scoringScaleMin", "min score", "điểm sàn", "diem san", "điểm tối thiểu"),

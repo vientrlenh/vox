@@ -11,7 +11,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.DateMapper;
+import com.sep.vox.application.event.InvoicePaidEvent;
 import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.port.output.EventPublisherPort;
 import com.sep.vox.domain.model.subscription.FinancialEvent;
 import com.sep.vox.domain.model.subscription.FinancialEventType;
 import com.sep.vox.domain.model.subscription.Invoice;
@@ -49,6 +51,7 @@ public class PayOSInvoiceSettlementService {
     private final TokenPurchaseRepository tokenPurchaseRepository;
     private final TokenPurchaseItemRepository tokenPurchaseItemRepository;
     private final FinancialEventRepository financialEventRepository;
+    private final EventPublisherPort eventPublisherPort;
 
     public PayOSInvoiceSettlementService(
             InvoiceRepository invoiceRepository,
@@ -59,7 +62,8 @@ public class PayOSInvoiceSettlementService {
             SubscriptionQuotaRepository subscriptionQuotaRepository,
             TokenPurchaseRepository tokenPurchaseRepository,
             TokenPurchaseItemRepository tokenPurchaseItemRepository,
-            FinancialEventRepository financialEventRepository) {
+            FinancialEventRepository financialEventRepository,
+            EventPublisherPort eventPublisherPort) {
         this.invoiceRepository = invoiceRepository;
         this.subscriptionRequestRepository = subscriptionRequestRepository;
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
@@ -69,6 +73,7 @@ public class PayOSInvoiceSettlementService {
         this.tokenPurchaseRepository = tokenPurchaseRepository;
         this.tokenPurchaseItemRepository = tokenPurchaseItemRepository;
         this.financialEventRepository = financialEventRepository;
+        this.eventPublisherPort = eventPublisherPort;
     }
 
     // Idempotent: nếu invoice không còn PENDING (đã được chốt trước đó, kể cả bởi lần gọi khác) thì bỏ qua.
@@ -113,11 +118,16 @@ public class PayOSInvoiceSettlementService {
         } else if (invoice.getSourceType() == InvoiceSourceType.TOKEN_PURCHASE) {
             finalizeTokenPurchase(invoice.getSourceId(), invoice.getSubscriptionId(), now);
         } else if (invoice.getSourceType() == InvoiceSourceType.SUBSCRIPTION) {
-            var savedSubscription = renewSubscription(invoice.getSourceId(), now);
+            var savedSubscription = renewSubscription(invoice.getSourceId(), invoice.getResolvedPlanId(), now);
             invoice.setSubscriptionId(savedSubscription.getId());
         }
 
         invoiceRepository.save(invoice);
+
+        eventPublisherPort.publish(new InvoicePaidEvent(
+            invoice.getSchoolId(), invoice.getSubscriptionId(), invoice.getSourceId(), invoice.getInvoiceNumber(),
+            invoice.getAmount(), invoice.getPaidAt(), invoice.getSourceType()
+        ));
     }
 
     private SchoolSubscription approveSubscriptionRequest(UUID requestId, Instant now) {
@@ -172,7 +182,7 @@ public class PayOSInvoiceSettlementService {
         return savedSubscription;
     }
 
-    private SchoolSubscription renewSubscription(UUID subscriptionId, Instant now) {
+    private SchoolSubscription renewSubscription(UUID subscriptionId, UUID resolvedPlanId, Instant now) {
         var current = schoolSubscriptionRepository.findById(subscriptionId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói đăng ký"));
         if (current.getStatus() != SubscriptionStatus.ACTIVE) {
@@ -180,8 +190,17 @@ public class PayOSInvoiceSettlementService {
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy gói đăng ký đang hoạt động"));
         }
 
-        var plan = subscriptionPlanRepository.findById(current.getPlanId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
+        // Dùng ĐÚNG plan đã chốt giá lúc tạo invoice/payment link (CreatePaymentLinkForRenewalUseCase),
+        // không resolve lại PlanReplacementResolver ở đây — nếu resolve lại, admin đổi replacedByPlanId
+        // giữa lúc tạo invoice và lúc PayOS xác nhận thanh toán có thể khiến trường bị tính tiền theo 1
+        // plan nhưng lại được cấp quota/hạn theo plan khác. resolvedPlanId chỉ null cho invoice cũ tạo
+        // trước khi field này tồn tại — fallback resolve lại để không vỡ luồng cũ.
+        var plan = resolvedPlanId != null
+            ? subscriptionPlanRepository.findById(resolvedPlanId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"))
+            : PlanReplacementResolver.resolveActive(subscriptionPlanRepository,
+                subscriptionPlanRepository.findById(current.getPlanId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy gói")));
 
         current.setStatus(SubscriptionStatus.EXPIRED);
         schoolSubscriptionRepository.save(current);

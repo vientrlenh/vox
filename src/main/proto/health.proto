@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package health.v1;
+
+option java_package = "com.sep.vox.grpc.proto";
+option java_multiple_files = true;
+
+service HealthService {
+    rpc Ping(HealthRequest) returns (HealthResponse);
+}
+
+message HealthRequest {
+
+}
+
+message HealthResponse {
+    bool alive = 1;
+    string message = 2;
+}

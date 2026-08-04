@@ -12,6 +12,7 @@ import com.sep.vox.domain.dto.SubscriptionPlanDto;
 import com.sep.vox.domain.mapper.SubscriptionPlanDtoMapper;
 import com.sep.vox.domain.model.subscription.PlanQuota;
 import com.sep.vox.domain.repository.PlanQuotaRepository;
+import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
 
 @Service
@@ -19,14 +20,17 @@ public class UpdatePlanUseCase implements IUseCase<UpdatePlanCommand, Subscripti
 
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final PlanQuotaRepository planQuotaRepository;
+    private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final UserContextPort userContextPort;
 
     public UpdatePlanUseCase(
             SubscriptionPlanRepository subscriptionPlanRepository,
             PlanQuotaRepository planQuotaRepository,
+            SchoolSubscriptionRepository schoolSubscriptionRepository,
             UserContextPort userContextPort) {
         this.subscriptionPlanRepository = subscriptionPlanRepository;
         this.planQuotaRepository = planQuotaRepository;
+        this.schoolSubscriptionRepository = schoolSubscriptionRepository;
         this.userContextPort = userContextPort;
     }
 
@@ -39,6 +43,17 @@ public class UpdatePlanUseCase implements IUseCase<UpdatePlanCommand, Subscripti
 
         var plan = subscriptionPlanRepository.findById(input.planId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
+
+        // Gói đang có trường ACTIVE thì bị khóa hoàn toàn, kể cả field không liên quan tiền/quota:
+        // renewal (CreatePaymentLinkForRenewalUseCase / PayOSInvoiceSettlementService) đọc giá và
+        // quota LIVE từ đúng plan này tại thời điểm gia hạn, không qua snapshot nào — sửa tại chỗ
+        // sẽ âm thầm đổi giá/quota cho trường đang gia hạn mà không qua bước xác nhận
+        // (PlanReplacementResolver chỉ kích hoạt khi đổi SANG plan khác, tức đổi id, không phải sửa
+        // tại chỗ). Muốn đổi gì thì phải archive gói này và tạo gói mới (kèm replacedByPlanId).
+        if (schoolSubscriptionRepository.existsActiveByPlanId(plan.getId())) {
+            throw new IllegalStateException(
+                "Gói đang được ít nhất một trường sử dụng nên không thể chỉnh sửa. Hãy lưu trữ gói này và tạo gói mới thay thế.");
+        }
 
         if (input.name() != null) {
             plan.setName(input.name());

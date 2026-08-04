@@ -12,13 +12,15 @@ import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreatePaymentLinkForRenewalCommand;
+import com.sep.vox.application.port.input.service.PaymentPortResolver;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.PayOSPort;
+import com.sep.vox.application.port.output.PaymentPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.PaymentLinkDto;
 import com.sep.vox.domain.model.subscription.Invoice;
 import com.sep.vox.domain.model.subscription.InvoiceSourceType;
 import com.sep.vox.domain.model.subscription.InvoiceStatus;
+import com.sep.vox.domain.model.subscription.PaymentMethod;
 import com.sep.vox.domain.model.subscription.SubscriptionStatus;
 import com.sep.vox.domain.repository.InvoiceRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
@@ -30,19 +32,19 @@ public class CreatePaymentLinkForRenewalUseCase implements IUseCase<CreatePaymen
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final InvoiceRepository invoiceRepository;
-    private final PayOSPort payOSPort;
+    private final PaymentPort paymentPort;
     private final UserContextPort userContextPort;
 
     public CreatePaymentLinkForRenewalUseCase(
             SchoolSubscriptionRepository schoolSubscriptionRepository,
             SubscriptionPlanRepository subscriptionPlanRepository,
             InvoiceRepository invoiceRepository,
-            PayOSPort payOSPort,
+            PaymentPortResolver paymentPortResolver,
             UserContextPort userContextPort) {
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
         this.subscriptionPlanRepository = subscriptionPlanRepository;
         this.invoiceRepository = invoiceRepository;
-        this.payOSPort = payOSPort;
+        this.paymentPort = paymentPortResolver.resolve(PaymentMethod.PAYOS);
         this.userContextPort = userContextPort;
     }
 
@@ -101,7 +103,7 @@ public class CreatePaymentLinkForRenewalUseCase implements IUseCase<CreatePaymen
             plan.getId()
         ));
 
-        var result = payOSPort.createPaymentLink(orderCode, plan.getPricePerYear(), "VOX-" + orderCode);
+        var result = paymentPort.createPaymentLink(orderCode, plan.getPricePerYear(), "VOX-" + orderCode);
 
         invoice.setPaymentLinkId(result.paymentLinkId());
         invoice.setCheckoutUrl(result.checkoutUrl());

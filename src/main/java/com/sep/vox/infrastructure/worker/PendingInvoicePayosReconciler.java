@@ -5,10 +5,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import com.sep.vox.application.port.input.service.PaymentPortResolver;
 import com.sep.vox.application.port.input.usecase.subscription.PayOSInvoiceSettlementService;
-import com.sep.vox.application.port.output.PayOSPort;
+import com.sep.vox.application.port.output.PaymentPort;
 import com.sep.vox.application.response.output.PaymentLinkRemoteStatus;
 import com.sep.vox.domain.model.subscription.InvoiceStatus;
+import com.sep.vox.domain.model.subscription.PaymentMethod;
 import com.sep.vox.domain.repository.InvoiceRepository;
 
 // Lưới an toàn cho các invoice PENDING mà webhook PayOS không bao giờ gọi tới (vd: user tự hủy/đóng tab
@@ -20,15 +22,15 @@ public class PendingInvoicePayosReconciler {
     private static final Logger LOGGER = LoggerFactory.getLogger(PendingInvoicePayosReconciler.class);
 
     private final InvoiceRepository invoiceRepository;
-    private final PayOSPort payOSPort;
+    private final PaymentPort paymentPort;
     private final PayOSInvoiceSettlementService settlementService;
 
     public PendingInvoicePayosReconciler(
             InvoiceRepository invoiceRepository,
-            PayOSPort payOSPort,
+            PaymentPortResolver paymentPortResolver,
             PayOSInvoiceSettlementService settlementService) {
         this.invoiceRepository = invoiceRepository;
-        this.payOSPort = payOSPort;
+        this.paymentPort = paymentPortResolver.resolve(PaymentMethod.PAYOS);
         this.settlementService = settlementService;
     }
 
@@ -40,7 +42,7 @@ public class PendingInvoicePayosReconciler {
                 continue; // hóa đơn PENDING không qua PayOS (không nên xảy ra, phòng hờ)
             }
             try {
-                var remoteStatus = payOSPort.getPaymentLinkStatus(invoice.getPayosOrderCode()).status();
+                var remoteStatus = paymentPort.getPaymentLinkStatus(invoice.getPayosOrderCode()).status();
                 if (remoteStatus == PaymentLinkRemoteStatus.PAID) {
                     settlementService.settle(invoice, true);
                 } else {

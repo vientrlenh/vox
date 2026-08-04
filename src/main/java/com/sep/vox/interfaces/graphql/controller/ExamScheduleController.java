@@ -86,6 +86,11 @@ public class ExamScheduleController {
 
     @SchemaMapping(typeName = "ExamSchedule", field = "room")
     public CompletableFuture<SchoolRoomFromDto> room(ExamScheduleDto source, DataFetchingEnvironment env) {
+        // Ca thi được phép chưa có phòng (bài kiểm tra trên lớp tạo ca nháp rồi chọn phòng sau).
+        // DataLoader ném NPE nếu nhận khoá null, làm hỏng cả query examSchedules chứ không chỉ field này.
+        if (source.schoolRoomId() == null) {
+            return CompletableFuture.completedFuture(null);
+        }
         DataLoader<UUID, SchoolRoomFromDto> loader = env.getDataLoader("schoolRoomById");
         return loader.load(source.schoolRoomId());
     }

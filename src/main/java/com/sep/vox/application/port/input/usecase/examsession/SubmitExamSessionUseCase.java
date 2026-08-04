@@ -10,6 +10,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.ExamCandidateStatusSupport;
 import com.sep.vox.application.event.ExamAttemptEvaluationRequestedExternalEvent;
@@ -101,6 +102,7 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
     }
 
     @Override
+    @Transactional
     public Void execute(SubmitExamSessionCommand input) {
         var session = examSessionRepository.findById(input.sessionId())
             .orElseThrow(() -> new NotFoundException("Không thể tìm thấy phiên thi"));

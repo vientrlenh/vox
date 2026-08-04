@@ -4,7 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
@@ -15,10 +18,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ServiceUnavailableException;
 import com.sep.vox.application.port.input.command.StartClassTestSessionCommand;
 import com.sep.vox.application.port.input.usecase.exam.StartClassTestSessionUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.CreateExamSessionUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.UpdateExamSessionStatusUseCase;
+import com.sep.vox.application.port.output.HealthCheckPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
@@ -52,6 +57,7 @@ class StartClassTestSessionUseCaseTests {
     private ExamRepository examRepository;
     private ExamScheduleRepository examScheduleRepository;
     private ExamSessionRepository examSessionRepository;
+    private HealthCheckPort healthCheckPort;
     private StartClassTestSessionUseCase useCase;
 
     @BeforeEach
@@ -60,6 +66,7 @@ class StartClassTestSessionUseCaseTests {
         examRepository = mock(ExamRepository.class);
         examScheduleRepository = mock(ExamScheduleRepository.class);
         examSessionRepository = mock(ExamSessionRepository.class);
+        healthCheckPort = mock(HealthCheckPort.class);
         var userContextPort = mock(UserContextPort.class);
 
         useCase = new StartClassTestSessionUseCase(
@@ -70,7 +77,8 @@ class StartClassTestSessionUseCaseTests {
             examSessionRepository,
             userContextPort,
             mock(CreateExamSessionUseCase.class),
-            mock(UpdateExamSessionStatusUseCase.class)
+            mock(UpdateExamSessionStatusUseCase.class),
+            healthCheckPort
         );
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(STUDENT_ID);
@@ -117,6 +125,49 @@ class StartClassTestSessionUseCaseTests {
         assertThat(result.attemptId()).isNotNull();
         assertThat(result.requiredStreamType()).isNull();
         assertThat(result.streamTypePermission()).isNull();
+    }
+
+    /**
+     * Bài trên lớp bật stream mà tắt OTP vẫn đi qua cổng này, nên cổng này cũng phải hỏi service
+     * streaming còn sống không — nếu không thì học sinh vào thi được nhưng không có đoạn ghi giám
+     * sát nào, và bài làm coi như không kiểm chứng được.
+     */
+    @Test
+    void should_check_streaming_health_when_class_test_is_monitored() {
+        when(examRepository.findById(EXAM_ID)).thenReturn(Optional.of(monitoredExam()));
+
+        useCase.execute(new StartClassTestSessionCommand(EXAM_ID));
+
+        verify(healthCheckPort).checkStreamingOk();
+    }
+
+    @Test
+    void should_not_check_streaming_health_when_class_test_is_not_monitored() {
+        useCase.execute(new StartClassTestSessionCommand(EXAM_ID));
+
+        verify(healthCheckPort, never()).checkStreamingOk();
+    }
+
+    @Test
+    void should_refuse_entry_ticket_when_streaming_service_is_down() {
+        when(examRepository.findById(EXAM_ID)).thenReturn(Optional.of(monitoredExam()));
+        doThrow(new ServiceUnavailableException("Streaming service hiện không hoạt động"))
+            .when(healthCheckPort).checkStreamingOk();
+
+        assertThatThrownBy(() -> useCase.execute(new StartClassTestSessionCommand(EXAM_ID)))
+            .isInstanceOf(ServiceUnavailableException.class)
+            .hasMessageContaining("Streaming service");
+    }
+
+    /** Bài không giám sát không được vạ lây khi streaming chết. */
+    @Test
+    void should_still_issue_entry_ticket_for_unmonitored_class_test_when_streaming_is_down() {
+        doThrow(new ServiceUnavailableException("Streaming service hiện không hoạt động"))
+            .when(healthCheckPort).checkStreamingOk();
+
+        var result = useCase.execute(new StartClassTestSessionCommand(EXAM_ID));
+
+        assertThat(result.attemptId()).isNotNull();
     }
 
     @Test
@@ -192,6 +243,13 @@ class StartClassTestSessionUseCaseTests {
         exam.setRequiresOtp(requiresOtp);
         exam.setMaxAttempt(1);
         exam.setCloseAt(Instant.now().plusSeconds(3600));
+        return exam;
+    }
+
+    private Exam monitoredExam() {
+        var exam = exam(false);
+        exam.setRequiredStreamType(ExamRequiredStreamType.CAMERA);
+        exam.setStreamTypePermission(ExamStreamTypePermission.ANY);
         return exam;
     }
 

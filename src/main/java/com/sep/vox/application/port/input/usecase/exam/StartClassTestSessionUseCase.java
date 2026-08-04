@@ -16,6 +16,7 @@ import com.sep.vox.application.port.input.command.UpdateExamSessionStatusCommand
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.CreateExamSessionUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.UpdateExamSessionStatusUseCase;
+import com.sep.vox.application.port.output.HealthCheckPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.exam.ExamEntryTicketResponse;
 import com.sep.vox.domain.model.exam.Exam;
@@ -41,6 +42,7 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
     private final UserContextPort userContextPort;
     private final CreateExamSessionUseCase createExamSessionUseCase;
     private final UpdateExamSessionStatusUseCase updateExamSessionStatusUseCase;
+    private final HealthCheckPort healthCheckPort;
 
     public StartClassTestSessionUseCase(
             ExamCandidateRepository examCandidateRepository,
@@ -50,7 +52,8 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
             ExamSessionRepository examSessionRepository,
             UserContextPort userContextPort,
             CreateExamSessionUseCase createExamSessionUseCase,
-            UpdateExamSessionStatusUseCase updateExamSessionStatusUseCase) {
+            UpdateExamSessionStatusUseCase updateExamSessionStatusUseCase,
+            HealthCheckPort healthCheckPort) {
         this.examCandidateRepository = examCandidateRepository;
         this.examCandidateResultRepository = examCandidateResultRepository;
         this.examRepository = examRepository;
@@ -59,6 +62,7 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
         this.userContextPort = userContextPort;
         this.createExamSessionUseCase = createExamSessionUseCase;
         this.updateExamSessionStatusUseCase = updateExamSessionStatusUseCase;
+        this.healthCheckPort = healthCheckPort;
     }
 
     @Override
@@ -69,6 +73,13 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
 
         var exam = examRepository.findById(input.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+
+        // Chặn ngay ở cổng vào: vào làm bài được nhưng không ghi được dữ liệu giám sát thì bài làm
+        // coi như bỏ. Cùng luật với luồng OTP ở VerifyExamScheduleOtpUseCase.
+        if (exam.getRequiredStreamType() != null) {
+            healthCheckPort.checkStreamingOk();
+        }
+
         if (exam.isRequiresOtp()) {
             throw new IllegalStateException("Bài kiểm tra này yêu cầu xác thực OTP, vui lòng dùng luồng xác thực OTP");
         }

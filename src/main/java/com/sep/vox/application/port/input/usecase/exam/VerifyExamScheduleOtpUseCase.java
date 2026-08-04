@@ -77,6 +77,13 @@ public class VerifyExamScheduleOtpUseCase implements IUseCase<VerifyExamSchedule
 
         var exam = examRepository.findById(input.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+
+        // Chặn ngay ở cổng vào: vào thi được nhưng không ghi được dữ liệu giám sát thì bài thi coi
+        // như bỏ. Không lọc theo kind — bài kiểm tra trên lớp cũng bật stream được.
+        if (exam.getRequiredStreamType() != null) {
+            healthCheckPort.checkStreamingOk();
+        }
+
         if (!exam.isRequiresOtp()) {
             throw new IllegalStateException("Bài kiểm tra này không yêu cầu xác thực OTP, vui lòng dùng luồng bắt đầu trực tiếp");
         }

@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -13,12 +14,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.sep.vox.application.port.input.command.DeleteExamCandidateCommand;
 import com.sep.vox.application.port.input.command.UnblockExamCandidateCommand;
 import com.sep.vox.application.port.input.command.UpdateExamCandidateStatusCommand;
 import com.sep.vox.application.port.input.usecase.examcandidate.AddExamCandidateUseCase;
 import com.sep.vox.application.port.input.usecase.examcandidate.AssignExamCandidateScheduleUseCase;
 import com.sep.vox.application.port.input.usecase.examcandidate.AssignExamPapersUseCase;
 import com.sep.vox.application.port.input.usecase.examcandidate.AutoFillExamCandidatesUseCase;
+import com.sep.vox.application.port.input.usecase.examcandidate.DeleteExamCandidateUseCase;
 import com.sep.vox.application.port.input.usecase.examcandidate.ImportExamCandidatesFromClassUseCase;
 import com.sep.vox.application.port.input.usecase.examcandidate.ImportExamCandidatesFromGradeUseCase;
 import com.sep.vox.application.port.input.usecase.examcandidate.UnblockExamCandidateUseCase;
@@ -56,6 +59,7 @@ public class ExamCandidateController {
     private final AssignExamPapersUseCase assignExamPapersUseCase;
     private final UpdateExamCandidateStatusUseCase updateExamCandidateStatusUseCase;
     private final UnblockExamCandidateUseCase unblockExamCandidateUseCase;
+    private final DeleteExamCandidateUseCase deleteExamCandidateUseCase;
 
     public ExamCandidateController(
             AddExamCandidateUseCase addExamCandidateUseCase,
@@ -65,7 +69,8 @@ public class ExamCandidateController {
             AutoFillExamCandidatesUseCase autoFillExamCandidatesUseCase,
             AssignExamPapersUseCase assignExamPapersUseCase,
             UpdateExamCandidateStatusUseCase updateExamCandidateStatusUseCase,
-            UnblockExamCandidateUseCase unblockExamCandidateUseCase) {
+            UnblockExamCandidateUseCase unblockExamCandidateUseCase,
+            DeleteExamCandidateUseCase deleteExamCandidateUseCase) {
         this.addExamCandidateUseCase = addExamCandidateUseCase;
         this.importExamCandidatesFromClassUseCase = importExamCandidatesFromClassUseCase;
         this.importExamCandidatesFromGradeUseCase = importExamCandidatesFromGradeUseCase;
@@ -74,6 +79,7 @@ public class ExamCandidateController {
         this.assignExamPapersUseCase = assignExamPapersUseCase;
         this.updateExamCandidateStatusUseCase = updateExamCandidateStatusUseCase;
         this.unblockExamCandidateUseCase = unblockExamCandidateUseCase;
+        this.deleteExamCandidateUseCase = deleteExamCandidateUseCase;
     }
 
     @PostMapping
@@ -159,5 +165,14 @@ public class ExamCandidateController {
             @Valid @RequestBody SessionReasonRequest request) {
         var data = unblockExamCandidateUseCase.execute(new UnblockExamCandidateCommand(candidateId, request.reason()));
         return ResponseEntity.ok(ApiResponse.success("Dỡ chặn thí sinh thành công", data));
+    }
+
+    @DeleteMapping("/{candidateId}")
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
+    public ResponseEntity<ApiResponse<Void>> delete(
+            @PathVariable("examId") UUID examId,
+            @PathVariable("candidateId") UUID candidateId) {
+        deleteExamCandidateUseCase.execute(new DeleteExamCandidateCommand(examId, candidateId));
+        return ResponseEntity.ok(ApiResponse.success("Xóa thí sinh khỏi kỳ thi thành công"));
     }
 }

@@ -288,6 +288,9 @@ public class TopicSuggestionService {
     // Not @Transactional -- same reason as generateFromKeyword above. This one is the hottest
     // path (called synchronously from practiceTopicOffers whenever ranked offers are thin), so
     // it's the most load-bearing fix of the three.
+    /** So de xuat xin LLM moi luot, truoc khi loc trung. Xem chu thich trong than ham. */
+    private static final int MAX_PROPOSALS_PER_RUN = 8;
+
     public List<PracticeTopicOffer> synchronousOffers(UUID studentId, int requestedCount) {
         if (requestedCount <= 0 || "EXAM_PREP".equals(currentGoal(studentId))) {
             return List.of();
@@ -300,7 +303,12 @@ public class TopicSuggestionService {
             rejectedTopicNames(studentId),
             practiceTopicRepository.findExhaustedTopicNames(studentId),
             false,
-            Math.min(3, requestedCount),
+            // Xin NHIEU hon so can: bo loc trung-gan ngay ben duoi cat rat manh -- do that
+            // cho thay 3 de xuat chi song 1 (LLM hay de xuat cum chu de gan nhau, roi cai
+            // thu 2-3 bi so voi cai thu 1 vua tao xong). Xin dung so can thi moi luot chi
+            // ra duoc 1 chu de, kho lon rat cham. Phai <= MAX_TOPIC_PROPOSALS ben Python
+            // (schemas/topic_generation.py), khong thi 422 ngay o cua.
+            MAX_PROPOSALS_PER_RUN,
             dimensionCodes()
         );
         var result = new ArrayList<PracticeTopicOffer>();

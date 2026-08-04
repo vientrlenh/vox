@@ -173,12 +173,14 @@ public interface SpringDataPracticeQuestionRepository
             target_criterion_code, target_sub_attribute,
             difficulty_rank, difficulty_features_json,
             evaluation_guide_json, suggested_ideas_json,
+            question_type,
             max_response_seconds, min_response_seconds,
             vstep_part, source,
             usage_count, active, created_at
         ) VALUES (:id, :topicId, :questionText, :criterionCode, :subAttribute,
                   :difficultyRank, :difficultyFeaturesJson, :evaluationGuideJson,
-                  :suggestedIdeasJson, :maxResponseSeconds, :minResponseSeconds,
+                  :suggestedIdeasJson, :questionType,
+                  :maxResponseSeconds, :minResponseSeconds,
                   :vstepPart, 'AI_GENERATED', 0, true, CURRENT_TIMESTAMP)
         ON CONFLICT (id) DO NOTHING
         """, nativeQuery = true)
@@ -192,6 +194,7 @@ public interface SpringDataPracticeQuestionRepository
         @Param("difficultyFeaturesJson") String difficultyFeaturesJson,
         @Param("evaluationGuideJson") String evaluationGuideJson,
         @Param("suggestedIdeasJson") String suggestedIdeasJson,
+        @Param("questionType") String questionType,
         @Param("maxResponseSeconds") int maxResponseSeconds,
         @Param("minResponseSeconds") int minResponseSeconds,
         @Param("vstepPart") Integer vstepPart

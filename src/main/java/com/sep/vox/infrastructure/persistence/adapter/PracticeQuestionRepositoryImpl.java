@@ -104,6 +104,7 @@ public class PracticeQuestionRepositoryImpl implements PracticeQuestionRepositor
             question.getDifficultyFeaturesJson(),
             question.getEvaluationGuideJson(),
             question.getSuggestedIdeasJson(),
+            question.getQuestionType(),
             question.getMaxResponseSeconds(),
             question.getMinResponseSeconds(),
             question.getVstepPart()

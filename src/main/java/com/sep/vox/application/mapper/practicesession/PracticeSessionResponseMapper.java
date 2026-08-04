@@ -91,6 +91,8 @@ public final class PracticeSessionResponseMapper {
             dto.overallScore(),
             dto.criterionScores().stream().map(PracticeSessionResponseMapper::toResponse).toList(),
             dto.completed(),
+            dto.pendingEvaluationCount(),
+            dto.difficultyRank(),
             dto.turns().stream().map(PracticeSessionResponseMapper::toResponse).toList()
         );
     }

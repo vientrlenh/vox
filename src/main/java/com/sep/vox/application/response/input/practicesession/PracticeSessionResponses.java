@@ -80,6 +80,8 @@ public final class PracticeSessionResponses {
             Double overallScore,
             List<CriterionScore> criterionScores,
             boolean completed,
+            int pendingEvaluationCount,
+            Double difficultyRank,
             List<TeacherPracticeTurnView> turns) {
     }
 }

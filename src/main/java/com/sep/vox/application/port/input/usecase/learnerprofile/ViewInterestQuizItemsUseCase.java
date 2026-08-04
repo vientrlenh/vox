@@ -9,13 +9,13 @@ import org.springframework.stereotype.Service;
 import com.sep.vox.application.mapper.learnerprofile.LearnerProfileResponseMapper;
 import com.sep.vox.application.port.input.service.InterestQuizItemSelector;
 import com.sep.vox.application.port.input.service.InterestQuizScorer;
+import com.sep.vox.infrastructure.service.InterestQuizGenerationClient;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.learnerprofile.LearnerProfileResponses.InterestQuizItem;
 import com.sep.vox.domain.model.personalization.InterestQuizSeedItem;
 import com.sep.vox.domain.repository.personalization.InterestQuizItemRepository;
 import com.sep.vox.domain.repository.personalization.TopicInterestEventRepository;
-import com.sep.vox.infrastructure.service.InterestQuizGenerationClient;
 
 /**
  * Gói 13 -- sinh quiz sở thích theo tình huống bằng AI (Verbalized Sampling, không cá nhân hoá
@@ -72,6 +72,17 @@ public class ViewInterestQuizItemsUseCase implements IUseCase<Void, List<Interes
         var existingStatements = sharedPool.stream()
             .flatMap(item -> item.getStatements().stream())
             .toList();
+        // Sinh ĐỒNG BỘ rồi ghi rồi trả -- học sinh nhận đúng bộ riêng ngay lượt đầu.
+        //
+        // Không tách phần ghi ra chạy nền: chỗ chậm là LLM chứ không phải INSERT (7 dòng,
+        // vài mili giây). Tách ra không tiết kiệm được gì đáng kể, mà lại vỡ chỗ khác --
+        // id do DB sinh (uuidv7, insertable=false) nên trả trước khi ghi thì mọi item có
+        // id null, học sinh nộp đáp án theo itemId là hỏng.
+        //
+        // Phần thật sự phải sửa là tốc độ: bản cũ gọi MỘT lượt LLM cho cả 7 item và bắt
+        // model tự cân bằng chiều -- 46,8 giây đo được, vượt cả trần Tomcat lẫn trần client.
+        // Nay Python chia thành 7 lượt song song, mỗi lượt một item với bộ ba chiều và bối
+        // cảnh đã phân công sẵn, ở mức suy luận thấp.
         var generated = generationClient.generate(
             QUIZ_ITEM_COUNT,
             existingStatements,

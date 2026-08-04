@@ -32,6 +32,7 @@ public interface SpringDataPracticeItemEvaluationRepository
         JOIN practice_item_evaluation evaluation
           ON evaluation.practice_response_id = response.id
         WHERE response.practice_session_id = :sessionId
+          AND response.question_complete = true
           AND evaluation.marked_invalid = false
           AND evaluation.item_score IS NOT NULL
         ORDER BY evaluation.evaluated_at DESC
@@ -39,12 +40,17 @@ public interface SpringDataPracticeItemEvaluationRepository
         """, nativeQuery = true)
     Double findLastValidNormalizedScore(@Param("sessionId") UUID sessionId);
 
+    // question_complete = true: câu học sinh bỏ dở giữa chừng (rớt mạng, đóng app) VẪN được
+    // chấm -- để lấy quan sát điểm yếu, xem PracticeGradingFlushService -- nhưng KHÔNG kéo
+    // điểm phiên xuống. Chấm một câu trả lời dở dang theo rubric của câu đầy đủ thì chắc chắn
+    // thấp, và phạt học sinh vì mất mạng là sai. Tín hiệu thì giữ, điểm thì không tính.
     @Query(value = """
         SELECT AVG(evaluation.item_score)
         FROM practice_item_response response
         JOIN practice_item_evaluation evaluation
           ON evaluation.practice_response_id = response.id
         WHERE response.practice_session_id = :sessionId
+          AND response.question_complete = true
           AND evaluation.marked_invalid = false
         """, nativeQuery = true)
     BigDecimal findAverageItemScoreBySessionId(@Param("sessionId") UUID sessionId);
@@ -71,6 +77,7 @@ public interface SpringDataPracticeItemEvaluationRepository
             JOIN practice_session session
               ON session.id = response.practice_session_id
             WHERE session.student_id = :studentId
+              AND response.question_complete = true
               AND evaluation.marked_invalid = false
               AND evaluation.item_score IS NOT NULL
             ORDER BY evaluation.evaluated_at DESC

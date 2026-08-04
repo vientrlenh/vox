@@ -33,8 +33,17 @@ public final class PracticeInsights {
         String severity,
         boolean practiceable,
         /** Đổi nhịp so với cửa sổ trước, %. null = mẫu quá nhỏ hoặc lỗi mới xuất hiện. */
-        Double trendPercent
+        Double trendPercent,
+        /** Từng lặp lại nhưng gần đây không còn -- đang trên đà khỏi. */
+        boolean nearlyFixed,
+        /** Mọi lần xuất hiện đều trong cửa sổ gần đây -- lỗi mới lộ ra. */
+        boolean newlyFound,
+        /** Bằng chứng thật kèm số lần: "read x3". Rỗng với nhãn suy từ số đo. */
+        List<WeaknessExample> examples
     ) {
+    }
+
+    public record WeaknessExample(String text, int times) {
     }
 
     public record CriterionProgressPoint(

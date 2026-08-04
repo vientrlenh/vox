@@ -1,9 +1,12 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
+import com.sep.vox.domain.repository.personalization.PendingEvaluationResponse;
 import com.sep.vox.domain.repository.personalization.PracticeItemResponseRepository;
 import com.sep.vox.infrastructure.persistence.entity.PracticeItemResponseJpaEntity;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataPracticeItemResponseRepository;
@@ -29,11 +32,17 @@ public class PracticeItemResponseRepositoryImpl implements PracticeItemResponseR
     }
 
     @Override
+    public UUID findSessionIdByResponseId(UUID practiceResponseId) {
+        return repository.findSessionIdByResponseId(practiceResponseId);
+    }
+
+    @Override
     public UUID upsertResponse(
             UUID sessionId,
             UUID questionId,
             String audioUrl,
-            String transcript) {
+            String transcript,
+            boolean questionComplete) {
         var existing = repository
             .findByPracticeSessionIdAndPracticeQuestionId(sessionId, questionId)
             .orElse(null);
@@ -43,6 +52,10 @@ public class PracticeItemResponseRepositoryImpl implements PracticeItemResponseR
                 (existing.getTranscript() == null ? "" : existing.getTranscript())
                     + " " + (transcript == null ? "" : transcript)
             );
+            // Chỉ đi MỘT chiều false -> true. Câu đã xong thì xong; một lượt nộp lại
+            // (retry mạng) mang questionComplete=false không được phép mở lại nó, nếu không
+            // câu đó lại rơi vào diện "chưa chấm" và bị xả chấm lần hai.
+            existing.setQuestionComplete(existing.isQuestionComplete() || questionComplete);
             return repository.save(existing).getId();
         }
         var saved = repository.save(new PracticeItemResponseJpaEntity(
@@ -50,9 +63,30 @@ public class PracticeItemResponseRepositoryImpl implements PracticeItemResponseR
             sessionId,
             questionId,
             audioUrl,
-            transcript
+            transcript,
+            questionComplete
         ));
         return saved.getId();
+    }
+
+    @Override
+    public int countAwaitingEvaluation(UUID sessionId) {
+        return repository.countAwaitingEvaluation(sessionId);
+    }
+
+    @Override
+    public Double findAverageDifficultyRank(UUID sessionId) {
+        return repository.findAverageDifficultyRank(sessionId);
+    }
+
+    @Override
+    public List<PendingEvaluationResponse> findResponsesAwaitingFlush(UUID sessionId) {
+        return repository.findResponsesAwaitingFlush(sessionId);
+    }
+
+    @Override
+    public List<UUID> findEndedSessionsWithUngradedResponses(Instant since) {
+        return repository.findEndedSessionsWithUngradedResponses(since);
     }
 
     @Override

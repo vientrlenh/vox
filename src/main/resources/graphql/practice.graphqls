@@ -40,6 +40,17 @@ type SubAttributeWeakness {
     practiceable: Boolean!
     "Đổi nhịp xuất hiện so với cửa sổ trước, tính bằng %. null khi mẫu quá nhỏ hoặc lỗi vừa mới phát hiện."
     trendPercent: Float
+    "Từng lặp lại nhưng cửa sổ gần đây không còn xuất hiện -- đang trên đà khỏi. Không tái phạm trong 60 ngày thì nhãn tự rụng khỏi danh sách."
+    nearlyFixed: Boolean!
+    "Mọi lần xuất hiện đều nằm trong cửa sổ gần đây -- lỗi mới lộ ra."
+    newlyFound: Boolean!
+    "Bằng chứng thật kèm số lần lặp, hay gặp nhất trước. Với lỗi phát âm đây là phần dùng được: nhãn /d/ đứng một mình thì không sửa được gì, nhưng \"read x3\" thì luyện được ngay."
+    examples: [WeaknessExample!]!
+}
+
+type WeaknessExample {
+    text: String!
+    times: Int!
 }
 
 type CriterionProgressPoint {

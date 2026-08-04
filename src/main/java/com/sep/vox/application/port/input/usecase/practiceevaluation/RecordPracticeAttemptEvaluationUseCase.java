@@ -22,6 +22,7 @@ import com.sep.vox.domain.repository.WeaknessObservationRepository;
 import com.sep.vox.domain.repository.personalization.PracticeCriterionScoreRepository;
 import com.sep.vox.domain.repository.personalization.PracticeItemEvaluationRepository;
 import com.sep.vox.domain.repository.personalization.PracticeItemResponseRepository;
+import com.sep.vox.domain.repository.personalization.PracticeSessionRepository;
 
 @Service
 public class RecordPracticeAttemptEvaluationUseCase implements IUseCase<RecordPracticeAttemptEvaluationCommand, Void> {
@@ -36,6 +37,7 @@ public class RecordPracticeAttemptEvaluationUseCase implements IUseCase<RecordPr
     private final ConfidenceReviewCalculator confidenceReviewCalculator;
     private final WeaknessObservationDerivationService derivationService;
     private final WeaknessObservationRepository weaknessObservationRepository;
+    private final PracticeSessionRepository practiceSessionRepository;
 
     public RecordPracticeAttemptEvaluationUseCase(
             PracticeItemEvaluationRepository evaluationRepository,
@@ -44,7 +46,8 @@ public class RecordPracticeAttemptEvaluationUseCase implements IUseCase<RecordPr
             RubricCriterionRepository rubricCriterionRepository,
             ConfidenceReviewCalculator confidenceReviewCalculator,
             WeaknessObservationDerivationService derivationService,
-            WeaknessObservationRepository weaknessObservationRepository) {
+            WeaknessObservationRepository weaknessObservationRepository,
+            PracticeSessionRepository practiceSessionRepository) {
         this.evaluationRepository = evaluationRepository;
         this.criterionScoreRepository = criterionScoreRepository;
         this.responseRepository = responseRepository;
@@ -52,6 +55,7 @@ public class RecordPracticeAttemptEvaluationUseCase implements IUseCase<RecordPr
         this.confidenceReviewCalculator = confidenceReviewCalculator;
         this.derivationService = derivationService;
         this.weaknessObservationRepository = weaknessObservationRepository;
+        this.practiceSessionRepository = practiceSessionRepository;
     }
 
     @Override
@@ -100,12 +104,61 @@ public class RecordPracticeAttemptEvaluationUseCase implements IUseCase<RecordPr
                 evaluationId,
                 rubricCriterion.getId(),
                 criterion.score() == null ? 0 : criterion.score(),
-                criterion.matchedBandCode()
+                blankToNull(criterion.matchedBandCode())
             );
         }
 
         storeWeaknessObservations(input, evaluationId, markedInvalid, evaluatedAt, rubricCriteriaByCode);
+        refreshSessionScore(input.practiceResponseId());
         return null;
+    }
+
+    /**
+     * Tính lại điểm phiên ngay khi một bản chấm vừa về.
+     *
+     * Trước đây điểm phiên chỉ được tính ĐÚNG MỘT LẦN, tại thời điểm bấm kết thúc
+     * ({@code EndPracticeSessionUseCase}), rồi không bao giờ đụng lại. Nhưng chấm là bất đồng
+     * bộ và về SAU đó vài chục giây -- đo trên dữ liệu thật: ended_at 11:03:25, evaluated_at
+     * 11:04:10. Nên con số chốt lúc kết thúc gần như luôn được tính trên một tập rỗng, và học
+     * sinh thấy 0 điểm dù đã làm bài đầy đủ. Comment cũ ở đó khẳng định "overall_score tính
+     * lại từ đó" -- không có gì tính lại cả.
+     *
+     * Chạy cả khi phiên còn đang diễn ra cũng không sao: điểm chỉ đơn giản luôn phản ánh đúng
+     * những câu đã chấm xong tại thời điểm đó.
+     */
+    /**
+     * Chuỗi RỖNG phải thành NULL trước khi xuống DB.
+     *
+     * findEstimatedResultBandOrder đã có sẵn chốt {@code matched_band_code IS NOT NULL} -- người
+     * viết truy vấn đã lường trước chuyện thiếu mã bậc. Nhưng chuỗi rỗng LỌT QUA chốt đó rồi mới
+     * chết ở phép nối {@code band.code = matched_band_code}: bản ghi biến mất khỏi phép ước
+     * lượng, không lỗi, không log, chỉ là mẫu nhỏ đi. Đo trên dữ liệu thật: 5 dòng có mã, chỉ 3
+     * dòng qua được phép nối, mà ngưỡng {@code total >= 5} lại đếm SAU khi nối -- nên phép ước
+     * lượng bậc chưa từng chạy một lần nào.
+     *
+     * NULL hoá ở đây để chốt đó làm đúng việc nó được viết ra để làm.
+     */
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private void refreshSessionScore(UUID responseId) {
+        try {
+            var sessionId = responseRepository.findSessionIdByResponseId(responseId);
+            if (sessionId == null) {
+                return;
+            }
+            var session = practiceSessionRepository.findById(sessionId).orElse(null);
+            if (session == null) {
+                return;
+            }
+            session.setOverallScore(evaluationRepository.findAverageItemScoreBySessionId(sessionId));
+            practiceSessionRepository.save(session);
+        } catch (RuntimeException exception) {
+            // Điểm đã chấm là dữ liệu chính; tổng hợp lại điểm phiên là phần phái sinh, lần
+            // chấm sau bù được. Không để nó kéo đổ cả việc ghi bản chấm.
+            LOGGER.warn("Không tính lại được điểm phiên từ response {}.", responseId, exception);
+        }
     }
 
     /**

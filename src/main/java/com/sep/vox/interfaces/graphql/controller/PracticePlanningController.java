@@ -27,6 +27,7 @@ import com.sep.vox.application.port.input.command.SaveTopicCommand;
 import com.sep.vox.application.port.input.command.UnsaveTopicCommand;
 import com.sep.vox.application.port.input.query.SearchPracticeTopicsQuery;
 import com.sep.vox.application.port.input.service.PracticePaperDraftService;
+import com.sep.vox.application.port.input.service.TopicOfferBackfillService;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.port.input.query.ViewPracticeTopicOffersQuery;
 import com.sep.vox.application.port.input.query.ViewSynchronousTopicOffersQuery;
@@ -57,6 +58,7 @@ public class PracticePlanningController {
     private final ViewPracticeDashboardStatsUseCase viewPracticeDashboardStatsUseCase;
     private final PracticePaperDraftService practicePaperDraftService;
     private final UserContextPort userContextPort;
+    private final TopicOfferBackfillService topicOfferBackfillService;
     private final AsyncTaskExecutor practiceGenerationExecutor;
 
     public PracticePlanningController(
@@ -72,9 +74,11 @@ public class PracticePlanningController {
             ViewPracticeDashboardStatsUseCase viewPracticeDashboardStatsUseCase,
             PracticePaperDraftService practicePaperDraftService,
             UserContextPort userContextPort,
+            TopicOfferBackfillService topicOfferBackfillService,
             @Qualifier("practiceGenerationExecutor") AsyncTaskExecutor practiceGenerationExecutor) {
         this.practicePaperDraftService = practicePaperDraftService;
         this.userContextPort = userContextPort;
+        this.topicOfferBackfillService = topicOfferBackfillService;
         this.practiceGenerationExecutor = practiceGenerationExecutor;
         this.viewPracticeTopicOffersUseCase = viewPracticeTopicOffersUseCase;
         this.searchPracticeTopicsUseCase = searchPracticeTopicsUseCase;
@@ -109,11 +113,20 @@ public class PracticePlanningController {
                         bucket == null ? "FOR_YOU" : bucket
                     )
                 ));
+                // Kho còn thưa -> bổ sung chạy NỀN, KHÔNG chặn request.
+                //
+                // Bản trước gọi thẳng viewSynchronousTopicOffersUseCase ở đây, tức chờ LLM
+                // đề xuất chủ đề rồi index vector store ngay trong request. Với kho trống
+                // (học sinh mới, hoặc vừa dựng lại dữ liệu) thì LẦN NÀO cũng rơi vào đường
+                // đó, nên lượt mở màn ngay sau khi làm xong quiz luôn timeout.
+                //
+                // Trả về những gì đang có -- kể cả rỗng. Client hiện "đang tổng hợp, quay
+                // lại sau 1-2 phút"; chủ đề sinh xong được ghi thẳng vào kho nên lần mở sau
+                // đường xếp hạng thông thường tự thấy chúng.
                 if (offers.size() < 3) {
-                    offers.addAll(viewSynchronousTopicOffersUseCase.execute(
-                        new ViewSynchronousTopicOffersQuery(3 - offers.size())
-                    ));
-                    Collections.shuffle(offers);
+                    topicOfferBackfillService.backfillAsync(
+                        userContextPort.getCurrentAuthenticatedUserId()
+                    );
                 }
                 return (List<PracticeTopicOffer>) offers;
             },

@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.service;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
@@ -68,23 +69,33 @@ public class PracticeQuestionSelectionService {
      * (câu đầu tiên) và ResolveNextPracticeQuestionUseCase (các câu sau trong phiên).
      */
     public PracticeFocusInfo resolveFocus(UUID studentId, String forcedSubAttribute) {
-        var criteria = weaknessRepository.findFocusCriterionCodesOrderedByWeakness(studentId);
-        var primary = criteria.isEmpty() ? "GRAMMAR" : criteria.get(0);
-        var secondary = criteria.size() < 2 ? primary : criteria.get(1);
         if (forcedSubAttribute != null) {
             var forcedCriterion = SubAttributePolicy.criterionForSubAttribute(forcedSubAttribute);
             if (forcedCriterion == null) {
                 throw new IllegalArgumentException("Sub-attribute không thuộc taxonomy luyện tập.");
             }
-            return new PracticeFocusInfo(forcedCriterion, forcedCriterion, forcedSubAttribute, forcedSubAttribute);
+            // Học sinh bấm "luyện lại lỗi này" -- ép đúng một tiêu chí, KHÔNG xen lẫn. Đây là
+            // lựa chọn có chủ đích của người học, không phải chỗ để hệ thống tự cân đối.
+            return new PracticeFocusInfo(
+                List.of(forcedCriterion),
+                Map.of(forcedCriterion, List.of(forcedSubAttribute))
+            );
         }
+
+        // Dùng CẢ danh sách xếp theo mức yếu, không cắt còn hai. Truy vấn vốn đã trả về đủ;
+        // việc cắt trước đây khiến ba tiêu chí còn lại không bao giờ được hỏi tới.
+        var criteria = weaknessRepository.findFocusCriterionCodesOrderedByWeakness(studentId);
+        var ordered = criteria.isEmpty() ? List.of("GRAMMAR") : List.copyOf(criteria);
+
         var priorities = priorityRepository.findPracticeablePrioritiesOrderedDesc(studentId);
-        return new PracticeFocusInfo(
-            primary,
-            secondary,
-            firstSubAttribute(priorities, primary),
-            firstSubAttribute(priorities, secondary)
-        );
+        var subAttributes = new LinkedHashMap<String, List<String>>();
+        for (var criterion : ordered) {
+            var forCriterion = subAttributesFor(priorities, criterion);
+            if (!forCriterion.isEmpty()) {
+                subAttributes.put(criterion, forCriterion);
+            }
+        }
+        return new PracticeFocusInfo(ordered, Map.copyOf(subAttributes));
     }
 
     /**
@@ -97,13 +108,13 @@ public class PracticeQuestionSelectionService {
      * <p>Hiện nhánh null gần như luôn chạy, vì findPracticeablePrioritiesOrderedDesc lọc
      * practiceable = true mà cột đó chưa có chỗ nào set true.
      */
-    private String firstSubAttribute(List<PracticeablePriority> priorities, String criterion) {
+    private List<String> subAttributesFor(List<PracticeablePriority> priorities, String criterion) {
         return priorities.stream()
             .filter(entry -> entry.criterionCode().equals(criterion))
             .map(PracticeablePriority::subAttribute)
             .filter(value -> SubAttributePolicy.plannedSubAttribute(criterion, value) != null)
-            .findFirst()
-            .orElse(null);
+            .distinct()
+            .toList();
     }
 
     /** Câu đã chọn + toàn bộ metadata slot đi kèm -- để caller ghi PracticePaperItem không phải tự suy lại tiêu chí/rank theo slot. */
@@ -118,10 +129,13 @@ public class PracticeQuestionSelectionService {
             int targetRank,
             List<PracticeQuestion> alreadyChosenInSession) {
         var slotIndex = alreadyChosenInSession.size();
-        var criterion = slotIndex < 2 ? focus.primaryCriterion() : focus.secondaryCriterion();
+        // Chu kỳ 4 ô: yếu nhất, yếu nhất, yếu nhì, xoay vòng phần còn lại -- xem
+        // PracticeFocusInfo.criterionForSlot. Bản trước chỉ có hai tiêu chí và cắt cứng ở ô
+        // thứ 2, nên từ ô thứ ba trở đi mọi câu đều nhắm đúng một tiêu chí.
+        var criterion = focus.criterionForSlot(slotIndex);
         var subAttribute = SubAttributePolicy.plannedSubAttribute(
             criterion,
-            slotIndex < 2 ? focus.primarySubAttribute() : focus.secondarySubAttribute()
+            focus.subAttributeForSlot(slotIndex)
         );
         // Trần bậc đọc từ framework đang áp, KHÔNG cứng 6: đổi trường sang thang khác (CEFR 6,
         // IELTS 9) thì hằng số 6 kẹp sai mà không báo lỗi. Lấy MỘT lần rồi truyền xuống thang

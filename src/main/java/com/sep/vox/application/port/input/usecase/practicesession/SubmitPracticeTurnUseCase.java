@@ -17,6 +17,7 @@ import com.sep.vox.application.exception.QuotaExceededException;
 import com.sep.vox.application.mapper.practicesession.PracticeSessionResponseMapper;
 import com.sep.vox.application.port.input.command.ConsumeQuotaCommand;
 import com.sep.vox.application.port.input.command.SubmitPracticeTurnCommand;
+import com.sep.vox.application.port.input.service.PracticeEvaluationRequestFactory;
 import com.sep.vox.application.port.input.service.PracticeTopicOfferEnrichmentService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ConsumeQuotaUseCase;
@@ -45,42 +46,36 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
         org.slf4j.LoggerFactory.getLogger(SubmitPracticeTurnUseCase.class);
 
     private final PracticeSessionRepository practiceSessionRepository;
-    private final PracticeSessionQueryRepository practiceSessionQueryRepository;
     private final PracticeItemResponseRepository practiceItemResponseRepository;
     private final PracticeResponseTurnRepository practiceResponseTurnRepository;
     private final TurnCorrectionRepository turnCorrectionRepository;
-    private final PracticeQuestionRepository practiceQuestionRepository;
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
+    private final PracticeEvaluationRequestFactory evaluationRequestFactory;
     private final PracticeTopicOfferEnrichmentService enrichmentService;
     private final ConsumeQuotaUseCase consumeQuotaUseCase;
     private final ExternalEventPublisherPort eventPublisher;
-    private final JsonSerializationPort jsonSerializationPort;
     private final UserContextPort userContextPort;
 
     public SubmitPracticeTurnUseCase(
             PracticeSessionRepository practiceSessionRepository,
-            PracticeSessionQueryRepository practiceSessionQueryRepository,
             PracticeItemResponseRepository practiceItemResponseRepository,
             PracticeResponseTurnRepository practiceResponseTurnRepository,
             TurnCorrectionRepository turnCorrectionRepository,
-            PracticeQuestionRepository practiceQuestionRepository,
             SchoolSubscriptionRepository schoolSubscriptionRepository,
+            PracticeEvaluationRequestFactory evaluationRequestFactory,
             PracticeTopicOfferEnrichmentService enrichmentService,
             ConsumeQuotaUseCase consumeQuotaUseCase,
             ExternalEventPublisherPort eventPublisher,
-            JsonSerializationPort jsonSerializationPort,
             UserContextPort userContextPort) {
         this.practiceSessionRepository = practiceSessionRepository;
-        this.practiceSessionQueryRepository = practiceSessionQueryRepository;
         this.practiceItemResponseRepository = practiceItemResponseRepository;
         this.practiceResponseTurnRepository = practiceResponseTurnRepository;
         this.turnCorrectionRepository = turnCorrectionRepository;
-        this.practiceQuestionRepository = practiceQuestionRepository;
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
+        this.evaluationRequestFactory = evaluationRequestFactory;
         this.enrichmentService = enrichmentService;
         this.consumeQuotaUseCase = consumeQuotaUseCase;
         this.eventPublisher = eventPublisher;
-        this.jsonSerializationPort = jsonSerializationPort;
         this.userContextPort = userContextPort;
     }
 
@@ -102,7 +97,8 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
             turn.getSessionId(),
             turn.getQuestionId(),
             turn.getAudioUrl(),
-            turn.getTranscript()
+            turn.getTranscript(),
+            turn.isQuestionComplete()
         );
         var turnId = practiceResponseTurnRepository.save(
             responseId,
@@ -161,7 +157,7 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
             enrichmentService.sessionBudgetSecondsForStudent(studentId)
         );
         if (result.evaluationQueued()) {
-            eventPublisher.publish(buildEvaluationRequestEvent(
+            eventPublisher.publish(evaluationRequestFactory.build(
                 turn.getSessionId(),
                 result.responseId(),
                 turn.getQuestionId()
@@ -226,110 +222,4 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
         return result;
     }
 
-    private PracticeAttemptEvaluationRequestedExternalEvent buildEvaluationRequestEvent(
-            UUID sessionId,
-            UUID responseId,
-            UUID questionId) {
-        var question = practiceQuestionRepository.findQuestionWithTopic(questionId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi luyện."));
-        var turns = practiceResponseTurnRepository
-            .findByPracticeResponseIdOrderByTurnOrder(responseId).stream()
-            .map(record -> new ExamAttemptEvaluationRequestedExternalEvent.TurnInput(
-                record.turnOrder(),
-                record.turnType(),
-                record.promptText(),
-                record.audioUrl(),
-                record.transcript(),
-                record.durationSeconds()
-            ))
-            .toList();
-        var payload = new ExamAttemptEvaluationRequestedExternalEvent.Payload(
-            question.questionText(),
-            // Dạng bài THẬT (V13). Trước đây gửi "SPEAKING" -- không thuộc enum QuestionType
-            // bên Python nên bị validator nuốt về null trong im lặng, khiến
-            // get_expected_min_words rơi xuống nhánh mặc định và kỳ vọng ĐÚNG 10 TỪ cho mọi
-            // câu, kể cả câu 45 giây. Có dạng bài rồi thì nó chạy đúng nhánh: DESCRIPTION 45s
-            // kỳ vọng 35 từ chứ không phải 10.
-            question.questionType(),
-            null,
-            turns.stream().mapToInt(
-                ExamAttemptEvaluationRequestedExternalEvent.TurnInput::durationSeconds
-            ).sum(),
-            question.minResponseSeconds(),
-            question.maxResponseSeconds(),
-            null,
-            question.topicName(),
-            question.topicDescription(),
-            evaluationGuide(question.evaluationGuideJson()),
-            // mode: "unscripted" y như đường đề thi. Trước đây gửi "practice" -- nhầm TRỤC:
-            // SpeakingMode bên Python là scripted/unscripted (nói theo văn bản có sẵn hay nói
-            // tự do), không phải thi/luyện. Enum không có 'practice' nên
-            // SpeakingMode(request_payload.mode) ném ValueError, hỏng cả 3 lần retry rồi kết
-            // thúc bằng ExamAttemptEvaluationFailedEvent -- chuỗi chấm bài luyện chưa từng chạy.
-            "unscripted",
-            null,
-            "en-US",
-            criteriaFrameworks(sessionId),
-            turns
-        );
-        return new PracticeAttemptEvaluationRequestedExternalEvent(
-            sessionId.toString(),
-            responseId.toString(),
-            questionId.toString(),
-            payload
-        );
-    }
-
-    private ExamAttemptEvaluationRequestedExternalEvent.EvaluationGuide evaluationGuide(String json) {
-        var fields = jsonSerializationPort.toStringMap(json);
-        return new ExamAttemptEvaluationRequestedExternalEvent.EvaluationGuide(
-            fields.get("expected_content"),
-            fields.get("key_points"),
-            fields.get("acceptable_responses"),
-            fields.get("off_topic_examples"),
-            fields.get("scoring_hints"),
-            fields.get("common_mistakes")
-        );
-    }
-
-    private List<ExamAttemptEvaluationRequestedExternalEvent.CriterionFramework> criteriaFrameworks(UUID sessionId) {
-        var rows = practiceSessionQueryRepository.findCriteriaFrameworks(sessionId);
-        var grouped = new LinkedHashMap<UUID, List<CriterionFrameworkInfo>>();
-        for (var row : rows) {
-            grouped.computeIfAbsent(row.getRubricCriterionId(), ignored -> new ArrayList<>()).add(row);
-        }
-        return grouped.values().stream().map(group -> {
-            var first = group.get(0);
-            var bands = group.stream()
-                .map(row -> new ExamAttemptEvaluationRequestedExternalEvent.FrameworkBand(
-                    row.getBandCode(),
-                    row.getBandLabel(),
-                    row.getMinScore(),
-                    row.getMaxScore(),
-                    row.getDescriptor(),
-                    List.of(),
-                    List.of(),
-                    row.getBandOrder()
-                ))
-                .toList();
-            var criterionKey = first.getRubricCode().trim().toLowerCase(Locale.ROOT);
-            if ("discourse".equals(criterionKey)) {
-                criterionKey = "coherence";
-            }
-            return new ExamAttemptEvaluationRequestedExternalEvent.CriterionFramework(
-                criterionKey,
-                first.getFrameworkCode(),
-                first.getFrameworkName(),
-                first.getFrameworkDescription(),
-                first.getTargetBandId(),
-                first.getTargetBandCode(),
-                first.getTargetBandLabel(),
-                true,
-                first.getWeight(),
-                first.getMinScore(),
-                first.getMaxScore(),
-                bands
-            );
-        }).toList();
-    }
 }

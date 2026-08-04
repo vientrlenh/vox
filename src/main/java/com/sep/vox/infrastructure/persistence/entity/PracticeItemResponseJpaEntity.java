@@ -31,6 +31,9 @@ public class PracticeItemResponseJpaEntity {
     private String audioUrl;
     @Column(name = "transcript", columnDefinition = "TEXT")
     private String transcript;
+    /** Chuỗi follow-up của câu này đã kết thúc chưa -- xem V14 để biết vì sao phải lưu. */
+    @Column(name = "question_complete", nullable = false)
+    private boolean questionComplete;
 
     protected PracticeItemResponseJpaEntity() {
     }
@@ -40,12 +43,14 @@ public class PracticeItemResponseJpaEntity {
             UUID practiceSessionId,
             UUID practiceQuestionId,
             String audioUrl,
-            String transcript) {
+            String transcript,
+            boolean questionComplete) {
         this.id = id;
         this.practiceSessionId = practiceSessionId;
         this.practiceQuestionId = practiceQuestionId;
         this.audioUrl = audioUrl;
         this.transcript = transcript;
+        this.questionComplete = questionComplete;
     }
 
     public UUID getId() {
@@ -74,5 +79,13 @@ public class PracticeItemResponseJpaEntity {
 
     public void setTranscript(String transcript) {
         this.transcript = transcript;
+    }
+
+    public boolean isQuestionComplete() {
+        return questionComplete;
+    }
+
+    public void setQuestionComplete(boolean questionComplete) {
+        this.questionComplete = questionComplete;
     }
 }

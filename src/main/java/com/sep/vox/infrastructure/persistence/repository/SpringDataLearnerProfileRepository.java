@@ -100,6 +100,7 @@ public interface SpringDataLearnerProfileRepository
         """, nativeQuery = true)
     List<Integer> findEstimatedResultBandOrder(@Param("studentId") UUID studentId);
 
+
     @Query(value = """
         SELECT band.result_band_order
         FROM school_class_users membership

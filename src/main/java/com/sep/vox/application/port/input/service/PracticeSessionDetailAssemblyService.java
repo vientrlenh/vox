@@ -14,6 +14,7 @@ import com.sep.vox.domain.dto.personalization.TeacherPracticeSessionDetailDto;
 import com.sep.vox.domain.dto.personalization.TeacherPracticeTurnViewDto;
 import com.sep.vox.domain.repository.personalization.PracticeCriterionScoreRepository;
 import com.sep.vox.domain.repository.personalization.PracticeItemEvaluationRepository;
+import com.sep.vox.domain.repository.personalization.PracticeItemResponseRepository;
 import com.sep.vox.domain.repository.personalization.PracticeResponseTurnRepository;
 import com.sep.vox.domain.repository.personalization.TurnCorrectionRepository;
 
@@ -38,18 +39,21 @@ public class PracticeSessionDetailAssemblyService {
     private final TurnCorrectionRepository turnCorrectionRepository;
     private final PracticeCriterionScoreRepository practiceCriterionScoreRepository;
     private final PracticeItemEvaluationRepository practiceItemEvaluationRepository;
+    private final PracticeItemResponseRepository practiceItemResponseRepository;
 
     public PracticeSessionDetailAssemblyService(
             PracticeSessionQueryRepository practiceSessionQueryRepository,
             PracticeResponseTurnRepository practiceResponseTurnRepository,
             TurnCorrectionRepository turnCorrectionRepository,
             PracticeCriterionScoreRepository practiceCriterionScoreRepository,
-            PracticeItemEvaluationRepository practiceItemEvaluationRepository) {
+            PracticeItemEvaluationRepository practiceItemEvaluationRepository,
+            PracticeItemResponseRepository practiceItemResponseRepository) {
         this.practiceSessionQueryRepository = practiceSessionQueryRepository;
         this.practiceResponseTurnRepository = practiceResponseTurnRepository;
         this.turnCorrectionRepository = turnCorrectionRepository;
         this.practiceCriterionScoreRepository = practiceCriterionScoreRepository;
         this.practiceItemEvaluationRepository = practiceItemEvaluationRepository;
+        this.practiceItemResponseRepository = practiceItemResponseRepository;
     }
 
     @Transactional(readOnly = true)
@@ -80,6 +84,8 @@ public class PracticeSessionDetailAssemblyService {
             summary.getOverallScore(),
             scores,
             "COMPLETED".equals(summary.getStatus()),
+            practiceItemResponseRepository.countAwaitingEvaluation(sessionId),
+            practiceItemResponseRepository.findAverageDifficultyRank(sessionId),
             turns
         ));
     }

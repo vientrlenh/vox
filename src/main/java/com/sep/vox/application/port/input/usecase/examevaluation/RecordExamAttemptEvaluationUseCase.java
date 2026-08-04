@@ -291,7 +291,7 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
                         score,
                         score,
                         entry.getValue().note(),
-                        entry.getValue().matchedBandCode()
+                        blankToNull(entry.getValue().matchedBandCode())
                     );
                 })
                 .filter(item -> item != null)
@@ -527,4 +527,21 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
     private String toNullableJson(Object value) {
         return value == null ? null : jsonSerializationPort.toJson(value);
     }
+
+    /**
+     * Chuỗi RỖNG phải thành NULL trước khi xuống DB.
+     *
+     * findEstimatedResultBandOrder đã có sẵn chốt {@code matched_band_code IS NOT NULL} -- người
+     * viết truy vấn đã lường trước chuyện thiếu mã bậc. Nhưng chuỗi rỗng LỌT QUA chốt đó rồi mới
+     * chết ở phép nối {@code band.code = matched_band_code}: bản ghi biến mất khỏi phép ước
+     * lượng, không lỗi, không log, chỉ là mẫu nhỏ đi. Đo trên dữ liệu thật: 5 dòng có mã, chỉ 3
+     * dòng qua được phép nối, mà ngưỡng {@code total >= 5} lại đếm SAU khi nối -- nên phép ước
+     * lượng bậc chưa từng chạy một lần nào.
+     *
+     * NULL hoá ở đây để chốt đó làm đúng việc nó được viết ra để làm.
+     */
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
+    }
+
 }

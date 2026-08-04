@@ -21,7 +21,8 @@ public final class SubscriptionPlanMapper {
             PlanStatus.valueOf(jpa.getStatus()),
             jpa.getVersion(),
             jpa.getCreatedAt(),
-            jpa.getCreatedBy()
+            jpa.getCreatedBy(),
+            jpa.getReplacedByPlanId()
         );
     }
 
@@ -38,7 +39,8 @@ public final class SubscriptionPlanMapper {
             domain.getStatus().name(),
             domain.getVersion(),
             domain.getCreatedAt(),
-            domain.getCreatedBy()
+            domain.getCreatedBy(),
+            domain.getReplacedByPlanId()
         );
     }
 }

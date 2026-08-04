@@ -7,29 +7,29 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.exception.UnauthorizedException;
+import com.sep.vox.application.port.input.service.PaymentPortResolver;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.PayOSPort;
+import com.sep.vox.application.port.output.PaymentPort;
+import com.sep.vox.domain.model.subscription.PaymentMethod;
 import com.sep.vox.domain.repository.InvoiceRepository;
 
-import vn.payos.exception.WebhookException;
-
 // Internal service-to-service use case (webhook callback từ PayOS, xác thực bằng chữ ký thay vì JWT) —
-// không dùng UserContextPort/ApproveRequestUseCase vì luồng này không có người dùng đăng nhập.
 @Service
 public class HandlePayOSWebhookUseCase implements IUseCase<Object, Void> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HandlePayOSWebhookUseCase.class);
     private static final String SUCCESS_CODE = "00";
 
-    private final PayOSPort payOSPort;
+    private final PaymentPort paymentPort;
     private final InvoiceRepository invoiceRepository;
     private final PayOSInvoiceSettlementService settlementService;
 
     public HandlePayOSWebhookUseCase(
-            PayOSPort payOSPort,
+            PaymentPortResolver paymentPortResolver,
             InvoiceRepository invoiceRepository,
             PayOSInvoiceSettlementService settlementService) {
-        this.payOSPort = payOSPort;
+        this.paymentPort = paymentPortResolver.resolve(PaymentMethod.PAYOS);
         this.invoiceRepository = invoiceRepository;
         this.settlementService = settlementService;
     }
@@ -42,8 +42,8 @@ public class HandlePayOSWebhookUseCase implements IUseCase<Object, Void> {
         var data = (Map<String, Object>) body.get("data");
         var signature = (String) body.get("signature");
 
-        if (data == null || signature == null || !payOSPort.verifyWebhookSignature(data, signature)) {
-            throw new WebhookException("Invalid signature");
+        if (data == null || signature == null || !paymentPort.verifyWebhookSignature(data, signature)) {
+            throw new UnauthorizedException("Invalid signature");
         }
 
         var orderCode = ((Number) data.get("orderCode")).longValue();

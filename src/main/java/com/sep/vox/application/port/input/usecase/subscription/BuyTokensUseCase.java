@@ -130,7 +130,8 @@ public class BuyTokensUseCase implements IUseCase<BuyTokensCommand, TokenPurchas
             null,
             null,
             null,
-            now
+            now,
+            null
         ));
 
         financialEventRepository.save(new FinancialEvent(

@@ -20,6 +20,10 @@ import com.sep.vox.domain.model.subscription.SubscriptionStatus;
 import com.sep.vox.domain.repository.FinancialEventRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 
+// "Hủy" kiểu Claude: chỉ đánh dấu sẽ không gia hạn nữa (cancelledAt), KHÔNG cắt quyền dùng ngay —
+// trường đã trả tiền cho cả kỳ nên vẫn dùng bình thường (status giữ ACTIVE) tới hết endDate. Không
+// có gì để hoàn tiền vì không mất ngày nào đã trả. SubscriptionExpiryJob sẽ tự chuyển sang EXPIRED
+// khi endDate tới, dù có bị hủy hay không.
 @Service
 public class CancelSubscriptionUseCase implements IUseCase<CancelSubscriptionCommand, SchoolSubscriptionDto> {
 
@@ -51,9 +55,11 @@ public class CancelSubscriptionUseCase implements IUseCase<CancelSubscriptionCom
         if (subscription.getStatus() != SubscriptionStatus.ACTIVE) {
             throw new IllegalStateException("Gói đăng ký không ở trạng thái đang hoạt động");
         }
+        if (subscription.getCancelledAt() != null) {
+            throw new IllegalStateException("Gói đăng ký đã được hủy trước đó");
+        }
 
         var now = Instant.now();
-        subscription.setStatus(SubscriptionStatus.CANCELLED);
         subscription.setCancelledAt(now);
         var saved = schoolSubscriptionRepository.save(subscription);
 

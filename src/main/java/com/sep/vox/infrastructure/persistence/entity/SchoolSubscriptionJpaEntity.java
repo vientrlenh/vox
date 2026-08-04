@@ -13,6 +13,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 
 @Entity
 @Table(name = "school_subscription")
@@ -58,10 +59,14 @@ public class SchoolSubscriptionJpaEntity {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
+    @Version
+    @Column(name = "version", nullable = false)
+    private Long version;
+
     protected SchoolSubscriptionJpaEntity() {}
 
     public SchoolSubscriptionJpaEntity(UUID id, UUID schoolId, UUID planId, LocalDate startDate, LocalDate endDate,
-            String status, BigDecimal pricePaidSnapshot, Instant cancelledAt, Instant createdAt) {
+            String status, BigDecimal pricePaidSnapshot, Instant cancelledAt, Instant createdAt, Long version) {
         this.id = id;
         this.schoolId = schoolId;
         this.planId = planId;
@@ -71,6 +76,7 @@ public class SchoolSubscriptionJpaEntity {
         this.pricePaidSnapshot = pricePaidSnapshot;
         this.cancelledAt = cancelledAt;
         this.createdAt = createdAt;
+        this.version = version;
     }
 
     public UUID getId() {
@@ -143,5 +149,13 @@ public class SchoolSubscriptionJpaEntity {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
     }
 }

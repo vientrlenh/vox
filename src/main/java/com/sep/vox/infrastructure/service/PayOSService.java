@@ -13,10 +13,11 @@ import javax.crypto.spec.SecretKeySpec;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.port.output.PayOSPort;
+import com.sep.vox.application.port.output.PaymentPort;
 import com.sep.vox.application.response.output.PaymentLinkRemoteStatus;
 import com.sep.vox.application.response.output.PaymentLinkResult;
 import com.sep.vox.application.response.output.PaymentLinkStatusResult;
+import com.sep.vox.domain.model.subscription.PaymentMethod;
 
 import vn.payos.PayOS;
 import vn.payos.exception.WebhookException;
@@ -26,7 +27,7 @@ import vn.payos.model.v2.paymentRequests.CreatePaymentLinkRequest;
 // sang WebhookData (có field Instant) bằng ObjectMapper nội bộ không có JavaTimeModule,
 // luôn ném InvalidDefinitionException với mọi webhook thật (có transactionDateTime).
 @Service
-public class PayOSService implements PayOSPort {
+public class PayOSService implements PaymentPort {
 
     private static final String HMAC_ALGORITHM = "HmacSHA256";
 
@@ -47,18 +48,17 @@ public class PayOSService implements PayOSPort {
     }
 
     @Override
+    public PaymentMethod supports() {
+        return PaymentMethod.PAYOS;
+    }
+
+    @Override
     public boolean verifyWebhookSignature(Map<String, Object> data, String signature) {
         return signature.equals(computeSignature(data));
     }
 
     @Override
     public PaymentLinkResult createPaymentLink(long orderCode, BigDecimal amount, String description) {
-        return createPaymentLink(orderCode, amount, description, returnUrl, cancelUrl);
-    }
-
-    @Override
-    public PaymentLinkResult createPaymentLink(
-            long orderCode, BigDecimal amount, String description, String returnUrl, String cancelUrl) {
         var paymentLinkRequest = CreatePaymentLinkRequest.builder()
             .orderCode(orderCode)
             .amount(amount.longValueExact())

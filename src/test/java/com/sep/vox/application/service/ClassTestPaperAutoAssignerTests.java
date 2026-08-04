@@ -16,6 +16,7 @@ import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamPaper;
+import com.sep.vox.domain.model.exam.ExamPaperStatus;
 import com.sep.vox.domain.repository.ExamPaperRepository;
 
 /**
@@ -94,10 +95,29 @@ class ClassTestPaperAutoAssignerTests {
         return candidate;
     }
 
+    /**
+     * Phân đề thủ công (AssignExamPapersUseCase) đòi mọi mã đề đã LOCKED. Auto-assign phải theo cùng
+     * bất biến, nếu không thí sinh trỏ vào một mã đề vẫn sửa được cho tới lúc START ép khoá.
+     */
+    @Test
+    void should_skip_when_the_only_paper_is_not_locked() {
+        when(examPaperRepository.findByExamId(EXAM_ID)).thenReturn(List.of(paper(PAPER_ID, ExamPaperStatus.DRAFT)));
+        var candidate = candidate();
+
+        assigner.assignSinglePaperIfNeeded(exam(ExamKind.CLASS_TEST), candidate, Instant.now(), TEACHER_ID);
+
+        assertThat(candidate.getAssignedPaperId()).isNull();
+    }
+
     private ExamPaper paper(UUID id) {
+        return paper(id, ExamPaperStatus.LOCKED);
+    }
+
+    private ExamPaper paper(UUID id, ExamPaperStatus status) {
         var paper = new ExamPaper();
         paper.setId(id);
         paper.setExamId(EXAM_ID);
+        paper.setStatus(status);
         return paper;
     }
 }

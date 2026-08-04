@@ -29,6 +29,17 @@ public class ExamPaperRepositoryImpl implements ExamPaperRepository {
     }
 
     @Override
+    public List<ExamPaper> saveAll(Collection<ExamPaper> papers) {
+        if (papers == null || papers.isEmpty()) {
+            return List.of();
+        }
+        var entities = papers.stream().map(ExamPaperMapper::toJpa).toList();
+        return springDataExamPaperRepository.saveAll(entities).stream()
+            .map(ExamPaperMapper::toDomain)
+            .toList();
+    }
+
+    @Override
     public Optional<ExamPaper> findById(UUID id) {
         return springDataExamPaperRepository.findById(id)
             .map(ExamPaperMapper::toDomain);

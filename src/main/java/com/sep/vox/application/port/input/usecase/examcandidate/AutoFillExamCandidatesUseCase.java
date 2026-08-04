@@ -106,12 +106,18 @@ public class AutoFillExamCandidatesUseCase
             return List.of();
         }
 
+        // Bài kiểm tra trên lớp chỉ có một đề nên gán luôn, giáo viên không phải bấm thêm bước phân đề.
+        // Đề của kỳ thi không đổi trong vòng lặp nên tra đúng MỘT lần ở đây; gọi trong vòng lặp thì mỗi
+        // thí sinh là một findByExamId y hệt nhau.
+        var singlePaperId = classTestPaperAutoAssigner.resolveSinglePaperId(exam);
+
         var assigned = new ArrayList<ExamCandidate>();
         int i = 0;
         for (var candidate : unassigned) {
             candidate.assignToSchedule(lockedScheduleIds.get(i % lockedScheduleIds.size()), now, currentUserId);
-            // Bài kiểm tra trên lớp chỉ có một đề nên gán luôn, giáo viên không phải bấm thêm bước phân đề.
-            classTestPaperAutoAssigner.assignSinglePaperIfNeeded(exam, candidate, now, currentUserId);
+            if (singlePaperId != null && candidate.getAssignedPaperId() == null) {
+                candidate.assignPaper(singlePaperId, now, currentUserId);
+            }
             assigned.add(candidate);
             i++;
         }

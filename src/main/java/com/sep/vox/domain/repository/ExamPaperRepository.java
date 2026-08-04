@@ -10,6 +10,7 @@ import com.sep.vox.domain.model.exam.ExamPaperStatus;
 
 public interface ExamPaperRepository {
     ExamPaper save(ExamPaper paper);
+    List<ExamPaper> saveAll(Collection<ExamPaper> papers);
     Optional<ExamPaper> findById(UUID id);
     List<ExamPaper> findByIdIn(Collection<UUID> ids);
     List<ExamPaper> findByExamId(UUID examId);

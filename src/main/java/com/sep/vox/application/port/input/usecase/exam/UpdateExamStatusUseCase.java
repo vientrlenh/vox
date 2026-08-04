@@ -1,6 +1,8 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
 import java.time.Instant;
+import java.util.EnumSet;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,6 +47,13 @@ import com.sep.vox.domain.repository.SubscriptionQuotaRepository;
 
 @Service
 public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand, ExamDto> {
+
+    /**
+     * Huỷ được khi bài chưa chốt kết quả. RESULTS_PUBLISHED không rút lại được (học sinh đã xem điểm),
+     * và CANCELLED thì không huỷ thêm lần nữa.
+     */
+    private static final Set<ExamStatus> CANCELLABLE_FROM =
+        EnumSet.of(ExamStatus.DRAFT, ExamStatus.SCHEDULED, ExamStatus.IN_PROGRESS, ExamStatus.CLOSED);
 
     private final ExamRepository examRepository;
     private final ExamMemberRepository examMemberRepository;
@@ -129,10 +138,14 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
 
         switch (command.action()) {
             case "SCHEDULE" -> {
-                validatePlanLimits(exam);
+                // Trạng thái kiểm TRƯỚC hạn mức gói: bấm SCHEDULE trên bài không còn DRAFT mà báo lỗi
+                // "vượt quá giới hạn gói" thì người dùng đi sửa nhầm chỗ.
                 requireTransition(exam, ExamStatus.DRAFT, ExamStatus.SCHEDULED);
+                validatePlanLimits(exam);
                 if (exam.getKind() == ExamKind.CLASS_TEST) {
                     publishClassTestSchedules(exam, currentUserId);
+                } else {
+                    requireCentralizedScheduleReadiness(exam);
                 }
             }
             case "START" -> {
@@ -158,7 +171,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
                 requireTransition(exam, ExamStatus.CLOSED, ExamStatus.RESULTS_PUBLISHED);
                 finalizePassFailForExam(exam);
             }
-            case "CANCEL" -> exam.setStatus(ExamStatus.CANCELLED);
+            case "CANCEL" -> requireTransition(exam, CANCELLABLE_FROM, ExamStatus.CANCELLED);
             default -> throw new IllegalStateException("Action không hợp lệ");
         }
 
@@ -186,7 +199,15 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
     }
 
     private void requireTransition(com.sep.vox.domain.model.exam.Exam exam, ExamStatus from, ExamStatus to) {
-        if (exam.getStatus() != from) {
+        requireTransition(exam, EnumSet.of(from), to);
+    }
+
+    /**
+     * Bản nhiều trạng thái nguồn, hiện chỉ CANCEL dùng: huỷ được từ bất kỳ trạng thái nào chưa chốt,
+     * nhưng kết quả đã công bố thì không rút lại được, và bài đã huỷ không huỷ thêm lần nữa.
+     */
+    private void requireTransition(com.sep.vox.domain.model.exam.Exam exam, Set<ExamStatus> allowedFrom, ExamStatus to) {
+        if (!allowedFrom.contains(exam.getStatus())) {
             throw new IllegalStateException("Trạng thái bài kiểm tra hiện tại không hợp lệ cho action này");
         }
         exam.setStatus(to);
@@ -242,14 +263,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
     private void requireClassTestScheduleReadiness(
             com.sep.vox.domain.model.exam.Exam exam,
             java.util.List<com.sep.vox.domain.model.exam.ExamSchedule> schedules) {
-        for (var schedule : schedules) {
-            if (schedule.getSchoolRoomId() == null) {
-                throw new IllegalStateException("Ca thi chưa được chọn phòng");
-            }
-            if (examScheduleProctorRepository.countByScheduleId(schedule.getId()) == 0) {
-                throw new IllegalStateException("Ca thi chưa có giám khảo");
-            }
-        }
+        requireSchedulesHaveRoomAndProctor(schedules);
 
         var candidates = examCandidateRepository.findByExamId(exam.getId());
         var withoutSchedule = candidates.stream()
@@ -264,6 +278,42 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
             .count();
         if (withoutPaper > 0) {
             throw new IllegalStateException("Còn " + withoutPaper + " học sinh chưa được gán đề");
+        }
+    }
+
+    /** Ca thi nào cũng phải có phòng và ít nhất một giám khảo — đúng cho cả hai loại bài. */
+    private void requireSchedulesHaveRoomAndProctor(
+            java.util.List<com.sep.vox.domain.model.exam.ExamSchedule> schedules) {
+        for (var schedule : schedules) {
+            if (schedule.getSchoolRoomId() == null) {
+                throw new IllegalStateException("Ca thi chưa được chọn phòng");
+            }
+            if (examScheduleProctorRepository.countByScheduleId(schedule.getId()) == 0) {
+                throw new IllegalStateException("Ca thi chưa có giám khảo");
+            }
+        }
+    }
+
+    /**
+     * Kỳ thi tập trung trước đây lên lịch được cả khi chưa có ca thi, chưa có thí sinh và chưa có mã
+     * đề nào — bài mang trạng thái SCHEDULED mà thực tế không ai vào thi được.
+     *
+     * <p>Chốt ở đây nhẹ hơn bài trên lớp một bậc: KHÔNG đòi từng thí sinh đã có ca và đã có đề, vì kỳ
+     * thi tập trung xếp ca ({@code AssignExamCandidateSchedule}/{@code AutoFill}) và phân đề
+     * ({@code AssignExamPapersUseCase}, đòi mọi đề LOCKED) sau khi đã lên lịch. Chỉ chặn đúng trường
+     * hợp "rỗng" mà không có cách nào chạy được.
+     */
+    private void requireCentralizedScheduleReadiness(com.sep.vox.domain.model.exam.Exam exam) {
+        var schedules = examScheduleRepository.findByExamId(exam.getId());
+        if (schedules.isEmpty()) {
+            throw new IllegalStateException("Kỳ thi chưa có ca thi nào, không thể lên lịch");
+        }
+        requireSchedulesHaveRoomAndProctor(schedules);
+        if (examCandidateRepository.countByExamId(exam.getId()) == 0) {
+            throw new IllegalStateException("Kỳ thi chưa có thí sinh nào, không thể lên lịch");
+        }
+        if (examPaperRepository.findByExamId(exam.getId()).isEmpty()) {
+            throw new IllegalStateException("Kỳ thi chưa có mã đề nào, không thể lên lịch");
         }
     }
 

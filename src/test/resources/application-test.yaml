@@ -1,4 +1,9 @@
 spring:
+    # Cổng động: application.yaml cố định gRPC ở 9090, nên mọi @SpringBootTest đều chết với
+    # BindException khi máy đang chạy sẵn app (bootRun/IDE). Test không gọi gRPC nên để 0.
+    grpc:
+        server:
+            port: 0
     jpa:
         database-platform: org.hibernate.dialect.H2Dialect
         hibernate:

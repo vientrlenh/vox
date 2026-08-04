@@ -8,10 +8,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.ExamDeliveryModeSupport;
+import com.sep.vox.application.common.InstantParser;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreateClassTestCommand;
+import com.sep.vox.application.port.input.service.ExamAssessmentPolicyValidator;
 import com.sep.vox.application.port.input.service.ExamScheduleRoomValidator;
 import com.sep.vox.application.port.input.service.ExamStreamConfigResolver;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -29,8 +31,7 @@ import com.sep.vox.domain.model.exam.ExamSchedule;
 import com.sep.vox.domain.model.exam.ExamScheduleProctor;
 import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.model.exam.ResultDecisionMethod;
-import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStatus;
-import com.sep.vox.domain.repository.AssessmentPolicyRepository;
+import com.sep.vox.domain.model.user.SchoolRoleCodes;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
@@ -60,7 +61,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
     private final ExamScheduleProctorRepository examScheduleProctorRepository;
     private final ExamMemberRepository examMemberRepository;
     private final ExamCandidateRepository examCandidateRepository;
-    private final AssessmentPolicyRepository assessmentPolicyRepository;
+    private final ExamAssessmentPolicyValidator examAssessmentPolicyValidator;
     private final ExamStreamConfigResolver examStreamConfigResolver;
     private final ExamScheduleRoomValidator examScheduleRoomValidator;
     private final UserContextPort userContextPort;
@@ -74,7 +75,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             ExamScheduleProctorRepository examScheduleProctorRepository,
             ExamMemberRepository examMemberRepository,
             ExamCandidateRepository examCandidateRepository,
-            AssessmentPolicyRepository assessmentPolicyRepository,
+            ExamAssessmentPolicyValidator examAssessmentPolicyValidator,
             ExamStreamConfigResolver examStreamConfigResolver,
             ExamScheduleRoomValidator examScheduleRoomValidator,
             UserContextPort userContextPort) {
@@ -86,7 +87,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         this.examScheduleProctorRepository = examScheduleProctorRepository;
         this.examMemberRepository = examMemberRepository;
         this.examCandidateRepository = examCandidateRepository;
-        this.assessmentPolicyRepository = assessmentPolicyRepository;
+        this.examAssessmentPolicyValidator = examAssessmentPolicyValidator;
         this.examStreamConfigResolver = examStreamConfigResolver;
         this.examScheduleRoomValidator = examScheduleRoomValidator;
         this.userContextPort = userContextPort;
@@ -112,7 +113,8 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
-        validateAssessmentPolicy(command.assessmentPolicyId(), schoolClass.getSchoolId());
+        examAssessmentPolicyValidator.requirePublishedInSchool(
+            command.assessmentPolicyId(), schoolClass.getSchoolId());
         validateOpenClose(command.openAt(), command.closeAt());
 
         var now = Instant.now();
@@ -164,35 +166,14 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         );
     }
 
-    /**
-     * Chốt policy NGAY LÚC TẠO, không để trôi sang bước sửa: bài không gắn policy thì
-     * {@code ExamSessionResultCalculator} ném ngay khi tính kết quả, tức là không sinh
-     * được {@code ExamCandidateResult} nào — mà đó mới là thứ phân công chấm trỏ vào.
-     *
-     * <p>Policy hệ thống ({@code schoolId = null}) dùng được cho mọi trường.
-     */
-    private void validateAssessmentPolicy(UUID assessmentPolicyId, UUID schoolId) {
-        if (assessmentPolicyId == null) {
-            throw new IllegalArgumentException("Bộ tiêu chí đánh giá là bắt buộc");
-        }
-        var policy = assessmentPolicyRepository.findById(assessmentPolicyId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ tiêu chí đánh giá"));
-        if (policy.getStatus() != AssessmentPolicyStatus.PUBLISHED) {
-            throw new IllegalStateException("Chỉ được dùng bộ tiêu chí đã xuất bản");
-        }
-        if (policy.getSchoolId() != null && !policy.getSchoolId().equals(schoolId)) {
-            throw new ForbiddenException("Bộ tiêu chí không thuộc trường của bạn");
-        }
-    }
-
     private Exam createExam(
             SchoolClass schoolClass,
             CreateClassTestCommand command,
             UUID currentUserId,
             Instant now) {
         var code = "CT-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase();
-        var openAt = parseDateTime(command.openAt());
-        var closeAt = parseDateTime(command.closeAt());
+        var openAt = parseOpenAt(command.openAt());
+        var closeAt = parseCloseAt(command.closeAt());
         Integer requestedMaxAttempt = command.maxAttempt();
         int maxAttempt = requestedMaxAttempt == null ? 1 : requestedMaxAttempt;
         var streamConfig = examStreamConfigResolver.resolve(
@@ -266,32 +247,45 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             UUID schoolClassId,
             UUID currentUserId,
             Instant now) {
+        // findBySchoolClassId là 1-based (PageRequest.of(page - 1, size)) → trang đầu là 1, KHÔNG phải 0.
         var roster = schoolClassUserRepository.findBySchoolClassId(schoolClassId, 1, MAX_CLASS_ROSTER_SIZE).content();
+
+        var activeUserIds = roster.stream()
+            .filter(classUser -> classUser.isActive())
+            .map(classUser -> classUser.getUserId())
+            .distinct()
+            .toList();
+
+        // MỘT query cho cả lớp thay vì hỏi vai trò từng học sinh — lớp 40 người là 40 query, và trần
+        // roster là 2000. Giống hệt ImportExamCandidatesFromClassUseCase.
+        var studentIds = userRoleQueryRepository.findUserIdsByRoleCode(activeUserIds, SchoolRoleCodes.STUDENT);
+
         var candidates = new ArrayList<ExamCandidate>();
-        for (var classUser : roster) {
-            if (!classUser.isActive()) {
+        for (var userId : activeUserIds) {
+            if (!studentIds.contains(userId)) {
                 continue;
             }
-            var isStudent = userRoleQueryRepository.findByUserIdWithRoleInfo(classUser.getUserId()).stream()
-                .anyMatch(role -> "STUDENT".equals(role.roleCode()));
-            if (!isStudent) {
-                continue;
-            }
-            candidates.add(ExamCandidate.createFresh(exam.getId(), classUser.getUserId(), currentUserId, now));
+            candidates.add(ExamCandidate.createFresh(exam.getId(), userId, currentUserId, now));
         }
         return examCandidateRepository.saveAll(candidates).size();
     }
 
     private void validateOpenClose(String openAt, String closeAt) {
-        if (openAt == null || openAt.isBlank() || closeAt == null || closeAt.isBlank()) {
+        var open = parseOpenAt(openAt);
+        var close = parseCloseAt(closeAt);
+        if (open == null || close == null) {
             throw new IllegalStateException("Bài kiểm tra trên lớp phải có thời gian mở bài và đóng bài");
         }
-        if (!Instant.parse(openAt).isBefore(Instant.parse(closeAt))) {
+        if (!open.isBefore(close)) {
             throw new IllegalStateException("Thời gian mở bài phải nhỏ hơn thời gian đóng bài");
         }
     }
 
-    private Instant parseDateTime(String value) {
-        return value == null ? null : Instant.parse(value);
+    private Instant parseOpenAt(String value) {
+        return InstantParser.parseOrNull(value, "Thời gian mở bài");
+    }
+
+    private Instant parseCloseAt(String value) {
+        return InstantParser.parseOrNull(value, "Thời gian đóng bài");
     }
 }

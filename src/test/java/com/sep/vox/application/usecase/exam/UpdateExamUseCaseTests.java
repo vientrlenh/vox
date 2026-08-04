@@ -30,6 +30,8 @@ import com.sep.vox.domain.model.exam.ExamSchedule;
 import com.sep.vox.domain.model.exam.ExamScheduleStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.model.school.SchoolUser;
+import com.sep.vox.application.port.input.service.ExamAssessmentPolicyValidator;
+import com.sep.vox.domain.repository.AssessmentPolicyRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
@@ -62,7 +64,9 @@ class UpdateExamUseCaseTests {
         userContextPort = mock(UserContextPort.class);
         useCase = new UpdateExamUseCase(
             examRepository, examMemberRepository, examScheduleRepository,
-            schoolUserRepository, userRoleQueryRepository, userContextPort);
+            schoolUserRepository, userRoleQueryRepository,
+            new ExamAssessmentPolicyValidator(mock(AssessmentPolicyRepository.class)),
+            userContextPort);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(schoolUserRepository.findByUserId(userId)).thenReturn(Optional.empty());

@@ -7,10 +7,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.ExamEditingGuard;
 import com.sep.vox.application.common.ExamScheduleWindowMessages;
+import com.sep.vox.application.common.InstantParser;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateExamCommand;
+import com.sep.vox.application.port.input.service.ExamAssessmentPolicyValidator;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
@@ -33,6 +35,7 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
     private final ExamScheduleRepository examScheduleRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
+    private final ExamAssessmentPolicyValidator examAssessmentPolicyValidator;
     private final UserContextPort userContextPort;
 
     public UpdateExamUseCase(
@@ -41,7 +44,9 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
             ExamScheduleRepository examScheduleRepository,
             SchoolUserRepository schoolUserRepository,
             UserRoleQueryRepository userRoleQueryRepository,
+            ExamAssessmentPolicyValidator examAssessmentPolicyValidator,
             UserContextPort userContextPort) {
+        this.examAssessmentPolicyValidator = examAssessmentPolicyValidator;
         this.examRepository = examRepository;
         this.examMemberRepository = examMemberRepository;
         this.examScheduleRepository = examScheduleRepository;
@@ -81,12 +86,15 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
             exam.setDescription(command.description());
         }
         if (command.openAt() != null) {
-            exam.setOpenAt(Instant.parse(command.openAt()));
+            exam.setOpenAt(InstantParser.parseOrNull(command.openAt(), "Thời gian mở bài"));
         }
         if (command.closeAt() != null) {
-            exam.setCloseAt(Instant.parse(command.closeAt()));
+            exam.setCloseAt(InstantParser.parseOrNull(command.closeAt(), "Thời gian đóng bài"));
         }
         if (command.assessmentPolicyId() != null) {
+            // Kiểm theo trường của chính bài kiểm tra, không phải trường người gọi: bài đã tồn tại nên
+            // schoolId của nó mới là phạm vi đúng.
+            examAssessmentPolicyValidator.validateIfPresent(command.assessmentPolicyId(), exam.getSchoolId());
             exam.setAssessmentPolicyId(command.assessmentPolicyId());
         }
         if (command.maxAttempt() != null) {

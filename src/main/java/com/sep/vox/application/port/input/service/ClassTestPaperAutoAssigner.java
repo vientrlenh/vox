@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamKind;
+import com.sep.vox.domain.model.exam.ExamPaperStatus;
 import com.sep.vox.domain.repository.ExamPaperRepository;
 
 /**
@@ -38,8 +39,13 @@ public class ClassTestPaperAutoAssigner {
     }
 
     /**
-     * Id của đề duy nhất, hoặc {@code null} nếu không áp dụng (không phải bài trên lớp, hoặc bài có
-     * số đề khác 1 — lúc đó phải phân đề thủ công).
+     * Id của đề duy nhất, hoặc {@code null} nếu không áp dụng: không phải bài trên lớp, bài có số đề
+     * khác 1 (phải phân đề thủ công), hoặc đề chưa LOCKED.
+     *
+     * <p>Điều kiện LOCKED bám đúng {@code AssignExamPapersUseCase}, vốn đòi mọi mã đề của kỳ thi phải
+     * LOCKED trước khi phân. Không có nó thì thí sinh trỏ vào một mã đề mà CHAIR vẫn sửa được cho tới
+     * lúc START ép khoá — sửa đề sau khi đã phân là thay đổi bài thi dưới chân thí sinh. Chưa khoá thì
+     * để trống, {@code UpdateExamStatusUseCase} sẽ chặn ở bước SCHEDULE với thông báo rõ ràng.
      */
     public UUID resolveSinglePaperId(Exam exam) {
         if (exam.getKind() != ExamKind.CLASS_TEST) {
@@ -49,6 +55,7 @@ public class ClassTestPaperAutoAssigner {
         if (papers.size() != 1) {
             return null;
         }
-        return papers.get(0).getId();
+        var paper = papers.get(0);
+        return paper.getStatus() == ExamPaperStatus.LOCKED ? paper.getId() : null;
     }
 }

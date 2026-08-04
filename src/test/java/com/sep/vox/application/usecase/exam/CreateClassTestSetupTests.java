@@ -13,6 +13,7 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -20,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import com.sep.vox.application.port.input.command.CreateClassTestCommand;
+import com.sep.vox.application.port.input.service.ExamAssessmentPolicyValidator;
 import com.sep.vox.application.port.input.service.ExamScheduleRoomValidator;
 import com.sep.vox.application.port.input.service.ExamStreamConfigResolver;
 import com.sep.vox.application.port.input.usecase.exam.CreateClassTestUseCase;
@@ -40,6 +42,7 @@ import com.sep.vox.domain.model.exam.ExamStreamTypePermission;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.model.school.SchoolClassUser;
+import com.sep.vox.domain.model.user.SchoolRoleCodes;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
@@ -91,7 +94,7 @@ class CreateClassTestSetupTests {
             examScheduleProctorRepository,
             mock(ExamMemberRepository.class),
             examCandidateRepository,
-            assessmentPolicyRepository,
+            new ExamAssessmentPolicyValidator(assessmentPolicyRepository),
             new ExamStreamConfigResolver(),
             mock(ExamScheduleRoomValidator.class),
             userContextPort
@@ -126,9 +129,9 @@ class CreateClassTestSetupTests {
         when(schoolClassUserRepository.findBySchoolClassId(CLASS_ID, 1, 2000)).thenReturn(new PageResult<>(
             List.of(new SchoolClassUser(STUDENT_ID, CLASS_ID, true, Instant.now(), null, TEACHER_ID)),
             1, 2000, 1, 1));
-        when(userRoleQueryRepository.findByUserIdWithRoleInfo(STUDENT_ID)).thenReturn(List.of(
-            new UserRoleInfo(UUID.randomUUID(), STUDENT_ID, UUID.randomUUID(), Instant.now(), "STUDENT", "Học sinh")
-        ));
+        // Vai trò của cả lớp được hỏi bằng MỘT query batch, không phải từng học sinh một.
+        when(userRoleQueryRepository.findUserIdsByRoleCode(List.of(STUDENT_ID), SchoolRoleCodes.STUDENT))
+            .thenReturn(Set.of(STUDENT_ID));
     }
 
     @Test

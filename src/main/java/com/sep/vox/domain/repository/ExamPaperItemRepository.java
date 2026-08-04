@@ -13,6 +13,8 @@ public interface ExamPaperItemRepository {
     List<ExamPaperItem> findBySectionId(UUID sectionId);
     List<ExamPaperItem> findBySectionIdIn(Collection<UUID> sectionIds);
     List<ExamPaperItem> findByPaperId(UUID paperId);
+    /** Nạp item của nhiều mã đề trong một query — dùng khi tính lại thời lượng cho cả kỳ thi. */
+    List<ExamPaperItem> findByPaperIdIn(Collection<UUID> paperIds);
     boolean existsUnassignedItemByPaperId(UUID paperId);
     void deleteById(UUID id);
 }

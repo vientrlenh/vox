@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreateClassTestCommand;
+import com.sep.vox.application.port.input.service.ExamAssessmentPolicyValidator;
 import com.sep.vox.application.port.input.service.ExamScheduleRoomValidator;
 import com.sep.vox.application.port.input.service.ExamStreamConfigResolver;
 import com.sep.vox.application.port.input.usecase.exam.CreateClassTestUseCase;
@@ -84,7 +85,7 @@ class CreateClassTestAssessmentPolicyTests {
             mock(ExamScheduleProctorRepository.class),
             mock(ExamMemberRepository.class),
             examCandidateRepository,
-            assessmentPolicyRepository,
+            new ExamAssessmentPolicyValidator(assessmentPolicyRepository),
             new ExamStreamConfigResolver(),
             mock(ExamScheduleRoomValidator.class),
             userContextPort

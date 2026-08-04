@@ -30,6 +30,7 @@ import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
+import com.sep.vox.domain.model.exam.ExamPaper;
 import com.sep.vox.domain.model.exam.ExamSchedule;
 import com.sep.vox.domain.model.exam.ExamScheduleStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
@@ -62,6 +63,9 @@ class UpdateExamStatusUseCaseTests {
     private ExamScheduleRepository examScheduleRepository;
     private ExamScheduleProctorRepository examScheduleProctorRepository;
     private ExamCandidateRepository examCandidateRepository;
+    private ExamPaperRepository examPaperRepository;
+    private SchoolUserRepository schoolUserRepository;
+    private UserRoleQueryRepository userRoleQueryRepository;
     private SchoolSubscriptionRepository schoolSubscriptionRepository;
     private SubscriptionPlanRepository subscriptionPlanRepository;
     private SubscriptionQuotaRepository subscriptionQuotaRepository;
@@ -84,6 +88,9 @@ class UpdateExamStatusUseCaseTests {
         examScheduleRepository = mock(ExamScheduleRepository.class);
         examScheduleProctorRepository = mock(ExamScheduleProctorRepository.class);
         examCandidateRepository = mock(ExamCandidateRepository.class);
+        examPaperRepository = mock(ExamPaperRepository.class);
+        schoolUserRepository = mock(SchoolUserRepository.class);
+        userRoleQueryRepository = mock(UserRoleQueryRepository.class);
         schoolSubscriptionRepository = mock(SchoolSubscriptionRepository.class);
         subscriptionPlanRepository = mock(SubscriptionPlanRepository.class);
         subscriptionQuotaRepository = mock(SubscriptionQuotaRepository.class);
@@ -92,7 +99,7 @@ class UpdateExamStatusUseCaseTests {
         useCase = new UpdateExamStatusUseCase(
             examRepository,
             examMemberRepository,
-            mock(ExamPaperRepository.class),
+            examPaperRepository,
             examScheduleRepository,
             examScheduleProctorRepository,
             examCandidateRepository,
@@ -101,8 +108,8 @@ class UpdateExamStatusUseCaseTests {
             mock(AssessmentPolicyRepository.class),
             mock(ExamCandidateResultFinalizationService.class),
             mock(ZeroScoreExamResultService.class),
-            mock(SchoolUserRepository.class),
-            mock(UserRoleQueryRepository.class),
+            schoolUserRepository,
+            userRoleQueryRepository,
             mock(ExamQuestionSecureLockService.class),
             schoolSubscriptionRepository,
             subscriptionPlanRepository,
@@ -200,6 +207,142 @@ class UpdateExamStatusUseCaseTests {
         assertThatThrownBy(() -> useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null)))
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("Còn 1 học sinh chưa được gán đề");
+    }
+
+    // --- Kỳ thi tập trung: trước đây lên lịch được khi chưa có gì, bài "đã lên lịch" mà không ai thi được ---
+
+    @Test
+    void should_reject_schedule_when_centralized_exam_has_no_schedule() {
+        givenCentralizedExam();
+        when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of());
+
+        assertThatThrownBy(() -> useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null)))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("chưa có ca thi");
+    }
+
+    @Test
+    void should_reject_schedule_when_centralized_exam_has_no_candidate() {
+        givenCentralizedExam();
+        var schedule = schedule(ExamScheduleStatus.DRAFT, open, open.plus(2, ChronoUnit.HOURS));
+        when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(schedule));
+        when(examScheduleProctorRepository.countByScheduleId(schedule.getId())).thenReturn(1L);
+        when(examCandidateRepository.countByExamId(examId)).thenReturn(0L);
+
+        assertThatThrownBy(() -> useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null)))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("chưa có thí sinh");
+    }
+
+    @Test
+    void should_reject_schedule_when_centralized_exam_has_no_paper() {
+        givenCentralizedExam();
+        var schedule = schedule(ExamScheduleStatus.DRAFT, open, open.plus(2, ChronoUnit.HOURS));
+        when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(schedule));
+        when(examScheduleProctorRepository.countByScheduleId(schedule.getId())).thenReturn(1L);
+        when(examPaperRepository.findByExamId(examId)).thenReturn(List.of());
+
+        assertThatThrownBy(() -> useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null)))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("chưa có mã đề");
+    }
+
+    @Test
+    void should_schedule_centralized_exam_when_ready() {
+        givenCentralizedExam();
+        var schedule = schedule(ExamScheduleStatus.DRAFT, open, open.plus(2, ChronoUnit.HOURS));
+        when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(schedule));
+        when(examScheduleProctorRepository.countByScheduleId(schedule.getId())).thenReturn(1L);
+        when(examPaperRepository.findByExamId(examId)).thenReturn(List.of(new ExamPaper()));
+
+        var result = useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null));
+
+        assertThat(result.status()).isEqualTo(ExamStatus.SCHEDULED.name());
+    }
+
+    /**
+     * Trạng thái phải được kiểm trước hạn mức gói: bấm SCHEDULE trên bài không còn DRAFT mà báo lỗi
+     * "vượt quá giới hạn gói" thì người dùng đi sửa nhầm chỗ.
+     */
+    @Test
+    void should_report_invalid_status_before_plan_limit_when_exam_not_draft() {
+        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        exam.setStatus(ExamStatus.IN_PROGRESS);
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        when(schoolSubscriptionRepository.findActiveBySchoolId(schoolId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null)))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("không hợp lệ cho action này");
+    }
+
+    @Test
+    void should_reject_cancel_when_exam_already_published_results() {
+        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        exam.setStatus(ExamStatus.RESULTS_PUBLISHED);
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+
+        assertThatThrownBy(() -> useCase.execute(new UpdateExamStatusCommand(examId, "CANCEL", null)))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("không hợp lệ cho action này");
+        assertThat(exam.getStatus()).isEqualTo(ExamStatus.RESULTS_PUBLISHED);
+        verify(examRepository, never()).save(any());
+    }
+
+    @Test
+    void should_reject_cancel_when_exam_already_cancelled() {
+        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        exam.setStatus(ExamStatus.CANCELLED);
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+
+        assertThatThrownBy(() -> useCase.execute(new UpdateExamStatusCommand(examId, "CANCEL", null)))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("không hợp lệ cho action này");
+        verify(examRepository, never()).save(any());
+    }
+
+    @Test
+    void should_allow_cancel_from_draft() {
+        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+
+        var result = useCase.execute(new UpdateExamStatusCommand(examId, "CANCEL", null));
+
+        assertThat(result).isNotNull();
+        assertThat(exam.getStatus()).isEqualTo(ExamStatus.CANCELLED);
+    }
+
+    @Test
+    void should_allow_cancel_from_in_progress() {
+        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        exam.setStatus(ExamStatus.IN_PROGRESS);
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+
+        useCase.execute(new UpdateExamStatusCommand(examId, "CANCEL", null));
+
+        assertThat(exam.getStatus()).isEqualTo(ExamStatus.CANCELLED);
+    }
+
+    /**
+     * Kỳ thi tập trung dựng ở DRAFT, người gọi là SCHOOL_ADMIN cùng trường (authorizeMutation của
+     * nhánh CENTRALIZED không xét exam member), và mặc định đã đủ thí sinh + mã đề — từng test tự làm
+     * hỏng đúng một điều kiện.
+     */
+    private void givenCentralizedExam() {
+        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        exam.setKind(ExamKind.CENTRALIZED);
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+
+        var schoolUser = mock(com.sep.vox.domain.model.school.SchoolUser.class);
+        when(schoolUser.getSchoolId()).thenReturn(schoolId);
+        when(schoolUserRepository.findByUserId(userId)).thenReturn(Optional.of(schoolUser));
+        when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId)).thenReturn(List.of(
+            new com.sep.vox.application.query.dto.UserRoleInfo(
+                UUID.randomUUID(), userId, UUID.randomUUID(), Instant.now(), "SCHOOL_ADMIN", "Quản trị trường")
+        ));
+
+        when(examCandidateRepository.countByExamId(examId)).thenReturn(1L);
+        when(examPaperRepository.findByExamId(examId)).thenReturn(List.of(new ExamPaper()));
     }
 
     private void givenGenerousPlan() {

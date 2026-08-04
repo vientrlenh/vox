@@ -8,10 +8,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.ExamDeliveryModeSupport;
+import com.sep.vox.application.common.InstantParser;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreateExamCommand;
+import com.sep.vox.application.port.input.service.ExamAssessmentPolicyValidator;
 import com.sep.vox.application.port.input.service.ExamStreamConfigResolver;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -36,6 +38,7 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
     private final ExamStreamConfigResolver examStreamConfigResolver;
+    private final ExamAssessmentPolicyValidator examAssessmentPolicyValidator;
 
     public CreateExamUseCase(
             ExamRepository examRepository,
@@ -43,13 +46,15 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
             SchoolUserRepository schoolUserRepository,
             UserRoleQueryRepository userRoleQueryRepository,
             UserContextPort userContextPort,
-            ExamStreamConfigResolver examStreamConfigResolver) {
+            ExamStreamConfigResolver examStreamConfigResolver,
+            ExamAssessmentPolicyValidator examAssessmentPolicyValidator) {
         this.examRepository = examRepository;
         this.examBlueprintRepository = examBlueprintRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
         this.userContextPort = userContextPort;
         this.examStreamConfigResolver = examStreamConfigResolver;
+        this.examAssessmentPolicyValidator = examAssessmentPolicyValidator;
     }
 
     @Override
@@ -75,6 +80,11 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
             }
         }
 
+        // Bỏ trống được ở bước tạo (kỳ thi tập trung chọn policy sau), nhưng đã gửi lên thì phải là
+        // policy đã xuất bản và thuộc trường hiện tại — gắn nhầm thì bài chạy xong mới lộ ra là không
+        // sinh được kết quả nào để chấm.
+        examAssessmentPolicyValidator.validateIfPresent(command.assessmentPolicyId(), currentSchoolId);
+
         var streamConfig = examStreamConfigResolver.resolve(
             command.requiredStreamTypes(), command.streamTypePermission());
 
@@ -97,8 +107,8 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
             Objects.requireNonNullElse(command.maxAttempt(), 1),
             command.examTimeDurationSecond(),
             Objects.requireNonNullElse(command.resultDecisionMethod(), ResultDecisionMethod.HIGHEST),
-            parseDateTime(command.openAt()),
-            parseDateTime(command.closeAt()),
+            parseOpenAt(command.openAt()),
+            parseCloseAt(command.closeAt()),
             command.assessmentPolicyId(),
             command.requiresOtp() == null || command.requiresOtp(),
             now,
@@ -133,17 +143,24 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
         );
     }
 
+    /** Chỉ so được khi có đủ cả hai; thiếu một vế thì bỏ qua, kỳ thi tập trung cho phép để trống. */
     private void validateOpenClose(String openAt, String closeAt) {
-        if (openAt == null || closeAt == null) {
+        var open = parseOpenAt(openAt);
+        var close = parseCloseAt(closeAt);
+        if (open == null || close == null) {
             return;
         }
-        if (!Instant.parse(openAt).isBefore(Instant.parse(closeAt))) {
+        if (!open.isBefore(close)) {
             throw new IllegalStateException("Thời gian mở bài phải nhỏ hơn thời gian đóng bài");
         }
     }
 
-    private Instant parseDateTime(String value) {
-        return value == null ? null : Instant.parse(value);
+    private Instant parseOpenAt(String value) {
+        return InstantParser.parseOrNull(value, "Thời gian mở bài");
+    }
+
+    private Instant parseCloseAt(String value) {
+        return InstantParser.parseOrNull(value, "Thời gian đóng bài");
     }
 
     private String examCodeOf(String code) {

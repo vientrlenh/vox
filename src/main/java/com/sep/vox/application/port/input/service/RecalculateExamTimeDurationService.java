@@ -1,12 +1,17 @@
 package com.sep.vox.application.port.input.service;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.ExamScheduleWindowMessages;
 import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamPaper;
 import com.sep.vox.domain.model.exam.ExamScheduleStatus;
 import com.sep.vox.domain.repository.ExamPaperItemRepository;
 import com.sep.vox.domain.repository.ExamPaperRepository;
@@ -55,23 +60,41 @@ public class RecalculateExamTimeDurationService {
             return;
         }
 
+        // Hai query cho cả kỳ thi thay vì (1 query/mã đề + 1 query/câu hỏi). Hàm này chạy sau MỌI thao
+        // tác sửa đề, nên kỳ thi 5 mã đề × 40 câu trước đây tốn ~200 query mỗi lần bấm lưu.
+        var paperIds = papers.stream().map(paper -> paper.getId()).toList();
+        var itemsByPaperId = examPaperItemRepository.findByPaperIdIn(paperIds).stream()
+            .collect(Collectors.groupingBy(item -> item.getPaperId()));
+
+        var questionIds = itemsByPaperId.values().stream()
+            .flatMap(List::stream)
+            .map(item -> item.getQuestionId())
+            .filter(Objects::nonNull)
+            .distinct()
+            .toList();
+        var durationByQuestionId = questionRepository.findByIdIn(questionIds).stream()
+            .collect(Collectors.toMap(
+                question -> question.getId(),
+                question -> question.getPreparationTimeSeconds() + question.getMaxResponseSeconds()));
+
         var maxDuration = 0;
+        var changedPapers = new ArrayList<ExamPaper>();
         for (var paper : papers) {
             var paperDuration = 0;
-            for (var item : examPaperItemRepository.findByPaperId(paper.getId())) {
+            for (var item : itemsByPaperId.getOrDefault(paper.getId(), List.of())) {
                 if (item.getQuestionId() == null) {
                     continue;
                 }
-                var question = questionRepository.findById(item.getQuestionId()).orElse(null);
-                if (question != null) {
-                    paperDuration += question.getPreparationTimeSeconds() + question.getMaxResponseSeconds();
-                }
+                paperDuration += durationByQuestionId.getOrDefault(item.getQuestionId(), 0);
             }
             if (paper.getTimeDurationSeconds() == null || paper.getTimeDurationSeconds() != paperDuration) {
                 paper.setTimeDurationSeconds(paperDuration);
-                examPaperRepository.save(paper);
+                changedPapers.add(paper);
             }
             maxDuration = Math.max(maxDuration, paperDuration);
+        }
+        if (!changedPapers.isEmpty()) {
+            examPaperRepository.saveAll(changedPapers);
         }
 
         exam.setExamTimeDurationSecond(maxDuration);

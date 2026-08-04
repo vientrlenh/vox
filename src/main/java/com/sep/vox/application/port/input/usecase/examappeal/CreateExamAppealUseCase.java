@@ -83,9 +83,12 @@ public class CreateExamAppealUseCase implements IUseCase<CreateExamAppealCommand
         }
         // Trùng phần thi là lỗi của client, phát hiện trước khi chạm DB.
         var requested = command.paperItemIds();
-        LinkedHashSet<UUID> selected = requested == null ? null : new LinkedHashSet<>(requested);
-        if (selected != null && selected.size() != requested.size()) {
-            throw new IllegalArgumentException("Không được chọn trùng phần thi.");
+        LinkedHashSet<UUID> selected = null;
+        if (requested != null) {
+            selected = new LinkedHashSet<>(requested);
+            if (selected.size() != requested.size()) {
+                throw new IllegalArgumentException("Không được chọn trùng phần thi.");
+            }
         }
 
         // Điểm chấm lại được ghi theo response, nên phải chốt response ngay từ đầu.

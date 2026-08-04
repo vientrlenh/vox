@@ -154,10 +154,9 @@ class CreateClassTestSetupTests {
     void should_leave_candidates_without_schedule_and_paper() {
         useCase.execute(command(null, null, null, null));
 
-        var captor = ArgumentCaptor.forClass(Collection.class);
+        ArgumentCaptor<Collection<ExamCandidate>> captor = ArgumentCaptor.captor();
         verify(examCandidateRepository).saveAll(captor.capture());
 
-        @SuppressWarnings("unchecked")
         Collection<ExamCandidate> saved = captor.getValue();
         assertThat(saved).hasSize(1);
         assertThat(saved.iterator().next().getScheduleId()).isNull();

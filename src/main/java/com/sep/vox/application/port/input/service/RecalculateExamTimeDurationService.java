@@ -67,7 +67,7 @@ public class RecalculateExamTimeDurationService {
             .collect(Collectors.groupingBy(item -> item.getPaperId()));
 
         var questionIds = itemsByPaperId.values().stream()
-            .flatMap(List::stream)
+            .flatMap(items -> items.stream())
             .map(item -> item.getQuestionId())
             .filter(Objects::nonNull)
             .distinct()

@@ -4,6 +4,7 @@ import java.util.HashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -37,6 +38,7 @@ public class GlobalExceptionHandler {
     private static final String INTERNAL_ERROR = "INTERNAL_SERVER_ERROR";
     private static final String QUOTA_EXCEEDED_ERROR = "QUOTA_EXCEEDED";
     private static final String PLAN_LIMIT_EXCEEDED_ERROR = "PLAN_LIMIT_EXCEEDED";
+    private static final String CONCURRENT_UPDATE_ERROR = "CONCURRENT_UPDATE";
 
     private static final String AUTHENTICATION_ERROR = "BAD_CREDENTIALS";
     private static final String AUTHORIZATION_ERROR = "ACCESS_DENIED";
@@ -102,6 +104,16 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handlePlanLimitExceeded(PlanLimitExceededException e) {
         var error = new ErrorResponse(PLAN_LIMIT_EXCEEDED_ERROR, e.getMessage());
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT).body(error);
+    }
+
+    // Bản ghi (vd SchoolSubscription) đã bị nơi khác đổi (thao tác song song, hoặc
+    // SubscriptionExpiryJob) giữa lúc đọc và lúc lưu — @Version phát hiện lệch, Hibernate ném
+    // OptimisticLockException, Spring dịch sang exception này. Trả 409 để client biết cần tải
+    // lại dữ liệu mới nhất rồi thử lại, thay vì âm thầm ghi đè hoặc crash 500.
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    public ResponseEntity<ErrorResponse> handleOptimisticLock(OptimisticLockingFailureException e) {
+        var error = new ErrorResponse(CONCURRENT_UPDATE_ERROR, "Dữ liệu vừa được cập nhật bởi thao tác khác. Vui lòng tải lại và thử lại.");
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
     @ExceptionHandler(Exception.class)

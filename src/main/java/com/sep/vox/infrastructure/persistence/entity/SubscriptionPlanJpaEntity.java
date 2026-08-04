@@ -66,11 +66,14 @@ public class SubscriptionPlanJpaEntity {
     @Column(name = "created_by", updatable = false)
     private UUID createdBy;
 
+    @Column(name = "replaced_by_plan_id")
+    private UUID replacedByPlanId;
+
     protected SubscriptionPlanJpaEntity() {}
 
     public SubscriptionPlanJpaEntity(UUID id, String name, String tagline, BigDecimal pricePerYear, Integer validityDays,
             Integer maxTimePerAttemptMin, Integer maxStudentCount, boolean popular, String status, Integer version,
-            Instant createdAt, UUID createdBy) {
+            Instant createdAt, UUID createdBy, UUID replacedByPlanId) {
         this.id = id;
         this.name = name;
         this.tagline = tagline;
@@ -83,6 +86,7 @@ public class SubscriptionPlanJpaEntity {
         this.version = version;
         this.createdAt = createdAt;
         this.createdBy = createdBy;
+        this.replacedByPlanId = replacedByPlanId;
     }
 
     public UUID getId() {
@@ -179,5 +183,13 @@ public class SubscriptionPlanJpaEntity {
 
     public void setCreatedBy(UUID createdBy) {
         this.createdBy = createdBy;
+    }
+
+    public UUID getReplacedByPlanId() {
+        return replacedByPlanId;
+    }
+
+    public void setReplacedByPlanId(UUID replacedByPlanId) {
+        this.replacedByPlanId = replacedByPlanId;
     }
 }

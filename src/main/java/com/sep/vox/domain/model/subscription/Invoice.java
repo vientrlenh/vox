@@ -19,12 +19,13 @@ public class Invoice {
     private String paymentLinkId;
     private String checkoutUrl;
     private Instant paidAt;
+    private UUID resolvedPlanId;
 
     public Invoice() {}
 
     public Invoice(UUID id, String invoiceNumber, UUID schoolId, UUID subscriptionId, InvoiceSourceType sourceType, UUID sourceId,
             LocalDate issueDate, BigDecimal amount, InvoiceStatus status, Long payosOrderCode, String paymentLinkId,
-            String checkoutUrl, Instant paidAt) {
+            String checkoutUrl, Instant paidAt, UUID resolvedPlanId) {
         this.id = id;
         this.invoiceNumber = invoiceNumber;
         this.schoolId = schoolId;
@@ -38,11 +39,12 @@ public class Invoice {
         this.paymentLinkId = paymentLinkId;
         this.checkoutUrl = checkoutUrl;
         this.paidAt = paidAt;
+        this.resolvedPlanId = resolvedPlanId;
     }
 
     public Invoice(String invoiceNumber, UUID schoolId, UUID subscriptionId, InvoiceSourceType sourceType, UUID sourceId,
             LocalDate issueDate, BigDecimal amount, InvoiceStatus status, Long payosOrderCode, String paymentLinkId,
-            String checkoutUrl, Instant paidAt) {
+            String checkoutUrl, Instant paidAt, UUID resolvedPlanId) {
         this.invoiceNumber = invoiceNumber;
         this.schoolId = schoolId;
         this.subscriptionId = subscriptionId;
@@ -55,6 +57,7 @@ public class Invoice {
         this.paymentLinkId = paymentLinkId;
         this.checkoutUrl = checkoutUrl;
         this.paidAt = paidAt;
+        this.resolvedPlanId = resolvedPlanId;
     }
 
     public UUID getId() {
@@ -159,5 +162,13 @@ public class Invoice {
 
     public void setPaidAt(Instant paidAt) {
         this.paidAt = paidAt;
+    }
+
+    public UUID getResolvedPlanId() {
+        return resolvedPlanId;
+    }
+
+    public void setResolvedPlanId(UUID resolvedPlanId) {
+        this.resolvedPlanId = resolvedPlanId;
     }
 }

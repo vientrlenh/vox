@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -65,5 +66,15 @@ public class SchoolSubscriptionRepositoryImpl implements SchoolSubscriptionRepos
             result.getTotalElements(),
             result.getTotalPages()
         );
+    }
+
+    @Override
+    public boolean existsActiveByPlanId(UUID planId) {
+        return springDataSchoolSubscriptionRepository.existsByPlanIdAndStatus(planId, SubscriptionStatus.ACTIVE.name());
+    }
+
+    @Override
+    public int expireOverdue(LocalDate today) {
+        return springDataSchoolSubscriptionRepository.expireOverdue(today);
     }
 }

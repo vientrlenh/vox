@@ -8,4 +8,5 @@ import com.sep.vox.domain.model.subscription.PlanStatus;
 
 public interface SubscriptionPlanQueryRepository {
     Page<SubscriptionPlanDto> findAllByStatus(PlanStatus status, Pageable pageable);
+    Page<SubscriptionPlanDto> findAll(Pageable pageable);
 }

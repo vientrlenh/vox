@@ -11,7 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.port.input.command.RenewSubscriptionCommand;
+import com.sep.vox.application.port.input.command.CreatePaymentLinkForRenewalCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.PayOSPort;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -25,7 +25,7 @@ import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
 
 @Service
-public class CreatePaymentLinkForRenewalUseCase implements IUseCase<RenewSubscriptionCommand, PaymentLinkDto> {
+public class CreatePaymentLinkForRenewalUseCase implements IUseCase<CreatePaymentLinkForRenewalCommand, PaymentLinkDto> {
 
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
@@ -48,7 +48,7 @@ public class CreatePaymentLinkForRenewalUseCase implements IUseCase<RenewSubscri
 
     @Override
     @Transactional
-    public PaymentLinkDto execute(RenewSubscriptionCommand input) {
+    public PaymentLinkDto execute(CreatePaymentLinkForRenewalCommand input) {
         if (!userContextPort.isSystemAdmin() && !input.schoolId().equals(userContextPort.getCurrentSchoolId())) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
@@ -64,6 +64,14 @@ public class CreatePaymentLinkForRenewalUseCase implements IUseCase<RenewSubscri
 
         var plan = subscriptionPlanRepository.findById(subscription.getPlanId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
+        var renewalPlan = PlanReplacementResolver.resolveActive(subscriptionPlanRepository, plan);
+        // Gói bị đổi (plan cũ đã archive, có gói thay thế) -> bắt buộc trường phải xem trước
+        // (PreviewRenewalUseCase) và xác nhận đúng gói đó, chứ không được âm thầm đổi rồi thu tiền.
+        if (!renewalPlan.getId().equals(plan.getId()) && !renewalPlan.getId().equals(input.acceptedPlanId())) {
+            throw new IllegalStateException(
+                "Gói đăng ký đã ngừng cung cấp và được thay thế bằng gói khác. Vui lòng xem trước và xác nhận gói mới trước khi gia hạn.");
+        }
+        plan = renewalPlan;
 
         var now = Instant.now();
         // Năm trong số hóa đơn phải lấy từ chính invoiceDate, không phải Year.now(): Year.now() đọc
@@ -85,7 +93,12 @@ public class CreatePaymentLinkForRenewalUseCase implements IUseCase<RenewSubscri
             orderCode,
             null,
             null,
-            null
+            null,
+            // Chốt sẵn plan đã báo giá ở đây — lúc settle (PayOSInvoiceSettlementService) phải dùng
+            // lại đúng plan này, không resolve lại PlanReplacementResolver lần nữa. Nếu không, admin
+            // đổi replacedByPlanId giữa lúc tạo invoice và lúc PayOS xác nhận thanh toán có thể khiến
+            // trường bị tính tiền theo 1 gói nhưng lại được cấp quota theo gói khác.
+            plan.getId()
         ));
 
         var result = payOSPort.createPaymentLink(orderCode, plan.getPricePerYear(), "VOX-" + orderCode);

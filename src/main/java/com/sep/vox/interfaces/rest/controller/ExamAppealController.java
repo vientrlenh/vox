@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.sep.vox.application.port.input.usecase.examappeal.ApproveAndClaimExamAppealUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.ApproveExamAppealUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.AssignExamAppealReviewerUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.CreateExamAppealUseCase;
@@ -40,6 +41,7 @@ public class ExamAppealController {
 
     private final CreateExamAppealUseCase createExamAppealUseCase;
     private final ApproveExamAppealUseCase approveExamAppealUseCase;
+    private final ApproveAndClaimExamAppealUseCase approveAndClaimExamAppealUseCase;
     private final RejectExamAppealUseCase rejectExamAppealUseCase;
     private final AssignExamAppealReviewerUseCase assignExamAppealReviewerUseCase;
     private final WithdrawExamAppealUseCase withdrawExamAppealUseCase;
@@ -47,11 +49,13 @@ public class ExamAppealController {
     public ExamAppealController(
             CreateExamAppealUseCase createExamAppealUseCase,
             ApproveExamAppealUseCase approveExamAppealUseCase,
+            ApproveAndClaimExamAppealUseCase approveAndClaimExamAppealUseCase,
             RejectExamAppealUseCase rejectExamAppealUseCase,
             AssignExamAppealReviewerUseCase assignExamAppealReviewerUseCase,
             WithdrawExamAppealUseCase withdrawExamAppealUseCase) {
         this.createExamAppealUseCase = createExamAppealUseCase;
         this.approveExamAppealUseCase = approveExamAppealUseCase;
+        this.approveAndClaimExamAppealUseCase = approveAndClaimExamAppealUseCase;
         this.rejectExamAppealUseCase = rejectExamAppealUseCase;
         this.assignExamAppealReviewerUseCase = assignExamAppealReviewerUseCase;
         this.withdrawExamAppealUseCase = withdrawExamAppealUseCase;
@@ -85,6 +89,15 @@ public class ExamAppealController {
         var command = ExamAppealCommandMapper.fromRequest(appealId, request);
         var responseId = approveExamAppealUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Duyệt đơn phúc khảo thành công!", responseId));
+    }
+
+    @Operation(summary = "Giáo viên phụ trách bài trên lớp duyệt đơn và tự nhận chấm trong một thao tác. "
+        + "Hạn xử lý mặc định T+3 lúc 17:00. Trả về id dòng phân công vừa mở.")
+    @PostMapping("/{appealId}/approve-and-claim")
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
+    public ResponseEntity<ApiResponse<UUID>> approveAndClaimAppeal(@PathVariable("appealId") UUID appealId) {
+        return ResponseEntity.ok(ApiResponse.success(
+            "Đã duyệt và nhận chấm phúc khảo!", approveAndClaimExamAppealUseCase.execute(appealId)));
     }
 
     @Operation(summary = "Từ chối đơn phúc khảo (bắt buộc nêu lý do)")

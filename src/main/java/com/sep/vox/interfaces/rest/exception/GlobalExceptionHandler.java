@@ -19,6 +19,7 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.PlanLimitExceededException;
 import com.sep.vox.application.exception.QuotaExceededException;
+import com.sep.vox.application.exception.ServiceUnavailableException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.interfaces.rest.dto.response.ErrorResponse;
 import com.sep.vox.interfaces.rest.dto.response.ValidationErrorResponse;
@@ -39,6 +40,7 @@ public class GlobalExceptionHandler {
     private static final String QUOTA_EXCEEDED_ERROR = "QUOTA_EXCEEDED";
     private static final String PLAN_LIMIT_EXCEEDED_ERROR = "PLAN_LIMIT_EXCEEDED";
     private static final String CONCURRENT_UPDATE_ERROR = "CONCURRENT_UPDATE";
+    private static final String SERVICE_UNAVAILABLE_ERROR = "SERVICE_UNAVAILABLE";
 
     private static final String AUTHENTICATION_ERROR = "BAD_CREDENTIALS";
     private static final String AUTHORIZATION_ERROR = "ACCESS_DENIED";
@@ -114,6 +116,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleOptimisticLock(OptimisticLockingFailureException e) {
         var error = new ErrorResponse(CONCURRENT_UPDATE_ERROR, "Dữ liệu vừa được cập nhật bởi thao tác khác. Vui lòng tải lại và thử lại.");
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    @ExceptionHandler(ServiceUnavailableException.class)
+    public ResponseEntity<ErrorResponse> handleUnavailable(ServiceUnavailableException e) {
+        var error = new ErrorResponse(SERVICE_UNAVAILABLE_ERROR, e.getMessage());
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(error);
     }
 
     @ExceptionHandler(Exception.class)

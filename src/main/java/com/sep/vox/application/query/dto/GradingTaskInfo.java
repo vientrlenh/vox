@@ -31,6 +31,12 @@ public record GradingTaskInfo(
     /** Chỉ có giá trị với bài kiểm tra trên lớp; kỳ thi tập trung luôn null. */
     String studentName,
     /** Chỉ có giá trị với bài kiểm tra trên lớp; kỳ thi tập trung luôn null. */
-    String className
+    String className,
+    /** Phiên thi sinh ra bài này. Hai lượt của cùng một em khác nhau ở đây. */
+    UUID sessionId,
+    /** Lượt thi thứ mấy, đếm từ 1 theo thời điểm bắt đầu làm bài. */
+    int attemptNo,
+    /** Tổng số lượt em đó đã làm ở bài thi này. Bằng 1 nghĩa là không có thi lại. */
+    int attemptCount
 ) {
 }

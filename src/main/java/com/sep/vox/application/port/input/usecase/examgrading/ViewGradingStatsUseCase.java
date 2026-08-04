@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.examgrading;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.common.GradingScopeKind;
 import com.sep.vox.application.port.input.query.ViewGradingStatsQuery;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -28,6 +29,7 @@ public class ViewGradingStatsUseCase implements IUseCase<ViewGradingStatsQuery, 
     public GradingStatsInfo execute(ViewGradingStatsQuery input) {
         var currentUserId = examGradingAccessService.requireActiveUserId();
         var schoolId = examGradingAccessService.requireCurrentSchoolId(currentUserId);
-        return examGradingQueryRepository.stats(schoolId, input.examId(), input.scheduleId());
+        return examGradingQueryRepository.stats(
+            schoolId, input.examId(), input.scheduleId(), GradingScopeKind.orCentralized(input.kind()));
     }
 }

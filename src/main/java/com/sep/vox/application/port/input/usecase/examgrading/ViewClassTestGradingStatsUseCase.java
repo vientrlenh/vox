@@ -9,6 +9,7 @@ import com.sep.vox.application.port.input.service.ExamGradingAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.query.dto.GradingStatsInfo;
 import com.sep.vox.application.query.repository.ExamGradingQueryRepository;
+import com.sep.vox.domain.model.exam.ExamKind;
 
 /**
  * Thẻ số đầu màn chấm bài trên lớp của giáo viên tạo bài.
@@ -17,6 +18,9 @@ import com.sep.vox.application.query.repository.ExamGradingQueryRepository;
  * {@code examId} rỗng nghĩa là "toàn trường", nên nới quyền ở đó là để một giáo viên
  * đọc được tiến độ chấm của cả trường. Ở đây {@code examId} bắt buộc và phải là bài
  * mà người gọi làm CHAIR.
+ *
+ * <p>Đếm theo BÀI THI chứ không theo học sinh: một em thi hai lượt là hai bài phải
+ * chấm, nên tổng lớn hơn sĩ số lớp là đúng, không phải lỗi trùng dòng.
  */
 @Service
 public class ViewClassTestGradingStatsUseCase implements IUseCase<UUID, GradingStatsInfo> {
@@ -37,6 +41,6 @@ public class ViewClassTestGradingStatsUseCase implements IUseCase<UUID, GradingS
         var currentUserId = examGradingAccessService.requireActiveUserId();
         examGradingAccessService.authorizeClassTestChair(examId, currentUserId);
         var schoolId = examGradingAccessService.requireCurrentSchoolId(currentUserId);
-        return examGradingQueryRepository.stats(schoolId, examId, null);
+        return examGradingQueryRepository.stats(schoolId, examId, null, ExamKind.CLASS_TEST.name());
     }
 }

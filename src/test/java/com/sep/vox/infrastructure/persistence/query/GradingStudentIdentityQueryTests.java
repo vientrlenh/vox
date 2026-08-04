@@ -98,12 +98,13 @@ class GradingStudentIdentityQueryTests extends ContainerTestConfig {
     }
 
     /**
-     * Hàng đợi KHÔNG lọc theo kỳ thi trộn cả hai loại — mỗi dòng phải theo đúng luật
-     * của kỳ thi mình, không phải luật của dòng đầu trang.
+     * Hàng đợi KHÔNG lọc theo loại bài trộn cả hai — mỗi dòng phải theo đúng luật của
+     * kỳ thi mình, không phải luật của dòng đầu trang. Mọi use case đều truyền loại bài
+     * nên tình trạng trộn này chỉ còn ở tầng repository, nhưng luật theo dòng vẫn phải đúng.
      */
     @Test
     void should_decide_per_row_when_the_queue_mixes_both_kinds() {
-        var page = examGradingQueryRepository.findTasksByTeacherId(teacherId, null, null, 0, 20);
+        var page = examGradingQueryRepository.findTasksByTeacherId(teacherId, null, null, null, 0, 20);
 
         assertThat(page.content()).hasSize(2);
         assertThat(page.content())
@@ -136,7 +137,7 @@ class GradingStudentIdentityQueryTests extends ContainerTestConfig {
 
     private GradingTaskInfo onlyTaskOf(UUID examId) {
         var page = examGradingQueryRepository.findTasksByTeacherIdAndExamId(
-            teacherId, examId, null, null, 0, 20);
+            teacherId, examId, null, null, null, 0, 20);
         assertThat(page.content()).hasSize(1);
         return page.content().get(0);
     }

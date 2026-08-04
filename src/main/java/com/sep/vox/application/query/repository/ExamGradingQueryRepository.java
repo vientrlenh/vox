@@ -34,14 +34,21 @@ public interface ExamGradingQueryRepository {
     /** Bảng điều phối của school admin: mọi bài trong phạm vi lọc, gồm cả bài chưa gán. */
     PageResult<GradingAssignmentRowInfo> searchAssignments(GradingAssignmentFilter filter, int page, int size);
 
-    GradingStatsInfo stats(UUID schoolId, UUID examId, UUID scheduleId);
+    /** @param examKind {@code CENTRALIZED} / {@code CLASS_TEST}; {@code null} = cả hai. */
+    GradingStatsInfo stats(UUID schoolId, UUID examId, UUID scheduleId, String examKind);
 
-    /** Hàng đợi của giáo viên — một danh sách cho cả bốn vòng. Ẩn danh. */
+    /**
+     * Hàng đợi của giáo viên — một danh sách cho cả bốn vòng. Ẩn danh.
+     *
+     * <p>{@code examKind} là bắt buộc về mặt nghiệp vụ dù kiểu cho phép null: hàng đợi
+     * kỳ thi tập trung và hàng đợi bài kiểm tra trên lớp là hai màn riêng, trộn hai loại
+     * vào một danh sách là lỗi đã sửa chứ không phải tính năng.
+     */
     PageResult<GradingTaskInfo> findTasksByTeacherId(
-        UUID teacherId, String status, String roundType, int page, int size);
+        UUID teacherId, String examKind, String status, String roundType, int page, int size);
 
     PageResult<GradingTaskInfo> findTasksByTeacherIdAndExamId(
-        UUID teacherId, UUID examId, String status, String roundType, int page, int size);
+        UUID teacherId, UUID examId, String examKind, String status, String roundType, int page, int size);
 
     /** Màn chấm. Trả empty nếu người gọi không phải giáo viên được gán bài này. */
     Optional<GradingTaskDetailInfo> findTaskDetail(UUID assignmentId, UUID teacherId);
@@ -67,6 +74,10 @@ public interface ExamGradingQueryRepository {
      * <p>Trạng thái hợp lệ do {@code GradingRoundPolicy} quyết, truyền vào đây — luật
      * nghiệp vụ không nằm trong SQL. Bài đang có đơn phúc khảo mở bị loại ở mọi vòng
      * khác {@code APPEAL}: hai luồng cùng ghi điểm một bài là nguồn của review BE-4.
+     *
+     * <p>CHỈ kỳ thi tập trung. Auto-assign là hành động của nhà trường, mà nhà trường
+     * không phân công bài kiểm tra trên lớp — để lọt vào đây thì mỗi lần chạy đều gắp
+     * lên một mớ bài rồi bị {@code rejectClassTestCoordination} chặn ở tầng dưới.
      */
     List<UUID> findAssignableResultIds(
         UUID schoolId, UUID examId, UUID scheduleId, Collection<String> resultStatuses);

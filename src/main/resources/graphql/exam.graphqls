@@ -126,6 +126,13 @@ type ExamPaperItem {
     questionId: ID
     order: Int!
     weight: Float
+    """
+    Loại ô trong blueprint sinh ra câu này. null khi câu không sinh từ blueprint,
+    hoặc khi slot tương ứng đã bị xoá — cả hai trường hợp đều được phép gán câu tự do.
+    """
+    slotType: ExamBlueprintSlotType
+    """Tiêu chí rút câu của ô SELECTION; null với ô FIXED và câu không sinh từ blueprint."""
+    selectionSpec: QuestionSelectionSpec
     question: Question
 }
 

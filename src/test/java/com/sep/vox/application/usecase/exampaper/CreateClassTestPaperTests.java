@@ -28,6 +28,10 @@ import com.sep.vox.application.port.input.usecase.exam.ExamQuestionSecureLockSer
 import com.sep.vox.application.port.input.usecase.exampaper.CreateExamPaperUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamBlueprintSection;
+import com.sep.vox.domain.model.exam.ExamBlueprintSlot;
+import com.sep.vox.domain.model.exam.ExamBlueprintSlotType;
+import com.sep.vox.domain.model.exam.ExamBlueprintVersion;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamPaper;
@@ -64,6 +68,9 @@ class CreateClassTestPaperTests {
     private ExamPaperSectionRepository examPaperSectionRepository;
     private ExamPaperItemRepository examPaperItemRepository;
     private ExamQuestionSecureLockService examQuestionSecureLockService;
+    private ExamBlueprintVersionRepository examBlueprintVersionRepository;
+    private ExamBlueprintSectionRepository examBlueprintSectionRepository;
+    private ExamBlueprintSlotRepository examBlueprintSlotRepository;
     private CreateExamPaperUseCase useCase;
 
     @BeforeEach
@@ -74,15 +81,18 @@ class CreateClassTestPaperTests {
         examPaperSectionRepository = mock(ExamPaperSectionRepository.class);
         examPaperItemRepository = mock(ExamPaperItemRepository.class);
         examQuestionSecureLockService = mock(ExamQuestionSecureLockService.class);
+        examBlueprintVersionRepository = mock(ExamBlueprintVersionRepository.class);
+        examBlueprintSectionRepository = mock(ExamBlueprintSectionRepository.class);
+        examBlueprintSlotRepository = mock(ExamBlueprintSlotRepository.class);
         var questionRepository = mock(QuestionRepository.class);
         var userContextPort = mock(UserContextPort.class);
 
         useCase = new CreateExamPaperUseCase(
             examRepository,
             examMemberRepository,
-            mock(ExamBlueprintVersionRepository.class),
-            mock(ExamBlueprintSectionRepository.class),
-            mock(ExamBlueprintSlotRepository.class),
+            examBlueprintVersionRepository,
+            examBlueprintSectionRepository,
+            examBlueprintSlotRepository,
             examPaperRepository,
             examPaperSectionRepository,
             examPaperItemRepository,
@@ -200,6 +210,51 @@ class CreateClassTestPaperTests {
         assertThatThrownBy(() -> useCase.execute(command))
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("Phải có ít nhất một phần trong đề");
+    }
+
+    /**
+     * Hợp đồng có chủ đích cho ô "chọn ngẫu nhiên": sinh ra item RỖNG nhưng vẫn gắn
+     * {@code blueprintSlotId}, để người ra đề có chỗ gán câu và UpdateExamPaperItemUseCase nhận ra
+     * đây là ô SELECTION (được sửa) chứ không phải FIXED (bị khoá).
+     */
+    @Test
+    void should_materialize_selection_slots_as_empty_items_bound_to_the_blueprint_slot() {
+        var versionId = UUID.randomUUID();
+        var sectionId = UUID.randomUUID();
+        var slotId = UUID.randomUUID();
+        var exam = classTest(UUID.randomUUID());
+        exam.setBlueprintVersionId(versionId);
+        when(examRepository.findById(EXAM_ID)).thenReturn(Optional.of(exam));
+
+        var version = new ExamBlueprintVersion();
+        version.setId(versionId);
+        version.setCode("BP-V1");
+        version.setTotalTimeLimitSeconds(0);
+        when(examBlueprintVersionRepository.findById(versionId)).thenReturn(Optional.of(version));
+
+        var section = new ExamBlueprintSection();
+        section.setId(sectionId);
+        section.setBlueprintVersionId(versionId);
+        section.setOrder(1);
+        section.setTitle("Phần 1");
+        section.setSectionWeight(BigDecimal.ONE);
+        when(examBlueprintSectionRepository.findByBlueprintVersionId(versionId)).thenReturn(List.of(section));
+
+        var slot = new ExamBlueprintSlot();
+        slot.setId(slotId);
+        slot.setSectionId(sectionId);
+        slot.setBlueprintVersionId(versionId);
+        slot.setOrder(1);
+        slot.setWeight(BigDecimal.ONE);
+        slot.setSlotType(ExamBlueprintSlotType.SELECTION);
+        when(examBlueprintSlotRepository.findByBlueprintVersionId(versionId)).thenReturn(List.of(slot));
+
+        useCase.execute(new CreateExamPaperCommand(EXAM_ID, "blueprint", null, null));
+
+        var captor = ArgumentCaptor.forClass(ExamPaperItem.class);
+        verify(examPaperItemRepository).save(captor.capture());
+        assertThat(captor.getValue().getQuestionId()).isNull();
+        assertThat(captor.getValue().getBlueprintSlotId()).isEqualTo(slotId);
     }
 
     private CreateExamPaperCommand questionsCommand() {

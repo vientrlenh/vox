@@ -46,18 +46,21 @@ public class ExamBlueprintSlotJpaEntity {
     @Column(name = "response_time_seconds_override")
     private Integer responseTimeSecondsOverride;
 
-    @Column(name = "slot_type", nullable = false, updatable = false, length = 20, check = {
+    // Ba cột này phải update được: UpdateExamBlueprintSlotUseCase cho phép đổi loại ô và sửa
+    // tiêu chí khi version còn DRAFT. Trước đây updatable=false khiến các thay đổi đó âm thầm
+    // không lưu, kéo theo picker lọc câu theo tiêu chí cũ.
+    @Column(name = "slot_type", nullable = false, length = 20, check = {
         @CheckConstraint(
-            name = "chk_exam_blueprint_slots_type_valid", 
+            name = "chk_exam_blueprint_slots_type_valid",
             constraint = "slot_type IN ('FIXED', 'SELECTION')"
         )
     })
     private String slotType;
 
-    @Column(name = "fixed_question_id", updatable = false)
+    @Column(name = "fixed_question_id")
     private UUID fixedQuestionId;
 
-    @Column(name = "selection_spec", updatable = false, columnDefinition = "TEXT")
+    @Column(name = "selection_spec", columnDefinition = "TEXT")
     private String selectionSpec;
 
     @Column(name = "created_at", nullable = false, updatable = false)

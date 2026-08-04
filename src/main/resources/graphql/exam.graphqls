@@ -8,6 +8,17 @@ enum ExamDeliveryMode {
     LAB
 }
 
+enum ExamRequiredStreamType {
+    CAMERA
+    SCREEN
+    CAMERA_AND_SCREEN
+}
+
+enum ExamStreamTypePermission {
+    ANY
+    ALL
+}
+
 enum ExamStatus {
     DRAFT
     SCHEDULED
@@ -187,6 +198,8 @@ type Exam {
     closeAt: String
     assessmentPolicyId: ID
     requiresOtp: Boolean!
+    requiredStreamType: ExamRequiredStreamType
+    streamTypePermission: ExamStreamTypePermission
     papersLocked: Boolean
     createdAt: String
     updatedAt: String

@@ -62,7 +62,7 @@ public class ExamAppealController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
         return viewExamAppealsUseCase.execute(new SearchExamAppealsQuery(
-                status, keyword, page == null ? 0 : page, size == null ? 20 : size));
+            status, keyword, page == null ? 0 : page, size == null ? 20 : size));
     }
 
     @QueryMapping(name = "appealStats")
@@ -84,7 +84,7 @@ public class ExamAppealController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
         return viewMyAppealsUseCase.execute(new SearchExamAppealsQuery(
-                status, null, page == null ? 0 : page, size == null ? 20 : size));
+            status, null, page == null ? 0 : page, size == null ? 20 : size));
     }
 
     @QueryMapping(name = "myAppeal")

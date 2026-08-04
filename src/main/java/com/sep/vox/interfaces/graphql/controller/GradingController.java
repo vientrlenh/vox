@@ -80,9 +80,9 @@ public class GradingController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
         return viewGradingAssignmentsUseCase.execute(new SearchGradingAssignmentsQuery(
-                examId, scheduleId, teacherId, resultStatus, roundType, status,
-                Boolean.TRUE.equals(unassignedOnly), Boolean.TRUE.equals(overdueOnly), hasOpenAppeal, search,
-                page == null ? 0 : page, size == null ? DEFAULT_PAGE_SIZE : size));
+            examId, scheduleId, teacherId, resultStatus, roundType, status,
+            Boolean.TRUE.equals(unassignedOnly), Boolean.TRUE.equals(overdueOnly), hasOpenAppeal, search,
+            page == null ? 0 : page, size == null ? DEFAULT_PAGE_SIZE : size));
     }
 
     @QueryMapping(name = "gradingStats")
@@ -101,7 +101,7 @@ public class GradingController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
         return viewMyGradingTasksUseCase.execute(new ViewMyGradingTasksQuery(
-                status, roundType, page == null ? 0 : page, size == null ? DEFAULT_PAGE_SIZE : size));
+            status, roundType, page == null ? 0 : page, size == null ? DEFAULT_PAGE_SIZE : size));
     }
 
     @QueryMapping(name = "myClassTestGradingTasks")
@@ -113,9 +113,9 @@ public class GradingController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
         return viewMyClassTestGradingTasksUseCase.execute(new ViewMyClassTestGradingTasksQuery(
-                examId, status, roundType,
-                page == null ? 0 : page,
-                size == null ? DEFAULT_PAGE_SIZE : size
+            examId, status, roundType,
+            page == null ? 0 : page,
+            size == null ? DEFAULT_PAGE_SIZE : size
         ));
     }
 

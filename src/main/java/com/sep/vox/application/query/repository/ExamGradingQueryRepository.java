@@ -38,10 +38,10 @@ public interface ExamGradingQueryRepository {
 
     /** Hàng đợi của giáo viên — một danh sách cho cả bốn vòng. Ẩn danh. */
     PageResult<GradingTaskInfo> findTasksByTeacherId(
-            UUID teacherId, String status, String roundType, int page, int size);
+        UUID teacherId, String status, String roundType, int page, int size);
 
     PageResult<GradingTaskInfo> findTasksByTeacherIdAndExamId(
-            UUID teacherId, UUID examId, String status, String roundType, int page, int size);
+        UUID teacherId, UUID examId, String status, String roundType, int page, int size);
 
     /** Màn chấm. Trả empty nếu người gọi không phải giáo viên được gán bài này. */
     Optional<GradingTaskDetailInfo> findTaskDetail(UUID assignmentId, UUID teacherId);
@@ -69,7 +69,7 @@ public interface ExamGradingQueryRepository {
      * khác {@code APPEAL}: hai luồng cùng ghi điểm một bài là nguồn của review BE-4.
      */
     List<UUID> findAssignableResultIds(
-            UUID schoolId, UUID examId, UUID scheduleId, Collection<String> resultStatuses);
+        UUID schoolId, UUID examId, UUID scheduleId, Collection<String> resultStatuses);
 
     /**
      * Tín hiệu rủi ro của một tập bài, một query cho cả tập. Xếp hạng làm ở

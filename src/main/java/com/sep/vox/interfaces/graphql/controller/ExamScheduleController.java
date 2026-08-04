@@ -60,10 +60,10 @@ public class ExamScheduleController {
             @Argument(name = "startDate") String startDate,
             @Argument(name = "endDate") String endDate) {
         return viewMyExamSchedulesUseCase.execute(new ViewExamSchedulesQuery(
-                examId,
-                status,
-                DateMapper.toInstant(startDate),
-                DateMapper.toInstant(endDate)
+            examId,
+            status,
+            DateMapper.toInstant(startDate),
+            DateMapper.toInstant(endDate)
         ));
     }
 
@@ -75,12 +75,12 @@ public class ExamScheduleController {
             @Argument(name = "startDate") String startDate,
             @Argument(name = "endDate") String endDate) {
         return viewExamSchedulesUseCase.execute(
-                new ViewExamSchedulesQuery(
-                        examId,
-                        status,
-                        DateMapper.toInstant(startDate),
-                        DateMapper.toInstant(endDate)
-                )
+            new ViewExamSchedulesQuery(
+                examId, 
+                status, 
+                DateMapper.toInstant(startDate), 
+                DateMapper.toInstant(endDate)
+            )
         );
     }
 

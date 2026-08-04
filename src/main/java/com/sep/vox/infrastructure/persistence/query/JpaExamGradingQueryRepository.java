@@ -58,15 +58,15 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
      * đã cân bằng ngoặc, dùng lại được ở nhiều câu.
      */
     private static final String OPEN_APPEAL_EXISTS = " EXISTS ("
-            + " SELECT 1 FROM ExamResultAppealJpaEntity ap"
-            + " WHERE ap.candidateResultId = cr.id AND ap.status IN (" + OPEN_APPEAL_STATUSES + "))";
+        + " SELECT 1 FROM ExamResultAppealJpaEntity ap"
+        + " WHERE ap.candidateResultId = cr.id AND ap.status IN (" + OPEN_APPEAL_STATUSES + "))";
 
     /**
      * Bài chặn chốt sổ: còn chờ chấm, hoặc còn đơn phúc khảo mở. Một định nghĩa dùng
      * chung cho cả câu đếm lẫn câu lấy danh sách mẫu, để hai con số không nói khác nhau.
      */
     private static final String BLOCKING_CONDITION =
-            " (cr.status = :pendingReview OR " + OPEN_APPEAL_EXISTS + ")";
+        " (cr.status = :pendingReview OR " + OPEN_APPEAL_EXISTS + ")";
 
     /**
      * Trần số dòng một trang. {@code size} trong schema chỉ là giá trị MẶC ĐỊNH, không
@@ -77,9 +77,9 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
 
     /** Trạng thái bài còn có thể nhận một vòng chấm — luật lấy từ domain, không chép cứng. */
     private static final List<String> ASSIGNABLE_STATUS_NAMES = GradingRoundPolicy.allAssignableStatuses()
-            .stream()
-            .map(status -> status.name())
-            .toList();
+        .stream()
+        .map(status -> status.name())
+        .toList();
 
     @PersistenceContext
     private EntityManager em;
@@ -112,9 +112,9 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             """ + WHERE_CLAUSE + """
             ORDER BY cr.updatedAt DESC, cr.id ASC
         """, Tuple.class), filter, now)
-                .setFirstResult(normalizedPage * normalizedSize)
-                .setMaxResults(normalizedSize)
-                .getResultList();
+            .setFirstResult(normalizedPage * normalizedSize)
+            .setMaxResults(normalizedSize)
+            .getResultList();
 
         var candidateResultIds = rows.stream().map(row -> row.get(0, UUID.class)).toList();
         var classNames = classNamesByCandidateResultIds(candidateResultIds);
@@ -126,25 +126,25 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             var candidateResultId = row.get(0, UUID.class);
             var assignment = displayed.get(candidateResultId);
             content.add(new GradingAssignmentRowInfo(
-                    candidateResultId,
-                    GradingResultCode.of(candidateResultId),
-                    row.get(1, String.class),
-                    classNames.get(candidateResultId),
-                    row.get(2, String.class),
-                    row.get(3, String.class),
-                    row.get(4, BigDecimal.class),
-                    Boolean.TRUE.equals(row.get(5, Boolean.class)),
-                    assignment == null ? null : assignment.id(),
-                    assignment == null ? null : assignment.teacherId(),
-                    assignment == null ? null : assignment.teacherName(),
-                    assignment == null ? null : assignment.roundType(),
-                    assignment == null ? null : assignment.status(),
-                    assignment == null ? null : assignment.outcome(),
-                    assignment == null ? null : assignment.assignedAt(),
-                    assignment == null ? null : assignment.completedAt(),
-                    assignment == null ? null : assignment.deadlineAt(),
-                    assignment != null && assignment.isOverdue(now),
-                    openAppeals.contains(candidateResultId)
+                candidateResultId,
+                GradingResultCode.of(candidateResultId),
+                row.get(1, String.class),
+                classNames.get(candidateResultId),
+                row.get(2, String.class),
+                row.get(3, String.class),
+                row.get(4, BigDecimal.class),
+                Boolean.TRUE.equals(row.get(5, Boolean.class)),
+                assignment == null ? null : assignment.id(),
+                assignment == null ? null : assignment.teacherId(),
+                assignment == null ? null : assignment.teacherName(),
+                assignment == null ? null : assignment.roundType(),
+                assignment == null ? null : assignment.status(),
+                assignment == null ? null : assignment.outcome(),
+                assignment == null ? null : assignment.assignedAt(),
+                assignment == null ? null : assignment.completedAt(),
+                assignment == null ? null : assignment.deadlineAt(),
+                assignment != null && assignment.isOverdue(now),
+                openAppeals.contains(candidateResultId)
             ));
         }
 
@@ -156,7 +156,7 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             JOIN ExamCandidateJpaEntity c ON c.id = cr.candidateId
             JOIN UserJpaEntity u ON u.id = c.studentId
             """ + WHERE_CLAUSE, Long.class), filter, now)
-                .getSingleResult();
+            .getSingleResult();
 
         var totalPages = (int) Math.ceil((double) total / normalizedSize);
         return new PageResult<>(content, normalizedPage, normalizedSize, total, totalPages);
@@ -199,25 +199,25 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
     private <T> jakarta.persistence.TypedQuery<T> applyFilters(
             jakarta.persistence.TypedQuery<T> query, GradingAssignmentFilter filter, Instant now) {
         return query
-                .setParameter("schoolId", filter.schoolId())
-                .setParameter("examId", filter.examId())
-                .setParameter("scheduleId", filter.scheduleId())
-                .setParameter("resultStatus", filter.resultStatus())
-                .setParameter("keyword", normalizeKeyword(filter.keyword()))
-                .setParameter("teacherId", filter.teacherId())
-                .setParameter("roundType", filter.roundType())
-                .setParameter("assignmentStatus", filter.assignmentStatus())
-                // null = không lọc; TRUE = bật. Dùng Boolean nullable thay vì so `= FALSE`
-                // để một câu JPQL phục vụ được cả hai trường hợp.
-                .setParameter("unassignedOnly", filter.unassignedOnly() ? Boolean.TRUE : null)
-                .setParameter("overdueOnly", filter.overdueOnly() ? Boolean.TRUE : null)
-                .setParameter("hasOpenAppeal", filter.hasOpenAppeal())
-                .setParameter("now", now);
+            .setParameter("schoolId", filter.schoolId())
+            .setParameter("examId", filter.examId())
+            .setParameter("scheduleId", filter.scheduleId())
+            .setParameter("resultStatus", filter.resultStatus())
+            .setParameter("keyword", normalizeKeyword(filter.keyword()))
+            .setParameter("teacherId", filter.teacherId())
+            .setParameter("roundType", filter.roundType())
+            .setParameter("assignmentStatus", filter.assignmentStatus())
+            // null = không lọc; TRUE = bật. Dùng Boolean nullable thay vì so `= FALSE`
+            // để một câu JPQL phục vụ được cả hai trường hợp.
+            .setParameter("unassignedOnly", filter.unassignedOnly() ? Boolean.TRUE : null)
+            .setParameter("overdueOnly", filter.overdueOnly() ? Boolean.TRUE : null)
+            .setParameter("hasOpenAppeal", filter.hasOpenAppeal())
+            .setParameter("now", now);
     }
 
     private record DisplayAssignment(
-            UUID id, UUID teacherId, String teacherName, String roundType, String status, String outcome,
-            Instant assignedAt, Instant completedAt, Instant deadlineAt, boolean open
+        UUID id, UUID teacherId, String teacherName, String roundType, String status, String outcome,
+        Instant assignedAt, Instant completedAt, Instant deadlineAt, boolean open
     ) {
         boolean isOverdue(Instant now) {
             return open && deadlineAt != null && deadlineAt.isBefore(now);
@@ -240,23 +240,23 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             WHERE ga.candidateResultId IN (:candidateResultIds)
             ORDER BY ga.assignedAt DESC
         """, Tuple.class)
-                .setParameter("candidateResultIds", candidateResultIds)
-                .getResultList();
+            .setParameter("candidateResultIds", candidateResultIds)
+            .getResultList();
 
         var map = new HashMap<UUID, DisplayAssignment>();
         for (var row : rows) {
             var candidateResultId = row.get(0, UUID.class);
             var assignment = new DisplayAssignment(
-                    row.get(1, UUID.class),
-                    row.get(2, UUID.class),
-                    row.get(3, String.class),
-                    row.get(4, String.class),
-                    row.get(5, String.class),
-                    row.get(6, String.class),
-                    row.get(7, Instant.class),
-                    row.get(8, Instant.class),
-                    row.get(9, Instant.class),
-                    row.get(10, UUID.class) != null
+                row.get(1, UUID.class),
+                row.get(2, UUID.class),
+                row.get(3, String.class),
+                row.get(4, String.class),
+                row.get(5, String.class),
+                row.get(6, String.class),
+                row.get(7, Instant.class),
+                row.get(8, Instant.class),
+                row.get(9, Instant.class),
+                row.get(10, UUID.class) != null
             );
             var existing = map.get(candidateResultId);
             // Dòng mở luôn thắng; giữa các dòng đã đóng thì dòng đầu (mới nhất) thắng.
@@ -275,8 +275,8 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             SELECT DISTINCT ap.candidateResultId FROM ExamResultAppealJpaEntity ap
             WHERE ap.candidateResultId IN (:candidateResultIds)
             AND ap.status IN (""" + OPEN_APPEAL_STATUSES + ")", UUID.class)
-                .setParameter("candidateResultIds", candidateResultIds)
-                .getResultList());
+            .setParameter("candidateResultIds", candidateResultIds)
+            .getResultList());
     }
 
     /** Tên lớp của nhiều bài trong 1 query; giữ giá trị đầu tiên mỗi bài (tránh N+1). */
@@ -292,8 +292,8 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             JOIN SchoolClassJpaEntity sc ON sc.id = scu.schoolClassId
             WHERE cr.id IN (:candidateResultIds)
         """, Tuple.class)
-                .setParameter("candidateResultIds", candidateResultIds)
-                .getResultList();
+            .setParameter("candidateResultIds", candidateResultIds)
+            .getResultList();
         var map = new HashMap<UUID, String>();
         for (var row : rows) {
             map.putIfAbsent(row.get(0, UUID.class), row.get(1, String.class));
@@ -317,10 +317,10 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             AND (:scheduleId IS NULL OR c.scheduleId = :scheduleId)
             GROUP BY cr.status
         """, Tuple.class)
-                .setParameter("schoolId", schoolId)
-                .setParameter("examId", examId)
-                .setParameter("scheduleId", scheduleId)
-                .getResultList();
+            .setParameter("schoolId", schoolId)
+            .setParameter("examId", examId)
+            .setParameter("scheduleId", scheduleId)
+            .getResultList();
 
         var byResultStatus = new ArrayList<GradingStatsInfo.ResultStatusCount>();
         var total = 0;
@@ -342,11 +342,11 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             AND (:examId IS NULL OR cr.examId = :examId)
             AND (:scheduleId IS NULL OR c.scheduleId = :scheduleId)
         """, Tuple.class)
-                .setParameter("schoolId", schoolId)
-                .setParameter("examId", examId)
-                .setParameter("scheduleId", scheduleId)
-                .setParameter("now", now)
-                .getSingleResult();
+            .setParameter("schoolId", schoolId)
+            .setParameter("examId", examId)
+            .setParameter("scheduleId", scheduleId)
+            .setParameter("now", now)
+            .getSingleResult();
 
         var assigned = openRow.get(0, Long.class).intValue();
         var overdueSum = openRow.get(1, Long.class);
@@ -369,11 +369,11 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
                 SELECT 1 FROM ExamGradingAssignmentJpaEntity ga WHERE ga.activeResultId = cr.id
             )
         """, Long.class)
-                .setParameter("schoolId", schoolId)
-                .setParameter("examId", examId)
-                .setParameter("scheduleId", scheduleId)
-                .setParameter("assignableStatuses", ASSIGNABLE_STATUS_NAMES)
-                .getSingleResult();
+            .setParameter("schoolId", schoolId)
+            .setParameter("examId", examId)
+            .setParameter("scheduleId", scheduleId)
+            .setParameter("assignableStatuses", ASSIGNABLE_STATUS_NAMES)
+            .getSingleResult();
 
         var progressRows = em.createQuery("""
             SELECT ga.teacherId, t.fullName,
@@ -392,25 +392,25 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             GROUP BY ga.teacherId, t.fullName
             ORDER BY t.fullName ASC
         """, Tuple.class)
-                .setParameter("schoolId", schoolId)
-                .setParameter("examId", examId)
-                .setParameter("scheduleId", scheduleId)
-                .setParameter("now", now)
-                .getResultList();
+            .setParameter("schoolId", schoolId)
+            .setParameter("examId", examId)
+            .setParameter("scheduleId", scheduleId)
+            .setParameter("now", now)
+            .getResultList();
 
         var teacherProgress = new ArrayList<GradingStatsInfo.TeacherProgress>();
         for (var row : progressRows) {
             teacherProgress.add(new GradingStatsInfo.TeacherProgress(
-                    row.get(0, UUID.class),
-                    row.get(1, String.class),
-                    intOf(row.get(2, Long.class)),
-                    intOf(row.get(3, Long.class)),
-                    intOf(row.get(4, Long.class))
+                row.get(0, UUID.class),
+                row.get(1, String.class),
+                intOf(row.get(2, Long.class)),
+                intOf(row.get(3, Long.class)),
+                intOf(row.get(4, Long.class))
             ));
         }
 
         return new GradingStatsInfo(
-                total, byResultStatus, unassigned.intValue(), assigned, overdue, teacherProgress);
+            total, byResultStatus, unassigned.intValue(), assigned, overdue, teacherProgress);
     }
 
     private int intOf(Long value) {
@@ -451,16 +451,16 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             AND (:roundType IS NULL OR ga.roundType = :roundType)
             ORDER BY ga.status ASC, ga.deadlineAt ASC NULLS LAST, ga.assignedAt DESC
         """, Tuple.class)
-                .setParameter("teacherId", teacherId)
-                .setParameter("examId", examId)
-                .setParameter("status", status)
-                .setParameter("roundType", roundType)
-                .setFirstResult(normalizedPage * normalizedSize)
-                .setMaxResults(normalizedSize)
-                .getResultList();
+            .setParameter("teacherId", teacherId)
+            .setParameter("examId", examId)
+            .setParameter("status", status)
+            .setParameter("roundType", roundType)
+            .setFirstResult(normalizedPage * normalizedSize)
+            .setMaxResults(normalizedSize)
+            .getResultList();
 
         var partCounts = partCountsByCandidateResultIds(
-                rows.stream().map(row -> row.get(1, UUID.class)).toList());
+            rows.stream().map(row -> row.get(1, UUID.class)).toList());
 
         var content = new ArrayList<GradingTaskInfo>();
         for (var row : rows) {
@@ -468,19 +468,19 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             var assignmentStatus = row.get(4, String.class);
             var deadlineAt = row.get(9, Instant.class);
             content.add(new GradingTaskInfo(
-                    row.get(0, UUID.class),
-                    candidateResultId,
-                    GradingResultCode.of(candidateResultId),
-                    row.get(2, String.class),
-                    partCounts.getOrDefault(candidateResultId, 0),
-                    row.get(3, String.class),
-                    assignmentStatus,
-                    row.get(5, String.class),
-                    row.get(6, BigDecimal.class),
-                    Boolean.TRUE.equals(row.get(7, Boolean.class)),
-                    row.get(8, Instant.class),
-                    deadlineAt,
-                    isOverdue(assignmentStatus, deadlineAt, now)
+                row.get(0, UUID.class),
+                candidateResultId,
+                GradingResultCode.of(candidateResultId),
+                row.get(2, String.class),
+                partCounts.getOrDefault(candidateResultId, 0),
+                row.get(3, String.class),
+                assignmentStatus,
+                row.get(5, String.class),
+                row.get(6, BigDecimal.class),
+                Boolean.TRUE.equals(row.get(7, Boolean.class)),
+                row.get(8, Instant.class),
+                deadlineAt,
+                isOverdue(assignmentStatus, deadlineAt, now)
             ));
         }
 
@@ -492,11 +492,11 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             AND (:status IS NULL OR ga.status = :status)
             AND (:roundType IS NULL OR ga.roundType = :roundType)
         """, Long.class)
-                .setParameter("teacherId", teacherId)
-                .setParameter("examId", examId)
-                .setParameter("status", status)
-                .setParameter("roundType", roundType)
-                .getSingleResult();
+            .setParameter("teacherId", teacherId)
+            .setParameter("examId", examId)
+            .setParameter("status", status)
+            .setParameter("roundType", roundType)
+            .getSingleResult();
 
         var totalPages = (int) Math.ceil((double) total / normalizedSize);
         return new PageResult<>(content, normalizedPage, normalizedSize, total, totalPages);
@@ -504,7 +504,7 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
 
     private boolean isOverdue(String assignmentStatus, Instant deadlineAt, Instant now) {
         return GradingAssignmentStatus.ASSIGNED.name().equals(assignmentStatus)
-                && deadlineAt != null && deadlineAt.isBefore(now);
+            && deadlineAt != null && deadlineAt.isBefore(now);
     }
 
     /** Số phần phải chấm của nhiều bài trong 1 query — không đếm lẻ theo từng dòng. */
@@ -519,8 +519,8 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             WHERE cr.id IN (:candidateResultIds)
             GROUP BY cr.id
         """, Tuple.class)
-                .setParameter("candidateResultIds", candidateResultIds)
-                .getResultList();
+            .setParameter("candidateResultIds", candidateResultIds)
+            .getResultList();
         var map = new HashMap<UUID, Integer>();
         for (var row : rows) {
             map.put(row.get(0, UUID.class), row.get(1, Long.class).intValue());
@@ -544,9 +544,9 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             LEFT JOIN ExamResultAppealJpaEntity ap ON ap.id = ga.appealId
             WHERE ga.id = :assignmentId AND ga.teacherId = :teacherId
         """, Tuple.class)
-                .setParameter("assignmentId", assignmentId)
-                .setParameter("teacherId", teacherId)
-                .getResultList();
+            .setParameter("assignmentId", assignmentId)
+            .setParameter("teacherId", teacherId)
+            .getResultList();
         if (rows.isEmpty()) {
             return Optional.empty();
         }
@@ -562,30 +562,30 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
         // động nằm ở GradingRoundPolicy, suy lại ở FE là sớm muộn hai bên lệch nhau.
         var round = GradingRoundType.valueOf(roundType);
         var editable = !GradingAssignmentStatus.COMPLETED.name().equals(assignmentStatus)
-                && GradingRoundPolicy.isAssignable(round, ExamCandidateResultStatus.valueOf(resultStatus));
+            && GradingRoundPolicy.isAssignable(round, ExamCandidateResultStatus.valueOf(resultStatus));
         var allowedOutcomes = editable
-                ? GradingRoundPolicy.allowedOutcomes(round).stream().map(outcome -> outcome.name()).sorted().toList()
-                : List.<String>of();
+            ? GradingRoundPolicy.allowedOutcomes(round).stream().map(outcome -> outcome.name()).sorted().toList()
+            : List.<String>of();
 
         return Optional.of(new GradingTaskDetailInfo(
-                row.get(0, UUID.class),
-                candidateResultId,
-                GradingResultCode.of(candidateResultId),
-                row.get(2, String.class),
-                roundType,
-                assignmentStatus,
-                resultStatus,
-                Boolean.TRUE.equals(row.get(6, Boolean.class)),
-                row.get(7, String.class),
-                row.get(8, BigDecimal.class),
-                row.get(9, BigDecimal.class),
-                deadlineAt,
-                isOverdue(assignmentStatus, deadlineAt, now),
-                editable,
-                allowedOutcomes,
-                row.get(13, String.class),
-                taskItems(row.get(12, UUID.class)),
-                criteria(row.get(11, UUID.class))
+            row.get(0, UUID.class),
+            candidateResultId,
+            GradingResultCode.of(candidateResultId),
+            row.get(2, String.class),
+            roundType,
+            assignmentStatus,
+            resultStatus,
+            Boolean.TRUE.equals(row.get(6, Boolean.class)),
+            row.get(7, String.class),
+            row.get(8, BigDecimal.class),
+            row.get(9, BigDecimal.class),
+            deadlineAt,
+            isOverdue(assignmentStatus, deadlineAt, now),
+            editable,
+            allowedOutcomes,
+            row.get(13, String.class),
+            taskItems(row.get(12, UUID.class)),
+            criteria(row.get(11, UUID.class))
         ));
     }
 
@@ -606,8 +606,8 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             WHERE r.sessionId = :sessionId
             ORDER BY sec.order ASC, pi.order ASC
         """, Tuple.class)
-                .setParameter("sessionId", sessionId)
-                .getResultList();
+            .setParameter("sessionId", sessionId)
+            .getResultList();
         if (rows.isEmpty()) {
             return List.of();
         }
@@ -616,7 +616,7 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
         var currentEvaluations = currentEvaluationsByResponseIds(responseIds);
         var aiEvaluationIds = aiEvaluationIdsByResponseIds(responseIds);
         var scoresByEvaluation = criterionScoresByEvaluationIds(
-                currentEvaluations.values().stream().map(evaluation -> evaluation.id()).toList());
+            currentEvaluations.values().stream().map(evaluation -> evaluation.id()).toList());
         var turnsByEvaluation = turnsByEvaluationIds(List.copyOf(aiEvaluationIds.values()));
 
         var result = new ArrayList<GradingTaskItemInfo>();
@@ -625,13 +625,13 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             var current = currentEvaluations.get(responseId);
             var aiEvaluationId = aiEvaluationIds.get(responseId);
             result.add(new GradingTaskItemInfo(
-                    row.get(1, UUID.class),
-                    responseId,
-                    row.get(2, String.class),
-                    current == null ? null : current.itemScore(),
-                    current == null ? null : current.feedbackSummary(),
-                    current == null ? List.of() : scoresByEvaluation.getOrDefault(current.id(), List.of()),
-                    aiEvaluationId == null ? List.of() : turnsByEvaluation.getOrDefault(aiEvaluationId, List.of())
+                row.get(1, UUID.class),
+                responseId,
+                row.get(2, String.class),
+                current == null ? null : current.itemScore(),
+                current == null ? null : current.feedbackSummary(),
+                current == null ? List.of() : scoresByEvaluation.getOrDefault(current.id(), List.of()),
+                aiEvaluationId == null ? List.of() : turnsByEvaluation.getOrDefault(aiEvaluationId, List.of())
             ));
         }
         return result;
@@ -661,12 +661,12 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             AND ev.status IN ('AUTO_GRADED', 'FINALIZED')
             ORDER BY ev.responseId ASC, ev.evaluatedAt DESC
         """, Tuple.class)
-                .setParameter("responseIds", responseIds)
-                .getResultList();
+            .setParameter("responseIds", responseIds)
+            .getResultList();
         var map = new LinkedHashMap<UUID, CurrentEvaluation>();
         for (var row : rows) {
             map.putIfAbsent(row.get(0, UUID.class), new CurrentEvaluation(
-                    row.get(1, UUID.class), row.get(2, BigDecimal.class), row.get(3, String.class)));
+                row.get(1, UUID.class), row.get(2, BigDecimal.class), row.get(3, String.class)));
         }
         return map;
     }
@@ -686,8 +686,8 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             AND ev.engineType IN ('AI_SINGLE', 'AI_ENSEMBLE')
             ORDER BY ev.responseId ASC, ev.evaluatedAt DESC
         """, Tuple.class)
-                .setParameter("responseIds", responseIds)
-                .getResultList();
+            .setParameter("responseIds", responseIds)
+            .getResultList();
         var map = new LinkedHashMap<UUID, UUID>();
         for (var row : rows) {
             map.putIfAbsent(row.get(0, UUID.class), row.get(1, UUID.class));
@@ -707,18 +707,18 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             WHERE cs.evaluationId IN (:evaluationIds)
             ORDER BY rc.order ASC
         """, Tuple.class)
-                .setParameter("evaluationIds", evaluationIds)
-                .getResultList();
+            .setParameter("evaluationIds", evaluationIds)
+            .getResultList();
         var map = new LinkedHashMap<UUID, List<GradingCriterionScoreInfo>>();
         for (var row : rows) {
             map.computeIfAbsent(row.get(0, UUID.class), ignored -> new ArrayList<>())
-                    .add(new GradingCriterionScoreInfo(
-                            row.get(1, UUID.class),
-                            row.get(2, String.class),
-                            row.get(3, String.class),
-                            row.get(4, BigDecimal.class),
-                            row.get(5, String.class)
-                    ));
+                .add(new GradingCriterionScoreInfo(
+                    row.get(1, UUID.class),
+                    row.get(2, String.class),
+                    row.get(3, String.class),
+                    row.get(4, BigDecimal.class),
+                    row.get(5, String.class)
+                ));
         }
         return map;
     }
@@ -735,20 +735,20 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             WHERE t.evaluationId IN (:evaluationIds)
             ORDER BY t.turnOrder ASC
         """, Tuple.class)
-                .setParameter("evaluationIds", evaluationIds)
-                .getResultList();
+            .setParameter("evaluationIds", evaluationIds)
+            .getResultList();
         var map = new LinkedHashMap<UUID, List<GradingTurnInfo>>();
         for (var row : rows) {
             map.computeIfAbsent(row.get(0, UUID.class), ignored -> new ArrayList<>())
-                    .add(new GradingTurnInfo(
-                            row.get(1, UUID.class),
-                            row.get(2, Integer.class),
-                            row.get(3, String.class),
-                            row.get(4, String.class),
-                            row.get(5, String.class),
-                            row.get(6, String.class),
-                            row.get(7, Integer.class)
-                    ));
+                .add(new GradingTurnInfo(
+                    row.get(1, UUID.class),
+                    row.get(2, Integer.class),
+                    row.get(3, String.class),
+                    row.get(4, String.class),
+                    row.get(5, String.class),
+                    row.get(6, String.class),
+                    row.get(7, Integer.class)
+                ));
         }
         return map;
     }
@@ -762,8 +762,8 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             WHERE rc.rubricVersionId = :rubricVersionId
             ORDER BY rc.order ASC
         """, GradingCriterionMetaInfo.class)
-                .setParameter("rubricVersionId", rubricVersionId)
-                .getResultList();
+            .setParameter("rubricVersionId", rubricVersionId)
+            .getResultList();
     }
 
     // ---- picker phân công --------------------------------------------------
@@ -783,9 +783,9 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             AND (:keyword IS NULL OR LOWER(u.fullName) LIKE :keyword)
             ORDER BY u.fullName ASC
         """, Tuple.class)
-                .setParameter("schoolId", schoolId)
-                .setParameter("keyword", normalizedKeyword)
-                .getResultList();
+            .setParameter("schoolId", schoolId)
+            .setParameter("keyword", normalizedKeyword)
+            .getResultList();
 
         var teacherIds = rows.stream().map(row -> row.get(0, UUID.class)).toList();
         var loadByTeacher = assignedLoadByTeacherIds(teacherIds);
@@ -794,7 +794,7 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
         for (var row : rows) {
             var teacherId = row.get(0, UUID.class);
             result.add(new AssignableTeacherInfo(
-                    teacherId, row.get(1, String.class), loadByTeacher.getOrDefault(teacherId, 0L)));
+                teacherId, row.get(1, String.class), loadByTeacher.getOrDefault(teacherId, 0L)));
         }
         return result;
     }
@@ -819,9 +819,9 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             AND u.status = 'ACTIVE'
             AND u.id IN (:userIds)
         """, UUID.class)
-                .setParameter("schoolId", schoolId)
-                .setParameter("userIds", userIds)
-                .getResultList());
+            .setParameter("schoolId", schoolId)
+            .setParameter("userIds", userIds)
+            .getResultList());
     }
 
     /**
@@ -839,8 +839,8 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             WHERE ga.teacherId IN (:teacherIds) AND ga.activeResultId IS NOT NULL
             GROUP BY ga.teacherId
         """, Tuple.class)
-                .setParameter("teacherIds", teacherIds)
-                .getResultList();
+            .setParameter("teacherIds", teacherIds)
+            .getResultList();
         var map = new HashMap<UUID, Long>();
         for (var row : rows) {
             map.put(row.get(0, UUID.class), row.get(1, Long.class));
@@ -881,11 +881,11 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             )
             ORDER BY cr.id ASC
         """, UUID.class)
-                .setParameter("schoolId", schoolId)
-                .setParameter("resultStatuses", resultStatuses)
-                .setParameter("examId", examId)
-                .setParameter("scheduleId", scheduleId)
-                .getResultList();
+            .setParameter("schoolId", schoolId)
+            .setParameter("resultStatuses", resultStatuses)
+            .setParameter("examId", examId)
+            .setParameter("scheduleId", scheduleId)
+            .getResultList();
     }
 
     /**
@@ -908,16 +908,16 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             WHERE cr.id IN (:candidateResultIds)
             GROUP BY cr.id, cr.totalScore, pol.passingScore
         """, Tuple.class)
-                .setParameter("candidateResultIds", candidateResultIds)
-                .getResultList();
+            .setParameter("candidateResultIds", candidateResultIds)
+            .getResultList();
 
         var result = new ArrayList<GradingRiskInfo>();
         for (var row : rows) {
             result.add(new GradingRiskInfo(
-                    row.get(0, UUID.class),
-                    row.get(1, BigDecimal.class),
-                    row.get(2, BigDecimal.class),
-                    row.get(3, BigDecimal.class)
+                row.get(0, UUID.class),
+                row.get(1, BigDecimal.class),
+                row.get(2, BigDecimal.class),
+                row.get(3, BigDecimal.class)
             ));
         }
         return result;
@@ -942,8 +942,8 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             AND ev.engineType = 'HUMAN'
             AND ev.reviewerId IS NOT NULL
         """, UUID.class)
-                .setParameter("candidateResultId", candidateResultId)
-                .getResultList());
+            .setParameter("candidateResultId", candidateResultId)
+            .getResultList());
     }
 
     // ---- chốt sổ & xuất bảng điểm ------------------------------------------
@@ -976,11 +976,11 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             JOIN ExamJpaEntity e ON e.id = cr.examId
             WHERE e.schoolId = :schoolId AND cr.examId = :examId
         """, Tuple.class)
-                .setParameter("schoolId", schoolId)
-                .setParameter("examId", examId)
-                .setParameter("pendingReview", ExamCandidateResultStatus.PENDING_REVIEW.name())
-                .setParameter("invalid", ExamCandidateResultStatus.INVALID.name())
-                .getSingleResult();
+            .setParameter("schoolId", schoolId)
+            .setParameter("examId", examId)
+            .setParameter("pendingReview", ExamCandidateResultStatus.PENDING_REVIEW.name())
+            .setParameter("invalid", ExamCandidateResultStatus.INVALID.name())
+            .getSingleResult();
 
         var total = intOf(counts.get(0, Long.class));
         var blocked = intOf(counts.get(5, Long.class));
@@ -995,20 +995,20 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             AND """ + BLOCKING_CONDITION + """
             ORDER BY cr.id ASC
         """, UUID.class)
-                .setParameter("schoolId", schoolId)
-                .setParameter("examId", examId)
-                .setParameter("pendingReview", ExamCandidateResultStatus.PENDING_REVIEW.name())
-                .setMaxResults(BLOCKING_SAMPLE_SIZE)
-                .getResultList();
+            .setParameter("schoolId", schoolId)
+            .setParameter("examId", examId)
+            .setParameter("pendingReview", ExamCandidateResultStatus.PENDING_REVIEW.name())
+            .setMaxResults(BLOCKING_SAMPLE_SIZE)
+            .getResultList();
 
         return new BulkFinalizePreviewInfo(
-                total,
-                total - blocked,
-                intOf(counts.get(1, Long.class)),
-                intOf(counts.get(2, Long.class)),
-                intOf(counts.get(3, Long.class)),
-                intOf(counts.get(4, Long.class)),
-                List.copyOf(blockingResultIds));
+            total,
+            total - blocked,
+            intOf(counts.get(1, Long.class)),
+            intOf(counts.get(2, Long.class)),
+            intOf(counts.get(3, Long.class)),
+            intOf(counts.get(4, Long.class)),
+            List.copyOf(blockingResultIds));
     }
 
     /**
@@ -1036,10 +1036,10 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             AND (:scheduleId IS NULL OR c.scheduleId = :scheduleId)
             ORDER BY u.fullName ASC
         """, Tuple.class)
-                .setParameter("schoolId", schoolId)
-                .setParameter("examId", examId)
-                .setParameter("scheduleId", scheduleId)
-                .getResultList();
+            .setParameter("schoolId", schoolId)
+            .setParameter("examId", examId)
+            .setParameter("scheduleId", scheduleId)
+            .getResultList();
 
         var candidateResultIds = rows.stream().map(row -> row.get(0, UUID.class)).toList();
         var classNames = classNamesByCandidateResultIds(candidateResultIds);
@@ -1050,19 +1050,19 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             var candidateResultId = row.get(0, UUID.class);
             var lastRound = lastRounds.get(candidateResultId);
             result.add(new ExamScoreRowInfo(
-                    candidateResultId,
-                    row.get(1, String.class),
-                    row.get(2, String.class),
-                    classNames.get(candidateResultId),
-                    row.get(3, String.class),
-                    row.get(4, Instant.class),
-                    row.get(5, BigDecimal.class),
-                    row.get(6, String.class),
-                    row.get(7, String.class),
-                    lastRound == null ? null : lastRound.roundType(),
-                    lastRound == null ? null : lastRound.outcome(),
-                    lastRound == null ? null : lastRound.teacherName(),
-                    row.get(8, Instant.class)
+                candidateResultId,
+                row.get(1, String.class),
+                row.get(2, String.class),
+                classNames.get(candidateResultId),
+                row.get(3, String.class),
+                row.get(4, Instant.class),
+                row.get(5, BigDecimal.class),
+                row.get(6, String.class),
+                row.get(7, String.class),
+                lastRound == null ? null : lastRound.roundType(),
+                lastRound == null ? null : lastRound.outcome(),
+                lastRound == null ? null : lastRound.teacherName(),
+                row.get(8, Instant.class)
             ));
         }
         return result;
@@ -1084,13 +1084,13 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             AND ga.status = :completed
             ORDER BY ga.completedAt DESC
         """, Tuple.class)
-                .setParameter("candidateResultIds", candidateResultIds)
-                .setParameter("completed", GradingAssignmentStatus.COMPLETED.name())
-                .getResultList();
+            .setParameter("candidateResultIds", candidateResultIds)
+            .setParameter("completed", GradingAssignmentStatus.COMPLETED.name())
+            .getResultList();
         var map = new LinkedHashMap<UUID, LastRound>();
         for (var row : rows) {
             map.putIfAbsent(row.get(0, UUID.class), new LastRound(
-                    row.get(1, String.class), row.get(2, String.class), row.get(3, String.class)));
+                row.get(1, String.class), row.get(2, String.class), row.get(3, String.class)));
         }
         return map;
     }

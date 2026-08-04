@@ -43,19 +43,19 @@ public class ExamAppealControllerTests {
         viewMyAppealsUseCase = mock(ViewMyAppealsUseCase.class);
         viewMyAppealDetailUseCase = mock(ViewMyAppealDetailUseCase.class);
         controller = new ExamAppealController(
-                viewExamAppealsUseCase,
-                viewExamAppealStatsUseCase,
-                viewExamAppealDetailUseCase,
-                viewAssignableReviewersUseCase,
-                viewMyAppealsUseCase,
-                viewMyAppealDetailUseCase
+            viewExamAppealsUseCase,
+            viewExamAppealStatsUseCase,
+            viewExamAppealDetailUseCase,
+            viewAssignableReviewersUseCase,
+            viewMyAppealsUseCase,
+            viewMyAppealDetailUseCase
         );
     }
 
     @Test
     void should_default_paging_to_zero_based_first_page() {
         when(viewExamAppealsUseCase.execute(any()))
-                .thenReturn(new PageResult<>(List.of(), 0, 20, 0, 0));
+            .thenReturn(new PageResult<>(List.of(), 0, 20, 0, 0));
 
         controller.appeals(null, null, null, null);
 
@@ -68,7 +68,7 @@ public class ExamAppealControllerTests {
     @Test
     void should_pass_filters_through_to_use_case() {
         when(viewExamAppealsUseCase.execute(any()))
-                .thenReturn(new PageResult<>(List.of(), 1, 5, 0, 0));
+            .thenReturn(new PageResult<>(List.of(), 1, 5, 0, 0));
 
         controller.appeals("PENDING", "Nam", 1, 5);
 
@@ -109,7 +109,7 @@ public class ExamAppealControllerTests {
     void should_return_reviewers_with_load_and_conflict_flag() {
         var reviewerId = UUID.randomUUID();
         when(viewAssignableReviewersUseCase.execute(any()))
-                .thenReturn(List.of(new AppealReviewerLiteInfo(reviewerId, "Nguyễn Thị Lan", 3, true)));
+            .thenReturn(List.of(new AppealReviewerLiteInfo(reviewerId, "Nguyễn Thị Lan", 3, true)));
 
         var result = controller.appealReviewers(UUID.randomUUID(), "Lan");
 

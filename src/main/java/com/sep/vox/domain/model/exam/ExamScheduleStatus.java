@@ -23,4 +23,13 @@ public enum ExamScheduleStatus {
     public boolean allowsAttendance() {
         return !isRemoved() && this != CANCELLED;
     }
+
+    /**
+     * Ca thi học sinh được phép nhìn thấy. DRAFT là ca chưa publish -- tức lịch thi chưa xếp xong --
+     * nên không được lộ cho thí sinh; MOVED/DELETED thì đã bị thay thế/xoá. CANCELLED vẫn hiện để
+     * học sinh biết ca đã bị huỷ.
+     */
+    public boolean isVisibleToStudent() {
+        return this == PUBLISHED || this == COMPLETED || this == CANCELLED;
+    }
 }

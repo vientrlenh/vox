@@ -19,6 +19,7 @@ import com.sep.vox.application.port.input.query.ViewExamSchedulesQuery;
 import com.sep.vox.application.port.input.usecase.examschedule.UpdateExamScheduleUseCase;
 import com.sep.vox.application.port.input.usecase.examschedule.ViewExamSchedulesUseCase;
 import com.sep.vox.application.port.input.usecase.examschedule.ViewMyExamSchedulesUseCase;
+import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.domain.dto.ExamScheduleDto;
 import com.sep.vox.domain.dto.ExamScheduleProctorDto;
 import com.sep.vox.domain.dto.SchoolRoomFromDto;
@@ -93,6 +94,16 @@ public class ExamScheduleController {
         }
         DataLoader<UUID, SchoolRoomFromDto> loader = env.getDataLoader("schoolRoomById");
         return loader.load(source.schoolRoomId());
+    }
+
+    /**
+     * Lịch thi của học sinh cần tên/loại kỳ thi ngay trên từng ca. Không có field này thì client
+     * phải gọi thêm danh sách bài thi chỉ để tra tên -- mà danh sách đó nay đã phân trang.
+     */
+    @SchemaMapping(typeName = "ExamSchedule", field = "exam")
+    public CompletableFuture<ExamDto> exam(ExamScheduleDto source, DataFetchingEnvironment env) {
+        DataLoader<UUID, ExamDto> loader = env.getDataLoader("examById");
+        return loader.load(source.examId());
     }
 
     @SchemaMapping(typeName = "ExamSchedule", field = "proctors")

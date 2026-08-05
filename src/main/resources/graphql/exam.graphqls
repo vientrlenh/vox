@@ -319,6 +319,7 @@ type ExamScheduleProctor {
 type ExamSchedule {
     id: ID!
     examId: ID!
+    exam: Exam
     schoolRoomId: ID
     room: SchoolRoom
     startDate: String

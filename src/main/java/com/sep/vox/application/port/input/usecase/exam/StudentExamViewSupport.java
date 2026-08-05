@@ -54,10 +54,15 @@ final class StudentExamViewSupport {
         return Math.max(1, Math.toIntExact(Duration.between(schedule.getStartDate(), schedule.getEndDate()).toMinutes()));
     }
 
-    static String examDateOf(ExamSchedule schedule, Instant fallback) {
+    static Instant examDateInstantOf(ExamSchedule schedule, Instant fallback) {
         if (schedule != null && schedule.getStartDate() != null) {
-            return schedule.getStartDate().toString();
+            return schedule.getStartDate();
         }
-        return fallback == null ? null : fallback.toString();
+        return fallback;
+    }
+
+    static String examDateOf(ExamSchedule schedule, Instant fallback) {
+        var examDate = examDateInstantOf(schedule, fallback);
+        return examDate == null ? null : examDate.toString();
     }
 }

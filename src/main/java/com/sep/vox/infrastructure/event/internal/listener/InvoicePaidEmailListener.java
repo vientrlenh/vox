@@ -8,8 +8,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import com.sep.vox.domain.model.subscription.SubscriptionQuota;
-import com.sep.vox.domain.model.subscription.TokenPurchaseItem;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -86,12 +84,12 @@ public class InvoicePaidEmailListener {
             itemTitle = "Mua thêm hạn mức";
             var items = tokenPurchaseItemRepository.findAllByPurchaseId(event.sourceId());
             itemsHtml = buildItemsHtml(items.stream()
-                .collect(Collectors.toMap(TokenPurchaseItem::getQuotaType, TokenPurchaseItem::getQuantity)));
+                .collect(Collectors.toMap(item -> item.getQuotaType(), item -> item.getQuantity())));
         } else {
             itemTitle = "Gói " + plan.getName();
             var quotas = subscriptionQuotaRepository.findAllBySubscriptionId(subscription.getId());
             itemsHtml = buildItemsHtml(quotas.stream()
-                .collect(Collectors.toMap(SubscriptionQuota::getQuotaType, SubscriptionQuota::getTotalAllocated)));
+                .collect(Collectors.toMap(quota -> quota.getQuotaType(), quota -> quota.getTotalAllocated())));
         }
 
         var amountFormatter = new DecimalFormat("#,###", DecimalFormatSymbols.getInstance(Locale.of("vi", "VN")));

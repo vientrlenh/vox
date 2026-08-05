@@ -13,11 +13,10 @@ import javax.crypto.spec.SecretKeySpec;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.port.output.PaymentPort;
+import com.sep.vox.application.port.output.PaymentProcessPort;
 import com.sep.vox.application.response.output.PaymentLinkRemoteStatus;
 import com.sep.vox.application.response.output.PaymentLinkResult;
 import com.sep.vox.application.response.output.PaymentLinkStatusResult;
-import com.sep.vox.domain.model.subscription.PaymentMethod;
 
 import vn.payos.PayOS;
 import vn.payos.exception.WebhookException;
@@ -26,8 +25,8 @@ import vn.payos.model.v2.paymentRequests.CreatePaymentLinkRequest;
 // Tự tính chữ ký thay vì gọi payOSClient.webhooks().verify(...) vì SDK payos-java 2.0.1 bind Map
 // sang WebhookData (có field Instant) bằng ObjectMapper nội bộ không có JavaTimeModule,
 // luôn ném InvalidDefinitionException với mọi webhook thật (có transactionDateTime).
-@Service
-public class PayOSService implements PaymentPort {
+@Service("payos")
+public class PayOSService implements PaymentProcessPort {
 
     private static final String HMAC_ALGORITHM = "HmacSHA256";
 
@@ -45,11 +44,6 @@ public class PayOSService implements PaymentPort {
         this.checksumKey = checksumKey;
         this.returnUrl = returnUrl;
         this.cancelUrl = cancelUrl;
-    }
-
-    @Override
-    public PaymentMethod supports() {
-        return PaymentMethod.PAYOS;
     }
 
     @Override

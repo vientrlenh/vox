@@ -5,15 +5,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.port.input.service.PaymentPortResolver;
+import com.sep.vox.application.port.input.service.PaymentProcessResolver;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.PaymentPort;
+import com.sep.vox.application.port.output.PaymentProcessPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.output.PaymentLinkRemoteStatus;
 import com.sep.vox.domain.dto.InvoiceDto;
 import com.sep.vox.domain.mapper.InvoiceDtoMapper;
 import com.sep.vox.domain.model.subscription.InvoiceStatus;
-import com.sep.vox.domain.model.subscription.PaymentMethod;
 import com.sep.vox.domain.repository.InvoiceRepository;
 
 // Đồng bộ trạng thái invoice theo yêu cầu (FE gọi khi PayOS redirect user về returnUrl/cancelUrl, vì
@@ -22,17 +21,17 @@ import com.sep.vox.domain.repository.InvoiceRepository;
 public class SyncInvoicePaymentStatusUseCase implements IUseCase<Long, InvoiceDto> {
 
     private final InvoiceRepository invoiceRepository;
-    private final PaymentPort paymentPort;
+    private final PaymentProcessPort paymentProcessPort;
     private final PayOSInvoiceSettlementService settlementService;
     private final UserContextPort userContextPort;
 
     public SyncInvoicePaymentStatusUseCase(
             InvoiceRepository invoiceRepository,
-            PaymentPortResolver paymentPortResolver,
+            PaymentProcessResolver paymentProcessResolver,
             PayOSInvoiceSettlementService settlementService,
             UserContextPort userContextPort) {
         this.invoiceRepository = invoiceRepository;
-        this.paymentPort = paymentPortResolver.resolve(PaymentMethod.PAYOS);
+        this.paymentProcessPort = paymentProcessResolver.resolve("payos");
         this.settlementService = settlementService;
         this.userContextPort = userContextPort;
     }
@@ -48,7 +47,7 @@ public class SyncInvoicePaymentStatusUseCase implements IUseCase<Long, InvoiceDt
         }
 
         if (invoice.getStatus() == InvoiceStatus.PENDING) {
-            var remoteStatus = paymentPort.getPaymentLinkStatus(orderCode).status();
+            var remoteStatus = paymentProcessPort.getPaymentLinkStatus(orderCode).status();
             if (remoteStatus == PaymentLinkRemoteStatus.PAID) {
                 settlementService.settle(invoice, true);
             } else {

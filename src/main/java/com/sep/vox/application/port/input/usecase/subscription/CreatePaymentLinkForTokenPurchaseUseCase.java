@@ -14,15 +14,14 @@ import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.BuyTokensCommand;
-import com.sep.vox.application.port.input.service.PaymentPortResolver;
+import com.sep.vox.application.port.input.service.PaymentProcessResolver;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.PaymentPort;
+import com.sep.vox.application.port.output.PaymentProcessPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.PaymentLinkDto;
 import com.sep.vox.domain.model.subscription.Invoice;
 import com.sep.vox.domain.model.subscription.InvoiceSourceType;
 import com.sep.vox.domain.model.subscription.InvoiceStatus;
-import com.sep.vox.domain.model.subscription.PaymentMethod;
 import com.sep.vox.domain.model.subscription.PlanQuota;
 import com.sep.vox.domain.model.subscription.PurchaseStatus;
 import com.sep.vox.domain.model.subscription.QuotaType;
@@ -43,7 +42,7 @@ public class CreatePaymentLinkForTokenPurchaseUseCase implements IUseCase<BuyTok
     private final TokenPurchaseRepository tokenPurchaseRepository;
     private final TokenPurchaseItemRepository tokenPurchaseItemRepository;
     private final InvoiceRepository invoiceRepository;
-    private final PaymentPort paymentPort;
+    private final PaymentProcessPort paymentProcessPort;
     private final UserContextPort userContextPort;
 
     public CreatePaymentLinkForTokenPurchaseUseCase(
@@ -52,14 +51,14 @@ public class CreatePaymentLinkForTokenPurchaseUseCase implements IUseCase<BuyTok
             TokenPurchaseRepository tokenPurchaseRepository,
             TokenPurchaseItemRepository tokenPurchaseItemRepository,
             InvoiceRepository invoiceRepository,
-            PaymentPortResolver paymentPortResolver,
+            PaymentProcessResolver paymentPortResolver,
             UserContextPort userContextPort) {
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
         this.planQuotaRepository = planQuotaRepository;
         this.tokenPurchaseRepository = tokenPurchaseRepository;
         this.tokenPurchaseItemRepository = tokenPurchaseItemRepository;
         this.invoiceRepository = invoiceRepository;
-        this.paymentPort = paymentPortResolver.resolve(PaymentMethod.PAYOS);
+        this.paymentProcessPort = paymentPortResolver.resolve("payos");
         this.userContextPort = userContextPort;
     }
 
@@ -123,7 +122,7 @@ public class CreatePaymentLinkForTokenPurchaseUseCase implements IUseCase<BuyTok
             null
         ));
 
-        var result = paymentPort.createPaymentLink(orderCode, total, "VOX-" + orderCode);
+        var result = paymentProcessPort.createPaymentLink(orderCode, total, "VOX-" + orderCode);
 
         invoice.setPaymentLinkId(result.paymentLinkId());
         invoice.setCheckoutUrl(result.checkoutUrl());

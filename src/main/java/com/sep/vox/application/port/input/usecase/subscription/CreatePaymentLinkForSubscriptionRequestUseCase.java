@@ -13,9 +13,9 @@ import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreatePaymentLinkForSubscriptionRequestCommand;
-import com.sep.vox.application.port.input.service.PaymentPortResolver;
+import com.sep.vox.application.port.input.service.PaymentProcessResolver;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.PaymentPort;
+import com.sep.vox.application.port.output.PaymentProcessPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.output.PaymentLinkResult;
 import com.sep.vox.domain.dto.PaymentLinkDto;
@@ -30,19 +30,19 @@ public class CreatePaymentLinkForSubscriptionRequestUseCase
     private final SubscriptionRequestRepository subscriptionRequestRepository;
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final InvoiceRepository invoiceRepository;
-    private final PaymentPort paymentPort;
+    private final PaymentProcessPort paymentProcessPort;
     private final UserContextPort userContextPort;
 
     public CreatePaymentLinkForSubscriptionRequestUseCase(
             SubscriptionRequestRepository subscriptionRequestRepository,
             SchoolSubscriptionRepository schoolSubscriptionRepository,
             InvoiceRepository invoiceRepository,
-            PaymentPortResolver paymentPortResolver,
+            PaymentProcessResolver paymentPortResolver,
             UserContextPort userContextPort) {
         this.subscriptionRequestRepository = subscriptionRequestRepository;
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
         this.invoiceRepository = invoiceRepository;
-        this.paymentPort = paymentPortResolver.resolve(PaymentMethod.PAYOS);
+        this.paymentProcessPort = paymentPortResolver.resolve("payos");
         this.userContextPort = userContextPort;
     }
 
@@ -61,7 +61,7 @@ public class CreatePaymentLinkForSubscriptionRequestUseCase
 
         UUID existingSubscriptionId = request.getRequestType() == RequestType.UPGRADE
             ? schoolSubscriptionRepository.findActiveBySchoolId(request.getSchoolId())
-                .map(SchoolSubscription::getId)
+                .map(subscription -> subscription.getId())
                 .orElse(null)
             : null;
 
@@ -89,7 +89,7 @@ public class CreatePaymentLinkForSubscriptionRequestUseCase
             null
         ));
 
-        PaymentLinkResult result = paymentPort.createPaymentLink(orderCode, request.getAmount(), "VOX-" + orderCode);
+        PaymentLinkResult result = paymentProcessPort.createPaymentLink(orderCode, request.getAmount(), "VOX-" + orderCode);
 
         invoice.setPaymentLinkId(result.paymentLinkId());
         invoice.setCheckoutUrl(result.checkoutUrl());

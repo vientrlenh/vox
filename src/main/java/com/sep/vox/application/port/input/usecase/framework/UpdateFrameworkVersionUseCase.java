@@ -63,7 +63,7 @@ public class UpdateFrameworkVersionUseCase implements IUseCase<UpdateFrameworkVe
         if (version.getStatus() != FrameworkVersionStatus.DRAFT)
             throw new IllegalStateException("Chỉ có thể cập nhật phiên bản framework ở trạng thái DRAFT");
 
-        if (input.effectiveTo() != null && input.effectiveTo().isBefore(input.effectiveFrom()))
+        if (input.effectiveTo() != null && !input.effectiveTo().isAfter(input.effectiveFrom()))
             throw new IllegalArgumentException("Ngày hết hiệu lực phải sau ngày hiệu lực");
     }
 }

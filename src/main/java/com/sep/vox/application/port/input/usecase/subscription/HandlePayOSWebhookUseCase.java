@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.subscription;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -8,10 +9,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.UnauthorizedException;
-import com.sep.vox.application.port.input.service.PaymentPortResolver;
+import com.sep.vox.application.port.input.service.PaymentProcessResolver;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.PaymentPort;
-import com.sep.vox.domain.model.subscription.PaymentMethod;
+import com.sep.vox.application.port.output.PaymentProcessPort;
 import com.sep.vox.domain.repository.InvoiceRepository;
 
 // Internal service-to-service use case (webhook callback từ PayOS, xác thực bằng chữ ký thay vì JWT) —
@@ -21,29 +21,44 @@ public class HandlePayOSWebhookUseCase implements IUseCase<Object, Void> {
     private static final Logger LOGGER = LoggerFactory.getLogger(HandlePayOSWebhookUseCase.class);
     private static final String SUCCESS_CODE = "00";
 
-    private final PaymentPort paymentPort;
+    private final PaymentProcessPort paymentProcessPort;
     private final InvoiceRepository invoiceRepository;
     private final PayOSInvoiceSettlementService settlementService;
 
     public HandlePayOSWebhookUseCase(
-            PaymentPortResolver paymentPortResolver,
+            PaymentProcessResolver paymentProcessResolver,
             InvoiceRepository invoiceRepository,
             PayOSInvoiceSettlementService settlementService) {
-        this.paymentPort = paymentPortResolver.resolve(PaymentMethod.PAYOS);
+        this.paymentProcessPort = paymentProcessResolver.resolve("payos");
         this.invoiceRepository = invoiceRepository;
         this.settlementService = settlementService;
     }
 
     @Override
     @Transactional
-    @SuppressWarnings("unchecked")
     public Void execute(Object rawWebhookBody) {
-        var body = (Map<String, Object>) rawWebhookBody;
-        var data = (Map<String, Object>) body.get("data");
-        var signature = (String) body.get("signature");
-
-        if (data == null || signature == null || !paymentPort.verifyWebhookSignature(data, signature)) {
-            throw new UnauthorizedException("Invalid signature");
+        if (!(rawWebhookBody instanceof Map<?, ?> rawBody)) {
+            throw new IllegalArgumentException("Lỗi định dạng PayOS webhook");
+        }
+        var body = new HashMap<String, Object>(rawBody.size());
+        for (var e : rawBody.entrySet()) {
+            if (e.getKey() instanceof String k) {
+                body.put(k, e.getValue());
+            }
+        }
+        var dataObj = body.get("data");
+        var signatureObj = (String) body.get("signature");
+        if (!(dataObj instanceof Map<?, ?> rawData) || !(signatureObj instanceof String signature)) {
+            throw new UnauthorizedException("Signature PayOS lỗi");
+        }
+        var data = new HashMap<String, Object>(rawData.size());
+        for (var e : rawData.entrySet()) {
+            if (e.getKey() instanceof String k) {
+                data.put(k, e.getValue());
+            }
+        }
+        if (!paymentProcessPort.verifyWebhookSignature(data, signature)) {
+            throw new UnauthorizedException("Signature PayOS lỗi");
         }
 
         var orderCode = ((Number) data.get("orderCode")).longValue();

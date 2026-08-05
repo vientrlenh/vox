@@ -161,7 +161,6 @@ public class SubscriptionController {
         return ResponseEntity.ok(ApiResponse.success("Xem trước gia hạn thành công", data));
     }
 
-    // PAYOS
     @PostMapping("/schools/{schoolId}/subscriptions/{id}/renew/payment-link")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<PaymentLinkDto>> createPaymentLinkForRenewal(
@@ -219,7 +218,6 @@ public class SubscriptionController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Mua token thành công", data));
     }
 
-    // PAYOS
     @PostMapping("/subscription-requests/{id}/payment-link")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<PaymentLinkDto>> createPaymentLinkForSubscriptionRequest(@PathVariable UUID id, @RequestBody @Valid PaymentMethodRequest request) {
@@ -228,7 +226,6 @@ public class SubscriptionController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Tạo link thanh toán thành công", data));
     }
 
-    // PAYOS
     @PostMapping("/schools/{schoolId}/token-purchases/payment-link")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<PaymentLinkDto>> createPaymentLinkForTokenPurchase(

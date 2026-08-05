@@ -11,6 +11,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.ThreadLocalRandom;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -22,7 +23,9 @@ import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.output.PaymentProcessPort;
 import com.sep.vox.application.response.output.PaymentLinkRemoteStatus;
-import com.sep.vox.application.response.output.PaymentLinkResult;
+import com.sep.vox.application.response.output.CallbackVerificationResult;
+import com.sep.vox.application.response.output.CreatePaymentLinkCommand;
+import com.sep.vox.application.response.output.PaymentCheckoutResult;
 import com.sep.vox.application.response.output.PaymentLinkStatusResult;
 import com.sep.vox.domain.model.subscription.PaymentMethod;
 
@@ -69,8 +72,18 @@ public class PayOSService implements PaymentProcessPort {
         return PaymentMethod.PAYOS;
     }
 
+    /**
+     * PayOS bắt buộc orderCode là số nên không dùng lại được invoiceNumber dạng chuỗi. Sinh từ mốc
+     * thời gian mili giây nhân 1000 cộng phần ngẫu nhiên: đủ tăng dần để dễ tra theo thời gian, và
+     * phần ngẫu nhiên chặn hai hóa đơn tạo trong cùng một mili giây trùng mã.
+     */
     @Override
-    public PaymentLinkResult createPaymentLink(CreatePaymentLinkCommand command) {
+    public String newOrderRef(String invoiceNumber) {
+        return String.valueOf(System.currentTimeMillis() * 1000 + ThreadLocalRandom.current().nextInt(1000));
+    }
+
+    @Override
+    public PaymentCheckoutResult createPaymentLink(CreatePaymentLinkCommand command) {
         var paymentLinkRequest = CreatePaymentLinkRequest.builder()
             .orderCode(Long.parseLong(command.orderRef()))
             .amount(command.amount().longValueExact())
@@ -79,7 +92,7 @@ public class PayOSService implements PaymentProcessPort {
             .cancelUrl(cancelUrl)
             .build();
         var response = payOSClient.paymentRequests().create(paymentLinkRequest);
-        return new PaymentLinkResult(response.getPaymentLinkId(), response.getCheckoutUrl());
+        return PaymentCheckoutResult.redirect(response.getCheckoutUrl(), response.getPaymentLinkId());
     }
 
     @Override

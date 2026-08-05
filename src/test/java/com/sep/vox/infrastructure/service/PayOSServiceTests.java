@@ -8,7 +8,7 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.port.output.PaymentProcessPort;
+import com.sep.vox.application.response.output.CallbackVerificationResult;
 import com.sep.vox.application.response.output.PaymentLinkRemoteStatus;
 import com.sep.vox.domain.model.subscription.PaymentMethod;
 
@@ -48,7 +48,7 @@ class PayOSServiceTests {
             .getBytes(StandardCharsets.UTF_8);
     }
 
-    private PaymentProcessPort.CallbackVerificationResult verify(byte[] rawBody) {
+    private CallbackVerificationResult verify(byte[] rawBody) {
         return service.verifyCallback(rawBody, Map.of());
     }
 

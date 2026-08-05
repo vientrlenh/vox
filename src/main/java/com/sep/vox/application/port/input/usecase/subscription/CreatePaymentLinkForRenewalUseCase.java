@@ -3,7 +3,6 @@ package com.sep.vox.application.port.input.usecase.subscription;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,8 +15,8 @@ import com.sep.vox.application.port.input.command.CreatePaymentLinkForRenewalCom
 import com.sep.vox.application.port.input.service.PaymentProcessResolver;
 import com.sep.vox.application.port.input.service.SubscriptionPlanResolver;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.PaymentProcessPort;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.response.output.CreatePaymentLinkCommand;
 import com.sep.vox.domain.dto.PaymentLinkDto;
 import com.sep.vox.domain.model.subscription.Invoice;
 import com.sep.vox.domain.model.subscription.InvoiceSourceType;
@@ -89,8 +88,12 @@ public class CreatePaymentLinkForRenewalUseCase implements IUseCase<CreatePaymen
         // múi giờ của JVM, nên trên server UTC một hóa đơn tạo lúc 06:00 ngày 01/01 giờ VN sẽ mang
         // số INV-2025-... nhưng ngày 2026-01-01.
         var invoiceDate = LocalDate.ofInstant(now, DateMapper.DEFAULT_INPUT_ZONE);
-        var orderCode = System.currentTimeMillis() * 1000 + ThreadLocalRandom.current().nextInt(1000);
         var invoiceNumber = "INV-" + invoiceDate.getYear() + "-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+
+        // Mã đơn do adapter của cổng quyết định, không phải use case: PayOS đòi orderCode dạng số,
+        // còn SePay dùng thẳng invoiceNumber dạng chuỗi.
+        var paymentProcessPort = paymentProcessResolver.resolve(paymentMethod);
+        var orderRef = paymentProcessPort.newOrderRef(invoiceNumber);
 
         var invoice = invoiceRepository.save(new Invoice(
             invoiceNumber,
@@ -102,21 +105,22 @@ public class CreatePaymentLinkForRenewalUseCase implements IUseCase<CreatePaymen
             plan.getPricePerYear(),
             InvoiceStatus.PENDING,
             paymentMethod,
-            String.valueOf(orderCode),
+            orderRef,
             null,
             null,
             null,
             plan.getId()
         ));
-        var paymentProcessPort = paymentProcessResolver.resolve(paymentMethod);
-        var result = paymentProcessPort.createPaymentLink(new PaymentProcessPort.CreatePaymentLinkCommand(
-            String.valueOf(orderCode), plan.getPricePerYear(), "VOX-" + orderCode));
+
+        var result = paymentProcessPort.createPaymentLink(new CreatePaymentLinkCommand(
+            orderRef, plan.getPricePerYear(), "VOX-" + orderRef));
 
         invoice.setPaymentLinkId(result.paymentLinkId());
-        invoice.setCheckoutUrl(result.checkoutUrl());
+        invoice.setCheckoutUrl(result.actionUrl());
         var savedInvoice = invoiceRepository.save(invoice);
 
-        return new PaymentLinkDto(savedInvoice.getId(), orderCode, result.paymentLinkId(), result.checkoutUrl());
+        return new PaymentLinkDto(
+            savedInvoice.getId(), orderRef, result.action(), result.actionUrl(), result.paymentLinkId(), result.fields());
     }
     
     private CreatePaymentLinkForRenewalCommand normalize(CreatePaymentLinkForRenewalCommand input) {

@@ -280,10 +280,19 @@ payos:
   return-url: ${PAYOS_RETURN_URL:}
   cancel-url: ${PAYOS_CANCEL_URL:}
 
-sepay: 
-  pg: 
+sepay:
+  pg:
+    # SANDBOX | PRODUCTION. URL của trang checkout và của Open API được suy ra từ đây (xem
+    # SePayPaymentProperties.SePayEnvironment) — hai URL đó luôn phải cùng môi trường, khai rời
+    # từng cái là mở đường cho việc deploy quên đổi một dòng.
+    env: ${SEPAY_ENV:SANDBOX}
     merchant-id: ${SEPAY_MERCHANT_ID:}
+    # Khóa ký HMAC của form checkout, đồng thời là password Basic auth khi gọi Open API.
     secret-key: ${SEPAY_SECRET_KEY:}
-    checkout-url: https://pay-sandbox.sepay.vn/v1/checkout/init
-    api-base-url: https://pgapi-sandbox.sepay.vn
-    return-base-url: ${BASE_URL:}
+    # Giá trị header X-Secret-Key trên IPN, đặt riêng ở dashboard (Payment Gateway -> Cấu hình ->
+    # IPN). KHÔNG dùng lại secret-key: làm vậy là gửi khóa ký qua mạng ở mọi lần SePay gọi IPN.
+    ipn-secret-key: ${SEPAY_IPN_SECRET_KEY:}
+    # BANK_TRANSFER (VietQR) | NAPAS_BANK_TRANSFER | CARD
+    payment-method: ${SEPAY_PAYMENT_METHOD:BANK_TRANSFER}
+    # Gốc của các route FE /payment/success|error|cancel mà SePay redirect người dùng về.
+    return-base-url: ${SEPAY_RETURN_BASE_URL:${BASE_URL:}}

@@ -1,10 +1,10 @@
 package com.sep.vox.application.port.output;
 
-import java.math.BigDecimal;
 import java.util.Map;
 
-import com.sep.vox.application.response.output.PaymentLinkRemoteStatus;
-import com.sep.vox.application.response.output.PaymentLinkResult;
+import com.sep.vox.application.response.output.CallbackVerificationResult;
+import com.sep.vox.application.response.output.CreatePaymentLinkCommand;
+import com.sep.vox.application.response.output.PaymentCheckoutResult;
 import com.sep.vox.application.response.output.PaymentLinkStatusResult;
 import com.sep.vox.domain.model.subscription.PaymentMethod;
 
@@ -14,34 +14,17 @@ import com.sep.vox.domain.model.subscription.PaymentMethod;
 // tầng application.
 public interface PaymentProcessPort {
 
-    // returnUrl/cancelUrl cố tình KHÔNG nằm ở đây: mỗi adapter tự đọc từ config của mình, vì
-    // hiện chưa có luồng nào cần URL khác nhau theo từng hóa đơn.
-    record CreatePaymentLinkCommand(
-        String orderRef,
-        BigDecimal amount,
-        String description
-    ) {
-    }
-
-    // Kết quả đã chuẩn hoá của một callback: adapter chịu trách nhiệm xác thực chữ ký VÀ dịch
-    // payload riêng của cổng về đây, nên handler ở tầng trên dùng chung được cho mọi cổng.
-    // amount để đối chiếu với số tiền trên hóa đơn trước khi chốt; null nếu cổng không gửi kèm.
-    record CallbackVerificationResult(
-        boolean valid,
-        String providerOrderRef,
-        PaymentLinkRemoteStatus status,
-        BigDecimal amount
-    ) {
-        public static CallbackVerificationResult invalid() {
-            return new CallbackVerificationResult(false, null, null, null);
-        }
-    }
-
     // Cổng mà adapter này phục vụ — PaymentProcessResolver dùng để lập chỉ mục, thay cho việc
     // tra theo tên bean dạng chuỗi.
     PaymentMethod provider();
 
-    PaymentLinkResult createPaymentLink(CreatePaymentLinkCommand command);
+    // Sinh mã đơn theo đúng quy ước của cổng, từ số hóa đơn nội bộ. Trước đây use case tự sinh một
+    // mã dạng số kiểu PayOS rồi ép mọi cổng dùng chung — nhưng SePay PG định danh đơn bằng
+    // order_invoice_number dạng chuỗi và đã có sẵn invoiceNumber để dùng thẳng, còn PayOS thì bắt
+    // buộc orderCode phải là số. Không cổng nào ép được cổng kia, nên quyết định thuộc về adapter.
+    String newOrderRef(String invoiceNumber);
+
+    PaymentCheckoutResult createPaymentLink(CreatePaymentLinkCommand command);
 
     PaymentLinkStatusResult getPaymentLinkStatus(String providerOrderRef);
 

@@ -23,6 +23,14 @@ public class PendingInvoiceReconciler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PendingInvoiceReconciler.class);
 
+    // SePay giới hạn Open API ở mức vài request/giây và trả 429 khi vượt; PayOS cũng không thích
+    // bị dội. 400ms giữa hai lần hỏi (~2.5 req/s) nằm dưới ngưỡng của cả hai.
+    private static final long THROTTLE_MILLIS = 400L;
+
+    // Chặn trên số hóa đơn mỗi lượt để một lần tồn đọng bất thường không biến job thành cuộc gọi
+    // API kéo dài hàng chục phút. Phần còn lại được xử lý ở lượt quét sau (mỗi 5 phút).
+    private static final int MAX_INVOICES_PER_RUN = 200;
+
     private final InvoiceRepository invoiceRepository;
     private final PaymentProcessResolver paymentProcessResolver;
     private final InvoiceSettlementService settlementService;
@@ -39,10 +47,22 @@ public class PendingInvoiceReconciler {
     @Scheduled(fixedDelay = 300_000, initialDelay = 60_000)
     public void reconcile() {
         var pendingInvoices = invoiceRepository.findAllByStatus(InvoiceStatus.PENDING);
+        var remoteCalls = 0;
         for (var invoice : pendingInvoices) {
             if (!isReconcilable(invoice)) {
                 continue;
             }
+            if (remoteCalls >= MAX_INVOICES_PER_RUN) {
+                LOGGER.warn("Dừng đối soát ở {} hóa đơn trong lượt này, phần còn lại để lượt sau",
+                    MAX_INVOICES_PER_RUN);
+                return;
+            }
+            // Giãn nhịp TRƯỚC mỗi lời gọi (trừ lần đầu) thay vì sau: nếu vòng lặp thoát sớm vì lỗi
+            // thì cũng không phải trả giá bằng một lần ngủ vô ích.
+            if (remoteCalls > 0 && !throttle()) {
+                return;
+            }
+            remoteCalls++;
             try {
                 var paymentPort = paymentProcessResolver.resolve(invoice.getPaymentProvider());
                 var remoteStatus = paymentPort.getPaymentLinkStatus(invoice.getProviderOrderRef()).status();
@@ -60,6 +80,19 @@ public class PendingInvoiceReconciler {
                 LOGGER.warn("Lỗi khi đối soát hóa đơn PENDING provider={} orderRef={}",
                     invoice.getPaymentProvider(), invoice.getProviderOrderRef(), e);
             }
+        }
+    }
+
+    // Trả false khi bị ngắt (vd ứng dụng đang tắt) để vòng lặp dừng hẳn thay vì chạy tiếp không
+    // throttle và dội API của cổng.
+    private boolean throttle() {
+        try {
+            Thread.sleep(THROTTLE_MILLIS);
+            return true;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            LOGGER.warn("Job đối soát bị ngắt giữa chừng, dừng lượt quét này");
+            return false;
         }
     }
 

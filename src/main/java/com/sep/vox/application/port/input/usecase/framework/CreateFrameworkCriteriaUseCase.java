@@ -22,6 +22,7 @@ import com.sep.vox.domain.model.framework.FrameworkVersion;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
 import com.sep.vox.domain.repository.FrameworkCriterionRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
+import com.sep.vox.domain.valueobject.framework.FrameworkCriterionCode;
 
 @Service
 public class CreateFrameworkCriteriaUseCase
@@ -83,10 +84,24 @@ public class CreateFrameworkCriteriaUseCase
             throw new IllegalStateException("Chỉ có thể thêm tiêu chí khi phiên bản đang ở trạng thái DRAFT");
 
         Set<String> requestCodes = new HashSet<>();
+        Set<Integer> allOrders = frameworkCriterionRepository.findByFrameworkVersionId(command.versionId())
+                .stream().map(fc ->fc.getOrder()).collect(Collectors.toCollection(HashSet::new));
         for (var criterionCmd : command.criteria()) {
             String safeCode = StringNormalization.normalizeCode(criterionCmd.code());
+            if (!FrameworkCriterionCode.ALLOWED_CODES.contains(safeCode)) {
+                throw new IllegalArgumentException("Mã tiêu chí không hợp lệ: " + safeCode);
+            }
             if (!requestCodes.add(safeCode)) {
                 throw new IllegalArgumentException("Dữ liệu gửi lên bị trùng lặp mã tiêu chí: " + safeCode);
+            }
+            if (!allOrders.add(criterionCmd.order())) {
+                throw new IllegalArgumentException("Thứ tự tiêu chí bị trùng lặp: " + criterionCmd.order());
+            }
+        }
+        int expectedOrder = allOrders.size();
+        for (int i = 1; i <= expectedOrder; i++) {
+            if (!allOrders.contains(i)) {
+                throw new IllegalArgumentException("Thứ tự tiêu chí phải tăng dần liên tục từ 1, không được bỏ số");
             }
         }
 

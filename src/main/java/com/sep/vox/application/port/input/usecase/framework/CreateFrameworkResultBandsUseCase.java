@@ -84,6 +84,8 @@ public class CreateFrameworkResultBandsUseCase
 
         Set<String> requestCodes = new HashSet<>();
         Set<String> requestLabels = new HashSet<>();
+        Set<Integer> allOrders = frameworkResultBandRepository.findByFrameworkVersionId(command.versionId())
+                .stream().map(frb -> frb.getOrder()).collect(Collectors.toCollection(HashSet::new));
         for (var bandCmd : command.bands()) {
             String safeCode = StringNormalization.normalizeCode(bandCmd.code());
             String safeLabel = StringNormalization.trimAndCollapseSpaces(bandCmd.label());
@@ -93,6 +95,15 @@ public class CreateFrameworkResultBandsUseCase
             }
             if (!requestLabels.add(safeLabel)) {
                 throw new IllegalArgumentException("Dữ liệu gửi lên bị trùng lặp nhãn kết quả: " + safeLabel);
+            }
+            if (!allOrders.add(bandCmd.order())) {
+                throw new IllegalArgumentException("Thứ tự mức kết quả bị trùng lặp: " + bandCmd.order());
+            }
+        }
+        int expectedOrder = allOrders.size();
+        for (int i = 1; i <= expectedOrder; i++) {
+            if (!allOrders.contains(i)) {
+                throw new IllegalArgumentException("Thứ tự mức kết quả phải tăng dần liên tục từ 1, không được bỏ số");
             }
         }
 

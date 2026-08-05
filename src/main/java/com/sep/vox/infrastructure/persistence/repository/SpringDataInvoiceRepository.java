@@ -15,7 +15,7 @@ import jakarta.persistence.LockModeType;
 public interface SpringDataInvoiceRepository extends JpaRepository<InvoiceJpaEntity, UUID> {
     List<InvoiceJpaEntity> findAllBySubscriptionId(UUID subscriptionId);
     List<InvoiceJpaEntity> findAllBySubscriptionIdIn(Collection<UUID> subscriptionIds);
-    Optional<InvoiceJpaEntity> findByPayosOrderCode(Long payosOrderCode);
+    Optional<InvoiceJpaEntity> findByPaymentProviderAndProviderOrderRef(String paymentProvider, String providerOrderRef);
     List<InvoiceJpaEntity> findAllByStatus(String status);
 
     // PESSIMISTIC_WRITE: chặn các transaction settle() khác trên cùng invoice cho tới khi transaction

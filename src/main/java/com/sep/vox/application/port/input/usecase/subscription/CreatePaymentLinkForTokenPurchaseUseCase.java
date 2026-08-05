@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.DateMapper;
+import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.BuyTokensCommand;
@@ -22,6 +23,7 @@ import com.sep.vox.domain.dto.PaymentLinkDto;
 import com.sep.vox.domain.model.subscription.Invoice;
 import com.sep.vox.domain.model.subscription.InvoiceSourceType;
 import com.sep.vox.domain.model.subscription.InvoiceStatus;
+import com.sep.vox.domain.model.subscription.PaymentMethod;
 import com.sep.vox.domain.model.subscription.PlanQuota;
 import com.sep.vox.domain.model.subscription.PurchaseStatus;
 import com.sep.vox.domain.model.subscription.QuotaType;
@@ -42,7 +44,7 @@ public class CreatePaymentLinkForTokenPurchaseUseCase implements IUseCase<BuyTok
     private final TokenPurchaseRepository tokenPurchaseRepository;
     private final TokenPurchaseItemRepository tokenPurchaseItemRepository;
     private final InvoiceRepository invoiceRepository;
-    private final PaymentProcessPort paymentProcessPort;
+    private final PaymentProcessResolver paymentProcessResolver;
     private final UserContextPort userContextPort;
 
     public CreatePaymentLinkForTokenPurchaseUseCase(
@@ -51,27 +53,29 @@ public class CreatePaymentLinkForTokenPurchaseUseCase implements IUseCase<BuyTok
             TokenPurchaseRepository tokenPurchaseRepository,
             TokenPurchaseItemRepository tokenPurchaseItemRepository,
             InvoiceRepository invoiceRepository,
-            PaymentProcessResolver paymentPortResolver,
+            PaymentProcessResolver paymentProcessResolver,
             UserContextPort userContextPort) {
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
         this.planQuotaRepository = planQuotaRepository;
         this.tokenPurchaseRepository = tokenPurchaseRepository;
         this.tokenPurchaseItemRepository = tokenPurchaseItemRepository;
         this.invoiceRepository = invoiceRepository;
-        this.paymentProcessPort = paymentPortResolver.resolve("payos");
+        this.paymentProcessResolver = paymentProcessResolver;
         this.userContextPort = userContextPort;
     }
 
     @Override
     @Transactional
     public PaymentLinkDto execute(BuyTokensCommand input) {
-        if (!userContextPort.isSystemAdmin() && !input.schoolId().equals(userContextPort.getCurrentSchoolId())) {
+        var command = normalize(input);
+
+        if (!userContextPort.isSystemAdmin() && !command.schoolId().equals(userContextPort.getCurrentSchoolId())) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
-        var subscription = schoolSubscriptionRepository.findById(input.subscriptionId())
+        var subscription = schoolSubscriptionRepository.findById(command.subscriptionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói đăng ký"));
-        if (!subscription.getSchoolId().equals(input.schoolId())) {
+        if (!subscription.getSchoolId().equals(command.schoolId())) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
         if (subscription.getStatus() != SubscriptionStatus.ACTIVE) {
@@ -82,7 +86,7 @@ public class CreatePaymentLinkForTokenPurchaseUseCase implements IUseCase<BuyTok
         var now = Instant.now();
 
         var total = BigDecimal.ZERO;
-        for (var item : input.items()) {
+        for (var item : command.items()) {
             var planQuota = findPlanQuota(planQuotas, item.quotaType());
             total = total.add(planQuota.getTokenUnitPrice().multiply(BigDecimal.valueOf(item.quantity())));
         }
@@ -91,7 +95,7 @@ public class CreatePaymentLinkForTokenPurchaseUseCase implements IUseCase<BuyTok
         // trước rồi insert một lần với giá trị cuối cùng, không được insert 0 rồi set lại.
         var savedPurchase = tokenPurchaseRepository.save(new TokenPurchase(subscription.getId(), total, PurchaseStatus.PENDING, now));
 
-        for (var item : input.items()) {
+        for (var item : command.items()) {
             var planQuota = findPlanQuota(planQuotas, item.quotaType());
             var subtotal = planQuota.getTokenUnitPrice().multiply(BigDecimal.valueOf(item.quantity()));
 
@@ -100,6 +104,7 @@ public class CreatePaymentLinkForTokenPurchaseUseCase implements IUseCase<BuyTok
             ));
         }
 
+        var paymentMethod = PaymentMethod.resolve(command.paymentMethod());
         var orderCode = System.currentTimeMillis() * 1000 + ThreadLocalRandom.current().nextInt(1000);
         // Năm trong số hóa đơn phải lấy từ chính invoiceDate, không phải Year.now(): Year.now() đọc
         // múi giờ của JVM, nên trên server UTC một hóa đơn tạo lúc 06:00 ngày 01/01 giờ VN sẽ mang
@@ -115,14 +120,17 @@ public class CreatePaymentLinkForTokenPurchaseUseCase implements IUseCase<BuyTok
             invoiceDate,
             total,
             InvoiceStatus.PENDING,
-            orderCode,
+            paymentMethod,
+            String.valueOf(orderCode),
             null,
             null,
             null,
             null
         ));
 
-        var result = paymentProcessPort.createPaymentLink(orderCode, total, "VOX-" + orderCode);
+        var paymentProcessPort = paymentProcessResolver.resolve(paymentMethod);
+        var result = paymentProcessPort.createPaymentLink(new PaymentProcessPort.CreatePaymentLinkCommand(
+            String.valueOf(orderCode), total, "VOX-" + orderCode));
 
         invoice.setPaymentLinkId(result.paymentLinkId());
         invoice.setCheckoutUrl(result.checkoutUrl());
@@ -137,4 +145,14 @@ public class CreatePaymentLinkForTokenPurchaseUseCase implements IUseCase<BuyTok
             .findFirst()
             .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn giá cho loại quota này"));
     }
+
+    private BuyTokensCommand normalize(BuyTokensCommand input) {
+        return new BuyTokensCommand(
+            input.schoolId(), 
+            input.subscriptionId(), 
+            input.items(), 
+            StringNormalization.normalizeCode(input.paymentMethod())
+        );
+    }
+
 }

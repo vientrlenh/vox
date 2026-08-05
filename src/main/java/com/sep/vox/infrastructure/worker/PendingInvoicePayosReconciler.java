@@ -6,10 +6,11 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.sep.vox.application.port.input.service.PaymentProcessResolver;
-import com.sep.vox.application.port.input.usecase.subscription.PayOSInvoiceSettlementService;
+import com.sep.vox.application.port.input.service.InvoiceSettlementService;
 import com.sep.vox.application.port.output.PaymentProcessPort;
 import com.sep.vox.application.response.output.PaymentLinkRemoteStatus;
 import com.sep.vox.domain.model.subscription.InvoiceStatus;
+import com.sep.vox.domain.model.subscription.PaymentMethod;
 import com.sep.vox.domain.repository.InvoiceRepository;
 
 // Lưới an toàn cho các invoice PENDING mà webhook PayOS không bao giờ gọi tới (vd: user tự hủy/đóng tab
@@ -22,14 +23,14 @@ public class PendingInvoicePayosReconciler {
 
     private final InvoiceRepository invoiceRepository;
     private final PaymentProcessPort paymentPort;
-    private final PayOSInvoiceSettlementService settlementService;
+    private final InvoiceSettlementService settlementService;
 
     public PendingInvoicePayosReconciler(
             InvoiceRepository invoiceRepository,
             PaymentProcessResolver paymentPortResolver,
-            PayOSInvoiceSettlementService settlementService) {
+            InvoiceSettlementService settlementService) {
         this.invoiceRepository = invoiceRepository;
-        this.paymentPort = paymentPortResolver.resolve("payos");
+        this.paymentPort = paymentPortResolver.resolve(PaymentMethod.PAYOS);
         this.settlementService = settlementService;
     }
 
@@ -37,11 +38,15 @@ public class PendingInvoicePayosReconciler {
     public void reconcile() {
         var pendingInvoices = invoiceRepository.findAllByStatus(InvoiceStatus.PENDING);
         for (var invoice : pendingInvoices) {
-            if (invoice.getPayosOrderCode() == null) {
-                continue; // hóa đơn PENDING không qua PayOS (không nên xảy ra, phòng hờ)
+            // Chỉ đối soát hóa đơn của đúng cổng mà job này cầm adapter. Không có guard này thì khi
+            // SePay lên, job sẽ đem mã đơn SePay đi hỏi PayOS và log lỗi mỗi 5 phút mà không chốt
+            // được gì. TODO(Phase 4): resolve adapter theo invoice.getPaymentProvider() để một job
+            // đối soát được mọi cổng, thay vì bỏ qua như hiện tại.
+            if (invoice.getPaymentProvider() != PaymentMethod.PAYOS || invoice.getProviderOrderRef() == null) {
+                continue;
             }
             try {
-                var remoteStatus = paymentPort.getPaymentLinkStatus(invoice.getPayosOrderCode()).status();
+                var remoteStatus = paymentPort.getPaymentLinkStatus(invoice.getProviderOrderRef()).status();
                 if (remoteStatus == PaymentLinkRemoteStatus.PAID) {
                     settlementService.settle(invoice, true);
                 } else {
@@ -51,7 +56,8 @@ public class PendingInvoicePayosReconciler {
                     }
                 }
             } catch (Exception e) {
-                LOGGER.warn("Lỗi khi đối soát hóa đơn PENDING orderCode={}", invoice.getPayosOrderCode(), e);
+                LOGGER.warn("Lỗi khi đối soát hóa đơn PENDING provider={} orderRef={}",
+                    invoice.getPaymentProvider(), invoice.getProviderOrderRef(), e);
             }
         }
     }

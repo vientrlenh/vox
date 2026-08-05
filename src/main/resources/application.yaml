@@ -279,3 +279,11 @@ payos:
   checksum-key: ${PAYOS_CHECKSUM_KEY:}
   return-url: ${PAYOS_RETURN_URL:}
   cancel-url: ${PAYOS_CANCEL_URL:}
+
+sepay: 
+  pg: 
+    merchant-id: ${SEPAY_MERCHANT_ID:}
+    secret-key: ${SEPAY_SECRET_KEY:}
+    checkout-url: https://pay-sandbox.sepay.vn/v1/checkout/init
+    api-base-url: https://pgapi-sandbox.sepay.vn
+    return-base-url: ${BASE_URL:}

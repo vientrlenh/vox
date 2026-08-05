@@ -112,7 +112,6 @@ public class BuyTokensUseCase implements IUseCase<BuyTokensCommand, TokenPurchas
 
         purchase.setTotalAmount(total);
         var savedPurchase = tokenPurchaseRepository.save(purchase);
-
         // Năm trong số hóa đơn phải lấy từ chính invoiceDate, không phải Year.now(): Year.now() đọc
         // múi giờ của JVM, nên trên server UTC một hóa đơn tạo lúc 06:00 ngày 01/01 giờ VN sẽ mang
         // số INV-2025-... nhưng ngày 2026-01-01.
@@ -127,6 +126,8 @@ public class BuyTokensUseCase implements IUseCase<BuyTokensCommand, TokenPurchas
             invoiceDate,
             total,
             InvoiceStatus.PAID,
+            // Không đi qua cổng thanh toán nào (đơn được ghi nhận đã trả), nên không có mã đơn phía cổng.
+            PaymentMethod.MANUAL,
             null,
             null,
             null,

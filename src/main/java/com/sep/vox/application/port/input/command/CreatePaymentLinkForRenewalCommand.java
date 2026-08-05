@@ -9,6 +9,7 @@ import java.util.UUID;
 public record CreatePaymentLinkForRenewalCommand(
     UUID schoolId,
     UUID subscriptionId,
-    UUID acceptedPlanId
+    UUID acceptedPlanId, 
+    String paymentMethod
 ) {
 }

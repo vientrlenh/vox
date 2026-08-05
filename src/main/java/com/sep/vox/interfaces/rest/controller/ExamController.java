@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.sep.vox.application.port.input.command.DeleteExamCommand;
@@ -39,6 +40,7 @@ import com.sep.vox.application.response.input.examschedule.GetExamScheduleOtpRes
 import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.domain.dto.ExamMemberDto;
 import com.sep.vox.domain.dto.ExamSecurePoolDto;
+import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.interfaces.rest.dto.request.AttachExamBlueprintRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateExamMemberRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateExamRequest;
@@ -57,6 +59,7 @@ import com.sep.vox.interfaces.rest.mapper.UpdateExamDeliveryModeCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.UpdateExamMemberCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.UpdateExamSecurePoolStatusCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.UpdateExamStatusCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.ViewMyExamsQueryMapper;
 
 import jakarta.validation.Valid;
 
@@ -112,8 +115,14 @@ public class ExamController {
 
     @GetMapping
     @PreAuthorize("hasRole('STUDENT')")
-    public ResponseEntity<ApiResponse<?>> getMyExams() {
-        var data = viewMyExamsUseCase.execute(null);
+    public ResponseEntity<ApiResponse<?>> getMyExams(
+            @RequestParam(name = "kind", required = false) ExamKind kind,
+            @RequestParam(name = "status", required = false) String status,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "20") int size,
+            @RequestParam(name = "sort", defaultValue = "examDate,desc") String sort) {
+        var data = viewMyExamsUseCase.execute(
+            ViewMyExamsQueryMapper.fromRequest(kind, status, page, size, sort));
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách bài thi thành công", data));
     }
 

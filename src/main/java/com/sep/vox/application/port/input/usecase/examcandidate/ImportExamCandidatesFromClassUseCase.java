@@ -7,6 +7,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.common.ExamEditingGuard;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.ImportExamCandidatesFromClassCommand;
@@ -57,6 +58,7 @@ public class ImportExamCandidatesFromClassUseCase
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
         var scope = examDirectoryAccessService.resolve(exam);
         var currentUserId = scope.callerId();
+        ExamEditingGuard.requireScheduleEditable(exam);
 
         var schoolClass = schoolClassRepository.findById(input.schoolClassId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy lớp học"));

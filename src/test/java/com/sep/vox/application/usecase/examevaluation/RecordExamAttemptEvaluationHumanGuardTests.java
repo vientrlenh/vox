@@ -21,6 +21,7 @@ import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.SimpleTransactionStatus;
 
 import com.sep.vox.application.port.input.command.examevaluation.RecordExamAttemptEvaluationCommand;
+import com.sep.vox.application.port.input.service.ClassTestGradingAssignmentService;
 import com.sep.vox.application.port.input.service.ConfidenceReviewCalculator;
 import com.sep.vox.application.port.input.usecase.exam.CompleteExamSessionGradingUseCase;
 import com.sep.vox.application.port.input.usecase.examevaluation.RecordExamAttemptEvaluationUseCase;
@@ -101,7 +102,8 @@ public class RecordExamAttemptEvaluationHumanGuardTests {
             examItemEvaluationTurnRepository, rubricCriterionRepository, examSessionRepository, examRepository,
             assessmentPolicyRepository, rubricVersionRepository, upsertExamCandidateResultUseCase,
             completeExamSessionGradingUseCase,
-            transactionManager, jsonSerializationPort, new ConfidenceReviewCalculator());
+            transactionManager, jsonSerializationPort, new ConfidenceReviewCalculator(),
+            mock(ClassTestGradingAssignmentService.class));
 
         when(examItemResponseRepository.findById(responseId)).thenReturn(Optional.of(
             new ExamItemResponse(responseId, sessionId, paperItemId, null, null, null, null, null)));

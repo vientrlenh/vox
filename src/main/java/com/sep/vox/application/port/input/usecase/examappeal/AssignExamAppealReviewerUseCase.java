@@ -78,7 +78,7 @@ public class AssignExamAppealReviewerUseCase implements IUseCase<AssignExamAppea
     public UUID execute(AssignExamAppealReviewerCommand command) {
         var currentUserId = examAppealAccessService.requireActiveUserId();
         var context = examAppealAccessService.load(command.appealId());
-        examAppealAccessService.authorizeSchoolAdmin(context, currentUserId);
+        examAppealAccessService.authorizeSchoolAdminOrClassTestChair(context, currentUserId);
 
         var appeal = context.appeal();
         if (appeal.getStatus() != ExamAppealStatus.APPROVED) {
@@ -101,6 +101,10 @@ public class AssignExamAppealReviewerUseCase implements IUseCase<AssignExamAppea
             throw new DuplicatedException("Bài thi này đang được một giáo viên chấm ở vòng khác.");
         }
 
+        // Bài kiểm tra trên lớp: chính chủ bài tự nhận, nên luật xung đột lợi ích dưới
+        // đây gần như chắc chắn bắn — và đó là chủ ý. Chỉ khi họ ĐÃ chấm tay bài này
+        // (REGRADED sinh evaluation HUMAN) mới cần lý do; chỉ UPHELD thì không sinh
+        // evaluation nên không có gì để xung đột.
         var overrideReason = normalize(command.overrideReason());
         var conflicted = examGradingQueryRepository.findTeacherIdsWithHumanEvaluation(candidateResult.getId());
         if (conflicted.contains(command.reviewerId())) {

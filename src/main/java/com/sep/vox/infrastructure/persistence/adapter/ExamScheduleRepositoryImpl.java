@@ -49,12 +49,16 @@ public class ExamScheduleRepositoryImpl implements ExamScheduleRepository {
             .toList();
     }
 
+    /**
+     * Loại ca đã xoá mềm giống findByExamId/findBySchoolId -- nếu không, các màn dùng batch load
+     * theo id (lịch thi của học sinh, của giáo viên, DataLoader scheduleById) vẫn thấy ca đã xoá.
+     */
     @Override
     public List<ExamSchedule> findByIdIn(java.util.Collection<UUID> ids) {
         if (ids == null || ids.isEmpty()) {
             return List.of();
         }
-        return springDataExamScheduleRepository.findByIdIn(ids).stream()
+        return springDataExamScheduleRepository.findByIdInAndStatusNot(ids, ExamScheduleStatus.DELETED.name()).stream()
             .map(ExamScheduleMapper::toDomain)
             .toList();
     }

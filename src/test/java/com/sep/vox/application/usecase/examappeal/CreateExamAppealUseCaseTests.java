@@ -251,23 +251,46 @@ public class CreateExamAppealUseCaseTests {
             .hasMessageContaining("câu trả lời");
     }
 
+    // ---- không chọn phần nào = phúc khảo toàn bài ---------------------------
+
     @Test
-    void should_reject_when_part_not_selected() {
+    void should_appeal_every_answered_part_when_none_selected() {
         when(examAppealAccessService.loadByCandidateResultId(candidateResultId))
             .thenReturn(context(ExamCandidateResultStatus.RELEASED));
+        when(examItemResponseRepository.findBySessionId(sessionId))
+            .thenReturn(List.of(response(), response(otherResponseId, otherPaperItemId)));
 
-        assertThatThrownBy(() -> useCase.execute(command(null)))
-            .isInstanceOf(IllegalArgumentException.class);
+        assertThat(useCase.execute(command(null))).isEqualTo(appealId);
+
+        var items = captureSavedItems();
+        assertThat(items).extracting(item -> item.getPaperItemId())
+            .containsExactly(paperItemId, otherPaperItemId);
+        assertThat(items).extracting(item -> item.getResponseId())
+            .containsExactly(responseId, otherResponseId);
     }
 
     @Test
-    void should_reject_when_no_part_selected() {
+    void should_appeal_every_answered_part_when_selection_is_empty() {
         when(examAppealAccessService.loadByCandidateResultId(candidateResultId))
             .thenReturn(context(ExamCandidateResultStatus.RELEASED));
+        when(examItemResponseRepository.findBySessionId(sessionId))
+            .thenReturn(List.of(response(), response(otherResponseId, otherPaperItemId)));
 
-        assertThatThrownBy(() -> useCase.execute(command(List.of())))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("ít nhất một phần thi");
+        assertThat(useCase.execute(command(List.of()))).isEqualTo(appealId);
+
+        assertThat(captureSavedItems()).extracting(item -> item.getPaperItemId())
+            .containsExactly(paperItemId, otherPaperItemId);
+    }
+
+    @Test
+    void should_reject_when_the_paper_has_no_answer_at_all() {
+        when(examAppealAccessService.loadByCandidateResultId(candidateResultId))
+            .thenReturn(context(ExamCandidateResultStatus.RELEASED));
+        when(examItemResponseRepository.findBySessionId(sessionId)).thenReturn(List.of());
+
+        assertThatThrownBy(() -> useCase.execute(command(null)))
+            .isInstanceOf(NotFoundException.class)
+            .hasMessageContaining("không có câu trả lời nào");
 
         verify(examResultAppealRepository, never()).save(any());
     }

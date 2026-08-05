@@ -5,6 +5,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.common.ExamEditingGuard;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.DeleteExamScheduleProctorCommand;
@@ -58,6 +59,7 @@ public class RemoveExamScheduleProctorUseCase implements IUseCase<DeleteExamSche
         var exam = examRepository.findById(schedule.getExamId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
         authorize(exam);
+        ExamEditingGuard.requireScheduleEditable(exam);
 
         var proctor = examScheduleProctorRepository.findById(input.proctorId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy giám thị"));

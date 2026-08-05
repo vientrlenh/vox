@@ -17,8 +17,9 @@ public record CreateExamCommand(
     Integer maxAttempt,
     Integer examTimeDurationSecond,
     ResultDecisionMethod resultDecisionMethod,
-    Boolean requiresOtp, 
-    List<String> requiredStreamTypes, 
-    String streamTypePermission
+    Boolean requiresOtp,
+    List<String> requiredStreamTypes,
+    String streamTypePermission,
+    String deliveryMode
 ) {
 }

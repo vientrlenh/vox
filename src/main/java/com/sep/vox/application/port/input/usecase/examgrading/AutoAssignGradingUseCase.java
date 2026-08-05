@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.command.AutoAssignGradingCommand;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService;
 import com.sep.vox.application.port.input.service.GradingSampleSelector;
@@ -70,6 +71,12 @@ public class AutoAssignGradingUseCase implements IUseCase<AutoAssignGradingComma
         if (command.examId() == null && command.scheduleId() == null) {
             throw new IllegalArgumentException("Phải chọn kỳ thi hoặc ca thi để phân công tự động.");
         }
+        // Chặn ngay ở examId chứ không đợi tới danh sách bài: bài trên lớp đã được gán
+        // hết cho chủ bài nên danh sách sẽ RỖNG, và "rỗng" trả về thành công lặng lẽ —
+        // admin tưởng đã phân công xong trong khi không có gì xảy ra.
+        if (examGradingAccessService.isClassTestExam(command.examId())) {
+            throw new ForbiddenException(ExamGradingAccessService.CLASS_TEST_COORDINATION_REJECTION);
+        }
         var roundType = parseRoundType(command.roundType());
         var selectionMode = parseSelectionMode(command.selectionMode());
         var deadlineAt = validateDeadline(command.deadlineAt());
@@ -95,6 +102,8 @@ public class AutoAssignGradingUseCase implements IUseCase<AutoAssignGradingComma
         if (candidates.isEmpty()) {
             return List.of();
         }
+        // Đường vào theo scheduleId không đi qua chốt examId ở trên.
+        examGradingAccessService.rejectClassTestCoordination(candidates);
 
         // Chỉ nạp tín hiệu rủi ro khi chế độ thật sự cần — một query nặng chạy không
         // công cho ba chế độ còn lại là lãng phí thấy rõ.

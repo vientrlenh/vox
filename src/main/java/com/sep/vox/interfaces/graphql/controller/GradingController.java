@@ -11,10 +11,13 @@ import org.springframework.stereotype.Controller;
 import com.sep.vox.application.port.input.query.SearchGradingAssignmentsQuery;
 import com.sep.vox.application.port.input.query.ViewAiQualityReportQuery;
 import com.sep.vox.application.port.input.query.ViewAssignableTeachersQuery;
+import com.sep.vox.application.port.input.query.ViewClassTestGradingResultsQuery;
 import com.sep.vox.application.port.input.query.ViewGradingStatsQuery;
 import com.sep.vox.application.port.input.query.ViewMyGradingTasksQuery;
 import com.sep.vox.application.port.input.query.ViewMyClassTestGradingTasksQuery;
 import com.sep.vox.application.port.input.usecase.examgrading.ViewAiQualityReportUseCase;
+import com.sep.vox.application.port.input.usecase.examgrading.ViewClassTestGradingResultsUseCase;
+import com.sep.vox.application.port.input.usecase.examgrading.ViewClassTestGradingStatsUseCase;
 import com.sep.vox.application.port.input.usecase.examgrading.ViewAssignableTeachersUseCase;
 import com.sep.vox.application.port.input.usecase.examgrading.ViewGradingAssignmentsUseCase;
 import com.sep.vox.application.port.input.usecase.examgrading.ViewGradingStatsUseCase;
@@ -38,6 +41,8 @@ public class GradingController {
 
     private final ViewGradingAssignmentsUseCase viewGradingAssignmentsUseCase;
     private final ViewGradingStatsUseCase viewGradingStatsUseCase;
+    private final ViewClassTestGradingStatsUseCase viewClassTestGradingStatsUseCase;
+    private final ViewClassTestGradingResultsUseCase viewClassTestGradingResultsUseCase;
     private final ViewMyGradingTasksUseCase viewMyGradingTasksUseCase;
     private final ViewMyClassTestGradingTasksUseCase viewMyClassTestGradingTasksUseCase;
     private final ViewGradingTaskDetailUseCase viewGradingTaskDetailUseCase;
@@ -48,6 +53,8 @@ public class GradingController {
     public GradingController(
             ViewGradingAssignmentsUseCase viewGradingAssignmentsUseCase,
             ViewGradingStatsUseCase viewGradingStatsUseCase,
+            ViewClassTestGradingStatsUseCase viewClassTestGradingStatsUseCase,
+            ViewClassTestGradingResultsUseCase viewClassTestGradingResultsUseCase,
             ViewMyGradingTasksUseCase viewMyGradingTasksUseCase,
             ViewMyClassTestGradingTasksUseCase viewMyClassTestGradingTasksUseCase,
             ViewGradingTaskDetailUseCase viewGradingTaskDetailUseCase,
@@ -56,6 +63,8 @@ public class GradingController {
             ViewAiQualityReportUseCase viewAiQualityReportUseCase) {
         this.viewGradingAssignmentsUseCase = viewGradingAssignmentsUseCase;
         this.viewGradingStatsUseCase = viewGradingStatsUseCase;
+        this.viewClassTestGradingStatsUseCase = viewClassTestGradingStatsUseCase;
+        this.viewClassTestGradingResultsUseCase = viewClassTestGradingResultsUseCase;
         this.viewMyGradingTasksUseCase = viewMyGradingTasksUseCase;
         this.viewMyClassTestGradingTasksUseCase = viewMyClassTestGradingTasksUseCase;
         this.viewGradingTaskDetailUseCase = viewGradingTaskDetailUseCase;
@@ -77,11 +86,12 @@ public class GradingController {
             @Argument(name = "overdueOnly") Boolean overdueOnly,
             @Argument(name = "hasOpenAppeal") Boolean hasOpenAppeal,
             @Argument(name = "search") String search,
+            @Argument(name = "kind") String kind,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
         return viewGradingAssignmentsUseCase.execute(new SearchGradingAssignmentsQuery(
             examId, scheduleId, teacherId, resultStatus, roundType, status,
-            Boolean.TRUE.equals(unassignedOnly), Boolean.TRUE.equals(overdueOnly), hasOpenAppeal, search,
+            Boolean.TRUE.equals(unassignedOnly), Boolean.TRUE.equals(overdueOnly), hasOpenAppeal, search, kind,
             page == null ? 0 : page, size == null ? DEFAULT_PAGE_SIZE : size));
     }
 
@@ -89,8 +99,29 @@ public class GradingController {
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public GradingStatsInfo gradingStats(
             @Argument(name = "examId") UUID examId,
-            @Argument(name = "scheduleId") UUID scheduleId) {
-        return viewGradingStatsUseCase.execute(new ViewGradingStatsQuery(examId, scheduleId));
+            @Argument(name = "scheduleId") UUID scheduleId,
+            @Argument(name = "kind") String kind) {
+        return viewGradingStatsUseCase.execute(new ViewGradingStatsQuery(examId, scheduleId, kind));
+    }
+
+    @QueryMapping(name = "classTestGradingStats")
+    @PreAuthorize("hasRole('TEACHER')")
+    public GradingStatsInfo classTestGradingStats(@Argument(name = "examId") UUID examId) {
+        return viewClassTestGradingStatsUseCase.execute(examId);
+    }
+
+    @QueryMapping(name = "classTestGradingResults")
+    @PreAuthorize("hasRole('TEACHER')")
+    public PageResult<GradingAssignmentRowInfo> classTestGradingResults(
+            @Argument(name = "examId") UUID examId,
+            @Argument(name = "resultStatus") String resultStatus,
+            @Argument(name = "unassignedOnly") Boolean unassignedOnly,
+            @Argument(name = "search") String search,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
+        return viewClassTestGradingResultsUseCase.execute(new ViewClassTestGradingResultsQuery(
+            examId, resultStatus, Boolean.TRUE.equals(unassignedOnly), search,
+            page == null ? 0 : page, size == null ? DEFAULT_PAGE_SIZE : size));
     }
 
     @QueryMapping(name = "myGradingTasks")

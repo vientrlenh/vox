@@ -26,7 +26,7 @@ public class ViewExamItemResponseUseCase implements IUseCase<ViewExamItemRespons
     @Override
     @Transactional(readOnly = true)
     public ExamItemResponseDetailsResponse execute(ViewExamItemResponseQuery input) {
-        var response = examResultAccessService.getAuthorizedResponse(input.answerId());
+        var response = examResultAccessService.requireCandidateVisibleResponse(input.answerId()).response();
         var turns = examItemResponseTurnRepository.findByExamItemResponseId(input.answerId());
         return ExamItemResponseResponseMapper.toDetailsResponse(response, turns);
     }

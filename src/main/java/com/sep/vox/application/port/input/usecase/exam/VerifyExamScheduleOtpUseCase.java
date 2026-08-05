@@ -21,7 +21,7 @@ import com.sep.vox.application.port.output.CacheManagerPort;
 import com.sep.vox.application.port.output.HealthCheckPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.exam.ExamEntryTicketResponse;
-import com.sep.vox.domain.model.exam.ExamKind;
+import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamSession;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
@@ -78,11 +78,13 @@ public class VerifyExamScheduleOtpUseCase implements IUseCase<VerifyExamSchedule
         var exam = examRepository.findById(input.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
 
-        if (exam.getRequiredStreamType() != null && exam.getKind() == ExamKind.CENTRALIZED) {
+        // Chặn ngay ở cổng vào: vào thi được nhưng không ghi được dữ liệu giám sát thì bài thi coi
+        // như bỏ. Không lọc theo kind — bài kiểm tra trên lớp cũng bật stream được.
+        if (exam.getRequiredStreamType() != null) {
             healthCheckPort.checkStreamingOk();
         }
-        
-        if (exam.getKind() == ExamKind.CLASS_TEST || !exam.isRequiresOtp()) {
+
+        if (!exam.isRequiresOtp()) {
             throw new IllegalStateException("Bài kiểm tra này không yêu cầu xác thực OTP, vui lòng dùng luồng bắt đầu trực tiếp");
         }
 
@@ -127,7 +129,7 @@ public class VerifyExamScheduleOtpUseCase implements IUseCase<VerifyExamSchedule
                 );
                 resumableSession = examSessionRepository.findById(resumableSession.getId()).orElse(resumableSession);
             }
-            return buildEntryTicket(resumableSession, now, schedule.getEndDate());
+            return buildEntryTicket(resumableSession.getId(), now, schedule.getEndDate(), exam);
         }
 
         if (exam.getMaxAttempt() != null) {
@@ -142,12 +144,7 @@ public class VerifyExamScheduleOtpUseCase implements IUseCase<VerifyExamSchedule
             candidate.getId(),
             candidate.getAssignedPaperId()
         ));
-        return new ExamEntryTicketResponse(
-            session.id(),
-            UUID.randomUUID().toString(),
-            now.plus(ENTRY_TICKET_TTL).toString(),
-            schedule.getEndDate() == null ? null : schedule.getEndDate().toString()
-        );
+        return buildEntryTicket(session.id(), now, schedule.getEndDate(), exam);
     }
 
     private ExamSession findResumableSession(UUID candidateId) {
@@ -167,19 +164,20 @@ public class VerifyExamScheduleOtpUseCase implements IUseCase<VerifyExamSchedule
             .count();
     }
 
-    private boolean isExamClosedForEntry(com.sep.vox.domain.model.exam.Exam exam, Instant now) {
+    private boolean isExamClosedForEntry(Exam exam, Instant now) {
         return exam.getStatus() != ExamStatus.IN_PROGRESS
             || exam.getStatus() == ExamStatus.CLOSED
             || exam.getStatus() == ExamStatus.CANCELLED
             || (exam.getCloseAt() != null && exam.getCloseAt().isBefore(now));
     }
 
-    private ExamEntryTicketResponse buildEntryTicket(ExamSession session, Instant now, Instant scheduleEndAt) {
-        return new ExamEntryTicketResponse(
-            session.getId(),
+    private ExamEntryTicketResponse buildEntryTicket(UUID sessionId, Instant now, Instant scheduleEndAt, Exam exam) {
+        return ExamEntryTicketResponse.of(
+            sessionId,
             UUID.randomUUID().toString(),
             now.plus(ENTRY_TICKET_TTL).toString(),
-            scheduleEndAt == null ? null : scheduleEndAt.toString()
+            scheduleEndAt,
+            exam
         );
     }
 }

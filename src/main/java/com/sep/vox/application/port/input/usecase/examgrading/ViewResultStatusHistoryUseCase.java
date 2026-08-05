@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.common.ExamResultVisibilityPolicy;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -67,6 +68,12 @@ public class ViewResultStatusHistoryUseCase implements IUseCase<UUID, List<Resul
         var isOwner = examCandidateRepository.findById(result.getCandidateId())
             .map(candidate -> currentUserId.equals(candidate.getStudentId()))
             .orElse(false);
+        // Dòng thời gian mang scoreBefore/scoreAfter — với chính chủ nó chính là điểm, nên
+        // nó chịu đúng luật công bố như màn kết quả. Trả rỗng chứ không ném lỗi: đây là
+        // khối phụ trợ, ném lỗi sẽ làm hỏng cả trang chỉ vì một mục bên lề.
+        if (isOwner && !ExamResultVisibilityPolicy.isVisibleToCandidate(result.getStatus())) {
+            return List.of();
+        }
         if (!isOwner) {
             if (userContextPort.isSystemAdmin()) {
                 return examResultAuditQueryRepository.findHistory(candidateResultId);

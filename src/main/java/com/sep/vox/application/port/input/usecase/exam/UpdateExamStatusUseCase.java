@@ -1,6 +1,8 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
 import java.time.Instant;
+import java.util.EnumSet;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,6 +15,7 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.PlanLimitExceededException;
 import com.sep.vox.application.port.input.command.UpdateExamStatusCommand;
 import com.sep.vox.application.port.input.service.ExamCandidateResultFinalizationService;
+import com.sep.vox.application.port.input.service.ClassTestGradingAssignmentService;
 import com.sep.vox.application.port.input.service.ZeroScoreExamResultService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -36,6 +39,7 @@ import com.sep.vox.domain.repository.ExamPaperRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;
+import com.sep.vox.domain.repository.ExamScheduleProctorRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
@@ -44,10 +48,18 @@ import com.sep.vox.domain.repository.SubscriptionQuotaRepository;
 @Service
 public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand, ExamDto> {
 
+    /**
+     * Huỷ được khi bài chưa chốt kết quả. RESULTS_PUBLISHED không rút lại được (học sinh đã xem điểm),
+     * và CANCELLED thì không huỷ thêm lần nữa.
+     */
+    private static final Set<ExamStatus> CANCELLABLE_FROM =
+        EnumSet.of(ExamStatus.DRAFT, ExamStatus.SCHEDULED, ExamStatus.IN_PROGRESS, ExamStatus.CLOSED);
+
     private final ExamRepository examRepository;
     private final ExamMemberRepository examMemberRepository;
     private final ExamPaperRepository examPaperRepository;
     private final ExamScheduleRepository examScheduleRepository;
+    private final ExamScheduleProctorRepository examScheduleProctorRepository;
     private final ExamCandidateRepository examCandidateRepository;
     private final ExamSessionRepository examSessionRepository;
     private final ExamCandidateResultRepository examCandidateResultRepository;
@@ -61,12 +73,14 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final SubscriptionQuotaRepository subscriptionQuotaRepository;
     private final UserContextPort userContextPort;
+    private final ClassTestGradingAssignmentService classTestGradingAssignmentService;
 
     public UpdateExamStatusUseCase(
             ExamRepository examRepository,
             ExamMemberRepository examMemberRepository,
             ExamPaperRepository examPaperRepository,
             ExamScheduleRepository examScheduleRepository,
+            ExamScheduleProctorRepository examScheduleProctorRepository,
             ExamCandidateRepository examCandidateRepository,
             ExamSessionRepository examSessionRepository,
             ExamCandidateResultRepository examCandidateResultRepository,
@@ -79,11 +93,13 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
             SchoolSubscriptionRepository schoolSubscriptionRepository,
             SubscriptionPlanRepository subscriptionPlanRepository,
             SubscriptionQuotaRepository subscriptionQuotaRepository,
-            UserContextPort userContextPort) {
+            UserContextPort userContextPort,
+            ClassTestGradingAssignmentService classTestGradingAssignmentService) {
         this.examRepository = examRepository;
         this.examMemberRepository = examMemberRepository;
         this.examPaperRepository = examPaperRepository;
         this.examScheduleRepository = examScheduleRepository;
+        this.examScheduleProctorRepository = examScheduleProctorRepository;
         this.examCandidateRepository = examCandidateRepository;
         this.examSessionRepository = examSessionRepository;
         this.examCandidateResultRepository = examCandidateResultRepository;
@@ -97,6 +113,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
         this.subscriptionPlanRepository = subscriptionPlanRepository;
         this.subscriptionQuotaRepository = subscriptionQuotaRepository;
         this.userContextPort = userContextPort;
+        this.classTestGradingAssignmentService = classTestGradingAssignmentService;
     }
 
     @Override
@@ -121,10 +138,14 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
 
         switch (command.action()) {
             case "SCHEDULE" -> {
-                validatePlanLimits(exam);
+                // Trạng thái kiểm TRƯỚC hạn mức gói: bấm SCHEDULE trên bài không còn DRAFT mà báo lỗi
+                // "vượt quá giới hạn gói" thì người dùng đi sửa nhầm chỗ.
                 requireTransition(exam, ExamStatus.DRAFT, ExamStatus.SCHEDULED);
+                validatePlanLimits(exam);
                 if (exam.getKind() == ExamKind.CLASS_TEST) {
                     publishClassTestSchedules(exam, currentUserId);
+                } else {
+                    requireCentralizedScheduleReadiness(exam);
                 }
             }
             case "START" -> {
@@ -140,6 +161,9 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
                 requireTransition(exam, ExamStatus.IN_PROGRESS, ExamStatus.CLOSED);
                 examQuestionSecureLockService.releaseIfAutoAfterClose(exam.getId());
                 zeroScoreExamResultService.ensureZeroResultsForMissingOrEmptyAttempts(exam.getId());
+                // Quét bù SAU khi đã bù kết quả điểm 0: bài trên lớp không có ai điều phối
+                // chấm, nên đóng bài là chốt cuối để giáo viên chủ bài nhận hết phần còn lại.
+                classTestGradingAssignmentService.ensureAssignmentsForExam(exam.getId());
             }
             case "PUBLISH_RESULTS" -> {
                 zeroScoreExamResultService.ensureZeroResultsForMissingOrEmptyAttempts(exam.getId());
@@ -147,7 +171,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
                 requireTransition(exam, ExamStatus.CLOSED, ExamStatus.RESULTS_PUBLISHED);
                 finalizePassFailForExam(exam);
             }
-            case "CANCEL" -> exam.setStatus(ExamStatus.CANCELLED);
+            case "CANCEL" -> requireTransition(exam, CANCELLABLE_FROM, ExamStatus.CANCELLED);
             default -> throw new IllegalStateException("Action không hợp lệ");
         }
 
@@ -175,7 +199,15 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
     }
 
     private void requireTransition(com.sep.vox.domain.model.exam.Exam exam, ExamStatus from, ExamStatus to) {
-        if (exam.getStatus() != from) {
+        requireTransition(exam, EnumSet.of(from), to);
+    }
+
+    /**
+     * Bản nhiều trạng thái nguồn, hiện chỉ CANCEL dùng: huỷ được từ bất kỳ trạng thái nào chưa chốt,
+     * nhưng kết quả đã công bố thì không rút lại được, và bài đã huỷ không huỷ thêm lần nữa.
+     */
+    private void requireTransition(com.sep.vox.domain.model.exam.Exam exam, Set<ExamStatus> allowedFrom, ExamStatus to) {
+        if (!allowedFrom.contains(exam.getStatus())) {
             throw new IllegalStateException("Trạng thái bài kiểm tra hiện tại không hợp lệ cho action này");
         }
         exam.setStatus(to);
@@ -221,12 +253,77 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
         }
     }
 
+    /**
+     * Bài kiểm tra trên lớp cũng thi trong phòng có giám khảo như kỳ thi tập trung, nên trước khi
+     * công bố lịch phải đủ: ca thi có phòng, có giám khảo, và mọi học sinh đã được xếp ca + có đề.
+     *
+     * <p>Chọn lớp lúc tạo chỉ nạp học sinh vào danh sách dự thi; xếp ca là bước riêng, nên nếu
+     * không chặn ở đây thì bài vẫn lên lịch được với cả lớp chưa có ca và không ai vào thi được.
+     */
+    private void requireClassTestScheduleReadiness(
+            com.sep.vox.domain.model.exam.Exam exam,
+            java.util.List<com.sep.vox.domain.model.exam.ExamSchedule> schedules) {
+        requireSchedulesHaveRoomAndProctor(schedules);
+
+        var candidates = examCandidateRepository.findByExamId(exam.getId());
+        var withoutSchedule = candidates.stream()
+            .filter(candidate -> candidate.getScheduleId() == null)
+            .count();
+        if (withoutSchedule > 0) {
+            throw new IllegalStateException(
+                "Còn " + withoutSchedule + " học sinh chưa được xếp vào ca thi");
+        }
+        var withoutPaper = candidates.stream()
+            .filter(candidate -> candidate.getAssignedPaperId() == null)
+            .count();
+        if (withoutPaper > 0) {
+            throw new IllegalStateException("Còn " + withoutPaper + " học sinh chưa được gán đề");
+        }
+    }
+
+    /** Ca thi nào cũng phải có phòng và ít nhất một giám khảo — đúng cho cả hai loại bài. */
+    private void requireSchedulesHaveRoomAndProctor(
+            java.util.List<com.sep.vox.domain.model.exam.ExamSchedule> schedules) {
+        for (var schedule : schedules) {
+            if (schedule.getSchoolRoomId() == null) {
+                throw new IllegalStateException("Ca thi chưa được chọn phòng");
+            }
+            if (examScheduleProctorRepository.countByScheduleId(schedule.getId()) == 0) {
+                throw new IllegalStateException("Ca thi chưa có giám khảo");
+            }
+        }
+    }
+
+    /**
+     * Kỳ thi tập trung trước đây lên lịch được cả khi chưa có ca thi, chưa có thí sinh và chưa có mã
+     * đề nào — bài mang trạng thái SCHEDULED mà thực tế không ai vào thi được.
+     *
+     * <p>Chốt ở đây nhẹ hơn bài trên lớp một bậc: KHÔNG đòi từng thí sinh đã có ca và đã có đề, vì kỳ
+     * thi tập trung xếp ca ({@code AssignExamCandidateSchedule}/{@code AutoFill}) và phân đề
+     * ({@code AssignExamPapersUseCase}, đòi mọi đề LOCKED) sau khi đã lên lịch. Chỉ chặn đúng trường
+     * hợp "rỗng" mà không có cách nào chạy được.
+     */
+    private void requireCentralizedScheduleReadiness(com.sep.vox.domain.model.exam.Exam exam) {
+        var schedules = examScheduleRepository.findByExamId(exam.getId());
+        if (schedules.isEmpty()) {
+            throw new IllegalStateException("Kỳ thi chưa có ca thi nào, không thể lên lịch");
+        }
+        requireSchedulesHaveRoomAndProctor(schedules);
+        if (examCandidateRepository.countByExamId(exam.getId()) == 0) {
+            throw new IllegalStateException("Kỳ thi chưa có thí sinh nào, không thể lên lịch");
+        }
+        if (examPaperRepository.findByExamId(exam.getId()).isEmpty()) {
+            throw new IllegalStateException("Kỳ thi chưa có mã đề nào, không thể lên lịch");
+        }
+    }
+
     private void publishClassTestSchedules(com.sep.vox.domain.model.exam.Exam exam, java.util.UUID currentUserId) {
         requireClassTestScheduleWindow(exam);
         var schedules = examScheduleRepository.findByExamId(exam.getId());
         if (schedules.isEmpty()) {
             throw new IllegalStateException("Bài kiểm tra trên lớp chưa có lịch");
         }
+        requireClassTestScheduleReadiness(exam, schedules);
         var now = Instant.now();
         for (var schedule : schedules) {
             if (schedule.getStatus() == ExamScheduleStatus.DRAFT) {

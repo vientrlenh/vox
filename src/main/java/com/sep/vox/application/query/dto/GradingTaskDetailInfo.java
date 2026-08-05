@@ -6,7 +6,11 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Màn chấm của giáo viên. KHÔNG có tên/ID học sinh — giáo viên chấm ẩn danh.
+ * Màn chấm của giáo viên.
+ *
+ * <p>Với kỳ thi {@code CENTRALIZED}, {@code studentName}/{@code className} luôn
+ * {@code null} — chấm mù là bảo đảm công bằng. Bài kiểm tra trên lớp thì có, vì
+ * người chấm chính là giáo viên dạy lớp đó.
  *
  * <p>{@code allowedOutcomes} do BE quyết theo {@code GradingRoundPolicy}: FE dựng
  * đúng những nút được phép của vòng này, không tự suy từ {@code roundType} — nếu suy
@@ -33,6 +37,16 @@ public record GradingTaskDetailInfo(
     /** Chỉ có ở vòng APPEAL: lý do học sinh nêu trong đơn. */
     String appealReason,
     List<GradingTaskItemInfo> items,
-    List<GradingCriterionMetaInfo> criteria
+    List<GradingCriterionMetaInfo> criteria,
+    /** Chỉ có giá trị với bài kiểm tra trên lớp; kỳ thi tập trung luôn null. */
+    String studentName,
+    /** Chỉ có giá trị với bài kiểm tra trên lớp; kỳ thi tập trung luôn null. */
+    String className,
+    /** Phiên thi đang chấm. Hai lượt của cùng một em khác nhau ở đây. */
+    UUID sessionId,
+    /** Lượt thi thứ mấy, đếm từ 1 theo thời điểm bắt đầu làm bài. */
+    int attemptNo,
+    /** Tổng số lượt em đó đã làm ở bài thi này. Bằng 1 nghĩa là không có thi lại. */
+    int attemptCount
 ) {
 }

@@ -258,6 +258,26 @@ public class AssignGradingUseCaseTests {
         verify(examGradingAssignmentRepository, never()).saveAll(anyList());
     }
 
+    /**
+     * Bài kiểm tra trên lớp do giáo viên tạo bài tự chấm — nhà trường không phân công.
+     * Không chặn thì admin gán giáo viên khác trong khi chủ bài đã được gán tự động,
+     * hai bên tranh cùng một {@code active_result_id}.
+     */
+    @Test
+    void should_reject_class_test_result() {
+        org.mockito.Mockito.doThrow(new ForbiddenException(
+                ExamGradingAccessService.CLASS_TEST_COORDINATION_REJECTION))
+            .when(examGradingAccessService).rejectClassTestCoordination(anyCollection());
+        when(examCandidateResultRepository.findByIdIn(anyCollection()))
+            .thenReturn(List.of(result(firstResultId, ExamCandidateResultStatus.PENDING_REVIEW)));
+
+        assertThatThrownBy(() -> useCase.execute(command(firstResultId)))
+            .isInstanceOf(ForbiddenException.class)
+            .hasMessageContaining("nhà trường không phân công");
+
+        verify(examGradingAssignmentRepository, never()).saveAll(anyList());
+    }
+
     @Test
     void should_reject_an_empty_batch() {
         assertThatThrownBy(() -> useCase.execute(

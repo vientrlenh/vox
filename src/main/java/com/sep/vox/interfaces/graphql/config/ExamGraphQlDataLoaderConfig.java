@@ -14,6 +14,7 @@ import org.springframework.graphql.execution.BatchLoaderRegistry;
 import com.sep.vox.application.port.input.usecase.examevaluation.ResolveExamCandidateAttemptsUseCase;
 import com.sep.vox.application.query.dto.ExamCandidateAttempts;
 import com.sep.vox.domain.dto.ExamBlueprintDto;
+import com.sep.vox.domain.dto.ExamBlueprintSlotDto;
 import com.sep.vox.domain.dto.ExamBlueprintVersionDto;
 import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.domain.dto.ExamMemberDto;
@@ -22,6 +23,7 @@ import com.sep.vox.domain.dto.ExamScheduleDto;
 import com.sep.vox.domain.dto.ExamSecurePoolDto;
 import com.sep.vox.domain.dto.SchoolRoomFromDto;
 import com.sep.vox.domain.mapper.ExamBlueprintDtoMapper;
+import com.sep.vox.domain.mapper.ExamBlueprintSlotDtoMapper;
 import com.sep.vox.domain.mapper.ExamBlueprintVersionDtoMapper;
 import com.sep.vox.domain.mapper.ExamDtoMapper;
 import com.sep.vox.domain.mapper.ExamMemberDtoMapper;
@@ -34,6 +36,7 @@ import com.sep.vox.domain.mapper.ExamScheduleDtoMapper;
 import com.sep.vox.domain.mapper.ExamSecurePoolDtoMapper;
 import com.sep.vox.domain.mapper.SchoolRoomDtoMapper;
 import com.sep.vox.domain.repository.ExamBlueprintRepository;
+import com.sep.vox.domain.repository.ExamBlueprintSlotRepository;
 import com.sep.vox.domain.repository.ExamBlueprintVersionRepository;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
@@ -59,6 +62,7 @@ public class ExamGraphQlDataLoaderConfig {
             ExamPaperRepository examPaperRepository,
             ExamBlueprintRepository examBlueprintRepository,
             ExamBlueprintVersionRepository examBlueprintVersionRepository,
+            ExamBlueprintSlotRepository examBlueprintSlotRepository,
             ExamMemberRepository examMemberRepository,
             ExamPaperSectionRepository examPaperSectionRepository,
             ExamPaperItemRepository examPaperItemRepository,
@@ -118,6 +122,16 @@ public class ExamGraphQlDataLoaderConfig {
                     .stream()
                     .map(ExamBlueprintVersionDtoMapper::toDto)
                     .collect(Collectors.toMap(version -> version.id(), dto -> dto)))
+            );
+
+        // Ô blueprint sinh ra từng câu trong mã đề. Mapped loader tự trả null cho key không tìm
+        // thấy, đúng ý fail-open ở UpdateExamPaperItemUseCase: slot đã xoá thì câu gán tự do.
+        registry.<UUID, ExamBlueprintSlotDto>forName("examBlueprintSlotById")
+            .registerMappedBatchLoader((Set<UUID> slotIds, BatchLoaderEnvironment env) ->
+                Mono.fromSupplier(() -> examBlueprintSlotRepository.findByIdIn(slotIds)
+                    .stream()
+                    .map(ExamBlueprintSlotDtoMapper::toDto)
+                    .collect(Collectors.toMap(slot -> slot.id(), dto -> dto)))
             );
 
         registry.<UUID, List<ExamMemberDto>>forName("examMembersByExamId")

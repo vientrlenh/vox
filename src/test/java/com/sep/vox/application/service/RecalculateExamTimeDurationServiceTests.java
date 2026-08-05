@@ -142,14 +142,18 @@ class RecalculateExamTimeDurationServiceTests {
         when(paper.getTimeDurationSeconds()).thenReturn(totalSeconds);
         when(examPaperRepository.findByExamId(examId)).thenReturn(List.of(paper));
 
+        // Item của mọi mã đề và câu hỏi của mọi item đều được nạp bằng MỘT query batch, thay vì
+        // một query cho mỗi mã đề rồi một query cho mỗi câu hỏi.
         var item = mock(ExamPaperItem.class);
+        when(item.getPaperId()).thenReturn(paperId);
         when(item.getQuestionId()).thenReturn(questionId);
-        when(examPaperItemRepository.findByPaperId(paperId)).thenReturn(List.of(item));
+        when(examPaperItemRepository.findByPaperIdIn(List.of(paperId))).thenReturn(List.of(item));
 
         var question = mock(Question.class);
+        when(question.getId()).thenReturn(questionId);
         when(question.getPreparationTimeSeconds()).thenReturn(0);
         when(question.getMaxResponseSeconds()).thenReturn(totalSeconds);
-        when(questionRepository.findById(questionId)).thenReturn(Optional.of(question));
+        when(questionRepository.findByIdIn(List.of(questionId))).thenReturn(List.of(question));
         return exam;
     }
 

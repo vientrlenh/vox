@@ -15,14 +15,18 @@ import com.sep.vox.application.port.input.usecase.exam.ExamQuestionSecureLockSer
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.ExamPaperItemDto;
 import com.sep.vox.domain.mapper.ExamPaperItemDtoMapper;
+import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamBlueprintSlotType;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamPaperStatus;
 import com.sep.vox.domain.model.exam.ExamSecurePoolReleaseMode;
 import com.sep.vox.domain.model.exam.ExamStatus;
+import com.sep.vox.domain.model.question.Question;
 import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
 import com.sep.vox.domain.model.question.QuestionSharing;
 import com.sep.vox.domain.model.question.QuestionStatus;
+import com.sep.vox.domain.repository.ExamBlueprintSlotRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamPaperItemRepository;
 import com.sep.vox.domain.repository.ExamPaperRepository;
@@ -30,6 +34,7 @@ import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.QuestionCollaboratorRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
+import com.sep.vox.domain.valueobject.QuestionSelectionSpec;
 
 @Service
 public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemCommand, ExamPaperItemDto> {
@@ -38,6 +43,7 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
     private final ExamPaperRepository examPaperRepository;
     private final ExamPaperItemRepository examPaperItemRepository;
     private final ExamMemberRepository examMemberRepository;
+    private final ExamBlueprintSlotRepository examBlueprintSlotRepository;
     private final QuestionRepository questionRepository;
     private final QuestionCollaboratorRepository questionCollaboratorRepository;
     private final SchoolUserRepository schoolUserRepository;
@@ -51,6 +57,7 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
             ExamPaperRepository examPaperRepository,
             ExamPaperItemRepository examPaperItemRepository,
             ExamMemberRepository examMemberRepository,
+            ExamBlueprintSlotRepository examBlueprintSlotRepository,
             QuestionRepository questionRepository,
             QuestionCollaboratorRepository questionCollaboratorRepository,
             SchoolUserRepository schoolUserRepository,
@@ -62,6 +69,7 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
         this.examPaperRepository = examPaperRepository;
         this.examPaperItemRepository = examPaperItemRepository;
         this.examMemberRepository = examMemberRepository;
+        this.examBlueprintSlotRepository = examBlueprintSlotRepository;
         this.questionRepository = questionRepository;
         this.questionCollaboratorRepository = questionCollaboratorRepository;
         this.schoolUserRepository = schoolUserRepository;
@@ -97,11 +105,18 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
-        // H.7: CENTRALIZED (và CLASS_TEST đã gắn blueprint) phải khớp y hệt blueprint - mọi
-        // thay đổi câu hỏi/weight phải qua đổi version blueprint, không sửa tay từng item.
-        if (exam.getKind() != ExamKind.CLASS_TEST || exam.getBlueprintId() != null) {
+        // H.7: chỉ ô FIXED mới phải khớp y hệt blueprint - đổi câu ở đó bắt buộc qua đổi version.
+        // Ô SELECTION thì blueprint chỉ mô tả tiêu chí, người ra đề mới là người chọn câu cụ thể,
+        // nên đây chính là chỗ duy nhất để gán câu cho ô đó.
+        //
+        // Slot đã bị xoá (version còn DRAFT vẫn xoá slot được) thì coi như ô tự do: ràng buộc
+        // blueprint không còn tồn tại nữa, fail-closed ở đây chỉ làm mã đề kẹt vĩnh viễn.
+        var slot = item.getBlueprintSlotId() == null
+            ? null
+            : examBlueprintSlotRepository.findById(item.getBlueprintSlotId()).orElse(null);
+        if (slot != null && slot.getSlotType() == ExamBlueprintSlotType.FIXED) {
             throw new IllegalStateException(
-                "Đề thi này gắn với blueprint, không thể sửa câu hỏi trực tiếp - phải qua đổi version blueprint");
+                "Ô câu hỏi này cố định theo blueprint, không thể đổi câu hỏi trực tiếp - phải qua đổi version blueprint");
         }
 
         var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
@@ -109,8 +124,12 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
             .orElse(null);
         var question = questionRepository.findAccessibleById(input.questionId(), currentUserId, currentSchoolId, false, false)
             .orElseThrow(() -> new ForbiddenException("Không có quyền dùng câu hỏi này"));
-        if (exam.getKind() == ExamKind.CENTRALIZED && question.getStatus() != QuestionStatus.PUBLISHED) {
+        if ((exam.getKind() == ExamKind.CENTRALIZED || slot != null)
+                && question.getStatus() != QuestionStatus.PUBLISHED) {
             throw new IllegalStateException("Chỉ được gán câu hỏi đã PUBLISHED vào đề thi");
+        }
+        if (slot != null && slot.getSlotType() == ExamBlueprintSlotType.SELECTION) {
+            requireMatchesSelectionSpec(slot.getSelectionSpec(), question);
         }
 
         boolean isOwner = currentUserId.equals(question.getCreatedBy());
@@ -135,7 +154,7 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
         examQuestionSecureLockService.lockQuestionForExam(
             question.getId(),
             paper.getExamId(),
-            ExamSecurePoolReleaseMode.MANUAL,
+            releaseModeFor(exam),
             currentUserId
         );
 
@@ -148,6 +167,36 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
 
         recalculateExamTimeDurationService.recalculate(paper.getExamId());
         return ExamPaperItemDtoMapper.toDto(savedItem);
+    }
+
+    /**
+     * Câu hỏi của bài trên lớp tự mở khoá khi đóng bài; kỳ thi tập trung do người quản lý tự mở.
+     */
+    private ExamSecurePoolReleaseMode releaseModeFor(Exam exam) {
+        return exam.getKind() == ExamKind.CLASS_TEST
+            ? ExamSecurePoolReleaseMode.AUTO_AFTER_CLOSE
+            : ExamSecurePoolReleaseMode.MANUAL;
+    }
+
+    /**
+     * Ô SELECTION chỉ mô tả tiêu chí, nên câu được gán phải khớp tiêu chí đó. Picker ở client đã
+     * lọc sẵn, nhưng endpoint REST gọi thẳng được nên vẫn phải chặn ở đây.
+     *
+     * <p>Chỉ kiểm được {@code questionType} và {@code topicId}: {@link com.sep.vox.domain.model.question.Question}
+     * không có difficulty/skillCode/targetBandLevel nên 3 tiêu chí còn lại chỉ mang tính tham khảo
+     * cho người ra đề.
+     */
+    private void requireMatchesSelectionSpec(QuestionSelectionSpec spec, Question question) {
+        if (spec == null) {
+            return;
+        }
+        if (spec.questionType() != null && question.getType() != spec.questionType()) {
+            throw new IllegalStateException(
+                "Ô câu hỏi này yêu cầu câu hỏi loại " + spec.questionType() + ", câu hỏi đã chọn không khớp tiêu chí");
+        }
+        if (spec.topicId() != null && !spec.topicId().equals(question.getQuestionTopicId())) {
+            throw new IllegalStateException("Câu hỏi đã chọn không thuộc chủ đề mà ô câu hỏi yêu cầu");
+        }
     }
 
     private int calculatePaperDurationAfterQuestionChange(

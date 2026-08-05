@@ -25,6 +25,13 @@ public record ExamItemEvaluationDetailsResponse(
     String validity,
     String suggestions,
     List<ExamItemCriterionScoreResponse> criteria,
-    List<ExamItemEvaluationTurnResponse> turns
+    /**
+     * Luôn lấy theo bản AI — chỉ bản AI mới sinh lượt nói. Bản chấm tay không có turn nào,
+     * nên nếu đọc theo bản đang hiệu lực thì audio/transcript/nội dung câu hỏi biến mất
+     * ngay khi giáo viên chấm lại.
+     */
+    List<ExamItemEvaluationTurnResponse> turns,
+    /** Ngữ cảnh AI; {@code null} khi bài chưa từng có bản AI. */
+    ExamItemAiEvaluationContextResponse ai
 ) {
 }

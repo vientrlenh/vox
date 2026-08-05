@@ -11,16 +11,18 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.common.ExamCandidateStatusSupport;
+import com.sep.vox.application.port.input.query.ViewMyExamsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.query.dto.ExamAttemptSummary;
 import com.sep.vox.application.query.repository.ExamCandidateAttemptsQueryRepository;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.exam.StudentExamSessionSummaryResponse;
 import com.sep.vox.application.response.input.exam.StudentExamSummaryResponse;
+import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
-import com.sep.vox.domain.model.exam.ExamKind;
+import com.sep.vox.domain.model.exam.ExamPaper;
 import com.sep.vox.domain.model.exam.ExamSchedule;
 import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
@@ -30,7 +32,7 @@ import com.sep.vox.domain.repository.ExamScheduleRepository;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
 
 @Service
-public class ViewMyExamsUseCase implements IUseCase<Void, List<StudentExamSummaryResponse>> {
+public class ViewMyExamsUseCase implements IUseCase<ViewMyExamsQuery, PageResult<StudentExamSummaryResponse>> {
 
     private final ExamCandidateRepository examCandidateRepository;
     private final ExamRepository examRepository;
@@ -55,35 +57,86 @@ public class ViewMyExamsUseCase implements IUseCase<Void, List<StudentExamSummar
     }
 
     @Override
-    public List<StudentExamSummaryResponse> execute(Void input) {
+    public PageResult<StudentExamSummaryResponse> execute(ViewMyExamsQuery input) {
         var now = Instant.now();
         var studentId = userContextPort.getCurrentAuthenticatedUserId();
         var candidates = examCandidateRepository.findByStudentId(studentId);
-        var attemptsByCandidateId = groupAttemptsByCandidateId(candidates);
         var examsById = new HashMap<>(examRepository.findByIdIn(candidates.stream()
             .map(candidate -> candidate.getExamId())
             .distinct()
-            .toList()).stream().collect(java.util.stream.Collectors.toMap(exam -> exam.getId(), exam -> exam)));
+            .toList()).stream().collect(Collectors.toMap(exam -> exam.getId(), exam -> exam)));
         var schedulesById = new HashMap<>(examScheduleRepository.findByIdIn(
-            candidates.stream().map(candidate -> candidate.getScheduleId()).filter(java.util.Objects::nonNull).distinct().toList()
-        ).stream().collect(java.util.stream.Collectors.toMap(schedule -> schedule.getId(), schedule -> schedule)));
+            candidates.stream().map(candidate -> candidate.getScheduleId()).filter(Objects::nonNull).distinct().toList()
+        ).stream().collect(Collectors.toMap(schedule -> schedule.getId(), schedule -> schedule)));
+
+        var rows = candidates.stream()
+            .map(candidate -> toRow(candidate, examsById.get(candidate.getExamId()),
+                schedulesById.get(candidate.getScheduleId()), now))
+            .filter(Objects::nonNull)
+            .filter(row -> input.kind() == null || row.exam().getKind() == input.kind())
+            .filter(row -> input.status() == null || input.status().equals(row.derivedStatus()))
+            .sorted(orderBy(input.sortDescending()))
+            .toList();
+
+        var pageRows = rows.stream()
+            .skip((long) input.page() * input.size())
+            .limit(input.size())
+            .toList();
+        var content = toResponses(pageRows, now);
+        var totalPages = (int) Math.ceil(rows.size() / (double) input.size());
+
+        return new PageResult<>(content, input.page(), input.size(), rows.size(), totalPages);
+    }
+
+    /**
+     * Học sinh chỉ được thấy bài thi đã thực sự xếp lịch xong: kỳ thi còn DRAFT là giáo viên chưa
+     * bấm SCHEDULE, còn thí sinh chưa có ca (hoặc ca chưa publish/đã dời/đã xoá) thì lịch của em đó
+     * vẫn đang được sắp. CANCELLED vẫn giữ lại để học sinh biết kỳ thi đã bị huỷ.
+     */
+    private Row toRow(ExamCandidate candidate, Exam exam, ExamSchedule schedule, Instant now) {
+        if (exam == null || exam.getStatus() == ExamStatus.DRAFT) {
+            return null;
+        }
+        if (candidate.getScheduleId() == null || schedule == null || schedule.getStatus() == null
+                || !schedule.getStatus().isVisibleToStudent()) {
+            return null;
+        }
+
+        return new Row(
+            candidate,
+            exam,
+            schedule,
+            StudentExamViewSupport.examDateInstantOf(schedule, exam.getOpenAt()),
+            StudentExamViewSupport.statusOf(exam, schedule, now)
+        );
+    }
+
+    private static Comparator<Row> orderBy(boolean descending) {
+        // Bài chưa có ngày thi luôn xếp cuối ở cả hai chiều -- đảo chiều mà kéo chúng lên đầu thì
+        // danh sách mở ra toàn dòng trống.
+        Comparator<Instant> byInstant = descending ? Comparator.reverseOrder() : Comparator.naturalOrder();
+        return Comparator.comparing((Row row) -> row.examDate(), Comparator.nullsLast(byInstant));
+    }
+
+    /**
+     * Lượt thi và đề chỉ cần cho đúng trang đang trả về, nên nạp sau khi đã lọc/phân trang thay vì
+     * nạp cho toàn bộ bài thi của học sinh.
+     */
+    private List<StudentExamSummaryResponse> toResponses(List<Row> rows, Instant now) {
+        var attemptsByCandidateId = groupAttemptsByCandidateId(rows.stream().map(row -> row.candidate()).toList());
         var papersById = new HashMap<>(examPaperRepository.findByIdIn(
-            candidates.stream().map(candidate -> candidate.getAssignedPaperId()).filter(java.util.Objects::nonNull).distinct().toList()
-        ).stream().collect(java.util.stream.Collectors.toMap(paper -> paper.getId(), paper -> paper)));
+            rows.stream().map(row -> row.candidate().getAssignedPaperId()).filter(Objects::nonNull).distinct().toList()
+        ).stream().collect(Collectors.toMap(paper -> paper.getId(), paper -> paper)));
 
-        return candidates.stream()
-            .map(candidate -> {
-                var exam = examsById.get(candidate.getExamId());
-                var schedule = schedulesById.get(candidate.getScheduleId());
-                var assignedPaper = papersById.get(candidate.getAssignedPaperId());
-                if (exam == null) {
-                    return null;
-                }
-
+        return rows.stream()
+            .map(row -> {
+                var candidate = row.candidate();
+                var exam = row.exam();
+                var schedule = row.schedule();
+                ExamPaper assignedPaper = papersById.get(candidate.getAssignedPaperId());
                 var attempts = attemptsByCandidateId.getOrDefault(candidate.getId(), List.of());
                 var attemptsUsed = countAttemptsTowardLimit(attempts);
                 var entryAvailability = resolveEntryAvailability(exam, candidate, schedule, now, attemptsUsed);
-                var sessions = toSessionSummaries(attempts);
 
                 return new StudentExamSummaryResponse(
                     exam.getId(),
@@ -92,19 +145,25 @@ public class ViewMyExamsUseCase implements IUseCase<Void, List<StudentExamSummar
                     exam.getDescription(),
                     durationMinutesOf(assignedPaper == null ? null : assignedPaper.getTimeDurationSeconds(), schedule),
                     StudentExamViewSupport.examDateOf(schedule, exam.getOpenAt()),
-                    StudentExamViewSupport.statusOf(exam, schedule, now),
+                    row.derivedStatus(),
                     exam.getKind() == null ? null : exam.getKind().name(),
                     exam.isRequiresOtp(),
-                    sessions,
+                    toSessionSummaries(attempts),
                     exam.getMaxAttempt(),
                     attemptsUsed,
                     entryAvailability.canEnter(),
                     entryAvailability.message()
                 );
             })
-            .filter(java.util.Objects::nonNull)
-            .sorted(Comparator.comparing((StudentExamSummaryResponse response) -> response.examDate(), Comparator.nullsLast(Comparator.naturalOrder())))
             .toList();
+    }
+
+    private record Row(
+        ExamCandidate candidate,
+        Exam exam,
+        ExamSchedule schedule,
+        Instant examDate,
+        String derivedStatus) {
     }
 
     private Map<java.util.UUID, List<ExamAttemptSummary>> groupAttemptsByCandidateId(List<ExamCandidate> candidates) {
@@ -173,13 +232,8 @@ public class ViewMyExamsUseCase implements IUseCase<Void, List<StudentExamSummar
             return new EntryAvailability(false, "Bạn chưa được gán đề thi.");
         }
 
-        if (exam.getKind() == ExamKind.CLASS_TEST || !exam.isRequiresOtp()) {
-            if (exam.getStatus() != ExamStatus.IN_PROGRESS) {
-                return new EntryAvailability(false, "Bài kiểm tra chưa được giáo viên mở.");
-            }
-            return new EntryAvailability(true, null);
-        }
-
+        // Không còn nhánh tắt riêng cho bài trên lớp: bài trên lớp giờ cũng thi trong phòng có
+        // giám khảo và ca thi thật, nên đi chung đường kiểm tra với kỳ thi tập trung.
         if (!ExamCandidateStatusSupport.isAttended(candidate.getStatus())) {
             return new EntryAvailability(false, "Bạn chưa được điểm danh có mặt, vui lòng liên hệ giám thị.");
         }

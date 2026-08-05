@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.rest.exception;
 
+import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 
 import org.slf4j.Logger;
@@ -60,6 +61,19 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException e) {
         var error = new ErrorResponse(ILLEGAL_ARGUMENT_ERROR, e.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    /**
+     * Lưới an toàn: {@code DateTimeParseException} kế thừa {@code DateTimeException}, KHÔNG phải
+     * {@code IllegalArgumentException}, nên nếu không bắt riêng thì rơi xuống handler chung và client
+     * nhận 500 dù lỗi hoàn toàn do dữ liệu gửi lên. Các use case nên parse qua
+     * {@code InstantParser} để có message tiếng Việt nói rõ trường nào sai; nhánh này chỉ đỡ những
+     * chỗ chưa chuyển.
+     */
+    @ExceptionHandler(DateTimeParseException.class)
+    public ResponseEntity<ErrorResponse> handleDateTimeParse(DateTimeParseException e) {
+        var error = new ErrorResponse(ILLEGAL_ARGUMENT_ERROR, "Giá trị thời gian không đúng định dạng ISO-8601");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 

@@ -412,9 +412,10 @@ public class SchoolController {
         return viewSchoolRoomDetailsUseCase.execute(query);
     }
 
-    //Nhập Id chủa schoolId
+    // Nhập Id của schoolId. Mở cho cả TEACHER vì giáo viên cần chọn phòng khi tổ chức bài kiểm tra
+    // trên lớp; ViewSchoolRoomsUseCase tự chặn người gọi không thuộc trường được yêu cầu.
     @QueryMapping(name = "schoolRooms")
-    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public PageResult<SchoolRoomFromDto> schoolRooms(
             @Argument(name = "schoolId") UUID schoolId,
             @Argument(name = "page") Integer page,

@@ -21,7 +21,6 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.ExternalEventPublisherPort;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
-import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
@@ -134,7 +133,8 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
             persistInvalidBlockedResult(session);
             return null;
         }
-        if (exam.getKind() == ExamKind.CENTRALIZED && !ExamCandidateStatusSupport.isAttended(candidate.getStatus())) {
+        // Áp dụng cho mọi loại bài: cổng vào thi đã chặn người chưa điểm danh, đây là lớp chốt thứ hai.
+        if (!ExamCandidateStatusSupport.isAttended(candidate.getStatus())) {
             zeroScoreExamResultService.releaseZeroForEmptySession(session.getId());
             session.setStatus(ExamSessionStatus.GRADED);
             examSessionRepository.save(session);

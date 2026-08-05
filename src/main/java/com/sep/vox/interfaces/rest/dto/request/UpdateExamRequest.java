@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
+import java.util.List;
 import java.util.UUID;
 
 import com.sep.vox.domain.model.exam.ResultDecisionMethod;
@@ -21,6 +22,17 @@ public record UpdateExamRequest(
 
     ResultDecisionMethod resultDecisionMethod,
 
-    Boolean requiresOtp
+    Boolean requiresOtp,
+
+    /**
+     * Cấu hình giám sát, cùng dạng thô như lúc tạo ({@code ["CAMERA","SCREEN"]}).
+     *
+     * <p>Bỏ trống (null) = giữ nguyên cấu hình hiện tại, giống mọi trường khác của API này. Danh
+     * sách RỖNG mới là "tắt giám sát" -- lúc tạo thì null mang nghĩa đó, nhưng ở đây null đã có
+     * nghĩa "không đụng tới" nên phải tách ra.
+     */
+    List<String> requiredStreamTypes,
+
+    String streamTypePermission
 ) {
 }

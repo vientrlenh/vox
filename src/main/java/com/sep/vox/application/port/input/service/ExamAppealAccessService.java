@@ -43,6 +43,7 @@ public class ExamAppealAccessService {
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
+    private final ExamGradingAccessService examGradingAccessService;
 
     public ExamAppealAccessService(
             ExamResultAppealRepository examResultAppealRepository,
@@ -53,7 +54,8 @@ public class ExamAppealAccessService {
             UserRepository userRepository,
             SchoolUserRepository schoolUserRepository,
             UserRoleQueryRepository userRoleQueryRepository,
-            UserContextPort userContextPort) {
+            UserContextPort userContextPort,
+            ExamGradingAccessService examGradingAccessService) {
         this.examResultAppealRepository = examResultAppealRepository;
         this.examCandidateResultRepository = examCandidateResultRepository;
         this.examSessionRepository = examSessionRepository;
@@ -63,6 +65,7 @@ public class ExamAppealAccessService {
         this.schoolUserRepository = schoolUserRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
         this.userContextPort = userContextPort;
+        this.examGradingAccessService = examGradingAccessService;
     }
 
     /** Ngữ cảnh đã giải xong của một đơn phúc khảo — tránh mỗi use case tự nối lại chuỗi. */
@@ -125,6 +128,25 @@ public class ExamAppealAccessService {
             return;
         }
         throw new ForbiddenException("BẢO MẬT: Bạn không có quyền thao tác trên đơn phúc khảo của trường này.");
+    }
+
+    /**
+     * School admin cùng trường, HOẶC giáo viên tạo bài kiểm tra trên lớp đó.
+     *
+     * <p>Với bài trên lớp, nhà trường không tham gia chấm — nên chính chủ bài là người
+     * duyệt/từ chối đơn và tự nhận chấm phúc khảo. Luật CHAIR nằm ở
+     * {@link ExamGradingAccessService#isClassTestChair}, không suy lại ở đây.
+     */
+    public void authorizeSchoolAdminOrClassTestChair(AppealContext context, UUID currentUserId) {
+        if (isClassTestChair(context, currentUserId)) {
+            return;
+        }
+        authorizeSchoolAdmin(context, currentUserId);
+    }
+
+    public boolean isClassTestChair(AppealContext context, UUID currentUserId) {
+        return examGradingAccessService.isClassTestChair(
+            context.candidateResult().getExamId(), currentUserId);
     }
 
     /** Chính chủ bài thi. Dùng cho nộp đơn. */

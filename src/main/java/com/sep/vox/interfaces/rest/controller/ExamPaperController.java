@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.sep.vox.application.port.input.command.CreateExamPaperCommand;
 import com.sep.vox.application.port.input.command.DeleteExamPaperCommand;
 import com.sep.vox.application.port.input.usecase.exampaper.CreateExamPaperUseCase;
 import com.sep.vox.application.port.input.usecase.exampaper.DeleteExamPaperUseCase;
@@ -29,6 +28,7 @@ import com.sep.vox.interfaces.rest.dto.request.UpdateExamPaperItemRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateExamPaperSectionRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateExamPaperStatusRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
+import com.sep.vox.interfaces.rest.mapper.CreateExamPaperCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.UpdateExamPaperItemCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.UpdateExamPaperSectionCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.UpdateExamPaperStatusCommandMapper;
@@ -62,10 +62,8 @@ public class ExamPaperController {
     @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<ApiResponse<ExamPaperDto>> create(
             @PathVariable("examId") UUID examId,
-            @RequestBody(required = false) CreateExamPaperRequest request) {
-        var source = request == null ? null : request.source();
-        var copyFromPaperId = request == null ? null : request.copyFromPaperId();
-        var data = createExamPaperUseCase.execute(new CreateExamPaperCommand(examId, source, copyFromPaperId));
+            @Valid @RequestBody(required = false) CreateExamPaperRequest request) {
+        var data = createExamPaperUseCase.execute(CreateExamPaperCommandMapper.fromRequest(examId, request));
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Tạo đề thi thành công", data));
     }

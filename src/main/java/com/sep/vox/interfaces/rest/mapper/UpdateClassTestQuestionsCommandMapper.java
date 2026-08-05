@@ -20,6 +20,6 @@ public final class UpdateClassTestQuestionsCommandMapper {
                 ClassTestQuestionCommandMapper.fromRequests(section.questions())
             ))
             .toList();
-        return new UpdateClassTestQuestionsCommand(examId, sections);
+        return new UpdateClassTestQuestionsCommand(examId, request.paperId(), sections);
     }
 }

@@ -48,7 +48,7 @@ public class ViewAssignableReviewersUseCase
         // tin về bài thi của trường khác.
         if (input.appealId() != null) {
             var context = examAppealAccessService.load(input.appealId());
-            examAppealAccessService.authorizeSchoolAdmin(context, currentUserId);
+            examAppealAccessService.authorizeSchoolAdminOrClassTestChair(context, currentUserId);
         }
         return examAppealQueryRepository.findAssignableReviewers(schoolId, input.appealId(), input.keyword());
     }

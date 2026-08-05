@@ -8,6 +8,17 @@ enum ExamDeliveryMode {
     LAB
 }
 
+enum ExamRequiredStreamType {
+    CAMERA
+    SCREEN
+    CAMERA_AND_SCREEN
+}
+
+enum ExamStreamTypePermission {
+    ANY
+    ALL
+}
+
 enum ExamStatus {
     DRAFT
     SCHEDULED
@@ -126,6 +137,13 @@ type ExamPaperItem {
     questionId: ID
     order: Int!
     weight: Float
+    """
+    Loại ô trong blueprint sinh ra câu này. null khi câu không sinh từ blueprint,
+    hoặc khi slot tương ứng đã bị xoá — cả hai trường hợp đều được phép gán câu tự do.
+    """
+    slotType: ExamBlueprintSlotType
+    """Tiêu chí rút câu của ô SELECTION; null với ô FIXED và câu không sinh từ blueprint."""
+    selectionSpec: QuestionSelectionSpec
     question: Question
 }
 
@@ -180,6 +198,8 @@ type Exam {
     closeAt: String
     assessmentPolicyId: ID
     requiresOtp: Boolean!
+    requiredStreamType: ExamRequiredStreamType
+    streamTypePermission: ExamStreamTypePermission
     papersLocked: Boolean
     createdAt: String
     updatedAt: String
@@ -299,6 +319,7 @@ type ExamScheduleProctor {
 type ExamSchedule {
     id: ID!
     examId: ID!
+    exam: Exam
     schoolRoomId: ID
     room: SchoolRoom
     startDate: String
@@ -483,6 +504,33 @@ type ExamItemEvaluationTurn {
     wordFeedback: String
 }
 
+"""
+Bằng chứng của bản chấm AI, giữ lại kể cả khi giáo viên đã chấm lại (lúc đó bản AI mang
+SUPERSEDED). Điểm và rationale hiển thị vẫn là của bản đang có hiệu lực ở cấp trên — khối
+này chỉ là NGỮ CẢNH, không phải phán quyết. `null` khi bài chưa từng có bản AI.
+
+Báo cáo phúc khảo `UNDER_REVIEW` (chưa công bố) không bao giờ lọt vào đây.
+"""
+type ExamItemAiEvaluationContext {
+    evaluationId: ID!
+    engineType: String
+    gradedByModel: String
+    promptVersion: String
+    overallConfidence: Float
+    requiresHumanReview: Boolean!
+    reviewReasonCode: String
+    markedInvalid: Boolean!
+    requiresRetake: Boolean!
+    evaluatedAt: String
+    feedbackSummary: String
+    "JSON string — EvaluationSignals"
+    signals: String
+    "JSON string — ValidityResult"
+    validity: String
+    "JSON string"
+    suggestions: String
+}
+
 type ExamItemEvaluationDetails {
     id: ID!
     responseId: ID!
@@ -504,7 +552,9 @@ type ExamItemEvaluationDetails {
     validity: String
     suggestions: String
     criteria: [ExamItemCriterionScore!]!
+    "Luôn lấy từ bản AI — chỉ bản AI mới sinh lượt nói, bản chấm tay không có turn nào."
     turns: [ExamItemEvaluationTurn!]!
+    ai: ExamItemAiEvaluationContext
 }
 
 type StudentExamResultSummary {

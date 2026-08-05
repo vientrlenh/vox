@@ -1,6 +1,5 @@
 package com.sep.vox.interfaces.rest.mapper;
 
-import com.sep.vox.application.port.input.command.ClassTestSectionCommand;
 import com.sep.vox.application.port.input.command.CreateClassTestCommand;
 import com.sep.vox.interfaces.rest.dto.request.CreateClassTestRequest;
 
@@ -16,19 +15,15 @@ public final class CreateClassTestCommandMapper {
             request.description(),
             request.openAt(),
             request.closeAt(),
-            request.sections() == null ? null : request.sections().stream()
-                .map(section -> new ClassTestSectionCommand(
-                    section.title(),
-                    section.instruction(),
-                    section.weight(),
-                    ClassTestQuestionCommandMapper.fromRequests(section.questions())
-                ))
-                .toList(),
-            request.existingBlueprintId(),
-            request.existingBlueprintVersionId(),
+            request.assessmentPolicyId(),
             request.maxAttempt(),
             request.examTimeDurationSecond(),
-            request.resultDecisionMethod()
+            request.resultDecisionMethod(),
+            request.requiredStreamTypes(),
+            request.streamTypePermission(),
+            request.deliveryMode(),
+            request.requiresOtp(),
+            request.schoolRoomId()
         );
     }
 }

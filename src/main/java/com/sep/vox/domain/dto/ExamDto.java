@@ -21,6 +21,8 @@ public record ExamDto(
     String closeAt,
     UUID assessmentPolicyId,
     boolean requiresOtp,
+    String requiredStreamType,
+    String streamTypePermission,
     Boolean papersLocked,
     String createdAt,
     String updatedAt,

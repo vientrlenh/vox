@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.sep.vox.application.port.input.usecase.examappeal.ApproveAndClaimExamAppealUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.ApproveExamAppealUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.AssignExamAppealReviewerUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.CreateExamAppealUseCase;
@@ -40,6 +41,7 @@ public class ExamAppealController {
 
     private final CreateExamAppealUseCase createExamAppealUseCase;
     private final ApproveExamAppealUseCase approveExamAppealUseCase;
+    private final ApproveAndClaimExamAppealUseCase approveAndClaimExamAppealUseCase;
     private final RejectExamAppealUseCase rejectExamAppealUseCase;
     private final AssignExamAppealReviewerUseCase assignExamAppealReviewerUseCase;
     private final WithdrawExamAppealUseCase withdrawExamAppealUseCase;
@@ -47,11 +49,13 @@ public class ExamAppealController {
     public ExamAppealController(
             CreateExamAppealUseCase createExamAppealUseCase,
             ApproveExamAppealUseCase approveExamAppealUseCase,
+            ApproveAndClaimExamAppealUseCase approveAndClaimExamAppealUseCase,
             RejectExamAppealUseCase rejectExamAppealUseCase,
             AssignExamAppealReviewerUseCase assignExamAppealReviewerUseCase,
             WithdrawExamAppealUseCase withdrawExamAppealUseCase) {
         this.createExamAppealUseCase = createExamAppealUseCase;
         this.approveExamAppealUseCase = approveExamAppealUseCase;
+        this.approveAndClaimExamAppealUseCase = approveAndClaimExamAppealUseCase;
         this.rejectExamAppealUseCase = rejectExamAppealUseCase;
         this.assignExamAppealReviewerUseCase = assignExamAppealReviewerUseCase;
         this.withdrawExamAppealUseCase = withdrawExamAppealUseCase;
@@ -78,7 +82,7 @@ public class ExamAppealController {
 
     @Operation(summary = "Duyệt đơn phúc khảo và đặt hạn xử lý")
     @PostMapping("/{appealId}/approve")
-    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<UUID>> approveAppeal(
             @PathVariable("appealId") UUID appealId,
             @Valid @RequestBody ApproveExamAppealRequest request) {
@@ -87,9 +91,18 @@ public class ExamAppealController {
         return ResponseEntity.ok(ApiResponse.success("Duyệt đơn phúc khảo thành công!", responseId));
     }
 
+    @Operation(summary = "Giáo viên phụ trách bài trên lớp duyệt đơn và tự nhận chấm trong một thao tác. "
+        + "Hạn xử lý mặc định T+3 lúc 17:00. Trả về id dòng phân công vừa mở.")
+    @PostMapping("/{appealId}/approve-and-claim")
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
+    public ResponseEntity<ApiResponse<UUID>> approveAndClaimAppeal(@PathVariable("appealId") UUID appealId) {
+        return ResponseEntity.ok(ApiResponse.success(
+            "Đã duyệt và nhận chấm phúc khảo!", approveAndClaimExamAppealUseCase.execute(appealId)));
+    }
+
     @Operation(summary = "Từ chối đơn phúc khảo (bắt buộc nêu lý do)")
     @PostMapping("/{appealId}/reject")
-    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<UUID>> rejectAppeal(
             @PathVariable("appealId") UUID appealId,
             @Valid @RequestBody RejectExamAppealRequest request) {
@@ -101,7 +114,7 @@ public class ExamAppealController {
     @Operation(summary = "Giao MỘT giáo viên chấm phúc khảo. Người đã từng chấm bài này bị từ chối, "
         + "trừ khi truyền `overrideReason` — lý do đó được ghi lại trên đơn.")
     @PostMapping("/{appealId}/reviewer")
-    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<UUID>> assignReviewer(
             @PathVariable("appealId") UUID appealId,
             @Valid @RequestBody AssignExamAppealReviewerRequest request) {

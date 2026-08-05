@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.examappeal;
 
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.UUID;
 import java.util.function.Function;
@@ -80,13 +81,14 @@ public class CreateExamAppealUseCase implements IUseCase<CreateExamAppealCommand
             throw new IllegalStateException(
                 "Mỗi kết quả chỉ được phúc khảo tối đa " + MAX_APPEAL_ROUNDS + " lần.");
         }
-        var paperItemIds = command.paperItemIds();
-        if (paperItemIds == null || paperItemIds.isEmpty()) {
-            throw new IllegalArgumentException("Phải chọn ít nhất một phần thi cần phúc khảo.");
-        }
-        var distinctPaperItemIds = new LinkedHashSet<>(paperItemIds);
-        if (distinctPaperItemIds.size() != paperItemIds.size()) {
-            throw new IllegalArgumentException("Không được chọn trùng phần thi.");
+        // Trùng phần thi là lỗi của client, phát hiện trước khi chạm DB.
+        var requested = command.paperItemIds();
+        LinkedHashSet<UUID> selected = null;
+        if (requested != null) {
+            selected = new LinkedHashSet<>(requested);
+            if (selected.size() != requested.size()) {
+                throw new IllegalArgumentException("Không được chọn trùng phần thi.");
+            }
         }
 
         // Điểm chấm lại được ghi theo response, nên phải chốt response ngay từ đầu.
@@ -95,9 +97,23 @@ public class CreateExamAppealUseCase implements IUseCase<CreateExamAppealCommand
             .stream()
             .filter(item -> item.getPaperItemId() != null)
             .collect(Collectors.toMap(
-                item -> item.getPaperItemId(), Function.identity(), (left, right) -> left));
-        if (!responsesByPaperItem.keySet().containsAll(distinctPaperItemIds)) {
-            throw new NotFoundException("Không tìm thấy câu trả lời của phần thi cần phúc khảo.");
+                item -> item.getPaperItemId(), Function.identity(), (left, right) -> left,
+                LinkedHashMap::new));   // giữ thứ tự response cho phần tự điền
+
+        final LinkedHashSet<UUID> distinctPaperItemIds;
+        if (selected == null || selected.isEmpty()) {
+            // Không chọn câu nào = phúc khảo toàn bài. Vẫn ghi exam_result_appeal_items cho
+            // từng câu: màn đối chiếu của quản trị trường lấy baselineScores + turns từ chính
+            // các dòng đó, bỏ đi là mất dữ liệu so sánh.
+            if (responsesByPaperItem.isEmpty()) {
+                throw new NotFoundException("Bài thi này không có câu trả lời nào để phúc khảo.");
+            }
+            distinctPaperItemIds = new LinkedHashSet<>(responsesByPaperItem.keySet());
+        } else {
+            distinctPaperItemIds = selected;
+            if (!responsesByPaperItem.keySet().containsAll(distinctPaperItemIds)) {
+                throw new NotFoundException("Không tìm thấy câu trả lời của phần thi cần phúc khảo.");
+            }
         }
 
         var now = Instant.now();

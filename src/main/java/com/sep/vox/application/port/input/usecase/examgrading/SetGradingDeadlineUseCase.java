@@ -64,6 +64,9 @@ public class SetGradingDeadlineUseCase implements IUseCase<SetGradingDeadlineCom
             .map(context -> context.schoolId())
             .distinct()
             .forEach(schoolId -> examGradingAccessService.authorizeSchoolAdmin(schoolId, currentUserId));
+        // Bài trên lớp không có hạn chấm hành chính — nhà trường không đặt hạn hộ giáo viên.
+        examGradingAccessService.rejectClassTestCoordination(
+            contexts.stream().map(context -> context.candidateResult().getId()).toList());
 
         var updated = contexts.stream()
             .map(context -> {

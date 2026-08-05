@@ -148,12 +148,11 @@ public class RecordPracticeAttemptEvaluationUseCase implements IUseCase<RecordPr
             if (sessionId == null) {
                 return;
             }
-            var session = practiceSessionRepository.findById(sessionId).orElse(null);
-            if (session == null) {
-                return;
-            }
-            session.setOverallScore(evaluationRepository.findAverageItemScoreBySessionId(sessionId));
-            practiceSessionRepository.save(session);
+            // MỘT câu UPDATE, không nạp entity rồi save lại -- xem chú thích dài ở
+            // SpringDataPracticeSessionRepository.refreshOverallScore. Tóm tắt: save() ghi đè
+            // cả dòng nên có thể xoá mất graded_seconds mà lượt nộp song song vừa cộng vào,
+            // và nó giữ khoá dòng tới cuối transaction dài này khiến claim() phải xếp hàng.
+            practiceSessionRepository.refreshOverallScore(sessionId);
         } catch (RuntimeException exception) {
             // Điểm đã chấm là dữ liệu chính; tổng hợp lại điểm phiên là phần phái sinh, lần
             // chấm sau bù được. Không để nó kéo đổ cả việc ghi bản chấm.

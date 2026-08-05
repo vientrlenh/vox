@@ -1,5 +1,7 @@
 package com.sep.vox.infrastructure.persistence.mapper.personalization;
 
+import java.util.UUID;
+
 import com.sep.vox.domain.model.personalization.TopicSuggestion;
 import com.sep.vox.infrastructure.persistence.entity.TopicSuggestionJpaEntity;
 
@@ -29,7 +31,15 @@ public final class TopicSuggestionMapper {
     public static TopicSuggestionJpaEntity toJpa(
             TopicSuggestion suggestion) {
         var entity = new TopicSuggestionJpaEntity(
-            suggestion.getId(),
+            // Sinh id ở đây khi tầng gọi để null. TopicSuggestionJpaEntity chỉ có @Id, KHÔNG
+            // có @GeneratedValue, nên persist() với id null thì Hibernate ném
+            // IdentifierGenerationException -- và TopicSuggestionService.refreshSuggestions
+            // đúng là truyền null. Nghĩa là TopicSuggestionRefreshJob chưa từng tạo được gợi ý
+            // nào: mỗi lượt chạy đều chết ở dòng save đầu tiên.
+            //
+            // Sinh ở tầng ánh xạ, cùng cách các adapter khác trong repo đang làm
+            // (PracticeItemResponseRepositoryImpl, TopicInterestScoreRepositoryImpl).
+            suggestion.getId() == null ? UUID.randomUUID() : suggestion.getId(),
             suggestion.getStudentId(),
             suggestion.getSuggestedTopicName(),
             suggestion.getKeyword(),

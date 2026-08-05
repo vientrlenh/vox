@@ -54,4 +54,9 @@ public class PracticeSessionRepositoryImpl implements PracticeSessionRepository 
             .map(PracticeSessionMapper::toDomain)
             .toList();
     }
+
+    @Override
+    public void refreshOverallScore(UUID sessionId) {
+        repository.refreshOverallScore(sessionId);
+    }
 }

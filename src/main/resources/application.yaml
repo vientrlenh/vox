@@ -200,6 +200,15 @@ practice:
 app:
   data-initializer:
     enabled: ${DATA_INITIALIZER:true}
+  practice:
+    # Chu kỳ quét phiên treo. Phiên chỉ được nhặt khi nhịp tim cũ hơn 3 phút (ân hạn cho rớt
+    # sóng -- app có cơ chế resume, đóng ngay khi mất kết nối là giết buổi đang diễn ra bình
+    # thường), nên tổng thời gian chờ = 3 phút + tối đa một chu kỳ.
+    #
+    # ĐANG ĐỂ 30s ĐỂ THỬ. Giá trị dùng thật nên là 60000: job chỉ là một truy vấn
+    # FOR UPDATE SKIP LOCKED trên phiên treo, nhưng 30s thì mỗi giờ chạy 120 lượt cho một
+    # việc mà 3 phút ân hạn đằng nào cũng chặn trên.
+    heartbeat-cleanup-ms: ${PRACTICE_HEARTBEAT_CLEANUP_MS:30000}
   personalization:
     generation:
       paper-target-question-count: ${PERSONALIZATION_PAPER_TARGET_QUESTION_COUNT:4}

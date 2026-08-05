@@ -23,4 +23,8 @@ public interface PracticeSessionRepository {
     PracticeSession save(PracticeSession session);
 
     List<PracticeSession> findStaleInProgress(Instant staleBefore);
+
+    /** Tính lại điểm phiên bằng một câu UPDATE -- KHÔNG nạp entity rồi save lại, vì save() ghi
+     * đè cả dòng và có thể xoá mất graded_seconds do lượt nộp song song vừa cộng vào. */
+    void refreshOverallScore(UUID sessionId);
 }

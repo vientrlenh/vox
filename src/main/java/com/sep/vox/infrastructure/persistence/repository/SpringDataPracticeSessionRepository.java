@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -118,6 +119,23 @@ public interface SpringDataPracticeSessionRepository
         FOR UPDATE SKIP LOCKED
         """, nativeQuery = true)
     List<PracticeSessionJpaEntity> findStaleInProgressForUpdate(@Param("staleBefore") Instant staleBefore);
+
+  
+    @Modifying
+    @Query(value = """
+        UPDATE practice_session
+        SET overall_score = (
+            SELECT AVG(evaluation.item_score)
+            FROM practice_item_response response
+            JOIN practice_item_evaluation evaluation
+              ON evaluation.practice_response_id = response.id
+            WHERE response.practice_session_id = :sessionId
+              AND response.question_complete = true
+              AND evaluation.marked_invalid = false
+        )
+        WHERE id = :sessionId
+        """, nativeQuery = true)
+    void refreshOverallScore(@Param("sessionId") UUID sessionId);
 
     @Query(value = """
         SELECT rubric.id AS rubricCriterionId,

@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.context.ApplicationEventPublisher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,6 +17,7 @@ import com.sep.vox.application.mapper.practicesession.SessionRowMapper;
 import com.sep.vox.application.port.input.command.EndPracticeSessionCommand;
 import com.sep.vox.application.port.input.service.InterestVectorService;
 import com.sep.vox.application.port.input.service.PracticeGradingFlushService;
+import com.sep.vox.application.port.input.service.PracticeSessionClosedHandler;
 import com.sep.vox.application.port.input.service.TopicOfferBackfillService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
@@ -28,14 +31,14 @@ import com.sep.vox.domain.service.personalization.SessionDiagnosisPolicy;
 @Service
 public class EndPracticeSessionUseCase implements IUseCase<EndPracticeSessionCommand, PracticeSession> {
 
+    private static final Logger LOGGER =
+        LoggerFactory.getLogger(EndPracticeSessionUseCase.class);
+
     private final PracticeSessionRepository practiceSessionRepository;
     private final PracticeSessionQueryRepository practiceSessionQueryRepository;
     private final PracticeItemEvaluationRepository practiceItemEvaluationRepository;
     private final PracticeGradingFlushService gradingFlushService;
-    private final InterestVectorService interestVectorService;
-    private final TopicOfferBackfillService topicOfferBackfillService;
-    private final JsonSerializationPort jsonSerializationPort;
-    private final ApplicationEventPublisher applicationEventPublisher;
+    private final PracticeSessionClosedHandler sessionClosedHandler;
     private final UserContextPort userContextPort;
 
     public EndPracticeSessionUseCase(
@@ -43,19 +46,13 @@ public class EndPracticeSessionUseCase implements IUseCase<EndPracticeSessionCom
             PracticeSessionQueryRepository practiceSessionQueryRepository,
             PracticeItemEvaluationRepository practiceItemEvaluationRepository,
             PracticeGradingFlushService gradingFlushService,
-            InterestVectorService interestVectorService,
-            TopicOfferBackfillService topicOfferBackfillService,
-            JsonSerializationPort jsonSerializationPort,
-            ApplicationEventPublisher applicationEventPublisher,
+            PracticeSessionClosedHandler sessionClosedHandler,
             UserContextPort userContextPort) {
         this.practiceSessionRepository = practiceSessionRepository;
         this.practiceSessionQueryRepository = practiceSessionQueryRepository;
         this.practiceItemEvaluationRepository = practiceItemEvaluationRepository;
         this.gradingFlushService = gradingFlushService;
-        this.interestVectorService = interestVectorService;
-        this.topicOfferBackfillService = topicOfferBackfillService;
-        this.jsonSerializationPort = jsonSerializationPort;
-        this.applicationEventPublisher = applicationEventPublisher;
+        this.sessionClosedHandler = sessionClosedHandler;
         this.userContextPort = userContextPort;
     }
 
@@ -102,33 +99,16 @@ public class EndPracticeSessionUseCase implements IUseCase<EndPracticeSessionCom
             Instant.now(),
             practiceItemEvaluationRepository.findAverageItemScoreBySessionId(sessionId)
         ));
-        var row = practiceSessionQueryRepository.findSessionRowById(sessionId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên luyện."));
-        interestVectorService.recordSessionOutcome(
-            studentId,
-            row.getChosenPracticeTopicId(),
-            sessionId,
-            row.getOrigin(),
-            diagnosis,
-            "COMPLETED".equals(status),
-            offeredTopicIds(row.getOfferedTopicIdsJson(), "current"),
-            offeredTopicIds(row.getOfferedTopicIdsJson(), "previous")
-        );
-        // Bổ sung chủ đề chạy NỀN sau MỖI phiên, không đợi danh sách tụt xuống dưới 3.
-        //
-        // Vì sao: điều kiện cũ "thưa thì mới sinh" buộc học sinh phải luyện CẠN một chủ đề
-        // chán trước khi thấy chủ đề khác -- chủ đề chỉ rời danh sách khi hết câu hỏi. Với
-        // một buổi vừa bị chấm là BORED thì đó đúng là điều tệ nhất có thể làm.
-        //
-        // Chạy sau recordSessionOutcome là cố ý: điểm quan tâm vừa cập nhật xong (chủ đề vừa
-        // luyện lên hoặc xuống, chủ đề bị bỏ qua bị hạ), nên lượt đề xuất này nhìn thấy bức
-        // tranh mới nhất thay vì bức tranh trước buổi học.
-        //
-        // KHÔNG xoá chủ đề nào: practice_topic dùng chung cho mọi học sinh, xoá là làm hỏng
-        // của người khác. Việc "bớt" đã có cơ chế riêng theo từng học sinh -- điểm quan tâm
-        // thấp thì tụt hạng, và chủ đề đã lưu vẫn giữ nguyên trong mySavedTopics.
-        topicOfferBackfillService.backfillAsync(studentId);
-        applicationEventPublisher.publishEvent(new PracticeSessionEndedEvent(studentId, sessionId));
+        // Phần "học từ buổi vừa rồi" nằm chung với đường job dọn -- xem
+        // PracticeSessionClosedHandler. Để riêng ở đây thì phiên bị job đóng (đa số, vì học
+        // sinh thường chỉ đóng app) sẽ không cập nhật điểm quan tâm và không sinh chủ đề mới.
+        try {
+            sessionClosedHandler.afterClosed(studentId, sessionId, status, diagnosis);
+        } catch (RuntimeException exception) {
+            // Phiên ĐÃ đóng xong ở trên; phần ghi nhận phía sau hỏng thì không được làm hỏng
+            // cả yêu cầu kết thúc phiên của học sinh. Bắt ở đây, ngoài ranh giới REQUIRES_NEW.
+            LOGGER.warn("Ghi nhận sau khi kết thúc phiên {} thất bại.", sessionId, exception);
+        }
         return PracticeSessionResponseMapper.toResponse(
             SessionRowMapper.toDto(
                 practiceSessionQueryRepository.findSessionRow(sessionId, studentId).orElse(null)
@@ -142,9 +122,4 @@ public class EndPracticeSessionUseCase implements IUseCase<EndPracticeSessionCom
         }
     }
 
-    private List<UUID> offeredTopicIds(String json, String field) {
-        return jsonSerializationPort.toStringListField(json, field).stream()
-            .map(UUID::fromString)
-            .toList();
-    }
 }

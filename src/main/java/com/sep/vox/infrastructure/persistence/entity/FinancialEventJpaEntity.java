@@ -51,7 +51,7 @@ public class FinancialEventJpaEntity {
     @Column(name = "payment_method", nullable = false, updatable = false, length = 20, check = {
         @CheckConstraint(
             name = "chk_financial_event_payment_method_valid",
-            constraint = "payment_method IN ('PAYOS', 'MANUAL')"
+            constraint = "payment_method IN ('PAYOS', 'MANUAL', 'SEPAY')"
         )
     })
     private String paymentMethod;

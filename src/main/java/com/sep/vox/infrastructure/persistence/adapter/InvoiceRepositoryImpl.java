@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.subscription.Invoice;
 import com.sep.vox.domain.model.subscription.InvoiceStatus;
+import com.sep.vox.domain.model.subscription.PaymentMethod;
 import com.sep.vox.domain.repository.InvoiceRepository;
 import com.sep.vox.infrastructure.persistence.mapper.InvoiceMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataInvoiceRepository;
@@ -54,8 +55,10 @@ public class InvoiceRepositoryImpl implements InvoiceRepository {
     }
 
     @Override
-    public Optional<Invoice> findByPayosOrderCode(Long payosOrderCode) {
-        return springDataInvoiceRepository.findByPayosOrderCode(payosOrderCode).map(InvoiceMapper::toDomain);
+    public Optional<Invoice> findByPaymentProviderAndProviderOrderRef(PaymentMethod paymentProvider, String providerOrderRef) {
+        return springDataInvoiceRepository
+            .findByPaymentProviderAndProviderOrderRef(paymentProvider.name(), providerOrderRef)
+            .map(InvoiceMapper::toDomain);
     }
 
     @Override

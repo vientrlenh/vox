@@ -17,7 +17,8 @@ public final class BuyTokensCommandMapper {
             request.subscriptionId(),
             request.items().stream()
                 .map(item -> new TokenPurchaseItemInput(item.quotaType(), item.quantity()))
-                .toList()
+                .toList(), 
+            request.paymentMethod()
         );
     }
 }

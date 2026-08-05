@@ -1,4 +1,4 @@
-package com.sep.vox.application.port.input.usecase.subscription;
+package com.sep.vox.application.port.input.service;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -37,10 +37,11 @@ import com.sep.vox.domain.repository.TokenPurchaseItemRepository;
 import com.sep.vox.domain.repository.TokenPurchaseRepository;
 
 // Logic "chốt" kết quả thanh toán 1 invoice (PAID -> approve subscription/renew/finalize token purchase,
-// hoặc FAILED), dùng chung cho cả webhook PayOS (HandlePayOSWebhookUseCase) lẫn luồng đồng bộ theo yêu cầu
-// (SyncInvoicePaymentStatusUseCase) và job quét định kỳ, để business logic chỉ nằm ở đúng 1 chỗ.
+// hoặc FAILED). Không phụ thuộc cổng thanh toán nào: dùng chung cho callback của mọi provider
+// (PayOSWebhookHandler, SePayIpnHandler), luồng đồng bộ theo yêu cầu FE (SyncInvoicePaymentStatusUseCase)
+// và job quét định kỳ — để business logic chỉ nằm ở đúng 1 chỗ.
 @Service
-public class PayOSInvoiceSettlementService {
+public class InvoiceSettlementService {
 
     private final InvoiceRepository invoiceRepository;
     private final SubscriptionRequestRepository subscriptionRequestRepository;
@@ -51,9 +52,10 @@ public class PayOSInvoiceSettlementService {
     private final TokenPurchaseRepository tokenPurchaseRepository;
     private final TokenPurchaseItemRepository tokenPurchaseItemRepository;
     private final FinancialEventRepository financialEventRepository;
+    private final SubscriptionPlanResolver subscriptionPlanResolver;
     private final EventPublisherPort eventPublisherPort;
 
-    public PayOSInvoiceSettlementService(
+    public InvoiceSettlementService(
             InvoiceRepository invoiceRepository,
             SubscriptionRequestRepository subscriptionRequestRepository,
             SchoolSubscriptionRepository schoolSubscriptionRepository,
@@ -62,7 +64,8 @@ public class PayOSInvoiceSettlementService {
             SubscriptionQuotaRepository subscriptionQuotaRepository,
             TokenPurchaseRepository tokenPurchaseRepository,
             TokenPurchaseItemRepository tokenPurchaseItemRepository,
-            FinancialEventRepository financialEventRepository,
+            FinancialEventRepository financialEventRepository, 
+            SubscriptionPlanResolver subscriptionPlanResolver, 
             EventPublisherPort eventPublisherPort) {
         this.invoiceRepository = invoiceRepository;
         this.subscriptionRequestRepository = subscriptionRequestRepository;
@@ -72,7 +75,8 @@ public class PayOSInvoiceSettlementService {
         this.subscriptionQuotaRepository = subscriptionQuotaRepository;
         this.tokenPurchaseRepository = tokenPurchaseRepository;
         this.tokenPurchaseItemRepository = tokenPurchaseItemRepository;
-        this.financialEventRepository = financialEventRepository;
+        this.financialEventRepository = financialEventRepository; 
+        this.subscriptionPlanResolver = subscriptionPlanResolver;
         this.eventPublisherPort = eventPublisherPort;
     }
 
@@ -112,13 +116,19 @@ public class PayOSInvoiceSettlementService {
         invoice.setStatus(InvoiceStatus.PAID);
         invoice.setPaidAt(now);
 
+        // Ghi sổ theo đúng cổng đã thu tiền cho hóa đơn này, không mặc định PayOS: financial_event
+        // là nguồn để đối soát ngược với dashboard của từng cổng, gắn sai nhãn thì mọi giao dịch
+        // SePay sẽ nằm lẫn trong nhóm PayOS và không tra ra được.
+        var paymentProvider = invoice.getPaymentProvider();
+
         if (invoice.getSourceType() == InvoiceSourceType.SUBSCRIPTION_REQUEST) {
-            var savedSubscription = approveSubscriptionRequest(invoice.getSourceId(), now);
+            var savedSubscription = approveSubscriptionRequest(invoice.getSourceId(), paymentProvider, now);
             invoice.setSubscriptionId(savedSubscription.getId());
         } else if (invoice.getSourceType() == InvoiceSourceType.TOKEN_PURCHASE) {
-            finalizeTokenPurchase(invoice.getSourceId(), invoice.getSubscriptionId(), now);
+            finalizeTokenPurchase(invoice.getSourceId(), invoice.getSubscriptionId(), paymentProvider, now);
         } else if (invoice.getSourceType() == InvoiceSourceType.SUBSCRIPTION) {
-            var savedSubscription = renewSubscription(invoice.getSourceId(), invoice.getResolvedPlanId(), now);
+            var savedSubscription = renewSubscription(
+                invoice.getSourceId(), invoice.getResolvedPlanId(), paymentProvider, now);
             invoice.setSubscriptionId(savedSubscription.getId());
         }
 
@@ -130,7 +140,7 @@ public class PayOSInvoiceSettlementService {
         ));
     }
 
-    private SchoolSubscription approveSubscriptionRequest(UUID requestId, Instant now) {
+    private SchoolSubscription approveSubscriptionRequest(UUID requestId, PaymentMethod paymentProvider, Instant now) {
         var request = subscriptionRequestRepository.findById(requestId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy yêu cầu"));
         if (request.getStatus() != RequestStatus.PENDING) {
@@ -176,13 +186,14 @@ public class PayOSInvoiceSettlementService {
             : FinancialEventType.SUB_PURCHASED;
         financialEventRepository.save(new FinancialEvent(
             request.getSchoolId(), savedSubscription.getId(), eventType,
-            request.getAmount(), "VND", PaymentMethod.PAYOS, null, null, now
+            request.getAmount(), "VND", paymentProvider, null, null, now
         ));
 
         return savedSubscription;
     }
 
-    private SchoolSubscription renewSubscription(UUID subscriptionId, UUID resolvedPlanId, Instant now) {
+    private SchoolSubscription renewSubscription(
+            UUID subscriptionId, UUID resolvedPlanId, PaymentMethod paymentProvider, Instant now) {
         var current = schoolSubscriptionRepository.findById(subscriptionId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói đăng ký"));
         if (current.getStatus() != SubscriptionStatus.ACTIVE) {
@@ -191,16 +202,15 @@ public class PayOSInvoiceSettlementService {
         }
 
         // Dùng ĐÚNG plan đã chốt giá lúc tạo invoice/payment link (CreatePaymentLinkForRenewalUseCase),
-        // không resolve lại PlanReplacementResolver ở đây — nếu resolve lại, admin đổi replacedByPlanId
-        // giữa lúc tạo invoice và lúc PayOS xác nhận thanh toán có thể khiến trường bị tính tiền theo 1
-        // plan nhưng lại được cấp quota/hạn theo plan khác. resolvedPlanId chỉ null cho invoice cũ tạo
-        // trước khi field này tồn tại — fallback resolve lại để không vỡ luồng cũ.
+        // không resolve lại chuỗi thay thế ở đây — nếu resolve lại, admin đổi replacedByPlanId giữa
+        // lúc tạo invoice và lúc cổng thanh toán xác nhận có thể khiến trường bị tính tiền theo 1
+        // plan nhưng lại được cấp quota/hạn theo plan khác. resolvedPlanId chỉ null cho invoice cũ
+        // tạo trước khi field này tồn tại — fallback resolve lại để không vỡ luồng cũ.
         var plan = resolvedPlanId != null
             ? subscriptionPlanRepository.findById(resolvedPlanId)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"))
-            : PlanReplacementResolver.resolveActive(subscriptionPlanRepository,
-                subscriptionPlanRepository.findById(current.getPlanId())
-                    .orElseThrow(() -> new NotFoundException("Không tìm thấy gói")));
+            : subscriptionPlanResolver.resolveActivePlan(subscriptionPlanRepository.findById(current.getPlanId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy gói")));
 
         current.setStatus(SubscriptionStatus.EXPIRED);
         schoolSubscriptionRepository.save(current);
@@ -228,13 +238,14 @@ public class PayOSInvoiceSettlementService {
 
         financialEventRepository.save(new FinancialEvent(
             current.getSchoolId(), savedSubscription.getId(), FinancialEventType.SUB_RENEWED,
-            plan.getPricePerYear(), "VND", PaymentMethod.PAYOS, null, null, now
+            plan.getPricePerYear(), "VND", paymentProvider, null, null, now
         ));
 
         return savedSubscription;
     }
 
-    private void finalizeTokenPurchase(UUID purchaseId, UUID subscriptionId, Instant now) {
+    private void finalizeTokenPurchase(
+            UUID purchaseId, UUID subscriptionId, PaymentMethod paymentProvider, Instant now) {
         var purchase = tokenPurchaseRepository.findById(purchaseId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn mua token"));
         if (purchase.getStatus() != PurchaseStatus.PENDING) {
@@ -258,7 +269,8 @@ public class PayOSInvoiceSettlementService {
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói đăng ký"));
         financialEventRepository.save(new FinancialEvent(
             subscription.getSchoolId(), subscriptionId, FinancialEventType.TOKEN_PURCHASED,
-            purchase.getTotalAmount(), "VND", PaymentMethod.PAYOS, null, null, now
+            purchase.getTotalAmount(), "VND", paymentProvider, null, null, now
         ));
     }
+
 }

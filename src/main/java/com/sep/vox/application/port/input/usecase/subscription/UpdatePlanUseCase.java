@@ -45,10 +45,10 @@ public class UpdatePlanUseCase implements IUseCase<UpdatePlanCommand, Subscripti
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
 
         // Gói đang có trường ACTIVE thì bị khóa hoàn toàn, kể cả field không liên quan tiền/quota:
-        // renewal (CreatePaymentLinkForRenewalUseCase / PayOSInvoiceSettlementService) đọc giá và
+        // renewal (CreatePaymentLinkForRenewalUseCase / InvoiceSettlementService) đọc giá và
         // quota LIVE từ đúng plan này tại thời điểm gia hạn, không qua snapshot nào — sửa tại chỗ
         // sẽ âm thầm đổi giá/quota cho trường đang gia hạn mà không qua bước xác nhận
-        // (PlanReplacementResolver chỉ kích hoạt khi đổi SANG plan khác, tức đổi id, không phải sửa
+        // (chuỗi replacedByPlanId chỉ kích hoạt khi đổi SANG plan khác, tức đổi id, không phải sửa
         // tại chỗ). Muốn đổi gì thì phải archive gói này và tạo gói mới (kèm replacedByPlanId).
         if (schoolSubscriptionRepository.existsActiveByPlanId(plan.getId())) {
             throw new IllegalStateException(

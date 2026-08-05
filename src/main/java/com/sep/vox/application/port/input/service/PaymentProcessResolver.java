@@ -1,25 +1,37 @@
 package com.sep.vox.application.port.input.service;
 
+import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
+
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.output.PaymentProcessPort;
+import com.sep.vox.domain.model.subscription.PaymentMethod;
 
-// Chọn đúng PaymentPort (PayOS, hoặc provider mới sau này) theo PaymentMethod, thay vì use case
-// inject thẳng 1 implementation cụ thể. Spring tự gom mọi bean implement PaymentPort vào List —
-// thêm provider mới chỉ cần thêm 1 class @Service implements PaymentPort, không phải sửa gì ở đây
-// hay ở các use case đang gọi resolve(...).
+// Chọn đúng adapter theo PaymentMethod, thay vì use case inject thẳng 1 implementation cụ thể.
+// Lập chỉ mục theo PaymentProcessPort.provider() chứ không theo tên bean dạng chuỗi: gõ sai tên
+// bean chỉ lộ ra lúc chạy, còn sai enum thì compiler bắt ngay. Thêm cổng mới = thêm 1 class
+// implements PaymentProcessPort, không phải sửa gì ở đây.
 @Service
 public class PaymentProcessResolver {
 
-    private final Map<String, PaymentProcessPort> paymentProcessers;
+    private final Map<PaymentMethod, PaymentProcessPort> paymentProcessors;
 
-    public PaymentProcessResolver(Map<String, PaymentProcessPort> paymentProcessers) {
-        this.paymentProcessers = paymentProcessers;
+    public PaymentProcessResolver(List<PaymentProcessPort> paymentProcessors) {
+        this.paymentProcessors = new EnumMap<>(PaymentMethod.class);
+        for (var processor : paymentProcessors) {
+            var existing = this.paymentProcessors.put(processor.provider(), processor);
+            if (existing != null) {
+                throw new IllegalStateException(
+                    "Có hai adapter cùng khai provider() = " + processor.provider() + ": "
+                        + existing.getClass().getName() + " và " + processor.getClass().getName());
+            }
+        }
     }
 
-    public PaymentProcessPort resolve(String selectedMethod) {
-        var port = paymentProcessers.get(selectedMethod);
+    public PaymentProcessPort resolve(PaymentMethod selectedMethod) {
+        var port = paymentProcessors.get(selectedMethod);
         if (port == null) {
             throw new IllegalArgumentException("Chưa hỗ trợ cổng thanh toán: " + selectedMethod);
         }

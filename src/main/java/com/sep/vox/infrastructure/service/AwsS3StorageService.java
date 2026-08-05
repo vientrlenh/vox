@@ -10,8 +10,8 @@ import org.springframework.stereotype.Service;
 import com.sep.vox.application.common.StoredFile;
 import com.sep.vox.application.common.UploadedFile;
 import com.sep.vox.application.port.output.StoragePort;
-import com.sep.vox.infrastructure.config.AwsS3StorageProperties;
 import com.sep.vox.infrastructure.exception.InfrastructureException;
+import com.sep.vox.infrastructure.properties.AwsS3StorageProperties;
 
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;

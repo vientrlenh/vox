@@ -56,6 +56,7 @@ import com.sep.vox.interfaces.rest.dto.request.AllocateQuotaRequest;
 import com.sep.vox.interfaces.rest.dto.request.BuyTokensRequest;
 import com.sep.vox.interfaces.rest.dto.request.ConsumeQuotaRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreatePlanRequest;
+import com.sep.vox.interfaces.rest.dto.request.PaymentMethodRequest;
 import com.sep.vox.interfaces.rest.dto.request.SubmitRequestRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 import com.sep.vox.interfaces.rest.mapper.AllocateQuotaCommandMapper;
@@ -160,15 +161,16 @@ public class SubscriptionController {
         return ResponseEntity.ok(ApiResponse.success("Xem trước gia hạn thành công", data));
     }
 
-    // PAYOS
     @PostMapping("/schools/{schoolId}/subscriptions/{id}/renew/payment-link")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<PaymentLinkDto>> createPaymentLinkForRenewal(
             @PathVariable UUID schoolId,
             @PathVariable UUID id,
-            @RequestParam(required = false) UUID acceptedPlanId) {
+            @RequestParam(required = false) UUID acceptedPlanId, 
+            @RequestBody @Valid PaymentMethodRequest request
+        ) {
         var data = createPaymentLinkForRenewalUseCase.execute(
-            new CreatePaymentLinkForRenewalCommand(schoolId, id, acceptedPlanId));
+            new CreatePaymentLinkForRenewalCommand(schoolId, id, acceptedPlanId, request.paymentMethod()));
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Tạo link thanh toán thành công", data));
     }
 
@@ -216,16 +218,14 @@ public class SubscriptionController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Mua token thành công", data));
     }
 
-    // PAYOS
     @PostMapping("/subscription-requests/{id}/payment-link")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<PaymentLinkDto>> createPaymentLinkForSubscriptionRequest(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<PaymentLinkDto>> createPaymentLinkForSubscriptionRequest(@PathVariable UUID id, @RequestBody @Valid PaymentMethodRequest request) {
         var data = createPaymentLinkForSubscriptionRequestUseCase.execute(
-            new CreatePaymentLinkForSubscriptionRequestCommand(id));
+            new CreatePaymentLinkForSubscriptionRequestCommand(id, request.paymentMethod()));
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Tạo link thanh toán thành công", data));
     }
 
-    // PAYOS
     @PostMapping("/schools/{schoolId}/token-purchases/payment-link")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<PaymentLinkDto>> createPaymentLinkForTokenPurchase(
@@ -235,12 +235,16 @@ public class SubscriptionController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Tạo link thanh toán thành công", data));
     }
 
-    // PAYOS — FE gọi khi PayOS redirect user về returnUrl/cancelUrl, vì PayOS không gọi webhook
+    // FE gọi khi cổng thanh toán redirect user về returnUrl/cancelUrl, vì cổng không gọi webhook
     // trong các trường hợp user tự hủy/không hoàn tất thanh toán trên checkout UI.
-    @PostMapping("/invoices/{orderCode}/sync-status")
+    //
+    // Định danh bằng invoiceId (không phải mã đơn phía cổng như trước): mã đơn chỉ duy nhất trong
+    // phạm vi một cổng nên không còn tra cứu được một mình. invoiceId đã có sẵn trong PaymentLinkDto
+    // mà FE nhận lúc tạo payment link.
+    @PostMapping("/invoices/{invoiceId}/sync-status")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<InvoiceDto>> syncInvoicePaymentStatus(@PathVariable Long orderCode) {
-        var data = syncInvoicePaymentStatusUseCase.execute(orderCode);
+    public ResponseEntity<ApiResponse<InvoiceDto>> syncInvoicePaymentStatus(@PathVariable UUID invoiceId) {
+        var data = syncInvoicePaymentStatusUseCase.execute(invoiceId);
         return ResponseEntity.ok(ApiResponse.success("Đồng bộ trạng thái hóa đơn thành công", data));
     }
 

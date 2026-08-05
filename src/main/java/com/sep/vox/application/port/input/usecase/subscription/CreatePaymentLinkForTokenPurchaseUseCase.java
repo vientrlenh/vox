@@ -104,7 +104,7 @@ public class CreatePaymentLinkForTokenPurchaseUseCase implements IUseCase<BuyTok
             ));
         }
 
-        var paymentMethod = PaymentMethod.resolve(command.paymentMethod());
+        var paymentMethod = PaymentMethod.resolveOnlineGateway(command.paymentMethod());
         var orderCode = System.currentTimeMillis() * 1000 + ThreadLocalRandom.current().nextInt(1000);
         // Năm trong số hóa đơn phải lấy từ chính invoiceDate, không phải Year.now(): Year.now() đọc
         // múi giờ của JVM, nên trên server UTC một hóa đơn tạo lúc 06:00 ngày 01/01 giờ VN sẽ mang

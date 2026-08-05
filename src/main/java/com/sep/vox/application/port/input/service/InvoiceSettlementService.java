@@ -116,13 +116,19 @@ public class InvoiceSettlementService {
         invoice.setStatus(InvoiceStatus.PAID);
         invoice.setPaidAt(now);
 
+        // Ghi sổ theo đúng cổng đã thu tiền cho hóa đơn này, không mặc định PayOS: financial_event
+        // là nguồn để đối soát ngược với dashboard của từng cổng, gắn sai nhãn thì mọi giao dịch
+        // SePay sẽ nằm lẫn trong nhóm PayOS và không tra ra được.
+        var paymentProvider = invoice.getPaymentProvider();
+
         if (invoice.getSourceType() == InvoiceSourceType.SUBSCRIPTION_REQUEST) {
-            var savedSubscription = approveSubscriptionRequest(invoice.getSourceId(), now);
+            var savedSubscription = approveSubscriptionRequest(invoice.getSourceId(), paymentProvider, now);
             invoice.setSubscriptionId(savedSubscription.getId());
         } else if (invoice.getSourceType() == InvoiceSourceType.TOKEN_PURCHASE) {
-            finalizeTokenPurchase(invoice.getSourceId(), invoice.getSubscriptionId(), now);
+            finalizeTokenPurchase(invoice.getSourceId(), invoice.getSubscriptionId(), paymentProvider, now);
         } else if (invoice.getSourceType() == InvoiceSourceType.SUBSCRIPTION) {
-            var savedSubscription = renewSubscription(invoice.getSourceId(), invoice.getResolvedPlanId(), now);
+            var savedSubscription = renewSubscription(
+                invoice.getSourceId(), invoice.getResolvedPlanId(), paymentProvider, now);
             invoice.setSubscriptionId(savedSubscription.getId());
         }
 
@@ -134,7 +140,7 @@ public class InvoiceSettlementService {
         ));
     }
 
-    private SchoolSubscription approveSubscriptionRequest(UUID requestId, Instant now) {
+    private SchoolSubscription approveSubscriptionRequest(UUID requestId, PaymentMethod paymentProvider, Instant now) {
         var request = subscriptionRequestRepository.findById(requestId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy yêu cầu"));
         if (request.getStatus() != RequestStatus.PENDING) {
@@ -180,13 +186,14 @@ public class InvoiceSettlementService {
             : FinancialEventType.SUB_PURCHASED;
         financialEventRepository.save(new FinancialEvent(
             request.getSchoolId(), savedSubscription.getId(), eventType,
-            request.getAmount(), "VND", PaymentMethod.PAYOS, null, null, now
+            request.getAmount(), "VND", paymentProvider, null, null, now
         ));
 
         return savedSubscription;
     }
 
-    private SchoolSubscription renewSubscription(UUID subscriptionId, UUID resolvedPlanId, Instant now) {
+    private SchoolSubscription renewSubscription(
+            UUID subscriptionId, UUID resolvedPlanId, PaymentMethod paymentProvider, Instant now) {
         var current = schoolSubscriptionRepository.findById(subscriptionId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói đăng ký"));
         if (current.getStatus() != SubscriptionStatus.ACTIVE) {
@@ -231,13 +238,14 @@ public class InvoiceSettlementService {
 
         financialEventRepository.save(new FinancialEvent(
             current.getSchoolId(), savedSubscription.getId(), FinancialEventType.SUB_RENEWED,
-            plan.getPricePerYear(), "VND", PaymentMethod.PAYOS, null, null, now
+            plan.getPricePerYear(), "VND", paymentProvider, null, null, now
         ));
 
         return savedSubscription;
     }
 
-    private void finalizeTokenPurchase(UUID purchaseId, UUID subscriptionId, Instant now) {
+    private void finalizeTokenPurchase(
+            UUID purchaseId, UUID subscriptionId, PaymentMethod paymentProvider, Instant now) {
         var purchase = tokenPurchaseRepository.findById(purchaseId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn mua token"));
         if (purchase.getStatus() != PurchaseStatus.PENDING) {
@@ -261,7 +269,7 @@ public class InvoiceSettlementService {
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói đăng ký"));
         financialEventRepository.save(new FinancialEvent(
             subscription.getSchoolId(), subscriptionId, FinancialEventType.TOKEN_PURCHASED,
-            purchase.getTotalAmount(), "VND", PaymentMethod.PAYOS, null, null, now
+            purchase.getTotalAmount(), "VND", paymentProvider, null, null, now
         ));
     }
 

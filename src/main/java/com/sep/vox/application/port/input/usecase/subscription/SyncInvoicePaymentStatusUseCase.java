@@ -47,9 +47,11 @@ public class SyncInvoicePaymentStatusUseCase implements IUseCase<UUID, InvoiceDt
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
-        // Hóa đơn MANUAL không có mã đơn phía cổng để hỏi trạng thái — bỏ qua bước đồng bộ.
+        // Hóa đơn thu ngoài hệ thống (MANUAL) không có cổng nào để hỏi trạng thái — bỏ qua bước
+        // đồng bộ thay vì để resolve() ném lỗi.
         if (invoice.getStatus() == InvoiceStatus.PENDING
                 && invoice.getPaymentProvider() != null
+                && invoice.getPaymentProvider().isOnlineGateway()
                 && invoice.getProviderOrderRef() != null) {
             var paymentProcessPort = paymentProcessResolver.resolve(invoice.getPaymentProvider());
             var remoteStatus = paymentProcessPort.getPaymentLinkStatus(invoice.getProviderOrderRef()).status();

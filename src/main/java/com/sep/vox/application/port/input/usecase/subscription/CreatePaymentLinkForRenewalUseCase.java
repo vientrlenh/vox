@@ -83,7 +83,7 @@ public class CreatePaymentLinkForRenewalUseCase implements IUseCase<CreatePaymen
         }
         plan = renewalPlan;
         
-        var paymentMethod = PaymentMethod.resolve(command.paymentMethod());
+        var paymentMethod = PaymentMethod.resolveOnlineGateway(command.paymentMethod());
         var now = Instant.now();
         // Năm trong số hóa đơn phải lấy từ chính invoiceDate, không phải Year.now(): Year.now() đọc
         // múi giờ của JVM, nên trên server UTC một hóa đơn tạo lúc 06:00 ngày 01/01 giờ VN sẽ mang

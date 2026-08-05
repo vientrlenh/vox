@@ -112,9 +112,13 @@ class InvoiceSettlementServiceTests {
     }
 
     private Invoice invoice(InvoiceSourceType sourceType, InvoiceStatus status) {
+        return invoice(sourceType, status, PaymentMethod.PAYOS);
+    }
+
+    private Invoice invoice(InvoiceSourceType sourceType, InvoiceStatus status, PaymentMethod paymentProvider) {
         return new Invoice(
             invoiceId, "INV-2026-ABCD1234", schoolId, subscriptionId, sourceType, sourceId,
-            LocalDate.of(2026, 8, 5), amount, status, PaymentMethod.PAYOS, "1754380800000", "link-id",
+            LocalDate.of(2026, 8, 5), amount, status, paymentProvider, "1754380800000", "link-id",
             "https://pay.test/checkout", null, null
         );
     }
@@ -148,6 +152,25 @@ class InvoiceSettlementServiceTests {
         });
     }
 
+    /** Trả về id của SubscriptionQuota sẽ nhận thêm token. */
+    private UUID givenPendingTokenPurchase() {
+        var quotaId = UUID.randomUUID();
+        when(tokenPurchaseRepository.findById(sourceId)).thenReturn(Optional.of(
+            new TokenPurchase(sourceId, subscriptionId, amount, PurchaseStatus.PENDING, Instant.now())
+        ));
+        when(tokenPurchaseItemRepository.findAllByPurchaseId(any())).thenReturn(List.of(
+            new TokenPurchaseItem(sourceId, QuotaType.GRADING, 50, new BigDecimal("1000"), amount)
+        ));
+        when(subscriptionQuotaRepository.findAllBySubscriptionId(subscriptionId)).thenReturn(List.of(
+            new SubscriptionQuota(quotaId, subscriptionId, QuotaType.GRADING, 100, 10)
+        ));
+        when(schoolSubscriptionRepository.findById(subscriptionId)).thenReturn(Optional.of(
+            new SchoolSubscription(subscriptionId, schoolId, planId, LocalDate.now(), LocalDate.now().plusDays(365),
+                SubscriptionStatus.ACTIVE, amount, null, Instant.now(), 0L)
+        ));
+        return quotaId;
+    }
+
     @Test
     void marksInvoicePaidAndActivatesSubscriptionOnSuccess() {
         var pending = invoice(InvoiceSourceType.SUBSCRIPTION_REQUEST, InvoiceStatus.PENDING);
@@ -179,6 +202,37 @@ class InvoiceSettlementServiceTests {
         assertThat(eventCaptor.getValue().getPaymentMethod()).isEqualTo(PaymentMethod.PAYOS);
 
         verify(eventPublisherPort).publish(any(InvoicePaidEvent.class));
+    }
+
+    /**
+     * financial_event là nguồn để đối soát ngược với dashboard của từng cổng, nên nó phải ghi đúng
+     * cổng đã thu tiền cho hóa đơn này. Trước đây chỗ này hardcode PAYOS, nghĩa là mọi giao dịch
+     * SePay sẽ nằm lẫn trong nhóm PayOS và không tra ra được.
+     */
+    @Test
+    void recordsTheGatewayThatActuallyCollectedTheMoney() {
+        var pending = invoice(InvoiceSourceType.SUBSCRIPTION_REQUEST, InvoiceStatus.PENDING, PaymentMethod.SEPAY);
+        lockedInvoiceIs(pending);
+        givenPendingSubscriptionRequest();
+
+        service.settle(pending, true);
+
+        var eventCaptor = ArgumentCaptor.forClass(FinancialEvent.class);
+        verify(financialEventRepository).save(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().getPaymentMethod()).isEqualTo(PaymentMethod.SEPAY);
+    }
+
+    @Test
+    void recordsTheGatewayForTokenPurchaseToo() {
+        var pending = invoice(InvoiceSourceType.TOKEN_PURCHASE, InvoiceStatus.PENDING, PaymentMethod.SEPAY);
+        lockedInvoiceIs(pending);
+        givenPendingTokenPurchase();
+
+        service.settle(pending, true);
+
+        var eventCaptor = ArgumentCaptor.forClass(FinancialEvent.class);
+        verify(financialEventRepository).save(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().getPaymentMethod()).isEqualTo(PaymentMethod.SEPAY);
     }
 
     /**
@@ -245,20 +299,7 @@ class InvoiceSettlementServiceTests {
         var pending = invoice(InvoiceSourceType.TOKEN_PURCHASE, InvoiceStatus.PENDING);
         lockedInvoiceIs(pending);
 
-        var quotaId = UUID.randomUUID();
-        when(tokenPurchaseRepository.findById(sourceId)).thenReturn(Optional.of(
-            new TokenPurchase(sourceId, subscriptionId, amount, PurchaseStatus.PENDING, Instant.now())
-        ));
-        when(tokenPurchaseItemRepository.findAllByPurchaseId(any())).thenReturn(List.of(
-            new TokenPurchaseItem(sourceId, QuotaType.GRADING, 50, new BigDecimal("1000"), amount)
-        ));
-        when(subscriptionQuotaRepository.findAllBySubscriptionId(subscriptionId)).thenReturn(List.of(
-            new SubscriptionQuota(quotaId, subscriptionId, QuotaType.GRADING, 100, 10)
-        ));
-        when(schoolSubscriptionRepository.findById(subscriptionId)).thenReturn(Optional.of(
-            new SchoolSubscription(subscriptionId, schoolId, planId, LocalDate.now(), LocalDate.now().plusDays(365),
-                SubscriptionStatus.ACTIVE, amount, null, Instant.now(), 0L)
-        ));
+        var quotaId = givenPendingTokenPurchase();
 
         service.settle(pending, true);
 

@@ -57,13 +57,16 @@ type PracticeTopicOffer {
     minutes: Int!
     rationale: String
     reasons: [String!]!
-    focusTags: [String!]!
 }
 
+"""
+Chỉ còn một rổ. BY_GOAL và BY_WEAKNESS đã bỏ cùng hồ sơ điểm yếu: xếp hạng chủ đề giờ dựa
+hoàn toàn vào sở thích, kho câu còn lại và mức khớp chương trình.
+
+Giữ lại enum (thay vì bỏ hẳn tham số) để client cũ gửi `bucket: FOR_YOU` không bị lỗi schema.
+"""
 enum TopicOfferBucket {
     FOR_YOU
-    BY_GOAL
-    BY_WEAKNESS
 }
 
 type PracticeDashboardStats {

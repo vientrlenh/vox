@@ -1,7 +1,6 @@
 package com.sep.vox.application.port.input.service;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -10,10 +9,9 @@ import com.sep.vox.domain.repository.FrameworkResultBandRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.model.framework.FrameworkResultBand;
 import com.sep.vox.domain.repository.personalization.LearnerProfileRepository;
-import com.sep.vox.domain.repository.personalization.LearnerWeaknessSnapshotRepository;
 
 /**
- * Minutes, trần thời lượng và focusTags cho topic offer -- gộp 1 chỗ vì có nhiều caller
+ * Minutes và trần thời lượng cho topic offer -- gộp 1 chỗ vì có nhiều caller
  * (BuildPracticePaperUseCase, ViewPracticeTopicOffersUseCase, SearchPracticeTopicsUseCase,
  * PickRandomTopicUseCase, TopicSuggestionService).
  *
@@ -32,26 +30,15 @@ public class PracticeTopicOfferEnrichmentService {
     /** Chỉ dùng khi bậc của phiên đã bị xoá khỏi khung -- xem {@link #bandOrder}. */
     private static final int DEFAULT_BAND_ORDER = 3;
 
-    private static final Map<String, String> CRITERION_LABELS = Map.of(
-        "GRAMMAR", "Ngữ pháp",
-        "VOCABULARY", "Từ vựng",
-        "COHERENCE", "Mạch lạc",
-        "PRONUNCIATION", "Phát âm",
-        "FLUENCY", "Trôi chảy"
-    );
-
     private final LearnerProfileRepository learnerProfileRepository;
-    private final LearnerWeaknessSnapshotRepository weaknessRepository;
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final FrameworkResultBandRepository frameworkResultBandRepository;
 
     public PracticeTopicOfferEnrichmentService(
             LearnerProfileRepository learnerProfileRepository,
-            LearnerWeaknessSnapshotRepository weaknessRepository,
             SchoolSubscriptionRepository schoolSubscriptionRepository,
             FrameworkResultBandRepository frameworkResultBandRepository) {
         this.learnerProfileRepository = learnerProfileRepository;
-        this.weaknessRepository = weaknessRepository;
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
         this.frameworkResultBandRepository = frameworkResultBandRepository;
     }
@@ -130,22 +117,4 @@ public class PracticeTopicOfferEnrichmentService {
         return minutes == null ? 0 : minutes;
     }
 
-    /** 1-2 tiêu chí yếu nhất, đã map sang nhãn tiếng Việt để hiển thị trực tiếp lên chip. */
-    public List<String> focusTagsForStudent(UUID studentId) {
-        return weaknessRepository.findFocusCriterionCodesOrderedByWeakness(studentId).stream()
-            .limit(2)
-            .map(code -> CRITERION_LABELS.getOrDefault(code, code))
-            .toList();
-    }
-
-    /** Mã tiêu chí yếu nhất của học sinh, hoặc null nếu chưa có dữ liệu weakness nào. */
-    public String weakestCriterion(UUID studentId) {
-        return weaknessRepository.findFocusCriterionCodesOrderedByWeakness(studentId).stream()
-            .findFirst()
-            .orElse(null);
-    }
-
-    public String criterionLabel(String code) {
-        return CRITERION_LABELS.getOrDefault(code, code);
-    }
 }

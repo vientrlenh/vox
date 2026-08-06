@@ -27,11 +27,6 @@ public class PracticeItemResponseRepositoryImpl implements PracticeItemResponseR
     }
 
     @Override
-    public UUID findStudentIdByResponseId(UUID practiceResponseId) {
-        return repository.findStudentIdByResponseId(practiceResponseId);
-    }
-
-    @Override
     public UUID findSessionIdByResponseId(UUID practiceResponseId) {
         return repository.findSessionIdByResponseId(practiceResponseId);
     }

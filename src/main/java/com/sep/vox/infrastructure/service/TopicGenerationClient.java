@@ -18,6 +18,8 @@ import org.springframework.stereotype.Service;
 
 import tools.jackson.databind.json.JsonMapper;
 
+import com.sep.vox.domain.service.personalization.TensePolicy;
+
 @Service
 public class TopicGenerationClient {
 
@@ -98,6 +100,7 @@ public class TopicGenerationClient {
                     node.path("name").asText(),
                     node.path("interest_dimension").asText(),
                     node.path("curriculum_group").asText(),
+                    node.path("temporal_affordance").asString(TensePolicy.AFFORDANCE_MIXED),
                     node.path("confidence").asDouble(),
                     node.path("reason_text").asText(),
                     node.path("evidence_type").asText(),
@@ -186,6 +189,7 @@ public class TopicGenerationClient {
             String name,
             String interestDimension,
             String curriculumGroup,
+            String temporalAffordance,
             double confidence,
             String reasonText,
             String evidenceType,

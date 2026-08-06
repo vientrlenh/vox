@@ -22,11 +22,10 @@ public final class PracticePlanningResponses {
             Integer matchPercent,
             int minutes,
             String rationale,
-            List<String> reasons,
-            List<String> focusTags) {
+            List<String> reasons) {
 
         public PracticeTopicOffer(UUID topicId, String name, String dimension, boolean savedByMe) {
-            this(topicId, name, dimension, savedByMe, null, 0, null, List.of(), List.of());
+            this(topicId, name, dimension, savedByMe, null, 0, null, List.of());
         }
     }
 

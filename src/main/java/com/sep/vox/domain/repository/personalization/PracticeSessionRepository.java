@@ -16,8 +16,6 @@ public interface PracticeSessionRepository {
      * cùng session (ví dụ ResolveNextPracticeQuestionUseCase). */
     Optional<PracticeSession> findByIdForUpdate(UUID id);
 
-    Optional<PracticeSession> findByIdAndStudentId(UUID id, UUID studentId);
-
     boolean existsByIdAndStudentIdAndStatus(UUID id, UUID studentId, String status);
 
     PracticeSession save(PracticeSession session);

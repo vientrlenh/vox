@@ -1,9 +1,6 @@
 package com.sep.vox.interfaces.graphql.controller;
 
-import static com.sep.vox.application.response.input.practiceinsights.PracticeInsights.WeaknessProfile;
-
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -23,7 +20,6 @@ import com.sep.vox.application.port.input.usecase.learnerprofile.SubmitInterestQ
 import com.sep.vox.application.port.input.usecase.learnerprofile.ViewInterestQuizItemsUseCase;
 import com.sep.vox.application.port.input.usecase.learnerprofile.ViewPracticeBandOptionsUseCase;
 import com.sep.vox.application.port.input.usecase.learnerprofile.ViewLearnerProfileUseCase;
-import com.sep.vox.application.port.input.usecase.practiceinsights.ViewMyWeaknessProfileUseCase;
 import com.sep.vox.application.response.input.learnerprofile.LearnerProfileResponses.InterestQuizItem;
 import com.sep.vox.application.response.input.learnerprofile.LearnerProfileResponses.LearnerProfile;
 import com.sep.vox.application.response.input.learnerprofile.LearnerProfileResponses.PracticeBandOption;
@@ -33,7 +29,6 @@ import com.sep.vox.interfaces.graphql.dto.request.SubmitInterestQuizInput;
 @Controller
 public class PracticeController {
 
-    private final ViewMyWeaknessProfileUseCase viewMyWeaknessProfileUseCase;
     private final ViewLearnerProfileUseCase viewLearnerProfileUseCase;
     private final ViewInterestQuizItemsUseCase viewInterestQuizItemsUseCase;
     private final ViewPracticeBandOptionsUseCase viewPracticeBandOptionsUseCase;
@@ -43,7 +38,6 @@ public class PracticeController {
     private final AsyncTaskExecutor practiceGenerationExecutor;
 
     public PracticeController(
-            ViewMyWeaknessProfileUseCase viewMyWeaknessProfileUseCase,
             ViewLearnerProfileUseCase viewLearnerProfileUseCase,
             ViewInterestQuizItemsUseCase viewInterestQuizItemsUseCase,
             ViewPracticeBandOptionsUseCase viewPracticeBandOptionsUseCase,
@@ -52,19 +46,12 @@ public class PracticeController {
             SetPracticeGoalUseCase setPracticeGoalUseCase,
             @Qualifier("practiceGenerationExecutor") AsyncTaskExecutor practiceGenerationExecutor) {
         this.practiceGenerationExecutor = practiceGenerationExecutor;
-        this.viewMyWeaknessProfileUseCase = viewMyWeaknessProfileUseCase;
         this.viewLearnerProfileUseCase = viewLearnerProfileUseCase;
         this.viewInterestQuizItemsUseCase = viewInterestQuizItemsUseCase;
         this.viewPracticeBandOptionsUseCase = viewPracticeBandOptionsUseCase;
         this.submitInterestQuizUseCase = submitInterestQuizUseCase;
         this.submitFlsaSelfReportUseCase = submitFlsaSelfReportUseCase;
         this.setPracticeGoalUseCase = setPracticeGoalUseCase;
-    }
-
-    @QueryMapping
-    @PreAuthorize("hasRole('STUDENT')")
-    public WeaknessProfile myWeaknessProfile() {
-        return viewMyWeaknessProfileUseCase.execute(null);
     }
 
     @QueryMapping

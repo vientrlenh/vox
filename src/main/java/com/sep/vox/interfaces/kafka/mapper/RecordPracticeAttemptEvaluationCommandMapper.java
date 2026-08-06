@@ -41,16 +41,13 @@ public final class RecordPracticeAttemptEvaluationCommandMapper {
             signals == null ? null : decimalOrNull(signals.codeSwitchingRatio()),
             signals == null || signals.wordCount() == null ? 0 : signals.wordCount(),
             criteria,
-            payload == null ? null : payload.evaluatedAt(),
-            // Dùng lại đúng ba helper của mapper bài thi (cùng package) chứ không viết bản thứ
-            // hai: payload hai bên là cùng một hình dạng do Python phát ra từ cùng đồ thị chấm.
-            payload == null
-                ? null
-                : RecordExamAttemptEvaluationCommandMapper.toCriteria(payload.criteria()),
-            payload == null
-                ? null
-                : RecordExamAttemptEvaluationCommandMapper.toTurns(payload.turns()),
-            RecordExamAttemptEvaluationCommandMapper.toSignals(signals)
+            payload == null ? null : payload.evaluatedAt()
+            // KHÔNG còn map rawCriteria/turns/signals sang command. Ba trường đó chỉ phục vụ
+            // việc suy quan sát điểm yếu (đã gỡ) -- use case không đọc chúng, nên giữ lại là
+            // dựng ba cấu trúc mỗi lần chấm cho không ai dùng.
+            //
+            // Wire DTO của Kafka GIỮ NGUYÊN: Python vẫn phát đủ trường như cũ, chỉ là Java bỏ
+            // qua. Không đụng vào hình dạng payload thì không phải đổi gì bên chấm.
         );
     }
 

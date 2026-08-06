@@ -54,6 +54,7 @@ public class PracticeQuestionGenerationClient {
             TopicDetails topic,
             String criterionCode,
             String subAttribute,
+            String targetTense,
             int targetRank,
             int count,
             Duration timeout,
@@ -68,6 +69,9 @@ public class PracticeQuestionGenerationClient {
             payload.put("curriculum_group", topic.curriculumGroup());
             payload.put("target_criterion_code", criterionCode);
             payload.put("target_sub_attribute", subAttribute);
+            // Thì mà câu phải ép học sinh dùng. Prompt soạn có nhiệm vụ đặt MỐC THỜI GIAN sao
+            // cho thì đó là cách trả lời tự nhiên duy nhất -- ra lệnh suông không ép được.
+            payload.put("target_tense", targetTense);
             payload.put("target_rank", targetRank);
             payload.put("count", Math.min(3, count));
             payload.put("band_count", bandCount);
@@ -157,6 +161,9 @@ public class PracticeQuestionGenerationClient {
             item.path("target_sub_attribute").isNull()
                 ? null
                 : item.path("target_sub_attribute").asText(),
+            item.path("target_tense").isNull() || item.path("target_tense").isMissingNode()
+                ? null
+                : item.path("target_tense").asText(),
             item.path("difficulty_rank").asInt(),
             item.path("difficulty_features").toString(),
             item.path("evaluation_guide").toString(),
@@ -183,11 +190,11 @@ public class PracticeQuestionGenerationClient {
         String questionText,
         String criterionCode,
         String subAttribute,
+        String targetTense,
         int difficultyRank,
         String difficultyFeaturesJson,
         String evaluationGuideJson,
         String suggestedIdeasJson,
-        /** SHORT_ANSWER | LONG_ANSWER | DESCRIPTION | OPINION -- xem migration V13. */
         String questionType,
         int maxResponseSeconds,
         int minResponseSeconds,

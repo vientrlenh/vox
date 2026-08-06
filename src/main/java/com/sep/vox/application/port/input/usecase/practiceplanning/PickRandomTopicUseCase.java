@@ -42,8 +42,7 @@ public class PickRandomTopicUseCase implements IUseCase<Void, PracticeTopicOffer
             null,
             enrichmentService.minutesForStudent(studentId),
             null,
-            List.of(),
-            enrichmentService.focusTagsForStudent(studentId)
+            List.of()
         );
     }
 }

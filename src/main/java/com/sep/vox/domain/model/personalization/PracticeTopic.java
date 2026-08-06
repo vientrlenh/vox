@@ -16,6 +16,15 @@ public class PracticeTopic {
     private Instant createdAt;
     private UUID sourceQuestionTopicId;
 
+    /**
+     * Chủ đề này tự nhiên gọi ra thì nào -- PAST (lịch sử, kỷ niệm) / FUTURE (dự định, phát
+     * minh) / MIXED. Do topicGenerationGraph gắn lúc soạn chủ đề, vì lúc đó mô hình đang hiểu
+     * chủ đề nói về cái gì; đoán lại từ tên chủ đề về sau là kém trung thực hơn.
+     *
+     * <p>{@code null} coi như MIXED -- xem {@code TensePolicy.forSlot}.
+     */
+    private String temporalAffordance;
+
     public PracticeTopic() {
     }
 
@@ -29,7 +38,9 @@ public class PracticeTopic {
             String curriculumGroup,
             boolean active,
             Instant createdAt,
-            UUID sourceQuestionTopicId) {
+            UUID sourceQuestionTopicId,
+            String temporalAffordance) {
+        this.temporalAffordance = temporalAffordance;
         this.id = id;
         this.name = name;
         this.normalizedName = normalizedName;
@@ -112,6 +123,14 @@ public class PracticeTopic {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getTemporalAffordance() {
+        return temporalAffordance;
+    }
+
+    public void setTemporalAffordance(String temporalAffordance) {
+        this.temporalAffordance = temporalAffordance;
     }
 
     public UUID getSourceQuestionTopicId() {

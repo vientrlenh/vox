@@ -29,33 +29,17 @@ public class PracticeQuestionRepositoryImpl implements PracticeQuestionRepositor
     }
 
     @Override
-    public List<PracticeQuestion> findUnseenByTopic(UUID topicId, UUID studentId) {
-        return repository.findUnseenByTopic(topicId, studentId).stream()
-            .map(PracticeQuestionMapper::toDomain)
-            .toList();
-    }
-
-    @Override
     public List<PracticeQuestion> findUnseenByTopicAndCriterionAndRankRange(
             UUID topicId,
             UUID studentId,
             String criterion,
+            String tense,
             int rankMin,
             int rankMax) {
         return repository
             .findUnseenByTopicAndCriterionAndRankRange(
-                topicId, studentId, criterion, rankMin, rankMax, cooldownCutoff())
+                topicId, studentId, criterion, tense, rankMin, rankMax, cooldownCutoff())
             .stream()
-            .map(PracticeQuestionMapper::toDomain)
-            .toList();
-    }
-
-    @Override
-    public List<PracticeQuestion> findUnseenByIds(List<UUID> ids, UUID studentId) {
-        if (ids.isEmpty()) {
-            return List.of();
-        }
-        return repository.findUnseenByIds(ids, studentId, cooldownCutoff()).stream()
             .map(PracticeQuestionMapper::toDomain)
             .toList();
     }

@@ -32,11 +32,6 @@ public class PracticeSessionRepositoryImpl implements PracticeSessionRepository 
     }
 
     @Override
-    public Optional<PracticeSession> findByIdAndStudentId(UUID id, UUID studentId) {
-        return repository.findByIdAndStudentId(id, studentId).map(PracticeSessionMapper::toDomain);
-    }
-
-    @Override
     public boolean existsByIdAndStudentIdAndStatus(UUID id, UUID studentId, String status) {
         return repository.existsByIdAndStudentIdAndStatus(id, studentId, status);
     }

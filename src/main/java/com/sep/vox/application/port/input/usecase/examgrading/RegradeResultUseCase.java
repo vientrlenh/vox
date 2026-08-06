@@ -6,13 +6,11 @@ import java.util.ArrayList;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.event.HumanGradingSubmittedEvent;
 import com.sep.vox.application.port.input.command.SubmitGradingCommand;
 import com.sep.vox.application.port.input.service.GradingActionSupport;
 import com.sep.vox.application.port.input.service.GradingItemScoreResolver;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.usecase.examevaluation.UpsertExamCandidateResultUseCase;
-import com.sep.vox.application.port.output.EventPublisherPort;
 import com.sep.vox.application.response.input.examgrading.GradingActionResponse;
 import com.sep.vox.domain.model.exam.ExamEvaluationEngineType;
 import com.sep.vox.domain.model.exam.ExamItemCriterionScore;
@@ -21,7 +19,6 @@ import com.sep.vox.domain.model.exam.ExamItemEvaluationStatus;
 import com.sep.vox.domain.model.exam.GradingOutcome;
 import com.sep.vox.domain.model.exam.GradingRoundPolicy;
 import com.sep.vox.domain.model.exam.GradingRoundType;
-import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamItemCriterionScoreRepository;
 import com.sep.vox.domain.repository.ExamItemEvaluationRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;
@@ -54,9 +51,7 @@ public class RegradeResultUseCase implements IUseCase<SubmitGradingCommand, Grad
     private final ExamItemEvaluationRepository examItemEvaluationRepository;
     private final ExamItemCriterionScoreRepository examItemCriterionScoreRepository;
     private final ExamSessionRepository examSessionRepository;
-    private final ExamCandidateRepository examCandidateRepository;
     private final UpsertExamCandidateResultUseCase upsertExamCandidateResultUseCase;
-    private final EventPublisherPort eventPublisherPort;
 
     public RegradeResultUseCase(
             GradingActionSupport gradingActionSupport,
@@ -64,17 +59,13 @@ public class RegradeResultUseCase implements IUseCase<SubmitGradingCommand, Grad
             ExamItemEvaluationRepository examItemEvaluationRepository,
             ExamItemCriterionScoreRepository examItemCriterionScoreRepository,
             ExamSessionRepository examSessionRepository,
-            ExamCandidateRepository examCandidateRepository,
-            UpsertExamCandidateResultUseCase upsertExamCandidateResultUseCase,
-            EventPublisherPort eventPublisherPort) {
+            UpsertExamCandidateResultUseCase upsertExamCandidateResultUseCase) {
         this.gradingActionSupport = gradingActionSupport;
         this.gradingItemScoreResolver = gradingItemScoreResolver;
         this.examItemEvaluationRepository = examItemEvaluationRepository;
         this.examItemCriterionScoreRepository = examItemCriterionScoreRepository;
         this.examSessionRepository = examSessionRepository;
-        this.examCandidateRepository = examCandidateRepository;
         this.upsertExamCandidateResultUseCase = upsertExamCandidateResultUseCase;
-        this.eventPublisherPort = eventPublisherPort;
     }
 
     @Override
@@ -109,7 +100,6 @@ public class RegradeResultUseCase implements IUseCase<SubmitGradingCommand, Grad
         }
 
         var criterionScores = new ArrayList<ExamItemCriterionScore>();
-        var gradingDiagnosticsItems = new ArrayList<HumanGradingSubmittedEvent.Item>();
         for (var item : resolvedItems) {
             var savedEvaluation = examItemEvaluationRepository.save(new ExamItemEvaluation(
                 item.responseId(),
@@ -142,15 +132,6 @@ public class RegradeResultUseCase implements IUseCase<SubmitGradingCommand, Grad
                 score.score(),
                 score.rationale()
             )));
-            gradingDiagnosticsItems.add(new HumanGradingSubmittedEvent.Item(
-                savedEvaluation.getId(),
-                item.paperItemId(),
-                item.feedbackSummary(),
-                item.criteria().stream()
-                    .map(criterion -> new HumanGradingSubmittedEvent.CriterionRef(
-                        criterion.getCode(), criterion.getFrameworkCriterionId()))
-                    .toList()
-            ));
         }
         examItemCriterionScoreRepository.saveAll(criterionScores);
 
@@ -162,14 +143,10 @@ public class RegradeResultUseCase implements IUseCase<SubmitGradingCommand, Grad
             context.candidateResult().getSessionId(),
             targetStatus == null ? context.candidateResult().getStatus() : targetStatus);
 
-        // Suy nhãn điểm yếu (sub-attribute) từ feedbackSummary giáo viên vừa nhập -- bất
-        // đồng bộ sau commit (GradingDiagnosticsInferenceJob), không chặn/ảnh hưởng điểm số.
-        examCandidateRepository.findById(session.getCandidateId()).ifPresent(gradingCandidate ->
-            eventPublisherPort.publish(new HumanGradingSubmittedEvent(
-                gradingCandidate.getStudentId(),
-                gradingDiagnosticsItems
-            ))
-        );
+        // KHÔNG còn phát HumanGradingSubmittedEvent để suy nhãn điểm yếu từ feedbackSummary
+        // giáo viên. Cả người nghe (GradingDiagnosticsInferenceJob) lẫn đích đến
+        // (weakness_observation) đã bị gỡ; giữ lại thì mỗi lần giáo viên nộp điểm vẫn phải
+        // dựng danh sách item và gọi một lượt LLM cho một cái hộp không đáy.
 
         gradingActionSupport.finish(prepared, recalculated);
 

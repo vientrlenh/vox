@@ -11,10 +11,6 @@ public interface PracticeTopicQueryRepository {
 
     List<RankedTopicInfo> findRankedTopics(UUID studentId, String goal);
 
-    List<RankedTopicInfo> findRankedTopicsByWeakness(
-        UUID studentId, String goal, String criterion, String subAttribute
-    );
-
     List<TopicSearchRowInfo> searchTopics(UUID studentId, String pattern, String normalized);
 
     Optional<TopicSearchRowInfo> findRandomActiveTopic(UUID studentId);

@@ -20,8 +20,6 @@ public class TurnCorrectionJpaEntity {
     private UUID id;
     @Column(name = "turn_id", nullable = false, updatable = false)
     private UUID turnId;
-    @Column(name = "weakness_observation_id")
-    private UUID weaknessObservationId;
     @Column(name = "category", nullable = false, length = 64, updatable = false)
     private String category;
     @Column(name = "original_text", nullable = false, columnDefinition = "TEXT", updatable = false)
@@ -39,7 +37,6 @@ public class TurnCorrectionJpaEntity {
     public TurnCorrectionJpaEntity(
             UUID id,
             UUID turnId,
-            UUID weaknessObservationId,
             String category,
             String originalText,
             String correctedText,
@@ -47,7 +44,6 @@ public class TurnCorrectionJpaEntity {
             String correctAudioUrl) {
         this.id = id;
         this.turnId = turnId;
-        this.weaknessObservationId = weaknessObservationId;
         this.category = category;
         this.originalText = originalText;
         this.correctedText = correctedText;
@@ -61,10 +57,6 @@ public class TurnCorrectionJpaEntity {
 
     public UUID getTurnId() {
         return turnId;
-    }
-
-    public UUID getWeaknessObservationId() {
-        return weaknessObservationId;
     }
 
     public String getCategory() {

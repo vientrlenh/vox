@@ -67,6 +67,10 @@ public class PracticeTopicJpaEntity {
     @Column(name = "source_question_topic_id", updatable = false)
     private UUID sourceQuestionTopicId;
 
+    /** Xem {@code PracticeTopic.temporalAffordance}: PAST / FUTURE / MIXED, null coi như MIXED. */
+    @Column(name = "temporal_affordance", length = 8)
+    private String temporalAffordance;
+
     protected PracticeTopicJpaEntity() {
     }
 
@@ -79,7 +83,9 @@ public class PracticeTopicJpaEntity {
             String curriculumGroup,
             boolean active,
             Instant createdAt,
-            UUID sourceQuestionTopicId) {
+            UUID sourceQuestionTopicId,
+            String temporalAffordance) {
+        this.temporalAffordance = temporalAffordance;
         this.name = name;
         this.normalizedName = normalizedName;
         this.description = description;
@@ -129,5 +135,9 @@ public class PracticeTopicJpaEntity {
 
     public UUID getSourceQuestionTopicId() {
         return sourceQuestionTopicId;
+    }
+
+    public String getTemporalAffordance() {
+        return temporalAffordance;
     }
 }

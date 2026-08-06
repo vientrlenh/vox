@@ -20,6 +20,7 @@ import com.sep.vox.application.query.dto.QuestionTopicInfo;
 import com.sep.vox.application.query.repository.PracticeTopicQueryRepository;
 import com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.PracticeTopicOffer;
 import com.sep.vox.domain.model.personalization.PracticeTopic;
+import com.sep.vox.domain.service.personalization.TensePolicy;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.personalization.LearnerProfileRepository;
@@ -68,30 +69,25 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
             input.excludeTopicIds() == null ? List.<UUID>of() : input.excludeTopicIds()
         );
         var goal = currentGoal(studentId);
-        var bucket = input.bucket() == null ? "FOR_YOU" : input.bucket();
-        var weakCriterion = "BY_WEAKNESS".equals(bucket)
-            ? enrichmentService.weakestCriterion(studentId)
-            : null;
+        // `bucket` không còn phân nhánh gì: enum chỉ còn FOR_YOU (xem practice-planning.graphqls).
         var ranked = ("EXAM_PREP".equals(goal)
-                ? examTopicRanked(studentId, bucket)
-                : classicRanked(studentId, goal, bucket, weakCriterion))
+                ? examTopicRanked(studentId)
+                : classicRanked(studentId, goal))
             .stream()
             .filter(topic -> !excluded.contains(topic.id()))
             .sorted(Comparator.comparingDouble(RankedTopic::score).reversed())
             .toList();
         var selected = new ArrayList<>(ranked.subList(0, Math.min(4, ranked.size())));
-        if ("FOR_YOU".equals(bucket)) {
-            var epsilon = input.round() >= 2 ? 0.30 : 0.10;
-            if (selected.size() == 4
-                    && ranked.size() > 10
-                    && explorationAllowed(studentId)
-                    && ThreadLocalRandom.current().nextDouble() < epsilon) {
-                var exploratory = ranked.subList(10, ranked.size());
-                selected.set(
-                    selected.size() - 1,
-                    exploratory.get(ThreadLocalRandom.current().nextInt(exploratory.size()))
-                );
-            }
+        var epsilon = input.round() >= 2 ? 0.30 : 0.10;
+        if (selected.size() == 4
+                && ranked.size() > 10
+                && explorationAllowed(studentId)
+                && ThreadLocalRandom.current().nextDouble() < epsilon) {
+            var exploratory = ranked.subList(10, ranked.size());
+            selected.set(
+                selected.size() - 1,
+                exploratory.get(ThreadLocalRandom.current().nextInt(exploratory.size()))
+            );
         }
         // KHÔNG xáo thứ tự: client hiện `matchPercent` lấy đúng từ `score` vừa dùng để xếp
         // hạng, nên xáo xong thì thẻ #1 không còn là thẻ khớp cao nhất -- người dùng thấy
@@ -101,11 +97,9 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
         // CUỐI bằng một chủ đề ngoài top 10. Vì chủ đề đó xếp hạng thấp hơn nên nó vẫn nằm
         // cuối danh sách, thứ tự theo % khớp giữ được tính đơn điệu.
         var minutes = enrichmentService.minutesForStudent(studentId);
-        var focusTags = enrichmentService.focusTagsForStudent(studentId);
-        var weakCriterionLabel = weakCriterion == null ? null : enrichmentService.criterionLabel(weakCriterion);
         return selected.stream()
             .map(topic -> {
-                var rationale = rationaleFor(topic, weakCriterionLabel);
+                var rationale = rationaleFor(topic);
                 return new PracticeTopicOffer(
                     topic.id(),
                     topic.name(),
@@ -114,8 +108,7 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
                     clampPercent(topic.score()),
                     minutes,
                     rationale,
-                    List.of(rationale),
-                    focusTags
+                    List.of(rationale)
                 );
             })
             .toList();
@@ -140,7 +133,7 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
             // Đường EXAM_PREP không chạy ε-greedy (chỉ bucket FOR_YOU của pool AI-sinh mới có).
             return false;
         }
-        var ranked = classicRanked(studentId, goal, "FOR_YOU", null).stream()
+        var ranked = classicRanked(studentId, goal).stream()
             .sorted(Comparator.comparingDouble(RankedTopic::score).reversed())
             .toList();
         var position = -1;
@@ -158,10 +151,7 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
         return Math.max(0, Math.min(100, (int) Math.round(score * 100)));
     }
 
-    private static String rationaleFor(RankedTopic topic, String weakCriterionLabel) {
-        if (weakCriterionLabel != null) {
-            return "Còn nhiều câu luyện đúng kỹ năng bạn đang yếu (" + weakCriterionLabel + ")";
-        }
+    private static String rationaleFor(RankedTopic topic) {
         // "Khớp chương trình học" CHỈ dành cho chủ đề lấy từ ngân hàng đề của trường.
         //
         // Trước đây điều kiện là curriculum() >= 1.0, tức curriculum_group = 'IN_GDPT2018'.
@@ -176,27 +166,29 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
         return "Gợi ý cho bạn";
     }
 
-    private static double scoreFor(String bucket, String goal, double interest, double bank, double curriculum) {
-        return switch (bucket) {
-            case "BY_GOAL" -> 0.15 * interest + 0.15 * bank + 0.70 * curriculum;
-            case "BY_WEAKNESS" -> 0.20 * interest + 0.70 * bank + 0.10 * curriculum;
-            default -> "EXAM_PREP".equals(goal)
-                ? 0.35 * interest + 0.30 * bank + 0.35 * curriculum
-                : 0.60 * interest + 0.25 * bank + 0.15 * curriculum;
-        };
+    /**
+     * Hai công thức, chọn theo MỤC TIÊU của học sinh -- không còn theo rổ.
+     *
+     * <p>Hai nhánh BY_GOAL/BY_WEAKNESS đã bỏ cùng hồ sơ điểm yếu. Nhánh điểm yếu vốn dồn 0.70
+     * vào {@code bank} ("còn bao nhiêu câu chưa luyện đúng tiêu chí yếu"), mà nay không còn
+     * tiêu chí yếu nào để lọc theo, nên nó sẽ thoái hoá thành đúng nhánh mặc định nhưng lệch
+     * trọng số -- giữ lại chỉ là giữ một công thức không ai giải thích được nữa.
+     */
+    private static double scoreFor(String goal, double interest, double bank, double curriculum) {
+        return "EXAM_PREP".equals(goal)
+            ? 0.35 * interest + 0.30 * bank + 0.35 * curriculum
+            : 0.60 * interest + 0.25 * bank + 0.15 * curriculum;
     }
 
-    private List<RankedTopic> classicRanked(UUID studentId, String goal, String bucket, String weakCriterion) {
-        var rows = "BY_WEAKNESS".equals(bucket) && weakCriterion != null
-            ? practiceTopicQueryRepository.findRankedTopicsByWeakness(studentId, goal, weakCriterion, null)
-            : practiceTopicQueryRepository.findRankedTopics(studentId, goal);
+    private List<RankedTopic> classicRanked(UUID studentId, String goal) {
+        var rows = practiceTopicQueryRepository.findRankedTopics(studentId, goal);
         return rows.stream()
             .map(row -> {
                 var gamma = (double) row.getMentions() / (row.getMentions() + 2);
                 var interest = gamma * row.getTopicScore() + (1 - gamma) * row.getDimensionScore();
                 var bank = Math.min(1.0, row.getUnseenCount() / 3.0);
                 var curriculum = "IN_GDPT2018".equals(row.getCurriculumGroup()) ? 1.0 : 0.3;
-                var base = scoreFor(bucket, goal, interest, bank, curriculum);
+                var base = scoreFor(goal, interest, bank, curriculum);
                 return new RankedTopic(
                     row.getId(),
                     row.getName(),
@@ -216,7 +208,7 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
      * của đúng trường + khối hiện tại của học sinh -- không dùng pool AI-sinh cho ABILITY_IMPROVEMENT.
      * Mỗi topic được vật chất hoá lazy thành 1 dòng practice_topic (nếu chưa có) để toàn bộ pipeline
      * chọn câu hỏi / theo dõi điểm yếu / vector sở thích phía sau chạy nguyên vẹn không cần sửa. */
-    private List<RankedTopic> examTopicRanked(UUID studentId, String bucket) {
+    private List<RankedTopic> examTopicRanked(UUID studentId) {
         var schoolId = schoolUserRepository.findSchoolIdByUserId(studentId).orElse(null);
         if (schoolId == null) {
             return List.of();
@@ -231,7 +223,7 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
                 var interest = 0.5;
                 var bank = 0.5;
                 var curriculum = 1.0;
-                var base = scoreFor(bucket, "EXAM_PREP", interest, bank, curriculum);
+                var base = scoreFor("EXAM_PREP", interest, bank, curriculum);
                 return new RankedTopic(
                     topicId,
                     row.getName(),
@@ -260,7 +252,10 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
                 EXAM_TOPIC_CURRICULUM_GROUP,
                 true,
                 Instant.now(),
-                row.getId()
+                row.getId(),
+                // Chủ đề lấy từ ngân hàng đề của trường: không có ai gán khung thời gian, và
+                // đoán từ tên chủ đề thì không có cơ sở. MIXED để thang xoay vòng tự rải thì.
+                TensePolicy.AFFORDANCE_MIXED
             )).getId());
     }
 

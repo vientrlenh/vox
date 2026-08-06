@@ -63,6 +63,10 @@ public class PracticeQuestionJpaEntity {
     @Column(name = "target_sub_attribute", length = 64)
     private String targetSubAttribute;
 
+    /** Xem {@code PracticeQuestion.targetTense}: null = chưa biết, không phải "không ép thì". */
+    @Column(name = "target_tense", length = 16)
+    private String targetTense;
+
     @Column(name = "difficulty_rank", nullable = false)
     private int difficultyRank;
 
@@ -108,6 +112,7 @@ public class PracticeQuestionJpaEntity {
             String questionText,
             String targetCriterionCode,
             String targetSubAttribute,
+            String targetTense,
             int difficultyRank,
             String difficultyFeaturesJson,
             String evaluationGuideJson,
@@ -124,6 +129,7 @@ public class PracticeQuestionJpaEntity {
         this.questionText = questionText;
         this.targetCriterionCode = targetCriterionCode;
         this.targetSubAttribute = targetSubAttribute;
+        this.targetTense = targetTense;
         this.difficultyRank = difficultyRank;
         this.difficultyFeaturesJson = difficultyFeaturesJson;
         this.evaluationGuideJson = evaluationGuideJson;
@@ -156,6 +162,10 @@ public class PracticeQuestionJpaEntity {
 
     public String getTargetSubAttribute() {
         return targetSubAttribute;
+    }
+
+    public String getTargetTense() {
+        return targetTense;
     }
 
     public int getDifficultyRank() {

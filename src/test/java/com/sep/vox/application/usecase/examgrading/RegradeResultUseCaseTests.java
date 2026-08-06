@@ -29,7 +29,6 @@ import com.sep.vox.application.port.input.service.GradingItemScoreResolver.Resol
 import com.sep.vox.application.port.input.service.ResultStatusHistoryRecorder;
 import com.sep.vox.application.port.input.usecase.examevaluation.UpsertExamCandidateResultUseCase;
 import com.sep.vox.application.port.input.usecase.examgrading.RegradeResultUseCase;
-import com.sep.vox.application.port.output.EventPublisherPort;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.exam.ExamEvaluationEngineType;
@@ -40,7 +39,6 @@ import com.sep.vox.domain.model.exam.ExamItemEvaluationStatus;
 import com.sep.vox.domain.model.exam.ExamSession;
 import com.sep.vox.domain.model.exam.GradingOutcome;
 import com.sep.vox.domain.model.exam.GradingRoundType;
-import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamItemCriterionScoreRepository;
 import com.sep.vox.domain.repository.ExamItemEvaluationRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;
@@ -58,9 +56,7 @@ class RegradeResultUseCaseTests {
     private ExamItemEvaluationRepository examItemEvaluationRepository;
     private ExamItemCriterionScoreRepository examItemCriterionScoreRepository;
     private ExamSessionRepository examSessionRepository;
-    private ExamCandidateRepository examCandidateRepository;
     private UpsertExamCandidateResultUseCase upsertExamCandidateResultUseCase;
-    private EventPublisherPort eventPublisherPort;
     private RegradeResultUseCase useCase;
 
     private final UUID teacherId = UUID.randomUUID();
@@ -81,18 +77,14 @@ class RegradeResultUseCaseTests {
         examItemEvaluationRepository = mock(ExamItemEvaluationRepository.class);
         examItemCriterionScoreRepository = mock(ExamItemCriterionScoreRepository.class);
         examSessionRepository = mock(ExamSessionRepository.class);
-        examCandidateRepository = mock(ExamCandidateRepository.class);
         upsertExamCandidateResultUseCase = mock(UpsertExamCandidateResultUseCase.class);
-        eventPublisherPort = mock(EventPublisherPort.class);
         useCase = new RegradeResultUseCase(
             gradingActionSupport,
             gradingItemScoreResolver,
             examItemEvaluationRepository,
             examItemCriterionScoreRepository,
             examSessionRepository,
-            examCandidateRepository,
-            upsertExamCandidateResultUseCase,
-            eventPublisherPort);
+            upsertExamCandidateResultUseCase);
 
         session = new ExamSession();
         session.setId(sessionId);

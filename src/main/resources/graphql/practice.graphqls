@@ -1,5 +1,4 @@
 extend type Query {
-    myWeaknessProfile: WeaknessProfile!
     myLearnerProfile: LearnerProfile
     interestQuizItems: [InterestQuizItem!]!
     "Thang bậc của khung đang áp cho học sinh -- nguồn cho ô chọn độ khó trước mỗi phiên."
@@ -10,24 +9,6 @@ extend type Mutation {
     submitInterestQuiz(input: SubmitInterestQuizInput!): LearnerProfile!
     submitFlsaSelfReport(answers: [Int!]!): LearnerProfile!
     setPracticeGoal(goalType: PracticeGoalType!): LearnerProfile!
-}
-
-"""
-Chỉ còn mức TIÊU CHÍ. Nhãn lỗi chi tiết (sub-attribute) vẫn được đo và vẫn dùng để chọn
-tiêu chí/nhãn khi sinh câu hỏi, chỉ là không phơi ra màn hình nữa -- trang hồ sơ điểm yếu
-đã bỏ.
-"""
-type WeaknessProfile {
-    criteria: [CriterionWeakness!]!
-    sessionsAnalysed: Int!
-}
-
-type CriterionWeakness {
-    criterionCode: String!
-    criterionName: String!
-    weakness: Float!
-    observationCount: Int!
-    reliable: Boolean!
 }
 
 enum PracticeGoalType {

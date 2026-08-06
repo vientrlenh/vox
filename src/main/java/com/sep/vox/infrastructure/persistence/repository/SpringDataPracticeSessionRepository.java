@@ -18,8 +18,6 @@ import com.sep.vox.infrastructure.persistence.entity.PracticeSessionJpaEntity;
 public interface SpringDataPracticeSessionRepository
         extends JpaRepository<PracticeSessionJpaEntity, UUID> {
 
-    Optional<PracticeSessionJpaEntity> findByIdAndStudentId(UUID id, UUID studentId);
-
     // Khoá row cho suốt transaction resolve-next-question (gói 11 mục 2.4 bước 4) -- một
     // request thứ 2 (Python retry sau timeout, xem practice_session_client.py) cho CÙNG
     // session phải đợi request đầu commit xong rồi mới đọc, chứ không được chạy song song
@@ -28,8 +26,6 @@ public interface SpringDataPracticeSessionRepository
     Optional<PracticeSessionJpaEntity> findByIdForUpdate(@Param("id") UUID id);
 
     boolean existsByIdAndStudentIdAndStatus(UUID id, UUID studentId, String status);
-
-    int countByIdAndStudentIdAndStatus(UUID id, UUID studentId, String status);
 
     @Query(value = """
         SELECT session.id AS id,

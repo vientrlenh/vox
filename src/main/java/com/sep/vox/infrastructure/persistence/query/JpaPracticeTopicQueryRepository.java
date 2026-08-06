@@ -26,12 +26,6 @@ public class JpaPracticeTopicQueryRepository implements PracticeTopicQueryReposi
     }
 
     @Override
-    public List<RankedTopicInfo> findRankedTopicsByWeakness(
-            UUID studentId, String goal, String criterion, String subAttribute) {
-        return repository.findRankedTopicsByWeakness(studentId, goal, criterion, subAttribute);
-    }
-
-    @Override
     public List<TopicSearchRowInfo> searchTopics(UUID studentId, String pattern, String normalized) {
         return repository.searchTopics(studentId, pattern, normalized);
     }

@@ -38,7 +38,6 @@ public class SearchPracticeTopicsUseCase implements IUseCase<SearchPracticeTopic
             return new TopicSearchResult(List.of(), false);
         }
         var minutes = enrichmentService.minutesForStudent(studentId);
-        var focusTags = enrichmentService.focusTagsForStudent(studentId);
         var topics = practiceTopicQueryRepository
             .searchTopics(studentId, "%" + normalized + "%", normalized)
             .stream()
@@ -50,8 +49,7 @@ public class SearchPracticeTopicsUseCase implements IUseCase<SearchPracticeTopic
                 null,
                 minutes,
                 null,
-                List.of(),
-                focusTags
+                List.of()
             ))
             .toList();
         return new TopicSearchResult(topics, topics.isEmpty());

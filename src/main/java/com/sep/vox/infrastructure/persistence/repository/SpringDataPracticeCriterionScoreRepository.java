@@ -14,8 +14,6 @@ import com.sep.vox.infrastructure.persistence.entity.PracticeCriterionScoreJpaEn
 public interface SpringDataPracticeCriterionScoreRepository
         extends JpaRepository<PracticeCriterionScoreJpaEntity, UUID> {
 
-    List<PracticeCriterionScoreJpaEntity> findByPracticeEvaluationId(UUID practiceEvaluationId);
-
     Optional<PracticeCriterionScoreJpaEntity> findByPracticeEvaluationIdAndRubricCriterionId(
         UUID practiceEvaluationId,
         UUID rubricCriterionId

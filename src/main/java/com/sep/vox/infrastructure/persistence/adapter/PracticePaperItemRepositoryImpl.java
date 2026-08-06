@@ -34,11 +34,6 @@ public class PracticePaperItemRepositoryImpl implements PracticePaperItemReposit
     }
 
     @Override
-    public int sumPlannedSecondsForPaper(UUID paperId) {
-        return repository.sumPlannedSecondsForPaper(paperId);
-    }
-
-    @Override
     public List<UUID> findQuestionIdsForPaper(UUID paperId) {
         return repository.findQuestionIdsForPaper(paperId);
     }

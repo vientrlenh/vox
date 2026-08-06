@@ -25,6 +25,7 @@ import com.sep.vox.domain.repository.personalization.InterestDimensionRepository
 import com.sep.vox.domain.repository.personalization.LearnerProfileRepository;
 import com.sep.vox.domain.repository.personalization.PracticeTopicRepository;
 import com.sep.vox.domain.repository.personalization.TopicSuggestionRepository;
+import com.sep.vox.domain.service.personalization.TensePolicy;
 import com.sep.vox.infrastructure.service.TopicGenerationClient;
 import com.sep.vox.infrastructure.service.TopicGenerationClient.KeywordEvidence;
 
@@ -101,7 +102,10 @@ public class TopicSuggestionService {
                 suggestion.getSuggestedTopicName(),
                 suggestion.getInterestDimension(),
                 suggestion.getCurriculumGroup(),
-                "SUGGESTED"
+                "SUGGESTED",
+                // Gợi ý đã nằm trong topic_suggestion từ trước, mà bảng đó không lưu khung
+                // thời gian. Không bịa lại từ tên chủ đề -- MIXED để thang xoay vòng tự rải.
+                TensePolicy.AFFORDANCE_MIXED
             );
         }
         generationClient.index(
@@ -187,7 +191,8 @@ public class TopicSuggestionService {
             keyword,
             proposal.name(),
             proposal.interestDimension(),
-            proposal.curriculumGroup()
+            proposal.curriculumGroup(),
+            proposal.temporalAffordance()
         );
         generationClient.index(
             topicId.toString(), proposal.name(), proposal.reasonText(), true, null, "ACTIVE"
@@ -320,7 +325,7 @@ public class TopicSuggestionService {
             }
             var topicId = createTopic(
                 proposal.name(), proposal.interestDimension(), proposal.curriculumGroup(),
-                "AI_SUGGESTED"
+                "AI_SUGGESTED", proposal.temporalAffordance()
             );
             generationClient.index(
                 topicId.toString(), proposal.name(), proposal.reasonText(), true, null, "ACTIVE"
@@ -394,8 +399,7 @@ public class TopicSuggestionService {
             matchPercent,
             enrichmentService.minutesForStudent(studentId),
             rationale,
-            rationale == null ? List.of() : List.of(rationale),
-            enrichmentService.focusTagsForStudent(studentId)
+            rationale == null ? List.of() : List.of(rationale)
         );
     }
 
@@ -412,7 +416,11 @@ public class TopicSuggestionService {
     }
 
     private UUID createTopic(
-            String name, String dimension, String curriculumGroup, String source) {
+            String name,
+            String dimension,
+            String curriculumGroup,
+            String source,
+            String temporalAffordance) {
         var saved = practiceTopicRepository.save(new PracticeTopic(
             null,
             name,
@@ -423,7 +431,8 @@ public class TopicSuggestionService {
             curriculumGroup == null ? "OUT_OF_CURRICULUM" : curriculumGroup,
             true,
             Instant.now(),
-            null
+            null,
+            temporalAffordance == null ? TensePolicy.AFFORDANCE_MIXED : temporalAffordance
         ));
         return saved.getId();
     }

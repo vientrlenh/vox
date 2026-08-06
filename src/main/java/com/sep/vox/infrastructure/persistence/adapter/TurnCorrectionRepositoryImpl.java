@@ -30,7 +30,6 @@ public class TurnCorrectionRepositoryImpl implements TurnCorrectionRepository {
         repository.save(new TurnCorrectionJpaEntity(
             UUID.randomUUID(),
             turnId,
-            null,
             category,
             originalText,
             correctedText,

@@ -10,6 +10,13 @@ public class PracticeQuestion {
     private String questionText;
     private String targetCriterionCode;
     private String targetSubAttribute;
+
+    /**
+     * Thì mà câu này ép học sinh trả lời -- PRESENT/PAST/FUTURE/PERFECT/CONDITIONAL, xem
+     * {@code TensePolicy}. {@code null} nghĩa là CHƯA BIẾT (câu soạn trước khi có cột này),
+     * không phải "không ép thì nào"; thang leo chọn câu coi null là dùng được.
+     */
+    private String targetTense;
     private int difficultyRank;
     private String difficultyFeaturesJson;
     private String evaluationGuideJson;
@@ -32,6 +39,7 @@ public class PracticeQuestion {
             String questionText,
             String targetCriterionCode,
             String targetSubAttribute,
+            String targetTense,
             int difficultyRank,
             String difficultyFeaturesJson,
             String evaluationGuideJson,
@@ -49,6 +57,7 @@ public class PracticeQuestion {
         this.questionText = questionText;
         this.targetCriterionCode = targetCriterionCode;
         this.targetSubAttribute = targetSubAttribute;
+        this.targetTense = targetTense;
         this.difficultyRank = difficultyRank;
         this.difficultyFeaturesJson = difficultyFeaturesJson;
         this.evaluationGuideJson = evaluationGuideJson;
@@ -101,6 +110,14 @@ public class PracticeQuestion {
 
     public void setTargetSubAttribute(String targetSubAttribute) {
         this.targetSubAttribute = targetSubAttribute;
+    }
+
+    public String getTargetTense() {
+        return targetTense;
+    }
+
+    public void setTargetTense(String targetTense) {
+        this.targetTense = targetTense;
     }
 
     public int getDifficultyRank() {

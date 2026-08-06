@@ -218,25 +218,9 @@ app:
       # nền rồi client hỏi lại trạng thái (PracticePaperDraftService), nên nới trần rẻ hơn
       # nhiều so với hỏng cả lượt luyện.
       online-budget: ${PERSONALIZATION_ONLINE_GENERATION_BUDGET:45s}
-    weakness:
-      alpha: ${PERSONALIZATION_WEAKNESS_ALPHA:0.2}
-      shrinkage:
-        pronunciation: ${PERSONALIZATION_WEAKNESS_K_PRONUNCIATION:3}
-        fluency: ${PERSONALIZATION_WEAKNESS_K_FLUENCY:4}
-        grammar: ${PERSONALIZATION_WEAKNESS_K_GRAMMAR:5}
-        vocabulary: ${PERSONALIZATION_WEAKNESS_K_VOCABULARY:5}
-        coherence: ${PERSONALIZATION_WEAKNESS_K_COHERENCE:7}
-      reliable-observation-count: ${PERSONALIZATION_WEAKNESS_RELIABLE_COUNT:3}
-      minimum-criteria-per-evaluation: ${PERSONALIZATION_WEAKNESS_MIN_CRITERIA:3}
-      # Áp cho CẢ prior lớp lẫn prior khối. Trước đây tầng khối đóng cứng 1 học sinh trong mã,
-      # nghĩa là co Bayes co về chính học sinh đó -- tức không co gì cả.
-      minimum-cohort-students: ${PERSONALIZATION_WEAKNESS_MIN_COHORT_STUDENTS:10}
-      observation-window-days: ${PERSONALIZATION_WEAKNESS_WINDOW_DAYS:60}
-      minimum-sub-attribute-frequency: ${PERSONALIZATION_WEAKNESS_MIN_SUB_ATTRIBUTE_FREQ:3}
-      stale-after-hours: ${PERSONALIZATION_WEAKNESS_STALE_HOURS:24}
-      batch-size: ${PERSONALIZATION_WEAKNESS_BATCH_SIZE:200}
-      refresh-delay-ms: ${PERSONALIZATION_WEAKNESS_REFRESH_DELAY_MS:60000}
-      refresh-initial-delay-ms: ${PERSONALIZATION_WEAKNESS_REFRESH_INITIAL_DELAY_MS:60000}
+    # Khối `weakness:` (13 khoá: alpha EMA, hệ số co ngót từng tiêu chí, ngưỡng cohort, cửa sổ
+    # quan sát, nhịp job làm mới) đã bỏ cùng hồ sơ điểm yếu. Thứ tự tiêu chí đáng luyện giờ
+    # suy thẳng từ điểm đã chấm và không có tham số nào để chỉnh.
   frontend:
     password-setup-url: ${PASSWORD_SETUP_URL}
     oauth2-url: ${OAUTH2_URL}

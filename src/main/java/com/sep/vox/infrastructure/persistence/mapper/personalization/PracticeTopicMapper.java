@@ -19,7 +19,8 @@ public final class PracticeTopicMapper {
             entity.getCurriculumGroup(),
             entity.isActive(),
             entity.getCreatedAt(),
-            entity.getSourceQuestionTopicId()
+            entity.getSourceQuestionTopicId(),
+            entity.getTemporalAffordance()
         );
     }
 
@@ -33,7 +34,8 @@ public final class PracticeTopicMapper {
             topic.getCurriculumGroup(),
             topic.isActive(),
             topic.getCreatedAt(),
-            topic.getSourceQuestionTopicId()
+            topic.getSourceQuestionTopicId(),
+            topic.getTemporalAffordance()
         );
     }
 }

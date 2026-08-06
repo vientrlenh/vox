@@ -83,68 +83,6 @@ public interface SpringDataPracticeTopicRepository
     );
 
     @Query(value = """
-        WITH profile AS (
-            SELECT id
-            FROM learner_profile
-            WHERE student_id = :studentId
-            ORDER BY version DESC
-            LIMIT 1
-        )
-        SELECT topic.id AS id,
-               topic.name AS name,
-               topic.interest_dimension AS interestDimension,
-               topic.curriculum_group AS curriculumGroup,
-               COALESCE(topic_score.score, 0.5) AS topicScore,
-               COALESCE(topic_score.sessions_mentioned, 0) AS mentions,
-               COALESCE(dimension_score.score, 0.5) AS dimensionScore,
-               COUNT(question.id) FILTER (
-                   WHERE question.active = true
-                     AND exposure.id IS NULL
-                     AND question.target_criterion_code = :criterion
-                     AND (:subAttribute IS NULL OR question.target_sub_attribute = :subAttribute)
-               )::int AS unseenCount,
-               CASE
-                   WHEN topic_score.last_mentioned_at IS NULL THEN 0.0
-                   ELSE EXP(
-                       -EXTRACT(EPOCH FROM (
-                           CURRENT_TIMESTAMP - topic_score.last_mentioned_at
-                       )) / 86400.0 / 7.0
-                   )
-               END AS recency,
-               EXISTS (
-                   SELECT 1
-                   FROM saved_topic saved
-                   WHERE saved.student_id = :studentId
-                     AND saved.practice_topic_id = topic.id
-               ) AS savedByMe
-        FROM practice_topic topic
-        LEFT JOIN topic_interest_score topic_score
-          ON topic_score.student_id = :studentId
-         AND topic_score.practice_topic_id = topic.id
-        LEFT JOIN profile ON true
-        LEFT JOIN dimension_interest_score dimension_score
-          ON dimension_score.learner_profile_id = profile.id
-         AND dimension_score.dimension = topic.interest_dimension
-        LEFT JOIN practice_question question
-          ON question.practice_topic_id = topic.id
-        LEFT JOIN student_question_exposure exposure
-          ON exposure.student_id = :studentId
-         AND exposure.practice_question_id = question.id
-        WHERE topic.active = true
-          AND topic.source IS DISTINCT FROM 'EXAM_QUESTION_BANK'
-        GROUP BY topic.id, topic.name, topic.interest_dimension,
-                 topic.curriculum_group, topic_score.score,
-                 topic_score.sessions_mentioned,
-                 topic_score.last_mentioned_at, dimension_score.score
-        """, nativeQuery = true)
-    List<RankedTopicInfo> findRankedTopicsByWeakness(
-        @Param("studentId") UUID studentId,
-        @Param("goal") String goal,
-        @Param("criterion") String criterion,
-        @Param("subAttribute") String subAttribute
-    );
-
-    @Query(value = """
         SELECT topic.id AS id, topic.name AS name, topic.interest_dimension AS interestDimension,
                true AS savedByMe
         FROM practice_topic topic

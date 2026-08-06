@@ -11,6 +11,7 @@ import com.sep.vox.domain.model.personalization.PracticeTopic;
 import com.sep.vox.domain.model.personalization.TopicSuggestion;
 import com.sep.vox.domain.repository.personalization.PracticeTopicRepository;
 import com.sep.vox.domain.repository.personalization.TopicSuggestionRepository;
+import com.sep.vox.domain.service.personalization.TensePolicy;
 
 /**
  * Ghi topic mới sinh từ từ khoá + ghi nhận lượt dùng hạn mức của học sinh -- HAI
@@ -41,7 +42,8 @@ public class KeywordTopicPersistenceService {
             String keyword,
             String topicName,
             String dimension,
-            String curriculumGroup) {
+            String curriculumGroup,
+            String temporalAffordance) {
         var now = Instant.now();
         var saved = practiceTopicRepository.save(new PracticeTopic(
             null,
@@ -53,7 +55,8 @@ public class KeywordTopicPersistenceService {
             curriculumGroup == null ? "OUT_OF_CURRICULUM" : curriculumGroup,
             true,
             now,
-            null
+            null,
+            temporalAffordance == null ? TensePolicy.AFFORDANCE_MIXED : temporalAffordance
         ));
         topicSuggestionRepository.save(new TopicSuggestion(
             null,

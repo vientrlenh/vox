@@ -32,7 +32,6 @@ import com.sep.vox.application.port.input.usecase.examevaluation.ExamSessionResu
 import com.sep.vox.application.port.input.usecase.examevaluation.UpsertExamCandidateResultUseCase;
 import com.sep.vox.application.port.input.usecase.examgrading.PreviewGradingUseCase;
 import com.sep.vox.application.port.input.usecase.examgrading.RegradeResultUseCase;
-import com.sep.vox.application.port.output.EventPublisherPort;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.exam.ExamGradingAssignment;
@@ -44,7 +43,6 @@ import com.sep.vox.domain.model.exam.GradingRoundType;
 import com.sep.vox.domain.model.rubric.RubricCriterion;
 import com.sep.vox.domain.model.rubric.RubricTotalScoreMethod;
 import com.sep.vox.domain.model.rubric.RubricVersion;
-import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
 import com.sep.vox.domain.repository.ExamItemCriterionScoreRepository;
 import com.sep.vox.domain.repository.ExamItemEvaluationRepository;
@@ -190,8 +188,7 @@ public class PreviewGradingUseCaseTests {
 
         var regradeUseCase = new RegradeResultUseCase(
             gradingActionSupport, resolver, examItemEvaluationRepository, examItemCriterionScoreRepository,
-            examSessionRepository, mock(ExamCandidateRepository.class), upsertExamCandidateResultUseCase,
-            mock(EventPublisherPort.class));
+            examSessionRepository, upsertExamCandidateResultUseCase);
         when(examItemEvaluationRepository.findByResponseIdIn(anyList())).thenReturn(List.of());
         when(examItemEvaluationRepository.save(any())).thenAnswer(invocation -> {
             var evaluation = (ExamItemEvaluation) invocation.getArgument(0);

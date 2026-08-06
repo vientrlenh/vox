@@ -2,7 +2,6 @@ package com.sep.vox.application.port.input.usecase.practiceevaluation;
 
 import java.time.Instant;
 import java.util.Locale;
-import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -12,13 +11,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.port.input.command.practiceevaluation.RecordPracticeAttemptEvaluationCommand;
 import com.sep.vox.application.port.input.service.ConfidenceReviewCalculator;
-import com.sep.vox.application.port.input.service.WeaknessObservationDerivationService;
 import com.sep.vox.application.port.input.service.ConfidenceReviewCalculator.ConfidenceMode;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.domain.model.personalization.WeaknessObservationSourceType;
-import com.sep.vox.domain.model.rubric.RubricCriterion;
 import com.sep.vox.domain.repository.RubricCriterionRepository;
-import com.sep.vox.domain.repository.WeaknessObservationRepository;
 import com.sep.vox.domain.repository.personalization.PracticeCriterionScoreRepository;
 import com.sep.vox.domain.repository.personalization.PracticeItemEvaluationRepository;
 import com.sep.vox.domain.repository.personalization.PracticeItemResponseRepository;
@@ -35,8 +30,6 @@ public class RecordPracticeAttemptEvaluationUseCase implements IUseCase<RecordPr
     private final PracticeItemResponseRepository responseRepository;
     private final RubricCriterionRepository rubricCriterionRepository;
     private final ConfidenceReviewCalculator confidenceReviewCalculator;
-    private final WeaknessObservationDerivationService derivationService;
-    private final WeaknessObservationRepository weaknessObservationRepository;
     private final PracticeSessionRepository practiceSessionRepository;
 
     public RecordPracticeAttemptEvaluationUseCase(
@@ -45,16 +38,12 @@ public class RecordPracticeAttemptEvaluationUseCase implements IUseCase<RecordPr
             PracticeItemResponseRepository responseRepository,
             RubricCriterionRepository rubricCriterionRepository,
             ConfidenceReviewCalculator confidenceReviewCalculator,
-            WeaknessObservationDerivationService derivationService,
-            WeaknessObservationRepository weaknessObservationRepository,
             PracticeSessionRepository practiceSessionRepository) {
         this.evaluationRepository = evaluationRepository;
         this.criterionScoreRepository = criterionScoreRepository;
         this.responseRepository = responseRepository;
         this.rubricCriterionRepository = rubricCriterionRepository;
         this.confidenceReviewCalculator = confidenceReviewCalculator;
-        this.derivationService = derivationService;
-        this.weaknessObservationRepository = weaknessObservationRepository;
         this.practiceSessionRepository = practiceSessionRepository;
     }
 
@@ -108,7 +97,6 @@ public class RecordPracticeAttemptEvaluationUseCase implements IUseCase<RecordPr
             );
         }
 
-        storeWeaknessObservations(input, evaluationId, markedInvalid, evaluatedAt, rubricCriteriaByCode);
         refreshSessionScore(input.practiceResponseId());
         return null;
     }
@@ -160,59 +148,4 @@ public class RecordPracticeAttemptEvaluationUseCase implements IUseCase<RecordPr
         }
     }
 
-    /**
-     * Biến kết quả chấm thành các quan sát điểm yếu -- mắt xích đã thiếu khiến hồ sơ điểm yếu
-     * luôn trống dù học sinh luyện đều.
-     *
-     * Trước đây {@code WeaknessObservationDerivationService.derive} không có một call site nào
-     * trong cả repo: nó viết cho nhánh thi nhưng nhánh thi cũng chưa gọi. Kết quả là chuỗi dừng
-     * ngay sau khi ghi điểm -- có {@code practice_criterion_score} nhưng không ai đọc để suy ra
-     * nhãn điểm yếu, nên {@code weakness_observation} rỗng, kéo theo snapshot rỗng và cả ba ô
-     * đếm trên màn hồ sơ đều bằng 0.
-     *
-     * Không để hỏng cả việc ghi điểm nếu bước này lỗi: điểm đã chấm là dữ liệu chính, còn suy
-     * điểm yếu là phần làm giàu thêm -- mất nó thì lần chấm sau bù lại được.
-     */
-    private void storeWeaknessObservations(
-            RecordPracticeAttemptEvaluationCommand input,
-            UUID evaluationId,
-            boolean markedInvalid,
-            Instant evaluatedAt,
-            Map<String, RubricCriterion> rubricCriteriaByCode) {
-        try {
-            var studentId = responseRepository.findStudentIdByResponseId(input.practiceResponseId());
-            if (studentId == null) {
-                return;
-            }
-            var observations = derivationService.derive(
-                studentId,
-                evaluationId,
-                WeaknessObservationSourceType.PRACTICE,
-                evaluatedAt,
-                markedInvalid,
-                false,
-                input.rawCriteria(),
-                rubricCriteriaByCode
-            );
-            for (var observation : observations) {
-                // Chấm lại cùng một câu không được đẻ thêm bản trùng -- khoá tự nhiên là
-                // (evaluation, tiêu chí, nhãn, bằng chứng).
-                if (weaknessObservationRepository.existsForKey(
-                        observation.getSourceEvaluationId(),
-                        observation.getFrameworkCriterionId(),
-                        observation.getSubAttribute(),
-                        observation.getEvidenceSpan())) {
-                    continue;
-                }
-                weaknessObservationRepository.save(observation);
-            }
-            LOGGER.debug(
-                "Đã ghi {} quan sát điểm yếu từ phiên luyện, evaluation {}.",
-                observations.size(),
-                evaluationId
-            );
-        } catch (RuntimeException exception) {
-            LOGGER.warn("Không suy được quan sát điểm yếu cho evaluation {}.", evaluationId, exception);
-        }
-    }
 }

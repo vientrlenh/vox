@@ -32,7 +32,6 @@ public class ViewMySavedTopicsUseCase implements IUseCase<Void, List<PracticeTop
     public List<PracticeTopicOffer> execute(Void input) {
         var studentId = userContextPort.getCurrentAuthenticatedUserId();
         var minutes = enrichmentService.minutesForStudent(studentId);
-        var focusTags = enrichmentService.focusTagsForStudent(studentId);
         return practiceTopicQueryRepository.findSavedTopics(studentId).stream()
             .map(row -> new PracticeTopicOffer(
                 row.getId(),
@@ -42,8 +41,7 @@ public class ViewMySavedTopicsUseCase implements IUseCase<Void, List<PracticeTop
                 null,
                 minutes,
                 null,
-                List.of(),
-                focusTags
+                List.of()
             ))
             .toList();
     }

@@ -36,7 +36,8 @@ public class WeaknessVectorCalculator {
             WeaknessVectorSettings settings) {
         var relatives = centerScores(scores, settings.minimumCriteriaPerEvaluation());
         var snapshots = calculateSnapshots(relatives, targetStudentIds, computedAt, settings);
-        var priorities = calculatePriorities(frequencies, snapshots, computedAt, settings);
+        // KHÔNG nhận snapshots nữa: hai nửa của lớp này đã độc lập -- xem calculatePriorities.
+        var priorities = calculatePriorities(frequencies, computedAt, settings);
         return new CalculationResult(snapshots, priorities, relatives);
     }
 
@@ -90,12 +91,28 @@ public class WeaknessVectorCalculator {
             Set<UUID> targetStudentIds,
             Instant computedAt,
             WeaknessVectorSettings settings) {
+        // CÙNG ngưỡng cho cả hai tầng cohort. Trước đây tầng khối chỉ đòi 1 học sinh, và một
+        // tập gồm đúng một người thì trung bình của tập CHÍNH LÀ người đó:
+        //
+        //     estimate = w·ema + (1−w)·ema = ema
+        //
+        // tức co Bayes co về chính mình = không co gì cả. Đo được trên dữ liệu thật
+        // (2026-08-05, n=4, k=5 nên w=0,44): weakness GRAMMAR trong DB là 0,1798 trong khi
+        // rel thô là 0,180 -- lệch 0,2%, đúng bằng "không co".
+        //
+        // Dưới ngưỡng thì prior về 0,0, và 0,0 ở đây KHÔNG phải giá trị mặc định tuỳ tiện: rel
+        // đã trừ trung bình nên 0 nghĩa là "không lệch về phía nào", tức đúng cái ta muốn nói
+        // khi chưa đủ bằng chứng.
         var classPriors = priorsByCohort(
             relatives,
             RelativeObservation::schoolClassId,
-            settings.minimumClassPriorStudents()
+            settings.minimumCohortStudents()
         );
-        var gradePriors = priorsByCohort(relatives, RelativeObservation::schoolGradeId, 1);
+        var gradePriors = priorsByCohort(
+            relatives,
+            RelativeObservation::schoolGradeId,
+            settings.minimumCohortStudents()
+        );
         var byStudentCriterion = relatives.stream()
             .filter(item -> targetStudentIds.contains(item.studentId()))
             .collect(Collectors.groupingBy(
@@ -192,45 +209,14 @@ public class WeaknessVectorCalculator {
         }
         return 0.0;
     }
-
+    
     private List<SubAttributePriority> calculatePriorities(
             List<WeaknessFrequency> frequencies,
-            List<LearnerWeaknessSnapshot> snapshots,
             Instant computedAt,
             WeaknessVectorSettings settings) {
-        var snapshotByKey = snapshots.stream().collect(Collectors.toMap(
-            item -> new StudentCriterionKey(item.getStudentId(), item.getFrameworkCriterionId()),
-            Function.identity()
-        ));
-        var eligible = frequencies.stream()
+        return frequencies.stream()
             .filter(item -> item.getFrequency() >= settings.minimumSubAttributeFrequency())
-            .toList();
-        var maxima = eligible.stream().collect(Collectors.groupingBy(
-            item -> new StudentCriterionKey(item.getStudentId(), item.getFrameworkCriterionId()),
-            Collectors.collectingAndThen(
-                Collectors.toList(),
-                values -> new FrequencyMax(
-                    values.stream().mapToInt(WeaknessFrequency::getFrequency).max().orElse(1),
-                    values.stream().mapToInt(WeaknessFrequency::getRecentFrequency).max().orElse(0)
-                )
-            )
-        ));
-        var priorities = new ArrayList<SubAttributePriority>();
-        for (var item : eligible) {
-            var key = new StudentCriterionKey(item.getStudentId(), item.getFrameworkCriterionId());
-            var snapshot = snapshotByKey.get(key);
-            if (snapshot == null) {
-                continue;
-            }
-            var max = maxima.get(key);
-            var normalizedFrequency = (double) item.getFrequency() / max.frequency();
-            var normalizedRecent = max.recentFrequency() == 0
-                ? 0.0
-                : (double) item.getRecentFrequency() / max.recentFrequency();
-            var weightedFrequency = settings.frequencyWeight() * normalizedFrequency
-                + settings.recentFrequencyWeight() * normalizedRecent;
-            var priority = weightedFrequency * snapshot.getWeakness().doubleValue();
-            priorities.add(new SubAttributePriority(
+            .map(item -> new SubAttributePriority(
                 stableId(
                     "sub-attribute-priority",
                     item.getStudentId(),
@@ -241,23 +227,14 @@ public class WeaknessVectorCalculator {
                 item.getFrameworkCriterionId(),
                 item.getSubAttribute(),
                 item.getFrequency(),
-                item.getRecentFrequency(),
-                decimal(priority),
+                decimal(item.getDecayedFrequency()),
                 // practiceable = "việc sinh câu hỏi có nhắm được đúng nhãn này không", chứ
-                // không phải "nhãn này có đáng luyện không". Trước đây ghi cứng false nên
-                // findPracticeablePrioritiesOrderedDesc luôn trả rỗng: hệ thống chỉ nhắm được
-                // tới TIÊU CHÍ (GRAMMAR/VOCABULARY/...), không bao giờ tới được "thì quá khứ
-                // đơn", dù đã đo đếm đầy đủ tần suất của nó.
-                //
-                // Phép thử là taxonomy đóng: nhãn nào prompt sinh câu hiểu được thì nhắm được.
-                // Nhãn suy ra từ số đo -- phoneme_z, slow_rate, long_pause -- KHÔNG thuộc tập
-                // đó, và đúng là không nhắm được: không thể ra đề "hãy nói sai âm /z/ ít lại".
-                // Chúng vẫn được đếm và vẫn hiện trên hồ sơ, chỉ là không dùng để chọn đề.
+                // không phải "nhãn này có đáng luyện không". Phép thử là taxonomy đóng: nhãn
+                // nào prompt sinh câu hiểu được thì nhắm được.
                 SubAttributePolicy.criterionForSubAttribute(item.getSubAttribute()) != null,
                 computedAt
-            ));
-        }
-        return priorities;
+            ))
+            .toList();
     }
 
     private boolean hasValidScale(WeaknessScoreObservation score) {
@@ -316,6 +293,4 @@ public class WeaknessVectorCalculator {
     private record CohortCriterionKey(UUID cohortId, UUID frameworkCriterionId) {
     }
 
-    private record FrequencyMax(int frequency, int recentFrequency) {
-    }
 }

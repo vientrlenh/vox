@@ -13,13 +13,24 @@ public final class LearnerProfileResponses {
         Double flsaScore,
         String targetFrameworkBandCode,
         String targetFrameworkBandLabel,
-        Double targetBandAttainmentPercent,
-        String estimatedFrameworkBandCode,
-        boolean interestAutoUpdateEnabled,
+                boolean interestAutoUpdateEnabled,
         String quizCompletedAt
     ) {
     }
 
     public record InterestQuizItem(UUID id, List<String> statements) {
+    }
+
+    /**
+     * Một bậc để học sinh chọn làm độ khó phiên luyện. Cố tình KHÔNG có cờ "bậc của em":
+     * hệ thống không xếp bậc năng lực, nó chỉ ghi lại độ khó em chọn từng phiên.
+     */
+    public record PracticeBandOption(
+        UUID id,
+        String code,
+        String label,
+        String description,
+        int order
+    ) {
     }
 }

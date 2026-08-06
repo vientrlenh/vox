@@ -25,12 +25,9 @@ public class PersonalizationConfig {
             @Value("${app.personalization.weakness.shrinkage.coherence:7}") double coherenceK,
             @Value("${app.personalization.weakness.reliable-observation-count:3}") int reliableCount,
             @Value("${app.personalization.weakness.minimum-criteria-per-evaluation:3}") int minimumCriteria,
-            @Value("${app.personalization.weakness.minimum-class-prior-students:10}") int minimumClassStudents,
+            @Value("${app.personalization.weakness.minimum-cohort-students:10}") int minimumCohortStudents,
             @Value("${app.personalization.weakness.observation-window-days:60}") long observationWindowDays,
-            @Value("${app.personalization.weakness.recent-window-days:14}") long recentWindowDays,
             @Value("${app.personalization.weakness.minimum-sub-attribute-frequency:3}") int minimumFrequency,
-            @Value("${app.personalization.weakness.frequency-weight:0.6}") double frequencyWeight,
-            @Value("${app.personalization.weakness.recent-frequency-weight:0.4}") double recentFrequencyWeight,
             @Value("${app.personalization.weakness.stale-after-hours:24}") long staleAfterHours,
             @Value("${app.personalization.weakness.batch-size:200}") int batchSize) {
         return new WeaknessVectorSettings(
@@ -44,12 +41,9 @@ public class PersonalizationConfig {
             ),
             reliableCount,
             minimumCriteria,
-            minimumClassStudents,
+            minimumCohortStudents,
             Duration.ofDays(observationWindowDays),
-            Duration.ofDays(recentWindowDays),
             minimumFrequency,
-            frequencyWeight,
-            recentFrequencyWeight,
             Duration.ofHours(staleAfterHours),
             Math.min(Math.max(batchSize, 1), 200)
         );

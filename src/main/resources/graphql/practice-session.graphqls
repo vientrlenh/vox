@@ -1,5 +1,4 @@
 extend type Query {
-    practiceSession(sessionId: ID!): PracticeSession
     myPracticeHistory(limit: Int = 20): [PracticeSession!]!
     "Học sinh xem lại bài của CHÍNH MÌNH. Cùng nội dung với studentPracticeSessionDetail nhưng khác quyền -- bên kia dành cho giáo viên xem bài học sinh mình dạy."
     myPracticeSessionDetail(sessionId: ID!): TeacherPracticeSessionDetail!
@@ -8,33 +7,7 @@ extend type Query {
 
 extend type Mutation {
     startPracticeSession(paperId: ID!): PracticeSession!
-    submitPracticeTurn(input: SubmitPracticeTurnInput!): SubmitTurnResult!
-    heartbeatPracticeSession(sessionId: ID!): Boolean!
     endPracticeSession(input: EndPracticeSessionInput!): PracticeSession!
-}
-
-input TurnCorrectionInput {
-    category: String!
-    originalText: String!
-    correctedText: String!
-    explanation: String!
-    correctAudioUrl: String
-    confidence: Float!
-}
-
-input SubmitPracticeTurnInput {
-    sessionId: ID!
-    questionId: ID!
-    turnOrder: Int!
-    turnType: String!
-    promptText: String
-    audioUrl: String!
-    transcript: String!
-    durationSeconds: Int!
-    wordFeedbackJson: String
-    turnScore: Float
-    questionComplete: Boolean!
-    corrections: [TurnCorrectionInput!]
 }
 
 input EndPracticeSessionInput {
@@ -63,20 +36,6 @@ type TurnCorrection {
     correctedText: String!
     explanation: String!
     correctAudioUrl: String
-}
-
-type SubmitTurnResult {
-    responseId: ID!
-    turnId: ID!
-    remainingGradedSeconds: Int!
-    evaluationQueued: Boolean!
-    corrections: [TurnCorrection!]!
-    "Lượt này tiêu nốt hạn mức còn lại -- lượt VẪN được ghi và chấm, nhưng phiên phải đóng sau khi trả kết quả."
-    quotaExhausted: Boolean!
-    "Tổng số giây học sinh ĐÃ NÓI trong phiên, đã tính cả lượt này. Chỉ đếm khoảng VAD nghe thấy tiếng -- lúc AI nói hay học sinh nghĩ đều không tính."
-    sessionSpokenSeconds: Int!
-    "Trần nói của cả phiên (giây), cùng con số với PracticePaper.sessionBudgetSeconds."
-    sessionBudgetSeconds: Int!
 }
 
 type CriterionScore {

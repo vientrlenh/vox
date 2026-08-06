@@ -102,11 +102,9 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
         // cuối danh sách, thứ tự theo % khớp giữ được tính đơn điệu.
         var minutes = enrichmentService.minutesForStudent(studentId);
         var focusTags = enrichmentService.focusTagsForStudent(studentId);
-        var signal = enrichmentService.studentRankSignal(studentId);
         var weakCriterionLabel = weakCriterion == null ? null : enrichmentService.criterionLabel(weakCriterion);
         return selected.stream()
             .map(topic -> {
-                var rank = enrichmentService.rankForTopic(studentId, topic.id(), signal);
                 var rationale = rationaleFor(topic, weakCriterionLabel);
                 return new PracticeTopicOffer(
                     topic.id(),
@@ -115,7 +113,6 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
                     topic.saved(),
                     clampPercent(topic.score()),
                     minutes,
-                    enrichmentService.levelLabel(rank, signal.bandCount()),
                     rationale,
                     List.of(rationale),
                     focusTags

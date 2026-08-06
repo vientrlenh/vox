@@ -21,8 +21,6 @@ public final class LearnerProfileResponseMapper {
             dto.flsaScore(),
             dto.targetFrameworkBandCode(),
             dto.targetFrameworkBandLabel(),
-            dto.targetBandAttainmentPercent(),
-            dto.estimatedFrameworkBandCode(),
             dto.interestAutoUpdateEnabled(),
             dto.quizCompletedAt()
         );

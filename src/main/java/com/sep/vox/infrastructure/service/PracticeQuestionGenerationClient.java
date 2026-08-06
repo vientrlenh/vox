@@ -58,7 +58,8 @@ public class PracticeQuestionGenerationClient {
             int count,
             Duration timeout,
             int bandCount,
-            List<FrameworkResultBand> bandLadder) {
+            List<FrameworkResultBand> bandLadder,
+            List<UUID> excludeQuestionIds) {
         try {
             var payload = new java.util.LinkedHashMap<String, Object>();
             payload.put("topic_id", topic.id().toString());
@@ -70,6 +71,14 @@ public class PracticeQuestionGenerationClient {
             payload.put("target_rank", targetRank);
             payload.put("count", Math.min(3, count));
             payload.put("band_count", bandCount);
+            // Câu đã chết vĩnh viễn với chính học sinh này -- Python loại chúng khỏi phép so
+            // trùng. Không gửi thì cổng chặn trùng so với cả kho, kể cả câu em ấy không bao
+            // giờ được thấy lại, và mọi bản nháp mới đều bị vứt vì "giống câu đã có".
+            payload.put(
+                "exclude_question_ids",
+                (excludeQuestionIds == null ? List.<UUID>of() : excludeQuestionIds)
+                    .stream().map(UUID::toString).toList()
+            );
             payload.put(
                 "band_ladder",
                 (bandLadder == null ? List.<FrameworkResultBand>of() : bandLadder).stream()

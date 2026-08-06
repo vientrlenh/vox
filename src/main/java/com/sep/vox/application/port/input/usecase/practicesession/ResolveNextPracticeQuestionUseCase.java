@@ -8,7 +8,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.input.service.PracticeQuestionSelectionService;
-import com.sep.vox.application.port.input.service.PracticeTopicOfferEnrichmentService;
 import com.sep.vox.application.port.input.service.ResolveNextPracticeQuestionClaimService;
 import com.sep.vox.application.port.input.service.ResolveNextPracticeQuestionPersistenceService;
 import com.sep.vox.domain.model.personalization.PracticeQuestion;
@@ -80,17 +79,14 @@ public class ResolveNextPracticeQuestionUseCase {
 
     private final ResolveNextPracticeQuestionClaimService claimService;
     private final PracticeQuestionSelectionService selectionService;
-    private final PracticeTopicOfferEnrichmentService enrichmentService;
     private final ResolveNextPracticeQuestionPersistenceService persistenceService;
 
     public ResolveNextPracticeQuestionUseCase(
             ResolveNextPracticeQuestionClaimService claimService,
             PracticeQuestionSelectionService selectionService,
-            PracticeTopicOfferEnrichmentService enrichmentService,
             ResolveNextPracticeQuestionPersistenceService persistenceService) {
         this.claimService = claimService;
         this.selectionService = selectionService;
-        this.enrichmentService = enrichmentService;
         this.persistenceService = persistenceService;
     }
 
@@ -123,11 +119,11 @@ public class ResolveNextPracticeQuestionUseCase {
             );
         }
 
-        var signal = enrichmentService.studentRankSignal(claim.studentId());
-        var baseRank = enrichmentService.rankForTopic(claim.studentId(), claim.topic().getId(), signal);
-
         var selection = selectionService
-            .resolveNextQuestion(claim.topic(), claim.studentId(), claim.focus(), baseRank, claim.alreadyChosen())
+            .resolveNextQuestion(
+                claim.topic(), claim.studentId(), claim.focus(),
+                claim.targetBandOrder(), claim.alreadyChosen()
+            )
             .orElse(null);
         if (selection == null) {
             return Result.noMoreQuestions(

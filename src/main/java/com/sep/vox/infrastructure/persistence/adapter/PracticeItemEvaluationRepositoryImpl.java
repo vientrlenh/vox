@@ -60,9 +60,4 @@ public class PracticeItemEvaluationRepositoryImpl implements PracticeItemEvaluat
     public BigDecimal findAverageItemScoreBySessionId(UUID sessionId) {
         return repository.findAverageItemScoreBySessionId(sessionId);
     }
-
-    @Override
-    public java.util.List<Double> findNormalizedScoresChronological(UUID studentId) {
-        return repository.findNormalizedScoresChronological(studentId);
-    }
 }

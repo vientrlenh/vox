@@ -154,7 +154,9 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
             corrections,
             quotaExhausted,
             spokenSeconds,
-            enrichmentService.sessionBudgetSecondsForStudent(studentId)
+            enrichmentService.sessionBudgetSeconds(
+                studentId, enrichmentService.bandOrder(session.getTargetFrameworkBandId())
+            )
         );
         if (result.evaluationQueued()) {
             eventPublisher.publish(evaluationRequestFactory.build(

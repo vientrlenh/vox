@@ -57,18 +57,18 @@ public class WeaknessObservationRepositoryImpl implements WeaknessObservationRep
     public List<WeaknessFrequency> findWeaknessFrequencies(
             List<UUID> studentIds,
             Instant windowStart,
-            Instant recentWindowStart) {
+            double decayBase) {
         if (studentIds.isEmpty()) {
             return List.of();
         }
         return repository
-            .findWeaknessFrequencies(studentIds, windowStart, recentWindowStart).stream()
+            .findWeaknessFrequencies(studentIds, windowStart, decayBase).stream()
             .map(row -> new WeaknessFrequency(
                 row.getStudentId(),
                 row.getFrameworkCriterionId(),
                 row.getSubAttribute(),
                 row.getFrequency(),
-                row.getRecentFrequency()
+                row.getDecayedFrequency()
             ))
             .toList();
     }

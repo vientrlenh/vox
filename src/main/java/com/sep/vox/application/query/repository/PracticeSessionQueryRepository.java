@@ -20,8 +20,6 @@ public interface PracticeSessionQueryRepository {
 
     List<CriterionFrameworkInfo> findCriteriaFrameworks(UUID sessionId);
 
-    List<String> findLastAbandonDiagnosis(UUID studentId, UUID topicId);
-
     PracticeDashboardCountsInfo findDashboardCounts(UUID studentId);
 
     List<java.time.LocalDate> findCompletedSessionDatesDesc(UUID studentId);

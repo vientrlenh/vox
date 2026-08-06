@@ -97,15 +97,40 @@ public class InterestVectorService {
         var sessions = new HashMap<UUID, Set<UUID>>();
         var last = new HashMap<UUID, Instant>();
         for (var event : events) {
+            // ĐIỂM thì mọi sự kiện đều tính -- kể cả "được chào mà không chọn", đó chính là
+            // thông tin âm ta muốn học.
             scores.compute(
                 event.getTopicId(),
                 (key, value) -> 0.3 * event.getSignal() + 0.7 * (value == null ? 0.5 : value)
             );
+            // sessions_mentioned CŨNG tính mọi sự kiện -- nó là LƯỢNG BẰNG CHỨNG, không phải
+            // số buổi đã luyện.
+            //
+            // Nó chỉ đi vào đúng một chỗ: gamma = n/(n+2) trong ViewPracticeTopicOffersUseCase,
+            // trả lời "tôi biết bao nhiêu về chủ đề này để dám tin điểm riêng của nó thay vì
+            // mượn điểm của cả chiều". Một lần chào rồi bị bỏ qua LÀ bằng chứng về chủ đề đó.
+            //
+            // Lọc nó ra là tự bắn vào chân: chủ đề chưa luyện bao giờ sẽ mãi n = 0 -> gamma = 0
+            // -> interest = d_t hoàn toàn -> điểm riêng s_t (đang bị tín hiệu 0,30 kéo xuống)
+            // KHÔNG được dùng một chút nào. Tức là bỏ qua bao nhiêu lần cũng không đổi thứ hạng.
             if (event.getSessionId() != null) {
                 sessions.computeIfAbsent(event.getTopicId(), ignored -> new HashSet<>())
                     .add(event.getSessionId());
             }
-            last.put(event.getTopicId(), event.getOccurredAt());
+            // Chỉ LẦN CUỐI mới phải lọc theo loại.
+            //
+            // last_mentioned_at đi vào recency = e^(-dt/7 ngày), rồi vào hệ số phạt
+            // (1 - 0,4·recency) với ý nghĩa "vừa luyện xong thì khoan mời lại". Chủ đề chỉ mới
+            // HIỆN LÊN rồi bị lướt qua chưa hề được luyện, nên đóng dấu "vừa mới đây" cho nó là
+            // phạt 40% một việc chưa xảy ra.
+            //
+            // Vô hại chừng nào bảng chỉ có SESSION_OUTCOME; từ lúc OFFERED_NOT_CHOSEN xuất hiện
+            // thì thành lỗi thật. Cột này nullable và SQL xếp hạng đã có
+            // CASE WHEN last_mentioned_at IS NULL THEN 0.0 -- chưa luyện thì recency = 0, không
+            // phạt, đúng nghĩa.
+            if (event.isSessionOutcome()) {
+                last.put(event.getTopicId(), event.getOccurredAt());
+            }
         }
         var newScores = new ArrayList<TopicInterestScoreEntry>();
         for (var entry : scores.entrySet()) {

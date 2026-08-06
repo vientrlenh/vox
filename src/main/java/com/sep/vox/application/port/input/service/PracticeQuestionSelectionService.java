@@ -28,9 +28,11 @@ import com.sep.vox.infrastructure.service.QuestionDiversityClient;
 /**
  * Chọn/sinh ĐÚNG 1 câu MAIN tiếp theo trong lúc phiên luyện đang chạy -- tách từ
  * BuildPracticePaperUseCase vì giờ có 2 caller (buildPracticePaper cho câu đầu tiên,
- * ResolveNextPracticeQuestionUseCase cho các câu sau). Bậc 1->2->3->4 giữ nguyên logic
- * (đọc kho, nới rank, Chroma neighbor, LLM sinh mới), chỉ đổi từ "gom N câu cho cả đề"
- * sang "gom candidate rồi chọn đúng 1 câu, loại trừ những câu đã chọn trong phiên".
+ * ResolveNextPracticeQuestionUseCase cho các câu sau).
+ *
+ * <p>Thang leo còn BA bậc: đọc kho đúng tiêu chí -> đọc kho bỏ lọc tiêu chí -> nhờ LLM sinh mới.
+ * Bậc "hàng xóm ngữ nghĩa (Chroma)" đã bỏ 2026-08-05 vì nó kéo câu của CHỦ ĐỀ KHÁC lên -- lý do
+ * đầy đủ ghi ở {@link #ladderCandidatesForOneQuestion}.
  */
 @Service
 public class PracticeQuestionSelectionService {
@@ -38,6 +40,14 @@ public class PracticeQuestionSelectionService {
     private static final Logger LOGGER = LoggerFactory.getLogger(PracticeQuestionSelectionService.class);
     private static final JsonMapper JSON_MAPPER = new JsonMapper();
     private static final int ONLINE_GENERATION_MAX_CANDIDATES = 2;
+
+    /**
+     * Lấy ngẫu nhiên trong {@value} câu tốt nhất thay vì luôn lấy câu đầu bảng -- randomesque
+     * (Kingsbury &amp; Zara 1989). Chọn cứng câu đầu thì cùng một kho, cùng một trọng tâm sẽ
+     * cho ra cùng một câu cho mọi học sinh, và câu đó bị dùng mòn trong khi phần còn lại của
+     * kho không ai đụng tới.
+     */
+    private static final int TOP_CANDIDATES_BEFORE_RANDOM = 5;
 
     private final PracticeQuestionRepository questionRepository;
     private final PracticeQuestionGenerationService generationService;
@@ -105,8 +115,10 @@ public class PracticeQuestionSelectionService {
      * một sub-attribute khi chưa có bằng chứng là nói với học sinh rằng em yếu chỗ đó mà
      * không có cơ sở. Bên sinh câu phải chịu được null (xem CandidateFilterNode).
      *
-     * <p>Hiện nhánh null gần như luôn chạy, vì findPracticeablePrioritiesOrderedDesc lọc
-     * practiceable = true mà cột đó chưa có chỗ nào set true.
+     * <p>Nhánh null chỉ chạy ở giai đoạn đầu: sub_attribute_priority đòi frequency >= 3 nên
+     * nhãn chỉ xuất hiện từ lần chấm thứ ba trở đi. Đo trên dữ liệu thật (2026-08-05, 4 lần
+     * chấm): 4 nhãn đều có mặt và practiceable = true -- cột đó do WeaknessVectorCalculator
+     * đặt theo "nhãn có thuộc taxonomy đóng không", tức có nhắm được khi sinh câu hay không.
      */
     private List<String> subAttributesFor(List<PracticeablePriority> priorities, String criterion) {
         return priorities.stream()
@@ -141,39 +153,40 @@ public class PracticeQuestionSelectionService {
         // IELTS 9) thì hằng số 6 kẹp sai mà không báo lỗi. Lấy MỘT lần rồi truyền xuống thang
         // leo, tránh query lặp ở từng bậc.
         var bandCount = enrichmentService.frameworkBandCount(studentId);
-        var slotRank = Math.min(bandCount, targetRank + (slotIndex >= 3 ? 1 : 0));
+        // Mọi ô cùng một bậc: bậc học sinh CHỌN. Trước đây ô thứ 4 trở đi tự nâng thêm một
+        // bậc -- nghĩa là độ khó trôi ngay giữa phiên, theo một luật học sinh không nhìn thấy.
         var excludeIds = alreadyChosenInSession.stream().map(PracticeQuestion::getId).toList();
 
-        // Ba bậc đọc DB trước (rẻ), CHƯA sinh mới.
+        // Hai bậc đọc DB trước (rẻ), CHƯA sinh mới.
         var candidates = ladderCandidatesForOneQuestion(
-            topic, studentId, criterion, subAttribute, slotRank, excludeIds, bandCount
+            topic, studentId, criterion, targetRank, excludeIds, bandCount
         );
         // Ba nước, đắt dần. Điều kiện đi tiếp là KHÔNG CHỌN ĐƯỢC CÂU DÙNG ĐƯỢC -- không phải
         // "thang leo không trả về dòng nào". Lẫn lộn hai thứ đó đã giết phiên luyện sau đúng
         // một câu: thang leo trả về 1 câu, pickOne loại nó vì trùng kiểu lập luận với câu vừa
         // hỏi (kho chủ đề có 12/14 câu cùng kiểu 'description'), thế là hết câu để hỏi trong
         // khi bậc sinh không bao giờ chạy vì "đã tìm được 1 dòng rồi".
-        var chosen = pickOne(candidates, alreadyChosenInSession, criterion, subAttribute, slotRank, false);
+        var chosen = pickOne(candidates, alreadyChosenInSession, subAttribute, targetRank, false);
         if (chosen.isEmpty()) {
             // Nới ĐÚNG luật đa dạng kiểu lập luận, GIỮ NGUYÊN luật gần-trùng-nội-dung. Hai luật
             // này không cùng hạng: hỏi hai câu cùng kiểu lập luận chỉ là kém phong phú, còn hỏi
             // lại một câu gần y hệt thì học sinh thấy rõ là bị lặp.
-            chosen = pickOne(candidates, alreadyChosenInSession, criterion, subAttribute, slotRank, true);
+            chosen = pickOne(candidates, alreadyChosenInSession, subAttribute, targetRank, true);
         }
         if (chosen.isEmpty()) {
             // Chỉ tới đây mới trả giá LLM 10-40 giây với học sinh đang ngồi chờ -- khi kho thật
             // sự không còn gì hỏi được, chứ không phải mỗi lần pool chưa đủ 4 câu như bản gốc.
             var generated = generateThenReload(
-                topic, studentId, criterion, subAttribute, slotRank, excludeIds, bandCount
+                topic, studentId, criterion, subAttribute, targetRank, excludeIds, bandCount
             );
-            chosen = pickOne(generated, alreadyChosenInSession, criterion, subAttribute, slotRank, true);
+            chosen = pickOne(generated, alreadyChosenInSession, subAttribute, targetRank, true);
         }
         if (chosen.isEmpty()) {
             return Optional.empty();
         }
         chosen.ifPresent(question -> questionRepository.incrementUsageCount(question.getId()));
         return chosen.map(question -> new NextQuestionSelection(
-            question, slotIndex + 1, criterion, subAttribute, slotRank
+            question, slotIndex + 1, criterion, subAttribute, targetRank
         ));
     }
 
@@ -187,7 +200,6 @@ public class PracticeQuestionSelectionService {
     private Optional<PracticeQuestion> pickOne(
             List<PracticeQuestion> candidates,
             List<PracticeQuestion> alreadyChosen,
-            String criterion,
             String subAttribute,
             int targetRank,
             boolean relaxReasoning) {
@@ -205,10 +217,8 @@ public class PracticeQuestionSelectionService {
             .filter(question -> relaxReasoning
                 || previousReasoning == null
                 || !previousReasoning.equals(reasoningType(question)))
-            .sorted(Comparator.comparingDouble(
-                (PracticeQuestion question) -> quality(question, criterion, subAttribute, targetRank)
-            ).reversed())
-            .limit(5)
+            .sorted(rankThenSubAttribute(subAttribute, targetRank))
+            .limit(TOP_CANDIDATES_BEFORE_RANDOM)
             .toList();
         if (ranked.isEmpty()) {
             return Optional.empty();
@@ -216,51 +226,53 @@ public class PracticeQuestionSelectionService {
         return Optional.of(ranked.get(ThreadLocalRandom.current().nextInt(ranked.size())));
     }
 
-    private double quality(
-            PracticeQuestion question,
-            String criterion,
-            String subAttribute,
-            int targetRank) {
-        var zpd = Math.max(0.0, 1 - Math.abs(question.getDifficultyRank() - targetRank) / 2.0);
-        var sub = subAttribute != null && subAttribute.equals(question.getTargetSubAttribute())
-            ? 1.0
-            : 0.3;
-        var criterionMatch = criterion.equals(question.getTargetCriterionCode()) ? 1.0 : 0.4;
-        var fresh = 1 - Math.min(1.0, question.getUsageCount() / 50.0);
-        return 0.40 * zpd + 0.30 * sub + 0.20 * criterionMatch + 0.10 * fresh;
+    /**
+     * Hai khoá sắp xếp, KHÔNG trọng số nào: gần độ khó mong muốn nhất trước; bằng nhau thì câu
+     * nhắm đúng nhãn điểm yếu trước.
+     *
+     * <p>Bản trước là tổng có trọng số bốn hạng {@code 0.40·zpd + 0.30·sub + 0.20·criterionMatch
+     * + 0.10·fresh}. Hai hạng cuối không đổi được kết quả nào có ý nghĩa: {@code zpd} nhảy theo
+     * bước 0,20 sau khi nhân trọng số, trong khi biên độ tối đa của {@code criterionMatch} là
+     * 0,12 và của {@code fresh} là 0,10 -- không hạng nào một mình lật nổi một bước độ khó.
+     * Chúng chỉ phá hoà giữa các câu đã bằng điểm, mà ngay dòng dưới {@code limit(5)} +
+     * {@code ThreadLocalRandom} đã CỐ Ý chọn ngẫu nhiên trong nhóm hoà đó rồi.
+     *
+     * <p>{@code criterionMatch} còn gần như luôn bằng 1.0 nữa, vì bậc đầu của thang leo đã lọc
+     * theo tiêu chí ngay trong SQL; và {@code fresh} gần như luôn bằng 1.0 ở quy mô hiện tại vì
+     * {@code usage_count} hiếm khi bén mảng tới 50.
+     */
+    private Comparator<PracticeQuestion> rankThenSubAttribute(String subAttribute, int targetRank) {
+        return Comparator
+            .comparingInt((PracticeQuestion question) ->
+                Math.abs(question.getDifficultyRank() - targetRank))
+            .thenComparingInt(question -> subAttribute != null
+                && subAttribute.equals(question.getTargetSubAttribute()) ? 0 : 1);
     }
 
+    /**
+     * HAI nước đọc kho, rộng dần -- trước là ba, xem lý do bỏ nước Chroma ở cuối hàm.
+     *
+     * <p>Bản trước nữa có bốn: nước đầu tìm ĐÚNG {@code rank = targetRank},
+     * nước hai mới nới {@code ±1}. Gộp lại được vì phép sắp xếp
+     * ({@link #rankThenSubAttribute}) đã tự đẩy câu đúng bậc lên đầu -- giữ hai truy vấn chỉ
+     * khác nhau ở khoảng bậc là làm cùng một việc hai lần.
+     */
     private List<PracticeQuestion> ladderCandidatesForOneQuestion(
             PracticeTopic topic,
             UUID studentId,
             String criterion,
-            String subAttribute,
             int targetRank,
             List<UUID> excludeIds,
             int bandCount) {
         var selected = new LinkedHashMap<UUID, PracticeQuestion>();
+        var rankMin = Math.max(1, targetRank - 1);
+        var rankMax = Math.min(bandCount, targetRank + 1);
 
-        questions(topic.getId(), studentId, criterion, targetRank, targetRank)
+        questions(topic.getId(), studentId, criterion, rankMin, rankMax)
             .forEach(question -> putIfNotExcluded(selected, question, excludeIds));
 
         if (selected.size() < generationProperties.paperTargetQuestionCount()) {
-            questions(
-                topic.getId(),
-                studentId,
-                null,
-                Math.max(1, targetRank - 1),
-                Math.min(bandCount, targetRank + 1)
-            ).forEach(question -> putIfNotExcluded(selected, question, excludeIds));
-        }
-
-        if (selected.size() < generationProperties.paperTargetQuestionCount()) {
-            var neighborIds = diversityClient.neighborQuestionIds(
-                topic.getName(),
-                criterion,
-                Math.max(1, targetRank - 1),
-                Math.min(bandCount, targetRank + 1)
-            );
-            questionRepository.findUnseenByIds(neighborIds, studentId)
+            questions(topic.getId(), studentId, null, rankMin, rankMax)
                 .forEach(question -> putIfNotExcluded(selected, question, excludeIds));
         }
 
@@ -289,7 +301,12 @@ public class PracticeQuestionSelectionService {
                 ONLINE_GENERATION_MAX_CANDIDATES,
                 generationProperties.onlineBudget(),
                 bandCount,
-                enrichmentService.frameworkBandLadder(studentId)
+                enrichmentService.frameworkBandLadder(studentId),
+                // Câu đã chết vĩnh viễn với CHÍNH học sinh này. Không gửi xuống thì cổng chặn
+                // trùng bên Python so bản nháp mới với cả kho -- kể cả những câu em ấy không
+                // bao giờ được thấy lại -- rồi vứt sạch vì "giống câu đã có", và chủ đề khoá
+                // cứng ở pool_exhausted mãi mãi.
+                questionRepository.findPermanentlyExhaustedIds(topic.getId(), studentId)
             );
             questions(
                 topic.getId(),

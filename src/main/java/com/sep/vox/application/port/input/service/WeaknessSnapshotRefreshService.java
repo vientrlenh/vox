@@ -71,7 +71,8 @@ public class WeaknessSnapshotRefreshService {
         var frequencies = weaknessObservationRepository.findWeaknessFrequencies(
             studentIds,
             now.minus(settings.observationWindow()),
-            now.minus(settings.recentObservationWindow())
+            // Cùng alpha với EMA điểm yếu -- cả hệ chỉ còn MỘT tốc độ quên.
+            1.0 - settings.alpha()
         );
         var result = calculator.calculate(
             scoreObservationView.findAllValidScoreObservations(),

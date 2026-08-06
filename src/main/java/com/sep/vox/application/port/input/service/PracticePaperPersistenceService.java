@@ -53,13 +53,15 @@ public class PracticePaperPersistenceService {
     public com.sep.vox.domain.model.personalization.PracticePaper persist(
             UUID studentId,
             UUID topicId,
+            UUID targetFrameworkBandId,
             String origin,
             List<UUID> offeredTopicIds,
             List<UUID> previousOfferedTopicIds,
             PracticeQuestion question,
             PracticeQuestionSelectionService.NextQuestionSelection selection) {
         var paper = createPaper(
-            studentId, topicId, origin, offeredTopicIds, previousOfferedTopicIds, question
+            studentId, topicId, targetFrameworkBandId, origin,
+            offeredTopicIds, previousOfferedTopicIds, question
         );
         saveItemAndExposure(studentId, paper.getId(), selection);
         return paper;
@@ -74,6 +76,7 @@ public class PracticePaperPersistenceService {
     private com.sep.vox.domain.model.personalization.PracticePaper createPaper(
             UUID studentId,
             UUID topicId,
+            UUID targetFrameworkBandId,
             String origin,
             List<UUID> offeredTopicIds,
             List<UUID> previousOfferedTopicIds,
@@ -84,6 +87,7 @@ public class PracticePaperPersistenceService {
             UUID.randomUUID(),
             studentId,
             topicId,
+            targetFrameworkBandId,
             resolvedOrigin,
             currentGoal(studentId),
             jsonSerializationPort.toJson(

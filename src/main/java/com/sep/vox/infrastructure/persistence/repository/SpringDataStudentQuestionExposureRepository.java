@@ -14,4 +14,6 @@ public interface SpringDataStudentQuestionExposureRepository
         UUID studentId,
         UUID practiceQuestionId
     );
+
+    long deleteByStudentIdAndPracticeQuestionId(UUID studentId, UUID practiceQuestionId);
 }

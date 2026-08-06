@@ -116,8 +116,19 @@ public class PracticeQuestionRepositoryImpl implements PracticeQuestionRepositor
      * saveGenerated trước khi tới được đây. */
     @Override
     @Transactional
+    public List<UUID> findPermanentlyExhaustedIds(UUID topicId, UUID studentId) {
+        return repository.findPermanentlyExhaustedIds(topicId, studentId);
+    }
+
+    @Override
     public void incrementUsageCount(UUID id) {
         repository.incrementUsageCount(id);
+    }
+
+    @Override
+    @Transactional
+    public void decrementUsageCount(UUID id) {
+        repository.decrementUsageCount(id);
     }
 
     @Override

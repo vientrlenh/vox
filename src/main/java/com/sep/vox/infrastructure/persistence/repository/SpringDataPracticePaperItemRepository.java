@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -31,5 +32,21 @@ public interface SpringDataPracticePaperItemRepository
         """, nativeQuery = true)
     List<UUID> findQuestionIdsForPaper(@Param("paperId") UUID paperId);
 
-    int countByPracticePaperId(UUID paperId);
+    /**
+     * Xoá đúng dòng ở slot CAO NHẤT của paper, và chỉ khi nó mang đúng câu được chỉ định.
+     *
+     * <p>Ràng buộc {@code practice_question_id = :questionId} là chốt an toàn, không thừa: giữa
+     * lúc caller đọc "câu cuối là gì" và lúc xoá, một lượt {@code next-question} khác có thể đã
+     * chèn thêm slot mới. Không ràng thì ta xoá nhầm câu vừa được chọn cho học sinh.
+     */
+    @Modifying
+    @Query(value = """
+        DELETE FROM practice_paper_item
+        WHERE practice_paper_id = :paperId
+          AND practice_question_id = :questionId
+          AND slot_order = (
+              SELECT MAX(slot_order) FROM practice_paper_item WHERE practice_paper_id = :paperId
+          )
+        """, nativeQuery = true)
+    int deleteLastItemForPaper(@Param("paperId") UUID paperId, @Param("questionId") UUID questionId);
 }

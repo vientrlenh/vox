@@ -8,7 +8,7 @@ public class WeaknessFrequency {
     private UUID frameworkCriterionId;
     private String subAttribute;
     private int frequency;
-    private int recentFrequency;
+    private double decayedFrequency;
 
     public WeaknessFrequency() {
     }
@@ -18,12 +18,12 @@ public class WeaknessFrequency {
             UUID frameworkCriterionId,
             String subAttribute,
             int frequency,
-            int recentFrequency) {
+            double decayedFrequency) {
         this.studentId = studentId;
         this.frameworkCriterionId = frameworkCriterionId;
         this.subAttribute = subAttribute;
         this.frequency = frequency;
-        this.recentFrequency = recentFrequency;
+        this.decayedFrequency = decayedFrequency;
     }
 
     public UUID getStudentId() {
@@ -58,11 +58,11 @@ public class WeaknessFrequency {
         this.frequency = frequency;
     }
 
-    public int getRecentFrequency() {
-        return recentFrequency;
+    public double getDecayedFrequency() {
+        return decayedFrequency;
     }
 
-    public void setRecentFrequency(int recentFrequency) {
-        this.recentFrequency = recentFrequency;
+    public void setDecayedFrequency(double decayedFrequency) {
+        this.decayedFrequency = decayedFrequency;
     }
 }

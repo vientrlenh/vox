@@ -57,7 +57,8 @@ public class PracticeQuestionGenerationService {
             int count,
             Duration timeout,
             int bandCount,
-            List<FrameworkResultBand> bandLadder) {
+            List<FrameworkResultBand> bandLadder,
+            List<UUID> excludeQuestionIds) {
         var generated = generationClient.generate(
             topicDetails(topicId),
             criterionCode,
@@ -66,7 +67,8 @@ public class PracticeQuestionGenerationService {
             count,
             timeout,
             bandCount,
-            bandLadder
+            bandLadder,
+            excludeQuestionIds
         );
         if (generated.isEmpty()) {
             // Python tra 200 kem mang rong la che do hong TE NHAT: vong lap ben duoi khong

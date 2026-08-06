@@ -37,4 +37,10 @@ public class StudentQuestionExposureRepositoryImpl implements StudentQuestionExp
             repository.save(exposure);
         }
     }
+
+    @Override
+    @Transactional
+    public void removeExposure(UUID studentId, UUID questionId) {
+        repository.deleteByStudentIdAndPracticeQuestionId(studentId, questionId);
+    }
 }

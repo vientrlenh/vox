@@ -192,9 +192,7 @@ public class RecordPracticeAttemptEvaluationUseCase implements IUseCase<RecordPr
                 markedInvalid,
                 false,
                 input.rawCriteria(),
-                rubricCriteriaByCode,
-                input.turns(),
-                input.signals()
+                rubricCriteriaByCode
             );
             for (var observation : observations) {
                 // Chấm lại cùng một câu không được đẻ thêm bản trùng -- khoá tự nhiên là

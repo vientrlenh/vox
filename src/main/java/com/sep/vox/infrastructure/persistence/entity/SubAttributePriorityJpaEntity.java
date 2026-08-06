@@ -41,9 +41,6 @@ public class SubAttributePriorityJpaEntity {
     @Column(name = "freq", nullable = false)
     private int frequency;
 
-    @Column(name = "recent_freq", nullable = false)
-    private int recentFrequency;
-
     @Column(name = "priority", nullable = false, precision = 6, scale = 4)
     private BigDecimal priority;
 
@@ -62,7 +59,6 @@ public class SubAttributePriorityJpaEntity {
             UUID frameworkCriterionId,
             String subAttribute,
             int frequency,
-            int recentFrequency,
             BigDecimal priority,
             boolean practiceable,
             Instant computedAt) {
@@ -71,7 +67,6 @@ public class SubAttributePriorityJpaEntity {
         this.frameworkCriterionId = frameworkCriterionId;
         this.subAttribute = subAttribute;
         this.frequency = frequency;
-        this.recentFrequency = recentFrequency;
         this.priority = priority;
         this.practiceable = practiceable;
         this.computedAt = computedAt;
@@ -95,10 +90,6 @@ public class SubAttributePriorityJpaEntity {
 
     public int getFrequency() {
         return frequency;
-    }
-
-    public int getRecentFrequency() {
-        return recentFrequency;
     }
 
     public BigDecimal getPriority() {

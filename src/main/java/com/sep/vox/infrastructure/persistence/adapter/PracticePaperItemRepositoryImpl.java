@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.domain.model.personalization.PracticePaperItem;
 import com.sep.vox.domain.repository.personalization.PracticePaperItemRepository;
@@ -43,7 +44,8 @@ public class PracticePaperItemRepositoryImpl implements PracticePaperItemReposit
     }
 
     @Override
-    public int countItemsForPaper(UUID paperId) {
-        return repository.countByPracticePaperId(paperId);
+    @Transactional
+    public int deleteLastItemForPaper(UUID paperId, UUID questionId) {
+        return repository.deleteLastItemForPaper(paperId, questionId);
     }
 }

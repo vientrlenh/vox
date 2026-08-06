@@ -33,7 +33,6 @@ public class ViewMySavedTopicsUseCase implements IUseCase<Void, List<PracticeTop
         var studentId = userContextPort.getCurrentAuthenticatedUserId();
         var minutes = enrichmentService.minutesForStudent(studentId);
         var focusTags = enrichmentService.focusTagsForStudent(studentId);
-        var signal = enrichmentService.studentRankSignal(studentId);
         return practiceTopicQueryRepository.findSavedTopics(studentId).stream()
             .map(row -> new PracticeTopicOffer(
                 row.getId(),
@@ -42,10 +41,6 @@ public class ViewMySavedTopicsUseCase implements IUseCase<Void, List<PracticeTop
                 row.getSavedByMe(),
                 null,
                 minutes,
-                enrichmentService.levelLabel(
-                    enrichmentService.rankForTopic(studentId, row.getId(), signal),
-                    signal.bandCount()
-                ),
                 null,
                 List.of(),
                 focusTags

@@ -12,10 +12,16 @@ import jakarta.persistence.Table;
 @Entity
 @Table(
     name = "practice_paper",
-    indexes = @Index(
-        name = "idx_practice_paper_student_created",
-        columnList = "student_id, created_at"
-    )
+    indexes = {
+        @Index(
+            name = "idx_practice_paper_student_created",
+            columnList = "student_id, created_at"
+        ),
+        @Index(
+            name = "idx_practice_paper_target_band",
+            columnList = "target_framework_band_id"
+        )
+    }
 )
 public class PracticePaperJpaEntity {
 
@@ -28,6 +34,10 @@ public class PracticePaperJpaEntity {
 
     @Column(name = "practice_topic_id", nullable = false, updatable = false)
     private UUID practiceTopicId;
+
+    /** Bậc học sinh chọn cho phiên. Nullable: đề dựng trước V15 không mang lựa chọn nào. */
+    @Column(name = "target_framework_band_id", updatable = false)
+    private UUID targetFrameworkBandId;
 
     @Column(name = "origin", nullable = false, length = 24, updatable = false)
     private String origin;
@@ -63,6 +73,7 @@ public class PracticePaperJpaEntity {
             UUID id,
             UUID studentId,
             UUID practiceTopicId,
+            UUID targetFrameworkBandId,
             String origin,
             String goalType,
             String offeredTopicIdsJson,
@@ -75,6 +86,7 @@ public class PracticePaperJpaEntity {
         this.id = id;
         this.studentId = studentId;
         this.practiceTopicId = practiceTopicId;
+        this.targetFrameworkBandId = targetFrameworkBandId;
         this.origin = origin;
         this.goalType = goalType;
         this.offeredTopicIdsJson = offeredTopicIdsJson;
@@ -96,6 +108,10 @@ public class PracticePaperJpaEntity {
 
     public UUID getPracticeTopicId() {
         return practiceTopicId;
+    }
+
+    public UUID getTargetFrameworkBandId() {
+        return targetFrameworkBandId;
     }
 
     public String getOrigin() {

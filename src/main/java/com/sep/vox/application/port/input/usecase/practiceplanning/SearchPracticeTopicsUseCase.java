@@ -39,7 +39,6 @@ public class SearchPracticeTopicsUseCase implements IUseCase<SearchPracticeTopic
         }
         var minutes = enrichmentService.minutesForStudent(studentId);
         var focusTags = enrichmentService.focusTagsForStudent(studentId);
-        var signal = enrichmentService.studentRankSignal(studentId);
         var topics = practiceTopicQueryRepository
             .searchTopics(studentId, "%" + normalized + "%", normalized)
             .stream()
@@ -50,10 +49,6 @@ public class SearchPracticeTopicsUseCase implements IUseCase<SearchPracticeTopic
                 row.getSavedByMe(),
                 null,
                 minutes,
-                enrichmentService.levelLabel(
-                    enrichmentService.rankForTopic(studentId, row.getId(), signal),
-                    signal.bandCount()
-                ),
                 null,
                 List.of(),
                 focusTags

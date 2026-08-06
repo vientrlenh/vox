@@ -22,7 +22,7 @@ public interface SpringDataSubAttributePriorityRepository
           ON criterion.id = priority.framework_criterion_id
         WHERE priority.student_id = :studentId
           AND priority.practiceable = true
-        ORDER BY priority.priority DESC
+        ORDER BY priority.priority DESC, priority.freq DESC, priority.sub_attribute
         """, nativeQuery = true)
     List<CriterionSubAttributeInfo> findPracticeablePrioritiesOrderedDesc(@Param("studentId") UUID studentId);
 }

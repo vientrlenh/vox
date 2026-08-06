@@ -37,7 +37,6 @@ public class SubAttributePriorityRepositoryImpl implements SubAttributePriorityR
                 item.getFrameworkCriterionId(),
                 item.getSubAttribute(),
                 item.getFrequency(),
-                item.getRecentFrequency(),
                 item.getPriority(),
                 item.isPracticeable(),
                 item.getComputedAt()

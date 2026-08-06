@@ -168,20 +168,6 @@ public interface SpringDataPracticeSessionRepository
     List<CriterionFrameworkInfo> findCriteriaFrameworks(@Param("sessionId") UUID sessionId);
 
     @Query(value = """
-        SELECT abandon_diagnosis
-        FROM practice_session
-        WHERE student_id = :studentId
-          AND chosen_practice_topic_id = :topicId
-          AND status = 'ABANDONED'
-        ORDER BY started_at DESC
-        LIMIT 1
-        """, nativeQuery = true)
-    List<String> findLastAbandonDiagnosis(
-        @Param("studentId") UUID studentId,
-        @Param("topicId") UUID topicId
-    );
-
-    @Query(value = """
         SELECT COUNT(*) AS sessionsDone,
                COALESCE(AVG(overall_score), 0) AS averageScore
         FROM practice_session

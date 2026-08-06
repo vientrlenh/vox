@@ -34,8 +34,6 @@ public class PickRandomTopicUseCase implements IUseCase<Void, PracticeTopicOffer
         var studentId = userContextPort.getCurrentAuthenticatedUserId();
         var row = practiceTopicQueryRepository.findRandomActiveTopic(studentId)
             .orElseThrow(() -> new NotFoundException("Kho chủ đề đang trống."));
-        var signal = enrichmentService.studentRankSignal(studentId);
-        var rank = enrichmentService.rankForTopic(studentId, row.getId(), signal);
         return new PracticeTopicOffer(
             row.getId(),
             row.getName(),
@@ -43,7 +41,6 @@ public class PickRandomTopicUseCase implements IUseCase<Void, PracticeTopicOffer
             row.getSavedByMe(),
             null,
             enrichmentService.minutesForStudent(studentId),
-            enrichmentService.levelLabel(rank, signal.bandCount()),
             null,
             List.of(),
             enrichmentService.focusTagsForStudent(studentId)

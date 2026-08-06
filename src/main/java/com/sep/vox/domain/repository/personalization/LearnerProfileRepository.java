@@ -15,12 +15,6 @@ public interface LearnerProfileRepository {
 
     LearnerProfile save(LearnerProfile profile);
 
-    // Bậc band ước lượng từ lịch sử thi gần nhất của học sinh (rỗng nếu chưa có dữ liệu)
-    List<Integer> findEstimatedResultBandOrder(UUID studentId);
-
-    // Bậc band mục tiêu theo chính sách chấm đang áp dụng cho học sinh
-    List<Integer> findPolicyTargetBandOrder(UUID studentId);
-
     /** Số bậc của thang năng lực đang áp (VSTEP 6, CEFR 6, IELTS 9...) -- rỗng nếu chưa có
      * chính sách chấm nào. Đọc từ dữ liệu thay vì giả định cứng 6 bậc. */
     List<Integer> findFrameworkBandCount(UUID studentId);

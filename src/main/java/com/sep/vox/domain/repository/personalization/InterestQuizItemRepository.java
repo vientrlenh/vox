@@ -8,11 +8,7 @@ import com.sep.vox.domain.model.personalization.InterestQuizSeedItem;
 
 public interface InterestQuizItemRepository {
 
-    List<InterestQuizSeedItem> findActiveQuizItems(int limit);
-
     /** Bộ câu sinh riêng cho đúng học sinh này, nếu đã có -- xem hasQuizItemsForStudent. */
-    List<InterestQuizSeedItem> findActiveQuizItemsForStudent(UUID studentId, int limit);
-
     /** Cả kho (giới hạn mềm) để bộ chọn cân bằng có đủ ứng viên -- xem InterestQuizItemSelector. */
     List<InterestQuizSeedItem> findAllActiveQuizItems();
 

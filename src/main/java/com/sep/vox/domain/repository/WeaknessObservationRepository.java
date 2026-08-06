@@ -18,9 +18,13 @@ public interface WeaknessObservationRepository {
 
     void save(WeaknessObservation observation);
 
+    /**
+     * @param decayBase {@code 1 - alpha}; trọng số của quan sát cách đây k lần chấm là
+     *     {@code decayBase^k}. Thay cho cửa sổ "gần đây" cứng trước đây.
+     */
     List<WeaknessFrequency> findWeaknessFrequencies(
         List<UUID> studentIds,
         Instant windowStart,
-        Instant recentWindowStart
+        double decayBase
     );
 }

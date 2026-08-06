@@ -30,9 +30,13 @@ import com.sep.vox.application.query.repository.PracticeSessionQueryRepository;
 @Service
 public class PracticeSessionClosedHandler {
 
+    private static final org.slf4j.Logger LOGGER =
+        org.slf4j.LoggerFactory.getLogger(PracticeSessionClosedHandler.class);
+
     private final PracticeSessionQueryRepository practiceSessionQueryRepository;
     private final InterestVectorService interestVectorService;
     private final TopicOfferBackfillService topicOfferBackfillService;
+    private final UndeliveredQuestionCleanupService undeliveredQuestionCleanupService;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final JsonSerializationPort jsonSerializationPort;
 
@@ -40,11 +44,13 @@ public class PracticeSessionClosedHandler {
             PracticeSessionQueryRepository practiceSessionQueryRepository,
             InterestVectorService interestVectorService,
             TopicOfferBackfillService topicOfferBackfillService,
+            UndeliveredQuestionCleanupService undeliveredQuestionCleanupService,
             ApplicationEventPublisher applicationEventPublisher,
             JsonSerializationPort jsonSerializationPort) {
         this.practiceSessionQueryRepository = practiceSessionQueryRepository;
         this.interestVectorService = interestVectorService;
         this.topicOfferBackfillService = topicOfferBackfillService;
+        this.undeliveredQuestionCleanupService = undeliveredQuestionCleanupService;
         this.applicationEventPublisher = applicationEventPublisher;
         this.jsonSerializationPort = jsonSerializationPort;
     }
@@ -85,6 +91,23 @@ public class PracticeSessionClosedHandler {
         //
         // Để nó ném ra: transaction REQUIRES_NEW này rollback gọn gàng, và NƠI GỌI (ngoài ranh
         // giới transaction) mới là chỗ bắt được thật.
+        // Trả về kho câu đã CHỌN mà học sinh chưa bao giờ trả lời.
+        //
+        // Đặt TRƯỚC recordSessionOutcome và trong transaction riêng (REQUIRES_NEW) là cố ý: đây
+        // là việc dọn tài nguyên, không phải việc học từ buổi vừa rồi. Nó hỏng thì không được
+        // kéo theo điểm quan tâm; ngược lại điểm quan tâm hỏng thì câu vẫn phải được trả về.
+        //
+        // Hai nguồn sinh ra câu thừa: học sinh đóng app ngay khi vừa nhận câu, và -- từ khi
+        // Python nạp trước câu tiếp theo trong lúc còn follow-up -- một câu sinh sẵn chưa kịp
+        // dùng. Không dọn thì `student_question_exposure` đánh dấu "đã gặp" vĩnh viễn và câu đó
+        // biến mất khỏi kho của em ấy dù chưa từng nhìn thấy.
+        try {
+            undeliveredQuestionCleanupService.releaseUndeliveredQuestion(
+                studentId, sessionId, row.getPracticePaperId()
+            );
+        } catch (RuntimeException exception) {
+            LOGGER.warn("Không trả được câu chưa dùng về kho cho phiên {}.", sessionId, exception);
+        }
         interestVectorService.recordSessionOutcome(
             studentId,
             row.getChosenPracticeTopicId(),

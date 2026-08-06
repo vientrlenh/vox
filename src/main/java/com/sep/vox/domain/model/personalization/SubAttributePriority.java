@@ -11,7 +11,6 @@ public class SubAttributePriority {
     private UUID frameworkCriterionId;
     private String subAttribute;
     private int frequency;
-    private int recentFrequency;
     private BigDecimal priority;
     private boolean practiceable;
     private Instant computedAt;
@@ -25,7 +24,6 @@ public class SubAttributePriority {
             UUID frameworkCriterionId,
             String subAttribute,
             int frequency,
-            int recentFrequency,
             BigDecimal priority,
             boolean practiceable,
             Instant computedAt) {
@@ -34,7 +32,6 @@ public class SubAttributePriority {
         this.frameworkCriterionId = frameworkCriterionId;
         this.subAttribute = subAttribute;
         this.frequency = frequency;
-        this.recentFrequency = recentFrequency;
         this.priority = priority;
         this.practiceable = practiceable;
         this.computedAt = computedAt;
@@ -78,14 +75,6 @@ public class SubAttributePriority {
 
     public void setFrequency(int frequency) {
         this.frequency = frequency;
-    }
-
-    public int getRecentFrequency() {
-        return recentFrequency;
-    }
-
-    public void setRecentFrequency(int recentFrequency) {
-        this.recentFrequency = recentFrequency;
     }
 
     public BigDecimal getPriority() {

@@ -46,11 +46,6 @@ public class JpaPracticeSessionQueryRepository implements PracticeSessionQueryRe
     }
 
     @Override
-    public List<String> findLastAbandonDiagnosis(UUID studentId, UUID topicId) {
-        return repository.findLastAbandonDiagnosis(studentId, topicId);
-    }
-
-    @Override
     public com.sep.vox.application.query.dto.PracticeDashboardCountsInfo findDashboardCounts(UUID studentId) {
         return repository.findDashboardCounts(studentId);
     }

@@ -1,6 +1,5 @@
 package com.sep.vox.interfaces.graphql.controller;
 
-import static com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.InterestProfile;
 import static com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.PracticePaper;
 import static com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.PracticePaperDraft;
 import static com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.PracticeTopicOffer;
@@ -36,7 +35,6 @@ import com.sep.vox.application.port.input.usecase.practiceplanning.PickRandomTop
 import com.sep.vox.application.port.input.usecase.practiceplanning.SaveTopicUseCase;
 import com.sep.vox.application.port.input.usecase.practiceplanning.SearchPracticeTopicsUseCase;
 import com.sep.vox.application.port.input.usecase.practiceplanning.UnsaveTopicUseCase;
-import com.sep.vox.application.port.input.usecase.practiceplanning.ViewMyInterestProfileUseCase;
 import com.sep.vox.application.port.input.usecase.practiceplanning.ViewMySavedTopicsUseCase;
 import com.sep.vox.application.port.input.usecase.practiceplanning.ViewPracticeTopicOffersUseCase;
 import com.sep.vox.application.port.input.usecase.practicesession.ViewPracticeDashboardStatsUseCase;
@@ -48,7 +46,6 @@ public class PracticePlanningController {
 
     private final ViewPracticeTopicOffersUseCase viewPracticeTopicOffersUseCase;
     private final SearchPracticeTopicsUseCase searchPracticeTopicsUseCase;
-    private final ViewMyInterestProfileUseCase viewMyInterestProfileUseCase;
     private final BuildPracticePaperUseCase buildPracticePaperUseCase;
     private final PickRandomTopicUseCase pickRandomTopicUseCase;
     private final SaveTopicUseCase saveTopicUseCase;
@@ -64,7 +61,6 @@ public class PracticePlanningController {
     public PracticePlanningController(
             ViewPracticeTopicOffersUseCase viewPracticeTopicOffersUseCase,
             SearchPracticeTopicsUseCase searchPracticeTopicsUseCase,
-            ViewMyInterestProfileUseCase viewMyInterestProfileUseCase,
             BuildPracticePaperUseCase buildPracticePaperUseCase,
             PickRandomTopicUseCase pickRandomTopicUseCase,
             SaveTopicUseCase saveTopicUseCase,
@@ -82,7 +78,6 @@ public class PracticePlanningController {
         this.practiceGenerationExecutor = practiceGenerationExecutor;
         this.viewPracticeTopicOffersUseCase = viewPracticeTopicOffersUseCase;
         this.searchPracticeTopicsUseCase = searchPracticeTopicsUseCase;
-        this.viewMyInterestProfileUseCase = viewMyInterestProfileUseCase;
         this.buildPracticePaperUseCase = buildPracticePaperUseCase;
         this.pickRandomTopicUseCase = pickRandomTopicUseCase;
         this.saveTopicUseCase = saveTopicUseCase;
@@ -140,11 +135,6 @@ public class PracticePlanningController {
         return searchPracticeTopicsUseCase.execute(new SearchPracticeTopicsQuery(keyword));
     }
 
-    @QueryMapping
-    @PreAuthorize("hasRole('STUDENT')")
-    public InterestProfile myInterestProfile() {
-        return viewMyInterestProfileUseCase.execute(null);
-    }
 
     @QueryMapping
     @PreAuthorize("hasRole('STUDENT')")
@@ -168,6 +158,7 @@ public class PracticePlanningController {
     public PracticePaperDraft buildPracticePaper(@Argument("input") StartPracticeSessionInput input) {
         var command = new BuildPracticePaperCommand(
             input.topicId(),
+            input.targetFrameworkBandId(),
             input.origin(),
             input.fromSubAttribute(),
             input.offeredTopicIds(),

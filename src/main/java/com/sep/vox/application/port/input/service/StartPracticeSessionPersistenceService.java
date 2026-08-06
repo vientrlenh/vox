@@ -52,7 +52,12 @@ public class StartPracticeSessionPersistenceService {
             studentId,
             paper.getId(),
             policy.rubricVersionId(),
-            policy.targetFrameworkBandId(),
+            // Bậc do HỌC SINH chọn lúc dựng đề, không phải bậc mục tiêu của chính sách chấm.
+            // Lùi về chính sách khi đề dựng trước V15 (chưa có màn hình chọn bậc) -- giữ đúng
+            // hành vi cũ cho dữ liệu cũ thay vì để phiên chết vì thiếu bậc.
+            paper.getTargetFrameworkBandId() == null
+                ? policy.targetFrameworkBandId()
+                : paper.getTargetFrameworkBandId(),
             paper.getPracticeTopicId(),
             "[]",
             paper.getOrigin(),

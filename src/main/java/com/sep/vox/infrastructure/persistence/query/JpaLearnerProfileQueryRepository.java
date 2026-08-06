@@ -1,7 +1,5 @@
 package com.sep.vox.infrastructure.persistence.query;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
@@ -40,7 +38,6 @@ public class JpaLearnerProfileQueryRepository
                 "Không tìm thấy chính sách đánh giá đang hiệu lực"
             );
         }
-        var attainment = findAttainmentPercent(studentId);
         return new LearnerProfileInfo(
             current == null || current.getGoalType() == null
                 ? "ABILITY_IMPROVEMENT"
@@ -50,12 +47,6 @@ public class JpaLearnerProfileQueryRepository
                 : current.getFlsaScore().doubleValue(),
             (String) target[0],
             (String) target[1],
-            attainment == null
-                ? null
-                : BigDecimal.valueOf(attainment)
-                    .setScale(2, RoundingMode.HALF_UP)
-                    .doubleValue(),
-            findEstimatedBandCode(studentId),
             current == null || current.isAutoUpdateInterest(),
             current == null || current.getQuizCompletedAt() == null
                 ? null
@@ -90,90 +81,5 @@ public class JpaLearnerProfileQueryRepository
         } catch (NoResultException exception) {
             return null;
         }
-    }
-
-    private Double findAttainmentPercent(UUID studentId) {
-        return (Double) em.createNativeQuery("""
-            SELECT AVG(
-                (score.final_score - criterion.min_score)
-                / NULLIF(criterion.max_score - criterion.min_score, 0)
-            ) * 100
-            FROM exam_item_criterion_scores score
-            JOIN rubric_criterions criterion ON criterion.id = score.rubric_criterion_id
-            JOIN exam_item_evaluations evaluation ON evaluation.id = score.evaluation_id
-            JOIN exam_item_responses response ON response.id = evaluation.response_id
-            JOIN exam_sessions session ON session.id = response.session_id
-            JOIN exam_candidates candidate ON candidate.id = session.candidate_id
-            WHERE candidate.student_id = :studentId
-              AND candidate.blocked_at IS NULL
-              AND evaluation.marked_invalid = false
-            """)
-            .setParameter("studentId", studentId)
-            .getSingleResult();
-    }
-
-    /**
-     * Mã bậc ước lượng để HIỂN THỊ (bản song sinh của
-     * SpringDataLearnerProfileRepository.findEstimatedResultBandOrder, cái kia trả số để chọn
-     * độ khó câu hỏi). Hai bên phải giữ cùng quy tắc, nếu không màn hình và đề luyện sẽ nói
-     * hai bậc khác nhau -- gồm cả nhánh practice và trọng số thi gấp 3.
-     */
-    private String findEstimatedBandCode(UUID studentId) {
-        var rows = em.createNativeQuery("""
-            WITH raw AS (
-                SELECT band.code,
-                       band.result_band_order,
-                       3 AS weight
-                FROM exam_item_criterion_scores score
-                JOIN rubric_criterions criterion ON criterion.id = score.rubric_criterion_id
-                JOIN framework_criteria framework
-                  ON framework.id = criterion.framework_criterion_id
-                JOIN framework_result_bands band
-                  ON band.framework_version_id = framework.framework_version_id
-                 AND band.code = score.matched_band_code
-                JOIN exam_item_evaluations evaluation ON evaluation.id = score.evaluation_id
-                JOIN exam_item_responses response ON response.id = evaluation.response_id
-                JOIN exam_sessions session ON session.id = response.session_id
-                JOIN exam_candidates candidate ON candidate.id = session.candidate_id
-                WHERE candidate.student_id = :studentId
-                  AND candidate.blocked_at IS NULL
-                  AND evaluation.marked_invalid = false
-                  AND score.matched_band_code IS NOT NULL
-                UNION ALL
-                SELECT band.code,
-                       band.result_band_order,
-                       1 AS weight
-                FROM practice_criterion_score pcs
-                JOIN rubric_criterions criterion ON criterion.id = pcs.rubric_criterion_id
-                JOIN framework_criteria framework
-                  ON framework.id = criterion.framework_criterion_id
-                JOIN framework_result_bands band
-                  ON band.framework_version_id = framework.framework_version_id
-                 AND band.code = pcs.matched_band_code
-                JOIN practice_item_evaluation pe ON pe.id = pcs.practice_evaluation_id
-                JOIN practice_item_response pr ON pr.id = pe.practice_response_id
-                JOIN practice_session ps ON ps.id = pr.practice_session_id
-                WHERE ps.student_id = :studentId
-                  AND pe.marked_invalid = false
-                  AND pcs.matched_band_code IS NOT NULL
-                  AND EXISTS (
-                      SELECT 1
-                      FROM practice_response_turn pt
-                      WHERE pt.practice_response_id = pr.id
-                  )
-            ),
-            observations AS (
-                SELECT code, result_band_order, weight, COUNT(*) OVER () AS total FROM raw
-            )
-            SELECT code
-            FROM observations
-            WHERE total >= 5
-            GROUP BY code, result_band_order
-            ORDER BY SUM(weight) DESC, result_band_order DESC
-            LIMIT 1
-            """)
-            .setParameter("studentId", studentId)
-            .getResultList();
-        return rows.isEmpty() ? null : (String) rows.get(0);
     }
 }

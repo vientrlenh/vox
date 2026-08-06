@@ -7,9 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.domain.repository.personalization.PracticeItemEvaluationRepository;
 import com.sep.vox.domain.repository.personalization.PracticeSessionRepository;
-import com.sep.vox.domain.service.personalization.SessionDiagnosisPolicy;
 
 @Service
 public class PracticeSessionCleanupService {
@@ -18,17 +16,14 @@ public class PracticeSessionCleanupService {
         LoggerFactory.getLogger(PracticeSessionCleanupService.class);
 
     private final PracticeSessionRepository practiceSessionRepository;
-    private final PracticeItemEvaluationRepository practiceItemEvaluationRepository;
     private final PracticeGradingFlushService gradingFlushService;
     private final PracticeSessionClosedHandler sessionClosedHandler;
 
     public PracticeSessionCleanupService(
             PracticeSessionRepository practiceSessionRepository,
-            PracticeItemEvaluationRepository practiceItemEvaluationRepository,
             PracticeGradingFlushService gradingFlushService,
             PracticeSessionClosedHandler sessionClosedHandler) {
         this.practiceSessionRepository = practiceSessionRepository;
-        this.practiceItemEvaluationRepository = practiceItemEvaluationRepository;
         this.gradingFlushService = gradingFlushService;
         this.sessionClosedHandler = sessionClosedHandler;
     }
@@ -41,7 +36,6 @@ public class PracticeSessionCleanupService {
             // gần như chắc chắn đang nói dở một câu. Không xả ở đây thì đúng nhóm cần nhất
             // lại là nhóm mất trắng.
             gradingFlushService.flush(session.getId());
-            var score = practiceItemEvaluationRepository.findLastValidNormalizedScore(session.getId());
             // Cùng phép đo với EndPracticeSessionUseCase: CÓ NÓI hay không, chứ không phải
             // đã chấm xong hay chưa -- xem chú thích dài ở đó để biết vì sao.
             //
@@ -50,7 +44,20 @@ public class PracticeSessionCleanupService {
             // đó vẫn phải được tính -- lượt nói đã ghi, đã chấm, đã vào hồ sơ điểm yếu.
             var spoke = session.getGradedSeconds() > 0;
             var status = spoke ? "COMPLETED" : "ABANDONED";
-            var diagnosis = spoke ? null : SessionDiagnosisPolicy.diagnose(score, 0, 0);
+            // UNKNOWN thẳng, KHÔNG gọi SessionDiagnosisPolicy.
+            //
+            // Phiên tới được job dọn nghĩa là client không kịp gửi gì -- ta không có
+            // helpRequestCount lẫn longPauseCount. Bản trước truyền 0/0 vào chính sách chẩn
+            // đoán, mà 0/0 làm hai vế hành vi của luật luôn đúng/luôn sai, nên chính sách
+            // thoái hoá thành "điểm >= 0,65 thì kết luận CHÁN". Học sinh đóng app mà chưa nói
+            // câu nào, điểm buổi TRƯỚC lại cao -> bị ghi là chán chủ đề này.
+            //
+            // Hậu quả không dừng ở một cái nhãn sai: recordSessionOutcome chỉ ghi sự kiện sở
+            // thích cho phiên dở khi diagnosis == BORED, nên mỗi lần đoán nhầm là một lần hạ
+            // điểm quan tâm của chủ đề dựa trên bằng chứng không tồn tại.
+            //
+            // Không biết thì nói không biết. UNKNOWN không sinh sự kiện nào cả.
+            var diagnosis = spoke ? null : "UNKNOWN";
             practiceSessionRepository.save(session.closedAsStale(
                 status,
                 diagnosis,

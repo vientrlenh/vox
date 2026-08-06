@@ -12,5 +12,6 @@ public interface WeaknessFrequencyInfo {
 
     int getFrequency();
 
-    int getRecentFrequency();
+    /** Tổng phân rã theo số lần chấm đã trôi qua -- xem SpringDataWeaknessObservationRepository. */
+    double getDecayedFrequency();
 }

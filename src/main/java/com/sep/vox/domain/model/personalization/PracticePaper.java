@@ -8,6 +8,8 @@ public class PracticePaper {
     private UUID id;
     private UUID studentId;
     private UUID practiceTopicId;
+    /** Bậc học sinh CHỌN cho phiên này -- null với đề dựng trước khi có màn hình chọn bậc. */
+    private UUID targetFrameworkBandId;
     private String origin;
     private String goalAtBuild;
     private String offeredTopicIdsJson;
@@ -25,6 +27,7 @@ public class PracticePaper {
             UUID id,
             UUID studentId,
             UUID practiceTopicId,
+            UUID targetFrameworkBandId,
             String origin,
             String goalAtBuild,
             String offeredTopicIdsJson,
@@ -37,6 +40,7 @@ public class PracticePaper {
         this.id = id;
         this.studentId = studentId;
         this.practiceTopicId = practiceTopicId;
+        this.targetFrameworkBandId = targetFrameworkBandId;
         this.origin = origin;
         this.goalAtBuild = goalAtBuild;
         this.offeredTopicIdsJson = offeredTopicIdsJson;
@@ -70,6 +74,14 @@ public class PracticePaper {
 
     public void setPracticeTopicId(UUID practiceTopicId) {
         this.practiceTopicId = practiceTopicId;
+    }
+
+    public UUID getTargetFrameworkBandId() {
+        return targetFrameworkBandId;
+    }
+
+    public void setTargetFrameworkBandId(UUID targetFrameworkBandId) {
+        this.targetFrameworkBandId = targetFrameworkBandId;
     }
 
     public String getOrigin() {
@@ -149,6 +161,7 @@ public class PracticePaper {
             id,
             studentId,
             practiceTopicId,
+            targetFrameworkBandId,
             origin,
             goalAtBuild,
             offeredTopicIdsJson,

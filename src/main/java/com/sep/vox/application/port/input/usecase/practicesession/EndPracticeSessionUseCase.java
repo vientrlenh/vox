@@ -77,9 +77,8 @@ public class EndPracticeSessionUseCase implements IUseCase<EndPracticeSessionCom
         // rồi tự bấm kết thúc.
         //
         // Cái giá không chỉ là một cái nhãn sai: recordSessionOutcome thoát ngay nếu không
-        // COMPLETED (điểm quan tâm không bao giờ được ghi), findDashboardCounts lọc
-        // status='COMPLETED' (số buổi và điểm trung bình luôn 0), và findLastAbandonDiagnosis
-        // gán BORED/TOO_HARD cho những phiên hoàn toàn bình thường rồi dùng nó chọn đề.
+        // COMPLETED (điểm quan tâm không bao giờ được ghi) và findDashboardCounts lọc
+        // status='COMPLETED' (số buổi và điểm trung bình luôn 0).
         //
         // Trạng thái phải mô tả HÀNH VI NGƯỜI HỌC, không mô tả độ trễ hạ tầng. Kết quả chấm
         // về sau vẫn ghi vào practice_item_evaluation và overall_score tính lại từ đó -- học

@@ -76,7 +76,13 @@ public class ResolveNextPracticeQuestionClaimService {
          * Trên dữ liệu thật hai số này lệch nhau rất xa -- 45 giây dự trù cho 16 giây nói.
          */
         int spokenSeconds,
-        int budgetSeconds) {
+        int budgetSeconds,
+        /**
+         * Thứ tự bậc học sinh đã chọn khi dựng đề, đọc lại từ phiên. Trước đây chỗ này ước
+         * lượng lại bậc mỗi lượt (bậc đo được + EMA hiệu năng + lần bỏ dở gần nhất), nên độ
+         * khó có thể trôi ngay giữa phiên mà học sinh không hiểu vì sao.
+         */
+        int targetBandOrder) {
     }
 
     /**
@@ -98,7 +104,10 @@ public class ResolveNextPracticeQuestionClaimService {
         // Tính SỚM, trước cả nhánh idempotent: mọi nhánh trả về đều phải mang được cặp số cho
         // thanh tiến độ, kể cả nhánh trả lại nguyên câu cũ sau một lần gọi bị timeout.
         var spokenSeconds = session.getGradedSeconds();
-        var budgetSeconds = enrichmentService.sessionBudgetSecondsForStudent(session.getStudentId());
+        var targetBandOrder = enrichmentService.bandOrder(session.getTargetFrameworkBandId());
+        var budgetSeconds = enrichmentService.sessionBudgetSeconds(
+            session.getStudentId(), targetBandOrder
+        );
 
         var alreadyChosenIds = paperItemRepository.findQuestionIdsForPaper(session.getPracticePaperId());
         if (!alreadyChosenIds.isEmpty()) {
@@ -108,7 +117,8 @@ public class ResolveNextPracticeQuestionClaimService {
                     .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi luyện."));
                 return new Claim(
                     session.getStudentId(), session.getPracticePaperId(), null, null, null,
-                    latestQuestion, alreadyChosenIds.size(), null, spokenSeconds, budgetSeconds
+                    latestQuestion, alreadyChosenIds.size(), null,
+                    spokenSeconds, budgetSeconds, targetBandOrder
                 );
             }
         }
@@ -131,7 +141,7 @@ public class ResolveNextPracticeQuestionClaimService {
         if (spokenSeconds + MINIMUM_USEFUL_TURN_SECONDS > budgetSeconds) {
             return new Claim(
                 session.getStudentId(), session.getPracticePaperId(), null, null, null,
-                null, 0, "budget_exhausted", spokenSeconds, budgetSeconds
+                null, 0, "budget_exhausted", spokenSeconds, budgetSeconds, targetBandOrder
             );
         }
 
@@ -142,7 +152,8 @@ public class ResolveNextPracticeQuestionClaimService {
 
         return new Claim(
             session.getStudentId(), session.getPracticePaperId(), topic, focus, alreadyChosen,
-            null, 0, null, spokenSeconds, budgetSeconds
+            null, 0, null, spokenSeconds, budgetSeconds, targetBandOrder
         );
     }
+
 }

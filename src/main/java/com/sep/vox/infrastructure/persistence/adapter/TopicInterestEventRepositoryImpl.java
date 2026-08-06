@@ -46,6 +46,7 @@ public class TopicInterestEventRepositoryImpl
             .map(entity -> new TopicInterestEvent(
                 entity.getPracticeTopicId(),
                 entity.getPracticeSessionId(),
+                entity.getEventType(),
                 entity.getSignal().doubleValue(),
                 entity.getOccurredAt()
             ))

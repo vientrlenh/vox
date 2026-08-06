@@ -10,11 +10,7 @@ import com.sep.vox.infrastructure.persistence.entity.InterestQuizItemJpaEntity;
 public interface SpringDataInterestQuizItemRepository
         extends JpaRepository<InterestQuizItemJpaEntity, UUID> {
 
-    List<InterestQuizItemJpaEntity> findTop7ByActiveTrueOrderById();
-
     List<InterestQuizItemJpaEntity> findByIdAndActiveTrue(UUID id);
-
-    List<InterestQuizItemJpaEntity> findTop7ByStudentIdAndActiveTrueOrderById(UUID studentId);
 
     // Lấy nguyên kho (giới hạn mềm bằng Top50) chứ không phải Top7: bộ chọn cân bằng cần
     // nhiều ứng viên hơn số câu sẽ hỏi thì mới chọn được bộ phủ đều các chiều.

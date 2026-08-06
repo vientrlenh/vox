@@ -342,15 +342,11 @@ public class TopicSuggestionService {
             .toList();
     }
 
-    public static double confidenceForSessionCount(int count) {
-        if (count <= 1) {
-            return 0.5;
-        }
-        if (count == 2) {
-            return 0.7;
-        }
-        return 0.85;
-    }
+    // KHÔNG thêm lại confidenceForSessionCount ở đây. Trần độ tự tin theo lượng bằng chứng
+    // (≤1 buổi → 0,5; 2 → 0,7; ≥3 → 0,85) sống ở PHÍA PYTHON, trong
+    // TopicProposalNode/topic_proposal_node_config.py -- nơi nó được áp cùng lúc với các trần
+    // khác (ungrounded 0,4; INTEREST 0,6; EXHAUSTED 0,7; SEARCH 0,95). Bản Java cũ ở đây là
+    // bản sao không nơi nào gọi, và hai bản sẽ trôi lệch ngay lần sửa đầu tiên.
 
     public static String normalize(String value) {
         if (value == null) {
@@ -390,8 +386,6 @@ public class TopicSuggestionService {
     private PracticeTopicOffer offerFor(
             UUID studentId, UUID topicId, String name, String dimension, boolean savedByMe,
             Integer matchPercent, String rationale) {
-        var signal = enrichmentService.studentRankSignal(studentId);
-        var rank = enrichmentService.rankForTopic(studentId, topicId, signal);
         return new PracticeTopicOffer(
             topicId,
             name,
@@ -399,7 +393,6 @@ public class TopicSuggestionService {
             savedByMe,
             matchPercent,
             enrichmentService.minutesForStudent(studentId),
-            enrichmentService.levelLabel(rank, signal.bandCount()),
             rationale,
             rationale == null ? List.of() : List.of(rationale),
             enrichmentService.focusTagsForStudent(studentId)

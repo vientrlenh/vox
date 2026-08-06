@@ -16,5 +16,14 @@ public interface PracticePaperItemRepository {
     // Id các câu đã chọn trong paper, theo đúng thứ tự slot -- dùng làm alreadyChosenInSession
     List<UUID> findQuestionIdsForPaper(UUID paperId);
 
-    int countItemsForPaper(UUID paperId);
+    /**
+     * Gỡ câu ở slot CUỐI của paper khi học sinh chưa bao giờ trả lời nó -- xem
+     * {@code UndeliveredQuestionCleanupService}.
+     *
+     * <p>Chỉ slot cuối mới có thể chưa trả lời: nếu một slot giữa còn trống thì
+     * {@code ResolveNextPracticeQuestionClaimService} đã trả lại chính nó thay vì chọn câu mới.
+     *
+     * @return số dòng đã xoá -- 0 nghĩa là không có gì để dọn.
+     */
+    int deleteLastItemForPaper(UUID paperId, UUID questionId);
 }

@@ -1,7 +1,6 @@
 extend type Query {
     practiceTopicOffers(excludeTopicIds: [ID!], round: Int = 1, bucket: TopicOfferBucket = FOR_YOU): [PracticeTopicOffer!]!
     searchPracticeTopics(keyword: String!): TopicSearchResult!
-    myInterestProfile: InterestProfile!
     mySavedTopics: [PracticeTopicOffer!]!
     myPracticeDashboardStats: PracticeDashboardStats!
     "Hỏi lại kết quả dựng đề đã khởi động bởi buildPracticePaper (xem PracticePaperDraft)."
@@ -37,6 +36,12 @@ enum PracticePaperDraftStatus {
 
 input StartPracticeSessionInput {
     topicId: ID!
+    """
+    Bậc học sinh CHỌN cho phiên này, lấy từ thang bậc của khung đang áp. Trước đây hệ thống
+    tự suy ra bậc từ bài chấm + hiệu năng gần đây; giờ đó là lựa chọn của người học, và bậc
+    chỉ còn nghĩa "độ khó tôi muốn hôm nay" chứ không phải một tuyên bố về trình độ.
+    """
+    targetFrameworkBandId: ID!
     origin: String!
     fromSubAttribute: String
     offeredTopicIds: [ID!]
@@ -50,16 +55,9 @@ type PracticeTopicOffer {
     savedByMe: Boolean!
     matchPercent: Int
     minutes: Int!
-    level: TopicLevel!
     rationale: String
     reasons: [String!]!
     focusTags: [String!]!
-}
-
-enum TopicLevel {
-    BEGINNER
-    INTERMEDIATE
-    ADVANCED
 }
 
 enum TopicOfferBucket {
@@ -77,18 +75,6 @@ type PracticeDashboardStats {
 type TopicSearchResult {
     topics: [PracticeTopicOffer!]!
     canGenerate: Boolean!
-}
-
-type TopicInterest {
-    topicId: ID!
-    name: String!
-    score: Float!
-    sessionsMentioned: Int!
-    lastMentionedAt: String
-}
-
-type InterestProfile {
-    topics: [TopicInterest!]!
 }
 
 type PracticePaper {

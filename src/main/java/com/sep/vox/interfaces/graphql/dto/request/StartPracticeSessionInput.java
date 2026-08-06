@@ -5,6 +5,7 @@ import java.util.UUID;
 
 public record StartPracticeSessionInput(
         UUID topicId,
+        UUID targetFrameworkBandId,
         String origin,
         String fromSubAttribute,
         List<UUID> offeredTopicIds,

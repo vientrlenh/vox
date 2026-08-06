@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.service;
 
-import java.text.Normalizer;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -8,12 +7,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.input.command.examevaluation.CriterionScoreInput;
-import com.sep.vox.application.port.input.command.examevaluation.EvaluationSignalsInput;
-import com.sep.vox.application.port.input.command.examevaluation.TurnDetailInput;
 import com.sep.vox.domain.model.personalization.WeaknessObservation;
 import com.sep.vox.domain.model.personalization.WeaknessObservationSourceType;
 import com.sep.vox.domain.model.rubric.RubricCriterion;
@@ -23,23 +19,19 @@ public class WeaknessObservationDerivationService {
 
     private static final int MAX_EVIDENCE_LENGTH = 200;
 
-    private final double pronunciationAccuracyThreshold;
-    private final double fluencySlowRateWordsPerMinute;
-    private final double fluencyLongPauseRatio;
-
-    public WeaknessObservationDerivationService(
-            @Value("${app.personalization.pronunciation-accuracy-threshold:60}")
-            double pronunciationAccuracyThreshold,
-            @Value("${app.personalization.fluency-slow-rate-words-per-minute:60}")
-            double fluencySlowRateWordsPerMinute,
-            @Value("${app.personalization.fluency-long-pause-ratio:0.35}")
-            double fluencyLongPauseRatio) {
-        this.pronunciationAccuracyThreshold = pronunciationAccuracyThreshold;
-        this.fluencySlowRateWordsPerMinute = fluencySlowRateWordsPerMinute;
-        this.fluencyLongPauseRatio = fluencyLongPauseRatio;
-    }
-
     /**
+     * Chuyển nhãn điểm yếu do người chấm/LLM trả về thành quan sát lưu được.
+     *
+     * <p>KHÔNG còn suy nhãn từ SỐ ĐO. Trước đây lớp này còn sinh thêm ba loại nhãn ngoài
+     * taxonomy: {@code phoneme_<âm>} (mỗi âm vị đọc dưới ngưỡng), {@code slow_rate} (tốc độ
+     * nói thấp) và {@code long_pause} (tỉ lệ im lặng cao). Chúng chảy vào
+     * sub_attribute_priority nhưng {@code practiceable} luôn false vì không thuộc taxonomy
+     * đóng, nên chưa bao giờ được dùng để chọn đề -- không thể ra đề "hãy nói sai âm /z/ ít
+     * lại". Nơi duy nhất chúng xuất hiện là trang hồ sơ điểm yếu, và trang đó đã bỏ.
+     *
+     * <p>Điểm yếu PHÁT ÂM và TRÔI CHẢY vẫn được đo bình thường -- ở mức TIÊU CHÍ, qua điểm số
+     * trong WeaknessScoreObservation. Mất là mất "yếu ở âm /z/", thứ vốn không ra đề được.
+     *
      * @param sourceType bài THI hay bài LUYỆN sinh ra quan sát này. Trước đây ghi cứng
      *     EXAM ngay trong {@link #observation}, nên không dùng lại được cho nhánh luyện
      *     -- mà nhánh luyện mới là nơi sinh ra phần lớn dữ liệu điểm yếu, vì học sinh
@@ -53,9 +45,7 @@ public class WeaknessObservationDerivationService {
             boolean markedInvalid,
             boolean candidateBlocked,
             Map<String, CriterionScoreInput> criteria,
-            Map<String, RubricCriterion> rubricCriteriaByCode,
-            List<TurnDetailInput> turns,
-            EvaluationSignalsInput signals) {
+            Map<String, RubricCriterion> rubricCriteriaByCode) {
         if (markedInvalid || candidateBlocked || studentId == null || evaluationId == null) {
             return List.of();
         }
@@ -92,127 +82,7 @@ public class WeaknessObservationDerivationService {
             }
         }
 
-        derivePronunciation(
-            observations,
-            studentId,
-            evaluationId,
-            sourceType,
-            observedAt,
-            safeCriteria,
-            rubricCriteriaByCode,
-            turns
-        );
-        deriveFluency(
-            observations,
-            studentId,
-            evaluationId,
-            sourceType,
-            observedAt,
-            safeCriteria,
-            rubricCriteriaByCode,
-            signals
-        );
         return observations;
-    }
-
-    private void derivePronunciation(
-            List<WeaknessObservation> observations,
-            UUID studentId,
-            UUID evaluationId,
-            WeaknessObservationSourceType sourceType,
-            Instant observedAt,
-            Map<String, CriterionScoreInput> criteria,
-            Map<String, RubricCriterion> rubricCriteriaByCode,
-            List<TurnDetailInput> turns) {
-        var criterionEntry = findCriterionEntry(criteria, rubricCriteriaByCode, "pronunciation");
-        if (criterionEntry == null || !hasScoredEvidence(criterionEntry.score())) {
-            return;
-        }
-        for (var turn : turns == null ? List.<TurnDetailInput>of() : turns) {
-            for (var word : turn.wordFeedback() == null ? List.<com.sep.vox.application.port.input.command.examevaluation.WordFeedbackInput>of() : turn.wordFeedback()) {
-                var wordNeedsReview = Boolean.TRUE.equals(word.hasCriticalIssue())
-                    || below(word.accuracyScore(), pronunciationAccuracyThreshold);
-                if (!wordNeedsReview) {
-                    continue;
-                }
-                for (var phoneme : word.phonemes() == null ? List.<com.sep.vox.application.port.input.command.examevaluation.PhonemeFeedbackInput>of() : word.phonemes()) {
-                    if (!below(phoneme.accuracyScore(), pronunciationAccuracyThreshold)) {
-                        continue;
-                    }
-                    var normalized = normalizePhoneme(phoneme.phoneme());
-                    if (normalized.isBlank()) {
-                        continue;
-                    }
-                    observations.add(observation(
-                        studentId,
-                        evaluationId,
-                        sourceType,
-                        criterionEntry.criterion(),
-                        criterionEntry.key(),
-                        "phoneme_" + normalized,
-                        word.word(),
-                        observedAt
-                    ));
-                }
-            }
-        }
-    }
-
-    private void deriveFluency(
-            List<WeaknessObservation> observations,
-            UUID studentId,
-            UUID evaluationId,
-            WeaknessObservationSourceType sourceType,
-            Instant observedAt,
-            Map<String, CriterionScoreInput> criteria,
-            Map<String, RubricCriterion> rubricCriteriaByCode,
-            EvaluationSignalsInput signals) {
-        if (signals == null) {
-            return;
-        }
-        var criterionEntry = findCriterionEntry(criteria, rubricCriteriaByCode, "fluency");
-        if (criterionEntry == null || !hasScoredEvidence(criterionEntry.score())) {
-            return;
-        }
-        if (below(signals.speechRate(), fluencySlowRateWordsPerMinute)) {
-            observations.add(observation(
-                studentId,
-                evaluationId,
-                sourceType,
-                criterionEntry.criterion(),
-                criterionEntry.key(),
-                "slow_rate",
-                "",
-                observedAt
-            ));
-        }
-        if (signals.silenceRatio() != null && signals.silenceRatio() > fluencyLongPauseRatio) {
-            observations.add(observation(
-                studentId,
-                evaluationId,
-                sourceType,
-                criterionEntry.criterion(),
-                criterionEntry.key(),
-                "long_pause",
-                "",
-                observedAt
-            ));
-        }
-    }
-
-    private CriterionEntry findCriterionEntry(
-            Map<String, CriterionScoreInput> criteria,
-            Map<String, RubricCriterion> rubricCriteriaByCode,
-            String expectedKey) {
-        return criteria.entrySet().stream()
-            .filter(entry -> normalizeCode(entry.getKey()).equals(normalizeCode(expectedKey)))
-            .map(entry -> {
-                var criterion = rubricCriteriaByCode.get(normalizeCode(entry.getKey()));
-                return criterion == null ? null : new CriterionEntry(entry.getKey(), entry.getValue(), criterion);
-            })
-            .filter(entry -> entry != null)
-            .findFirst()
-            .orElse(null);
     }
 
     private WeaknessObservation observation(
@@ -244,20 +114,6 @@ public class WeaknessObservationDerivationService {
         return !"zeroed".equals(status) && !"not_scored".equals(status);
     }
 
-    private boolean below(Double value, double threshold) {
-        return value != null && value < threshold;
-    }
-
-    private String normalizePhoneme(String value) {
-        if (value == null) {
-            return "";
-        }
-        return Normalizer.normalize(value, Normalizer.Form.NFKC)
-            .toLowerCase(Locale.ROOT)
-            .replaceAll("[^\\p{L}\\p{N}]+", "_")
-            .replaceAll("^_+|_+$", "");
-    }
-
     private String normalizeCode(String value) {
         return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
     }
@@ -265,12 +121,5 @@ public class WeaknessObservationDerivationService {
     private String truncate(String value, int maxLength) {
         var safe = value == null ? "" : value;
         return safe.length() <= maxLength ? safe : safe.substring(0, maxLength);
-    }
-
-    private record CriterionEntry(
-        String key,
-        CriterionScoreInput score,
-        RubricCriterion criterion
-    ) {
     }
 }

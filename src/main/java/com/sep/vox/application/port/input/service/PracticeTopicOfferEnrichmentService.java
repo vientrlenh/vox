@@ -2,31 +2,35 @@ package com.sep.vox.application.port.input.service;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.query.repository.PracticeSessionQueryRepository;
+import com.sep.vox.domain.repository.FrameworkResultBandRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.model.framework.FrameworkResultBand;
 import com.sep.vox.domain.repository.personalization.LearnerProfileRepository;
 import com.sep.vox.domain.repository.personalization.LearnerWeaknessSnapshotRepository;
-import com.sep.vox.domain.repository.personalization.PracticeItemEvaluationRepository;
 
 /**
- * Tính rank/level, minutes và focusTags cho topic offer -- gộp 1 chỗ vì có nhiều caller
+ * Minutes, trần thời lượng và focusTags cho topic offer -- gộp 1 chỗ vì có nhiều caller
  * (BuildPracticePaperUseCase, ViewPracticeTopicOffersUseCase, SearchPracticeTopicsUseCase,
  * PickRandomTopicUseCase, TopicSuggestionService).
+ *
+ * <p>KHÔNG còn tính bậc cho học sinh. Trước đây lớp này suy ra bậc từ ba nguồn (bậc đo được
+ * từ bài chấm, EMA hiệu năng, lần bỏ dở gần nhất theo chủ đề) -- tức lấy độ khó của CÂU HỎI
+ * gán thành trình độ của NGƯỜI HỌC, một tuyên bố hệ thống không chứng minh được. Giờ học
+ * sinh tự chọn bậc muốn luyện mỗi phiên, và bậc đó chỉ còn nghĩa "độ khó tôi muốn hôm nay".
  */
 @Service
 public class PracticeTopicOfferEnrichmentService {
 
-    private static final Set<String> BAD_ABANDON_DIAGNOSES = Set.of("TOO_HARD", "UNKNOWN");
-
     /** Dùng khi học sinh chưa gắn với chính sách chấm nào -- giữ nguyên hành vi cũ cho dữ
      * liệu chưa cấu hình, không phải vì hệ thống mặc định là VSTEP. */
     private static final int DEFAULT_BAND_COUNT = 6;
+
+    /** Chỉ dùng khi bậc của phiên đã bị xoá khỏi khung -- xem {@link #bandOrder}. */
+    private static final int DEFAULT_BAND_ORDER = 3;
 
     private static final Map<String, String> CRITERION_LABELS = Map.of(
         "GRAMMAR", "Ngữ pháp",
@@ -37,59 +41,32 @@ public class PracticeTopicOfferEnrichmentService {
     );
 
     private final LearnerProfileRepository learnerProfileRepository;
-    private final PracticeItemEvaluationRepository practiceItemEvaluationRepository;
-    private final PracticeSessionQueryRepository practiceSessionQueryRepository;
     private final LearnerWeaknessSnapshotRepository weaknessRepository;
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
+    private final FrameworkResultBandRepository frameworkResultBandRepository;
 
     public PracticeTopicOfferEnrichmentService(
             LearnerProfileRepository learnerProfileRepository,
-            PracticeItemEvaluationRepository practiceItemEvaluationRepository,
-            PracticeSessionQueryRepository practiceSessionQueryRepository,
             LearnerWeaknessSnapshotRepository weaknessRepository,
-            SchoolSubscriptionRepository schoolSubscriptionRepository) {
+            SchoolSubscriptionRepository schoolSubscriptionRepository,
+            FrameworkResultBandRepository frameworkResultBandRepository) {
         this.learnerProfileRepository = learnerProfileRepository;
-        this.practiceItemEvaluationRepository = practiceItemEvaluationRepository;
-        this.practiceSessionQueryRepository = practiceSessionQueryRepository;
         this.weaknessRepository = weaknessRepository;
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
+        this.frameworkResultBandRepository = frameworkResultBandRepository;
     }
 
-    /** @param bandCount số bậc của thang đang áp -- nằm ở đây thay vì query lại trong
-     * rankForTopic/levelLabel, vì hai hàm đó chạy MỘT LẦN MỖI CHỦ ĐỀ trong vòng lặp xếp hạng
-     * (query lại là N+1). studentRankSignal vốn đã tính đúng 1 lần mỗi request. */
-    public record RankSignal(int base, int scoreAdjustment, int bandCount) {
-    }
-
-    /** Phần student-level của ước lượng bậc -- tính 1 lần/request, không lặp lại theo từng topic. */
-    public RankSignal studentRankSignal(UUID studentId) {
-        var estimated = learnerProfileRepository.findEstimatedResultBandOrder(studentId).stream()
-            .findFirst()
-            .orElse(null);
-        var base = estimated == null ? policyBandOrder(studentId) : estimated;
-        var scores = practiceItemEvaluationRepository.findNormalizedScoresChronological(studentId);
-        var adjustment = 0;
-        if (!scores.isEmpty()) {
-            // EMA, không phải trung bình cộng cửa sổ cứng -- cùng công thức đệ quy
-            // InterestVectorService.recomputeInterest đang dùng cho interest score (mỗi điểm
-            // mới góp phần ngay từ điểm đầu tiên, điểm gần đây có trọng số cao hơn tự nhiên,
-            // không phải chờ đúng 3 điểm rồi mới có tác dụng).
-            var performance = 0.5;
-            for (var score : scores) {
-                performance = 0.3 * score + 0.7 * performance;
-            }
-            adjustment = performance >= 0.75 ? 1 : performance <= 0.45 ? -1 : 0;
+    /**
+     * Thứ tự của một bậc trên thang. Bậc đã bị xoá khỏi khung thì lùi về giữa thang -- thà
+     * hỏi hơi lệch còn hơn làm chết một phiên đang chạy vì dữ liệu cấu hình đổi sau lưng.
+     */
+    public int bandOrder(UUID bandId) {
+        if (bandId == null) {
+            return DEFAULT_BAND_ORDER;
         }
-        return new RankSignal(base, adjustment, frameworkBandCount(studentId));
-    }
-
-    /** Phần topic-specific -- 1 query rẻ mỗi topic, không lặp lại phần student-level ở trên. */
-    public int rankForTopic(UUID studentId, UUID topicId, RankSignal signal) {
-        var diagnoses = practiceSessionQueryRepository.findLastAbandonDiagnosis(studentId, topicId);
-        var adjustment = !diagnoses.isEmpty() && BAD_ABANDON_DIAGNOSES.contains(diagnoses.get(0))
-            ? -1
-            : signal.scoreAdjustment();
-        return Math.max(1, Math.min(signal.bandCount(), signal.base() + adjustment));
+        return frameworkResultBandRepository.findById(bandId)
+            .map(FrameworkResultBand::getOrder)
+            .orElse(DEFAULT_BAND_ORDER);
     }
 
     /**
@@ -111,45 +88,21 @@ public class PracticeTopicOfferEnrichmentService {
     }
 
     /**
-     * Nhãn mức độ hiển thị trên thẻ chủ đề. Chia thang thành 3 phần THEO TỈ LỆ thay vì cắt
-     * cứng ở bậc 2/4 -- với 6 bậc cho ra đúng kết quả cũ (1,2 → BEGINNER · 3,4 →
-     * INTERMEDIATE · 5,6 → ADVANCED), với 9 bậc thì tự giãn thành 1-3 / 4-6 / 7-9.
-     */
-    public String levelLabel(int rank, int bandCount) {
-        var safeBandCount = Math.max(1, bandCount);
-        var ratio = (double) rank / safeBandCount;
-        if (ratio <= 1.0 / 3) {
-            return "BEGINNER";
-        }
-        if (ratio <= 2.0 / 3) {
-            return "INTERMEDIATE";
-        }
-        return "ADVANCED";
-    }
-
-    private int policyBandOrder(UUID studentId) {
-        var values = learnerProfileRepository.findPolicyTargetBandOrder(studentId);
-        // Chưa có chính sách -> lấy GIỮA thang, không phải hằng số 3: với 6 bậc vẫn ra 3 như
-        // trước, với 9 bậc ra 5 (đúng nghĩa "giữa") thay vì lệch xuống dưới.
-        return values.isEmpty()
-            ? (frameworkBandCount(studentId) + 1) / 2
-            : values.get(0);
-    }
-
-    /**
-     * Trần độ dài MỘT phiên theo bậc năng lực (thiết kế gói 6 mục 4.1: BAC_1-2 → 720s,
-     * BAC_3 → 900s, BAC_4+ → 1200s).
+     * Trần độ dài MỘT phiên theo bậc ĐANG LUYỆN (thiết kế gói 6 mục 4.1: bậc 1-2 → 720s,
+     * bậc 3 → 900s, bậc 4+ → 1200s).
      *
      * Khác bản chất với hạn mức subscription ({@link #minutesForStudent}): cái kia là giới hạn
      * THƯƠNG MẠI (trường mua bao nhiêu), cái này là giới hạn SƯ PHẠM (bậc này ngồi luyện liên
      * tục bao lâu là hợp lý). Phải áp CẢ HAI, lấy cái nhỏ hơn -- chỉ có hạn mức gói thì học
      * sinh mới bắt đầu vẫn có thể bị đẩy vào phiên 20 phút.
+     *
+     * <p>Tham số là bậc học sinh CHỌN cho phiên này, không phải bậc hệ thống đoán -- đó là
+     * toàn bộ khác biệt so với bản trước.
      */
-    public int sessionSecondsCapForStudent(UUID studentId) {
-        var band = studentRankSignal(studentId).base();
+    public int sessionSecondsCapForBand(int bandOrder, int bandCount) {
         // Chia theo TỈ LỆ vị trí trên thang, không cắt cứng ở bậc 2/3: với 6 bậc cho ra đúng
         // 720/720/900/1200/1200/1200 như trước, với thang khác thì tự giãn theo.
-        var ratio = (double) band / Math.max(1, frameworkBandCount(studentId));
+        var ratio = (double) bandOrder / Math.max(1, bandCount);
         if (ratio <= 1.0 / 3) {
             return 720;
         }
@@ -164,8 +117,11 @@ public class PracticeTopicOfferEnrichmentService {
      * nơi cần cùng con số; để mỗi nơi tự tính lại là mở đường cho chúng lệch nhau, rồi thanh
      * tiến độ trên máy học sinh nói một đằng còn phiên dừng một nẻo.
      */
-    public int sessionBudgetSecondsForStudent(UUID studentId) {
-        return Math.min(minutesForStudent(studentId) * 60, sessionSecondsCapForStudent(studentId));
+    public int sessionBudgetSeconds(UUID studentId, int bandOrder) {
+        return Math.min(
+            minutesForStudent(studentId) * 60,
+            sessionSecondsCapForBand(bandOrder, frameworkBandCount(studentId))
+        );
     }
 
     /** Số phút mỗi lượt luyện theo đúng gói subscription đang hoạt động -- 0 nếu không có gói. */

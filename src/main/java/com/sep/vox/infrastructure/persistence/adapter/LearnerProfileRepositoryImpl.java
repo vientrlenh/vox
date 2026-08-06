@@ -46,16 +46,6 @@ public class LearnerProfileRepositoryImpl
     }
 
     @Override
-    public List<Integer> findEstimatedResultBandOrder(UUID studentId) {
-        return profileRepository.findEstimatedResultBandOrder(studentId);
-    }
-
-    @Override
-    public List<Integer> findPolicyTargetBandOrder(UUID studentId) {
-        return profileRepository.findPolicyTargetBandOrder(studentId);
-    }
-
-    @Override
     public List<Integer> findFrameworkBandCount(UUID studentId) {
         return profileRepository.findFrameworkBandCount(studentId);
     }

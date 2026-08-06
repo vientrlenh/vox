@@ -1,8 +1,12 @@
 package com.sep.vox.interfaces.rest.controller.internal;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.task.AsyncTaskExecutor;
+import org.springframework.web.context.request.async.WebAsyncTask;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -34,22 +38,32 @@ public class PracticeSessionInternalController {
     private final SubmitPracticeTurnUseCase submitPracticeTurnUseCase;
     private final GetPracticeTurnUploadUrlUseCase getPracticeTurnUploadUrlUseCase;
     private final PracticeSessionRepository practiceSessionRepository;
+    private final AsyncTaskExecutor practiceGenerationExecutor;
 
     public PracticeSessionInternalController(
             ResolveNextPracticeQuestionUseCase resolveNextPracticeQuestionUseCase,
             SubmitPracticeTurnUseCase submitPracticeTurnUseCase,
             GetPracticeTurnUploadUrlUseCase getPracticeTurnUploadUrlUseCase,
-            PracticeSessionRepository practiceSessionRepository) {
+            PracticeSessionRepository practiceSessionRepository,
+            @Qualifier("practiceGenerationExecutor") AsyncTaskExecutor practiceGenerationExecutor) {
         this.resolveNextPracticeQuestionUseCase = resolveNextPracticeQuestionUseCase;
         this.submitPracticeTurnUseCase = submitPracticeTurnUseCase;
         this.getPracticeTurnUploadUrlUseCase = getPracticeTurnUploadUrlUseCase;
         this.practiceSessionRepository = practiceSessionRepository;
+        this.practiceGenerationExecutor = practiceGenerationExecutor;
     }
 
+    
+    private static final long NEXT_QUESTION_TIMEOUT_SECONDS = 90;
+
     @PostMapping("/{sessionId}/next-question")
-    public ApiResponse<ResolveNextPracticeQuestionUseCase.Result> nextQuestion(
+    public WebAsyncTask<ApiResponse<ResolveNextPracticeQuestionUseCase.Result>> nextQuestion(
             @PathVariable UUID sessionId) {
-        return ApiResponse.success("OK", resolveNextPracticeQuestionUseCase.execute(sessionId));
+        return new WebAsyncTask<>(
+            Duration.ofSeconds(NEXT_QUESTION_TIMEOUT_SECONDS).toMillis(),
+            practiceGenerationExecutor,
+            () -> ApiResponse.success("OK", resolveNextPracticeQuestionUseCase.execute(sessionId))
+        );
     }
 
     @GetMapping("/{sessionId}/turns/{turnOrder}/upload-url")

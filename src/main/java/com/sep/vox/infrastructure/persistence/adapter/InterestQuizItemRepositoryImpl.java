@@ -28,22 +28,6 @@ public class InterestQuizItemRepositoryImpl
     }
 
     @Override
-    public List<InterestQuizSeedItem> findActiveQuizItems(int limit) {
-        return repository.findTop7ByActiveTrueOrderById().stream()
-            .limit(Math.max(1, limit))
-            .map(this::toDomain)
-            .toList();
-    }
-
-    @Override
-    public List<InterestQuizSeedItem> findActiveQuizItemsForStudent(UUID studentId, int limit) {
-        return repository.findTop7ByStudentIdAndActiveTrueOrderById(studentId).stream()
-            .limit(Math.max(1, limit))
-            .map(this::toDomain)
-            .toList();
-    }
-
-    @Override
     public List<InterestQuizSeedItem> findAllActiveQuizItems() {
         return repository.findTop50ByActiveTrueOrderById().stream()
             .map(this::toDomain)

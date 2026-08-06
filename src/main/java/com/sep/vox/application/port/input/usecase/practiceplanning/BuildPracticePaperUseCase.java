@@ -16,6 +16,7 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.PracticePaper;
 import com.sep.vox.domain.mapper.PracticePaperDtoMapper;
+import com.sep.vox.domain.model.framework.FrameworkResultBand;
 import com.sep.vox.domain.model.personalization.PracticeTopic;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.personalization.PracticePaperRepository;
@@ -63,7 +64,7 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
         var topic = requireTopic(input.topicId());
         var quotaRemaining = remainingPracticeQuota(studentId);
         var focus = selectionService.resolveFocus(studentId, input.fromSubAttribute());
-        var baseRank = estimatedBaseRank(studentId, input.topicId());
+        var chosenBandOrder = chosenBandOrder(studentId, input.targetFrameworkBandId());
         // Deliberately NOT wrapped in a Spring transaction: resolveNextQuestion can call out
         // to the Python agents service (diversity check, and -- on a thin/new topic -- live
         // LLM question generation, which alone can take 10+ seconds). Holding a HikariCP
@@ -75,7 +76,7 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
         // -- self-invocation within this class would bypass the AOP proxy) needs a real
         // transaction, scoped separately there.
         var selection = selectionService
-            .resolveNextQuestion(topic, studentId, focus, baseRank, List.of())
+            .resolveNextQuestion(topic, studentId, focus, chosenBandOrder, List.of())
             .orElseThrow(() -> new NotFoundException("Chủ đề chưa có câu luyện phù hợp."));
         var question = selection.question();
         if (quotaRemaining < question.spokenSeconds()) {
@@ -84,6 +85,7 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
         var paper = persistenceService.persist(
             studentId,
             input.topicId(),
+            input.targetFrameworkBandId(),
             resolveOrigin(studentId, input),
             input.offeredTopicIds(),
             input.previousOfferedTopicIds(),
@@ -94,7 +96,7 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
             PracticePaperDtoMapper.toDto(
                 paper,
                 List.of(question),
-                enrichmentService.sessionBudgetSecondsForStudent(studentId)
+                enrichmentService.sessionBudgetSeconds(studentId, chosenBandOrder)
             )
         );
     }
@@ -126,9 +128,24 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
         return Math.max(0, quota - reserved);
     }
 
-    private int estimatedBaseRank(UUID studentId, UUID topicId) {
-        var signal = enrichmentService.studentRankSignal(studentId);
-        return enrichmentService.rankForTopic(studentId, topicId, signal);
+    /**
+     * Thứ tự của bậc học sinh chọn, sau khi đã kiểm bậc đó có thật trong khung đang áp cho em.
+     *
+     * <p>Phải kiểm, không được tin thẳng id client gửi: nhận bừa một bậc thuộc khung khác thì
+     * {@code result_band_order} của nó vô nghĩa với thang này, và mọi phép so độ khó phía sau
+     * lệch âm thầm. Dùng luôn thang bậc đã nạp cho màn hình chọn nên không tốn query mới.
+     */
+    private int chosenBandOrder(UUID studentId, UUID bandId) {
+        if (bandId == null) {
+            throw new NotFoundException("Chưa chọn bậc muốn luyện.");
+        }
+        return enrichmentService.frameworkBandLadder(studentId).stream()
+            .filter(band -> bandId.equals(band.getId()))
+            .findFirst()
+            .map(FrameworkResultBand::getOrder)
+            .orElseThrow(() -> new NotFoundException(
+                "Bậc luyện tập không thuộc khung đánh giá đang áp dụng."
+            ));
     }
 
     private PracticeTopic requireTopic(UUID topicId) {

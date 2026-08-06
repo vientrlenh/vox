@@ -19,6 +19,4 @@ public interface PracticeItemEvaluationRepository {
     Double findLastValidNormalizedScore(UUID sessionId);
 
     BigDecimal findAverageItemScoreBySessionId(UUID sessionId);
-
-    java.util.List<Double> findNormalizedScoresChronological(UUID studentId);
 }

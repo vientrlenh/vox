@@ -8,6 +8,12 @@ public final class PracticePlanningResponses {
     private PracticePlanningResponses() {
     }
 
+    /**
+     * Không còn trường {@code level}. Trước đây mỗi thẻ mang một mức độ riêng, nên học sinh
+     * nhìn thấy "Công nghệ — Nâng cao" cạnh "Đồ ăn — Cơ bản" rồi bấm cái thứ hai: hệ thống ghi
+     * nhận "em thích Đồ ăn" trong khi em chỉ chọn cái dễ hơn. Giờ độ khó chọn MỘT lần cho cả
+     * phiên nên mọi thẻ cùng một mức, và lựa chọn chủ đề trở lại thuần sở thích.
+     */
     public record PracticeTopicOffer(
             UUID topicId,
             String name,
@@ -15,30 +21,18 @@ public final class PracticePlanningResponses {
             boolean savedByMe,
             Integer matchPercent,
             int minutes,
-            String level,
             String rationale,
             List<String> reasons,
             List<String> focusTags) {
 
         public PracticeTopicOffer(UUID topicId, String name, String dimension, boolean savedByMe) {
-            this(topicId, name, dimension, savedByMe, null, 0, "INTERMEDIATE", null, List.of(), List.of());
+            this(topicId, name, dimension, savedByMe, null, 0, null, List.of(), List.of());
         }
     }
 
     public record TopicSearchResult(
             List<PracticeTopicOffer> topics,
             boolean canGenerate) {
-    }
-
-    public record TopicInterest(
-            UUID topicId,
-            String name,
-            double score,
-            int sessionsMentioned,
-            String lastMentionedAt) {
-    }
-
-    public record InterestProfile(List<TopicInterest> topics) {
     }
 
     public record PracticePaperQuestion(

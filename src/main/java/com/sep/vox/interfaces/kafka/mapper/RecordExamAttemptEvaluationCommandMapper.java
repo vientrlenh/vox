@@ -203,6 +203,11 @@ public final class RecordExamAttemptEvaluationCommandMapper {
             .map(value -> new WordFeedbackInput(
                 textOrNull(value.get("word")),
                 doubleOrNull(value.get("accuracyScore")),
+                doubleOrNull(value.get("effectiveScore")),
+                textOrNull(value.get("errorType")),
+                textOrNull(value.get("color")),
+                textOrNull(value.get("level")),
+                textOrNull(value.get("errorNote")),
                 booleanOrNull(value.get("hasCriticalIssue")),
                 toPhonemes(value.get("phonemes"))
             ))
@@ -217,7 +222,10 @@ public final class RecordExamAttemptEvaluationCommandMapper {
             .filter(value -> value != null && value.isObject())
             .map(value -> new PhonemeFeedbackInput(
                 textOrNull(value.get("phoneme")),
-                doubleOrNull(value.get("accuracyScore"))
+                doubleOrNull(value.get("accuracyScore")),
+                textOrNull(value.get("color")),
+                textOrNull(value.get("level")),
+                textOrNull(value.get("note"))
             ))
             .toList();
     }

@@ -389,7 +389,11 @@ CREATE TABLE interest_quiz_item (
     id UUID DEFAULT uuidv7() NOT NULL,
     dimensions_json TEXT NOT NULL,
     statements_json TEXT NOT NULL,
-    desirability_note VARCHAR(512),
+    -- TEXT chứ không VARCHAR(512): chữ này do LLM sinh (interestQuizGenerationGraph), độ dài
+    -- không có trần nào kiểm. Cùng họ với exam_item_criterion_scores.rationale -- cột đó để
+    -- trần 512 và ngày 2026-08-06 một nhận xét dài đã làm INSERT ném "value too long", kéo
+    -- theo consumer không ack -> retry -> DLT -> cả bài chấm mất, xem migration V12.
+    desirability_note TEXT,
     active BOOLEAN NOT NULL DEFAULT TRUE,
     student_id UUID,
     created_at TIMESTAMPTZ NOT NULL,

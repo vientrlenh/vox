@@ -29,8 +29,13 @@ spring:
           inbound: 
             message:
               max-size: 8MB
-        vox-streaming: 
-          target: 0.0.0.0:9096
+        # vox-streaming chạy trong docker với network_mode: host, còn vox-app ở bridge
+        # network riêng -- từ trong container vox, "0.0.0.0" trỏ về CHÍNH NÓ, không bao giờ
+        # tới được service kia. Chạy trong compose thì biến này được đặt thành
+        # host.docker.internal:9096 (xem docker-compose.yml); mặc định dưới đây dành cho lúc
+        # chạy vox thẳng trên máy.
+        vox-streaming:
+          target: ${VOX_STREAMING_GRPC_TARGET:0.0.0.0:9096}
           inbound: 
             message: 
               max-size: 10MB
@@ -204,6 +209,13 @@ practice:
     secret: ${PRACTICE_INTERNAL_SECRET:}
 
 app:
+  grpc:
+    # Bí mật dùng chung gắn vào mọi lời gọi gRPC sang vox-streaming (xem
+    # StreamingServiceTokenInterceptor). Phải trùng GRPC_SERVICE_TOKEN bên vox-streaming.
+    # Rỗng thì interceptor KHÔNG gắn header, và vox-streaming trả UNAUTHENTICATED với lý do
+    # đọc được -- hơn là gắn "Bearer " cụt rồi nhận PERMISSION_DENIED, hai lỗi đó dẫn người
+    # đọc log đi hai hướng khác nhau.
+    streaming-token: ${GRPC_SERVICE_TOKEN:}
   cookie:
     secure: ${COOKIE_SECURE:false} # Local dev use false
     same-site: ${COOKIE_SAME_SITE:Lax} # If using domain forward, make this as None

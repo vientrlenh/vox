@@ -17,12 +17,14 @@ services:
         condition: service_started
     ports:
       - '${APP_PORT}:8081'
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
     environment:
       DB_URL: postgres:5432
       REDIS_HOST: redis
       EXTERNAL_EVENT_PROVIDER: kafka
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      # Tạm thời để chẩn đoán treo 5s ở examBlueprint — xóa sau khi tìm ra nguyên nhân.
+      VOX_STREAMING_GRPC_TARGET: vox-streaming:9096
       JAVA_OPTS: "-Xlog:gc*:file=/app/gc.log:time,uptime,level,tags:filecount=5,filesize=10M"
     networks:
       - vox-network
@@ -68,7 +70,6 @@ services:
 
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
-
       KAFKA_LISTENERS: INTERNAL://:9092,EXTERNAL://:9094,CONTROLLER://:9093
       KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://localhost:9094
 

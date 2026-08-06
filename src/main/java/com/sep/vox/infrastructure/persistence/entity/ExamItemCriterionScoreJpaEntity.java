@@ -37,7 +37,9 @@ public class ExamItemCriterionScoreJpaEntity {
     @Column(name = "final_score", nullable = false, updatable = false, precision = 5, scale = 2)
     private BigDecimal finalScore;
 
-    @Column(name = "rationale", length = 512, updatable = false)
+    // TEXT, không phải varchar(512): nhận xét AI dài theo số lượt nói của câu, không có trần.
+    // Trần cũ từng làm hỏng CẢ bài chấm chứ không chỉ cụt chữ -- xem migration V12.
+    @Column(name = "rationale", columnDefinition = "TEXT", updatable = false)
     private String rationale;
 
     @Column(name = "matched_band_code", length = 64, updatable = false)

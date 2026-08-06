@@ -58,7 +58,7 @@ public class ExamScheduleController {
     @PostMapping
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<ExamScheduleDto>> create(
-            @PathVariable UUID examId,
+            @PathVariable(name = "examId") UUID examId,
             @Valid @RequestBody CreateExamScheduleRequest request) {
         var data = createExamScheduleUseCase.execute(CreateExamScheduleCommandMapper.fromRequest(examId, request));
         return ResponseEntity.status(HttpStatus.CREATED)

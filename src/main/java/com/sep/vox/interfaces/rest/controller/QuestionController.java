@@ -174,7 +174,7 @@ public class QuestionController {
     @PostMapping("/import/{sessionId}/accept")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<Object>> acceptImport(
-            @PathVariable UUID sessionId,
+            @PathVariable(name = "sessionId") UUID sessionId,
             @Valid @RequestBody AcceptQuestionImportRequest request) {
         var command = AcceptQuestionImportCommandMapper.fromRequest(sessionId, request);
         acceptQuestionImportUseCase.execute(command);
@@ -184,14 +184,14 @@ public class QuestionController {
     @GetMapping("/export")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<byte[]> export(
-            @RequestParam(value = "questionBankId", required = false) UUID questionBankId,
-            @RequestParam(value = "questionTopicId", required = false) UUID questionTopicId,
-            @RequestParam(value = "topicName", required = false) String topicName,
-            @RequestParam(value = "status", required = false) QuestionStatus status,
-            @RequestParam(value = "type", required = false) QuestionType type,
-            @RequestParam(value = "sharing", required = false) QuestionSharing sharing,
-            @RequestParam(value = "scope", required = false) String scope,
-            @RequestParam(value = "keyword", required = false) String keyword) {
+            @RequestParam(name = "questionBankId", required = false) UUID questionBankId,
+            @RequestParam(name = "questionTopicId", required = false) UUID questionTopicId,
+            @RequestParam(name = "topicName", required = false) String topicName,
+            @RequestParam(name = "status", required = false) QuestionStatus status,
+            @RequestParam(name = "type", required = false) QuestionType type,
+            @RequestParam(name = "sharing", required = false) QuestionSharing sharing,
+            @RequestParam(name = "scope", required = false) String scope,
+            @RequestParam(name = "keyword", required = false) String keyword) {
         var file = questionSpreadsheetService.exportQuestions(
             questionBankId,
             questionTopicId,
@@ -211,7 +211,7 @@ public class QuestionController {
     @GetMapping("/import/template")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'TEACHER')")
     public ResponseEntity<byte[]> downloadTemplate(
-            @RequestParam(value = "type", required = false) String type) {
+            @RequestParam(name = "type", required = false) String type) {
         var file = questionSpreadsheetService.downloadTemplate(type);
         return ResponseEntity.ok()
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + questionSpreadsheetService.templateFileName() + "\"")
@@ -222,7 +222,7 @@ public class QuestionController {
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<UpdateQuestionResponse>> update(
-            @PathVariable UUID id,
+            @PathVariable(name = "id") UUID id,
             @Valid @RequestBody UpdateQuestionRequest request) {
         var command = UpdateQuestionCommandMapper.fromRequest(id, request);
         var data = updateQuestionUseCase.execute(command);
@@ -232,7 +232,7 @@ public class QuestionController {
 
     @PostMapping("/{id}/clone")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'TEACHER')")
-    public ResponseEntity<ApiResponse<QuestionDto>> clone(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<QuestionDto>> clone(@PathVariable(name = "id") UUID id) {
         var data = cloneQuestionUseCase.execute(new CloneQuestionCommand(id));
         var response = ApiResponse.success("Nhan ban cau hoi thanh cong", data);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -241,7 +241,7 @@ public class QuestionController {
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<QuestionDto>> updateStatus(
-            @PathVariable UUID id,
+            @PathVariable(name = "id") UUID id,
             @Valid @RequestBody UpdateQuestionStatusRequest request) {
         var command = UpdateQuestionStatusCommandMapper.fromRequest(id, request);
         var data = updateQuestionStatusUseCase.execute(command);
@@ -261,7 +261,7 @@ public class QuestionController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER')")
-    public ResponseEntity<ApiResponse<DeleteQuestionResponse>> delete(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<DeleteQuestionResponse>> delete(@PathVariable(name = "id") UUID id) {
         var data = deleteQuestionUseCase.execute(new DeleteQuestionCommand(id));
         var response = ApiResponse.success("Xoa cau hoi thanh cong", data);
         return ResponseEntity.ok(response);
@@ -270,7 +270,7 @@ public class QuestionController {
     @PostMapping("/{id}/collaborators")
     @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<ApiResponse<QuestionCollaboratorDto>> createCollaborator(
-            @PathVariable UUID id,
+            @PathVariable(name = "id") UUID id,
             @Valid @RequestBody CreateQuestionCollaboratorRequest request) {
         var command = CreateQuestionCollaboratorCommandMapper.fromRequest(id, request);
         var data = createQuestionCollaboratorUseCase.execute(command);
@@ -281,8 +281,8 @@ public class QuestionController {
     @PutMapping("/{id}/collaborators/{collaboratorId}")
     @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<ApiResponse<QuestionCollaboratorDto>> updateCollaborator(
-            @PathVariable UUID id,
-            @PathVariable UUID collaboratorId,
+            @PathVariable(name = "id") UUID id,
+            @PathVariable(name = "collaboratorId") UUID collaboratorId,
             @Valid @RequestBody UpdateQuestionCollaboratorRequest request) {
         var command = UpdateQuestionCollaboratorCommandMapper.fromRequest(id, collaboratorId, request);
         var data = updateQuestionCollaboratorUseCase.execute(command);
@@ -293,8 +293,8 @@ public class QuestionController {
     @DeleteMapping("/{id}/collaborators/{collaboratorId}")
     @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<ApiResponse<Void>> deleteCollaborator(
-            @PathVariable UUID id,
-            @PathVariable UUID collaboratorId) {
+            @PathVariable(name = "id") UUID id,
+            @PathVariable(name = "collaboratorId") UUID collaboratorId) {
         deleteQuestionCollaboratorUseCase.execute(new DeleteQuestionCollaboratorCommand(id, collaboratorId));
         ApiResponse<Void> response = ApiResponse.success("Xoa collaborator thanh cong");
         return ResponseEntity.ok(response);
@@ -303,7 +303,7 @@ public class QuestionController {
     @PostMapping("/{id}/assets")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<QuestionAssetDto>> createAsset(
-            @PathVariable UUID id,
+            @PathVariable(name = "id") UUID id,
             @Valid @RequestBody CreateQuestionAssetRequest request) {
         var command = CreateQuestionAssetCommandMapper.fromRequest(id, request);
         var data = createQuestionAssetUseCase.execute(command);
@@ -314,8 +314,8 @@ public class QuestionController {
     @GetMapping("/{id}/assets/upload-url")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<?>> getAssetUploadUrl(
-            @PathVariable UUID id,
-            @RequestParam String contentType) {
+            @PathVariable(name = "id") UUID id,
+            @RequestParam(name = "contentType") String contentType) {
         var data = getQuestionAssetUploadUrlUseCase.execute(new GetQuestionAssetUploadUrlQuery(id, contentType));
         return ResponseEntity.ok(ApiResponse.success("Lấy upload URL tài nguyên câu hỏi thành công", data));
     }
@@ -323,8 +323,8 @@ public class QuestionController {
     @PutMapping("/{id}/assets/{assetId}")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<QuestionAssetDto>> updateAsset(
-            @PathVariable UUID id,
-            @PathVariable UUID assetId,
+            @PathVariable(name = "id") UUID id,
+            @PathVariable(name = "assetId") UUID assetId,
             @Valid @RequestBody UpdateQuestionAssetRequest request) {
         var command = UpdateQuestionAssetCommandMapper.fromRequest(id, assetId, request);
         var data = updateQuestionAssetUseCase.execute(command);
@@ -335,8 +335,8 @@ public class QuestionController {
     @DeleteMapping("/{id}/assets/{assetId}")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<Void>> deleteAsset(
-            @PathVariable UUID id,
-            @PathVariable UUID assetId) {
+            @PathVariable(name = "id") UUID id,
+            @PathVariable(name = "assetId") UUID assetId) {
         deleteQuestionAssetUseCase.execute(new DeleteQuestionAssetCommand(id, assetId));
         ApiResponse<Void> response = ApiResponse.success("Xoa tai nguyen cau hoi thanh cong");
         return ResponseEntity.ok(response);
@@ -345,8 +345,8 @@ public class QuestionController {
     @PostMapping("/{id}/assets/{assetId}/regenerate-analysis")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<QuestionAssetDto>> regenerateAssetAnalysis(
-            @PathVariable UUID id,
-            @PathVariable UUID assetId) {
+            @PathVariable(name = "id") UUID id,
+            @PathVariable(name = "assetId") UUID assetId) {
         var data = regenerateQuestionAssetAnalysisUseCase.execute(
             new RegenerateQuestionAssetAnalysisUseCase.Command(id, assetId)
         );
@@ -356,7 +356,7 @@ public class QuestionController {
     @PutMapping("/{id}/evaluation-guide")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<QuestionEvaluationGuideDto>> upsertEvaluationGuide(
-            @PathVariable UUID id,
+            @PathVariable(name = "id") UUID id,
             @Valid @RequestBody QuestionEvaluationGuideRequest request) {
         var command = UpsertQuestionEvaluationGuideCommandMapper.fromRequest(id, request);
         var data = upsertQuestionEvaluationGuideUseCase.execute(command);

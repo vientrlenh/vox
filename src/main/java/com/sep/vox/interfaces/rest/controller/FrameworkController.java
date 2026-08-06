@@ -111,7 +111,7 @@ public class FrameworkController {
     @PatchMapping("/{frameworkId}")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> updateFramework(
-            @PathVariable UUID frameworkId,
+            @PathVariable(name = "frameworkId") UUID frameworkId,
             @Valid @RequestBody UpdateFrameworkRequest request) {
         var command = UpdateFrameworkCommandMapper.fromRequest(frameworkId, request);
         var id = updateFrameworkUseCase.execute(command);
@@ -120,21 +120,21 @@ public class FrameworkController {
 
     @PatchMapping("/{frameworkId}/activate")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public ResponseEntity<ApiResponse<UUID>> activateFramework(@PathVariable UUID frameworkId) {
+    public ResponseEntity<ApiResponse<UUID>> activateFramework(@PathVariable(name = "frameworkId") UUID frameworkId) {
         var id = updateFrameworkStatusUseCase.execute(new UpdateFrameworkActiveStatusCommand(frameworkId, true));
         return ResponseEntity.ok(ApiResponse.success("Kích hoạt framework thành công", id));
     }
 
     @PatchMapping("/{frameworkId}/deactivate")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public ResponseEntity<ApiResponse<UUID>> deactivateFramework(@PathVariable UUID frameworkId) {
+    public ResponseEntity<ApiResponse<UUID>> deactivateFramework(@PathVariable(name = "frameworkId") UUID frameworkId) {
         var id = updateFrameworkStatusUseCase.execute(new UpdateFrameworkActiveStatusCommand(frameworkId, false));
         return ResponseEntity.ok(ApiResponse.success("Vô hiệu hóa framework thành công", id));
     }
 
     @DeleteMapping("/{frameworkId}")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public ResponseEntity<Void> deleteFramework(@PathVariable UUID frameworkId) {
+    public ResponseEntity<Void> deleteFramework(@PathVariable(name = "frameworkId") UUID frameworkId) {
         deleteFrameworkUseCase.execute(new DeleteFrameworkCommand(frameworkId));
         return ResponseEntity.noContent().build();
     }
@@ -142,7 +142,7 @@ public class FrameworkController {
     @PostMapping("/{frameworkId}/versions")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<CreateFrameworkVersionResponse>> createVersion(
-            @PathVariable UUID frameworkId,
+            @PathVariable(name = "frameworkId") UUID frameworkId,
             @Valid @RequestBody CreateFrameworkVersionRequest request) {
         var command = CreateFrameworkVersionCommandMapper.fromRequest(frameworkId, request);
         var data = createFrameworkVersionUseCase.execute(command);
@@ -153,8 +153,8 @@ public class FrameworkController {
     @PatchMapping("/{frameworkId}/versions/{versionId}/status")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> updateVersionStatus(
-            @PathVariable UUID frameworkId,
-            @PathVariable UUID versionId,
+            @PathVariable(name = "frameworkId") UUID frameworkId,
+            @PathVariable(name = "versionId") UUID versionId,
             @Valid @RequestBody UpdateFrameworkVersionStatusRequest request) {
         var command = UpdateFrameworkVersionStatusCommandMapper.fromRequest(frameworkId, versionId, request);
         var updatedVersionId = updateFrameworkVersionStatusUseCase.execute(command);
@@ -164,8 +164,8 @@ public class FrameworkController {
     @DeleteMapping("/{frameworkId}/versions/{versionId}")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<Void> deleteVersion(
-            @PathVariable UUID frameworkId,
-            @PathVariable UUID versionId) {
+            @PathVariable(name = "frameworkId") UUID frameworkId,
+            @PathVariable(name = "versionId") UUID versionId) {
         deleteFrameworkVersionUseCase.execute(new DeleteFrameworkVersionCommand(frameworkId, versionId));
         return ResponseEntity.noContent().build();
     }
@@ -173,8 +173,8 @@ public class FrameworkController {
     @PostMapping("/{frameworkId}/versions/{versionId}/criteria")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<List<UUID>>> createCriteria(
-            @PathVariable UUID frameworkId,
-            @PathVariable UUID versionId,
+            @PathVariable(name = "frameworkId") UUID frameworkId,
+            @PathVariable(name = "versionId") UUID versionId,
             @Valid @RequestBody CreateFrameworkCriteriaRequest request) {
         var command = CreateFrameworkCriteriaCommandMapper.fromRequest(frameworkId, versionId, request);
         var ids = createFrameworkCriteriaUseCase.execute(command);
@@ -185,7 +185,7 @@ public class FrameworkController {
     @DeleteMapping("/{frameworkId}/versions/{versionId}/criteria/{criterionId}")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<Void> deleteCriterion(
-            @PathVariable UUID frameworkId, @PathVariable UUID versionId, @PathVariable UUID criterionId) {
+            @PathVariable(name = "frameworkId") UUID frameworkId, @PathVariable(name = "versionId") UUID versionId, @PathVariable(name = "criterionId") UUID criterionId) {
         deleteFrameworkCriterionUseCase.execute(
                 new DeleteFrameworkCriterionCommand(frameworkId, versionId, criterionId));
         return ResponseEntity.noContent().build();
@@ -194,9 +194,9 @@ public class FrameworkController {
     @PostMapping("/{frameworkId}/versions/{versionId}/criteria/{criterionId}/bands")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<List<UUID>>> createCriterionBands(
-            @PathVariable UUID frameworkId,
-            @PathVariable UUID versionId,
-            @PathVariable UUID criterionId,
+            @PathVariable(name = "frameworkId") UUID frameworkId,
+            @PathVariable(name = "versionId") UUID versionId,
+            @PathVariable(name = "criterionId") UUID criterionId,
             @Valid @RequestBody CreateFrameworkCriterionBandsRequest request) {
         var command = CreateFrameworkCriterionBandsCommandMapper.fromRequest(frameworkId, versionId, criterionId, request);
         var ids = createFrameworkCriterionBandsUseCase.execute(command);
@@ -207,8 +207,8 @@ public class FrameworkController {
     @PostMapping("/{frameworkId}/versions/{versionId}/result-bands")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<List<UUID>>> createResultBands(
-            @PathVariable UUID frameworkId,
-            @PathVariable UUID versionId,
+            @PathVariable(name = "frameworkId") UUID frameworkId,
+            @PathVariable(name = "versionId") UUID versionId,
             @Valid @RequestBody CreateFrameworkResultBandsRequest request) {
         var command = CreateFrameworkResultBandsCommandMapper.fromRequest(frameworkId, versionId, request);
         var ids = createFrameworkResultBandsUseCase.execute(command);
@@ -219,7 +219,7 @@ public class FrameworkController {
     @DeleteMapping("/{frameworkId}/versions/{versionId}/result-bands/{bandId}")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<Void> deleteResultBand(
-            @PathVariable UUID frameworkId, @PathVariable UUID versionId, @PathVariable UUID bandId) {
+            @PathVariable(name = "frameworkId") UUID frameworkId, @PathVariable(name = "versionId") UUID versionId, @PathVariable(name = "bandId") UUID bandId) {
         deleteFrameworkResultBandUseCase.execute(new DeleteFrameworkResultBandCommand(frameworkId, versionId, bandId));
         return ResponseEntity.noContent().build();
     }
@@ -227,8 +227,8 @@ public class FrameworkController {
     @DeleteMapping("/{frameworkId}/versions/{versionId}/criteria/{criterionId}/bands/{bandId}")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<Void> deleteCriterionBand(
-            @PathVariable UUID frameworkId, @PathVariable UUID versionId,
-            @PathVariable UUID criterionId, @PathVariable UUID bandId) {
+            @PathVariable(name = "frameworkId") UUID frameworkId, @PathVariable(name = "versionId") UUID versionId,
+            @PathVariable(name = "criterionId") UUID criterionId, @PathVariable(name = "bandId") UUID bandId) {
         deleteFrameworkCriterionBandUseCase.execute(
                 new DeleteFrameworkCriterionBandCommand(frameworkId, versionId, criterionId, bandId));
         return ResponseEntity.noContent().build();

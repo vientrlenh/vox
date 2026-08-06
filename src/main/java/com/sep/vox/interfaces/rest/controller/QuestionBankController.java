@@ -90,7 +90,7 @@ public class QuestionBankController {
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<QuestionBankDto>> update(
-            @PathVariable UUID id,
+            @PathVariable(name = "id") UUID id,
             @Valid @RequestBody UpdateQuestionBankRequest request) {
         var command = UpdateQuestionBankCommandMapper.fromRequest(id, request);
         var data = updateQuestionBankUseCase.execute(command);
@@ -101,7 +101,7 @@ public class QuestionBankController {
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<QuestionBankDto>> updateStatus(
-            @PathVariable UUID id,
+            @PathVariable(name = "id") UUID id,
             @Valid @RequestBody UpdateQuestionBankStatusRequest request) {
         var command = UpdateQuestionBankStatusCommandMapper.fromRequest(id, request);
         var data = updateQuestionBankStatusUseCase.execute(command);
@@ -111,7 +111,7 @@ public class QuestionBankController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<DeleteQuestionBankResponse>> delete(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<DeleteQuestionBankResponse>> delete(@PathVariable(name = "id") UUID id) {
         var data = deleteQuestionBankUseCase.execute(new DeleteQuestionBankCommand(id));
         var response = ApiResponse.success("Xóa ngân hàng câu hỏi thành công", data);
         return ResponseEntity.ok(response);
@@ -120,7 +120,7 @@ public class QuestionBankController {
     @PostMapping("/{id}/grades")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<QuestionBankGradeDto>> createGrade(
-            @PathVariable UUID id,
+            @PathVariable(name = "id") UUID id,
             @Valid @RequestBody CreateQuestionBankGradeRequest request) {
         var command = CreateQuestionBankGradeCommandMapper.fromRequest(id, request);
         var data = createQuestionBankGradeUseCase.execute(command);
@@ -131,8 +131,8 @@ public class QuestionBankController {
     @DeleteMapping("/{id}/grades/{gradeRowId}")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteGrade(
-            @PathVariable UUID id,
-            @PathVariable UUID gradeRowId) {
+            @PathVariable(name = "id") UUID id,
+            @PathVariable(name = "gradeRowId") UUID gradeRowId) {
         deleteQuestionBankGradeUseCase.execute(new DeleteQuestionBankGradeCommand(id, gradeRowId));
         ApiResponse<Void> response = ApiResponse.success("Bỏ khối lớp khỏi ngân hàng câu hỏi thành công");
         return ResponseEntity.ok(response);

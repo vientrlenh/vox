@@ -7,9 +7,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.common.PushDispatchResult;
-import com.sep.vox.application.common.PushMessage;
 import com.sep.vox.application.port.output.PushNotificationPort;
+import com.sep.vox.application.response.output.PushDispatchResult;
+import com.sep.vox.application.response.output.PushMessage;
 
 /**
  * Bản thay thế khi {@code firebase.enabled} không bật: máy dev chưa có service account,

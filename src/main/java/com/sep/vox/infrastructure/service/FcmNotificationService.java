@@ -17,9 +17,9 @@ import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.MessagingErrorCode;
 import com.google.firebase.messaging.MulticastMessage;
 import com.google.firebase.messaging.Notification;
-import com.sep.vox.application.common.PushDispatchResult;
-import com.sep.vox.application.common.PushMessage;
 import com.sep.vox.application.port.output.PushNotificationPort;
+import com.sep.vox.application.response.output.PushDispatchResult;
+import com.sep.vox.application.response.output.PushMessage;
 
 @Service
 @ConditionalOnProperty(prefix = "firebase", name = "enabled", havingValue = "true")

@@ -2,8 +2,8 @@ package com.sep.vox.application.port.output;
 
 import java.util.List;
 
-import com.sep.vox.application.common.PushDispatchResult;
-import com.sep.vox.application.common.PushMessage;
+import com.sep.vox.application.response.output.PushDispatchResult;
+import com.sep.vox.application.response.output.PushMessage;
 
 public interface PushNotificationPort {
 

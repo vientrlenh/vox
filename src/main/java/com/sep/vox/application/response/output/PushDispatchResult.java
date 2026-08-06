@@ -1,4 +1,4 @@
-package com.sep.vox.application.common;
+package com.sep.vox.application.response.output;
 
 import java.util.ArrayList;
 import java.util.List;

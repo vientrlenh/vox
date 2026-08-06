@@ -1,0 +1,55 @@
+type SystemAdminDashboardSummary {
+    totalSchools: Int!
+    activeSchools: Int!
+    inactiveSchools: Int!
+    pendingRegistrations: Int!
+    registrationsLast30Days: Int!
+    registrationsLast90Days: Int!
+    totalRevenue: Float!
+    "Doanh thu 24 tháng gần nhất, xếp từ cũ đến mới"
+    monthlyRevenue: [MonthlySpending!]!
+    studentCount: Int!
+    teacherCount: Int!
+    schoolAdminCount: Int!
+    activeFrameworkCount: Int!
+    systemRubricCount: Int!
+}
+
+type MonthlySpending {
+    "Định dạng YYYY-MM"
+    month: String!
+    amount: Float!
+}
+
+type SchoolAdminDashboardSummary {
+    examStatusCounts: ExamStatusCounts!
+    appealStats: AppealStats!
+    revenue: Float!
+    "Chi tiêu 12 tháng gần nhất, xếp từ cũ đến mới"
+    monthlySpending: [MonthlySpending!]!
+    tokenAllocated: Int!
+    tokenUsed: Int!
+}
+
+type TeacherGradingStats {
+    pending: Int!
+    completed: Int!
+}
+
+type TeacherScoreStats {
+    averageScore: Float
+    gradedCount: Int!
+    totalCandidates: Int!
+}
+
+type TeacherDashboardSummary {
+    examStatusCounts: ExamStatusCounts!
+    gradingStats: TeacherGradingStats!
+    scoreStats: TeacherScoreStats!
+}
+
+extend type Query {
+    systemAdminDashboard: SystemAdminDashboardSummary!
+    schoolAdminDashboard: SchoolAdminDashboardSummary!
+    teacherDashboard: TeacherDashboardSummary!
+}

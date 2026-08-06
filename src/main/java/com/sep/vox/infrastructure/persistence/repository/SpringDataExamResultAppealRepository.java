@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -33,4 +34,14 @@ public interface SpringDataExamResultAppealRepository extends JpaRepository<Exam
     long countPublishedByCandidateResultId(@Param("candidateResultId") UUID candidateResultId);
 
     List<ExamResultAppealJpaEntity> findByCandidateResultId(UUID candidateResultId);
+
+    /** candidateResultId/examId là cột FK trần, không có quan hệ JPA — join tường minh qua 3 bảng. */
+    @Query("""
+        SELECT COUNT(a) FROM ExamResultAppealJpaEntity a, ExamCandidateResultJpaEntity r, ExamJpaEntity e
+        WHERE a.candidateResultId = r.id
+        AND r.examId = e.id
+        AND e.schoolId = :schoolId
+        AND a.status IN :statuses
+    """)
+    long countBySchoolIdAndStatusIn(@Param("schoolId") UUID schoolId, @Param("statuses") Collection<String> statuses);
 }

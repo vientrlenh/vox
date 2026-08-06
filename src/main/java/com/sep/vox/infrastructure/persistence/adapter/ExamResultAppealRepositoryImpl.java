@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
+import com.sep.vox.domain.model.exam.ExamAppealStatus;
 import com.sep.vox.domain.model.exam.ExamResultAppeal;
 import com.sep.vox.domain.repository.ExamResultAppealRepository;
 import com.sep.vox.infrastructure.persistence.mapper.ExamResultAppealMapper;
@@ -54,5 +55,11 @@ public class ExamResultAppealRepositoryImpl implements ExamResultAppealRepositor
     @Override
     public void deleteByIdIn(Collection<UUID> ids) {
         springDataExamResultAppealRepository.deleteAllByIdInBatch(ids);
+    }
+
+    @Override
+    public long countBySchoolIdAndStatusIn(UUID schoolId, Collection<ExamAppealStatus> statuses) {
+        var statusNames = statuses.stream().map(Enum::name).toList();
+        return springDataExamResultAppealRepository.countBySchoolIdAndStatusIn(schoolId, statusNames);
     }
 }

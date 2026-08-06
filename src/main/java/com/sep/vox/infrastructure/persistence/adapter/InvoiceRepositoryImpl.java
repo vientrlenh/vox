@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -66,5 +67,10 @@ public class InvoiceRepositoryImpl implements InvoiceRepository {
         return springDataInvoiceRepository.findAllByStatus(status.name()).stream()
             .map(InvoiceMapper::toDomain)
             .toList();
+    }
+
+    @Override
+    public BigDecimal sumAmountByStatus(InvoiceStatus status) {
+        return springDataInvoiceRepository.sumAmountByStatus(status.name());
     }
 }

@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -12,7 +13,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.sep.vox.application.port.input.command.DeleteFrameworkCommand;
 import com.sep.vox.application.port.input.command.UpdateFrameworkActiveStatusCommand;
@@ -20,6 +23,10 @@ import com.sep.vox.application.port.input.command.DeleteFrameworkCriterionBandCo
 import com.sep.vox.application.port.input.command.DeleteFrameworkCriterionCommand;
 import com.sep.vox.application.port.input.command.DeleteFrameworkResultBandCommand;
 import com.sep.vox.application.port.input.command.DeleteFrameworkVersionCommand;
+import com.sep.vox.application.port.input.usecase.framework.AcceptFrameworkCriterionBandImportUseCase;
+import com.sep.vox.application.port.input.usecase.framework.AcceptFrameworkCriterionImportUseCase;
+import com.sep.vox.application.port.input.usecase.framework.AcceptFrameworkResultBandImportUseCase;
+import com.sep.vox.application.port.input.usecase.framework.AcceptFrameworkVersionImportUseCase;
 import com.sep.vox.application.port.input.usecase.framework.CreateFrameworkCriteriaUseCase;
 import com.sep.vox.application.port.input.usecase.framework.CreateFrameworkCriterionBandsUseCase;
 import com.sep.vox.application.port.input.usecase.framework.CreateFrameworkResultBandsUseCase;
@@ -30,10 +37,23 @@ import com.sep.vox.application.port.input.usecase.framework.DeleteFrameworkCrite
 import com.sep.vox.application.port.input.usecase.framework.DeleteFrameworkResultBandUseCase;
 import com.sep.vox.application.port.input.usecase.framework.DeleteFrameworkUseCase;
 import com.sep.vox.application.port.input.usecase.framework.DeleteFrameworkVersionUseCase;
+import com.sep.vox.application.port.input.usecase.framework.PreviewFrameworkCriterionBandImportFromFileUseCase;
+import com.sep.vox.application.port.input.usecase.framework.PreviewFrameworkCriterionImportFromFileUseCase;
+import com.sep.vox.application.port.input.usecase.framework.PreviewFrameworkResultBandImportFromFileUseCase;
+import com.sep.vox.application.port.input.usecase.framework.PreviewFrameworkVersionImportFromFileUseCase;
 import com.sep.vox.application.port.input.usecase.framework.UpdateFrameworkStatusUseCase;
 import com.sep.vox.application.port.input.usecase.framework.UpdateFrameworkUseCase;
 import com.sep.vox.application.port.input.usecase.framework.UpdateFrameworkVersionStatusUseCase;
 import com.sep.vox.application.response.input.framework.CreateFrameworkVersionResponse;
+import com.sep.vox.application.response.input.importfile.AcceptFrameworkCriterionBandImportResponse;
+import com.sep.vox.application.response.input.importfile.AcceptFrameworkCriterionImportResponse;
+import com.sep.vox.application.response.input.importfile.AcceptFrameworkResultBandImportResponse;
+import com.sep.vox.application.response.input.importfile.AcceptFrameworkVersionImportResponse;
+import com.sep.vox.application.response.input.importfile.PreviewFrameworkCriterionBandImportResponse;
+import com.sep.vox.application.response.input.importfile.PreviewFrameworkCriterionImportResponse;
+import com.sep.vox.application.response.input.importfile.PreviewFrameworkResultBandImportResponse;
+import com.sep.vox.application.response.input.importfile.PreviewFrameworkVersionImportResponse;
+import com.sep.vox.interfaces.rest.dto.request.AcceptImportRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateFrameworkCriteriaRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateFrameworkCriterionBandsRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateFrameworkRequest;
@@ -42,11 +62,19 @@ import com.sep.vox.interfaces.rest.dto.request.CreateFrameworkVersionRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateFrameworkRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateFrameworkVersionStatusRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
+import com.sep.vox.interfaces.rest.mapper.AcceptFrameworkCriterionBandImportCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.AcceptFrameworkCriterionImportCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.AcceptFrameworkResultBandImportCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.AcceptFrameworkVersionImportCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateFrameworkCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateFrameworkCriteriaCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateFrameworkCriterionBandsCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateFrameworkResultBandsCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateFrameworkVersionCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.PreviewFrameworkCriterionBandImportCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.PreviewFrameworkCriterionImportCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.PreviewFrameworkResultBandImportCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.PreviewFrameworkVersionImportFromFileCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.UpdateFrameworkCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.UpdateFrameworkVersionStatusCommandMapper;
 
@@ -69,6 +97,14 @@ public class FrameworkController {
     private final DeleteFrameworkCriterionBandUseCase deleteFrameworkCriterionBandUseCase;
     private final CreateFrameworkCriteriaUseCase createFrameworkCriteriaUseCase;
     private final DeleteFrameworkCriterionUseCase deleteFrameworkCriterionUseCase;
+    private final PreviewFrameworkVersionImportFromFileUseCase previewFrameworkVersionImportFromFileUseCase;
+    private final AcceptFrameworkVersionImportUseCase acceptFrameworkVersionImportUseCase;
+    private final PreviewFrameworkCriterionImportFromFileUseCase previewFrameworkCriterionImportFromFileUseCase;
+    private final AcceptFrameworkCriterionImportUseCase acceptFrameworkCriterionImportUseCase;
+    private final PreviewFrameworkResultBandImportFromFileUseCase previewFrameworkResultBandImportFromFileUseCase;
+    private final AcceptFrameworkResultBandImportUseCase acceptFrameworkResultBandImportUseCase;
+    private final PreviewFrameworkCriterionBandImportFromFileUseCase previewFrameworkCriterionBandImportFromFileUseCase;
+    private final AcceptFrameworkCriterionBandImportUseCase acceptFrameworkCriterionBandImportUseCase;
 
     public FrameworkController(
             CreateFrameworkUseCase createFrameworkUseCase,
@@ -83,7 +119,15 @@ public class FrameworkController {
             DeleteFrameworkResultBandUseCase deleteFrameworkResultBandUseCase,
             DeleteFrameworkCriterionBandUseCase deleteFrameworkCriterionBandUseCase,
             CreateFrameworkCriteriaUseCase createFrameworkCriteriaUseCase,
-            DeleteFrameworkCriterionUseCase deleteFrameworkCriterionUseCase) {
+            DeleteFrameworkCriterionUseCase deleteFrameworkCriterionUseCase,
+            PreviewFrameworkVersionImportFromFileUseCase previewFrameworkVersionImportFromFileUseCase,
+            AcceptFrameworkVersionImportUseCase acceptFrameworkVersionImportUseCase,
+            PreviewFrameworkCriterionImportFromFileUseCase previewFrameworkCriterionImportFromFileUseCase,
+            AcceptFrameworkCriterionImportUseCase acceptFrameworkCriterionImportUseCase,
+            PreviewFrameworkResultBandImportFromFileUseCase previewFrameworkResultBandImportFromFileUseCase,
+            AcceptFrameworkResultBandImportUseCase acceptFrameworkResultBandImportUseCase,
+            PreviewFrameworkCriterionBandImportFromFileUseCase previewFrameworkCriterionBandImportFromFileUseCase,
+            AcceptFrameworkCriterionBandImportUseCase acceptFrameworkCriterionBandImportUseCase) {
         this.createFrameworkUseCase = createFrameworkUseCase;
         this.updateFrameworkUseCase = updateFrameworkUseCase;
         this.updateFrameworkStatusUseCase = updateFrameworkStatusUseCase;
@@ -97,6 +141,14 @@ public class FrameworkController {
         this.deleteFrameworkCriterionBandUseCase = deleteFrameworkCriterionBandUseCase;
         this.createFrameworkCriteriaUseCase = createFrameworkCriteriaUseCase;
         this.deleteFrameworkCriterionUseCase = deleteFrameworkCriterionUseCase;
+        this.previewFrameworkVersionImportFromFileUseCase = previewFrameworkVersionImportFromFileUseCase;
+        this.acceptFrameworkVersionImportUseCase = acceptFrameworkVersionImportUseCase;
+        this.previewFrameworkCriterionImportFromFileUseCase = previewFrameworkCriterionImportFromFileUseCase;
+        this.acceptFrameworkCriterionImportUseCase = acceptFrameworkCriterionImportUseCase;
+        this.previewFrameworkResultBandImportFromFileUseCase = previewFrameworkResultBandImportFromFileUseCase;
+        this.acceptFrameworkResultBandImportUseCase = acceptFrameworkResultBandImportUseCase;
+        this.previewFrameworkCriterionBandImportFromFileUseCase = previewFrameworkCriterionBandImportFromFileUseCase;
+        this.acceptFrameworkCriterionBandImportUseCase = acceptFrameworkCriterionBandImportUseCase;
     }
 
     @PostMapping
@@ -232,5 +284,85 @@ public class FrameworkController {
         deleteFrameworkCriterionBandUseCase.execute(
                 new DeleteFrameworkCriterionBandCommand(frameworkId, versionId, criterionId, bandId));
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping(value = "/{frameworkId}/versions/import/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public ResponseEntity<ApiResponse<PreviewFrameworkVersionImportResponse>> previewVersionImport(
+            @PathVariable UUID frameworkId,
+            @RequestParam("file") MultipartFile file) {
+        var command = PreviewFrameworkVersionImportFromFileCommandMapper.fromRequest(frameworkId, file);
+        var data = previewFrameworkVersionImportFromFileUseCase.execute(command);
+        return ResponseEntity.ok(ApiResponse.success("Xem trước dữ liệu import phiên bản framework thành công", data));
+    }
+
+    @PostMapping("/versions/import/{sessionId}/accept")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public ResponseEntity<ApiResponse<AcceptFrameworkVersionImportResponse>> acceptVersionImport(
+            @PathVariable UUID sessionId,
+            @Valid @RequestBody AcceptImportRequest request) {
+        var command = AcceptFrameworkVersionImportCommandMapper.fromRequest(sessionId, request);
+        var data = acceptFrameworkVersionImportUseCase.execute(command);
+        return ResponseEntity.ok(ApiResponse.success("Xác nhận import phiên bản framework thành công", data));
+    }
+
+    @PostMapping(value = "/versions/{versionId}/criteria/import/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public ResponseEntity<ApiResponse<PreviewFrameworkCriterionImportResponse>> previewCriterionImport(
+            @PathVariable UUID versionId,
+            @RequestParam("file") MultipartFile file) {
+        var command = PreviewFrameworkCriterionImportCommandMapper.fromRequest(versionId, file);
+        var data = previewFrameworkCriterionImportFromFileUseCase.execute(command);
+        return ResponseEntity.ok(ApiResponse.success("Xem trước dữ liệu import tiêu chí thành công", data));
+    }
+
+    @PostMapping("/versions/criteria/import/{sessionId}/accept")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public ResponseEntity<ApiResponse<AcceptFrameworkCriterionImportResponse>> acceptCriterionImport(
+            @PathVariable UUID sessionId,
+            @Valid @RequestBody AcceptImportRequest request) {
+        var command = AcceptFrameworkCriterionImportCommandMapper.fromRequest(sessionId, request);
+        var data = acceptFrameworkCriterionImportUseCase.execute(command);
+        return ResponseEntity.ok(ApiResponse.success("Xác nhận import tiêu chí thành công", data));
+    }
+
+    @PostMapping(value = "/versions/{versionId}/result-bands/import/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public ResponseEntity<ApiResponse<PreviewFrameworkResultBandImportResponse>> previewResultBandImport(
+            @PathVariable UUID versionId,
+            @RequestParam("file") MultipartFile file) {
+        var command = PreviewFrameworkResultBandImportCommandMapper.fromRequest(versionId, file);
+        var data = previewFrameworkResultBandImportFromFileUseCase.execute(command);
+        return ResponseEntity.ok(ApiResponse.success("Xem trước dữ liệu import mức kết quả thành công", data));
+    }
+
+    @PostMapping("/versions/result-bands/import/{sessionId}/accept")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public ResponseEntity<ApiResponse<AcceptFrameworkResultBandImportResponse>> acceptResultBandImport(
+            @PathVariable UUID sessionId,
+            @Valid @RequestBody AcceptImportRequest request) {
+        var command = AcceptFrameworkResultBandImportCommandMapper.fromRequest(sessionId, request);
+        var data = acceptFrameworkResultBandImportUseCase.execute(command);
+        return ResponseEntity.ok(ApiResponse.success("Xác nhận import mức kết quả thành công", data));
+    }
+
+    @PostMapping(value = "/versions/{versionId}/criterion-bands/import/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public ResponseEntity<ApiResponse<PreviewFrameworkCriterionBandImportResponse>> previewCriterionBandImport(
+            @PathVariable UUID versionId,
+            @RequestParam("file") MultipartFile file) {
+        var command = PreviewFrameworkCriterionBandImportCommandMapper.fromRequest(versionId, file);
+        var data = previewFrameworkCriterionBandImportFromFileUseCase.execute(command);
+        return ResponseEntity.ok(ApiResponse.success("Xem trước dữ liệu import mức đánh giá tiêu chí thành công", data));
+    }
+
+    @PostMapping("/versions/criterion-bands/import/{sessionId}/accept")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public ResponseEntity<ApiResponse<AcceptFrameworkCriterionBandImportResponse>> acceptCriterionBandImport(
+            @PathVariable UUID sessionId,
+            @Valid @RequestBody AcceptImportRequest request) {
+        var command = AcceptFrameworkCriterionBandImportCommandMapper.fromRequest(sessionId, request);
+        var data = acceptFrameworkCriterionBandImportUseCase.execute(command);
+        return ResponseEntity.ok(ApiResponse.success("Xác nhận import mức đánh giá tiêu chí thành công", data));
     }
 }

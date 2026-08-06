@@ -42,10 +42,21 @@ type TeacherScoreStats {
     totalCandidates: Int!
 }
 
+type ClassScoreStats {
+    examName: String!
+    className: String!
+    averageScore: Float
+    highestScore: Float
+    lowestScore: Float
+    gradedCount: Int!
+    totalCandidates: Int!
+}
+
 type TeacherDashboardSummary {
     examStatusCounts: ExamStatusCounts!
     gradingStats: TeacherGradingStats!
     scoreStats: TeacherScoreStats!
+    classScoreStats: [ClassScoreStats!]!
 }
 
 extend type Query {

@@ -388,7 +388,11 @@ public class SePayPaymentProcessService implements PaymentProcessPort {
             @JsonProperty("order_currency") String orderCurrency,
             @JsonProperty("order_amount") String orderAmount,
             @JsonProperty("order_invoice_number") String orderInvoiceNumber,
-            @JsonProperty("custom_data") String customData,
+            // Object chứ không phải String: SePay gửi custom_data dưới dạng mảng (rỗng, hoặc mảng
+            // object name/value). Khai là String làm Jackson ném MismatchedInputException, parseBody
+            // trả null, và MỌI IPN đều bị coi là không xác thực được — trường đã trả tiền nhưng hóa
+            // đơn không bao giờ được chốt. Ta không đọc field này, nên nhận kiểu gì cũng được.
+            @JsonProperty("custom_data") Object customData,
             @JsonProperty("user_agent") String userAgent,
             @JsonProperty("ip_address") String ipAddress,
             @JsonProperty("order_description") String orderDescription

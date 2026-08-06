@@ -68,7 +68,7 @@ class ViewSchoolAdminDashboardUseCaseTests {
 
         var subscription = new SchoolSubscription(
             subscriptionId, schoolId, UUID.randomUUID(), LocalDate.now(), null,
-            SubscriptionStatus.ACTIVE, BigDecimal.ZERO, null, Instant.now()
+            SubscriptionStatus.ACTIVE, BigDecimal.ZERO, null, Instant.now(), null
         );
         when(schoolSubscriptionRepository.findAllBySchoolId(schoolId)).thenReturn(List.of(subscription));
     }
@@ -77,7 +77,7 @@ class ViewSchoolAdminDashboardUseCaseTests {
         return new Invoice(
             UUID.randomUUID(), "INV-" + UUID.randomUUID(), schoolId, subscriptionId,
             InvoiceSourceType.SUBSCRIPTION, UUID.randomUUID(), LocalDate.now(), amount,
-            InvoiceStatus.PAID, null, null, null, paidAt
+            InvoiceStatus.PAID, null, null, null, null, paidAt, null
         );
     }
 
@@ -124,7 +124,7 @@ class ViewSchoolAdminDashboardUseCaseTests {
         var unpaidInvoice = new Invoice(
             UUID.randomUUID(), "INV-UNPAID", schoolId, subscriptionId,
             InvoiceSourceType.SUBSCRIPTION, UUID.randomUUID(), LocalDate.now(), new BigDecimal("999999"),
-            InvoiceStatus.PENDING, null, null, null, null
+            InvoiceStatus.PENDING, null, null, null, null, null, null
         );
         when(invoiceRepository.findAllBySubscriptionIdIn(List.of(subscriptionId))).thenReturn(List.of(unpaidInvoice));
 

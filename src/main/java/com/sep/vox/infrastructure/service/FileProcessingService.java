@@ -355,6 +355,36 @@ public class FileProcessingService implements FileProcessingPort {
                 Map.entry("evaluationScoringHints", List.of("scoringHints", "scoring hints", "gợi ý chấm điểm", "goi y cham diem")),
                 Map.entry("evaluationCommonMistakes", List.of("commonMistakes", "common mistakes", "lỗi thường gặp", "loi thuong gap"))
             );
+
+            case FRAMEWORK_VERSION -> Map.of(
+                    "version", List.of("version", "version number", "phiên bản", "phien ban", "số version", "STT Version"),
+                    "name", List.of("name", "version name", "tên phiên bản", "ten phien ban", "tên"),
+                    "description", List.of("description", "note", "notes", "mô tả", "mo ta", "ghi chú", "ghi chu"),
+                    "effectiveFrom", List.of("effectiveFrom", "from date", "ngày bắt đầu", "ngày áp dụng", "ngay bat dau"),
+                    "effectiveTo", List.of("effectiveTo", "to date", "ngày kết thúc", "ngày hết hạn", "ngay ket thuc")
+            );
+
+            case FRAMEWORK_CRITERION -> Map.of(
+                    "code", List.of("code", "mã tiêu chí", "ma tieu chi", "criterion code", "mã"),
+                    "name", List.of("name", "tên tiêu chí", "ten tieu chi", "criterion name", "tên"),
+                    "description", List.of("description", "mô tả", "mo ta", "ghi chú", "ghi chu"),
+                    "order", List.of("order", "thứ tự", "thu tu", "số thứ tự")
+            );
+
+            case FRAMEWORK_RESULT_BAND -> Map.of(
+                    "code", List.of("code", "mã kết quả", "ma ket qua", "mã xếp loại", "ma xep loai"),
+                    "label", List.of("label", "name", "nhãn", "nhan", "tên kết quả", "ten ket qua", "tên xếp loại"),
+                    "description", List.of("description", "mô tả", "mo ta", "ghi chú", "ghi chu"),
+                    "order", List.of("order", "thứ tự", "thu tu", "số thứ tự")
+            );
+
+            case FRAMEWORK_CRITERION_BAND -> Map.of(
+                    "criterionCode", List.of("criterionCode", "criterion code", "mã tiêu chí", "ma tieu chi"),
+                    "resultBandCode", List.of("resultBandCode", "result band code", "mã kết quả", "ma ket qua", "mã xếp loại", "ma xep loai"),
+                    "descriptor", List.of("descriptor", "mô tả chi tiết", "mo ta chi tiet", "mô tả", "mo ta"),
+                    "positiveSignals", List.of("positiveSignals", "positive signals", "dấu hiệu tích cực", "dau hieu tich cuc"),
+                    "negativeSignals", List.of("negativeSignals", "negative signals", "dấu hiệu tiêu cực", "dau hieu tieu cuc")
+            );
         };
     }
 

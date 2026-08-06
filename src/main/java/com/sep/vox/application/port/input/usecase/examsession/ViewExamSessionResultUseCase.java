@@ -3,17 +3,16 @@ package com.sep.vox.application.port.input.usecase.examsession;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.common.ExamResultVisibilityPolicy;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.query.ViewExamSessionResultQuery;
 import com.sep.vox.application.port.input.service.ExamResultAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.usecase.examevaluation.ExamSessionResultCalculator;
-import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.examsession.ExamCandidateResultItemResponse;
 import com.sep.vox.application.response.input.examsession.ExamCandidateResultResponse;
 import com.sep.vox.application.response.input.examsession.ExamCandidateResultSectionResponse;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
-import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.FrameworkResultBandRepository;
 import com.sep.vox.domain.repository.RubricResultBandRepository;
@@ -26,33 +25,33 @@ public class ViewExamSessionResultUseCase implements IUseCase<ViewExamSessionRes
     private final FrameworkResultBandRepository frameworkResultBandRepository;
     private final RubricResultBandRepository rubricResultBandRepository;
     private final ExamResultAccessService examResultAccessService;
-    private final UserContextPort userContextPort;
-    private final ExamCandidateRepository examCandidateRepository;
 
     public ViewExamSessionResultUseCase(
             ExamCandidateResultRepository examCandidateResultRepository,
             ExamSessionResultCalculator examSessionResultCalculator,
             FrameworkResultBandRepository frameworkResultBandRepository,
             RubricResultBandRepository rubricResultBandRepository,
-            ExamResultAccessService examResultAccessService,
-            UserContextPort userContextPort,
-            ExamCandidateRepository examCandidateRepository) {
+            ExamResultAccessService examResultAccessService) {
         this.examCandidateResultRepository = examCandidateResultRepository;
         this.examSessionResultCalculator = examSessionResultCalculator;
         this.frameworkResultBandRepository = frameworkResultBandRepository;
         this.rubricResultBandRepository = rubricResultBandRepository;
         this.examResultAccessService = examResultAccessService;
-        this.userContextPort = userContextPort;
-        this.examCandidateRepository = examCandidateRepository;
     }
 
     @Override
     @Transactional(readOnly = true)
     public ExamCandidateResultResponse execute(ViewExamSessionResultQuery input) {
-        var session = examResultAccessService.getAuthorizedSession(input.sessionId());
+        var access = examResultAccessService.authorizeSession(input.sessionId());
+        var session = access.session();
         var result = examCandidateResultRepository.findBySessionId(session.getId())
             .orElseThrow(() -> new NotFoundException("Khong tim thay ket qua phien thi"));
-        var includeBreakdown = shouldIncludeBreakdown(result.getStatus());
+        // Chính chủ chỉ xem được bài đã có kết luận; giáo viên/admin thì luôn xem được.
+        // Trang vẫn trả về bản ghi kèm status — che field chứ không chặn, để học sinh còn
+        // biết bài mình đang ở đâu thay vì gặp màn "không tìm thấy".
+        var scoreVisible = !access.candidateOwner()
+            || ExamResultVisibilityPolicy.isVisibleToCandidate(result.getStatus());
+        var includeBreakdown = scoreVisible && shouldIncludeBreakdown(result.getStatus());
         var calculated = includeBreakdown ? examSessionResultCalculator.calculate(session.getId()) : null;
         var targetBand = result.getTargetFrameworkBandId() == null
             ? null
@@ -60,7 +59,6 @@ public class ViewExamSessionResultUseCase implements IUseCase<ViewExamSessionRes
         var rubricBand = result.getRubricResultBandId() == null
             ? null
             : rubricResultBandRepository.findById(result.getRubricResultBandId()).orElse(null);
-        var scoreVisible = isScoreVisibleToCurrentUser(session, result.getStatus());
 
         return new ExamCandidateResultResponse(
             result.getId(),
@@ -96,19 +94,5 @@ public class ViewExamSessionResultUseCase implements IUseCase<ViewExamSessionRes
 
     private boolean shouldIncludeBreakdown(ExamCandidateResultStatus status) {
         return status != ExamCandidateResultStatus.INVALID;
-    }
-
-    private boolean isScoreVisibleToCurrentUser(com.sep.vox.domain.model.exam.ExamSession session, ExamCandidateResultStatus status) {
-        if (!session.isFlagged()) {
-            return true;
-        }
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var isStudentOwner = examCandidateRepository.findById(session.getCandidateId())
-            .map(candidate -> candidate.getStudentId().equals(currentUserId))
-            .orElse(false);
-        if (!isStudentOwner) {
-            return true;
-        }
-        return status == ExamCandidateResultStatus.FINAL || status == ExamCandidateResultStatus.RELEASED;
     }
 }

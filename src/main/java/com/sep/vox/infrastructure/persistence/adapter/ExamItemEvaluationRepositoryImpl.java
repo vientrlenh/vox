@@ -35,6 +35,12 @@ public class ExamItemEvaluationRepositoryImpl implements ExamItemEvaluationRepos
     }
 
     @Override
+    public Optional<ExamItemEvaluation> findLatestAiByResponseId(UUID responseId) {
+        return springDataExamItemEvaluationRepository.findLatestAiByResponseId(responseId)
+            .map(ExamItemEvaluationMapper::toDomain);
+    }
+
+    @Override
     public List<ExamItemEvaluation> findLatestByResponseIdIn(Collection<UUID> responseIds) {
         return springDataExamItemEvaluationRepository.findLatestByResponseIdIn(responseIds).stream()
             .map(ExamItemEvaluationMapper::toDomain)

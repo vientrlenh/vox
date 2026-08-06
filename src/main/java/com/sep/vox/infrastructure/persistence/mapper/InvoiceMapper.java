@@ -3,6 +3,7 @@ package com.sep.vox.infrastructure.persistence.mapper;
 import com.sep.vox.domain.model.subscription.Invoice;
 import com.sep.vox.domain.model.subscription.InvoiceSourceType;
 import com.sep.vox.domain.model.subscription.InvoiceStatus;
+import com.sep.vox.domain.model.subscription.PaymentMethod;
 import com.sep.vox.infrastructure.persistence.entity.InvoiceJpaEntity;
 
 public final class InvoiceMapper {
@@ -20,10 +21,12 @@ public final class InvoiceMapper {
             jpa.getIssueDate(),
             jpa.getAmount(),
             InvoiceStatus.valueOf(jpa.getStatus()),
-            jpa.getPayosOrderCode(),
+            PaymentMethod.valueOf(jpa.getPaymentProvider()),
+            jpa.getProviderOrderRef(),
             jpa.getPaymentLinkId(),
             jpa.getCheckoutUrl(),
-            jpa.getPaidAt()
+            jpa.getPaidAt(),
+            jpa.getResolvedPlanId()
         );
     }
 
@@ -38,10 +41,12 @@ public final class InvoiceMapper {
             domain.getIssueDate(),
             domain.getAmount(),
             domain.getStatus().name(),
-            domain.getPayosOrderCode(),
+            domain.getPaymentProvider().name(),
+            domain.getProviderOrderRef(),
             domain.getPaymentLinkId(),
             domain.getCheckoutUrl(),
-            domain.getPaidAt()
+            domain.getPaidAt(),
+            domain.getResolvedPlanId()
         );
     }
 }

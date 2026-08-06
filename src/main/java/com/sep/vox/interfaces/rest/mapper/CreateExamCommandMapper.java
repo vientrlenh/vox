@@ -22,8 +22,9 @@ public final class CreateExamCommandMapper {
             request.examTimeDurationSecond(),
             request.resultDecisionMethod(),
             request.requiresOtp(), 
-            request.requiredStreamTypes(), 
-            request.streamTypePermission()
+            request.requiredStreamTypes(),
+            request.streamTypePermission(),
+            request.deliveryMode()
         );
     }
 }

@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
 
 import tools.jackson.databind.json.JsonMapper;
 
-import com.sep.vox.application.config.PracticeGenerationProperties;
+import com.sep.vox.infrastructure.properties.PracticeGenerationProperties;
 import com.sep.vox.application.query.dto.PracticeFocusInfo;
 import com.sep.vox.domain.model.personalization.PracticeQuestion;
 import com.sep.vox.domain.model.personalization.PracticeTopic;
@@ -39,7 +39,6 @@ public class PracticeQuestionSelectionService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PracticeQuestionSelectionService.class);
     private static final JsonMapper JSON_MAPPER = new JsonMapper();
-    private static final int ONLINE_GENERATION_MAX_CANDIDATES = 2;
 
     /**
      * Lấy ngẫu nhiên trong {@value} câu tốt nhất thay vì luôn lấy câu đầu bảng -- randomesque
@@ -318,7 +317,7 @@ public class PracticeQuestionSelectionService {
                 subAttribute,
                 tense,
                 targetRank,
-                ONLINE_GENERATION_MAX_CANDIDATES,
+                generationProperties.onlineCandidateCount(),
                 generationProperties.onlineBudget(),
                 bandCount,
                 enrichmentService.frameworkBandLadder(studentId),

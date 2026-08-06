@@ -107,7 +107,11 @@ public class BulkFinalizeExamResultsUseCase
         var currentUserId = examGradingAccessService.requireActiveUserId();
         var exam = examRepository.findById(command.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra."));
-        examGradingAccessService.authorizeSchoolAdmin(exam.getSchoolId(), currentUserId);
+        // Bài kiểm tra trên lớp: nhà trường không chấm, nên nếu chỉ school admin chốt
+        // sổ được thì giáo viên kẹt cứng — công bố kết quả đòi MỌI bài phải RELEASED
+        // hoặc INVALID (UpdateExamStatusUseCase.requirePublishReadiness).
+        examGradingAccessService.authorizeSchoolAdminOrClassTestChair(
+            exam.getSchoolId(), exam.getId(), currentUserId);
 
         var preview = examGradingQueryRepository.previewBulkFinalize(exam.getSchoolId(), command.examId());
         // Đơn phúc khảo đang mở thì LUÔN chặn, kể cả khi admin đã tick "công bố theo

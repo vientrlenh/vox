@@ -38,6 +38,16 @@ public class ExamBlueprintSlotRepositoryImpl implements ExamBlueprintSlotReposit
     }
 
     @Override
+    public List<ExamBlueprintSlot> findByIdIn(Collection<UUID> ids) {
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+        return springDataExamBlueprintSlotRepository.findAllById(ids).stream()
+            .map(ExamBlueprintSlotMapper::toDomain)
+            .toList();
+    }
+
+    @Override
     public List<ExamBlueprintSlot> findByBlueprintVersionId(UUID blueprintVersionId) {
         return springDataExamBlueprintSlotRepository.findByBlueprintVersionIdOrderByOrderAsc(blueprintVersionId).stream()
             .map(ExamBlueprintSlotMapper::toDomain)

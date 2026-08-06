@@ -73,7 +73,11 @@ public class PracticeQuestionGenerationClient {
             // cho thì đó là cách trả lời tự nhiên duy nhất -- ra lệnh suông không ép được.
             payload.put("target_tense", targetTense);
             payload.put("target_rank", targetRank);
-            payload.put("count", Math.min(3, count));
+            // Gửi ĐÚNG con số cấu hình. Trước đây có Math.min(3, count) ở đây -- một cái trần
+            // thứ hai không ai khai báo ở đâu, âm thầm đè lên application.yaml: đặt 5 thì vẫn
+            // chỉ nhận 3, không log, không lỗi. Trần thật đã có bên Python (DRAFTER_CANDIDATES),
+            // và ở đó nó nổ thành lỗi 422 đọc được chứ không cắt lặng lẽ.
+            payload.put("count", count);
             payload.put("band_count", bandCount);
             // Câu đã chết vĩnh viễn với chính học sinh này -- Python loại chúng khỏi phép so
             // trùng. Không gửi thì cổng chặn trùng so với cả kho, kể cả câu em ấy không bao

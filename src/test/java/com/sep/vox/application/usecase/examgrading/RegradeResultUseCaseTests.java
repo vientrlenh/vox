@@ -175,6 +175,38 @@ class RegradeResultUseCaseTests {
         assertThat(aiEvaluation.getStatus()).isEqualTo(ExamItemEvaluationStatus.SUPERSEDED);
     }
 
+    /**
+     * Màn kết quả của học sinh đọc lại chính bản AI đã SUPERSEDED này để lấy lượt nói và
+     * bằng chứng AI (xem {@code ExamItemEvaluationRepository#findLatestAiByResponseId}).
+     * Nếu chấm lại mà xoá hoặc làm rỗng các cột đó, học sinh sẽ mất nội dung câu hỏi,
+     * audio và transcript ngay khi giáo viên nộp — nên bất biến này phải được khoá ở đây.
+     */
+    @Test
+    void should_only_flip_status_of_the_ai_evaluation_so_its_evidence_survives() {
+        given(GradingRoundType.INITIAL, ExamCandidateResultStatus.PENDING_REVIEW);
+        var aiEvaluation = new ExamItemEvaluation();
+        aiEvaluation.setId(UUID.randomUUID());
+        aiEvaluation.setResponseId(responseId);
+        aiEvaluation.setEngineType(ExamEvaluationEngineType.AI_SINGLE);
+        aiEvaluation.setStatus(ExamItemEvaluationStatus.AUTO_GRADED);
+        aiEvaluation.setOverallConfidence(new BigDecimal("0.82"));
+        aiEvaluation.setValidityJson("{\"ruleResults\":[]}");
+        aiEvaluation.setFeedbackSummary("AI: phát âm ổn");
+        aiEvaluation.setSuggestionsJson("[\"nói chậm lại\"]");
+        aiEvaluation.setPromptVersion("v3");
+        when(examItemEvaluationRepository.findByResponseIdIn(anyCollection()))
+            .thenReturn(List.of(aiEvaluation));
+
+        useCase.execute(command());
+
+        assertThat(aiEvaluation.getEngineType()).isEqualTo(ExamEvaluationEngineType.AI_SINGLE);
+        assertThat(aiEvaluation.getOverallConfidence()).isEqualByComparingTo("0.82");
+        assertThat(aiEvaluation.getValidityJson()).isEqualTo("{\"ruleResults\":[]}");
+        assertThat(aiEvaluation.getFeedbackSummary()).isEqualTo("AI: phát âm ổn");
+        assertThat(aiEvaluation.getSuggestionsJson()).isEqualTo("[\"nói chậm lại\"]");
+        assertThat(aiEvaluation.getPromptVersion()).isEqualTo("v3");
+    }
+
     @Test
     void should_not_rewrite_an_evaluation_that_is_already_superseded() {
         given(GradingRoundType.INITIAL, ExamCandidateResultStatus.PENDING_REVIEW);

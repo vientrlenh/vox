@@ -41,7 +41,7 @@ public class CreateFrameworkUseCase implements IUseCase<CreateFrameworkCommand, 
             new FrameworkCode(code), 
             name, 
             description, 
-            input.isActive(), 
+            false,
             now, now, 
             userId, userId);
         

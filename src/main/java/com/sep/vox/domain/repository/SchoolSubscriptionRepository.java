@@ -1,5 +1,6 @@
 package com.sep.vox.domain.repository;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -14,6 +15,10 @@ public interface SchoolSubscriptionRepository {
     Optional<SchoolSubscription> findActiveBySchoolId(UUID schoolId);
     List<SchoolSubscription> findAllBySchoolId(UUID schoolId);
     PageResult<SchoolSubscription> findAllForAdmin(UUID planId, SubscriptionStatus status, String keyword, int page, int size);
+    boolean existsActiveByPlanId(UUID planId);
+
+    /** Chuyển hàng loạt ACTIVE -> EXPIRED cho các subscription đã qua endDate. Trả về số dòng bị đổi. */
+    int expireOverdue(LocalDate today);
 
     // Id gói đang hoạt động của trường mà 1 user đang trực thuộc (dùng để trừ quota)
     Optional<UUID> findActiveSubscriptionIdForUser(UUID userId);

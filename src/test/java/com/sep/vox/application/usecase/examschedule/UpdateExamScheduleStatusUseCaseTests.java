@@ -15,15 +15,20 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import com.sep.vox.application.port.input.command.UpdateExamScheduleStatusCommand;
 import com.sep.vox.application.port.input.usecase.examschedule.UpdateExamScheduleStatusUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamSchedule;
+import com.sep.vox.domain.model.exam.ExamScheduleProctor;
 import com.sep.vox.domain.model.exam.ExamScheduleStatus;
+import com.sep.vox.domain.model.exam.ExamStatus;
+import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleProctorRepository;
@@ -35,6 +40,7 @@ class UpdateExamScheduleStatusUseCaseTests {
     private ExamRepository examRepository;
     private ExamScheduleRepository examScheduleRepository;
     private ExamScheduleProctorRepository examScheduleProctorRepository;
+    private ExamCandidateRepository examCandidateRepository;
     private ExamMemberRepository examMemberRepository;
     private SchoolUserRepository schoolUserRepository;
     private UserRoleQueryRepository userRoleQueryRepository;
@@ -52,21 +58,24 @@ class UpdateExamScheduleStatusUseCaseTests {
         examRepository = mock(ExamRepository.class);
         examScheduleRepository = mock(ExamScheduleRepository.class);
         examScheduleProctorRepository = mock(ExamScheduleProctorRepository.class);
+        examCandidateRepository = mock(ExamCandidateRepository.class);
         examMemberRepository = mock(ExamMemberRepository.class);
         schoolUserRepository = mock(SchoolUserRepository.class);
         userRoleQueryRepository = mock(UserRoleQueryRepository.class);
         userContextPort = mock(UserContextPort.class);
         useCase = new UpdateExamScheduleStatusUseCase(
-            examRepository, examScheduleRepository, examScheduleProctorRepository, examMemberRepository,
-            schoolUserRepository, userRoleQueryRepository, userContextPort);
+            examRepository, examScheduleRepository, examScheduleProctorRepository, examCandidateRepository,
+            examMemberRepository, schoolUserRepository, userRoleQueryRepository, userContextPort);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(schoolUserRepository.findByUserId(userId)).thenReturn(Optional.empty());
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId)).thenReturn(List.of());
         when(examMemberRepository.existsByExamIdAndUserIdAndRole(examId, userId, ExamMemberRole.CHAIR))
             .thenReturn(true);
-        when(examRepository.findById(examId)).thenReturn(Optional.of(exam()));
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam(ExamStatus.SCHEDULED)));
         when(examScheduleRepository.save(any(ExamSchedule.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(examCandidateRepository.findByScheduleId(any(UUID.class))).thenReturn(List.of());
+        when(examScheduleProctorRepository.findByScheduleId(any(UUID.class))).thenReturn(List.of());
     }
 
     @Test
@@ -111,12 +120,8 @@ class UpdateExamScheduleStatusUseCaseTests {
 
     @Test
     void should_move_and_set_moved_to_schedule_id() {
-        var targetId = UUID.randomUUID();
-        var schedule = schedule(ExamScheduleStatus.PUBLISHED);
-        when(examScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule));
-        var target = schedule(ExamScheduleStatus.DRAFT);
-        target.setId(targetId);
-        when(examScheduleRepository.findById(targetId)).thenReturn(Optional.of(target));
+        var targetId = givenTarget(ExamScheduleStatus.DRAFT);
+        var schedule = givenSource(ExamScheduleStatus.PUBLISHED);
 
         var result = useCase.execute(command("MOVE", targetId));
 
@@ -125,14 +130,119 @@ class UpdateExamScheduleStatusUseCaseTests {
         assertThat(result.movedToScheduleId()).isEqualTo(targetId);
     }
 
+    @Test
+    void should_move_candidates_to_target_schedule() {
+        var targetId = givenTarget(ExamScheduleStatus.DRAFT);
+        givenSource(ExamScheduleStatus.PUBLISHED);
+        var first = candidate();
+        var second = candidate();
+        when(examCandidateRepository.findByScheduleId(scheduleId)).thenReturn(List.of(first, second));
+
+        useCase.execute(command("MOVE", targetId));
+
+        assertThat(first.getScheduleId()).isEqualTo(targetId);
+        assertThat(second.getScheduleId()).isEqualTo(targetId);
+        verify(examCandidateRepository).saveAll(List.of(first, second));
+    }
+
+    @Test
+    void should_move_proctors_to_target_schedule() {
+        var targetId = givenTarget(ExamScheduleStatus.DRAFT);
+        givenSource(ExamScheduleStatus.PUBLISHED);
+        var teacherId = UUID.randomUUID();
+        var proctorId = UUID.randomUUID();
+        when(examScheduleProctorRepository.findByScheduleId(scheduleId))
+            .thenReturn(List.of(new ExamScheduleProctor(proctorId, scheduleId, teacherId)));
+        when(examScheduleProctorRepository.existsByScheduleIdAndTeacherId(targetId, teacherId)).thenReturn(false);
+
+        useCase.execute(command("MOVE", targetId));
+
+        var saved = ArgumentCaptor.forClass(ExamScheduleProctor.class);
+        verify(examScheduleProctorRepository).save(saved.capture());
+        assertThat(saved.getValue().getScheduleId()).isEqualTo(targetId);
+        assertThat(saved.getValue().getTeacherId()).isEqualTo(teacherId);
+        verify(examScheduleProctorRepository).deleteById(proctorId);
+    }
+
+    @Test
+    void should_not_duplicate_proctor_already_assigned_to_target() {
+        var targetId = givenTarget(ExamScheduleStatus.DRAFT);
+        givenSource(ExamScheduleStatus.PUBLISHED);
+        var teacherId = UUID.randomUUID();
+        var proctorId = UUID.randomUUID();
+        when(examScheduleProctorRepository.findByScheduleId(scheduleId))
+            .thenReturn(List.of(new ExamScheduleProctor(proctorId, scheduleId, teacherId)));
+        when(examScheduleProctorRepository.existsByScheduleIdAndTeacherId(targetId, teacherId)).thenReturn(true);
+
+        useCase.execute(command("MOVE", targetId));
+
+        verify(examScheduleProctorRepository, never()).save(any());
+        verify(examScheduleProctorRepository).deleteById(proctorId);
+    }
+
+    @Test
+    void should_reject_move_to_the_same_schedule() {
+        givenSource(ExamScheduleStatus.PUBLISHED);
+
+        assertThatThrownBy(() -> useCase.execute(command("MOVE", scheduleId)))
+            .isInstanceOf(IllegalStateException.class);
+        verify(examScheduleRepository, never()).save(any());
+    }
+
+    @Test
+    void should_reject_move_when_exam_already_started() {
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam(ExamStatus.IN_PROGRESS)));
+        var targetId = givenTarget(ExamScheduleStatus.DRAFT);
+        givenSource(ExamScheduleStatus.PUBLISHED);
+
+        assertThatThrownBy(() -> useCase.execute(command("MOVE", targetId)))
+            .isInstanceOf(IllegalStateException.class);
+        verify(examScheduleRepository, never()).save(any());
+    }
+
+    @Test
+    void should_allow_complete_when_exam_in_progress() {
+        // Đánh dấu ca hoàn thành là thao tác vận hành lúc đang thi -- không nằm trong phạm vi khoá.
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam(ExamStatus.IN_PROGRESS)));
+        var schedule = givenSource(ExamScheduleStatus.PUBLISHED);
+
+        useCase.execute(command("COMPLETE", null));
+
+        assertThat(schedule.getStatus()).isEqualTo(ExamScheduleStatus.COMPLETED);
+    }
+
+    private UUID givenTarget(ExamScheduleStatus status) {
+        var targetId = UUID.randomUUID();
+        var target = schedule(status);
+        target.setId(targetId);
+        when(examScheduleRepository.findByIdForUpdate(targetId)).thenReturn(Optional.of(target));
+        return targetId;
+    }
+
+    private ExamSchedule givenSource(ExamScheduleStatus status) {
+        var schedule = schedule(status);
+        when(examScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule));
+        return schedule;
+    }
+
+    private ExamCandidate candidate() {
+        var candidate = new ExamCandidate();
+        candidate.setId(UUID.randomUUID());
+        candidate.setExamId(examId);
+        candidate.setStudentId(UUID.randomUUID());
+        candidate.setScheduleId(scheduleId);
+        return candidate;
+    }
+
     private UpdateExamScheduleStatusCommand command(String action, UUID targetScheduleId) {
         return new UpdateExamScheduleStatusCommand(examId, scheduleId, action, null, targetScheduleId);
     }
 
-    private Exam exam() {
+    private Exam exam(ExamStatus status) {
         var exam = new Exam();
         exam.setId(examId);
         exam.setSchoolId(schoolId);
+        exam.setStatus(status);
         return exam;
     }
 

@@ -36,6 +36,8 @@ public final class ExamDtoMapper {
             valueOf(domain.getCloseAt()),
             domain.getAssessmentPolicyId(),
             domain.isRequiresOtp(),
+            domain.getRequiredStreamType() == null ? null : domain.getRequiredStreamType().name(),
+            domain.getStreamTypePermission() == null ? null : domain.getStreamTypePermission().name(),
             papersLocked,
             valueOf(domain.getCreatedAt()),
             valueOf(domain.getUpdatedAt()),

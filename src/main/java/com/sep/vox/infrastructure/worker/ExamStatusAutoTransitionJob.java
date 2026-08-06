@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import com.sep.vox.application.port.input.service.ClassTestGradingAssignmentService;
 import com.sep.vox.application.port.input.service.ZeroScoreExamResultService;
 import com.sep.vox.application.port.input.usecase.exam.ExamQuestionSecureLockService;
 import com.sep.vox.domain.model.exam.ExamKind;
@@ -24,16 +25,19 @@ public class ExamStatusAutoTransitionJob {
     private final ExamPaperRepository examPaperRepository;
     private final ExamQuestionSecureLockService examQuestionSecureLockService;
     private final ZeroScoreExamResultService zeroScoreExamResultService;
+    private final ClassTestGradingAssignmentService classTestGradingAssignmentService;
 
     public ExamStatusAutoTransitionJob(
             ExamRepository examRepository,
             ExamPaperRepository examPaperRepository,
             ExamQuestionSecureLockService examQuestionSecureLockService,
-            ZeroScoreExamResultService zeroScoreExamResultService) {
+            ZeroScoreExamResultService zeroScoreExamResultService,
+            ClassTestGradingAssignmentService classTestGradingAssignmentService) {
         this.examRepository = examRepository;
         this.examPaperRepository = examPaperRepository;
         this.examQuestionSecureLockService = examQuestionSecureLockService;
         this.zeroScoreExamResultService = zeroScoreExamResultService;
+        this.classTestGradingAssignmentService = classTestGradingAssignmentService;
     }
 
     @Scheduled(fixedDelay = 60000)
@@ -68,6 +72,9 @@ public class ExamStatusAutoTransitionJob {
             examRepository.save(exam);
             examQuestionSecureLockService.releaseIfAutoAfterClose(exam.getId());
             zeroScoreExamResultService.ensureZeroResultsForMissingOrEmptyAttempts(exam.getId());
+            // Đa số bài trên lớp đóng bằng đường này chứ không phải CHAIR bấm tay — bỏ sót
+            // ở đây là mất phân công chấm cho gần như toàn bộ bài.
+            classTestGradingAssignmentService.ensureAssignmentsForExam(exam.getId());
             log.info("Tự động đóng bài kiểm tra {} (closeAt đã tới)", exam.getId());
         }
     }

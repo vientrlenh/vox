@@ -114,6 +114,8 @@ public class AssignGradingUseCase implements IUseCase<AssignGradingCommand, List
         for (var schoolId : distinctSchoolIds) {
             examGradingAccessService.authorizeSchoolAdmin(schoolId, currentUserId);
         }
+        // Bài trên lớp đi đường riêng: chủ bài tự nhận qua /class-tests/{id}/grading/claim.
+        examGradingAccessService.rejectClassTestCoordination(candidateResultIds);
 
         // ---- đã có phân công ĐANG MỞ? một query cho cả lô ----
         var alreadyAssigned = examGradingAssignmentRepository

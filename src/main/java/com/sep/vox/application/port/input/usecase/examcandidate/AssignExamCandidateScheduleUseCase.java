@@ -7,9 +7,11 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.common.ExamEditingGuard;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.AssignExamCandidateScheduleCommand;
+import com.sep.vox.application.port.input.service.ClassTestPaperAutoAssigner;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
@@ -35,6 +37,7 @@ public class AssignExamCandidateScheduleUseCase
     private final ExamCandidateRepository examCandidateRepository;
     private final ExamScheduleRepository examScheduleRepository;
     private final ExamMemberRepository examMemberRepository;
+    private final ClassTestPaperAutoAssigner classTestPaperAutoAssigner;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
@@ -44,9 +47,11 @@ public class AssignExamCandidateScheduleUseCase
             ExamCandidateRepository examCandidateRepository,
             ExamScheduleRepository examScheduleRepository,
             ExamMemberRepository examMemberRepository,
+            ClassTestPaperAutoAssigner classTestPaperAutoAssigner,
             SchoolUserRepository schoolUserRepository,
             UserRoleQueryRepository userRoleQueryRepository,
             UserContextPort userContextPort) {
+        this.classTestPaperAutoAssigner = classTestPaperAutoAssigner;
         this.examRepository = examRepository;
         this.examCandidateRepository = examCandidateRepository;
         this.examScheduleRepository = examScheduleRepository;
@@ -62,6 +67,7 @@ public class AssignExamCandidateScheduleUseCase
         var exam = examRepository.findById(input.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
         var currentUserId = authorize(exam);
+        ExamEditingGuard.requireScheduleEditable(exam);
 
         var candidate = examCandidateRepository.findById(input.candidateId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy thí sinh"));
@@ -92,6 +98,8 @@ public class AssignExamCandidateScheduleUseCase
         }
 
         candidate.assignToSchedule(schedule.getId(), now, currentUserId);
+        // Bài kiểm tra trên lớp chỉ có một đề nên gán luôn, giáo viên không phải bấm thêm bước phân đề.
+        classTestPaperAutoAssigner.assignSinglePaperIfNeeded(exam, candidate, now, currentUserId);
         return ExamCandidateDtoMapper.toDto(examCandidateRepository.save(candidate));
     }
 

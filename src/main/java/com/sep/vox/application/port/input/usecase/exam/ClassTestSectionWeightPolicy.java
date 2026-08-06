@@ -9,14 +9,19 @@ import com.sep.vox.application.port.input.command.ClassTestQuestionCommand;
 import com.sep.vox.application.port.input.command.ClassTestSectionCommand;
 import com.sep.vox.domain.model.exam.ExamPaperSection;
 
-final class ClassTestSectionWeightPolicy {
+/**
+ * Luật trọng số của bài kiểm tra trên lớp. Public vì {@code CreateExamPaperUseCase} (package
+ * {@code usecase.exampaper}) cũng dựng đề trên lớp từ câu hỏi trực tiếp — hai nơi suy lại luật
+ * trọng số là sớm muộn hai nơi lệch.
+ */
+public final class ClassTestSectionWeightPolicy {
 
     private static final BigDecimal WEIGHT_TOLERANCE = new BigDecimal("0.01");
 
     private ClassTestSectionWeightPolicy() {
     }
 
-    static List<BigDecimal> resolveRequestedWeights(List<ClassTestSectionCommand> sections) {
+    public static List<BigDecimal> resolveRequestedWeights(List<ClassTestSectionCommand> sections) {
         var providedCount = sections.stream().filter(section -> section.weight() != null).count();
         if (providedCount == sections.size()) {
             var weights = sections.stream().map(command -> command.weight()).toList();
@@ -28,7 +33,7 @@ final class ClassTestSectionWeightPolicy {
 
     // H.6.4: câu hỏi trong section class test PHẢI có weight tường minh (không auto-fill
     // ở backend - nút "Chia trọng số tự động" là tính năng FE, backend chỉ validate).
-    static List<BigDecimal> resolveQuestionWeights(List<ClassTestQuestionCommand> questions) {
+    public static List<BigDecimal> resolveQuestionWeights(List<ClassTestQuestionCommand> questions) {
         var weights = questions.stream().map(command -> command.weight()).toList();
         validateWeightSum(weights, "Tổng trọng số câu hỏi trong phần phải bằng 1.00");
         return weights;

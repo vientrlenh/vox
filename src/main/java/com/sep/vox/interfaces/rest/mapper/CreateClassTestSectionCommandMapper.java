@@ -13,6 +13,7 @@ public final class CreateClassTestSectionCommandMapper {
     public static CreateClassTestSectionCommand fromRequest(UUID examId, CreateClassTestSectionRequest request) {
         return new CreateClassTestSectionCommand(
             examId,
+            request.paperId(),
             request.title(),
             request.instruction(),
             request.weight(),

@@ -9,6 +9,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.common.ExamEditingGuard;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.ImportExamCandidatesFromGradeCommand;
@@ -74,6 +75,7 @@ public class ImportExamCandidatesFromGradeUseCase
             throw new ForbiddenException("Bài kiểm tra trên lớp không hỗ trợ nhập thí sinh theo niên khóa");
         }
         var currentUserId = scope.callerId();
+        ExamEditingGuard.requireScheduleEditable(exam);
 
         var grade = schoolGradeRepository.findById(input.schoolGradeId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy khối"));

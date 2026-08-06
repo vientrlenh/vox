@@ -29,6 +29,12 @@ spring:
           inbound: 
             message:
               max-size: 8MB
+        vox-streaming: 
+          target: 0.0.0.0:9096
+          inbound: 
+            message: 
+              max-size: 10MB
+
 
   flyway: 
     enabled: true
@@ -198,29 +204,21 @@ practice:
     secret: ${PRACTICE_INTERNAL_SECRET:}
 
 app:
+  cookie:
+    secure: ${COOKIE_SECURE:false} # Local dev use false
+    same-site: ${COOKIE_SAME_SITE:Lax} # If using domain forward, make this as None
   data-initializer:
     enabled: ${DATA_INITIALIZER:true}
   practice:
-    # Chu kỳ quét phiên treo. Phiên chỉ được nhặt khi nhịp tim cũ hơn 3 phút (ân hạn cho rớt
-    # sóng -- app có cơ chế resume, đóng ngay khi mất kết nối là giết buổi đang diễn ra bình
-    # thường), nên tổng thời gian chờ = 3 phút + tối đa một chu kỳ.
-    #
-    # ĐANG ĐỂ 30s ĐỂ THỬ. Giá trị dùng thật nên là 60000: job chỉ là một truy vấn
-    # FOR UPDATE SKIP LOCKED trên phiên treo, nhưng 30s thì mỗi giờ chạy 120 lượt cho một
-    # việc mà 3 phút ân hạn đằng nào cũng chặn trên.
     heartbeat-cleanup-ms: ${PRACTICE_HEARTBEAT_CLEANUP_MS:30000}
   personalization:
+   
+    quiz:
+     item-count: ${PERSONALIZATION_QUIZ_ITEM_COUNT:7}
     generation:
       paper-target-question-count: ${PERSONALIZATION_PAPER_TARGET_QUESTION_COUNT:4}
-      # 45s chứ không 20s: đo thật đường online sau khi rút ngắn pipeline (chỉ còn 1 lượt
-      # LLM ở drafter) cho 15.0s / 16.9s / 18.4s -- biên với 20s chỉ 1.6-5s, một lần OpenAI
-      # chậm là timeout và cả việc dựng đề hỏng. Học sinh KHÔNG chờ đồng bộ ở đây: đề dựng
-      # nền rồi client hỏi lại trạng thái (PracticePaperDraftService), nên nới trần rẻ hơn
-      # nhiều so với hỏng cả lượt luyện.
+      online-candidate-count: ${PERSONALIZATION_ONLINE_CANDIDATE_COUNT:2}
       online-budget: ${PERSONALIZATION_ONLINE_GENERATION_BUDGET:45s}
-    # Khối `weakness:` (13 khoá: alpha EMA, hệ số co ngót từng tiêu chí, ngưỡng cohort, cửa sổ
-    # quan sát, nhịp job làm mới) đã bỏ cùng hồ sơ điểm yếu. Thứ tự tiêu chí đáng luyện giờ
-    # suy thẳng từ điểm đã chấm và không có tham số nào để chỉnh.
   frontend:
     password-setup-url: ${PASSWORD_SETUP_URL}
     oauth2-url: ${OAUTH2_URL}
@@ -300,6 +298,21 @@ payos:
   api-key: ${PAYOS_API_KEY:}
   checksum-key: ${PAYOS_CHECKSUM_KEY:}
   return-url: ${PAYOS_RETURN_URL:}
-  cancel-url: ${PAYOS_CANCEL_URL:}
-  system-admin-return-url: ${PAYOS_SYSTEM_ADMIN_RETURN_URL:}
-  system-admin-cancel-url: ${PAYOS_SYSTEM_ADMIN_CANCEL_URL:}
+  cancel-url: ${PAYOS_CANCEL_URL:}              
+
+sepay:
+  pg:
+    # SANDBOX | PRODUCTION. URL của trang checkout và của Open API được suy ra từ đây (xem
+    # SePayPaymentProperties.SePayEnvironment) — hai URL đó luôn phải cùng môi trường, khai rời
+    # từng cái là mở đường cho việc deploy quên đổi một dòng.
+    env: ${SEPAY_ENV:SANDBOX}
+    merchant-id: ${SEPAY_MERCHANT_ID:}
+    # Khóa ký HMAC của form checkout, đồng thời là password Basic auth khi gọi Open API.
+    secret-key: ${SEPAY_SECRET_KEY:}
+    # Giá trị header X-Secret-Key trên IPN, đặt riêng ở dashboard (Payment Gateway -> Cấu hình ->
+    # IPN). KHÔNG dùng lại secret-key: làm vậy là gửi khóa ký qua mạng ở mọi lần SePay gọi IPN.
+    ipn-secret-key: ${SEPAY_IPN_SECRET_KEY:}
+    # BANK_TRANSFER (VietQR) | NAPAS_BANK_TRANSFER | CARD
+    payment-method: ${SEPAY_PAYMENT_METHOD:BANK_TRANSFER}
+    # Gốc của các route FE /payment/success|error|cancel mà SePay redirect người dùng về.
+    return-base-url: ${SEPAY_RETURN_BASE_URL:${BASE_URL:}}

@@ -16,9 +16,10 @@ import com.sep.vox.application.port.input.command.UpdateExamSessionStatusCommand
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.CreateExamSessionUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.UpdateExamSessionStatusUseCase;
+import com.sep.vox.application.port.output.HealthCheckPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.exam.ExamEntryTicketResponse;
-import com.sep.vox.domain.model.exam.ExamKind;
+import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamSession;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
@@ -41,6 +42,7 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
     private final UserContextPort userContextPort;
     private final CreateExamSessionUseCase createExamSessionUseCase;
     private final UpdateExamSessionStatusUseCase updateExamSessionStatusUseCase;
+    private final HealthCheckPort healthCheckPort;
 
     public StartClassTestSessionUseCase(
             ExamCandidateRepository examCandidateRepository,
@@ -50,7 +52,8 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
             ExamSessionRepository examSessionRepository,
             UserContextPort userContextPort,
             CreateExamSessionUseCase createExamSessionUseCase,
-            UpdateExamSessionStatusUseCase updateExamSessionStatusUseCase) {
+            UpdateExamSessionStatusUseCase updateExamSessionStatusUseCase,
+            HealthCheckPort healthCheckPort) {
         this.examCandidateRepository = examCandidateRepository;
         this.examCandidateResultRepository = examCandidateResultRepository;
         this.examRepository = examRepository;
@@ -59,6 +62,7 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
         this.userContextPort = userContextPort;
         this.createExamSessionUseCase = createExamSessionUseCase;
         this.updateExamSessionStatusUseCase = updateExamSessionStatusUseCase;
+        this.healthCheckPort = healthCheckPort;
     }
 
     @Override
@@ -69,7 +73,14 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
 
         var exam = examRepository.findById(input.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
-        if (exam.getKind() != ExamKind.CLASS_TEST && exam.isRequiresOtp()) {
+
+        // Chặn ngay ở cổng vào: vào làm bài được nhưng không ghi được dữ liệu giám sát thì bài làm
+        // coi như bỏ. Cùng luật với luồng OTP ở VerifyExamScheduleOtpUseCase.
+        if (exam.getRequiredStreamType() != null) {
+            healthCheckPort.checkStreamingOk();
+        }
+
+        if (exam.isRequiresOtp()) {
             throw new IllegalStateException("Bài kiểm tra này yêu cầu xác thực OTP, vui lòng dùng luồng xác thực OTP");
         }
 
@@ -80,18 +91,25 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
         if (ExamCandidateStatusSupport.isBlockedForEntry(candidate.getStatus())) {
             throw new IllegalStateException("Bạn không đủ điều kiện tham gia kỳ thi này");
         }
+        // Bài trên lớp cũng thi trong phòng có giám khảo, nên phải được điểm danh có mặt mới vào được.
+        if (!ExamCandidateStatusSupport.isAttended(candidate.getStatus())) {
+            throw new IllegalStateException("Bạn chưa được điểm danh có mặt, vui lòng liên hệ giám thị");
+        }
         if (isExamClosedForEntry(exam, now)) {
             throw new IllegalStateException("Bài kiểm tra hiện không mở để làm bài (trạng thái: " + exam.getStatus() + ")");
+        }
+        if (candidate.getScheduleId() == null) {
+            throw new IllegalStateException("Bạn chưa được xếp ca thi");
         }
         if (candidate.getAssignedPaperId() == null) {
             throw new IllegalStateException("Bạn chưa được gán đề bài kiểm tra");
         }
 
-        var scheduleEndAt = candidate.getScheduleId() == null
-            ? exam.getCloseAt()
-            : examScheduleRepository.findById(candidate.getScheduleId())
-                .map(schedule -> schedule.getEndDate())
-                .orElse(exam.getCloseAt());
+        // Lấy ca thi đang trong khung giờ, không fallback về closeAt của bài: đây đúng là điều kiện
+        // mà IssueStudentStreamTokenUseCase kiểm tra ngay sau đó khi phát token stream.
+        var schedule = examScheduleRepository.findByIdAndInSchedule(candidate.getScheduleId(), now)
+            .orElseThrow(() -> new NotFoundException("Ca thi không hợp lệ hoặc đã hết hạn"));
+        var scheduleEndAt = schedule.getEndDate();
 
         var resumableSession = findResumableSession(candidate.getId());
         if (resumableSession != null) {
@@ -101,7 +119,7 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
                 );
                 resumableSession = examSessionRepository.findById(resumableSession.getId()).orElse(resumableSession);
             }
-            return buildEntryTicket(resumableSession, now, scheduleEndAt);
+            return buildEntryTicket(resumableSession.getId(), now, scheduleEndAt, exam);
         }
 
         if (exam.getMaxAttempt() != null) {
@@ -116,12 +134,7 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
             candidate.getId(),
             candidate.getAssignedPaperId()
         ));
-        return new ExamEntryTicketResponse(
-            session.id(),
-            UUID.randomUUID().toString(),
-            now.plus(ENTRY_TICKET_TTL).toString(),
-            scheduleEndAt == null ? null : scheduleEndAt.toString()
-        );
+        return buildEntryTicket(session.id(), now, scheduleEndAt, exam);
     }
 
     private ExamSession findResumableSession(UUID candidateId) {
@@ -141,19 +154,20 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
             .count();
     }
 
-    private boolean isExamClosedForEntry(com.sep.vox.domain.model.exam.Exam exam, Instant now) {
+    private boolean isExamClosedForEntry(Exam exam, Instant now) {
         return exam.getStatus() != ExamStatus.IN_PROGRESS
             || exam.getStatus() == ExamStatus.CLOSED
             || exam.getStatus() == ExamStatus.CANCELLED
             || (exam.getCloseAt() != null && exam.getCloseAt().isBefore(now));
     }
 
-    private ExamEntryTicketResponse buildEntryTicket(ExamSession session, Instant now, Instant scheduleEndAt) {
-        return new ExamEntryTicketResponse(
-            session.getId(),
+    private ExamEntryTicketResponse buildEntryTicket(UUID sessionId, Instant now, Instant scheduleEndAt, Exam exam) {
+        return ExamEntryTicketResponse.of(
+            sessionId,
             UUID.randomUUID().toString(),
             now.plus(ENTRY_TICKET_TTL).toString(),
-            scheduleEndAt == null ? null : scheduleEndAt.toString()
+            scheduleEndAt,
+            exam
         );
     }
 }

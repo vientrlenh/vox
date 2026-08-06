@@ -13,6 +13,7 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.ClassTestQuestionCommand;
 import com.sep.vox.application.port.input.command.ClassTestSectionCommand;
 import com.sep.vox.application.port.input.command.UpdateClassTestQuestionsCommand;
+import com.sep.vox.application.port.input.service.ClassTestPaperResolver;
 import com.sep.vox.application.port.input.service.ExamTimeQuotaGuardService;
 import com.sep.vox.application.port.input.service.RecalculateExamTimeDurationService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -31,7 +32,6 @@ import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
 import com.sep.vox.domain.model.question.QuestionSharing;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamPaperItemRepository;
-import com.sep.vox.domain.repository.ExamPaperRepository;
 import com.sep.vox.domain.repository.ExamPaperSectionRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.QuestionCollaboratorRepository;
@@ -42,7 +42,7 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
 
     private final ExamRepository examRepository;
     private final ExamMemberRepository examMemberRepository;
-    private final ExamPaperRepository examPaperRepository;
+    private final ClassTestPaperResolver classTestPaperResolver;
     private final ExamPaperSectionRepository examPaperSectionRepository;
     private final ExamPaperItemRepository examPaperItemRepository;
     private final QuestionRepository questionRepository;
@@ -55,7 +55,7 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
     public UpdateClassTestQuestionsUseCase(
             ExamRepository examRepository,
             ExamMemberRepository examMemberRepository,
-            ExamPaperRepository examPaperRepository,
+            ClassTestPaperResolver classTestPaperResolver,
             ExamPaperSectionRepository examPaperSectionRepository,
             ExamPaperItemRepository examPaperItemRepository,
             QuestionRepository questionRepository,
@@ -66,7 +66,7 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
             UserContextPort userContextPort) {
         this.examRepository = examRepository;
         this.examMemberRepository = examMemberRepository;
-        this.examPaperRepository = examPaperRepository;
+        this.classTestPaperResolver = classTestPaperResolver;
         this.examPaperSectionRepository = examPaperSectionRepository;
         this.examPaperItemRepository = examPaperItemRepository;
         this.questionRepository = questionRepository;
@@ -134,9 +134,7 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
             "Mã đề trên lớp"
         );
 
-        var paper = examPaperRepository.findByExamId(exam.getId()).stream()
-            .findFirst()
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy đề thi"));
+        var paper = classTestPaperResolver.resolve(exam.getId(), input.paperId());
         var existingPaperSections = examPaperSectionRepository.findByPaperId(paper.getId()).stream()
             .sorted((a, b) -> Integer.compare(a.getOrder(), b.getOrder()))
             .toList();

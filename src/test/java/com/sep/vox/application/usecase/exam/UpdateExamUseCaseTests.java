@@ -26,10 +26,15 @@ import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
+import com.sep.vox.domain.model.exam.ExamRequiredStreamType;
 import com.sep.vox.domain.model.exam.ExamSchedule;
 import com.sep.vox.domain.model.exam.ExamScheduleStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
+import com.sep.vox.domain.model.exam.ExamStreamTypePermission;
 import com.sep.vox.domain.model.school.SchoolUser;
+import com.sep.vox.application.port.input.service.ExamAssessmentPolicyValidator;
+import com.sep.vox.application.port.input.service.ExamStreamConfigResolver;
+import com.sep.vox.domain.repository.AssessmentPolicyRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
@@ -62,7 +67,10 @@ class UpdateExamUseCaseTests {
         userContextPort = mock(UserContextPort.class);
         useCase = new UpdateExamUseCase(
             examRepository, examMemberRepository, examScheduleRepository,
-            schoolUserRepository, userRoleQueryRepository, userContextPort);
+            schoolUserRepository, userRoleQueryRepository,
+            new ExamAssessmentPolicyValidator(mock(AssessmentPolicyRepository.class)),
+            new ExamStreamConfigResolver(),
+            userContextPort);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(schoolUserRepository.findByUserId(userId)).thenReturn(Optional.empty());
@@ -98,7 +106,7 @@ class UpdateExamUseCaseTests {
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
 
         useCase.execute(new UpdateExamCommand(
-            examId, "Tên mới", null, null, null, null, null, null, null, null));
+            examId, "Tên mới", null, null, null, null, null, null, null, null, null, null));
 
         verify(examRepository).save(exam);
         verify(examScheduleRepository, never()).save(any());
@@ -146,7 +154,7 @@ class UpdateExamUseCaseTests {
             .thenReturn(List.of(schedule(ExamScheduleStatus.DRAFT, open, open.plus(1, ChronoUnit.HOURS))));
 
         assertThatThrownBy(() -> useCase.execute(new UpdateExamCommand(
-                examId, null, null, null, null, null, null, 2 * 3600, null, null)))
+                examId, null, null, null, null, null, null, 2 * 3600, null, null, null, null)))
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("vượt quá thời lượng");
         verify(examRepository, never()).save(any());
@@ -173,15 +181,122 @@ class UpdateExamUseCaseTests {
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
 
         useCase.execute(new UpdateExamCommand(
-            examId, "Tên mới", null, null, null, null, null, null, null, null));
+            examId, "Tên mới", null, null, null, null, null, null, null, null, null, null));
 
         // Không gửi field thời gian nào -> không cần truy vấn ca thi.
         verify(examScheduleRepository, never()).findByExamId(any());
         verify(examRepository).save(any(Exam.class));
     }
 
+    // --- Kỳ thi đã bắt đầu thì khoá chỉnh sửa thông tin ---
+
+    @Test
+    void should_reject_updating_centralized_exam_after_it_started() {
+        var exam = centralized(null);
+        exam.setStatus(ExamStatus.IN_PROGRESS);
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+
+        assertThatThrownBy(() -> useCase.execute(new UpdateExamCommand(
+                examId, "Tên mới", null, null, null, null, null, null, null, null, null, null)))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("đã bắt đầu");
+        verify(examRepository, never()).save(any());
+    }
+
+    @Test
+    void should_reject_updating_centralized_exam_after_results_published() {
+        var exam = centralized(null);
+        exam.setStatus(ExamStatus.RESULTS_PUBLISHED);
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+
+        assertThatThrownBy(() -> useCase.execute(new UpdateExamCommand(
+                examId, "Tên mới", null, null, null, null, null, null, null, null, null, null)))
+            .isInstanceOf(IllegalStateException.class);
+        verify(examRepository, never()).save(any());
+    }
+
+    @Test
+    void should_allow_updating_centralized_exam_while_scheduled() {
+        var exam = centralized(null);
+        exam.setStatus(ExamStatus.SCHEDULED);
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+
+        useCase.execute(new UpdateExamCommand(
+            examId, "Tên mới", null, null, null, null, null, null, null, null, null, null));
+
+        verify(examRepository).save(exam);
+    }
+
+    // --- Cấu hình giám sát (stream) ---
+
+    @Test
+    void should_update_stream_config_when_types_provided() {
+        var exam = centralized(null);
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+
+        useCase.execute(streamCommand(List.of("CAMERA", "SCREEN"), "ANY"));
+
+        assertThat(exam.getRequiredStreamType()).isEqualTo(ExamRequiredStreamType.CAMERA_AND_SCREEN);
+        assertThat(exam.getStreamTypePermission()).isEqualTo(ExamStreamTypePermission.ANY);
+        verify(examRepository).save(exam);
+    }
+
+    @Test
+    void should_keep_stream_config_when_types_null() {
+        // Sửa tên không được làm mất cấu hình giám sát: null = "không đụng tới", không phải "tắt".
+        var exam = centralized(null);
+        exam.setRequiredStreamType(ExamRequiredStreamType.CAMERA);
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+
+        useCase.execute(new UpdateExamCommand(
+            examId, "Tên mới", null, null, null, null, null, null, null, null, null, null));
+
+        assertThat(exam.getRequiredStreamType()).isEqualTo(ExamRequiredStreamType.CAMERA);
+    }
+
+    @Test
+    void should_disable_monitoring_when_stream_types_empty() {
+        var exam = centralized(null);
+        exam.setRequiredStreamType(ExamRequiredStreamType.CAMERA_AND_SCREEN);
+        exam.setStreamTypePermission(ExamStreamTypePermission.ALL);
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+
+        useCase.execute(streamCommand(List.of(), null));
+
+        assertThat(exam.getRequiredStreamType()).isNull();
+        assertThat(exam.getStreamTypePermission()).isNull();
+    }
+
+    @Test
+    void should_reject_permission_without_two_stream_types() {
+        var exam = centralized(null);
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+
+        assertThatThrownBy(() -> useCase.execute(streamCommand(List.of("CAMERA"), "ALL")))
+            .isInstanceOf(IllegalArgumentException.class);
+        verify(examRepository, never()).save(any());
+    }
+
+    @Test
+    void should_reject_stream_update_after_exam_started() {
+        var exam = centralized(null);
+        exam.setStatus(ExamStatus.IN_PROGRESS);
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+
+        assertThatThrownBy(() -> useCase.execute(streamCommand(List.of("CAMERA"), null)))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("đã bắt đầu");
+        verify(examRepository, never()).save(any());
+    }
+
+    private UpdateExamCommand streamCommand(List<String> requiredStreamTypes, String streamTypePermission) {
+        return new UpdateExamCommand(
+            examId, null, null, null, null, null, null, null, null, null,
+            requiredStreamTypes, streamTypePermission);
+    }
+
     private UpdateExamCommand command(String openAt, String closeAt) {
-        return new UpdateExamCommand(examId, null, null, openAt, closeAt, null, null, null, null, null);
+        return new UpdateExamCommand(examId, null, null, openAt, closeAt, null, null, null, null, null, null, null);
     }
 
     private Exam classTest(Integer examTimeDurationSecond) {

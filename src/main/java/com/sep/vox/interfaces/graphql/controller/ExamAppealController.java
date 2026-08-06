@@ -8,11 +8,13 @@ import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 
+import com.sep.vox.application.port.input.query.SearchClassTestAppealsQuery;
 import com.sep.vox.application.port.input.query.SearchExamAppealsQuery;
 import com.sep.vox.application.port.input.query.ViewAssignableReviewersQuery;
 import com.sep.vox.application.port.input.usecase.examappeal.ViewAssignableReviewersUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.ViewExamAppealDetailUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.ViewExamAppealStatsUseCase;
+import com.sep.vox.application.port.input.usecase.examappeal.ViewClassTestAppealsUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.ViewExamAppealsUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.ViewMyAppealDetailUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.ViewMyAppealsUseCase;
@@ -38,6 +40,7 @@ public class ExamAppealController {
     private final ViewAssignableReviewersUseCase viewAssignableReviewersUseCase;
     private final ViewMyAppealsUseCase viewMyAppealsUseCase;
     private final ViewMyAppealDetailUseCase viewMyAppealDetailUseCase;
+    private final ViewClassTestAppealsUseCase viewClassTestAppealsUseCase;
 
     public ExamAppealController(
             ViewExamAppealsUseCase viewExamAppealsUseCase,
@@ -45,13 +48,15 @@ public class ExamAppealController {
             ViewExamAppealDetailUseCase viewExamAppealDetailUseCase,
             ViewAssignableReviewersUseCase viewAssignableReviewersUseCase,
             ViewMyAppealsUseCase viewMyAppealsUseCase,
-            ViewMyAppealDetailUseCase viewMyAppealDetailUseCase) {
+            ViewMyAppealDetailUseCase viewMyAppealDetailUseCase,
+            ViewClassTestAppealsUseCase viewClassTestAppealsUseCase) {
         this.viewExamAppealsUseCase = viewExamAppealsUseCase;
         this.viewExamAppealStatsUseCase = viewExamAppealStatsUseCase;
         this.viewExamAppealDetailUseCase = viewExamAppealDetailUseCase;
         this.viewAssignableReviewersUseCase = viewAssignableReviewersUseCase;
         this.viewMyAppealsUseCase = viewMyAppealsUseCase;
         this.viewMyAppealDetailUseCase = viewMyAppealDetailUseCase;
+        this.viewClassTestAppealsUseCase = viewClassTestAppealsUseCase;
     }
 
     @QueryMapping(name = "appeals")
@@ -65,6 +70,18 @@ public class ExamAppealController {
             status, keyword, page == null ? 0 : page, size == null ? 20 : size));
     }
 
+    @QueryMapping(name = "classTestAppeals")
+    @PreAuthorize("hasRole('TEACHER')")
+    public PageResult<AppealSummaryInfo> classTestAppeals(
+            @Argument(name = "examId") UUID examId,
+            @Argument(name = "status") String status,
+            @Argument(name = "keyword") String keyword,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
+        return viewClassTestAppealsUseCase.execute(new SearchClassTestAppealsQuery(
+            examId, status, keyword, page == null ? 0 : page, size == null ? 20 : size));
+    }
+
     @QueryMapping(name = "appealStats")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public AppealStatsInfo appealStats() {
@@ -72,7 +89,7 @@ public class ExamAppealController {
     }
 
     @QueryMapping(name = "appeal")
-    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public AppealDetailInfo appeal(@Argument(name = "id") UUID id) {
         return viewExamAppealDetailUseCase.execute(id);
     }
@@ -94,7 +111,7 @@ public class ExamAppealController {
     }
 
     @QueryMapping(name = "appealReviewers")
-    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public List<AppealReviewerLiteInfo> appealReviewers(
             @Argument(name = "appealId") UUID appealId,
             @Argument(name = "keyword") String keyword) {

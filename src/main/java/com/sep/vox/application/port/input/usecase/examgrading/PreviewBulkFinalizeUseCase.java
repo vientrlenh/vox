@@ -41,7 +41,11 @@ public class PreviewBulkFinalizeUseCase implements IUseCase<UUID, BulkFinalizePr
         var currentUserId = examGradingAccessService.requireActiveUserId();
         var exam = examRepository.findById(examId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra."));
-        examGradingAccessService.authorizeSchoolAdmin(exam.getSchoolId(), currentUserId);
+        // Bài kiểm tra trên lớp: nhà trường không chấm, nên nếu chỉ school admin chốt
+        // sổ được thì giáo viên kẹt cứng — công bố kết quả đòi MỌI bài phải RELEASED
+        // hoặc INVALID (UpdateExamStatusUseCase.requirePublishReadiness).
+        examGradingAccessService.authorizeSchoolAdminOrClassTestChair(
+            exam.getSchoolId(), exam.getId(), currentUserId);
         return examGradingQueryRepository.previewBulkFinalize(exam.getSchoolId(), examId);
     }
 }

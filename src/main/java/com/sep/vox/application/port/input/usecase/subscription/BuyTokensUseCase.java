@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.DateMapper;
+import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.BuyTokensCommand;
@@ -70,13 +71,25 @@ public class BuyTokensUseCase implements IUseCase<BuyTokensCommand, TokenPurchas
     @Override
     @Transactional
     public TokenPurchaseDto execute(BuyTokensCommand input) {
-        if (!userContextPort.isSystemAdmin() && !input.schoolId().equals(userContextPort.getCurrentSchoolId())) {
+        var command = normalize(input);
+        if (!userContextPort.isSystemAdmin() && !command.schoolId().equals(userContextPort.getCurrentSchoolId())) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
-        var subscription = schoolSubscriptionRepository.findById(input.subscriptionId())
+        // Use case này cấp quota NGAY và ghi hóa đơn PAID mà không có cổng nào xác nhận tiền, nên chỉ
+        // chấp nhận phương thức thu ngoài hệ thống. Nếu cho gắn nhãn PAYOS/SEPAY ở đây, financial_event
+        // sẽ có dòng payment_method='PAYOS' kèm actor_id và provider_order_ref=NULL — không tra ngược
+        // được sang dashboard cổng, mà lại nằm lẫn giữa các giao dịch cổng thật trong báo cáo.
+        var paymentMethod = PaymentMethod.resolve(command.paymentMethod());
+        if (paymentMethod.isOnlineGateway()) {
+            throw new IllegalArgumentException(
+                "Phương thức " + paymentMethod + " phải thanh toán qua link. "
+                    + "Hãy dùng POST /schools/{schoolId}/token-purchases/payment-link.");
+        }
+
+        var subscription = schoolSubscriptionRepository.findById(command.subscriptionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói đăng ký"));
-        if (!subscription.getSchoolId().equals(input.schoolId())) {
+        if (!subscription.getSchoolId().equals(command.schoolId())) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
         if (subscription.getStatus() != SubscriptionStatus.ACTIVE) {
@@ -91,7 +104,7 @@ public class BuyTokensUseCase implements IUseCase<BuyTokensCommand, TokenPurchas
 
         var purchase = tokenPurchaseRepository.save(new TokenPurchase(subscription.getId(), BigDecimal.ZERO, PurchaseStatus.PAID, now));
 
-        for (var item : input.items()) {
+        for (var item : command.items()) {
             var planQuota = planQuotas.stream()
                 .filter(pq -> pq.getQuotaType() == item.quotaType())
                 .findFirst()
@@ -112,7 +125,6 @@ public class BuyTokensUseCase implements IUseCase<BuyTokensCommand, TokenPurchas
 
         purchase.setTotalAmount(total);
         var savedPurchase = tokenPurchaseRepository.save(purchase);
-
         // Năm trong số hóa đơn phải lấy từ chính invoiceDate, không phải Year.now(): Year.now() đọc
         // múi giờ của JVM, nên trên server UTC một hóa đơn tạo lúc 06:00 ngày 01/01 giờ VN sẽ mang
         // số INV-2025-... nhưng ngày 2026-01-01.
@@ -127,17 +139,30 @@ public class BuyTokensUseCase implements IUseCase<BuyTokensCommand, TokenPurchas
             invoiceDate,
             total,
             InvoiceStatus.PAID,
+            // Guard ở đầu use case đảm bảo đây luôn là phương thức thu ngoài hệ thống, nên không có
+            // mã đơn phía cổng lẫn checkoutUrl.
+            paymentMethod,
             null,
             null,
             null,
-            now
+            now,
+            null
         ));
 
         financialEventRepository.save(new FinancialEvent(
             input.schoolId(), subscription.getId(), FinancialEventType.TOKEN_PURCHASED,
-            total, "VND", PaymentMethod.MANUAL, userContextPort.getCurrentAuthenticatedUserId(), null, now
+            total, "VND", paymentMethod, userContextPort.getCurrentAuthenticatedUserId(), null, now
         ));
 
         return TokenPurchaseDtoMapper.toDto(savedPurchase, tokenPurchaseItemRepository.findAllByPurchaseId(savedPurchase.getId()));
+    }
+
+    private BuyTokensCommand normalize(BuyTokensCommand input) {
+        return new BuyTokensCommand(
+            input.schoolId(), 
+            input.subscriptionId(), 
+            input.items(), 
+            StringNormalization.normalizeCode(input.paymentMethod())
+        );
     }
 }

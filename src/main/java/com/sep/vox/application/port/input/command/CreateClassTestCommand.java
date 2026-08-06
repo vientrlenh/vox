@@ -11,11 +11,14 @@ public record CreateClassTestCommand(
     String description,
     String openAt,
     String closeAt,
-    List<ClassTestSectionCommand> sections,
-    UUID existingBlueprintId,
-    UUID existingBlueprintVersionId,
+    UUID assessmentPolicyId,
     Integer maxAttempt,
     Integer examTimeDurationSecond,
-    ResultDecisionMethod resultDecisionMethod
+    ResultDecisionMethod resultDecisionMethod,
+    List<String> requiredStreamTypes,
+    String streamTypePermission,
+    String deliveryMode,
+    Boolean requiresOtp,
+    UUID schoolRoomId
 ) {
 }

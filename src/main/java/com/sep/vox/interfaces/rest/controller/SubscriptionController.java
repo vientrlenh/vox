@@ -12,16 +12,19 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.sep.vox.application.port.input.command.ApproveRequestCommand;
 import com.sep.vox.application.port.input.command.ArchivePlanCommand;
 import com.sep.vox.application.port.input.command.CancelSubscriptionCommand;
 import com.sep.vox.application.port.input.command.ConsumeQuotaCommand;
+import com.sep.vox.application.port.input.command.CreatePaymentLinkForRenewalCommand;
 import com.sep.vox.application.port.input.command.CreatePaymentLinkForSubscriptionRequestCommand;
 import com.sep.vox.application.port.input.command.RejectRequestCommand;
 import com.sep.vox.application.port.input.command.RenewSubscriptionCommand;
 import com.sep.vox.application.port.input.command.SubmitRequestCommand;
+import com.sep.vox.application.port.input.query.PreviewRenewalQuery;
 import com.sep.vox.application.port.input.query.ViewQuotaAllocationsQuery;
 import com.sep.vox.application.port.input.usecase.subscription.AllocateClassTestQuotaToTeachersUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.AllocatePracticeQuotaToStudentsUseCase;
@@ -34,6 +37,7 @@ import com.sep.vox.application.port.input.usecase.subscription.CreatePaymentLink
 import com.sep.vox.application.port.input.usecase.subscription.CreatePaymentLinkForSubscriptionRequestUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.CreatePaymentLinkForTokenPurchaseUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.CreatePlanUseCase;
+import com.sep.vox.application.port.input.usecase.subscription.PreviewRenewalUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.RejectRequestUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.RenewSubscriptionUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.SubmitRequestUseCase;
@@ -43,6 +47,7 @@ import com.sep.vox.application.port.input.usecase.subscription.ViewPracticeQuota
 import com.sep.vox.domain.dto.InvoiceDto;
 import com.sep.vox.domain.dto.PaymentLinkDto;
 import com.sep.vox.domain.dto.QuotaUserAllocationSummaryDto;
+import com.sep.vox.domain.dto.RenewalPreviewDto;
 import com.sep.vox.domain.dto.SchoolSubscriptionDto;
 import com.sep.vox.domain.dto.SubscriptionPlanDto;
 import com.sep.vox.domain.dto.SubscriptionRequestDto;
@@ -51,6 +56,7 @@ import com.sep.vox.interfaces.rest.dto.request.AllocateQuotaRequest;
 import com.sep.vox.interfaces.rest.dto.request.BuyTokensRequest;
 import com.sep.vox.interfaces.rest.dto.request.ConsumeQuotaRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreatePlanRequest;
+import com.sep.vox.interfaces.rest.dto.request.PaymentMethodRequest;
 import com.sep.vox.interfaces.rest.dto.request.SubmitRequestRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 import com.sep.vox.interfaces.rest.mapper.AllocateQuotaCommandMapper;
@@ -75,6 +81,7 @@ public class SubscriptionController {
     private final CreatePaymentLinkForSubscriptionRequestUseCase createPaymentLinkForSubscriptionRequestUseCase;
     private final CreatePaymentLinkForTokenPurchaseUseCase createPaymentLinkForTokenPurchaseUseCase;
     private final CreatePaymentLinkForRenewalUseCase createPaymentLinkForRenewalUseCase;
+    private final PreviewRenewalUseCase previewRenewalUseCase;
     private final SyncInvoicePaymentStatusUseCase syncInvoicePaymentStatusUseCase;
     private final AllocateClassTestQuotaToTeachersUseCase allocateClassTestQuotaToTeachersUseCase;
     private final AllocatePracticeQuotaToStudentsUseCase allocatePracticeQuotaToStudentsUseCase;
@@ -94,6 +101,7 @@ public class SubscriptionController {
             CreatePaymentLinkForSubscriptionRequestUseCase createPaymentLinkForSubscriptionRequestUseCase,
             CreatePaymentLinkForTokenPurchaseUseCase createPaymentLinkForTokenPurchaseUseCase,
             CreatePaymentLinkForRenewalUseCase createPaymentLinkForRenewalUseCase,
+            PreviewRenewalUseCase previewRenewalUseCase,
             SyncInvoicePaymentStatusUseCase syncInvoicePaymentStatusUseCase,
             AllocateClassTestQuotaToTeachersUseCase allocateClassTestQuotaToTeachersUseCase,
             AllocatePracticeQuotaToStudentsUseCase allocatePracticeQuotaToStudentsUseCase,
@@ -111,6 +119,7 @@ public class SubscriptionController {
         this.createPaymentLinkForSubscriptionRequestUseCase = createPaymentLinkForSubscriptionRequestUseCase;
         this.createPaymentLinkForTokenPurchaseUseCase = createPaymentLinkForTokenPurchaseUseCase;
         this.createPaymentLinkForRenewalUseCase = createPaymentLinkForRenewalUseCase;
+        this.previewRenewalUseCase = previewRenewalUseCase;
         this.syncInvoicePaymentStatusUseCase = syncInvoicePaymentStatusUseCase;
         this.allocateClassTestQuotaToTeachersUseCase = allocateClassTestQuotaToTeachersUseCase;
         this.allocatePracticeQuotaToStudentsUseCase = allocatePracticeQuotaToStudentsUseCase;
@@ -127,35 +136,49 @@ public class SubscriptionController {
 
     @DeleteMapping("/plans/{id}")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public ResponseEntity<ApiResponse<SubscriptionPlanDto>> archivePlan(@PathVariable UUID id) {
-        var data = archivePlanUseCase.execute(new ArchivePlanCommand(id));
+    public ResponseEntity<ApiResponse<SubscriptionPlanDto>> archivePlan(
+            @PathVariable(name = "id") UUID id,
+            @RequestParam(required = false) UUID replacedByPlanId) {
+        var data = archivePlanUseCase.execute(new ArchivePlanCommand(id, replacedByPlanId));
         return ResponseEntity.ok(ApiResponse.success("Lưu trữ gói đăng ký thành công", data));
     }
 
     @PostMapping("/schools/{schoolId}/subscriptions/{id}/renew")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<SchoolSubscriptionDto>> renewSubscription(
-            @PathVariable UUID schoolId,
-            @PathVariable UUID id) {
+            @PathVariable(name = "schoolId") UUID schoolId,
+            @PathVariable(name = "id") UUID id) {
         var data = renewSubscriptionUseCase.execute(new RenewSubscriptionCommand(schoolId, id));
         return ResponseEntity.ok(ApiResponse.success("Gia hạn gói đăng ký thành công", data));
     }
 
-    // PAYOS
+    @GetMapping("/schools/{schoolId}/subscriptions/{id}/renewal-preview")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
+    public ResponseEntity<ApiResponse<RenewalPreviewDto>> previewRenewal(
+            @PathVariable(name = "schoolId") UUID schoolId,
+            @PathVariable(name = "id") UUID id) {
+        var data = previewRenewalUseCase.execute(new PreviewRenewalQuery(schoolId, id));
+        return ResponseEntity.ok(ApiResponse.success("Xem trước gia hạn thành công", data));
+    }
+
     @PostMapping("/schools/{schoolId}/subscriptions/{id}/renew/payment-link")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<PaymentLinkDto>> createPaymentLinkForRenewal(
-            @PathVariable UUID schoolId,
-            @PathVariable UUID id) {
-        var data = createPaymentLinkForRenewalUseCase.execute(new RenewSubscriptionCommand(schoolId, id));
+            @PathVariable(name = "schoolId") UUID schoolId,
+            @PathVariable(name = "id") UUID id,
+            @RequestParam(name = "acceptedPlanId", required = false) UUID acceptedPlanId, 
+            @RequestBody @Valid PaymentMethodRequest request
+        ) {
+        var data = createPaymentLinkForRenewalUseCase.execute(
+            new CreatePaymentLinkForRenewalCommand(schoolId, id, acceptedPlanId, request.paymentMethod()));
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Tạo link thanh toán thành công", data));
     }
 
     @PostMapping("/schools/{schoolId}/subscriptions/{id}/cancel")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<SchoolSubscriptionDto>> cancelSubscription(
-            @PathVariable UUID schoolId,
-            @PathVariable UUID id) {
+            @PathVariable(name = "schoolId") UUID schoolId,
+            @PathVariable(name = "id") UUID id) {
         var data = cancelSubscriptionUseCase.execute(new CancelSubscriptionCommand(schoolId, id));
         return ResponseEntity.ok(ApiResponse.success("Hủy gói đăng ký thành công", data));
     }
@@ -163,7 +186,7 @@ public class SubscriptionController {
     @PostMapping("/schools/{schoolId}/subscription-requests")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<SubscriptionRequestDto>> submitRequest(
-            @PathVariable UUID schoolId,
+            @PathVariable(name = "schoolId") UUID schoolId,
             @Valid @RequestBody SubmitRequestRequest request) {
         var data = submitRequestUseCase.execute(new SubmitRequestCommand(
             schoolId, request.requestType(), request.currentPlanId(), request.requestedPlanId()
@@ -174,14 +197,14 @@ public class SubscriptionController {
     @PostMapping("/subscription-requests/{id}/approve")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<SubscriptionRequestDto>> approveRequest(
-            @PathVariable UUID id) {
+            @PathVariable(name = "id") UUID id) {
         var data = approveRequestUseCase.execute(new ApproveRequestCommand(id));
         return ResponseEntity.ok(ApiResponse.success("Duyệt yêu cầu thành công", data));
     }
 
     @PostMapping("/subscription-requests/{id}/reject")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public ResponseEntity<ApiResponse<SubscriptionRequestDto>> rejectRequest(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<SubscriptionRequestDto>> rejectRequest(@PathVariable(name = "id") UUID id) {
         var data = rejectRequestUseCase.execute(new RejectRequestCommand(id));
         return ResponseEntity.ok(ApiResponse.success("Từ chối yêu cầu thành công", data));
     }
@@ -189,44 +212,46 @@ public class SubscriptionController {
     @PostMapping("/schools/{schoolId}/token-purchases")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<TokenPurchaseDto>> buyTokens(
-            @PathVariable UUID schoolId,
+            @PathVariable(name = "schoolId") UUID schoolId,
             @Valid @RequestBody BuyTokensRequest request) {
         var data = buyTokensUseCase.execute(BuyTokensCommandMapper.fromRequest(schoolId, request));
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Mua token thành công", data));
     }
 
-    // PAYOS
     @PostMapping("/subscription-requests/{id}/payment-link")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<PaymentLinkDto>> createPaymentLinkForSubscriptionRequest(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<PaymentLinkDto>> createPaymentLinkForSubscriptionRequest(@PathVariable(name = "id") UUID id, @RequestBody @Valid PaymentMethodRequest request) {
         var data = createPaymentLinkForSubscriptionRequestUseCase.execute(
-            new CreatePaymentLinkForSubscriptionRequestCommand(id));
+            new CreatePaymentLinkForSubscriptionRequestCommand(id, request.paymentMethod()));
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Tạo link thanh toán thành công", data));
     }
 
-    // PAYOS
     @PostMapping("/schools/{schoolId}/token-purchases/payment-link")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<PaymentLinkDto>> createPaymentLinkForTokenPurchase(
-            @PathVariable UUID schoolId,
+            @PathVariable(name = "schoolId") UUID schoolId,
             @Valid @RequestBody BuyTokensRequest request) {
         var data = createPaymentLinkForTokenPurchaseUseCase.execute(BuyTokensCommandMapper.fromRequest(schoolId, request));
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Tạo link thanh toán thành công", data));
     }
 
-    // PAYOS — FE gọi khi PayOS redirect user về returnUrl/cancelUrl, vì PayOS không gọi webhook
+    // FE gọi khi cổng thanh toán redirect user về returnUrl/cancelUrl, vì cổng không gọi webhook
     // trong các trường hợp user tự hủy/không hoàn tất thanh toán trên checkout UI.
-    @PostMapping("/invoices/{orderCode}/sync-status")
+    //
+    // Định danh bằng invoiceId (không phải mã đơn phía cổng như trước): mã đơn chỉ duy nhất trong
+    // phạm vi một cổng nên không còn tra cứu được một mình. invoiceId đã có sẵn trong PaymentLinkDto
+    // mà FE nhận lúc tạo payment link.
+    @PostMapping("/invoices/{invoiceId}/sync-status")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<InvoiceDto>> syncInvoicePaymentStatus(@PathVariable Long orderCode) {
-        var data = syncInvoicePaymentStatusUseCase.execute(orderCode);
+    public ResponseEntity<ApiResponse<InvoiceDto>> syncInvoicePaymentStatus(@PathVariable(name = "invoiceId") UUID invoiceId) {
+        var data = syncInvoicePaymentStatusUseCase.execute(invoiceId);
         return ResponseEntity.ok(ApiResponse.success("Đồng bộ trạng thái hóa đơn thành công", data));
     }
 
     @PutMapping("/schools/{schoolId}/teachers/class-test-quota")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<QuotaUserAllocationSummaryDto>> allocateClassTestQuotaToTeachers(
-            @PathVariable UUID schoolId,
+            @PathVariable(name = "schoolId") UUID schoolId,
             @Valid @RequestBody AllocateQuotaRequest request) {
         var data = allocateClassTestQuotaToTeachersUseCase.execute(
             AllocateQuotaCommandMapper.toClassTestCommand(schoolId, request));
@@ -236,7 +261,7 @@ public class SubscriptionController {
     @GetMapping("/schools/{schoolId}/teachers/class-test-quota")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<QuotaUserAllocationSummaryDto>> viewClassTestQuotaAllocations(
-            @PathVariable UUID schoolId) {
+            @PathVariable(name = "schoolId") UUID schoolId) {
         var data = viewClassTestQuotaAllocationsUseCase.execute(new ViewQuotaAllocationsQuery(schoolId));
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách hạn mức kiểm tra lớp thành công", data));
     }
@@ -244,7 +269,7 @@ public class SubscriptionController {
     @PutMapping("/schools/{schoolId}/students/practice-quota")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<QuotaUserAllocationSummaryDto>> allocatePracticeQuotaToStudents(
-            @PathVariable UUID schoolId,
+            @PathVariable(name = "schoolId") UUID schoolId,
             @Valid @RequestBody AllocateQuotaRequest request) {
         var data = allocatePracticeQuotaToStudentsUseCase.execute(
             AllocateQuotaCommandMapper.toPracticeCommand(schoolId, request));
@@ -254,7 +279,7 @@ public class SubscriptionController {
     @GetMapping("/schools/{schoolId}/students/practice-quota")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<QuotaUserAllocationSummaryDto>> viewPracticeQuotaAllocations(
-            @PathVariable UUID schoolId) {
+            @PathVariable(name = "schoolId") UUID schoolId) {
         var data = viewPracticeQuotaAllocationsUseCase.execute(new ViewQuotaAllocationsQuery(schoolId));
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách hạn mức luyện tập thành công", data));
     }

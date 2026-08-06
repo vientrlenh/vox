@@ -24,9 +24,11 @@ import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamSchedule;
 import com.sep.vox.domain.model.exam.ExamScheduleStatus;
+import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
+import com.sep.vox.domain.repository.ExamScheduleProctorRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
@@ -35,6 +37,7 @@ class DeleteExamScheduleUseCaseTests {
     private ExamRepository examRepository;
     private ExamScheduleRepository examScheduleRepository;
     private ExamCandidateRepository examCandidateRepository;
+    private ExamScheduleProctorRepository examScheduleProctorRepository;
     private ExamMemberRepository examMemberRepository;
     private SchoolUserRepository schoolUserRepository;
     private UserRoleQueryRepository userRoleQueryRepository;
@@ -51,20 +54,21 @@ class DeleteExamScheduleUseCaseTests {
         examRepository = mock(ExamRepository.class);
         examScheduleRepository = mock(ExamScheduleRepository.class);
         examCandidateRepository = mock(ExamCandidateRepository.class);
+        examScheduleProctorRepository = mock(ExamScheduleProctorRepository.class);
         examMemberRepository = mock(ExamMemberRepository.class);
         schoolUserRepository = mock(SchoolUserRepository.class);
         userRoleQueryRepository = mock(UserRoleQueryRepository.class);
         userContextPort = mock(UserContextPort.class);
         useCase = new DeleteExamScheduleUseCase(
-            examRepository, examScheduleRepository, examCandidateRepository, examMemberRepository,
-            schoolUserRepository, userRoleQueryRepository, userContextPort);
+            examRepository, examScheduleRepository, examCandidateRepository, examScheduleProctorRepository,
+            examMemberRepository, schoolUserRepository, userRoleQueryRepository, userContextPort);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(schoolUserRepository.findByUserId(userId)).thenReturn(Optional.empty());
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId)).thenReturn(List.of());
         when(examMemberRepository.existsByExamIdAndUserIdAndRole(examId, userId, ExamMemberRole.CHAIR))
             .thenReturn(true);
-        when(examRepository.findById(examId)).thenReturn(Optional.of(exam()));
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam(ExamStatus.SCHEDULED)));
         when(examScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule()));
     }
 
@@ -78,10 +82,33 @@ class DeleteExamScheduleUseCaseTests {
     }
 
     @Test
+    void should_reject_delete_when_has_proctors() {
+        when(examCandidateRepository.countByScheduleId(scheduleId)).thenReturn(0L);
+        when(examScheduleProctorRepository.countByScheduleId(scheduleId)).thenReturn(2L);
+
+        assertThatThrownBy(() -> useCase.execute(new DeleteExamScheduleCommand(examId, scheduleId)))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("giám thị");
+        verify(examScheduleRepository, never()).save(any());
+    }
+
+    @Test
+    void should_reject_delete_when_exam_already_started() {
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam(ExamStatus.IN_PROGRESS)));
+        when(examCandidateRepository.countByScheduleId(scheduleId)).thenReturn(0L);
+        when(examScheduleProctorRepository.countByScheduleId(scheduleId)).thenReturn(0L);
+
+        assertThatThrownBy(() -> useCase.execute(new DeleteExamScheduleCommand(examId, scheduleId)))
+            .isInstanceOf(IllegalStateException.class);
+        verify(examScheduleRepository, never()).save(any());
+    }
+
+    @Test
     void should_soft_delete_when_no_candidates() {
         var schedule = schedule();
         when(examScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule));
         when(examCandidateRepository.countByScheduleId(scheduleId)).thenReturn(0L);
+        when(examScheduleProctorRepository.countByScheduleId(scheduleId)).thenReturn(0L);
         when(examScheduleRepository.save(any(ExamSchedule.class))).thenAnswer(inv -> inv.getArgument(0));
 
         useCase.execute(new DeleteExamScheduleCommand(examId, scheduleId));
@@ -90,10 +117,11 @@ class DeleteExamScheduleUseCaseTests {
         verify(examScheduleRepository).save(schedule);
     }
 
-    private Exam exam() {
+    private Exam exam(ExamStatus status) {
         var exam = new Exam();
         exam.setId(examId);
         exam.setSchoolId(schoolId);
+        exam.setStatus(status);
         return exam;
     }
 

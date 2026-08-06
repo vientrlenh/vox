@@ -18,6 +18,8 @@ public interface ExamCandidateRepository {
     long countByExamId(UUID examId);
     Map<UUID, Long> countByExamIdIn(Collection<UUID> examIds);
 
+    void deleteById(UUID id);
+
     Optional<ExamCandidate> findById(UUID id);
     Optional<ExamCandidate> findByExamIdAndStudentId(UUID examId, UUID studentId);
     boolean existsByExamIdAndStudentId(UUID examId, UUID studentId);

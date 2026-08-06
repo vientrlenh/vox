@@ -17,7 +17,8 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "invoice", indexes = {
-    @Index(columnList = "school_id", name = "idx_invoice_school")
+    @Index(columnList = "school_id", name = "idx_invoice_school"),
+    @Index(columnList = "payment_provider, provider_order_ref", name = "idx_invoice_provider_order_ref", unique = true)
 })
 public class InvoiceJpaEntity {
 
@@ -66,8 +67,18 @@ public class InvoiceJpaEntity {
     })
     private String status;
 
-    @Column(name = "payos_order_code", unique = true)
-    private Long payosOrderCode;
+    @Column(name = "payment_provider", nullable = false, length = 20, check = {
+        @CheckConstraint(
+            name = "chk_invoice_payment_provider_valid",
+            constraint = "payment_provider IN ('PAYOS', 'SEPAY', 'MANUAL')"
+        )
+    })
+    private String paymentProvider;
+
+    // Không unique một mình: mã đơn chỉ cần duy nhất trong phạm vi một cổng, nên ràng buộc nằm
+    // ở unique index (payment_provider, provider_order_ref) — xem idx_invoice_provider_order_ref.
+    @Column(name = "provider_order_ref", length = 100)
+    private String providerOrderRef;
 
     @Column(name = "payment_link_id")
     private String paymentLinkId;
@@ -78,11 +89,14 @@ public class InvoiceJpaEntity {
     @Column(name = "paid_at")
     private Instant paidAt;
 
+    @Column(name = "resolved_plan_id")
+    private UUID resolvedPlanId;
+
     protected InvoiceJpaEntity() {}
 
     public InvoiceJpaEntity(UUID id, String invoiceNumber, UUID schoolId, UUID subscriptionId, String sourceType, UUID sourceId,
-            LocalDate issueDate, BigDecimal amount, String status, Long payosOrderCode, String paymentLinkId,
-            String checkoutUrl, Instant paidAt) {
+            LocalDate issueDate, BigDecimal amount, String status, String paymentProvider, String providerOrderRef,
+            String paymentLinkId, String checkoutUrl, Instant paidAt, UUID resolvedPlanId) {
         this.id = id;
         this.invoiceNumber = invoiceNumber;
         this.schoolId = schoolId;
@@ -92,10 +106,12 @@ public class InvoiceJpaEntity {
         this.issueDate = issueDate;
         this.amount = amount;
         this.status = status;
-        this.payosOrderCode = payosOrderCode;
+        this.paymentProvider = paymentProvider;
+        this.providerOrderRef = providerOrderRef;
         this.paymentLinkId = paymentLinkId;
         this.checkoutUrl = checkoutUrl;
         this.paidAt = paidAt;
+        this.resolvedPlanId = resolvedPlanId;
     }
 
     public UUID getId() {
@@ -170,12 +186,20 @@ public class InvoiceJpaEntity {
         this.status = status;
     }
 
-    public Long getPayosOrderCode() {
-        return payosOrderCode;
+    public String getPaymentProvider() {
+        return paymentProvider;
     }
 
-    public void setPayosOrderCode(Long payosOrderCode) {
-        this.payosOrderCode = payosOrderCode;
+    public void setPaymentProvider(String paymentProvider) {
+        this.paymentProvider = paymentProvider;
+    }
+
+    public String getProviderOrderRef() {
+        return providerOrderRef;
+    }
+
+    public void setProviderOrderRef(String providerOrderRef) {
+        this.providerOrderRef = providerOrderRef;
     }
 
     public String getPaymentLinkId() {
@@ -200,5 +224,13 @@ public class InvoiceJpaEntity {
 
     public void setPaidAt(Instant paidAt) {
         this.paidAt = paidAt;
+    }
+
+    public UUID getResolvedPlanId() {
+        return resolvedPlanId;
+    }
+
+    public void setResolvedPlanId(UUID resolvedPlanId) {
+        this.resolvedPlanId = resolvedPlanId;
     }
 }

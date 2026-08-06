@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.mapper.learnerprofile.LearnerProfileResponseMapper;
+import com.sep.vox.infrastructure.properties.InterestQuizProperties;
 import com.sep.vox.application.port.input.service.InterestQuizItemSelector;
 import com.sep.vox.application.port.input.service.InterestQuizScorer;
 import com.sep.vox.infrastructure.service.InterestQuizGenerationClient;
@@ -24,8 +25,7 @@ import com.sep.vox.domain.repository.personalization.TopicInterestEventRepositor
 @Service
 public class ViewInterestQuizItemsUseCase implements IUseCase<Void, List<InterestQuizItem>> {
 
-    private static final int QUIZ_ITEM_COUNT = 7;
-
+    private final InterestQuizProperties quizProperties;
     private final InterestQuizItemRepository quizItemRepository;
     private final TopicInterestEventRepository topicInterestEventRepository;
     private final InterestQuizGenerationClient generationClient;
@@ -39,7 +39,9 @@ public class ViewInterestQuizItemsUseCase implements IUseCase<Void, List<Interes
             InterestQuizGenerationClient generationClient,
             UserContextPort userContextPort,
             InterestQuizScorer interestQuizScorer,
-            InterestQuizItemSelector itemSelector) {
+            InterestQuizItemSelector itemSelector,
+            InterestQuizProperties quizProperties) {
+        this.quizProperties = quizProperties;
         this.itemSelector = itemSelector;
         this.quizItemRepository = quizItemRepository;
         this.topicInterestEventRepository = topicInterestEventRepository;
@@ -84,7 +86,7 @@ public class ViewInterestQuizItemsUseCase implements IUseCase<Void, List<Interes
         // Nay Python chia thành 7 lượt song song, mỗi lượt một item với bộ ba chiều và bối
         // cảnh đã phân công sẵn, ở mức suy luận thấp.
         var generated = generationClient.generate(
-            QUIZ_ITEM_COUNT,
+            quizProperties.itemCount(),
             existingStatements,
             interestQuizScorer.quizDimensionCodes()
         );
@@ -120,10 +122,11 @@ public class ViewInterestQuizItemsUseCase implements IUseCase<Void, List<Interes
         return selectBalanced(List.copyOf(pool.values()));
     }
 
-    /** Loại item chứa chiều không còn hỏi được + phủ đều các chiều trong đúng QUIZ_ITEM_COUNT
-     * câu -- xem InterestQuizItemSelector để biết vì sao cần cả hai. */
+    /** Loại item chứa chiều không còn hỏi được + phủ đều các chiều trong đúng ngân sách câu
+     * hỏi (app.personalization.quiz.item-count) -- xem InterestQuizItemSelector để biết vì sao
+     * cần cả hai. */
     private List<InterestQuizSeedItem> selectBalanced(List<InterestQuizSeedItem> pool) {
-        return itemSelector.select(pool, QUIZ_ITEM_COUNT);
+        return itemSelector.select(pool, quizProperties.itemCount());
     }
 
     private List<InterestQuizItem> toResponse(List<InterestQuizSeedItem> items) {

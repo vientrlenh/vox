@@ -75,6 +75,12 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
      */
     private static final int MAX_PAGE_SIZE = 100;
 
+    /** So khớp với {@code ExamKind.CLASS_TEST}; JPQL trả enum về dạng String. */
+    private static final String CLASS_TEST_KIND = "CLASS_TEST";
+
+    /** So khớp với {@code ExamKind.CENTRALIZED}. Cùng lý do dùng String như trên. */
+    private static final String CENTRALIZED_KIND = "CENTRALIZED";
+
     /** Trạng thái bài còn có thể nhận một vòng chấm — luật lấy từ domain, không chép cứng. */
     private static final List<String> ASSIGNABLE_STATUS_NAMES = GradingRoundPolicy.allAssignableStatuses()
         .stream()
@@ -103,7 +109,7 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
         var now = Instant.now();
 
         var rows = applyFilters(em.createQuery("""
-            SELECT cr.id, u.fullName, e.name, cr.status, cr.totalScore, s.flagged, cr.updatedAt
+            SELECT cr.id, u.fullName, e.name, cr.status, cr.totalScore, s.flagged, cr.updatedAt, cr.sessionId
             FROM ExamCandidateResultJpaEntity cr
             JOIN ExamSessionJpaEntity s ON s.id = cr.sessionId
             JOIN ExamJpaEntity e ON e.id = cr.examId
@@ -120,11 +126,13 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
         var classNames = classNamesByCandidateResultIds(candidateResultIds);
         var displayed = displayAssignmentsByResultIds(candidateResultIds);
         var openAppeals = resultIdsWithOpenAppeal(candidateResultIds);
+        var attempts = attemptsByCandidateResultIds(candidateResultIds);
 
         var content = new ArrayList<GradingAssignmentRowInfo>();
         for (var row : rows) {
             var candidateResultId = row.get(0, UUID.class);
             var assignment = displayed.get(candidateResultId);
+            var attempt = attemptOrSingle(attempts, candidateResultId, row.get(7, UUID.class));
             content.add(new GradingAssignmentRowInfo(
                 candidateResultId,
                 GradingResultCode.of(candidateResultId),
@@ -144,7 +152,10 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
                 assignment == null ? null : assignment.completedAt(),
                 assignment == null ? null : assignment.deadlineAt(),
                 assignment != null && assignment.isOverdue(now),
-                openAppeals.contains(candidateResultId)
+                openAppeals.contains(candidateResultId),
+                attempt.sessionId(),
+                attempt.attemptNo(),
+                attempt.attemptCount()
             ));
         }
 
@@ -169,6 +180,7 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
      */
     private static final String WHERE_CLAUSE = """
         WHERE e.schoolId = :schoolId
+        AND (:examKind IS NULL OR e.kind = :examKind)
         AND (:examId IS NULL OR cr.examId = :examId)
         AND (:scheduleId IS NULL OR c.scheduleId = :scheduleId)
         AND (:resultStatus IS NULL OR cr.status = :resultStatus)
@@ -200,6 +212,7 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             jakarta.persistence.TypedQuery<T> query, GradingAssignmentFilter filter, Instant now) {
         return query
             .setParameter("schoolId", filter.schoolId())
+            .setParameter("examKind", filter.examKind())
             .setParameter("examId", filter.examId())
             .setParameter("scheduleId", filter.scheduleId())
             .setParameter("resultStatus", filter.resultStatus())
@@ -280,6 +293,30 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
     }
 
     /** Tên lớp của nhiều bài trong 1 query; giữ giá trị đầu tiên mỗi bài (tránh N+1). */
+    /**
+     * Tên học sinh theo lô. Chỉ gọi cho bài kiểm tra TRÊN LỚP — kỳ thi tập trung giữ
+     * nguyên chấm ẩn danh, và đó là bảo đảm công bằng chứ không phải chi tiết dư.
+     */
+    private Map<UUID, String> studentNamesByCandidateResultIds(List<UUID> candidateResultIds) {
+        if (candidateResultIds.isEmpty()) {
+            return Map.of();
+        }
+        var rows = em.createQuery("""
+            SELECT cr.id, u.fullName
+            FROM ExamCandidateResultJpaEntity cr
+            JOIN ExamCandidateJpaEntity c ON c.id = cr.candidateId
+            JOIN UserJpaEntity u ON u.id = c.studentId
+            WHERE cr.id IN (:candidateResultIds)
+        """, Tuple.class)
+            .setParameter("candidateResultIds", candidateResultIds)
+            .getResultList();
+        var map = new HashMap<UUID, String>();
+        for (var row : rows) {
+            map.putIfAbsent(row.get(0, UUID.class), row.get(1, String.class));
+        }
+        return map;
+    }
+
     private Map<UUID, String> classNamesByCandidateResultIds(List<UUID> candidateResultIds) {
         if (candidateResultIds.isEmpty()) {
             return Map.of();
@@ -301,10 +338,73 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
         return map;
     }
 
+    /** Lượt thi thứ mấy trên tổng mấy lượt, kèm phiên thi tương ứng. */
+    record AttemptInfo(UUID sessionId, int attemptNo, int attemptCount) {
+
+        /** Bài không tra được lượt (phiên đã xoá) vẫn phải hiện, coi như lượt duy nhất. */
+        static AttemptInfo single(UUID sessionId) {
+            return new AttemptInfo(sessionId, 1, 1);
+        }
+    }
+
+    /**
+     * Số lượt thi của nhiều bài trong 1 query.
+     *
+     * <p>Không có cột {@code attempt_no} trong DB: một lượt thi là một dòng
+     * {@code exam_sessions}, nên thứ tự phải suy từ {@code startedAt} của cùng thí sinh.
+     * Đánh số TĂNG DẦN để khớp với cách màn "bài thi của tôi" của học sinh đang đánh số
+     * ({@code ViewMyExamsUseCase}) — hai bên nói "lượt 2" phải là cùng một lượt.
+     *
+     * <p>Điều kiện {@code s.examId = cr.examId} là thừa về dữ liệu (mỗi dòng
+     * {@code exam_candidates} vốn đã thuộc đúng một kỳ thi) nhưng giữ lại làm hàng rào:
+     * đếm nhầm lượt của kỳ thi khác thì con số sai mà không ai thấy sai.
+     */
+    private Map<UUID, AttemptInfo> attemptsByCandidateResultIds(List<UUID> candidateResultIds) {
+        if (candidateResultIds.isEmpty()) {
+            return Map.of();
+        }
+        var rows = em.createQuery("""
+            SELECT cr.id, cr.sessionId, s.id
+            FROM ExamCandidateResultJpaEntity cr
+            JOIN ExamCandidateJpaEntity c ON c.id = cr.candidateId
+            JOIN ExamSessionJpaEntity s ON s.candidateId = c.id AND s.examId = cr.examId
+            WHERE cr.id IN (:candidateResultIds)
+            ORDER BY cr.id ASC, s.startedAt ASC, s.id ASC
+        """, Tuple.class)
+            .setParameter("candidateResultIds", candidateResultIds)
+            .getResultList();
+
+        // Gom theo bài rồi mới đánh số: ORDER BY đã lo thứ tự, ở đây chỉ cần đếm dồn.
+        var sessionsByResult = new LinkedHashMap<UUID, List<UUID>>();
+        var ownSessionByResult = new HashMap<UUID, UUID>();
+        for (var row : rows) {
+            var candidateResultId = row.get(0, UUID.class);
+            ownSessionByResult.putIfAbsent(candidateResultId, row.get(1, UUID.class));
+            sessionsByResult.computeIfAbsent(candidateResultId, ignored -> new ArrayList<>())
+                .add(row.get(2, UUID.class));
+        }
+
+        var map = new HashMap<UUID, AttemptInfo>();
+        for (var entry : sessionsByResult.entrySet()) {
+            var ownSessionId = ownSessionByResult.get(entry.getKey());
+            var index = entry.getValue().indexOf(ownSessionId);
+            map.put(entry.getKey(), index < 0
+                ? AttemptInfo.single(ownSessionId)
+                : new AttemptInfo(ownSessionId, index + 1, entry.getValue().size()));
+        }
+        return map;
+    }
+
+    /** Bài không có dòng lượt nào (dữ liệu lỗi) vẫn phải hiện thay vì rơi khỏi bảng. */
+    private AttemptInfo attemptOrSingle(Map<UUID, AttemptInfo> attempts, UUID candidateResultId, UUID sessionId) {
+        var attempt = attempts.get(candidateResultId);
+        return attempt == null ? AttemptInfo.single(sessionId) : attempt;
+    }
+
     // ---- thẻ số đầu màn ----------------------------------------------------
 
     @Override
-    public GradingStatsInfo stats(UUID schoolId, UUID examId, UUID scheduleId) {
+    public GradingStatsInfo stats(UUID schoolId, UUID examId, UUID scheduleId, String examKind) {
         var now = Instant.now();
 
         var statusRows = em.createQuery("""
@@ -313,11 +413,13 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             JOIN ExamJpaEntity e ON e.id = cr.examId
             JOIN ExamCandidateJpaEntity c ON c.id = cr.candidateId
             WHERE e.schoolId = :schoolId
+            AND (:examKind IS NULL OR e.kind = :examKind)
             AND (:examId IS NULL OR cr.examId = :examId)
             AND (:scheduleId IS NULL OR c.scheduleId = :scheduleId)
             GROUP BY cr.status
         """, Tuple.class)
             .setParameter("schoolId", schoolId)
+            .setParameter("examKind", examKind)
             .setParameter("examId", examId)
             .setParameter("scheduleId", scheduleId)
             .getResultList();
@@ -339,10 +441,12 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             JOIN ExamJpaEntity e ON e.id = cr.examId
             JOIN ExamCandidateJpaEntity c ON c.id = cr.candidateId
             WHERE e.schoolId = :schoolId
+            AND (:examKind IS NULL OR e.kind = :examKind)
             AND (:examId IS NULL OR cr.examId = :examId)
             AND (:scheduleId IS NULL OR c.scheduleId = :scheduleId)
         """, Tuple.class)
             .setParameter("schoolId", schoolId)
+            .setParameter("examKind", examKind)
             .setParameter("examId", examId)
             .setParameter("scheduleId", scheduleId)
             .setParameter("now", now)
@@ -362,6 +466,7 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             JOIN ExamJpaEntity e ON e.id = cr.examId
             JOIN ExamCandidateJpaEntity c ON c.id = cr.candidateId
             WHERE e.schoolId = :schoolId
+            AND (:examKind IS NULL OR e.kind = :examKind)
             AND (:examId IS NULL OR cr.examId = :examId)
             AND (:scheduleId IS NULL OR c.scheduleId = :scheduleId)
             AND cr.status IN (:assignableStatuses)
@@ -370,6 +475,7 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             )
         """, Long.class)
             .setParameter("schoolId", schoolId)
+            .setParameter("examKind", examKind)
             .setParameter("examId", examId)
             .setParameter("scheduleId", scheduleId)
             .setParameter("assignableStatuses", ASSIGNABLE_STATUS_NAMES)
@@ -387,12 +493,14 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             JOIN ExamCandidateJpaEntity c ON c.id = cr.candidateId
             LEFT JOIN UserJpaEntity t ON t.id = ga.teacherId
             WHERE e.schoolId = :schoolId
+            AND (:examKind IS NULL OR e.kind = :examKind)
             AND (:examId IS NULL OR cr.examId = :examId)
             AND (:scheduleId IS NULL OR c.scheduleId = :scheduleId)
             GROUP BY ga.teacherId, t.fullName
             ORDER BY t.fullName ASC
         """, Tuple.class)
             .setParameter("schoolId", schoolId)
+            .setParameter("examKind", examKind)
             .setParameter("examId", examId)
             .setParameter("scheduleId", scheduleId)
             .setParameter("now", now)
@@ -425,33 +533,38 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
      */
     @Override
     public PageResult<GradingTaskInfo> findTasksByTeacherId(
-            UUID teacherId, String status, String roundType, int page, int size) {
-        return findTasksByTeacherIdAndExamId(teacherId, null, status, roundType, page, size);
+            UUID teacherId, String examKind, String status, String roundType, int page, int size) {
+        return findTasksByTeacherIdAndExamId(teacherId, null, examKind, status, roundType, page, size);
     }
 
     @Override
     public PageResult<GradingTaskInfo> findTasksByTeacherIdAndExamId(
-            UUID teacherId, UUID examId, String status, String roundType, int page, int size) {
+            UUID teacherId, UUID examId, String examKind, String status, String roundType,
+            int page, int size) {
         var normalizedPage = Math.max(page, 0);
         var normalizedSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
         var now = Instant.now();
 
-        // Không join sang candidate/user: giáo viên chấm ẩn danh, dữ liệu học sinh
-        // không được rời khỏi read model này.
+        // Ẩn danh là luật của kỳ thi TẬP TRUNG, không phải luật chung: ở đó dữ liệu học
+        // sinh không được rời khỏi read model này. Bài kiểm tra trên lớp thì ngược lại —
+        // người chấm chính là giáo viên dạy lớp đó. Nên chỉ lấy thêm e.kind ở đây rồi
+        // nạp danh tính theo lô cho ĐÚNG những dòng CLASS_TEST (xem bên dưới).
         var rows = em.createQuery("""
             SELECT ga.id, cr.id, e.name, ga.roundType, ga.status, cr.status, cr.totalScore,
-                   s.flagged, ga.assignedAt, ga.deadlineAt
+                   s.flagged, ga.assignedAt, ga.deadlineAt, e.kind, cr.sessionId
             FROM ExamGradingAssignmentJpaEntity ga
             JOIN ExamCandidateResultJpaEntity cr ON cr.id = ga.candidateResultId
             JOIN ExamSessionJpaEntity s ON s.id = cr.sessionId
             JOIN ExamJpaEntity e ON e.id = cr.examId
             WHERE ga.teacherId = :teacherId
+            AND (:examKind IS NULL OR e.kind = :examKind)
             AND (:examId IS NULL OR cr.examId = :examId)
             AND (:status IS NULL OR ga.status = :status)
             AND (:roundType IS NULL OR ga.roundType = :roundType)
             ORDER BY ga.status ASC, ga.deadlineAt ASC NULLS LAST, ga.assignedAt DESC
         """, Tuple.class)
             .setParameter("teacherId", teacherId)
+            .setParameter("examKind", examKind)
             .setParameter("examId", examId)
             .setParameter("status", status)
             .setParameter("roundType", roundType)
@@ -459,14 +572,25 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             .setMaxResults(normalizedSize)
             .getResultList();
 
-        var partCounts = partCountsByCandidateResultIds(
-            rows.stream().map(row -> row.get(1, UUID.class)).toList());
+        var pageResultIds = rows.stream().map(row -> row.get(1, UUID.class)).toList();
+        var partCounts = partCountsByCandidateResultIds(pageResultIds);
+        var attempts = attemptsByCandidateResultIds(pageResultIds);
+
+        // Hai query phụ, và CHỈ chạy khi trang có dòng của bài kiểm tra trên lớp — số
+        // query vẫn cố định theo trang, không N+1.
+        var classTestResultIds = rows.stream()
+            .filter(row -> CLASS_TEST_KIND.equals(row.get(10, String.class)))
+            .map(row -> row.get(1, UUID.class))
+            .toList();
+        var studentNames = studentNamesByCandidateResultIds(classTestResultIds);
+        var classNames = classNamesByCandidateResultIds(classTestResultIds);
 
         var content = new ArrayList<GradingTaskInfo>();
         for (var row : rows) {
             var candidateResultId = row.get(1, UUID.class);
             var assignmentStatus = row.get(4, String.class);
             var deadlineAt = row.get(9, Instant.class);
+            var attempt = attemptOrSingle(attempts, candidateResultId, row.get(11, UUID.class));
             content.add(new GradingTaskInfo(
                 row.get(0, UUID.class),
                 candidateResultId,
@@ -480,19 +604,30 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
                 Boolean.TRUE.equals(row.get(7, Boolean.class)),
                 row.get(8, Instant.class),
                 deadlineAt,
-                isOverdue(assignmentStatus, deadlineAt, now)
+                isOverdue(assignmentStatus, deadlineAt, now),
+                studentNames.get(candidateResultId),
+                classNames.get(candidateResultId),
+                attempt.sessionId(),
+                attempt.attemptNo(),
+                attempt.attemptCount()
             ));
         }
 
+        // JOIN sang exams ở đây là BẮT BUỘC dù câu này không đọc cột nào của exam: thiếu
+        // nó thì COUNT đếm cả hai loại bài trong khi trang chỉ trả một loại, và FE dựng ra
+        // những trang rỗng không bấm được.
         var total = em.createQuery("""
             SELECT COUNT(ga) FROM ExamGradingAssignmentJpaEntity ga
             JOIN ExamCandidateResultJpaEntity cr ON cr.id = ga.candidateResultId
+            JOIN ExamJpaEntity e ON e.id = cr.examId
             WHERE ga.teacherId = :teacherId
+            AND (:examKind IS NULL OR e.kind = :examKind)
             AND (:examId IS NULL OR cr.examId = :examId)
             AND (:status IS NULL OR ga.status = :status)
             AND (:roundType IS NULL OR ga.roundType = :roundType)
         """, Long.class)
             .setParameter("teacherId", teacherId)
+            .setParameter("examKind", examKind)
             .setParameter("examId", examId)
             .setParameter("status", status)
             .setParameter("roundType", roundType)
@@ -536,7 +671,8 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
         // quyền. Không được để query phần thi nào chạy trước khi nó trả về dòng.
         var rows = em.createQuery("""
             SELECT ga.id, cr.id, e.name, ga.roundType, ga.status, cr.status, s.flagged, s.flagReason,
-                   cr.totalScore, ga.scoreBefore, ga.deadlineAt, cr.rubricVersionId, cr.sessionId, ap.reason
+                   cr.totalScore, ga.scoreBefore, ga.deadlineAt, cr.rubricVersionId, cr.sessionId, ap.reason,
+                   e.kind
             FROM ExamGradingAssignmentJpaEntity ga
             JOIN ExamCandidateResultJpaEntity cr ON cr.id = ga.candidateResultId
             JOIN ExamSessionJpaEntity s ON s.id = cr.sessionId
@@ -556,6 +692,10 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
         var assignmentStatus = row.get(4, String.class);
         var resultStatus = row.get(5, String.class);
         var deadlineAt = row.get(10, Instant.class);
+        var isClassTest = CLASS_TEST_KIND.equals(row.get(14, String.class));
+        var sessionId = row.get(12, UUID.class);
+        var attempt = attemptOrSingle(
+            attemptsByCandidateResultIds(List.of(candidateResultId)), candidateResultId, sessionId);
         var now = Instant.now();
 
         // Cờ chỉ-đọc và danh sách nút do BE quyết, FE không tự suy: luật vòng × hành
@@ -584,8 +724,14 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             editable,
             allowedOutcomes,
             row.get(13, String.class),
-            taskItems(row.get(12, UUID.class)),
-            criteria(row.get(11, UUID.class))
+            taskItems(sessionId),
+            criteria(row.get(11, UUID.class)),
+            // Kỳ thi tập trung giữ nguyên chấm ẩn danh — hai lookup dưới đây không chạy.
+            isClassTest ? studentNamesByCandidateResultIds(List.of(candidateResultId)).get(candidateResultId) : null,
+            isClassTest ? classNamesByCandidateResultIds(List.of(candidateResultId)).get(candidateResultId) : null,
+            attempt.sessionId(),
+            attempt.attemptNo(),
+            attempt.attemptCount()
         ));
     }
 
@@ -599,7 +745,7 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
      */
     private List<GradingTaskItemInfo> taskItems(UUID sessionId) {
         var rows = em.createQuery("""
-            SELECT r.id, r.paperItemId, sec.title
+            SELECT r.id, r.paperItemId, sec.title, pi.sectionId
             FROM ExamItemResponseJpaEntity r
             LEFT JOIN ExamPaperItemJpaEntity pi ON pi.id = r.paperItemId
             LEFT JOIN ExamPaperSectionJpaEntity sec ON sec.id = pi.sectionId
@@ -614,30 +760,71 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
 
         var responseIds = rows.stream().map(row -> row.get(0, UUID.class)).filter(Objects::nonNull).toList();
         var currentEvaluations = currentEvaluationsByResponseIds(responseIds);
-        var aiEvaluationIds = aiEvaluationIdsByResponseIds(responseIds);
-        var scoresByEvaluation = criterionScoresByEvaluationIds(
-            currentEvaluations.values().stream().map(evaluation -> evaluation.id()).toList());
-        var turnsByEvaluation = turnsByEvaluationIds(List.copyOf(aiEvaluationIds.values()));
+        var aiEvaluations = aiEvaluationsByResponseIds(responseIds);
+        // Một lượt query cho CẢ HAI bản: hai lần gọi riêng chỉ tốn thêm round-trip mà
+        // vẫn phải group theo evaluationId y hệt.
+        var scoreEvaluationIds = new ArrayList<UUID>();
+        currentEvaluations.values().forEach(evaluation -> scoreEvaluationIds.add(evaluation.id()));
+        aiEvaluations.values().forEach(evaluation -> scoreEvaluationIds.add(evaluation.id()));
+        var scoresByEvaluation = criterionScoresByEvaluationIds(scoreEvaluationIds);
+        var turnsByEvaluation = turnsByEvaluationIds(
+            aiEvaluations.values().stream().map(evaluation -> evaluation.id()).toList());
 
+        // Số thứ tự câu trong section: rows đã sắp theo (sec.order, pi.order) nên chỉ
+        // cần đếm dồn theo sectionId. Câu không thuộc section nào tự thành câu 1.
+        var seenPerSection = new HashMap<UUID, Integer>();
         var result = new ArrayList<GradingTaskItemInfo>();
         for (var row : rows) {
             var responseId = row.get(0, UUID.class);
+            var sectionId = row.get(3, UUID.class);
             var current = currentEvaluations.get(responseId);
-            var aiEvaluationId = aiEvaluationIds.get(responseId);
+            var ai = aiEvaluations.get(responseId);
+            int orderInSection;
+            if (sectionId == null) {
+                orderInSection = 1;
+            } else {
+                var seen = seenPerSection.get(sectionId);
+                orderInSection = seen == null ? 1 : seen + 1;
+                seenPerSection.put(sectionId, orderInSection);
+            }
             result.add(new GradingTaskItemInfo(
                 row.get(1, UUID.class),
                 responseId,
                 row.get(2, String.class),
+                sectionId,
+                orderInSection,
                 current == null ? null : current.itemScore(),
                 current == null ? null : current.feedbackSummary(),
                 current == null ? List.of() : scoresByEvaluation.getOrDefault(current.id(), List.of()),
-                aiEvaluationId == null ? List.of() : turnsByEvaluation.getOrDefault(aiEvaluationId, List.of())
+                ai == null ? List.of() : turnsByEvaluation.getOrDefault(ai.id(), List.of()),
+                ai == null ? List.of() : scoresByEvaluation.getOrDefault(ai.id(), List.of()),
+                ai == null ? null : ai.overallConfidence(),
+                ai == null ? null : ai.feedbackSummary(),
+                ai != null && ai.requiresHumanReview(),
+                ai == null ? null : ai.reviewReasonCode(),
+                ai != null && ai.markedInvalid(),
+                ai != null && ai.requiresRetake(),
+                ai == null ? null : ai.signals(),
+                ai == null ? null : ai.validityJson()
             ));
         }
         return result;
     }
 
     private record CurrentEvaluation(UUID id, BigDecimal itemScore, String feedbackSummary) {
+    }
+
+    private record AiEvaluation(
+        UUID id,
+        BigDecimal overallConfidence,
+        String feedbackSummary,
+        boolean requiresHumanReview,
+        String reviewReasonCode,
+        boolean markedInvalid,
+        boolean requiresRetake,
+        String signals,
+        String validityJson
+    ) {
     }
 
     /**
@@ -672,25 +859,39 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
     }
 
     /**
-     * Bản AI của mỗi response — nguồn DUY NHẤT của lượt nói (audio/transcript), vì
-     * bản chấm tay không bao giờ sinh turn. Sau khi giáo viên nộp, bản AI mang
+     * Bản AI của mỗi response — nguồn DUY NHẤT của lượt nói (audio/transcript) và của
+     * mọi bằng chứng AI (signals, validity, word feedback), vì bản chấm tay không sinh
+     * turn và cũng không có các tín hiệu này. Sau khi giáo viên nộp, bản AI mang
      * SUPERSEDED nên query này cố tình không lọc theo status.
      */
-    private Map<UUID, UUID> aiEvaluationIdsByResponseIds(List<UUID> responseIds) {
+    private Map<UUID, AiEvaluation> aiEvaluationsByResponseIds(List<UUID> responseIds) {
         if (responseIds.isEmpty()) {
             return Map.of();
         }
         var rows = em.createQuery("""
-            SELECT ev.responseId, ev.id FROM ExamItemEvaluationJpaEntity ev
+            SELECT ev.responseId, ev.id, ev.overallConfidence, ev.feedbackSummary,
+                   ev.requiresHumanReview, ev.reviewReasonCode, ev.markedInvalid,
+                   ev.requiresRetake, ev.signals, ev.validityJson
+            FROM ExamItemEvaluationJpaEntity ev
             WHERE ev.responseId IN (:responseIds)
             AND ev.engineType IN ('AI_SINGLE', 'AI_ENSEMBLE')
             ORDER BY ev.responseId ASC, ev.evaluatedAt DESC
         """, Tuple.class)
             .setParameter("responseIds", responseIds)
             .getResultList();
-        var map = new LinkedHashMap<UUID, UUID>();
+        var map = new LinkedHashMap<UUID, AiEvaluation>();
         for (var row : rows) {
-            map.putIfAbsent(row.get(0, UUID.class), row.get(1, UUID.class));
+            map.putIfAbsent(row.get(0, UUID.class), new AiEvaluation(
+                row.get(1, UUID.class),
+                row.get(2, BigDecimal.class),
+                row.get(3, String.class),
+                Boolean.TRUE.equals(row.get(4, Boolean.class)),
+                row.get(5, String.class),
+                Boolean.TRUE.equals(row.get(6, Boolean.class)),
+                Boolean.TRUE.equals(row.get(7, Boolean.class)),
+                row.get(8, String.class),
+                row.get(9, String.class)
+            ));
         }
         return map;
     }
@@ -730,7 +931,8 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
         }
         var rows = em.createQuery("""
             SELECT t.evaluationId, t.id, t.turnOrder, t.turnType, t.promptText, t.audioUrl,
-                   t.transcript, t.durationSeconds
+                   t.transcript, t.durationSeconds, t.wordCount, t.asrConfidence,
+                   t.pronunciationOverall, t.wordFeedback
             FROM ExamItemEvaluationTurnJpaEntity t
             WHERE t.evaluationId IN (:evaluationIds)
             ORDER BY t.turnOrder ASC
@@ -747,7 +949,11 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
                     row.get(4, String.class),
                     row.get(5, String.class),
                     row.get(6, String.class),
-                    row.get(7, Integer.class)
+                    row.get(7, Integer.class),
+                    row.get(8, Integer.class),
+                    row.get(9, Double.class),
+                    row.get(10, String.class),
+                    row.get(11, String.class)
                 ));
         }
         return map;
@@ -862,12 +1068,16 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
         // Bài đang có đơn phúc khảo mở cũng bị loại — vòng APPEAL do luồng phúc khảo
         // giao, không đi qua auto-assign, và giao vòng khác lúc đó sẽ có hai người
         // cùng ghi điểm một bài (review BE-4).
+        //
+        // Loại bài kiểm tra trên lớp khoá cứng ở đây chứ không nhận tham số: auto-assign
+        // là hành động của nhà trường, mà bài trên lớp thì nhà trường không phân công.
         return em.createQuery("""
             SELECT cr.id
             FROM ExamCandidateResultJpaEntity cr
             JOIN ExamJpaEntity e ON e.id = cr.examId
             JOIN ExamCandidateJpaEntity c ON c.id = cr.candidateId
             WHERE e.schoolId = :schoolId
+            AND e.kind = :centralizedKind
             AND cr.status IN (:resultStatuses)
             AND (:examId IS NULL OR cr.examId = :examId)
             AND (:scheduleId IS NULL OR c.scheduleId = :scheduleId)
@@ -882,6 +1092,7 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             ORDER BY cr.id ASC
         """, UUID.class)
             .setParameter("schoolId", schoolId)
+            .setParameter("centralizedKind", CENTRALIZED_KIND)
             .setParameter("resultStatuses", resultStatuses)
             .setParameter("examId", examId)
             .setParameter("scheduleId", scheduleId)

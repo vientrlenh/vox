@@ -18,6 +18,7 @@ import com.sep.vox.domain.model.exam.ExamScheduleStatus;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
+import com.sep.vox.domain.repository.ExamScheduleProctorRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
@@ -27,6 +28,7 @@ public class DeleteExamScheduleUseCase implements IUseCase<DeleteExamScheduleCom
     private final ExamRepository examRepository;
     private final ExamScheduleRepository examScheduleRepository;
     private final ExamCandidateRepository examCandidateRepository;
+    private final ExamScheduleProctorRepository examScheduleProctorRepository;
     private final ExamMemberRepository examMemberRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
@@ -36,6 +38,7 @@ public class DeleteExamScheduleUseCase implements IUseCase<DeleteExamScheduleCom
             ExamRepository examRepository,
             ExamScheduleRepository examScheduleRepository,
             ExamCandidateRepository examCandidateRepository,
+            ExamScheduleProctorRepository examScheduleProctorRepository,
             ExamMemberRepository examMemberRepository,
             SchoolUserRepository schoolUserRepository,
             UserRoleQueryRepository userRoleQueryRepository,
@@ -43,6 +46,7 @@ public class DeleteExamScheduleUseCase implements IUseCase<DeleteExamScheduleCom
         this.examRepository = examRepository;
         this.examScheduleRepository = examScheduleRepository;
         this.examCandidateRepository = examCandidateRepository;
+        this.examScheduleProctorRepository = examScheduleProctorRepository;
         this.examMemberRepository = examMemberRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
@@ -63,6 +67,14 @@ public class DeleteExamScheduleUseCase implements IUseCase<DeleteExamScheduleCom
 
         if (examCandidateRepository.countByScheduleId(schedule.getId()) > 0) {
             throw new IllegalStateException("Không thể xoá ca thi đang có thí sinh");
+        }
+        // Ca thi bị xoá mềm nhưng dòng exam_schedule_proctors thì không có FK/cascade nào dọn hộ,
+        // nên bắt buộc gỡ hết giám thị trước — nếu không màn điểm danh vẫn join ra ca đã xoá.
+        if (examScheduleProctorRepository.countByScheduleId(schedule.getId()) > 0) {
+            throw new IllegalStateException("Không thể xoá ca thi đang có giám thị");
+        }
+        if (exam.isLockedForEditing()) {
+            throw new IllegalStateException("Không thể thay đổi lịch thi khi kỳ thi đã bắt đầu");
         }
 
         schedule.setStatus(ExamScheduleStatus.DELETED);

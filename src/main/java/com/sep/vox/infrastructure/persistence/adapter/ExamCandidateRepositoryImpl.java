@@ -84,6 +84,11 @@ public class ExamCandidateRepositoryImpl implements ExamCandidateRepository {
             ));
     }
 
+    @Override
+    public void deleteById(UUID id) {
+        springDataExamCandidateRepository.deleteById(id);
+    }
+
     public Optional<ExamCandidate> findById(UUID id) {
         return springDataExamCandidateRepository.findById(id)
             .map(ExamCandidateMapper::toDomain);

@@ -45,4 +45,22 @@ public interface SpringDataExamItemEvaluationRepository extends JpaRepository<Ex
         )
     """)
     List<ExamItemEvaluationJpaEntity> findLatestByResponseIdIn(@Param("responseIds") Collection<UUID> responseIds);
+
+    // Bản AI của một response, KHÔNG lọc AUTO_GRADED/FINALIZED: sau khi giáo viên chấm lại,
+    // bản AI mang SUPERSEDED, mà nó lại là nơi duy nhất có turn (audio/transcript/word
+    // feedback) và bằng chứng AI (signals, validity, confidence). Bỏ bộ lọc đó đi thì màn
+    // kết quả của học sinh mất nội dung câu hỏi ngay khi có người chấm lại.
+    // UNDER_REVIEW loại tường minh: đó là báo cáo phúc khảo chưa công bố.
+    // ORDER BY ... LIMIT 1 thay vì MAX(evaluatedAt) — hai hàng trùng mốc thời gian thì
+    // phép so bằng trả về cả hai (cùng lý do đã ghi ở JpaExamGradingQueryRepository).
+    @Query("""
+        SELECT e FROM ExamItemEvaluationJpaEntity e
+        WHERE e.responseId = :responseId
+        AND e.engineType IN ('AI_SINGLE', 'AI_ENSEMBLE')
+        AND e.status <> 'UNDER_REVIEW'
+        AND e.evaluatedAt IS NOT NULL
+        ORDER BY e.evaluatedAt DESC
+        LIMIT 1
+    """)
+    Optional<ExamItemEvaluationJpaEntity> findLatestAiByResponseId(@Param("responseId") UUID responseId);
 }

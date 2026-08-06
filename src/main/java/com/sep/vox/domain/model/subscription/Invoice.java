@@ -15,16 +15,22 @@ public class Invoice {
     private LocalDate issueDate;
     private BigDecimal amount;
     private InvoiceStatus status;
-    private Long payosOrderCode;
+    // Cổng thanh toán đã tạo hóa đơn này. Quyết định adapter nào được dùng để hỏi trạng thái
+    // (SyncInvoicePaymentStatusUseCase, job đối soát) và xác thực callback nào áp cho nó.
+    private PaymentMethod paymentProvider;
+    // Mã đơn theo cách đánh của chính cổng đó (PayOS: orderCode dạng số; SePay PG:
+    // order_invoice_number dạng chuỗi). Null với hóa đơn MANUAL.
+    private String providerOrderRef;
     private String paymentLinkId;
     private String checkoutUrl;
     private Instant paidAt;
+    private UUID resolvedPlanId;
 
     public Invoice() {}
 
     public Invoice(UUID id, String invoiceNumber, UUID schoolId, UUID subscriptionId, InvoiceSourceType sourceType, UUID sourceId,
-            LocalDate issueDate, BigDecimal amount, InvoiceStatus status, Long payosOrderCode, String paymentLinkId,
-            String checkoutUrl, Instant paidAt) {
+            LocalDate issueDate, BigDecimal amount, InvoiceStatus status, PaymentMethod paymentProvider,
+            String providerOrderRef, String paymentLinkId, String checkoutUrl, Instant paidAt, UUID resolvedPlanId) {
         this.id = id;
         this.invoiceNumber = invoiceNumber;
         this.schoolId = schoolId;
@@ -34,15 +40,17 @@ public class Invoice {
         this.issueDate = issueDate;
         this.amount = amount;
         this.status = status;
-        this.payosOrderCode = payosOrderCode;
+        this.paymentProvider = paymentProvider;
+        this.providerOrderRef = providerOrderRef;
         this.paymentLinkId = paymentLinkId;
         this.checkoutUrl = checkoutUrl;
         this.paidAt = paidAt;
+        this.resolvedPlanId = resolvedPlanId;
     }
 
     public Invoice(String invoiceNumber, UUID schoolId, UUID subscriptionId, InvoiceSourceType sourceType, UUID sourceId,
-            LocalDate issueDate, BigDecimal amount, InvoiceStatus status, Long payosOrderCode, String paymentLinkId,
-            String checkoutUrl, Instant paidAt) {
+            LocalDate issueDate, BigDecimal amount, InvoiceStatus status, PaymentMethod paymentProvider,
+            String providerOrderRef, String paymentLinkId, String checkoutUrl, Instant paidAt, UUID resolvedPlanId) {
         this.invoiceNumber = invoiceNumber;
         this.schoolId = schoolId;
         this.subscriptionId = subscriptionId;
@@ -51,10 +59,12 @@ public class Invoice {
         this.issueDate = issueDate;
         this.amount = amount;
         this.status = status;
-        this.payosOrderCode = payosOrderCode;
+        this.paymentProvider = paymentProvider;
+        this.providerOrderRef = providerOrderRef;
         this.paymentLinkId = paymentLinkId;
         this.checkoutUrl = checkoutUrl;
         this.paidAt = paidAt;
+        this.resolvedPlanId = resolvedPlanId;
     }
 
     public UUID getId() {
@@ -129,12 +139,20 @@ public class Invoice {
         this.status = status;
     }
 
-    public Long getPayosOrderCode() {
-        return payosOrderCode;
+    public PaymentMethod getPaymentProvider() {
+        return paymentProvider;
     }
 
-    public void setPayosOrderCode(Long payosOrderCode) {
-        this.payosOrderCode = payosOrderCode;
+    public void setPaymentProvider(PaymentMethod paymentProvider) {
+        this.paymentProvider = paymentProvider;
+    }
+
+    public String getProviderOrderRef() {
+        return providerOrderRef;
+    }
+
+    public void setProviderOrderRef(String providerOrderRef) {
+        this.providerOrderRef = providerOrderRef;
     }
 
     public String getPaymentLinkId() {
@@ -159,5 +177,13 @@ public class Invoice {
 
     public void setPaidAt(Instant paidAt) {
         this.paidAt = paidAt;
+    }
+
+    public UUID getResolvedPlanId() {
+        return resolvedPlanId;
+    }
+
+    public void setResolvedPlanId(UUID resolvedPlanId) {
+        this.resolvedPlanId = resolvedPlanId;
     }
 }

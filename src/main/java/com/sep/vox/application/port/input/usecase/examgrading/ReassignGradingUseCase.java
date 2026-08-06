@@ -55,6 +55,7 @@ public class ReassignGradingUseCase implements IUseCase<ReassignGradingCommand, 
         if (command.teacherId() == null) {
             throw new IllegalArgumentException("Thiếu giáo viên cần phân công.");
         }
+        examGradingAccessService.rejectClassTestCoordination(assignment.getCandidateResultId());
         if (!examGradingAccessService.isTeacherOfSchool(command.teacherId(), context.schoolId())) {
             throw new IllegalArgumentException("Người chấm phải là giáo viên thuộc cùng trường với bài thi.");
         }

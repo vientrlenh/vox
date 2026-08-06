@@ -28,6 +28,7 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.ExamStatusCountsDto;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.ExamBlueprintDto;
+import com.sep.vox.domain.dto.ExamBlueprintSlotDto;
 import com.sep.vox.domain.dto.ExamBlueprintVersionDto;
 import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.domain.dto.ExamMemberDto;
@@ -36,6 +37,7 @@ import com.sep.vox.domain.dto.ExamPaperItemDto;
 import com.sep.vox.domain.dto.ExamPaperSectionDto;
 import com.sep.vox.domain.dto.ExamSecurePoolDto;
 import com.sep.vox.domain.dto.QuestionDto;
+import com.sep.vox.domain.dto.QuestionSelectionSpecDto;
 import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamPaperStatus;
@@ -204,6 +206,34 @@ public class ExamController {
         }
         DataLoader<UUID, QuestionDto> loader = env.getDataLoader("questionByIdAccessible");
         return loader.load(source.questionId());
+    }
+
+    @SchemaMapping(typeName = "ExamPaperItem", field = "slotType")
+    public CompletableFuture<String> examPaperItemSlotType(ExamPaperItemDto source, DataFetchingEnvironment env) {
+        return loadBlueprintSlot(source, env)
+            .thenApply(slot -> slot == null ? null : slot.slotType());
+    }
+
+    @SchemaMapping(typeName = "ExamPaperItem", field = "selectionSpec")
+    public CompletableFuture<QuestionSelectionSpecDto> examPaperItemSelectionSpec(
+            ExamPaperItemDto source, DataFetchingEnvironment env) {
+        return loadBlueprintSlot(source, env)
+            .thenApply(slot -> slot == null ? null : slot.selectionSpec());
+    }
+
+    /**
+     * Không cần check quyền riêng: ExamPaperItem chỉ tới được qua ExamPaper.sections.items, mà
+     * ViewExamPaperDetailsUseCase đã uỷ quyền check cho ViewExamDetailsUseCase. Cố tình KHÔNG dùng
+     * canViewExamBlueprintData ở đây - nó chỉ true với SCHOOL_ADMIN/kỳ thi đã đóng, sẽ giấu tiêu chí
+     * khỏi chính AUTHOR đang cần chọn câu cho ô SELECTION.
+     */
+    private CompletableFuture<ExamBlueprintSlotDto> loadBlueprintSlot(
+            ExamPaperItemDto source, DataFetchingEnvironment env) {
+        if (source.blueprintSlotId() == null) {
+            return CompletableFuture.completedFuture(null);
+        }
+        DataLoader<UUID, ExamBlueprintSlotDto> loader = env.getDataLoader("examBlueprintSlotById");
+        return loader.load(source.blueprintSlotId());
     }
 
     private CompletableFuture<Boolean> canViewExamBlueprintData(ExamDto source, DataFetchingEnvironment env) {

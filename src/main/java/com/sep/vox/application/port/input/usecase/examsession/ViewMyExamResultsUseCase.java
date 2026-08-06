@@ -8,10 +8,10 @@ import java.util.Objects;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.common.ExamResultVisibilityPolicy;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.examsession.StudentExamResultSummaryResponse;
-import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.ExamRepository;
@@ -73,7 +73,9 @@ public class ViewMyExamResultsUseCase implements IUseCase<Void, List<StudentExam
                 var rubricBand = result.getRubricResultBandId() == null
                     ? null
                     : rubricResultBandRepository.findById(result.getRubricResultBandId()).orElse(null);
-                var scoreVisible = isScoreVisible(session, result.getStatus());
+                // Query này gác hasRole('STUDENT') và chỉ quét candidate của chính người
+                // gọi, nên mọi dòng ở đây đều là bài của họ — không cần kiểm chính chủ.
+                var scoreVisible = ExamResultVisibilityPolicy.isVisibleToCandidate(result.getStatus());
 
                 return new StudentExamResultSummaryResponse(
                     candidate.getId(),
@@ -102,10 +104,4 @@ public class ViewMyExamResultsUseCase implements IUseCase<Void, List<StudentExam
             .toList();
     }
 
-    private boolean isScoreVisible(com.sep.vox.domain.model.exam.ExamSession session, ExamCandidateResultStatus status) {
-        if (!session.isFlagged()) {
-            return true;
-        }
-        return status == ExamCandidateResultStatus.FINAL || status == ExamCandidateResultStatus.RELEASED;
-    }
 }

@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.rest.exception;
 
+import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 
 import org.slf4j.Logger;
@@ -18,6 +19,7 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.PlanLimitExceededException;
 import com.sep.vox.application.exception.QuotaExceededException;
+import com.sep.vox.application.exception.ServiceUnavailableException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.interfaces.rest.dto.response.ErrorResponse;
 import com.sep.vox.interfaces.rest.dto.response.ValidationErrorResponse;
@@ -37,6 +39,7 @@ public class GlobalExceptionHandler {
     private static final String INTERNAL_ERROR = "INTERNAL_SERVER_ERROR";
     private static final String QUOTA_EXCEEDED_ERROR = "QUOTA_EXCEEDED";
     private static final String PLAN_LIMIT_EXCEEDED_ERROR = "PLAN_LIMIT_EXCEEDED";
+    private static final String SERVICE_UNAVAILABLE_ERROR = "SERVICE_UNAVAILABLE";
 
     private static final String AUTHENTICATION_ERROR = "BAD_CREDENTIALS";
     private static final String AUTHORIZATION_ERROR = "ACCESS_DENIED";
@@ -58,6 +61,19 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException e) {
         var error = new ErrorResponse(ILLEGAL_ARGUMENT_ERROR, e.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    /**
+     * Lưới an toàn: {@code DateTimeParseException} kế thừa {@code DateTimeException}, KHÔNG phải
+     * {@code IllegalArgumentException}, nên nếu không bắt riêng thì rơi xuống handler chung và client
+     * nhận 500 dù lỗi hoàn toàn do dữ liệu gửi lên. Các use case nên parse qua
+     * {@code InstantParser} để có message tiếng Việt nói rõ trường nào sai; nhánh này chỉ đỡ những
+     * chỗ chưa chuyển.
+     */
+    @ExceptionHandler(DateTimeParseException.class)
+    public ResponseEntity<ErrorResponse> handleDateTimeParse(DateTimeParseException e) {
+        var error = new ErrorResponse(ILLEGAL_ARGUMENT_ERROR, "Giá trị thời gian không đúng định dạng ISO-8601");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
@@ -102,6 +118,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handlePlanLimitExceeded(PlanLimitExceededException e) {
         var error = new ErrorResponse(PLAN_LIMIT_EXCEEDED_ERROR, e.getMessage());
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT).body(error);
+    }
+
+    @ExceptionHandler(ServiceUnavailableException.class)
+    public ResponseEntity<ErrorResponse> handleUnavailable(ServiceUnavailableException e) {
+        var error = new ErrorResponse(SERVICE_UNAVAILABLE_ERROR, e.getMessage());
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(error);
     }
 
     @ExceptionHandler(Exception.class)

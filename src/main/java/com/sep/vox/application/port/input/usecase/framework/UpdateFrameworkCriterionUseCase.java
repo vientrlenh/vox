@@ -1,7 +1,9 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
 import java.time.Instant;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -17,6 +19,7 @@ import com.sep.vox.domain.model.framework.FrameworkVersion;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
 import com.sep.vox.domain.repository.FrameworkCriterionRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
+import com.sep.vox.domain.valueobject.framework.FrameworkCriterionCode;
 
 @Service
 public class UpdateFrameworkCriterionUseCase
@@ -73,6 +76,29 @@ public class UpdateFrameworkCriterionUseCase
 
         if (!criterion.getFrameworkVersionId().equals(command.versionId()))
             throw new IllegalArgumentException("Tiêu chí không thuộc phiên bản này");
+
+        String safeCode = StringNormalization.normalizeCode(command.code());
+        if (!FrameworkCriterionCode.ALLOWED_CODES.contains(safeCode)) {
+            throw new IllegalArgumentException("Mã tiêu chí không hợp lệ: " + safeCode);
+        }
+        if (frameworkCriterionRepository.existsByFrameworkVersionIdAndCodeAndIdNot(command.versionId(), safeCode, command.criterionId())) {
+            throw new IllegalStateException("Mã tiêu chí đã tồn tại");
+        }
+
+        Set<Integer> otherOrders = frameworkCriterionRepository.findByFrameworkVersionId(command.versionId())
+                .stream()
+                .filter(fc -> !fc.getId().equals(command.criterionId()))
+                .map(fc -> fc.getOrder())
+                .collect(Collectors.toSet());
+        if (!otherOrders.add(command.order())) {
+            throw new IllegalArgumentException("Thứ tự tiêu chí bị trùng lặp: " + command.order());
+        }
+        int expectedOrder = otherOrders.size();
+        for (int i = 1; i <= expectedOrder; i++) {
+            if (!otherOrders.contains(i)) {
+                throw new IllegalArgumentException("Thứ tự tiêu chí phải tăng dần liên tục từ 1, không được bỏ số");
+            }
+        }
     }
 
     private void updateCriterion(UpdateFrameworkCriterionCommand command, FrameworkCriterion criterion) {

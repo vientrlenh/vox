@@ -16,7 +16,7 @@ input UpdateRubricVersionInput {
 input UpdateRubricCriterionInput {
     name: String
     description: String
-    examplesJson: String # Nhận chuỗi JSON từ Frontend
+    examplesJson: String # Nhận chuỗi JSON từ Frontend.
     weight: Float
     minScore: Float
     maxScore: Float

@@ -17,6 +17,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.port.input.command.AssignExamCandidateScheduleCommand;
+import com.sep.vox.application.port.input.service.ClassTestPaperAutoAssigner;
 import com.sep.vox.application.port.input.usecase.examcandidate.AssignExamCandidateScheduleUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
@@ -28,6 +29,7 @@ import com.sep.vox.domain.model.exam.ExamSchedule;
 import com.sep.vox.domain.model.exam.ExamScheduleStatus;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
+import com.sep.vox.domain.repository.ExamPaperRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -61,7 +63,9 @@ class AssignExamCandidateScheduleUseCaseTests {
         userContextPort = mock(UserContextPort.class);
         useCase = new AssignExamCandidateScheduleUseCase(
             examRepository, examCandidateRepository, examScheduleRepository,
-            examMemberRepository, schoolUserRepository, userRoleQueryRepository, userContextPort);
+            examMemberRepository,
+            new ClassTestPaperAutoAssigner(mock(ExamPaperRepository.class)),
+            schoolUserRepository, userRoleQueryRepository, userContextPort);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(schoolUserRepository.findByUserId(userId)).thenReturn(Optional.empty());

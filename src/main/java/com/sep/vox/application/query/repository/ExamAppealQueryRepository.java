@@ -24,7 +24,9 @@ import com.sep.vox.domain.common.PageResult;
  */
 public interface ExamAppealQueryRepository {
 
-    PageResult<AppealSummaryInfo> searchAppeals(UUID schoolId, String status, String keyword, int page, int size);
+    /** {@code examId} null = toàn trường (màn của school admin); có giá trị = một bài kiểm tra. */
+    PageResult<AppealSummaryInfo> searchAppeals(
+        UUID schoolId, UUID examId, String status, String keyword, int page, int size);
 
     PageResult<AppealSummaryInfo> searchAppealsByStudentId(
         UUID studentId, String status, int page, int size);

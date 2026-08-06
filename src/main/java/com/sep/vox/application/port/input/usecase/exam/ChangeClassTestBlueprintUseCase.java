@@ -122,9 +122,16 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
         }
 
         var now = Instant.now();
-        var paper = examPaperRepository.findByExamId(exam.getId()).stream()
+        // Đổi blueprint viết lại toàn bộ nội dung của mã đề. Bài có nhiều mã đề thì không có mã đề
+        // nào là "mã đề của blueprint" cả — chặn hẳn thay vì âm thầm ghi đè mã đề đầu tiên.
+        var papers = examPaperRepository.findByExamId(exam.getId());
+        if (papers.size() > 1) {
+            throw new IllegalStateException(
+                "Bài có nhiều mã đề, hãy xoá bớt chỉ còn một mã đề trước khi đổi blueprint");
+        }
+        var paper = papers.stream()
             .findFirst()
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy đề thi"));
+            .orElseThrow(() -> new NotFoundException("Bài kiểm tra chưa có mã đề nào"));
 
         clearExistingPaperContent(paper, currentUserId);
 

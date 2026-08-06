@@ -1,18 +1,20 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
 import java.time.Instant;
-import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.common.ExamDeliveryModeSupport;
+import com.sep.vox.application.common.InstantParser;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreateExamCommand;
+import com.sep.vox.application.port.input.service.ExamAssessmentPolicyValidator;
+import com.sep.vox.application.port.input.service.ExamStreamConfigResolver;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
@@ -21,9 +23,7 @@ import com.sep.vox.domain.mapper.ExamDtoMapper;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamDeliveryMode;
 import com.sep.vox.domain.model.exam.ExamKind;
-import com.sep.vox.domain.model.exam.ExamRequiredStreamType;
 import com.sep.vox.domain.model.exam.ExamStatus;
-import com.sep.vox.domain.model.exam.ExamStreamTypePermission;
 import com.sep.vox.domain.model.exam.ResultDecisionMethod;
 import com.sep.vox.domain.repository.ExamBlueprintRepository;
 import com.sep.vox.domain.repository.ExamRepository;
@@ -32,26 +32,29 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 @Service
 public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
 
-    private static final List<String> PERMITTED_STREAM_TYPES = List.of("CAMERA", "SCREEN");
-    private static final List<String> PERMITTED_STREAM_PERMISSION = List.of("ALL", "ANY");
-
     private final ExamRepository examRepository;
     private final ExamBlueprintRepository examBlueprintRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
+    private final ExamStreamConfigResolver examStreamConfigResolver;
+    private final ExamAssessmentPolicyValidator examAssessmentPolicyValidator;
 
     public CreateExamUseCase(
             ExamRepository examRepository,
             ExamBlueprintRepository examBlueprintRepository,
             SchoolUserRepository schoolUserRepository,
             UserRoleQueryRepository userRoleQueryRepository,
-            UserContextPort userContextPort) {
+            UserContextPort userContextPort,
+            ExamStreamConfigResolver examStreamConfigResolver,
+            ExamAssessmentPolicyValidator examAssessmentPolicyValidator) {
         this.examRepository = examRepository;
         this.examBlueprintRepository = examBlueprintRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
         this.userContextPort = userContextPort;
+        this.examStreamConfigResolver = examStreamConfigResolver;
+        this.examAssessmentPolicyValidator = examAssessmentPolicyValidator;
     }
 
     @Override
@@ -77,7 +80,13 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
             }
         }
 
-        var streamConfig = resolveStreamConfig(command.requiredStreamTypes(), command.streamTypePermission());
+        // Bỏ trống được ở bước tạo (kỳ thi tập trung chọn policy sau), nhưng đã gửi lên thì phải là
+        // policy đã xuất bản và thuộc trường hiện tại — gắn nhầm thì bài chạy xong mới lộ ra là không
+        // sinh được kết quả nào để chấm.
+        examAssessmentPolicyValidator.validateIfPresent(command.assessmentPolicyId(), currentSchoolId);
+
+        var streamConfig = examStreamConfigResolver.resolve(
+            command.requiredStreamTypes(), command.streamTypePermission());
 
         validateOpenClose(command.openAt(), command.closeAt());
 
@@ -91,13 +100,15 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
             currentSchoolId,
             command.languageId(),
             ExamKind.CENTRALIZED,
-            ExamDeliveryMode.LAB,
+            // Kỳ thi tập trung mặc định thi trên thiết bị nhà trường; trường nào cho thí sinh
+            // mang máy riêng vào phòng thì chọn STUDENT_DEVICE ngay lúc tạo.
+            ExamDeliveryModeSupport.parseOrDefault(command.deliveryMode(), ExamDeliveryMode.LAB),
             ExamStatus.DRAFT,
             Objects.requireNonNullElse(command.maxAttempt(), 1),
             command.examTimeDurationSecond(),
             Objects.requireNonNullElse(command.resultDecisionMethod(), ResultDecisionMethod.HIGHEST),
-            parseDateTime(command.openAt()),
-            parseDateTime(command.closeAt()),
+            parseOpenAt(command.openAt()),
+            parseCloseAt(command.closeAt()),
             command.assessmentPolicyId(),
             command.requiresOtp() == null || command.requiresOtp(),
             now,
@@ -126,22 +137,30 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
             input.requiresOtp(), 
             input.requiredStreamTypes() == null ? null : input.requiredStreamTypes().stream()
                 .map(StringNormalization::normalizeCode)
-                .toList(), 
-            input.streamTypePermission() == null ? null : StringNormalization.normalizeCode(input.streamTypePermission())
+                .toList(),
+            input.streamTypePermission() == null ? null : StringNormalization.normalizeCode(input.streamTypePermission()),
+            input.deliveryMode() == null ? null : StringNormalization.normalizeCode(input.deliveryMode())
         );
     }
 
+    /** Chỉ so được khi có đủ cả hai; thiếu một vế thì bỏ qua, kỳ thi tập trung cho phép để trống. */
     private void validateOpenClose(String openAt, String closeAt) {
-        if (openAt == null || closeAt == null) {
+        var open = parseOpenAt(openAt);
+        var close = parseCloseAt(closeAt);
+        if (open == null || close == null) {
             return;
         }
-        if (!Instant.parse(openAt).isBefore(Instant.parse(closeAt))) {
+        if (!open.isBefore(close)) {
             throw new IllegalStateException("Thời gian mở bài phải nhỏ hơn thời gian đóng bài");
         }
     }
 
-    private Instant parseDateTime(String value) {
-        return value == null ? null : Instant.parse(value);
+    private Instant parseOpenAt(String value) {
+        return InstantParser.parseOrNull(value, "Thời gian mở bài");
+    }
+
+    private Instant parseCloseAt(String value) {
+        return InstantParser.parseOrNull(value, "Thời gian đóng bài");
     }
 
     private String examCodeOf(String code) {
@@ -151,44 +170,4 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
         return "EX-" + UUID.randomUUID().toString().replace("-", "").toUpperCase();
     }
 
-    private StreamConfig resolveStreamConfig(List<String> rawTypes, String rawPermission) {
-        if (rawTypes == null || rawTypes.isEmpty()) {
-            if (rawPermission != null) {
-                throw new IllegalArgumentException("Không thể đặt quyền stream khi không yêu cầu stream nào");
-            }
-            return new StreamConfig(
-                null, 
-                null
-            );
-        }
-
-        var types = new LinkedHashSet<>(rawTypes);
-        if (types.contains(null) || !PERMITTED_STREAM_TYPES.containsAll(types)) {
-            throw new IllegalArgumentException("Các loại stream gửi yêu cầu không được hỗ trợ");
-        }
-
-        if (types.size() == 1) {
-            if (rawPermission != null) {
-                throw new IllegalArgumentException("Quyền stream chỉ áp dụng khi yêu cầu đồng thời cả hai loại stream");
-            }
-            return new StreamConfig(ExamRequiredStreamType.valueOf(types.iterator().next()), null);
-        }
-
-        if (rawPermission == null) {
-            throw new IllegalArgumentException("Quyền cho các stream là bắt buộc cho 2 loại đồng thời");
-        }
-        if (!PERMITTED_STREAM_PERMISSION.contains(rawPermission)) {
-            throw new IllegalArgumentException("Quyền cho các stream không hợp lệ");
-        }
-        return new StreamConfig(
-            ExamRequiredStreamType.CAMERA_AND_SCREEN, 
-            ExamStreamTypePermission.valueOf(rawPermission)
-        );
-    }
-
-    private record StreamConfig(
-        ExamRequiredStreamType requiredStreamType, 
-        ExamStreamTypePermission streamTypePermission
-    ) {
-    }
 }

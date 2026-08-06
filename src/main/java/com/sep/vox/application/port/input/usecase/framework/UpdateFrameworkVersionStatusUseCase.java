@@ -1,7 +1,9 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -9,12 +11,16 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateFrameworkVersionStatusCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
+import com.sep.vox.domain.model.framework.FrameworkCriterion;
+import com.sep.vox.domain.model.framework.FrameworkCriterionBand;
 import com.sep.vox.domain.model.framework.FrameworkVersion;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
+import com.sep.vox.domain.repository.FrameworkCriterionBandRepository;
 import com.sep.vox.domain.repository.FrameworkCriterionRepository;
 import com.sep.vox.domain.repository.FrameworkRepository;
 import com.sep.vox.domain.repository.FrameworkResultBandRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
+import com.sep.vox.domain.valueobject.framework.FrameworkCriterionCode;
 
 @Service
 public class UpdateFrameworkVersionStatusUseCase implements IUseCase<UpdateFrameworkVersionStatusCommand, UUID> {
@@ -23,16 +29,19 @@ public class UpdateFrameworkVersionStatusUseCase implements IUseCase<UpdateFrame
     private final FrameworkVersionRepository frameworkVersionRepository;
     private final FrameworkCriterionRepository frameworkCriterionRepository;
     private final FrameworkResultBandRepository frameworkResultBandRepository;
+    private final FrameworkCriterionBandRepository frameworkCriterionBandRepository;
 
     public UpdateFrameworkVersionStatusUseCase(
             FrameworkRepository frameworkRepository,
             FrameworkVersionRepository frameworkVersionRepository,
             FrameworkCriterionRepository frameworkCriterionRepository,
-            FrameworkResultBandRepository frameworkResultBandRepository) {
+            FrameworkResultBandRepository frameworkResultBandRepository,
+            FrameworkCriterionBandRepository frameworkCriterionBandRepository) {
         this.frameworkRepository = frameworkRepository;
         this.frameworkVersionRepository = frameworkVersionRepository;
         this.frameworkCriterionRepository = frameworkCriterionRepository;
         this.frameworkResultBandRepository = frameworkResultBandRepository;
+        this.frameworkCriterionBandRepository = frameworkCriterionBandRepository;
     }
 
     @Override
@@ -70,12 +79,43 @@ public class UpdateFrameworkVersionStatusUseCase implements IUseCase<UpdateFrame
                 throw new IllegalStateException("Phiên bản framework phải có ít nhất một tiêu chí trước khi xuất bản");
             if (!frameworkResultBandRepository.existsByFrameworkVersionId(input.versionId()))
                 throw new IllegalStateException("Phiên bản framework phải có ít nhất một dải kết quả trước khi xuất bản");
+            validateEveryCriterionHasBandsWithSignals(input.versionId());
             validateNoConflictingPublished(input.frameworkId(), input.versionId(), version.getEffectiveFrom(), version.getEffectiveTo());
         } else if (input.status() == FrameworkVersionStatus.ARCHIVED) {
             if (version.getStatus() != FrameworkVersionStatus.PUBLISHED)
                 throw new IllegalStateException("Chỉ có thể lưu trữ phiên bản ở trạng thái PUBLISHED");
         } else {
             throw new IllegalArgumentException("Trạng thái không hợp lệ để cập nhật");
+        }
+    }
+
+    private void validateEveryCriterionHasBandsWithSignals(UUID versionId) {
+        List<FrameworkCriterion> criteria = frameworkCriterionRepository.findByFrameworkVersionId(versionId);
+
+        var presentCodes = criteria.stream().map(fc -> fc.getCode()).collect(Collectors.toSet());
+        if (!presentCodes.equals(FrameworkCriterionCode.ALLOWED_CODES)) {
+            throw new IllegalStateException(
+                    "Phiên bản framework phải có đầy đủ và chỉ có 5 tiêu chí: " + FrameworkCriterionCode.ALLOWED_CODES);
+        }
+
+        List<UUID> criterionIds = criteria.stream().map(fc -> fc.getId()).collect(Collectors.toList());
+        List<FrameworkCriterionBand> bands = frameworkCriterionBandRepository.findByFrameworkCriterionIdIn(criterionIds);
+
+        var bandsByCriterion = bands.stream().collect(Collectors.groupingBy(fcb -> fcb.getFrameworkCriterionId()));
+
+        for (FrameworkCriterion criterion : criteria) {
+            List<FrameworkCriterionBand> criterionBands = bandsByCriterion.getOrDefault(criterion.getId(), List.of());
+            if (criterionBands.isEmpty()) {
+                throw new IllegalStateException(
+                        "Tiêu chí \"" + criterion.getName() + "\" phải có ít nhất một thang kết quả trước khi xuất bản");
+            }
+            for (FrameworkCriterionBand band : criterionBands) {
+                if (band.getPositiveSignals() == null || band.getPositiveSignals().values().isEmpty()
+                        || band.getNegativeSignals() == null || band.getNegativeSignals().values().isEmpty()) {
+                    throw new IllegalStateException(
+                            "Tiêu chí \"" + criterion.getName() + "\" phải có ít nhất một dấu hiệu tích cực và tiêu cực ở mỗi thang kết quả trước khi xuất bản");
+                }
+            }
         }
     }
 

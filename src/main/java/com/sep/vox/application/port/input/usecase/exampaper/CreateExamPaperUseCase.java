@@ -2,7 +2,9 @@ package com.sep.vox.application.port.input.usecase.exampaper;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -13,10 +15,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.port.input.command.ClassTestSectionCommand;
 import com.sep.vox.application.port.input.command.CreateExamPaperCommand;
 import com.sep.vox.application.port.input.service.ExamTimeQuotaGuardService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.service.RecalculateExamTimeDurationService;
+import com.sep.vox.application.port.input.usecase.exam.ClassTestSectionWeightPolicy;
 import com.sep.vox.application.port.input.usecase.exam.ExamQuestionSecureLockService;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.ExamPaperDto;
@@ -32,6 +36,9 @@ import com.sep.vox.domain.model.exam.ExamPaperItem;
 import com.sep.vox.domain.model.exam.ExamPaperSection;
 import com.sep.vox.domain.model.exam.ExamPaperStatus;
 import com.sep.vox.domain.model.exam.ExamSecurePoolReleaseMode;
+import com.sep.vox.domain.model.question.Question;
+import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
+import com.sep.vox.domain.model.question.QuestionSharing;
 import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.repository.ExamBlueprintSectionRepository;
 import com.sep.vox.domain.repository.ExamBlueprintSlotRepository;
@@ -41,6 +48,7 @@ import com.sep.vox.domain.repository.ExamPaperItemRepository;
 import com.sep.vox.domain.repository.ExamPaperRepository;
 import com.sep.vox.domain.repository.ExamPaperSectionRepository;
 import com.sep.vox.domain.repository.ExamRepository;
+import com.sep.vox.domain.repository.QuestionCollaboratorRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 
 @Service
@@ -55,6 +63,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
     private final ExamPaperSectionRepository examPaperSectionRepository;
     private final ExamPaperItemRepository examPaperItemRepository;
     private final QuestionRepository questionRepository;
+    private final QuestionCollaboratorRepository questionCollaboratorRepository;
     private final ExamQuestionSecureLockService examQuestionSecureLockService;
     private final ExamTimeQuotaGuardService examTimeQuotaGuardService;
     private final RecalculateExamTimeDurationService recalculateExamTimeDurationService;
@@ -70,6 +79,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
             ExamPaperSectionRepository examPaperSectionRepository,
             ExamPaperItemRepository examPaperItemRepository,
             QuestionRepository questionRepository,
+            QuestionCollaboratorRepository questionCollaboratorRepository,
             ExamQuestionSecureLockService examQuestionSecureLockService,
             ExamTimeQuotaGuardService examTimeQuotaGuardService,
             RecalculateExamTimeDurationService recalculateExamTimeDurationService,
@@ -83,6 +93,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
         this.examPaperSectionRepository = examPaperSectionRepository;
         this.examPaperItemRepository = examPaperItemRepository;
         this.questionRepository = questionRepository;
+        this.questionCollaboratorRepository = questionCollaboratorRepository;
         this.examQuestionSecureLockService = examQuestionSecureLockService;
         this.examTimeQuotaGuardService = examTimeQuotaGuardService;
         this.recalculateExamTimeDurationService = recalculateExamTimeDurationService;
@@ -96,10 +107,9 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
         var exam = examRepository.findById(input.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
 
-        if (exam.getKind() != ExamKind.CENTRALIZED) {
-            throw new ForbiddenException("Bài kiểm tra trên lớp không tạo đề qua endpoint này");
-        }
-        if (!examMemberRepository.existsByExamIdAndUserIdAndRole(exam.getId(), currentUserId, ExamMemberRole.AUTHOR)) {
+        // Bài trên lớp không có luồng duyệt đề: giáo viên tạo bài chính là CHAIR và tự soạn mọi mã đề.
+        var requiredRole = exam.getKind() == ExamKind.CLASS_TEST ? ExamMemberRole.CHAIR : ExamMemberRole.AUTHOR;
+        if (!examMemberRepository.existsByExamIdAndUserIdAndRole(exam.getId(), currentUserId, requiredRole)) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
@@ -107,8 +117,18 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
         return switch (source) {
             case "blueprint" -> createFromBlueprint(exam, currentUserId);
             case "copy" -> createFromCopy(exam, input.copyFromPaperId(), currentUserId);
-            default -> throw new IllegalStateException("Source không hợp lệ, chỉ hỗ trợ blueprint hoặc copy");
+            case "questions" -> createFromQuestions(exam, input.sections(), currentUserId);
+            default -> throw new IllegalStateException("Source không hợp lệ, chỉ hỗ trợ blueprint, copy hoặc questions");
         };
+    }
+
+    /**
+     * Câu hỏi của bài trên lớp tự mở khoá khi đóng bài; kỳ thi tập trung do người quản lý tự mở.
+     */
+    private ExamSecurePoolReleaseMode releaseModeFor(Exam exam) {
+        return exam.getKind() == ExamKind.CLASS_TEST
+            ? ExamSecurePoolReleaseMode.AUTO_AFTER_CLOSE
+            : ExamSecurePoolReleaseMode.MANUAL;
     }
 
     private ExamPaperDto createFromBlueprint(Exam exam, UUID currentUserId) {
@@ -177,8 +197,21 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
                     var fixedQuestion = questionRepository.findById(questionId)
                         .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi cố định trong slot"));
                     if (fixedQuestion.getStatus() != QuestionStatus.PUBLISHED) {
-                        throw new IllegalStateException(
-                            "Câu hỏi " + fixedQuestion.getCode() + " trong khung chưa PUBLISHED, không thể sinh đề thi");
+                        if (exam.getKind() != ExamKind.CLASS_TEST) {
+                            throw new IllegalStateException(
+                                "Câu hỏi " + fixedQuestion.getCode() + " trong khung chưa PUBLISHED, không thể sinh đề thi");
+                        }
+                        // Bài trên lớp: câu hỏi fixed đã bị archived sau khi blueprint publish — để trống
+                        // ô này, CHAIR tự chọn câu khác qua picker thay vì chặn hẳn việc tạo mã đề.
+                        examPaperItemRepository.save(new ExamPaperItem(
+                            null,
+                            savedSection.getId(),
+                            paper.getId(),
+                            null,
+                            slot.getOrder(),
+                            slot.getWeight()
+                        ));
+                        continue;
                     }
                 }
                 examPaperItemRepository.save(new ExamPaperItem(
@@ -193,7 +226,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
                     examQuestionSecureLockService.lockQuestionForExam(
                         questionId,
                         exam.getId(),
-                        ExamSecurePoolReleaseMode.MANUAL,
+                        releaseModeFor(exam),
                         currentUserId
                     );
                 }
@@ -202,6 +235,116 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
 
         recalculateExamTimeDurationService.recalculate(exam.getId());
         return ExamPaperDtoMapper.toDto(examPaperRepository.findById(paper.getId()).orElse(paper));
+    }
+
+    /**
+     * Soạn câu hỏi trực tiếp — chỉ bài kiểm tra trên lớp mới có, và chỉ khi bài không gắn blueprint
+     * dùng chung (gắn rồi thì mọi mã đề phải khớp blueprint, đổi câu phải qua đổi version).
+     *
+     * <p>Không sinh blueprint ẩn nào: thao tác thẳng trên ExamPaperSection/ExamPaperItem để bài trên
+     * lớp thực sự tự do.
+     */
+    private ExamPaperDto createFromQuestions(Exam exam, List<ClassTestSectionCommand> sections, UUID currentUserId) {
+        if (exam.getKind() != ExamKind.CLASS_TEST) {
+            throw new ForbiddenException("Chỉ bài kiểm tra trên lớp mới được soạn câu hỏi trực tiếp");
+        }
+        if (exam.getBlueprintId() != null) {
+            throw new IllegalStateException(
+                "Bài đang dùng blueprint dùng chung, không thể soạn câu hỏi trực tiếp — tạo mã đề từ blueprint hoặc sao chép mã đề có sẵn");
+        }
+        if (sections == null || sections.isEmpty()) {
+            throw new IllegalStateException("Phải có ít nhất một phần trong đề");
+        }
+
+        var seenQuestionIds = new HashSet<UUID>();
+        var questionsBySection = new ArrayList<List<Question>>();
+        var totalSeconds = 0;
+        for (var section : sections) {
+            if (section.questions() == null || section.questions().isEmpty()) {
+                throw new IllegalStateException("Mỗi phần phải có ít nhất 1 câu hỏi");
+            }
+            var questions = new ArrayList<Question>();
+            for (var questionCommand : section.questions()) {
+                if (!seenQuestionIds.add(questionCommand.questionId())) {
+                    throw new IllegalStateException("Một câu hỏi không thể xuất hiện nhiều lần trong cùng 1 mã đề");
+                }
+                var question = questionRepository
+                    .findAccessibleById(questionCommand.questionId(), currentUserId, exam.getSchoolId(), false, false)
+                    .orElseThrow(() -> new ForbiddenException(
+                        "Bạn không có quyền sử dụng câu hỏi " + questionCommand.questionId()));
+                requireCanUseQuestion(question, currentUserId);
+                questions.add(question);
+                totalSeconds += question.getPreparationTimeSeconds() + question.getMaxResponseSeconds();
+            }
+            questionsBySection.add(questions);
+        }
+        examTimeQuotaGuardService.requireWithinPlan(exam.getSchoolId(), totalSeconds, "Bài kiểm tra trên lớp");
+
+        var sectionWeights = ClassTestSectionWeightPolicy.resolveRequestedWeights(sections);
+        var now = Instant.now();
+        var variant = examPaperRepository.nextVariant(exam.getId());
+        var paper = examPaperRepository.save(new ExamPaper(
+            exam.getId(),
+            null,
+            exam.getCode() + "-P" + variant,
+            variant,
+            ExamPaperStatus.DRAFT,
+            0,
+            now,
+            now,
+            currentUserId,
+            currentUserId
+        ));
+
+        for (int i = 0; i < sections.size(); i++) {
+            var sectionCommand = sections.get(i);
+            var questionWeights = ClassTestSectionWeightPolicy.resolveQuestionWeights(sectionCommand.questions());
+            var savedSection = examPaperSectionRepository.save(new ExamPaperSection(
+                paper.getId(),
+                i + 1,
+                sectionCommand.title(),
+                sectionCommand.instruction(),
+                null,
+                sectionWeights.get(i),
+                now,
+                now,
+                currentUserId,
+                currentUserId
+            ));
+
+            var questions = questionsBySection.get(i);
+            for (int j = 0; j < questions.size(); j++) {
+                examPaperItemRepository.save(new ExamPaperItem(
+                    null,
+                    savedSection.getId(),
+                    paper.getId(),
+                    questions.get(j).getId(),
+                    j + 1,
+                    questionWeights.get(j)
+                ));
+                examQuestionSecureLockService.lockQuestionForExam(
+                    questions.get(j).getId(),
+                    exam.getId(),
+                    releaseModeFor(exam),
+                    currentUserId
+                );
+            }
+        }
+
+        recalculateExamTimeDurationService.recalculate(exam.getId());
+        return ExamPaperDtoMapper.toDto(examPaperRepository.findById(paper.getId()).orElse(paper));
+    }
+
+    private void requireCanUseQuestion(Question question, UUID currentUserId) {
+        boolean isOwner = currentUserId.equals(question.getCreatedBy());
+        boolean isSchoolShared = question.getSharing() == QuestionSharing.SCHOOL_SHARED;
+        if (isOwner || isSchoolShared) {
+            return;
+        }
+        var collaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId);
+        if (collaborator.isEmpty() || collaborator.get().getPermission() == QuestionCollaboratorPermission.READ_ONLY) {
+            throw new ForbiddenException("Quyền READ_ONLY không được phép dùng câu hỏi trong bài kiểm tra");
+        }
     }
 
     private static final BigDecimal WEIGHT_TOLERANCE = new BigDecimal("0.01");
@@ -291,7 +434,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
                     examQuestionSecureLockService.lockQuestionForExam(
                         item.getQuestionId(),
                         exam.getId(),
-                        ExamSecurePoolReleaseMode.MANUAL,
+                        releaseModeFor(exam),
                         currentUserId
                     );
                 }

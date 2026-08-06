@@ -61,7 +61,7 @@ class GradingQueryRepositorySmokeTests extends ContainerTestConfig {
     @Test
     void should_run_the_coordination_board_query() {
         var filter = new GradingAssignmentFilter(
-            schoolId, null, null, null, null, null, null, false, false, null, null);
+            schoolId, null, null, null, null, null, null, false, false, null, null, null);
 
         var page = examGradingQueryRepository.searchAssignments(filter, 0, 20);
 
@@ -72,14 +72,14 @@ class GradingQueryRepositorySmokeTests extends ContainerTestConfig {
     void should_run_the_coordination_board_query_with_every_filter_on() {
         var filter = new GradingAssignmentFilter(
             schoolId, examId, scheduleId, someId, "PENDING_REVIEW", "APPEAL", "ASSIGNED",
-            true, true, Boolean.TRUE, "nguyen");
+            true, true, Boolean.TRUE, "nguyen", "CENTRALIZED");
 
         assertThat(examGradingQueryRepository.searchAssignments(filter, 0, 20).content()).isEmpty();
     }
 
     @Test
     void should_run_the_stats_query() {
-        var stats = examGradingQueryRepository.stats(schoolId, examId, scheduleId);
+        var stats = examGradingQueryRepository.stats(schoolId, examId, scheduleId, "CENTRALIZED");
 
         assertThat(stats.total()).isZero();
         assertThat(stats.unassigned()).isZero();
@@ -88,7 +88,8 @@ class GradingQueryRepositorySmokeTests extends ContainerTestConfig {
 
     @Test
     void should_run_the_teacher_queue_query() {
-        assertThat(examGradingQueryRepository.findTasksByTeacherId(someId, null, null, 0, 20).content())
+        assertThat(examGradingQueryRepository
+            .findTasksByTeacherId(someId, "CENTRALIZED", null, null, 0, 20).content())
             .isEmpty();
     }
 

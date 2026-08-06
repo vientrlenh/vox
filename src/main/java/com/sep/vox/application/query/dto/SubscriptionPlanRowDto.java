@@ -15,5 +15,6 @@ public record SubscriptionPlanRowDto(
     String status,
     Integer version,
     String createdAt,
-    UUID createdBy
+    UUID createdBy,
+    UUID replacedByPlanId
 ) { }

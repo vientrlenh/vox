@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
+import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.ProctorCandidateSummary;
@@ -51,6 +52,11 @@ public class ViewMyProctorScheduleCandidatesUseCase implements IUseCase<UUID, Li
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!hasAccess(scheduleId, currentUserId)) {
             throw new ForbiddenException("Bạn không phải giám thị của ca thi này");
+        }
+        var schedule = examScheduleRepository.findById(scheduleId)
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy ca thi"));
+        if (schedule.getStatus() != null && schedule.getStatus().isRemoved()) {
+            throw new NotFoundException("Không tìm thấy ca thi");
         }
         return proctorScheduleCandidatesQueryRepository.findByScheduleId(scheduleId);
     }

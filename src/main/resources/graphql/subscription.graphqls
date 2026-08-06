@@ -80,6 +80,8 @@ type SubscriptionPlan {
     version: Int!
     createdAt: String
     createdBy: ID
+    replacedByPlanId: ID
+    hasActiveSubscribers: Boolean!
     quotas: [PlanQuota!]!
 }
 

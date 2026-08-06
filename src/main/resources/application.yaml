@@ -301,6 +301,17 @@ sepay:
     # Gốc của các route FE /payment/success|error|cancel mà SePay redirect người dùng về.
     return-base-url: ${SEPAY_RETURN_BASE_URL:${BASE_URL:}}
 
-firebase: 
+firebase:
+  # Tắt mặc định: bean FirebaseApp ném lỗi khi không có service account, nên nếu bật
+  # sẵn thì mọi máy chưa cấu hình credentials sẽ không khởi động được app lẫn test.
+  # Khi tắt, NoOpPushNotificationService đứng thay PushNotificationPort.
+  enabled: ${FIREBASE_ENABLED:false}
   credentials:
+    # Đường dẫn tới file service account .json. Chấp nhận đường dẫn tuyệt đối trần
+    # (C:\... hoặc /etc/...) -- FirebaseConfig tự thêm scheme file: -- và cả dạng có
+    # sẵn scheme như classpath:firebase/service-account.json.
+    # Lưu ý phải trỏ tới CHÍNH FILE .json, không phải thư mục chứa nó.
     path: ${FIREBASE_CREDENTIALS_PATH:}
+    # Thay thế cho path khi deploy bằng container không mount được file: dán thẳng
+    # nội dung service account, dạng JSON thô hoặc base64.
+    json: ${FIREBASE_CREDENTIALS_JSON:}

@@ -30,7 +30,7 @@ public class ViewFrameworkCriteriaUseCase implements IUseCase<ViewFrameworkCrite
     public List<FrameworkCriterionDto> execute(ViewFrameworkCriteriaQuery query) {
         // 1. Kiểm tra FrameworkVersion tồn tại
         frameworkVersionRepository.findById(query.frameworkVersionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản Framework."));
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản khung năng lực."));
 
         // 2. Lấy Criteria + Band tương ứng, map sang DTO
         var criteria = frameworkCriterionRepository.findByFrameworkVersionId(query.frameworkVersionId());

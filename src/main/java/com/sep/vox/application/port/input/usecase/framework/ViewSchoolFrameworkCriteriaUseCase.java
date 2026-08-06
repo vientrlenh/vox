@@ -35,9 +35,9 @@ public class ViewSchoolFrameworkCriteriaUseCase implements IUseCase<ViewFramewor
     public List<FrameworkCriterionDto> execute(ViewFrameworkCriteriaQuery query) {
         // 1. Kiểm tra FrameworkVersion tồn tại và đã PUBLISHED
         var version = frameworkVersionRepository.findById(query.frameworkVersionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản Framework."));
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản khung năng lực."));
         if (version.getStatus() != FrameworkVersionStatus.PUBLISHED) {
-            throw new NotFoundException("Không tìm thấy phiên bản Framework.");
+            throw new NotFoundException("Không tìm thấy phiên bản khung năng lực.");
         }
 
         // 2. Lấy Criteria + Band tương ứng, map sang DTO

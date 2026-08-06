@@ -8,29 +8,29 @@ public class NotificationDevice {
     private UUID userId;
     private String deviceId;
     private NotificationDevicePlatform platform;
-    private String token;
+    private String installationId;
     private Instant createdAt;
     private Instant lastSeenAt;
 
     public NotificationDevice() {}
 
-    public NotificationDevice(UUID id, UUID userId, String deviceId, NotificationDevicePlatform platform, String token,
+    public NotificationDevice(UUID id, UUID userId, String deviceId, NotificationDevicePlatform platform, String installationId,
             Instant createdAt, Instant lastSeenAt) {
         this.id = id;
         this.userId = userId;
         this.deviceId = deviceId;
         this.platform = platform;
-        this.token = token;
+        this.installationId = installationId;
         this.createdAt = createdAt;
         this.lastSeenAt = lastSeenAt;
     }
 
-    public NotificationDevice(UUID userId, String deviceId, NotificationDevicePlatform platform, String token,
+    public NotificationDevice(UUID userId, String deviceId, NotificationDevicePlatform platform, String installationId,
             Instant createdAt, Instant lastSeenAt) {
         this.userId = userId;
         this.deviceId = deviceId;
         this.platform = platform;
-        this.token = token;
+        this.installationId = installationId;
         this.createdAt = createdAt;
         this.lastSeenAt = lastSeenAt;
     }
@@ -67,12 +67,12 @@ public class NotificationDevice {
         this.platform = platform;
     }
 
-    public String getToken() {
-        return token;
+    public String getInstallationId() {
+        return installationId;
     }
 
-    public void setToken(String token) {
-        this.token = token;
+    public void setInstallationId(String installationId) {
+        this.installationId = installationId;
     }
 
     public Instant getCreatedAt() {

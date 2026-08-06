@@ -1,0 +1,29 @@
+type Notification {
+    id: ID!
+    userId: ID! 
+    eventId: ID 
+    eventType: String
+    title: String 
+    body: String 
+    payload: String
+    readAt: String 
+    createdAt: String
+}
+
+type NotificationDevice {
+    id: ID!
+    userId: ID!
+    deviceId: ID!
+    platform: String 
+    installationId: String 
+    createdAt: String 
+    lastSeenAt: String
+}
+
+
+type NotificationPreference {
+    id: ID!
+    userId: ID!
+    category: String 
+    pushEnabled: Boolean
+}

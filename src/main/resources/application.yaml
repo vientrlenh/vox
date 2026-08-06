@@ -300,3 +300,7 @@ sepay:
     payment-method: ${SEPAY_PAYMENT_METHOD:BANK_TRANSFER}
     # Gốc của các route FE /payment/success|error|cancel mà SePay redirect người dùng về.
     return-base-url: ${SEPAY_RETURN_BASE_URL:${BASE_URL:}}
+
+firebase: 
+  credentials:
+    path: ${FIREBASE_CREDENTIALS_PATH:}

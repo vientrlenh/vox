@@ -175,7 +175,7 @@ springdoc:
 
 jwt:
   secret: ${JWT_SECRET}
-  expiration-ms: 1800000
+  expiration-ms: 900000
   stream:
     secret: ${JWT_STREAM_SECRET}
 

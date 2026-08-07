@@ -14,6 +14,7 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreateClassTestCommand;
 import com.sep.vox.application.port.input.service.ExamAssessmentPolicyValidator;
+import com.sep.vox.application.port.input.service.ExamScheduleProctorConflictValidator;
 import com.sep.vox.application.port.input.service.ExamScheduleRoomValidator;
 import com.sep.vox.application.port.input.service.ExamStreamConfigResolver;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -64,6 +65,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
     private final ExamAssessmentPolicyValidator examAssessmentPolicyValidator;
     private final ExamStreamConfigResolver examStreamConfigResolver;
     private final ExamScheduleRoomValidator examScheduleRoomValidator;
+    private final ExamScheduleProctorConflictValidator examScheduleProctorConflictValidator;
     private final UserContextPort userContextPort;
 
     public CreateClassTestUseCase(
@@ -78,6 +80,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             ExamAssessmentPolicyValidator examAssessmentPolicyValidator,
             ExamStreamConfigResolver examStreamConfigResolver,
             ExamScheduleRoomValidator examScheduleRoomValidator,
+            ExamScheduleProctorConflictValidator examScheduleProctorConflictValidator,
             UserContextPort userContextPort) {
         this.schoolClassRepository = schoolClassRepository;
         this.schoolClassUserRepository = schoolClassUserRepository;
@@ -90,6 +93,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         this.examAssessmentPolicyValidator = examAssessmentPolicyValidator;
         this.examStreamConfigResolver = examStreamConfigResolver;
         this.examScheduleRoomValidator = examScheduleRoomValidator;
+        this.examScheduleProctorConflictValidator = examScheduleProctorConflictValidator;
         this.userContextPort = userContextPort;
     }
 
@@ -138,8 +142,11 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             Instant now) {
         examMemberRepository.save(new ExamMember(exam.getId(), currentUserId, ExamMemberRole.CHAIR, now, currentUserId));
         // Giám khảo mặc định là chính giáo viên tạo bài; giáo viên có thể thêm/bớt sau qua
-        // endpoint proctor của ca thi. Không có guard nào cần chạy thêm: người gọi đã được xác nhận
-        // là TEACHER và là thành viên active của lớp ở đầu execute().
+        // endpoint proctor của ca thi. Quyền thì không phải kiểm thêm (người gọi đã được xác nhận là
+        // TEACHER và là thành viên active của lớp ở đầu execute()), nhưng lịch thì có: luật "không
+        // gác hai ca trùng giờ" là toàn trường nên bài trên lớp này có thể đâm vào một ca thi khác.
+        examScheduleProctorConflictValidator.requireTeacherFree(
+            currentUserId, schedule.getStartDate(), schedule.getEndDate(), schedule.getId());
         examScheduleProctorRepository.save(new ExamScheduleProctor(schedule.getId(), currentUserId));
         var candidateCount = assignCandidates(exam, schoolClass.getId(), currentUserId, now);
         return new CreateClassTestResponse(ExamDtoMapper.toDto(exam), candidateCount);

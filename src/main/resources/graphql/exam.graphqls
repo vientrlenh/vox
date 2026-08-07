@@ -331,6 +331,15 @@ type ExamSchedule {
     requiredProctorCount: Int!
 }
 
+# Một giáo viên đang vướng lịch: đã gác ca `scheduleId` chạy [startDate, endDate).
+# Chỉ để làm mờ sẵn người bận ở màn chọn giám thị — luật chặn thật chạy lúc ghi.
+type ProctorBusySlot {
+    teacherId: ID!
+    scheduleId: ID!
+    startDate: String
+    endDate: String
+}
+
 type ExamCandidate {
     id: ID!
     examId: ID!
@@ -636,6 +645,7 @@ extend type Query {
 
     examSchedules(examId: ID, status: ExamScheduleStatus, startDate: String, endDate: String): [ExamSchedule!]!
     myExamSchedules(examId: ID, status: ExamScheduleStatus, startDate: String, endDate: String): [ExamSchedule!]!
+    proctorBusySlots(scheduleId: ID!, teacherIds: [ID!]!): [ProctorBusySlot!]!
 
     examCandidates(examId: ID!, scheduleId: ID, status: ExamCandidateStatus): [ExamCandidate!]!
 

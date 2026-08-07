@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -20,8 +21,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.port.input.command.CreateClassTestCommand;
 import com.sep.vox.application.port.input.service.ExamAssessmentPolicyValidator;
+import com.sep.vox.application.port.input.service.ExamScheduleProctorConflictValidator;
 import com.sep.vox.application.port.input.service.ExamScheduleRoomValidator;
 import com.sep.vox.application.port.input.service.ExamStreamConfigResolver;
 import com.sep.vox.application.port.input.usecase.exam.CreateClassTestUseCase;
@@ -97,6 +100,9 @@ class CreateClassTestSetupTests {
             new ExamAssessmentPolicyValidator(assessmentPolicyRepository),
             new ExamStreamConfigResolver(),
             mock(ExamScheduleRoomValidator.class),
+            // Validator thật trên proctor repo đã mock: mặc định "giáo viên rảnh", và test riêng
+            // bên dưới bật cờ trùng lịch lên để kiểm tra luật.
+            new ExamScheduleProctorConflictValidator(examScheduleProctorRepository),
             userContextPort
         );
 
@@ -170,6 +176,20 @@ class CreateClassTestSetupTests {
         var captor = ArgumentCaptor.forClass(ExamScheduleProctor.class);
         verify(examScheduleProctorRepository).save(captor.capture());
         assertThat(captor.getValue().getTeacherId()).isEqualTo(TEACHER_ID);
+    }
+
+    /**
+     * Luật "không gác hai ca trùng giờ" quét toàn trường, nên bài trên lớp tự gán giáo viên tạo bài
+     * làm giám thị cũng có thể đâm vào một ca của kỳ thi tập trung.
+     */
+    @Test
+    void should_reject_when_creating_teacher_already_proctors_an_overlapping_schedule() {
+        when(examScheduleProctorRepository.existsOverlappingAssignment(
+            eq(TEACHER_ID), any(Instant.class), any(Instant.class), any())).thenReturn(true);
+
+        assertThatThrownBy(() -> useCase.execute(command(null, null, null, null)))
+            .isInstanceOf(DuplicatedException.class);
+        verify(examScheduleProctorRepository, never()).save(any(ExamScheduleProctor.class));
     }
 
     @Test

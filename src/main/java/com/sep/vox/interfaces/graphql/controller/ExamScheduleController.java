@@ -16,9 +16,12 @@ import graphql.schema.DataFetchingEnvironment;
 
 import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.input.query.ViewExamSchedulesQuery;
+import com.sep.vox.application.port.input.query.ViewProctorBusySlotsQuery;
 import com.sep.vox.application.port.input.usecase.examschedule.UpdateExamScheduleUseCase;
 import com.sep.vox.application.port.input.usecase.examschedule.ViewExamSchedulesUseCase;
 import com.sep.vox.application.port.input.usecase.examschedule.ViewMyExamSchedulesUseCase;
+import com.sep.vox.application.port.input.usecase.examschedule.ViewProctorBusySlotsUseCase;
+import com.sep.vox.application.response.input.examschedule.ProctorBusySlotResponse;
 import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.domain.dto.ExamScheduleDto;
 import com.sep.vox.domain.dto.ExamScheduleProctorDto;
@@ -37,6 +40,7 @@ public class ExamScheduleController {
     private final ViewExamSchedulesUseCase viewExamSchedulesUseCase;
     private final ViewMyExamSchedulesUseCase viewMyExamSchedulesUseCase;
     private final UpdateExamScheduleUseCase updateExamScheduleUseCase;
+    private final ViewProctorBusySlotsUseCase viewProctorBusySlotsUseCase;
     private final ExamScheduleProctorRepository examScheduleProctorRepository;
     private final ExamCandidateRepository examCandidateRepository;
 
@@ -44,11 +48,13 @@ public class ExamScheduleController {
             ViewExamSchedulesUseCase viewExamSchedulesUseCase,
             ViewMyExamSchedulesUseCase viewMyExamSchedulesUseCase,
             UpdateExamScheduleUseCase updateExamScheduleUseCase,
+            ViewProctorBusySlotsUseCase viewProctorBusySlotsUseCase,
             ExamScheduleProctorRepository examScheduleProctorRepository,
             ExamCandidateRepository examCandidateRepository) {
         this.viewExamSchedulesUseCase = viewExamSchedulesUseCase;
         this.viewMyExamSchedulesUseCase = viewMyExamSchedulesUseCase;
         this.updateExamScheduleUseCase = updateExamScheduleUseCase;
+        this.viewProctorBusySlotsUseCase = viewProctorBusySlotsUseCase;
         this.examScheduleProctorRepository = examScheduleProctorRepository;
         this.examCandidateRepository = examCandidateRepository;
     }
@@ -83,6 +89,18 @@ public class ExamScheduleController {
                 DateMapper.toInstant(endDate)
             )
         );
+    }
+
+    /**
+     * Trong nhóm giáo viên đang hiển thị ở màn chọn giám thị, ai bận vào đúng khung giờ của ca này.
+     * Chỉ để làm mờ sẵn kèm lý do — luật chặn thật chạy lúc ghi.
+     */
+    @QueryMapping(name = "proctorBusySlots")
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
+    public List<ProctorBusySlotResponse> proctorBusySlots(
+            @Argument(name = "scheduleId") UUID scheduleId,
+            @Argument(name = "teacherIds") List<UUID> teacherIds) {
+        return viewProctorBusySlotsUseCase.execute(new ViewProctorBusySlotsQuery(scheduleId, teacherIds));
     }
 
     @SchemaMapping(typeName = "ExamSchedule", field = "room")

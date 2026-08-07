@@ -21,6 +21,7 @@ import com.sep.vox.application.port.input.usecase.examcandidate.AddExamCandidate
 import com.sep.vox.application.port.input.usecase.examcandidate.AssignExamCandidateScheduleUseCase;
 import com.sep.vox.application.port.input.usecase.examcandidate.AssignExamPapersUseCase;
 import com.sep.vox.application.port.input.usecase.examcandidate.AutoFillExamCandidatesUseCase;
+import com.sep.vox.application.port.input.usecase.examcandidate.BulkAssignExamCandidateScheduleUseCase;
 import com.sep.vox.application.port.input.usecase.examcandidate.DeleteExamCandidateUseCase;
 import com.sep.vox.application.port.input.usecase.examcandidate.ImportExamCandidatesFromClassUseCase;
 import com.sep.vox.application.port.input.usecase.examcandidate.ImportExamCandidatesFromGradeUseCase;
@@ -33,6 +34,7 @@ import com.sep.vox.interfaces.rest.dto.request.AddExamCandidateRequest;
 import com.sep.vox.interfaces.rest.dto.request.AssignExamCandidateScheduleRequest;
 import com.sep.vox.interfaces.rest.dto.request.AssignExamPapersRequest;
 import com.sep.vox.interfaces.rest.dto.request.AutoFillExamCandidatesRequest;
+import com.sep.vox.interfaces.rest.dto.request.BulkAssignExamCandidateScheduleRequest;
 import com.sep.vox.interfaces.rest.dto.request.ImportExamCandidatesFromClassRequest;
 import com.sep.vox.interfaces.rest.dto.request.ImportExamCandidatesFromGradeRequest;
 import com.sep.vox.interfaces.rest.dto.request.SessionReasonRequest;
@@ -42,6 +44,7 @@ import com.sep.vox.interfaces.rest.mapper.AddExamCandidateCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.AssignExamCandidateScheduleCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.AssignExamPapersCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.AutoFillExamCandidatesCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.BulkAssignExamCandidateScheduleCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.ImportExamCandidatesFromClassCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.ImportExamCandidatesFromGradeCommandMapper;
 
@@ -55,6 +58,7 @@ public class ExamCandidateController {
     private final ImportExamCandidatesFromClassUseCase importExamCandidatesFromClassUseCase;
     private final ImportExamCandidatesFromGradeUseCase importExamCandidatesFromGradeUseCase;
     private final AssignExamCandidateScheduleUseCase assignExamCandidateScheduleUseCase;
+    private final BulkAssignExamCandidateScheduleUseCase bulkAssignExamCandidateScheduleUseCase;
     private final AutoFillExamCandidatesUseCase autoFillExamCandidatesUseCase;
     private final AssignExamPapersUseCase assignExamPapersUseCase;
     private final UpdateExamCandidateStatusUseCase updateExamCandidateStatusUseCase;
@@ -66,6 +70,7 @@ public class ExamCandidateController {
             ImportExamCandidatesFromClassUseCase importExamCandidatesFromClassUseCase,
             ImportExamCandidatesFromGradeUseCase importExamCandidatesFromGradeUseCase,
             AssignExamCandidateScheduleUseCase assignExamCandidateScheduleUseCase,
+            BulkAssignExamCandidateScheduleUseCase bulkAssignExamCandidateScheduleUseCase,
             AutoFillExamCandidatesUseCase autoFillExamCandidatesUseCase,
             AssignExamPapersUseCase assignExamPapersUseCase,
             UpdateExamCandidateStatusUseCase updateExamCandidateStatusUseCase,
@@ -75,6 +80,7 @@ public class ExamCandidateController {
         this.importExamCandidatesFromClassUseCase = importExamCandidatesFromClassUseCase;
         this.importExamCandidatesFromGradeUseCase = importExamCandidatesFromGradeUseCase;
         this.assignExamCandidateScheduleUseCase = assignExamCandidateScheduleUseCase;
+        this.bulkAssignExamCandidateScheduleUseCase = bulkAssignExamCandidateScheduleUseCase;
         this.autoFillExamCandidatesUseCase = autoFillExamCandidatesUseCase;
         this.assignExamPapersUseCase = assignExamPapersUseCase;
         this.updateExamCandidateStatusUseCase = updateExamCandidateStatusUseCase;
@@ -122,6 +128,17 @@ public class ExamCandidateController {
             @RequestBody AssignExamCandidateScheduleRequest request) {
         var data = assignExamCandidateScheduleUseCase.execute(
             AssignExamCandidateScheduleCommandMapper.fromRequest(examId, candidateId, request));
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật ca thi của thí sinh thành công", data));
+    }
+
+    /** Xếp/gỡ cả nhóm trong một transaction — dùng cho màn tick chọn nhiều thí sinh. */
+    @PutMapping("/schedule")
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
+    public ResponseEntity<ApiResponse<List<ExamCandidateDto>>> bulkAssignSchedule(
+            @PathVariable("examId") UUID examId,
+            @Valid @RequestBody BulkAssignExamCandidateScheduleRequest request) {
+        var data = bulkAssignExamCandidateScheduleUseCase.execute(
+            BulkAssignExamCandidateScheduleCommandMapper.fromRequest(examId, request));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật ca thi của thí sinh thành công", data));
     }
 

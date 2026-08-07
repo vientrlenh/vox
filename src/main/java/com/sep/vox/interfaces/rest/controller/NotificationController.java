@@ -67,6 +67,7 @@ public class NotificationController {
         return ResponseEntity.ok(response);
     }
 
+
     @PatchMapping("/read-all")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Object>> markAllNotificationsAsRead() {

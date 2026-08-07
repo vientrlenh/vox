@@ -18,6 +18,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.junit.jupiter.api.BeforeEach;
@@ -64,6 +66,13 @@ class NotificationPushedEventConsumerTests {
     private Acknowledgment ack;
     private NotificationPushedEventConsumer consumer;
 
+    /**
+     * Chạy task ngay trên luồng gọi. Đây chính là lý do consumer nhận {@link Executor} thay
+     * vì {@code ThreadPoolTaskExecutor} hay {@code @Async}: mọi assertion về push bên dưới
+     * giữ nguyên tính tất định, không cần await và không thể flaky.
+     */
+    private Executor executor;
+
     private UUID userId;
 
     @BeforeEach
@@ -75,6 +84,7 @@ class NotificationPushedEventConsumerTests {
         pushNotificationPort = mock(PushNotificationPort.class);
         jsonMapper = JsonMapper.builder().build();
         ack = mock(Acknowledgment.class);
+        executor = r -> r.run();
 
         consumer = new NotificationPushedEventConsumer(
             notificationRepository,
@@ -82,7 +92,8 @@ class NotificationPushedEventConsumerTests {
             notificationPreferenceRepository,
             processedEventRepository,
             pushNotificationPort,
-            jsonMapper);
+            jsonMapper,
+            executor);
 
         userId = UUID.randomUUID();
 
@@ -208,6 +219,51 @@ class NotificationPushedEventConsumerTests {
         verify(ack).acknowledge();
     }
 
+    /** Push phải đi qua executor, không được chạy thẳng trên luồng consumer. */
+    @Test
+    void should_dispatch_push_through_the_executor() {
+        var submitted = new java.util.concurrent.atomic.AtomicInteger();
+        consumer = newConsumer(task -> {
+            submitted.incrementAndGet();
+            task.run();
+        });
+
+        consumer.consume(record(EventTypeConstant.EXAM_RESULT_RELEASED, releasedPayload()), ack);
+
+        assertThat(submitted.get()).isEqualTo(1);
+        verify(pushNotificationPort).send(any(), anyList());
+    }
+
+    /**
+     * Hàng đợi đầy là chuyện bình thường khi FCM chậm. Thông báo đã nằm trong DB nên
+     * message phải được coi là xử lý xong -- không được để RejectedExecutionException lan
+     * ra và kéo cả message vào vòng retry cho một công việc đã hoàn thành.
+     */
+    @Test
+    void should_still_ack_when_push_queue_rejects() {
+        consumer = newConsumer(task -> {
+            throw new RejectedExecutionException("queue full");
+        });
+
+        consumer.consume(record(EventTypeConstant.EXAM_RESULT_RELEASED, releasedPayload()), ack);
+
+        verify(notificationRepository).saveIfAbsent(any());
+        verify(processedEventRepository).save(any());
+        verify(ack).acknowledge();
+    }
+
+    /** Lỗi khi push chạy trên luồng pool không được thoát ra ngoài task. */
+    @Test
+    void should_not_let_push_failure_escape_the_task() {
+        when(notificationDeviceRepository.findByUserId(any()))
+            .thenThrow(new IllegalStateException("mất kết nối DB"));
+
+        consumer.consume(record(EventTypeConstant.EXAM_RESULT_RELEASED, releasedPayload()), ack);
+
+        verify(processedEventRepository).save(any());
+        verify(ack).acknowledge();
+    }
+
     @Test
     void should_skip_already_processed_event() {
         when(processedEventRepository.existsByEventIdAndConsumerGroup(any(), any())).thenReturn(true);
@@ -231,6 +287,17 @@ class NotificationPushedEventConsumerTests {
     }
 
     // --- helpers ---------------------------------------------------------------
+
+    private NotificationPushedEventConsumer newConsumer(Executor withExecutor) {
+        return new NotificationPushedEventConsumer(
+            notificationRepository,
+            notificationDeviceRepository,
+            notificationPreferenceRepository,
+            processedEventRepository,
+            pushNotificationPort,
+            jsonMapper,
+            withExecutor);
+    }
 
     private record TestCase(String eventType, Object payload) {}
 

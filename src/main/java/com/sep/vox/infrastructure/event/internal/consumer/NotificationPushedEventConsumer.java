@@ -6,10 +6,13 @@ import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.kafka.annotation.BackOff;
 import org.springframework.kafka.annotation.DltHandler;
@@ -74,6 +77,7 @@ public class NotificationPushedEventConsumer {
     private final ProcessedEventRepository processedEventRepository;
     private final PushNotificationPort pushNotificationPort;
     private final JsonMapper jsonMapper;
+    private final Executor executor;
 
     public NotificationPushedEventConsumer(
             NotificationRepository notificationRepository,
@@ -81,13 +85,14 @@ public class NotificationPushedEventConsumer {
             NotificationPreferenceRepository notificationPreferenceRepository,
             ProcessedEventRepository processedEventRepository,
             PushNotificationPort pushNotificationPort,
-            JsonMapper jsonMapper) {
+            JsonMapper jsonMapper, @Qualifier("pushExecutor") Executor executor) {
         this.notificationRepository = notificationRepository;
         this.notificationDeviceRepository = notificationDeviceRepository;
         this.notificationPreferenceRepository = notificationPreferenceRepository;
         this.processedEventRepository = processedEventRepository;
         this.pushNotificationPort = pushNotificationPort;
         this.jsonMapper = jsonMapper;
+        this.executor = executor;
     }
 
     @RetryableTopic(
@@ -165,7 +170,23 @@ public class NotificationPushedEventConsumer {
             return;
         }
 
-        pushBestEffort(draft, eventId);
+        // Nuốt lỗi ở cả hai chỗ dưới đây là CHỦ Ý, khác hẳn ca SmtpEmailSendingService: dòng
+        // notifications đã ghi xong ở trên, nên mất một lần push chỉ mất lớp đánh động, người
+        // dùng mở app vẫn thấy đủ. Để lỗi lan ra thì message chạy lại cả vòng retry cho một
+        // công việc thực ra đã hoàn thành.
+        try {
+            executor.execute(() -> {
+                try {
+                    pushBestEffort(draft, eventId);
+                } catch (Exception e) {
+                    // Chạy trên luồng pool: không log ở đây thì exception rơi vào uncaught
+                    // handler của thread và không bao giờ vào file log.
+                    LOGGER.error("Push failed outside consumer thread: eventId={}", eventId, e);
+                }
+            });
+        } catch (RejectedExecutionException e) {
+            LOGGER.warn("Push queue is full, skipping push: eventId={}, userId={}", eventId, draft.userId());
+        }
 
         markProcessed(eventId);
 

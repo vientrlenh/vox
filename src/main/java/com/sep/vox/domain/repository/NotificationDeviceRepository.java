@@ -19,5 +19,7 @@ public interface NotificationDeviceRepository {
     int deleteByInstallationIdIn(Collection<String> installationIds);
     int deleteByUserIdAndDeviceIdAndExceptInstallationId(UUID userId, String deviceId, String installationId);
     int deleteByUserIdAndInstallationId(UUID userId, String installationId);
+    int deleteByUserIdAndDeviceId(UUID userId, String deviceId);
+    int deleteByLastSeenAtBefore(Instant threshold);
     int registerDevice(UUID userId, String deviceId, NotificationDevicePlatform platform, String installationId, Instant now);
 }

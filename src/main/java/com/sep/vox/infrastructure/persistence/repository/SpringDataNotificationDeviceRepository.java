@@ -39,6 +39,21 @@ public interface SpringDataNotificationDeviceRepository extends JpaRepository<No
     int deleteByUserIdAndInstallationId(@Param("userId") UUID userId, @Param("installationId") String installationId);
 
     @Modifying
+    @Query("""
+        DELETE FROM NotificationDeviceJpaEntity d
+        WHERE d.userId = :userId
+            AND d.deviceId = :deviceId
+    """)
+    int deleteByUserIdAndDeviceId(@Param("userId") UUID userId, @Param("deviceId") String deviceId);
+
+    @Modifying
+    @Query("""
+        DELETE FROM NotificationDeviceJpaEntity d
+        WHERE d.lastSeenAt < :threshold
+    """)
+    int deleteByLastSeenAtBefore(@Param("threshold") Instant threshold);
+
+    @Modifying
     @Query(value = """
         INSERT INTO notification_devices (user_id, device_id, platform, installation_id, created_at, last_seen_at) VALUES (:userId, :deviceId, :platform, :installationId, :now, :now) 
         ON CONFLICT (installation_id) DO UPDATE 

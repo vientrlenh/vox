@@ -66,6 +66,21 @@ public class NotificationDeviceRepositoryImpl implements NotificationDeviceRepos
     }
 
     @Override
+    @Transactional
+    public int deleteByUserIdAndDeviceId(UUID userId, String deviceId) {
+        if (deviceId == null || deviceId.isBlank()) {
+            return 0;
+        }
+        return springDataNotificationDeviceRepository.deleteByUserIdAndDeviceId(userId, deviceId);
+    }
+
+    @Override
+    @Transactional
+    public int deleteByLastSeenAtBefore(Instant threshold) {
+        return springDataNotificationDeviceRepository.deleteByLastSeenAtBefore(threshold);
+    }
+
+    @Override
     public int registerDevice(UUID userId, String deviceId, NotificationDevicePlatform platform, String installationId, Instant now) {
         return springDataNotificationDeviceRepository.registerDevice(userId, deviceId, platform.name(), installationId, now);
     }

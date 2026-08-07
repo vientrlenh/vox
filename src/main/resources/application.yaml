@@ -257,6 +257,11 @@ app:
           # thì khi biến đó được set, hai listener rơi vào cùng một consumer group và Kafka
           # chỉ giao mỗi message cho MỘT trong hai -- mail hoặc notification, ngẫu nhiên.
           group-id: ${KAFKA_NOTIFICATION_GROUP_ID:vox-notification}
+  notification:
+    # Thiết bị biến mất lặng lẽ (gỡ app mà không đăng xuất, xoá dữ liệu trình duyệt) sẽ
+    # không bao giờ nhận được UNREGISTERED từ FCM, nên đây là đường dọn duy nhất của chúng.
+    # Đặt 0 để tắt job.
+    device-retention-days: ${NOTIFICATION_DEVICE_RETENTION_DAYS:90}
   recording:
     bucket: ${RECORDING_S3_BUCKET:}
   outbox:

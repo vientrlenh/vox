@@ -296,6 +296,9 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
      * thi tập trung xếp ca ({@code AssignExamCandidateSchedule}/{@code AutoFill}) và phân đề
      * ({@code AssignExamPapersUseCase}, đòi mọi đề LOCKED) sau khi đã lên lịch. Chỉ chặn đúng trường
      * hợp "rỗng" mà không có cách nào chạy được.
+     *
+     * <p>Ngoài ra mọi ca thi phải đã được công bố: ca còn DRAFT thì học sinh và giám thị chưa nhìn
+     * thấy, kỳ thi "đã lên lịch" mà có ca không ai vào được.
      */
     private void requireCentralizedScheduleReadiness(com.sep.vox.domain.model.exam.Exam exam) {
         var schedules = examScheduleRepository.findByExamId(exam.getId());
@@ -308,6 +311,15 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
         }
         if (examPaperRepository.findByExamId(exam.getId()).isEmpty()) {
             throw new IllegalStateException("Kỳ thi chưa có mã đề nào, không thể lên lịch");
+        }
+        // Công bố từng ca là thao tác riêng (UpdateExamScheduleStatusUseCase) và không đòi trạng thái
+        // kỳ thi, nên chặn ở đây không khoá luồng: công bố hết ca xong mới lên lịch được kỳ thi.
+        var draftScheduleCount = schedules.stream()
+            .filter(schedule -> schedule.getStatus() == ExamScheduleStatus.DRAFT)
+            .count();
+        if (draftScheduleCount > 0) {
+            throw new IllegalStateException(
+                "Còn " + draftScheduleCount + " ca thi chưa được công bố, không thể lên lịch kỳ thi");
         }
     }
 

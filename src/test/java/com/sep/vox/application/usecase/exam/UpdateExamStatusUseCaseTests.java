@@ -264,10 +264,30 @@ class UpdateExamStatusUseCaseTests {
             .hasMessageContaining("chưa có mã đề");
     }
 
+    /**
+     * Ca thi còn DRAFT thì học sinh và giám thị chưa nhìn thấy — kỳ thi "đã lên lịch" mà có ca
+     * không ai vào được. Công bố từng ca là thao tác riêng nên phải làm xong trước khi lên lịch.
+     */
+    @Test
+    void should_reject_schedule_when_centralized_exam_has_draft_schedule() {
+        givenCentralizedExam();
+        var draft = schedule(ExamScheduleStatus.DRAFT, open, open.plus(2, ChronoUnit.HOURS));
+        var published = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
+        when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(draft, published));
+        when(examScheduleProctorRepository.countByScheduleId(draft.getId())).thenReturn(1L);
+        when(examScheduleProctorRepository.countByScheduleId(published.getId())).thenReturn(1L);
+        when(examPaperRepository.findByExamId(examId)).thenReturn(List.of(new ExamPaper()));
+
+        assertThatThrownBy(() -> useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null)))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("Còn 1 ca thi chưa được công bố");
+        verify(examRepository, never()).save(any());
+    }
+
     @Test
     void should_schedule_centralized_exam_when_ready() {
         givenCentralizedExam();
-        var schedule = schedule(ExamScheduleStatus.DRAFT, open, open.plus(2, ChronoUnit.HOURS));
+        var schedule = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(schedule));
         when(examScheduleProctorRepository.countByScheduleId(schedule.getId())).thenReturn(1L);
         when(examPaperRepository.findByExamId(examId)).thenReturn(List.of(new ExamPaper()));

@@ -117,10 +117,24 @@ class GradingQueryRepositorySmokeTests extends ContainerTestConfig {
         assertThat(examGradingQueryRepository.findTeacherIdsWithHumanEvaluation(someId)).isEmpty();
     }
 
+    /**
+     * Câu xuất bảng điểm nay dùng chung WHERE_CLAUSE với bảng điều phối, nên phải chạy
+     * được với MỌI vị ngữ trong đó — kể cả các EXISTS lồng và tham số Boolean nullable.
+     */
     @Test
     void should_run_the_score_export_query() {
-        assertThat(examGradingQueryRepository.findScoreRows(schoolId, examId, null)).isEmpty();
-        assertThat(examGradingQueryRepository.findScoreRows(schoolId, null, scheduleId)).isEmpty();
+        assertThat(examGradingQueryRepository.findScoreRows(
+            scoreExportFilter(examId, null, "CENTRALIZED"))).isEmpty();
+        assertThat(examGradingQueryRepository.findScoreRows(
+            scoreExportFilter(null, scheduleId, "CLASS_TEST"))).isEmpty();
+        assertThat(examGradingQueryRepository.findScoreRows(new GradingAssignmentFilter(
+            schoolId, examId, null, someId, "RELEASED", "INITIAL", "COMPLETED",
+            true, true, Boolean.TRUE, "nguyen", "CENTRALIZED"))).isEmpty();
+    }
+
+    private GradingAssignmentFilter scoreExportFilter(UUID examId, UUID scheduleId, String kind) {
+        return new GradingAssignmentFilter(schoolId, examId, scheduleId, null, null, null, null,
+            false, false, null, null, kind);
     }
 
     @Test

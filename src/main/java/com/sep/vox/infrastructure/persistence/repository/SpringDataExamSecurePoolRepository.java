@@ -12,4 +12,5 @@ import com.sep.vox.infrastructure.persistence.entity.ExamSecurePoolJpaEntity;
 public interface SpringDataExamSecurePoolRepository extends JpaRepository<ExamSecurePoolJpaEntity, UUID> {
     Optional<ExamSecurePoolJpaEntity> findByExamId(UUID examId);
     List<ExamSecurePoolJpaEntity> findByExamIdIn(Collection<UUID> examIds);
+    void deleteByExamId(UUID examId);
 }

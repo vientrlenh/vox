@@ -66,6 +66,11 @@ public class ExamPaperRepositoryImpl implements ExamPaperRepository {
     }
 
     @Override
+    public void deleteByExamId(UUID examId) {
+        springDataExamPaperRepository.deleteByExamId(examId);
+    }
+
+    @Override
     public List<ExamPaper> findByExamId(UUID examId) {
         return springDataExamPaperRepository.findByExamIdOrderByVariantAsc(examId).stream()
             .map(ExamPaperMapper::toDomain)

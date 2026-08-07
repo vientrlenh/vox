@@ -19,4 +19,10 @@ public interface ExamRecordingRepository {
         UUID examSessionId, ExamRequiredStreamType streamType, String source);
 
     ExamRecording save(ExamRecording recording);
+
+    /**
+     * Xoá bản ghi hình/tiếng của một phiên thi. Chỉ xoá dòng trong DB: file trên S3 để lifecycle
+     * rule của bucket dọn, vì xoá file không rollback được cùng transaction.
+     */
+    void deleteByExamSessionId(UUID examSessionId);
 }

@@ -152,6 +152,10 @@ spring:
 storage:
   provider: ${STORAGE_PROVIDER:}
   s3:
+    ensure-bucket: ${AWS_S3_ENSURE_BUCKET:false}
+    public-read: ${AWS_S3_PUBLIC_READ:true}
+    uploader-principal-arn: ${AWS_S3_UPLOADER_ARN:}
+    fail-on-error: ${AWS_S3_ENSURE_FAIL_FAST:false}
     bucket: ${AWS_S3_BUCKET:}
     region: ${AWS_REGION:ap-southeast-1}
     endpoint: ${AWS_S3_ENDPOINT:}

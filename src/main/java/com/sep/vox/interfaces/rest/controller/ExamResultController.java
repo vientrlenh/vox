@@ -78,8 +78,8 @@ public class ExamResultController {
     @GetMapping(value = "/export", produces = "text/csv")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<byte[]> exportScores(
-            @RequestParam(value = "examId", required = false) UUID examId,
-            @RequestParam(value = "scheduleId", required = false) UUID scheduleId) {
+            @RequestParam(name = "examId", required = false) UUID examId,
+            @RequestParam(name = "scheduleId", required = false) UUID scheduleId) {
         var csv = exportExamScoresUseCase.execute(new ExportExamScoresQuery(examId, scheduleId));
         return ResponseEntity.ok()
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"bang-diem.csv\"")

@@ -143,14 +143,14 @@ public class ExamSessionController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
-    public ResponseEntity<ApiResponse<?>> delete(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<?>> delete(@PathVariable(name = "id") UUID id) {
         deleteExamSessionUseCase.execute(id);
         return ResponseEntity.ok(ApiResponse.success("Xoa phien thi thanh cong", null));
     }
 
      @PostMapping("/{sessionId}/complete-grading")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public ResponseEntity<ApiResponse<Void>> completeGrading(@PathVariable UUID sessionId) {
+    public ResponseEntity<ApiResponse<Void>> completeGrading(@PathVariable(name = "sessionId") UUID sessionId) {
         completeExamSessionGradingUseCase.execute(new CompleteExamSessionGradingCommand(sessionId));
         return ResponseEntity.ok(ApiResponse.success("Ghi nhận hoàn tất chấm bài thành công"));
 }

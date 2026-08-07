@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.rubricsystem;
 
+import com.sep.vox.domain.service.rubric.RubricOrderValidator;
 import com.sep.vox.domain.service.rubric.ScoreRangeValidator;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
@@ -109,6 +110,11 @@ public class CreateSystemRubricCriteriaUseCase implements IUseCase<CreateSystemR
         Set<String> uniqueCodes = new HashSet<>();
         Set<UUID> uniqueFrameworkIds = new HashSet<>();
 
+        // Tích luỹ order đã có trong version (DB) + order mới trong cùng batch để chống trùng thứ tự
+        Set<Integer> ordersSoFar = new HashSet<>();
+        rubricCriterionRepository.findByRubricVersionId(command.versionId())
+                .forEach(c -> ordersSoFar.add(c.getOrder()));
+
         List<RubricCriterion> criteriaToSave = command.criteria().stream().map(cCmd -> {
 
             String safeCode = StringNormalization.trimAndCollapseSpaces(cCmd.code());
@@ -131,6 +137,9 @@ public class CreateSystemRubricCriteriaUseCase implements IUseCase<CreateSystemR
             if (cCmd.weight() != null && cCmd.weight().compareTo(BigDecimal.ZERO) < 0) {
                 throw new IllegalArgumentException("Tiêu chí '" + safeCode + "': Trọng số (weight) không được là số âm.");
             }
+
+            // Check trùng thứ tự (order) với sibling đã có trong version hoặc trong cùng batch
+            RubricOrderValidator.assertNoDuplicateOrder(ordersSoFar, cCmd.order(), safeName);
 
             // Validate nằm trong thang điểm tổng của RubricVersion
             ScoreRangeValidator.assertWithinScale(version.getScoringScaleMin(), version.getScoringScaleMax(),
@@ -167,7 +176,7 @@ public class CreateSystemRubricCriteriaUseCase implements IUseCase<CreateSystemR
             rubricCriterionRepository.saveAll(criteriaToSave);
         } catch (DataIntegrityViolationException e) {
             // Nhờ bước Validate DB phía trên, lúc này ta chắc chắn 100% DataIntegrityViolationException ở đây là lỗi Unique Constraint (Trùng lặp Code/Framework với dữ liệu CŨ đã lưu từ đợt trước)
-            throw new IllegalStateException("Lỗi lưu dữ liệu: Mã tiêu chí hoặc Khung tiêu chuẩn (Framework) đã tồn tại trong phiên bản Rubric hệ thống này từ trước.");
+            throw new IllegalStateException("Lỗi lưu dữ liệu: Mã tiêu chí, Khung tiêu chuẩn (Framework) hoặc Thứ tự (order) đã tồn tại trong phiên bản Rubric hệ thống này từ trước.");
         }
 
         return criteriaToSave.stream().map(rc -> rc.getId()).collect(Collectors.toList());

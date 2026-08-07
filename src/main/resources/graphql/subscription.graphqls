@@ -164,7 +164,9 @@ type TokenPurchase {
 type Invoice {
     id: ID!
     invoiceNumber: String!
-    subscriptionId: ID!
+    # Chỉ được gán sau khi thanh toán thành công (InvoiceSettlementService.settle()) — null với hóa
+    # đơn còn PENDING hoặc đã CANCELLED/FAILED mà chưa từng chốt.
+    subscriptionId: ID
     sourceType: InvoiceSourceType!
     sourceId: ID!
     issueDate: String

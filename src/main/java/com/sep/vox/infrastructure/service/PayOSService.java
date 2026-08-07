@@ -8,6 +8,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
@@ -47,6 +49,10 @@ public class PayOSService implements PaymentProcessPort {
 
     private static final String HMAC_ALGORITHM = "HmacSHA256";
     private static final String SUCCESS_CODE = "00";
+
+    // Đủ ngắn để đưa hóa đơn PENDING treo mãi về trạng thái cuối trong một khoảng thời gian xác định,
+    // và ngắn hơn chu kỳ quét của PendingInvoiceReconciler (5 phút) để lần quét kế tiếp bắt kịp ngay.
+    private static final long PAYMENT_LINK_EXPIRATION_MINUTES = 3;
 
     private final PayOS payOSClient;
     private final JsonMapper jsonMapper;
@@ -90,6 +96,7 @@ public class PayOSService implements PaymentProcessPort {
             .description(command.description())
             .returnUrl(returnUrl)
             .cancelUrl(cancelUrl)
+            .expiredAt(Instant.now().plus(PAYMENT_LINK_EXPIRATION_MINUTES, ChronoUnit.MINUTES).getEpochSecond())
             .build();
         var response = payOSClient.paymentRequests().create(paymentLinkRequest);
         return PaymentCheckoutResult.redirect(response.getCheckoutUrl(), response.getPaymentLinkId());

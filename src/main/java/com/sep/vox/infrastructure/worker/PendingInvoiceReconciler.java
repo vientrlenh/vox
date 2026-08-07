@@ -67,10 +67,14 @@ public class PendingInvoiceReconciler {
                 var paymentPort = paymentProcessResolver.resolve(invoice.getPaymentProvider());
                 var remoteStatus = paymentPort.getPaymentLinkStatus(invoice.getProviderOrderRef()).status();
                 if (remoteStatus == PaymentLinkRemoteStatus.PAID) {
+                    LOGGER.info("[RECONCILER] Chốt hóa đơn {} (orderRef={}) thành PAID qua polling {}",
+                        invoice.getId(), invoice.getProviderOrderRef(), invoice.getPaymentProvider());
                     settlementService.settle(invoice, true);
                 } else {
                     var failureStatus = toFailureStatus(remoteStatus);
                     if (failureStatus != null) {
+                        LOGGER.info("[RECONCILER] Chốt hóa đơn {} (orderRef={}) thành {} qua polling {}",
+                            invoice.getId(), invoice.getProviderOrderRef(), failureStatus, invoice.getPaymentProvider());
                         settlementService.settle(invoice, false, failureStatus);
                     }
                 }

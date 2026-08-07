@@ -13,6 +13,7 @@ import com.sep.vox.domain.model.question.QuestionType;
 
 public interface QuestionRepository {
     Question save(Question question);
+    List<Question> saveAll(Collection<Question> questions);
     Optional<Question> findById(UUID id);
     /**
      * Lookup thẳng theo id, KHÔNG check quyền — chỉ dùng ở những nơi quyền xem đã được

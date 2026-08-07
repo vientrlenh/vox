@@ -17,4 +17,5 @@ public interface ExamPaperItemRepository {
     List<ExamPaperItem> findByPaperIdIn(Collection<UUID> paperIds);
     boolean existsUnassignedItemByPaperId(UUID paperId);
     void deleteById(UUID id);
+    void deleteByPaperIdIn(Collection<UUID> paperIds);
 }

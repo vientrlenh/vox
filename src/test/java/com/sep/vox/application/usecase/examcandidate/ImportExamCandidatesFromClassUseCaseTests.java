@@ -5,9 +5,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
@@ -21,7 +23,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.ForbiddenException;
+import com.sep.vox.application.exception.PlanLimitExceededException;
 import com.sep.vox.application.port.input.command.ImportExamCandidatesFromClassCommand;
+import com.sep.vox.application.port.input.service.ClassTestTokenQuotaGuardService;
 import com.sep.vox.application.port.input.service.ExamDirectoryAccessService;
 import com.sep.vox.application.port.input.service.ExamDirectoryAccessService.ExamDirectoryScope;
 import com.sep.vox.application.port.input.usecase.examcandidate.ImportExamCandidatesFromClassUseCase;
@@ -29,6 +33,8 @@ import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
+import com.sep.vox.domain.model.exam.ExamKind;
+import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassUser;
 import com.sep.vox.domain.model.user.SchoolRoleCodes;
@@ -45,6 +51,7 @@ class ImportExamCandidatesFromClassUseCaseTests {
     private SchoolClassUserRepository schoolClassUserRepository;
     private UserRoleQueryRepository userRoleQueryRepository;
     private ExamDirectoryAccessService examDirectoryAccessService;
+    private ClassTestTokenQuotaGuardService classTestTokenQuotaGuardService;
     private ImportExamCandidatesFromClassUseCase useCase;
 
     private final UUID userId = UUID.randomUUID();
@@ -65,9 +72,10 @@ class ImportExamCandidatesFromClassUseCaseTests {
         schoolClassUserRepository = mock(SchoolClassUserRepository.class);
         userRoleQueryRepository = mock(UserRoleQueryRepository.class);
         examDirectoryAccessService = mock(ExamDirectoryAccessService.class);
+        classTestTokenQuotaGuardService = mock(ClassTestTokenQuotaGuardService.class);
         useCase = new ImportExamCandidatesFromClassUseCase(
             examRepository, examCandidateRepository, schoolClassRepository, schoolClassUserRepository,
-            userRoleQueryRepository, examDirectoryAccessService);
+            userRoleQueryRepository, examDirectoryAccessService, classTestTokenQuotaGuardService);
 
         var exam = exam();
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
@@ -131,6 +139,51 @@ class ImportExamCandidatesFromClassUseCaseTests {
     }
 
     @Test
+    void should_reject_importing_class_into_scheduled_class_test_when_token_quota_exceeded() {
+        var exam = scheduledClassTest();
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        when(examDirectoryAccessService.resolve(exam)).thenReturn(new ExamDirectoryScope(userId, schoolId, true));
+        when(schoolClassUserRepository.findBySchoolClassId(classId, 1, 1000))
+            .thenReturn(new PageResult<>(List.of(classUser(activeStudent, true)), 1, 1000, 1, 1));
+        when(userRoleQueryRepository.findUserIdsByRoleCode(anyCollection(), eq(SchoolRoleCodes.STUDENT)))
+            .thenReturn(Set.of(activeStudent));
+        when(examCandidateRepository.findStudentIdsByExamId(examId)).thenReturn(Set.of());
+        when(examCandidateRepository.saveAll(anyCollection())).thenAnswer(inv -> {
+            Collection<ExamCandidate> arg = inv.getArgument(0);
+            return arg.stream().peek(c -> c.setId(UUID.randomUUID())).toList();
+        });
+        doThrow(new PlanLimitExceededException("Đã vượt quá hạn mức"))
+            .when(classTestTokenQuotaGuardService).requireWithinTokenQuota(exam);
+
+        assertThatThrownBy(() -> useCase.execute(new ImportExamCandidatesFromClassCommand(examId, classId)))
+            .isInstanceOf(PlanLimitExceededException.class)
+            .hasMessageContaining("vượt quá hạn mức");
+    }
+
+    @Test
+    void should_not_check_quota_when_importing_into_draft_class_test() {
+        // Chưa publish thì publish sau này (UpdateExamStatusUseCase) sẽ tự soi với số thí sinh cuối cùng.
+        var exam = exam();
+        exam.setKind(ExamKind.CLASS_TEST);
+        exam.setStatus(ExamStatus.DRAFT);
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        when(examDirectoryAccessService.resolve(exam)).thenReturn(new ExamDirectoryScope(userId, schoolId, true));
+        when(schoolClassUserRepository.findBySchoolClassId(classId, 1, 1000))
+            .thenReturn(new PageResult<>(List.of(classUser(activeStudent, true)), 1, 1000, 1, 1));
+        when(userRoleQueryRepository.findUserIdsByRoleCode(anyCollection(), eq(SchoolRoleCodes.STUDENT)))
+            .thenReturn(Set.of(activeStudent));
+        when(examCandidateRepository.findStudentIdsByExamId(examId)).thenReturn(Set.of());
+        when(examCandidateRepository.saveAll(anyCollection())).thenAnswer(inv -> {
+            Collection<ExamCandidate> arg = inv.getArgument(0);
+            return arg.stream().peek(c -> c.setId(UUID.randomUUID())).toList();
+        });
+
+        useCase.execute(new ImportExamCandidatesFromClassCommand(examId, classId));
+
+        verifyNoInteractions(classTestTokenQuotaGuardService);
+    }
+
+    @Test
     void should_return_empty_when_nothing_to_import() {
         when(schoolClassUserRepository.findBySchoolClassId(classId, 1, 1000)).thenReturn(new PageResult<>(List.of(
             classUser(existingStudent, true)
@@ -159,6 +212,13 @@ class ImportExamCandidatesFromClassUseCaseTests {
         var exam = new Exam();
         exam.setId(examId);
         exam.setSchoolId(schoolId);
+        return exam;
+    }
+
+    private Exam scheduledClassTest() {
+        var exam = exam();
+        exam.setKind(ExamKind.CLASS_TEST);
+        exam.setStatus(ExamStatus.SCHEDULED);
         return exam;
     }
 }

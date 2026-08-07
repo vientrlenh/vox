@@ -38,8 +38,8 @@ import com.sep.vox.domain.repository.TokenPurchaseRepository;
 
 // Logic "chốt" kết quả thanh toán 1 invoice (PAID -> approve subscription/renew/finalize token purchase,
 // hoặc FAILED). Không phụ thuộc cổng thanh toán nào: dùng chung cho callback của mọi provider
-// (PayOSWebhookHandler, SePayIpnHandler), luồng đồng bộ theo yêu cầu FE (SyncInvoicePaymentStatusUseCase)
-// và job quét định kỳ — để business logic chỉ nằm ở đúng 1 chỗ.
+// (ProcessPaymentCallbackUseCase) và job quét định kỳ (PendingInvoiceReconciler) — để business logic
+// chỉ nằm ở đúng 1 chỗ.
 @Service
 public class InvoiceSettlementService {
 
@@ -93,8 +93,8 @@ public class InvoiceSettlementService {
     //
     // Lock lại invoice bằng SELECT ... FOR UPDATE trước khi check PENDING: invoice truyền vào có thể đã
     // được load từ trước (không lock) nên nếu chỉ check trên object đó, 2 lời gọi settle() song song cho
-    // cùng 1 invoice (vd: FE gọi sync-status 2 lần do StrictMode, hoặc sync-status đua với webhook PayOS)
-    // đều có thể đọc thấy PENDING trước khi bên kia commit, dẫn tới chốt thanh toán trùng 2 lần.
+    // cùng 1 invoice (vd: webhook PayOS đua với PendingInvoiceReconciler quét cùng lúc) đều có thể đọc
+    // thấy PENDING trước khi bên kia commit, dẫn tới chốt thanh toán trùng 2 lần.
     @Transactional
     public void settle(Invoice invoice, boolean success, InvoiceStatus failureStatus) {
         invoice = invoiceRepository.findByIdForUpdate(invoice.getId())

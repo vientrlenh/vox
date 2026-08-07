@@ -76,4 +76,12 @@ public class ExamPaperItemRepositoryImpl implements ExamPaperItemRepository {
     public void deleteById(UUID id) {
         springDataExamPaperItemRepository.deleteById(id);
     }
+
+    @Override
+    public void deleteByPaperIdIn(java.util.Collection<UUID> paperIds) {
+        if (paperIds == null || paperIds.isEmpty()) {
+            return;
+        }
+        springDataExamPaperItemRepository.deleteByPaperIdIn(paperIds);
+    }
 }

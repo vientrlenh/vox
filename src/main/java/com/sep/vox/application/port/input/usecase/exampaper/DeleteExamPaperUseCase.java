@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.exampaper;
 
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,13 +15,17 @@ import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamPaperStatus;
 import com.sep.vox.domain.repository.ExamMemberRepository;
+import com.sep.vox.domain.repository.ExamPaperItemRepository;
 import com.sep.vox.domain.repository.ExamPaperRepository;
+import com.sep.vox.domain.repository.ExamPaperSectionRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 
 @Service
 public class DeleteExamPaperUseCase implements IUseCase<DeleteExamPaperCommand, Void> {
 
     private final ExamPaperRepository examPaperRepository;
+    private final ExamPaperSectionRepository examPaperSectionRepository;
+    private final ExamPaperItemRepository examPaperItemRepository;
     private final ExamRepository examRepository;
     private final ExamMemberRepository examMemberRepository;
     private final RecalculateExamTimeDurationService recalculateExamTimeDurationService;
@@ -27,11 +33,15 @@ public class DeleteExamPaperUseCase implements IUseCase<DeleteExamPaperCommand, 
 
     public DeleteExamPaperUseCase(
             ExamPaperRepository examPaperRepository,
+            ExamPaperSectionRepository examPaperSectionRepository,
+            ExamPaperItemRepository examPaperItemRepository,
             ExamRepository examRepository,
             ExamMemberRepository examMemberRepository,
             RecalculateExamTimeDurationService recalculateExamTimeDurationService,
             UserContextPort userContextPort) {
         this.examPaperRepository = examPaperRepository;
+        this.examPaperSectionRepository = examPaperSectionRepository;
+        this.examPaperItemRepository = examPaperItemRepository;
         this.examRepository = examRepository;
         this.examMemberRepository = examMemberRepository;
         this.recalculateExamTimeDurationService = recalculateExamTimeDurationService;
@@ -57,6 +67,11 @@ public class DeleteExamPaperUseCase implements IUseCase<DeleteExamPaperCommand, 
             throw new IllegalStateException("Chỉ xoá được đề thi khi còn ở trạng thái DRAFT");
         }
 
+        // Phần thi và câu trong đề treo trên paper_id mà không có FK nào dọn hộ: xoá mỗi dòng đề là
+        // để lại section/item mồ côi. Con trước cha.
+        var paperIds = List.of(paper.getId());
+        examPaperItemRepository.deleteByPaperIdIn(paperIds);
+        examPaperSectionRepository.deleteByPaperIdIn(paperIds);
         examPaperRepository.deleteById(paper.getId());
         recalculateExamTimeDurationService.recalculate(paper.getExamId());
         return null;

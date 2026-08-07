@@ -16,7 +16,7 @@ public class Invoice {
     private BigDecimal amount;
     private InvoiceStatus status;
     // Cổng thanh toán đã tạo hóa đơn này. Quyết định adapter nào được dùng để hỏi trạng thái
-    // (SyncInvoicePaymentStatusUseCase, job đối soát) và xác thực callback nào áp cho nó.
+    // (PendingInvoiceReconciler) và xác thực callback nào áp cho nó.
     private PaymentMethod paymentProvider;
     // Mã đơn theo cách đánh của chính cổng đó (PayOS: orderCode dạng số; SePay PG:
     // order_invoice_number dạng chuỗi). Null với hóa đơn MANUAL.

@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.rubricsystem;
 
+import com.sep.vox.domain.service.rubric.RubricOrderValidator;
 import com.sep.vox.domain.service.rubric.RubricResultBandValidator;
 import com.sep.vox.domain.service.rubric.ScoreRangeValidator;
 import com.sep.vox.application.common.StringNormalization;
@@ -23,8 +24,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class UpdateSystemRubricResultBandUseCase implements IUseCase<UpdateSystemRubricResultBandCommand, UUID> {
@@ -98,6 +102,14 @@ public class UpdateSystemRubricResultBandUseCase implements IUseCase<UpdateSyste
                 .toList();
         String nameForError = safeName != null ? safeName : resultBand.getName();
         RubricResultBandValidator.assertNoOverlap(siblingBands, finalMinScore, finalMaxScore, nameForError);
+
+        // Validate không trùng thứ tự (order) với sibling khác trong cùng version
+        if (command.order() != null) {
+            Set<Integer> siblingOrders = siblingBands.stream()
+                    .map(RubricResultBand::getOrder)
+                    .collect(Collectors.toCollection(HashSet::new));
+            RubricOrderValidator.assertNoDuplicateOrder(siblingOrders, command.order(), nameForError);
+        }
 
         // Validate nằm trong thang điểm tổng của RubricVersion
         ScoreRangeValidator.assertWithinScale(version.getScoringScaleMin(), version.getScoringScaleMax(),

@@ -12,6 +12,7 @@ import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateExamCommand;
+import com.sep.vox.application.port.input.service.ClassTestTokenQuotaGuardService;
 import com.sep.vox.application.port.input.service.ExamAssessmentPolicyValidator;
 import com.sep.vox.application.port.input.service.ExamStreamConfigResolver;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -39,6 +40,7 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
     private final ExamAssessmentPolicyValidator examAssessmentPolicyValidator;
     private final ExamStreamConfigResolver examStreamConfigResolver;
     private final UserContextPort userContextPort;
+    private final ClassTestTokenQuotaGuardService classTestTokenQuotaGuardService;
 
     public UpdateExamUseCase(
             ExamRepository examRepository,
@@ -48,7 +50,8 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
             UserRoleQueryRepository userRoleQueryRepository,
             ExamAssessmentPolicyValidator examAssessmentPolicyValidator,
             ExamStreamConfigResolver examStreamConfigResolver,
-            UserContextPort userContextPort) {
+            UserContextPort userContextPort,
+            ClassTestTokenQuotaGuardService classTestTokenQuotaGuardService) {
         this.examAssessmentPolicyValidator = examAssessmentPolicyValidator;
         this.examStreamConfigResolver = examStreamConfigResolver;
         this.examRepository = examRepository;
@@ -57,6 +60,7 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
         this.schoolUserRepository = schoolUserRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
         this.userContextPort = userContextPort;
+        this.classTestTokenQuotaGuardService = classTestTokenQuotaGuardService;
     }
 
     @Override
@@ -106,6 +110,14 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
         }
         if (command.examTimeDurationSecond() != null) {
             exam.setExamTimeDurationSecond(command.examTimeDurationSecond());
+        }
+        // Bài trên lớp đã publish (SCHEDULED) vẫn sửa được duration/maxAttempt, nhưng đó là 2 input
+        // của ước lượng token đã soi lúc publish (UpdateExamStatusUseCase.validatePlanLimits) -- sửa
+        // xong mà không soi lại thì ước lượng cũ vô nghĩa, nên phải chạy lại đúng guard đó ở đây.
+        if (exam.getKind() == ExamKind.CLASS_TEST
+                && exam.getStatus() == ExamStatus.SCHEDULED
+                && (command.maxAttempt() != null || command.examTimeDurationSecond() != null)) {
+            classTestTokenQuotaGuardService.requireWithinTokenQuota(exam);
         }
         if (command.resultDecisionMethod() != null) {
             exam.setResultDecisionMethod(command.resultDecisionMethod());

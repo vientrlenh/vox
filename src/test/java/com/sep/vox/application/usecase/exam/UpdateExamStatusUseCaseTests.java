@@ -3,6 +3,7 @@ package com.sep.vox.application.usecase.exam;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -19,8 +20,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.port.input.command.UpdateExamStatusCommand;
+import com.sep.vox.application.exception.PlanLimitExceededException;
 import com.sep.vox.application.port.input.service.ExamCandidateResultFinalizationService;
 import com.sep.vox.application.port.input.service.ClassTestGradingAssignmentService;
+import com.sep.vox.application.port.input.service.ClassTestTokenQuotaGuardService;
 import com.sep.vox.application.port.input.service.ZeroScoreExamResultService;
 import com.sep.vox.application.port.input.usecase.exam.ExamQuestionSecureLockService;
 import com.sep.vox.application.port.input.usecase.exam.UpdateExamStatusUseCase;
@@ -34,10 +37,8 @@ import com.sep.vox.domain.model.exam.ExamPaper;
 import com.sep.vox.domain.model.exam.ExamSchedule;
 import com.sep.vox.domain.model.exam.ExamScheduleStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
-import com.sep.vox.domain.model.subscription.QuotaType;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.model.subscription.SubscriptionPlan;
-import com.sep.vox.domain.model.subscription.SubscriptionQuota;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
@@ -50,7 +51,6 @@ import com.sep.vox.domain.repository.ExamSessionRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
-import com.sep.vox.domain.repository.SubscriptionQuotaRepository;
 
 /**
  * Tập trung vào guard khung giờ ca thi ở action SCHEDULE. validatePlanLimits chạy trước nên phải
@@ -68,7 +68,7 @@ class UpdateExamStatusUseCaseTests {
     private UserRoleQueryRepository userRoleQueryRepository;
     private SchoolSubscriptionRepository schoolSubscriptionRepository;
     private SubscriptionPlanRepository subscriptionPlanRepository;
-    private SubscriptionQuotaRepository subscriptionQuotaRepository;
+    private ClassTestTokenQuotaGuardService classTestTokenQuotaGuardService;
     private UserContextPort userContextPort;
     private UpdateExamStatusUseCase useCase;
 
@@ -93,7 +93,7 @@ class UpdateExamStatusUseCaseTests {
         userRoleQueryRepository = mock(UserRoleQueryRepository.class);
         schoolSubscriptionRepository = mock(SchoolSubscriptionRepository.class);
         subscriptionPlanRepository = mock(SubscriptionPlanRepository.class);
-        subscriptionQuotaRepository = mock(SubscriptionQuotaRepository.class);
+        classTestTokenQuotaGuardService = mock(ClassTestTokenQuotaGuardService.class);
         userContextPort = mock(UserContextPort.class);
 
         useCase = new UpdateExamStatusUseCase(
@@ -113,10 +113,10 @@ class UpdateExamStatusUseCaseTests {
             mock(ExamQuestionSecureLockService.class),
             schoolSubscriptionRepository,
             subscriptionPlanRepository,
-            subscriptionQuotaRepository,
             userContextPort,
             mock(com.sep.vox.application.port.output.EventPublisherPort.class),
-            mock(ClassTestGradingAssignmentService.class));
+            mock(ClassTestGradingAssignmentService.class),
+            classTestTokenQuotaGuardService);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(examMemberRepository.existsByExamIdAndUserIdAndRole(examId, userId, ExamMemberRole.CHAIR))
@@ -150,6 +150,22 @@ class UpdateExamStatusUseCaseTests {
         assertThat(result).isNotNull();
         assertThat(schedule.getStatus()).isEqualTo(ExamScheduleStatus.PUBLISHED);
         verify(examScheduleRepository).save(schedule);
+    }
+
+    @Test
+    void should_reject_schedule_when_token_quota_exceeded() {
+        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        var schedule = schedule(ExamScheduleStatus.DRAFT, open, open.plus(2, ChronoUnit.HOURS));
+        when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(schedule));
+        givenScheduleReady(schedule);
+        doThrow(new PlanLimitExceededException("Đã vượt quá hạn mức"))
+            .when(classTestTokenQuotaGuardService).requireWithinTokenQuota(exam);
+
+        assertThatThrownBy(() -> useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null)))
+            .isInstanceOf(PlanLimitExceededException.class)
+            .hasMessageContaining("vượt quá hạn mức");
+        verify(examScheduleRepository, never()).save(any());
     }
 
     @Test
@@ -358,12 +374,10 @@ class UpdateExamStatusUseCaseTests {
         when(subscriptionPlanRepository.findById(planId)).thenReturn(Optional.of(plan));
 
         when(examCandidateRepository.countByExamId(examId)).thenReturn(1L);
-
-        var quota = mock(SubscriptionQuota.class);
-        when(quota.getTotalAllocated()).thenReturn(Integer.MAX_VALUE);
-        when(quota.getUsedQuantity()).thenReturn(0);
-        when(subscriptionQuotaRepository.findBySubscriptionIdAndQuotaType(subscriptionId, QuotaType.GRADING))
-            .thenReturn(Optional.of(quota));
+        // classTestTokenQuotaGuardService is a plain mock: requireWithinTokenQuota() no-ops by default,
+        // i.e. "đủ hạn mức". Chi tiết tính toán GRADING/CLASS_TEST/hạn mức cá nhân được test riêng ở
+        // ClassTestTokenQuotaGuardServiceTests; ở đây chỉ cần xác nhận UpdateExamStatusUseCase có gọi
+        // guard và tôn trọng exception mà guard ném ra (xem should_reject_schedule_when_token_quota_exceeded).
     }
 
     private Exam classTest(Integer examTimeDurationSecond, Instant openAt, Instant closeAt) {

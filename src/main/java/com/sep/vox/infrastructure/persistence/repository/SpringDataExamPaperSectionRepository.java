@@ -11,4 +11,5 @@ import com.sep.vox.infrastructure.persistence.entity.ExamPaperSectionJpaEntity;
 public interface SpringDataExamPaperSectionRepository extends JpaRepository<ExamPaperSectionJpaEntity, UUID> {
     List<ExamPaperSectionJpaEntity> findByPaperIdOrderByOrderAsc(UUID paperId);
     List<ExamPaperSectionJpaEntity> findByPaperIdInOrderByOrderAsc(Collection<UUID> paperIds);
+    void deleteByPaperIdIn(Collection<UUID> paperIds);
 }

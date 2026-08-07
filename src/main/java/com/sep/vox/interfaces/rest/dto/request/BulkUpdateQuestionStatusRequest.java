@@ -6,9 +6,11 @@ import java.util.UUID;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 public record BulkUpdateQuestionStatusRequest(
     @NotEmpty(message = "Danh sách câu hỏi không được để trống")
+    @Size(max = 200, message = "Chỉ được cập nhật tối đa 200 câu hỏi mỗi lần")
     List<UUID> questionIds,
 
     @NotBlank(message = "Action là bắt buộc")

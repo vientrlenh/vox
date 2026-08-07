@@ -22,7 +22,7 @@ public interface SpringDataImportSessionRepository extends JpaRepository<ImportS
           AND (:type IS NULL OR s.type = :type)
           AND (:status IS NULL OR s.status = :status)
         """)
-    Page<ImportSessionJpaEntity> findBySchoolIdWithFilters(UUID schoolId, String type, String status, Pageable pageable);
+    Page<ImportSessionJpaEntity> findBySchoolIdWithFilters(@Param("schoolId") UUID schoolId, @Param("type") String type, @Param("status") String status, Pageable pageable);
 
     
     @Modifying

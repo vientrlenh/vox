@@ -41,10 +41,8 @@ import com.sep.vox.application.port.input.usecase.subscription.PreviewRenewalUse
 import com.sep.vox.application.port.input.usecase.subscription.RejectRequestUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.RenewSubscriptionUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.SubmitRequestUseCase;
-import com.sep.vox.application.port.input.usecase.subscription.SyncInvoicePaymentStatusUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewClassTestQuotaAllocationsUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewPracticeQuotaAllocationsUseCase;
-import com.sep.vox.domain.dto.InvoiceDto;
 import com.sep.vox.domain.dto.PaymentLinkDto;
 import com.sep.vox.domain.dto.QuotaUserAllocationSummaryDto;
 import com.sep.vox.domain.dto.RenewalPreviewDto;
@@ -82,7 +80,6 @@ public class SubscriptionController {
     private final CreatePaymentLinkForTokenPurchaseUseCase createPaymentLinkForTokenPurchaseUseCase;
     private final CreatePaymentLinkForRenewalUseCase createPaymentLinkForRenewalUseCase;
     private final PreviewRenewalUseCase previewRenewalUseCase;
-    private final SyncInvoicePaymentStatusUseCase syncInvoicePaymentStatusUseCase;
     private final AllocateClassTestQuotaToTeachersUseCase allocateClassTestQuotaToTeachersUseCase;
     private final AllocatePracticeQuotaToStudentsUseCase allocatePracticeQuotaToStudentsUseCase;
     private final ViewClassTestQuotaAllocationsUseCase viewClassTestQuotaAllocationsUseCase;
@@ -102,7 +99,6 @@ public class SubscriptionController {
             CreatePaymentLinkForTokenPurchaseUseCase createPaymentLinkForTokenPurchaseUseCase,
             CreatePaymentLinkForRenewalUseCase createPaymentLinkForRenewalUseCase,
             PreviewRenewalUseCase previewRenewalUseCase,
-            SyncInvoicePaymentStatusUseCase syncInvoicePaymentStatusUseCase,
             AllocateClassTestQuotaToTeachersUseCase allocateClassTestQuotaToTeachersUseCase,
             AllocatePracticeQuotaToStudentsUseCase allocatePracticeQuotaToStudentsUseCase,
             ViewClassTestQuotaAllocationsUseCase viewClassTestQuotaAllocationsUseCase,
@@ -120,7 +116,6 @@ public class SubscriptionController {
         this.createPaymentLinkForTokenPurchaseUseCase = createPaymentLinkForTokenPurchaseUseCase;
         this.createPaymentLinkForRenewalUseCase = createPaymentLinkForRenewalUseCase;
         this.previewRenewalUseCase = previewRenewalUseCase;
-        this.syncInvoicePaymentStatusUseCase = syncInvoicePaymentStatusUseCase;
         this.allocateClassTestQuotaToTeachersUseCase = allocateClassTestQuotaToTeachersUseCase;
         this.allocatePracticeQuotaToStudentsUseCase = allocatePracticeQuotaToStudentsUseCase;
         this.viewClassTestQuotaAllocationsUseCase = viewClassTestQuotaAllocationsUseCase;
@@ -233,19 +228,6 @@ public class SubscriptionController {
             @Valid @RequestBody BuyTokensRequest request) {
         var data = createPaymentLinkForTokenPurchaseUseCase.execute(BuyTokensCommandMapper.fromRequest(schoolId, request));
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Tạo link thanh toán thành công", data));
-    }
-
-    // FE gọi khi cổng thanh toán redirect user về returnUrl/cancelUrl, vì cổng không gọi webhook
-    // trong các trường hợp user tự hủy/không hoàn tất thanh toán trên checkout UI.
-    //
-    // Định danh bằng invoiceId (không phải mã đơn phía cổng như trước): mã đơn chỉ duy nhất trong
-    // phạm vi một cổng nên không còn tra cứu được một mình. invoiceId đã có sẵn trong PaymentLinkDto
-    // mà FE nhận lúc tạo payment link.
-    @PostMapping("/invoices/{invoiceId}/sync-status")
-    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<InvoiceDto>> syncInvoicePaymentStatus(@PathVariable(name = "invoiceId") UUID invoiceId) {
-        var data = syncInvoicePaymentStatusUseCase.execute(invoiceId);
-        return ResponseEntity.ok(ApiResponse.success("Đồng bộ trạng thái hóa đơn thành công", data));
     }
 
     @PutMapping("/schools/{schoolId}/teachers/class-test-quota")

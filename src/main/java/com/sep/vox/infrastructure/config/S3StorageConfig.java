@@ -7,6 +7,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.sep.vox.infrastructure.initializer.S3BucketInitializer;
 import com.sep.vox.infrastructure.properties.AwsS3StorageProperties;
 
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -17,6 +18,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3ClientBuilder;
 import software.amazon.awssdk.services.s3.S3Configuration;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import tools.jackson.databind.json.JsonMapper;
 
 @Configuration
 @EnableConfigurationProperties(AwsS3StorageProperties.class)
@@ -33,6 +35,16 @@ public class S3StorageConfig {
 
         configureCredentialsAndEndpoint(properties, builder);
         return builder.build();
+    }
+
+    @Bean
+    @ConditionalOnProperty(prefix = "storage.s3", name = "ensure-bucket", havingValue = "true")
+    public S3BucketInitializer s3BucketInitializer(
+        S3Client s3Client,
+        AwsS3StorageProperties properties,
+        JsonMapper jsonMapper
+    ) {
+        return new S3BucketInitializer(s3Client, properties, jsonMapper);
     }
 
     @Bean

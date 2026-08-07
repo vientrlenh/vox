@@ -26,8 +26,8 @@ public class ExamTurnController {
     @GetMapping("/upload-url")
     @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<ApiResponse<?>> getUploadUrl(
-            @RequestParam UUID attemptAnswerId,
-            @RequestParam int turnOrder) {
+            @RequestParam(name = "attemptAnswerId") UUID attemptAnswerId,
+            @RequestParam(name = "turnOrder") int turnOrder) {
         var data = getTurnUploadUrlUseCase.execute(new GetTurnUploadUrlQuery(attemptAnswerId, turnOrder));
         return ResponseEntity.ok(ApiResponse.success("Lấy upload URL thành công", data));
     }

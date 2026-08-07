@@ -19,6 +19,7 @@ public interface ExamCandidateRepository {
     Map<UUID, Long> countByExamIdIn(Collection<UUID> examIds);
 
     void deleteById(UUID id);
+    void deleteByExamId(UUID examId);
 
     Optional<ExamCandidate> findById(UUID id);
     Optional<ExamCandidate> findByExamIdAndStudentId(UUID examId, UUID studentId);

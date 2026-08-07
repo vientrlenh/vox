@@ -75,7 +75,7 @@ public class QuestionTopicController {
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<QuestionTopicDto>> updateStatus(
-            @PathVariable UUID id,
+            @PathVariable(name = "id") UUID id,
             @Valid @RequestBody UpdateQuestionTopicStatusRequest request) {
         var command = UpdateQuestionTopicStatusCommandMapper.fromRequest(id, request);
         var data = updateQuestionTopicStatusUseCase.execute(command);
@@ -85,7 +85,7 @@ public class QuestionTopicController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable(name = "id") UUID id) {
         deleteQuestionTopicUseCase.execute(new DeleteQuestionTopicCommand(id));
         ApiResponse<Void> response = ApiResponse.success("Xóa chủ đề câu hỏi thành công");
         return ResponseEntity.ok(response);

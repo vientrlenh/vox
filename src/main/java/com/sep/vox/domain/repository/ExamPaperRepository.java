@@ -19,4 +19,5 @@ public interface ExamPaperRepository {
     boolean existsByExamId(UUID examId);
     int nextVariant(UUID examId);
     void deleteById(UUID id);
+    void deleteByExamId(UUID examId);
 }

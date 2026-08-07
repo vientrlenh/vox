@@ -20,6 +20,7 @@ import com.sep.vox.domain.repository.ExamItemEvaluationTurnRepository;
 import com.sep.vox.domain.repository.ExamItemResponseRepository;
 import com.sep.vox.domain.repository.ExamItemResponseTurnRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
+import com.sep.vox.domain.repository.ExamRecordingRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
 import com.sep.vox.domain.repository.ExamResultAppealItemRepository;
@@ -60,6 +61,7 @@ public class DeleteExamSessionUseCase implements IUseCase<UUID, Void> {
     private final ExamResultAppealItemRepository examResultAppealItemRepository;
     private final ExamGradingAssignmentRepository examGradingAssignmentRepository;
     private final ExamResultStatusHistoryRepository examResultStatusHistoryRepository;
+    private final ExamRecordingRepository examRecordingRepository;
 
     public DeleteExamSessionUseCase(
             ExamSessionRepository examSessionRepository,
@@ -77,7 +79,8 @@ public class DeleteExamSessionUseCase implements IUseCase<UUID, Void> {
             ExamResultAppealRepository examResultAppealRepository,
             ExamResultAppealItemRepository examResultAppealItemRepository,
             ExamGradingAssignmentRepository examGradingAssignmentRepository,
-            ExamResultStatusHistoryRepository examResultStatusHistoryRepository) {
+            ExamResultStatusHistoryRepository examResultStatusHistoryRepository,
+            ExamRecordingRepository examRecordingRepository) {
         this.examSessionRepository = examSessionRepository;
         this.examRepository = examRepository;
         this.examMemberRepository = examMemberRepository;
@@ -94,6 +97,7 @@ public class DeleteExamSessionUseCase implements IUseCase<UUID, Void> {
         this.examResultAppealItemRepository = examResultAppealItemRepository;
         this.examGradingAssignmentRepository = examGradingAssignmentRepository;
         this.examResultStatusHistoryRepository = examResultStatusHistoryRepository;
+        this.examRecordingRepository = examRecordingRepository;
     }
 
     @Override
@@ -149,6 +153,10 @@ public class DeleteExamSessionUseCase implements IUseCase<UUID, Void> {
         });
 
         examCandidateResultRepository.deleteBySessionId(sessionId);
+        // Bản ghi hình/tiếng cũng treo trên phiên thi và cũng không có FK. Chỉ xoá dòng trong DB:
+        // file trên S3 để lifecycle rule của bucket dọn, vì xoá file không rollback được cùng
+        // transaction này.
+        examRecordingRepository.deleteByExamSessionId(sessionId);
         examSessionRepository.deleteById(sessionId);
         return null;
     }

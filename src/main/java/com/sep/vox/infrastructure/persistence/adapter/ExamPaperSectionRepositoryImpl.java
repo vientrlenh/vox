@@ -53,4 +53,12 @@ public class ExamPaperSectionRepositoryImpl implements ExamPaperSectionRepositor
     public void deleteById(UUID id) {
         springDataExamPaperSectionRepository.deleteById(id);
     }
+
+    @Override
+    public void deleteByPaperIdIn(java.util.Collection<UUID> paperIds) {
+        if (paperIds == null || paperIds.isEmpty()) {
+            return;
+        }
+        springDataExamPaperSectionRepository.deleteByPaperIdIn(paperIds);
+    }
 }

@@ -35,6 +35,7 @@ import com.sep.vox.domain.repository.ExamItemEvaluationTurnRepository;
 import com.sep.vox.domain.repository.ExamItemResponseRepository;
 import com.sep.vox.domain.repository.ExamItemResponseTurnRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
+import com.sep.vox.domain.repository.ExamRecordingRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamResultAppealItemRepository;
 import com.sep.vox.domain.repository.ExamResultAppealRepository;
@@ -56,6 +57,7 @@ public class DeleteExamSessionUseCaseTests {
     private ExamGradingAssignmentRepository examGradingAssignmentRepository;
     private ExamResultAppealItemRepository examResultAppealItemRepository;
     private ExamResultStatusHistoryRepository examResultStatusHistoryRepository;
+    private ExamRecordingRepository examRecordingRepository;
     private UserContextPort userContextPort;
     private SchoolUserRepository schoolUserRepository;
     private UserRoleQueryRepository userRoleQueryRepository;
@@ -78,6 +80,7 @@ public class DeleteExamSessionUseCaseTests {
         examGradingAssignmentRepository = mock(ExamGradingAssignmentRepository.class);
         examResultAppealItemRepository = mock(ExamResultAppealItemRepository.class);
         examResultStatusHistoryRepository = mock(ExamResultStatusHistoryRepository.class);
+        examRecordingRepository = mock(ExamRecordingRepository.class);
         userContextPort = mock(UserContextPort.class);
         schoolUserRepository = mock(SchoolUserRepository.class);
         userRoleQueryRepository = mock(UserRoleQueryRepository.class);
@@ -98,7 +101,8 @@ public class DeleteExamSessionUseCaseTests {
             examResultAppealRepository,
             examResultAppealItemRepository,
             examGradingAssignmentRepository,
-            examResultStatusHistoryRepository
+            examResultStatusHistoryRepository,
+            examRecordingRepository
         );
 
         var session = new ExamSession();
@@ -184,6 +188,19 @@ public class DeleteExamSessionUseCaseTests {
 
         verify(examResultAppealRepository, never()).findByCandidateResultId(any());
         verify(examSessionRepository).deleteById(sessionId);
+    }
+
+    @Test
+    void should_delete_recordings_before_the_session() {
+        when(examCandidateResultRepository.findBySessionId(sessionId)).thenReturn(Optional.empty());
+
+        useCase.execute(sessionId);
+
+        // exam_recordings treo trên exam_session_id và cũng không có FK: bỏ sót là để lại bản ghi
+        // hình/tiếng trỏ vào phiên đã biến mất. File trên S3 cố ý giữ lại cho lifecycle của bucket.
+        var inOrder = org.mockito.Mockito.inOrder(examRecordingRepository, examSessionRepository);
+        inOrder.verify(examRecordingRepository).deleteByExamSessionId(sessionId);
+        inOrder.verify(examSessionRepository).deleteById(sessionId);
     }
 
     @Test

@@ -148,7 +148,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
                 requireTransition(exam, ExamStatus.DRAFT, ExamStatus.SCHEDULED);
                 validatePlanLimits(exam);
                 if (exam.getKind() == ExamKind.CLASS_TEST) {
-                    publishClassTestSchedules(exam, currentUserId);
+                    requireClassTestScheduleReady(exam);
                 } else {
                     requireCentralizedScheduleReadiness(exam);
                 }
@@ -328,21 +328,26 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
         }
     }
 
-    private void publishClassTestSchedules(com.sep.vox.domain.model.exam.Exam exam, java.util.UUID currentUserId) {
+    /**
+     * Trước đây hàm này tự đẩy mọi ca thi DRAFT sang PUBLISHED khi giáo viên bấm lên lịch — bài trên
+     * lớp và kỳ thi tập trung vì thế chạy hai mô hình ngược nhau, và ca thi đổi trạng thái sau lưng
+     * người dùng. Giờ nó chỉ KIỂM TRA, không ghi: công bố từng ca là thao tác riêng
+     * ({@code UpdateExamScheduleStatusUseCase}, không phân biệt loại bài), còn lên lịch bài chỉ chốt
+     * lại kết quả của thao tác đó — đúng như {@link #requireCentralizedScheduleReadiness}.
+     */
+    private void requireClassTestScheduleReady(com.sep.vox.domain.model.exam.Exam exam) {
         requireClassTestScheduleWindow(exam);
         var schedules = examScheduleRepository.findByExamId(exam.getId());
         if (schedules.isEmpty()) {
             throw new IllegalStateException("Bài kiểm tra trên lớp chưa có lịch");
         }
         requireClassTestScheduleReadiness(exam, schedules);
-        var now = Instant.now();
-        for (var schedule : schedules) {
-            if (schedule.getStatus() == ExamScheduleStatus.DRAFT) {
-                schedule.setStatus(ExamScheduleStatus.PUBLISHED);
-                schedule.setUpdatedAt(now);
-                schedule.setUpdatedBy(currentUserId);
-                examScheduleRepository.save(schedule);
-            }
+        var draftScheduleCount = schedules.stream()
+            .filter(schedule -> schedule.getStatus() == ExamScheduleStatus.DRAFT)
+            .count();
+        if (draftScheduleCount > 0) {
+            throw new IllegalStateException(
+                "Còn " + draftScheduleCount + " ca thi chưa được công bố, không thể lên lịch bài kiểm tra");
         }
     }
 

@@ -137,19 +137,40 @@ class UpdateExamStatusUseCaseTests {
         verify(examScheduleRepository, never()).save(any());
     }
 
+    /**
+     * Lên lịch bài trên lớp KHÔNG còn tự công bố ca thi: ca phải đã được công bố tay từ trước
+     * (UpdateExamScheduleStatusUseCase), và action này không ghi gì lên ca — giống kỳ thi tập trung.
+     */
     @Test
-    void should_publish_class_test_schedules_when_window_valid() {
+    void should_schedule_class_test_when_all_schedules_published() {
+        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        var schedule = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
+        when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(schedule));
+        givenScheduleReady(schedule);
+
+        var result = useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null));
+
+        assertThat(result.status()).isEqualTo(ExamStatus.SCHEDULED.name());
+        assertThat(schedule.getStatus()).isEqualTo(ExamScheduleStatus.PUBLISHED);
+        verify(examScheduleRepository, never()).save(any());
+    }
+
+    /** Bản song sinh của should_reject_schedule_when_centralized_exam_has_draft_schedule. */
+    @Test
+    void should_reject_schedule_when_class_test_has_draft_schedule() {
         var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
         var schedule = schedule(ExamScheduleStatus.DRAFT, open, open.plus(2, ChronoUnit.HOURS));
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(schedule));
         givenScheduleReady(schedule);
 
-        var result = useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null));
-
-        assertThat(result).isNotNull();
-        assertThat(schedule.getStatus()).isEqualTo(ExamScheduleStatus.PUBLISHED);
-        verify(examScheduleRepository).save(schedule);
+        assertThatThrownBy(() -> useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null)))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("Còn 1 ca thi chưa được công bố");
+        assertThat(schedule.getStatus()).isEqualTo(ExamScheduleStatus.DRAFT);
+        verify(examScheduleRepository, never()).save(any());
+        verify(examRepository, never()).save(any());
     }
 
     @Test

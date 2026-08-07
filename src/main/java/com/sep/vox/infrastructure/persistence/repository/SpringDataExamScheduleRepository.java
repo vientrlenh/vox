@@ -24,6 +24,11 @@ public interface SpringDataExamScheduleRepository extends JpaRepository<ExamSche
 
   List<ExamScheduleJpaEntity> findByIdInAndStatusNot(java.util.Collection<UUID> ids, String status);
 
+  @Query("SELECT s.id FROM ExamScheduleJpaEntity s WHERE s.examId = :examId")
+  List<UUID> findAllIdsByExamId(@Param("examId") UUID examId);
+
+  void deleteByExamId(UUID examId);
+
   @Query("""
               SELECT s FROM ExamScheduleJpaEntity s
               WHERE s.examId = :examId

@@ -25,8 +25,8 @@ public interface SpringDataInvoiceRepository extends JpaRepository<InvoiceJpaEnt
     BigDecimal sumAmountByStatus(@Param("status") String status);
 
     // PESSIMISTIC_WRITE: chặn các transaction settle() khác trên cùng invoice cho tới khi transaction
-    // hiện tại commit, để tránh 2 lần "chốt" thanh toán chạy song song (vd: FE gọi sync-status 2 lần do
-    // React StrictMode double-invoke effect, hoặc sync-status đua với webhook PayOS/reconciler job).
+    // hiện tại commit, để tránh 2 lần "chốt" thanh toán chạy song song (vd: webhook PayOS đua với
+    // PendingInvoiceReconciler quét cùng lúc).
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<InvoiceJpaEntity> findWithLockById(UUID id);
 }

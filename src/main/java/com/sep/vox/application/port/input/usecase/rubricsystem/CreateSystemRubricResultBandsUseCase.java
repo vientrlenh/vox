@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.rubricsystem;
 
+import com.sep.vox.domain.service.rubric.RubricOrderValidator;
 import com.sep.vox.domain.service.rubric.RubricResultBandValidator;
 import com.sep.vox.domain.service.rubric.ScoreRangeValidator;
 import com.sep.vox.application.common.StringNormalization;
@@ -82,8 +83,13 @@ public class CreateSystemRubricResultBandsUseCase implements IUseCase<CreateSyst
         // Tích luỹ band đã có trong version + các band mới trong cùng batch để check overlap khoảng điểm.
         // Dùng TreeMap (key = scoreMin) để check O(log n)/band thay vì quét List O(n)/band (O(n log n) cho cả batch thay vì O(n^2)).
         NavigableMap<BigDecimal, RubricResultBand> bandsSoFarByMin = new TreeMap<>();
+        // Tích luỹ order đã có trong version (DB) + order mới trong cùng batch để chống trùng thứ tự
+        Set<Integer> ordersSoFar = new HashSet<>();
         rubricResultBandRepository.findByRubricVersionId(command.versionId())
-                .forEach(b -> bandsSoFarByMin.put(b.getScoreMin(), b));
+                .forEach(b -> {
+                    bandsSoFarByMin.put(b.getScoreMin(), b);
+                    ordersSoFar.add(b.getOrder());
+                });
 
         // 4. Lặp và build thực thể (Toàn bộ thao tác diễn ra trên RAM)
         List<RubricResultBand> bandsToSave = command.resultBands().stream().map(bCmd -> {
@@ -103,6 +109,9 @@ public class CreateSystemRubricResultBandsUseCase implements IUseCase<CreateSyst
 
             // 4.3.1 Validate không chồng lấn với các band đã có/đang tạo cùng batch
             RubricResultBandValidator.assertNoOverlap(bandsSoFarByMin, bCmd.mappedScoreMin(), bCmd.mappedScoreMax(), safeName);
+
+            // 4.3.1b Validate không trùng thứ tự (order) với sibling đã có trong version hoặc trong cùng batch
+            RubricOrderValidator.assertNoDuplicateOrder(ordersSoFar, bCmd.order(), safeName);
 
             // 4.3.2 Validate nằm trong thang điểm tổng của RubricVersion
             ScoreRangeValidator.assertWithinScale(version.getScoringScaleMin(), version.getScoringScaleMax(),
@@ -132,7 +141,7 @@ public class CreateSystemRubricResultBandsUseCase implements IUseCase<CreateSyst
         try {
             savedBands = rubricResultBandRepository.saveAll(bandsToSave);
         } catch (DataIntegrityViolationException e) {
-            throw new IllegalStateException("Lỗi lưu dữ liệu: Mã thang điểm (Code) đã tồn tại trong phiên bản Rubric hệ thống này từ trước.");
+            throw new IllegalStateException("Lỗi lưu dữ liệu: Mã thang điểm (Code) hoặc Thứ tự (order) đã tồn tại trong phiên bản Rubric hệ thống này từ trước.");
         }
 
         // 5. Trích xuất ID từ List trả về và gửi cho Client

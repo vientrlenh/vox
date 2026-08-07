@@ -14,6 +14,7 @@ public interface SpringDataExamPaperRepository extends JpaRepository<ExamPaperJp
     List<ExamPaperJpaEntity> findByExamIdInOrderByVariantAsc(java.util.Collection<UUID> examIds);
     List<ExamPaperJpaEntity> findByExamIdAndStatusOrderByVariantAsc(UUID examId, String status);
     boolean existsByExamId(UUID examId);
+    void deleteByExamId(UUID examId);
 
     @Query("SELECT COALESCE(MAX(p.variant), 0) + 1 FROM ExamPaperJpaEntity p WHERE p.examId = :examId")
     int nextVariant(@Param("examId") UUID examId);

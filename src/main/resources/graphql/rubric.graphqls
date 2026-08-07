@@ -93,6 +93,7 @@ type RubricVersion {
     scoringScaleMin: Float!
     scoringScaleMax: Float!
     totalScoreMethod: String!
+    createdAt: String
     criteria(page: Int = 1, size: Int = 10): RubricCriterionPage!
     resultBands(page: Int = 1, size: Int = 10): RubricResultBandPage!
 }

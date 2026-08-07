@@ -12,12 +12,15 @@ import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.AddExamCandidateCommand;
+import com.sep.vox.application.port.input.service.ClassTestTokenQuotaGuardService;
 import com.sep.vox.application.port.input.service.ExamDirectoryAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.ExamCandidateDto;
 import com.sep.vox.domain.mapper.ExamCandidateDtoMapper;
 import com.sep.vox.domain.model.exam.ExamCandidate;
+import com.sep.vox.domain.model.exam.ExamKind;
+import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.model.user.SchoolRoleCodes;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamRepository;
@@ -33,6 +36,7 @@ public class AddExamCandidateUseCase implements IUseCase<AddExamCandidateCommand
     private final SchoolClassUserRepository schoolClassUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final ExamDirectoryAccessService examDirectoryAccessService;
+    private final ClassTestTokenQuotaGuardService classTestTokenQuotaGuardService;
 
     public AddExamCandidateUseCase(
             ExamRepository examRepository,
@@ -40,13 +44,15 @@ public class AddExamCandidateUseCase implements IUseCase<AddExamCandidateCommand
             SchoolUserRepository schoolUserRepository,
             SchoolClassUserRepository schoolClassUserRepository,
             UserRoleQueryRepository userRoleQueryRepository,
-            ExamDirectoryAccessService examDirectoryAccessService) {
+            ExamDirectoryAccessService examDirectoryAccessService,
+            ClassTestTokenQuotaGuardService classTestTokenQuotaGuardService) {
         this.examRepository = examRepository;
         this.examCandidateRepository = examCandidateRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.schoolClassUserRepository = schoolClassUserRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
         this.examDirectoryAccessService = examDirectoryAccessService;
+        this.classTestTokenQuotaGuardService = classTestTokenQuotaGuardService;
     }
 
     @Override
@@ -79,7 +85,14 @@ public class AddExamCandidateUseCase implements IUseCase<AddExamCandidateCommand
 
         var candidate = ExamCandidate.createFresh(exam.getId(), input.studentId(), currentUserId,
             Instant.now());
-        return ExamCandidateDtoMapper.toDto(examCandidateRepository.save(candidate));
+        var saved = examCandidateRepository.save(candidate);
+        // Bài trên lớp đã publish (SCHEDULED) mà thêm học sinh thì số thí sinh -- một input của ước
+        // lượng token đã soi lúc publish -- tăng lên; soi lại ngay, không để tới lúc chấm xong mới vỡ
+        // quota (xem ClassTestTokenQuotaGuardService).
+        if (exam.getKind() == ExamKind.CLASS_TEST && exam.getStatus() == ExamStatus.SCHEDULED) {
+            classTestTokenQuotaGuardService.requireWithinTokenQuota(exam);
+        }
+        return ExamCandidateDtoMapper.toDto(saved);
     }
 
     private boolean isInCallerClasses(ExamDirectoryAccessService.ExamDirectoryScope scope, UUID studentId) {

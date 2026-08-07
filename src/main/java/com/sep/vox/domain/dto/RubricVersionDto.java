@@ -16,5 +16,6 @@ public record RubricVersionDto(
         Instant effectiveTo,
         BigDecimal scoringScaleMin,
         BigDecimal scoringScaleMax,
-        String totalScoreMethod
+        String totalScoreMethod,
+        Instant createdAt
 ) {}

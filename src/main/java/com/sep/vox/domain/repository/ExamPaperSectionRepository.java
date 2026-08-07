@@ -13,4 +13,5 @@ public interface ExamPaperSectionRepository {
     List<ExamPaperSection> findByPaperId(UUID paperId);
     List<ExamPaperSection> findByPaperIdIn(Collection<UUID> paperIds);
     void deleteById(UUID id);
+    void deleteByPaperIdIn(Collection<UUID> paperIds);
 }

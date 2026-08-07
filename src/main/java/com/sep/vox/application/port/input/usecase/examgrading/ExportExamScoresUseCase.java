@@ -9,10 +9,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.input.query.ExportExamScoresQuery;
-import com.sep.vox.application.port.input.service.ExamGradingAccessService;
+import com.sep.vox.application.port.input.service.ExamScoreExportSupport;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.query.dto.ExamScoreRowInfo;
-import com.sep.vox.application.query.repository.ExamGradingQueryRepository;
 
 /**
  * Xuất bảng điểm kỳ thi ra CSV.
@@ -22,6 +21,9 @@ import com.sep.vox.application.query.repository.ExamGradingQueryRepository;
  *
  * <p>Mở đầu bằng BOM UTF-8 — Excel bản Windows đọc CSV không BOM theo codepage hệ
  * thống và làm hỏng toàn bộ tiếng Việt có dấu, đây là lý do duy nhất BOM có mặt ở đây.
+ *
+ * <p>Phân quyền, chốt phạm vi và nạp dòng nằm ở {@link ExamScoreExportSupport} — dùng
+ * chung với bản xuất Excel, để hai định dạng không thể lệch nhau về những gì được xuất.
  */
 @Service
 public class ExportExamScoresUseCase implements IUseCase<ExportExamScoresQuery, String> {
@@ -37,34 +39,16 @@ public class ExportExamScoresUseCase implements IUseCase<ExportExamScoresQuery, 
         "Mã bài", "Họ tên", "Email", "Lớp", "Kỳ thi", "Ca thi", "Điểm", "Xếp loại",
         "Trạng thái", "Vòng chấm cuối", "Kết luận", "Người chấm", "Thời điểm công bố");
 
-    private final ExamGradingQueryRepository examGradingQueryRepository;
-    private final ExamGradingAccessService examGradingAccessService;
+    private final ExamScoreExportSupport examScoreExportSupport;
 
-    public ExportExamScoresUseCase(
-            ExamGradingQueryRepository examGradingQueryRepository,
-            ExamGradingAccessService examGradingAccessService) {
-        this.examGradingQueryRepository = examGradingQueryRepository;
-        this.examGradingAccessService = examGradingAccessService;
+    public ExportExamScoresUseCase(ExamScoreExportSupport examScoreExportSupport) {
+        this.examScoreExportSupport = examScoreExportSupport;
     }
 
     @Override
     @Transactional(readOnly = true)
     public String execute(ExportExamScoresQuery input) {
-        var currentUserId = examGradingAccessService.requireActiveUserId();
-        var schoolId = examGradingAccessService.requireCurrentSchoolId(currentUserId);
-        // Giáo viên tạo bài kiểm tra trên lớp xuất được bảng điểm của ĐÚNG bài mình —
-        // phạm vi đóng bằng examId, nên không rò dữ liệu kỳ thi khác của trường.
-        examGradingAccessService.authorizeSchoolAdminOrClassTestChair(
-            schoolId, input.examId(), currentUserId);
-
-        // Không phạm vi = xuất mọi kỳ thi của cả trường: hàng chục nghìn dòng dựng
-        // trong RAM, kèm ba query không phân trang với mệnh đề IN khổng lồ. Bắt chọn
-        // phạm vi, cùng khuôn với AutoAssignGradingUseCase.
-        if (input.examId() == null && input.scheduleId() == null) {
-            throw new IllegalArgumentException("Phải chọn kỳ thi hoặc ca thi để xuất bảng điểm.");
-        }
-
-        var rows = examGradingQueryRepository.findScoreRows(schoolId, input.examId(), input.scheduleId());
+        var rows = examScoreExportSupport.loadRows(input);
         var csv = new StringBuilder(UTF8_BOM).append(HEADER).append(LINE_BREAK);
         for (var row : rows) {
             csv.append(line(row)).append(LINE_BREAK);

@@ -25,6 +25,16 @@ public interface ExamScheduleRepository {
     /** Tìm nhiều ca thi theo id (dùng cho DataLoader batch). */
     List<ExamSchedule> findByIdIn(java.util.Collection<UUID> ids);
 
+    /**
+     * Id của MỌI ca thi thuộc kỳ thi, kể cả ca đã xoá mềm — dùng khi dọn dữ liệu con lúc xoá hẳn
+     * kỳ thi. {@link #findByExamId(UUID)} lọc bỏ DELETED nên dùng nó ở đó sẽ bỏ sót giám thị của
+     * những ca đã xoá mềm.
+     */
+    List<UUID> findAllIdsByExamId(UUID examId);
+
+    /** Xoá cứng mọi ca thi của kỳ thi (kể cả ca đã xoá mềm). */
+    void deleteByExamId(UUID examId);
+
     ExamSchedule save(ExamSchedule schedule);
 
     /**

@@ -39,6 +39,19 @@ public class QuestionRepositoryImpl implements QuestionRepository {
     }
 
     @Override
+    public List<Question> saveAll(Collection<Question> questions) {
+        if (questions.isEmpty()) {
+            return List.of();
+        }
+        var entities = questions.stream()
+            .map(QuestionMapper::toJpa)
+            .toList();
+        return springDataQuestionRepository.saveAll(entities).stream()
+            .map(QuestionMapper::toDomain)
+            .toList();
+    }
+
+    @Override
     public Optional<Question> findById(UUID id) {
         return springDataQuestionRepository.findById(id)
             .map(QuestionMapper::toDomain);

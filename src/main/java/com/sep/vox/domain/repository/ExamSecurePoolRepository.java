@@ -12,4 +12,5 @@ public interface ExamSecurePoolRepository {
     Optional<ExamSecurePool> findById(UUID id);
     Optional<ExamSecurePool> findByExamId(UUID examId);
     List<ExamSecurePool> findByExamIdIn(Collection<UUID> examIds);
+    void deleteByExamId(UUID examId);
 }

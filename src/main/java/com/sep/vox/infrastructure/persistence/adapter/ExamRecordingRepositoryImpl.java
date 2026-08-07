@@ -43,4 +43,9 @@ public class ExamRecordingRepositoryImpl implements ExamRecordingRepository {
         var saved = springDataExamRecordingRepository.save(ExamRecordingMapper.toJpa(recording));
         return ExamRecordingMapper.toDomain(saved);
     }
+
+    @Override
+    public void deleteByExamSessionId(UUID examSessionId) {
+        springDataExamRecordingRepository.deleteByExamSessionId(examSessionId);
+    }
 }

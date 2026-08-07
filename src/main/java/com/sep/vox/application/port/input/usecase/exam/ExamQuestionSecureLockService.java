@@ -72,6 +72,29 @@ public class ExamQuestionSecureLockService {
         questionRepository.save(question);
     }
 
+    /**
+     * Xoá hẳn kỳ thi thì kho câu hỏi mật của nó cũng biến mất, nên phải mở khoá mọi câu hỏi đang
+     * trỏ vào pool trước rồi mới xoá pool. Bỏ bước này là câu hỏi nằm lại ngân hàng đề ở trạng thái
+     * khoá với securePoolId trỏ vào một pool không còn tồn tại — không còn đường nào giải phóng.
+     */
+    @Transactional
+    public void releaseAllForExam(UUID examId, UUID currentUserId) {
+        var pool = examSecurePoolRepository.findByExamId(examId).orElse(null);
+        if (pool == null) {
+            return;
+        }
+        var now = Instant.now();
+        for (var question : questionRepository.findBySecurePoolId(pool.getId())) {
+            question.setLocked(false);
+            question.setConfidentiality(QuestionConfidentiality.RELEASED);
+            question.setSecurePoolId(null);
+            question.setUpdatedAt(now);
+            question.setUpdatedBy(currentUserId);
+            questionRepository.save(question);
+        }
+        examSecurePoolRepository.deleteByExamId(examId);
+    }
+
     @Transactional
     public void releaseIfAutoAfterClose(UUID examId) {
         var pool = examSecurePoolRepository.findByExamId(examId).orElse(null);

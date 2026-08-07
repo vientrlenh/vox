@@ -103,6 +103,13 @@ public interface ExamGradingQueryRepository {
      */
     BulkFinalizePreviewInfo previewBulkFinalize(UUID schoolId, UUID examId);
 
-    /** Bảng điểm đầy đủ của một kỳ thi để xuất CSV. Không phân trang — xuất là xuất hết. */
-    List<ExamScoreRowInfo> findScoreRows(UUID schoolId, UUID examId, UUID scheduleId);
+    /**
+     * Bảng điểm để xuất file. Không phân trang — xuất là xuất hết, nên người gọi phải
+     * tự chốt phạm vi (kỳ thi hoặc ca thi) trước khi vào đây.
+     *
+     * <p>Nhận cùng {@link GradingAssignmentFilter} với {@link #searchAssignments} chứ
+     * không phải ba tham số rời: file xuất ra phải là đúng cái người dùng đang nhìn trên
+     * bảng, mà cách duy nhất bảo đảm điều đó là hai bên dùng chung một bộ vị ngữ.
+     */
+    List<ExamScoreRowInfo> findScoreRows(GradingAssignmentFilter filter);
 }

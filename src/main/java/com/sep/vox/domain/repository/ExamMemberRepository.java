@@ -21,4 +21,5 @@ public interface ExamMemberRepository {
     boolean canAttachBlueprint(UUID examId, UUID userId);
     boolean canApproveBlueprintVersion(UUID examId, UUID userId);
     void deleteById(UUID id);
+    void deleteByExamId(UUID examId);
 }

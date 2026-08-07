@@ -62,6 +62,14 @@ public class ExamScheduleProctorRepositoryImpl implements ExamScheduleProctorRep
     }
 
     @Override
+    public void deleteByScheduleIdIn(java.util.Collection<UUID> scheduleIds) {
+        if (scheduleIds == null || scheduleIds.isEmpty()) {
+            return;
+        }
+        springDataExamScheduleProctorRepository.deleteByScheduleIdIn(scheduleIds);
+    }
+
+    @Override
     public List<UUID> findScheduleIdsByTeacherIdAndScheduleIdIn(UUID teacherId, Collection<UUID> scheduleIds) {
         if (scheduleIds == null || scheduleIds.isEmpty()) {
             return List.of();

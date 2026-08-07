@@ -11,6 +11,4 @@ public interface TopicSuggestionRepository {
 
     TopicSuggestion save(TopicSuggestion suggestion);
 
-    int countWeeklyKeywordRequests(UUID studentId);
-
 }

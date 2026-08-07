@@ -137,7 +137,7 @@ public class TopicSuggestionService {
                 "MATCHED_EXISTING"
             );
         }
-        // Tạo topic + ghi nhận lượt hạn mức phải atomic với nhau -- tách sang bean
+        // Tạo topic + ghi dòng nhật ký yêu cầu phải atomic với nhau -- tách sang bean
         // riêng có @Transactional (xem KeywordTopicPersistenceService), KHÔNG bọc
         // transaction quanh cả hàm này vì generationClient.propose() ở trên là
         // cuộc gọi LLM chậm.
@@ -175,7 +175,7 @@ public class TopicSuggestionService {
     // không còn nguồn tạo dòng PENDING thì không còn gì để duyệt.
     //
     // Bảng topic_suggestion VẪN CÒN, nhưng nay chỉ là nhật ký yêu cầu theo từ khoá
-    // (recordKeywordRequest + hạn mức 3 lượt/tuần ở countWeeklyKeywordRequests).
+    // (recordKeywordRequest) -- ghi để xem lại học sinh đã tìm gì, không chi phối gì cả.
 
     // Not @Transactional -- same reason as generateFromKeyword above. This one is the hottest
     // path (called synchronously from practiceTopicOffers whenever ranked offers are thin), so
@@ -310,10 +310,6 @@ public class TopicSuggestionService {
             temporalAffordance == null ? TensePolicy.AFFORDANCE_MIXED : temporalAffordance
         ));
         return saved.getId();
-    }
-
-    private int weeklyRequestCount(UUID studentId) {
-        return topicSuggestionRepository.countWeeklyKeywordRequests(studentId);
     }
 
     private void recordKeywordRequest(UUID studentId, String keyword, String outcome) {

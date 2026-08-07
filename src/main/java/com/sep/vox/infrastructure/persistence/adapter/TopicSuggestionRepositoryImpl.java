@@ -32,9 +32,4 @@ public class TopicSuggestionRepositoryImpl implements TopicSuggestionRepository 
         );
     }
 
-    @Override
-    public int countWeeklyKeywordRequests(UUID studentId) {
-        return repository.countWeeklyKeywordRequests(studentId);
-    }
-
 }

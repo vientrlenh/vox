@@ -14,10 +14,12 @@ import com.sep.vox.domain.repository.personalization.TopicSuggestionRepository;
 import com.sep.vox.domain.service.personalization.TensePolicy;
 
 /**
- * Ghi topic mới sinh từ từ khoá + ghi nhận lượt dùng hạn mức của học sinh -- HAI
- * lệnh ghi GẮN VỚI NHAU về nghiệp vụ, nên phải cùng thành công hoặc cùng huỷ:
- * nếu tạo được topic mà không ghi nhận được lượt, học sinh được thêm 1 lượt tạo
- * từ khoá miễn phí (hạn mức 3 lượt/tuần trong generateFromKeyword).
+ * Ghi topic mới sinh từ từ khoá + ghi dòng nhật ký yêu cầu -- HAI lệnh ghi GẮN VỚI NHAU về
+ * nghiệp vụ, nên phải cùng thành công hoặc cùng huỷ: topic tồn tại mà không có dòng nhật ký
+ * nào trỏ tới thì sau này không truy được nó ra đời từ từ khoá nào của ai.
+ *
+ * Từ 2026-08-07 dòng nhật ký này KHÔNG còn chi phối gì (hạn mức 3 lượt/tuần đã gỡ, tìm bằng
+ * AI không giới hạn số lần) -- nhưng tính nguyên tử vẫn giữ, vì lý do truy vết ở trên.
  *
  * Là bean riêng, KHÔNG phải method trong TopicSuggestionService, vì:
  * (a) self-invocation bỏ qua proxy AOP nên @Transactional sẽ không có tác dụng;

@@ -333,3 +333,7 @@ firebase:
     # Thay thế cho path khi deploy bằng container không mount được file: dán thẳng
     # nội dung service account, dạng JSON thô hoặc base64.
     json: ${FIREBASE_CREDENTIALS_JSON:}
+
+demo-data: 
+  enabled: ${DEMO_DATA_ENABLED:false}
+  password: ${DEMO_DATA_PASSWORD:Password@123}

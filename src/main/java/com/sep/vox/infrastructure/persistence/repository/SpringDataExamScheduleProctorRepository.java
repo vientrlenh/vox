@@ -14,4 +14,5 @@ public interface SpringDataExamScheduleProctorRepository extends JpaRepository<E
     long countByScheduleId(UUID scheduleId);
 
     List<ExamScheduleProctorJpaEntity> findByTeacherIdAndScheduleIdIn(UUID teacherId, Collection<UUID> scheduleIds);
+    void deleteByScheduleIdIn(Collection<UUID> scheduleIds);
 }

@@ -1223,17 +1223,27 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
     }
 
     /**
-     * Bảng điểm để xuất CSV. Hai bước: lấy dòng chính, rồi nạp vòng chấm gần nhất theo
+     * Bảng điểm để xuất file. Hai bước: lấy dòng chính, rồi nạp vòng chấm gần nhất theo
      * lô — không lặp query theo từng học sinh.
      *
      * <p>Cột "ca thi" là {@code startDate} của lịch chứ không phải một cái tên:
      * {@code exam_schedules} không có cột tên, một ca được nhận diện bằng mốc bắt đầu
      * (bản trước chọn {@code sch.name} nên câu này ném {@code UnknownPathException}
      * mỗi lần xuất).
+     *
+     * <p>Dùng lại {@link #WHERE_CLAUSE} và {@link #applyFilters} của bảng điều phối thay vì
+     * viết một mệnh đề WHERE riêng. Bản trước viết riêng và QUÊN điều kiện {@code e.kind}
+     * — mọi câu khác trong lớp này đều có — nên xuất từ màn bài kiểm tra trên lớp vẫn kéo
+     * theo điểm của kỳ thi tập trung cùng trường. Đi chung một vị ngữ thì file xuất ra
+     * không thể lệch khỏi bảng người dùng đang nhìn.
+     *
+     * <p>Các alias mà {@code WHERE_CLAUSE} cần ({@code cr}, {@code e}, {@code c},
+     * {@code u}) đều đã có sẵn trong FROM dưới đây; nó không đụng tới {@code s}
+     * ({@code ExamSessionJpaEntity}) nên không phải join thêm.
      */
     @Override
-    public List<ExamScoreRowInfo> findScoreRows(UUID schoolId, UUID examId, UUID scheduleId) {
-        var rows = em.createQuery("""
+    public List<ExamScoreRowInfo> findScoreRows(GradingAssignmentFilter filter) {
+        var rows = applyFilters(em.createQuery("""
             SELECT cr.id, u.fullName, u.email, e.name, sch.startDate, cr.totalScore, rb.name,
                    cr.status, cr.releasedAt
             FROM ExamCandidateResultJpaEntity cr
@@ -1242,14 +1252,9 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             JOIN UserJpaEntity u ON u.id = c.studentId
             LEFT JOIN ExamScheduleJpaEntity sch ON sch.id = c.scheduleId
             LEFT JOIN RubricResultBandJpaEntity rb ON rb.id = cr.rubricResultBandId
-            WHERE e.schoolId = :schoolId
-            AND (:examId IS NULL OR cr.examId = :examId)
-            AND (:scheduleId IS NULL OR c.scheduleId = :scheduleId)
+            """ + WHERE_CLAUSE + """
             ORDER BY u.fullName ASC
-        """, Tuple.class)
-            .setParameter("schoolId", schoolId)
-            .setParameter("examId", examId)
-            .setParameter("scheduleId", scheduleId)
+        """, Tuple.class), filter, Instant.now())
             .getResultList();
 
         var candidateResultIds = rows.stream().map(row -> row.get(0, UUID.class)).toList();

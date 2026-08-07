@@ -63,6 +63,20 @@ public class ExamScheduleRepositoryImpl implements ExamScheduleRepository {
             .toList();
     }
 
+    /**
+     * Ngược lại với findByIdIn/findByExamId: KHÔNG lọc DELETED. Dọn dữ liệu con lúc xoá hẳn kỳ thi
+     * phải chạm cả ca đã xoá mềm, nếu không giám thị của những ca đó ở lại làm dòng mồ côi.
+     */
+    @Override
+    public List<UUID> findAllIdsByExamId(UUID examId) {
+        return springDataExamScheduleRepository.findAllIdsByExamId(examId);
+    }
+
+    @Override
+    public void deleteByExamId(UUID examId) {
+        springDataExamScheduleRepository.deleteByExamId(examId);
+    }
+
     @Override
     public ExamSchedule save(ExamSchedule schedule) {
         var saved = springDataExamScheduleRepository.save(ExamScheduleMapper.toJpa(schedule));

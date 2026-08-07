@@ -48,4 +48,9 @@ public class ExamSecurePoolRepositoryImpl implements ExamSecurePoolRepository {
             .map(ExamSecurePoolMapper::toDomain)
             .toList();
     }
+
+    @Override
+    public void deleteByExamId(UUID examId) {
+        springDataExamSecurePoolRepository.deleteByExamId(examId);
+    }
 }

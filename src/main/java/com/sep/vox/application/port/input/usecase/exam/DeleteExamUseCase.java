@@ -1,6 +1,8 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
 import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,34 +14,67 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.input.exam.DeleteExamResponse;
+import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamStatus;
+import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
+import com.sep.vox.domain.repository.ExamPaperItemRepository;
 import com.sep.vox.domain.repository.ExamPaperRepository;
+import com.sep.vox.domain.repository.ExamPaperSectionRepository;
 import com.sep.vox.domain.repository.ExamRepository;
+import com.sep.vox.domain.repository.ExamScheduleProctorRepository;
+import com.sep.vox.domain.repository.ExamScheduleRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
+/**
+ * Xoá kỳ thi. Chỉ kỳ thi còn DRAFT mới được xoá cứng — từ lúc lên lịch trở đi ca thi đã công bố
+ * cho học sinh nên bài không được phép biến mất, chỉ chuyển CANCELLED. Ranh giới này khớp với
+ * {@code UpdateExamStatusUseCase.CANCELLABLE_FROM}: kết quả đã công bố thì không rút lại được.
+ *
+ * <p>Nhánh xoá cứng phải tự dọn hết dữ liệu con: không bảng nào có FK hay ON DELETE CASCADE trỏ về
+ * {@code exams}, nên bỏ sót một bảng là để lại ca thi/thí sinh mồ côi — chúng rơi khỏi mọi màn hình
+ * dùng JOIN nhưng vẫn hiện ở màn hình nào nạp theo id, ví dụ lịch thi của học sinh.
+ */
 @Service
 public class DeleteExamUseCase implements IUseCase<DeleteExamCommand, DeleteExamResponse> {
 
     private final ExamRepository examRepository;
+    private final ExamScheduleRepository examScheduleRepository;
+    private final ExamScheduleProctorRepository examScheduleProctorRepository;
+    private final ExamCandidateRepository examCandidateRepository;
     private final ExamPaperRepository examPaperRepository;
+    private final ExamPaperSectionRepository examPaperSectionRepository;
+    private final ExamPaperItemRepository examPaperItemRepository;
     private final ExamMemberRepository examMemberRepository;
+    private final ExamQuestionSecureLockService examQuestionSecureLockService;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
 
     public DeleteExamUseCase(
             ExamRepository examRepository,
+            ExamScheduleRepository examScheduleRepository,
+            ExamScheduleProctorRepository examScheduleProctorRepository,
+            ExamCandidateRepository examCandidateRepository,
             ExamPaperRepository examPaperRepository,
+            ExamPaperSectionRepository examPaperSectionRepository,
+            ExamPaperItemRepository examPaperItemRepository,
             ExamMemberRepository examMemberRepository,
+            ExamQuestionSecureLockService examQuestionSecureLockService,
             SchoolUserRepository schoolUserRepository,
             UserRoleQueryRepository userRoleQueryRepository,
             UserContextPort userContextPort) {
         this.examRepository = examRepository;
+        this.examScheduleRepository = examScheduleRepository;
+        this.examScheduleProctorRepository = examScheduleProctorRepository;
+        this.examCandidateRepository = examCandidateRepository;
         this.examPaperRepository = examPaperRepository;
+        this.examPaperSectionRepository = examPaperSectionRepository;
+        this.examPaperItemRepository = examPaperItemRepository;
         this.examMemberRepository = examMemberRepository;
+        this.examQuestionSecureLockService = examQuestionSecureLockService;
         this.schoolUserRepository = schoolUserRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
         this.userContextPort = userContextPort;
@@ -60,20 +95,58 @@ public class DeleteExamUseCase implements IUseCase<DeleteExamCommand, DeleteExam
 
         authorizeDelete(exam.getId(), exam.getSchoolId(), exam.getKind(), currentUserId, currentSchoolId, schoolAdmin);
 
-        var hasSubmittedSessions = examRepository.existsSubmittedSessionByExamId(exam.getId());
-        // CLASS_TEST luôn có sẵn 1 ExamPaper ngay từ lúc tạo (pipeline tự sinh), nên "có paper" không phải dấu
-        // hiệu "đang dùng" như ở CENTRALIZED - chỉ chặn hard-delete khi đã có học sinh nộp bài.
-        var hasPapers = exam.getKind() == ExamKind.CENTRALIZED && examPaperRepository.existsByExamId(exam.getId());
-        if (hasPapers || hasSubmittedSessions) {
-            exam.setStatus(ExamStatus.CANCELLED);
-            exam.setUpdatedAt(Instant.now());
-            exam.setUpdatedBy(currentUserId);
-            examRepository.save(exam);
-            return new DeleteExamResponse(false, true);
+        return switch (exam.getStatus()) {
+            case RESULTS_PUBLISHED ->
+                throw new IllegalStateException("Không thể xoá kỳ thi đã công bố kết quả");
+            // Đã huỷ rồi thì bấm xoá lần nữa không có gì để làm: trả đúng kết quả cũ thay vì ném lỗi.
+            case CANCELLED -> new DeleteExamResponse(false, true);
+            case DRAFT -> {
+                cascadeDelete(exam.getId(), currentUserId);
+                yield new DeleteExamResponse(true, false);
+            }
+            default -> {
+                cancel(exam, currentUserId);
+                yield new DeleteExamResponse(false, true);
+            }
+        };
+    }
+
+    private void cancel(Exam exam, UUID currentUserId) {
+        exam.setStatus(ExamStatus.CANCELLED);
+        exam.setUpdatedAt(Instant.now());
+        exam.setUpdatedBy(currentUserId);
+        examRepository.save(exam);
+    }
+
+    /**
+     * Xoá con trước cha. Không có FK nào chặn nên sai thứ tự hay bỏ sót bảng đều không báo lỗi —
+     * chỉ lặng lẽ để lại dòng mồ côi.
+     */
+    private void cascadeDelete(UUID examId, UUID currentUserId) {
+        // Câu hỏi bị khoá trỏ vào exam_secure_pools của kỳ thi: xoá pool mà quên mở khoá thì câu hỏi
+        // nằm lại ngân hàng đề ở trạng thái khoá vĩnh viễn.
+        examQuestionSecureLockService.releaseAllForExam(examId, currentUserId);
+
+        var paperIds = examPaperRepository.findByExamId(examId).stream()
+            .map(paper -> paper.getId())
+            .toList();
+        if (!paperIds.isEmpty()) {
+            examPaperItemRepository.deleteByPaperIdIn(paperIds);
+            examPaperSectionRepository.deleteByPaperIdIn(paperIds);
+            examPaperRepository.deleteByExamId(examId);
         }
 
-        examRepository.deleteById(exam.getId());
-        return new DeleteExamResponse(true, false);
+        // Cố ý dùng findAllIdsByExamId chứ không phải findByExamId: bản kia lọc bỏ ca đã xoá mềm,
+        // và giám thị của những ca đó cũng phải được dọn.
+        List<UUID> scheduleIds = examScheduleRepository.findAllIdsByExamId(examId);
+        if (!scheduleIds.isEmpty()) {
+            examScheduleProctorRepository.deleteByScheduleIdIn(scheduleIds);
+        }
+        examCandidateRepository.deleteByExamId(examId);
+        examScheduleRepository.deleteByExamId(examId);
+
+        examMemberRepository.deleteByExamId(examId);
+        examRepository.deleteById(examId);
     }
 
     private void authorizeDelete(

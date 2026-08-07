@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.rubricsystem;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sep.vox.domain.service.rubric.RubricOrderValidator;
 import com.sep.vox.domain.service.rubric.ScoreRangeValidator;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
@@ -25,8 +26,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class UpdateSystemRubricCriterionUseCase implements IUseCase<UpdateSystemRubricCriterionCommand, UUID> {
@@ -100,6 +104,16 @@ public class UpdateSystemRubricCriterionUseCase implements IUseCase<UpdateSystem
         String nameForError = safeName != null ? safeName : criterion.getName();
         ScoreRangeValidator.assertWithinScale(version.getScoringScaleMin(), version.getScoringScaleMax(),
                 finalMinScore, finalMaxScore, nameForError);
+
+        // Validate không trùng thứ tự (order) với sibling khác trong cùng version
+        if (command.order() != null) {
+            Set<Integer> siblingOrders = rubricCriterionRepository.findByRubricVersionId(criterion.getRubricVersionId())
+                    .stream()
+                    .filter(c -> !c.getId().equals(criterion.getId()))
+                    .map(c -> c.getOrder())
+                    .collect(Collectors.toCollection(HashSet::new));
+            RubricOrderValidator.assertNoDuplicateOrder(siblingOrders, command.order(), nameForError);
+        }
 
         // =========================================================
         // Check lỗi examplesJson & chuẩn hóa lại đúng định dạng {"values": [...]} trước khi lưu DB

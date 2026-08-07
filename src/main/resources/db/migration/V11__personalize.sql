@@ -163,7 +163,9 @@ CREATE TABLE practice_session (
     id UUID NOT NULL,
     student_id UUID NOT NULL,
     practice_paper_id UUID NOT NULL,
-    rubric_version_id UUID NOT NULL,
+    -- KHONG co rubric_version_id: luyen tap cham thang 0-100 co dinh (thang goc Azure tra ve),
+    -- khong thuoc rubric nao va khong tra assessment policy. Bac muc tieu ben duoi la thu duy
+    -- nhat con lai tu khung danh gia -- no la THUOC DO cho AI cham, khong phai de xep loai.
     target_framework_band_id UUID NOT NULL,
     chosen_practice_topic_id UUID NOT NULL,
     target_sub_attributes_json TEXT,
@@ -248,11 +250,17 @@ CREATE INDEX idx_practice_evaluation_time ON practice_item_evaluation (evaluated
 CREATE TABLE practice_criterion_score (
     id UUID NOT NULL,
     practice_evaluation_id UUID NOT NULL,
-    rubric_criterion_id UUID NOT NULL,
+    -- Dinh danh bang MA tieu chi (GRAMMAR, PRONUNCIATION...), khong phai id rubric.
+    --
+    -- Ban truoc tra rubric_criterions de lay id, khong khop thi bo qua IM LANG -- diem bien mat
+    -- khong dau vet. Do dung cach bug 2026-08-06 o duong thi an duoc (criterionKey lech ->
+    -- 0 diem -> DLT). Ma la thu Python gui ve, ghi thang thi khong con cho nao de mat.
+    criterion_code VARCHAR(32) NOT NULL,
     final_score NUMERIC(7,3),
-    matched_band_code VARCHAR(64),
+    -- KHONG co matched_band_code: luyen tap cham doi chieu DUNG MOT bac hoc sinh da chon,
+    -- chi can biet diem trong bac do, khong xep loai.
     PRIMARY KEY (id),
-    CONSTRAINT uq_practice_criterion_score_evaluation_criterion UNIQUE (practice_evaluation_id, rubric_criterion_id)
+    CONSTRAINT uq_practice_criterion_score_evaluation_code UNIQUE (practice_evaluation_id, criterion_code)
 );
 CREATE INDEX idx_practice_criterion_score_evaluation ON practice_criterion_score (practice_evaluation_id);
 

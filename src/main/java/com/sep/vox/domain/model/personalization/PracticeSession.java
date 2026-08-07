@@ -9,7 +9,6 @@ public class PracticeSession {
     private UUID id;
     private UUID studentId;
     private UUID practicePaperId;
-    private UUID rubricVersionId;
     private UUID targetFrameworkBandId;
     private UUID chosenPracticeTopicId;
     private String targetSubAttributesJson;
@@ -32,7 +31,6 @@ public class PracticeSession {
             UUID id,
             UUID studentId,
             UUID practicePaperId,
-            UUID rubricVersionId,
             UUID targetFrameworkBandId,
             UUID chosenPracticeTopicId,
             String targetSubAttributesJson,
@@ -50,7 +48,6 @@ public class PracticeSession {
         this.id = id;
         this.studentId = studentId;
         this.practicePaperId = practicePaperId;
-        this.rubricVersionId = rubricVersionId;
         this.targetFrameworkBandId = targetFrameworkBandId;
         this.chosenPracticeTopicId = chosenPracticeTopicId;
         this.targetSubAttributesJson = targetSubAttributesJson;
@@ -91,12 +88,8 @@ public class PracticeSession {
         this.practicePaperId = practicePaperId;
     }
 
-    public UUID getRubricVersionId() {
-        return rubricVersionId;
-    }
 
     public void setRubricVersionId(UUID rubricVersionId) {
-        this.rubricVersionId = rubricVersionId;
     }
 
     public UUID getTargetFrameworkBandId() {
@@ -213,7 +206,7 @@ public class PracticeSession {
 
     public PracticeSession withLastHeartbeatAt(Instant newLastHeartbeatAt) {
         return new PracticeSession(
-            id, studentId, practicePaperId, rubricVersionId, targetFrameworkBandId,
+            id, studentId, practicePaperId, targetFrameworkBandId,
             chosenPracticeTopicId, targetSubAttributesJson, origin, offeredTopicIdsJson,
             overallScore, startedAt, endedAt, newLastHeartbeatAt, gradedSeconds, status,
             abandonDiagnosis, helpRequestCount, longPauseCount
@@ -222,7 +215,7 @@ public class PracticeSession {
 
     public PracticeSession withGradedSecondsAndHeartbeat(int newGradedSeconds, Instant newLastHeartbeatAt) {
         return new PracticeSession(
-            id, studentId, practicePaperId, rubricVersionId, targetFrameworkBandId,
+            id, studentId, practicePaperId, targetFrameworkBandId,
             chosenPracticeTopicId, targetSubAttributesJson, origin, offeredTopicIdsJson,
             overallScore, startedAt, endedAt, newLastHeartbeatAt, newGradedSeconds, status,
             abandonDiagnosis, helpRequestCount, longPauseCount
@@ -237,7 +230,7 @@ public class PracticeSession {
             Instant newEndedAt,
             BigDecimal newOverallScore) {
         return new PracticeSession(
-            id, studentId, practicePaperId, rubricVersionId, targetFrameworkBandId,
+            id, studentId, practicePaperId, targetFrameworkBandId,
             chosenPracticeTopicId, targetSubAttributesJson, origin, offeredTopicIdsJson,
             newOverallScore, startedAt, newEndedAt, lastHeartbeatAt, gradedSeconds, newStatus,
             newAbandonDiagnosis, newHelpRequestCount, newLongPauseCount
@@ -246,7 +239,7 @@ public class PracticeSession {
 
     public PracticeSession closedAsStale(String newStatus, String newAbandonDiagnosis, Instant newEndedAt) {
         return new PracticeSession(
-            id, studentId, practicePaperId, rubricVersionId, targetFrameworkBandId,
+            id, studentId, practicePaperId, targetFrameworkBandId,
             chosenPracticeTopicId, targetSubAttributesJson, origin, offeredTopicIdsJson,
             overallScore, startedAt, newEndedAt, lastHeartbeatAt, gradedSeconds, newStatus,
             newAbandonDiagnosis, helpRequestCount, longPauseCount

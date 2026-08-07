@@ -87,7 +87,18 @@ public class TopicSuggestionService {
                 "MATCHED_EXISTING"
             );
         }
-        if (weeklyRequestCount(studentId) >= 3 || unsuitable(normalized)) {
+        // GỠ hạn mức 3 lượt/tuần (2026-08-07). Điều kiện cũ là
+        // `weeklyRequestCount(studentId) >= 3 || unsuitable(normalized)`.
+        //
+        // Nó đếm MỌI dòng có keyword trong tuần lịch, không lọc kết quả -- mà
+        // recordKeywordRequest ghi dòng ở cả bốn nhánh, nên ba nhánh KHÔNG tốn lượt LLM nào
+        // (MATCHED_EXISTING, REJECTED_UNSUITABLE, OUT_OF_EXAM_SCOPE) vẫn bị trừ lượt. Học sinh
+        // gõ một từ khoá trỏ đúng vào chủ đề đã có sẵn cũng mất một lượt trong ba.
+        //
+        // Chi phí thật đã có nơi kiểm soát đúng chỗ của nó: quota PRACTICE tính theo giây nói
+        // (SubmitPracticeTurnUseCase -> ConsumeQuotaUseCase). Chặn thêm ở đây là siết hai lần
+        // vào cùng một túi tiền, bằng một đơn vị không liên quan.
+        if (unsuitable(normalized)) {
             recordKeywordRequest(studentId, keyword, "REJECTED_UNSUITABLE");
             return new TopicFromKeywordResult(null, "REJECTED_UNSUITABLE");
         }

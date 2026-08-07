@@ -27,10 +27,11 @@ public final class RecordPracticeAttemptEvaluationCommandMapper {
         var criteria = payload == null || payload.criteria() == null
             ? List.<PracticeCriterionScoreInput>of()
             : payload.criteria().entrySet().stream()
+                // Bỏ qua matchedBandCode dù Python có gửi: luyện tập chấm đối chiếu ĐÚNG
+                // một bậc học sinh đã chọn, chỉ cần điểm trong bậc đó, không xếp loại.
                 .map(entry -> new PracticeCriterionScoreInput(
                     entry.getKey(),
-                    entry.getValue() == null ? null : entry.getValue().score(),
-                    entry.getValue() == null ? null : entry.getValue().matchedBandCode()
+                    entry.getValue() == null ? null : entry.getValue().score()
                 ))
                 .toList();
         return new RecordPracticeAttemptEvaluationCommand(

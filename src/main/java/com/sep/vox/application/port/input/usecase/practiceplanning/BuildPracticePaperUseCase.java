@@ -148,7 +148,7 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
         if (bandId == null) {
             throw new NotFoundException("Chưa chọn bậc muốn luyện.");
         }
-        return enrichmentService.frameworkBandLadder(studentId).stream()
+        return enrichmentService.frameworkBandLadder().stream()
             .filter(band -> bandId.equals(band.getId()))
             .findFirst()
             .map(FrameworkResultBand::getOrder)

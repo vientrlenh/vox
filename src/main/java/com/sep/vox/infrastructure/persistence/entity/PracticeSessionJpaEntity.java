@@ -27,8 +27,6 @@ public class PracticeSessionJpaEntity {
     private UUID studentId;
     @Column(name = "practice_paper_id", nullable = false, updatable = false)
     private UUID practicePaperId;
-    @Column(name = "rubric_version_id", nullable = false, updatable = false)
-    private UUID rubricVersionId;
     @Column(name = "target_framework_band_id", nullable = false, updatable = false)
     private UUID targetFrameworkBandId;
     @Column(name = "chosen_practice_topic_id", nullable = false, updatable = false)
@@ -65,7 +63,6 @@ public class PracticeSessionJpaEntity {
             UUID id,
             UUID studentId,
             UUID practicePaperId,
-            UUID rubricVersionId,
             UUID targetFrameworkBandId,
             UUID chosenPracticeTopicId,
             String targetSubAttributesJson,
@@ -80,7 +77,6 @@ public class PracticeSessionJpaEntity {
         this.id = id;
         this.studentId = studentId;
         this.practicePaperId = practicePaperId;
-        this.rubricVersionId = rubricVersionId;
         this.targetFrameworkBandId = targetFrameworkBandId;
         this.chosenPracticeTopicId = chosenPracticeTopicId;
         this.targetSubAttributesJson = targetSubAttributesJson;
@@ -106,9 +102,6 @@ public class PracticeSessionJpaEntity {
         return practicePaperId;
     }
 
-    public UUID getRubricVersionId() {
-        return rubricVersionId;
-    }
 
     public UUID getTargetFrameworkBandId() {
         return targetFrameworkBandId;

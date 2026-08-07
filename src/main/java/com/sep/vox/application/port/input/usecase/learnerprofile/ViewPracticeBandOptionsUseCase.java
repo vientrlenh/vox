@@ -35,7 +35,7 @@ public class ViewPracticeBandOptionsUseCase implements IUseCase<Void, List<Pract
     @Transactional(readOnly = true)
     public List<PracticeBandOption> execute(Void input) {
         var studentId = userContextPort.getCurrentAuthenticatedUserId();
-        return enrichmentService.frameworkBandLadder(studentId).stream()
+        return enrichmentService.frameworkBandLadder().stream()
             .map(band -> new PracticeBandOption(
                 band.getId(),
                 band.getCode(),

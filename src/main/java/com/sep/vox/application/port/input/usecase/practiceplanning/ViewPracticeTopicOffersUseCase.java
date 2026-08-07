@@ -152,32 +152,17 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
     }
 
     private static String rationaleFor(RankedTopic topic) {
-        // "Khớp chương trình học" CHỈ dành cho chủ đề lấy từ ngân hàng đề của trường.
-        //
-        // Trước đây điều kiện là curriculum() >= 1.0, tức curriculum_group = 'IN_GDPT2018'.
-        // Sai: đó là nhãn "hợp chương trình quốc gia" và chủ đề do AI sinh cũng mang nhãn
-        // đó, nên "Healthy Daily Habits"/"Managing Stress" (source = AI_SUGGESTED) hiện
-        // "Khớp chương trình học" -- nói với học sinh một điều không đúng.
-        //
-        // Mọi thứ không đến từ trường đều là gợi ý của hệ thống, dùng nhãn trung tính.
         if (topic.fromSchool()) {
             return "Khớp chương trình học của bạn";
         }
         return "Gợi ý cho bạn";
     }
 
-    /**
-     * Hai công thức, chọn theo MỤC TIÊU của học sinh -- không còn theo rổ.
-     *
-     * <p>Hai nhánh BY_GOAL/BY_WEAKNESS đã bỏ cùng hồ sơ điểm yếu. Nhánh điểm yếu vốn dồn 0.70
-     * vào {@code bank} ("còn bao nhiêu câu chưa luyện đúng tiêu chí yếu"), mà nay không còn
-     * tiêu chí yếu nào để lọc theo, nên nó sẽ thoái hoá thành đúng nhánh mặc định nhưng lệch
-     * trọng số -- giữ lại chỉ là giữ một công thức không ai giải thích được nữa.
-     */
-    private static double scoreFor(String goal, double interest, double bank, double curriculum) {
+    
+    private static double scoreFor(String goal, double interest, double curriculum) {
         return "EXAM_PREP".equals(goal)
-            ? 0.35 * interest + 0.30 * bank + 0.35 * curriculum
-            : 0.60 * interest + 0.25 * bank + 0.15 * curriculum;
+            ? 0.50 * interest + 0.50 * curriculum
+            : 0.80 * interest + 0.20 * curriculum;
     }
 
     private List<RankedTopic> classicRanked(UUID studentId, String goal) {
@@ -186,9 +171,8 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
             .map(row -> {
                 var gamma = (double) row.getMentions() / (row.getMentions() + 2);
                 var interest = gamma * row.getTopicScore() + (1 - gamma) * row.getDimensionScore();
-                var bank = Math.min(1.0, row.getUnseenCount() / 3.0);
                 var curriculum = "IN_GDPT2018".equals(row.getCurriculumGroup()) ? 1.0 : 0.3;
-                var base = scoreFor(goal, interest, bank, curriculum);
+                var base = scoreFor(goal, interest, curriculum);
                 return new RankedTopic(
                     row.getId(),
                     row.getName(),
@@ -196,7 +180,6 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
                     row.getSavedByMe(),
                     base * (1 - 0.4 * row.getRecency()),
                     interest,
-                    bank,
                     curriculum,
                     false
                 );
@@ -221,9 +204,8 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
             .map(row -> {
                 var topicId = materializeExamTopic(row);
                 var interest = 0.5;
-                var bank = 0.5;
                 var curriculum = 1.0;
-                var base = scoreFor("EXAM_PREP", interest, bank, curriculum);
+                var base = scoreFor("EXAM_PREP", interest, curriculum);
                 return new RankedTopic(
                     topicId,
                     row.getName(),
@@ -231,7 +213,6 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
                     false,
                     base,
                     interest,
-                    bank,
                     curriculum,
                     true
                 );
@@ -276,20 +257,7 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
         boolean saved,
         double score,
         double interest,
-        double bank,
         double curriculum,
-        /**
-         * Chủ đề này có LẤY TỪ NGÂN HÀNG ĐỀ CỦA TRƯỜNG không.
-         *
-         * <p>Không suy được từ {@code curriculum}: điểm đó bằng 1.0 khi
-         * {@code curriculum_group = 'IN_GDPT2018'}, mà đó chỉ là nhãn "hợp chương trình quốc
-         * gia" -- chủ đề do AI sinh cũng được gắn (ví dụ "Healthy Daily Habits"). Dùng nó để
-         * nói "khớp chương trình học" là nói sai với học sinh.
-         *
-         * <p>Phân biệt thật nằm ở nguồn: hai query của classicRanked đều lọc
-         * {@code source IS DISTINCT FROM 'EXAM_QUESTION_BANK'} nên chỉ trả chủ đề ngoài
-         * trường; chủ đề trường chỉ đi qua examTopicRanked.
-         */
         boolean fromSchool) {
     }
 }

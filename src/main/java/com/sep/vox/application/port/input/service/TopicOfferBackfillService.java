@@ -9,6 +9,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import com.sep.vox.domain.repository.personalization.PracticeTopicRepository;
+
 /**
  * Bổ sung kho chủ đề luyện tập khi danh sách đề xuất còn thưa -- chạy NỀN.
  *
@@ -28,38 +30,54 @@ public class TopicOfferBackfillService {
     private static final Logger LOGGER = LoggerFactory.getLogger(TopicOfferBackfillService.class);
 
     /**
-     * Số chủ đề xin sinh mỗi lượt chạy nền. Rộng tay vì đây là việc NỀN -- học sinh không ngồi
-     * chờ, nên xin dư còn hơn để kho lớn nhỏ giọt. Đo thật với con số 3: bộ lọc trùng-gần cắt
-     * 2, mỗi lượt chỉ ra ĐÚNG MỘT chủ đề, phải tải lại ba lần mới đủ danh sách.
+     * Kho đủ lớn thì hạ tốc độ sinh. Dưới ngưỡng là giai đoạn gây dựng -- học sinh mới hoặc vừa
+     * dựng lại dữ liệu, cần kho đủ rộng để xếp hạng có gì mà chọn (ε-greedy còn đòi hẳn
+     * {@code ranked.size() > 10} mới chạy). Trên ngưỡng thì mỗi phiên chỉ tiêu thụ một chủ đề,
+     * nên sinh nhiều là phình ròng: đo sau 6 phiên với nhịp 8/phiên ra 56 chủ đề mà 37 cái chưa
+     * từng được chào lấy một lần.
      */
-    private static final int BACKFILL_COUNT = 8;
+    private static final long POOL_TARGET = 40;
+
+    /** Nhịp sinh lúc kho còn mỏng -- ưu tiên lấp đầy nhanh. */
+    private static final int BACKFILL_COUNT_BUILDING = 8;
 
     /**
-     * Học sinh đang có lượt sinh chạy dở. Màn chọn chủ đề bị kéo-làm-mới vài lần liên tiếp
-     * (đúng thứ học sinh sẽ làm khi thấy "quay lại sau 1-2 phút") mà không chặn thì thành
-     * nhiều lượt gọi LLM song song cho cùng một người.
+     * Nhịp sinh khi kho đã đạt {@link #POOL_TARGET} -- chỉ đủ bù hao.
+     *
+     * <p>Vẫn nhanh hơn tốc độ tiêu thụ (1 chủ đề/phiên) nên kho không teo, mà không loãng thành
+     * các biến thể na ná nhau: mọi lô đều sinh từ cùng sáu điểm sở thích gần như không đổi, nên
+     * sinh càng dày thì lô sau càng giống lô trước và tự nghiền vào bộ lọc trùng của chính nó.
      */
+    private static final int BACKFILL_COUNT_STEADY = 2;
+
     private final Set<UUID> inFlight = ConcurrentHashMap.newKeySet();
 
     private final TopicSuggestionService topicSuggestionService;
+    private final PracticeTopicRepository practiceTopicRepository;
 
-    public TopicOfferBackfillService(TopicSuggestionService topicSuggestionService) {
+    public TopicOfferBackfillService(
+            TopicSuggestionService topicSuggestionService,
+            PracticeTopicRepository practiceTopicRepository) {
         this.topicSuggestionService = topicSuggestionService;
+        this.practiceTopicRepository = practiceTopicRepository;
     }
 
-    /**
-     * Chốt chống trùng nằm BÊN TRONG method @Async, không phải ở một method bọc ngoài: gọi
-     * method @Async từ chính bean này sẽ đi thẳng, bỏ qua proxy AOP của Spring, và biến việc
-     * nền thành việc đồng bộ ngay trong request -- đúng thứ đang cần tránh.
-     */
+   
     @Async("practiceGenerationExecutor")
     public void backfillAsync(UUID studentId) {
         if (studentId == null || !inFlight.add(studentId)) {
             return;
         }
         try {
-            var created = topicSuggestionService.synchronousOffers(studentId, BACKFILL_COUNT);
-            LOGGER.info("Đã bổ sung {} chủ đề cho học sinh {}.", created.size(), studentId);
+            // Đếm TRƯỚC mỗi lượt chứ không cache: kho là của chung, nhiều học sinh cùng đẩy nó
+            // lên, nên một giá trị đọc lúc khởi động sẽ sai ngay sau vài phiên.
+            var pool = practiceTopicRepository.countOfferablePool();
+            var requested = pool < POOL_TARGET ? BACKFILL_COUNT_BUILDING : BACKFILL_COUNT_STEADY;
+            var created = topicSuggestionService.synchronousOffers(studentId, requested);
+            LOGGER.info(
+                "Đã bổ sung {}/{} chủ đề cho học sinh {} (kho hiện có {}).",
+                created.size(), requested, studentId, pool
+            );
         } catch (RuntimeException exception) {
             // Nuốt lỗi có chủ đích: đây là việc nền làm giàu kho. Hỏng thì màn chọn chủ đề vẫn
             // hiện được những gì đang có, và lần mở sau sẽ thử lại.

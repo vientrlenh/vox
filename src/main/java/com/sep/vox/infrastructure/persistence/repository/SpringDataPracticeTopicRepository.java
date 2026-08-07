@@ -18,6 +18,17 @@ public interface SpringDataPracticeTopicRepository
 
     List<PracticeTopicJpaEntity> findByActiveTrue();
 
+    /**
+     * Cỡ kho chủ đề NUÔI LÔ CHÀO -- dùng để quyết định sinh thêm nhiều hay ít mỗi phiên.
+     *
+     * <p>Phải trừ {@code EXAM_QUESTION_BANK}: đó là chủ đề vật chất hoá lazy từ ngân hàng đề
+     * của trường cho học sinh EXAM_PREP, và {@code findRankedTopics} đã loại chúng bằng
+     * {@code source IS DISTINCT FROM 'EXAM_QUESTION_BANK'}. Đếm cả vào thì một trường có
+     * 200 chủ đề ngân hàng đề sẽ vượt ngưỡng ngay, và học sinh luyện tự do bị siết sinh chủ đề
+     * vì một kho họ không bao giờ thấy.
+     */
+    long countByActiveTrueAndSourceNot(String source);
+
     List<PracticeTopicJpaEntity> findByActiveTrueOrderByName();
 
     Optional<PracticeTopicJpaEntity> findByNormalizedName(String normalizedName);

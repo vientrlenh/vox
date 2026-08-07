@@ -11,7 +11,6 @@ import com.sep.vox.application.mapper.practicesession.PracticeSessionResponseMap
 import com.sep.vox.application.mapper.practicesession.SessionRowMapper;
 import com.sep.vox.application.query.repository.PracticeSessionQueryRepository;
 import com.sep.vox.application.response.input.practicesession.PracticeSessionResponses.PracticeSession;
-import com.sep.vox.domain.repository.AssessmentPolicyRepository;
 import com.sep.vox.domain.repository.personalization.PracticePaperRepository;
 import com.sep.vox.domain.repository.personalization.PracticeSessionRepository;
 
@@ -23,17 +22,14 @@ public class StartPracticeSessionPersistenceService {
 
     private final PracticeSessionRepository practiceSessionRepository;
     private final PracticePaperRepository practicePaperRepository;
-    private final AssessmentPolicyRepository assessmentPolicyRepository;
     private final PracticeSessionQueryRepository practiceSessionQueryRepository;
 
     public StartPracticeSessionPersistenceService(
             PracticeSessionRepository practiceSessionRepository,
             PracticePaperRepository practicePaperRepository,
-            AssessmentPolicyRepository assessmentPolicyRepository,
             PracticeSessionQueryRepository practiceSessionQueryRepository) {
         this.practiceSessionRepository = practiceSessionRepository;
         this.practicePaperRepository = practicePaperRepository;
-        this.assessmentPolicyRepository = assessmentPolicyRepository;
         this.practiceSessionQueryRepository = practiceSessionQueryRepository;
     }
 
@@ -45,19 +41,17 @@ public class StartPracticeSessionPersistenceService {
             .orElseThrow(() -> new NotFoundException(
                 "Đề luyện không tồn tại hoặc đã hết thời gian giữ chỗ."
             ));
-        var policy = currentPolicy(studentId);
         var sessionId = UUID.randomUUID();
         practiceSessionRepository.save(new com.sep.vox.domain.model.personalization.PracticeSession(
             sessionId,
             studentId,
             paper.getId(),
-            policy.rubricVersionId(),
-            // Bậc do HỌC SINH chọn lúc dựng đề, không phải bậc mục tiêu của chính sách chấm.
-            // Lùi về chính sách khi đề dựng trước V15 (chưa có màn hình chọn bậc) -- giữ đúng
-            // hành vi cũ cho dữ liệu cũ thay vì để phiên chết vì thiếu bậc.
-            paper.getTargetFrameworkBandId() == null
-                ? policy.targetFrameworkBandId()
-                : paper.getTargetFrameworkBandId(),
+            // Không có rubric, cũng không tra assessment policy: luyện tập chấm thang 0-100
+            // cố định. Policy chọn theo lớp học sinh, mà trường chưa cấu hình thì học sinh
+            // KHÔNG vào được phiên -- chặn ngay ở cửa vì một thứ luyện tập không dùng tới.
+            //
+            // Bậc do HỌC SINH chọn ở màn chuẩn bị, là thứ duy nhất còn lại từ khung đánh giá.
+            requireTargetBand(paper.getTargetFrameworkBandId()),
             paper.getPracticeTopicId(),
             "[]",
             paper.getOrigin(),
@@ -80,12 +74,16 @@ public class StartPracticeSessionPersistenceService {
         );
     }
 
-    private AssessmentPolicyRepository.CurrentPolicy currentPolicy(UUID studentId) {
-        var rows = assessmentPolicyRepository.findCurrentPolicyForStudent(studentId);
-        if (rows.isEmpty()) {
-            throw new NotFoundException("Không tìm thấy chính sách chấm đang hiệu lực.");
+    /**
+     * Đề dựng TRƯỚC V15 không có bậc mục tiêu. Chúng đã hết hạn giữ chỗ từ lâu
+     * ({@code findReservedPaper} lọc theo {@code now}) nên trên thực tế không đề nào vào được
+     * đây -- nhưng nói thẳng vẫn hơn ghi một bậc bịa vào phiên.
+     */
+    private UUID requireTargetBand(UUID targetFrameworkBandId) {
+        if (targetFrameworkBandId == null) {
+            throw new NotFoundException("Đề luyện chưa có bậc mục tiêu, hãy dựng lại đề.");
         }
-        return rows.get(0);
+        return targetFrameworkBandId;
     }
 
     private String offerEvidenceJson(String current, String previous) {

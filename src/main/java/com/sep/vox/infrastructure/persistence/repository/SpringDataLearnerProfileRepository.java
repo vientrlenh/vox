@@ -29,53 +29,24 @@ public interface SpringDataLearnerProfileRepository
 
 
     /**
-     * Số bậc của thang năng lực đang áp cho học sinh này (= bậc cao nhất trong framework
-     * version mà assessment policy đang trỏ tới).
+     * Số bậc của thang năng lực (= bậc cao nhất trong framework version truyền vào).
      *
      * Cần vì trước đây code giả định cứng thang 6 bậc kiểu VSTEP (`Math.min(6, ...)` rải rác).
      * Đổi trường sang CEFR/IELTS thì con số 6 đó sai mà KHÔNG nổ -- chỉ lặng lẽ kẹp trần sai.
      * Đọc từ dữ liệu thay vì đoán.
      *
-     * Dùng cùng bộ điều kiện chọn policy như {@link #findFrameworkBandLadder} (ưu tiên
-     * lớp > khối > trường, rồi version mới nhất) để hai hàm luôn nói về cùng một framework.
+     * Từ V13 nhận thẳng frameworkVersionId thay vì suy từ assessment policy theo lớp của học
+     * sinh. Hai hàm này và {@link #findFrameworkBandLadder} PHẢI được gọi với cùng một
+     * frameworkVersionId -- caller chịu trách nhiệm, xem PracticeFrameworkResolver.
      */
     @Query(value = """
         SELECT MAX(band.result_band_order)
-        FROM school_class_users membership
-        JOIN school_classes class
-          ON class.id = membership.school_class_id
-        JOIN assessment_policies policy
-          ON policy.status = 'PUBLISHED'
-         AND policy.effective_from <= CURRENT_TIMESTAMP
-         AND (
-             policy.effective_to IS NULL
-             OR policy.effective_to >= CURRENT_TIMESTAMP
-         )
-         AND (
-             policy.school_id IS NULL
-             OR policy.school_id = class.school_id
-         )
-         AND (
-             policy.school_grade_id IS NULL
-             OR policy.school_grade_id = class.school_grade_id
-         )
-         AND (
-             policy.school_class_id IS NULL
-             OR policy.school_class_id = class.id
-         )
-        JOIN framework_result_bands band
-          ON band.framework_version_id = policy.framework_version_id
-        WHERE membership.user_id = :studentId
-          AND membership.is_active = true
-        GROUP BY policy.id, policy.school_class_id, policy.school_grade_id,
-                 policy.school_id, policy.version
-        ORDER BY (policy.school_class_id IS NOT NULL) DESC,
-                 (policy.school_grade_id IS NOT NULL) DESC,
-                 (policy.school_id IS NOT NULL) DESC,
-                 policy.version DESC
-        LIMIT 1
+        FROM framework_result_bands band
+        WHERE band.framework_version_id = :frameworkVersionId
         """, nativeQuery = true)
-    List<Integer> findFrameworkBandCount(@Param("studentId") UUID studentId);
+    List<Integer> findFrameworkBandCount(
+        @Param("frameworkVersionId") UUID frameworkVersionId
+    );
 
     /**
      * Toàn bộ thang bậc (thứ tự, mã, mô tả) của framework đang áp cho học sinh -- gửi xuống
@@ -93,39 +64,10 @@ public interface SpringDataLearnerProfileRepository
     @Query(value = """
         SELECT band.*
         FROM framework_result_bands band
-        WHERE band.framework_version_id = (
-            SELECT policy.framework_version_id
-            FROM school_class_users membership
-            JOIN school_classes class
-              ON class.id = membership.school_class_id
-            JOIN assessment_policies policy
-              ON policy.status = 'PUBLISHED'
-             AND policy.effective_from <= CURRENT_TIMESTAMP
-             AND (
-                 policy.effective_to IS NULL
-                 OR policy.effective_to >= CURRENT_TIMESTAMP
-             )
-             AND (
-                 policy.school_id IS NULL
-                 OR policy.school_id = class.school_id
-             )
-             AND (
-                 policy.school_grade_id IS NULL
-                 OR policy.school_grade_id = class.school_grade_id
-             )
-             AND (
-                 policy.school_class_id IS NULL
-                 OR policy.school_class_id = class.id
-             )
-            WHERE membership.user_id = :studentId
-              AND membership.is_active = true
-            ORDER BY (policy.school_class_id IS NOT NULL) DESC,
-                     (policy.school_grade_id IS NOT NULL) DESC,
-                     (policy.school_id IS NOT NULL) DESC,
-                     policy.version DESC
-            LIMIT 1
-        )
+        WHERE band.framework_version_id = :frameworkVersionId
         ORDER BY band.result_band_order
         """, nativeQuery = true)
-    List<FrameworkResultBandJpaEntity> findFrameworkBandLadder(@Param("studentId") UUID studentId);
+    List<FrameworkResultBandJpaEntity> findFrameworkBandLadder(
+        @Param("frameworkVersionId") UUID frameworkVersionId
+    );
 }

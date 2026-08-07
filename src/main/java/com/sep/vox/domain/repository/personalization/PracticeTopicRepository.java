@@ -21,6 +21,9 @@ public interface PracticeTopicRepository {
 
     List<PracticeTopic> findAllActive();
 
+    /** Cỡ kho chủ đề nuôi lô chào (đã trừ chủ đề vật chất hoá từ ngân hàng đề của trường). */
+    long countOfferablePool();
+
     List<PracticeTopic> findAllActiveOrderByName();
 
     Optional<PracticeTopic> findByNormalizedName(String normalizedName);

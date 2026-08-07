@@ -115,7 +115,7 @@ public class PracticeEvaluationRequestFactory {
         var rows = practiceSessionQueryRepository.findCriteriaFrameworks(sessionId);
         var grouped = new LinkedHashMap<UUID, List<CriterionFrameworkInfo>>();
         for (var row : rows) {
-            grouped.computeIfAbsent(row.getRubricCriterionId(), ignored -> new ArrayList<>()).add(row);
+            grouped.computeIfAbsent(row.getCriterionId(), ignored -> new ArrayList<>()).add(row);
         }
         return grouped.values().stream().map(group -> {
             var first = group.get(0);
@@ -131,7 +131,7 @@ public class PracticeEvaluationRequestFactory {
                     row.getBandOrder()
                 ))
                 .toList();
-            var criterionKey = first.getRubricCode().trim().toLowerCase(Locale.ROOT);
+            var criterionKey = first.getCriterionCode().trim().toLowerCase(Locale.ROOT);
             if ("discourse".equals(criterionKey)) {
                 criterionKey = "coherence";
             }
@@ -143,8 +143,14 @@ public class PracticeEvaluationRequestFactory {
                 first.getTargetBandId(),
                 first.getTargetBandCode(),
                 first.getTargetBandLabel(),
+                // targetBandOnly = true: luyện tập chỉ gửi ĐÚNG bậc học sinh chọn, và Python
+                // đã có sẵn nhánh cho nó -- "assign a score within {range} for how fully this
+                // answer satisfies the TARGET band's descriptor".
                 true,
-                first.getWeight(),
+                // Trọng số: null. Python không đọc trường này (grep agents/src ra 0 chỗ), và
+                // điểm câu là trung bình cộng 5 tiêu chí ở RecordPracticeAttemptEvaluationUseCase
+                // -- tức 20% mỗi tiêu chí, đã đúng sẵn không cần trọng số nào.
+                null,
                 first.getMinScore(),
                 first.getMaxScore(),
                 bands

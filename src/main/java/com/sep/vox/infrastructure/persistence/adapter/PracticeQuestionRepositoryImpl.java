@@ -81,6 +81,7 @@ public class PracticeQuestionRepositoryImpl implements PracticeQuestionRepositor
             question.getQuestionText(),
             question.getTargetCriterionCode(),
             question.getTargetSubAttribute(),
+            question.getTargetTense(),
             question.getDifficultyRank(),
             question.getDifficultyFeaturesJson(),
             question.getEvaluationGuideJson(),

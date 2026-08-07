@@ -3,8 +3,6 @@ package com.sep.vox.application.port.input.usecase.practiceevaluation;
 import java.time.Instant;
 import java.util.Locale;
 import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,7 +11,6 @@ import com.sep.vox.application.port.input.command.practiceevaluation.RecordPract
 import com.sep.vox.application.port.input.service.ConfidenceReviewCalculator;
 import com.sep.vox.application.port.input.service.ConfidenceReviewCalculator.ConfidenceMode;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.domain.repository.RubricCriterionRepository;
 import com.sep.vox.domain.repository.personalization.PracticeCriterionScoreRepository;
 import com.sep.vox.domain.repository.personalization.PracticeItemEvaluationRepository;
 import com.sep.vox.domain.repository.personalization.PracticeItemResponseRepository;
@@ -28,7 +25,6 @@ public class RecordPracticeAttemptEvaluationUseCase implements IUseCase<RecordPr
     private final PracticeItemEvaluationRepository evaluationRepository;
     private final PracticeCriterionScoreRepository criterionScoreRepository;
     private final PracticeItemResponseRepository responseRepository;
-    private final RubricCriterionRepository rubricCriterionRepository;
     private final ConfidenceReviewCalculator confidenceReviewCalculator;
     private final PracticeSessionRepository practiceSessionRepository;
 
@@ -36,13 +32,11 @@ public class RecordPracticeAttemptEvaluationUseCase implements IUseCase<RecordPr
             PracticeItemEvaluationRepository evaluationRepository,
             PracticeCriterionScoreRepository criterionScoreRepository,
             PracticeItemResponseRepository responseRepository,
-            RubricCriterionRepository rubricCriterionRepository,
             ConfidenceReviewCalculator confidenceReviewCalculator,
             PracticeSessionRepository practiceSessionRepository) {
         this.evaluationRepository = evaluationRepository;
         this.criterionScoreRepository = criterionScoreRepository;
         this.responseRepository = responseRepository;
-        this.rubricCriterionRepository = rubricCriterionRepository;
         this.confidenceReviewCalculator = confidenceReviewCalculator;
         this.practiceSessionRepository = practiceSessionRepository;
     }
@@ -73,27 +67,27 @@ public class RecordPracticeAttemptEvaluationUseCase implements IUseCase<RecordPr
             evaluatedAt
         );
 
-        var rubricVersionId = responseRepository.findRubricVersionIdByResponseId(input.practiceResponseId());
-        var rubricCriteriaByCode = rubricCriterionRepository.findByRubricVersionId(rubricVersionId).stream()
-            .collect(Collectors.toMap(
-                item -> item.getCode() == null ? "" : item.getCode().trim().toLowerCase(Locale.ROOT),
-                Function.identity(),
-                (left, right) -> left
-            ));
+        // Ghi thẳng theo MÃ tiêu chí (V13). Bản cũ tra rubric_criterions rồi `continue` khi
+        // không khớp -- điểm biến mất không dấu vết, đúng cách bug 2026-08-06 ở đường thi ẩn
+        // được. Giờ chỉ bỏ khi mã rỗng, và có log để còn lần ra.
+        //
+        // Mã lạ (ví dụ "tc01" do Python gửi nhầm khoá) VẪN được ghi: thà có một dòng sai mã
+        // nhìn thấy được còn hơn mất cả bản chấm trong im lặng.
         for (var criterion : input.criteria()) {
-            var rubricCriterion = rubricCriteriaByCode.get(
-                criterion.criterionCode() == null
-                    ? ""
-                    : criterion.criterionCode().trim().toLowerCase(Locale.ROOT)
-            );
-            if (rubricCriterion == null) {
+            var code = criterion.criterionCode() == null
+                ? ""
+                : criterion.criterionCode().trim().toUpperCase(Locale.ROOT);
+            if (code.isBlank()) {
+                LOGGER.warn(
+                    "Bỏ qua một tiêu chí không có mã ở bản chấm luyện tập {}",
+                    input.practiceResponseId()
+                );
                 continue;
             }
-            criterionScoreRepository.upsert(
+            criterionScoreRepository.upsertByCode(
                 evaluationId,
-                rubricCriterion.getId(),
-                criterion.score() == null ? 0 : criterion.score(),
-                blankToNull(criterion.matchedBandCode())
+                code,
+                criterion.score() == null ? 0 : criterion.score()
             );
         }
 

@@ -78,7 +78,7 @@ public final class PracticeSessionResponseMapper {
     }
 
     private static CriterionScore toResponse(PracticeCriterionScoreDto dto) {
-        return new CriterionScore(dto.criterionCode(), dto.score(), dto.matchedBandCode());
+        return new CriterionScore(dto.criterionCode(), dto.score());
     }
 
     public static TeacherPracticeSessionDetail toResponse(TeacherPracticeSessionDetailDto dto) {
@@ -93,7 +93,11 @@ public final class PracticeSessionResponseMapper {
             dto.completed(),
             dto.pendingEvaluationCount(),
             dto.difficultyRank(),
-            dto.turns().stream().map(PracticeSessionResponseMapper::toResponse).toList()
+            dto.turns().stream().map(PracticeSessionResponseMapper::toResponse).toList(),
+            // Chuyển tiếp, KHÔNG tra gì: lớp này là static nên không tiêm repository được.
+            // Thang đã được tính ngay trong truy vấn (COALESCE trên LEFT JOIN rubric_versions).
+            dto.scoreScaleMin(),
+            dto.scoreScaleMax()
         );
     }
 }

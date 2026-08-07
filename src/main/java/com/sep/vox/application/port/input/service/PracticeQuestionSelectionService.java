@@ -153,7 +153,7 @@ public class PracticeQuestionSelectionService {
         // Trần bậc đọc từ framework đang áp, KHÔNG cứng 6: đổi trường sang thang khác (CEFR 6,
         // IELTS 9) thì hằng số 6 kẹp sai mà không báo lỗi. Lấy MỘT lần rồi truyền xuống thang
         // leo, tránh query lặp ở từng bậc.
-        var bandCount = enrichmentService.frameworkBandCount(studentId);
+        var bandCount = enrichmentService.frameworkBandCount();
         // Thì đích của ô này: chủ đề nói trước (chủ đề lịch sử thì khoá quá khứ), chủ đề MIXED
         // thì xoay vòng theo ô để một buổi phủ nhiều khung thời gian. Bậc có quyền phủ quyết --
         // xem TensePolicy, thì và độ khó KHÔNG độc lập.
@@ -320,7 +320,7 @@ public class PracticeQuestionSelectionService {
                 generationProperties.onlineCandidateCount(),
                 generationProperties.onlineBudget(),
                 bandCount,
-                enrichmentService.frameworkBandLadder(studentId),
+                enrichmentService.frameworkBandLadder(),
                 // Câu đã chết vĩnh viễn với CHÍNH học sinh này. Không gửi xuống thì cổng chặn
                 // trùng bên Python so bản nháp mới với cả kho -- kể cả những câu em ấy không
                 // bao giờ được thấy lại -- rồi vứt sạch vì "giống câu đã có", và chủ đề khoá

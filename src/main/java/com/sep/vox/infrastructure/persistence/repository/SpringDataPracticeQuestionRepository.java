@@ -96,18 +96,31 @@ public interface SpringDataPracticeQuestionRepository
     void decrementUsageCount(@Param("id") UUID id);
 
  
+    /**
+     * ⚠️ Cột target_tense TỪNG BỊ SÓT ở đây (sửa 2026-08-07).
+     *
+     * Thì đích đi hết cả chuỗi -- TensePolicy.forSlot -> generateAndStore -> payload gửi Python
+     * -> Python trả về -> PracticeQuestion giữ trong object -- rồi bị vứt ở đúng bước ghi cuối
+     * vì câu INSERT này không liệt kê cột. Không lỗi, không cảnh báo: mọi câu sinh ra đều có
+     * target_tense NULL, nên bộ lọc thì ở findUnseenByTopicAndCriterionAndRankRange
+     * (`question.target_tense IS NULL OR = :tense`) luôn rơi vào vế đầu và cả cơ chế ép thì
+     * chưa từng chạy.
+     *
+     * Thêm cột mới vào practice_question thì PHẢI sửa cả đây -- đây là đường ghi duy nhất của
+     * câu do AI sinh, và nó không dùng entity nên Hibernate không nhắc.
+     */
     @Modifying
     @Query(value = """
         INSERT INTO practice_question (
             id, practice_topic_id, question_text,
-            target_criterion_code, target_sub_attribute,
+            target_criterion_code, target_sub_attribute, target_tense,
             difficulty_rank, difficulty_features_json,
             evaluation_guide_json, suggested_ideas_json,
             question_type,
             max_response_seconds, min_response_seconds,
             vstep_part, source,
             usage_count, active, created_at
-        ) VALUES (:id, :topicId, :questionText, :criterionCode, :subAttribute,
+        ) VALUES (:id, :topicId, :questionText, :criterionCode, :subAttribute, :targetTense,
                   :difficultyRank, :difficultyFeaturesJson, :evaluationGuideJson,
                   :suggestedIdeasJson, :questionType,
                   :maxResponseSeconds, :minResponseSeconds,
@@ -120,6 +133,7 @@ public interface SpringDataPracticeQuestionRepository
         @Param("questionText") String questionText,
         @Param("criterionCode") String criterionCode,
         @Param("subAttribute") String subAttribute,
+        @Param("targetTense") String targetTense,
         @Param("difficultyRank") int difficultyRank,
         @Param("difficultyFeaturesJson") String difficultyFeaturesJson,
         @Param("evaluationGuideJson") String evaluationGuideJson,

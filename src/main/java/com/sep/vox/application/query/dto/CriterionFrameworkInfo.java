@@ -4,14 +4,17 @@ import java.util.UUID;
 
 public interface CriterionFrameworkInfo {
 
-    UUID getRubricCriterionId();
+    /** Khoá gom nhóm -- từ V13 là framework_criteria.id, trước đó là rubric_criterions.id. */
+    UUID getCriterionId();
 
-    String getRubricCode();
+    /** Mã tiêu chí dùng làm criterionKey gửi xuống Python. */
+    String getCriterionCode();
 
-    double getWeight();
 
+    /** Thang chấm của tiêu chí. Luyện tập luôn 0. */
     double getMinScore();
 
+    /** Luyện tập luôn 100 -- Azure trả HundredMark nên đây là thang gốc. */
     double getMaxScore();
 
     String getFrameworkCode();

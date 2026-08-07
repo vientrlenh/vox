@@ -61,8 +61,7 @@ public final class PracticeSessionResponses {
 
     public record CriterionScore(
             String criterionCode,
-            Double score,
-            String matchedBandCode) {
+            Double score) {
     }
 
     public record PracticeDashboardStats(
@@ -82,6 +81,9 @@ public final class PracticeSessionResponses {
             boolean completed,
             int pendingEvaluationCount,
             Double difficultyRank,
-            List<TeacherPracticeTurnView> turns) {
+            List<TeacherPracticeTurnView> turns,
+            /** Thang chấm của CHÍNH phiên này -- 0-100 từ V13, thang rubric với phiên cũ. */
+            double scoreScaleMin,
+            double scoreScaleMax) {
     }
 }

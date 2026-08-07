@@ -14,6 +14,8 @@ public record TeacherPracticeSessionDetailDto(
     boolean completed,
     int pendingEvaluationCount,
     Double difficultyRank,
-    List<TeacherPracticeTurnViewDto> turns
+    List<TeacherPracticeTurnViewDto> turns,
+    double scoreScaleMin,
+    double scoreScaleMax
 ) {
 }

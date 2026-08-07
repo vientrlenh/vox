@@ -49,6 +49,11 @@ public class PracticeTopicRepositoryImpl implements PracticeTopicRepository {
     }
 
     @Override
+    public long countOfferablePool() {
+        return repository.countByActiveTrueAndSourceNot("EXAM_QUESTION_BANK");
+    }
+
+    @Override
     public List<PracticeTopic> findAllActive() {
         return repository.findByActiveTrue().stream()
             .map(PracticeTopicMapper::toDomain)

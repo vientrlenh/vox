@@ -14,24 +14,22 @@ import com.sep.vox.infrastructure.persistence.entity.PracticeCriterionScoreJpaEn
 public interface SpringDataPracticeCriterionScoreRepository
         extends JpaRepository<PracticeCriterionScoreJpaEntity, UUID> {
 
-    Optional<PracticeCriterionScoreJpaEntity> findByPracticeEvaluationIdAndRubricCriterionId(
+    Optional<PracticeCriterionScoreJpaEntity> findByPracticeEvaluationIdAndCriterionCode(
         UUID practiceEvaluationId,
-        UUID rubricCriterionId
+        String criterionCode
     );
 
+  
     @Query(value = """
-        SELECT criterion.code AS code, score.final_score AS finalScore, score.matched_band_code AS matchedBandCode
+        SELECT score.criterion_code AS code,
+               score.final_score AS finalScore
         FROM practice_criterion_score score
-        JOIN rubric_criterions rubric
-          ON rubric.id = score.rubric_criterion_id
-        JOIN framework_criteria criterion
-          ON criterion.id = rubric.framework_criterion_id
         JOIN practice_item_evaluation evaluation
           ON evaluation.id = score.practice_evaluation_id
         JOIN practice_item_response response
           ON response.id = evaluation.practice_response_id
         WHERE response.practice_session_id = :sessionId
-        ORDER BY criterion.criteria_order
+        ORDER BY score.criterion_code
         """, nativeQuery = true)
     List<CriterionScoreWithCodeInfo> findScoresBySessionId(@Param("sessionId") UUID sessionId);
 }

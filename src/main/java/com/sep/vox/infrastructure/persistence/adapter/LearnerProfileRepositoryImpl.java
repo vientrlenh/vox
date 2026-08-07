@@ -46,13 +46,13 @@ public class LearnerProfileRepositoryImpl
     }
 
     @Override
-    public List<Integer> findFrameworkBandCount(UUID studentId) {
-        return profileRepository.findFrameworkBandCount(studentId);
+    public List<Integer> findFrameworkBandCount(UUID frameworkVersionId) {
+        return profileRepository.findFrameworkBandCount(frameworkVersionId);
     }
 
     @Override
-    public List<FrameworkResultBand> findFrameworkBandLadder(UUID studentId) {
-        return profileRepository.findFrameworkBandLadder(studentId).stream()
+    public List<FrameworkResultBand> findFrameworkBandLadder(UUID frameworkVersionId) {
+        return profileRepository.findFrameworkBandLadder(frameworkVersionId).stream()
             .map(FrameworkResultBandMapper::toDomain)
             .toList();
     }

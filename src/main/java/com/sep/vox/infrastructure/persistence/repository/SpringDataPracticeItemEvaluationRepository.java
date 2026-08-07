@@ -32,7 +32,6 @@ public interface SpringDataPracticeItemEvaluationRepository
         JOIN practice_item_evaluation evaluation
           ON evaluation.practice_response_id = response.id
         WHERE response.practice_session_id = :sessionId
-          AND response.question_complete = true
           AND evaluation.marked_invalid = false
           AND evaluation.item_score IS NOT NULL
         ORDER BY evaluation.evaluated_at DESC
@@ -40,17 +39,29 @@ public interface SpringDataPracticeItemEvaluationRepository
         """, nativeQuery = true)
     Double findLastValidNormalizedScore(@Param("sessionId") UUID sessionId);
 
-    // question_complete = true: câu học sinh bỏ dở giữa chừng (rớt mạng, đóng app) VẪN được
-    // chấm -- để lấy quan sát điểm yếu, xem PracticeGradingFlushService -- nhưng KHÔNG kéo
-    // điểm phiên xuống. Chấm một câu trả lời dở dang theo rubric của câu đầy đủ thì chắc chắn
-    // thấp, và phạt học sinh vì mất mạng là sai. Tín hiệu thì giữ, điểm thì không tính.
+    // KHÔNG lọc question_complete nữa (2026-08-07).
+    //
+    // Luật cũ: câu bỏ dở vẫn được chấm để lấy quan sát điểm yếu, nhưng không tính vào điểm
+    // phiên -- "chấm một câu dở dang theo rubric của câu đầy đủ thì chắc chắn thấp, phạt học
+    // sinh vì mất mạng là sai".
+    //
+    // Hai lý do bỏ:
+    //   1. Hồ sơ điểm yếu đã gỡ 2026-08-06, nên vế "vẫn chấm để lấy quan sát" không còn đích
+    //      nào. Giờ chấm xong rồi vứt.
+    //   2. Giả định "chắc chắn thấp" không đúng. Đo trên phiên thật 2026-08-07: câu bỏ dở
+    //      (2 lượt, 26 giây) được 80,07 -- CAO HƠN cả hai câu hoàn tất (72,56 và 73,97).
+    //
+    // Và khi câu bỏ dở là câu DUY NHẤT, loại nó không bảo vệ được gì: AVG trên tập rỗng ra
+    // NULL, cả phiên hiện 0 điểm. Bảo vệ khỏi bị kéo xuống mà thành xoá trắng.
+    //
+    // marked_invalid mới là cờ đúng vai cho "có đáng tính không" -- ValidityNode đã hạ cờ đó
+    // cho câu quá ngắn hoặc lạc đề.
     @Query(value = """
         SELECT AVG(evaluation.item_score)
         FROM practice_item_response response
         JOIN practice_item_evaluation evaluation
           ON evaluation.practice_response_id = response.id
         WHERE response.practice_session_id = :sessionId
-          AND response.question_complete = true
           AND evaluation.marked_invalid = false
         """, nativeQuery = true)
     BigDecimal findAverageItemScoreBySessionId(@Param("sessionId") UUID sessionId);

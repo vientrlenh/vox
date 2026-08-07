@@ -24,38 +24,31 @@ public class PracticeCriterionScoreRepositoryImpl implements PracticeCriterionSc
 
     @Override
     @Transactional
-    public void upsert(
+    public void upsertByCode(
             UUID practiceEvaluationId,
-            UUID rubricCriterionId,
-            double finalScore,
-            String matchedBandCode) {
+            String criterionCode,
+            double finalScore) {
         var existing = repository
-            .findByPracticeEvaluationIdAndRubricCriterionId(practiceEvaluationId, rubricCriterionId)
+            .findByPracticeEvaluationIdAndCriterionCode(practiceEvaluationId, criterionCode)
             .orElse(null);
         var scoreValue = BigDecimal.valueOf(finalScore);
         if (existing == null) {
             repository.save(new PracticeCriterionScoreJpaEntity(
                 UUID.randomUUID(),
                 practiceEvaluationId,
-                rubricCriterionId,
-                scoreValue,
-                matchedBandCode
+                criterionCode,
+                scoreValue
             ));
             return;
         }
         existing.setFinalScore(scoreValue);
-        existing.setMatchedBandCode(matchedBandCode);
         repository.save(existing);
     }
 
     @Override
     public List<PracticeCriterionScoreDto> findScoresBySessionId(UUID sessionId) {
         return repository.findScoresBySessionId(sessionId).stream()
-            .map(row -> new PracticeCriterionScoreDto(
-                row.getCode(),
-                row.getFinalScore(),
-                row.getMatchedBandCode()
-            ))
+            .map(row -> new PracticeCriterionScoreDto(row.getCode(), row.getFinalScore()))
             .toList();
     }
 }

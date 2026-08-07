@@ -86,7 +86,9 @@ public class PracticeSessionDetailAssemblyService {
             "COMPLETED".equals(summary.getStatus()),
             practiceItemResponseRepository.countAwaitingEvaluation(sessionId),
             practiceItemResponseRepository.findAverageDifficultyRank(sessionId),
-            turns
+            turns,
+            summary.getScoreScaleMin(),
+            summary.getScoreScaleMax()
         ));
     }
 }

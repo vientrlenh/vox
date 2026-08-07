@@ -63,12 +63,14 @@ public interface SpringDataCriterionScoreAverageRepository
                   WHERE t.evaluation_id = e.id
               )
             UNION ALL
-            SELECT fc.code AS criterion_code,
-                   (pcs.final_score - rc.min_score)
-                       / NULLIF(rc.max_score - rc.min_score, 0) AS normalized
+            -- Điểm luyện: thang 0-100 cố định, định danh bằng MÃ, không join rubric.
+            --
+            -- Chia cho 100 chứ không cho dải rubric: hai nguồn phải cùng quy về 0..1 thì phép
+            -- so mới có nghĩa. Dùng nhầm dải của bên kia là lỗi CHẠY SAI LẶNG LẼ -- không nổ,
+            -- chỉ khiến điểm luyện lấn át điểm thi và Q1 chọn sai tiêu chí mãi mãi.
+            SELECT UPPER(TRIM(pcs.criterion_code)) AS criterion_code,
+                   pcs.final_score / 100.0 AS normalized
             FROM practice_criterion_score pcs
-            JOIN rubric_criterions rc ON rc.id = pcs.rubric_criterion_id
-            JOIN framework_criteria fc ON fc.id = rc.framework_criterion_id
             JOIN practice_item_evaluation pe ON pe.id = pcs.practice_evaluation_id
             JOIN practice_item_response pr ON pr.id = pe.practice_response_id
             JOIN practice_session ps ON ps.id = pr.practice_session_id
@@ -81,11 +83,13 @@ public interface SpringDataCriterionScoreAverageRepository
                   WHERE pt.practice_response_id = pr.id
               )
         )
-        SELECT criterion_code
+        -- UPPER ở đây vì ba nguồn trên có thể khác kiểu chữ: framework_criteria.code
+        -- và practice_criterion_score.criterion_code không cùng quy ước.
+        SELECT UPPER(criterion_code) AS criterion_code
         FROM scores
         WHERE normalized IS NOT NULL
-        GROUP BY criterion_code
-        ORDER BY AVG(normalized), criterion_code
+        GROUP BY UPPER(criterion_code)
+        ORDER BY AVG(normalized), UPPER(criterion_code)
         """, nativeQuery = true)
     List<String> findCriterionCodesOrderedByLowestAverageScore(@Param("studentId") UUID studentId);
 }

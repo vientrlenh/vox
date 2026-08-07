@@ -14,8 +14,8 @@ import jakarta.persistence.UniqueConstraint;
 @Table(
     name = "practice_criterion_score",
     uniqueConstraints = @UniqueConstraint(
-        name = "uq_practice_criterion_score_evaluation_criterion",
-        columnNames = {"practice_evaluation_id", "rubric_criterion_id"}
+        name = "uq_practice_criterion_score_evaluation_code",
+        columnNames = {"practice_evaluation_id", "criterion_code"}
     ),
     indexes = @Index(name = "idx_practice_criterion_score_evaluation", columnList = "practice_evaluation_id")
 )
@@ -26,27 +26,23 @@ public class PracticeCriterionScoreJpaEntity {
     private UUID id;
     @Column(name = "practice_evaluation_id", nullable = false, updatable = false)
     private UUID practiceEvaluationId;
-    @Column(name = "rubric_criterion_id", nullable = false, updatable = false)
-    private UUID rubricCriterionId;
+    /** Mã tiêu chí viết hoa (GRAMMAR, PRONUNCIATION...) -- khoá định danh thật, thay cho id rubric. */
+    @Column(name = "criterion_code", nullable = false, length = 32, updatable = false)
+    private String criterionCode;
     @Column(name = "final_score", precision = 7, scale = 3)
     private BigDecimal finalScore;
-    @Column(name = "matched_band_code", length = 64)
-    private String matchedBandCode;
-
     protected PracticeCriterionScoreJpaEntity() {
     }
 
     public PracticeCriterionScoreJpaEntity(
             UUID id,
             UUID practiceEvaluationId,
-            UUID rubricCriterionId,
-            BigDecimal finalScore,
-            String matchedBandCode) {
+            String criterionCode,
+            BigDecimal finalScore) {
         this.id = id;
         this.practiceEvaluationId = practiceEvaluationId;
-        this.rubricCriterionId = rubricCriterionId;
+        this.criterionCode = criterionCode;
         this.finalScore = finalScore;
-        this.matchedBandCode = matchedBandCode;
     }
 
     public UUID getId() {
@@ -57,8 +53,8 @@ public class PracticeCriterionScoreJpaEntity {
         return practiceEvaluationId;
     }
 
-    public UUID getRubricCriterionId() {
-        return rubricCriterionId;
+    public String getCriterionCode() {
+        return criterionCode;
     }
 
     public BigDecimal getFinalScore() {
@@ -69,11 +65,4 @@ public class PracticeCriterionScoreJpaEntity {
         this.finalScore = finalScore;
     }
 
-    public String getMatchedBandCode() {
-        return matchedBandCode;
-    }
-
-    public void setMatchedBandCode(String matchedBandCode) {
-        this.matchedBandCode = matchedBandCode;
-    }
 }

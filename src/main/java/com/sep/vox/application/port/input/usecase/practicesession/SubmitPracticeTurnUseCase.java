@@ -24,7 +24,6 @@ import com.sep.vox.application.port.input.usecase.subscription.ConsumeQuotaUseCa
 import com.sep.vox.application.port.output.ExternalEventPublisherPort;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.dto.CriterionFrameworkInfo;
 import com.sep.vox.application.query.repository.PracticeSessionQueryRepository;
 import com.sep.vox.application.response.input.practicesession.PracticeSessionResponses.SubmitTurnResult;
 import com.sep.vox.domain.dto.personalization.SubmitTurnResultDto;

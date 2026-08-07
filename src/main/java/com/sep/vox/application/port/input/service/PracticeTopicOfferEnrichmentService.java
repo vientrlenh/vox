@@ -3,9 +3,11 @@ package com.sep.vox.application.port.input.service;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.domain.repository.FrameworkResultBandRepository;
+import com.sep.vox.domain.repository.FrameworkVersionRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.model.framework.FrameworkResultBand;
 import com.sep.vox.domain.repository.personalization.LearnerProfileRepository;
@@ -33,14 +35,25 @@ public class PracticeTopicOfferEnrichmentService {
     private final LearnerProfileRepository learnerProfileRepository;
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final FrameworkResultBandRepository frameworkResultBandRepository;
+    private final FrameworkVersionRepository frameworkVersionRepository;
+
+    /** Rỗng = tự chọn khung đang hoạt động. Điền mã để ghim một khung cụ thể. */
+    private final String practiceFrameworkVersionCode;
 
     public PracticeTopicOfferEnrichmentService(
             LearnerProfileRepository learnerProfileRepository,
             SchoolSubscriptionRepository schoolSubscriptionRepository,
-            FrameworkResultBandRepository frameworkResultBandRepository) {
+            FrameworkResultBandRepository frameworkResultBandRepository,
+            FrameworkVersionRepository frameworkVersionRepository,
+            @Value("${app.practice.framework-version-code:}") String practiceFrameworkVersionCode) {
         this.learnerProfileRepository = learnerProfileRepository;
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
         this.frameworkResultBandRepository = frameworkResultBandRepository;
+        this.frameworkVersionRepository = frameworkVersionRepository;
+        this.practiceFrameworkVersionCode =
+            practiceFrameworkVersionCode == null || practiceFrameworkVersionCode.isBlank()
+                ? null
+                : practiceFrameworkVersionCode.trim();
     }
 
     /**
@@ -57,12 +70,15 @@ public class PracticeTopicOfferEnrichmentService {
     }
 
     /**
-     * Số bậc của thang năng lực đang áp cho học sinh. Mặc định {@value #DEFAULT_BAND_COUNT}
-     * khi chưa có chính sách chấm nào -- không phải vì VSTEP, mà vì đó là giá trị an toàn
-     * giữ nguyên hành vi cũ cho dữ liệu chưa cấu hình.
+     * Số bậc của thang năng lực. Mặc định {@value #DEFAULT_BAND_COUNT} khi chưa có khung nào
+     * đang hiệu lực -- không phải vì VSTEP, mà vì đó là giá trị an toàn giữ nguyên hành vi cũ
+     * cho dữ liệu chưa cấu hình.
+     *
+     * <p>Từ V13 không còn nhận studentId: khung đánh giá của luyện tập là khái niệm TOÀN HỆ,
+     * không suy từ lớp học sinh qua assessment policy nữa.
      */
-    public int frameworkBandCount(UUID studentId) {
-        var values = learnerProfileRepository.findFrameworkBandCount(studentId);
+    public int frameworkBandCount() {
+        var values = learnerProfileRepository.findFrameworkBandCount(practiceFrameworkVersionId());
         return values.isEmpty() || values.get(0) == null || values.get(0) < 1
             ? DEFAULT_BAND_COUNT
             : values.get(0);
@@ -70,9 +86,22 @@ public class PracticeTopicOfferEnrichmentService {
 
     /** Cả thang bậc kèm mô tả, để gửi xuống Python dựng ladder trong prompt chấm câu hỏi.
      * Rỗng thì Python tự lùi về ladder mặc định của nó. */
-    public List<FrameworkResultBand> frameworkBandLadder(UUID studentId) {
-        return learnerProfileRepository.findFrameworkBandLadder(studentId);
+    public List<FrameworkResultBand> frameworkBandLadder() {
+        return learnerProfileRepository.findFrameworkBandLadder(practiceFrameworkVersionId());
     }
+
+    /**
+     * Khung đánh giá dùng cho luyện tập. Không có bản nào đang hiệu lực thì trả về một UUID
+     * KHÔNG tồn tại thay vì ném: hai hàm gọi nó đều có đường lùi hợp lý (số bậc mặc định,
+     * ladder rỗng để Python tự lùi), nên chặn cả màn chọn độ khó vì thiếu cấu hình là phản ứng
+     * nặng tay hơn vấn đề.
+     */
+    private UUID practiceFrameworkVersionId() {
+        return frameworkVersionRepository.findActiveVersionId(practiceFrameworkVersionCode)
+            .orElse(NO_FRAMEWORK);
+    }
+
+    private static final UUID NO_FRAMEWORK = new UUID(0L, 0L);
 
     /**
      * Trần độ dài MỘT phiên theo bậc ĐANG LUYỆN (thiết kế gói 6 mục 4.1: bậc 1-2 → 720s,
@@ -107,7 +136,7 @@ public class PracticeTopicOfferEnrichmentService {
     public int sessionBudgetSeconds(UUID studentId, int bandOrder) {
         return Math.min(
             minutesForStudent(studentId) * 60,
-            sessionSecondsCapForBand(bandOrder, frameworkBandCount(studentId))
+            sessionSecondsCapForBand(bandOrder, frameworkBandCount())
         );
     }
 

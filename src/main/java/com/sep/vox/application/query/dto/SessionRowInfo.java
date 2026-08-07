@@ -31,4 +31,13 @@ public interface SessionRowInfo {
     Instant getStartedAt();
 
     Instant getEndedAt();
+
+    /**
+     * Thang chấm của chính phiên này. Phiên từ V13 luôn 0-100; phiên CŨ lấy thang của rubric
+     * đã dùng lúc đó. Suy theo phiên chứ không theo cấu hình toàn cục -- hai loại cùng tồn tại
+     * lâu dài và màn tổng kết phải hiện đúng cho cả hai.
+     */
+    double getScoreScaleMin();
+
+    double getScoreScaleMax();
 }

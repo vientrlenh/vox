@@ -122,6 +122,18 @@ type SubscriptionQuota {
     usedQuantity: Int!
 }
 
+# null = giáo viên gọi query không có hạn mức CLASS_TEST cá nhân riêng, chỉ pool của trường áp dụng.
+type MyClassTestQuotaAllocation {
+    allocatedQuantity: Int!
+    usedQuantity: Int!
+}
+
+# null = học sinh gọi query không có hạn mức PRACTICE cá nhân riêng, chỉ pool của trường áp dụng.
+type MyPracticeQuotaAllocation {
+    allocatedQuantity: Int!
+    usedQuantity: Int!
+}
+
 type SubscriptionRequest {
     id: ID!
     schoolId: ID!
@@ -240,6 +252,8 @@ extend type Query {
 
     tokenPurchases(schoolId: ID!): [TokenPurchase!]!
     subscriptionUsage(schoolId: ID!): [SubscriptionQuota!]!
+    myClassTestQuotaAllocation: MyClassTestQuotaAllocation
+    myPracticeQuotaAllocation: MyPracticeQuotaAllocation
 
     invoices(schoolId: ID!, page: Int = 0, size: Int = 20): InvoicePage!
     financialEvents(schoolId: ID!, page: Int = 0, size: Int = 20): FinancialEventPage!

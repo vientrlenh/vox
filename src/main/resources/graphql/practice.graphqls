@@ -7,7 +7,6 @@ extend type Query {
 
 extend type Mutation {
     submitInterestQuiz(input: SubmitInterestQuizInput!): LearnerProfile!
-    submitFlsaSelfReport(answers: [Int!]!): LearnerProfile!
     setPracticeGoal(goalType: PracticeGoalType!): LearnerProfile!
 }
 
@@ -33,10 +32,15 @@ type InterestQuizItem {
 
 type LearnerProfile {
     goalType: PracticeGoalType!
-    flsaScore: Float
-    "Bậc mục tiêu của chính sách chấm -- dùng làm bậc chọn sẵn ở màn hình chọn độ khó."
-    targetFrameworkBandCode: String!
-    targetFrameworkBandLabel: String!
+    """
+    Bậc mục tiêu của chính sách chấm -- dùng làm bậc chọn sẵn ở màn hình chọn độ khó.
+
+    NULL khi trường chưa có chính sách nào phủ tới lớp của học sinh. Trước đây trường hợp này
+    ném lỗi, làm hỏng cả những thao tác GHI trả về kiểu này (nộp quiz, đặt mục tiêu) -- xem chú
+    thích ở JpaLearnerProfileQueryRepository.findCurrent. Client tự chọn bậc mặc định khi thiếu.
+    """
+    targetFrameworkBandCode: String
+    targetFrameworkBandLabel: String
     quizCompletedAt: String
 }
 

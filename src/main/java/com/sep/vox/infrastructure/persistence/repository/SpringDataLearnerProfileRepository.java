@@ -22,23 +22,32 @@ public interface SpringDataLearnerProfileRepository
     /** Khoá FOR SHARE bản mới nhất trước khi nối thêm version -- tránh hai request cùng ghi đè nhau. */
     @Lock(LockModeType.PESSIMISTIC_READ)
     Optional<LearnerProfileJpaEntity> findTopWithLockByStudentIdOrderByVersionDesc(UUID studentId);
+    @Query(value = """
+        WITH active_version AS (
+            SELECT fv.id
+            FROM framework_versions fv
+            JOIN frameworks f ON f.id = fv.framework_id AND f.is_active = true
+            WHERE fv.status = 'PUBLISHED'
+              AND fv.effective_from <= CURRENT_TIMESTAMP
+              AND (fv.effective_to IS NULL OR fv.effective_to >= CURRENT_TIMESTAMP)
+              AND (CAST(:code AS varchar) IS NULL OR fv.code = CAST(:code AS varchar))
+            ORDER BY fv.version DESC
+            LIMIT 1
+        ),
+        ranked AS (
+            SELECT band.id,
+                   ROW_NUMBER() OVER (ORDER BY band.result_band_order) AS rn,
+                   COUNT(*) OVER () AS total
+            FROM framework_result_bands band
+            JOIN active_version ON active_version.id = band.framework_version_id
+        )
+        SELECT band.*
+        FROM framework_result_bands band
+        JOIN ranked ON ranked.id = band.id AND ranked.rn = (ranked.total + 1) / 2
+        """, nativeQuery = true)
+    List<FrameworkResultBandJpaEntity> findDefaultTargetBand(@Param("code") String code);
 
 
-
-
-
-
-    /**
-     * Số bậc của thang năng lực (= bậc cao nhất trong framework version truyền vào).
-     *
-     * Cần vì trước đây code giả định cứng thang 6 bậc kiểu VSTEP (`Math.min(6, ...)` rải rác).
-     * Đổi trường sang CEFR/IELTS thì con số 6 đó sai mà KHÔNG nổ -- chỉ lặng lẽ kẹp trần sai.
-     * Đọc từ dữ liệu thay vì đoán.
-     *
-     * Từ V13 nhận thẳng frameworkVersionId thay vì suy từ assessment policy theo lớp của học
-     * sinh. Hai hàm này và {@link #findFrameworkBandLadder} PHẢI được gọi với cùng một
-     * frameworkVersionId -- caller chịu trách nhiệm, xem PracticeFrameworkResolver.
-     */
     @Query(value = """
         SELECT MAX(band.result_band_order)
         FROM framework_result_bands band
@@ -48,19 +57,7 @@ public interface SpringDataLearnerProfileRepository
         @Param("frameworkVersionId") UUID frameworkVersionId
     );
 
-    /**
-     * Toàn bộ thang bậc (thứ tự, mã, mô tả) của framework đang áp cho học sinh -- gửi xuống
-     * Python để dựng ladder mô tả bậc trong prompt chấm câu hỏi, thay cho hằng số viết cứng
-     * `BAC_1..BAC_6` bằng tiếng Anh vốn khoá hệ thống vào VSTEP.
-     *
-     * Không LIMIT 1 như hai hàm trên vì cần cả thang; policy được chọn bằng subquery theo đúng
-     * thứ tự ưu tiên lớp > khối > trường để nhất quán với chúng.
-     *
-     * Trả thẳng FrameworkResultBandJpaEntity (SELECT band.*) thay vì một projection riêng: bậc
-     * thang đã có sẵn model/entity/mapper ở gói framework, dựng thêm kiểu riêng chỉ để bớt vài
-     * cột là nhân đôi khái niệm. Query phải nằm ở đây (không gọi FrameworkResultBandRepository)
-     * vì luồng này chỉ có studentId, và một adapter chỉ được phép dùng đúng một repo.
-     */
+    
     @Query(value = """
         SELECT band.*
         FROM framework_result_bands band

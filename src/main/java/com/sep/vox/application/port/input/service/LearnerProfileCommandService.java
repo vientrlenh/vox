@@ -76,45 +76,17 @@ public class LearnerProfileCommandService {
                 Integer::sum
             );
         }
-        var saved = appendProfile(
-            studentId,
-            null,
-            null,
-            null,
-            null,
-            Instant.now()
-        );
+        var saved = appendProfile(studentId, null, null, Instant.now());
         dimensionScoreRepository.replaceScores(
             saved.getId(),
             interestQuizScorer.normalize(raw)
         );
     }
 
-    public void submitFlsa(UUID studentId, List<Integer> answers) {
-        if (answers == null || answers.size() < 3 || answers.size() > 4
-                || answers.stream().anyMatch(
-                    value -> value == null || value < 1 || value > 5
-                )) {
-            throw new IllegalArgumentException(
-                "FLAS phải có 3 đến 4 câu trả lời Likert từ 1 đến 5"
-            );
-        }
-        var adjusted = new ArrayList<>(answers);
-        adjusted.set(2, 6 - adjusted.get(2));
-        var score = adjusted.stream()
-            .mapToInt(Integer::intValue)
-            .average()
-            .orElseThrow();
-        appendProfile(
-            studentId,
-            null,
-            BigDecimal.valueOf((score - 1.0) * 25.0)
-                .setScale(2, RoundingMode.HALF_UP),
-            jsonSerialization.toJson(answers),
-            null,
-            null
-        );
-    }
+    // GỠ 2026-08-07: submitFlsa -- thang tự đánh giá lo lắng ngoại ngữ (FLSA). Không client nào
+    // gọi mutation submitFlsaSelfReport, và không cơ chế nào ĐỌC flsaScore để đổi hành vi: nó chỉ
+    // được ghi rồi dội ngược lại qua GraphQL. Xoá cả cột flsa_score/flsa_raw_answers_json khỏi
+    // ánh xạ (cột trong DB giữ nguyên, xem chú thích ở LearnerProfileJpaEntity).
 
     public void setGoal(UUID studentId, String goalType) {
         if (!"EXAM_PREP".equals(goalType)
@@ -123,46 +95,28 @@ public class LearnerProfileCommandService {
                 "Mục tiêu luyện tập không hợp lệ"
             );
         }
-        appendProfile(studentId, goalType, null, null, null, null);
+        appendProfile(studentId, goalType, null, null);
     }
 
     public void setAutoUpdate(UUID studentId, boolean enabled) {
-        appendProfile(studentId, null, null, null, enabled, null);
+        appendProfile(studentId, null, enabled, null);
     }
 
     private LearnerProfile appendProfile(
             UUID studentId,
             String goalType,
-            BigDecimal flsaScore,
-            String flsaRawAnswersJson,
             Boolean autoUpdate,
             Instant quizCompletedAt) {
         var previous = repository.findCurrentForUpdate(studentId).orElse(null);
         var next = previous == null
-            ? LearnerProfile.first(studentId).next(
-                goalType,
-                flsaScore,
-                flsaRawAnswersJson,
-                autoUpdate,
-                quizCompletedAt
-            )
-            : previous.next(
-                goalType,
-                flsaScore,
-                flsaRawAnswersJson,
-                autoUpdate,
-                quizCompletedAt
-            );
+            ? LearnerProfile.first(studentId).next(goalType, autoUpdate, quizCompletedAt)
+            : previous.next(goalType, autoUpdate, quizCompletedAt);
         if (previous == null) {
             next = new LearnerProfile(
                 null,
                 next.getStudentId(),
                 1,
                 next.getGoalType(),
-                next.getTargetExam(),
-                next.getTargetDate(),
-                next.getFlsaScore(),
-                next.getFlsaRawAnswersJson(),
                 next.isAutoUpdateInterest(),
                 next.getQuizCompletedAt(),
                 next.getRecordedAt()

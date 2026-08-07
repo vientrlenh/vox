@@ -12,10 +12,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 
 import com.sep.vox.application.port.input.command.SetPracticeGoalCommand;
-import com.sep.vox.application.port.input.command.SubmitFlsaSelfReportCommand;
 import com.sep.vox.application.port.input.command.SubmitInterestQuizCommand;
 import com.sep.vox.application.port.input.usecase.learnerprofile.SetPracticeGoalUseCase;
-import com.sep.vox.application.port.input.usecase.learnerprofile.SubmitFlsaSelfReportUseCase;
 import com.sep.vox.application.port.input.usecase.learnerprofile.SubmitInterestQuizUseCase;
 import com.sep.vox.application.port.input.usecase.learnerprofile.ViewInterestQuizItemsUseCase;
 import com.sep.vox.application.port.input.usecase.learnerprofile.ViewPracticeBandOptionsUseCase;
@@ -33,7 +31,6 @@ public class PracticeController {
     private final ViewInterestQuizItemsUseCase viewInterestQuizItemsUseCase;
     private final ViewPracticeBandOptionsUseCase viewPracticeBandOptionsUseCase;
     private final SubmitInterestQuizUseCase submitInterestQuizUseCase;
-    private final SubmitFlsaSelfReportUseCase submitFlsaSelfReportUseCase;
     private final SetPracticeGoalUseCase setPracticeGoalUseCase;
     private final AsyncTaskExecutor practiceGenerationExecutor;
 
@@ -42,7 +39,6 @@ public class PracticeController {
             ViewInterestQuizItemsUseCase viewInterestQuizItemsUseCase,
             ViewPracticeBandOptionsUseCase viewPracticeBandOptionsUseCase,
             SubmitInterestQuizUseCase submitInterestQuizUseCase,
-            SubmitFlsaSelfReportUseCase submitFlsaSelfReportUseCase,
             SetPracticeGoalUseCase setPracticeGoalUseCase,
             @Qualifier("practiceGenerationExecutor") AsyncTaskExecutor practiceGenerationExecutor) {
         this.practiceGenerationExecutor = practiceGenerationExecutor;
@@ -50,7 +46,6 @@ public class PracticeController {
         this.viewInterestQuizItemsUseCase = viewInterestQuizItemsUseCase;
         this.viewPracticeBandOptionsUseCase = viewPracticeBandOptionsUseCase;
         this.submitInterestQuizUseCase = submitInterestQuizUseCase;
-        this.submitFlsaSelfReportUseCase = submitFlsaSelfReportUseCase;
         this.setPracticeGoalUseCase = setPracticeGoalUseCase;
     }
 
@@ -91,12 +86,6 @@ public class PracticeController {
             ))
             .toList();
         return submitInterestQuizUseCase.execute(new SubmitInterestQuizCommand(answers));
-    }
-
-    @MutationMapping
-    @PreAuthorize("hasRole('STUDENT')")
-    public LearnerProfile submitFlsaSelfReport(@Argument("answers") List<Integer> answers) {
-        return submitFlsaSelfReportUseCase.execute(new SubmitFlsaSelfReportCommand(answers));
     }
 
     @MutationMapping

@@ -244,6 +244,19 @@ app:
             exam-result-lifecycle: ${KAFKA_EXAM_RESULT_LIFECYCLE_TOPIC:vox.exam-result-lifecycle.v1}
             grading-assignment: ${KAFKA_GRADING_ASSIGNMENT_TOPIC:vox.grading-assignment.v1}
           group-id: ${KAFKA_EMAIL_GROUP_ID:vox-email}
+        # Cố tình dùng LẠI biến môi trường topic của email: hai nhóm phải luôn đọc cùng
+        # một topic, tách biến ra là có ngày đổi một bên rồi lệch nhau trong im lặng.
+        # Vắng register-form-rejected và user-created là có chủ ý: người nhận chưa có tài
+        # khoản / chưa từng đăng nhập nên không có thiết bị nào để đẩy.
+        notification:
+          topic:
+            exam-appeal: ${KAFKA_EXAM_APPEAL_TOPIC:vox.exam-appeal.v1}
+            exam-result-lifecycle: ${KAFKA_EXAM_RESULT_LIFECYCLE_TOPIC:vox.exam-result-lifecycle.v1}
+            grading-assignment: ${KAFKA_GRADING_ASSIGNMENT_TOPIC:vox.grading-assignment.v1}
+          # Ngược lại, group-id BẮT BUỘC phải là biến riêng. Dùng chung KAFKA_EMAIL_GROUP_ID
+          # thì khi biến đó được set, hai listener rơi vào cùng một consumer group và Kafka
+          # chỉ giao mỗi message cho MỘT trong hai -- mail hoặc notification, ngẫu nhiên.
+          group-id: ${KAFKA_NOTIFICATION_GROUP_ID:vox-notification}
   recording:
     bucket: ${RECORDING_S3_BUCKET:}
   outbox:

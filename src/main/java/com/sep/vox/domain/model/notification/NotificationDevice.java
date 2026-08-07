@@ -91,5 +91,8 @@ public class NotificationDevice {
         this.lastSeenAt = lastSeenAt;
     }
 
-    
+    public static NotificationDevice create(UUID userId, String deviceId, NotificationDevicePlatform platform, String installationId, Instant now) {
+        return new NotificationDevice(
+            userId, deviceId, platform, installationId, now, now);
+    }
 }

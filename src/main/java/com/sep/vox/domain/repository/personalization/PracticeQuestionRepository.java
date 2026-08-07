@@ -26,11 +26,6 @@ public interface PracticeQuestionRepository {
 
     void saveGenerated(PracticeQuestion question);
 
-    /**
-     * Câu của chủ đề này đã chết VĨNH VIỄN với học sinh -- gửi xuống Python để loại khỏi phép
-     * so trùng lúc sinh câu mới, tránh khoá cứng. Xem chú thích dài ở
-     * {@code SpringDataPracticeQuestionRepository.findPermanentlyExhaustedIds}.
-     */
     List<UUID> findPermanentlyExhaustedIds(UUID topicId, UUID studentId);
 
     void incrementUsageCount(UUID id);

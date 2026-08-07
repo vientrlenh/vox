@@ -1,7 +1,5 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -38,16 +36,15 @@ public class PracticeQuestionRepositoryImpl implements PracticeQuestionRepositor
             int rankMax) {
         return repository
             .findUnseenByTopicAndCriterionAndRankRange(
-                topicId, studentId, criterion, tense, rankMin, rankMax, cooldownCutoff())
+                topicId, studentId, criterion, tense, rankMin, rankMax)
             .stream()
             .map(PracticeQuestionMapper::toDomain)
             .toList();
     }
 
-    // Gói 11 mục 3.3: câu chưa đạt band mục tiêu chỉ bị loại trong 24h kể từ lần gặp gần nhất.
-    private static Instant cooldownCutoff() {
-        return Instant.now().minus(Duration.ofDays(1));
-    }
+    // GỠ 2026-08-06: cooldownCutoff (gói 11 mục 3.3 -- "câu chưa đạt band mục tiêu chỉ bị loại
+    // trong 24h"). Luật mới không có ngoại lệ nào cho câu đã gặp, nên không còn mốc thời gian
+    // nào để tính.
 
     @Override
     public List<PracticeQuestion> findByIds(List<UUID> ids) {
@@ -105,6 +102,7 @@ public class PracticeQuestionRepositoryImpl implements PracticeQuestionRepositor
     }
 
     @Override
+    @Transactional
     public void incrementUsageCount(UUID id) {
         repository.incrementUsageCount(id);
     }

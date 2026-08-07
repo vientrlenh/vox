@@ -71,15 +71,29 @@ public class InterestVectorService {
         if (!completed && !"BORED".equals(diagnosis)) {
             return;
         }
+        // EPSILON xếp CÙNG NHÓM với EXPLORATION, không rơi vào default nữa (sửa 2026-08-06).
+        //
+        // Trước đây EPSILON không có case nên nhận 0.95 -- y hệt học sinh tự chọn. Đúng cái
+        // "dương giả" mà chú thích ở BuildPracticePaperUseCase.resolveOrigin nói là đã tránh
+        // được; thực ra nhận diện xong rồi vẫn tính 0.95, nên vế đó của chú thích sai.
+        //
+        // Vì sao cùng nhóm: cả hai đều là HỆ THỐNG đưa chủ đề tới, không phải bằng chứng học
+        // sinh vốn thích nó. Và với ε-greedy thì đây là điều kiện để phép đo có nghĩa -- cả
+        // điểm của slot thăm dò bằng điểm của slot khai thác thì chính thứ mà thăm dò sinh ra
+        // để đo lại bị nhiễu bởi ưu thế của lựa chọn có sẵn.
+        //
+        // Chấp nhận đánh đổi: chủ đề chỉ từng vào phiên qua đường thăm dò thì lần đầu tối đa
+        // chỉ được 0.60, thấp hơn chủ đề tự chọn. Muốn lên cao hơn phải được học sinh CHỦ ĐỘNG
+        // chọn ở lần sau -- đúng thứ ta muốn coi là bằng chứng thật.
         var signal = completed
             ? switch (origin) {
                 case "KEYWORD" -> 1.00;
-                case "EXPLORATION", "RANDOM" -> 0.60;
+                case "EXPLORATION", "RANDOM", "EPSILON" -> 0.60;
                 default -> 0.95;
             }
             : switch (origin) {
                 case "KEYWORD" -> 0.20;
-                case "EXPLORATION", "RANDOM" -> 0.10;
+                case "EXPLORATION", "RANDOM", "EPSILON" -> 0.10;
                 default -> 0.15;
             };
         appendInterestEvent(studentId, topicId, sessionId, "SESSION_OUTCOME", signal);
@@ -95,6 +109,8 @@ public class InterestVectorService {
         var events = eventRepository.findByStudent(studentId);
         var scores = new LinkedHashMap<UUID, Double>();
         var sessions = new HashMap<UUID, Set<UUID>>();
+        // Bằng chứng KHÔNG gắn phiên -- xem chú thích ở nhánh else bên dưới.
+        var standalone = new HashMap<UUID, Integer>();
         var last = new HashMap<UUID, Instant>();
         for (var event : events) {
             // ĐIỂM thì mọi sự kiện đều tính -- kể cả "được chào mà không chọn", đó chính là
@@ -116,6 +132,14 @@ public class InterestVectorService {
             if (event.getSessionId() != null) {
                 sessions.computeIfAbsent(event.getTopicId(), ignored -> new HashSet<>())
                     .add(event.getSessionId());
+            } else {
+                // Sự kiện KHÔNG gắn phiên nào -- hiện chỉ có TOPIC_DISMISSED (học sinh bấm loại
+                // thẻ ở màn chọn chủ đề). Mỗi lần bấm là một bằng chứng riêng, phải đếm.
+                //
+                // Bỏ nhánh này thì tính năng loại thẻ CHẠY MÀ VÔ TÁC DỤNG: mentions đứng yên ở 0
+                // -> gamma = 0/(0+2) = 0 -> interest = điểm_chiều hoàn toàn -> điểm riêng vừa bị
+                // hạ không được dùng một chút nào. Bấm loại bao nhiêu lần thứ hạng cũng y nguyên.
+                standalone.merge(event.getTopicId(), 1, Integer::sum);
             }
             // Chỉ LẦN CUỐI mới phải lọc theo loại.
             //
@@ -137,7 +161,8 @@ public class InterestVectorService {
             newScores.add(new TopicInterestScoreEntry(
                 entry.getKey(),
                 entry.getValue(),
-                sessions.getOrDefault(entry.getKey(), Set.of()).size(),
+                sessions.getOrDefault(entry.getKey(), Set.of()).size()
+                    + standalone.getOrDefault(entry.getKey(), 0),
                 last.get(entry.getKey())
             ));
         }

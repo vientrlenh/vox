@@ -103,9 +103,18 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
 
     /**
      * Lối vào thật của phiên. Client chỉ biết "học sinh bấm một thẻ" nên gửi SELECTED, nhưng
-     * thẻ đó có thể là slot ε-greedy do HỆ THỐNG tráo vào lô chào -- ghi SELECTED cho nó là
-     * dương giả (0.95 như tự chọn, xem InterestVectorService.recordSessionOutcome), và làm
-     * van thăm dò §2.7 không bao giờ đóng vì không phiếu nào mang origin EPSILON.
+     * thẻ đó có thể là slot ε-greedy do HỆ THỐNG tráo vào lô chào. Ghi SELECTED cho nó hỏng
+     * hai việc:
+     *
+     * <ul>
+     *   <li>tín hiệu sở thích thành dương giả -- 0.95 như học sinh tự chọn, trong khi chủ đề
+     *       là do hệ thống đưa tới. Từ 2026-08-06 EPSILON có case riêng trong
+     *       {@code InterestVectorService.recordSessionOutcome} và nhận 0.60 cùng nhóm với
+     *       EXPLORATION; trước đó nó rơi vào {@code default} nên nhận diện xong vẫn tính 0.95,
+     *       tức vế này của chú thích cũ mô tả một điều chưa thành sự thật.</li>
+     *   <li>van thăm dò §2.7 không bao giờ đóng, vì không phiếu nào mang origin EPSILON để
+     *       mà đếm.</li>
+     * </ul>
      *
      * Suy ra bằng cách xếp hạng lại thay vì nhớ slot nào đã chào cho ai: xem
      * ViewPracticeTopicOffersUseCase.isOutsideTopRanked để biết vì sao không dùng cache.

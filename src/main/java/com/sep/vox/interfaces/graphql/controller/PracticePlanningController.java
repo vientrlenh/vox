@@ -22,6 +22,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 
 import com.sep.vox.application.port.input.command.BuildPracticePaperCommand;
+import com.sep.vox.application.port.input.command.DismissTopicOfferCommand;
 import com.sep.vox.application.port.input.command.SaveTopicCommand;
 import com.sep.vox.application.port.input.command.UnsaveTopicCommand;
 import com.sep.vox.application.port.input.query.SearchPracticeTopicsQuery;
@@ -32,6 +33,7 @@ import com.sep.vox.application.port.input.query.ViewPracticeTopicOffersQuery;
 import com.sep.vox.application.port.input.query.ViewSynchronousTopicOffersQuery;
 import com.sep.vox.application.port.input.usecase.practiceplanning.BuildPracticePaperUseCase;
 import com.sep.vox.application.port.input.usecase.practiceplanning.PickRandomTopicUseCase;
+import com.sep.vox.application.port.input.usecase.practiceplanning.DismissTopicOfferUseCase;
 import com.sep.vox.application.port.input.usecase.practiceplanning.SaveTopicUseCase;
 import com.sep.vox.application.port.input.usecase.practiceplanning.SearchPracticeTopicsUseCase;
 import com.sep.vox.application.port.input.usecase.practiceplanning.UnsaveTopicUseCase;
@@ -48,6 +50,7 @@ public class PracticePlanningController {
     private final SearchPracticeTopicsUseCase searchPracticeTopicsUseCase;
     private final BuildPracticePaperUseCase buildPracticePaperUseCase;
     private final PickRandomTopicUseCase pickRandomTopicUseCase;
+    private final DismissTopicOfferUseCase dismissTopicOfferUseCase;
     private final SaveTopicUseCase saveTopicUseCase;
     private final UnsaveTopicUseCase unsaveTopicUseCase;
     private final ViewSynchronousTopicOffersUseCase viewSynchronousTopicOffersUseCase;
@@ -63,6 +66,7 @@ public class PracticePlanningController {
             SearchPracticeTopicsUseCase searchPracticeTopicsUseCase,
             BuildPracticePaperUseCase buildPracticePaperUseCase,
             PickRandomTopicUseCase pickRandomTopicUseCase,
+            DismissTopicOfferUseCase dismissTopicOfferUseCase,
             SaveTopicUseCase saveTopicUseCase,
             UnsaveTopicUseCase unsaveTopicUseCase,
             ViewSynchronousTopicOffersUseCase viewSynchronousTopicOffersUseCase,
@@ -80,6 +84,7 @@ public class PracticePlanningController {
         this.searchPracticeTopicsUseCase = searchPracticeTopicsUseCase;
         this.buildPracticePaperUseCase = buildPracticePaperUseCase;
         this.pickRandomTopicUseCase = pickRandomTopicUseCase;
+        this.dismissTopicOfferUseCase = dismissTopicOfferUseCase;
         this.saveTopicUseCase = saveTopicUseCase;
         this.unsaveTopicUseCase = unsaveTopicUseCase;
         this.viewMySavedTopicsUseCase = viewMySavedTopicsUseCase;
@@ -196,5 +201,11 @@ public class PracticePlanningController {
     @PreAuthorize("hasRole('STUDENT')")
     public boolean unsaveTopic(@Argument("topicId") UUID topicId) {
         return unsaveTopicUseCase.execute(new UnsaveTopicCommand(topicId));
+    }
+
+    @MutationMapping
+    @PreAuthorize("hasRole('STUDENT')")
+    public boolean dismissTopicOffer(@Argument("topicId") UUID topicId) {
+        return dismissTopicOfferUseCase.execute(new DismissTopicOfferCommand(topicId));
     }
 }

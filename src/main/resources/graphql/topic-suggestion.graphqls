@@ -1,27 +1,12 @@
+# GỠ 2026-08-06: mutation respondToTopicSuggestion, query myPendingTopicSuggestions và
+# type TopicSuggestion. Cả cụm chỉ phục vụ gợi ý chủ đề suy ra TỪ LỜI HỌC SINH NÓI trong bài
+# luyện -- đường đó đã bỏ ở backend nên không còn gì tạo ra dòng PENDING để mà duyệt.
+#
+# generateTopicFromKeyword bên dưới là đường KHÁC và vẫn chạy: học sinh chủ động gõ từ khoá,
+# tìm không ra thì AI soạn chủ đề mới.
+
 extend type Mutation {
-    respondToTopicSuggestion(suggestionId: ID!, accept: Boolean!): Boolean!
     generateTopicFromKeyword(keyword: String!): TopicFromKeywordResult!
-}
-
-extend type Query {
-    """
-    Chủ đề AI gợi ý đang chờ học sinh nhận/bỏ.
-
-    Trước đây là field `suggestions` gắn vào `InterestProfile` -- type đó đã bỏ cùng trang
-    hồ sơ sở thích, nên chuyển thành query mức trên. Hiện CHƯA có màn hình nào gọi: luồng
-    nhận/bỏ gợi ý vốn nằm trong trang vừa xoá. Giữ lại vì đây là một tính năng hoàn chỉnh,
-    không phải mảnh vụn -- cần quyết định riêng chứ không xoá kèm.
-    """
-    myPendingTopicSuggestions: [TopicSuggestion!]!
-}
-
-type TopicSuggestion {
-    id: ID!
-    suggestedTopicName: String!
-    interestDimension: String!
-    confidence: Float!
-    reasonText: String!
-    status: String!
 }
 
 type TopicFromKeywordResult {

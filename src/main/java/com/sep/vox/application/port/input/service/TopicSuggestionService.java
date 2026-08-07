@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 import java.text.Normalizer;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -13,9 +12,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.PracticeTopicOffer;
 import com.sep.vox.application.response.input.topicsuggestion.TopicSuggestionResponses.TopicFromKeywordResult;
 import com.sep.vox.domain.model.personalization.PracticeTopic;
@@ -37,20 +34,12 @@ import com.sep.vox.infrastructure.service.TopicGenerationClient.KeywordEvidence;
 @Service
 public class TopicSuggestionService {
 
-    private static final Set<String> STOPWORDS = Set.of(
-        "a", "an", "and", "are", "as", "at", "be", "because", "but",
-        "by", "for", "from", "had", "has", "have", "he", "her", "his",
-        "i", "in", "is", "it", "its", "me", "my", "of", "on", "or",
-        "our", "she", "so", "that", "the", "their", "them", "they",
-        "this", "to", "was", "we", "were", "with", "you", "your"
-    );
     private static final Set<String> UNSUITABLE = Set.of(
         "porn", "sex", "drugs", "weapon", "gambling", "hate", "suicide"
     );
 
     private final TopicSuggestionRepository topicSuggestionRepository;
     private final PracticeTopicRepository practiceTopicRepository;
-    private final InterestVectorService interestVectorService;
     private final LearnerProfileRepository learnerProfileRepository;
     private final TopicGenerationClient generationClient;
     private final PracticeTopicOfferEnrichmentService enrichmentService;
@@ -60,7 +49,6 @@ public class TopicSuggestionService {
     public TopicSuggestionService(
             TopicSuggestionRepository topicSuggestionRepository,
             PracticeTopicRepository practiceTopicRepository,
-            InterestVectorService interestVectorService,
             LearnerProfileRepository learnerProfileRepository,
             TopicGenerationClient generationClient,
             PracticeTopicOfferEnrichmentService enrichmentService,
@@ -69,59 +57,15 @@ public class TopicSuggestionService {
         this.interestDimensionRepository = interestDimensionRepository;
         this.topicSuggestionRepository = topicSuggestionRepository;
         this.practiceTopicRepository = practiceTopicRepository;
-        this.interestVectorService = interestVectorService;
         this.learnerProfileRepository = learnerProfileRepository;
         this.generationClient = generationClient;
         this.enrichmentService = enrichmentService;
         this.keywordTopicPersistenceService = keywordTopicPersistenceService;
     }
 
-    @Transactional
-    public boolean respond(UUID studentId, UUID suggestionId, boolean accept) {
-        var suggestion = topicSuggestionRepository
-            .findByIdAndStudentIdAndStatusForUpdate(suggestionId, studentId, "PENDING")
-            .orElseThrow(() -> new NotFoundException(
-                "Gợi ý không tồn tại hoặc đã được phản hồi."
-            ));
-        var updated = withResponse(suggestion, accept ? "ACCEPTED" : "REJECTED");
-        topicSuggestionRepository.save(updated);
-        if (!accept) {
-            generationClient.index(
-                "rejected:" + suggestionId,
-                suggestion.getSuggestedTopicName(),
-                suggestion.getSuggestedTopicName(),
-                false,
-                studentId,
-                "REJECTED"
-            );
-            return true;
-        }
-        var topicId = findExact(suggestion.getSuggestedTopicName());
-        if (topicId == null) {
-            topicId = createTopic(
-                suggestion.getSuggestedTopicName(),
-                suggestion.getInterestDimension(),
-                suggestion.getCurriculumGroup(),
-                "SUGGESTED",
-                // Gợi ý đã nằm trong topic_suggestion từ trước, mà bảng đó không lưu khung
-                // thời gian. Không bịa lại từ tên chủ đề -- MIXED để thang xoay vòng tự rải.
-                TensePolicy.AFFORDANCE_MIXED
-            );
-        }
-        generationClient.index(
-            topicId.toString(),
-            suggestion.getSuggestedTopicName(),
-            suggestion.getSuggestedTopicName(),
-            true,
-            null,
-            "ACTIVE"
-        );
-        interestVectorService.appendInterestEvent(
-            studentId, topicId, null, "SUGGESTION_ACCEPTED", 1.0
-        );
-        interestVectorService.recomputeInterest(studentId);
-        return true;
-    }
+    // GỠ 2026-08-06: respond(studentId, suggestionId, accept) -- nhận/bỏ một gợi ý chủ đề.
+    // Không còn nguồn nào tạo dòng PENDING sau khi bỏ đường suy chủ đề từ lời học sinh nói,
+    // nên không còn gì để duyệt. Giao diện, GraphQL và use case đi kèm đã xoá cùng lúc.
 
     // Not @Transactional -- generationClient.propose() is a slow synchronous LLM call to the
     // Python agents service; see PracticeQuestionGenerationService.generateAndStore for the
@@ -160,7 +104,7 @@ public class TopicSuggestionService {
             List.of(new KeywordEvidence(keyword, 1)),
             interestScores(studentId),
             topicNames(),
-            rejectedTopicNames(studentId),
+            List.of(),   // xem ghi chu o cho go rejectedTopicNames
             practiceTopicRepository.findExhaustedTopicNames(studentId),
             true,
             1,
@@ -206,89 +150,21 @@ public class TopicSuggestionService {
         );
     }
 
-    // Not @Transactional -- same reason as generateFromKeyword above.
-    public int refreshSuggestions(UUID studentId) {
-        var pending = topicSuggestionRepository.countByStudentIdAndStatus(studentId, "PENDING");
-        if (pending >= 2) {
-            return 0;
-        }
-        var transcripts = topicSuggestionRepository.findRecentTranscripts(studentId);
-        var sessionsByKeyword = new HashMap<String, Set<UUID>>();
-        for (var row : transcripts) {
-            for (var token : contentWords(row.transcript())) {
-                sessionsByKeyword.computeIfAbsent(token, ignored -> new HashSet<>())
-                    .add(row.sessionId());
-            }
-        }
-        var evidence = sessionsByKeyword.entrySet().stream()
-            .sorted(Map.Entry.<String, Set<UUID>>comparingByValue(
-                (left, right) -> Integer.compare(left.size(), right.size())
-            ).reversed())
-            .limit(30)
-            .map(entry -> new KeywordEvidence(entry.getKey(), entry.getValue().size()))
-            .toList();
-        if (evidence.isEmpty()) {
-            return 0;
-        }
-        var availableSlots = 2 - pending;
-        var proposals = generationClient.propose(
-            studentId,
-            evidence,
-            interestScores(studentId),
-            topicNames(),
-            rejectedTopicNames(studentId),
-            practiceTopicRepository.findExhaustedTopicNames(studentId),
-            false,
-            Math.min(3, availableSlots),
-            dimensionCodes()
-        );
-        var created = 0;
-        for (var proposal : proposals) {
-            if (pending + created >= 2) {
-                break;
-            }
-            if (proposal.reasonText().isBlank()
-                    || findNearExistingTopic(normalize(proposal.name())) != null
-                    || nearRejected(studentId, normalize(proposal.name()))) {
-                continue;
-            }
-            topicSuggestionRepository.save(new TopicSuggestion(
-                null,
-                studentId,
-                proposal.name(),
-                null,
-                proposal.interestDimension(),
-                proposal.curriculumGroup(),
-                BigDecimal.valueOf(proposal.confidence()),
-                proposal.reasonText(),
-                proposal.evidenceJson(),
-                "PENDING",
-                Instant.now(),
-                null
-            ));
-            created++;
-        }
-        return created;
-    }
-
-    public List<UUID> studentsDueForSuggestionRefresh(int limit) {
-        return topicSuggestionRepository.findStudentsDueForSuggestionRefresh(Math.max(1, limit));
-    }
-
-    public List<com.sep.vox.application.response.input.topicsuggestion.TopicSuggestionResponses.TopicSuggestion>
-            pendingSuggestions(UUID studentId) {
-        return topicSuggestionRepository.findPendingByStudentId(studentId).stream()
-            .map(suggestion -> new com.sep.vox.application.response.input.topicsuggestion
-                .TopicSuggestionResponses.TopicSuggestion(
-                suggestion.getId(),
-                suggestion.getSuggestedTopicName(),
-                suggestion.getInterestDimension(),
-                suggestion.getConfidence().doubleValue(),
-                suggestion.getReasonText(),
-                suggestion.getStatus()
-            ))
-            .toList();
-    }
+    // GỠ 2026-08-06 -- refreshSuggestions / studentsDueForSuggestionRefresh.
+    //
+    // Đường cũ: đọc transcript 30 ngày gần nhất, đếm từ nội dung theo số buổi có nhắc, lấy 30 từ
+    // đứng đầu làm bằng chứng rồi nhờ LLM đề xuất chủ đề mới -- "AI nghe thấy em hay nhắc tới X".
+    // Bỏ theo yêu cầu: hệ thống không suy diễn chủ đề từ lời học sinh nói nữa.
+    //
+    // Hai đường sinh chủ đề CÒN LẠI đều không đọc transcript, nên không đụng tới:
+    //   - generateFromKeyword  : học sinh tự gõ từ khoá, bằng chứng là chính từ khoá đó
+    //   - synchronousOffers    : truyền evidence rỗng, chỉ dựa điểm sở thích
+    //
+    // Cả luồng duyệt gợi ý đã xoá theo (pendingSuggestions / respond / GraphQL / thẻ bên Flutter):
+    // không còn nguồn tạo dòng PENDING thì không còn gì để duyệt.
+    //
+    // Bảng topic_suggestion VẪN CÒN, nhưng nay chỉ là nhật ký yêu cầu theo từ khoá
+    // (recordKeywordRequest + hạn mức 3 lượt/tuần ở countWeeklyKeywordRequests).
 
     // Not @Transactional -- same reason as generateFromKeyword above. This one is the hottest
     // path (called synchronously from practiceTopicOffers whenever ranked offers are thin), so
@@ -305,7 +181,7 @@ public class TopicSuggestionService {
             List.of(),
             interestScores(studentId),
             topicNames(),
-            rejectedTopicNames(studentId),
+            List.of(),   // xem ghi chu o cho go rejectedTopicNames
             practiceTopicRepository.findExhaustedTopicNames(studentId),
             false,
             // Xin NHIEU hon so can: bo loc trung-gan ngay ben duoi cat rat manh -- do that
@@ -319,8 +195,7 @@ public class TopicSuggestionService {
         var result = new ArrayList<PracticeTopicOffer>();
         for (var proposal : proposals) {
             if (result.size() >= requestedCount
-                    || findNearExistingTopic(normalize(proposal.name())) != null
-                    || nearRejected(studentId, normalize(proposal.name()))) {
+                    || findNearExistingTopic(normalize(proposal.name())) != null) {
                 continue;
             }
             var topicId = createTopic(
@@ -403,17 +278,6 @@ public class TopicSuggestionService {
         );
     }
 
-    private boolean nearRejected(UUID studentId, String normalized) {
-        return topicSuggestionRepository.findByStudentIdAndStatus(studentId, "REJECTED").stream()
-            .map(TopicSuggestion::getSuggestedTopicName)
-            .anyMatch(value -> tokenSimilarity(value, normalized) >= 0.90);
-    }
-
-    private UUID findExact(String name) {
-        return practiceTopicRepository.findByNormalizedName(normalize(name))
-            .map(PracticeTopic::getId)
-            .orElse(null);
-    }
 
     private UUID createTopic(
             String name,
@@ -464,11 +328,10 @@ public class TopicSuggestionService {
             .toList();
     }
 
-    private List<String> rejectedTopicNames(UUID studentId) {
-        return topicSuggestionRepository.findByStudentIdAndStatus(studentId, "REJECTED").stream()
-            .map(TopicSuggestion::getSuggestedTopicName)
-            .toList();
-    }
+    // GỠ 2026-08-06: rejectedTopicNames + nearRejected. Cả hai đọc dòng status='REJECTED', mà
+    // nơi duy nhất ghi trạng thái đó là respond() -- đã xoá. Giữ lại thì mỗi lượt gọi LLM phải
+    // chạy thêm hai truy vấn chắc chắn rỗng. Tham số tương ứng của propose() vẫn giữ nguyên
+    // (truyền List.of()) để không phải đổi hợp đồng với Python.
 
     private Map<String, Double> interestScores(UUID studentId) {
         return practiceTopicRepository.findInterestScoresByDimension(studentId);
@@ -484,30 +347,4 @@ public class TopicSuggestionService {
         return UNSUITABLE.stream().anyMatch(normalized::contains);
     }
 
-    private List<String> contentWords(String transcript) {
-        var result = new ArrayList<String>();
-        for (var token : normalize(transcript).split(" ")) {
-            if (token.length() >= 4 && !STOPWORDS.contains(token)) {
-                result.add(token);
-            }
-        }
-        return result;
-    }
-
-    private TopicSuggestion withResponse(TopicSuggestion suggestion, String status) {
-        return new TopicSuggestion(
-            suggestion.getId(),
-            suggestion.getStudentId(),
-            suggestion.getSuggestedTopicName(),
-            suggestion.getKeyword(),
-            suggestion.getInterestDimension(),
-            suggestion.getCurriculumGroup(),
-            suggestion.getConfidence(),
-            suggestion.getReasonText(),
-            suggestion.getEvidenceJson(),
-            status,
-            suggestion.getCreatedAt(),
-            Instant.now()
-        );
-    }
 }

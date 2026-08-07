@@ -127,6 +127,10 @@ public class PracticeSessionClosedHandler {
         // Chạy SAU recordSessionOutcome là cố ý: điểm quan tâm vừa cập nhật xong, nên lượt
         // đề xuất này nhìn thấy bức tranh mới nhất thay vì bức tranh trước buổi học.
         topicOfferBackfillService.backfillAsync(studentId);
+        // ⚠️ Từ 2026-08-06 sự kiện này KHÔNG CÒN NGƯỜI NGHE: hai listener cũ là
+        // WeaknessSnapshotRefreshJob (gỡ cùng hồ sơ điểm yếu) và TopicSuggestionSessionListener
+        // (gỡ cùng đường đọc transcript). Giữ lại làm điểm nối cho việc sau; nếu đến lúc dọn mà
+        // vẫn không ai nghe thì xoá cả PracticeSessionEndedEvent.
         applicationEventPublisher.publishEvent(new PracticeSessionEndedEvent(studentId, sessionId));
     }
 

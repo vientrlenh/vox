@@ -1,6 +1,5 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -44,38 +43,16 @@ public interface SpringDataPracticeQuestionRepository
              OR question.target_tense = :tense
           )
           AND question.difficulty_rank BETWEEN :rankMin AND :rankMax
+          -- ĐÃ GẶP LÀ KHÔNG BAO GIỜ GẶP LẠI (2026-08-06). Chỉ một điều kiện: có dòng exposure
+          -- là loại. Bản cũ cho câu quay lại nếu học sinh được chấm DƯỚI bậc của câu và đã qua
+          -- thời gian chờ -- kèm theo là một LATERAL join qua 5 bảng (response → evaluation →
+          -- criterion_score → rubric_criterions → framework_result_bands) chỉ để biết điều đó.
+          -- Bỏ cả luật lẫn join.
           AND NOT EXISTS (
               SELECT 1
               FROM student_question_exposure exposure
-             
-              LEFT JOIN LATERAL (
-                  SELECT MAX(band.result_band_order) AS best_band_order
-                  FROM practice_item_response response
-                  JOIN practice_item_evaluation evaluation
-                    ON evaluation.practice_response_id = response.id
-                   AND evaluation.marked_invalid = false
-                  JOIN practice_criterion_score score
-                    ON score.practice_evaluation_id = evaluation.id
-                  JOIN rubric_criterions rc
-                    ON rc.id = score.rubric_criterion_id
-                   AND UPPER(rc.code) = UPPER(question.target_criterion_code)
-                  JOIN framework_criteria fc
-                    ON fc.id = rc.framework_criterion_id
-                  JOIN framework_result_bands band
-                    ON band.framework_version_id = fc.framework_version_id
-                   AND band.code = score.matched_band_code
-                  WHERE response.practice_question_id = exposure.practice_question_id
-                    AND response.practice_session_id IN (
-                        SELECT id FROM practice_session WHERE student_id = exposure.student_id
-                    )
-              ) target_score ON true
               WHERE exposure.student_id = :studentId
                 AND exposure.practice_question_id = question.id
-                AND (
-                      target_score.best_band_order IS NULL
-                   OR target_score.best_band_order >= question.difficulty_rank
-                   OR exposure.seen_at > :cooldownCutoff
-                )
           )
         ORDER BY question.usage_count, question.created_at
         """, nativeQuery = true)
@@ -85,43 +62,21 @@ public interface SpringDataPracticeQuestionRepository
         @Param("criterion") String criterion,
         @Param("tense") String tense,
         @Param("rankMin") int rankMin,
-        @Param("rankMax") int rankMax,
-        @Param("cooldownCutoff") Instant cooldownCutoff
+        @Param("rankMax") int rankMax
     );
 
+    // "Cạn vĩnh viễn" = đã gặp. Từ 2026-08-06 không còn khái niệm gặp-lại-nếu-làm-chưa-đạt,
+    // nên mọi câu đã gặp đều cạn -- điều kiện trùng khít với bộ lọc ở
+    // findUnseenByTopicAndCriterionAndRankRange, và hai chỗ PHẢI trùng nhau: lệch một chút là
+    // chủ đề bị coi là còn câu trong khi thang leo không tìm ra câu nào, hoặc ngược lại.
     @Query(value = """
         SELECT question.id
         FROM practice_question question
         JOIN student_question_exposure exposure
           ON exposure.practice_question_id = question.id
          AND exposure.student_id = :studentId
-        LEFT JOIN LATERAL (
-            SELECT MAX(band.result_band_order) AS best_band_order
-            FROM practice_item_response response
-            JOIN practice_item_evaluation evaluation
-              ON evaluation.practice_response_id = response.id
-             AND evaluation.marked_invalid = false
-            JOIN practice_criterion_score score
-              ON score.practice_evaluation_id = evaluation.id
-            JOIN rubric_criterions rc
-              ON rc.id = score.rubric_criterion_id
-             AND UPPER(rc.code) = UPPER(question.target_criterion_code)
-            JOIN framework_criteria fc
-              ON fc.id = rc.framework_criterion_id
-            JOIN framework_result_bands band
-              ON band.framework_version_id = fc.framework_version_id
-             AND band.code = score.matched_band_code
-            WHERE response.practice_question_id = question.id
-              AND response.practice_session_id IN (
-                  SELECT id FROM practice_session WHERE student_id = :studentId
-              )
-        ) target_score ON true
         WHERE question.practice_topic_id = :topicId
           AND question.active = true
-          AND (
-                target_score.best_band_order IS NULL
-             OR target_score.best_band_order >= question.difficulty_rank
-          )
         """, nativeQuery = true)
     List<UUID> findPermanentlyExhaustedIds(
         @Param("topicId") UUID topicId,

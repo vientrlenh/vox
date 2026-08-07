@@ -11,9 +11,6 @@ public interface PracticeSessionRepository {
 
     Optional<PracticeSession> findById(UUID id);
 
-    /** Khoá row (SELECT ... FOR UPDATE) -- dùng khi transaction sẽ ghi thêm dữ liệu phụ thuộc
-     * vào trạng thái hiện tại của session và phải serialize với các lời gọi đồng thời khác cho
-     * cùng session (ví dụ ResolveNextPracticeQuestionUseCase). */
     Optional<PracticeSession> findByIdForUpdate(UUID id);
 
     boolean existsByIdAndStudentIdAndStatus(UUID id, UUID studentId, String status);
@@ -22,7 +19,5 @@ public interface PracticeSessionRepository {
 
     List<PracticeSession> findStaleInProgress(Instant staleBefore);
 
-    /** Tính lại điểm phiên bằng một câu UPDATE -- KHÔNG nạp entity rồi save lại, vì save() ghi
-     * đè cả dòng và có thể xoá mất graded_seconds do lượt nộp song song vừa cộng vào. */
     void refreshOverallScore(UUID sessionId);
 }

@@ -17,6 +17,14 @@ extend type Mutation {
     pickRandomTopic: PracticeTopicOffer!
     saveTopic(topicId: ID!): Boolean!
     unsaveTopic(topicId: ID!): Boolean!
+    """
+    Học sinh bấm loại một thẻ chủ đề đang được chào ("không thích cái này").
+
+    Ghi tín hiệu sở thích âm 0,15 -- bằng đúng mức "bỏ dở vì chán" -- rồi tính lại điểm quan
+    tâm ngay. Khác `excludeTopicIds` của practiceTopicOffers: cái đó chỉ giấu thẻ trong lượt
+    duyệt hiện tại, còn cái này DẠY hệ thống nên có hiệu lực ở mọi lần mở sau.
+    """
+    dismissTopicOffer(topicId: ID!): Boolean!
 }
 
 type PracticePaperDraft {

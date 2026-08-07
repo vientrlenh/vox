@@ -3,9 +3,11 @@ package com.sep.vox.application.usecase.exam;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
@@ -32,6 +34,8 @@ import com.sep.vox.domain.model.exam.ExamScheduleStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.model.exam.ExamStreamTypePermission;
 import com.sep.vox.domain.model.school.SchoolUser;
+import com.sep.vox.application.exception.PlanLimitExceededException;
+import com.sep.vox.application.port.input.service.ClassTestTokenQuotaGuardService;
 import com.sep.vox.application.port.input.service.ExamAssessmentPolicyValidator;
 import com.sep.vox.application.port.input.service.ExamStreamConfigResolver;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
@@ -48,6 +52,7 @@ class UpdateExamUseCaseTests {
     private SchoolUserRepository schoolUserRepository;
     private UserRoleQueryRepository userRoleQueryRepository;
     private UserContextPort userContextPort;
+    private ClassTestTokenQuotaGuardService classTestTokenQuotaGuardService;
     private UpdateExamUseCase useCase;
 
     private final UUID userId = UUID.randomUUID();
@@ -65,12 +70,14 @@ class UpdateExamUseCaseTests {
         schoolUserRepository = mock(SchoolUserRepository.class);
         userRoleQueryRepository = mock(UserRoleQueryRepository.class);
         userContextPort = mock(UserContextPort.class);
+        classTestTokenQuotaGuardService = mock(ClassTestTokenQuotaGuardService.class);
         useCase = new UpdateExamUseCase(
             examRepository, examMemberRepository, examScheduleRepository,
             schoolUserRepository, userRoleQueryRepository,
             new ExamAssessmentPolicyValidator(mock(AssessmentPolicyRepository.class)),
             new ExamStreamConfigResolver(),
-            userContextPort);
+            userContextPort,
+            classTestTokenQuotaGuardService);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(schoolUserRepository.findByUserId(userId)).thenReturn(Optional.empty());
@@ -124,6 +131,55 @@ class UpdateExamUseCaseTests {
         assertThat(schedule.getStartDate()).isEqualTo(open);
         assertThat(schedule.getEndDate()).isEqualTo(close.plus(1, ChronoUnit.HOURS));
         verify(examScheduleRepository).save(schedule);
+    }
+
+    // --- Bài trên lớp đã publish: sửa duration/maxAttempt phải soi lại token quota ---
+
+    @Test
+    void should_reject_editing_scheduled_class_test_when_token_quota_exceeded() {
+        var exam = classTest(3600);
+        exam.setStatus(ExamStatus.SCHEDULED);
+        exam.setOpenAt(open);
+        exam.setCloseAt(close);
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        doThrow(new PlanLimitExceededException("Đã vượt quá hạn mức"))
+            .when(classTestTokenQuotaGuardService).requireWithinTokenQuota(exam);
+
+        assertThatThrownBy(() -> useCase.execute(new UpdateExamCommand(
+                examId, null, null, null, null, null, null, 2 * 3600, null, null, null, null)))
+            .isInstanceOf(PlanLimitExceededException.class)
+            .hasMessageContaining("vượt quá hạn mức");
+        verify(examRepository, never()).save(any());
+    }
+
+    @Test
+    void should_not_revalidate_quota_when_editing_draft_class_test() {
+        // Chưa publish thì chưa có ước lượng cũ nào cần soi lại -- publish sau này sẽ tự kiểm.
+        var exam = classTest(3 * 3600);
+        exam.setOpenAt(open);
+        exam.setCloseAt(open.plus(6, ChronoUnit.HOURS));
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+
+        useCase.execute(new UpdateExamCommand(
+            examId, null, null, null, null, null, null, 2 * 3600, null, null, null, null));
+
+        verifyNoInteractions(classTestTokenQuotaGuardService);
+        verify(examRepository).save(exam);
+    }
+
+    @Test
+    void should_not_revalidate_quota_when_scheduled_class_test_edit_does_not_touch_duration_or_attempt() {
+        var exam = classTest(3600);
+        exam.setStatus(ExamStatus.SCHEDULED);
+        exam.setOpenAt(open);
+        exam.setCloseAt(close);
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+
+        useCase.execute(new UpdateExamCommand(
+            examId, "Tên mới", null, null, null, null, null, null, null, null, null, null));
+
+        verifyNoInteractions(classTestTokenQuotaGuardService);
+        verify(examRepository).save(exam);
     }
 
     // --- Kỳ thi thường: ca thi độc lập, đổi khung kỳ thi phải kiểm lại ca thi đã có ---

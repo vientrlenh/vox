@@ -16,6 +16,7 @@ import com.sep.vox.application.exception.PlanLimitExceededException;
 import com.sep.vox.application.port.input.command.UpdateExamStatusCommand;
 import com.sep.vox.application.port.input.service.ExamCandidateResultFinalizationService;
 import com.sep.vox.application.port.input.service.ClassTestGradingAssignmentService;
+import com.sep.vox.application.port.input.service.ClassTestTokenQuotaGuardService;
 import com.sep.vox.application.port.input.service.ZeroScoreExamResultService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -30,7 +31,6 @@ import com.sep.vox.domain.model.exam.ExamPaperStatus;
 import com.sep.vox.domain.model.exam.ExamScheduleStatus;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
-import com.sep.vox.domain.model.subscription.QuotaType;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
@@ -43,7 +43,6 @@ import com.sep.vox.domain.repository.ExamScheduleProctorRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
-import com.sep.vox.domain.repository.SubscriptionQuotaRepository;
 
 @Service
 public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand, ExamDto> {
@@ -71,9 +70,9 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
     private final ExamQuestionSecureLockService examQuestionSecureLockService;
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
-    private final SubscriptionQuotaRepository subscriptionQuotaRepository;
     private final UserContextPort userContextPort;
     private final ClassTestGradingAssignmentService classTestGradingAssignmentService;
+    private final ClassTestTokenQuotaGuardService classTestTokenQuotaGuardService;
 
     public UpdateExamStatusUseCase(
             ExamRepository examRepository,
@@ -92,9 +91,9 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
             ExamQuestionSecureLockService examQuestionSecureLockService,
             SchoolSubscriptionRepository schoolSubscriptionRepository,
             SubscriptionPlanRepository subscriptionPlanRepository,
-            SubscriptionQuotaRepository subscriptionQuotaRepository,
             UserContextPort userContextPort,
-            ClassTestGradingAssignmentService classTestGradingAssignmentService) {
+            ClassTestGradingAssignmentService classTestGradingAssignmentService,
+            ClassTestTokenQuotaGuardService classTestTokenQuotaGuardService) {
         this.examRepository = examRepository;
         this.examMemberRepository = examMemberRepository;
         this.examPaperRepository = examPaperRepository;
@@ -111,9 +110,9 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
         this.examQuestionSecureLockService = examQuestionSecureLockService;
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
         this.subscriptionPlanRepository = subscriptionPlanRepository;
-        this.subscriptionQuotaRepository = subscriptionQuotaRepository;
         this.userContextPort = userContextPort;
         this.classTestGradingAssignmentService = classTestGradingAssignmentService;
+        this.classTestTokenQuotaGuardService = classTestTokenQuotaGuardService;
     }
 
     @Override
@@ -236,21 +235,10 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
             );
         }
 
-        if (exam.getExamTimeDurationSecond() != null) {
-            // Ước lượng worst-case: mọi thí sinh dùng hết toàn bộ thời lượng bài thi cho mỗi lượt làm bài.
-            //Công thức worst-case: thời lượng bài thi (giây) × số thí sinh × maxAttempt — giả định mọi thí sinh dùng hết toàn bộ thời gian cho mỗi lượt thi được phép, so với token GRADING
-            //còn lại (totalAllocated - usedQuantity) của subscription đang active. Nếu vượt, chặn SCHEDULE và báo lỗi gợi ý mua thêm token hoặc nâng cấp gói
-            var estimatedTokens = (long) exam.getExamTimeDurationSecond() * candidateCount * exam.getMaxAttempt();
-            var quota = subscriptionQuotaRepository.findBySubscriptionIdAndQuotaType(activeSubscription.getId(), QuotaType.GRADING)
-                .orElseThrow(() -> new PlanLimitExceededException("Không tìm thấy hạn mức token của gói đăng ký"));
-            var remaining = quota.getTotalAllocated() - quota.getUsedQuantity();
-            if (estimatedTokens > remaining) {
-                throw new PlanLimitExceededException(
-                    "Số token ước tính cần dùng (" + estimatedTokens + ") vượt quá số token còn lại ("
-                        + remaining + "), vui lòng mua thêm token hoặc nâng cấp gói"
-                );
-            }
-        }
+        // Ước lượng worst-case: mọi thí sinh dùng hết toàn bộ thời lượng bài thi cho mỗi lượt làm bài,
+        // soi trước hạn mức GRADING (và với bài trên lớp, cả CLASS_TEST + hạn mức cá nhân giáo viên) --
+        // xem ClassTestTokenQuotaGuardService để rõ vì sao phải soi cả 3 chỗ.
+        classTestTokenQuotaGuardService.requireWithinTokenQuota(exam);
     }
 
     /**

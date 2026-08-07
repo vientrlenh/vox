@@ -45,6 +45,13 @@ public class TestStoragePortConfig {
             public PresignedUpload presignUpload(String key, String contentType, Duration ttl) {
                 return new PresignedUpload("https://storage.test/upload/" + key, resolveUrl(key));
             }
+
+            @Override
+            public String presignRead(String bucket, String key, Duration ttl) {
+                // Bucket đi vào URL và key giữ nguyên văn -- giống hợp đồng thật, để test nào
+                // assert trên link phát lại vẫn thấy đúng bucket/key đã truyền vào.
+                return "https://storage.test/" + bucket + "/" + key + "?read=1";
+            }
         };
     }
 }

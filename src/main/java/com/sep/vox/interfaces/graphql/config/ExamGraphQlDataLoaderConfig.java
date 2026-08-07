@@ -186,6 +186,19 @@ public class ExamGraphQlDataLoaderConfig {
                 })
             );
 
+        registry.<UUID, List<ExamScheduleDto>>forName("examSchedulesByExamId")
+            .registerMappedBatchLoader((Set<UUID> examIds, BatchLoaderEnvironment env) ->
+                Mono.fromSupplier(() -> {
+                    Map<UUID, List<ExamScheduleDto>> result = new HashMap<>();
+                    examIds.forEach(id -> result.put(id, List.of()));
+                    examScheduleRepository.findByExamIdIn(examIds).stream()
+                        .map(ExamScheduleDtoMapper::toDto)
+                        .collect(Collectors.groupingBy(schedule -> schedule.examId()))
+                        .forEach(result::put);
+                    return result;
+                })
+            );
+
         registry.<UUID, ExamSecurePoolDto>forName("examSecurePoolByExamId")
             .registerMappedBatchLoader((Set<UUID> examIds, BatchLoaderEnvironment env) ->
                 Mono.fromSupplier(() -> examSecurePoolRepository.findByExamIdIn(examIds)

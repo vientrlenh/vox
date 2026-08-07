@@ -17,6 +17,7 @@ import com.sep.vox.application.response.input.exam.DeleteExamResponse;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
+import com.sep.vox.domain.model.exam.ExamScheduleStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
@@ -112,10 +113,37 @@ public class DeleteExamUseCase implements IUseCase<DeleteExamCommand, DeleteExam
     }
 
     private void cancel(Exam exam, UUID currentUserId) {
+        var now = Instant.now();
         exam.setStatus(ExamStatus.CANCELLED);
-        exam.setUpdatedAt(Instant.now());
+        exam.setUpdatedAt(now);
         exam.setUpdatedBy(currentUserId);
         examRepository.save(exam);
+        cancelSchedules(exam.getId(), currentUserId, now);
+    }
+
+    /**
+     * Huỷ kỳ thi phải kéo theo ca thi: ca còn PUBLISHED vẫn lọt qua {@code isVisibleToStudent()} và
+     * {@code allowsAttendance()}, và các truy vấn vào ca ({@code findByIdAndInSchedule}...) hard-code
+     * {@code status = 'PUBLISHED'} — bỏ ca lại là để nguyên một ca "sẵn sàng" của kỳ thi đã huỷ.
+     *
+     * <p>Chỉ đụng DRAFT/PUBLISHED, đúng luật của {@code UpdateExamScheduleStatusUseCase.cancel}.
+     * COMPLETED/MOVED là trạng thái kết thúc: ghi đè sẽ xoá dấu vết ca đã thi xong và làm lệch
+     * {@code movedToScheduleId}. DELETED đã bị {@code findByExamId} lọc sẵn. Đây là cascade nên gặp
+     * trạng thái không huỷ được thì bỏ qua chứ không ném lỗi.
+     *
+     * <p>Bản song sinh nằm ở {@code UpdateExamStatusUseCase} (action CANCEL) — sửa thì sửa cả hai.
+     */
+    private void cancelSchedules(UUID examId, UUID currentUserId, Instant now) {
+        for (var schedule : examScheduleRepository.findByExamId(examId)) {
+            if (schedule.getStatus() != ExamScheduleStatus.DRAFT
+                    && schedule.getStatus() != ExamScheduleStatus.PUBLISHED) {
+                continue;
+            }
+            schedule.setStatus(ExamScheduleStatus.CANCELLED);
+            schedule.setUpdatedAt(now);
+            schedule.setUpdatedBy(currentUserId);
+            examScheduleRepository.save(schedule);
+        }
     }
 
     /**

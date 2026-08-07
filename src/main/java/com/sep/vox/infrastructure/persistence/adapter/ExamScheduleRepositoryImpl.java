@@ -43,6 +43,16 @@ public class ExamScheduleRepositoryImpl implements ExamScheduleRepository {
     }
 
     @Override
+    public List<ExamSchedule> findByExamIdIn(Collection<UUID> examIds) {
+        if (examIds == null || examIds.isEmpty()) {
+            return List.of();
+        }
+        return springDataExamScheduleRepository.findByExamIdInAndStatusNot(examIds, ExamScheduleStatus.DELETED.name()).stream()
+            .map(ExamScheduleMapper::toDomain)
+            .toList();
+    }
+
+    @Override
     public List<ExamSchedule> findBySchoolId(UUID schoolId) {
         return springDataExamScheduleRepository.findBySchoolId(schoolId).stream()
             .map(ExamScheduleMapper::toDomain)

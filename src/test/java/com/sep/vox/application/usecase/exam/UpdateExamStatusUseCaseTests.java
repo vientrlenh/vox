@@ -361,6 +361,58 @@ class UpdateExamStatusUseCaseTests {
     }
 
     /**
+     * Ca thi còn PUBLISHED thì vẫn lọt qua isVisibleToStudent()/allowsAttendance() và các truy vấn
+     * hard-code status = 'PUBLISHED' — huỷ kỳ thi mà không kéo theo ca là để lại ca "sẵn sàng".
+     */
+    @Test
+    void should_cancel_schedules_when_exam_is_cancelled() {
+        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        exam.setStatus(ExamStatus.SCHEDULED);
+        var draft = schedule(ExamScheduleStatus.DRAFT, open, open.plus(2, ChronoUnit.HOURS));
+        var published = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(draft, published));
+
+        useCase.execute(new UpdateExamStatusCommand(examId, "CANCEL", null));
+
+        assertThat(draft.getStatus()).isEqualTo(ExamScheduleStatus.CANCELLED);
+        assertThat(published.getStatus()).isEqualTo(ExamScheduleStatus.CANCELLED);
+        assertThat(published.getUpdatedBy()).isEqualTo(userId);
+        verify(examScheduleRepository).save(draft);
+        verify(examScheduleRepository).save(published);
+    }
+
+    @Test
+    void should_not_cancel_completed_or_moved_schedules() {
+        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        exam.setStatus(ExamStatus.CLOSED);
+        var completed = schedule(ExamScheduleStatus.COMPLETED, open, open.plus(2, ChronoUnit.HOURS));
+        var moved = schedule(ExamScheduleStatus.MOVED, open, open.plus(2, ChronoUnit.HOURS));
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(completed, moved));
+
+        useCase.execute(new UpdateExamStatusCommand(examId, "CANCEL", null));
+
+        assertThat(completed.getStatus()).isEqualTo(ExamScheduleStatus.COMPLETED);
+        assertThat(moved.getStatus()).isEqualTo(ExamScheduleStatus.MOVED);
+        verify(examScheduleRepository, never()).save(any());
+    }
+
+    @Test
+    void should_not_change_schedules_when_cancel_transition_is_rejected() {
+        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        exam.setStatus(ExamStatus.RESULTS_PUBLISHED);
+        var published = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(published));
+
+        assertThatThrownBy(() -> useCase.execute(new UpdateExamStatusCommand(examId, "CANCEL", null)))
+            .isInstanceOf(IllegalStateException.class);
+        assertThat(published.getStatus()).isEqualTo(ExamScheduleStatus.PUBLISHED);
+        verify(examScheduleRepository, never()).save(any());
+    }
+
+    /**
      * Kỳ thi tập trung dựng ở DRAFT, người gọi là SCHOOL_ADMIN cùng trường (authorizeMutation của
      * nhánh CENTRALIZED không xét exam member), và mặc định đã đủ thí sinh + mã đề — từng test tự làm
      * hỏng đúng một điều kiện.

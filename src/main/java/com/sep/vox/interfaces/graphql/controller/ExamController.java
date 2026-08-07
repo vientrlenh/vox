@@ -35,6 +35,7 @@ import com.sep.vox.domain.dto.ExamMemberDto;
 import com.sep.vox.domain.dto.ExamPaperDto;
 import com.sep.vox.domain.dto.ExamPaperItemDto;
 import com.sep.vox.domain.dto.ExamPaperSectionDto;
+import com.sep.vox.domain.dto.ExamScheduleDto;
 import com.sep.vox.domain.dto.ExamSecurePoolDto;
 import com.sep.vox.domain.dto.QuestionDto;
 import com.sep.vox.domain.dto.QuestionSelectionSpecDto;
@@ -184,6 +185,12 @@ public class ExamController {
     @SchemaMapping(typeName = "ExamPaperSection", field = "items")
     public CompletableFuture<List<ExamPaperItemDto>> items(ExamPaperSectionDto source, DataFetchingEnvironment env) {
         DataLoader<UUID, List<ExamPaperItemDto>> loader = env.getDataLoader("examPaperItemsBySectionId");
+        return loader.load(source.id());
+    }
+
+    @SchemaMapping(typeName = "Exam", field = "schedules")
+    public CompletableFuture<List<ExamScheduleDto>> schedules(ExamDto source, DataFetchingEnvironment env) {
+        DataLoader<UUID, List<ExamScheduleDto>> loader = env.getDataLoader("examSchedulesByExamId");
         return loader.load(source.id());
     }
 

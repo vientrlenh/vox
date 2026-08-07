@@ -207,6 +207,9 @@ type Exam {
     updatedBy: ID
     members: [ExamMember!]!
     papers(status: ExamPaperStatus): [ExamPaper!]!
+    # Ca thi của kỳ thi (đã loại ca xoá mềm), chạy qua DataLoader examSchedulesByExamId nên trang
+    # danh sách kỳ thi dựng được thanh tiến độ "đã xếp lịch tới đâu" mà không N+1.
+    schedules: [ExamSchedule!]!
     securePool: ExamSecurePool
     schoolClassId: ID
     candidateCount: Int!

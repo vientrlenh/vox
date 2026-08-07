@@ -19,6 +19,12 @@ public interface ExamScheduleRepository {
     /** Danh sách ca thi của một bài kiểm tra (đã loại các ca DELETED). */
     List<ExamSchedule> findByExamId(UUID examId);
 
+    /**
+     * Ca thi của nhiều kỳ thi cùng lúc (đã loại các ca DELETED) — dùng cho DataLoader
+     * {@code examSchedulesByExamId} để trang danh sách kỳ thi dựng được thanh tiến độ mà không N+1.
+     */
+    List<ExamSchedule> findByExamIdIn(Collection<UUID> examIds);
+
     /** Danh sách ca thi của toàn trường (đã loại các ca DELETED). */
     List<ExamSchedule> findBySchoolId(UUID schoolId);
 

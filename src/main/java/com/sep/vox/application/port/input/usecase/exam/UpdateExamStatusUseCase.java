@@ -140,6 +140,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
 
         authorizeMutation(exam.getId(), exam.getSchoolId(), exam.getKind(), currentUserId, currentSchoolId, schoolAdmin);
 
+        var now = Instant.now();
         switch (command.action()) {
             case "SCHEDULE" -> {
                 // Trạng thái kiểm TRƯỚC hạn mức gói: bấm SCHEDULE trên bài không còn DRAFT mà báo lỗi
@@ -176,11 +177,15 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
                 finalizePassFailForExam(exam);
                 eventPublisherPort.publish(new ExamResultsPublishedEvent(exam.getId()));
             }
-            case "CANCEL" -> requireTransition(exam, CANCELLABLE_FROM, ExamStatus.CANCELLED);
+            case "CANCEL" -> {
+                // Kiểm trạng thái trước rồi mới đụng ca thi: huỷ không hợp lệ thì không được ghi gì.
+                requireTransition(exam, CANCELLABLE_FROM, ExamStatus.CANCELLED);
+                cancelSchedules(exam.getId(), currentUserId, now);
+            }
             default -> throw new IllegalStateException("Action không hợp lệ");
         }
 
-        exam.setUpdatedAt(Instant.now());
+        exam.setUpdatedAt(now);
         exam.setUpdatedBy(currentUserId);
         return ExamDtoMapper.toDto(examRepository.save(exam));
     }
@@ -338,6 +343,31 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
                 schedule.setUpdatedBy(currentUserId);
                 examScheduleRepository.save(schedule);
             }
+        }
+    }
+
+    /**
+     * Huỷ kỳ thi phải kéo theo ca thi: ca còn PUBLISHED vẫn lọt qua {@code isVisibleToStudent()} và
+     * {@code allowsAttendance()}, và các truy vấn vào ca ({@code findByIdAndInSchedule}...) hard-code
+     * {@code status = 'PUBLISHED'} — bỏ ca lại là để nguyên một ca "sẵn sàng" của kỳ thi đã huỷ.
+     *
+     * <p>Chỉ đụng DRAFT/PUBLISHED, đúng luật của {@code UpdateExamScheduleStatusUseCase.cancel}.
+     * COMPLETED/MOVED là trạng thái kết thúc: ghi đè sẽ xoá dấu vết ca đã thi xong và làm lệch
+     * {@code movedToScheduleId}. DELETED đã bị {@code findByExamId} lọc sẵn. Đây là cascade nên gặp
+     * trạng thái không huỷ được thì bỏ qua chứ không ném lỗi.
+     *
+     * <p>Bản song sinh nằm ở {@code DeleteExamUseCase} (nhánh huỷ thay vì xoá) — sửa thì sửa cả hai.
+     */
+    private void cancelSchedules(java.util.UUID examId, java.util.UUID currentUserId, Instant now) {
+        for (var schedule : examScheduleRepository.findByExamId(examId)) {
+            if (schedule.getStatus() != ExamScheduleStatus.DRAFT
+                    && schedule.getStatus() != ExamScheduleStatus.PUBLISHED) {
+                continue;
+            }
+            schedule.setStatus(ExamScheduleStatus.CANCELLED);
+            schedule.setUpdatedAt(now);
+            schedule.setUpdatedBy(currentUserId);
+            examScheduleRepository.save(schedule);
         }
     }
 

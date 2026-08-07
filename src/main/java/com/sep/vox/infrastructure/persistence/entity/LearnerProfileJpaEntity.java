@@ -1,7 +1,6 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -45,17 +44,16 @@ public class LearnerProfileJpaEntity {
     @Column(name = "goal_type", length = 24)
     private String goalType;
 
-    @Column(name = "target_exam", length = 24)
-    private String targetExam;
+    // GỠ 2026-08-07: targetExam / targetDate. Cột `target_exam` và `target_date` VẪN CÒN trong
+    // DB (V13 đã chạy, không sửa được checksum) nhưng không ánh xạ nữa -- cả hai chưa từng được
+    // ghi: appendProfile không có tham số cho chúng, không setter nào được gọi, và next() chỉ
+    // chép giá trị cũ sang bản mới. Tức chúng vĩnh viễn NULL. Không mặt ở GraphQL lẫn Flutter.
 
-    @Column(name = "target_date")
-    private LocalDate targetDate;
-
-    @Column(name = "flsa_score", precision = 5, scale = 2)
-    private BigDecimal flsaScore;
-
-    @Column(name = "flsa_raw_answers_json", columnDefinition = "TEXT")
-    private String flsaRawAnswersJson;
+    // GỠ 2026-08-07: flsaScore / flsaRawAnswersJson -- thang tự đánh giá lo lắng ngoại ngữ.
+    // Cột `flsa_score` và `flsa_raw_answers_json` cũng giữ nguyên trong DB, chỉ thôi ánh xạ.
+    // Chúng ĐƯỢC ghi (qua mutation submitFlsaSelfReport) nhưng chưa từng được ĐỌC để đổi hành
+    // vi: không luồng sinh câu hỏi, chọn độ khó hay xếp hạng chủ đề nào tra tới. Client cũng đã
+    // bỏ màn hỏi từ trước -- Flutter chỉ còn chú thích nhắc rằng mutation vẫn còn nếu cần quay lại.
 
     @Column(name = "auto_update_interest", nullable = false)
     private boolean autoUpdateInterest = true;
@@ -73,20 +71,12 @@ public class LearnerProfileJpaEntity {
             UUID studentId,
             int version,
             String goalType,
-            String targetExam,
-            LocalDate targetDate,
-            BigDecimal flsaScore,
-            String flsaRawAnswersJson,
             boolean autoUpdateInterest,
             Instant quizCompletedAt,
             Instant recordedAt) {
         this.studentId = studentId;
         this.version = version;
         this.goalType = goalType;
-        this.targetExam = targetExam;
-        this.targetDate = targetDate;
-        this.flsaScore = flsaScore;
-        this.flsaRawAnswersJson = flsaRawAnswersJson;
         this.autoUpdateInterest = autoUpdateInterest;
         this.quizCompletedAt = quizCompletedAt;
         this.recordedAt = recordedAt;
@@ -106,22 +96,6 @@ public class LearnerProfileJpaEntity {
 
     public String getGoalType() {
         return goalType;
-    }
-
-    public String getTargetExam() {
-        return targetExam;
-    }
-
-    public LocalDate getTargetDate() {
-        return targetDate;
-    }
-
-    public BigDecimal getFlsaScore() {
-        return flsaScore;
-    }
-
-    public String getFlsaRawAnswersJson() {
-        return flsaRawAnswersJson;
     }
 
     public boolean isAutoUpdateInterest() {

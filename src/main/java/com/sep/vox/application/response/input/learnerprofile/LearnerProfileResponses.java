@@ -10,7 +10,6 @@ public final class LearnerProfileResponses {
 
     public record LearnerProfile(
         String goalType,
-        Double flsaScore,
         String targetFrameworkBandCode,
         String targetFrameworkBandLabel,
                 boolean interestAutoUpdateEnabled,

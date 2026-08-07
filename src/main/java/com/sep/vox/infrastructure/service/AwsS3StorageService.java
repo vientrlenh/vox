@@ -16,9 +16,11 @@ import com.sep.vox.infrastructure.properties.AwsS3StorageProperties;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
 @Service
@@ -120,6 +122,33 @@ public class AwsS3StorageService implements StoragePort {
             return new PresignedUpload(presigned.url().toString(), resolveUrl(objectKey));
         } catch (S3Exception e) {
             throw new InfrastructureException("Khong the tao presigned upload URL: " + errorMessageOf(e));
+        }
+    }
+
+    @Override
+    public String presignRead(String bucket, String key, Duration ttl) {
+        validateKey(key);
+        if (!hasText(bucket)) {
+            throw new IllegalArgumentException("Bucket khong duoc de trong khi tao presigned read URL");
+        }
+        if (ttl == null || ttl.isNegative() || ttl.isZero()) {
+            throw new IllegalArgumentException("Thời hạn presigned URL không hợp lệ");
+        }
+
+        try {
+            // KHÔNG qua buildObjectKey: key ở đây do hệ thống khác sinh và đã đầy đủ, gắn thêm
+            // keyPrefix của ứng dụng sẽ trỏ vào một object không tồn tại.
+            var getObjectRequest = GetObjectRequest.builder()
+                .bucket(bucket)
+                .key(key.strip().replace("\\", "/").replaceAll("^/+", ""))
+                .build();
+            var presignRequest = GetObjectPresignRequest.builder()
+                .signatureDuration(ttl)
+                .getObjectRequest(getObjectRequest)
+                .build();
+            return s3Presigner.presignGetObject(presignRequest).url().toString();
+        } catch (S3Exception e) {
+            throw new InfrastructureException("Khong the tao presigned read URL: " + errorMessageOf(e));
         }
     }
 

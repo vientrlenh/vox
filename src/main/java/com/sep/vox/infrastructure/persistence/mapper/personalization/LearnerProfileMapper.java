@@ -14,10 +14,6 @@ public final class LearnerProfileMapper {
             entity.getStudentId(),
             entity.getVersion(),
             entity.getGoalType(),
-            entity.getTargetExam(),
-            entity.getTargetDate(),
-            entity.getFlsaScore(),
-            entity.getFlsaRawAnswersJson(),
             entity.isAutoUpdateInterest(),
             entity.getQuizCompletedAt(),
             entity.getRecordedAt()
@@ -29,10 +25,6 @@ public final class LearnerProfileMapper {
             profile.getStudentId(),
             profile.getVersion(),
             profile.getGoalType(),
-            profile.getTargetExam(),
-            profile.getTargetDate(),
-            profile.getFlsaScore(),
-            profile.getFlsaRawAnswersJson(),
             profile.isAutoUpdateInterest(),
             profile.getQuizCompletedAt(),
             profile.getRecordedAt()

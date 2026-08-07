@@ -18,7 +18,6 @@ public final class LearnerProfileResponseMapper {
         }
         return new LearnerProfile(
             dto.goalType(),
-            dto.flsaScore(),
             dto.targetFrameworkBandCode(),
             dto.targetFrameworkBandLabel(),
             dto.interestAutoUpdateEnabled(),

@@ -3,7 +3,9 @@ package com.sep.vox.interfaces.graphql.controller;
 import java.util.List;
 import java.util.UUID;
 
+import com.sep.vox.application.port.input.usecase.recording.GetExamRecordingPlaybackUseCase;
 import com.sep.vox.application.port.input.usecase.recording.GetExamRecordsUseCase;
+import com.sep.vox.application.response.input.recording.ExamRecordingPlaybackResponse;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
@@ -65,6 +67,7 @@ public class ExamSessionController {
     private final RetryGradingExamSessionUseCase retryGradingExamSessionUseCase;
     private final SubmitExamSessionUseCase submitExamSessionUseCase;
     private final GetExamRecordsUseCase getExamRecordsUseCase;
+    private final GetExamRecordingPlaybackUseCase getExamRecordingPlaybackUseCase;
 
 
     public ExamSessionController(
@@ -80,7 +83,10 @@ public class ExamSessionController {
             UnblockExamCandidateUseCase unblockExamCandidateUseCase,
             DecideExamCandidateResultOutcomeUseCase decideExamCandidateResultOutcomeUseCase,
             RetryGradingExamSessionUseCase retryGradingExamSessionUseCase,
-            SubmitExamSessionUseCase submitExamSessionUseCase,GetExamRecordsUseCase getExamRecordsUseCase) {
+            SubmitExamSessionUseCase submitExamSessionUseCase,
+            GetExamRecordsUseCase getExamRecordsUseCase,
+            GetExamRecordingPlaybackUseCase getExamRecordingPlaybackUseCase) {
+        this.getExamRecordingPlaybackUseCase = getExamRecordingPlaybackUseCase;
         this.viewExamSessionUseCase = viewExamSessionUseCase;
         this.viewExamSessionResultUseCase = viewExamSessionResultUseCase;
         this.viewExamSessionFollowupsUseCase = viewExamSessionFollowupsUseCase;
@@ -103,6 +109,17 @@ public class ExamSessionController {
     public List<ExamRecordingDto> recordings(@Argument(name = "examSessionId") UUID examSessionId, @Argument(name = "streamType") String streamType) {
         var query = new GetExamRecordsQuery(examSessionId, streamType);
         return getExamRecordsUseCase.execute(query);
+    }
+
+    /**
+     * Bản ghi kèm link phát, cho màn chấm bài. Tách khỏi {@link #recordings} vì đường kia là API
+     * của app giám thị và không cần link -- xem chú thích ở GetExamRecordingPlaybackUseCase.
+     */
+    @QueryMapping
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
+    public List<ExamRecordingPlaybackResponse> examRecordingPlayback(
+            @Argument(name = "examSessionId") UUID examSessionId) {
+        return getExamRecordingPlaybackUseCase.execute(new GetExamRecordsQuery(examSessionId, null));
     }
 
     @QueryMapping

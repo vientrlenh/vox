@@ -16,6 +16,7 @@ import com.sep.vox.application.common.ExamCandidateStatusSupport;
 import com.sep.vox.application.event.ExamAttemptEvaluationRequestedExternalEvent;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.SubmitExamSessionCommand;
+import com.sep.vox.application.port.input.service.MissingResponseBackfillService;
 import com.sep.vox.application.port.input.service.ZeroScoreExamResultService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.ExternalEventPublisherPort;
@@ -47,6 +48,7 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
     private final ExamCandidateRepository examCandidateRepository;
     private final ExamCandidateResultRepository examCandidateResultRepository;
     private final ExamItemResponseRepository examItemResponseRepository;
+    private final MissingResponseBackfillService missingResponseBackfillService;
     private final ExamItemResponseTurnRepository examItemResponseTurnRepository;
     private final ExamPaperItemRepository examPaperItemRepository;
     private final QuestionRepository questionRepository;
@@ -67,6 +69,7 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
             ExamCandidateRepository examCandidateRepository,
             ExamCandidateResultRepository examCandidateResultRepository,
             ExamItemResponseRepository examItemResponseRepository,
+            MissingResponseBackfillService missingResponseBackfillService,
             ExamItemResponseTurnRepository examItemResponseTurnRepository,
             ExamPaperItemRepository examPaperItemRepository,
             QuestionRepository questionRepository,
@@ -85,6 +88,7 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
         this.examCandidateRepository = examCandidateRepository;
         this.examCandidateResultRepository = examCandidateResultRepository;
         this.examItemResponseRepository = examItemResponseRepository;
+        this.missingResponseBackfillService = missingResponseBackfillService;
         this.examItemResponseTurnRepository = examItemResponseTurnRepository;
         this.examPaperItemRepository = examPaperItemRepository;
         this.questionRepository = questionRepository;
@@ -146,6 +150,13 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
             examSessionRepository.save(session);
             return null;
         }
+
+        // Lấp câu KHÔNG có bản ghi (hết giờ, mất kết nối, buộc kết thúc) bằng cặp response rỗng
+        // + bản chấm 0 điểm. Đặt SAU hai nhánh thoát sớm ở trên vì cả hai đã tự xử trọn bài
+        // (releaseZeroForEmptySession), và TRƯỚC vòng bắn sự kiện AI bên dưới -- vòng đó chạy
+        // trên `responses` đọc lúc nãy nên các dòng vừa tạo không lọt vào, đúng ý: không đẩy
+        // transcript rỗng sang LLM. Xem MissingResponseBackfillService.
+        missingResponseBackfillService.backfill(session.getId(), session.getPaperId());
 
         var criteriaFrameworks = buildCriteriaFrameworks(exam.getAssessmentPolicyId());
 

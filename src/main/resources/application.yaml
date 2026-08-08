@@ -202,6 +202,10 @@ server:
   port: 8081
   shutdown: graceful
   forward-headers-strategy: framework
+  ssl: 
+    enabled: ${SSL_ENABLED:false}
+    certificate: ${SSL_CERT_PATH:}
+    certificate-private-key: ${SSL_KEY_PATH:}
 
 app:
   cookie:

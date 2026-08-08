@@ -16,31 +16,7 @@ import com.sep.vox.domain.repository.ExamItemEvaluationRepository;
 import com.sep.vox.domain.repository.ExamItemResponseRepository;
 import com.sep.vox.domain.repository.ExamPaperItemRepository;
 
-/**
- * Lấp chỗ trống cho câu KHÔNG có bản ghi nào -- chạy lúc nộp bài.
- *
- * <p><b>Vấn đề.</b> Cả dây chuyền chấm neo vào {@code exam_item_responses}: màn chấm liệt kê câu
- * từ bảng đó, {@code GradingItemScoreResolver} tra {@code paperItemId -> response} rồi ném nếu
- * không thấy, và {@code exam_item_evaluations.response_id} là NOT NULL. Câu mà thí sinh chưa
- * kịp làm (hết giờ, mất kết nối, buộc kết thúc) không có dòng nào, nên nó VÔ HÌNH với người
- * chấm -- kể cả ở vòng phúc khảo, kể cả khi học sinh khiếu nại đúng.
- *
- * <p>Nhưng trọng số của nó thì KHÔNG vô hình: bộ tính điểm cộng theo trọng số từng câu, câu
- * thiếu không đóng góp gì trong khi trọng số của section vẫn cố định. Đo trên một phiên thật:
- * đề 3 câu, làm được 1 câu đạt 8.63/10, tổng ra 2.16. Trọng số đã bị tính vào mẫu số nhưng
- * giáo viên không có đường nào cho điểm hai câu kia.
- *
- * <p><b>Cách chữa.</b> Tạo CẶP response rỗng + bản chấm 0 điểm. Cả bốn tầng trên tự chạy đúng
- * mà không phải sửa cái nào -- đó là lý do chọn hướng này thay vì vá từng query.
- *
- * <p><b>Phải là cặp, không được chỉ tạo response.</b>
- * {@code RecordExamAttemptEvaluationUseCase.allResponsesHaveEvaluations} đòi MỌI response có
- * bản chấm mới cho bài chốt. Tạo response trần là điều kiện đó vĩnh viễn sai, bài không bao giờ
- * đạt GRADED, không sinh kết quả, không mở được phân công chấm. Hỏng nặng hơn cả trước khi sửa.
- *
- * <p><b>Không bắn sự kiện AI.</b> Bản chấm ghi thẳng ở đây. Đẩy một transcript rỗng sang LLM là
- * mời nó bịa ra một con điểm nhìn không phân biệt được với điểm thật.
- */
+
 @Service
 public class MissingResponseBackfillService {
 

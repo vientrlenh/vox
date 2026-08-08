@@ -161,6 +161,9 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
         var criteriaFrameworks = buildCriteriaFrameworks(exam.getAssessmentPolicyId());
 
         for (var response : responses) {
+            if (MissingResponseBackfillService.NO_RECORDING.equals(response.getTerminationReason())) {
+                continue;
+            }
             var paperItemId = response.getPaperItemId();
             if (paperItemId == null) {
                 throw new NotFoundException("không thể tìm thấy paperItemId cho câu trả lời " + response.getId());

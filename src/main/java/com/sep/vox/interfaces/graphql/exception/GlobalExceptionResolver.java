@@ -5,6 +5,7 @@ import org.springframework.graphql.execution.DataFetcherExceptionResolverAdapter
 import org.springframework.graphql.execution.ErrorType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
@@ -62,6 +63,15 @@ public class GlobalExceptionResolver extends DataFetcherExceptionResolverAdapter
         }
 
         if (ex instanceof UnauthorizedException) {
+            return GraphQLError.newError()
+                .errorType(ErrorType.UNAUTHORIZED)
+                .message(ex.getMessage())
+                .path(env.getExecutionStepInfo().getPath())
+                .location(env.getField().getSourceLocation())
+                .build();
+        }
+
+        if (ex instanceof AuthenticationException) {
             return GraphQLError.newError()
                 .errorType(ErrorType.UNAUTHORIZED)
                 .message(ex.getMessage())

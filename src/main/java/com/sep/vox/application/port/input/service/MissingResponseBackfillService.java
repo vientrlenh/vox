@@ -69,7 +69,21 @@ public class MissingResponseBackfillService {
             if (answeredPaperItemIds.contains(paperItem.getId())) {
                 continue;
             }
+            // Id phải tự sinh ở đây. {@code exam_item_responses.id} là @Id trần, KHÔNG
+            // @GeneratedValue -- khác với {@code exam_item_evaluations.id} ngay bên dưới vốn có
+            // @Generated(INSERT) + DEFAULT uuidv7(). Cố ý: id của response chính là answerId do
+            // phía Python sinh (UUID v5 deterministic) và RecordAnswerTurnUseCase ghi thẳng giá
+            // trị đó vào, nên cột này không được để DB quyết -- id lệch thì mọi findById(answerId)
+            // đều trượt.
+            //
+            // Dùng constructor 7 tham số (bỏ id) khiến Hibernate ném
+            // IdentifierGenerationException lúc persist(). Vì SubmitExamSessionUseCase.execute()
+            // là @Transactional và gọi backfill NGAY TRƯỚC vòng bắn ExamAttemptEvaluationRequested,
+            // exception ở đây rollback cả transaction và nuốt luôn vòng bắn sự kiện: phía Python
+            // publish AnswerTurnsRecorded xong chờ mãi không có request chấm quay lại. Triệu chứng
+            // là "bài không được chấm", không phải "backfill hỏng", nên rất dễ đổ nhầm cho Kafka.
             var response = examItemResponseRepository.save(new ExamItemResponse(
+                UUID.randomUUID(),
                 sessionId, paperItem.getId(), null, 0, null, NO_RECORDING, now
             ));
             examItemEvaluationRepository.save(new ExamItemEvaluation(

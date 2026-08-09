@@ -12,7 +12,6 @@ public final class LearnerProfileMapper {
         return new LearnerProfile(
             entity.getId(),
             entity.getStudentId(),
-            entity.getVersion(),
             entity.getGoalType(),
             entity.isAutoUpdateInterest(),
             entity.getQuizCompletedAt(),
@@ -20,14 +19,20 @@ public final class LearnerProfileMapper {
         );
     }
 
+    /**
+     * PHẢI mang theo {@code id}: hồ sơ nay cập nhật tại chỗ, mà JPA phân biệt insert với update
+     * bằng chính khoá chính. Thiếu id thì mỗi lần lưu lại chèn một dòng mới -- và unique index
+     * trên {@code student_id} sẽ ném ngay từ lần thứ hai.
+     */
     public static LearnerProfileJpaEntity toJpa(LearnerProfile profile) {
-        return new LearnerProfileJpaEntity(
+        var entity = new LearnerProfileJpaEntity(
             profile.getStudentId(),
-            profile.getVersion(),
             profile.getGoalType(),
             profile.isAutoUpdateInterest(),
             profile.getQuizCompletedAt(),
             profile.getRecordedAt()
         );
+        entity.setId(profile.getId());
+        return entity;
     }
 }

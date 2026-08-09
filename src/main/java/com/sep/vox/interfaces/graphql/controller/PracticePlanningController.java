@@ -35,6 +35,7 @@ import com.sep.vox.application.port.input.usecase.practiceplanning.BuildPractice
 import com.sep.vox.application.port.input.usecase.practiceplanning.PickRandomTopicUseCase;
 import com.sep.vox.application.port.input.usecase.practiceplanning.DismissTopicOfferUseCase;
 import com.sep.vox.application.port.input.usecase.practiceplanning.SaveTopicUseCase;
+import com.sep.vox.application.port.input.usecase.practiceplanning.SearchPracticeTopicsSemanticUseCase;
 import com.sep.vox.application.port.input.usecase.practiceplanning.SearchPracticeTopicsUseCase;
 import com.sep.vox.application.port.input.usecase.practiceplanning.UnsaveTopicUseCase;
 import com.sep.vox.application.port.input.usecase.practiceplanning.ViewMySavedTopicsUseCase;
@@ -48,6 +49,7 @@ public class PracticePlanningController {
 
     private final ViewPracticeTopicOffersUseCase viewPracticeTopicOffersUseCase;
     private final SearchPracticeTopicsUseCase searchPracticeTopicsUseCase;
+    private final SearchPracticeTopicsSemanticUseCase searchPracticeTopicsSemanticUseCase;
     private final BuildPracticePaperUseCase buildPracticePaperUseCase;
     private final PickRandomTopicUseCase pickRandomTopicUseCase;
     private final DismissTopicOfferUseCase dismissTopicOfferUseCase;
@@ -64,6 +66,7 @@ public class PracticePlanningController {
     public PracticePlanningController(
             ViewPracticeTopicOffersUseCase viewPracticeTopicOffersUseCase,
             SearchPracticeTopicsUseCase searchPracticeTopicsUseCase,
+            SearchPracticeTopicsSemanticUseCase searchPracticeTopicsSemanticUseCase,
             BuildPracticePaperUseCase buildPracticePaperUseCase,
             PickRandomTopicUseCase pickRandomTopicUseCase,
             DismissTopicOfferUseCase dismissTopicOfferUseCase,
@@ -82,6 +85,7 @@ public class PracticePlanningController {
         this.practiceGenerationExecutor = practiceGenerationExecutor;
         this.viewPracticeTopicOffersUseCase = viewPracticeTopicOffersUseCase;
         this.searchPracticeTopicsUseCase = searchPracticeTopicsUseCase;
+        this.searchPracticeTopicsSemanticUseCase = searchPracticeTopicsSemanticUseCase;
         this.buildPracticePaperUseCase = buildPracticePaperUseCase;
         this.pickRandomTopicUseCase = pickRandomTopicUseCase;
         this.dismissTopicOfferUseCase = dismissTopicOfferUseCase;
@@ -138,6 +142,16 @@ public class PracticePlanningController {
     @PreAuthorize("hasRole('STUDENT')")
     public TopicSearchResult searchPracticeTopics(@Argument("keyword") String keyword) {
         return searchPracticeTopicsUseCase.execute(new SearchPracticeTopicsQuery(keyword));
+    }
+
+    /**
+     * Query RIÊNG, không gộp vào searchPracticeTopics: hai nguồn chênh nhau hàng chục lần về độ
+     * trễ, nên client bắn song song rồi vẽ dần thay vì chờ cả hai.
+     */
+    @QueryMapping
+    @PreAuthorize("hasRole('STUDENT')")
+    public List<PracticeTopicOffer> searchPracticeTopicsSemantic(@Argument("keyword") String keyword) {
+        return searchPracticeTopicsSemanticUseCase.execute(new SearchPracticeTopicsQuery(keyword));
     }
 
 

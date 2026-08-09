@@ -13,6 +13,4 @@ public interface DimensionInterestScoreRepository {
     void upsertScore(UUID learnerProfileId, String dimension, double score);
 
     void replaceScores(UUID learnerProfileId, Map<String, Double> scores);
-
-    void copyScores(UUID previousProfileId, UUID newProfileId);
 }

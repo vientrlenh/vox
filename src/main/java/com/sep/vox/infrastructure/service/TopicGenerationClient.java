@@ -31,6 +31,7 @@ public class TopicGenerationClient {
     private final JsonMapper jsonMapper;
     private final URI proposeUri;
     private final URI indexUri;
+    private final URI searchUri;
 
     public TopicGenerationClient(
             JsonMapper jsonMapper,
@@ -48,13 +49,11 @@ public class TopicGenerationClient {
         this.indexUri = URI.create(
             base + "/internal/practice-generation/topics/index"
         );
+        this.searchUri = URI.create(
+            base + "/internal/practice-generation/topics/search"
+        );
     }
 
-    /**
-     * @param dimensions danh mục chiều sở thích hiện hành (đọc từ interest_dimension) -- gửi
-     *                   xuống để Python ràng buộc đầu ra theo đúng danh mục đang có, thay vì
-     *                   gắn cứng và phải deploy lại mỗi lần admin thêm chiều mới.
-     */
     public List<TopicProposal> propose(
             UUID studentId,
             List<KeywordEvidence> keywordEvidence,
@@ -180,6 +179,48 @@ public class TopicGenerationClient {
             request,
             HttpResponse.BodyHandlers.ofString()
         );
+    }
+
+    /**
+     * Tìm chủ đề gần nghĩa với từ khoá. Trả về id kèm độ tương đồng, KHÔNG trả tên.
+     *
+     * <p>Lỗi hoặc quá hạn thì trả rỗng, không ném. Đây là nguồn BỔ SUNG cho tìm theo chuỗi:
+     * agents chết thì người dùng vẫn có kết quả từ Postgres và không thấy lỗi gì -- suy giảm êm
+     * thay vì hỏng cả ô tìm kiếm.
+     */
+    public List<TopicSearchHit> searchByVector(String keyword, int limit) {
+        if (keyword == null || keyword.isBlank()) {
+            return List.of();
+        }
+        var body = new LinkedHashMap<String, Object>();
+        body.put("keyword", keyword.strip());
+        body.put("limit", limit);
+        try {
+            var response = send(searchUri, body);
+            if (response.statusCode() / 100 != 2) {
+                LOGGER.warn(
+                    "Topic search endpoint returned status {}: {}",
+                    response.statusCode(),
+                    response.body()
+                );
+                return List.of();
+            }
+            var hits = new ArrayList<TopicSearchHit>();
+            for (var node : jsonMapper.readTree(response.body()).path("hits")) {
+                hits.add(new TopicSearchHit(
+                    UUID.fromString(node.path("topic_id").asText()),
+                    node.path("similarity").asDouble()
+                ));
+            }
+            return hits;
+        } catch (Exception exception) {
+            LOGGER.warn("Topic search endpoint unavailable; falling back to name search only",
+                exception);
+            return List.of();
+        }
+    }
+
+    public record TopicSearchHit(UUID topicId, double similarity) {
     }
 
     public record KeywordEvidence(String keyword, int sessionCount) {

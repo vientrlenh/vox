@@ -31,6 +31,12 @@ public class JpaPracticeTopicQueryRepository implements PracticeTopicQueryReposi
     }
 
     @Override
+    public List<TopicSearchRowInfo> findActiveByIds(UUID studentId, java.util.Collection<UUID> topicIds) {
+        // IN () rỗng là lỗi cú pháp SQL, không phải "không khớp gì" -- chặn từ đây.
+        return topicIds.isEmpty() ? List.of() : repository.findActiveByIds(studentId, topicIds);
+    }
+
+    @Override
     public Optional<TopicSearchRowInfo> findRandomActiveTopic(UUID studentId) {
         return repository.findRandomActiveTopic(studentId);
     }

@@ -52,6 +52,46 @@ public class MissingResponseBackfillService {
     }
 
     /**
+     * Ghi bản chấm 0 điểm cho một response ĐÃ TỒN TẠI nhưng thí sinh không nói gì.
+     *
+     * <p>Khác {@link #backfill}: ở đó câu chưa từng được đưa ra nên không có dòng nào; ở đây thí
+     * sinh ĐÃ được hỏi, AI đã hỏi lại tới trần rồi cắt câu, nhưng transcript vẫn rỗng.
+     *
+     * <p>Vì sao không để LLM chấm: nó nhận đề bài đầy đủ nhưng phần trả lời rỗng, và vẫn sẽ trả
+     * về một con điểm -- suy ra từ hư không, nhìn không phân biệt được với điểm thật. Không nói
+     * gì thì 0 là câu trả lời duy nhất đúng, và ghi thẳng ở đây vừa chắc chắn vừa khỏi tốn một
+     * lượt gọi model.
+     *
+     * @return true nếu đã ghi (tức response này thật sự rỗng)
+     */
+    public boolean recordSilentAnswer(UUID responseId, UUID paperItemId) {
+        examItemEvaluationRepository.save(new ExamItemEvaluation(
+            responseId,
+            paperItemId,
+            ExamEvaluationEngineType.AI_SINGLE,
+            GRADED_BY,
+            null,
+            null,
+            BigDecimal.ZERO,
+            BigDecimal.ZERO,
+            null,
+            false,
+            NO_RECORDING,
+            false,
+            false,
+            null,
+            null,
+            "Thí sinh không đưa ra câu trả lời nào cho câu hỏi này.",
+            null,
+            null,
+            ExamItemEvaluationStatus.FINALIZED,
+            Instant.now()
+        ));
+        LOGGER.info("Câu {} không có nội dung trả lời -- ghi 0 điểm, không gọi LLM.", responseId);
+        return true;
+    }
+
+    /**
      * @return số câu đã lấp; 0 khi thí sinh làm đủ đề (đường thường gặp nhất)
      */
     public int backfill(UUID sessionId, UUID paperId) {

@@ -169,6 +169,21 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
                 throw new NotFoundException("không thể tìm thấy paperItemId cho câu trả lời " + response.getId());
             }
 
+            // Thí sinh ĐƯỢC hỏi nhưng KHÔNG NÓI GÌ: ghi thẳng 0 điểm, không gửi sang LLM.
+            //
+            // Đây là kết cục của chuỗi im lặng -- AI hỏi lại tới trần (3 lượt liên tiếp) rồi cắt
+            // câu, nhưng dòng response vẫn tồn tại với transcript rỗng. Đẩy nó sang LLM là mời
+            // model chấm một bài không có nội dung: nó nhận đề bài đầy đủ, phần trả lời trống,
+            // và vẫn trả về một con điểm suy ra từ hư không -- nhìn không phân biệt được với
+            // điểm thật.
+            //
+            // Xét cả transcript của TỪNG LƯỢT chứ không chỉ ô tổng: có đường ghi chỉ điền
+            // transcript ở mức lượt, nên chỉ nhìn response sẽ kết luận nhầm là rỗng.
+            if (isSilentAnswer(response)) {
+                missingResponseBackfillService.recordSilentAnswer(response.getId(), paperItemId);
+                continue;
+            }
+
             var paperItem = examPaperItemRepository.findById(paperItemId)
                 .orElseThrow(() -> new NotFoundException("không thể tìm thấy paper item " + paperItemId));
             var question = questionRepository.findById(paperItem.getQuestionId())
@@ -238,6 +253,24 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
         }
 
         return null;
+    }
+
+    /**
+     * Câu này có nội dung trả lời nào không.
+     *
+     * <p>Xét CẢ HAI nơi transcript có thể nằm: ô tổng của response, và transcript của từng lượt
+     * nói. Hai đường ghi khác nhau điền hai chỗ khác nhau, nên chỉ nhìn một chỗ sẽ kết luận nhầm
+     * là rỗng và ghi 0 cho một bài thí sinh đã làm -- sai theo hướng nguy hiểm nhất.
+     *
+     * <p>KHÔNG xét thời lượng: mic mở nhưng thí sinh im lặng vẫn cho ra vài chục giây audio mà
+     * không có chữ nào. Chỉ có chữ mới chấm được.
+     */
+    private boolean isSilentAnswer(com.sep.vox.domain.model.exam.ExamItemResponse response) {
+        if (response.getTranscript() != null && !response.getTranscript().isBlank()) {
+            return false;
+        }
+        return examItemResponseTurnRepository.findByExamItemResponseId(response.getId()).stream()
+            .noneMatch(turn -> turn.getTranscript() != null && !turn.getTranscript().isBlank());
     }
 
     private void persistInvalidBlockedResult(com.sep.vox.domain.model.exam.ExamSession session) {

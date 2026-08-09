@@ -1,6 +1,15 @@
 extend type Query {
     practiceTopicOffers(excludeTopicIds: [ID!], round: Int = 1, bucket: TopicOfferBucket = FOR_YOU): [PracticeTopicOffer!]!
     searchPracticeTopics(keyword: String!): TopicSearchResult!
+
+    """
+    Tìm chủ đề theo NGỮ NGHĨA (vector). Bổ sung cho `searchPracticeTopics`, không thay thế.
+
+    Trả rỗng khi dịch vụ AI không sẵn sàng -- client phải chịu được điều đó và vẫn hiện kết quả
+    của `searchPracticeTopics`. `matchPercent` ở đây là độ tương đồng ngữ nghĩa, dùng để hiện
+    nhãn "gần nghĩa".
+    """
+    searchPracticeTopicsSemantic(keyword: String!): [PracticeTopicOffer!]!
     mySavedTopics: [PracticeTopicOffer!]!
     myPracticeDashboardStats: PracticeDashboardStats!
     "Hỏi lại kết quả dựng đề đã khởi động bởi buildPracticePaper (xem PracticePaperDraft)."

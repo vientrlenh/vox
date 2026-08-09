@@ -71,9 +71,4 @@ public class DimensionInterestScoreRepositoryImpl
             .toList());
     }
 
-    @Override
-    @Transactional
-    public void copyScores(UUID previousProfileId, UUID newProfileId) {
-        repository.copyScores(previousProfileId, newProfileId);
-    }
 }

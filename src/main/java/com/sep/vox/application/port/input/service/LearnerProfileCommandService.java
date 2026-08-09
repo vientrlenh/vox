@@ -76,7 +76,7 @@ public class LearnerProfileCommandService {
                 Integer::sum
             );
         }
-        var saved = appendProfile(studentId, null, null, Instant.now());
+        var saved = upsertProfile(studentId, null, null, Instant.now());
         dimensionScoreRepository.replaceScores(
             saved.getId(),
             interestQuizScorer.normalize(raw)
@@ -95,38 +95,23 @@ public class LearnerProfileCommandService {
                 "Mục tiêu luyện tập không hợp lệ"
             );
         }
-        appendProfile(studentId, goalType, null, null);
+        upsertProfile(studentId, goalType, null, null);
     }
 
     public void setAutoUpdate(UUID studentId, boolean enabled) {
-        appendProfile(studentId, null, enabled, null);
+        upsertProfile(studentId, null, enabled, null);
     }
 
-    private LearnerProfile appendProfile(
+   
+    private LearnerProfile upsertProfile(
             UUID studentId,
             String goalType,
             Boolean autoUpdate,
             Instant quizCompletedAt) {
-        var previous = repository.findCurrentForUpdate(studentId).orElse(null);
-        var next = previous == null
-            ? LearnerProfile.first(studentId).next(goalType, autoUpdate, quizCompletedAt)
-            : previous.next(goalType, autoUpdate, quizCompletedAt);
-        if (previous == null) {
-            next = new LearnerProfile(
-                null,
-                next.getStudentId(),
-                1,
-                next.getGoalType(),
-                next.isAutoUpdateInterest(),
-                next.getQuizCompletedAt(),
-                next.getRecordedAt()
-            );
-        }
-        var saved = repository.save(next);
-        if (previous != null) {
-            dimensionScoreRepository.copyScores(previous.getId(), saved.getId());
-        }
-        return saved;
+        var profile = repository.findCurrentForUpdate(studentId)
+            .orElseGet(() -> LearnerProfile.forStudent(studentId));
+        profile.applyChanges(goalType, autoUpdate, quizCompletedAt);
+        return repository.save(profile);
     }
 
     private String dimensionAt(List<String> dimensions, int index) {

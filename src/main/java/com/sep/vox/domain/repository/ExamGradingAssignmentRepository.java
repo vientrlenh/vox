@@ -32,6 +32,16 @@ public interface ExamGradingAssignmentRepository {
 
     List<ExamGradingAssignment> findByCandidateResultIdIn(Collection<UUID> candidateResultIds);
 
+    /**
+     * Giáo viên này có từng được giao chấm bài đó không — mọi vòng, mọi trạng thái.
+     *
+     * <p>Cố ý đếm cả dòng đã {@code COMPLETED}: bài bị phúc khảo thì chính người chấm vòng trước
+     * là người bị hỏi lại, mà lúc đó dòng phân công của họ đã đóng. Dùng cho các kiểm tra CHỈ
+     * ĐỌC (xem bản ghi buổi thi); mọi hành động GHI điểm vẫn phải đi qua
+     * {@code ExamGradingAccessService.authorizeAssignedTeacher} trên đúng dòng đang mở.
+     */
+    boolean existsByCandidateResultIdAndTeacherId(UUID candidateResultId, UUID teacherId);
+
     /** Vòng phúc khảo của một đơn (mọi trạng thái). */
     List<ExamGradingAssignment> findByAppealId(UUID appealId);
 

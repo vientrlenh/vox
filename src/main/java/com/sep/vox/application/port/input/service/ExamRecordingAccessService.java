@@ -10,6 +10,8 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamSession;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
+import com.sep.vox.domain.repository.ExamCandidateResultRepository;
+import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleProctorRepository;
@@ -31,6 +33,8 @@ public class ExamRecordingAccessService {
     private final ExamCandidateRepository examCandidateRepository;
     private final ExamMemberRepository examMemberRepository;
     private final ExamScheduleProctorRepository examScheduleProctorRepository;
+    private final ExamCandidateResultRepository examCandidateResultRepository;
+    private final ExamGradingAssignmentRepository examGradingAssignmentRepository;
     private final UserContextPort userContextPort;
 
     public ExamRecordingAccessService(
@@ -39,21 +43,33 @@ public class ExamRecordingAccessService {
             ExamCandidateRepository examCandidateRepository,
             ExamMemberRepository examMemberRepository,
             ExamScheduleProctorRepository examScheduleProctorRepository,
+            ExamCandidateResultRepository examCandidateResultRepository,
+            ExamGradingAssignmentRepository examGradingAssignmentRepository,
             UserContextPort userContextPort) {
         this.examSessionRepository = examSessionRepository;
         this.examRepository = examRepository;
         this.examCandidateRepository = examCandidateRepository;
         this.examMemberRepository = examMemberRepository;
         this.examScheduleProctorRepository = examScheduleProctorRepository;
+        this.examCandidateResultRepository = examCandidateResultRepository;
+        this.examGradingAssignmentRepository = examGradingAssignmentRepository;
         this.userContextPort = userContextPort;
     }
 
     /**
      * Ném nếu người gọi không được xem; trả về phiên thi nếu được.
      *
-     * <p>Ba tầng, theo đúng thứ tự cũ: phải cùng trường → school admin đi thẳng → giáo viên phải
-     * là chủ tịch hội đồng hoặc giám thị của đúng ca thi đó. Vai khác đều bị chặn, kể cả chính
-     * thí sinh: học sinh không được xem lại video buổi thi của mình qua đường này.
+     * <p>Bốn tầng: phải cùng trường → school admin đi thẳng → giáo viên phải là chủ tịch hội
+     * đồng, HOẶC người được phân công chấm chính bài đó, HOẶC giám thị của đúng ca thi. Vai khác
+     * đều bị chặn, kể cả chính thí sinh: học sinh không được xem lại video buổi thi của mình qua
+     * đường này.
+     *
+     * <p>Tầng "người chấm" là tầng thêm sau, và nó KHÔNG phải nới lỏng cho tiện: hai vòng
+     * {@code SPOT_CHECK} và {@code APPEAL} cố tình giao bài cho giáo viên chưa từng dính tới ca
+     * thi (hậu kiểm mà giao lại đúng người coi thi thì còn gì là hậu kiểm). Nếu quyền xem bản ghi
+     * chỉ đi theo vai coi thi thì đúng những người bắt buộc phải nghe lại bài mới chấm được lại
+     * là những người bị chặn -- mà FE thì nuốt lỗi 403 thành "ca thi không có bản ghi", nên sự cố
+     * này im lặng suốt.
      */
     public ExamSession requireCanViewRecordings(UUID examSessionId) {
         var userId = userContextPort.getCurrentAuthenticatedUserId();
@@ -80,6 +96,21 @@ public class ExamRecordingAccessService {
         var isChair = examMemberRepository
             .existsByExamIdAndUserIdAndRole(exam.getId(), userId, ExamMemberRole.CHAIR);
         if (isChair) {
+            return session;
+        }
+
+        // Người được phân công chấm chính bài này. Đặt TRƯỚC nhánh giám thị vì trên màn chấm đây
+        // là ca phổ biến nhất, để nó rơi xuống dưới là mỗi lần mở bài thêm hai query thừa.
+        //
+        // Tính cả dòng phân công đã đóng: bài bị phúc khảo thì người chấm vòng trước là người bị
+        // hỏi lại "vì sao chấm thế", mà lúc đó dòng của họ đã COMPLETED. Đây là quyền ĐỌC bằng
+        // chứng, không phải quyền ghi điểm -- mọi hành động chấm vẫn qua
+        // ExamGradingAccessService.authorizeAssignedTeacher trên đúng dòng đang mở.
+        var isAssignedGrader = examCandidateResultRepository.findBySessionId(session.getId())
+            .map(result -> examGradingAssignmentRepository
+                .existsByCandidateResultIdAndTeacherId(result.getId(), userId))
+            .orElse(false);
+        if (isAssignedGrader) {
             return session;
         }
 

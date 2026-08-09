@@ -17,16 +17,20 @@ import com.sep.vox.domain.dto.SchoolAdminDashboardSummaryDto;
 import com.sep.vox.domain.dto.SchoolAdminDashboardSummaryDto.AppealStatsDto;
 import com.sep.vox.domain.dto.SchoolAdminDashboardSummaryDto.ExamStatusCountsDto;
 import com.sep.vox.domain.dto.SchoolAdminDashboardSummaryDto.MonthlySpendingDto;
+import com.sep.vox.domain.dto.SchoolAdminDashboardSummaryDto.SubscriptionRenewalDto;
 import com.sep.vox.domain.model.exam.ExamAppealStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.model.subscription.Invoice;
+import com.sep.vox.domain.model.subscription.InvoiceSourceType;
 import com.sep.vox.domain.model.subscription.InvoiceStatus;
 import com.sep.vox.domain.model.subscription.QuotaType;
+import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.model.subscription.SubscriptionQuota;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamResultAppealRepository;
 import com.sep.vox.domain.repository.InvoiceRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
+import com.sep.vox.domain.repository.SubscriptionPlanRepository;
 import com.sep.vox.domain.repository.SubscriptionQuotaRepository;
 
 @Service
@@ -37,17 +41,20 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
     private final ExamResultAppealRepository examResultAppealRepository;
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final SubscriptionQuotaRepository subscriptionQuotaRepository;
+    private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final InvoiceRepository invoiceRepository;
 
     public ViewSchoolAdminDashboardUseCase(UserContextPort userContextPort, ExamRepository examRepository,
             ExamResultAppealRepository examResultAppealRepository,
             SchoolSubscriptionRepository schoolSubscriptionRepository,
-            SubscriptionQuotaRepository subscriptionQuotaRepository, InvoiceRepository invoiceRepository) {
+            SubscriptionQuotaRepository subscriptionQuotaRepository,
+            SubscriptionPlanRepository subscriptionPlanRepository, InvoiceRepository invoiceRepository) {
         this.userContextPort = userContextPort;
         this.examRepository = examRepository;
         this.examResultAppealRepository = examResultAppealRepository;
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
         this.subscriptionQuotaRepository = subscriptionQuotaRepository;
+        this.subscriptionPlanRepository = subscriptionPlanRepository;
         this.invoiceRepository = invoiceRepository;
     }
 
@@ -56,7 +63,8 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         var schoolId = userContextPort.getCurrentSchoolId();
 
-        var gradingQuota = activeGradingQuota(schoolId);
+        var activeSubscription = schoolSubscriptionRepository.findActiveBySchoolId(schoolId);
+        var gradingQuota = activeGradingQuota(activeSubscription);
         var paidInvoices = fetchPaidInvoices(schoolId);
 
         return new SchoolAdminDashboardSummaryDto(
@@ -65,7 +73,8 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
             sumAmount(paidInvoices),
             buildMonthlySpending(paidInvoices),
             gradingQuota.map(quota -> toLong(quota.getTotalAllocated())).orElse(0L),
-            gradingQuota.map(quota -> toLong(quota.getUsedQuantity())).orElse(0L)
+            gradingQuota.map(quota -> toLong(quota.getUsedQuantity())).orElse(0L),
+            buildSubscriptionRenewal(activeSubscription)
         );
     }
 
@@ -115,16 +124,24 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
 
     private static BigDecimal sumAmount(List<Invoice> invoices) {
         return invoices.stream()
-            .map(Invoice::getAmount)
+            .map(i -> i.getAmount())
             .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    /** Chi tiêu 12 tháng gần nhất (kể cả tháng hiện tại), xếp cũ -> mới, tháng không có hóa đơn trả về 0. */
+    /**
+     * Chi tiêu 12 tháng gần nhất (kể cả tháng hiện tại), xếp cũ -> mới, tháng không có hóa đơn trả về 0.
+     * Tách riêng phần chi cho gói (đăng ký/gia hạn) và phần mua thêm token — gói thường trả theo năm
+     * nên hầu hết các tháng chỉ có mua thêm token (hoặc không có gì); tách 2 phần giúp biểu đồ phân
+     * biệt được tháng "chỉ mua thêm token" với tháng "đến kỳ gia hạn gói".
+     */
     private static List<MonthlySpendingDto> buildMonthlySpending(List<Invoice> invoices) {
         var currentMonth = YearMonth.now(ZoneOffset.UTC);
-        var totalsByMonth = new LinkedHashMap<YearMonth, BigDecimal>();
+        var subscriptionByMonth = new LinkedHashMap<YearMonth, BigDecimal>();
+        var tokenTopUpByMonth = new LinkedHashMap<YearMonth, BigDecimal>();
         for (var i = 11; i >= 0; i--) {
-            totalsByMonth.put(currentMonth.minusMonths(i), BigDecimal.ZERO);
+            var month = currentMonth.minusMonths(i);
+            subscriptionByMonth.put(month, BigDecimal.ZERO);
+            tokenTopUpByMonth.put(month, BigDecimal.ZERO);
         }
 
         for (var invoice : invoices) {
@@ -132,18 +149,40 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
                 continue;
             }
             var invoiceMonth = YearMonth.from(invoice.getPaidAt().atZone(ZoneOffset.UTC));
-            totalsByMonth.computeIfPresent(invoiceMonth, (month, total) -> total.add(invoice.getAmount()));
+            var targetMap = invoice.getSourceType() == InvoiceSourceType.TOKEN_PURCHASE
+                ? tokenTopUpByMonth
+                : subscriptionByMonth;
+            targetMap.computeIfPresent(invoiceMonth, (month, total) -> total.add(invoice.getAmount()));
         }
 
-        return totalsByMonth.entrySet().stream()
-            .map(entry -> new MonthlySpendingDto(entry.getKey().toString(), entry.getValue()))
+        return subscriptionByMonth.keySet().stream()
+            .map(month -> {
+                var subscriptionAmount = subscriptionByMonth.get(month);
+                var tokenTopUpAmount = tokenTopUpByMonth.get(month);
+                return new MonthlySpendingDto(
+                    month.toString(),
+                    subscriptionAmount.add(tokenTopUpAmount),
+                    subscriptionAmount,
+                    tokenTopUpAmount
+                );
+            })
             .toList();
     }
 
-    private Optional<SubscriptionQuota> activeGradingQuota(UUID schoolId) {
-        return schoolSubscriptionRepository.findActiveBySchoolId(schoolId)
-            .flatMap(subscription -> subscriptionQuotaRepository
-                .findBySubscriptionIdAndQuotaType(subscription.getId(), QuotaType.GRADING));
+    private Optional<SubscriptionQuota> activeGradingQuota(Optional<SchoolSubscription> activeSubscription) {
+        return activeSubscription.flatMap(subscription -> subscriptionQuotaRepository
+            .findBySubscriptionIdAndQuotaType(subscription.getId(), QuotaType.GRADING));
+    }
+
+    private SubscriptionRenewalDto buildSubscriptionRenewal(Optional<SchoolSubscription> activeSubscription) {
+        if (activeSubscription.isEmpty()) {
+            return null;
+        }
+        var subscription = activeSubscription.get();
+        var planName = subscriptionPlanRepository.findById(subscription.getPlanId())
+            .map(plan -> plan.getName())
+            .orElse(null);
+        return new SubscriptionRenewalDto(planName, subscription.getStatus().name(), subscription.getEndDate().toString());
     }
 
 }

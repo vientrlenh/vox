@@ -9,12 +9,24 @@ public record SchoolAdminDashboardSummaryDto(
     BigDecimal revenue,
     List<MonthlySpendingDto> monthlySpending,
     long tokenAllocated,
-    long tokenUsed
+    long tokenUsed,
+    SubscriptionRenewalDto subscriptionRenewal
 ) {
+
+    /** {@code null} nếu trường chưa từng có gói đăng ký nào đang hoạt động. */
+    public record SubscriptionRenewalDto(
+        String planName,
+        String status,
+        String endDate
+    ) {
+
+    }
 
     public record MonthlySpendingDto(
         String month,
-        BigDecimal amount
+        BigDecimal amount,
+        BigDecimal subscriptionAmount,
+        BigDecimal tokenTopUpAmount
     ) {
 
     }

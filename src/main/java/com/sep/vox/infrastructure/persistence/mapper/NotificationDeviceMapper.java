@@ -14,7 +14,7 @@ public final class NotificationDeviceMapper {
             jpa.getUserId(),
             jpa.getDeviceId(),
             platformFromString(jpa.getPlatform()),
-            jpa.getToken(),
+            jpa.getInstallationId(),
             jpa.getCreatedAt(),
             jpa.getLastSeenAt()
         );
@@ -26,7 +26,7 @@ public final class NotificationDeviceMapper {
             device.getUserId(),
             device.getDeviceId(),
             valueOf(device.getPlatform()),
-            device.getToken(),
+            device.getInstallationId(),
             device.getCreatedAt(),
             device.getLastSeenAt()
         );

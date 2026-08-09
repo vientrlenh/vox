@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.examsession;
 
 import java.time.Instant;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +23,7 @@ import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;
 
 @Service
-public class ForceEndExamSessionUseCase implements IUseCase<ForceEndExamSessionCommand, java.util.UUID> {
+public class ForceEndExamSessionUseCase implements IUseCase<ForceEndExamSessionCommand, UUID> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ForceEndExamSessionUseCase.class);
 
@@ -74,6 +75,9 @@ public class ForceEndExamSessionUseCase implements IUseCase<ForceEndExamSessionC
         var now = Instant.now();
         var currentUserId = moderationAccessService.getCurrentUserId();
         var normalizedReason = StringNormalization.trimAndCollapseSpaces(input.reason());
+        if (normalizedReason == null || normalizedReason.isEmpty()) {
+            throw new IllegalArgumentException("Cần nhập lý do khi buộc kết thúc phiên thi");
+        }
 
         session.setFlagged(true);
         session.setFlagReason(normalizedReason);

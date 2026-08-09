@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
+import com.sep.vox.domain.model.notification.NotificationCategory;
 import com.sep.vox.domain.model.notification.NotificationPreference;
 import com.sep.vox.domain.repository.NotificationPreferenceRepository;
 import com.sep.vox.infrastructure.persistence.mapper.NotificationPreferenceMapper;
@@ -12,10 +13,11 @@ import com.sep.vox.infrastructure.persistence.repository.SpringDataNotificationP
 
 @Repository
 public class NotificationPreferenceRepositoryImpl implements NotificationPreferenceRepository {
-    
+
     private final SpringDataNotificationPreferenceRepository springDataNotificationPreferenceRepository;
 
-    public NotificationPreferenceRepositoryImpl(SpringDataNotificationPreferenceRepository springDataNotificationPreferenceRepository) {
+    public NotificationPreferenceRepositoryImpl(
+            SpringDataNotificationPreferenceRepository springDataNotificationPreferenceRepository) {
         this.springDataNotificationPreferenceRepository = springDataNotificationPreferenceRepository;
     }
 
@@ -32,5 +34,13 @@ public class NotificationPreferenceRepositoryImpl implements NotificationPrefere
         return NotificationPreferenceMapper.toDomain(saved);
     }
 
-
+    @Override
+    public Optional<NotificationPreference> findByUserIdAndCategory(UUID userId, NotificationCategory category) {
+        if (category == null) {
+            return Optional.empty();
+        }
+        return springDataNotificationPreferenceRepository
+            .findByUserIdAndCategory(userId, category.name())
+            .map(NotificationPreferenceMapper::toDomain);
+    }
 }

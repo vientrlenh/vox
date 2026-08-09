@@ -17,6 +17,15 @@ public interface ExamSessionRepository {
     Optional<ExamSession> findLatestByCandidateIdAndStatuses(UUID candidateId, Collection<ExamSessionStatus> statuses);
     List<ExamSession> findAllByCandidateId(UUID candidateId);
     List<ExamSession> findAllByCandidateIdIn(Collection<UUID> candidateIds);
+    /**
+     * Số phiên còn đang làm bài ({@link ExamSessionStatus#RESUMABLE}) của một bài kiểm tra.
+     *
+     * <p>Bỏ qua thí sinh đã bị đình chỉ ({@code blockedAt != null}) — phiên của họ sẽ không bao giờ
+     * tự kết thúc, giữ lại thì một lệnh đình chỉ sẽ khoá luôn nút đóng bài. Cùng lý do mà
+     * {@code ExamScheduleTimeoutGradingJob} bỏ qua họ.
+     */
+    long countActiveByExamId(UUID examId);
+
     List<ExamSession> findDeferredGradingCandidates(java.time.Instant now);
     List<ExamSession> findPastScheduleEndCandidates(java.time.Instant threshold);
     boolean existsById(UUID id);

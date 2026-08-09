@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.DeleteExamCommand;
+import com.sep.vox.application.port.input.service.ExamScheduleClosureService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
@@ -17,7 +18,6 @@ import com.sep.vox.application.response.input.exam.DeleteExamResponse;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
-import com.sep.vox.domain.model.exam.ExamScheduleStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
@@ -50,6 +50,7 @@ public class DeleteExamUseCase implements IUseCase<DeleteExamCommand, DeleteExam
     private final ExamPaperItemRepository examPaperItemRepository;
     private final ExamMemberRepository examMemberRepository;
     private final ExamQuestionSecureLockService examQuestionSecureLockService;
+    private final ExamScheduleClosureService examScheduleClosureService;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
@@ -64,6 +65,7 @@ public class DeleteExamUseCase implements IUseCase<DeleteExamCommand, DeleteExam
             ExamPaperItemRepository examPaperItemRepository,
             ExamMemberRepository examMemberRepository,
             ExamQuestionSecureLockService examQuestionSecureLockService,
+            ExamScheduleClosureService examScheduleClosureService,
             SchoolUserRepository schoolUserRepository,
             UserRoleQueryRepository userRoleQueryRepository,
             UserContextPort userContextPort) {
@@ -76,6 +78,7 @@ public class DeleteExamUseCase implements IUseCase<DeleteExamCommand, DeleteExam
         this.examPaperItemRepository = examPaperItemRepository;
         this.examMemberRepository = examMemberRepository;
         this.examQuestionSecureLockService = examQuestionSecureLockService;
+        this.examScheduleClosureService = examScheduleClosureService;
         this.schoolUserRepository = schoolUserRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
         this.userContextPort = userContextPort;
@@ -118,32 +121,8 @@ public class DeleteExamUseCase implements IUseCase<DeleteExamCommand, DeleteExam
         exam.setUpdatedAt(now);
         exam.setUpdatedBy(currentUserId);
         examRepository.save(exam);
-        cancelSchedules(exam.getId(), currentUserId, now);
-    }
-
-    /**
-     * Huỷ kỳ thi phải kéo theo ca thi: ca còn PUBLISHED vẫn lọt qua {@code isVisibleToStudent()} và
-     * {@code allowsAttendance()}, và các truy vấn vào ca ({@code findByIdAndInSchedule}...) hard-code
-     * {@code status = 'PUBLISHED'} — bỏ ca lại là để nguyên một ca "sẵn sàng" của kỳ thi đã huỷ.
-     *
-     * <p>Chỉ đụng DRAFT/PUBLISHED, đúng luật của {@code UpdateExamScheduleStatusUseCase.cancel}.
-     * COMPLETED/MOVED là trạng thái kết thúc: ghi đè sẽ xoá dấu vết ca đã thi xong và làm lệch
-     * {@code movedToScheduleId}. DELETED đã bị {@code findByExamId} lọc sẵn. Đây là cascade nên gặp
-     * trạng thái không huỷ được thì bỏ qua chứ không ném lỗi.
-     *
-     * <p>Bản song sinh nằm ở {@code UpdateExamStatusUseCase} (action CANCEL) — sửa thì sửa cả hai.
-     */
-    private void cancelSchedules(UUID examId, UUID currentUserId, Instant now) {
-        for (var schedule : examScheduleRepository.findByExamId(examId)) {
-            if (schedule.getStatus() != ExamScheduleStatus.DRAFT
-                    && schedule.getStatus() != ExamScheduleStatus.PUBLISHED) {
-                continue;
-            }
-            schedule.setStatus(ExamScheduleStatus.CANCELLED);
-            schedule.setUpdatedAt(now);
-            schedule.setUpdatedBy(currentUserId);
-            examScheduleRepository.save(schedule);
-        }
+        // Huỷ kỳ thi phải kéo theo ca thi -- xem ExamScheduleClosureService để rõ vì sao.
+        examScheduleClosureService.cancelSchedulesForExam(exam.getId(), currentUserId, now);
     }
 
     /**

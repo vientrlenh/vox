@@ -98,6 +98,10 @@ class DeleteExamUseCaseTests {
             examPaperItemRepository,
             examMemberRepository,
             examQuestionSecureLockService,
+            // Service thật (không mock) trên cùng repo giả: cascade huỷ ca vẫn được kiểm ở đây,
+            // bảng ánh xạ trạng thái đầy đủ nằm ở ExamScheduleClosureServiceTests.
+            new com.sep.vox.application.port.input.service.ExamScheduleClosureService(
+                examScheduleRepository, mock(com.sep.vox.domain.repository.ExamSessionRepository.class)),
             schoolUserRepository,
             userRoleQueryRepository,
             userContextPort);

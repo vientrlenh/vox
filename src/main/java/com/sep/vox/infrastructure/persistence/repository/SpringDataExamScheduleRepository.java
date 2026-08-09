@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
@@ -40,6 +41,13 @@ public interface SpringDataExamScheduleRepository extends JpaRepository<ExamSche
   List<ExamScheduleJpaEntity> findByExamIdAndInSchedule(
       @Param("examId") UUID examId,
       @Param("now") Instant now);
+
+  @Query("""
+      SELECT s FROM ExamScheduleJpaEntity s
+      WHERE s.status = 'PUBLISHED' AND s.endDate <= :now
+      ORDER BY s.endDate ASC
+      """)
+  List<ExamScheduleJpaEntity> findPublishedEndedBefore(@Param("now") Instant now, Pageable pageable);
 
   @Query("""
       SELECT s FROM ExamScheduleJpaEntity s

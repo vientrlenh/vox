@@ -55,6 +55,13 @@ public interface ExamScheduleRepository {
      */
     int updateAtomic(UUID id, UUID schoolRoomId, Instant start, Instant end,
             Instant now, UUID updatedBy);
+    /**
+     * Ca đã công bố nhưng đã qua giờ kết thúc, cũ nhất trước, tối đa {@code limit} dòng — dùng cho
+     * job tự chuyển ca sang COMPLETED. Có trần vì lần chạy đầu sau khi triển khai phải quét cả tồn
+     * đọng lịch sử.
+     */
+    List<ExamSchedule> findPublishedEndedBefore(Instant now, int limit);
+
     List<ExamSchedule> findByExamIdAndInSchedule(UUID examId, Instant now);
     List<ExamSchedule> findByIdInAndInSchedule(Collection<UUID> ids, Instant now);
     Optional<ExamSchedule> findByIdAndInSchedule(UUID id, Instant now);

@@ -16,6 +16,7 @@ import com.sep.vox.application.exception.PlanLimitExceededException;
 import com.sep.vox.application.event.ExamResultsPublishedEvent;
 import com.sep.vox.application.port.input.command.UpdateExamStatusCommand;
 import com.sep.vox.application.port.input.service.ExamCandidateResultFinalizationService;
+import com.sep.vox.application.port.input.service.ExamScheduleClosureService;
 import com.sep.vox.application.port.input.service.ClassTestGradingAssignmentService;
 import com.sep.vox.application.port.input.service.ClassTestTokenQuotaGuardService;
 import com.sep.vox.application.port.input.service.ZeroScoreExamResultService;
@@ -76,6 +77,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
     private final EventPublisherPort eventPublisherPort;
     private final ClassTestGradingAssignmentService classTestGradingAssignmentService;
     private final ClassTestTokenQuotaGuardService classTestTokenQuotaGuardService;
+    private final ExamScheduleClosureService examScheduleClosureService;
 
     public UpdateExamStatusUseCase(
             ExamRepository examRepository,
@@ -97,7 +99,8 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
             UserContextPort userContextPort,
             EventPublisherPort eventPublisherPort,
             ClassTestGradingAssignmentService classTestGradingAssignmentService,
-            ClassTestTokenQuotaGuardService classTestTokenQuotaGuardService) {
+            ClassTestTokenQuotaGuardService classTestTokenQuotaGuardService,
+            ExamScheduleClosureService examScheduleClosureService) {
         this.examRepository = examRepository;
         this.examMemberRepository = examMemberRepository;
         this.examPaperRepository = examPaperRepository;
@@ -118,6 +121,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
         this.eventPublisherPort = eventPublisherPort;
         this.classTestGradingAssignmentService = classTestGradingAssignmentService;
         this.classTestTokenQuotaGuardService = classTestTokenQuotaGuardService;
+        this.examScheduleClosureService = examScheduleClosureService;
     }
 
     @Override
@@ -164,6 +168,9 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
             }
             case "CLOSE" -> {
                 requireTransition(exam, ExamStatus.IN_PROGRESS, ExamStatus.CLOSED);
+                // Kiểm trạng thái trước rồi mới đụng ca thi, giống nhánh CANCEL bên dưới.
+                examScheduleClosureService.requireNoActiveSessionInOngoingSchedule(exam.getId(), now);
+                examScheduleClosureService.closeSchedulesForExam(exam.getId(), currentUserId, now);
                 examQuestionSecureLockService.releaseIfAutoAfterClose(exam.getId());
                 zeroScoreExamResultService.ensureZeroResultsForMissingOrEmptyAttempts(exam.getId());
                 // Quét bù SAU khi đã bù kết quả điểm 0: bài trên lớp không có ai điều phối
@@ -180,7 +187,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
             case "CANCEL" -> {
                 // Kiểm trạng thái trước rồi mới đụng ca thi: huỷ không hợp lệ thì không được ghi gì.
                 requireTransition(exam, CANCELLABLE_FROM, ExamStatus.CANCELLED);
-                cancelSchedules(exam.getId(), currentUserId, now);
+                examScheduleClosureService.cancelSchedulesForExam(exam.getId(), currentUserId, now);
             }
             default -> throw new IllegalStateException("Action không hợp lệ");
         }
@@ -348,31 +355,6 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
         if (draftScheduleCount > 0) {
             throw new IllegalStateException(
                 "Còn " + draftScheduleCount + " ca thi chưa được công bố, không thể lên lịch bài kiểm tra");
-        }
-    }
-
-    /**
-     * Huỷ kỳ thi phải kéo theo ca thi: ca còn PUBLISHED vẫn lọt qua {@code isVisibleToStudent()} và
-     * {@code allowsAttendance()}, và các truy vấn vào ca ({@code findByIdAndInSchedule}...) hard-code
-     * {@code status = 'PUBLISHED'} — bỏ ca lại là để nguyên một ca "sẵn sàng" của kỳ thi đã huỷ.
-     *
-     * <p>Chỉ đụng DRAFT/PUBLISHED, đúng luật của {@code UpdateExamScheduleStatusUseCase.cancel}.
-     * COMPLETED/MOVED là trạng thái kết thúc: ghi đè sẽ xoá dấu vết ca đã thi xong và làm lệch
-     * {@code movedToScheduleId}. DELETED đã bị {@code findByExamId} lọc sẵn. Đây là cascade nên gặp
-     * trạng thái không huỷ được thì bỏ qua chứ không ném lỗi.
-     *
-     * <p>Bản song sinh nằm ở {@code DeleteExamUseCase} (nhánh huỷ thay vì xoá) — sửa thì sửa cả hai.
-     */
-    private void cancelSchedules(java.util.UUID examId, java.util.UUID currentUserId, Instant now) {
-        for (var schedule : examScheduleRepository.findByExamId(examId)) {
-            if (schedule.getStatus() != ExamScheduleStatus.DRAFT
-                    && schedule.getStatus() != ExamScheduleStatus.PUBLISHED) {
-                continue;
-            }
-            schedule.setStatus(ExamScheduleStatus.CANCELLED);
-            schedule.setUpdatedAt(now);
-            schedule.setUpdatedBy(currentUserId);
-            examScheduleRepository.save(schedule);
         }
     }
 

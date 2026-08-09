@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import com.sep.vox.application.port.input.command.UpdateExamStatusCommand;
 import com.sep.vox.application.exception.PlanLimitExceededException;
 import com.sep.vox.application.port.input.service.ExamCandidateResultFinalizationService;
+import com.sep.vox.application.port.input.service.ExamScheduleClosureService;
 import com.sep.vox.application.port.input.service.ClassTestGradingAssignmentService;
 import com.sep.vox.application.port.input.service.ClassTestTokenQuotaGuardService;
 import com.sep.vox.application.port.input.service.ZeroScoreExamResultService;
@@ -64,6 +65,7 @@ class UpdateExamStatusUseCaseTests {
     private ExamScheduleProctorRepository examScheduleProctorRepository;
     private ExamCandidateRepository examCandidateRepository;
     private ExamPaperRepository examPaperRepository;
+    private ExamSessionRepository examSessionRepository;
     private SchoolUserRepository schoolUserRepository;
     private UserRoleQueryRepository userRoleQueryRepository;
     private SchoolSubscriptionRepository schoolSubscriptionRepository;
@@ -89,6 +91,7 @@ class UpdateExamStatusUseCaseTests {
         examScheduleProctorRepository = mock(ExamScheduleProctorRepository.class);
         examCandidateRepository = mock(ExamCandidateRepository.class);
         examPaperRepository = mock(ExamPaperRepository.class);
+        examSessionRepository = mock(ExamSessionRepository.class);
         schoolUserRepository = mock(SchoolUserRepository.class);
         userRoleQueryRepository = mock(UserRoleQueryRepository.class);
         schoolSubscriptionRepository = mock(SchoolSubscriptionRepository.class);
@@ -103,7 +106,7 @@ class UpdateExamStatusUseCaseTests {
             examScheduleRepository,
             examScheduleProctorRepository,
             examCandidateRepository,
-            mock(ExamSessionRepository.class),
+            examSessionRepository,
             mock(ExamCandidateResultRepository.class),
             mock(AssessmentPolicyRepository.class),
             mock(ExamCandidateResultFinalizationService.class),
@@ -116,7 +119,10 @@ class UpdateExamStatusUseCaseTests {
             userContextPort,
             mock(com.sep.vox.application.port.output.EventPublisherPort.class),
             mock(ClassTestGradingAssignmentService.class),
-            classTestTokenQuotaGuardService);
+            classTestTokenQuotaGuardService,
+            // Service thật (không mock) trên cùng repo giả: guard và cascade ca thi được kiểm luôn
+            // ở đây; bảng ánh xạ trạng thái đầy đủ nằm ở ExamScheduleClosureServiceTests.
+            new ExamScheduleClosureService(examScheduleRepository, examSessionRepository));
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(examMemberRepository.existsByExamIdAndUserIdAndRole(examId, userId, ExamMemberRole.CHAIR))
@@ -379,6 +385,64 @@ class UpdateExamStatusUseCaseTests {
         useCase.execute(new UpdateExamStatusCommand(examId, "CANCEL", null));
 
         assertThat(exam.getStatus()).isEqualTo(ExamStatus.CANCELLED);
+    }
+
+    /**
+     * Đóng bài mà bỏ ca lại là ca ở PUBLISHED vĩnh viễn — không đường nào chuyển nó sang COMPLETED
+     * trừ khi có người bấm tay từng ca.
+     */
+    @Test
+    void should_close_schedules_when_exam_is_closed() {
+        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        exam.setStatus(ExamStatus.IN_PROGRESS);
+        // Ca đã kết thúc từ hôm qua và ca của tuần sau chưa tới giờ.
+        var ended = schedule(ExamScheduleStatus.PUBLISHED,
+            open.minus(1, ChronoUnit.DAYS), open.minus(22, ChronoUnit.HOURS));
+        var notStarted = schedule(ExamScheduleStatus.PUBLISHED,
+            Instant.now().plus(7, ChronoUnit.DAYS), Instant.now().plus(8, ChronoUnit.DAYS));
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(ended, notStarted));
+
+        useCase.execute(new UpdateExamStatusCommand(examId, "CLOSE", null));
+
+        assertThat(exam.getStatus()).isEqualTo(ExamStatus.CLOSED);
+        assertThat(ended.getStatus()).isEqualTo(ExamScheduleStatus.COMPLETED);
+        assertThat(notStarted.getStatus()).isEqualTo(ExamScheduleStatus.CANCELLED);
+        verify(examScheduleRepository).save(ended);
+        verify(examScheduleRepository).save(notStarted);
+    }
+
+    @Test
+    void should_reject_close_when_ongoing_schedule_still_has_active_session() {
+        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        exam.setStatus(ExamStatus.IN_PROGRESS);
+        var ongoing = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        when(examScheduleRepository.findByExamIdAndInSchedule(any(), any())).thenReturn(List.of(ongoing));
+        when(examSessionRepository.countActiveByExamId(examId)).thenReturn(2L);
+
+        assertThatThrownBy(() -> useCase.execute(new UpdateExamStatusCommand(examId, "CLOSE", null)))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("2 học sinh đang làm bài");
+        assertThat(ongoing.getStatus()).isEqualTo(ExamScheduleStatus.PUBLISHED);
+        verify(examScheduleRepository, never()).save(any());
+    }
+
+    /** Cả lớp nộp xong thì vẫn phải đóng sớm được — đây là lý do không chặn cứng theo khung giờ. */
+    @Test
+    void should_allow_close_while_schedule_is_ongoing_but_nobody_is_working() {
+        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        exam.setStatus(ExamStatus.IN_PROGRESS);
+        var ongoing = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        when(examScheduleRepository.findByExamIdAndInSchedule(any(), any())).thenReturn(List.of(ongoing));
+        when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(ongoing));
+        when(examSessionRepository.countActiveByExamId(examId)).thenReturn(0L);
+
+        useCase.execute(new UpdateExamStatusCommand(examId, "CLOSE", null));
+
+        assertThat(exam.getStatus()).isEqualTo(ExamStatus.CLOSED);
+        assertThat(ongoing.getStatus()).isEqualTo(ExamScheduleStatus.COMPLETED);
     }
 
     /**

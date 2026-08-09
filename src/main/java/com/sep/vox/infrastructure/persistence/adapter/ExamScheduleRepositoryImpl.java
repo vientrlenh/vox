@@ -105,6 +105,15 @@ public class ExamScheduleRepositoryImpl implements ExamScheduleRepository {
     }
     
     @Override
+    public List<ExamSchedule> findPublishedEndedBefore(Instant now, int limit) {
+        return springDataExamScheduleRepository
+            .findPublishedEndedBefore(now, org.springframework.data.domain.PageRequest.of(0, limit))
+            .stream()
+            .map(ExamScheduleMapper::toDomain)
+            .toList();
+    }
+
+    @Override
     public List<ExamSchedule> findByExamIdAndInSchedule(UUID examId, Instant now) {
         return springDataExamScheduleRepository.findByExamIdAndInSchedule(examId, now)
             .stream()

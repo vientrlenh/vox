@@ -11,7 +11,6 @@ import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.UpdateSchoolRubricCriterionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.model.rubric.RubricCriterion;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
 import com.sep.vox.domain.model.rubric.RubricStatus;
 import com.sep.vox.domain.model.user.UserStatus;
@@ -129,7 +128,7 @@ public class UpdateSchoolRubricCriterionUseCase implements IUseCase<UpdateSchool
             Set<Integer> siblingOrders = rubricCriterionRepository.findByRubricVersionId(criterion.getRubricVersionId())
                     .stream()
                     .filter(c -> !c.getId().equals(criterion.getId()))
-                    .map(RubricCriterion::getOrder)
+                    .map(c -> c.getOrder())
                     .collect(Collectors.toCollection(HashSet::new));
             RubricOrderValidator.assertNoDuplicateOrder(siblingOrders, command.order(), nameForError);
         }

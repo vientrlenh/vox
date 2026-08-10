@@ -15,6 +15,12 @@ enum QuotaType {
     PRACTICE
 }
 
+enum TokenUsageGranularity {
+    DAY
+    WEEK
+    MONTH
+}
+
 enum RequestType {
     REGISTRATION
     UPGRADE
@@ -120,6 +126,23 @@ type SubscriptionQuota {
     quotaType: QuotaType!
     totalAllocated: Int!
     usedQuantity: Int!
+}
+
+type TokenUsageTimeseriesPoint {
+    "Mốc bắt đầu của bucket, ISO instant (đầu ngày/tuần/tháng theo granularity)"
+    bucket: String!
+    quotaType: QuotaType!
+    tokensConsumed: Int!
+}
+
+type TokenUsageTimeseries {
+    granularity: TokenUsageGranularity!
+    "Tổng token đã dùng trong toàn khoảng dateFrom..dateTo, cộng cả 3 loại quota"
+    totalUsed: Int!
+    "Chuỗi điểm dữ liệu cho line chart — 1 điểm / bucket / quotaType"
+    points: [TokenUsageTimeseriesPoint!]!
+    "Snapshot hạn mức hiện tại (giống subscriptionUsage) — dùng để vẽ progress bar hạn mức"
+    currentPeriod: [SubscriptionQuota!]!
 }
 
 # null = giáo viên gọi query không có hạn mức CLASS_TEST cá nhân riêng, chỉ pool của trường áp dụng.
@@ -252,6 +275,16 @@ extend type Query {
 
     tokenPurchases(schoolId: ID!): [TokenPurchase!]!
     subscriptionUsage(schoolId: ID!): [SubscriptionQuota!]!
+    """
+    Token usage theo thời gian. dateFrom/dateTo là ISO instant (vd. 2026-08-01T00:00:00Z), bỏ trống
+    = 30 ngày gần nhất; khoảng tối đa 366 ngày (BE tự cắt bớt nếu vượt).
+    """
+    schoolTokenUsageTimeseries(
+        schoolId: ID!,
+        dateFrom: String,
+        dateTo: String,
+        granularity: TokenUsageGranularity = DAY
+    ): TokenUsageTimeseries!
     myClassTestQuotaAllocation: MyClassTestQuotaAllocation
     myPracticeQuotaAllocation: MyPracticeQuotaAllocation
 

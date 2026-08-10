@@ -19,7 +19,7 @@ public class AsyncConfig {
     private static final int MAIL_MAX_POOL_SIZE = 5;
     // Import hàng loạt user sinh một mail thiết lập mật khẩu cho mỗi dòng, nên queue phải
     // đủ cho một file import bình thường.
-    private static final int MAIL_QUEUE_CAPACITY = 1000;
+    private static final int MAIL_QUEUE_CAPACITY = 100;
     private static final String MAIL_THREAD_NAME_PREFIX = "mail-";
 
     private static final int FILE_CORE_POOL_SIZE = 2;
@@ -31,6 +31,12 @@ public class AsyncConfig {
     private static final int PRACTICE_MAX_POOL_SIZE = 8;
     private static final int PRACTICE_QUEUE_CAPACITY = 50;
     private static final String PRACTICE_THREAD_NAME_PREFIX = "practice-gen-";
+
+    private static final int PUSH_CORE_POOL_SIZE = 2;
+    private static final int PUSH_MAX_POOL_SIZE = 4;
+    private static final int PUSH_QUEUE_CAPACITY = 20;
+    private static final String PUSH_THREAD_NAME_PREFIX = "push-";
+
 
 
     @Bean(name = "mailExecutor")
@@ -64,16 +70,7 @@ public class AsyncConfig {
         return executor;
     }
 
-    /**
-     * Chạy các bước luyện tập có gọi LLM chậm (dựng đề, sinh quiz sở thích, gợi ý chủ đề)
-     * NGOÀI thread request của Tomcat. Hai lợi ích: (1) trả thread request về sớm nên
-     * OSIV nhả connection DB thay vì giữ suốt 10-20s chờ mạng; (2) không chiếm thread
-     * phục vụ HTTP.
-     *
-     * Bọc {@code DelegatingSecurityContextAsyncTaskExecutor} vì use case bên trong đọc
-     * {@code SecurityContextHolder} (qua UserContextPort) -- vốn là ThreadLocal, sang
-     * thread khác sẽ mất và use case sẽ tưởng chưa đăng nhập.
-     */
+
     @Bean(name = "practiceGenerationExecutor")
     public AsyncTaskExecutor practiceGenerationExecutor() {
         var executor = new ThreadPoolTaskExecutor();
@@ -86,5 +83,19 @@ public class AsyncConfig {
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
         executor.initialize();
         return new DelegatingSecurityContextAsyncTaskExecutor(executor);
+    }
+    
+    @Bean(name = "pushExecutor")
+    ThreadPoolTaskExecutor pushExecutor() {
+        var executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(PUSH_CORE_POOL_SIZE);
+        executor.setMaxPoolSize(PUSH_MAX_POOL_SIZE);
+        executor.setQueueCapacity(PUSH_QUEUE_CAPACITY);
+        executor.setThreadNamePrefix(PUSH_THREAD_NAME_PREFIX);
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setAwaitTerminationSeconds(20);
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.AbortPolicy());
+        executor.initialize();
+        return executor;
     }
 }

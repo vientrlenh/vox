@@ -106,7 +106,7 @@ public class UpdateSystemRubricResultBandUseCase implements IUseCase<UpdateSyste
         // Validate không trùng thứ tự (order) với sibling khác trong cùng version
         if (command.order() != null) {
             Set<Integer> siblingOrders = siblingBands.stream()
-                    .map(RubricResultBand::getOrder)
+                    .map(b -> b.getOrder())
                     .collect(Collectors.toCollection(HashSet::new));
             RubricOrderValidator.assertNoDuplicateOrder(siblingOrders, command.order(), nameForError);
         }

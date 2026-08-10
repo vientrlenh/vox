@@ -648,7 +648,7 @@ extend type Query {
 
     examPaper(id: ID!): ExamPaper
 
-    examStatusCounts(schoolId: ID, kind: ExamKind): ExamStatusCounts!
+    examStatusCounts(schoolId: ID, kind: ExamKind, dateFrom: String, dateTo: String): ExamStatusCounts!
 
     classTests(
         status: ExamStatus,

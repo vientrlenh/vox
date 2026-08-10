@@ -4,6 +4,9 @@ import com.sep.vox.application.exception.ForbiddenException;
 import org.springframework.graphql.execution.DataFetcherExceptionResolverAdapter;
 import org.springframework.graphql.execution.ErrorType;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import com.sep.vox.application.exception.DuplicatedException;
@@ -22,13 +25,6 @@ public class GlobalExceptionResolver extends DataFetcherExceptionResolverAdapter
     protected GraphQLError resolveToSingleError(Throwable ex, DataFetchingEnvironment env) {
 
         ex.printStackTrace();
-
-//        Throwable rootCause = ex.getCause();
-//
-//        if (!(rootCause instanceof NotFoundException || rootCause instanceof ForbiddenException || rootCause instanceof UnauthorizedException || rootCause instanceof DuplicatedException || rootCause instanceof IllegalArgumentException || rootCause instanceof IllegalStateException)) {
-//            ex.printStackTrace();
-//        }
-
 
         if (ex instanceof NotFoundException) {
             return GraphQLError.newError()
@@ -75,9 +71,20 @@ public class GlobalExceptionResolver extends DataFetcherExceptionResolverAdapter
                 .build();
         }
 
-        if (ex instanceof AccessDeniedException) {
+        if (ex instanceof AuthenticationException) {
             return GraphQLError.newError()
-                    .errorType(ErrorType.FORBIDDEN)
+                .errorType(ErrorType.UNAUTHORIZED)
+                .message(ex.getMessage())
+                .path(env.getExecutionStepInfo().getPath())
+                .location(env.getField().getSourceLocation())
+                .build();
+        }
+
+        if (ex instanceof AccessDeniedException) {
+            var authentication = SecurityContextHolder.getContext().getAuthentication();
+            var unauthenticated = authentication == null || authentication instanceof AnonymousAuthenticationToken || !authentication.isAuthenticated();
+            return GraphQLError.newError()
+                    .errorType(unauthenticated ? ErrorType.UNAUTHORIZED : ErrorType.FORBIDDEN)
                     .message(ex.getMessage())
                     .path(env.getExecutionStepInfo().getPath())
                     .location(env.getField().getSourceLocation())

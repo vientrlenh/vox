@@ -18,7 +18,7 @@ import jakarta.persistence.UniqueConstraint;
 @Table(name = "notification_devices", indexes = {
     @Index(columnList = "user_id", name = "idx_notification_devices_user")
 }, uniqueConstraints = {
-    @UniqueConstraint(columnNames = "token", name = "uk_notification_devices_token")
+    @UniqueConstraint(columnNames = "installation_id", name = "uk_notification_devices_installation_id")
 })
 public class NotificationDeviceJpaEntity {
 
@@ -47,8 +47,8 @@ public class NotificationDeviceJpaEntity {
     })
     private String platform;
 
-    @Column(name = "token", nullable = false, length = 512)
-    private String token;
+    @Column(name = "installation_id", nullable = false, length = 50)
+    private String installationId;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -58,13 +58,13 @@ public class NotificationDeviceJpaEntity {
 
     protected NotificationDeviceJpaEntity() {}
 
-    public NotificationDeviceJpaEntity(UUID id, UUID userId, String deviceId, String platform, String token,
+    public NotificationDeviceJpaEntity(UUID id, UUID userId, String deviceId, String platform, String installationId,
             Instant createdAt, Instant lastSeenAt) {
         this.id = id;
         this.userId = userId;
         this.deviceId = deviceId;
         this.platform = platform;
-        this.token = token;
+        this.installationId = installationId;
         this.createdAt = createdAt;
         this.lastSeenAt = lastSeenAt;
     }
@@ -101,12 +101,12 @@ public class NotificationDeviceJpaEntity {
         this.platform = platform;
     }
 
-    public String getToken() {
-        return token;
+    public String getInstallationId() {
+        return installationId;
     }
 
-    public void setToken(String token) {
-        this.token = token;
+    public void setInstallationId(String installationId) {
+        this.installationId = installationId;
     }
 
     public Instant getCreatedAt() {

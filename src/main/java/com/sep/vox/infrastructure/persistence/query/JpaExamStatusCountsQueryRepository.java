@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.query;
 
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
@@ -23,8 +24,10 @@ public class JpaExamStatusCountsQueryRepository implements ExamStatusCountsQuery
             boolean systemAdmin,
             boolean schoolAdmin,
             UUID schoolId,
-            String kind) {
-        return em.createQuery("""
+            String kind,
+            Instant createdFrom,
+            Instant createdTo) {
+        var jpql = new StringBuilder("""
             SELECT new com.sep.vox.application.query.dto.ExamStatusCountsDto(
                 COUNT(e),
                 COALESCE(SUM(CASE WHEN e.status = 'DRAFT' THEN 1L ELSE 0L END), 0L),
@@ -37,6 +40,14 @@ public class JpaExamStatusCountsQueryRepository implements ExamStatusCountsQuery
             FROM ExamJpaEntity e
             WHERE (:schoolId IS NULL OR e.schoolId = :schoolId)
               AND (:kind IS NULL OR e.kind = :kind)
+            """);
+        if (createdFrom != null) {
+            jpql.append(" AND e.createdAt >= :createdFrom\n");
+        }
+        if (createdTo != null) {
+            jpql.append(" AND e.createdAt <= :createdTo\n");
+        }
+        jpql.append("""
               AND (
                     :systemAdmin = true
                     OR (:schoolAdmin = true AND e.schoolId = :currentSchoolId)
@@ -47,13 +58,21 @@ public class JpaExamStatusCountsQueryRepository implements ExamStatusCountsQuery
                           AND em.userId = :currentUserId
                     )
                   )
-        """, ExamStatusCountsDto.class)
+            """);
+
+        var query = em.createQuery(jpql.toString(), ExamStatusCountsDto.class)
             .setParameter("schoolId", schoolId)
             .setParameter("kind", kind)
             .setParameter("systemAdmin", systemAdmin)
             .setParameter("schoolAdmin", schoolAdmin)
             .setParameter("currentSchoolId", currentSchoolId)
-            .setParameter("currentUserId", currentUserId)
-            .getSingleResult();
+            .setParameter("currentUserId", currentUserId);
+        if (createdFrom != null) {
+            query.setParameter("createdFrom", createdFrom);
+        }
+        if (createdTo != null) {
+            query.setParameter("createdTo", createdTo);
+        }
+        return query.getSingleResult();
     }
 }

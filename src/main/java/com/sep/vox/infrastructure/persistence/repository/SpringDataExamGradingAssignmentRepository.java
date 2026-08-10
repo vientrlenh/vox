@@ -101,4 +101,6 @@ public interface SpringDataExamGradingAssignmentRepository
     List<ExamGradingAssignmentJpaEntity> findDueForReminder(@Param("threshold") Instant threshold);
 
     void deleteByCandidateResultIdIn(Collection<UUID> candidateResultIds);
+
+    long countByTeacherIdAndStatus(UUID teacherId, String status);
 }

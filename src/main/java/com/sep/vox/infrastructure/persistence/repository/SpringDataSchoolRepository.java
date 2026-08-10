@@ -62,4 +62,9 @@ public interface SpringDataSchoolRepository extends JpaRepository<SchoolJpaEntit
             @Param("updatedBy") UUID updatedBy
     );
     List<SchoolJpaEntity> findByIdIn(Collection<UUID> ids);
+
+    @Query("SELECT s.id AS id, s.name AS name FROM SchoolJpaEntity s WHERE s.id IN :ids")
+    List<Object[]> findIdNameByIdIn(@Param("ids") Collection<UUID> ids);
+
+    long countByIsActiveTrue();
 }

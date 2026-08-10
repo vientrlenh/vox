@@ -21,4 +21,7 @@ public interface RegisterFormRepository {
     boolean existsByContactEmailAndStatus(String contactEmail, RegisterFormStatus status);
     boolean existsByContactPhoneAndStatus(String contactPhone, RegisterFormStatus status);
     boolean existsBySchoolDomainAndStatusIn(String schoolDomain, Collection<RegisterFormStatus> statuses);
+
+    long countByStatus(RegisterFormStatus status);
+    long countByCreatedAtAfter(Instant after);
 }

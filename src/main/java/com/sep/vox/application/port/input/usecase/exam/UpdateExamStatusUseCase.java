@@ -2,7 +2,9 @@ package com.sep.vox.application.port.input.usecase.exam;
 
 import java.time.Instant;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +33,7 @@ import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamPaperStatus;
+import com.sep.vox.domain.model.exam.ExamSchedule;
 import com.sep.vox.domain.model.exam.ExamScheduleStatus;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
@@ -198,11 +201,11 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
     }
 
     private void authorizeMutation(
-            java.util.UUID examId,
-            java.util.UUID examSchoolId,
+            UUID examId,
+            UUID examSchoolId,
             ExamKind kind,
-            java.util.UUID currentUserId,
-            java.util.UUID currentSchoolId,
+            UUID currentUserId,
+            UUID currentSchoolId,
             boolean schoolAdmin) {
         if (kind == ExamKind.CENTRALIZED) {
             if (schoolAdmin && currentSchoolId != null && currentSchoolId.equals(examSchoolId)) {
@@ -215,7 +218,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
         }
     }
 
-    private void requireTransition(com.sep.vox.domain.model.exam.Exam exam, ExamStatus from, ExamStatus to) {
+    private void requireTransition(Exam exam, ExamStatus from, ExamStatus to) {
         requireTransition(exam, EnumSet.of(from), to);
     }
 
@@ -223,7 +226,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
      * Bản nhiều trạng thái nguồn, hiện chỉ CANCEL dùng: huỷ được từ bất kỳ trạng thái nào chưa chốt,
      * nhưng kết quả đã công bố thì không rút lại được, và bài đã huỷ không huỷ thêm lần nữa.
      */
-    private void requireTransition(com.sep.vox.domain.model.exam.Exam exam, Set<ExamStatus> allowedFrom, ExamStatus to) {
+    private void requireTransition(Exam exam, Set<ExamStatus> allowedFrom, ExamStatus to) {
         if (!allowedFrom.contains(exam.getStatus())) {
             throw new IllegalStateException("Trạng thái bài kiểm tra hiện tại không hợp lệ cho action này");
         }
@@ -267,8 +270,8 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
      * không chặn ở đây thì bài vẫn lên lịch được với cả lớp chưa có ca và không ai vào thi được.
      */
     private void requireClassTestScheduleReadiness(
-            com.sep.vox.domain.model.exam.Exam exam,
-            java.util.List<com.sep.vox.domain.model.exam.ExamSchedule> schedules) {
+            Exam exam,
+            List<ExamSchedule> schedules) {
         requireSchedulesHaveRoomAndProctor(schedules);
 
         var candidates = examCandidateRepository.findByExamId(exam.getId());
@@ -287,9 +290,21 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
         }
     }
 
-    /** Ca thi nào cũng phải có phòng và ít nhất một giám khảo — đúng cho cả hai loại bài. */
+    /**
+     * Ca thi còn hiệu lực của bài. Ca đã huỷ/dời sẽ không bao giờ diễn ra nên không được tham gia
+     * bất kỳ điều kiện lên lịch nào: soi phòng/giám thị của chúng thì kỳ thi bị chặn
+     * bởi một ca đã bỏ, còn đếm chúng vào "đã có ca thi" thì kỳ thi lên lịch được mà không còn ca nào
+     * chạy thật. {@code findByExamId} chỉ lọc sẵn DELETED nên phải lọc thêm ở đây.
+     */
+    private List<ExamSchedule> effectiveSchedules(UUID examId) {
+        return examScheduleRepository.findByExamId(examId).stream()
+            .filter(schedule -> schedule.getStatus() != null && schedule.getStatus().isInEffect())
+            .toList();
+    }
+
+    /** Ca thi còn hiệu lực nào cũng phải có phòng và ít nhất một giám khảo — đúng cho cả hai loại bài. */
     private void requireSchedulesHaveRoomAndProctor(
-            java.util.List<com.sep.vox.domain.model.exam.ExamSchedule> schedules) {
+            List<ExamSchedule> schedules) {
         for (var schedule : schedules) {
             if (schedule.getSchoolRoomId() == null) {
                 throw new IllegalStateException("Ca thi chưa được chọn phòng");
@@ -312,8 +327,8 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
      * <p>Ngoài ra mọi ca thi phải đã được công bố: ca còn DRAFT thì học sinh và giám thị chưa nhìn
      * thấy, kỳ thi "đã lên lịch" mà có ca không ai vào được.
      */
-    private void requireCentralizedScheduleReadiness(com.sep.vox.domain.model.exam.Exam exam) {
-        var schedules = examScheduleRepository.findByExamId(exam.getId());
+    private void requireCentralizedScheduleReadiness(Exam exam) {
+        var schedules = effectiveSchedules(exam.getId());
         if (schedules.isEmpty()) {
             throw new IllegalStateException("Kỳ thi chưa có ca thi nào, không thể lên lịch");
         }
@@ -342,9 +357,9 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
      * ({@code UpdateExamScheduleStatusUseCase}, không phân biệt loại bài), còn lên lịch bài chỉ chốt
      * lại kết quả của thao tác đó — đúng như {@link #requireCentralizedScheduleReadiness}.
      */
-    private void requireClassTestScheduleReady(com.sep.vox.domain.model.exam.Exam exam) {
+    private void requireClassTestScheduleReady(Exam exam) {
         requireClassTestScheduleWindow(exam);
-        var schedules = examScheduleRepository.findByExamId(exam.getId());
+        var schedules = effectiveSchedules(exam.getId());
         if (schedules.isEmpty()) {
             throw new IllegalStateException("Bài kiểm tra trên lớp chưa có lịch");
         }
@@ -358,7 +373,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
         }
     }
 
-    private void requireClassTestScheduleWindow(com.sep.vox.domain.model.exam.Exam exam) {
+    private void requireClassTestScheduleWindow(Exam exam) {
         if (exam.getOpenAt() == null || exam.getCloseAt() == null) {
             throw new IllegalStateException("Bài kiểm tra trên lớp phải có thời gian mở bài và đóng bài trước khi lên lịch");
         }
@@ -373,7 +388,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
         }
     }
 
-    private void requireClassTestCanStart(com.sep.vox.domain.model.exam.Exam exam) {
+    private void requireClassTestCanStart(Exam exam) {
         var now = Instant.now();
         if (exam.getCloseAt() != null && !now.isBefore(exam.getCloseAt())) {
             throw new IllegalStateException("Bài kiểm tra trên lớp đã quá thời gian đóng bài");
@@ -386,7 +401,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
      * nào khác (PENDING_REVIEW chưa duyệt, FINAL/APPEALED/RE_GRADING/RETAKE_REQUIRED từ
      * luồng phúc khảo/nghi vấn) đều chặn publish cho tới khi được xử lý dứt điểm.
      */
-    private void requirePublishReadiness(java.util.UUID examId) {
+    private void requirePublishReadiness(UUID examId) {
         var missingResultCount = examCandidateRepository.findByExamId(examId).stream()
             .filter(candidate -> !ExamCandidateStatusSupport.isNonScorable(candidate.getStatus()))
             .flatMap(candidate -> examSessionRepository.findAllByCandidateId(candidate.getId()).stream())
@@ -417,7 +432,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
      * chọn PASSED/FAILED sau qua decideExamCandidateResultOutcome). Xem
      * ExamCandidateResultFinalizationService.finalizeForPublish.
      */
-    private void finalizePassFailForExam(com.sep.vox.domain.model.exam.Exam exam) {
+    private void finalizePassFailForExam(Exam exam) {
         var passingScore = exam.getAssessmentPolicyId() == null
             ? null
             : assessmentPolicyRepository.findById(exam.getAssessmentPolicyId())
@@ -431,7 +446,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
         }
     }
 
-    private void lockClassTestPapers(java.util.UUID examId, java.util.UUID currentUserId) {
+    private void lockClassTestPapers(UUID examId, UUID currentUserId) {
         var now = Instant.now();
         for (var paper : examPaperRepository.findByExamId(examId)) {
             if (paper.getStatus() != ExamPaperStatus.LOCKED) {

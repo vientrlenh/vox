@@ -28,7 +28,9 @@ import com.sep.vox.application.port.input.service.ClassTestTokenQuotaGuardServic
 import com.sep.vox.application.port.input.service.ZeroScoreExamResultService;
 import com.sep.vox.application.port.input.usecase.exam.ExamQuestionSecureLockService;
 import com.sep.vox.application.port.input.usecase.exam.UpdateExamStatusUseCase;
+import com.sep.vox.application.port.output.EventPublisherPort;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.query.dto.UserRoleInfo;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
@@ -38,6 +40,7 @@ import com.sep.vox.domain.model.exam.ExamPaper;
 import com.sep.vox.domain.model.exam.ExamSchedule;
 import com.sep.vox.domain.model.exam.ExamScheduleStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
+import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.model.subscription.SubscriptionPlan;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
@@ -117,7 +120,7 @@ class UpdateExamStatusUseCaseTests {
             schoolSubscriptionRepository,
             subscriptionPlanRepository,
             userContextPort,
-            mock(com.sep.vox.application.port.output.EventPublisherPort.class),
+            mock(EventPublisherPort.class),
             mock(ClassTestGradingAssignmentService.class),
             classTestTokenQuotaGuardService,
             // Service thật (không mock) trên cùng repo giả: guard và cascade ca thi được kiểm luôn
@@ -324,6 +327,85 @@ class UpdateExamStatusUseCaseTests {
         assertThat(result.status()).isEqualTo(ExamStatus.SCHEDULED.name());
     }
 
+    // --- Ca đã huỷ/dời không còn diễn ra, nên không được tham gia bất kỳ điều kiện lên lịch nào ---
+
+    /**
+     * Ca huỷ được ngay từ DRAFT, lúc chưa gán phòng lẫn giám thị. Nếu vẫn soi phòng/giám thị của nó
+     * thì kỳ thi bị chặn bởi một ca sẽ không bao giờ diễn ra, kèm thông báo không nói rõ ca nào — mà
+     * lối thoát duy nhất là đi gán phòng cho ca đã huỷ, hoặc gỡ hết giám thị rồi xoá ca.
+     */
+    @Test
+    void should_ignore_cancelled_schedule_when_checking_room_and_proctor() {
+        givenCentralizedExam();
+        var published = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
+        var cancelled = schedule(ExamScheduleStatus.CANCELLED, open, open.plus(2, ChronoUnit.HOURS));
+        cancelled.setSchoolRoomId(null);
+        when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(published, cancelled));
+        when(examScheduleProctorRepository.countByScheduleId(published.getId())).thenReturn(1L);
+        when(examScheduleProctorRepository.countByScheduleId(cancelled.getId())).thenReturn(0L);
+
+        var result = useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null));
+
+        assertThat(result.status()).isEqualTo(ExamStatus.SCHEDULED.name());
+    }
+
+    @Test
+    void should_ignore_moved_schedule_when_checking_room_and_proctor() {
+        givenCentralizedExam();
+        var published = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
+        var moved = schedule(ExamScheduleStatus.MOVED, open, open.plus(2, ChronoUnit.HOURS));
+        moved.setSchoolRoomId(null);
+        when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(published, moved));
+        when(examScheduleProctorRepository.countByScheduleId(published.getId())).thenReturn(1L);
+        when(examScheduleProctorRepository.countByScheduleId(moved.getId())).thenReturn(0L);
+
+        var result = useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null));
+
+        assertThat(result.status()).isEqualTo(ExamStatus.SCHEDULED.name());
+    }
+
+    /** Bỏ ca huỷ ra rồi không còn ca nào thì kỳ thi rỗng, không phải "đã đủ điều kiện". */
+    @Test
+    void should_reject_schedule_when_every_centralized_schedule_is_cancelled() {
+        givenCentralizedExam();
+        var cancelled = schedule(ExamScheduleStatus.CANCELLED, open, open.plus(2, ChronoUnit.HOURS));
+        when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(cancelled));
+
+        assertThatThrownBy(() -> useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null)))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("chưa có ca thi");
+        verify(examRepository, never()).save(any());
+    }
+
+    @Test
+    void should_ignore_cancelled_schedule_when_class_test_schedule_ready() {
+        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        var published = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
+        var cancelled = schedule(ExamScheduleStatus.CANCELLED, open, open.plus(2, ChronoUnit.HOURS));
+        cancelled.setSchoolRoomId(null);
+        when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(published, cancelled));
+        when(examScheduleProctorRepository.countByScheduleId(cancelled.getId())).thenReturn(0L);
+        givenScheduleReady(published);
+
+        var result = useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null));
+
+        assertThat(result.status()).isEqualTo(ExamStatus.SCHEDULED.name());
+    }
+
+    @Test
+    void should_reject_schedule_when_every_class_test_schedule_is_cancelled() {
+        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        var cancelled = schedule(ExamScheduleStatus.CANCELLED, open, open.plus(2, ChronoUnit.HOURS));
+        when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(cancelled));
+
+        assertThatThrownBy(() -> useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null)))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("chưa có lịch");
+        verify(examRepository, never()).save(any());
+    }
+
     /**
      * Trạng thái phải được kiểm trước hạn mức gói: bấm SCHEDULE trên bài không còn DRAFT mà báo lỗi
      * "vượt quá giới hạn gói" thì người dùng đi sửa nhầm chỗ.
@@ -507,11 +589,11 @@ class UpdateExamStatusUseCaseTests {
         exam.setKind(ExamKind.CENTRALIZED);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
 
-        var schoolUser = mock(com.sep.vox.domain.model.school.SchoolUser.class);
+        var schoolUser = mock(SchoolUser.class);
         when(schoolUser.getSchoolId()).thenReturn(schoolId);
         when(schoolUserRepository.findByUserId(userId)).thenReturn(Optional.of(schoolUser));
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId)).thenReturn(List.of(
-            new com.sep.vox.application.query.dto.UserRoleInfo(
+            new UserRoleInfo(
                 UUID.randomUUID(), userId, UUID.randomUUID(), Instant.now(), "SCHOOL_ADMIN", "Quản trị trường")
         ));
 

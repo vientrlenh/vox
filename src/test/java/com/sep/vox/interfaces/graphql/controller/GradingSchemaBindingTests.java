@@ -22,6 +22,7 @@ import com.sep.vox.application.query.dto.AssignableTeacherInfo;
 import com.sep.vox.application.query.dto.GradingAssignmentRowInfo;
 import com.sep.vox.application.query.dto.GradingCriterionMetaInfo;
 import com.sep.vox.application.query.dto.GradingCriterionScoreInfo;
+import com.sep.vox.application.query.dto.GradingExamOptionInfo;
 import com.sep.vox.application.query.dto.GradingStatsInfo;
 import com.sep.vox.application.query.dto.GradingTaskDetailInfo;
 import com.sep.vox.application.query.dto.GradingTaskInfo;
@@ -58,6 +59,7 @@ class GradingSchemaBindingTests {
             Arguments.of("GradingTask", GradingTaskInfo.class),
             Arguments.of("GradingAssignmentRow", GradingAssignmentRowInfo.class),
             Arguments.of("AssignableTeacher", AssignableTeacherInfo.class),
+            Arguments.of("GradingExamOption", GradingExamOptionInfo.class),
             Arguments.of("ResultStatusHistoryEntry", ResultStatusHistoryInfo.class),
             Arguments.of("AiQualityReport", AiQualityReportInfo.class),
             Arguments.of("AiQualityByTeacher", AiQualityReportInfo.ByTeacher.class)

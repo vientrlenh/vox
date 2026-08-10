@@ -38,6 +38,7 @@ import com.sep.vox.domain.model.question.QuestionType;
 import com.sep.vox.domain.repository.QuestionBankRepository;
 import com.sep.vox.domain.repository.QuestionCollaboratorRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
+import com.sep.vox.domain.service.question.QuestionStatusTransition.RejectionCode;
 
 /**
  * Cập nhật trạng thái hàng loạt.
@@ -97,8 +98,28 @@ class BulkUpdateQuestionStatusUseCaseTests {
         assertThat(response.updated().getFirst().status()).isEqualTo(QuestionStatus.SUBMITTED_FOR_REVIEW.name());
         assertThat(response.failed()).hasSize(1);
         assertThat(response.failed().getFirst().questionId()).isEqualTo(alreadySubmitted.getId());
-        assertThat(response.failed().getFirst().reason())
-            .isEqualTo("Chỉ được submit khi câu hỏi ở trạng thái DRAFT hoặc REVISION_REQUESTED");
+        assertThat(response.failed().getFirst().reason()).isEqualTo(
+            "Không thể gửi duyệt: câu hỏi đang ở trạng thái \"Chờ duyệt\", "
+                + "thao tác này chỉ áp dụng cho câu hỏi ở trạng thái \"Bản nháp\" hoặc \"Yêu cầu sửa\"");
+    }
+
+    /**
+     * Màn hình duyệt hàng loạt phải liệt kê được "câu nào, đang ở đâu, vì sao" ngay từ response.
+     * Trước đây chỉ có {@code questionId} nên client phải tự tra ngược sang danh sách đang xem —
+     * câu nào không nằm trên trang hiện tại thì biến mất khỏi thông báo.
+     */
+    @Test
+    void should_describe_each_skipped_question_with_its_code_status_and_reason_code() {
+        var alreadySubmitted = question(QuestionStatus.SUBMITTED_FOR_REVIEW);
+        mockQuestions(alreadySubmitted);
+
+        var response = useCase.execute(new BulkUpdateQuestionStatusCommand(
+            List.of(alreadySubmitted.getId()), "SUBMIT", null));
+
+        var failure = response.failed().getFirst();
+        assertThat(failure.questionCode()).isEqualTo(alreadySubmitted.getCode());
+        assertThat(failure.currentStatus()).isEqualTo(QuestionStatus.SUBMITTED_FOR_REVIEW.name());
+        assertThat(failure.reasonCode()).isEqualTo(RejectionCode.INVALID_STATUS.name());
     }
 
     @Test
@@ -114,6 +135,8 @@ class BulkUpdateQuestionStatusUseCaseTests {
         assertThat(response.failed()).hasSize(1);
         assertThat(response.failed().getFirst().questionId()).isEqualTo(missingQuestionId);
         assertThat(response.failed().getFirst().reason()).isEqualTo("Không tìm thấy câu hỏi");
+        assertThat(response.failed().getFirst().reasonCode())
+            .isEqualTo(RejectionCode.QUESTION_NOT_FOUND.name());
     }
 
     @Test
@@ -156,7 +179,8 @@ class BulkUpdateQuestionStatusUseCaseTests {
             List.of(otherAuthorQuestion.getId()), "SUBMIT", null));
 
         assertThat(response.updated()).isEmpty();
-        assertThat(response.failed().getFirst().reason()).isEqualTo("Quyền truy cập bị từ chối");
+        assertThat(response.failed().getFirst().reason()).isEqualTo(
+            "Không thể gửi duyệt: bạn không phải người tạo hoặc người cộng tác có quyền sửa câu hỏi này");
     }
 
     @Test
@@ -189,7 +213,8 @@ class BulkUpdateQuestionStatusUseCaseTests {
             List.of(otherAuthorQuestion.getId()), "SUBMIT", null));
 
         assertThat(response.updated()).isEmpty();
-        assertThat(response.failed().getFirst().reason()).isEqualTo("Quyền truy cập bị từ chối");
+        assertThat(response.failed().getFirst().reason()).isEqualTo(
+            "Không thể gửi duyệt: bạn không phải người tạo hoặc người cộng tác có quyền sửa câu hỏi này");
     }
 
     @Test

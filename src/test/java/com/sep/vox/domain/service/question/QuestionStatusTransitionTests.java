@@ -16,6 +16,7 @@ import com.sep.vox.domain.model.question.QuestionSharing;
 import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.model.question.QuestionType;
 import com.sep.vox.domain.service.question.QuestionStatusTransition.Actor;
+import com.sep.vox.domain.service.question.QuestionStatusTransition.RejectionCode;
 import com.sep.vox.domain.service.question.QuestionStatusTransition.RejectionKind;
 
 /**
@@ -56,6 +57,7 @@ class QuestionStatusTransitionTests {
 
         assertThat(rejection).isNotNull();
         assertThat(rejection.kind()).isEqualTo(RejectionKind.FORBIDDEN);
+        assertThat(rejection.code()).isEqualTo(RejectionCode.NO_PERMISSION);
     }
 
     @Test
@@ -65,6 +67,36 @@ class QuestionStatusTransitionTests {
 
         assertThat(rejection).isNotNull();
         assertThat(rejection.kind()).isEqualTo(RejectionKind.INVALID_STATE);
+        assertThat(rejection.code()).isEqualTo(RejectionCode.INVALID_STATUS);
+    }
+
+    /**
+     * Lý do phải tự nó nói được vì sao câu này bị bỏ qua: đang ở trạng thái nào và cần trạng thái
+     * nào. Màn hình duyệt hàng loạt hiển thị thẳng chuỗi này cho hàng chục câu cùng lúc, nên một
+     * câu chung chung kiểu "trạng thái không hợp lệ" là vô dụng với người dùng.
+     */
+    @Test
+    void should_name_the_current_and_required_status_when_the_status_blocks_the_action() {
+        var systemAdmin = new Actor(UUID.randomUUID(), null, true, false);
+
+        var rejection = QuestionStatusTransition.rejectionFor(
+            question(QuestionStatus.APPROVED), systemBank(), false, systemAdmin, "APPROVE", null);
+
+        assertThat(rejection).isNotNull();
+        assertThat(rejection.reason()).isEqualTo(
+            "Không thể duyệt: câu hỏi đang ở trạng thái \"Đã duyệt\", "
+                + "thao tác này chỉ áp dụng cho câu hỏi ở trạng thái \"Chờ duyệt\"");
+    }
+
+    @Test
+    void should_list_every_allowed_status_when_more_than_one_is_accepted() {
+        var rejection = QuestionStatusTransition.rejectionFor(
+            question(QuestionStatus.PUBLISHED), systemBank(), false, owner(), "SUBMIT", null);
+
+        assertThat(rejection).isNotNull();
+        assertThat(rejection.reason()).isEqualTo(
+            "Không thể gửi duyệt: câu hỏi đang ở trạng thái \"Đã xuất bản\", "
+                + "thao tác này chỉ áp dụng cho câu hỏi ở trạng thái \"Bản nháp\" hoặc \"Yêu cầu sửa\"");
     }
 
     /** Tự duyệt bài của chính mình là lỗ hổng review — chặn kể cả khi là collaborator có quyền sửa. */
@@ -75,6 +107,9 @@ class QuestionStatusTransitionTests {
 
         assertThat(rejection).isNotNull();
         assertThat(rejection.kind()).isEqualTo(RejectionKind.FORBIDDEN);
+        assertThat(rejection.code()).isEqualTo(RejectionCode.SELF_REVIEW);
+        assertThat(rejection.reason())
+            .isEqualTo("Không thể duyệt: bạn là người tạo câu hỏi này, cần người khác duyệt");
     }
 
     @Test
@@ -106,6 +141,9 @@ class QuestionStatusTransitionTests {
 
         assertThat(rejection).isNotNull();
         assertThat(rejection.kind()).isEqualTo(RejectionKind.FORBIDDEN);
+        assertThat(rejection.code()).isEqualTo(RejectionCode.NO_PERMISSION);
+        assertThat(rejection.reason())
+            .isEqualTo("Không thể duyệt: bạn không có quyền duyệt câu hỏi trong ngân hàng này");
     }
 
     @Test
@@ -127,7 +165,8 @@ class QuestionStatusTransitionTests {
 
         assertThat(rejection).isNotNull();
         assertThat(rejection.kind()).isEqualTo(RejectionKind.INVALID_STATE);
-        assertThat(rejection.reason()).isEqualTo("Action REJECT bắt buộc phải có note");
+        assertThat(rejection.code()).isEqualTo(RejectionCode.NOTE_REQUIRED);
+        assertThat(rejection.reason()).isEqualTo("Không thể từ chối: thao tác này bắt buộc phải nhập lý do");
     }
 
     @Test
@@ -138,7 +177,8 @@ class QuestionStatusTransitionTests {
             question(QuestionStatus.SUBMITTED_FOR_REVIEW), systemBank(), false, systemAdmin, "REQUEST_REVISION", null);
 
         assertThat(rejection).isNotNull();
-        assertThat(rejection.reason()).isEqualTo("Action REQUEST_REVISION bắt buộc phải có note");
+        assertThat(rejection.reason())
+            .isEqualTo("Không thể yêu cầu chỉnh sửa: thao tác này bắt buộc phải nhập lý do");
     }
 
     @Test
@@ -157,6 +197,7 @@ class QuestionStatusTransitionTests {
 
         assertThat(rejection).isNotNull();
         assertThat(rejection.kind()).isEqualTo(RejectionKind.FORBIDDEN);
+        assertThat(rejection.code()).isEqualTo(RejectionCode.ADMIN_ONLY);
     }
 
     @Test
@@ -166,6 +207,9 @@ class QuestionStatusTransitionTests {
 
         assertThat(rejection).isNotNull();
         assertThat(rejection.kind()).isEqualTo(RejectionKind.FORBIDDEN);
+        assertThat(rejection.code()).isEqualTo(RejectionCode.ADMIN_ONLY);
+        assertThat(rejection.reason()).isEqualTo(
+            "Không thể lưu trữ: chỉ quản trị viên của ngân hàng câu hỏi mới thực hiện được");
     }
 
     @Test
@@ -178,7 +222,8 @@ class QuestionStatusTransitionTests {
             question, systemBank(), false, systemAdmin, "LOCK", null);
 
         assertThat(rejection).isNotNull();
-        assertThat(rejection.reason()).isEqualTo("Câu hỏi đã bị khóa");
+        assertThat(rejection.code()).isEqualTo(RejectionCode.ALREADY_LOCKED);
+        assertThat(rejection.reason()).isEqualTo("Không thể khóa: câu hỏi đã bị khóa");
     }
 
     @Test
@@ -189,7 +234,8 @@ class QuestionStatusTransitionTests {
             question(QuestionStatus.PUBLISHED), systemBank(), false, systemAdmin, "UNLOCK", null);
 
         assertThat(rejection).isNotNull();
-        assertThat(rejection.reason()).isEqualTo("Câu hỏi chưa bị khóa");
+        assertThat(rejection.code()).isEqualTo(RejectionCode.NOT_LOCKED);
+        assertThat(rejection.reason()).isEqualTo("Không thể mở khóa: câu hỏi chưa bị khóa");
     }
 
     @Test
@@ -199,6 +245,7 @@ class QuestionStatusTransitionTests {
 
         assertThat(rejection).isNotNull();
         assertThat(rejection.kind()).isEqualTo(RejectionKind.INVALID_STATE);
+        assertThat(rejection.code()).isEqualTo(RejectionCode.INVALID_ACTION);
         assertThat(rejection.reason()).isEqualTo("Action không hợp lệ");
     }
 

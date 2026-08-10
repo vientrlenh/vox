@@ -94,6 +94,11 @@ public class ExamSessionRepositoryImpl implements ExamSessionRepository {
     }
 
     @Override
+    public boolean existsByPaperId(UUID paperId) {
+        return springDataExamSessionRepository.existsByPaperId(paperId);
+    }
+
+    @Override
     public ExamSession save(ExamSession session) {
         var saved = springDataExamSessionRepository.save(ExamSessionMapper.toJpa(session));
         return ExamSessionMapper.toDomain(saved);

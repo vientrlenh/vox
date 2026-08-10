@@ -119,17 +119,42 @@ class RecalculateExamTimeDurationServiceTests {
         verify(examRepository).save(exam);
     }
 
+    /** Không mã đề nào ⇒ 0, không phải null: một trạng thái chỉ được có một cách mã hoá. */
     @Test
-    void should_pass_when_exam_has_no_paper() {
+    void should_write_zero_duration_when_exam_has_no_paper() {
         var exam = exam(ExamKind.CENTRALIZED);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
         when(examPaperRepository.findByExamId(examId)).thenReturn(List.of());
 
         service.recalculate(examId);
 
-        assertThat(exam.getExamTimeDurationSecond()).isNull();
+        assertThat(exam.getExamTimeDurationSecond()).isEqualTo(0);
         verify(examRepository).save(exam);
         verify(examScheduleRepository, never()).findByExamId(any());
+    }
+
+    /** Nhánh còn lại của cùng trạng thái "chưa tính được": có mã đề nhưng chưa gán câu hỏi nào. */
+    @Test
+    void should_write_zero_duration_when_papers_have_no_assigned_question() {
+        var exam = exam(ExamKind.CENTRALIZED);
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+
+        var paper = mock(ExamPaper.class);
+        when(paper.getId()).thenReturn(paperId);
+        when(paper.getTimeDurationSeconds()).thenReturn(0);
+        when(examPaperRepository.findByExamId(examId)).thenReturn(List.of(paper));
+
+        var item = mock(ExamPaperItem.class);
+        when(item.getPaperId()).thenReturn(paperId);
+        when(item.getQuestionId()).thenReturn(null);
+        when(examPaperItemRepository.findByPaperIdIn(List.of(paperId))).thenReturn(List.of(item));
+        when(questionRepository.findByIdIn(List.of())).thenReturn(List.of());
+        when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of());
+
+        service.recalculate(examId);
+
+        assertThat(exam.getExamTimeDurationSecond()).isEqualTo(0);
+        verify(examRepository).save(exam);
     }
 
     /** Dựng exam có đúng 1 mã đề, 1 item, câu hỏi tổng thời lượng = totalSeconds. */

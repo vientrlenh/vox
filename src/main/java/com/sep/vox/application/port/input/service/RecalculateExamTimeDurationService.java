@@ -55,7 +55,11 @@ public class RecalculateExamTimeDurationService {
 
         var papers = examPaperRepository.findByExamId(examId);
         if (papers.isEmpty()) {
-            exam.setExamTimeDurationSecond(null);
+            // Không mã đề nào ⇒ chưa tính được thời gian làm bài. Ghi 0 chứ không phải null: cùng
+            // một trạng thái thì phải cùng một cách mã hoá, mà nhánh dưới đã ghi 0 cho trường hợp
+            // có mã đề nhưng chưa gán câu hỏi nào. Không cần soi lại ca thi: 0 giây thì ca nào cũng
+            // đủ dài.
+            exam.setExamTimeDurationSecond(0);
             examRepository.save(exam);
             return;
         }

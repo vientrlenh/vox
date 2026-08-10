@@ -26,6 +26,8 @@ public interface ExamCandidateRepository {
     boolean existsByExamIdAndStudentId(UUID examId, UUID studentId);
     List<ExamCandidate> findByStudentId(UUID studentId);
     List<ExamCandidate> findByScheduleId(UUID scheduleId);
+    /** Thí sinh đang được phân đúng mã đề này — dùng để gỡ phân đề trước khi xoá mã đề. */
+    List<ExamCandidate> findByAssignedPaperId(UUID paperId);
     Set<UUID> findStudentIdsByExamId(UUID examId);
     List<UUID> findUnblockedStudentIdsByExamId(UUID examId);
     List<ExamCandidate> findByExamIdAndScheduleIdIsNullOrderByAssignedAtAsc(UUID examId);

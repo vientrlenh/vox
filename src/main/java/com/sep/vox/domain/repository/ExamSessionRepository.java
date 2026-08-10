@@ -29,6 +29,11 @@ public interface ExamSessionRepository {
     List<ExamSession> findDeferredGradingCandidates(java.time.Instant now);
     List<ExamSession> findPastScheduleEndCandidates(java.time.Instant threshold);
     boolean existsById(UUID id);
+    /**
+     * Đã có phiên thi nào dựng trên mã đề này chưa. {@code exam_sessions.paper_id} là cột NOT NULL
+     * nên không gỡ được như {@code exam_candidates.assigned_paper_id} — chỉ dùng để chặn xoá mã đề.
+     */
+    boolean existsByPaperId(UUID paperId);
     ExamSession save(ExamSession session);
     void deleteById(UUID id);
     /**

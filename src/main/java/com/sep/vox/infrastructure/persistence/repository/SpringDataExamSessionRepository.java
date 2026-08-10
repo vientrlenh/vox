@@ -20,6 +20,7 @@ public interface SpringDataExamSessionRepository extends JpaRepository<ExamSessi
     Optional<ExamSessionJpaEntity> findTopByCandidateIdAndStatusInOrderByStartedAtDesc(UUID candidateId, Collection<String> statuses);
     List<ExamSessionJpaEntity> findByCandidateId(UUID candidateId);
     List<ExamSessionJpaEntity> findByCandidateIdIn(Collection<UUID> candidateIds);
+    boolean existsByPaperId(UUID paperId);
 
     /**
      * Đếm phiên còn đang làm bài của một kỳ thi. Bỏ qua thí sinh đã bị đình chỉ giống

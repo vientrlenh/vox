@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.service;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -85,7 +86,7 @@ public class PracticeQuestionGenerationClient {
             payload.put(
                 "exclude_question_ids",
                 (excludeQuestionIds == null ? List.<UUID>of() : excludeQuestionIds)
-                    .stream().map(UUID::toString).toList()
+                    .stream().map(id -> id.toString()).toList()
             );
             payload.put(
                 "band_ladder",
@@ -123,7 +124,7 @@ public class PracticeQuestionGenerationClient {
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("Question generation interrupted", exception);
-        } catch (Exception exception) {
+        } catch (IOException | RuntimeException exception) {
             throw new IllegalStateException("Question generation failed", exception);
         }
     }
@@ -151,28 +152,28 @@ public class PracticeQuestionGenerationClient {
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("Question indexing interrupted", exception);
-        } catch (Exception exception) {
+        } catch (IOException | RuntimeException exception) {
             throw new IllegalStateException("Question indexing failed", exception);
         }
     }
 
     private GeneratedQuestion toQuestion(JsonNode item) {
         return new GeneratedQuestion(
-            UUID.fromString(item.path("id").asText()),
-            UUID.fromString(item.path("topic_id").asText()),
-            item.path("question_text").asText(),
-            item.path("target_criterion_code").asText(),
+            UUID.fromString(item.path("id").asString()),
+            UUID.fromString(item.path("topic_id").asString()),
+            item.path("question_text").asString(),
+            item.path("target_criterion_code").asString(),
             item.path("target_sub_attribute").isNull()
                 ? null
-                : item.path("target_sub_attribute").asText(),
+                : item.path("target_sub_attribute").asString(),
             item.path("target_tense").isNull() || item.path("target_tense").isMissingNode()
                 ? null
-                : item.path("target_tense").asText(),
+                : item.path("target_tense").asString(),
             item.path("difficulty_rank").asInt(),
             item.path("difficulty_features").toString(),
             item.path("evaluation_guide").toString(),
             item.path("suggested_ideas").toString(),
-            item.path("question_type").asText("SHORT_ANSWER"),
+            item.path("question_type").asString("SHORT_ANSWER"),
             item.path("max_response_seconds").asInt(),
             item.path("min_response_seconds").asInt(),
             item.path("vstep_part").asInt(),

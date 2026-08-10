@@ -107,7 +107,7 @@ public class PracticeQuestionGenerationService {
 
     private TopicDetails topicDetails(UUID topicId) {
         var topic = practiceTopicRepository.findTopicById(topicId)
-            .filter(com.sep.vox.domain.model.personalization.PracticeTopic::isActive)
+            .filter(candidate -> candidate.isActive())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy chủ đề luyện tập."));
         return new TopicDetails(
             topic.getId(),

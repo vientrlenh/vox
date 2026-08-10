@@ -63,11 +63,11 @@ public class GetExamRecordingPlaybackUseCase
         // nó phải với tới được. Người chấm tự chọn giữa chúng.
         var canonicalIds = records.stream()
             .collect(Collectors.groupingBy(
-                ExamRecording::getStreamType,
+                (ExamRecording recording) -> recording.getStreamType(),
                 Collectors.maxBy(RecordingPrecedence.CANONICAL_ORDER)))
             .values().stream()
-            .flatMap(java.util.Optional::stream)
-            .map(ExamRecording::getId)
+            .flatMap(canonical -> canonical.stream())
+            .map(recording -> recording.getId())
             .collect(Collectors.toSet());
 
         return records.stream()

@@ -75,7 +75,7 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
                 : classicRanked(studentId, goal))
             .stream()
             .filter(topic -> !excluded.contains(topic.id()))
-            .sorted(Comparator.comparingDouble(RankedTopic::score).reversed())
+            .sorted(Comparator.comparingDouble((RankedTopic topic) -> topic.score()).reversed())
             .toList();
         var selected = new ArrayList<>(ranked.subList(0, Math.min(4, ranked.size())));
         var epsilon = input.round() >= 2 ? 0.30 : 0.10;
@@ -134,7 +134,7 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
             return false;
         }
         var ranked = classicRanked(studentId, goal).stream()
-            .sorted(Comparator.comparingDouble(RankedTopic::score).reversed())
+            .sorted(Comparator.comparingDouble((RankedTopic topic) -> topic.score()).reversed())
             .toList();
         var position = -1;
         for (var index = 0; index < ranked.size(); index++) {
@@ -222,7 +222,7 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
 
     private UUID materializeExamTopic(QuestionTopicInfo row) {
         return practiceTopicRepository.findBySourceQuestionTopicId(row.getId())
-            .map(PracticeTopic::getId)
+            .map(existing -> existing.getId())
             .orElseGet(() -> practiceTopicRepository.save(new PracticeTopic(
                 null,
                 row.getName(),

@@ -162,7 +162,7 @@ public class PracticeQuestionSelectionService {
         );
         // Mọi ô cùng một bậc: bậc học sinh CHỌN. Trước đây ô thứ 4 trở đi tự nâng thêm một
         // bậc -- nghĩa là độ khó trôi ngay giữa phiên, theo một luật học sinh không nhìn thấy.
-        var excludeIds = alreadyChosenInSession.stream().map(PracticeQuestion::getId).toList();
+        var excludeIds = alreadyChosenInSession.stream().map(question -> question.getId()).toList();
 
         // Hai bậc đọc DB trước (rẻ), CHƯA sinh mới.
         var candidates = ladderCandidatesForOneQuestion(
@@ -214,8 +214,8 @@ public class PracticeQuestionSelectionService {
             return Optional.empty();
         }
         var similarities = diversityClient.maxSimilarities(
-            candidates.stream().map(PracticeQuestion::getId).toList(),
-            alreadyChosen.stream().map(PracticeQuestion::getId).toList()
+            candidates.stream().map(question -> question.getId()).toList(),
+            alreadyChosen.stream().map(question -> question.getId()).toList()
         );
         var previousReasoning = alreadyChosen.isEmpty() ? null : reasoningType(alreadyChosen.getLast());
         var ranked = candidates.stream()

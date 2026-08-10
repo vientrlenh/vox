@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.service;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -59,9 +60,9 @@ public class QuestionDiversityClient {
         try {
             var body = jsonMapper.writeValueAsString(Map.of(
                 "candidate_ids",
-                candidateIds.stream().map(UUID::toString).toList(),
+                candidateIds.stream().map(id -> id.toString()).toList(),
                 "selected_ids",
-                selectedIds.stream().map(UUID::toString).toList()
+                selectedIds.stream().map(id -> id.toString()).toList()
             ));
             var request = HttpRequest.newBuilder(endpoint)
                 .timeout(Duration.ofSeconds(5))
@@ -87,7 +88,7 @@ public class QuestionDiversityClient {
                 );
             }
             return result;
-        } catch (Exception exception) {
+        } catch (IOException | InterruptedException | RuntimeException exception) {
             LOGGER.warn(
                 "Question similarity endpoint unavailable; "
                     + "no additional paper item will be selected",
@@ -129,12 +130,12 @@ public class QuestionDiversityClient {
             var result = new java.util.ArrayList<NeighborQuestion>();
             for (var question : questions) {
                 result.add(new NeighborQuestion(
-                    UUID.fromString(question.path("question_id").asText()),
+                    UUID.fromString(question.path("question_id").asString()),
                     question.path("similarity").asDouble()
                 ));
             }
             return result;
-        } catch (Exception exception) {
+        } catch (IOException | InterruptedException | RuntimeException exception) {
             LOGGER.warn(
                 "Neighbor question endpoint unavailable; "
                     + "paper generation will continue with the next tier",
@@ -154,7 +155,7 @@ public class QuestionDiversityClient {
             criterionCode,
             rankMin,
             rankMax
-        ).stream().map(NeighborQuestion::questionId).toList();
+        ).stream().map(neighbor -> neighbor.questionId()).toList();
     }
 
     public record NeighborQuestion(UUID questionId, double similarity) {

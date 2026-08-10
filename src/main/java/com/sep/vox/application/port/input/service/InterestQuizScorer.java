@@ -6,7 +6,6 @@ import java.util.Map;
 
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.domain.model.personalization.InterestDimension;
 import com.sep.vox.domain.repository.personalization.InterestDimensionRepository;
 
 /**
@@ -33,7 +32,7 @@ public class InterestQuizScorer {
     /** Các chiều được đem ra hỏi trong quiz -- không gồm chiều hệ thống như ACADEMIC_EXAM. */
     public List<String> quizDimensionCodes() {
         return dimensionRepository.findQuizEligible().stream()
-            .map(InterestDimension::getCode)
+            .map(dimension -> dimension.getCode())
             .toList();
     }
 

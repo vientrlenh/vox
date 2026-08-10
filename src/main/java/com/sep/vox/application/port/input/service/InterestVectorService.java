@@ -139,7 +139,7 @@ public class InterestVectorService {
                 // Bỏ nhánh này thì tính năng loại thẻ CHẠY MÀ VÔ TÁC DỤNG: mentions đứng yên ở 0
                 // -> gamma = 0/(0+2) = 0 -> interest = điểm_chiều hoàn toàn -> điểm riêng vừa bị
                 // hạ không được dùng một chút nào. Bấm loại bao nhiêu lần thứ hạng cũng y nguyên.
-                standalone.merge(event.getTopicId(), 1, Integer::sum);
+                standalone.merge(event.getTopicId(), 1, (current, delta) -> current + delta);
             }
             // Chỉ LẦN CUỐI mới phải lọc theo loại.
             //

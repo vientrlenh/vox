@@ -89,17 +89,17 @@ public class InterestQuizGenerationClient {
         for (var node : root.path("items")) {
             var dimensions = new ArrayList<String>();
             for (var dimension : node.path("dimension_per_statement")) {
-                dimensions.add(dimension.asText());
+                dimensions.add(dimension.asString());
             }
             var statements = new ArrayList<String>();
             for (var statement : node.path("statements")) {
-                statements.add(statement.asText());
+                statements.add(statement.asString());
             }
             items.add(new InterestQuizSeedItem(
                 null,
                 dimensions,
                 statements,
-                node.path("desirability_check").asText()
+                node.path("desirability_check").asString()
             ));
         }
         return items;

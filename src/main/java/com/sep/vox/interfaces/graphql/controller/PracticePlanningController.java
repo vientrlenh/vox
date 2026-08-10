@@ -31,7 +31,6 @@ import com.sep.vox.application.port.input.usecase.practiceplanning.UnsaveTopicUs
 import com.sep.vox.application.port.input.usecase.practiceplanning.ViewMySavedTopicsUseCase;
 import com.sep.vox.application.port.input.usecase.practiceplanning.ViewPracticeTopicOffersUseCase;
 import com.sep.vox.application.port.input.usecase.practicesession.ViewPracticeDashboardStatsUseCase;
-import com.sep.vox.application.port.input.usecase.topicsuggestion.ViewSynchronousTopicOffersUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.PracticePaperDraft;
 import com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.PracticeTopicOffer;
@@ -50,7 +49,6 @@ public class PracticePlanningController {
     private final DismissTopicOfferUseCase dismissTopicOfferUseCase;
     private final SaveTopicUseCase saveTopicUseCase;
     private final UnsaveTopicUseCase unsaveTopicUseCase;
-    private final ViewSynchronousTopicOffersUseCase viewSynchronousTopicOffersUseCase;
     private final ViewMySavedTopicsUseCase viewMySavedTopicsUseCase;
     private final ViewPracticeDashboardStatsUseCase viewPracticeDashboardStatsUseCase;
     private final PracticePaperDraftService practicePaperDraftService;
@@ -67,7 +65,6 @@ public class PracticePlanningController {
             DismissTopicOfferUseCase dismissTopicOfferUseCase,
             SaveTopicUseCase saveTopicUseCase,
             UnsaveTopicUseCase unsaveTopicUseCase,
-            ViewSynchronousTopicOffersUseCase viewSynchronousTopicOffersUseCase,
             ViewMySavedTopicsUseCase viewMySavedTopicsUseCase,
             ViewPracticeDashboardStatsUseCase viewPracticeDashboardStatsUseCase,
             PracticePaperDraftService practicePaperDraftService,
@@ -88,7 +85,6 @@ public class PracticePlanningController {
         this.unsaveTopicUseCase = unsaveTopicUseCase;
         this.viewMySavedTopicsUseCase = viewMySavedTopicsUseCase;
         this.viewPracticeDashboardStatsUseCase = viewPracticeDashboardStatsUseCase;
-        this.viewSynchronousTopicOffersUseCase = viewSynchronousTopicOffersUseCase;
     }
 
     /**

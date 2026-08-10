@@ -55,7 +55,7 @@ public class SearchPracticeTopicsSemanticUseCase
         // có thể đã đổi và chủ đề có thể đã bị tắt. Query cũng lọc luôn `active = true`.
         var rows = practiceTopicQueryRepository.findActiveByIds(
             studentId,
-            hits.stream().map(TopicGenerationClient.TopicSearchHit::topicId).toList()
+            hits.stream().map(hit -> hit.topicId()).toList()
         );
 
         // Giữ THỨ TỰ theo độ tương đồng, không theo thứ tự Postgres trả về -- xếp hạng là toàn

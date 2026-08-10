@@ -8,7 +8,6 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.domain.model.personalization.LearnerProfile;
 import com.sep.vox.domain.model.personalization.QuizAnswer;
 import com.sep.vox.domain.repository.personalization.DimensionInterestScoreRepository;
@@ -21,19 +20,16 @@ public class LearnerProfileCommandService {
     private final LearnerProfileRepository repository;
     private final InterestQuizItemRepository quizItemRepository;
     private final DimensionInterestScoreRepository dimensionScoreRepository;
-    private final JsonSerializationPort jsonSerialization;
     private final InterestQuizScorer interestQuizScorer;
 
     public LearnerProfileCommandService(
             LearnerProfileRepository repository,
             InterestQuizItemRepository quizItemRepository,
             DimensionInterestScoreRepository dimensionScoreRepository,
-            JsonSerializationPort jsonSerialization,
             InterestQuizScorer interestQuizScorer) {
         this.repository = repository;
         this.quizItemRepository = quizItemRepository;
         this.dimensionScoreRepository = dimensionScoreRepository;
-        this.jsonSerialization = jsonSerialization;
         this.interestQuizScorer = interestQuizScorer;
     }
 
@@ -65,12 +61,12 @@ public class LearnerProfileCommandService {
             raw.merge(
                 dimensionAt(dimensions, answer.getMostStatementIndex()),
                 1,
-                Integer::sum
+                (current, delta) -> current + delta
             );
             raw.merge(
                 dimensionAt(dimensions, answer.getLeastStatementIndex()),
                 -1,
-                Integer::sum
+                (current, delta) -> current + delta
             );
         }
         var saved = upsertProfile(studentId, null, null, Instant.now());

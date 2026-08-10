@@ -17,7 +17,6 @@ import com.sep.vox.application.response.input.practiceplanning.PracticePlanningR
 import com.sep.vox.application.response.input.topicsuggestion.TopicSuggestionResponses.TopicFromKeywordResult;
 import com.sep.vox.domain.model.personalization.PracticeTopic;
 import com.sep.vox.domain.model.personalization.TopicSuggestion;
-import com.sep.vox.domain.model.personalization.InterestDimension;
 import com.sep.vox.domain.repository.personalization.InterestDimensionRepository;
 import com.sep.vox.domain.repository.personalization.LearnerProfileRepository;
 import com.sep.vox.domain.repository.personalization.PracticeTopicRepository;
@@ -229,7 +228,7 @@ public class TopicSuggestionService {
      * học sinh -- khác với quiz, nơi chỉ dùng chiều quiz_eligible. */
     private List<String> dimensionCodes() {
         return interestDimensionRepository.findActive().stream()
-            .map(InterestDimension::getCode)
+            .map(dimension -> dimension.getCode())
             .toList();
     }
 
@@ -331,7 +330,7 @@ public class TopicSuggestionService {
 
     private List<String> topicNames() {
         return practiceTopicRepository.findAllActiveOrderByName().stream()
-            .map(PracticeTopic::getName)
+            .map(topic -> topic.getName())
             .toList();
     }
 

@@ -62,7 +62,7 @@ public class InterestQuizItemSelector {
             remaining.remove(best);
             selected.add(best);
             for (var dimension : best.getDimensionPerStatement()) {
-                coverage.merge(dimension, 1, Integer::sum);
+                coverage.merge(dimension, 1, (current, delta) -> current + delta);
             }
         }
         return selected;

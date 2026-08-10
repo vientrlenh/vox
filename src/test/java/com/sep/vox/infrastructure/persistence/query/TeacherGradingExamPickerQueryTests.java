@@ -92,7 +92,7 @@ class TeacherGradingExamPickerQueryTests extends ContainerTestConfig {
     @Test
     void should_list_only_the_exams_the_teacher_has_assignments_in() {
         assertThat(pickerFor(teacherId))
-            .extracting(GradingExamOptionInfo::name)
+            .extracting(option -> option.name())
             .containsExactlyInAnyOrder("Kỳ thi giữa kỳ", "Kỳ thi cuối kỳ");
     }
 
@@ -114,7 +114,7 @@ class TeacherGradingExamPickerQueryTests extends ContainerTestConfig {
     @Test
     void should_keep_class_test_exams_out_of_the_centralized_picker() {
         assertThat(pickerFor(teacherId))
-            .extracting(GradingExamOptionInfo::name)
+            .extracting(option -> option.name())
             .doesNotContain("Kiểm tra 15 phút");
     }
 
@@ -133,7 +133,7 @@ class TeacherGradingExamPickerQueryTests extends ContainerTestConfig {
     @Test
     void should_order_exams_by_the_most_recent_assignment_first() {
         assertThat(pickerFor(teacherId))
-            .extracting(GradingExamOptionInfo::id)
+            .extracting(option -> option.id())
             .containsExactly(midtermExamId, finalExamId);
     }
 

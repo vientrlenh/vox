@@ -65,7 +65,7 @@ public class InterestQuizBankTopUpService {
         var coverage = new HashMap<String, Integer>();
         for (var item : pool) {
             for (var dimension : item.getDimensionPerStatement()) {
-                coverage.merge(dimension, 1, Integer::sum);
+                coverage.merge(dimension, 1, (current, delta) -> current + delta);
             }
         }
         var underCovered = dimensions.stream()

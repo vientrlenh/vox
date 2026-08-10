@@ -65,7 +65,7 @@ public class PracticeTopicOfferEnrichmentService {
             return DEFAULT_BAND_ORDER;
         }
         return frameworkResultBandRepository.findById(bandId)
-            .map(FrameworkResultBand::getOrder)
+            .map(band -> band.getOrder())
             .orElse(DEFAULT_BAND_ORDER);
     }
 
@@ -79,9 +79,11 @@ public class PracticeTopicOfferEnrichmentService {
      */
     public int frameworkBandCount() {
         var values = learnerProfileRepository.findFrameworkBandCount(practiceFrameworkVersionId());
-        return values.isEmpty() || values.get(0) == null || values.get(0) < 1
-            ? DEFAULT_BAND_COUNT
-            : values.get(0);
+        if (values.isEmpty()) {
+            return DEFAULT_BAND_COUNT;
+        }
+        var bandCount = values.get(0);
+        return bandCount == null || bandCount < 1 ? DEFAULT_BAND_COUNT : bandCount;
     }
 
     /** Cả thang bậc kèm mô tả, để gửi xuống Python dựng ladder trong prompt chấm câu hỏi.

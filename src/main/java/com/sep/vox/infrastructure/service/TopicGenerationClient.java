@@ -96,21 +96,21 @@ public class TopicGenerationClient {
             var proposals = new ArrayList<TopicProposal>();
             for (var node : root.path("proposals")) {
                 proposals.add(new TopicProposal(
-                    node.path("name").asText(),
-                    node.path("interest_dimension").asText(),
-                    node.path("curriculum_group").asText(),
+                    node.path("name").asString(),
+                    node.path("interest_dimension").asString(),
+                    node.path("curriculum_group").asString(),
                     node.path("temporal_affordance").asString(TensePolicy.AFFORDANCE_MIXED),
                     node.path("confidence").asDouble(),
-                    node.path("reason_text").asText(),
-                    node.path("evidence_type").asText(),
+                    node.path("reason_text").asString(),
+                    node.path("evidence_type").asString(),
                     jsonMapper.writeValueAsString(
                         Map.of(
                             "evidence_type",
-                            node.path("evidence_type").asText(),
+                            node.path("evidence_type").asString(),
                             "evidence_keywords",
                             node.path("evidence_keywords"),
                             "distinct_from",
-                            node.path("distinct_from").asText(),
+                            node.path("distinct_from").asString(),
                             "grounded_in_keyword",
                             node.path("grounded_in_keyword").asBoolean()
                         )
@@ -208,7 +208,7 @@ public class TopicGenerationClient {
             var hits = new ArrayList<TopicSearchHit>();
             for (var node : jsonMapper.readTree(response.body()).path("hits")) {
                 hits.add(new TopicSearchHit(
-                    UUID.fromString(node.path("topic_id").asText()),
+                    UUID.fromString(node.path("topic_id").asString()),
                     node.path("similarity").asDouble()
                 ));
             }

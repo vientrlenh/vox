@@ -99,7 +99,7 @@ public class MissingResponseBackfillService {
             return 0;
         }
         var answeredPaperItemIds = examItemResponseRepository.findBySessionId(sessionId).stream()
-            .map(ExamItemResponse::getPaperItemId)
+            .map(response -> response.getPaperItemId())
             .filter(java.util.Objects::nonNull)
             .collect(java.util.stream.Collectors.toSet());
 

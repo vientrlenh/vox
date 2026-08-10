@@ -63,7 +63,7 @@ public final class SubAttributePolicy {
     public static String criterionForSubAttribute(String subAttribute) {
         return SUB_ATTRIBUTES.entrySet().stream()
             .filter(entry -> entry.getValue().contains(subAttribute))
-            .map(Map.Entry::getKey)
+            .map(entry -> entry.getKey())
             .findFirst()
             .orElse(null);
     }

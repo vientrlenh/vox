@@ -7,7 +7,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.port.input.service.PracticeTopicOfferEnrichmentService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.learnerprofile.LearnerProfileResponses.PracticeBandOption;
 
 /**
@@ -22,19 +21,18 @@ import com.sep.vox.application.response.input.learnerprofile.LearnerProfileRespo
 public class ViewPracticeBandOptionsUseCase implements IUseCase<Void, List<PracticeBandOption>> {
 
     private final PracticeTopicOfferEnrichmentService enrichmentService;
-    private final UserContextPort userContextPort;
 
     public ViewPracticeBandOptionsUseCase(
-            PracticeTopicOfferEnrichmentService enrichmentService,
-            UserContextPort userContextPort) {
+            PracticeTopicOfferEnrichmentService enrichmentService) {
         this.enrichmentService = enrichmentService;
-        this.userContextPort = userContextPort;
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<PracticeBandOption> execute(Void input) {
-        var studentId = userContextPort.getCurrentAuthenticatedUserId();
+        // Danh sách bậc là khái niệm TOÀN HỆ, không phụ thuộc học sinh nào -- nên không cần
+        // studentId ở đây. Việc chặn người lạ do @PreAuthorize("hasRole('STUDENT')") ở
+        // PracticeController lo, không phải bằng cách gọi UserContextPort rồi vứt kết quả.
         return enrichmentService.frameworkBandLadder().stream()
             .map(band -> new PracticeBandOption(
                 band.getId(),

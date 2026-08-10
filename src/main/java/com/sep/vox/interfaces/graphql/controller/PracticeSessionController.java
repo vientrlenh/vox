@@ -15,7 +15,6 @@ import com.sep.vox.application.port.input.query.ViewMyPracticeHistoryQuery;
 import com.sep.vox.application.port.input.query.ViewStudentPracticeSessionDetailQuery;
 import com.sep.vox.application.port.input.usecase.practicesession.EndPracticeSessionUseCase;
 import com.sep.vox.application.port.input.usecase.practicesession.StartPracticeSessionUseCase;
-import com.sep.vox.application.port.input.usecase.practicesession.SubmitPracticeTurnUseCase;
 import com.sep.vox.application.port.input.usecase.practicesession.ViewMyPracticeHistoryUseCase;
 import com.sep.vox.application.port.input.usecase.practicesession.ViewMyPracticeSessionDetailUseCase;
 import com.sep.vox.application.port.input.usecase.practicesession.ViewStudentPracticeSessionDetailUseCase;
@@ -27,7 +26,6 @@ import com.sep.vox.interfaces.graphql.dto.request.EndPracticeSessionInput;
 public class PracticeSessionController {
 
     private final StartPracticeSessionUseCase startPracticeSessionUseCase;
-    private final SubmitPracticeTurnUseCase submitPracticeTurnUseCase;
     private final EndPracticeSessionUseCase endPracticeSessionUseCase;
     private final ViewMyPracticeHistoryUseCase viewMyPracticeHistoryUseCase;
     private final ViewMyPracticeSessionDetailUseCase viewMyPracticeSessionDetailUseCase;
@@ -35,13 +33,11 @@ public class PracticeSessionController {
 
     public PracticeSessionController(
             StartPracticeSessionUseCase startPracticeSessionUseCase,
-            SubmitPracticeTurnUseCase submitPracticeTurnUseCase,
             EndPracticeSessionUseCase endPracticeSessionUseCase,
             ViewMyPracticeHistoryUseCase viewMyPracticeHistoryUseCase,
             ViewMyPracticeSessionDetailUseCase viewMyPracticeSessionDetailUseCase,
             ViewStudentPracticeSessionDetailUseCase viewStudentPracticeSessionDetailUseCase) {
         this.startPracticeSessionUseCase = startPracticeSessionUseCase;
-        this.submitPracticeTurnUseCase = submitPracticeTurnUseCase;
         this.endPracticeSessionUseCase = endPracticeSessionUseCase;
         this.viewMyPracticeHistoryUseCase = viewMyPracticeHistoryUseCase;
         this.viewMyPracticeSessionDetailUseCase = viewMyPracticeSessionDetailUseCase;

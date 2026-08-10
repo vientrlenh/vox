@@ -94,7 +94,7 @@ public class PracticeSessionInternalController {
             request.questionComplete(),
             request.corrections() == null
                 ? List.of()
-                : request.corrections().stream().map(TurnCorrectionRequest::toDomain).toList()
+                : request.corrections().stream().map(correction -> correction.toDomain()).toList()
         );
         return ApiResponse.success("OK", submitPracticeTurnUseCase.execute(studentId, turn));
     }

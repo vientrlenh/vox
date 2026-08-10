@@ -71,9 +71,7 @@ public class PracticeEvaluationRequestFactory {
             // kỳ vọng 35 từ chứ không phải 10.
             question.questionType(),
             null,
-            turns.stream().mapToInt(
-                ExamAttemptEvaluationRequestedExternalEvent.TurnInput::durationSeconds
-            ).sum(),
+            turns.stream().mapToInt(turn -> turn.durationSeconds()).sum(),
             question.minResponseSeconds(),
             question.maxResponseSeconds(),
             null,

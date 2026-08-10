@@ -16,7 +16,6 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.PracticePaper;
 import com.sep.vox.domain.mapper.PracticePaperDtoMapper;
-import com.sep.vox.domain.model.framework.FrameworkResultBand;
 import com.sep.vox.domain.model.personalization.PracticeTopic;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.personalization.PracticePaperRepository;
@@ -64,7 +63,7 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
         var topic = requireTopic(input.topicId());
         var quotaRemaining = remainingPracticeQuota(studentId);
         var focus = selectionService.resolveFocus(studentId, input.fromSubAttribute());
-        var chosenBandOrder = chosenBandOrder(studentId, input.targetFrameworkBandId());
+        var chosenBandOrder = chosenBandOrder(input.targetFrameworkBandId());
         // Deliberately NOT wrapped in a Spring transaction: resolveNextQuestion can call out
         // to the Python agents service (diversity check, and -- on a thin/new topic -- live
         // LLM question generation, which alone can take 10+ seconds). Holding a HikariCP
@@ -144,14 +143,14 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
      * {@code result_band_order} của nó vô nghĩa với thang này, và mọi phép so độ khó phía sau
      * lệch âm thầm. Dùng luôn thang bậc đã nạp cho màn hình chọn nên không tốn query mới.
      */
-    private int chosenBandOrder(UUID studentId, UUID bandId) {
+    private int chosenBandOrder(UUID bandId) {
         if (bandId == null) {
             throw new NotFoundException("Chưa chọn bậc muốn luyện.");
         }
         return enrichmentService.frameworkBandLadder().stream()
             .filter(band -> bandId.equals(band.getId()))
             .findFirst()
-            .map(FrameworkResultBand::getOrder)
+            .map(band -> band.getOrder())
             .orElseThrow(() -> new NotFoundException(
                 "Bậc luyện tập không thuộc khung đánh giá đang áp dụng."
             ));
@@ -159,7 +158,7 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
 
     private PracticeTopic requireTopic(UUID topicId) {
         return topicRepository.findTopicById(topicId)
-            .filter(PracticeTopic::isActive)
+            .filter(candidate -> candidate.isActive())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy chủ đề luyện tập."));
     }
 }

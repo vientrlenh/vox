@@ -41,7 +41,10 @@ public class RecordPracticeAttemptEvaluationUseCase implements IUseCase<RecordPr
     public Void execute(RecordPracticeAttemptEvaluationCommand input) {
         var markedInvalid = !input.validForScoring();
         var itemScore = input.criteria().stream()
-            .mapToDouble(criterion -> criterion.score() == null ? 0 : criterion.score())
+            .mapToDouble(criterion -> {
+                var score = criterion.score();
+                return score == null ? 0 : score;
+            })
             .average()
             .orElse(0);
         var evaluatedAt = input.evaluatedAt() == null || input.evaluatedAt().isBlank()
@@ -66,20 +69,16 @@ public class RecordPracticeAttemptEvaluationUseCase implements IUseCase<RecordPr
                 );
                 continue;
             }
+            var score = criterion.score();
             criterionScoreRepository.upsertByCode(
                 evaluationId,
                 code,
-                criterion.score() == null ? 0 : criterion.score()
+                score == null ? 0 : score
             );
         }
 
         refreshSessionScore(input.practiceResponseId());
         return null;
-    }
-
- 
-    private static String blankToNull(String value) {
-        return value == null || value.isBlank() ? null : value.trim();
     }
 
     private void refreshSessionScore(UUID responseId) {

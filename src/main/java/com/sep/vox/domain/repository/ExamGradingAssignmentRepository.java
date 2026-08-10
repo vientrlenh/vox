@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import com.sep.vox.domain.model.exam.ExamGradingAssignment;
+import com.sep.vox.domain.model.exam.GradingAssignmentStatus;
 
 public interface ExamGradingAssignmentRepository {
     Optional<ExamGradingAssignment> findById(UUID id);
@@ -57,4 +58,6 @@ public interface ExamGradingAssignmentRepository {
 
     /** Dọn theo bài khi xoá phiên thi — không có FK nào chặn, bỏ sót là để lại dòng mồ côi. */
     void deleteByCandidateResultIdIn(Collection<UUID> candidateResultIds);
+
+    long countByTeacherIdAndStatus(UUID teacherId, GradingAssignmentStatus status);
 }

@@ -32,4 +32,7 @@ public interface SchoolRepository {
                            Instant now, UUID updatedBy);
     List<School> findByIdIn(Collection<UUID> ids);
     boolean existsByCode(String code);
+
+    long countAll();
+    long countByIsActiveTrue();
 }

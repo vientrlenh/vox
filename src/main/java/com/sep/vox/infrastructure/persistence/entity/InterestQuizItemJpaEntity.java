@@ -32,7 +32,8 @@ public class InterestQuizItemJpaEntity {
     @Column(name = "statements_json", nullable = false, columnDefinition = "TEXT")
     private String statementsJson;
 
-    // TEXT: chữ do LLM sinh, không có trần độ dài -- xem chú thích ở migration V11.
+    // TEXT: chữ do LLM sinh, không có trần độ dài -- xem chú thích ở V15__personalize.sql
+    // (mục 18. interest_quiz_item).
     @Column(name = "desirability_note", columnDefinition = "TEXT")
     private String desirabilityNote;
 

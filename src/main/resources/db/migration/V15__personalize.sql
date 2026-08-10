@@ -1,5 +1,5 @@
 -- ===========================================================================
--- Toàn bộ schema personalize, gộp từ 12 migration rời (V6..V18) thành một file.
+-- Toàn bộ schema personalize, gộp từ 12 migration rời (đã xoá khỏi thư mục) thành một file.
 --
 -- Đây là TRẠNG THÁI CUỐI, không phải lịch sử phát lại: những cột từng được thêm rồi bỏ
 -- (preparation_time_seconds, max_followup_seconds, recent_freq), những bảng từng tạo rồi drop
@@ -400,7 +400,8 @@ CREATE TABLE interest_quiz_item (
     -- TEXT chứ không VARCHAR(512): chữ này do LLM sinh (interestQuizGenerationGraph), độ dài
     -- không có trần nào kiểm. Cùng họ với exam_item_criterion_scores.rationale -- cột đó để
     -- trần 512 và ngày 2026-08-06 một nhận xét dài đã làm INSERT ném "value too long", kéo
-    -- theo consumer không ack -> retry -> DLT -> cả bài chấm mất, xem migration V12.
+    -- theo consumer không ack -> retry -> DLT -> cả bài chấm mất, xem
+    -- V14__widen_criterion_rationale.sql.
     desirability_note TEXT,
     active BOOLEAN NOT NULL DEFAULT TRUE,
     student_id UUID,
@@ -475,18 +476,24 @@ ALTER TABLE rubric_result_bands
 
 
 -- ===========================================================================
--- GHI CHÚ VỀ VIỆC GỘP -- đọc trước khi chạy trên một DB đã có dữ liệu
+-- GHI CHÚ VỀ SỐ HIỆU -- đọc trước khi chạy trên một DB đã có dữ liệu
 --
--- File này thay cho 12 migration cũ (V6..V18), đã xoá khỏi thư mục. Flyway ghi lịch sử theo
--- SỐ HIỆU vào bảng `flyway_schema_history`, nên:
+-- File này thay cho 12 migration personalize cũ đã xoá khỏi thư mục, và ĐÃ ĐƯỢC ĐÁNH SỐ LẠI
+-- một lần nữa sau khi merge nhánh `default`: nhánh đó cũng tiêu số 12 và 13
+-- (V12__notification_cursor_index.sql, V13__notification_device_installation_id.sql), nên toàn
+-- bộ dãy personalize đã dời lên V14..V18. Chi tiết ở đầu V16 và V18.
 --
---   * DB TRỐNG (hoặc mới chỉ chạy tới V5): chạy thẳng, không cần làm gì.
+-- Flyway ghi lịch sử theo SỐ HIỆU vào bảng `flyway_schema_history`, nên:
 --
---   * DB ĐÃ TỪNG chạy V6..V16: Flyway sẽ TỪ CHỐI khởi động với
---     "Detected applied migration not resolved locally: 7, 8, 9, ..." -- vì lịch sử có những
---     số hiệu mà thư mục không còn file tương ứng. Cách xử lý là tạo lại DB từ đầu, hoặc xoá
---     các dòng >= 6 khỏi flyway_schema_history rồi drop tay các bảng personalize.
+--   * DB TRỐNG (hoặc mới chỉ chạy tới V13 của nhánh `default`): chạy thẳng, không cần làm gì.
 --
--- Đây là cái giá của việc gộp và không có cách nào tránh: Flyway không có khái niệm "viết lại
--- lịch sử". Chấp nhận được ở đây vì phần personalize chưa từng chạy ở đâu ngoài máy phát triển.
+--   * DB ĐÃ TỪNG chạy bất kỳ bản personalize nào dưới số hiệu CŨ: Flyway sẽ TỪ CHỐI khởi động,
+--     bằng "Detected applied migration not resolved locally: ..." (lịch sử có số hiệu mà thư mục
+--     không còn file tương ứng) và/hoặc checksum mismatch ở version 12/13 (số đó nay thuộc về
+--     hai file notification của `default`). Cách xử lý: XOÁ VOLUME và tạo lại DB từ đầu --
+--     `docker compose down -v && docker compose up -d`.
+--
+-- Đây là cái giá của việc gộp + đánh số lại, không có cách nào tránh: Flyway không có khái niệm
+-- "viết lại lịch sử". Chấp nhận được ở đây vì phần personalize chưa từng chạy ở đâu ngoài máy
+-- phát triển.
 -- ===========================================================================

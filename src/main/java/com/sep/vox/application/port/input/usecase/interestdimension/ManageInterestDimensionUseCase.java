@@ -16,9 +16,9 @@ import com.sep.vox.domain.model.personalization.InterestDimension;
 import com.sep.vox.domain.repository.personalization.InterestDimensionRepository;
 
 /**
- * Quản lý danh mục chiều sở thích (SYSTEM_ADMIN). Xem migration
- * V9__interest_dimension_catalog.sql để biết vì sao danh mục này phải là dữ liệu chứ không
- * phải hằng số cứng trong code.
+ * Quản lý danh mục chiều sở thích (SYSTEM_ADMIN). Xem V15__personalize.sql, mục
+ * 19. interest_dimension, để biết vì sao danh mục này phải là dữ liệu chứ không phải hằng số
+ * cứng trong code.
  */
 @Service
 public class ManageInterestDimensionUseCase {

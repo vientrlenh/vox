@@ -1,8 +1,9 @@
 -- Bỏ 4 cột chưa từng chở dữ liệu thật trong learner_profile.
 --
--- Vì sao là migration MỚI chứ không sửa thẳng V13: V13 đã chạy rồi (flyway_schema_history ghi
--- success=t), nên sửa nội dung nó chỉ làm lệch checksum -> Flyway chặn khởi động, mà cột thì vẫn
--- nằm nguyên trong DB. Muốn cột biến mất thật thì phải DROP bằng một bản mới.
+-- Vì sao là migration MỚI chứ không sửa thẳng V15__personalize.sql (bản tạo bảng): file đó đã chạy
+-- rồi (flyway_schema_history ghi success=t), nên sửa nội dung nó chỉ làm lệch checksum -> Flyway
+-- chặn khởi động, mà cột thì vẫn nằm nguyên trong DB. Muốn cột biến mất thật thì phải DROP bằng
+-- một bản mới.
 --
 --   target_exam, target_date
 --     Chưa từng được GHI. appendProfile() không có tham số cho chúng, không setter nào được gọi,

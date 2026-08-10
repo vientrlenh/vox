@@ -38,7 +38,8 @@ public class ExamItemCriterionScoreJpaEntity {
     private BigDecimal finalScore;
 
     // TEXT, không phải varchar(512): nhận xét AI dài theo số lượt nói của câu, không có trần.
-    // Trần cũ từng làm hỏng CẢ bài chấm chứ không chỉ cụt chữ -- xem migration V12.
+    // Trần cũ từng làm hỏng CẢ bài chấm chứ không chỉ cụt chữ -- xem
+    // V14__widen_criterion_rationale.sql.
     @Column(name = "rationale", columnDefinition = "TEXT", updatable = false)
     private String rationale;
 

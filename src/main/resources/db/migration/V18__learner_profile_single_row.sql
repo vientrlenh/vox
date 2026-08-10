@@ -7,9 +7,10 @@
 -- target_framework_band_id vào chính nó. Cái giá phải trả cho version là mỗi bản mới phải CHÉP 6
 -- dòng dimension_interest_score sang id mới; đổi mục tiêu ba lần là 18 dòng cho 6 chiều.
 --
--- Vì sao là migration MỚI chứ không sửa thẳng V13: V13 đã chạy rồi (flyway_schema_history ghi
--- success=t), nên sửa nội dung nó chỉ làm lệch checksum -> Flyway chặn khởi động, mà cột thì vẫn
--- nằm nguyên trong DB. Muốn cột biến mất thật thì phải DROP bằng một bản mới.
+-- Vì sao là migration MỚI chứ không sửa thẳng V15__personalize.sql (bản tạo bảng): file đó đã chạy
+-- rồi (flyway_schema_history ghi success=t), nên sửa nội dung nó chỉ làm lệch checksum -> Flyway
+-- chặn khởi động, mà cột thì vẫn nằm nguyên trong DB. Muốn cột biến mất thật thì phải DROP bằng
+-- một bản mới.
 
 -- Dọn phòng thủ: gộp về bản version cao nhất của mỗi học sinh trước khi ép unique trên student_id.
 -- dimension_interest_score KHÔNG có ràng buộc khoá ngoại tới learner_profile nên phải tự xoá con

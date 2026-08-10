@@ -152,7 +152,7 @@ public class PracticeQuestion {
         this.suggestedIdeasJson = suggestedIdeasJson;
     }
 
-    /** SHORT_ANSWER | LONG_ANSWER | DESCRIPTION | OPINION -- xem migration V13. */
+    /** SHORT_ANSWER | LONG_ANSWER | DESCRIPTION | OPINION -- xem V15__personalize.sql. */
     public String getQuestionType() {
         return questionType;
     }

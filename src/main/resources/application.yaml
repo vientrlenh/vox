@@ -175,7 +175,7 @@ springdoc:
 
 jwt:
   secret: ${JWT_SECRET}
-  expiration-ms: 10000
+  expiration-ms: ${JWT_EXPIRATION_MS:900000}
   stream:
     secret: ${JWT_STREAM_SECRET}
 
@@ -208,6 +208,13 @@ server:
     certificate-private-key: ${SSL_KEY_PATH:}
 
 app:
+  cors:
+    # Chỉ những origin liệt kê ở đây gọi được API. Mặc định là các cổng dev quen thuộc
+    # để clone repo về là chạy được ngay; mỗi môi trường triển khai phải tự đặt
+    # CORS_ALLOWED_ORIGINS (phân tách bằng dấu phẩy), KHÔNG sửa dòng này.
+    # Ghi đúng dạng scheme://host[:port] -- thừa '/' ở cuối hay kèm path là app không
+    # khởi động, xem SecurityConfig#validatedAllowedOrigins.
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173}
   cookie:
     secure: ${COOKIE_SECURE:false} # Local dev use false
     same-site: ${COOKIE_SAME_SITE:Lax} # If using domain forward, make this as None

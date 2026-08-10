@@ -16,7 +16,7 @@ import jakarta.persistence.Id;
 @Entity
 @Table(
     name = "learner_profile",
-    // Phải khớp V13: chỉ mục nay chỉ trên student_id (bất biến 1-1). Khai còn cột `version` ở
+    // Phải khớp V16: chỉ mục nay chỉ trên student_id (bất biến 1-1). Khai còn cột `version` ở
     // đây là bảo Hibernate tạo chỉ mục trên một cột không tồn tại.
     indexes = @Index(
         name = "idx_learner_profile_student",
@@ -43,12 +43,12 @@ public class LearnerProfileJpaEntity {
     @Column(name = "goal_type", length = 24)
     private String goalType;
 
-    // Không còn cột `version`: một học sinh một hồ sơ, cập nhật tại chỗ. Xem chú thích
-    // CREATE TABLE learner_profile trong V13.
+    // Không còn cột `version`: một học sinh một hồ sơ, cập nhật tại chỗ. V16 drop cột này khỏi
+    // DB -- xem chú thích đầu migration đó.
 
     // GỠ 2026-08-07: flsaScore / flsaRawAnswersJson -- thang tự đánh giá lo lắng ngoại ngữ.
-    // Hai cột `flsa_score` / `flsa_raw_answers_json` nay cũng không còn trong DB -- V13 bỏ hẳn
-    // khỏi CREATE TABLE thay vì tạo rồi để V14 drop.
+    // Hai cột `flsa_score` / `flsa_raw_answers_json` nay cũng không còn trong DB -- V14 drop
+    // chúng (cùng target_exam / target_date) khỏi bảng do V13 tạo.
     // Chúng ĐƯỢC ghi (qua mutation submitFlsaSelfReport) nhưng chưa từng được ĐỌC để đổi hành
     // vi: không luồng sinh câu hỏi, chọn độ khó hay xếp hạng chủ đề nào tra tới. Client cũng đã
     // bỏ màn hỏi từ trước -- Flutter chỉ còn chú thích nhắc rằng mutation vẫn còn nếu cần quay lại.

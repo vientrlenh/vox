@@ -286,31 +286,21 @@ CREATE INDEX idx_turn_correction_turn ON turn_correction (turn_id);
 -- ---------------------------------------------------------------------------
 -- 12. learner_profile
 -- ---------------------------------------------------------------------------
--- MỘT hồ sơ cho MỘT học sinh, cập nhật tại chỗ.
---
--- Bản đầu là append-only có cột `version`: mỗi lần đổi mục tiêu / nộp lại quiz / bật tắt tự cập
--- nhật là chèn một dòng mới. Bỏ đi vì lịch sử đó ĐƯỢC GHI MÀ KHÔNG AI ĐỌC -- quét toàn bộ
--- src/main chỉ thấy ba truy vấn, cả ba đều `Top...OrderByVersionDesc` (luôn lấy bản mới nhất).
--- Câu duy nhất lịch sử trả lời được -- "lúc làm phiên này mục tiêu là gì" -- thì practice_paper
--- đã chụp sẵn goal_type và target_framework_band_id vào chính nó.
---
--- Cái giá phải trả cho version: mỗi bản mới phải CHÉP 6 dòng dimension_interest_score sang id
--- mới. Đổi mục tiêu ba lần là 18 dòng cho 6 chiều.
---
--- Bốn cột target_exam / target_date / flsa_score / flsa_raw_answers_json từng có ở đây và bị
--- V14 drop ngay sau đó; nay bỏ hẳn khỏi CREATE TABLE thay vì tạo rồi xoá.
 CREATE TABLE learner_profile (
     id UUID DEFAULT uuidv7() NOT NULL,
     student_id UUID NOT NULL,
+    version INTEGER NOT NULL,
     goal_type VARCHAR(24),
+    target_exam VARCHAR(24),
+    target_date DATE,
+    flsa_score NUMERIC(5,2),
+    flsa_raw_answers_json TEXT,
     auto_update_interest BOOLEAN NOT NULL DEFAULT TRUE,
     quiz_completed_at TIMESTAMPTZ,
     recorded_at TIMESTAMPTZ NOT NULL,
     PRIMARY KEY (id)
 );
--- Đây là thứ THẬT SỰ ép bất biến 1-1. Thiếu nó thì code vẫn có thể sinh hai dòng cho một học
--- sinh mà không ai biết; và nó cũng là chốt phát hiện đua ghi khi hai request cùng tạo hồ sơ.
-CREATE UNIQUE INDEX idx_learner_profile_student ON learner_profile (student_id);
+CREATE UNIQUE INDEX idx_learner_profile_student_version ON learner_profile (student_id, version);
 
 
 -- ---------------------------------------------------------------------------

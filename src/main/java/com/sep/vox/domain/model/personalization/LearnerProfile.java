@@ -8,7 +8,7 @@ import java.util.UUID;
  *
  * <p>Bản trước là append-only có cột {@code version}: mỗi lần đổi mục tiêu / nộp lại quiz / bật
  * tắt tự cập nhật là sinh một bản mới. Bỏ vì lịch sử đó được ghi mà không ai đọc -- chi tiết ở
- * chú thích {@code CREATE TABLE learner_profile} trong V13.
+ * chú thích đầu migration V16 (bản drop cột {@code version}).
  *
  * <p>Đi kèm là {@code first()} và {@code next()} cũng bị gỡ: chúng chỉ tồn tại để dựng bản kế
  * tiếp. Giờ dùng setter thường, và {@code applyChanges} gom phần "chỉ ghi đè khi có giá trị".

@@ -2,16 +2,12 @@ package com.sep.vox.application.port.input.usecase.practicesession;
 
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.event.ExamAttemptEvaluationRequestedExternalEvent;
-import com.sep.vox.application.event.PracticeAttemptEvaluationRequestedExternalEvent;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.QuotaExceededException;
 import com.sep.vox.application.mapper.practicesession.PracticeSessionResponseMapper;
@@ -22,9 +18,7 @@ import com.sep.vox.application.port.input.service.PracticeTopicOfferEnrichmentSe
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ConsumeQuotaUseCase;
 import com.sep.vox.application.port.output.ExternalEventPublisherPort;
-import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.repository.PracticeSessionQueryRepository;
 import com.sep.vox.application.response.input.practicesession.PracticeSessionResponses.SubmitTurnResult;
 import com.sep.vox.domain.dto.personalization.SubmitTurnResultDto;
 import com.sep.vox.domain.dto.personalization.TurnCorrectionDto;
@@ -33,7 +27,6 @@ import com.sep.vox.domain.model.personalization.TurnCorrectionSubmission;
 import com.sep.vox.domain.model.subscription.QuotaType;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.personalization.PracticeItemResponseRepository;
-import com.sep.vox.domain.repository.personalization.PracticeQuestionRepository;
 import com.sep.vox.domain.repository.personalization.PracticeResponseTurnRepository;
 import com.sep.vox.domain.repository.personalization.PracticeSessionRepository;
 import com.sep.vox.domain.repository.personalization.TurnCorrectionRepository;

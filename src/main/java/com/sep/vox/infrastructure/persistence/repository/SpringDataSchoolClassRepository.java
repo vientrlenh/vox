@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -116,7 +115,7 @@ public interface SpringDataSchoolClassRepository extends JpaRepository<SchoolCla
         @Param("descriptionProvided") boolean descriptionProvided,
         @Param("status") String status,
         @Param("statusProvided") boolean statusProvided,
-        @Param("updatedAt") java.time.Instant updatedAt,
+        @Param("updatedAt") Instant updatedAt,
         @Param("updatedBy") UUID updatedBy
     );
 
@@ -165,7 +164,7 @@ public interface SpringDataSchoolClassRepository extends JpaRepository<SchoolCla
         """)
     int archiveByGradeId(
         @Param("schoolGradeId") UUID schoolGradeId,
-        @Param("updatedAt") java.time.Instant updatedAt,
+        @Param("updatedAt") Instant updatedAt,
         @Param("updatedBy") UUID updatedBy
     );
 }

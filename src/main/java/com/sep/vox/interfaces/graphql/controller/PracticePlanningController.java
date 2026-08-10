@@ -1,20 +1,12 @@
 package com.sep.vox.interfaces.graphql.controller;
 
-import static com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.PracticePaper;
-import static com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.PracticePaperDraft;
-import static com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.PracticeTopicOffer;
-import static com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.TopicSearchResult;
-import static com.sep.vox.application.response.input.practicesession.PracticeSessionResponses.PracticeDashboardStats;
-
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.task.AsyncTaskExecutor;
-
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
@@ -26,14 +18,12 @@ import com.sep.vox.application.port.input.command.DismissTopicOfferCommand;
 import com.sep.vox.application.port.input.command.SaveTopicCommand;
 import com.sep.vox.application.port.input.command.UnsaveTopicCommand;
 import com.sep.vox.application.port.input.query.SearchPracticeTopicsQuery;
+import com.sep.vox.application.port.input.query.ViewPracticeTopicOffersQuery;
 import com.sep.vox.application.port.input.service.PracticePaperDraftService;
 import com.sep.vox.application.port.input.service.TopicOfferBackfillService;
-import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.port.input.query.ViewPracticeTopicOffersQuery;
-import com.sep.vox.application.port.input.query.ViewSynchronousTopicOffersQuery;
 import com.sep.vox.application.port.input.usecase.practiceplanning.BuildPracticePaperUseCase;
-import com.sep.vox.application.port.input.usecase.practiceplanning.PickRandomTopicUseCase;
 import com.sep.vox.application.port.input.usecase.practiceplanning.DismissTopicOfferUseCase;
+import com.sep.vox.application.port.input.usecase.practiceplanning.PickRandomTopicUseCase;
 import com.sep.vox.application.port.input.usecase.practiceplanning.SaveTopicUseCase;
 import com.sep.vox.application.port.input.usecase.practiceplanning.SearchPracticeTopicsSemanticUseCase;
 import com.sep.vox.application.port.input.usecase.practiceplanning.SearchPracticeTopicsUseCase;
@@ -42,6 +32,11 @@ import com.sep.vox.application.port.input.usecase.practiceplanning.ViewMySavedTo
 import com.sep.vox.application.port.input.usecase.practiceplanning.ViewPracticeTopicOffersUseCase;
 import com.sep.vox.application.port.input.usecase.practicesession.ViewPracticeDashboardStatsUseCase;
 import com.sep.vox.application.port.input.usecase.topicsuggestion.ViewSynchronousTopicOffersUseCase;
+import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.PracticePaperDraft;
+import com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.PracticeTopicOffer;
+import com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.TopicSearchResult;
+import com.sep.vox.application.response.input.practicesession.PracticeSessionResponses.PracticeDashboardStats;
 import com.sep.vox.interfaces.graphql.dto.request.StartPracticeSessionInput;
 
 @Controller

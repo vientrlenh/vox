@@ -1,8 +1,5 @@
 package com.sep.vox.application.event;
 
-import com.sep.vox.application.event.HasPartitionKey;
-import com.sep.vox.application.event.ExternalEventTopic;
-
 import com.sep.vox.application.event.ExamAttemptEvaluationRequestedExternalEvent.Payload;
 
 @ExternalEventTopic("practice-attempt-evaluation-requested")

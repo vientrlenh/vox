@@ -1,26 +1,20 @@
 package com.sep.vox.application.port.input.usecase.practicesession;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 
-import org.springframework.context.ApplicationEventPublisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.event.PracticeSessionEndedEvent;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.mapper.practicesession.PracticeSessionResponseMapper;
 import com.sep.vox.application.mapper.practicesession.SessionRowMapper;
 import com.sep.vox.application.port.input.command.EndPracticeSessionCommand;
-import com.sep.vox.application.port.input.service.InterestVectorService;
 import com.sep.vox.application.port.input.service.PracticeGradingFlushService;
 import com.sep.vox.application.port.input.service.PracticeSessionClosedHandler;
-import com.sep.vox.application.port.input.service.TopicOfferBackfillService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.PracticeSessionQueryRepository;
 import com.sep.vox.application.response.input.practicesession.PracticeSessionResponses.PracticeSession;

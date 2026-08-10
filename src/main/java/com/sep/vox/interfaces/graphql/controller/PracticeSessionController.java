@@ -1,9 +1,5 @@
 package com.sep.vox.interfaces.graphql.controller;
 
-import static com.sep.vox.application.response.input.practicesession.PracticeSessionResponses.PracticeSession;
-import static com.sep.vox.application.response.input.practicesession.PracticeSessionResponses.SubmitTurnResult;
-import static com.sep.vox.application.response.input.practicesession.PracticeSessionResponses.TeacherPracticeSessionDetail;
-
 import java.util.List;
 import java.util.UUID;
 
@@ -15,7 +11,6 @@ import org.springframework.stereotype.Controller;
 
 import com.sep.vox.application.port.input.command.EndPracticeSessionCommand;
 import com.sep.vox.application.port.input.command.StartPracticeSessionCommand;
-import com.sep.vox.application.port.input.command.SubmitPracticeTurnCommand;
 import com.sep.vox.application.port.input.query.ViewMyPracticeHistoryQuery;
 import com.sep.vox.application.port.input.query.ViewStudentPracticeSessionDetailQuery;
 import com.sep.vox.application.port.input.usecase.practicesession.EndPracticeSessionUseCase;
@@ -24,8 +19,8 @@ import com.sep.vox.application.port.input.usecase.practicesession.SubmitPractice
 import com.sep.vox.application.port.input.usecase.practicesession.ViewMyPracticeHistoryUseCase;
 import com.sep.vox.application.port.input.usecase.practicesession.ViewMyPracticeSessionDetailUseCase;
 import com.sep.vox.application.port.input.usecase.practicesession.ViewStudentPracticeSessionDetailUseCase;
-import com.sep.vox.domain.model.personalization.SubmitPracticeTurn;
-import com.sep.vox.domain.model.personalization.TurnCorrectionSubmission;
+import com.sep.vox.application.response.input.practicesession.PracticeSessionResponses.PracticeSession;
+import com.sep.vox.application.response.input.practicesession.PracticeSessionResponses.TeacherPracticeSessionDetail;
 import com.sep.vox.interfaces.graphql.dto.request.EndPracticeSessionInput;
 
 @Controller

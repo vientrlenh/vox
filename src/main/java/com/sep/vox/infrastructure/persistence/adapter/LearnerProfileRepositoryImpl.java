@@ -27,14 +27,14 @@ public class LearnerProfileRepositoryImpl
     @Override
     public Optional<LearnerProfile> findCurrent(UUID studentId) {
         return profileRepository
-            .findTopByStudentIdOrderByVersionDesc(studentId)
+            .findByStudentId(studentId)
             .map(LearnerProfileMapper::toDomain);
     }
 
     @Override
     public Optional<LearnerProfile> findCurrentForUpdate(UUID studentId) {
         return profileRepository
-            .findTopWithLockByStudentIdOrderByVersionDesc(studentId)
+            .findWithLockByStudentId(studentId)
             .map(LearnerProfileMapper::toDomain);
     }
 

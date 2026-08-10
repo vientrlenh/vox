@@ -55,7 +55,7 @@ public class JpaLearnerProfileQueryRepository
     @Override
     public LearnerProfileInfo findCurrent(UUID studentId) {
         var current = repository
-            .findTopByStudentIdOrderByVersionDesc(studentId)
+            .findByStudentId(studentId)
             .orElse(null);
         var target = repository.findDefaultTargetBand(practiceFrameworkVersionCode)
             .stream()

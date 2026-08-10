@@ -3,11 +3,20 @@ package com.sep.vox.domain.model.personalization;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Hồ sơ học tập -- MỘT dòng cho MỘT học sinh, cập nhật tại chỗ.
+ *
+ * <p>Bản trước là append-only có cột {@code version}: mỗi lần đổi mục tiêu / nộp lại quiz / bật
+ * tắt tự cập nhật là sinh một bản mới. Bỏ vì lịch sử đó được ghi mà không ai đọc -- chi tiết ở
+ * chú thích {@code CREATE TABLE learner_profile} trong V13.
+ *
+ * <p>Đi kèm là {@code first()} và {@code next()} cũng bị gỡ: chúng chỉ tồn tại để dựng bản kế
+ * tiếp. Giờ dùng setter thường, và {@code applyChanges} gom phần "chỉ ghi đè khi có giá trị".
+ */
 public class LearnerProfile {
 
     private UUID id;
     private UUID studentId;
-    private int version;
     private String goalType;
     private boolean autoUpdateInterest;
     private Instant quizCompletedAt;
@@ -19,18 +28,43 @@ public class LearnerProfile {
     public LearnerProfile(
             UUID id,
             UUID studentId,
-            int version,
             String goalType,
             boolean autoUpdateInterest,
             Instant quizCompletedAt,
             Instant recordedAt) {
         this.id = id;
         this.studentId = studentId;
-        this.version = version;
         this.goalType = goalType;
         this.autoUpdateInterest = autoUpdateInterest;
         this.quizCompletedAt = quizCompletedAt;
         this.recordedAt = recordedAt;
+    }
+
+    /** Hồ sơ mặc định cho học sinh chưa có gì -- bật tự cập nhật sở thích. */
+    public static LearnerProfile forStudent(UUID studentId) {
+        return new LearnerProfile(null, studentId, null, true, null, Instant.now());
+    }
+
+    /**
+     * Ghi đè các trường có giá trị, giữ nguyên phần còn lại.
+     *
+     * <p>{@code null} nghĩa là "không đụng tới", đúng như ngữ nghĩa của {@code next()} cũ: mỗi
+     * hành động (đặt mục tiêu / nộp quiz / bật tắt) chỉ truyền đúng phần nó phụ trách.
+     */
+    public void applyChanges(
+            String nextGoalType,
+            Boolean nextAutoUpdate,
+            Instant nextQuizCompletedAt) {
+        if (nextGoalType != null) {
+            this.goalType = nextGoalType;
+        }
+        if (nextAutoUpdate != null) {
+            this.autoUpdateInterest = nextAutoUpdate;
+        }
+        if (nextQuizCompletedAt != null) {
+            this.quizCompletedAt = nextQuizCompletedAt;
+        }
+        this.recordedAt = Instant.now();
     }
 
     public UUID getId() {
@@ -47,14 +81,6 @@ public class LearnerProfile {
 
     public void setStudentId(UUID studentId) {
         this.studentId = studentId;
-    }
-
-    public int getVersion() {
-        return version;
-    }
-
-    public void setVersion(int version) {
-        this.version = version;
     }
 
     public String getGoalType() {
@@ -87,34 +113,5 @@ public class LearnerProfile {
 
     public void setRecordedAt(Instant recordedAt) {
         this.recordedAt = recordedAt;
-    }
-
-    public static LearnerProfile first(UUID studentId) {
-        return new LearnerProfile(
-            null,
-            studentId,
-            1,
-            null,
-            true,
-            null,
-            Instant.now()
-        );
-    }
-
-    public LearnerProfile next(
-            String nextGoalType,
-            Boolean nextAutoUpdate,
-            Instant nextQuizCompletedAt) {
-        return new LearnerProfile(
-            null,
-            studentId,
-            version + 1,
-            nextGoalType != null ? nextGoalType : goalType,
-            nextAutoUpdate != null ? nextAutoUpdate : autoUpdateInterest,
-            nextQuizCompletedAt != null
-                ? nextQuizCompletedAt
-                : quizCompletedAt,
-            Instant.now()
-        );
     }
 }

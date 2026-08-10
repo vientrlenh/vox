@@ -17,11 +17,11 @@ import com.sep.vox.infrastructure.persistence.entity.LearnerProfileJpaEntity;
 public interface SpringDataLearnerProfileRepository
         extends JpaRepository<LearnerProfileJpaEntity, UUID> {
 
-    Optional<LearnerProfileJpaEntity> findTopByStudentIdOrderByVersionDesc(UUID studentId);
+    Optional<LearnerProfileJpaEntity> findByStudentId(UUID studentId);
 
     /** Khoá FOR SHARE bản mới nhất trước khi nối thêm version -- tránh hai request cùng ghi đè nhau. */
     @Lock(LockModeType.PESSIMISTIC_READ)
-    Optional<LearnerProfileJpaEntity> findTopWithLockByStudentIdOrderByVersionDesc(UUID studentId);
+    Optional<LearnerProfileJpaEntity> findWithLockByStudentId(UUID studentId);
     @Query(value = """
         WITH active_version AS (
             SELECT fv.id

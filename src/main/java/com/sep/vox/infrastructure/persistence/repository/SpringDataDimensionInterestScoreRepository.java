@@ -41,17 +41,6 @@ public interface SpringDataDimensionInterestScoreRepository
         @Param("score") java.math.BigDecimal score
     );
 
-    @Modifying
-    @Query(value = """
-        INSERT INTO dimension_interest_score (
-            id, learner_profile_id, dimension, score, baseline_score
-        )
-        SELECT uuidv7(), :newProfileId, dimension, score, baseline_score
-        FROM dimension_interest_score
-        WHERE learner_profile_id = :previousProfileId
-        """, nativeQuery = true)
-    void copyScores(
-        @Param("previousProfileId") UUID previousProfileId,
-        @Param("newProfileId") UUID newProfileId
-    );
+    // GỠ: copyScores. Nó chỉ tồn tại để chép 6 dòng điểm sang learner_profile bản mới mỗi lần
+    // hồ sơ đổi. Từ khi hồ sơ về 1-1 và cập nhật tại chỗ thì id không đổi, điểm nằm yên một chỗ.
 }

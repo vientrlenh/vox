@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -37,10 +38,12 @@ public interface SpringDataPracticeTopicRepository
 
     @Query(value = """
         WITH profile AS (
+            -- Không còn ORDER BY version: hồ sơ nay 1-1 với học sinh (unique index
+            -- idx_learner_profile_student), nên chỉ có đúng một dòng để lấy. LIMIT 1 giữ lại
+            -- làm chốt chặn cho LEFT JOIN bên dưới -- hai dòng ở đây sẽ nhân đôi mọi chủ đề.
             SELECT id
             FROM learner_profile
             WHERE student_id = :studentId
-            ORDER BY version DESC
             LIMIT 1
         )
         SELECT topic.id AS id,
@@ -127,6 +130,28 @@ public interface SpringDataPracticeTopicRepository
         @Param("normalized") String normalized
     );
 
+    /**
+     * Nạp lại chủ đề theo danh sách id -- dùng cho kết quả tìm bằng vector.
+     *
+     * Chroma chỉ trả id; tên và mô tả bên đó là bản chụp lúc index nên có thể đã cũ, và chủ đề
+     * có thể đã bị tắt active sau đó. Đọc lại từ Postgres để hiển thị đúng hiện trạng, đồng thời
+     * lọc luôn chủ đề không còn dùng được.
+     */
+    @Query(value = """
+        SELECT topic.id AS id, topic.name AS name, topic.interest_dimension AS interestDimension,
+               EXISTS (
+                   SELECT 1 FROM saved_topic saved
+                   WHERE saved.student_id = :studentId
+                     AND saved.practice_topic_id = topic.id
+               ) AS savedByMe
+        FROM practice_topic topic
+        WHERE topic.active = true AND topic.id IN (:topicIds)
+        """, nativeQuery = true)
+    List<TopicSearchRowInfo> findActiveByIds(
+        @Param("studentId") UUID studentId,
+        @Param("topicIds") Collection<UUID> topicIds
+    );
+
     @Query(value = """
         SELECT topic.id AS id, topic.name AS name, topic.interest_dimension AS interestDimension,
                EXISTS (
@@ -204,7 +229,6 @@ public interface SpringDataPracticeTopicRepository
             SELECT id
             FROM learner_profile
             WHERE student_id = :studentId
-            ORDER BY version DESC
             LIMIT 1
         )
         """, nativeQuery = true)

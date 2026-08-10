@@ -83,6 +83,8 @@ public class ProcessPaymentCallbackUseCase {
 
         var status = verification.status();
         if (status == PaymentLinkRemoteStatus.PAID) {
+            LOGGER.info("[WEBHOOK] Chốt hóa đơn {} (orderRef={}) thành PAID qua callback {}",
+                invoice.getId(), verification.providerOrderRef(), provider);
             settlementService.settle(invoice, true);
             return CallbackOutcome.SETTLED;
         }

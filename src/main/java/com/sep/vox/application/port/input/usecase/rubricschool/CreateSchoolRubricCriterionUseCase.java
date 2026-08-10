@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.rubricschool;
 
+import com.sep.vox.domain.service.rubric.RubricOrderValidator;
 import com.sep.vox.domain.service.rubric.ScoreRangeValidator;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
@@ -100,6 +101,11 @@ public class CreateSchoolRubricCriterionUseCase implements IUseCase<CreateSchool
         Set<String> uniqueCodes = new HashSet<>();
         Set<UUID> uniqueFrameworkIds = new HashSet<>();
 
+        // Tích luỹ order đã có trong version (DB) + order mới trong cùng batch để chống trùng thứ tự
+        Set<Integer> ordersSoFar = new HashSet<>();
+        rubricCriterionRepository.findByRubricVersionId(command.versionId())
+                .forEach(c -> ordersSoFar.add(c.getOrder()));
+
         // 4. Xử lý danh sách tiêu chí
         List<RubricCriterion> criteriaToSave = command.criteria().stream().map(cCmd -> {
 
@@ -120,6 +126,9 @@ public class CreateSchoolRubricCriterionUseCase implements IUseCase<CreateSchool
             if (cCmd.weight() != null && cCmd.weight().compareTo(BigDecimal.ZERO) < 0) {
                 throw new IllegalArgumentException("Tiêu chí '" + safeCode + "': Trọng số (weight) không được là số âm.");
             }
+
+            // Check trùng thứ tự (order) với sibling đã có trong version hoặc trong cùng batch
+            RubricOrderValidator.assertNoDuplicateOrder(ordersSoFar, cCmd.order(), safeName);
 
             // Validate nằm trong thang điểm tổng của RubricVersion
             ScoreRangeValidator.assertWithinScale(version.getScoringScaleMin(), version.getScoringScaleMax(),
@@ -154,7 +163,7 @@ public class CreateSchoolRubricCriterionUseCase implements IUseCase<CreateSchool
         try {
             rubricCriterionRepository.saveAll(criteriaToSave);
         } catch (DataIntegrityViolationException e) {
-            throw new IllegalStateException("Lỗi lưu dữ liệu: Mã tiêu chí hoặc Khung tiêu chuẩn đã tồn tại trong phiên bản này từ trước.");
+            throw new IllegalStateException("Lỗi lưu dữ liệu: Mã tiêu chí, Khung tiêu chuẩn hoặc Thứ tự (order) đã tồn tại trong phiên bản này từ trước.");
         }
 
         return criteriaToSave.stream().map(c -> c.getId()).collect(Collectors.toList());

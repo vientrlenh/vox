@@ -4,6 +4,15 @@ import java.time.Instant;
 import java.util.UUID;
 
 public class NotificationPreference {
+
+    /**
+     * Không có dòng trong notification_preferences nghĩa là "dùng mặc định". Hai hằng số
+     * này là nguồn duy nhất của giá trị mặc định đó, để phía Java và câu
+     * {@code COALESCE(np.push_enabled, TRUE)} phía SQL không bao giờ lệch nhau.
+     */
+    public static final boolean DEFAULT_PUSH_ENABLED = true;
+    public static final boolean DEFAULT_EMAIL_ENABLED = true;
+
     private UUID id;
     private UUID userId;
     private NotificationCategory category;

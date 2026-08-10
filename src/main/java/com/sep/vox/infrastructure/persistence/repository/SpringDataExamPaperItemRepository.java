@@ -16,6 +16,7 @@ public interface SpringDataExamPaperItemRepository extends JpaRepository<ExamPap
 
     List<ExamPaperItemJpaEntity> findByPaperId(UUID paperId);
     List<ExamPaperItemJpaEntity> findByPaperIdIn(Collection<UUID> paperIds);
+    void deleteByPaperIdIn(Collection<UUID> paperIds);
 
     @Query("""
         SELECT CASE WHEN COUNT(i) > 0 THEN true ELSE false END

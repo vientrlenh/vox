@@ -12,4 +12,5 @@ public interface SpringDataExamRecordingRepository extends JpaRepository<ExamRec
     List<ExamRecordingJpaEntity> findByExamSessionId(UUID examSessionId);
     Optional<ExamRecordingJpaEntity> findByExamSessionIdAndStreamTypeAndSource(
         UUID examSessionId, String streamType, String source);
+    void deleteByExamSessionId(UUID examSessionId);
 }

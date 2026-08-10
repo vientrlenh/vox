@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.rubricschool;
 
+import com.sep.vox.domain.service.rubric.RubricOrderValidator;
 import com.sep.vox.domain.service.rubric.RubricResultBandValidator;
 import com.sep.vox.domain.service.rubric.ScoreRangeValidator;
 import com.sep.vox.application.common.StringNormalization;
@@ -99,8 +100,13 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
         // Tích luỹ band đã có trong version + các band mới trong cùng batch để check overlap khoảng điểm.
         // Dùng TreeMap (key = scoreMin) để check O(log n)/band thay vì quét List O(n)/band (O(n log n) cho cả batch thay vì O(n^2)).
         NavigableMap<BigDecimal, RubricResultBand> bandsSoFarByMin = new TreeMap<>();
+        // Tích luỹ order đã có trong version (DB) + order mới trong cùng batch để chống trùng thứ tự
+        Set<Integer> ordersSoFar = new HashSet<>();
         rubricResultBandRepository.findByRubricVersionId(command.versionId())
-                .forEach(b -> bandsSoFarByMin.put(b.getScoreMin(), b));
+                .forEach(b -> {
+                    bandsSoFarByMin.put(b.getScoreMin(), b);
+                    ordersSoFar.add(b.getOrder());
+                });
 
         // 4.4 Lặp qua danh sách từ Command và xử lý logic
         List<RubricResultBand> bandsToSave = command.resultBands().stream().map(bCmd -> {
@@ -120,6 +126,9 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
 
             // Validate không chồng lấn với các band đã có/đang tạo cùng batch
             RubricResultBandValidator.assertNoOverlap(bandsSoFarByMin, bCmd.mappedScoreMin(), bCmd.mappedScoreMax(), safeName);
+
+            // Validate không trùng thứ tự (order) với sibling đã có trong version hoặc trong cùng batch
+            RubricOrderValidator.assertNoDuplicateOrder(ordersSoFar, bCmd.order(), safeName);
 
             // Validate nằm trong thang điểm tổng của RubricVersion
             ScoreRangeValidator.assertWithinScale(version.getScoringScaleMin(), version.getScoringScaleMax(),
@@ -149,7 +158,7 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
         try {
             savedBands = rubricResultBandRepository.saveAll(bandsToSave);
         } catch (DataIntegrityViolationException e) {
-            throw new IllegalStateException("Lỗi lưu dữ liệu: Mã thang điểm (Code) đã tồn tại trong phiên bản Rubric này từ trước. Vui lòng kiểm tra lại.");
+            throw new IllegalStateException("Lỗi lưu dữ liệu: Mã thang điểm (Code) hoặc Thứ tự (order) đã tồn tại trong phiên bản Rubric này từ trước. Vui lòng kiểm tra lại.");
         }
 
         // Bốc ID từ cái mảng savedBands (đã được DB gắn ID) chứ không phải mảng bandsToSave gốc

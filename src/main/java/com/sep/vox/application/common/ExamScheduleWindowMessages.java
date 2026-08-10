@@ -14,7 +14,20 @@ public final class ExamScheduleWindowMessages {
 
     public static String tooShortForExamTime(Exam exam) {
         return "Thời lượng ca thi phải lớn hơn hoặc bằng thời gian làm bài của kỳ thi ("
-            + exam.getExamTimeDurationSecond() + " giây)";
+            + formatDuration(exam.getExamTimeDurationSecond()) + ")";
+    }
+
+    /** Hiển thị thời lượng dạng "xx phút yy giây" thay vì giây thô cho dễ đọc. */
+    private static String formatDuration(Integer totalSeconds) {
+        if (totalSeconds == null) {
+            return "0 giây";
+        }
+        var minutes = totalSeconds / 60;
+        var seconds = totalSeconds % 60;
+        if (minutes == 0) {
+            return seconds + " giây";
+        }
+        return seconds == 0 ? minutes + " phút" : minutes + " phút " + seconds + " giây";
     }
 
     public static String outsideExamWindow(Exam exam) {
@@ -35,10 +48,10 @@ public final class ExamScheduleWindowMessages {
      */
     public static String schedulesNoLongerFit(int count, Exam exam) {
         if (exam.getKind() == ExamKind.CLASS_TEST) {
-            return "Tổng thời gian làm bài (" + exam.getExamTimeDurationSecond()
-                + " giây) vượt quá khoảng mở và đóng bài đã đặt. Vui lòng kéo dài thời gian đóng bài.";
+            return "Tổng thời gian làm bài (" + formatDuration(exam.getExamTimeDurationSecond())
+                + ") vượt quá khoảng mở và đóng bài đã đặt. Vui lòng kéo dài thời gian đóng bài.";
         }
-        return "Thời gian làm bài (" + exam.getExamTimeDurationSecond() + " giây) vượt quá thời lượng của "
+        return "Thời gian làm bài (" + formatDuration(exam.getExamTimeDurationSecond()) + ") vượt quá thời lượng của "
             + count + " ca thi đã lên lịch. Vui lòng kéo dài các ca thi này trước.";
     }
 

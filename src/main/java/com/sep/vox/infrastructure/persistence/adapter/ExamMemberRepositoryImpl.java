@@ -91,4 +91,9 @@ public class ExamMemberRepositoryImpl implements ExamMemberRepository {
     public void deleteById(UUID id) {
         springDataExamMemberRepository.deleteById(id);
     }
+
+    @Override
+    public void deleteByExamId(UUID examId) {
+        springDataExamMemberRepository.deleteByExamId(examId);
+    }
 }

@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 
 import com.sep.vox.application.query.dto.NearestCentralizedExamDto;
 import com.sep.vox.application.query.repository.NearestCentralizedExamQueryRepository;
+import com.sep.vox.application.response.output.CandidateExamProjection;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;

@@ -28,7 +28,6 @@ import com.sep.vox.domain.dto.TeacherDashboardSummaryDto.ScoreStatsDto;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamKind;
-import com.sep.vox.domain.model.exam.ExamMember;
 import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.model.exam.GradingAssignmentStatus;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
@@ -77,8 +76,8 @@ public class ViewTeacherDashboardUseCase implements IUseCase<Void, TeacherDashbo
         var schoolId = userContextPort.getCurrentSchoolId();
         var classTests = fetchTeacherClassTests(teacherId, schoolId);
 
-        var candidates = examCandidateRepository.findByExamIdIn(classTests.stream().map(Exam::getId).toList());
-        var candidateIds = candidates.stream().map(ExamCandidate::getId).toList();
+        var candidates = examCandidateRepository.findByExamIdIn(classTests.stream().map(exam -> exam.getId()).toList());
+        var candidateIds = candidates.stream().map(candidate -> candidate.getId()).toList();
         Map<UUID, ExamCandidateAttempts> attemptsByCandidateId = candidateIds.isEmpty()
             ? Map.of()
             : resolveExamCandidateAttemptsUseCase.executeBatch(candidateIds);
@@ -100,10 +99,10 @@ public class ViewTeacherDashboardUseCase implements IUseCase<Void, TeacherDashbo
             return List.of();
         }
 
-        var examIds = accessible.stream().map(Exam::getId).toList();
+        var examIds = accessible.stream().map(exam -> exam.getId()).toList();
         Set<UUID> memberExamIds = examMemberRepository.findByExamIdIn(examIds).stream()
             .filter(m -> m.getUserId().equals(teacherId))
-            .map(ExamMember::getExamId)
+            .map(member -> member.getExamId())
             .collect(Collectors.toSet());
 
         return accessible.stream().filter(e -> memberExamIds.contains(e.getId())).toList();
@@ -151,7 +150,7 @@ public class ViewTeacherDashboardUseCase implements IUseCase<Void, TeacherDashbo
             return List.of();
         }
 
-        var candidatesByExamId = candidates.stream().collect(Collectors.groupingBy(ExamCandidate::getExamId));
+        var candidatesByExamId = candidates.stream().collect(Collectors.groupingBy(candidate -> candidate.getExamId()));
         var classIdByStudentId = resolveActiveClassIdByStudent(candidates);
         var classIdByExamId = resolveClassIdByExam(classTests, candidatesByExamId, classIdByStudentId);
         var classNameById = resolveClassNames(classIdByExamId.values());
@@ -176,7 +175,7 @@ public class ViewTeacherDashboardUseCase implements IUseCase<Void, TeacherDashbo
     }
 
     private Map<UUID, UUID> resolveActiveClassIdByStudent(List<ExamCandidate> candidates) {
-        var studentIds = candidates.stream().map(ExamCandidate::getStudentId).distinct().toList();
+        var studentIds = candidates.stream().map(candidate -> candidate.getStudentId()).distinct().toList();
         if (studentIds.isEmpty()) {
             return Map.of();
         }
@@ -196,7 +195,7 @@ public class ViewTeacherDashboardUseCase implements IUseCase<Void, TeacherDashbo
                 .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
                 .entrySet().stream()
                 .max(Map.Entry.comparingByValue())
-                .map(Map.Entry::getKey)
+                .map(entry -> entry.getKey())
                 .orElse(null);
             classIdByExamId.put(exam.getId(), classId);
         }
@@ -217,14 +216,14 @@ public class ViewTeacherDashboardUseCase implements IUseCase<Void, TeacherDashbo
         return candidates.stream()
             .map(c -> attemptsByCandidateId.get(c.getId()))
             .filter(Objects::nonNull)
-            .map(ExamCandidateAttempts::officialScore)
+            .map(attempt -> attempt.officialScore())
             .filter(Objects::nonNull)
             .toList();
     }
 
     private BigDecimal average(List<BigDecimal> scores) {
         return scores.stream()
-            .reduce(BigDecimal.ZERO, BigDecimal::add)
+            .reduce(BigDecimal.ZERO, (a, b) -> a.add(b))
             .divide(BigDecimal.valueOf(scores.size()), 2, RoundingMode.HALF_UP);
     }
 }

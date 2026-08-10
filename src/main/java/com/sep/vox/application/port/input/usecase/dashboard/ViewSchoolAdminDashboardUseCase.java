@@ -125,7 +125,7 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
     private static BigDecimal sumAmount(List<Invoice> invoices) {
         return invoices.stream()
             .map(i -> i.getAmount())
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+            .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
     }
 
     /**

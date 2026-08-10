@@ -59,7 +59,7 @@ public class ExamResultAppealRepositoryImpl implements ExamResultAppealRepositor
 
     @Override
     public long countBySchoolIdAndStatusIn(UUID schoolId, Collection<ExamAppealStatus> statuses) {
-        var statusNames = statuses.stream().map(Enum::name).toList();
+        var statusNames = statuses.stream().map(e -> e.name()).toList();
         return springDataExamResultAppealRepository.countBySchoolIdAndStatusIn(schoolId, statusNames);
     }
 }

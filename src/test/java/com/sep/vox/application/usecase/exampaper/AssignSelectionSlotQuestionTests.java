@@ -25,6 +25,9 @@ import com.sep.vox.application.port.input.service.ExamTimeQuotaGuardService;
 import com.sep.vox.application.port.input.service.RecalculateExamTimeDurationService;
 import com.sep.vox.application.port.input.usecase.exam.ExamQuestionSecureLockService;
 import com.sep.vox.application.port.input.usecase.exampaper.UpdateExamPaperItemUseCase;
+import com.sep.vox.application.port.input.service.ExamPaperAuthoringAccessService;
+import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.domain.model.exam.ExamMember;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamBlueprintSlot;
@@ -93,7 +96,8 @@ class AssignSelectionSlotQuestionTests {
             examRepository,
             examPaperRepository,
             examPaperItemRepository,
-            examMemberRepository,
+            new ExamPaperAuthoringAccessService(
+                examMemberRepository, schoolUserRepository, mock(UserRoleQueryRepository.class)),
             examBlueprintSlotRepository,
             questionRepository,
             mock(QuestionCollaboratorRepository.class),
@@ -112,10 +116,8 @@ class AssignSelectionSlotQuestionTests {
         when(examPaperItemRepository.save(any(ExamPaperItem.class))).thenAnswer(inv -> inv.getArgument(0));
         when(examPaperRepository.findById(PAPER_ID)).thenReturn(Optional.of(paper));
         when(examRepository.findById(EXAM_ID)).thenReturn(Optional.of(centralizedExam()));
-        when(examMemberRepository.existsByExamIdAndUserIdAndRole(EXAM_ID, TEACHER_ID, ExamMemberRole.AUTHOR))
-            .thenReturn(true);
-        when(examMemberRepository.existsByExamIdAndUserIdAndRole(EXAM_ID, TEACHER_ID, ExamMemberRole.CHAIR))
-            .thenReturn(true);
+        when(examMemberRepository.findByExamIdAndUserId(EXAM_ID, TEACHER_ID)).thenReturn(Optional.of(
+            new ExamMember(EXAM_ID, TEACHER_ID, ExamMemberRole.AUTHOR, Instant.now(), TEACHER_ID)));
         when(examBlueprintSlotRepository.findById(SLOT_ID))
             .thenReturn(Optional.of(slot(ExamBlueprintSlotType.SELECTION, null)));
         when(questionRepository.findAccessibleById(eq(QUESTION_ID), any(), any(), anyBoolean(), anyBoolean()))

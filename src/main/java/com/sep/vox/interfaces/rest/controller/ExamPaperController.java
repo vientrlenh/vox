@@ -59,7 +59,7 @@ public class ExamPaperController {
     }
 
     @PostMapping("/exams/{examId}/papers")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<ExamPaperDto>> create(
             @PathVariable("examId") UUID examId,
             @Valid @RequestBody(required = false) CreateExamPaperRequest request) {
@@ -69,7 +69,7 @@ public class ExamPaperController {
     }
 
     @PutMapping("/exam-papers/{id}/items/{itemId}")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<ExamPaperItemDto>> updateItem(
             @PathVariable("id") UUID id,
             @PathVariable("itemId") UUID itemId,
@@ -79,7 +79,7 @@ public class ExamPaperController {
     }
 
     @PatchMapping("/exam-papers/{id}/sections/{sectionId}")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<ExamPaperSectionDto>> updateSection(
             @PathVariable("id") UUID id,
             @PathVariable("sectionId") UUID sectionId,
@@ -98,7 +98,7 @@ public class ExamPaperController {
     }
 
     @DeleteMapping("/exam-papers/{id}")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable("id") UUID id) {
         deleteExamPaperUseCase.execute(new DeleteExamPaperCommand(id));
         return ResponseEntity.ok(ApiResponse.success("Xóa đề thi thành công"));

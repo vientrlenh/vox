@@ -211,6 +211,12 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
             if (schoolAdmin && currentSchoolId != null && currentSchoolId.equals(examSchoolId)) {
                 return;
             }
+            // Chủ tịch hội đồng chạy trọn quy trình kỳ thi tập trung trên trang chi tiết, nên cũng là
+            // người bấm lên lịch / bắt đầu / đóng / công bố kết quả. Xoá kỳ thi thì vẫn chỉ quản trị
+            // trường (xem DeleteExamUseCase) — đó là thao tác phá huỷ, không nằm trong quy trình này.
+            if (examMemberRepository.existsByExamIdAndUserIdAndRole(examId, currentUserId, ExamMemberRole.CHAIR)) {
+                return;
+            }
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
         if (!examMemberRepository.existsByExamIdAndUserIdAndRole(examId, currentUserId, ExamMemberRole.CHAIR)) {

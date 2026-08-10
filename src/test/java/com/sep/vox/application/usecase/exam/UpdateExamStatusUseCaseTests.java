@@ -20,6 +20,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.port.input.command.UpdateExamStatusCommand;
+import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.PlanLimitExceededException;
 import com.sep.vox.application.port.input.service.ExamCandidateResultFinalizationService;
 import com.sep.vox.application.port.input.service.ExamScheduleClosureService;
@@ -327,6 +328,38 @@ class UpdateExamStatusUseCaseTests {
         assertThat(result.status()).isEqualTo(ExamStatus.SCHEDULED.name());
     }
 
+    /**
+     * Chủ tịch hội đồng chạy trọn quy trình kỳ thi tập trung nên cũng là người bấm lên lịch. Trước
+     * đây nhánh CENTRALIZED chỉ nhận quản trị trường, khiến giáo viên chủ tịch làm xong mọi bước rồi
+     * đứng lại ở nút cuối cùng.
+     */
+    @Test
+    void should_schedule_centralized_exam_when_caller_is_the_chair() {
+        givenCentralizedExam();
+        givenCallerIsChairInsteadOfSchoolAdmin();
+        var schedule = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
+        when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(schedule));
+        when(examScheduleProctorRepository.countByScheduleId(schedule.getId())).thenReturn(1L);
+        when(examPaperRepository.findByExamId(examId)).thenReturn(List.of(new ExamPaper()));
+
+        var result = useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null));
+
+        assertThat(result.status()).isEqualTo(ExamStatus.SCHEDULED.name());
+    }
+
+    @Test
+    void should_reject_status_change_when_caller_is_neither_school_admin_nor_chair() {
+        givenCentralizedExam();
+        givenCallerIsChairInsteadOfSchoolAdmin();
+        when(examMemberRepository.existsByExamIdAndUserIdAndRole(examId, userId, ExamMemberRole.CHAIR))
+            .thenReturn(false);
+
+        assertThatThrownBy(() -> useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null)))
+            .isInstanceOf(ForbiddenException.class)
+            .hasMessageContaining("Quyền truy cập bị từ chối");
+        verify(examRepository, never()).save(any());
+    }
+
     // --- Ca đã huỷ/dời không còn diễn ra, nên không được tham gia bất kỳ điều kiện lên lịch nào ---
 
     /**
@@ -580,9 +613,9 @@ class UpdateExamStatusUseCaseTests {
     }
 
     /**
-     * Kỳ thi tập trung dựng ở DRAFT, người gọi là SCHOOL_ADMIN cùng trường (authorizeMutation của
-     * nhánh CENTRALIZED không xét exam member), và mặc định đã đủ thí sinh + mã đề — từng test tự làm
-     * hỏng đúng một điều kiện.
+     * Kỳ thi tập trung dựng ở DRAFT, người gọi là SCHOOL_ADMIN cùng trường, và mặc định đã đủ thí
+     * sinh + mã đề — từng test tự làm hỏng đúng một điều kiện. Nhánh chủ tịch hội đồng xem
+     * {@link #givenCallerIsChairInsteadOfSchoolAdmin()}.
      */
     private void givenCentralizedExam() {
         var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
@@ -599,6 +632,15 @@ class UpdateExamStatusUseCaseTests {
 
         when(examCandidateRepository.countByExamId(examId)).thenReturn(1L);
         when(examPaperRepository.findByExamId(examId)).thenReturn(List.of(new ExamPaper()));
+    }
+
+    /** Hạ người gọi từ quản trị trường xuống giáo viên chỉ giữ vai trò CHAIR của chính kỳ thi đó. */
+    private void givenCallerIsChairInsteadOfSchoolAdmin() {
+        when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId)).thenReturn(List.of(
+            new UserRoleInfo(UUID.randomUUID(), userId, UUID.randomUUID(), Instant.now(), "TEACHER", "Giáo viên")
+        ));
+        when(examMemberRepository.existsByExamIdAndUserIdAndRole(examId, userId, ExamMemberRole.CHAIR))
+            .thenReturn(true);
     }
 
     private void givenGenerousPlan() {

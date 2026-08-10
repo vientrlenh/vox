@@ -9,6 +9,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -20,6 +21,10 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.command.DeleteExamPaperCommand;
 import com.sep.vox.application.port.input.service.RecalculateExamTimeDurationService;
 import com.sep.vox.application.port.input.usecase.exampaper.DeleteExamPaperUseCase;
+import com.sep.vox.application.port.input.service.ExamPaperAuthoringAccessService;
+import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.domain.model.exam.ExamMember;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamKind;
@@ -66,15 +71,16 @@ class DeleteExamPaperUseCaseTests {
             examPaperSectionRepository,
             examPaperItemRepository,
             examRepository,
-            examMemberRepository,
+            new ExamPaperAuthoringAccessService(
+                examMemberRepository, mock(SchoolUserRepository.class), mock(UserRoleQueryRepository.class)),
             recalculateExamTimeDurationService,
             userContextPort);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(examPaperRepository.findById(paperId)).thenReturn(Optional.of(paper(ExamPaperStatus.DRAFT)));
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam()));
-        when(examMemberRepository.existsByExamIdAndUserIdAndRole(examId, userId, ExamMemberRole.CHAIR))
-            .thenReturn(true);
+        when(examMemberRepository.findByExamIdAndUserId(examId, userId)).thenReturn(Optional.of(
+            new ExamMember(examId, userId, ExamMemberRole.AUTHOR, Instant.now(), userId)));
     }
 
     @Test

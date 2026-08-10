@@ -275,6 +275,22 @@ class DeleteExamUseCaseTests {
         verify(examRepository, never()).deleteById(any());
     }
 
+    /**
+     * Chốt hồi quy cho ranh giới quyền của chủ tịch hội đồng: họ chạy trọn quy trình kỳ thi tập trung
+     * (sửa thông tin, đổi trạng thái, ra đề, xếp lịch) nhưng xoá kỳ thi thì vẫn chỉ quản trị trường —
+     * đây là thao tác phá huỷ, không nằm trong quy trình đó.
+     */
+    @Test
+    void should_reject_delete_of_a_centralized_exam_by_its_chair() {
+        var exam = exam(ExamStatus.DRAFT);
+        exam.setKind(ExamKind.CENTRALIZED);
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+
+        assertThatThrownBy(() -> useCase.execute(new DeleteExamCommand(examId)))
+            .isInstanceOf(com.sep.vox.application.exception.ForbiddenException.class);
+        verify(examRepository, never()).deleteById(any());
+    }
+
     private void assertCancelledInsteadOfDeleted(ExamStatus status) {
         var exam = exam(status);
         var schedule = schedule(ExamScheduleStatus.PUBLISHED);

@@ -10,32 +10,42 @@ import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateExamPaperStatusCommand;
+import com.sep.vox.application.port.input.service.ExamPaperAuthoringAccessService;
+import com.sep.vox.application.port.input.service.ExamPaperAuthoringAccessService.PaperActor;
 import com.sep.vox.application.port.input.service.ExamTimeQuotaGuardService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.ExamPaperDto;
 import com.sep.vox.domain.mapper.ExamPaperDtoMapper;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamKind;
-import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamPaper;
 import com.sep.vox.domain.model.exam.ExamPaperStatus;
-import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamPaperItemRepository;
 import com.sep.vox.domain.repository.ExamPaperRepository;
 import com.sep.vox.domain.repository.ExamRepository;
-import com.sep.vox.domain.repository.SchoolUserRepository;
 
+/**
+ * Vòng đời một mã đề. Kỳ thi tập trung có hai đường đi, chọn theo <b>ai soạn ra mã đề đó</b>:
+ *
+ * <ul>
+ *   <li><b>Có người thứ hai</b> — mã đề do người khác soạn: DRAFT → IN_REVIEW → APPROVED → LOCKED,
+ *       với {@code requireNotAuthor} chặn người soạn tự duyệt bài của mình. Nhờ vậy trạng thái
+ *       {@code APPROVED} luôn có nghĩa "đã qua mắt người thứ hai".</li>
+ *   <li><b>Không có người thứ hai</b> — chủ tịch hội đồng hoặc quản trị trường tự soạn mã đề: đi tắt
+ *       một bước DRAFT → LOCKED. Bắt họ bấm nộp duyệt rồi tự duyệt chính bài mình chỉ tạo ra một dấu
+ *       {@code APPROVED} giả, còn cấm hẳn thì trường ít người không khoá nổi mã đề để phân đề.</li>
+ * </ul>
+ *
+ * <p>Bài trên lớp luôn đi đường tắt: giáo viên tạo bài vừa là CHAIR vừa là người soạn mọi mã đề.
+ */
 @Service
 public class UpdateExamPaperStatusUseCase implements IUseCase<UpdateExamPaperStatusCommand, ExamPaperDto> {
 
     private final ExamPaperRepository examPaperRepository;
     private final ExamPaperItemRepository examPaperItemRepository;
     private final ExamRepository examRepository;
-    private final ExamMemberRepository examMemberRepository;
-    private final SchoolUserRepository schoolUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
+    private final ExamPaperAuthoringAccessService examPaperAuthoringAccessService;
     private final ExamTimeQuotaGuardService examTimeQuotaGuardService;
     private final UserContextPort userContextPort;
 
@@ -43,17 +53,13 @@ public class UpdateExamPaperStatusUseCase implements IUseCase<UpdateExamPaperSta
             ExamPaperRepository examPaperRepository,
             ExamPaperItemRepository examPaperItemRepository,
             ExamRepository examRepository,
-            ExamMemberRepository examMemberRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
+            ExamPaperAuthoringAccessService examPaperAuthoringAccessService,
             ExamTimeQuotaGuardService examTimeQuotaGuardService,
             UserContextPort userContextPort) {
         this.examPaperRepository = examPaperRepository;
         this.examPaperItemRepository = examPaperItemRepository;
         this.examRepository = examRepository;
-        this.examMemberRepository = examMemberRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
+        this.examPaperAuthoringAccessService = examPaperAuthoringAccessService;
         this.examTimeQuotaGuardService = examTimeQuotaGuardService;
         this.userContextPort = userContextPort;
     }
@@ -71,47 +77,44 @@ public class UpdateExamPaperStatusUseCase implements IUseCase<UpdateExamPaperSta
             .orElseThrow(() -> new NotFoundException("Không tìm thấy đề thi"));
         var exam = examRepository.findById(paper.getExamId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+        var actor = examPaperAuthoringAccessService.resolve(exam, currentUserId);
 
         switch (command.action()) {
             case "SUBMIT" -> {
-                requireRole(paper.getExamId(), currentUserId, ExamMemberRole.AUTHOR);
-                if (examPaperItemRepository.existsUnassignedItemByPaperId(paper.getId())) {
-                    throw new IllegalStateException("Đề thi còn ô câu hỏi chưa được gán, không thể nộp duyệt");
-                }
+                requireCanAuthor(actor);
+                requireAllSlotsAssigned(paper, "Đề thi còn ô câu hỏi chưa được gán, không thể nộp duyệt");
                 requirePaperWithinPlan(exam, paper);
                 requireTransition(paper, ExamPaperStatus.DRAFT, ExamPaperStatus.IN_REVIEW);
             }
             case "APPROVE" -> {
-                requireReviewerOrAdminOverride(paper, exam.getSchoolId(), currentUserId);
+                requireCanReview(actor);
+                requireNotAuthor(paper, currentUserId);
                 requirePaperWithinPlan(exam, paper);
                 requireTransition(paper, ExamPaperStatus.IN_REVIEW, ExamPaperStatus.APPROVED);
             }
             case "REQUEST_REVISION" -> {
-                requireReviewerOrAdminOverride(paper, exam.getSchoolId(), currentUserId);
+                requireCanReview(actor);
+                requireNotAuthor(paper, currentUserId);
                 if (command.note() == null || command.note().isBlank()) {
                     throw new IllegalStateException("Yêu cầu sửa lại bắt buộc phải có góp ý");
                 }
                 requireTransition(paper, ExamPaperStatus.IN_REVIEW, ExamPaperStatus.DRAFT);
             }
             case "LOCK" -> {
+                requireCanDecide(actor);
                 requirePaperWithinPlan(exam, paper);
-                if (exam.getKind() == ExamKind.CLASS_TEST) {
-                    requireClassTestChair(paper, currentUserId);
-                    if (examPaperItemRepository.existsUnassignedItemByPaperId(paper.getId())) {
-                        throw new IllegalStateException("Mã đề còn ô câu hỏi chưa được gán, không thể khoá");
-                    }
+                if (isOneStepLock(exam, paper, currentUserId)) {
+                    requireAllSlotsAssigned(paper, "Mã đề còn ô câu hỏi chưa được gán, không thể khoá");
                     requireTransition(paper, ExamPaperStatus.DRAFT, ExamPaperStatus.LOCKED);
                 } else {
-                    requireChairOrAdminOverride(paper, exam.getSchoolId(), currentUserId);
+                    requireNotAuthor(paper, currentUserId);
                     requireTransition(paper, ExamPaperStatus.APPROVED, ExamPaperStatus.LOCKED);
                 }
             }
             case "REOPEN" -> {
-                if (exam.getKind() == ExamKind.CLASS_TEST) {
-                    requireClassTestChair(paper, currentUserId);
-                } else {
-                    requireChairOrAdminOverride(paper, exam.getSchoolId(), currentUserId);
-                }
+                // Không có requireNotAuthor ở đây: người vừa đi đường tắt DRAFT → LOCKED phải mở lại
+                // được chính mã đề của mình, nếu không họ tự khoá mình ra ngoài và mã đề kẹt vĩnh viễn.
+                requireCanDecide(actor);
                 requireTransition(paper, ExamPaperStatus.LOCKED, ExamPaperStatus.DRAFT);
             }
             default -> throw new IllegalStateException("Action không hợp lệ");
@@ -122,8 +125,28 @@ public class UpdateExamPaperStatusUseCase implements IUseCase<UpdateExamPaperSta
         return ExamPaperDtoMapper.toDto(examPaperRepository.save(paper));
     }
 
-    private void requireRole(UUID examId, UUID currentUserId, ExamMemberRole role) {
-        if (!examMemberRepository.existsByExamIdAndUserIdAndRole(examId, currentUserId, role)) {
+    /**
+     * Đi tắt khi không có người thứ hai để duyệt: bài trên lớp (chỉ có một CHAIR), hoặc kỳ thi tập
+     * trung mà chính người quyết định là người soạn ra mã đề này.
+     */
+    private boolean isOneStepLock(Exam exam, ExamPaper paper, UUID currentUserId) {
+        return exam.getKind() == ExamKind.CLASS_TEST || currentUserId.equals(paper.getCreatedBy());
+    }
+
+    private void requireCanAuthor(PaperActor actor) {
+        if (!actor.canAuthor()) {
+            throw new ForbiddenException("Quyền truy cập bị từ chối");
+        }
+    }
+
+    private void requireCanReview(PaperActor actor) {
+        if (!actor.canReview()) {
+            throw new ForbiddenException("Quyền truy cập bị từ chối");
+        }
+    }
+
+    private void requireCanDecide(PaperActor actor) {
+        if (!actor.canDecide()) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
     }
@@ -134,57 +157,10 @@ public class UpdateExamPaperStatusUseCase implements IUseCase<UpdateExamPaperSta
         }
     }
 
-    private void requireReviewerOrAdminOverride(ExamPaper paper, UUID examSchoolId, UUID currentUserId) {
-        // CHAIR có toàn quyền của REVIEWER (approve/request-revision), ngoài quyền lock/reopen riêng của CHAIR.
-        if (examMemberRepository.existsByExamIdAndUserIdAndRole(paper.getExamId(), currentUserId, ExamMemberRole.REVIEWER)
-                || examMemberRepository.existsByExamIdAndUserIdAndRole(paper.getExamId(), currentUserId, ExamMemberRole.CHAIR)) {
-            requireNotAuthor(paper, currentUserId);
-            return;
+    private void requireAllSlotsAssigned(ExamPaper paper, String message) {
+        if (examPaperItemRepository.existsUnassignedItemByPaperId(paper.getId())) {
+            throw new IllegalStateException(message);
         }
-        if (isSchoolAdminOverrideAllowed(paper, examSchoolId, currentUserId, ExamMemberRole.REVIEWER)) {
-            return;
-        }
-        throw new ForbiddenException("Quyền truy cập bị từ chối");
-    }
-
-    /**
-     * Bài trên lớp không có tách bạch tác giả/người duyệt: giáo viên tạo bài vừa là CHAIR vừa là
-     * người soạn mọi mã đề, nên {@code requireNotAuthor} sẽ khoá chết luồng này. Khoá đề ở đây là
-     * một bước DRAFT → LOCKED, chỉ để chốt nội dung trước khi phân đề cho học sinh.
-     */
-    private void requireClassTestChair(ExamPaper paper, UUID currentUserId) {
-        if (!examMemberRepository.existsByExamIdAndUserIdAndRole(paper.getExamId(), currentUserId, ExamMemberRole.CHAIR)) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
-        }
-    }
-
-    private void requireChairOrAdminOverride(ExamPaper paper, UUID examSchoolId, UUID currentUserId) {
-        if (examMemberRepository.existsByExamIdAndUserIdAndRole(paper.getExamId(), currentUserId, ExamMemberRole.CHAIR)) {
-            requireNotAuthor(paper, currentUserId);
-            return;
-        }
-        if (isSchoolAdminOverrideAllowed(paper, examSchoolId, currentUserId, ExamMemberRole.CHAIR)) {
-            return;
-        }
-        throw new ForbiddenException("Quyền truy cập bị từ chối");
-    }
-
-    private boolean isSchoolAdminOverrideAllowed(ExamPaper paper, UUID examSchoolId, UUID currentUserId, ExamMemberRole role) {
-        if (currentUserId.equals(paper.getCreatedBy())) {
-            return false;
-        }
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
-            .map(schoolUser -> schoolUser.getSchoolId())
-            .orElse(null);
-        if (currentSchoolId == null || !currentSchoolId.equals(examSchoolId)) {
-            return false;
-        }
-        var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-            .anyMatch(roleInfo -> "SCHOOL_ADMIN".equals(roleInfo.roleCode()));
-        if (!schoolAdmin) {
-            return false;
-        }
-        return !examMemberRepository.existsByExamIdAndRoleExcludingUserId(paper.getExamId(), role, paper.getCreatedBy());
     }
 
     private void requirePaperWithinPlan(Exam exam, ExamPaper paper) {

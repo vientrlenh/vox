@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.common.ExamCandidateStatusSupport;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateExamScheduleStatusCommand;
@@ -106,7 +107,30 @@ public class UpdateExamScheduleStatusUseCase implements IUseCase<UpdateExamSched
         if (examScheduleProctorRepository.countByScheduleId(schedule.getId()) < 1) {
             throw new IllegalStateException("Cần ít nhất 1 giám thị trước khi công bố ca thi");
         }
+        requireEveryCandidateHasPaper(schedule);
         schedule.setStatus(ExamScheduleStatus.PUBLISHED);
+    }
+
+    /**
+     * Ca đã công bố là ca học sinh và giám thị nhìn thấy và sẽ vào thi thật, nên phải chốt ngay ở
+     * đây: thiếu đề thì mãi tới lúc vào phòng mới nổ ({@code VerifyExamScheduleOtpUseCase}). Thí sinh
+     * đã miễn thi hoặc đã huỷ không vào phòng nên không cần đề, và cũng không làm ca "có người" --
+     * dùng chung cách phân loại với {@link ExamCandidateStatusSupport}.
+     */
+    private void requireEveryCandidateHasPaper(ExamSchedule schedule) {
+        var candidates = examCandidateRepository.findByScheduleId(schedule.getId()).stream()
+            .filter(candidate -> !ExamCandidateStatusSupport.isNonScorable(candidate.getStatus()))
+            .toList();
+        if (candidates.isEmpty()) {
+            throw new IllegalStateException("Ca thi chưa có thí sinh nào, không thể công bố");
+        }
+        var withoutPaper = candidates.stream()
+            .filter(candidate -> candidate.getAssignedPaperId() == null)
+            .count();
+        if (withoutPaper > 0) {
+            throw new IllegalStateException(
+                "Còn " + withoutPaper + " học sinh chưa được gán đề, không thể công bố ca thi");
+        }
     }
 
     /**

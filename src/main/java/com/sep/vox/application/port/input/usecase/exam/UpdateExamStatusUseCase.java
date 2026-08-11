@@ -325,10 +325,12 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
      * Kỳ thi tập trung trước đây lên lịch được cả khi chưa có ca thi, chưa có thí sinh và chưa có mã
      * đề nào — bài mang trạng thái SCHEDULED mà thực tế không ai vào thi được.
      *
-     * <p>Chốt ở đây nhẹ hơn bài trên lớp một bậc: KHÔNG đòi từng thí sinh đã có ca và đã có đề, vì kỳ
-     * thi tập trung xếp ca ({@code AssignExamCandidateSchedule}/{@code AutoFill}) và phân đề
-     * ({@code AssignExamPapersUseCase}, đòi mọi đề LOCKED) sau khi đã lên lịch. Chỉ chặn đúng trường
-     * hợp "rỗng" mà không có cách nào chạy được.
+     * <p>Chốt ở đây nhẹ hơn bài trên lớp một bậc: KHÔNG đòi từng thí sinh đã có ca và đã có đề, vì
+     * luật đó đã nằm ở bước công bố từng ca ({@code UpdateExamScheduleStatusUseCase.publish}: ca phải
+     * có thí sinh và mọi thí sinh trong ca đã có đề). Kỳ thi tập trung vì thế phải xếp ca
+     * ({@code AssignExamCandidateSchedule}/{@code AutoFill}) và phân đề ({@code AssignExamPapersUseCase},
+     * đòi mọi đề LOCKED) TRƯỚC khi công bố ca -- cả hai thao tác đều chạy được lúc kỳ thi còn DRAFT.
+     * Ở đây chỉ chặn đúng trường hợp "rỗng" mà không có cách nào chạy được.
      *
      * <p>Ngoài ra mọi ca thi phải đã được công bố: ca còn DRAFT thì học sinh và giám thị chưa nhìn
      * thấy, kỳ thi "đã lên lịch" mà có ca không ai vào được.

@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.examcandidate;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -10,11 +11,12 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.common.ExamEditingGuard;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.BulkAssignExamCandidateScheduleCommand;
-import com.sep.vox.application.port.input.service.ClassTestPaperAutoAssigner;
+import com.sep.vox.application.port.input.service.ExamPaperAutoAssigner;
 import com.sep.vox.application.port.input.service.ExamScheduleManageAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.ExamCandidateDto;
 import com.sep.vox.domain.mapper.ExamCandidateDtoMapper;
+import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamScheduleStatus;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamRepository;
@@ -37,19 +39,19 @@ public class BulkAssignExamCandidateScheduleUseCase
     private final ExamRepository examRepository;
     private final ExamCandidateRepository examCandidateRepository;
     private final ExamScheduleRepository examScheduleRepository;
-    private final ClassTestPaperAutoAssigner classTestPaperAutoAssigner;
+    private final ExamPaperAutoAssigner examPaperAutoAssigner;
     private final ExamScheduleManageAccessService examScheduleManageAccessService;
 
     public BulkAssignExamCandidateScheduleUseCase(
             ExamRepository examRepository,
             ExamCandidateRepository examCandidateRepository,
             ExamScheduleRepository examScheduleRepository,
-            ClassTestPaperAutoAssigner classTestPaperAutoAssigner,
+            ExamPaperAutoAssigner examPaperAutoAssigner,
             ExamScheduleManageAccessService examScheduleManageAccessService) {
         this.examRepository = examRepository;
         this.examCandidateRepository = examCandidateRepository;
         this.examScheduleRepository = examScheduleRepository;
-        this.classTestPaperAutoAssigner = classTestPaperAutoAssigner;
+        this.examPaperAutoAssigner = examPaperAutoAssigner;
         this.examScheduleManageAccessService = examScheduleManageAccessService;
     }
 
@@ -88,17 +90,17 @@ public class BulkAssignExamCandidateScheduleUseCase
         }
 
         var now = Instant.now();
-        var singlePaperId = classTestPaperAutoAssigner.resolveSinglePaperId(exam);
+        var assignedToSchedule = new ArrayList<ExamCandidate>();
         for (var candidate : candidates) {
             if (scheduleId == null) {
                 candidate.unassignFromSchedule(now, currentUserId);
                 continue;
             }
             candidate.assignToSchedule(scheduleId, now, currentUserId);
-            if (singlePaperId != null && candidate.getAssignedPaperId() == null) {
-                candidate.assignPaper(singlePaperId, now, currentUserId);
-            }
+            assignedToSchedule.add(candidate);
         }
+        // Chỉ thí sinh vừa được xếp vào ca mới được gán đề; bỏ gán khỏi ca thì giữ nguyên đề đang có.
+        examPaperAutoAssigner.assignPapersIfNeeded(exam, assignedToSchedule, now, currentUserId);
         return ExamCandidateDtoMapper.toDtoList(examCandidateRepository.saveAll(candidates));
     }
 }

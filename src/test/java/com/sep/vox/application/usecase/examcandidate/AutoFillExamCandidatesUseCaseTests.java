@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
 import com.sep.vox.application.port.input.command.AutoFillExamCandidatesCommand;
-import com.sep.vox.application.port.input.service.ClassTestPaperAutoAssigner;
+import com.sep.vox.application.port.input.service.ExamPaperAutoAssigner;
 import com.sep.vox.application.port.input.service.ExamScheduleManageAccessService;
 import com.sep.vox.application.port.input.usecase.examcandidate.AutoFillExamCandidatesUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -70,7 +70,7 @@ class AutoFillExamCandidatesUseCaseTests {
         // trước khi nó được tách ra khỏi use case.
         useCase = new AutoFillExamCandidatesUseCase(
             examRepository, examCandidateRepository, examScheduleRepository,
-            new ClassTestPaperAutoAssigner(mock(ExamPaperRepository.class)),
+            new ExamPaperAutoAssigner(mock(ExamPaperRepository.class), examCandidateRepository),
             new ExamScheduleManageAccessService(
                 examMemberRepository, schoolUserRepository, userRoleQueryRepository, userContextPort));
 

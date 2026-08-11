@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.command.UpdateExamPaperStatusCommand;
+import com.sep.vox.application.port.input.service.ExamPaperAutoAssigner;
 import com.sep.vox.application.port.input.service.ExamTimeQuotaGuardService;
 import com.sep.vox.application.port.input.usecase.exampaper.UpdateExamPaperStatusUseCase;
 import com.sep.vox.application.port.input.service.ExamPaperAuthoringAccessService;
@@ -27,6 +28,7 @@ import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamPaper;
 import com.sep.vox.domain.model.exam.ExamPaperStatus;
 import com.sep.vox.domain.repository.ExamMemberRepository;
+import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamPaperItemRepository;
 import com.sep.vox.domain.repository.ExamPaperRepository;
 import com.sep.vox.domain.repository.ExamRepository;
@@ -62,9 +64,11 @@ class LockClassTestPaperTests {
             examPaperRepository,
             examPaperItemRepository,
             examRepository,
+            mock(ExamCandidateRepository.class),
             new ExamPaperAuthoringAccessService(
                 examMemberRepository, mock(SchoolUserRepository.class), mock(UserRoleQueryRepository.class)),
             mock(ExamTimeQuotaGuardService.class),
+            mock(ExamPaperAutoAssigner.class),
             userContextPort
         );
 

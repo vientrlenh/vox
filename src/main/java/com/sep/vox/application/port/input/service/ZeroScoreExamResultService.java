@@ -29,6 +29,9 @@ import com.sep.vox.domain.repository.RubricResultBandRepository;
 @Service
 public class ZeroScoreExamResultService {
 
+    private static final org.slf4j.Logger LOGGER =
+        org.slf4j.LoggerFactory.getLogger(ZeroScoreExamResultService.class);
+
     private static final BigDecimal ZERO_SCORE = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
 
     private final ExamRepository examRepository;
@@ -162,6 +165,14 @@ public class ZeroScoreExamResultService {
             .orElseThrow(() -> new NotFoundException("Không tìm thấy assessment policy"));
     }
 
+    /**
+     * Dải điểm kết quả cho bài 0 điểm, hoặc {@code null} nếu không suy ra được.
+     *
+     * <p>Cùng lý lẽ với {@code ExamSessionResultCalculator.resolveRubricResultBand} -- xem chú
+     * thích dài ở đó. Bản trước ném khi số dải khớp khác 1, và đường này còn dễ trúng hơn đường
+     * thường: nhiều trường không đặt dải nào chứa 0.00 (dải thấp nhất bắt đầu từ 1 hoặc 10), nên
+     * đúng những bài đáng ra phải được ghi nhận 0 điểm lại là những bài biến mất.
+     */
     private RubricResultBand resolveRubricBandForZero(AssessmentPolicy policy) {
         if (policy.getRubricVersionId() == null) {
             return null;
@@ -173,9 +184,19 @@ public class ZeroScoreExamResultService {
                 && ZERO_SCORE.compareTo(band.getScoreMin()) >= 0
                 && ZERO_SCORE.compareTo(band.getScoreMax()) <= 0)
             .toList();
-        if (matchingBands.size() != 1) {
-            throw new IllegalStateException("Điểm 0.00 phải thuộc chính xác một dải điểm kết quả, nhưng tìm thấy "
-                + matchingBands.size() + " dải.");
+        if (matchingBands.isEmpty()) {
+            LOGGER.info(
+                "Không có dải điểm kết quả nào chứa 0.00 (rubricVersionId={}) -- lưu kết quả 0 điểm không kèm xếp loại.",
+                policy.getRubricVersionId()
+            );
+            return null;
+        }
+        if (matchingBands.size() > 1) {
+            LOGGER.error(
+                "Cấu hình dải điểm CHỒNG LẤN tại 0.00: khớp {} dải của rubricVersionId={}."
+                    + " Lấy dải order nhỏ nhất ({}). Quản trị cần sửa lại dải.",
+                matchingBands.size(), policy.getRubricVersionId(), matchingBands.get(0).getCode()
+            );
         }
         return matchingBands.get(0);
     }

@@ -35,6 +35,9 @@ import com.sep.vox.domain.repository.RubricResultBandRepository;
 @Service
 public class ExamSessionResultCalculator {
 
+    private static final org.slf4j.Logger LOGGER =
+        org.slf4j.LoggerFactory.getLogger(ExamSessionResultCalculator.class);
+
     private final ExamSessionRepository examSessionRepository;
     private final ExamRepository examRepository;
     private final AssessmentPolicyRepository assessmentPolicyRepository;
@@ -216,14 +219,27 @@ public class ExamSessionResultCalculator {
     }
 
     private RubricResultBand resolveRubricResultBand(AssessmentPolicy policy, BigDecimal totalScore) {
+        if (policy.getRubricVersionId() == null) {
+            return null;
+        }
         var matchingBands = rubricResultBandRepository.findByRubricVersionId(policy.getRubricVersionId()).stream()
             .sorted(Comparator.comparingInt(band -> band.getOrder()))
             .filter(band -> within(totalScore, band.getScoreMin(), band.getScoreMax()))
             .toList();
-        if (matchingBands.size() != 1) {
-            throw new IllegalStateException("Điểm " + totalScore
-                + " phải thuộc chính xác một dải điểm kết quả, nhưng tìm thấy "
-                + matchingBands.size() + " dải.");
+        if (matchingBands.isEmpty()) {
+            LOGGER.info(
+                "Không có dải điểm kết quả nào khớp tổng điểm {} (rubricVersionId={}) -- lưu kết quả không kèm xếp loại.",
+                totalScore, policy.getRubricVersionId()
+            );
+            return null;
+        }
+        if (matchingBands.size() > 1) {
+            LOGGER.error(
+                "Cấu hình dải điểm CHỒNG LẤN: tổng điểm {} khớp {} dải của rubricVersionId={}."
+                    + " Lấy dải order nhỏ nhất ({}). Quản trị cần sửa lại dải.",
+                totalScore, matchingBands.size(), policy.getRubricVersionId(),
+                matchingBands.get(0).getCode()
+            );
         }
         return matchingBands.get(0);
     }

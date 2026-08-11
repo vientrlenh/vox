@@ -31,6 +31,7 @@ import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;
 import com.sep.vox.domain.repository.FrameworkResultBandRepository;
 import com.sep.vox.domain.repository.RubricResultBandRepository;
+import com.sep.vox.domain.repository.RubricVersionRepository;
 
 @Service
 public class ExamSessionResultCalculator {
@@ -47,6 +48,7 @@ public class ExamSessionResultCalculator {
     private final ExamPaperSectionRepository examPaperSectionRepository;
     private final RubricResultBandRepository rubricResultBandRepository;
     private final FrameworkResultBandRepository frameworkResultBandRepository;
+    private final RubricVersionRepository rubricVersionRepository;
 
     public ExamSessionResultCalculator(
             ExamSessionRepository examSessionRepository,
@@ -57,7 +59,8 @@ public class ExamSessionResultCalculator {
             ExamPaperItemRepository examPaperItemRepository,
             ExamPaperSectionRepository examPaperSectionRepository,
             RubricResultBandRepository rubricResultBandRepository,
-            FrameworkResultBandRepository frameworkResultBandRepository) {
+            FrameworkResultBandRepository frameworkResultBandRepository,
+            RubricVersionRepository rubricVersionRepository) {
         this.examSessionRepository = examSessionRepository;
         this.examRepository = examRepository;
         this.assessmentPolicyRepository = assessmentPolicyRepository;
@@ -67,6 +70,7 @@ public class ExamSessionResultCalculator {
         this.examPaperSectionRepository = examPaperSectionRepository;
         this.rubricResultBandRepository = rubricResultBandRepository;
         this.frameworkResultBandRepository = frameworkResultBandRepository;
+        this.rubricVersionRepository = rubricVersionRepository;
     }
 
     public CalculatedExamSessionResult calculate(UUID sessionId) {
@@ -150,7 +154,18 @@ public class ExamSessionResultCalculator {
      */
     private RolledUpScores rollUp(LoadedSession loaded, Map<UUID, BigDecimal> itemScoreByResponseId) {
         var sectionScores = new LinkedHashMap<UUID, BigDecimal>();
-        loaded.orderedSections().forEach(section -> sectionScores.put(section.getId(), scaled(BigDecimal.ZERO)));
+        // Tổng trọng số câu THEO TỪNG PHẦN -- mẫu số của phép chuẩn hoá bên dưới.
+        var sectionWeightSums = new LinkedHashMap<UUID, BigDecimal>();
+        // Tổng điểm câu KHÔNG nhân trọng số, và số câu -- chỉ dùng khi mọi trọng số trong phần đều
+        // bằng 0, lúc đó lùi về trung bình cộng (xem normalizedSectionScore).
+        var sectionPlainSums = new LinkedHashMap<UUID, BigDecimal>();
+        var sectionItemCounts = new LinkedHashMap<UUID, Integer>();
+        loaded.orderedSections().forEach(section -> {
+            sectionScores.put(section.getId(), scaled(BigDecimal.ZERO));
+            sectionWeightSums.put(section.getId(), BigDecimal.ZERO);
+            sectionPlainSums.put(section.getId(), BigDecimal.ZERO);
+            sectionItemCounts.put(section.getId(), 0);
+        });
 
         var itemScores = new ArrayList<ItemScore>();
         for (var response : loaded.responses()) {
@@ -165,6 +180,13 @@ public class ExamSessionResultCalculator {
             sectionScores.compute(paperItem.getSectionId(), (ignored, current) ->
                 scaled((current == null ? BigDecimal.ZERO : current).add(weightedScore))
             );
+            sectionWeightSums.compute(paperItem.getSectionId(), (ignored, current) ->
+                (current == null ? BigDecimal.ZERO : current).add(weight)
+            );
+            sectionPlainSums.compute(paperItem.getSectionId(), (ignored, current) ->
+                (current == null ? BigDecimal.ZERO : current).add(itemScore)
+            );
+            sectionItemCounts.merge(paperItem.getSectionId(), 1, Integer::sum);
             itemScores.add(new ItemScore(
                 paperItem.getId(),
                 response.getId(),
@@ -174,15 +196,28 @@ public class ExamSessionResultCalculator {
             ));
         }
 
+        // sectionScores được dùng lại ở calculateTotalScore, nên chuẩn hoá TẠI CHỖ trước khi dựng
+        // danh sách hiển thị -- không thì điểm phần người dùng thấy và điểm phần đi vào tổng là hai
+        // số khác nhau.
+        sectionScores.replaceAll((sectionId, weightedSum) -> normalizedSectionScore(
+            weightedSum,
+            sectionWeightSums.getOrDefault(sectionId, BigDecimal.ZERO),
+            sectionPlainSums.getOrDefault(sectionId, BigDecimal.ZERO),
+            sectionItemCounts.getOrDefault(sectionId, 0),
+            loaded.scaleFloor()
+        ));
+
         var sections = loaded.orderedSections().stream()
             .map(section -> new SectionScore(
                 section.getId(),
                 section.getTitle(),
-                sectionScores.getOrDefault(section.getId(), scaled(BigDecimal.ZERO))
+                sectionScores.getOrDefault(section.getId(), loaded.scaleFloor())
             ))
             .toList();
         return new RolledUpScores(
-            calculateTotalScore(loaded.orderedSections(), sectionScores), sections, itemScores);
+            calculateTotalScore(loaded.orderedSections(), sectionScores, loaded.scaleFloor()),
+            sections,
+            itemScores);
     }
 
     /** Tất cả dữ liệu một lần chấm cần, nạp đúng một lần cho cả calculate lẫn preview. */
@@ -204,7 +239,9 @@ public class ExamSessionResultCalculator {
         var paperItemsById = examPaperItemRepository.findByPaperId(session.getPaperId()).stream()
             .collect(Collectors.toMap(item -> item.getId(), Function.identity(), (left, right) -> left));
 
-        return new LoadedSession(session, exam.getId(), policy, orderedSections, responses, paperItemsById);
+        return new LoadedSession(
+            session, exam.getId(), policy, orderedSections, responses, paperItemsById,
+            resolveScaleFloor(policy));
     }
 
     /**
@@ -255,11 +292,66 @@ public class ExamSessionResultCalculator {
         return value.setScale(2, RoundingMode.HALF_UP);
     }
 
+    /**
+     * Sàn thang của rubric mà policy này dùng -- điểm cho một phần/bài không có gì để tính.
+     *
+     * <p>Trước 2026-08-11 những chỗ đó trả thẳng 0. Số 0 chỉ đúng khi thang bắt đầu từ 0; thang
+     * 4-10 thì nó nằm dưới sàn và không dải xếp loại nào chứa được.
+     *
+     * <p>Không tra được rubric version thì lùi về 0, giữ hành vi cũ cho dữ liệu thiếu cấu hình.
+     */
+    private BigDecimal resolveScaleFloor(AssessmentPolicy policy) {
+        if (policy.getRubricVersionId() == null) {
+            return scaled(BigDecimal.ZERO);
+        }
+        return rubricVersionRepository.findById(policy.getRubricVersionId())
+            .map(version -> version.getScoringScaleMin())
+            .map(this::scaled)
+            .orElseGet(() -> scaled(BigDecimal.ZERO));
+    }
+
+    /**
+     * Chuẩn hoá điểm phần: {@code Σ(điểm_câu × trọng_số_câu) / Σ trọng_số_câu}.
+     *
+     * <p>Phép chia này THÊM 2026-08-11. Trước đó tầng câu→phần chỉ cộng tích mà không chia, trong
+     * khi tầng phần→tổng ngay bên dưới lại có chia -- hai quy ước ngược nhau trong cùng một hàm.
+     * Nó vô hại đúng một trường hợp: trọng số các câu trong phần cộng lại vừa bằng 1. Lệch khỏi đó
+     * là điểm phần rời khỏi thang rubric, và khi tổng điểm rời thang thì KHÔNG dải xếp loại nào
+     * khớp -- học sinh có điểm mà không có xếp loại.
+     *
+     * <p>Ví dụ đã đo: một phần có 2 câu, mỗi câu trọng số 1.00, hai câu được 83.47 và 74.78 trên
+     * thang 100. Bản cũ cho điểm phần 158.25; bản này cho 79.13.
+     *
+     * <p>Hai mức lùi khi không chia được, cả hai đều cho ra điểm NẰM TRONG thang:
+     *
+     * <ul>
+     *   <li>Mọi câu trong phần đều trọng số 0 -- trả trung bình cộng các câu. Đọc đúng ý "không ai
+     *       khai trọng số thì các câu ngang nhau", chứ không phải "mọi câu đều vô giá trị": bản
+     *       trước trả về tổng đã nhân, tức 0, và trên thang 4-10 thì 0 nằm ngoài thang.
+     *   <li>Phần không có câu nào -- trả sàn thang, cũng vì lý do đó.
+     * </ul>
+     */
+    private BigDecimal normalizedSectionScore(
+            BigDecimal weightedSum,
+            BigDecimal weightSum,
+            BigDecimal plainSum,
+            int itemCount,
+            BigDecimal scaleFloor) {
+        if (weightSum != null && weightSum.compareTo(BigDecimal.ZERO) > 0) {
+            return weightedSum.divide(weightSum, 2, RoundingMode.HALF_UP);
+        }
+        if (itemCount > 0) {
+            return plainSum.divide(BigDecimal.valueOf(itemCount), 2, RoundingMode.HALF_UP);
+        }
+        return scaleFloor;
+    }
+
     private BigDecimal calculateTotalScore(
             List<ExamPaperSection> orderedSections,
-            LinkedHashMap<UUID, BigDecimal> sectionScores) {
+            LinkedHashMap<UUID, BigDecimal> sectionScores,
+            BigDecimal scaleFloor) {
         if (orderedSections.isEmpty()) {
-            return scaled(BigDecimal.ZERO);
+            return scaleFloor;
         }
 
         var totalWeight = orderedSections.stream()
@@ -268,7 +360,7 @@ public class ExamSessionResultCalculator {
 
         if (totalWeight.compareTo(BigDecimal.ZERO) > 0) {
             var weightedTotal = orderedSections.stream()
-                .map(section -> sectionScores.getOrDefault(section.getId(), scaled(BigDecimal.ZERO))
+                .map(section -> sectionScores.getOrDefault(section.getId(), scaleFloor)
                     .multiply(section.getWeight() == null ? BigDecimal.ZERO : section.getWeight()))
                 .reduce(BigDecimal.ZERO, (left, right) -> left.add(right));
             return scaled(weightedTotal.divide(totalWeight, 2, RoundingMode.HALF_UP));
@@ -284,7 +376,9 @@ public class ExamSessionResultCalculator {
         AssessmentPolicy policy,
         List<ExamPaperSection> orderedSections,
         List<ExamItemResponse> responses,
-        Map<UUID, ExamPaperItem> paperItemsById
+        Map<UUID, ExamPaperItem> paperItemsById,
+        /** Sàn thang rubric -- điểm của một phần/bài không có gì để tính. */
+        BigDecimal scaleFloor
     ) {
     }
 

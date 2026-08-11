@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.examevaluation;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -33,6 +34,7 @@ import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.TurnType;
 import com.sep.vox.domain.model.rubric.RubricCriterion;
 import com.sep.vox.domain.model.rubric.RubricTotalScoreMethod;
+import com.sep.vox.domain.service.exam.RubricItemScoreFormula;
 import com.sep.vox.application.port.input.service.ClassTestGradingAssignmentService;
 import com.sep.vox.application.port.input.service.ConfidenceReviewCalculator;
 import com.sep.vox.domain.valueobject.ConfidenceCaseSignals;
@@ -145,13 +147,12 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
                 Function.identity(),
                 (left, right) -> left
             ));
+            // Kẹp về trong thang nay nằm SẴN trong RubricItemScoreFormula (dùng chung với đường
+            // chấm tay), nên không còn lời gọi clampScore riêng ở đây nữa.
             BigDecimal itemScore = computeItemScore(
                 criteriaMap,
                 rubricCriteriaByCode,
-                evaluationContext.totalScoreMethod()
-            );
-            itemScore = clampScore(
-                itemScore,
+                evaluationContext.totalScoreMethod(),
                 evaluationContext.scoringScaleMin(),
                 evaluationContext.scoringScaleMax()
             );
@@ -195,12 +196,22 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
             var requiresRetake = requiresRetake(validity);
             boolean markedInvalid = hasCriticalValidityFlag
                 || (validity != null && Boolean.FALSE.equals(validity.validForScoring()));
+            // Bài vô hiệu nhận SÀN CỦA THANG, không phải số 0 (sửa 2026-08-11).
+            //
+            // Số 0 chỉ tình cờ đúng với thang bắt đầu từ 0. Trường khai thang 4-10 thì 0 nằm DƯỚI
+            // sàn, kéo điểm phần và điểm phiên tụt ra ngoài thang, và khi tổng điểm ngoài thang thì
+            // không dải xếp loại nào khớp -- học sinh có điểm mà bỏ trống xếp loại.
+            //
+            // Nghĩa nghiệp vụ không đổi: sàn thang LÀ điểm thấp nhất diễn đạt được của rubric đó.
+            // Trường nào muốn "bỏ trống = 0" thì khai sàn thang bằng 0, đó là lựa chọn của họ về
+            // thang điểm chứ không phải quyết định của hệ thống.
+            var floorScore = scaleFloor(evaluationContext.scoringScaleMin());
             boolean zeroedByValidity = markedInvalid;
             if (zeroedByValidity) {
-                itemScore = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+                itemScore = floorScore;
             }
             if ("uncooperative_move_on".equals(response.getTerminationReason())) {
-                itemScore = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+                itemScore = floorScore;
                 requiresHumanReview = true;
                 reviewReasonCode = "CONDUCT_VIOLATION";
                 markedInvalid = true;
@@ -286,8 +297,11 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
                     if (criterion == null) {
                         return null;
                     }
+                    // Sàn của CHÍNH tiêu chí đó, không phải số 0 -- cùng lý do với điểm câu ở trên.
+                    // Dùng min của tiêu chí (không phải của thang) vì với SUM mỗi tiêu chí có
+                    // khoảng riêng, và điểm hiển thị từng tiêu chí phải nằm trong khoảng của nó.
                     var score = zeroCriterionScores
-                        ? BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP)
+                        ? clampCriterionScore(criterion.getMinScore(), criterion)
                         : clampCriterionScore(
                             BigDecimal.valueOf(entry.getValue().score()),
                             criterion
@@ -357,17 +371,21 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
             .isPresent();
     }
 
+    /**
+     * Phân giải tiêu chí từ payload của AI rồi giao phép tính cho công thức DÙNG CHUNG với đường
+     * chấm tay ({@link RubricItemScoreFormula}) -- xem lý do gộp ở javadoc của lớp đó.
+     *
+     * <p>Phần riêng của đường này: tiêu chí trong payload không khớp mã nào của rubric thì BỎ QUA
+     * im lặng, không ném. Chấm tay thì ngược lại (ném lỗi) vì đó là người đang nhập; còn ở đây một
+     * mã lạ do Python gửi lên không được phép làm hỏng cả lượt chấm.
+     */
     private BigDecimal computeItemScore(
             Map<String, CriterionScoreInput> criteriaMap,
             Map<String, RubricCriterion> rubricCriteriaByCode,
-            RubricTotalScoreMethod totalScoreMethod) {
-        var weightedSum = BigDecimal.ZERO;
-        var weightSum = BigDecimal.ZERO;
-        var matchedSum = BigDecimal.ZERO;
-        var matchedCount = 0;
-        var unweightedSum = BigDecimal.ZERO;
-        var unweightedCount = 0;
-
+            RubricTotalScoreMethod totalScoreMethod,
+            BigDecimal scoringScaleMin,
+            BigDecimal scoringScaleMax) {
+        var scored = new ArrayList<RubricItemScoreFormula.ScoredCriterion>();
         for (var entry : criteriaMap.entrySet()) {
             var criterionScore = entry.getValue();
             if (criterionScore == null || criterionScore.score() == null) {
@@ -377,33 +395,14 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
             if (criterion == null) {
                 continue;
             }
-            var score = clampCriterionScore(BigDecimal.valueOf(criterionScore.score()), criterion);
-            unweightedSum = unweightedSum.add(score);
-            unweightedCount++;
-
-            matchedSum = matchedSum.add(score);
-            matchedCount++;
-            if (criterion.getWeight() == null) {
-                continue;
-            }
-            weightedSum = weightedSum.add(score.multiply(criterion.getWeight()));
-            weightSum = weightSum.add(criterion.getWeight());
+            scored.add(new RubricItemScoreFormula.ScoredCriterion(
+                clampCriterionScore(BigDecimal.valueOf(criterionScore.score()), criterion),
+                criterion.getWeight()
+            ));
         }
-
-        if (totalScoreMethod == RubricTotalScoreMethod.SUM && matchedCount > 0) {
-            return matchedSum.setScale(2, RoundingMode.HALF_UP);
-        }
-        if (weightSum.compareTo(BigDecimal.ZERO) > 0) {
-            return weightedSum.divide(weightSum, 2, RoundingMode.HALF_UP);
-        }
-
-        // Fallback: none of the incoming criteria matched a RubricCriterion with
-        // a real weight (e.g. codes don't line up with what's seeded for this
-        // rubric version) -- plain mean, same behavior as before this fix, so
-        // grading doesn't silently collapse to zero.
-        return unweightedCount == 0
-            ? BigDecimal.ZERO
-            : unweightedSum.divide(BigDecimal.valueOf(unweightedCount), 2, RoundingMode.HALF_UP);
+        return RubricItemScoreFormula.compute(
+            scored, totalScoreMethod, scoringScaleMin, scoringScaleMax
+        );
     }
 
     private BigDecimal clampScore(BigDecimal score, BigDecimal scaleMin, BigDecimal scaleMax) {
@@ -419,6 +418,16 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
 
     private BigDecimal clampCriterionScore(BigDecimal score, RubricCriterion criterion) {
         return clampScore(score, criterion.getMinScore(), criterion.getMaxScore());
+    }
+
+    /**
+     * Sàn của thang rubric -- điểm dành cho bài bị vô hiệu hoá (không hợp lệ, không hợp tác).
+     *
+     * <p>Chưa khai thang thì lùi về 0, giữ nguyên hành vi cũ cho dữ liệu thiếu cấu hình.
+     */
+    private BigDecimal scaleFloor(BigDecimal scoringScaleMin) {
+        return (scoringScaleMin == null ? BigDecimal.ZERO : scoringScaleMin)
+            .setScale(2, RoundingMode.HALF_UP);
     }
 
     private EvaluationContext resolveEvaluationContext(UUID sessionId) {

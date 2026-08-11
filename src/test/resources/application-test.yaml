@@ -4,6 +4,26 @@ spring:
     grpc:
         server:
             port: 0
+
+    # Cách ly Kafka. ContainerTestConfig chỉ dựng testcontainer cho Postgres, KHÔNG có
+    # container Kafka -- nên nếu không chặn ở đây thì mọi @SpringBootTest sẽ nối thẳng vào
+    # broker thật của máy dev (spring.kafka.bootstrap-servers mặc định localhost:9092).
+    #
+    # từ offset 0 bằng đúng group-id production, tra phiên thi trong DB testcontainer rỗng nên
+    # fail hết, rồi đẩy toàn bộ event sang DLT. Với app thật thì số event đó coi như đã tiêu
+    # thụ xong và mất vĩnh viễn.
+    kafka:
+        listener:
+            # Chốt chặn chính: không container listener nào khởi động, nên không có gì bị đọc mất.
+            auto-startup: false
+        admin:
+            # @RetryableTopic(autoCreateTopics="true") đăng ký NewTopic bean; KafkaAdmin sẽ tạo
+            # chúng trên broker thật ngay lúc dựng context dù listener không chạy.
+            auto-create: false
+        consumer:
+            # Chốt chặn cuối, phòng khi có test tự bật listener lên: không tua lại lịch sử topic.
+            auto-offset-reset: latest
+
     jpa:
         database-platform: org.hibernate.dialect.H2Dialect
         hibernate:
@@ -38,3 +58,38 @@ app:
   frontend:
     password-setup-url: http://localhost:5173/test-password-setup-url
     oauth2-url: http://localhost:5173/oauth2-callback
+
+  # OutboxEventScheduler chạy mỗi giây và đẩy mọi hàng outbox lên Kafka. @EnableScheduling
+  # bật sẵn trong test, nên chỉ cần một test ghi được hàng outbox là một event giả lọt vào
+  # topic thật -- chiều ngược lại của cùng một rò rỉ mà khối spring.kafka phía trên chặn.
+  outbox:
+    scheduler:
+      enabled: false
+
+  # Mỗi @KafkaListener khai groupId qua các khoá dưới đây, KHÔNG lấy từ
+  # spring.kafka.consumer.group-id -- nên đè khoá đó là vô ích, phải đè từng cái một.
+  # Mặc định chúng trùng đúng group-id production (vox-recording, vox-email...), tức là test
+  # commit offset thẳng vào group mà app thật đang dùng. Đây là lớp phòng thủ thứ hai, phòng
+  # khi có test tự bật listener lên bằng KafkaListenerEndpointRegistry.
+  external-event:
+    kafka:
+      consumer-groups:
+        user-service:
+          group-id: vox-test-user
+        answer-turns:
+          group-id: vox-test-answer-turns
+        exam-evaluation:
+          group-id: vox-test-exam-evaluation
+        practice-evaluation:
+          group-id: vox-test-practice-evaluation
+        question-asset-analysis:
+          group-id: vox-test-question-asset-analysis
+        recording:
+          group-id: vox-test-recording
+  internal-event:
+    kafka:
+      consumer-groups:
+        email:
+          group-id: vox-test-email
+        notification:
+          group-id: vox-test-notification

@@ -78,6 +78,28 @@ class ExamPaperAutoAssignerTests {
         assertThat(countUsing(candidates, paperIds.get(1))).isEqualTo(2);
     }
 
+    /**
+     * Rải đều phải tính TRONG TỪNG CA. Rải đều trên toàn kỳ thi thì hai vòng round-robin -- xếp ca và
+     * phân đề -- trùng chu kỳ, và cả phòng lĩnh trọn một mã đề, mất sạch tác dụng của nhiều mã đề.
+     * Thứ tự dựng ở đây đúng bằng thứ tự AutoFillExamCandidatesUseCase tạo ra.
+     */
+    @Test
+    void should_spread_papers_within_each_schedule() {
+        givenPapers(2);
+        var firstSchedule = UUID.randomUUID();
+        var secondSchedule = UUID.randomUUID();
+        var candidates = List.of(
+            candidateInSchedule(firstSchedule),
+            candidateInSchedule(secondSchedule),
+            candidateInSchedule(firstSchedule),
+            candidateInSchedule(secondSchedule));
+
+        assigner.assignPapersIfNeeded(exam(ExamKind.CENTRALIZED), candidates, Instant.now(), TEACHER_ID);
+
+        assertThat(distinctPapersIn(candidates, firstSchedule)).hasSize(2);
+        assertThat(distinctPapersIn(candidates, secondSchedule)).hasSize(2);
+    }
+
     /** Phân bố phải tính cả thí sinh đã có đề, nếu không mỗi lượt gán lại dồn vào mã đề đầu tiên. */
     @Test
     void should_continue_the_existing_distribution() {
@@ -193,6 +215,19 @@ class ExamPaperAutoAssignerTests {
         }
         when(examPaperRepository.findByExamId(EXAM_ID)).thenReturn(papers);
         return papers.stream().map(ExamPaper::getId).toList();
+    }
+
+    private ExamCandidate candidateInSchedule(UUID scheduleId) {
+        var candidate = candidate();
+        candidate.setScheduleId(scheduleId);
+        return candidate;
+    }
+
+    private java.util.Set<UUID> distinctPapersIn(List<ExamCandidate> candidates, UUID scheduleId) {
+        return candidates.stream()
+            .filter(candidate -> scheduleId.equals(candidate.getScheduleId()))
+            .map(ExamCandidate::getAssignedPaperId)
+            .collect(java.util.stream.Collectors.toSet());
     }
 
     private long countUsing(List<ExamCandidate> candidates, UUID paperId) {

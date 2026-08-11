@@ -3,7 +3,9 @@ package com.sep.vox.application.port.input.service;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -65,7 +67,7 @@ public class ExamPaperAutoAssigner {
         }
         // Phân bố hiện có phải tính cả thí sinh đã có đề, nếu không mỗi lượt gán lại dồn hết vào mã
         // đề đầu tiên.
-        assign(pending, paperIds, usageOf(examCandidateRepository.findByExamId(exam.getId()), paperIds), now, updatedBy);
+        assign(pending, paperIds, examCandidateRepository.findByExamId(exam.getId()), now, updatedBy);
     }
 
     /**
@@ -84,7 +86,7 @@ public class ExamPaperAutoAssigner {
         if (pending.isEmpty()) {
             return 0;
         }
-        assign(pending, paperIds, usageOf(all, paperIds), now, updatedBy);
+        assign(pending, paperIds, all, now, updatedBy);
         examCandidateRepository.saveAll(pending);
         return pending.size();
     }
@@ -123,13 +125,39 @@ public class ExamPaperAutoAssigner {
         return usage;
     }
 
+    /**
+     * Rải đều <b>trong từng ca</b>, không phải trên toàn kỳ thi. Cân bằng toàn kỳ thi thì hai vòng
+     * round-robin -- xếp thí sinh vào ca ({@code AutoFillExamCandidatesUseCase}) và chọn mã đề -- trùng
+     * chu kỳ, nên với 2 ca và 2 mã đề thì cả phòng lĩnh trọn một mã đề, đúng thứ mà nhiều mã đề sinh ra
+     * để tránh.
+     */
     private void assign(
-            List<ExamCandidate> pending, List<UUID> paperIds, Map<UUID, Long> usage, Instant now, UUID updatedBy) {
-        for (var candidate : pending) {
-            var paperId = leastUsed(paperIds, usage);
-            candidate.assignPaper(paperId, now, updatedBy);
-            usage.merge(paperId, 1L, Long::sum);
+            List<ExamCandidate> pending,
+            List<UUID> paperIds,
+            Collection<ExamCandidate> examCandidates,
+            Instant now,
+            UUID updatedBy) {
+        var usageBySchedule = new HashMap<UUID, Map<UUID, Long>>();
+        groupBySchedule(examCandidates)
+            .forEach((scheduleId, group) -> usageBySchedule.put(scheduleId, usageOf(group, paperIds)));
+
+        groupBySchedule(pending).forEach((scheduleId, group) -> {
+            var usage = usageBySchedule.computeIfAbsent(scheduleId, key -> usageOf(List.of(), paperIds));
+            for (var candidate : group) {
+                var paperId = leastUsed(paperIds, usage);
+                candidate.assignPaper(paperId, now, updatedBy);
+                usage.merge(paperId, 1L, Long::sum);
+            }
+        });
+    }
+
+    /** Thí sinh chưa xếp ca gom chung một nhóm (khoá {@code null}) -- rải đều giữa họ với nhau. */
+    private Map<UUID, List<ExamCandidate>> groupBySchedule(Collection<ExamCandidate> candidates) {
+        var grouped = new LinkedHashMap<UUID, List<ExamCandidate>>();
+        for (var candidate : candidates) {
+            grouped.computeIfAbsent(candidate.getScheduleId(), key -> new ArrayList<>()).add(candidate);
         }
+        return grouped;
     }
 
     /** Mã đề đang được dùng ít nhất; hoà thì lấy mã đề đứng trước trong thứ tự ổn định. */

@@ -214,7 +214,7 @@ class ExamPaperAutoAssignerTests {
             papers.add(paper(variant, ExamPaperStatus.LOCKED));
         }
         when(examPaperRepository.findByExamId(EXAM_ID)).thenReturn(papers);
-        return papers.stream().map(ExamPaper::getId).toList();
+        return papers.stream().map(paper -> paper.getId()).toList();
     }
 
     private ExamCandidate candidateInSchedule(UUID scheduleId) {
@@ -226,7 +226,7 @@ class ExamPaperAutoAssignerTests {
     private java.util.Set<UUID> distinctPapersIn(List<ExamCandidate> candidates, UUID scheduleId) {
         return candidates.stream()
             .filter(candidate -> scheduleId.equals(candidate.getScheduleId()))
-            .map(ExamCandidate::getAssignedPaperId)
+            .map(candidate -> candidate.getAssignedPaperId())
             .collect(java.util.stream.Collectors.toSet());
     }
 

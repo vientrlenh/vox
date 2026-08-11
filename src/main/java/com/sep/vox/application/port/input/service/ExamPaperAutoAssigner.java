@@ -101,8 +101,9 @@ public class ExamPaperAutoAssigner {
             return List.of();
         }
         return papers.stream()
-            .sorted(Comparator.comparingInt(ExamPaper::getVariant).thenComparing(ExamPaper::getId))
-            .map(ExamPaper::getId)
+            .sorted(Comparator.comparingInt((ExamPaper paper) -> paper.getVariant())
+                .thenComparing(paper -> paper.getId()))
+            .map(paper -> paper.getId())
             .toList();
     }
 
@@ -119,10 +120,20 @@ public class ExamPaperAutoAssigner {
         for (var candidate : candidates) {
             var paperId = candidate.getAssignedPaperId();
             if (paperId != null && usage.containsKey(paperId)) {
-                usage.merge(paperId, 1L, Long::sum);
+                increment(usage, paperId);
             }
         }
         return usage;
+    }
+
+    /** Số lần một mã đề đã được dùng; mã đề chưa có mặt trong bảng đếm coi như 0. */
+    private static long countOf(Map<UUID, Long> usage, UUID paperId) {
+        var count = usage.get(paperId);
+        return count == null ? 0L : count;
+    }
+
+    private static void increment(Map<UUID, Long> usage, UUID paperId) {
+        usage.put(paperId, countOf(usage, paperId) + 1L);
     }
 
     /**
@@ -146,7 +157,7 @@ public class ExamPaperAutoAssigner {
             for (var candidate : group) {
                 var paperId = leastUsed(paperIds, usage);
                 candidate.assignPaper(paperId, now, updatedBy);
-                usage.merge(paperId, 1L, Long::sum);
+                increment(usage, paperId);
             }
         });
     }
@@ -163,9 +174,9 @@ public class ExamPaperAutoAssigner {
     /** Mã đề đang được dùng ít nhất; hoà thì lấy mã đề đứng trước trong thứ tự ổn định. */
     private UUID leastUsed(List<UUID> paperIds, Map<UUID, Long> usage) {
         var chosen = paperIds.get(0);
-        var chosenCount = usage.get(chosen);
+        var chosenCount = countOf(usage, chosen);
         for (var paperId : paperIds) {
-            var count = usage.get(paperId);
+            var count = countOf(usage, paperId);
             if (count < chosenCount) {
                 chosen = paperId;
                 chosenCount = count;

@@ -58,7 +58,6 @@ public class TopicGenerationClient {
             UUID studentId,
             List<KeywordEvidence> keywordEvidence,
             Map<String, Double> interestScores,
-            List<String> existingTopics,
             List<String> rejectedTopics,
             List<String> exhaustedTopics,
             boolean searchKeyword,
@@ -77,7 +76,10 @@ public class TopicGenerationClient {
                 .toList()
         );
         body.put("interest_scores", interestScores);
-        body.put("existing_topics", existingTopics);
+        // GỠ 2026-08-11: existing_topics. Trước đây gửi TOÀN BỘ tên chủ đề đang hoạt động, mà kho
+        // là của chung mọi học sinh nên nó lớn dần mãi -- token vào tăng theo (số học sinh × số
+        // chủ đề mỗi người sinh). Python nay dùng vòng đề xuất lại có phản hồi: vòng 1 đề xuất tự
+        // do, vòng sau nhận đúng TÊN chủ đề vừa va chạm. Xem MAX_PROPOSAL_ROUNDS bên đó.
         body.put("rejected_topics", rejectedTopics);
         body.put("exhausted_topics", exhaustedTopics);
         body.put("search_keyword", searchKeyword);

@@ -17,14 +17,33 @@ public interface PracticeTopicRepository {
     PracticeTopic save(PracticeTopic topic);
 
     /** topicId -> interestDimension, cho toàn bộ topic active. Dùng để quy đổi sự kiện chủ đề sang điểm theo dimension. */
-    Map<UUID, String> findAllTopicDimensions();
+    /**
+     * Chiều sở thích của ĐÚNG những chủ đề được hỏi tới, khoá theo id.
+     *
+     * <p>Thay cho {@code findAllTopicDimensions()} cũ (gỡ 2026-08-11) vốn gọi {@code findAll()}
+     * thuần: nạp MỌI chủ đề, KỂ CẢ đã tắt, dưới dạng entity đầy đủ (gồm cột {@code description}
+     * kiểu TEXT) chỉ để dựng một map hai trường -- và chạy sau MỖI buổi luyện.
+     *
+     * <p>Cố ý KHÔNG lọc {@code active}: bản cũ cũng không lọc, và sự kiện quan tâm nằm trên chủ đề
+     * đã tắt vẫn phải được tính. Thêm lọc ở đây là đổi kết quả điểm chiều một cách âm thầm.
+     *
+     * @param topicIds rỗng thì trả map rỗng -- không được hiểu thành "lấy tất cả"
+     */
+    Map<UUID, String> findDimensionsByIds(java.util.Collection<UUID> topicIds);
 
-    List<PracticeTopic> findAllActive();
+    /**
+     * Danh thiếp (id, tên, chiều) của chủ đề đang hoạt động -- cho phép chống trùng theo tên.
+     *
+     * <p>Thay {@code findAllActive()} cũ (gỡ 2026-08-11) vốn trả entity đầy đủ kèm cột
+     * {@code description} kiểu TEXT, trong khi chỗ dùng chỉ đọc ba trường này.
+     */
+    List<com.sep.vox.application.query.dto.TopicNameCardInfo> findActiveNameCards();
 
     /** Cỡ kho chủ đề nuôi lô chào (đã trừ chủ đề vật chất hoá từ ngân hàng đề của trường). */
     long countOfferablePool();
 
-    List<PracticeTopic> findAllActiveOrderByName();
+    // GỠ 2026-08-11: findAllActiveOrderByName(). Chỗ dùng duy nhất là TopicSuggestionService
+    // .topicNames(), vốn gửi cả danh sách tên xuống prompt LLM -- đã bỏ cùng đợt.
 
     Optional<PracticeTopic> findByNormalizedName(String normalizedName);
 

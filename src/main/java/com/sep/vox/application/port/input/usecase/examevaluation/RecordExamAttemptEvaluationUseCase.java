@@ -494,6 +494,12 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
     //   - qSnr/qSpeech: là tín hiệu audio gate, KHÔNG phải confidence scalar. Audio đã hiển thị
     //     riêng ở field audioQuality và calculator dùng chúng độc lập cho quyết định review.
     //   - cPfBranch: = min(cRef, cAlign), đã có cRef/cAlign trong tập nên trùng lặp.
+    //
+    // TỪ 2026-08-11 cAlign bị loại khỏi tập: case (4) đã tắt (xem ConfidenceReviewCalculator),
+    // Python không phát ra c_align nữa nên giá trị luôn null và vòng lặp bỏ qua. Chú thích hẳn
+    // dòng đó thay vì để nó nằm im -- giữ lại thì bản ghi CŨ (còn c_align) sẽ được tính min theo
+    // một tín hiệu mà hệ thống đã ngừng tin dùng, tức hai bài giống nhau cho hai con số khác nhau
+    // chỉ vì chấm ở hai thời điểm.
     private BigDecimal minimumConfidence(ConfidenceCaseSignals signals) {
         if (signals == null) {
             return null;
@@ -502,7 +508,7 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
         BigDecimal[] values = {
             signals.cAsrLog(),
             signals.cRef(),
-            signals.cAlign(),
+            // signals.cAlign(),
             signals.cGrammar(),
             signals.cVocabulary(),
             signals.cCoherence()

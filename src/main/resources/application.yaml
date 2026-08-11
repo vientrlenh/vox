@@ -296,6 +296,7 @@ app:
             exam-appeal: ${KAFKA_EXAM_APPEAL_TOPIC:vox.exam-appeal.v1}
             exam-result-lifecycle: ${KAFKA_EXAM_RESULT_LIFECYCLE_TOPIC:vox.exam-result-lifecycle.v1}
             grading-assignment: ${KAFKA_GRADING_ASSIGNMENT_TOPIC:vox.grading-assignment.v1}
+            exam-blueprint-version: ${KAFKA_EXAM_BLUEPRINT_VERSION_TOPIC:vox.exam-blueprint-version.v1}
           # Ngược lại, group-id BẮT BUỘC phải là biến riêng. Dùng chung KAFKA_EMAIL_GROUP_ID
           # thì khi biến đó được set, hai listener rơi vào cùng một consumer group và Kafka
           # chỉ giao mỗi message cho MỘT trong hai -- mail hoặc notification, ngẫu nhiên.
@@ -327,6 +328,8 @@ app:
 
       "[GradingDeadlineReminder]": ${KAFKA_GRADING_ASSIGNMENT_TOPIC:vox.grading-assignment.v1}
       "[GradingAssignmentDeclined]": ${KAFKA_GRADING_ASSIGNMENT_TOPIC:vox.grading-assignment.v1}
+
+      "[ExamBlueprintVersionPublished]": ${KAFKA_EXAM_BLUEPRINT_VERSION_TOPIC:vox.exam-blueprint-version.v1}
     
 
 

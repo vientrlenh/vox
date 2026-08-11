@@ -1,7 +1,8 @@
-package com.sep.vox.infrastructure.worker.personalization;
+package com.sep.vox.infrastructure.initializer;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -11,16 +12,17 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sep.vox.domain.model.personalization.InterestQuizSeedItem;
 import com.sep.vox.domain.repository.personalization.InterestQuizItemRepository;
+
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.json.JsonMapper;
 
 @Component
 public class InterestQuizSeedInitializer implements ApplicationRunner {
 
     private final InterestQuizItemRepository quizItemRepository;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final JsonMapper jsonMapper = new JsonMapper();
 
     public InterestQuizSeedInitializer(InterestQuizItemRepository quizItemRepository) {
         this.quizItemRepository = quizItemRepository;
@@ -30,9 +32,9 @@ public class InterestQuizSeedInitializer implements ApplicationRunner {
     public void run(ApplicationArguments args) throws IOException {
         var resource = new ClassPathResource("practice/interest-quiz-seed.json");
         var json = new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-        var rawItems = objectMapper.readValue(json, new TypeReference<List<SeedItemJson>>() {
+        var rawItems = jsonMapper.readValue(json, new TypeReference<List<SeedItemJson>>() {
         });
-        var items = new java.util.ArrayList<InterestQuizSeedItem>(rawItems.size());
+        var items = new ArrayList<InterestQuizSeedItem>(rawItems.size());
         for (var index = 0; index < rawItems.size(); index++) {
             var item = rawItems.get(index);
             items.add(new InterestQuizSeedItem(

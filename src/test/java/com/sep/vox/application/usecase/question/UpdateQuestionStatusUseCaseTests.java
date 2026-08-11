@@ -21,7 +21,6 @@ import com.sep.vox.application.port.input.service.QuestionStatusActorResolver;
 import com.sep.vox.application.port.input.usecase.question.UpdateQuestionStatusUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
-import com.sep.vox.application.usecase.TestSchoolUserRepository;
 import com.sep.vox.domain.model.question.Question;
 import com.sep.vox.domain.model.question.QuestionBank;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
@@ -33,6 +32,7 @@ import com.sep.vox.domain.model.question.QuestionType;
 import com.sep.vox.domain.repository.QuestionBankRepository;
 import com.sep.vox.domain.repository.QuestionCollaboratorRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 
 /**
  * Endpoint cập nhật trạng thái một câu hỏi.
@@ -46,11 +46,11 @@ class UpdateQuestionStatusUseCaseTests {
     private QuestionRepository questionRepository;
     private QuestionBankRepository questionBankRepository;
     private QuestionCollaboratorRepository questionCollaboratorRepository;
+    private SchoolUserRepository schoolUserRepository;
     private UserContextPort userContextPort;
     private UpdateQuestionStatusUseCase useCase;
 
     private final UUID currentUserId = UUID.randomUUID();
-    private final UUID schoolId = UUID.randomUUID();
     private final UUID bankId = UUID.randomUUID();
 
     @BeforeEach
@@ -58,11 +58,10 @@ class UpdateQuestionStatusUseCaseTests {
         questionRepository = mock(QuestionRepository.class);
         questionBankRepository = mock(QuestionBankRepository.class);
         questionCollaboratorRepository = mock(QuestionCollaboratorRepository.class);
+        schoolUserRepository = mock(SchoolUserRepository.class);
         userContextPort = mock(UserContextPort.class);
         var userRoleQueryRepository = mock(UserRoleQueryRepository.class);
 
-        var schoolUserRepository = TestSchoolUserRepository.create();
-        TestSchoolUserRepository.remember(currentUserId, schoolId);
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(userContextPort.isSystemAdmin()).thenReturn(false);
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(any())).thenReturn(List.of());

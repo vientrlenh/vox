@@ -1,7 +1,5 @@
 package com.sep.vox.application.usecase.importfile;
 
-import com.sep.vox.application.usecase.TestSchoolUserRepository;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
@@ -98,7 +96,6 @@ class ViewImportSessionsUseCaseTests {
     private User activeUser(UUID id, UUID schoolId) {
         var user = new User();
         user.setId(id);
-        TestSchoolUserRepository.remember(id, schoolId);
         user.setStatus(UserStatus.ACTIVE);
         when(schoolUserRepository.findByUserId(id)).thenReturn(
             schoolId != null ? Optional.of(new SchoolUser(schoolId, id, java.time.Instant.now(), java.time.Instant.now().plus(36500, ChronoUnit.DAYS))) : Optional.empty()

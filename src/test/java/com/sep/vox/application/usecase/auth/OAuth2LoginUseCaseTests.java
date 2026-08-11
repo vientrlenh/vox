@@ -1,7 +1,5 @@
 package com.sep.vox.application.usecase.auth;
 
-import com.sep.vox.application.usecase.TestSchoolUserRepository;
-
 import java.time.LocalDate;
 import java.time.Instant;
 import java.util.List;
@@ -31,10 +29,12 @@ import com.sep.vox.application.response.output.GeneratedSessionToken;
 import com.sep.vox.domain.model.devicesession.DeviceSession;
 import com.sep.vox.domain.model.devicesession.SessionPlatform;
 import com.sep.vox.domain.model.refreshtoken.RefreshToken;
+import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.DeviceSessionRepository;
 import com.sep.vox.domain.repository.RefreshTokenRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.valueobject.DateOfBirth;
 import com.sep.vox.domain.valueobject.Email;
@@ -47,6 +47,7 @@ class OAuth2LoginUseCaseTests {
     private UserRoleQueryRepository userRoleQueryRepository;
     private DeviceSessionRepository deviceSessionRepository;
     private RefreshTokenRepository refreshTokenRepository;
+    private SchoolUserRepository schoolUserRepository;
     private AuthTokenPort authTokenPort;
     private SessionTokenManagerPort sessionTokenManagerPort;
     private OAuth2LoginUseCase oAuth2LoginUseCase;
@@ -59,7 +60,7 @@ class OAuth2LoginUseCaseTests {
         refreshTokenRepository = mock(RefreshTokenRepository.class);
         authTokenPort = mock(AuthTokenPort.class);
         sessionTokenManagerPort = mock(SessionTokenManagerPort.class);
-        var schoolUserRepository = TestSchoolUserRepository.create();
+        schoolUserRepository = mock(SchoolUserRepository.class);
         oAuth2LoginUseCase = new OAuth2LoginUseCase(
             userRepository,
             userRoleQueryRepository,
@@ -78,6 +79,7 @@ class OAuth2LoginUseCaseTests {
         var sessionId = UUID.randomUUID();
         var roleId = UUID.randomUUID();
         var user = activeUser(userId, schoolId);
+        var schoolUser = activeSchoolUser(userId, schoolId);
         var savedDeviceSession = new DeviceSession(
             sessionId,
             userId,
@@ -101,6 +103,7 @@ class OAuth2LoginUseCaseTests {
             .thenReturn(Optional.of(user));
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId))
             .thenReturn(roles);
+        when(schoolUserRepository.findByUserId(userId)).thenReturn(Optional.of(schoolUser));
         when(deviceSessionRepository.save(any(DeviceSession.class)))
             .thenReturn(savedDeviceSession);
         when(authTokenPort.generateJwtToken(userId.toString(), schoolId, "student@example.com", List.of("STUDENT")))
@@ -148,7 +151,7 @@ class OAuth2LoginUseCaseTests {
         );
     }
 
-    private static OAuth2LoginCommand validCommand() {
+    private OAuth2LoginCommand validCommand() {
         return new OAuth2LoginCommand(
             "google",
             "google-user-id",
@@ -162,8 +165,7 @@ class OAuth2LoginUseCaseTests {
         );
     }
 
-    private static User activeUser(UUID userId, UUID schoolId) {
-        TestSchoolUserRepository.remember(userId, schoolId);
+    private User activeUser(UUID userId, UUID schoolId) {
         return new User(
             userId,
             new Email("student@example.com"),
@@ -180,5 +182,9 @@ class OAuth2LoginUseCaseTests {
             null,
             null
         );
+    }
+
+    private SchoolUser activeSchoolUser(UUID userId, UUID schoolId) {
+        return new SchoolUser(schoolId, userId, Instant.now(), Instant.now());
     }
 }

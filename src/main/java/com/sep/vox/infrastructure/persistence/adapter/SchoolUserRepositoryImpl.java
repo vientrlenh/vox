@@ -118,4 +118,12 @@ public class SchoolUserRepositoryImpl implements SchoolUserRepository {
         return springDataSchoolUserRepository.existsBySchoolIdAndUserId(schoolId, userId);
     }
 
+    @Override
+    public List<SchoolUser> findBySchoolIdWithRole(UUID schoolId, String roleCode) {
+        return springDataSchoolUserRepository.findBySchoolIdWithRole(schoolId, roleCode)
+            .stream()
+            .map(SchoolUserMapper::toDomain)
+            .toList();
+    }
+
 }

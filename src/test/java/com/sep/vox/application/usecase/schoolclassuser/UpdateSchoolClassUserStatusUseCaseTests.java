@@ -1,6 +1,5 @@
 package com.sep.vox.application.usecase.schoolclassuser;
 
-import com.sep.vox.application.usecase.TestSchoolUserRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -27,11 +26,13 @@ import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.model.school.SchoolClassUser;
+import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.valueobject.ClassCode;
 
@@ -41,6 +42,7 @@ class UpdateSchoolClassUserStatusUseCaseTests {
     private SchoolClassRepository schoolClassRepository;
     private SchoolRepository schoolRepository;
     private UserRepository userRepository;
+    private SchoolUserRepository schoolUserRepository;
     private UserContextPort userContextPort;
     private UpdateSchoolClassUserStatusUseCase useCase;
 
@@ -50,6 +52,7 @@ class UpdateSchoolClassUserStatusUseCaseTests {
         schoolClassRepository = mock(SchoolClassRepository.class);
         schoolRepository = mock(SchoolRepository.class);
         userRepository = mock(UserRepository.class);
+        schoolUserRepository = mock(SchoolUserRepository.class);
         userContextPort = mock(UserContextPort.class);
         useCase = new UpdateSchoolClassUserStatusUseCase(
             schoolClassUserRepository,
@@ -57,7 +60,7 @@ class UpdateSchoolClassUserStatusUseCaseTests {
             schoolRepository,
             userRepository,
             userContextPort,
-            TestSchoolUserRepository.create()
+            schoolUserRepository
         );
     }
 
@@ -138,6 +141,13 @@ class UpdateSchoolClassUserStatusUseCaseTests {
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(schoolClassRepository.findById(classId)).thenReturn(Optional.of(activeSchoolClass(classId, schoolId)));
         when(userRepository.findById(targetUserId)).thenReturn(Optional.of(activeUser(targetUserId, schoolId)));
+        mockUserSchool(currentUserId, schoolId);
+        mockUserSchool(targetUserId, schoolId);
+    }
+
+    private void mockUserSchool(UUID userId, UUID schoolId) {
+        when(schoolUserRepository.findByUserId(userId))
+            .thenReturn(Optional.of(new SchoolUser(schoolId, userId, Instant.now(), null)));
     }
 
     private static SchoolClassUser membership(UUID userId, UUID classId, boolean isActive, Instant leftAt, UUID assignedBy) {
@@ -149,7 +159,6 @@ class UpdateSchoolClassUserStatusUseCaseTests {
     private static User activeUser(UUID id, UUID schoolId) {
         var user = new User();
         user.setId(id);
-        TestSchoolUserRepository.remember(id, schoolId);
         user.setStatus(UserStatus.ACTIVE);
         return user;
     }

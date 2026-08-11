@@ -9,7 +9,8 @@ public enum NotificationCategory {
     EXAM_RESULT,
     EXAM_APPEAL,
     GRADING,
-    EXAM_SCHEDULE,
+    EXAM_SCHEDULE, 
+    EXAM_BLUEPRINT,
     SYSTEM;
 
     /**
@@ -32,7 +33,8 @@ public enum NotificationCategory {
         Map.entry(EventTypeConstant.EXAM_RESULT_OUTCOME_DECIDED, EXAM_RESULT),
 
         Map.entry(EventTypeConstant.GRADING_DEADLINE_REMINDER, GRADING),
-        Map.entry(EventTypeConstant.GRADING_ASSIGNMENT_DECLINED, GRADING)
+        Map.entry(EventTypeConstant.GRADING_ASSIGNMENT_DECLINED, GRADING), 
+        Map.entry(EventTypeConstant.EXAM_BLUEPRINT_VERSION_PUBLISHED, EXAM_BLUEPRINT)
     );
 
     /**

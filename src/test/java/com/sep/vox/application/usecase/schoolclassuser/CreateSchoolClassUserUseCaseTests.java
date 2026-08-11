@@ -1,6 +1,5 @@
 package com.sep.vox.application.usecase.schoolclassuser;
 
-import com.sep.vox.application.usecase.TestSchoolUserRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -29,11 +28,13 @@ import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.model.school.SchoolClassUser;
+import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.valueobject.ClassCode;
 
@@ -43,6 +44,7 @@ class CreateSchoolClassUserUseCaseTests {
     private SchoolClassRepository schoolClassRepository;
     private SchoolRepository schoolRepository;
     private UserRepository userRepository;
+    private SchoolUserRepository schoolUserRepository;
     private UserContextPort userContextPort;
     private CreateSchoolClassUserUseCase useCase;
 
@@ -52,6 +54,7 @@ class CreateSchoolClassUserUseCaseTests {
         schoolClassRepository = mock(SchoolClassRepository.class);
         schoolRepository = mock(SchoolRepository.class);
         userRepository = mock(UserRepository.class);
+        schoolUserRepository = mock(SchoolUserRepository.class);
         userContextPort = mock(UserContextPort.class);
         useCase = new CreateSchoolClassUserUseCase(
             schoolClassUserRepository,
@@ -59,7 +62,7 @@ class CreateSchoolClassUserUseCaseTests {
             schoolRepository,
             userRepository,
             userContextPort,
-            TestSchoolUserRepository.create()
+            schoolUserRepository
         );
     }
 
@@ -166,6 +169,7 @@ class CreateSchoolClassUserUseCaseTests {
         when(userRepository.findById(currentUserId)).thenReturn(Optional.of(activeUser(currentUserId, schoolId)));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(schoolClassRepository.findById(classId)).thenReturn(Optional.empty());
+        mockUserSchool(currentUserId, schoolId);
 
         assertThrows(NotFoundException.class, () -> useCase.execute(command));
 
@@ -184,6 +188,7 @@ class CreateSchoolClassUserUseCaseTests {
         when(userRepository.findById(currentUserId)).thenReturn(Optional.of(activeUser(currentUserId, schoolId)));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(schoolClassRepository.findById(classId)).thenReturn(Optional.of(activeSchoolClass(classId, UUID.randomUUID())));
+        mockUserSchool(currentUserId, schoolId);
 
         assertThrows(NotFoundException.class, () -> useCase.execute(command));
 
@@ -203,6 +208,7 @@ class CreateSchoolClassUserUseCaseTests {
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(schoolClassRepository.findById(classId)).thenReturn(Optional.of(activeSchoolClass(classId, schoolId)));
         when(userRepository.findById(targetUserId)).thenReturn(Optional.empty());
+        mockUserSchool(currentUserId, schoolId);
 
         assertThrows(NotFoundException.class, () -> useCase.execute(command));
 
@@ -223,6 +229,8 @@ class CreateSchoolClassUserUseCaseTests {
         when(schoolClassRepository.findById(classId)).thenReturn(Optional.of(activeSchoolClass(classId, schoolId)));
         when(userRepository.findById(targetUserId)).thenReturn(Optional.of(user(targetUserId, schoolId, UserStatus.INACTIVE)));
         when(schoolClassUserRepository.findByUserIdAndSchoolClassId(targetUserId, classId)).thenReturn(Optional.empty());
+        mockUserSchool(currentUserId, schoolId);
+        mockUserSchool(targetUserId, schoolId);
         when(schoolClassUserRepository.save(any(SchoolClassUser.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         var response = useCase.execute(command);
@@ -282,6 +290,7 @@ class CreateSchoolClassUserUseCaseTests {
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(schoolClassRepository.findById(classId)).thenReturn(Optional.of(activeSchoolClass(classId, schoolId)));
         when(userRepository.findById(targetUserId)).thenReturn(Optional.of(activeUser(targetUserId, UUID.randomUUID())));
+        mockUserSchool(currentUserId, schoolId);
 
         assertThrows(IllegalArgumentException.class, () -> useCase.execute(command));
 
@@ -321,6 +330,7 @@ class CreateSchoolClassUserUseCaseTests {
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(userRepository.findById(currentUserId)).thenReturn(Optional.of(activeUser(currentUserId, UUID.randomUUID())));
+        mockUserSchool(currentUserId, UUID.randomUUID());
 
         assertThrows(IllegalArgumentException.class, () -> useCase.execute(command));
 
@@ -333,6 +343,13 @@ class CreateSchoolClassUserUseCaseTests {
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(schoolClassRepository.findById(classId)).thenReturn(Optional.of(activeSchoolClass(classId, schoolId)));
         when(userRepository.findById(targetUserId)).thenReturn(Optional.of(activeUser(targetUserId, schoolId)));
+        mockUserSchool(currentUserId, schoolId);
+        mockUserSchool(targetUserId, schoolId);
+    }
+
+    private void mockUserSchool(UUID userId, UUID schoolId) {
+        when(schoolUserRepository.findByUserId(userId))
+            .thenReturn(Optional.of(new SchoolUser(schoolId, userId, Instant.now(), null)));
     }
 
     private static User activeUser(UUID id, UUID schoolId) {
@@ -342,7 +359,6 @@ class CreateSchoolClassUserUseCaseTests {
     private static User user(UUID id, UUID schoolId, UserStatus status) {
         var user = new User();
         user.setId(id);
-        TestSchoolUserRepository.remember(id, schoolId);
         user.setStatus(status);
         return user;
     }

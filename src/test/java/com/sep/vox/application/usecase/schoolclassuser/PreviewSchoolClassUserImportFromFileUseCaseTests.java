@@ -1,6 +1,5 @@
 package com.sep.vox.application.usecase.schoolclassuser;
 
-import com.sep.vox.application.usecase.TestSchoolUserRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -11,6 +10,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -33,11 +33,13 @@ import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
 import com.sep.vox.domain.model.school.School;
+import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.ImportRowRepository;
 import com.sep.vox.domain.repository.ImportSessionRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 class PreviewSchoolClassUserImportFromFileUseCaseTests {
@@ -48,6 +50,7 @@ class PreviewSchoolClassUserImportFromFileUseCaseTests {
     private UserContextPort userContextPort;
     private UserRepository userRepository;
     private SchoolRepository schoolRepository;
+    private SchoolUserRepository schoolUserRepository;
     private FakeJsonSerializationPort jsonSerializationPort;
     private PreviewSchoolClassUserImportFromFileUseCase useCase;
 
@@ -59,6 +62,7 @@ class PreviewSchoolClassUserImportFromFileUseCaseTests {
         userContextPort = mock(UserContextPort.class);
         userRepository = mock(UserRepository.class);
         schoolRepository = mock(SchoolRepository.class);
+        schoolUserRepository = mock(SchoolUserRepository.class);
         jsonSerializationPort = new FakeJsonSerializationPort();
         useCase = new PreviewSchoolClassUserImportFromFileUseCase(
             fileProcessingPort,
@@ -67,8 +71,8 @@ class PreviewSchoolClassUserImportFromFileUseCaseTests {
             userContextPort,
             userRepository,
             schoolRepository,
-            jsonSerializationPort,
-            TestSchoolUserRepository.create()
+            jsonSerializationPort, 
+            schoolUserRepository
         );
     }
 
@@ -90,6 +94,7 @@ class PreviewSchoolClassUserImportFromFileUseCaseTests {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(activeUser(userId, schoolId)));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
+        mockUserSchool(userId, schoolId);
         when(fileProcessingPort.parse(file, ImportType.SCHOOL_CLASS_USER)).thenReturn(parsed);
         when(importSessionRepository.save(any(ImportSession.class))).thenAnswer(invocation -> {
             var session = invocation.getArgument(0, ImportSession.class);
@@ -163,6 +168,7 @@ class PreviewSchoolClassUserImportFromFileUseCaseTests {
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(activeUser(userId, schoolId)));
+        mockUserSchool(userId, schoolId);
 
         assertThrows(IllegalArgumentException.class,
             () -> useCase.execute(new PreviewSchoolClassUserImportFromFileCommand(UUID.randomUUID(), file)));
@@ -188,6 +194,11 @@ class PreviewSchoolClassUserImportFromFileUseCaseTests {
         verifyNoInteractions(fileProcessingPort, importSessionRepository, importRowRepository);
     }
 
+    private void mockUserSchool(UUID userId, UUID schoolId) {
+        when(schoolUserRepository.findByUserId(userId))
+            .thenReturn(Optional.of(new SchoolUser(schoolId, userId, Instant.now(), null)));
+    }
+
     private static User activeUser(UUID id, UUID schoolId) {
         return user(id, schoolId, UserStatus.ACTIVE);
     }
@@ -195,7 +206,6 @@ class PreviewSchoolClassUserImportFromFileUseCaseTests {
     private static User user(UUID id, UUID schoolId, UserStatus status) {
         var user = new User();
         user.setId(id);
-        TestSchoolUserRepository.remember(id, schoolId);
         user.setStatus(status);
         return user;
     }

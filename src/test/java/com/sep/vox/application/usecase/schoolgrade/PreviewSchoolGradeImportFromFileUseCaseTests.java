@@ -1,6 +1,5 @@
 package com.sep.vox.application.usecase.schoolgrade;
 
-import com.sep.vox.application.usecase.TestSchoolUserRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -150,7 +149,6 @@ class PreviewSchoolGradeImportFromFileUseCaseTests {
     private User user(UUID id, UUID schoolId, UserStatus status) {
         var user = new User();
         user.setId(id);
-        TestSchoolUserRepository.remember(id, schoolId);
         user.setStatus(status);
         when(schoolUserRepository.findByUserId(id)).thenReturn(
             schoolId != null

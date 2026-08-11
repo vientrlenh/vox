@@ -3,6 +3,7 @@ package com.sep.vox.infrastructure.persistence.repository;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -63,4 +64,7 @@ public interface SpringDataNotificationDeviceRepository extends JpaRepository<No
                 last_seen_at = excluded.last_seen_at
     """, nativeQuery = true)
     int registerDevice(@Param("userId") UUID userId, @Param("deviceId") String deviceId, @Param("platform") String platform, @Param("installationId") String installationId, @Param("now") Instant now);
+
+    boolean existsByUserIdAndDeviceId(UUID userId, String deviceId);
+    Optional<NotificationDeviceJpaEntity> findFirstByUserIdAndDeviceIdOrderByLastSeenAtDesc(UUID userId, String deviceId);
 }

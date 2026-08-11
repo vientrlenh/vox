@@ -3,7 +3,9 @@ package com.sep.vox.infrastructure.event.internal.consumer;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Executor;
@@ -26,6 +28,7 @@ import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.event.ExamAppealApprovedPayloadV1;
 import com.sep.vox.application.event.ExamAppealPublishedPayloadV1;
 import com.sep.vox.application.event.ExamAppealRejectedPayloadV1;
+import com.sep.vox.application.event.ExamBlueprintVersionPublishedEvent;
 import com.sep.vox.application.event.ExamResultInvalidClearedPayloadV1;
 import com.sep.vox.application.event.ExamResultInvalidatedPayloadV1;
 import com.sep.vox.application.event.ExamResultOutcomeDecidedPayloadV1;
@@ -48,7 +51,8 @@ import com.sep.vox.domain.repository.ProcessedEventRepository;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Đọc lại đúng ba topic mà consumer mail đang dùng, bằng một consumer group riêng.
+ * Đọc ba topic mà consumer mail cũng đang dùng (bằng một consumer group riêng), cộng thêm
+ * topic exam-blueprint-version vốn chỉ có notification đọc.
  *
  * <p>Thứ tự xử lý là phần quan trọng nhất: <b>ghi bảng notifications trước, push sau</b>.
  * Dòng trong DB mới là bản ghi bền vững -- người dùng chưa đăng ký thiết bị nào, hoặc FCM
@@ -57,8 +61,11 @@ import tools.jackson.databind.json.JsonMapper;
  *
  * <p>Cũng vì vậy mà consumer này parse chính payload của các event nghiệp vụ
  * ({@code ExamResultReleasedPayloadV1}...) rồi tự dựng title/body, thay vì trông chờ một
- * payload notification dựng sẵn: message trên ba topic đó do luồng mail sinh ra, chúng
- * mang hình dạng nghiệp vụ chứ không mang hình dạng thông báo.
+ * payload notification dựng sẵn: message trên các topic đó mang hình dạng nghiệp vụ chứ
+ * không mang hình dạng thông báo.
+ *
+ * <p>Một event có thể sinh nhiều dòng notification. Danh sách người nhận luôn nằm sẵn
+ * trong payload, không truy vấn lại ở đây -- xem {@link #fanOut}.
  */
 @Component
 public class NotificationPushedEventConsumer {
@@ -111,7 +118,8 @@ public class NotificationPushedEventConsumer {
         topics = {
             "${app.internal-event.kafka.consumer-groups.notification.topic.exam-appeal}",
             "${app.internal-event.kafka.consumer-groups.notification.topic.exam-result-lifecycle}",
-            "${app.internal-event.kafka.consumer-groups.notification.topic.grading-assignment}"
+            "${app.internal-event.kafka.consumer-groups.notification.topic.grading-assignment}", 
+            "${app.internal-event.kafka.consumer-groups.notification.topic.exam-blueprint-version}"
         },
         groupId = "${app.internal-event.kafka.consumer-groups.notification.group-id}",
         containerFactory = "stringKafkaListenerContainerFactory",
@@ -146,25 +154,50 @@ public class NotificationPushedEventConsumer {
             return;
         }
 
-        var draft = renderDraft(eventType, eventId, record.value());
+        var drafts = renderDrafts(eventType, eventId, record.value());
 
-        // Bước bền vững: ghi bảng trước mọi thứ khác.
-        var saved = notificationRepository.saveIfAbsent(new Notification(
-            draft.userId(),
-            eventId,
-            eventType,
-            draft.title(),
-            draft.body(),
-            writePayload(draft.data()),
-            null,
-            Instant.now()
-        ));
+        if (drafts.isEmpty()) {
+            // Payload không chỉ ra người nhận nào. Với event fan-out là trường không còn
+            // admin nào đang hoạt động; với event một người nhận là payload thiếu id. Cả hai
+            // đều không sửa được bằng cách chạy lại.
+            LOGGER.warn("Skip notification, không có người nhận: eventId={}, eventType={}",
+                eventId, eventType);
+            markProcessed(eventId);
+            ack.acknowledge();
+            return;
+        }
 
-        if (saved.isEmpty()) {
-            // uk_notifications_user_event đã chặn: message từng được xử lý xong nhưng chưa
-            // kịp markProcessed (crash giữa hai bước). Không push lần thứ hai.
-            LOGGER.info("Notification đã tồn tại, bỏ qua push: eventId={}, userId={}",
-                eventId, draft.userId());
+        // Bước bền vững: ghi bảng trước mọi thứ khác. Cùng một Instant cho cả lô để mọi
+        // người nhận của một event có createdAt giống nhau -- cursor phân trang sắp theo id
+        // nên không bị ảnh hưởng, nhưng lệch vài chục ms giữa các dòng cùng event chỉ gây
+        // khó hiểu khi soi log.
+        var now = Instant.now();
+        var pushable = new ArrayList<Draft>();
+        for (var draft : drafts) {
+            var saved = notificationRepository.saveIfAbsent(new Notification(
+                draft.userId(),
+                eventId,
+                eventType,
+                draft.title(),
+                draft.body(),
+                writePayload(draft.data()),
+                null,
+                now
+            ));
+
+            // Quyết định push phải là quyết định của TỪNG người nhận, không phải của cả
+            // message: crash giữa chừng ở lần trước có thể đã tạo xong 30/50 dòng, và lần
+            // này chỉ 20 người còn lại mới xứng đáng nhận push.
+            if (saved.isPresent()) {
+                pushable.add(draft);
+            }
+        }
+
+        if (pushable.isEmpty()) {
+            // uk_notifications_user_event đã chặn toàn bộ: message từng được xử lý xong nhưng
+            // chưa kịp markProcessed (crash giữa hai bước). Không push lần thứ hai.
+            LOGGER.info("Notification đã tồn tại cho cả {} người nhận, bỏ qua push: eventId={}",
+                drafts.size(), eventId);
             markProcessed(eventId);
             ack.acknowledge();
             return;
@@ -175,23 +208,31 @@ public class NotificationPushedEventConsumer {
         // dùng mở app vẫn thấy đủ. Để lỗi lan ra thì message chạy lại cả vòng retry cho một
         // công việc thực ra đã hoàn thành.
         try {
+            // Cả lô đi trong MỘT task, không phải mỗi người nhận một task: pushExecutor dùng
+            // AbortPolicy, nên N task cho một event fan-out sẽ làm đầy hàng đợi và đánh rơi
+            // push của những event khác đang chờ.
             executor.execute(() -> {
-                try {
-                    pushBestEffort(draft, eventId);
-                } catch (Exception e) {
-                    // Chạy trên luồng pool: không log ở đây thì exception rơi vào uncaught
-                    // handler của thread và không bao giờ vào file log.
-                    LOGGER.error("Push failed outside consumer thread: eventId={}", eventId, e);
+                for (var draft : pushable) {
+                    try {
+                        pushBestEffort(draft, eventId);
+                    } catch (Exception e) {
+                        // Chạy trên luồng pool: không log ở đây thì exception rơi vào uncaught
+                        // handler của thread và không bao giờ vào file log. Bắt trong vòng lặp
+                        // để một người nhận hỏng không cắt mất push của những người còn lại.
+                        LOGGER.error("Push failed outside consumer thread: eventId={}, userId={}",
+                            eventId, draft.userId(), e);
+                    }
                 }
             });
         } catch (RejectedExecutionException e) {
-            LOGGER.warn("Push queue is full, skipping push: eventId={}, userId={}", eventId, draft.userId());
+            LOGGER.warn("Push queue is full, skipping push: eventId={}, recipients={}",
+                eventId, pushable.size());
         }
 
         markProcessed(eventId);
 
-        LOGGER.info("Notification created: eventId={}, eventType={}, userId={}",
-            eventId, eventType, draft.userId());
+        LOGGER.info("Notification created: eventId={}, eventType={}, recipients={}, pushable={}",
+            eventId, eventType, drafts.size(), pushable.size());
         ack.acknowledge();
     }
 
@@ -246,20 +287,24 @@ public class NotificationPushedEventConsumer {
             .orElse(NotificationPreference.DEFAULT_PUSH_ENABLED);
     }
 
-    private Draft renderDraft(String eventType, UUID eventId, String value) {
+    /**
+     * @return một Draft cho mỗi người nhận. Danh sách rỗng nghĩa là event không có người
+     *         nhận nào -- phía gọi bỏ qua message thay vì đẩy vào retry.
+     */
+    private List<Draft> renderDrafts(String eventType, UUID eventId, String value) {
         var category = NotificationCategory.of(eventType);
 
         return switch (eventType) {
             case EventTypeConstant.EXAM_RESULT_RELEASED -> {
                 var payload = parse(value, ExamResultReleasedPayloadV1.class, eventType, eventId);
-                yield new Draft(payload.studentId(), category,
+                yield one(payload.studentId(), category,
                     "Điểm thi của bạn đã có",
                     "%s: %s điểm".formatted(orPlaceholder(payload.examName()), formatScore(payload.totalScore())),
                     data(eventType, "candidateResultId", payload.candidateResultId()));
             }
             case EventTypeConstant.EXAM_RESULT_REGRADED -> {
                 var payload = parse(value, ExamResultRegradedPayloadV1.class, eventType, eventId);
-                yield new Draft(payload.studentId(), category,
+                yield one(payload.studentId(), category,
                     "Điểm thi của bạn đã thay đổi",
                     "%s: %s -> %s điểm".formatted(orPlaceholder(payload.examName()),
                         formatScore(payload.scoreBefore()), formatScore(payload.scoreAfter())),
@@ -267,21 +312,21 @@ public class NotificationPushedEventConsumer {
             }
             case EventTypeConstant.EXAM_RESULT_INVALIDATED -> {
                 var payload = parse(value, ExamResultInvalidatedPayloadV1.class, eventType, eventId);
-                yield new Draft(payload.studentId(), category,
+                yield one(payload.studentId(), category,
                     "Bài thi của bạn đã bị vô hiệu",
                     "%s: %s".formatted(orPlaceholder(payload.examName()), orPlaceholder(payload.reason())),
                     data(eventType, "candidateResultId", payload.candidateResultId()));
             }
             case EventTypeConstant.EXAM_RESULT_INVALID_CLEARED -> {
                 var payload = parse(value, ExamResultInvalidClearedPayloadV1.class, eventType, eventId);
-                yield new Draft(payload.studentId(), category,
+                yield one(payload.studentId(), category,
                     "Bài thi của bạn đã được khôi phục",
                     "%s: %s".formatted(orPlaceholder(payload.examName()), orPlaceholder(payload.reason())),
                     data(eventType, "candidateResultId", payload.candidateResultId()));
             }
             case EventTypeConstant.EXAM_RESULT_OUTCOME_DECIDED -> {
                 var payload = parse(value, ExamResultOutcomeDecidedPayloadV1.class, eventType, eventId);
-                yield new Draft(payload.studentId(), category,
+                yield one(payload.studentId(), category,
                     "Kết quả cuối cùng của bạn",
                     "%s: %s".formatted(orPlaceholder(payload.examName()), orPlaceholder(payload.outcome())),
                     data(eventType, "candidateResultId", payload.candidateResultId()));
@@ -289,7 +334,7 @@ public class NotificationPushedEventConsumer {
 
             case EventTypeConstant.EXAM_APPEAL_PUBLISHED -> {
                 var payload = parse(value, ExamAppealPublishedPayloadV1.class, eventType, eventId);
-                yield new Draft(payload.studentId(), category,
+                yield one(payload.studentId(), category,
                     "Kết quả phúc khảo đã được công bố",
                     "%s: %s -> %s điểm".formatted(orPlaceholder(payload.examName()),
                         formatScore(payload.scoreBefore()), formatScore(payload.scoreAfter())),
@@ -297,14 +342,14 @@ public class NotificationPushedEventConsumer {
             }
             case EventTypeConstant.EXAM_APPEAL_REJECTED -> {
                 var payload = parse(value, ExamAppealRejectedPayloadV1.class, eventType, eventId);
-                yield new Draft(payload.studentId(), category,
+                yield one(payload.studentId(), category,
                     "Đơn phúc khảo không được chấp nhận",
                     "%s: %s".formatted(orPlaceholder(payload.examName()), orPlaceholder(payload.reason())),
                     data(eventType, "appealId", payload.appealId()));
             }
             case EventTypeConstant.EXAM_APPEAL_APPROVED -> {
                 var payload = parse(value, ExamAppealApprovedPayloadV1.class, eventType, eventId);
-                yield new Draft(payload.studentId(), category,
+                yield one(payload.studentId(), category,
                     "Đơn phúc khảo của bạn đã được duyệt",
                     "%s -- dự kiến có kết quả trước %s".formatted(
                         orPlaceholder(payload.examName()), formatDeadline(payload.deadline())),
@@ -313,7 +358,7 @@ public class NotificationPushedEventConsumer {
 
             case EventTypeConstant.GRADING_DEADLINE_REMINDER -> {
                 var payload = parse(value, GradingDeadlineReminderPayloadV1.class, eventType, eventId);
-                yield new Draft(payload.teacherId(), category,
+                yield one(payload.teacherId(), category,
                     "Sắp tới hạn chấm bài",
                     "%s -- hạn %s".formatted(orPlaceholder(payload.examName()),
                         formatDeadline(payload.deadlineAt())),
@@ -322,10 +367,21 @@ public class NotificationPushedEventConsumer {
             case EventTypeConstant.GRADING_ASSIGNMENT_DECLINED -> {
                 var payload = parse(value, GradingAssignmentDeclinedPayloadV1.class, eventType, eventId);
                 // Người nhận là admin đã giao việc, không phải giáo viên trả lại việc.
-                yield new Draft(payload.assignedBy(), category,
+                yield one(payload.assignedBy(), category,
                     "Có người trả lại phân công chấm",
                     "%s: %s".formatted(orPlaceholder(payload.examName()), orPlaceholder(payload.reason())),
                     data(eventType, "assignmentId", payload.assignmentId()));
+            }
+
+            // Event fan-out duy nhất hiện nay: một blueprint được publish thì MỌI school
+            // admin của trường đều cần biết.
+            case EventTypeConstant.EXAM_BLUEPRINT_VERSION_PUBLISHED -> {
+                var payload = parse(value, ExamBlueprintVersionPublishedEvent.class, eventType, eventId);
+                yield fanOut(payload.schoolAdminIds(), category,
+                    "Blueprint đề thi đã sẵn sàng",
+                    "%s (%s)".formatted(orPlaceholder(payload.blueprintName()),
+                        orPlaceholder(payload.blueprintCode())),
+                    data(eventType, "blueprintCode", payload.blueprintCode()));
             }
 
             default -> throw new IllegalStateException(
@@ -333,12 +389,49 @@ public class NotificationPushedEventConsumer {
         };
     }
 
+    /**
+     * Người nhận null trả về danh sách rỗng thay vì một Draft hỏng: {@code notifications
+     * .user_id} là NOT NULL, nên dựng Draft ở đây chỉ để chết ở tầng DB, và saveIfAbsent
+     * nuốt DataIntegrityViolationException nên sự cố sẽ biến mất không dấu vết.
+     */
+    private List<Draft> one(UUID userId, NotificationCategory category, String title, String body,
+            Map<String, String> data) {
+        return userId == null ? List.of() : List.of(new Draft(userId, category, title, body, data));
+    }
+
+    /**
+     * Danh sách người nhận được chốt từ lúc publish và đi kèm trong payload, KHÔNG truy vấn
+     * lại ở đây. Nhờ vậy mỗi lần chạy lại (retry, replay từ DLT) đều cho ra đúng tập người
+     * nhận cũ, và uk_notifications_user_event chặn được sạch. Nếu resolve tại đây, một admin
+     * mới được thêm giữa hai lần retry sẽ nhận thông báo về việc đã cũ -- ràng buộc unique
+     * không cứu được vì đó là user_id khác.
+     *
+     * <p>{@code distinct} là lưới an toàn: payload đã đi qua Kafka nên phía này không kiểm
+     * soát được nó, mà id trùng sẽ tốn một lượt ghi hỏng cho mỗi bản trùng.
+     */
+    private List<Draft> fanOut(List<UUID> userIds, NotificationCategory category, String title, String body,
+            Map<String, String> data) {
+        if (userIds == null || userIds.isEmpty()) {
+            return List.of();
+        }
+        return userIds.stream()
+            .filter(userId -> userId != null)
+            .distinct()
+            .map(userId -> new Draft(userId, category, title, body, data))
+            .toList();
+    }
+
     /** FCM chỉ nhận {@code Map<String, String>}, nên mọi giá trị phải stringify từ đây. */
     private Map<String, String> data(String eventType, String idKey, UUID idValue) {
+        return data(eventType, idKey, idValue == null ? null : idValue.toString());
+    }
+
+    /** Biến thể cho khoá điều hướng vốn đã là chuỗi (mã blueprint...), không phải UUID. */
+    private Map<String, String> data(String eventType, String key, String value) {
         var data = new LinkedHashMap<String, String>();
         data.put("eventType", eventType);
-        if (idValue != null) {
-            data.put(idKey, idValue.toString());
+        if (value != null && !value.isBlank()) {
+            data.put(key, value);
         }
         return data;
     }

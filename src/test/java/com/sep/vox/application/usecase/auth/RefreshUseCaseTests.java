@@ -1,6 +1,5 @@
 package com.sep.vox.application.usecase.auth;
 
-import com.sep.vox.application.usecase.TestSchoolUserRepository;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -33,10 +32,12 @@ import com.sep.vox.application.response.output.GeneratedSessionToken;
 import com.sep.vox.domain.model.devicesession.DeviceSession;
 import com.sep.vox.domain.model.devicesession.SessionPlatform;
 import com.sep.vox.domain.model.refreshtoken.RefreshToken;
+import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.DeviceSessionRepository;
 import com.sep.vox.domain.repository.RefreshTokenRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.valueobject.DateOfBirth;
 import com.sep.vox.domain.valueobject.Email;
@@ -49,6 +50,7 @@ class RefreshUseCaseTests {
     private RefreshTokenRepository refreshTokenRepository;
     private UserRepository userRepository;
     private UserRoleQueryRepository userRoleQueryRepository;
+    private SchoolUserRepository schoolUserRepository;
     private SessionManagerPort sessionManagerPort;
     private RefreshUseCase refreshUseCase;
     private SessionTokenManagerPort sessionTokenManagerPort;
@@ -63,6 +65,7 @@ class RefreshUseCaseTests {
         sessionManagerPort = mock(SessionManagerPort.class);
         sessionTokenManagerPort = mock(SessionTokenManagerPort.class);
         authTokenPort = mock(AuthTokenPort.class);
+        schoolUserRepository = mock(SchoolUserRepository.class);
         refreshUseCase = new RefreshUseCase(
             deviceSessionRepository,
             refreshTokenRepository,
@@ -71,7 +74,7 @@ class RefreshUseCaseTests {
             sessionTokenManagerPort,
             sessionManagerPort,
             authTokenPort,
-            TestSchoolUserRepository.create()
+            schoolUserRepository
         );
     }
 
@@ -87,6 +90,7 @@ class RefreshUseCaseTests {
         var oldToken = activeRefreshToken(oldTokenId, sessionId, "old-token-hash");
         var savedNewToken = activeRefreshToken(newTokenId, sessionId, "new-token-hash");
         var user = activeUser(userId, schoolId);
+        var schoolUser = activeSchoolUser(userId, schoolId);
         var roles = List.of(new UserRoleInfo(
             UUID.randomUUID(),
             userId,
@@ -111,6 +115,7 @@ class RefreshUseCaseTests {
             .thenReturn(Optional.of(user));
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId))
             .thenReturn(roles);
+        when(schoolUserRepository.findByUserId(userId)).thenReturn(Optional.of(schoolUser));
         when(authTokenPort.generateJwtToken(userId.toString(), schoolId, "test@example.com", List.of("SCHOOL_ADMIN")))
             .thenReturn("access-token");
 
@@ -276,8 +281,7 @@ class RefreshUseCaseTests {
         );
     }
 
-    private static User activeUser(UUID userId, UUID schoolId) {
-        TestSchoolUserRepository.remember(userId, schoolId);
+    private User activeUser(UUID userId, UUID schoolId) {
         return new User(
             userId,
             new Email("test@example.com"),
@@ -296,7 +300,7 @@ class RefreshUseCaseTests {
         );
     }
 
-    private static DeviceSession revokedSession(UUID sessionId, String deviceId) {
+    private DeviceSession revokedSession(UUID sessionId, String deviceId) {
         return new DeviceSession(
             sessionId,
             UUID.randomUUID(),
@@ -309,7 +313,7 @@ class RefreshUseCaseTests {
         );
     }
 
-    private static RefreshToken activeRefreshToken(UUID tokenId, UUID sessionId, String tokenHash) {
+    private RefreshToken activeRefreshToken(UUID tokenId, UUID sessionId, String tokenHash) {
         var now = Instant.now();
         return new RefreshToken(
             tokenId,
@@ -322,7 +326,7 @@ class RefreshUseCaseTests {
         );
     }
 
-    private static RefreshToken expiredRefreshToken(UUID tokenId, UUID sessionId, String tokenHash) {
+    private RefreshToken expiredRefreshToken(UUID tokenId, UUID sessionId, String tokenHash) {
         var now = Instant.now();
         return new RefreshToken(
             tokenId,
@@ -335,7 +339,7 @@ class RefreshUseCaseTests {
         );
     }
 
-    private static RefreshToken usedRefreshToken(UUID tokenId, UUID sessionId, String tokenHash) {
+    private RefreshToken usedRefreshToken(UUID tokenId, UUID sessionId, String tokenHash) {
         var now = Instant.now();
         return new RefreshToken(
             tokenId,
@@ -346,5 +350,9 @@ class RefreshUseCaseTests {
             now,
             UUID.randomUUID()
         );
+    }
+
+    private SchoolUser activeSchoolUser(UUID userId, UUID schoolId) {
+        return new SchoolUser(schoolId, userId, Instant.now(), Instant.now());
     }
 }

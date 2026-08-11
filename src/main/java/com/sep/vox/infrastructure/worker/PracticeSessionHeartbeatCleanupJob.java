@@ -1,4 +1,4 @@
-package com.sep.vox.infrastructure.worker.personalization;
+package com.sep.vox.infrastructure.worker;
 
 import java.time.Duration;
 import java.time.Instant;

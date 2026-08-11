@@ -21,6 +21,7 @@ public final class EventTypeConstant {
 
     public static final String GRADING_DEADLINE_REMINDER = "GradingDeadlineReminder";
     public static final String GRADING_ASSIGNMENT_DECLINED = "GradingAssignmentDeclined";
+    public static final String EXAM_BLUEPRINT_VERSION_PUBLISHED = "ExamBlueprintVersionPublished";
 
     public static List<String> all() {
         return List.of(
@@ -35,7 +36,8 @@ public final class EventTypeConstant {
             EXAM_RESULT_INVALID_CLEARED,
             EXAM_RESULT_OUTCOME_DECIDED,
             GRADING_DEADLINE_REMINDER,
-            GRADING_ASSIGNMENT_DECLINED
+            GRADING_ASSIGNMENT_DECLINED, 
+            EXAM_BLUEPRINT_VERSION_PUBLISHED
         );
     }
 }

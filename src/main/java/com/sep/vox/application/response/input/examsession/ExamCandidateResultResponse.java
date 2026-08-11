@@ -14,6 +14,8 @@ public record ExamCandidateResultResponse(
     String flagReason,
     boolean scoreVisible,
     BigDecimal totalScore,
+    BigDecimal scoringScaleMin,
+    BigDecimal scoringScaleMax,
     UUID targetFrameworkBandId,
     String targetFrameworkBandCode,
     String targetFrameworkBandLabel,

@@ -16,6 +16,9 @@ import tools.jackson.databind.json.JsonMapper;
 @Repository
 public class RedisCacheManagerRepository implements CacheManagerPort {
 
+    private static final org.slf4j.Logger LOGGER =
+        org.slf4j.LoggerFactory.getLogger(RedisCacheManagerRepository.class);
+
     /**
      * Dựng MỘT lần: {@code DefaultRedisScript} tính sẵn SHA1 của script lúc khởi tạo, nên tạo mới
      * mỗi lần gọi là băm lại chuỗi mỗi lần nhả khoá -- không cần thiết.
@@ -75,19 +78,19 @@ public class RedisCacheManagerRepository implements CacheManagerPort {
         return Boolean.TRUE.equals(isSaved) ? value : redis.opsForValue().get(key);
     }
 
-    /**
-     * So sánh rồi xoá trong MỘT lệnh Redis, bằng script Lua -- Redis chạy script đơn luồng nên
-     * không lệnh nào chen được vào giữa GET và DEL.
-     *
-     * <p>Script tự viết thay vì dùng {@code WATCH/MULTI} vì cách kia đòi giữ nguyên một connection
-     * qua nhiều lệnh, mà pool của Lettuce thì không đảm bảo điều đó.
-     */
     @Override
     public boolean deleteIfValueMatches(String key, String expectedValue) {
         if (key == null || expectedValue == null) {
             return false;
         }
-        Long deleted = redis.execute(COMPARE_AND_DELETE, List.of(key), expectedValue);
-        return deleted != null && deleted > 0;
+        try {
+            Long deleted = redis.execute(COMPARE_AND_DELETE, List.of(key), expectedValue);
+            return deleted != null && deleted > 0;
+        } catch (RuntimeException exception) {
+            LOGGER.warn(
+                "Không nhả được khoá {} -- để TTL tự dọn.", key, exception
+            );
+            return false;
+        }
     }
 }

@@ -125,7 +125,7 @@ class UpdateQuestionStatusUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateQuestionStatusCommand(question.getId(), "SUBMIT", null)))
             .isInstanceOf(ForbiddenException.class)
-            .hasMessage("Quyền truy cập bị từ chối");
+            .hasMessage("Không thể gửi duyệt: bạn không phải người tạo hoặc người cộng tác có quyền sửa câu hỏi này");
     }
 
     @Test
@@ -135,7 +135,8 @@ class UpdateQuestionStatusUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateQuestionStatusCommand(question.getId(), "SUBMIT", null)))
             .isInstanceOf(IllegalStateException.class)
-            .hasMessage("Chỉ được submit khi câu hỏi ở trạng thái DRAFT hoặc REVISION_REQUESTED");
+            .hasMessage("Không thể gửi duyệt: câu hỏi đang ở trạng thái \"Chờ duyệt\", "
+                + "thao tác này chỉ áp dụng cho câu hỏi ở trạng thái \"Bản nháp\" hoặc \"Yêu cầu sửa\"");
     }
 
     @Test

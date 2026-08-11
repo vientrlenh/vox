@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -78,6 +79,30 @@ public class ExamScheduleProctorRepositoryImpl implements ExamScheduleProctorRep
             .stream()
             .map(e -> e.getScheduleId())
             .distinct()
+            .toList();
+    }
+
+    @Override
+    public boolean existsOverlappingAssignment(UUID teacherId, Instant start, Instant end, UUID excludeScheduleId) {
+        // Ca thi chưa đặt giờ thì không có gì để so — coi như không vướng, đúng như cách
+        // ExamScheduleRoomValidator bỏ qua khi thiếu dữ liệu.
+        if (teacherId == null || start == null || end == null) {
+            return false;
+        }
+        return springDataExamScheduleProctorRepository
+            .countOverlappingAssignments(teacherId, start, end, excludeScheduleId) > 0;
+    }
+
+    @Override
+    public List<ProctorScheduleConflict> findConflictsForTeachers(
+            Collection<UUID> teacherIds, Instant start, Instant end, UUID excludeScheduleId) {
+        if (teacherIds == null || teacherIds.isEmpty() || start == null || end == null) {
+            return List.of();
+        }
+        return springDataExamScheduleProctorRepository
+            .findOverlappingAssignments(teacherIds, start, end, excludeScheduleId).stream()
+            .map(row -> new ProctorScheduleConflict(
+                (UUID) row[0], (UUID) row[1], (Instant) row[2], (Instant) row[3]))
             .toList();
     }
 }

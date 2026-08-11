@@ -19,21 +19,34 @@ import com.sep.vox.application.port.input.usecase.user.ViewUserDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.user.ViewUsersUseCase;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.RoleDto;
+import com.sep.vox.domain.dto.SchoolDto;
 import com.sep.vox.domain.dto.UserDto;
+import com.sep.vox.domain.mapper.SchoolDtoMapper;
+import com.sep.vox.domain.repository.SchoolRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 
 import graphql.schema.DataFetchingEnvironment;
 
 @Controller("graphqlUserController")
 public class UserController {
-    
+
     private final ViewUserDetailsUseCase viewUserDetailsUseCase;
     private final ViewUsersUseCase viewUsersUseCase;
     private final ViewProfileUseCase viewProfileUseCase;
+    private final SchoolUserRepository schoolUserRepository;
+    private final SchoolRepository schoolRepository;
 
-    public UserController(ViewUserDetailsUseCase viewUserDetailsUseCase, ViewUsersUseCase viewUsersUseCase, ViewProfileUseCase viewProfileUseCase) {
+    public UserController(
+            ViewUserDetailsUseCase viewUserDetailsUseCase,
+            ViewUsersUseCase viewUsersUseCase,
+            ViewProfileUseCase viewProfileUseCase,
+            SchoolUserRepository schoolUserRepository,
+            SchoolRepository schoolRepository) {
         this.viewUserDetailsUseCase = viewUserDetailsUseCase;
         this.viewUsersUseCase = viewUsersUseCase;
         this.viewProfileUseCase = viewProfileUseCase;
+        this.schoolUserRepository = schoolUserRepository;
+        this.schoolRepository = schoolRepository;
     }
 
     @QueryMapping(name = "user")
@@ -60,9 +73,18 @@ public class UserController {
     }
 
     @SchemaMapping(typeName = "User", field = "roles")
-    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
+    @PreAuthorize("isAuthenticated()")
     public CompletableFuture<List<RoleDto>> userRoles(UserDto user, DataFetchingEnvironment env) {
         DataLoader<UserRolesKey, List<RoleDto>> loader = env.getDataLoader("rolesByUser");
         return loader.load(new UserRolesKey(user.id()));
+    }
+
+    @SchemaMapping(typeName = "User", field = "school")
+    @PreAuthorize("isAuthenticated()")
+    public SchoolDto userSchool(UserDto user) {
+        return schoolUserRepository.findByUserId(user.id())
+            .flatMap(schoolUser -> schoolRepository.findById(schoolUser.getSchoolId()))
+            .map(SchoolDtoMapper::toSchoolDto)
+            .orElse(null);
     }
 }

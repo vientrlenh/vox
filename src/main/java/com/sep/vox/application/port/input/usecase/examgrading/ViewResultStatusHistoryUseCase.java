@@ -23,10 +23,10 @@ import com.sep.vox.domain.repository.ExamRepository;
  * vì sao, điểm trước → sau.
  *
  * <p>Ba nhóm người xem, ba lý do khác nhau: school admin cần nó để giải trình tranh
- * chấp, học sinh cần nó để hiểu vì sao điểm mình thay đổi, và giáo viên ĐANG được giao
- * bài cần nó làm ngữ cảnh khi chấm — nhất là ở vòng phúc khảo, nơi câu hỏi đúng là
- * "điểm này đã đi qua những tay nào". Học sinh chỉ xem được bài của chính mình; giáo
- * viên chỉ xem được bài mình đang cầm, hết phân công là hết quyền.
+ * chấp, học sinh cần nó để hiểu vì sao điểm mình thay đổi, và giáo viên ĐÃ TỪNG được
+ * giao bài cần nó làm ngữ cảnh — nhất là ở vòng phúc khảo, nơi câu hỏi đúng là "điểm
+ * này đã đi qua những tay nào". Học sinh chỉ xem được bài của chính mình; giáo viên chỉ
+ * xem được bài mình từng cầm, kể cả khi phân công đó đã đóng.
  */
 @Service
 public class ViewResultStatusHistoryUseCase implements IUseCase<UUID, List<ResultStatusHistoryInfo>> {
@@ -78,13 +78,17 @@ public class ViewResultStatusHistoryUseCase implements IUseCase<UUID, List<Resul
             if (userContextPort.isSystemAdmin()) {
                 return examResultAuditQueryRepository.findHistory(candidateResultId);
             }
-            // Giáo viên đang cầm bài: quyền đến từ chính dòng phân công đang mở, đúng
-            // khuôn với mọi thao tác chấm khác. Phân công đóng lại là quyền mất theo.
-            var isAssignedTeacher = examGradingAssignmentRepository
-                .findOpenByCandidateResultId(candidateResultId)
-                .map(assignment -> currentUserId.equals(assignment.getTeacherId()))
-                .orElse(false);
-            if (isAssignedTeacher) {
+            // Giáo viên TỪNG được giao bài này: quyền đọc dòng thời gian đi theo việc đã
+            // chấm, không theo dòng phân công còn mở. Ở vòng phúc khảo, chính người chấm
+            // vòng trước là người bị hỏi lại "vì sao chấm thế" — mà lúc đó phân công của
+            // họ đã COMPLETED, nên đòi phân công còn mở là khoá đúng người cần đọc nó
+            // nhất. Cùng luật với nghe lại bản ghi ở ExamRecordingAccessService.
+            //
+            // Đây là quyền ĐỌC. Mọi thao tác GHI điểm vẫn đi qua
+            // ExamGradingAccessService.authorizeAssignedTeacher trên đúng dòng đang mở.
+            var wasAssignedTeacher = examGradingAssignmentRepository
+                .existsByCandidateResultIdAndTeacherId(candidateResultId, currentUserId);
+            if (wasAssignedTeacher) {
                 return examResultAuditQueryRepository.findHistory(candidateResultId);
             }
             var exam = examRepository.findById(result.getExamId())

@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.query;
 
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,7 +65,7 @@ public class JpaProctorScheduleCandidatesQueryRepository implements ProctorSched
                     (String) row[2],
                     (String) row[3],
                     (String) row[4],
-                    (java.time.Instant) row[5],
+                    (Instant) row[5],
                     latestSession == null ? null : latestSession.getId(),
                     latestSession == null ? null : latestSession.getStatus(),
                     latestSession != null && latestSession.isFlagged()

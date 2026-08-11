@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateExamScheduleStatusCommand;
+import com.sep.vox.application.port.input.service.ExamScheduleProctorConflictValidator;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
@@ -32,6 +33,7 @@ public class UpdateExamScheduleStatusUseCase implements IUseCase<UpdateExamSched
     private final ExamRepository examRepository;
     private final ExamScheduleRepository examScheduleRepository;
     private final ExamScheduleProctorRepository examScheduleProctorRepository;
+    private final ExamScheduleProctorConflictValidator examScheduleProctorConflictValidator;
     private final ExamCandidateRepository examCandidateRepository;
     private final ExamMemberRepository examMemberRepository;
     private final SchoolUserRepository schoolUserRepository;
@@ -42,6 +44,7 @@ public class UpdateExamScheduleStatusUseCase implements IUseCase<UpdateExamSched
             ExamRepository examRepository,
             ExamScheduleRepository examScheduleRepository,
             ExamScheduleProctorRepository examScheduleProctorRepository,
+            ExamScheduleProctorConflictValidator examScheduleProctorConflictValidator,
             ExamCandidateRepository examCandidateRepository,
             ExamMemberRepository examMemberRepository,
             SchoolUserRepository schoolUserRepository,
@@ -50,6 +53,7 @@ public class UpdateExamScheduleStatusUseCase implements IUseCase<UpdateExamSched
         this.examRepository = examRepository;
         this.examScheduleRepository = examScheduleRepository;
         this.examScheduleProctorRepository = examScheduleProctorRepository;
+        this.examScheduleProctorConflictValidator = examScheduleProctorConflictValidator;
         this.examCandidateRepository = examCandidateRepository;
         this.examMemberRepository = examMemberRepository;
         this.schoolUserRepository = schoolUserRepository;
@@ -132,7 +136,7 @@ public class UpdateExamScheduleStatusUseCase implements IUseCase<UpdateExamSched
         }
 
         moveCandidates(schedule.getId(), target.getId(), currentUserId, now);
-        moveProctors(schedule.getId(), target.getId());
+        moveProctors(schedule.getId(), target);
 
         schedule.setStatus(ExamScheduleStatus.MOVED);
         schedule.setMovedToScheduleId(targetScheduleId);
@@ -147,12 +151,16 @@ public class UpdateExamScheduleStatusUseCase implements IUseCase<UpdateExamSched
         examCandidateRepository.saveAll(candidates);
     }
 
-    private void moveProctors(UUID sourceScheduleId, UUID targetScheduleId) {
+    private void moveProctors(UUID sourceScheduleId, ExamSchedule target) {
         for (var proctor : examScheduleProctorRepository.findByScheduleId(sourceScheduleId)) {
             // Bảng có unique (schedule_id, teacher_id) nên bỏ qua giám thị đã có sẵn ở ca đích,
             // nhưng vẫn phải xoá dòng cũ để ca nguồn không còn giám thị nào.
-            if (!examScheduleProctorRepository.existsByScheduleIdAndTeacherId(targetScheduleId, proctor.getTeacherId())) {
-                examScheduleProctorRepository.save(new ExamScheduleProctor(targetScheduleId, proctor.getTeacherId()));
+            if (!examScheduleProctorRepository.existsByScheduleIdAndTeacherId(target.getId(), proctor.getTeacherId())) {
+                // Ca đích có khung giờ khác ca nguồn nên phải soát lại: giám thị đi theo có thể đâm
+                // vào một ca thứ ba. Loại ca nguồn khỏi phép kiểm tra vì nó sắp thành MOVED.
+                examScheduleProctorConflictValidator.requireTeacherFree(
+                    proctor.getTeacherId(), target.getStartDate(), target.getEndDate(), sourceScheduleId);
+                examScheduleProctorRepository.save(new ExamScheduleProctor(target.getId(), proctor.getTeacherId()));
             }
             examScheduleProctorRepository.deleteById(proctor.getId());
         }

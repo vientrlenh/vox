@@ -207,6 +207,9 @@ type Exam {
     updatedBy: ID
     members: [ExamMember!]!
     papers(status: ExamPaperStatus): [ExamPaper!]!
+    # Ca thi của kỳ thi (đã loại ca xoá mềm), chạy qua DataLoader examSchedulesByExamId nên trang
+    # danh sách kỳ thi dựng được thanh tiến độ "đã xếp lịch tới đâu" mà không N+1.
+    schedules: [ExamSchedule!]!
     securePool: ExamSecurePool
     schoolClassId: ID
     candidateCount: Int!
@@ -329,6 +332,15 @@ type ExamSchedule {
     proctors: [ExamScheduleProctor!]!
     candidateCount: Int!
     requiredProctorCount: Int!
+}
+
+# Một giáo viên đang vướng lịch: đã gác ca `scheduleId` chạy [startDate, endDate).
+# Chỉ để làm mờ sẵn người bận ở màn chọn giám thị — luật chặn thật chạy lúc ghi.
+type ProctorBusySlot {
+    teacherId: ID!
+    scheduleId: ID!
+    startDate: String
+    endDate: String
 }
 
 type ExamCandidate {
@@ -589,6 +601,31 @@ type ExamRecording {
     assembledAt: String
 }
 
+"""
+Bản ghi kèm LINK PHÁT được, dành cho màn chấm bài.
+
+Tách khỏi `ExamRecording` thay vì thêm field vào đó: `records` là API của app giám thị trên
+desktop (`ExamRecordingService`), chạy trong lúc thi và không cần link phát. Nhét thêm vào đó
+nghĩa là mỗi lượt gọi của giám thị đều phải ký link cho mọi bản ghi, cho một thứ nó không dùng.
+"""
+type ExamRecordingPlayback {
+    id: ID!
+    streamType: String
+    status: String
+    source: String
+    durationSeconds: Int
+    """Bản nên mở trước cho streamType này khi có nhiều nguồn cùng ghi."""
+    canonical: Boolean!
+    """
+    Link phát trực tiếp trong thẻ <video>, ký sẵn và HẾT HẠN sau 2 giờ.
+
+    NULL khi bản ghi chưa có file trên S3 (đang PROCESSING, hoặc FAILED/ABANDONED) -- đó là
+    trạng thái bình thường, không phải lỗi. Vì link có hạn, đừng lưu lại hay chia sẻ: hỏi lại
+    query này mỗi lần mở trình phát.
+    """
+    playbackUrl: String
+}
+
 input UpdateExamScheduleInput {
     schoolRoomId: ID
     startDate: String
@@ -636,6 +673,7 @@ extend type Query {
 
     examSchedules(examId: ID, status: ExamScheduleStatus, startDate: String, endDate: String): [ExamSchedule!]!
     myExamSchedules(examId: ID, status: ExamScheduleStatus, startDate: String, endDate: String): [ExamSchedule!]!
+    proctorBusySlots(scheduleId: ID!, teacherIds: [ID!]!): [ProctorBusySlot!]!
 
     examCandidates(examId: ID!, scheduleId: ID, status: ExamCandidateStatus): [ExamCandidate!]!
 
@@ -656,7 +694,18 @@ extend type Query {
     examItemResponseTurns(answerId: ID!): [ExamItemResponseTurn!]!
 
     examItemResponseEvaluation(answerId: ID!): ExamItemEvaluationDetails
-    records(examSessionId: ID!, streamType: ExamRecordingStreamType): [ExamRecording!]!
+    # Đổi tên `records` -> `recordings` (2026-08-07). Resolver luôn tên `recordings`
+    # (ExamSessionController#recordings), nên field `records` KHÔNG có ai phục vụ -- báo cáo
+    # schema inspection lúc khởi động liệt kê nó ở "Unmapped fields", và gọi vào sẽ vỡ vì kiểu
+    # trả về non-null. Không client nào đang gọi nên đổi tên field là an toàn.
+    recordings(examSessionId: ID!, streamType: ExamRecordingStreamType): [ExamRecording!]!
+
+    """
+    Bản ghi camera + màn hình của một phiên thi, kèm link phát -- cho màn chấm bài và trang kết
+    quả phía giáo viên. Cùng luật quyền với `records` (school admin, hoặc giáo viên là chủ tịch
+    hội đồng / giám thị của đúng ca thi).
+    """
+    examRecordingPlayback(examSessionId: ID!): [ExamRecordingPlayback!]!
 }
 
 extend type Mutation {

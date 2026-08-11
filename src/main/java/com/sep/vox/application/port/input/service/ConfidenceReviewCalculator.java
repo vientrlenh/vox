@@ -326,14 +326,14 @@ public class ConfidenceReviewCalculator {
                 BigDecimal.ZERO, BigDecimal.ZERO, decimal(0.01),
                 decimal(0.50), decimal(0.25),
                 decimal(1.00), decimal(2.00), decimal(1.50), decimal(3.00),
-                2, true
+                2, false
             );
             case HIGH_STAKES -> new ThresholdProfile(
                 decimal(0.80), decimal(0.65), decimal(0.60),
                 decimal(0.05), decimal(0.03), decimal(0.007),
                 decimal(0.60), decimal(0.35),
                 decimal(0.80), decimal(1.50), decimal(1.50), decimal(3.00),
-                1, true
+                1, false
             );
         };
     }

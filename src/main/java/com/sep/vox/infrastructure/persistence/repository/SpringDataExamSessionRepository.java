@@ -20,6 +20,21 @@ public interface SpringDataExamSessionRepository extends JpaRepository<ExamSessi
     Optional<ExamSessionJpaEntity> findTopByCandidateIdAndStatusInOrderByStartedAtDesc(UUID candidateId, Collection<String> statuses);
     List<ExamSessionJpaEntity> findByCandidateId(UUID candidateId);
     List<ExamSessionJpaEntity> findByCandidateIdIn(Collection<UUID> candidateIds);
+    boolean existsByPaperId(UUID paperId);
+
+    /**
+     * Đếm phiên còn đang làm bài của một kỳ thi. Bỏ qua thí sinh đã bị đình chỉ giống
+     * {@code findPastScheduleEndCandidates} bên dưới -- phiên của họ không tự kết thúc.
+     */
+    @Query("""
+        SELECT COUNT(s)
+        FROM ExamSessionJpaEntity s
+        JOIN ExamCandidateJpaEntity c ON c.id = s.candidateId
+        WHERE s.examId = :examId
+          AND s.status IN ('IN_PROGRESS', 'INTERRUPTED')
+          AND c.blockedAt IS NULL
+    """)
+    long countActiveByExamId(@Param("examId") UUID examId);
 
     @Query("""
         SELECT s

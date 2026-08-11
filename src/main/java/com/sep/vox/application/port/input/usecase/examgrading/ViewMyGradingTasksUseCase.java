@@ -18,6 +18,9 @@ import com.sep.vox.domain.model.exam.ExamKind;
  * <p>CHỈ kỳ thi tập trung, khoá cứng không nhận tham số: bài kiểm tra trên lớp có màn
  * riêng theo từng bài ({@code myClassTestGradingTasks}), nơi giáo viên còn thấy tên học
  * sinh và lớp. Trộn chung hai loại vào đây là lỗi đang sửa.
+ *
+ * <p>{@code examId} thì ngược lại — nhận từ client, nhưng chỉ để thu hẹp: nó nằm CẠNH
+ * điều kiện teacherId chứ không thay nó, nên không mở thêm được gì.
  */
 @Service
 public class ViewMyGradingTasksUseCase
@@ -37,8 +40,9 @@ public class ViewMyGradingTasksUseCase
     @Transactional(readOnly = true)
     public PageResult<GradingTaskInfo> execute(ViewMyGradingTasksQuery input) {
         var currentUserId = examGradingAccessService.requireActiveUserId();
-        return examGradingQueryRepository.findTasksByTeacherId(
+        return examGradingQueryRepository.findTasksByTeacherIdAndExamId(
             currentUserId,
+            input.examId(),
             ExamKind.CENTRALIZED.name(),
             input.status(),
             input.roundType(),

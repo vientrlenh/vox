@@ -34,6 +34,7 @@ import com.sep.vox.domain.model.exam.ExamScheduleStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.model.exam.ExamStreamTypePermission;
 import com.sep.vox.domain.model.school.SchoolUser;
+import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.PlanLimitExceededException;
 import com.sep.vox.application.port.input.service.ClassTestTokenQuotaGuardService;
 import com.sep.vox.application.port.input.service.ExamAssessmentPolicyValidator;
@@ -343,6 +344,44 @@ class UpdateExamUseCaseTests {
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("đã bắt đầu");
         verify(examRepository, never()).save(any());
+    }
+
+    // --- Chủ tịch hội đồng sửa được thông tin kỳ thi tập trung như quản trị trường ---
+
+    @Test
+    void should_allow_the_chair_to_update_a_centralized_exam() {
+        var exam = centralized(null);
+        exam.setName("Cũ");
+        givenCallerIsChairInsteadOfSchoolAdmin();
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+
+        useCase.execute(new UpdateExamCommand(
+            examId, "Mới", null, null, null, null, null, null, null, null, null, null));
+
+        assertThat(exam.getName()).isEqualTo("Mới");
+        verify(examRepository).save(exam);
+    }
+
+    @Test
+    void should_reject_updating_centralized_exam_when_caller_is_neither_school_admin_nor_chair() {
+        var exam = centralized(null);
+        givenCallerIsChairInsteadOfSchoolAdmin();
+        when(examMemberRepository.existsByExamIdAndUserIdAndRole(examId, userId, ExamMemberRole.CHAIR))
+            .thenReturn(false);
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+
+        assertThatThrownBy(() -> useCase.execute(new UpdateExamCommand(
+            examId, "Mới", null, null, null, null, null, null, null, null, null, null)))
+            .isInstanceOf(ForbiddenException.class)
+            .hasMessageContaining("Quyền truy cập bị từ chối");
+        verify(examRepository, never()).save(any());
+    }
+
+    /** Hạ người gọi từ quản trị trường xuống giáo viên chỉ giữ vai trò CHAIR của chính kỳ thi đó. */
+    private void givenCallerIsChairInsteadOfSchoolAdmin() {
+        when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId)).thenReturn(List.of(
+            new UserRoleInfo(UUID.randomUUID(), userId, UUID.randomUUID(), Instant.now(), "TEACHER", "Giáo viên")
+        ));
     }
 
     private UpdateExamCommand streamCommand(List<String> requiredStreamTypes, String streamTypePermission) {

@@ -1,0 +1,22 @@
+# GỠ 2026-08-06: mutation respondToTopicSuggestion, query myPendingTopicSuggestions và
+# type TopicSuggestion. Cả cụm chỉ phục vụ gợi ý chủ đề suy ra TỪ LỜI HỌC SINH NÓI trong bài
+# luyện -- đường đó đã bỏ ở backend nên không còn gì tạo ra dòng PENDING để mà duyệt.
+#
+# generateTopicFromKeyword bên dưới là đường KHÁC và vẫn chạy: học sinh chủ động gõ từ khoá,
+# tìm không ra thì AI soạn chủ đề mới.
+
+extend type Mutation {
+    generateTopicFromKeyword(keyword: String!): TopicFromKeywordResult!
+}
+
+type TopicFromKeywordResult {
+    topic: PracticeTopicOffer
+    outcome: TopicFromKeywordOutcome!
+}
+
+enum TopicFromKeywordOutcome {
+    CREATED
+    MATCHED_EXISTING
+    REJECTED_UNSUITABLE
+    OUT_OF_EXAM_SCOPE
+}

@@ -147,4 +147,9 @@ public class SchoolClassUserRepositoryImpl implements SchoolClassUserRepository 
             .map(SchoolClassUserMapper::toDomain)
             .toList();
     }
+
+    @Override
+    public Optional<UUID> findCurrentSchoolGradeId(UUID studentId) {
+        return springDataSchoolClassUserRepository.findCurrentSchoolGradeId(studentId);
+    }
 }

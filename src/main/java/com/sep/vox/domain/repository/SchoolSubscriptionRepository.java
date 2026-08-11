@@ -19,4 +19,13 @@ public interface SchoolSubscriptionRepository {
 
     /** Chuyển hàng loạt ACTIVE -> EXPIRED cho các subscription đã qua endDate. Trả về số dòng bị đổi. */
     int expireOverdue(LocalDate today);
+
+    // Id gói đang hoạt động của trường mà 1 user đang trực thuộc (dùng để trừ quota)
+    Optional<UUID> findActiveSubscriptionIdForUser(UUID userId);
+
+    // Hạn mức PRACTICE còn lại của user (0 nếu không có gói đang hoạt động)
+    int findPracticeQuotaRemaining(UUID userId);
+
+    // Số phút tối đa mỗi lượt luyện của gói đang hoạt động (null nếu không có gói)
+    Integer findMaxTimePerAttemptMinForUser(UUID userId);
 }

@@ -196,6 +196,11 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
             if (schoolAdmin && currentSchoolId != null && currentSchoolId.equals(examSchoolId)) {
                 return;
             }
+            // Chủ tịch hội đồng chạy trọn quy trình kỳ thi tập trung trên trang chi tiết (lập hội đồng →
+            // chốt khung đề → ra đề → xếp lịch), nên phải sửa được thông tin kỳ thi như quản trị trường.
+            if (examMemberRepository.existsByExamIdAndUserIdAndRole(examId, currentUserId, ExamMemberRole.CHAIR)) {
+                return;
+            }
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
         if (!examMemberRepository.existsByExamIdAndUserIdAndRole(examId, currentUserId, ExamMemberRole.CHAIR)) {

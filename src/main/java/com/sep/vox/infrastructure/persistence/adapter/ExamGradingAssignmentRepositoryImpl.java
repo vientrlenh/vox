@@ -72,6 +72,12 @@ public class ExamGradingAssignmentRepositoryImpl implements ExamGradingAssignmen
     }
 
     @Override
+    public boolean existsByCandidateResultIdAndTeacherId(UUID candidateResultId, UUID teacherId) {
+        return springDataExamGradingAssignmentRepository
+            .existsByCandidateResultIdAndTeacherId(candidateResultId, teacherId);
+    }
+
+    @Override
     public List<ExamGradingAssignment> findByAppealId(UUID appealId) {
         return springDataExamGradingAssignmentRepository.findByAppealId(appealId).stream()
             .map(ExamGradingAssignmentMapper::toDomain)

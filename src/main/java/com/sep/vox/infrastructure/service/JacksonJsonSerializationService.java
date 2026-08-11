@@ -73,6 +73,21 @@ public class JacksonJsonSerializationService implements JsonSerializationPort {
         }
     }
 
+    @Override
+    public List<String> toStringListField(String json, String field) {
+        if (json == null || json.isBlank()) {
+            return List.of();
+        }
+        var root = jsonMapper.readTree(json);
+        var result = new java.util.ArrayList<String>();
+        for (var node : root.path(field)) {
+            if (!node.asString().isBlank()) {
+                result.add(node.asString());
+            }
+        }
+        return result;
+    }
+
     private Map<String, String> toStringMap(Map<?, ?> raw) {
         var result = new LinkedHashMap<String, String>();
         raw.forEach((key, value) -> result.put(

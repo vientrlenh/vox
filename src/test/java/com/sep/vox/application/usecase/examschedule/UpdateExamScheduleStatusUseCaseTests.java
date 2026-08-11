@@ -3,6 +3,7 @@ package com.sep.vox.application.usecase.examschedule;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -17,7 +18,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.port.input.command.UpdateExamScheduleStatusCommand;
+import com.sep.vox.application.port.input.service.ExamScheduleProctorConflictValidator;
 import com.sep.vox.application.port.input.usecase.examschedule.UpdateExamScheduleStatusUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
@@ -64,7 +67,10 @@ class UpdateExamScheduleStatusUseCaseTests {
         userRoleQueryRepository = mock(UserRoleQueryRepository.class);
         userContextPort = mock(UserContextPort.class);
         useCase = new UpdateExamScheduleStatusUseCase(
-            examRepository, examScheduleRepository, examScheduleProctorRepository, examCandidateRepository,
+            examRepository, examScheduleRepository, examScheduleProctorRepository,
+            // Validator thật trên proctor repo đã mock: mặc định "giáo viên rảnh", test dời ca bên
+            // dưới bật cờ trùng lịch lên để kiểm tra luật.
+            new ExamScheduleProctorConflictValidator(examScheduleProctorRepository), examCandidateRepository,
             examMemberRepository, schoolUserRepository, userRoleQueryRepository, userContextPort);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
@@ -178,6 +184,26 @@ class UpdateExamScheduleStatusUseCaseTests {
 
         verify(examScheduleProctorRepository, never()).save(any());
         verify(examScheduleProctorRepository).deleteById(proctorId);
+    }
+
+    /**
+     * Ca đích có khung giờ khác ca nguồn, nên giám thị đi theo có thể đâm vào một ca thứ ba — dời ca
+     * không được phép âm thầm tạo ra trùng lịch.
+     */
+    @Test
+    void should_reject_move_when_proctor_busy_in_target_window() {
+        var targetId = givenTarget(ExamScheduleStatus.DRAFT);
+        givenSource(ExamScheduleStatus.PUBLISHED);
+        var teacherId = UUID.randomUUID();
+        when(examScheduleProctorRepository.findByScheduleId(scheduleId))
+            .thenReturn(List.of(new ExamScheduleProctor(UUID.randomUUID(), scheduleId, teacherId)));
+        when(examScheduleProctorRepository.existsByScheduleIdAndTeacherId(targetId, teacherId)).thenReturn(false);
+        when(examScheduleProctorRepository.existsOverlappingAssignment(
+            eq(teacherId), any(Instant.class), any(Instant.class), eq(scheduleId))).thenReturn(true);
+
+        assertThatThrownBy(() -> useCase.execute(command("MOVE", targetId)))
+            .isInstanceOf(DuplicatedException.class);
+        verify(examScheduleProctorRepository, never()).save(any());
     }
 
     @Test

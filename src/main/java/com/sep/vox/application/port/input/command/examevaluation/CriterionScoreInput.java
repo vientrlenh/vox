@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.command.examevaluation;
 
+import java.util.List;
 import java.util.Map;
 
 public record CriterionScoreInput(
@@ -9,6 +10,10 @@ public record CriterionScoreInput(
     String source,
     Map<String, Object> subscores,
     String note,
-    String suggestion
+    String suggestion,
+    List<String> weaknessLabels,
+    List<String> evidenceSpans,
+    String recommendationTag,
+    String matchedBandCode
 ) {
 }

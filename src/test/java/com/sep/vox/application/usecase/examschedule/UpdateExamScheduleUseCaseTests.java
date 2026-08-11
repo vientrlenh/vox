@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.port.input.command.UpdateExamScheduleCommand;
+import com.sep.vox.application.port.input.service.ExamScheduleProctorConflictValidator;
 import com.sep.vox.application.port.input.service.ExamScheduleRoomValidator;
 import com.sep.vox.application.port.input.usecase.examschedule.UpdateExamScheduleUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -27,10 +28,12 @@ import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamSchedule;
+import com.sep.vox.domain.model.exam.ExamScheduleProctor;
 import com.sep.vox.domain.model.exam.ExamScheduleStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
+import com.sep.vox.domain.repository.ExamScheduleProctorRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
 import com.sep.vox.domain.repository.SchoolRoomRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -40,6 +43,7 @@ class UpdateExamScheduleUseCaseTests {
     private ExamRepository examRepository;
     private ExamScheduleRepository examScheduleRepository;
     private SchoolRoomRepository schoolRoomRepository;
+    private ExamScheduleProctorRepository examScheduleProctorRepository;
     private ExamMemberRepository examMemberRepository;
     private SchoolUserRepository schoolUserRepository;
     private UserRoleQueryRepository userRoleQueryRepository;
@@ -67,9 +71,11 @@ class UpdateExamScheduleUseCaseTests {
         userContextPort = mock(UserContextPort.class);
         // Validator thật chạy trên hai repository đã mock: luật kiểm tra phòng vẫn được test đúng
         // như trước khi nó được tách ra khỏi use case.
+        examScheduleProctorRepository = mock(ExamScheduleProctorRepository.class);
         useCase = new UpdateExamScheduleUseCase(
             examRepository, examScheduleRepository,
             new ExamScheduleRoomValidator(schoolRoomRepository, examScheduleRepository),
+            new ExamScheduleProctorConflictValidator(examScheduleProctorRepository),
             examMemberRepository,
             schoolUserRepository, userRoleQueryRepository, userContextPort);
 
@@ -110,6 +116,26 @@ class UpdateExamScheduleUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateExamScheduleCommand(scheduleId, null, newStart, newEnd)))
             .isInstanceOf(DuplicatedException.class);
+        verify(examScheduleRepository, never()).updateAtomic(any(), any(), any(), any(), any(), any());
+    }
+
+    /**
+     * Lỗ dễ bỏ sót: gán giám thị lúc hai ca chưa đụng nhau, rồi kéo giờ cho chúng chồng lên. Chặn ở
+     * mỗi lúc gán là chưa đủ.
+     */
+    @Test
+    void should_reject_moving_schedule_when_proctor_busy_in_new_window() {
+        var teacherId = UUID.randomUUID();
+        when(examScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule(ExamScheduleStatus.DRAFT)));
+        when(examScheduleRepository.existsOverlapping(roomId, newStart, newEnd, scheduleId)).thenReturn(false);
+        when(examScheduleProctorRepository.findByScheduleId(scheduleId))
+            .thenReturn(List.of(new ExamScheduleProctor(scheduleId, teacherId)));
+        when(examScheduleProctorRepository.existsOverlappingAssignment(teacherId, newStart, newEnd, scheduleId))
+            .thenReturn(true);
+
+        assertThatThrownBy(() -> useCase.execute(new UpdateExamScheduleCommand(scheduleId, null, newStart, newEnd)))
+            .isInstanceOf(DuplicatedException.class)
+            .hasMessageContaining("Giám thị");
         verify(examScheduleRepository, never()).updateAtomic(any(), any(), any(), any(), any(), any());
     }
 

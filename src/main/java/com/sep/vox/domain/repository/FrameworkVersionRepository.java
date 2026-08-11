@@ -25,4 +25,14 @@ public interface FrameworkVersionRepository {
     int updateStatus(UUID id, FrameworkVersionStatus status);
     void deleteById(UUID id);
     boolean existsByFrameworkId(UUID frameworkId);
+
+    /**
+     * Bản khung đánh giá đang hiệu lực của toàn hệ -- nguồn framework cho LUYỆN TẬP.
+     *
+     * <p>Khác đường thi (tra qua assessment policy theo lớp học sinh): luyện tập không phụ
+     * thuộc policy, xem V13 và {@code SpringDataFrameworkVersionRepository.findActiveVersionId}.
+     *
+     * @param code chỉ định thẳng một mã version; null = tự chọn bản đang hoạt động
+     */
+    Optional<UUID> findActiveVersionId(String code);
 }

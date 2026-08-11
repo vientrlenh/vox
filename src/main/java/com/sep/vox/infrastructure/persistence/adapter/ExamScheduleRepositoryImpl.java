@@ -43,6 +43,16 @@ public class ExamScheduleRepositoryImpl implements ExamScheduleRepository {
     }
 
     @Override
+    public List<ExamSchedule> findByExamIdIn(Collection<UUID> examIds) {
+        if (examIds == null || examIds.isEmpty()) {
+            return List.of();
+        }
+        return springDataExamScheduleRepository.findByExamIdInAndStatusNot(examIds, ExamScheduleStatus.DELETED.name()).stream()
+            .map(ExamScheduleMapper::toDomain)
+            .toList();
+    }
+
+    @Override
     public List<ExamSchedule> findBySchoolId(UUID schoolId) {
         return springDataExamScheduleRepository.findBySchoolId(schoolId).stream()
             .map(ExamScheduleMapper::toDomain)
@@ -94,6 +104,15 @@ public class ExamScheduleRepositoryImpl implements ExamScheduleRepository {
         return springDataExamScheduleRepository.updateAtomic(id, schoolRoomId, start, end, now, updatedBy);
     }
     
+    @Override
+    public List<ExamSchedule> findPublishedEndedBefore(Instant now, int limit) {
+        return springDataExamScheduleRepository
+            .findPublishedEndedBefore(now, org.springframework.data.domain.PageRequest.of(0, limit))
+            .stream()
+            .map(ExamScheduleMapper::toDomain)
+            .toList();
+    }
+
     @Override
     public List<ExamSchedule> findByExamIdAndInSchedule(UUID examId, Instant now) {
         return springDataExamScheduleRepository.findByExamIdAndInSchedule(examId, now)

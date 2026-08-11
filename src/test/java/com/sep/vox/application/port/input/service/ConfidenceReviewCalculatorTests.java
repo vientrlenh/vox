@@ -38,10 +38,16 @@ class ConfidenceReviewCalculatorTests {
 
         assertThat(decision.reviewSeverity()).isEqualTo("mandatory");
         assertThat(decision.reviewReasons()).containsExactly("ASR_LOW_CONF");
+        // "mandatory" là mức DUY NHẤT còn tự đẩy bài sang người chấm -- chốt lại ở đây để lần
+        // sau ai đổi ngưỡng cũng thấy ngay ranh giới đó.
+        assertThat(decision.requiresHumanReview()).isTrue();
     }
 
     @Test
-    void oneBranchSoftFailureRequiresSoftReview() {
+    void oneBranchSoftFailureIsReportedAsSoftWithoutForcingReview() {
+        // Một nhánh soft vẫn được ghi nhận severity "soft" để hiển thị cho người chấm, nhưng
+        // KHÔNG tự đẩy bài vào hàng chấm tay: reviewSoftSignals = false ở cả ba profile
+        // (PRACTICE/MOCK_TEST/HIGH_STAKES), nên requiresHumanReview chỉ bật ở "mandatory".
         var decision = calculator.compute(
             signals(decimal("0.70"), null, null, null, null, null, null, null, null, null),
             ExamKind.CLASS_TEST,
@@ -50,7 +56,7 @@ class ConfidenceReviewCalculatorTests {
         );
 
         assertThat(decision.reviewSeverity()).isEqualTo("soft");
-        assertThat(decision.requiresHumanReview()).isTrue();
+        assertThat(decision.requiresHumanReview()).isFalse();
     }
 
     @Test
@@ -84,6 +90,9 @@ class ConfidenceReviewCalculatorTests {
 
         assertThat(classTest.reviewSeverity()).isEqualTo("none");
         assertThat(centralized.reviewSeverity()).isEqualTo("recommended");
+        // Kỳ thi tập trung siết NGƯỠNG severity, nhưng "recommended" vẫn không tự đẩy sang
+        // người chấm -- chỉ "mandatory" mới đẩy.
+        assertThat(centralized.requiresHumanReview()).isFalse();
     }
 
     @Test

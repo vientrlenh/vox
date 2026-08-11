@@ -13,6 +13,6 @@ public record TurnDetailInput(
     Integer durationSeconds,
     Double asrConfidence,
     PronunciationOverallInput pronunciationOverall,
-    List<Object> wordFeedback
+    List<WordFeedbackInput> wordFeedback
 ) {
 }

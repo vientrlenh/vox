@@ -83,4 +83,16 @@ public interface SpringDataSchoolClassUserRepository extends JpaRepository<Schoo
         @Param("schoolClassId") UUID schoolClassId,
         @Param("leftAt") Instant leftAt
     );
+
+    @Query(value = """
+        SELECT sc.school_grade_id
+        FROM school_class_users scu
+        JOIN school_classes sc ON sc.id = scu.school_class_id
+        WHERE scu.user_id = :studentId
+          AND scu.is_active = true
+          AND sc.status = 'ACTIVE'
+        ORDER BY scu.joined_at DESC, scu.id DESC
+        LIMIT 1
+        """, nativeQuery = true)
+    Optional<UUID> findCurrentSchoolGradeId(@Param("studentId") UUID studentId);
 }

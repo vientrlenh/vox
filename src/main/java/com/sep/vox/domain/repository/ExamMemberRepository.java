@@ -18,6 +18,7 @@ public interface ExamMemberRepository {
     boolean existsByUserIdAndRoleAndSchoolId(UUID userId, ExamMemberRole role, UUID schoolId);
     boolean existsByExamIdAndRoleExcludingUserId(UUID examId, ExamMemberRole role, UUID excludeUserId);
     boolean existsByRoleAndSchoolIdExcludingUserId(ExamMemberRole role, UUID schoolId, UUID excludeUserId);
+    /** Quản trị trường, hoặc thành viên AUTHOR/CHAIR của kỳ thi — người được gắn/đổi khung đề. */
     boolean canAttachBlueprint(UUID examId, UUID userId);
     boolean canApproveBlueprintVersion(UUID examId, UUID userId);
     void deleteById(UUID id);

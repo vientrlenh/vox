@@ -137,4 +137,9 @@ public class FrameworkVersionRepositoryImpl implements FrameworkVersionRepositor
     public boolean existsByFrameworkId(UUID frameworkId) {
         return springDataFrameworkVersionRepository.existsByFrameworkId(frameworkId);
     }
+
+    @Override
+    public Optional<UUID> findActiveVersionId(String code) {
+        return springDataFrameworkVersionRepository.findActiveVersionId(code);
+    }
 }

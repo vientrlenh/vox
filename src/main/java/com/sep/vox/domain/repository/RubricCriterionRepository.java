@@ -26,4 +26,6 @@ public interface RubricCriterionRepository {
     List<RubricCriterion> findByRubricVersionId(UUID rubricVersionId);
 
     Optional<RubricCriterion> findByRubricVersionIdAndCode(UUID rubricVersionId, String code);
+
+    Optional<RubricCriterion> findByRubricVersionIdAndCodeIgnoreCase(UUID rubricVersionId, String code);
 }

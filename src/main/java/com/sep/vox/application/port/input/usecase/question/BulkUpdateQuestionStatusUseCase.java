@@ -26,6 +26,7 @@ import com.sep.vox.domain.repository.QuestionBankRepository;
 import com.sep.vox.domain.repository.QuestionCollaboratorRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.service.question.QuestionStatusTransition;
+import com.sep.vox.domain.service.question.QuestionStatusTransition.RejectionCode;
 
 /**
  * Cập nhật trạng thái nhiều câu hỏi trong một request, theo ngữ nghĩa "thành công một phần":
@@ -88,20 +89,22 @@ public class BulkUpdateQuestionStatusUseCase
             var question = questionsById.get(questionId);
             if (question == null) {
                 failed.add(new BulkUpdateQuestionStatusFailure(
-                    questionId, QuestionStatusTransition.QUESTION_NOT_FOUND));
+                    questionId, null, null,
+                    RejectionCode.QUESTION_NOT_FOUND.name(),
+                    QuestionStatusTransition.QUESTION_NOT_FOUND));
                 continue;
             }
             var bank = banksById.get(question.getQuestionBankId());
             if (bank == null) {
-                failed.add(new BulkUpdateQuestionStatusFailure(
-                    questionId, QuestionStatusTransition.QUESTION_BANK_NOT_FOUND));
+                failed.add(failure(question, RejectionCode.QUESTION_BANK_NOT_FOUND.name(),
+                    QuestionStatusTransition.QUESTION_BANK_NOT_FOUND));
                 continue;
             }
 
             var rejection = QuestionStatusTransition.rejectionFor(
                 question, bank, editableQuestionIds.contains(questionId), actor, action, note);
             if (rejection != null) {
-                failed.add(new BulkUpdateQuestionStatusFailure(questionId, rejection.reason()));
+                failed.add(failure(question, rejection.code().name(), rejection.reason()));
                 continue;
             }
 
@@ -116,6 +119,15 @@ public class BulkUpdateQuestionStatusUseCase
             .toList();
 
         return new BulkUpdateQuestionStatusResponse(List.copyOf(updated), List.copyOf(failed));
+    }
+
+    /**
+     * Kèm mã và trạng thái hiện tại của câu hỏi vào lý do bị bỏ qua, để client hiển thị được danh
+     * sách "câu nào, đang ở đâu, vì sao" mà không phải tra ngược sang danh sách đang xem.
+     */
+    private BulkUpdateQuestionStatusFailure failure(Question question, String reasonCode, String reason) {
+        return new BulkUpdateQuestionStatusFailure(
+            question.getId(), question.getCode(), question.getStatus().name(), reasonCode, reason);
     }
 
     private Map<UUID, QuestionBank> loadBanks(Map<UUID, Question> questionsById) {

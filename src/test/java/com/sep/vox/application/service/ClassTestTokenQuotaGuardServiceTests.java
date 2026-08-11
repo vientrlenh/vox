@@ -74,6 +74,29 @@ class ClassTestTokenQuotaGuardServiceTests {
         assertThatCode(() -> guard.requireWithinTokenQuota(exam)).doesNotThrowAnyException();
     }
 
+    /**
+     * Kỳ thi chưa có mã đề nào được RecalculateExamTimeDurationService ghi 0 (không phải null). Ước
+     * tính 0 token thì không có gì để soi -- đi tiếp sẽ ném "Không tìm thấy hạn mức" chỉ vì trường
+     * chưa cấu hình quota, tức là chặn lên lịch vì một con số bằng 0. Cố ý bỏ hạn mức GRADING để
+     * test đỏ nếu guard chỉ chấp null.
+     */
+    @Test
+    void should_skip_when_duration_is_zero() {
+        when(subscriptionQuotaRepository.findBySubscriptionIdAndQuotaType(subscriptionId, QuotaType.GRADING))
+            .thenReturn(Optional.empty());
+        var exam = classTest(0);
+
+        assertThatCode(() -> guard.requireWithinTokenQuota(exam)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void should_skip_when_duration_is_zero_and_school_has_no_active_subscription() {
+        when(schoolSubscriptionRepository.findActiveBySchoolId(schoolId)).thenReturn(Optional.empty());
+        var exam = classTest(0);
+
+        assertThatCode(() -> guard.requireWithinTokenQuota(exam)).doesNotThrowAnyException();
+    }
+
     @Test
     void should_pass_when_all_quotas_have_headroom() {
         var exam = classTest(3600);

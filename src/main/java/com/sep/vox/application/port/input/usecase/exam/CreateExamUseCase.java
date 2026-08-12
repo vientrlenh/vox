@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.ExamDeliveryModeSupport;
-import com.sep.vox.application.common.InstantParser;
+import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
@@ -107,8 +107,8 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
             Objects.requireNonNullElse(command.maxAttempt(), 1),
             command.examTimeDurationSecond(),
             Objects.requireNonNullElse(command.resultDecisionMethod(), ResultDecisionMethod.HIGHEST),
-            parseOpenAt(command.openAt()),
-            parseCloseAt(command.closeAt()),
+            DateMapper.toInstant(command.openAt()),
+            DateMapper.toInstant(command.closeAt()),
             command.assessmentPolicyId(),
             command.requiresOtp() == null || command.requiresOtp(),
             now,
@@ -145,22 +145,14 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
 
     /** Chỉ so được khi có đủ cả hai; thiếu một vế thì bỏ qua, kỳ thi tập trung cho phép để trống. */
     private void validateOpenClose(String openAt, String closeAt) {
-        var open = parseOpenAt(openAt);
-        var close = parseCloseAt(closeAt);
+        var open = DateMapper.toInstant(openAt);
+        var close = DateMapper.toInstant(closeAt);
         if (open == null || close == null) {
             return;
         }
         if (!open.isBefore(close)) {
             throw new IllegalStateException("Thời gian mở bài phải nhỏ hơn thời gian đóng bài");
         }
-    }
-
-    private Instant parseOpenAt(String value) {
-        return InstantParser.parseOrNull(value, "Thời gian mở bài");
-    }
-
-    private Instant parseCloseAt(String value) {
-        return InstantParser.parseOrNull(value, "Thời gian đóng bài");
     }
 
     private String examCodeOf(String code) {

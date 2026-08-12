@@ -1,5 +1,6 @@
 package com.sep.vox.domain.repository;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -12,8 +13,8 @@ public interface SubscriptionQuotaUserAllocationRepository {
     Optional<SubscriptionQuotaUserAllocation> findBySubscriptionIdAndQuotaTypeAndUserId(UUID subscriptionId, QuotaType quotaType, UUID userId);
 
     /** Set-based upsert: creates the row if missing, otherwise overwrites allocatedQuantity. */
-    SubscriptionQuotaUserAllocation upsertAllocation(UUID subscriptionId, QuotaType quotaType, UUID userId, int allocatedQuantity);
+    SubscriptionQuotaUserAllocation upsertAllocation(UUID subscriptionId, QuotaType quotaType, UUID userId, BigDecimal allocatedQuantity);
 
     /** returns false if usedQuantity + amount would exceed allocatedQuantity. */
-    boolean tryConsume(UUID id, int amount);
+    boolean tryConsume(UUID id, BigDecimal amount);
 }

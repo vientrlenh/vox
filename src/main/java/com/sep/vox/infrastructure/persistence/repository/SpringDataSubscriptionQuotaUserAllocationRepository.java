@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -21,5 +22,5 @@ public interface SpringDataSubscriptionQuotaUserAllocationRepository extends Jpa
         SET a.usedQuantity = a.usedQuantity + :amount
         WHERE a.id = :id AND a.usedQuantity + :amount <= a.allocatedQuantity
         """)
-    int tryConsume(@Param("id") UUID id, @Param("amount") int amount);
+    int tryConsume(@Param("id") UUID id, @Param("amount") BigDecimal amount);
 }

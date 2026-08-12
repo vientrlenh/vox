@@ -8,7 +8,7 @@ import jakarta.validation.constraints.NotNull;
 
 public record PlanQuotaItemRequest(
     @NotNull QuotaType quotaType,
-    @NotNull Integer includedQuantity,
+    @NotNull BigDecimal includedQuantity,
     @NotNull BigDecimal tokenUnitPrice
 ) {
 }

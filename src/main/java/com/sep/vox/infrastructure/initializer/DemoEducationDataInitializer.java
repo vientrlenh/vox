@@ -493,9 +493,9 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
                 5,
                 100,
                 false,
-                300,
-                100,
-                600
+                new BigDecimal("30"),
+                new BigDecimal("10"),
+                new BigDecimal("60")
             ),
             new SubscriptionPlanSeed(
                 "Chuyên nghiệp",
@@ -504,9 +504,9 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
                 10,
                 500,
                 true,
-                1200,
-                400,
-                2500
+                new BigDecimal("120"),
+                new BigDecimal("40"),
+                new BigDecimal("250")
             ),
             new SubscriptionPlanSeed(
                 "Toàn diện",
@@ -515,9 +515,9 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
                 15,
                 2000,
                 false,
-                5000,
-                1500,
-                10000
+                new BigDecimal("500"),
+                new BigDecimal("150"),
+                new BigDecimal("1000")
             )
         );
 
@@ -576,7 +576,7 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
                 subscription.getId(),
                 planQuota.getQuotaType(),
                 planQuota.getIncludedQuantity(),
-                0
+                BigDecimal.ZERO
             ))
         );
     }
@@ -1858,9 +1858,9 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
         int maxTimePerAttemptMin,
         int maxStudentCount,
         boolean popular,
-        int gradingQuota,
-        int classTestQuota,
-        int practiceQuota
+        BigDecimal gradingQuota,
+        BigDecimal classTestQuota,
+        BigDecimal practiceQuota
     ) {
     }
 

@@ -244,7 +244,11 @@ app:
           topic:
             recording-part-changed: ${KAFKA_RECORDING_PART_CHANGED_TOPIC:exam.recording.part.changed}
           group-id: ${KAFKA_RECORDING_GROUP_ID:vox-recording}
-  internal-event: 
+        ai-usage:
+          topic:
+            ai-usage-recorded: ${KAFKA_AI_USAGE_TOPIC:exam-ai-usage-recorded}
+          group-id: ${KAFKA_AI_USAGE_GROUP_ID:vox-ai-usage}
+  internal-event:
     kafka: 
       consumer-groups:
         email:
@@ -312,6 +316,25 @@ payos:
   checksum-key: ${PAYOS_CHECKSUM_KEY:}
   return-url: ${PAYOS_RETURN_URL:}
   cancel-url: ${PAYOS_CANCEL_URL:}              
+
+vox:
+  quota:
+    # PLACEHOLDER: dùng để ước lượng worst-case chi phí AI (USD) trước khi cho phép
+    # lên lịch kỳ thi -- xem ClassTestTokenQuotaGuardService. Đây KHÔNG phải chi phí
+    # thật (chi phí thật lấy từ ai_usage_record.cost_usd sau khi Agentic AI xử lý
+    # xong), chỉ là hệ số quy đổi tạm để chặn sớm khi trường rõ ràng không đủ hạn
+    # mức. Cần thay bằng số đo thực tế (trung bình cost_usd / audio_duration_seconds
+    # trên một khoảng thời gian đủ dài) trước khi dùng ở production.
+    estimated-cost-per-exam-second-usd: ${VOX_QUOTA_ESTIMATED_COST_PER_EXAM_SECOND_USD:}
+    calibration:
+      # QuotaPricingCalibrationJob dùng các số này để tự tính lại estimated-cost-per-exam-second-usd
+      # ở trên từ dữ liệu ai_usage_record/exam_item_responses thật, thay vì phải tự sửa .env tay --
+      # xem QuotaPricingCalibrationService.
+      window-days: ${VOX_QUOTA_CALIBRATION_WINDOW_DAYS:}
+      min-sample-sessions: ${VOX_QUOTA_CALIBRATION_MIN_SAMPLE_SESSIONS:}
+      max-change-ratio: ${VOX_QUOTA_CALIBRATION_MAX_CHANGE_RATIO:}
+      min-rate-bound: ${VOX_QUOTA_CALIBRATION_MIN_RATE_BOUND:}
+      max-rate-bound: ${VOX_QUOTA_CALIBRATION_MAX_RATE_BOUND:}
 
 sepay:
   pg:

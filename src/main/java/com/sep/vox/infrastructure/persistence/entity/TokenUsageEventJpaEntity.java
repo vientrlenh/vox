@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -41,8 +42,8 @@ public class TokenUsageEventJpaEntity {
     })
     private String quotaType;
 
-    @Column(name = "tokens_consumed", nullable = false, updatable = false)
-    private Integer tokensConsumed;
+    @Column(name = "tokens_consumed", nullable = false, updatable = false, precision = 12, scale = 6)
+    private BigDecimal tokensConsumed;
 
     @Column(name = "occurred_at", nullable = false, updatable = false)
     private Instant occurredAt;
@@ -50,7 +51,7 @@ public class TokenUsageEventJpaEntity {
     protected TokenUsageEventJpaEntity() {}
 
     public TokenUsageEventJpaEntity(UUID id, UUID subscriptionId, UUID examSessionId, String quotaType,
-            Integer tokensConsumed, Instant occurredAt) {
+            BigDecimal tokensConsumed, Instant occurredAt) {
         this.id = id;
         this.subscriptionId = subscriptionId;
         this.examSessionId = examSessionId;
@@ -91,11 +92,11 @@ public class TokenUsageEventJpaEntity {
         this.quotaType = quotaType;
     }
 
-    public Integer getTokensConsumed() {
+    public BigDecimal getTokensConsumed() {
         return tokensConsumed;
     }
 
-    public void setTokensConsumed(Integer tokensConsumed) {
+    public void setTokensConsumed(BigDecimal tokensConsumed) {
         this.tokensConsumed = tokensConsumed;
     }
 

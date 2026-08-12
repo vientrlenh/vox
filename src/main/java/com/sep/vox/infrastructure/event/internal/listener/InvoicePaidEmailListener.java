@@ -1,5 +1,7 @@
 package com.sep.vox.infrastructure.event.internal.listener;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.time.format.DateTimeFormatter;
@@ -111,20 +113,20 @@ public class InvoicePaidEmailListener {
         }
     }
 
-    // Quota tính bằng GIÂY audio xử lý (xem FE), quy đổi sang phút cho dễ đọc trong mail.
-    private String buildItemsHtml(Map<QuotaType, Integer> quantityByType) {
+    // Quota tính bằng USD chi phí AI (xem V15__quota_unit_to_usd.sql), hiển thị 2 chữ số thập phân.
+    private String buildItemsHtml(Map<QuotaType, BigDecimal> quantityByType) {
         var rows = new StringBuilder();
         for (var quotaType : QuotaType.values()) {
             var quantity = quantityByType.get(quotaType);
             if (quantity == null) {
                 continue;
             }
-            var minutes = Math.round(quantity / 60.0);
+            var usdLabel = quantity.setScale(2, RoundingMode.HALF_UP).toPlainString();
             rows.append("<tr><td style=\"padding:6px 20px; color:#475569; font-size:14px;\">")
                 .append(QUOTA_LABELS.get(quotaType))
                 .append("</td><td style=\"padding:6px 20px; text-align:right; font-weight:700; font-size:14px; color:#1e293b;\">")
-                .append(minutes)
-                .append(" phút</td></tr>");
+                .append(usdLabel)
+                .append(" USD</td></tr>");
         }
         return rows.toString();
     }

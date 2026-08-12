@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -36,21 +37,21 @@ public class SubscriptionQuotaUserAllocationRepositoryImpl implements Subscripti
     }
 
     @Override
-    public SubscriptionQuotaUserAllocation upsertAllocation(UUID subscriptionId, QuotaType quotaType, UUID userId, int allocatedQuantity) {
+    public SubscriptionQuotaUserAllocation upsertAllocation(UUID subscriptionId, QuotaType quotaType, UUID userId, BigDecimal allocatedQuantity) {
         var existing = springDataRepository.findBySubscriptionIdAndQuotaTypeAndUserId(subscriptionId, quotaType.name(), userId);
         SubscriptionQuotaUserAllocationJpaEntity entity;
         if (existing.isPresent()) {
             entity = existing.get();
             entity.setAllocatedQuantity(allocatedQuantity);
         } else {
-            entity = new SubscriptionQuotaUserAllocationJpaEntity(null, subscriptionId, quotaType.name(), userId, allocatedQuantity, 0);
+            entity = new SubscriptionQuotaUserAllocationJpaEntity(null, subscriptionId, quotaType.name(), userId, allocatedQuantity, BigDecimal.ZERO);
         }
         var saved = springDataRepository.save(entity);
         return SubscriptionQuotaUserAllocationMapper.toDomain(saved);
     }
 
     @Override
-    public boolean tryConsume(UUID id, int amount) {
+    public boolean tryConsume(UUID id, BigDecimal amount) {
         return springDataRepository.tryConsume(id, amount) > 0;
     }
 }

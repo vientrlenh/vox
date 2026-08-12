@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -82,7 +83,7 @@ class BuyTokensUseCaseGuardTests {
         return new BuyTokensCommand(
             schoolId,
             subscriptionId,
-            List.of(new TokenPurchaseItemInput(QuotaType.GRADING, 10)),
+            List.of(new TokenPurchaseItemInput(QuotaType.GRADING, BigDecimal.valueOf(10))),
             paymentMethod
         );
     }
@@ -94,7 +95,7 @@ class BuyTokensUseCaseGuardTests {
             .hasMessageContaining("payment-link");
 
         verifyNoInteractions(tokenPurchaseRepository, invoiceRepository, financialEventRepository);
-        verify(subscriptionQuotaRepository, never()).addAllocation(any(), org.mockito.ArgumentMatchers.anyInt());
+        verify(subscriptionQuotaRepository, never()).addAllocation(any(), any());
     }
 
     @Test

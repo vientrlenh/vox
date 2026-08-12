@@ -107,6 +107,6 @@ public class AddSchoolRubricVersionsUseCase implements IUseCase<AddSchoolRubricV
 
         List<RubricVersion> savedVersions = rubricVersionRepository.saveAll(newVersions);
 
-        return savedVersions.stream().map(v -> v.getId()).toList();
+        return savedVersions.stream().map(RubricVersion::getId).toList();
     }
 }

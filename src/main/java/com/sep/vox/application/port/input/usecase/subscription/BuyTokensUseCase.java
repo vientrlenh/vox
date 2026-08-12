@@ -109,7 +109,7 @@ public class BuyTokensUseCase implements IUseCase<BuyTokensCommand, TokenPurchas
                 .filter(pq -> pq.getQuotaType() == item.quotaType())
                 .findFirst()
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn giá cho loại quota này"));
-            var subtotal = planQuota.getTokenUnitPrice().multiply(BigDecimal.valueOf(item.quantity()));
+            var subtotal = planQuota.getTokenUnitPrice().multiply(item.quantity());
             total = total.add(subtotal);
 
             tokenPurchaseItemRepository.save(new TokenPurchaseItem(

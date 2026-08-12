@@ -38,15 +38,15 @@ public class PlanQuotaJpaEntity {
     })
     private String quotaType;
 
-    @Column(name = "included_quantity", nullable = false)
-    private Integer includedQuantity;
+    @Column(name = "included_quantity", nullable = false, precision = 12, scale = 6)
+    private BigDecimal includedQuantity;
 
     @Column(name = "token_unit_price", nullable = false, precision = 15, scale = 0)
     private BigDecimal tokenUnitPrice;
 
     protected PlanQuotaJpaEntity() {}
 
-    public PlanQuotaJpaEntity(UUID id, UUID planId, String quotaType, Integer includedQuantity, BigDecimal tokenUnitPrice) {
+    public PlanQuotaJpaEntity(UUID id, UUID planId, String quotaType, BigDecimal includedQuantity, BigDecimal tokenUnitPrice) {
         this.id = id;
         this.planId = planId;
         this.quotaType = quotaType;
@@ -78,11 +78,11 @@ public class PlanQuotaJpaEntity {
         this.quotaType = quotaType;
     }
 
-    public Integer getIncludedQuantity() {
+    public BigDecimal getIncludedQuantity() {
         return includedQuantity;
     }
 
-    public void setIncludedQuantity(Integer includedQuantity) {
+    public void setIncludedQuantity(BigDecimal includedQuantity) {
         this.includedQuantity = includedQuantity;
     }
 

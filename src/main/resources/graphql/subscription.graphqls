@@ -63,7 +63,7 @@ enum PaymentMethod {
 type PlanQuota {
     id: ID!
     quotaType: QuotaType!
-    includedQuantity: Int!
+    includedQuantity: Float!
     tokenUnitPrice: Float!
 }
 
@@ -118,20 +118,20 @@ type SubscriptionQuota {
     id: ID!
     subscriptionId: ID!
     quotaType: QuotaType!
-    totalAllocated: Int!
-    usedQuantity: Int!
+    totalAllocated: Float!
+    usedQuantity: Float!
 }
 
 # null = giáo viên gọi query không có hạn mức CLASS_TEST cá nhân riêng, chỉ pool của trường áp dụng.
 type MyClassTestQuotaAllocation {
-    allocatedQuantity: Int!
-    usedQuantity: Int!
+    allocatedQuantity: Float!
+    usedQuantity: Float!
 }
 
 # null = học sinh gọi query không có hạn mức PRACTICE cá nhân riêng, chỉ pool của trường áp dụng.
 type MyPracticeQuotaAllocation {
-    allocatedQuantity: Int!
-    usedQuantity: Int!
+    allocatedQuantity: Float!
+    usedQuantity: Float!
 }
 
 type SubscriptionRequest {
@@ -159,7 +159,7 @@ type TokenPurchaseItem {
     id: ID!
     purchaseId: ID!
     quotaType: QuotaType!
-    quantity: Int!
+    quantity: Float!
     unitPriceSnapshot: Float!
     subtotal: Float!
 }
@@ -219,7 +219,7 @@ type FinancialEventPage {
 
 input PlanQuotaItemInput {
     quotaType: QuotaType!
-    includedQuantity: Int!
+    includedQuantity: Float!
     tokenUnitPrice: Float!
 }
 
@@ -234,9 +234,14 @@ input UpdateSubscriptionPlanInput {
     quotas: [PlanQuotaItemInput!]
 }
 
+type QuotaPricing {
+    estimatedCostPerExamSecondUsd: Float!
+}
+
 extend type Query {
     subscriptionPlans(page: Int = 0, size: Int = 20): SubscriptionPlanPage!
     subscriptionPlan(id: ID!): SubscriptionPlan
+    quotaPricing: QuotaPricing!
 
     schoolSubscriptions(
         keyword: String,

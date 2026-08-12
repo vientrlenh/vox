@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.subscription;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 
@@ -89,7 +90,7 @@ public class RenewSubscriptionUseCase implements IUseCase<RenewSubscriptionComma
                 savedSubscription.getId(),
                 planQuota.getQuotaType(),
                 planQuota.getIncludedQuantity(),
-                0
+                BigDecimal.ZERO
             ))
         );
 

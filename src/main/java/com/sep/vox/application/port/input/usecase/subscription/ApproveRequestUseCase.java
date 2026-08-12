@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.subscription;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 
@@ -99,7 +100,7 @@ public class ApproveRequestUseCase implements IUseCase<ApproveRequestCommand, Su
                 savedSubscription.getId(),
                 planQuota.getQuotaType(),
                 planQuota.getIncludedQuantity(),
-                0
+                BigDecimal.ZERO
             ))
         );
 

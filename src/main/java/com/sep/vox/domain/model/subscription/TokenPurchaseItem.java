@@ -7,13 +7,13 @@ public class TokenPurchaseItem {
     private UUID id;
     private UUID purchaseId;
     private QuotaType quotaType;
-    private Integer quantity;
+    private BigDecimal quantity;
     private BigDecimal unitPriceSnapshot;
     private BigDecimal subtotal;
 
     public TokenPurchaseItem() {}
 
-    public TokenPurchaseItem(UUID id, UUID purchaseId, QuotaType quotaType, Integer quantity,
+    public TokenPurchaseItem(UUID id, UUID purchaseId, QuotaType quotaType, BigDecimal quantity,
             BigDecimal unitPriceSnapshot, BigDecimal subtotal) {
         this.id = id;
         this.purchaseId = purchaseId;
@@ -23,7 +23,7 @@ public class TokenPurchaseItem {
         this.subtotal = subtotal;
     }
 
-    public TokenPurchaseItem(UUID purchaseId, QuotaType quotaType, Integer quantity,
+    public TokenPurchaseItem(UUID purchaseId, QuotaType quotaType, BigDecimal quantity,
             BigDecimal unitPriceSnapshot, BigDecimal subtotal) {
         this.purchaseId = purchaseId;
         this.quotaType = quotaType;
@@ -56,11 +56,11 @@ public class TokenPurchaseItem {
         this.quotaType = quotaType;
     }
 
-    public Integer getQuantity() {
+    public BigDecimal getQuantity() {
         return quantity;
     }
 
-    public void setQuantity(Integer quantity) {
+    public void setQuantity(BigDecimal quantity) {
         this.quantity = quantity;
     }
 

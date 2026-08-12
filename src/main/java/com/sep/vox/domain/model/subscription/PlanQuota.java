@@ -7,12 +7,12 @@ public class PlanQuota {
     private UUID id;
     private UUID planId;
     private QuotaType quotaType;
-    private Integer includedQuantity;
+    private BigDecimal includedQuantity;
     private BigDecimal tokenUnitPrice;
 
     public PlanQuota() {}
 
-    public PlanQuota(UUID id, UUID planId, QuotaType quotaType, Integer includedQuantity, BigDecimal tokenUnitPrice) {
+    public PlanQuota(UUID id, UUID planId, QuotaType quotaType, BigDecimal includedQuantity, BigDecimal tokenUnitPrice) {
         this.id = id;
         this.planId = planId;
         this.quotaType = quotaType;
@@ -20,7 +20,7 @@ public class PlanQuota {
         this.tokenUnitPrice = tokenUnitPrice;
     }
 
-    public PlanQuota(UUID planId, QuotaType quotaType, Integer includedQuantity, BigDecimal tokenUnitPrice) {
+    public PlanQuota(UUID planId, QuotaType quotaType, BigDecimal includedQuantity, BigDecimal tokenUnitPrice) {
         this.planId = planId;
         this.quotaType = quotaType;
         this.includedQuantity = includedQuantity;
@@ -51,11 +51,11 @@ public class PlanQuota {
         this.quotaType = quotaType;
     }
 
-    public Integer getIncludedQuantity() {
+    public BigDecimal getIncludedQuantity() {
         return includedQuantity;
     }
 
-    public void setIncludedQuantity(Integer includedQuantity) {
+    public void setIncludedQuantity(BigDecimal includedQuantity) {
         this.includedQuantity = includedQuantity;
     }
 

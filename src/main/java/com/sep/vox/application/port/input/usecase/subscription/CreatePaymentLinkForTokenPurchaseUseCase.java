@@ -87,7 +87,7 @@ public class CreatePaymentLinkForTokenPurchaseUseCase implements IUseCase<BuyTok
         var total = BigDecimal.ZERO;
         for (var item : command.items()) {
             var planQuota = findPlanQuota(planQuotas, item.quotaType());
-            total = total.add(planQuota.getTokenUnitPrice().multiply(BigDecimal.valueOf(item.quantity())));
+            total = total.add(planQuota.getTokenUnitPrice().multiply(item.quantity()));
         }
 
         // total_amount không cho update sau khi tạo (xem TokenPurchaseJpaEntity), nên phải tính total
@@ -96,7 +96,7 @@ public class CreatePaymentLinkForTokenPurchaseUseCase implements IUseCase<BuyTok
 
         for (var item : command.items()) {
             var planQuota = findPlanQuota(planQuotas, item.quotaType());
-            var subtotal = planQuota.getTokenUnitPrice().multiply(BigDecimal.valueOf(item.quantity()));
+            var subtotal = planQuota.getTokenUnitPrice().multiply(item.quantity());
 
             tokenPurchaseItemRepository.save(new TokenPurchaseItem(
                 savedPurchase.getId(), item.quotaType(), item.quantity(), planQuota.getTokenUnitPrice(), subtotal

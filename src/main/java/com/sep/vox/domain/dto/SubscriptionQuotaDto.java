@@ -1,12 +1,13 @@
 package com.sep.vox.domain.dto;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 public record SubscriptionQuotaDto(
     UUID id,
     UUID subscriptionId,
     String quotaType,
-    Integer totalAllocated,
-    Integer usedQuantity
+    BigDecimal totalAllocated,
+    BigDecimal usedQuantity
 ) {
 }

@@ -141,7 +141,7 @@ class InvoiceSettlementServiceTests {
         when(subscriptionPlanRepository.findById(planId)).thenReturn(Optional.of(plan));
         when(schoolSubscriptionRepository.findActiveBySchoolId(schoolId)).thenReturn(Optional.empty());
         when(planQuotaRepository.findAllByPlanId(planId)).thenReturn(List.of(
-            new PlanQuota(planId, QuotaType.GRADING, 100, new BigDecimal("1000"))
+            new PlanQuota(planId, QuotaType.GRADING, BigDecimal.valueOf(100), new BigDecimal("1000"))
         ));
         when(schoolSubscriptionRepository.save(any(SchoolSubscription.class))).thenAnswer(call -> {
             SchoolSubscription saved = call.getArgument(0);
@@ -159,10 +159,10 @@ class InvoiceSettlementServiceTests {
             new TokenPurchase(sourceId, subscriptionId, amount, PurchaseStatus.PENDING, Instant.now())
         ));
         when(tokenPurchaseItemRepository.findAllByPurchaseId(any())).thenReturn(List.of(
-            new TokenPurchaseItem(sourceId, QuotaType.GRADING, 50, new BigDecimal("1000"), amount)
+            new TokenPurchaseItem(sourceId, QuotaType.GRADING, BigDecimal.valueOf(50), new BigDecimal("1000"), amount)
         ));
         when(subscriptionQuotaRepository.findAllBySubscriptionId(subscriptionId)).thenReturn(List.of(
-            new SubscriptionQuota(quotaId, subscriptionId, QuotaType.GRADING, 100, 10)
+            new SubscriptionQuota(quotaId, subscriptionId, QuotaType.GRADING, BigDecimal.valueOf(100), BigDecimal.valueOf(10))
         ));
         when(schoolSubscriptionRepository.findById(subscriptionId)).thenReturn(Optional.of(
             new SchoolSubscription(subscriptionId, schoolId, planId, LocalDate.now(), LocalDate.now().plusDays(365),
@@ -194,7 +194,7 @@ class InvoiceSettlementServiceTests {
         var quotaCaptor = ArgumentCaptor.forClass(SubscriptionQuota.class);
         verify(subscriptionQuotaRepository).save(quotaCaptor.capture());
         assertThat(quotaCaptor.getValue().getQuotaType()).isEqualTo(QuotaType.GRADING);
-        assertThat(quotaCaptor.getValue().getTotalAllocated()).isEqualTo(100);
+        assertThat(quotaCaptor.getValue().getTotalAllocated()).isEqualByComparingTo(BigDecimal.valueOf(100));
 
         var eventCaptor = ArgumentCaptor.forClass(FinancialEvent.class);
         verify(financialEventRepository).save(eventCaptor.capture());
@@ -304,7 +304,7 @@ class InvoiceSettlementServiceTests {
         service.settle(pending, true);
 
         assertThat(pending.getStatus()).isEqualTo(InvoiceStatus.PAID);
-        verify(subscriptionQuotaRepository).addAllocation(eq(quotaId), eq(50));
+        verify(subscriptionQuotaRepository).addAllocation(eq(quotaId), eq(BigDecimal.valueOf(50)));
 
         var purchaseCaptor = ArgumentCaptor.forClass(TokenPurchase.class);
         verify(tokenPurchaseRepository).save(purchaseCaptor.capture());

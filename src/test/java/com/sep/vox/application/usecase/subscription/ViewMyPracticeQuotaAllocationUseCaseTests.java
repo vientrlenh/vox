@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -49,13 +50,13 @@ class ViewMyPracticeQuotaAllocationUseCaseTests {
         when(subscriptionQuotaUserAllocationRepository
             .findBySubscriptionIdAndQuotaTypeAndUserId(subscriptionId, QuotaType.PRACTICE, userId))
             .thenReturn(Optional.of(new SubscriptionQuotaUserAllocation(
-                subscriptionId, QuotaType.PRACTICE, userId, 1200, 300)));
+                subscriptionId, QuotaType.PRACTICE, userId, BigDecimal.valueOf(1200), BigDecimal.valueOf(300))));
 
         var result = useCase.execute(null);
 
         assertThat(result).isNotNull();
-        assertThat(result.allocatedQuantity()).isEqualTo(1200);
-        assertThat(result.usedQuantity()).isEqualTo(300);
+        assertThat(result.allocatedQuantity()).isEqualByComparingTo(BigDecimal.valueOf(1200));
+        assertThat(result.usedQuantity()).isEqualByComparingTo(BigDecimal.valueOf(300));
     }
 
     @Test

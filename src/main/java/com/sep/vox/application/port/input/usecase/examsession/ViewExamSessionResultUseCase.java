@@ -16,6 +16,7 @@ import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.FrameworkResultBandRepository;
 import com.sep.vox.domain.repository.RubricResultBandRepository;
+import com.sep.vox.domain.repository.RubricVersionRepository;
 
 @Service
 public class ViewExamSessionResultUseCase implements IUseCase<ViewExamSessionResultQuery, ExamCandidateResultResponse> {
@@ -24,6 +25,7 @@ public class ViewExamSessionResultUseCase implements IUseCase<ViewExamSessionRes
     private final ExamSessionResultCalculator examSessionResultCalculator;
     private final FrameworkResultBandRepository frameworkResultBandRepository;
     private final RubricResultBandRepository rubricResultBandRepository;
+    private final RubricVersionRepository rubricVersionRepository;
     private final ExamResultAccessService examResultAccessService;
 
     public ViewExamSessionResultUseCase(
@@ -31,11 +33,13 @@ public class ViewExamSessionResultUseCase implements IUseCase<ViewExamSessionRes
             ExamSessionResultCalculator examSessionResultCalculator,
             FrameworkResultBandRepository frameworkResultBandRepository,
             RubricResultBandRepository rubricResultBandRepository,
+            RubricVersionRepository rubricVersionRepository,
             ExamResultAccessService examResultAccessService) {
         this.examCandidateResultRepository = examCandidateResultRepository;
         this.examSessionResultCalculator = examSessionResultCalculator;
         this.frameworkResultBandRepository = frameworkResultBandRepository;
         this.rubricResultBandRepository = rubricResultBandRepository;
+        this.rubricVersionRepository = rubricVersionRepository;
         this.examResultAccessService = examResultAccessService;
     }
 
@@ -59,6 +63,11 @@ public class ViewExamSessionResultUseCase implements IUseCase<ViewExamSessionRes
         var rubricBand = result.getRubricResultBandId() == null
             ? null
             : rubricResultBandRepository.findById(result.getRubricResultBandId()).orElse(null);
+        // Thang điểm đi kèm kết quả để client khỏi phải đoán -- xem javadoc ở
+        // ExamCandidateResultResponse.scoringScaleMin để biết chuyện gì xảy ra khi nó đoán.
+        var rubricVersion = !scoreVisible || result.getRubricVersionId() == null
+            ? null
+            : rubricVersionRepository.findById(result.getRubricVersionId()).orElse(null);
 
         return new ExamCandidateResultResponse(
             result.getId(),
@@ -70,6 +79,8 @@ public class ViewExamSessionResultUseCase implements IUseCase<ViewExamSessionRes
             session.getFlagReason(),
             scoreVisible,
             scoreVisible ? result.getTotalScore() : null,
+            rubricVersion == null ? null : rubricVersion.getScoringScaleMin(),
+            rubricVersion == null ? null : rubricVersion.getScoringScaleMax(),
             scoreVisible ? result.getTargetFrameworkBandId() : null,
             scoreVisible && targetBand != null ? targetBand.getCode() : null,
             scoreVisible && targetBand != null ? targetBand.getLabel() : null,

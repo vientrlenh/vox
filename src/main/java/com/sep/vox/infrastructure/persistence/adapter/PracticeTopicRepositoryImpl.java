@@ -9,6 +9,8 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.application.query.dto.QuestionTopicInfo;
+import com.sep.vox.application.query.dto.TopicDimensionInfo;
+import com.sep.vox.application.query.dto.TopicNameCardInfo;
 import com.sep.vox.domain.model.personalization.PracticeTopic;
 import com.sep.vox.domain.repository.personalization.PracticeTopicRepository;
 import com.sep.vox.infrastructure.persistence.mapper.personalization.PracticeTopicMapper;
@@ -39,11 +41,14 @@ public class PracticeTopicRepositoryImpl implements PracticeTopicRepository {
     }
 
     @Override
-    public Map<UUID, String> findAllTopicDimensions() {
-        return repository.findAll().stream()
+    public Map<UUID, String> findDimensionsByIds(java.util.Collection<UUID> topicIds) {
+        if (topicIds == null || topicIds.isEmpty()) {
+            return Map.of();
+        }
+        return repository.findDimensionsByIds(topicIds).stream()
             .collect(Collectors.toMap(
-                entity -> entity.getId(),
-                entity -> entity.getInterestDimension(),
+                TopicDimensionInfo::getId,
+                TopicDimensionInfo::getInterestDimension,
                 (left, right) -> left
             ));
     }
@@ -54,17 +59,8 @@ public class PracticeTopicRepositoryImpl implements PracticeTopicRepository {
     }
 
     @Override
-    public List<PracticeTopic> findAllActive() {
-        return repository.findByActiveTrue().stream()
-            .map(PracticeTopicMapper::toDomain)
-            .toList();
-    }
-
-    @Override
-    public List<PracticeTopic> findAllActiveOrderByName() {
-        return repository.findByActiveTrueOrderByName().stream()
-            .map(PracticeTopicMapper::toDomain)
-            .toList();
+    public List<TopicNameCardInfo> findActiveNameCards() {
+        return repository.findActiveNameCards();
     }
 
     @Override

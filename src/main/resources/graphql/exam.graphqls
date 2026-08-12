@@ -394,6 +394,13 @@ type ExamAttemptSummary {
     flagged: Boolean!
     flagReason: String
     totalScore: Float
+    """
+    Thang điểm của rubric đã chấm lượt này. Danh sách trộn nhiều kỳ thi, mỗi kỳ có thể
+    dùng rubric khác thang -- client PHẢI đọc theo từng dòng, không suy từ cấu hình chung.
+    Null khi chưa có kết quả hoặc điểm đang bị che.
+    """
+    scoringScaleMin: Float
+    scoringScaleMax: Float
     rubricResultBandCode: String
     rubricResultBandName: String
     resultStatus: ExamCandidateResultStatus
@@ -454,6 +461,8 @@ type ExamCandidateResult {
     flagReason: String
     scoreVisible: Boolean!
     totalScore: Float
+    scoringScaleMin: Float
+    scoringScaleMax: Float
     targetFrameworkBandId: ID
     targetFrameworkBandCode: String
     targetFrameworkBandLabel: String
@@ -582,6 +591,13 @@ type StudentExamResultSummary {
     startedAt: String
     submittedAt: String
     totalScore: Float
+    """
+    Thang điểm của rubric đã chấm lượt này. Danh sách trộn nhiều kỳ thi, mỗi kỳ có thể
+    dùng rubric khác thang -- client PHẢI đọc theo từng dòng, không suy từ cấu hình chung.
+    Null khi chưa có kết quả hoặc điểm đang bị che.
+    """
+    scoringScaleMin: Float
+    scoringScaleMax: Float
     resultStatus: String
     rubricResultBandId: ID
     rubricResultBandCode: String

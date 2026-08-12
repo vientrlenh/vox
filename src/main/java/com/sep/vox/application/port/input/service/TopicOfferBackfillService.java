@@ -1,14 +1,14 @@
 package com.sep.vox.application.port.input.service;
 
-import java.util.Set;
+import java.time.Duration;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import com.sep.vox.application.port.output.CacheManagerPort;
 import com.sep.vox.domain.repository.personalization.PracticeTopicRepository;
 
 /**
@@ -50,22 +50,55 @@ public class TopicOfferBackfillService {
      */
     private static final int BACKFILL_COUNT_STEADY = 2;
 
-    private final Set<UUID> inFlight = ConcurrentHashMap.newKeySet();
+    /**
+     * Chống chạy trùng trên TOÀN CỤM, không phải trong RAM một pod.
+     *
+     * <p>Bản trước là {@code ConcurrentHashMap.newKeySet()} -- chỉ thấy được các lượt chạy của
+     * chính pod đó. Với 3 replica sau ALB chia tải luân phiên thì ba lời gọi
+     * {@code practiceTopicOffers} liên tiếp rơi vào ba pod là ba lượt sinh chủ đề chạy song song
+     * cho cùng một học sinh: tiền LLM nhân ba, và tệ hơn là cả ba đều nạp {@code activeNameCards()}
+     * TRƯỚC khi hai lượt kia kịp ghi nên không thấy nhau -- phép chống trùng theo tên vô hiệu, chỉ
+     * còn Chroma bên Python đỡ.
+     *
+     * <p>(Đường gọi từ {@code PracticeSessionClosedHandler.afterClosed} vốn đã an toàn: job dọn
+     * phiên dùng {@code FOR UPDATE SKIP LOCKED} nên chỉ một pod cầm được phiên đó.)
+     */
+    private static final String IN_FLIGHT_KEY_PREFIX = "practice:backfill:";
+
+    /**
+     * Dài hơn hẳn một lượt sinh để khoá không hết hạn giữa chừng: HTTP timeout sang agents là 45
+     * giây, cộng thời gian ghi chủ đề và index sang vector store.
+     *
+     * <p>Đây chỉ là lưới an toàn cho trường hợp pod chết giữa chừng -- đường bình thường luôn xoá
+     * khoá trong {@code finally}.
+     */
+    private static final Duration IN_FLIGHT_TTL = Duration.ofMinutes(2);
 
     private final TopicSuggestionService topicSuggestionService;
     private final PracticeTopicRepository practiceTopicRepository;
+    private final CacheManagerPort cacheManagerPort;
 
     public TopicOfferBackfillService(
             TopicSuggestionService topicSuggestionService,
-            PracticeTopicRepository practiceTopicRepository) {
+            PracticeTopicRepository practiceTopicRepository,
+            CacheManagerPort cacheManagerPort) {
         this.topicSuggestionService = topicSuggestionService;
         this.practiceTopicRepository = practiceTopicRepository;
+        this.cacheManagerPort = cacheManagerPort;
     }
 
    
     @Async("practiceGenerationExecutor")
     public void backfillAsync(UUID studentId) {
-        if (studentId == null || !inFlight.add(studentId)) {
+        if (studentId == null) {
+            return;
+        }
+        var key = IN_FLIGHT_KEY_PREFIX + studentId;
+        // Token riêng cho mỗi lượt: nhả khoá phải chứng minh được mình là chủ, không thì một lượt
+        // chạy quá hạn có thể xoá nhầm khoá của lượt sau.
+        var token = UUID.randomUUID().toString();
+        if (!token.equals(cacheManagerPort.saveIfAbsentAndGet(key, token, IN_FLIGHT_TTL))) {
+            // Pod nào đó (kể cả chính pod này) đang chạy rồi -- bỏ lượt, đúng như bản cũ.
             return;
         }
         try {
@@ -83,7 +116,7 @@ public class TopicOfferBackfillService {
             // hiện được những gì đang có, và lần mở sau sẽ thử lại.
             LOGGER.warn("Bổ sung chủ đề thất bại cho học sinh {}", studentId, exception);
         } finally {
-            inFlight.remove(studentId);
+            cacheManagerPort.deleteIfValueMatches(key, token);
         }
     }
 }

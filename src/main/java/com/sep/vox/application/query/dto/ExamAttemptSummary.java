@@ -19,6 +19,18 @@ public record ExamAttemptSummary(
     boolean flagged,
     String flagReason,
     BigDecimal totalScore,
+    /**
+     * Thang điểm của rubric đã chấm lượt này -- thêm 2026-08-11.
+     *
+     * <p>Không có nó thì client phải đoán, và đã đoán sai: cả web lẫn Flutter tô màu điểm theo
+     * ngưỡng cứng 80/45, đúng với thang 0-100 nhưng biến MỌI điểm của rubric thang 0-10 thành
+     * màu đỏ, kể cả bài 10/10.
+     *
+     * <p>Danh sách lượt thi trộn nhiều kỳ thi, mà mỗi kỳ có thể dùng rubric khác thang -- nên
+     * thang phải đi theo TỪNG lượt, không suy từ một cấu hình chung nào được.
+     */
+    BigDecimal scoringScaleMin,
+    BigDecimal scoringScaleMax,
     UUID rubricResultBandId,
     String rubricResultBandCode,
     String rubricResultBandName,
@@ -41,6 +53,8 @@ public record ExamAttemptSummary(
             Boolean flagged,
             String flagReason,
             BigDecimal totalScore,
+            BigDecimal scoringScaleMin,
+            BigDecimal scoringScaleMax,
             UUID rubricResultBandId,
             String rubricResultBandCode,
             String rubricResultBandName,
@@ -56,6 +70,8 @@ public record ExamAttemptSummary(
             Boolean.TRUE.equals(flagged),
             flagReason,
             totalScore,
+            scoringScaleMin,
+            scoringScaleMax,
             rubricResultBandId,
             rubricResultBandCode,
             rubricResultBandName,

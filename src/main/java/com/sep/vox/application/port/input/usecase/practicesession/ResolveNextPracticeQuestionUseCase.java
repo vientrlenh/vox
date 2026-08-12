@@ -1,12 +1,18 @@
 package com.sep.vox.application.port.input.usecase.practicesession;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import com.sep.vox.application.port.output.CacheManagerPort;
+import com.sep.vox.infrastructure.properties.PracticeGenerationProperties;
 import com.sep.vox.application.port.input.service.PracticeQuestionSelectionService;
 import com.sep.vox.application.port.input.service.ResolveNextPracticeQuestionClaimService;
 import com.sep.vox.application.port.input.service.ResolveNextPracticeQuestionPersistenceService;
@@ -77,26 +83,113 @@ public class ResolveNextPracticeQuestionUseCase {
     // (xoá đúng lúc 1 luồng khác vừa lấy lock cũ từ map).
     private final ConcurrentHashMap<UUID, ReentrantLock> sessionLocks = new ConcurrentHashMap<>();
 
+    private static final Logger LOGGER =
+        LoggerFactory.getLogger(ResolveNextPracticeQuestionUseCase.class);
+
+    private static final String CLUSTER_LOCK_KEY_PREFIX = "practice:next-question:";
+
+    /**
+     * Biên an toàn cộng vào ngân sách sinh câu để ra TTL của khoá.
+     *
+     * <p>TTL BẮT BUỘC dài hơn thời gian chạy tối đa. Ngắn hơn thì khoá hết hạn trong lúc chủ khoá
+     * vẫn đang sinh câu, người thứ hai vào được, và ta quay lại đúng lỗi đang đi sửa -- lần này im
+     * lặng hơn, vì nhìn vào thì thấy "đã có khoá rồi".
+     */
+    private static final Duration CLUSTER_LOCK_MARGIN = Duration.ofSeconds(30);
+
+    /** Nhịp hỏi lại khoá. Người chờ là đường hiếm, không cần backoff cho phức tạp. */
+    private static final Duration LOCK_POLL_INTERVAL = Duration.ofMillis(200);
+
     private final ResolveNextPracticeQuestionClaimService claimService;
     private final PracticeQuestionSelectionService selectionService;
     private final ResolveNextPracticeQuestionPersistenceService persistenceService;
+    private final CacheManagerPort cacheManagerPort;
+    private final PracticeGenerationProperties generationProperties;
 
     public ResolveNextPracticeQuestionUseCase(
             ResolveNextPracticeQuestionClaimService claimService,
             PracticeQuestionSelectionService selectionService,
-            ResolveNextPracticeQuestionPersistenceService persistenceService) {
+            ResolveNextPracticeQuestionPersistenceService persistenceService,
+            CacheManagerPort cacheManagerPort,
+            PracticeGenerationProperties generationProperties) {
         this.claimService = claimService;
         this.selectionService = selectionService;
         this.persistenceService = persistenceService;
+        this.cacheManagerPort = cacheManagerPort;
+        this.generationProperties = generationProperties;
     }
 
     public Result execute(UUID sessionId) {
+        // Cổng TRONG: khoá JVM. Giữ lại dù đã có khoá Redis vì hai lời gọi trùng CÙNG pod chặn
+        // nhau ngay tại đây, không tốn một vòng mạng nào -- mà từ khi bật sticky session thì đa số
+        // trùng lặp đúng là cùng pod. Hành vi trong phạm vi một pod vì vậy giống hệt bản cũ.
         var lock = sessionLocks.computeIfAbsent(sessionId, ignored -> new ReentrantLock());
         lock.lock();
         try {
-            return doExecute(sessionId);
+            return executeWithClusterLock(sessionId);
         } finally {
             lock.unlock();
+        }
+    }
+
+    /**
+     * Cổng NGOÀI: khoá phân tán, chặn trùng giữa các pod.
+     *
+     * <p>Người trượt khoá phải CHỜ chứ không được trả lỗi: chờ xong thì {@code claim()} thấy câu đã
+     * được ghi và trả về qua nhánh {@code idempotentQuestion} -- đúng thứ khoá JVM đang làm hôm
+     * nay, và đúng hợp đồng Python trông đợi ("a retry returns that SAME item instead of picking a
+     * new one").
+     *
+     * <p>Nhả khoá nằm ở {@code finally} NGOÀI {@code doExecute}, tức sau khi transaction ghi câu đã
+     * commit. Nhả sớm hơn là người chờ chạy {@code claim()} lúc câu chưa commit rồi lại sinh câu
+     * thứ hai -- đúng lỗi vừa sửa.
+     */
+    private Result executeWithClusterLock(UUID sessionId) {
+        var key = CLUSTER_LOCK_KEY_PREFIX + sessionId;
+        // Token riêng mỗi lượt để lúc nhả còn chứng minh được quyền sở hữu.
+        var token = UUID.randomUUID().toString();
+        var ttl = clusterLockTtl();
+        var deadline = Instant.now().plus(ttl).plusSeconds(5);
+
+        while (true) {
+            if (token.equals(cacheManagerPort.saveIfAbsentAndGet(key, token, ttl))) {
+                try {
+                    return doExecute(sessionId);
+                } finally {
+                    cacheManagerPort.deleteIfValueMatches(key, token);
+                }
+            }
+            if (Instant.now().isAfter(deadline)) {
+                // Quá cả TTL mà vẫn không lấy được nghĩa là chủ khoá coi như đã chết (khoá không
+                // sống lâu hơn TTL được). Chạy tiếp không khoá thay vì ném lỗi: tới nước này ném
+                // lỗi là kết thúc phiên luyện của học sinh, còn nguy cơ sinh trùng thì đã rất nhỏ.
+                LOGGER.warn(
+                    "Chờ quá {} mà không lấy được khoá {} -- chạy tiếp không khoá.", ttl, key
+                );
+                return doExecute(sessionId);
+            }
+            sleepQuietly();
+        }
+    }
+
+    /**
+     * TTL suy TỪ cấu hình, không viết cứng: ai chỉnh
+     * {@code PERSONALIZATION_ONLINE_GENERATION_BUDGET} lên thì TTL tự dài theo. Viết cứng một con
+     * số ở đây là gài mìn cho lần chỉnh cấu hình sau.
+     */
+    private Duration clusterLockTtl() {
+        return generationProperties.onlineBudget().plus(CLUSTER_LOCK_MARGIN);
+    }
+
+    /**
+     * Bị ngắt thì đặt lại cờ rồi chờ tiếp, KHÔNG thoát sớm -- {@code ReentrantLock.lock()} mà nó
+     * thay thế cũng không ngắt được. Vòng lặp vẫn dừng nhờ {@code deadline}.
+     */
+    private void sleepQuietly() {
+        try {
+            Thread.sleep(LOCK_POLL_INTERVAL.toMillis());
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
         }
     }
 

@@ -28,6 +28,8 @@ type PracticeSession {
     gradedSeconds: Int!
     startedAt: String!
     endedAt: String
+    """Số câu đã nói nhưng chưa chấm xong. > 0 nghĩa là overallScore còn TẠM."""
+    pendingEvaluations: Int!
 }
 
 type TurnCorrection {

@@ -40,6 +40,16 @@ public interface SpringDataPracticeSessionRepository
                session.offered_topic_ids_json AS offeredTopicIdsJson,
                session.started_at AS startedAt,
                session.ended_at AS endedAt,
+               (
+                   SELECT COUNT(*)
+                   FROM practice_item_response response
+                   WHERE response.practice_session_id = session.id
+                     AND NOT EXISTS (
+                         SELECT 1
+                         FROM practice_item_evaluation evaluation
+                         WHERE evaluation.practice_response_id = response.id
+                     )
+               )::int AS pendingEvaluations,
                -- Thang chấm của luyện tập là 0-100 CỐ ĐỊNH -- Azure trả HundredMark nên đây
                -- là thang gốc. Vẫn trả về cho client thay vì để client tự biết: mẫu số viết
                -- cứng ở giao diện chính là lỗi đã gặp (in " / 100" khi dữ liệu là 0-10).
@@ -67,6 +77,16 @@ public interface SpringDataPracticeSessionRepository
                session.offered_topic_ids_json AS offeredTopicIdsJson,
                session.started_at AS startedAt,
                session.ended_at AS endedAt,
+               (
+                   SELECT COUNT(*)
+                   FROM practice_item_response response
+                   WHERE response.practice_session_id = session.id
+                     AND NOT EXISTS (
+                         SELECT 1
+                         FROM practice_item_evaluation evaluation
+                         WHERE evaluation.practice_response_id = response.id
+                     )
+               )::int AS pendingEvaluations,
                -- Thang chấm của luyện tập là 0-100 CỐ ĐỊNH -- Azure trả HundredMark nên đây
                -- là thang gốc. Vẫn trả về cho client thay vì để client tự biết: mẫu số viết
                -- cứng ở giao diện chính là lỗi đã gặp (in " / 100" khi dữ liệu là 0-10).
@@ -90,7 +110,24 @@ public interface SpringDataPracticeSessionRepository
                session.graded_seconds AS gradedSeconds,
                session.offered_topic_ids_json AS offeredTopicIdsJson,
                session.started_at AS startedAt,
-               session.ended_at AS endedAt
+               session.ended_at AS endedAt,
+               -- Cùng phép đếm mà màn CHI TIẾT dùng để quyết định hiện băng "đang chấm"
+               -- (countAwaitingEvaluation). Danh sách phải hỏi cùng câu hỏi đó, nếu không
+               -- hai màn hình nói hai điều khác nhau về cùng một phiên: ngoài hiện 72, bấm
+               -- vào bảo đang chấm, lát sau thành 76.
+               --
+               -- Tính ngay trong câu truy vấn danh sách thay vì gọi thêm một vòng cho mỗi
+               -- phiên: lịch sử trả tối đa vài chục dòng, mà N+1 ở đây là N+1 thật.
+               (
+                   SELECT COUNT(*)
+                   FROM practice_item_response response
+                   WHERE response.practice_session_id = session.id
+                     AND NOT EXISTS (
+                         SELECT 1
+                         FROM practice_item_evaluation evaluation
+                         WHERE evaluation.practice_response_id = response.id
+                     )
+               )::int AS pendingEvaluations
         FROM practice_session session
         JOIN practice_topic topic ON topic.id = session.chosen_practice_topic_id
         WHERE session.student_id = :studentId

@@ -19,7 +19,8 @@ public final class PracticeSessionResponses {
             Double overallScore,
             int gradedSeconds,
             String startedAt,
-            String endedAt) {
+            String endedAt,
+            int pendingEvaluations) {
     }
 
     public record TurnCorrection(

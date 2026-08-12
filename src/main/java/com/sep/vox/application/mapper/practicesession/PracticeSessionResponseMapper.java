@@ -35,7 +35,8 @@ public final class PracticeSessionResponseMapper {
             dto.overallScore(),
             dto.gradedSeconds(),
             dto.startedAt(),
-            dto.endedAt()
+            dto.endedAt(),
+            dto.pendingEvaluations()
         );
     }
 

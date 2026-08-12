@@ -43,7 +43,9 @@ import com.sep.vox.application.event.ExamResultRegradedPayloadV1;
 import com.sep.vox.application.event.ExamResultReleasedPayloadV1;
 import com.sep.vox.application.event.GradingAssignmentDeclinedPayloadV1;
 import com.sep.vox.application.event.GradingDeadlineReminderPayloadV1;
+import com.sep.vox.application.event.InvoicePaidPayloadV1;
 import com.sep.vox.application.port.output.PushNotificationPort;
+import com.sep.vox.domain.model.subscription.InvoiceSourceType;
 import com.sep.vox.domain.common.EventTypeConstant;
 import com.sep.vox.domain.model.notification.Notification;
 import com.sep.vox.domain.model.notification.NotificationCategory;
@@ -400,10 +402,13 @@ class NotificationPushedEventConsumerTests {
             new TestCase(EventTypeConstant.GRADING_ASSIGNMENT_DECLINED, new GradingAssignmentDeclinedPayloadV1(
                 id, id, UUID.randomUUID(), userId, examName, "Bận lịch coi thi")),
 
-            // Event fan-out: ở đây cố tình chỉ một người nhận để dùng chung được vòng lặp
-            // assertion phía trên. Hành vi nhiều người nhận có test riêng bên dưới.
+            // Hai event fan-out: ở đây cố tình chỉ một người nhận để dùng chung được vòng
+            // lặp assertion phía trên. Hành vi nhiều người nhận có test riêng bên dưới.
             new TestCase(EventTypeConstant.EXAM_BLUEPRINT_VERSION_PUBLISHED,
-                new ExamBlueprintVersionPublishedEvent(List.of(userId), "BP-01", "Blueprint Toán 12"))
+                new ExamBlueprintVersionPublishedEvent(List.of(userId), "BP-01", "Blueprint Toán 12")),
+            new TestCase(EventTypeConstant.INVOICE_PAID, new InvoicePaidPayloadV1(
+                List.of(userId), id, id, id, "INV-001", new BigDecimal("500000"),
+                Instant.parse("2026-09-01T03:00:00Z"), InvoiceSourceType.SUBSCRIPTION))
         );
     }
 

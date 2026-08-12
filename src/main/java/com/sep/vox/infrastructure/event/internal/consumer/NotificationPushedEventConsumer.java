@@ -1,11 +1,14 @@
 package com.sep.vox.infrastructure.event.internal.consumer;
 
 import java.math.BigDecimal;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Executor;
@@ -36,6 +39,7 @@ import com.sep.vox.application.event.ExamResultRegradedPayloadV1;
 import com.sep.vox.application.event.ExamResultReleasedPayloadV1;
 import com.sep.vox.application.event.GradingAssignmentDeclinedPayloadV1;
 import com.sep.vox.application.event.GradingDeadlineReminderPayloadV1;
+import com.sep.vox.application.event.InvoicePaidPayloadV1;
 import com.sep.vox.application.port.output.PushNotificationPort;
 import com.sep.vox.application.response.output.PushMessage;
 import com.sep.vox.domain.common.EventTypeConstant;
@@ -77,6 +81,10 @@ public class NotificationPushedEventConsumer {
     /** {@code withZone} là phần bắt buộc: thiếu nó thì thông báo ghi giờ UTC của container. */
     private static final DateTimeFormatter DEADLINE_FORMAT =
         DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy").withZone(DateMapper.DEFAULT_INPUT_ZONE);
+
+    /** DecimalFormat KHÔNG thread-safe, nên đây phải là ThreadLocal chứ không phải field dùng chung. */
+    private static final ThreadLocal<DecimalFormat> AMOUNT_FORMAT = ThreadLocal.withInitial(
+        () -> new DecimalFormat("#,###", DecimalFormatSymbols.getInstance(Locale.of("vi", "VN"))));
 
     private final NotificationRepository notificationRepository;
     private final NotificationDeviceRepository notificationDeviceRepository;
@@ -373,7 +381,16 @@ public class NotificationPushedEventConsumer {
                     data(eventType, "assignmentId", payload.assignmentId()));
             }
 
-            // Event fan-out duy nhất hiện nay: một blueprint được publish thì MỌI school
+            case EventTypeConstant.INVOICE_PAID -> {
+                var payload = parse(value, InvoicePaidPayloadV1.class, eventType, eventId);
+                yield fanOut(payload.schoolAdminIds(), category,
+                    "Hóa đơn đã được thanh toán",
+                    "Hóa đơn #%s -- %s".formatted(orPlaceholder(payload.invoiceNumber()),
+                        formatAmount(payload.amount())),
+                    data(eventType, "invoiceNumber", payload.invoiceNumber()));
+            }
+
+            // Cùng dạng fan-out với InvoicePaid: một blueprint được publish thì MỌI school
             // admin của trường đều cần biết.
             case EventTypeConstant.EXAM_BLUEPRINT_VERSION_PUBLISHED -> {
                 var payload = parse(value, ExamBlueprintVersionPublishedEvent.class, eventType, eventId);
@@ -460,6 +477,10 @@ public class NotificationPushedEventConsumer {
 
     private String formatScore(BigDecimal score) {
         return score == null ? "--" : score.stripTrailingZeros().toPlainString();
+    }
+
+    private String formatAmount(BigDecimal amount) {
+        return amount == null ? "--" : AMOUNT_FORMAT.get().format(amount) + " ₫";
     }
 
     private String formatDeadline(Instant deadline) {

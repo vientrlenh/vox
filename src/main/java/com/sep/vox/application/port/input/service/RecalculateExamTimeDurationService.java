@@ -9,7 +9,6 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.ExamScheduleWindowMessages;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamPaper;
 import com.sep.vox.domain.model.exam.ExamScheduleStatus;
@@ -18,6 +17,7 @@ import com.sep.vox.domain.repository.ExamPaperRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
+import com.sep.vox.domain.service.exam.ExamScheduleWindowMessages;
 
 /**
  * H.1: paper.timeDurationSeconds = tổng preparationTimeSeconds + maxResponseSeconds của mọi item

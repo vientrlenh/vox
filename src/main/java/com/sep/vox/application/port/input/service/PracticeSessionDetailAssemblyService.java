@@ -12,11 +12,11 @@ import com.sep.vox.application.query.repository.PracticeSessionQueryRepository;
 import com.sep.vox.application.response.input.practicesession.PracticeSessionResponses.TeacherPracticeSessionDetail;
 import com.sep.vox.domain.dto.personalization.TeacherPracticeSessionDetailDto;
 import com.sep.vox.domain.dto.personalization.TeacherPracticeTurnViewDto;
-import com.sep.vox.domain.repository.personalization.PracticeCriterionScoreRepository;
-import com.sep.vox.domain.repository.personalization.PracticeItemEvaluationRepository;
-import com.sep.vox.domain.repository.personalization.PracticeItemResponseRepository;
-import com.sep.vox.domain.repository.personalization.PracticeResponseTurnRepository;
-import com.sep.vox.domain.repository.personalization.TurnCorrectionRepository;
+import com.sep.vox.domain.repository.PracticeCriterionScoreRepository;
+import com.sep.vox.domain.repository.PracticeItemEvaluationRepository;
+import com.sep.vox.domain.repository.PracticeItemResponseRepository;
+import com.sep.vox.domain.repository.PracticeResponseTurnRepository;
+import com.sep.vox.domain.repository.TurnCorrectionRepository;
 
 /**
  * Dựng bản chi tiết một phiên luyện (lượt nói + sửa lỗi + điểm theo tiêu chí), KHÔNG kiểm quyền.

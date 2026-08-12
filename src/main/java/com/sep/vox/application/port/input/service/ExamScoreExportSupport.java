@@ -6,11 +6,11 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.GradingScopeKind;
 import com.sep.vox.application.port.input.query.ExportExamScoresQuery;
 import com.sep.vox.application.query.dto.ExamScoreRowInfo;
 import com.sep.vox.application.query.dto.GradingAssignmentFilter;
 import com.sep.vox.application.query.repository.ExamGradingQueryRepository;
+import com.sep.vox.domain.service.exam.GradingScopeKind;
 
 /**
  * Phần dùng chung của mọi định dạng xuất bảng điểm: phân quyền, chốt phạm vi, nạp dòng.

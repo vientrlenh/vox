@@ -9,7 +9,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.domain.model.personalization.InterestQuizSeedItem;
-import com.sep.vox.domain.repository.personalization.InterestQuizItemRepository;
+import com.sep.vox.domain.repository.InterestQuizItemRepository;
 import com.sep.vox.infrastructure.service.InterestQuizGenerationClient;
 
 /**

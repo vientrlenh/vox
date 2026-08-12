@@ -7,7 +7,6 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.ExamDeliveryModeSupport;
 import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
@@ -41,6 +40,7 @@ import com.sep.vox.domain.repository.ExamScheduleRepository;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
+import com.sep.vox.domain.service.exam.ExamDeliveryModeSupport;
 
 /**
  * Tạo "vỏ" bài kiểm tra trên lớp: exam DRAFT + ca thi nháp + CHAIR + danh sách học sinh của lớp.

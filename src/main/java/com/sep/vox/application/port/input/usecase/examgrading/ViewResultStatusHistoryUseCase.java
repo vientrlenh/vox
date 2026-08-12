@@ -6,13 +6,13 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.ExamResultVisibilityPolicy;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.ResultStatusHistoryInfo;
 import com.sep.vox.application.query.repository.ExamResultAuditQueryRepository;
+import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
@@ -71,7 +71,7 @@ public class ViewResultStatusHistoryUseCase implements IUseCase<UUID, List<Resul
         // Dòng thời gian mang scoreBefore/scoreAfter — với chính chủ nó chính là điểm, nên
         // nó chịu đúng luật công bố như màn kết quả. Trả rỗng chứ không ném lỗi: đây là
         // khối phụ trợ, ném lỗi sẽ làm hỏng cả trang chỉ vì một mục bên lề.
-        if (isOwner && !ExamResultVisibilityPolicy.isVisibleToCandidate(result.getStatus())) {
+        if (isOwner && !ExamCandidateResultStatus.isVisibleToCandidate(result.getStatus())) {
             return List.of();
         }
         if (!isOwner) {

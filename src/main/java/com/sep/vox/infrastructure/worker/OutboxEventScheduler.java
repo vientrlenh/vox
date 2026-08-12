@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -13,7 +14,16 @@ import com.sep.vox.application.port.output.EventMessagePublisherPort;
 import com.sep.vox.domain.model.outbox.Outbox;
 import com.sep.vox.domain.repository.OutboxRepository;
 
+/**
+ * Bơm outbox ra Kafka.
+ *
+ * <p>Tắt được bằng {@code app.outbox.scheduler.enabled=false}, và chỗ duy nhất tắt nó là
+ * môi trường test: job này chạy mỗi giây, nên với broker thật của máy dev thì chỉ cần một
+ * test ghi được hàng outbox là một event giả lọt vào topic production. Mặc định vẫn bật để
+ * mọi môi trường chạy thật không phải khai thêm gì.
+ */
 @Component
+@ConditionalOnProperty(name = "app.outbox.scheduler.enabled", havingValue = "true", matchIfMissing = true)
 public class OutboxEventScheduler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OutboxEventScheduler.class);

@@ -11,13 +11,14 @@ import org.springframework.data.repository.query.Param;
 
 import com.sep.vox.application.query.dto.DimensionScoreInfo;
 import com.sep.vox.application.query.dto.RankedTopicInfo;
+import com.sep.vox.application.query.dto.TopicDimensionInfo;
+import com.sep.vox.application.query.dto.TopicNameCardInfo;
 import com.sep.vox.application.query.dto.TopicSearchRowInfo;
 import com.sep.vox.infrastructure.persistence.entity.PracticeTopicJpaEntity;
 
 public interface SpringDataPracticeTopicRepository
         extends JpaRepository<PracticeTopicJpaEntity, UUID> {
 
-    List<PracticeTopicJpaEntity> findByActiveTrue();
 
     /**
      * Cỡ kho chủ đề NUÔI LÔ CHÀO -- dùng để quyết định sinh thêm nhiều hay ít mỗi phiên.
@@ -30,11 +31,47 @@ public interface SpringDataPracticeTopicRepository
      */
     long countByActiveTrueAndSourceNot(String source);
 
-    List<PracticeTopicJpaEntity> findByActiveTrueOrderByName();
+    // GỠ 2026-08-11: findByActiveTrueOrderByName() và findByActiveTrue(). Cả hai trả entity đầy đủ
+    // (kèm cột description kiểu TEXT) cho những chỗ chỉ cần tên -- nay dùng findActiveNameCards()
+    // bên dưới.
 
     Optional<PracticeTopicJpaEntity> findByNormalizedName(String normalizedName);
 
     boolean existsByIdAndActiveTrue(UUID id);
+
+    /**
+     * Chiều sở thích của đúng những chủ đề được hỏi tới -- thay cho {@code findAll()} thuần mà
+     * {@code findAllTopicDimensions()} cũ dùng (gỡ 2026-08-11).
+     *
+     * <p>KHÔNG lọc {@code active}: bản cũ cũng không lọc, và sự kiện quan tâm nằm trên chủ đề đã
+     * tắt vẫn phải được tính vào điểm chiều. Thêm lọc là đổi kết quả một cách âm thầm.
+     */
+    @Query(value = """
+        SELECT topic.id AS id, topic.interest_dimension AS interestDimension
+        FROM practice_topic topic
+        WHERE topic.id IN (:topicIds)
+        """, nativeQuery = true)
+    List<TopicDimensionInfo> findDimensionsByIds(@Param("topicIds") Collection<UUID> topicIds);
+
+    /**
+     * Danh thiếp tên chủ đề đang hoạt động -- dùng cho phép chống trùng theo tên ở
+     * {@code TopicSuggestionService.findNearExistingTopic}.
+     *
+     * <p>Thay {@code findByActiveTrue()} vốn trả entity đầy đủ. Phép so chỉ đụng tới {@code name},
+     * và kết quả chỉ đọc {@code id}/{@code name}/{@code interestDimension}.
+     *
+     * <p>KHÔNG lọc {@code source}: chủ đề vật chất hoá từ ngân hàng đề ({@code EXAM_QUESTION_BANK})
+     * cũng phải nằm trong tập ứng viên, đúng như {@code findByActiveTrue()} cũ. Chúng KHÔNG có
+     * trong Chroma (đường vật chất hoá không gọi {@code generationClient.index}), nên đây là chỗ
+     * duy nhất chặn được trùng với chúng.
+     */
+    @Query(value = """
+        SELECT topic.id AS id, topic.name AS name,
+               topic.interest_dimension AS interestDimension
+        FROM practice_topic topic
+        WHERE topic.active = true
+        """, nativeQuery = true)
+    List<TopicNameCardInfo> findActiveNameCards();
 
     @Query(value = """
         WITH profile AS (
@@ -53,10 +90,6 @@ public interface SpringDataPracticeTopicRepository
                COALESCE(topic_score.score, 0.5) AS topicScore,
                COALESCE(topic_score.sessions_mentioned, 0) AS mentions,
                COALESCE(dimension_score.score, 0.5) AS dimensionScore,
-               COUNT(question.id) FILTER (
-                   WHERE question.active = true
-                     AND exposure.id IS NULL
-               )::int AS unseenCount,
                CASE
                    WHEN topic_score.last_mentioned_at IS NULL THEN 0.0
                    ELSE EXP(
@@ -79,17 +112,8 @@ public interface SpringDataPracticeTopicRepository
         LEFT JOIN dimension_interest_score dimension_score
           ON dimension_score.learner_profile_id = profile.id
          AND dimension_score.dimension = topic.interest_dimension
-        LEFT JOIN practice_question question
-          ON question.practice_topic_id = topic.id
-        LEFT JOIN student_question_exposure exposure
-          ON exposure.student_id = :studentId
-         AND exposure.practice_question_id = question.id
         WHERE topic.active = true
           AND topic.source IS DISTINCT FROM 'EXAM_QUESTION_BANK'
-        GROUP BY topic.id, topic.name, topic.interest_dimension,
-                 topic.curriculum_group, topic_score.score,
-                 topic_score.sessions_mentioned,
-                 topic_score.last_mentioned_at, dimension_score.score
         """, nativeQuery = true)
     List<RankedTopicInfo> findRankedTopics(
         @Param("studentId") UUID studentId,

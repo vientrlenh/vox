@@ -14,11 +14,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.domain.model.personalization.TopicInterestEvent;
 import com.sep.vox.domain.model.personalization.TopicInterestScoreEntry;
-import com.sep.vox.domain.repository.personalization.DimensionInterestScoreRepository;
-import com.sep.vox.domain.repository.personalization.LearnerProfileRepository;
-import com.sep.vox.domain.repository.personalization.PracticeTopicRepository;
-import com.sep.vox.domain.repository.personalization.TopicInterestEventRepository;
-import com.sep.vox.domain.repository.personalization.TopicInterestScoreRepository;
+import com.sep.vox.domain.repository.DimensionInterestScoreRepository;
+import com.sep.vox.domain.repository.LearnerProfileRepository;
+import com.sep.vox.domain.repository.PracticeTopicRepository;
+import com.sep.vox.domain.repository.TopicInterestEventRepository;
+import com.sep.vox.domain.repository.TopicInterestScoreRepository;
 
 /**
  * Tính vector sở thích chủ đề (EMA theo topic) và vector sở thích theo dimension.
@@ -192,7 +192,16 @@ public class InterestVectorService {
         }
         var profileId = profile.getId();
         dimensionScoreRepository.primeBaselineFromScoreWhereMissing(profileId);
-        var dimensions = topicRepository.findAllTopicDimensions();
+        // Chỉ hỏi chiều của những chủ đề THẬT SỰ có trong sự kiện của học sinh này, thay vì nạp
+        // cả bảng như bản cũ (findAllTopicDimensions -> findAll(), entity đầy đủ, không lọc gì,
+        // chạy sau MỖI buổi luyện). Kết quả y hệt: id nào không có trong bảng vẫn trả null và rơi
+        // vào nhánh `continue` ngay dưới, đúng như trước.
+        var dimensions = topicRepository.findDimensionsByIds(
+            events.stream()
+                .map(event -> event.getTopicId())
+                .filter(java.util.Objects::nonNull)
+                .collect(java.util.stream.Collectors.toSet())
+        );
         var scores = new HashMap<>(dimensionScoreRepository.findByLearnerProfile(profileId));
         for (var event : events) {
             var dimension = dimensions.get(event.getTopicId());

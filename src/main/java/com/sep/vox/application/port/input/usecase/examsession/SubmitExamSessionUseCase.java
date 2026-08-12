@@ -12,7 +12,6 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.ExamCandidateStatusSupport;
 import com.sep.vox.application.event.ExamAttemptEvaluationRequestedExternalEvent;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.SubmitExamSessionCommand;
@@ -22,6 +21,7 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.ExternalEventPublisherPort;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
+import com.sep.vox.domain.model.exam.ExamCandidateStatus;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
@@ -138,7 +138,7 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
             return null;
         }
         // Áp dụng cho mọi loại bài: cổng vào thi đã chặn người chưa điểm danh, đây là lớp chốt thứ hai.
-        if (!ExamCandidateStatusSupport.isAttended(candidate.getStatus())) {
+        if (!ExamCandidateStatus.isAttended(candidate.getStatus())) {
             zeroScoreExamResultService.releaseZeroForEmptySession(session.getId());
             session.setStatus(ExamSessionStatus.GRADED);
             examSessionRepository.save(session);

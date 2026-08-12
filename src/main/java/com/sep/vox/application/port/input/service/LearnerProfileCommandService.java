@@ -10,9 +10,9 @@ import org.springframework.stereotype.Service;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.domain.model.personalization.LearnerProfile;
 import com.sep.vox.domain.model.personalization.QuizAnswer;
-import com.sep.vox.domain.repository.personalization.DimensionInterestScoreRepository;
-import com.sep.vox.domain.repository.personalization.InterestQuizItemRepository;
-import com.sep.vox.domain.repository.personalization.LearnerProfileRepository;
+import com.sep.vox.domain.repository.DimensionInterestScoreRepository;
+import com.sep.vox.domain.repository.InterestQuizItemRepository;
+import com.sep.vox.domain.repository.LearnerProfileRepository;
 
 @Service
 public class LearnerProfileCommandService {

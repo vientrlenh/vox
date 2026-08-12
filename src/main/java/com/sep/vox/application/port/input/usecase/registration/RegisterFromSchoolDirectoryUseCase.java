@@ -10,20 +10,23 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.common.CacheKey;
 import com.sep.vox.application.common.CachePayload;
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.event.SendRegisterVerificationOtpEvent;
+import com.sep.vox.application.event.RegisterVerificationOtpRequestedPayloadV1;
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.RegisterFromSchoolDirectoryCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.CacheManagerPort;
-import com.sep.vox.application.port.output.EventPublisherPort;
-import com.sep.vox.application.port.output.OneTimePasswordPort;
+import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.response.input.registration.RegisterFromSchoolDirectoryResponse;
+import com.sep.vox.domain.common.AggregateTypeConstant;
+import com.sep.vox.domain.common.EventTypeConstant;
+import com.sep.vox.domain.model.outbox.Outbox;
 import com.sep.vox.domain.model.registerform.RegisterForm;
 import com.sep.vox.domain.model.registerform.RegisterFormDocument;
 import com.sep.vox.domain.model.registerform.RegisterFormStatus;
 import com.sep.vox.domain.model.registerform.RegisterFormVerificationMethod;
 import com.sep.vox.domain.model.school.SchoolDirectory;
+import com.sep.vox.domain.repository.OutboxRepository;
 import com.sep.vox.domain.repository.RegisterFormDocumentRepository;
 import com.sep.vox.domain.repository.RegisterFormRepository;
 import com.sep.vox.domain.repository.SchoolDirectoryRepository;
@@ -39,19 +42,19 @@ public class RegisterFromSchoolDirectoryUseCase implements IUseCase<RegisterFrom
     private final SchoolRepository schoolRepository;
     private final SchoolDirectoryRepository schoolDirectoryRepository;
     private final UserRepository userRepository;
-    private final OneTimePasswordPort oneTimePasswordPort;
     private final CacheManagerPort cacheManagerPort;
-    private final EventPublisherPort eventPublisherPort;
+    private final OutboxRepository outboxRepository;
+    private final JsonSerializationPort jsonSerializationPort;
 
-    public RegisterFromSchoolDirectoryUseCase(RegisterFormRepository registerFormRepository, RegisterFormDocumentRepository registerFormDocumentRepository, SchoolRepository schoolRepository, SchoolDirectoryRepository schoolDirectoryRepository, UserRepository userRepository, OneTimePasswordPort oneTimePasswordPort, CacheManagerPort cacheManagerPort, EventPublisherPort eventPublisherPort) {
+    public RegisterFromSchoolDirectoryUseCase(RegisterFormRepository registerFormRepository, RegisterFormDocumentRepository registerFormDocumentRepository, SchoolRepository schoolRepository, SchoolDirectoryRepository schoolDirectoryRepository, UserRepository userRepository, CacheManagerPort cacheManagerPort, OutboxRepository outboxRepository, JsonSerializationPort jsonSerializationPort) {
         this.registerFormRepository = registerFormRepository;
         this.registerFormDocumentRepository = registerFormDocumentRepository;
         this.schoolRepository = schoolRepository;
         this.schoolDirectoryRepository = schoolDirectoryRepository;
         this.userRepository = userRepository;
-        this.oneTimePasswordPort = oneTimePasswordPort;
         this.cacheManagerPort = cacheManagerPort;
-        this.eventPublisherPort = eventPublisherPort;
+        this.outboxRepository = outboxRepository;
+        this.jsonSerializationPort = jsonSerializationPort;
     }
 
     private static final List<RegisterFormStatus> blockingFormStatuses = List.of(
@@ -60,7 +63,7 @@ public class RegisterFromSchoolDirectoryUseCase implements IUseCase<RegisterFrom
         RegisterFormStatus.PENDING
     );
 
-    private static final int OTP_SIZE = 6;
+    /** Phải >= TTL bên RegisterVerificationOtpEmailConsumer, nếu không hồ sơ hết hạn trước khi consumer kịp chèn mã. */
     private static final Duration TTL = Duration.ofMinutes(10);
 
     @Override
@@ -137,13 +140,16 @@ public class RegisterFromSchoolDirectoryUseCase implements IUseCase<RegisterFrom
     }
 
 
+    /**
+     * Chỉ ghi hồ sơ đăng ký vào cache rồi phát sự kiện. OTP KHÔNG sinh ở đây nữa:
+     * {@code RegisterVerificationOtpEmailConsumer} sinh mã ngay trước lúc gửi mail rồi chèn
+     * bản hash vào chính dòng cache này, để credential không đi qua outbox hay Kafka.
+     */
     private void saveAndSendRegisterVerificationOtp(SchoolDirectory schoolDir, RegisterFromSchoolDirectoryCommand command) {
         var registerVerificationKey = CacheKey.registerVerificationKey(command.contactEmail());
-        var otp = oneTimePasswordPort.generate(OTP_SIZE);
-        var otpHash = oneTimePasswordPort.hash(otp);
 
         var payload = new CachePayload.RegisterVerificationPayload(
-            otpHash, 
+            null,
             command.contactEmail(), 
             command.schoolDirectoryId(), 
             command.contactFullName(), 
@@ -157,7 +163,15 @@ public class RegisterFromSchoolDirectoryUseCase implements IUseCase<RegisterFrom
         );
 
         cacheManagerPort.save(registerVerificationKey, payload, TTL);
-        eventPublisherPort.publish(new SendRegisterVerificationOtpEvent(command.contactEmail(), otp));
+
+        outboxRepository.save(Outbox.create(
+            AggregateTypeConstant.REGISTER_FORM,
+            command.schoolDirectoryId(),
+            EventTypeConstant.REGISTER_VERIFICATION_OTP_REQUESTED,
+            jsonSerializationPort.toJson(
+                new RegisterVerificationOtpRequestedPayloadV1(command.contactEmail())),
+            Instant.now()
+        ));
     }
 
     private void saveRegisterFormWithDocuments(RegisterFromSchoolDirectoryCommand command, RegisterFormVerificationMethod method) {

@@ -10,7 +10,7 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.service.PracticeSessionDetailAssemblyService;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.practicesession.PracticeSessionResponses.TeacherPracticeSessionDetail;
-import com.sep.vox.domain.repository.personalization.PracticeSessionRepository;
+import com.sep.vox.domain.repository.PracticeSessionRepository;
 
 /**
  * HỌC SINH xem lại bài luyện của chính mình -- màn tổng kết ngay sau khi kết thúc phiên, và

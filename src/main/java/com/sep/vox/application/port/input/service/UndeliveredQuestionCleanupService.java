@@ -8,10 +8,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.domain.repository.personalization.PracticeItemResponseRepository;
-import com.sep.vox.domain.repository.personalization.PracticePaperItemRepository;
-import com.sep.vox.domain.repository.personalization.PracticeQuestionRepository;
-import com.sep.vox.domain.repository.personalization.StudentQuestionExposureRepository;
+import com.sep.vox.domain.repository.PracticeItemResponseRepository;
+import com.sep.vox.domain.repository.PracticePaperItemRepository;
+import com.sep.vox.domain.repository.PracticeQuestionRepository;
+import com.sep.vox.domain.repository.StudentQuestionExposureRepository;
 
 /**
  * Trả câu hỏi ĐÃ CHỌN nhưng học sinh CHƯA BAO GIỜ trả lời về lại kho, khi phiên đóng.

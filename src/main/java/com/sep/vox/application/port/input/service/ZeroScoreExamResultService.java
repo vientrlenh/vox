@@ -9,11 +9,11 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.ExamCandidateStatusSupport;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
+import com.sep.vox.domain.model.exam.ExamCandidateStatus;
 import com.sep.vox.domain.model.exam.ExamSession;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
 import com.sep.vox.domain.model.rubric.RubricResultBand;
@@ -25,10 +25,22 @@ import com.sep.vox.domain.repository.ExamPaperRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;
 import com.sep.vox.domain.repository.RubricResultBandRepository;
+import com.sep.vox.domain.repository.RubricVersionRepository;
 
 @Service
 public class ZeroScoreExamResultService {
 
+    private static final org.slf4j.Logger LOGGER =
+        org.slf4j.LoggerFactory.getLogger(ZeroScoreExamResultService.class);
+
+    /**
+     * Chỉ còn là mức lùi khi không tra được thang của rubric -- KHÔNG còn là "điểm của bài trống".
+     *
+     * <p>Sửa 2026-08-11: điểm bài trống nay là SÀN CỦA THANG rubric (xem {@code floorScore}). Số 0
+     * chỉ tình cờ đúng với thang bắt đầu từ 0; trường khai thang 4-10 thì 0 nằm dưới sàn và không
+     * dải xếp loại nào chứa nó -- đúng những bài đáng ra phải được ghi nhận lại là những bài mất
+     * xếp loại.
+     */
     private static final BigDecimal ZERO_SCORE = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
 
     private final ExamRepository examRepository;
@@ -39,6 +51,7 @@ public class ZeroScoreExamResultService {
     private final ExamPaperRepository examPaperRepository;
     private final AssessmentPolicyRepository assessmentPolicyRepository;
     private final RubricResultBandRepository rubricResultBandRepository;
+    private final RubricVersionRepository rubricVersionRepository;
 
     public ZeroScoreExamResultService(
             ExamRepository examRepository,
@@ -48,7 +61,8 @@ public class ZeroScoreExamResultService {
             ExamItemResponseRepository examItemResponseRepository,
             ExamPaperRepository examPaperRepository,
             AssessmentPolicyRepository assessmentPolicyRepository,
-            RubricResultBandRepository rubricResultBandRepository) {
+            RubricResultBandRepository rubricResultBandRepository,
+            RubricVersionRepository rubricVersionRepository) {
         this.examRepository = examRepository;
         this.examCandidateRepository = examCandidateRepository;
         this.examSessionRepository = examSessionRepository;
@@ -57,6 +71,7 @@ public class ZeroScoreExamResultService {
         this.examPaperRepository = examPaperRepository;
         this.assessmentPolicyRepository = assessmentPolicyRepository;
         this.rubricResultBandRepository = rubricResultBandRepository;
+        this.rubricVersionRepository = rubricVersionRepository;
     }
 
     @Transactional
@@ -78,7 +93,7 @@ public class ZeroScoreExamResultService {
             .orElse(null);
 
         for (var candidate : examCandidateRepository.findByExamId(examId)) {
-            if (ExamCandidateStatusSupport.isNonScorable(candidate.getStatus())) {
+            if (ExamCandidateStatus.isNonScorable(candidate.getStatus())) {
                 continue;
             }
             var sessions = examSessionRepository.findAllByCandidateId(candidate.getId()).stream()
@@ -129,7 +144,8 @@ public class ZeroScoreExamResultService {
     private ExamCandidateResult releaseZeroForSession(ExamSession session, AssessmentPolicy policy, Instant now) {
         var existing = examCandidateResultRepository.findBySessionId(session.getId()).orElse(null);
         var result = existing == null ? new ExamCandidateResult() : existing;
-        var rubricBand = resolveRubricBandForZero(policy);
+        var floorScore = floorScore(policy);
+        var rubricBand = resolveRubricBandForZero(policy, floorScore);
 
         result.setExamId(session.getExamId());
         result.setCandidateId(session.getCandidateId());
@@ -140,7 +156,7 @@ public class ZeroScoreExamResultService {
         result.setFrameworkVersionId(policy.getFrameworkVersionId());
         result.setTargetFrameworkBandId(policy.getTargetFrameworkBandId());
         result.setRubricResultBandId(rubricBand == null ? null : rubricBand.getId());
-        result.setTotalScore(ZERO_SCORE);
+        result.setTotalScore(floorScore);
         result.setStatus(ExamCandidateResultStatus.RELEASED);
         if (result.getReleasedAt() == null) {
             result.setReleasedAt(now);
@@ -162,7 +178,17 @@ public class ZeroScoreExamResultService {
             .orElseThrow(() -> new NotFoundException("Không tìm thấy assessment policy"));
     }
 
-    private RubricResultBand resolveRubricBandForZero(AssessmentPolicy policy) {
+    private BigDecimal floorScore(AssessmentPolicy policy) {
+        if (policy.getRubricVersionId() == null) {
+            return ZERO_SCORE;
+        }
+        return rubricVersionRepository.findById(policy.getRubricVersionId())
+            .map(version -> version.getScoringScaleMin())
+            .map(min -> min.setScale(2, RoundingMode.HALF_UP))
+            .orElse(ZERO_SCORE);
+    }
+
+    private RubricResultBand resolveRubricBandForZero(AssessmentPolicy policy, BigDecimal floorScore) {
         if (policy.getRubricVersionId() == null) {
             return null;
         }
@@ -170,12 +196,23 @@ public class ZeroScoreExamResultService {
             .sorted(Comparator.comparingInt(band -> band.getOrder()))
             .filter(band -> band.getScoreMin() != null
                 && band.getScoreMax() != null
-                && ZERO_SCORE.compareTo(band.getScoreMin()) >= 0
-                && ZERO_SCORE.compareTo(band.getScoreMax()) <= 0)
+                && floorScore.compareTo(band.getScoreMin()) >= 0
+                && floorScore.compareTo(band.getScoreMax()) <= 0)
             .toList();
-        if (matchingBands.size() != 1) {
-            throw new IllegalStateException("Điểm 0.00 phải thuộc chính xác một dải điểm kết quả, nhưng tìm thấy "
-                + matchingBands.size() + " dải.");
+        if (matchingBands.isEmpty()) {
+            LOGGER.info(
+                "Không có dải điểm kết quả nào chứa {} (rubricVersionId={}) -- lưu kết quả điểm sàn không kèm xếp loại.",
+                floorScore, policy.getRubricVersionId()
+            );
+            return null;
+        }
+        if (matchingBands.size() > 1) {
+            LOGGER.error(
+                "Cấu hình dải điểm CHỒNG LẤN tại {}: khớp {} dải của rubricVersionId={}."
+                    + " Lấy dải order nhỏ nhất ({}). Quản trị cần sửa lại dải.",
+                floorScore, matchingBands.size(), policy.getRubricVersionId(),
+                matchingBands.get(0).getCode()
+            );
         }
         return matchingBands.get(0);
     }

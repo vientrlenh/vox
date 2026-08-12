@@ -12,9 +12,9 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.common.ExamCandidateStatusSupport;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
+import com.sep.vox.domain.model.exam.ExamCandidateStatus;
 import com.sep.vox.domain.model.exam.ExamPaper;
 import com.sep.vox.domain.model.exam.ExamPaperStatus;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
@@ -110,7 +110,7 @@ public class ExamPaperAutoAssigner {
     private List<ExamCandidate> pendingOf(Collection<ExamCandidate> candidates) {
         return candidates.stream()
             .filter(candidate -> candidate.getAssignedPaperId() == null)
-            .filter(candidate -> !ExamCandidateStatusSupport.isNonScorable(candidate.getStatus()))
+            .filter(candidate -> !ExamCandidateStatus.isNonScorable(candidate.getStatus()))
             .toList();
     }
 

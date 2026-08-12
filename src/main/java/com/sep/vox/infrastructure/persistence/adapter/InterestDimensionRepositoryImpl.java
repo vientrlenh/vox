@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.domain.model.personalization.InterestDimension;
-import com.sep.vox.domain.repository.personalization.InterestDimensionRepository;
+import com.sep.vox.domain.repository.InterestDimensionRepository;
 import com.sep.vox.infrastructure.persistence.entity.InterestDimensionJpaEntity;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataInterestDimensionRepository;
 

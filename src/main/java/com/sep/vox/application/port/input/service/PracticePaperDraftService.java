@@ -1,11 +1,8 @@
 package com.sep.vox.application.port.input.service;
 
 import java.time.Duration;
-import java.time.Instant;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -20,6 +17,7 @@ import org.springframework.stereotype.Service;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.QuotaExceededException;
+import com.sep.vox.application.port.output.CacheManagerPort;
 import com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.PracticePaper;
 import com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.PracticePaperDraft;
 
@@ -37,9 +35,17 @@ import com.sep.vox.application.response.input.practiceplanning.PracticePlanningR
  * Nhận {@code Supplier} thay vì tự gọi use case để không phụ thuộc ngược từ tầng service lên
  * tầng use case -- service này chỉ lo vòng đời draft + chạy nền, việc dựng đề do caller đưa vào.
  *
- * Lưu draft trong bộ nhớ, không xuống DB: mất khi restart app là chấp nhận được (học sinh
- * bấm lại là xong, bản thân practice_paper đã nằm trong DB với hạn giữ chỗ 10 phút), đổi lại
- * không phải thêm bảng + migration cho một thứ sống vài chục giây.
+ * Lưu draft ở REDIS, không xuống DB: mất khi Redis mất là chấp nhận được (học sinh bấm lại là
+ * xong, bản thân practice_paper đã nằm trong DB với hạn giữ chỗ 10 phút), đổi lại không phải thêm
+ * bảng + migration cho một thứ sống vài chục giây.
+ *
+ * <p>SỬA 2026-08-11 -- trước đây là {@code ConcurrentHashMap} trong RAM. Với 3 replica sau ALB
+ * chia tải luân phiên thì draft chỉ tồn tại trên pod đã tạo ra nó: client tạo draft ở pod A rồi
+ * hỏi lại, ALB đẩy sang pod B, map ở đó rỗng -> 404 "Không tìm thấy phiên dựng đề". Trúng lại
+ * đúng pod cũ chỉ 1/3 nên lỗi trông chập chờn chứ không hỏng hẳn.
+ *
+ * <p>Phần chạy nền KHÔNG phải đổi: pod nào khởi động thì pod đó dựng xong rồi ghi kết quả vào
+ * Redis, pod nào đọc cũng thấy.
  */
 @Service
 public class PracticePaperDraftService {
@@ -48,19 +54,28 @@ public class PracticePaperDraftService {
     private static final Duration FAST_PATH_WAIT = Duration.ofSeconds(2);
     private static final Duration DRAFT_TTL = Duration.ofMinutes(10);
 
-    private record Entry(UUID studentId, PracticePaperDraft draft, Instant createdAt) {
+    private static final String DRAFT_KEY_PREFIX = "practice:draft:";
+
+    /**
+     * PUBLIC vì Jackson phải dựng lại được bản ghi này khi đọc từ Redis.
+     *
+     * <p>Bỏ trường {@code createdAt}: nó chỉ phục vụ {@code evictExpired()}, mà TTL của Redis nay
+     * làm việc đó -- và làm đúng hơn, vì bản cũ chỉ dọn khi có người tạo draft mới.
+     */
+    public record Entry(UUID studentId, PracticePaperDraft draft) {
     }
 
-    private final Map<UUID, Entry> drafts = new ConcurrentHashMap<>();
+    private final CacheManagerPort cacheManagerPort;
     private final AsyncTaskExecutor executor;
 
     public PracticePaperDraftService(
-            @Qualifier("practiceGenerationExecutor") AsyncTaskExecutor executor) {
+            @Qualifier("practiceGenerationExecutor") AsyncTaskExecutor executor,
+            CacheManagerPort cacheManagerPort) {
         this.executor = executor;
+        this.cacheManagerPort = cacheManagerPort;
     }
 
     public PracticePaperDraft start(UUID studentId, Supplier<PracticePaper> buildPaper) {
-        evictExpired();
         var draftId = UUID.randomUUID();
         store(draftId, studentId, PracticePaperDraft.preparing(draftId));
 
@@ -95,7 +110,7 @@ public class PracticePaperDraftService {
     }
 
     public PracticePaperDraft get(UUID studentId, UUID draftId) {
-        var entry = drafts.get(draftId);
+        var entry = cacheManagerPort.get(DRAFT_KEY_PREFIX + draftId, Entry.class);
         if (entry == null) {
             throw new NotFoundException("Không tìm thấy phiên dựng đề, vui lòng chọn lại chủ đề.");
         }
@@ -106,7 +121,9 @@ public class PracticePaperDraftService {
     }
 
     private PracticePaperDraft store(UUID draftId, UUID studentId, PracticePaperDraft draft) {
-        drafts.put(draftId, new Entry(studentId, draft, Instant.now()));
+        // TTL đặt lại mỗi lần ghi. Đúng ý: hạn được tính từ lần cập nhật cuối, mà trạng thái cuối
+        // (READY/FAILED) mới là thứ client cần kịp đọc.
+        cacheManagerPort.save(DRAFT_KEY_PREFIX + draftId, new Entry(studentId, draft), DRAFT_TTL);
         return draft;
     }
 
@@ -130,8 +147,4 @@ public class PracticePaperDraftService {
         return "Không dựng được đề luyện lúc này, vui lòng thử lại.";
     }
 
-    private void evictExpired() {
-        var cutoff = Instant.now().minus(DRAFT_TTL);
-        drafts.entrySet().removeIf(entry -> entry.getValue().createdAt().isBefore(cutoff));
-    }
 }

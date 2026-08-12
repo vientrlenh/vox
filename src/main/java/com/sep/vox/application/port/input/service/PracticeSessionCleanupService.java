@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.domain.repository.personalization.PracticeSessionRepository;
+import com.sep.vox.domain.repository.PracticeSessionRepository;
 
 @Service
 public class PracticeSessionCleanupService {

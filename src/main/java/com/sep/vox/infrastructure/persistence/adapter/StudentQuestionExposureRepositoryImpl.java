@@ -6,7 +6,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.domain.repository.personalization.StudentQuestionExposureRepository;
+import com.sep.vox.domain.repository.StudentQuestionExposureRepository;
 import com.sep.vox.infrastructure.persistence.entity.StudentQuestionExposureJpaEntity;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataStudentQuestionExposureRepository;
 

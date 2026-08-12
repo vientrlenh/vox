@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.domain.repository.personalization.DimensionInterestScoreRepository;
+import com.sep.vox.domain.repository.DimensionInterestScoreRepository;
 import com.sep.vox.infrastructure.persistence.entity.DimensionInterestScoreJpaEntity;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataDimensionInterestScoreRepository;
 

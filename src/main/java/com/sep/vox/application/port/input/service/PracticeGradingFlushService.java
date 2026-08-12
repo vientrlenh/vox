@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.output.ExternalEventPublisherPort;
-import com.sep.vox.domain.repository.personalization.PracticeItemResponseRepository;
+import com.sep.vox.domain.repository.PracticeItemResponseRepository;
 
 /**
  * Xả chấm những câu học sinh đã nói nhưng bỏ dở, lúc đóng phiên.

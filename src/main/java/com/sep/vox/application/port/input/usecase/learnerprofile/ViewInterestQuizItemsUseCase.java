@@ -15,8 +15,8 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.learnerprofile.LearnerProfileResponses.InterestQuizItem;
 import com.sep.vox.domain.model.personalization.InterestQuizSeedItem;
-import com.sep.vox.domain.repository.personalization.InterestQuizItemRepository;
-import com.sep.vox.domain.repository.personalization.TopicInterestEventRepository;
+import com.sep.vox.domain.repository.InterestQuizItemRepository;
+import com.sep.vox.domain.repository.TopicInterestEventRepository;
 
 /**
  * Gói 13 -- sinh quiz sở thích theo tình huống bằng AI (Verbalized Sampling, không cá nhân hoá

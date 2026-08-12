@@ -6,7 +6,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.domain.repository.personalization.SavedTopicRepository;
+import com.sep.vox.domain.repository.SavedTopicRepository;
 import com.sep.vox.infrastructure.persistence.entity.SavedTopicJpaEntity;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSavedTopicRepository;
 

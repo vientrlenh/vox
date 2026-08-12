@@ -21,11 +21,11 @@ import com.sep.vox.application.query.repository.PracticeTopicQueryRepository;
 import com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.PracticeTopicOffer;
 import com.sep.vox.domain.model.personalization.PracticeTopic;
 import com.sep.vox.domain.service.personalization.TensePolicy;
+import com.sep.vox.domain.repository.LearnerProfileRepository;
+import com.sep.vox.domain.repository.PracticePaperRepository;
+import com.sep.vox.domain.repository.PracticeTopicRepository;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
-import com.sep.vox.domain.repository.personalization.LearnerProfileRepository;
-import com.sep.vox.domain.repository.personalization.PracticePaperRepository;
-import com.sep.vox.domain.repository.personalization.PracticeTopicRepository;
 
 @Service
 public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopicOffersQuery, List<PracticeTopicOffer>> {
@@ -200,7 +200,7 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
         if (gradeId == null) {
             return List.of();
         }
-        return practiceTopicRepository.findPublishedExamTopics(schoolId, gradeId).stream()
+        return practiceTopicQueryRepository.findPublishedExamTopics(schoolId, gradeId).stream()
             .map(row -> {
                 var topicId = materializeExamTopic(row);
                 var interest = 0.5;

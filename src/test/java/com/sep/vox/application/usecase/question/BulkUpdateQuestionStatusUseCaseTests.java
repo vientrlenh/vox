@@ -24,7 +24,6 @@ import com.sep.vox.application.port.input.service.QuestionStatusActorResolver;
 import com.sep.vox.application.port.input.usecase.question.BulkUpdateQuestionStatusUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
-import com.sep.vox.application.usecase.TestSchoolUserRepository;
 import com.sep.vox.domain.model.question.Question;
 import com.sep.vox.domain.model.question.QuestionBank;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
@@ -38,6 +37,7 @@ import com.sep.vox.domain.model.question.QuestionType;
 import com.sep.vox.domain.repository.QuestionBankRepository;
 import com.sep.vox.domain.repository.QuestionCollaboratorRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.service.question.QuestionStatusTransition.RejectionCode;
 
 /**
@@ -55,10 +55,10 @@ class BulkUpdateQuestionStatusUseCaseTests {
     private QuestionCollaboratorRepository questionCollaboratorRepository;
     private UserContextPort userContextPort;
     private UserRoleQueryRepository userRoleQueryRepository;
+    private SchoolUserRepository schoolUserRepository;
     private BulkUpdateQuestionStatusUseCase useCase;
 
     private final UUID currentUserId = UUID.randomUUID();
-    private final UUID schoolId = UUID.randomUUID();
     private final UUID bankId = UUID.randomUUID();
 
     @BeforeEach
@@ -68,9 +68,7 @@ class BulkUpdateQuestionStatusUseCaseTests {
         questionCollaboratorRepository = mock(QuestionCollaboratorRepository.class);
         userContextPort = mock(UserContextPort.class);
         userRoleQueryRepository = mock(UserRoleQueryRepository.class);
-
-        var schoolUserRepository = TestSchoolUserRepository.create();
-        TestSchoolUserRepository.remember(currentUserId, schoolId);
+        schoolUserRepository = mock(SchoolUserRepository.class);
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(userContextPort.isSystemAdmin()).thenReturn(false);
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(any())).thenReturn(List.of());

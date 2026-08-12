@@ -22,8 +22,6 @@ public class SmtpEmailTemplateRenderService implements MailTemplatePort {
         "templates/email/school-user-password-setup.html";
     private static final String REGISTER_VERIFICATION_OTP_TEMPLATE =
         "templates/email/register-verification-otp.html";
-    private static final String EXAM_BLUEPRINT_READY_TEMPLATE =
-        "templates/email/exam-blueprint-ready.html";
     private static final String APPEAL_REJECTED_TEMPLATE =
         "templates/email/appeal-rejected.html";
     private static final String APPEAL_PUBLISHED_TEMPLATE =
@@ -74,12 +72,6 @@ public class SmtpEmailTemplateRenderService implements MailTemplatePort {
             .replace("{{expiresIn}}", escapeHtml(expiresIn));
     }
 
-    @Override
-    public String renderExamBlueprintReadyEmail(String blueprintName, String blueprintCode) {
-        return loadTemplate(EXAM_BLUEPRINT_READY_TEMPLATE)
-            .replace("{{blueprintName}}", escapeHtml(blueprintName))
-            .replace("{{blueprintCode}}", escapeHtml(blueprintCode));
-    }
 
     @Override
     public String renderAppealRejectedEmail(String examName, String reason) {

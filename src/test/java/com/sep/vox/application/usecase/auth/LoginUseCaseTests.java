@@ -1,7 +1,5 @@
 package com.sep.vox.application.usecase.auth;
 
-import com.sep.vox.application.usecase.TestSchoolUserRepository;
-
 import java.time.LocalDate;
 import java.time.Instant;
 import java.util.List;
@@ -33,10 +31,12 @@ import com.sep.vox.application.response.output.GeneratedSessionToken;
 import com.sep.vox.domain.model.devicesession.DeviceSession;
 import com.sep.vox.domain.model.devicesession.SessionPlatform;
 import com.sep.vox.domain.model.refreshtoken.RefreshToken;
+import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.DeviceSessionRepository;
 import com.sep.vox.domain.repository.RefreshTokenRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.valueobject.DateOfBirth;
 import com.sep.vox.domain.valueobject.Email;
@@ -48,6 +48,7 @@ public class LoginUseCaseTests {
     private AuthenticationManagerPort authenticationManagerPort;
     private UserRepository userRepository;
     private UserRoleQueryRepository userRoleQueryRepository;
+    private SchoolUserRepository schoolUserRepository;
     private AuthTokenPort authTokenPort;
     private SessionTokenManagerPort sessionTokenManagerPort;
     private DeviceSessionRepository deviceSessionRepository;
@@ -63,7 +64,7 @@ public class LoginUseCaseTests {
         sessionTokenManagerPort = mock(SessionTokenManagerPort.class);
         deviceSessionRepository = mock(DeviceSessionRepository.class);
         refreshTokenRepository = mock(RefreshTokenRepository.class);
-        var schoolUserRepository = TestSchoolUserRepository.create();
+        schoolUserRepository = mock(SchoolUserRepository.class);
         loginUseCase = new LoginUseCase(
             authenticationManagerPort,
             userRepository,
@@ -83,6 +84,7 @@ public class LoginUseCaseTests {
         var sessionId = UUID.randomUUID();
         var roleId = UUID.randomUUID();
         var user = activeUser(userId, schoolId, "test@example.com");
+        var schoolUser = activeSchoolUser(userId, schoolId);
         var deviceSession = new DeviceSession(
             sessionId,
             userId,
@@ -108,6 +110,8 @@ public class LoginUseCaseTests {
             .thenReturn(Optional.of(user));
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId))
             .thenReturn(roles);
+        when(schoolUserRepository.findByUserId(userId))
+            .thenReturn(Optional.of(schoolUser));
         when(authTokenPort.generateJwtToken(userId.toString(), schoolId, user.getEmail().value(), List.of("SCHOOL_ADMIN")))
             .thenReturn("access-token");
         when(sessionTokenManagerPort.generateToken())
@@ -231,7 +235,6 @@ public class LoginUseCaseTests {
     }
 
     private User activeUser(UUID userId, UUID schoolId, String email) {
-        TestSchoolUserRepository.remember(userId, schoolId);
         return new User(
             userId,
             new Email(email),
@@ -247,6 +250,15 @@ public class LoginUseCaseTests {
             Instant.now(),
             null,
             null
+        );
+    }
+
+    private SchoolUser activeSchoolUser(UUID userId, UUID schoolId) {
+        return new SchoolUser(
+            schoolId, 
+            userId, 
+            Instant.now(), 
+            Instant.now()
         );
     }
 }

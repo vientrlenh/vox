@@ -21,4 +21,5 @@ public interface SchoolUserRepository {
     Optional<SchoolUser> findBySchoolIdAndUserId(UUID schoolId, UUID userId);
     Optional<UUID> findSchoolIdByUserId( UUID userId);
     boolean existsBySchoolIdAndUserId(UUID schoolId, UUID userId);
+    List<SchoolUser> findBySchoolIdWithRole(UUID schoolId, String roleCode);
 }

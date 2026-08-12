@@ -20,16 +20,17 @@ public class ConfidenceReviewCalculator {
     private static final BigDecimal C_REF_SOFT = decimal(0.90);
     private static final BigDecimal C_REF_SOFT_CODESWITCH = decimal(0.85);
     private static final BigDecimal C_REF_HARD = decimal(0.80);
+    // TẮT 2026-08-11 cùng Group D -- xem khối chú thích trong compute().
     // Case (4) -- 3 ngưỡng RIÊNG cho accuracy(1-m)/coverage(c)/timing(1-j), theo ĐÚNG spec
     // (không phải 1 ngưỡng chung áp lên composite min() như bản trước). Áp ngưỡng chung 0.90 lên
     // composite sẽ vô tình ép accuracy phải đạt 0.90 mới qua, xoá mất biên nới Vietnam-adjusted
     // 0.80/0.70 dành riêng cho accuracy (rụng phụ âm cuối) -- xem AlignmentConfidence ở Python.
-    private static final BigDecimal C_ALIGN_ACCURACY_SOFT = decimal(0.80); // 1 - m, m soft > 0.20 (nới từ 0.10)
-    private static final BigDecimal C_ALIGN_ACCURACY_HARD = decimal(0.70); // m hard > 0.30 (nới từ 0.20)
-    private static final BigDecimal C_ALIGN_COVERAGE_SOFT = decimal(0.90); // c soft < 0.90 (giữ nguyên)
-    private static final BigDecimal C_ALIGN_COVERAGE_HARD = decimal(0.80); // c hard < 0.80 (giữ nguyên)
-    private static final BigDecimal C_ALIGN_TIMING_SOFT = decimal(0.85); // 1 - j, j soft > 0.15 (giữ nguyên)
-    private static final BigDecimal C_ALIGN_TIMING_HARD = decimal(0.70); // j hard > 0.30 (giữ nguyên)
+    // private static final BigDecimal C_ALIGN_ACCURACY_SOFT = decimal(0.80); // 1 - m, m soft > 0.20 (nới từ 0.10)
+    // private static final BigDecimal C_ALIGN_ACCURACY_HARD = decimal(0.70); // m hard > 0.30 (nới từ 0.20)
+    // private static final BigDecimal C_ALIGN_COVERAGE_SOFT = decimal(0.90); // c soft < 0.90 (giữ nguyên)
+    // private static final BigDecimal C_ALIGN_COVERAGE_HARD = decimal(0.80); // c hard < 0.80 (giữ nguyên)
+    // private static final BigDecimal C_ALIGN_TIMING_SOFT = decimal(0.85); // 1 - j, j soft > 0.15 (giữ nguyên)
+    // private static final BigDecimal C_ALIGN_TIMING_HARD = decimal(0.70); // j hard > 0.30 (giữ nguyên)
     // Coherence có trần đồng thuận NGƯỜI-NGƯỜI thấp hơn hẳn Grammar/Vocabulary
     // (kappa .653-.68 trong literature review correctness/03-bo-sung-con-thieu.md, vì bản
     // thân construct không có 1 cách tổ chức ý "đúng duy nhất") -- dao động Δc giữa 3 lần
@@ -170,56 +171,68 @@ public class ConfidenceReviewCalculator {
             );
         }
 
-        // Group D: forced alignment (case 4) -- 3 thành phần độc lập, MỖI thành phần so với
-        // đúng ngưỡng riêng của nó (không gộp qua composite) để giữ đúng biên nới Vietnam-
-        // adjusted chỉ áp cho accuracy (1-m), không lây sang coverage/timing.
-        if (signals.cAlignAccuracy() != null) {
-            boolean explainedByCodeSwitch = codeSwitchingRatio != null
-                && codeSwitchingRatio.compareTo(BigDecimal.ONE.subtract(signals.cAlignAccuracy())) >= 0;
-            if (!explainedByCodeSwitch) {
-                evaluateMinimumBound(
-                    signals.cAlignAccuracy(),
-                    C_ALIGN_ACCURACY_HARD.add(profile.hardDelta()),
-                    C_ALIGN_ACCURACY_SOFT.add(profile.softDelta()),
-                    "ALIGNMENT_MISCUE_HIGH",
-                    "D",
-                    hardReasons,
-                    softReasons,
-                    hardGroups,
-                    softGroups
-                );
-            }
-        }
-        if (signals.cAlignCoverage() != null) {
-            boolean explainedByCodeSwitch = codeSwitchingRatio != null
-                && codeSwitchingRatio.compareTo(BigDecimal.ONE.subtract(signals.cAlignCoverage())) >= 0;
-            if (!explainedByCodeSwitch) {
-                evaluateMinimumBound(
-                    signals.cAlignCoverage(),
-                    C_ALIGN_COVERAGE_HARD.add(profile.hardDelta()),
-                    C_ALIGN_COVERAGE_SOFT.add(profile.softDelta()),
-                    "ALIGNMENT_COVERAGE_LOW",
-                    "D",
-                    hardReasons,
-                    softReasons,
-                    hardGroups,
-                    softGroups
-                );
-            }
-        }
-        if (signals.cAlignTiming() != null) {
-            evaluateMinimumBound(
-                signals.cAlignTiming(),
-                C_ALIGN_TIMING_HARD.add(profile.hardDelta()),
-                C_ALIGN_TIMING_SOFT.add(profile.softDelta()),
-                "ALIGNMENT_TIMING_ANOMALY",
-                "D",
-                hardReasons,
-                softReasons,
-                hardGroups,
-                softGroups
-            );
-        }
+        // ==========================================================================================
+        // TẮT 2026-08-11 -- Group D: forced alignment (case 4).
+        //
+        // Python không còn phát ra c_align* nữa (xem utils/confidence_utils.py), nên cả ba chốt
+        // `!= null` bên dưới đã tự động không bao giờ vào. Chú thích hẳn khối này để ý định là rõ
+        // ràng chứ không phải "tình cờ chết vì thiếu dữ liệu", và để bản ghi CŨ trong DB -- vốn
+        // vẫn còn c_align* -- cũng không sinh ra ALIGNMENT_* khi được chấm lại.
+        //
+        // Vì sao tắt: đo trên production, ba tín hiệu này chỉ sinh ra lý do MỀM
+        // (ALIGNMENT_COVERAGE_LOW ở 0.84, ALIGNMENT_TIMING_ANOMALY ở 0.80 -- đều trên ngưỡng
+        // hard), mà từ khi reviewSoftSignals = false thì lý do mềm không còn đẩy được bài sang
+        // giáo viên. Chúng chỉ còn làm dài chuỗi review_reason_code: giáo viên đọc thấy "4 lý do"
+        // trong khi thủ phạm bắt buộc duy nhất là LLM_UNSTABLE_VOCABULARY.
+        //
+        // if (signals.cAlignAccuracy() != null) {
+        //     boolean explainedByCodeSwitch = codeSwitchingRatio != null
+        //         && codeSwitchingRatio.compareTo(BigDecimal.ONE.subtract(signals.cAlignAccuracy())) >= 0;
+        //     if (!explainedByCodeSwitch) {
+        //         evaluateMinimumBound(
+        //             signals.cAlignAccuracy(),
+        //             C_ALIGN_ACCURACY_HARD.add(profile.hardDelta()),
+        //             C_ALIGN_ACCURACY_SOFT.add(profile.softDelta()),
+        //             "ALIGNMENT_MISCUE_HIGH",
+        //             "D",
+        //             hardReasons,
+        //             softReasons,
+        //             hardGroups,
+        //             softGroups
+        //         );
+        //     }
+        // }
+        // if (signals.cAlignCoverage() != null) {
+        //     boolean explainedByCodeSwitch = codeSwitchingRatio != null
+        //         && codeSwitchingRatio.compareTo(BigDecimal.ONE.subtract(signals.cAlignCoverage())) >= 0;
+        //     if (!explainedByCodeSwitch) {
+        //         evaluateMinimumBound(
+        //             signals.cAlignCoverage(),
+        //             C_ALIGN_COVERAGE_HARD.add(profile.hardDelta()),
+        //             C_ALIGN_COVERAGE_SOFT.add(profile.softDelta()),
+        //             "ALIGNMENT_COVERAGE_LOW",
+        //             "D",
+        //             hardReasons,
+        //             softReasons,
+        //             hardGroups,
+        //             softGroups
+        //         );
+        //     }
+        // }
+        // if (signals.cAlignTiming() != null) {
+        //     evaluateMinimumBound(
+        //         signals.cAlignTiming(),
+        //         C_ALIGN_TIMING_HARD.add(profile.hardDelta()),
+        //         C_ALIGN_TIMING_SOFT.add(profile.softDelta()),
+        //         "ALIGNMENT_TIMING_ANOMALY",
+        //         "D",
+        //         hardReasons,
+        //         softReasons,
+        //         hardGroups,
+        //         softGroups
+        //     );
+        // }
+        // ==========================================================================================
 
         BigDecimal llmSoft = isShortAnswer ? profile.llmSoftShort() : profile.llmSoftLong();
         BigDecimal llmDeltaSoft = isShortAnswer

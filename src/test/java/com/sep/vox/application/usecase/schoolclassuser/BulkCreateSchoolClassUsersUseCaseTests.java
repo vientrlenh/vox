@@ -1,7 +1,5 @@
 package com.sep.vox.application.usecase.schoolclassuser;
 
-import com.sep.vox.application.usecase.TestSchoolUserRepository;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyCollection;
@@ -13,6 +11,7 @@ import static org.mockito.Mockito.when;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -21,6 +20,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.NotFoundException;
@@ -32,11 +32,13 @@ import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.model.school.SchoolClassUser;
+import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.valueobject.ClassCode;
 
@@ -46,6 +48,7 @@ class BulkCreateSchoolClassUsersUseCaseTests {
     private SchoolClassRepository schoolClassRepository;
     private SchoolRepository schoolRepository;
     private UserRepository userRepository;
+    private SchoolUserRepository schoolUserRepository;
     private UserContextPort userContextPort;
     private BulkCreateSchoolClassUsersUseCase useCase;
 
@@ -59,6 +62,7 @@ class BulkCreateSchoolClassUsersUseCaseTests {
         schoolClassRepository = mock(SchoolClassRepository.class);
         schoolRepository = mock(SchoolRepository.class);
         userRepository = mock(UserRepository.class);
+        schoolUserRepository = mock(SchoolUserRepository.class);
         userContextPort = mock(UserContextPort.class);
         useCase = new BulkCreateSchoolClassUsersUseCase(
             schoolClassUserRepository,
@@ -66,7 +70,7 @@ class BulkCreateSchoolClassUsersUseCaseTests {
             schoolRepository,
             userRepository,
             userContextPort,
-            TestSchoolUserRepository.create()
+            schoolUserRepository
         );
 
         currentUserId = UUID.randomUUID();
@@ -121,7 +125,8 @@ class BulkCreateSchoolClassUsersUseCaseTests {
     void bulk_create_should_add_user_who_has_not_set_password_yet() {
         var pendingUserId = UUID.randomUUID();
         mockContext();
-        mockTargetUsers(user(pendingUserId, schoolId, UserStatus.INACTIVE));
+        mockTargetUsers(user(pendingUserId, UserStatus.INACTIVE));
+        mockUsersBelongToSchool(pendingUserId);
         mockNoExistingMemberships();
         mockSaveAllEchoesInput();
 
@@ -136,7 +141,7 @@ class BulkCreateSchoolClassUsersUseCaseTests {
     void bulk_create_should_report_failure_when_user_is_locked() {
         var lockedUserId = UUID.randomUUID();
         mockContext();
-        mockTargetUsers(user(lockedUserId, schoolId, UserStatus.LOCKED));
+        mockTargetUsers(user(lockedUserId, UserStatus.LOCKED));
         mockNoExistingMemberships();
 
         var response = useCase.execute(
@@ -152,7 +157,7 @@ class BulkCreateSchoolClassUsersUseCaseTests {
     void bulk_create_should_report_failure_when_user_is_disabled() {
         var disabledUserId = UUID.randomUUID();
         mockContext();
-        mockTargetUsers(user(disabledUserId, schoolId, UserStatus.DISABLED));
+        mockTargetUsers(user(disabledUserId, UserStatus.DISABLED));
         mockNoExistingMemberships();
 
         var response = useCase.execute(
@@ -168,7 +173,7 @@ class BulkCreateSchoolClassUsersUseCaseTests {
     void bulk_create_should_report_failure_when_user_belongs_to_other_school() {
         var otherSchoolUserId = UUID.randomUUID();
         mockContext();
-        mockTargetUsers(activeUser(otherSchoolUserId, UUID.randomUUID()));
+        mockTargetUsers(activeUser(otherSchoolUserId));
         mockNoExistingMemberships();
 
         var response = useCase.execute(
@@ -244,7 +249,7 @@ class BulkCreateSchoolClassUsersUseCaseTests {
         mockValidContext(userId);
         mockNoExistingMemberships();
         when(schoolClassUserRepository.saveAll(anyCollection()))
-            .thenThrow(new org.springframework.dao.DataIntegrityViolationException("unique violation"));
+            .thenThrow(new DataIntegrityViolationException("unique violation"));
 
         assertThrows(DuplicatedException.class, () -> useCase.execute(
             new BulkCreateSchoolClassUsersCommand(schoolId, classId, List.of(userId))));
@@ -288,7 +293,9 @@ class BulkCreateSchoolClassUsersUseCaseTests {
     @Test
     void bulk_create_should_throw_when_requested_school_differs_from_current_user_school() {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
-        when(userRepository.findById(currentUserId)).thenReturn(Optional.of(activeUser(currentUserId, UUID.randomUUID())));
+        when(userRepository.findById(currentUserId)).thenReturn(Optional.of(activeUser(currentUserId)));
+        when(schoolUserRepository.findByUserId(currentUserId))
+            .thenReturn(Optional.of(activeSchoolUser(currentUserId, UUID.randomUUID())));
 
         assertThrows(IllegalArgumentException.class, () -> useCase.execute(
             new BulkCreateSchoolClassUsersCommand(schoolId, classId, List.of(UUID.randomUUID()))));
@@ -298,20 +305,29 @@ class BulkCreateSchoolClassUsersUseCaseTests {
 
     private void mockContext() {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
-        when(userRepository.findById(currentUserId)).thenReturn(Optional.of(activeUser(currentUserId, schoolId)));
+        when(userRepository.findById(currentUserId)).thenReturn(Optional.of(activeUser(currentUserId)));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(schoolClassRepository.findById(classId)).thenReturn(Optional.of(activeSchoolClass(classId, schoolId)));
+        when(schoolUserRepository.findByUserId(currentUserId)).thenReturn(Optional.of(activeSchoolUser(currentUserId, schoolId)));
     }
 
     private void mockValidContext(UUID... targetUserIds) {
         mockContext();
-        mockTargetUsers(java.util.Arrays.stream(targetUserIds)
-            .map(userId -> activeUser(userId, schoolId))
+        mockTargetUsers(Arrays.stream(targetUserIds)
+            .map(userId -> activeUser(userId))
             .toArray(User[]::new));
+        mockUsersBelongToSchool(targetUserIds);
     }
 
     private void mockTargetUsers(User... users) {
         when(userRepository.findByIdIn(anyCollection())).thenReturn(List.of(users));
+    }
+
+    private void mockUsersBelongToSchool(UUID... userIds) {
+        var schoolUsers = Arrays.stream(userIds)
+            .map(userId -> activeSchoolUser(userId, schoolId))
+            .toList();
+        when(schoolUserRepository.findByUserIdIn(anyCollection())).thenReturn(schoolUsers);
     }
 
     private void mockNoExistingMemberships() {
@@ -325,30 +341,29 @@ class BulkCreateSchoolClassUsersUseCaseTests {
     }
 
     @SuppressWarnings("unchecked")
-    private static ArgumentCaptor<Collection<SchoolClassUser>> memberships() {
+    private ArgumentCaptor<Collection<SchoolClassUser>> memberships() {
         return ArgumentCaptor.forClass((Class<Collection<SchoolClassUser>>) (Class<?>) Collection.class);
     }
 
-    private static User activeUser(UUID id, UUID schoolId) {
-        return user(id, schoolId, UserStatus.ACTIVE);
+    private User activeUser(UUID id) {
+        return user(id, UserStatus.ACTIVE);
     }
 
-    private static User user(UUID id, UUID schoolId, UserStatus status) {
+    private  User user(UUID id, UserStatus status) {
         var user = new User();
         user.setId(id);
-        TestSchoolUserRepository.remember(id, schoolId);
         user.setStatus(status);
         return user;
     }
 
-    private static School activeSchool(UUID id) {
+    private School activeSchool(UUID id) {
         var school = new School();
         school.setId(id);
         school.setActive(true);
         return school;
     }
 
-    private static SchoolClass activeSchoolClass(UUID id, UUID schoolId) {
+    private SchoolClass activeSchoolClass(UUID id, UUID schoolId) {
         var schoolClass = new SchoolClass();
         schoolClass.setId(id);
         schoolClass.setSchoolId(schoolId);
@@ -356,5 +371,9 @@ class BulkCreateSchoolClassUsersUseCaseTests {
         schoolClass.setName("English 01");
         schoolClass.setStatus(SchoolClassStatus.ACTIVE);
         return schoolClass;
+    }
+
+    private SchoolUser activeSchoolUser(UUID userId, UUID schoolId) {
+        return new SchoolUser(schoolId, userId, Instant.now(), Instant.now());
     }
 }

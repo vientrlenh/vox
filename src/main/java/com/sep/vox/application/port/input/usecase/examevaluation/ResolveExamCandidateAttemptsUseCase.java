@@ -14,10 +14,10 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.ExamCandidateStatusSupport;
 import com.sep.vox.application.query.dto.ExamAttemptSummary;
 import com.sep.vox.application.query.dto.ExamCandidateAttempts;
 import com.sep.vox.application.query.repository.ExamCandidateAttemptsQueryRepository;
+import com.sep.vox.domain.model.exam.ExamCandidateStatus;
 import com.sep.vox.domain.model.exam.ResultDecisionMethod;
 import com.sep.vox.domain.repository.ExamRepository;
 
@@ -100,7 +100,7 @@ public class ResolveExamCandidateAttemptsUseCase {
     }
 
     private boolean countsTowardOfficialScore(ExamAttemptSummary attempt) {
-        if (ExamCandidateStatusSupport.isNonScorable(attempt.candidateStatus())) {
+        if (ExamCandidateStatus.isNonScorable(attempt.candidateStatus())) {
             return false;
         }
         if (attempt.totalScore() == null || attempt.resultStatus() == null) {

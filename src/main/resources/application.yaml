@@ -286,6 +286,11 @@ app:
             exam-appeal: ${KAFKA_EXAM_APPEAL_TOPIC:vox.exam-appeal.v1}
             exam-result-lifecycle: ${KAFKA_EXAM_RESULT_LIFECYCLE_TOPIC:vox.exam-result-lifecycle.v1}
             grading-assignment: ${KAFKA_GRADING_ASSIGNMENT_TOPIC:vox.grading-assignment.v1}
+            invoice: ${KAFKA_INVOICE_TOPIC:vox.invoice.v1}
+            # Hai topic OTP chỉ email đọc. Payload của chúng KHÔNG chứa mã OTP -- mã được
+            # sinh tại consumer ngay trước lúc gửi mail, xem EventTypeConstant.
+            reset-password-otp: ${KAFKA_RESET_PASSWORD_OTP_TOPIC:vox.reset-password-otp.v1}
+            register-verification-otp: ${KAFKA_REGISTER_VERIFICATION_OTP_TOPIC:vox.register-verification-otp.v1}
           group-id: ${KAFKA_EMAIL_GROUP_ID:vox-email}
         # Cố tình dùng LẠI biến môi trường topic của email: hai nhóm phải luôn đọc cùng
         # một topic, tách biến ra là có ngày đổi một bên rồi lệch nhau trong im lặng.
@@ -296,6 +301,8 @@ app:
             exam-appeal: ${KAFKA_EXAM_APPEAL_TOPIC:vox.exam-appeal.v1}
             exam-result-lifecycle: ${KAFKA_EXAM_RESULT_LIFECYCLE_TOPIC:vox.exam-result-lifecycle.v1}
             grading-assignment: ${KAFKA_GRADING_ASSIGNMENT_TOPIC:vox.grading-assignment.v1}
+            exam-blueprint-version: ${KAFKA_EXAM_BLUEPRINT_VERSION_TOPIC:vox.exam-blueprint-version.v1}
+            invoice: ${KAFKA_INVOICE_TOPIC:vox.invoice.v1}
           # Ngược lại, group-id BẮT BUỘC phải là biến riêng. Dùng chung KAFKA_EMAIL_GROUP_ID
           # thì khi biến đó được set, hai listener rơi vào cùng một consumer group và Kafka
           # chỉ giao mỗi message cho MỘT trong hai -- mail hoặc notification, ngẫu nhiên.
@@ -327,6 +334,14 @@ app:
 
       "[GradingDeadlineReminder]": ${KAFKA_GRADING_ASSIGNMENT_TOPIC:vox.grading-assignment.v1}
       "[GradingAssignmentDeclined]": ${KAFKA_GRADING_ASSIGNMENT_TOPIC:vox.grading-assignment.v1}
+
+      "[ExamBlueprintVersionPublished]": ${KAFKA_EXAM_BLUEPRINT_VERSION_TOPIC:vox.exam-blueprint-version.v1}
+
+      "[InvoicePaid]": ${KAFKA_INVOICE_TOPIC:vox.invoice.v1}
+
+      # Hai event OTP: payload chỉ mang địa chỉ nhận, mã sinh ở consumer.
+      "[ResetPasswordOtpRequested]": ${KAFKA_RESET_PASSWORD_OTP_TOPIC:vox.reset-password-otp.v1}
+      "[RegisterVerificationOtpRequested]": ${KAFKA_REGISTER_VERIFICATION_OTP_TOPIC:vox.register-verification-otp.v1}
     
 
 

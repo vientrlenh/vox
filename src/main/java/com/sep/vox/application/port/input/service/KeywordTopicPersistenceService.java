@@ -9,8 +9,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.domain.model.personalization.PracticeTopic;
 import com.sep.vox.domain.model.personalization.TopicSuggestion;
-import com.sep.vox.domain.repository.personalization.PracticeTopicRepository;
-import com.sep.vox.domain.repository.personalization.TopicSuggestionRepository;
+import com.sep.vox.domain.repository.PracticeTopicRepository;
+import com.sep.vox.domain.repository.TopicSuggestionRepository;
 import com.sep.vox.domain.service.personalization.TensePolicy;
 
 /**

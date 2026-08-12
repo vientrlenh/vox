@@ -5,11 +5,11 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.ExamResultVisibilityPolicy;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.exam.ExamItemResponse;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamSession;
@@ -119,7 +119,7 @@ public class ExamResultAccessService {
         var status = examCandidateResultRepository.findBySessionId(access.session().getId())
             .map(result -> result.getStatus())
             .orElse(null);
-        if (!ExamResultVisibilityPolicy.isVisibleToCandidate(status)) {
+        if (!ExamCandidateResultStatus.isVisibleToCandidate(status)) {
             throw new ForbiddenException("Kết quả bài thi chưa được công bố");
         }
     }

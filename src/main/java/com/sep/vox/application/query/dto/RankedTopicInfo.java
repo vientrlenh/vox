@@ -18,8 +18,6 @@ public interface RankedTopicInfo {
 
     double getDimensionScore();
 
-    int getUnseenCount();
-
     double getRecency();
 
     boolean getSavedByMe();

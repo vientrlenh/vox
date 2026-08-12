@@ -6,8 +6,8 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.domain.repository.personalization.PendingEvaluationResponse;
-import com.sep.vox.domain.repository.personalization.PracticeItemResponseRepository;
+import com.sep.vox.domain.repository.PendingEvaluationResponse;
+import com.sep.vox.domain.repository.PracticeItemResponseRepository;
 import com.sep.vox.infrastructure.persistence.entity.PracticeItemResponseJpaEntity;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataPracticeItemResponseRepository;
 

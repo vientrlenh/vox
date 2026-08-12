@@ -84,4 +84,15 @@ public class NotificationDeviceRepositoryImpl implements NotificationDeviceRepos
     public int registerDevice(UUID userId, String deviceId, NotificationDevicePlatform platform, String installationId, Instant now) {
         return springDataNotificationDeviceRepository.registerDevice(userId, deviceId, platform.name(), installationId, now);
     }
+
+    @Override
+    public boolean existByUserIdAndDeviceId(UUID userId, String deviceId) {
+        return springDataNotificationDeviceRepository.existsByUserIdAndDeviceId(userId, deviceId);
+    }
+
+    @Override
+    public Optional<NotificationDevice> findFirstByUserIdAndDeviceIdOrderByLastSeenAtDesc(UUID userId, String deviceId) {
+        return springDataNotificationDeviceRepository.findFirstByUserIdAndDeviceIdOrderByLastSeenAtDesc(userId, deviceId)
+            .map(NotificationDeviceMapper::toDomain);
+    }
 }

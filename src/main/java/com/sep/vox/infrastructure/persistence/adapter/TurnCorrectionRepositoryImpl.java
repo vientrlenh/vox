@@ -6,7 +6,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.dto.personalization.TurnCorrectionDto;
-import com.sep.vox.domain.repository.personalization.TurnCorrectionRepository;
+import com.sep.vox.domain.repository.TurnCorrectionRepository;
 import com.sep.vox.infrastructure.persistence.entity.TurnCorrectionJpaEntity;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataTurnCorrectionRepository;
 

@@ -6,8 +6,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.domain.model.personalization.PracticePaperItem;
-import com.sep.vox.domain.repository.personalization.PracticePaperItemRepository;
-import com.sep.vox.domain.repository.personalization.StudentQuestionExposureRepository;
+import com.sep.vox.domain.repository.PracticePaperItemRepository;
+import com.sep.vox.domain.repository.StudentQuestionExposureRepository;
 
 /** Phase 3 (ghi kết quả) của ResolveNextPracticeQuestionUseCase -- bean riêng vì self-invocation
  * trong cùng class sẽ bỏ qua proxy AOP, @Transactional sẽ không có tác dụng nếu gọi qua this. */

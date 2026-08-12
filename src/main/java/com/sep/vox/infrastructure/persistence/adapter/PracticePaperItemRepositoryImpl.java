@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.domain.model.personalization.PracticePaperItem;
-import com.sep.vox.domain.repository.personalization.PracticePaperItemRepository;
+import com.sep.vox.domain.repository.PracticePaperItemRepository;
 import com.sep.vox.infrastructure.persistence.entity.PracticePaperItemJpaEntity;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataPracticePaperItemRepository;
 

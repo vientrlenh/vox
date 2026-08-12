@@ -1,12 +1,11 @@
 package com.sep.vox.application.usecase.schoolclassuser;
 
-import com.sep.vox.application.usecase.TestSchoolUserRepository;
-
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -21,10 +20,12 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
+import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.valueobject.ClassCode;
 
@@ -34,6 +35,7 @@ class ViewSchoolClassUsersUseCaseTests {
     private SchoolClassRepository schoolClassRepository;
     private UserRepository userRepository;
     private SchoolRepository schoolRepository;
+    private SchoolUserRepository schoolUserRepository;
     private UserContextPort userContextPort;
     private ViewSchoolClassUsersUseCase useCase;
 
@@ -43,6 +45,7 @@ class ViewSchoolClassUsersUseCaseTests {
         schoolClassRepository = mock(SchoolClassRepository.class);
         userRepository = mock(UserRepository.class);
         schoolRepository = mock(SchoolRepository.class);
+        schoolUserRepository = mock(SchoolUserRepository.class);
         userContextPort = mock(UserContextPort.class);
         useCase = new ViewSchoolClassUsersUseCase(
             schoolClassUserRepository,
@@ -50,7 +53,7 @@ class ViewSchoolClassUsersUseCaseTests {
             userRepository,
             schoolRepository,
             userContextPort,
-            TestSchoolUserRepository.create()
+            schoolUserRepository
         );
     }
 
@@ -63,9 +66,9 @@ class ViewSchoolClassUsersUseCaseTests {
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)).thenReturn(true);
-        TestSchoolUserRepository.remember(currentUserId, schoolId);
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(schoolClassRepository.findById(classId)).thenReturn(Optional.empty());
+        mockUserSchool(currentUserId, schoolId);
 
         assertThrows(NotFoundException.class, () -> useCase.execute(new ViewSchoolClassUsersQuery(classId, 1, 20)));
 
@@ -80,9 +83,9 @@ class ViewSchoolClassUsersUseCaseTests {
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)).thenReturn(true);
-        TestSchoolUserRepository.remember(currentUserId, schoolId);
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(schoolClassRepository.findById(classId)).thenReturn(Optional.of(activeSchoolClass(classId, UUID.randomUUID())));
+        mockUserSchool(currentUserId, schoolId);
 
         assertThrows(NotFoundException.class, () -> useCase.execute(new ViewSchoolClassUsersQuery(classId, 1, 20)));
 
@@ -124,7 +127,6 @@ class ViewSchoolClassUsersUseCaseTests {
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)).thenReturn(true);
-        TestSchoolUserRepository.remember(currentUserId, schoolId);
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(school));
 
         assertThrows(IllegalStateException.class,
@@ -133,6 +135,11 @@ class ViewSchoolClassUsersUseCaseTests {
         verifyNoInteractions(schoolClassRepository, schoolClassUserRepository);
     }
 
+
+    private void mockUserSchool(UUID userId, UUID schoolId) {
+        when(schoolUserRepository.findByUserId(userId))
+            .thenReturn(Optional.of(new SchoolUser(schoolId, userId, Instant.now(), null)));
+    }
 
     private static School activeSchool(UUID id) {
         var school = new School();

@@ -22,4 +22,7 @@ public interface NotificationDeviceRepository {
     int deleteByUserIdAndDeviceId(UUID userId, String deviceId);
     int deleteByLastSeenAtBefore(Instant threshold);
     int registerDevice(UUID userId, String deviceId, NotificationDevicePlatform platform, String installationId, Instant now);
+
+    boolean existByUserIdAndDeviceId(UUID userId, String deviceId);
+    Optional<NotificationDevice> findFirstByUserIdAndDeviceIdOrderByLastSeenAtDesc(UUID userId, String deviceId);
 }

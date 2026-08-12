@@ -1,7 +1,5 @@
 package com.sep.vox.application.usecase.schoolclass;
 
-import com.sep.vox.application.usecase.TestSchoolUserRepository;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -202,7 +200,6 @@ class CreateSchoolClassUseCaseTests {
     private User user(UUID id, UUID schoolId, UserStatus status) {
         var user = new User();
         user.setId(id);
-        TestSchoolUserRepository.remember(id, schoolId);
         user.setStatus(status);
         when(schoolUserRepository.findByUserId(id)).thenReturn(
             schoolId != null ? Optional.of(new SchoolUser(schoolId, id, java.time.Instant.now(), java.time.Instant.now().plus(36500, ChronoUnit.DAYS))) : Optional.empty()

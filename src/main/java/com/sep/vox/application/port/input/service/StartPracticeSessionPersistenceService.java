@@ -11,8 +11,8 @@ import com.sep.vox.application.mapper.practicesession.PracticeSessionResponseMap
 import com.sep.vox.application.mapper.practicesession.SessionRowMapper;
 import com.sep.vox.application.query.repository.PracticeSessionQueryRepository;
 import com.sep.vox.application.response.input.practicesession.PracticeSessionResponses.PracticeSession;
-import com.sep.vox.domain.repository.personalization.PracticePaperRepository;
-import com.sep.vox.domain.repository.personalization.PracticeSessionRepository;
+import com.sep.vox.domain.repository.PracticePaperRepository;
+import com.sep.vox.domain.repository.PracticeSessionRepository;
 
 /** Phần ghi DB (đọc đề đã giữ chỗ + tạo session + đổi trạng thái đề) của
  * StartPracticeSessionUseCase -- tách riêng để @Transactional không bọc luôn

@@ -10,11 +10,11 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.query.dto.PracticeFocusInfo;
 import com.sep.vox.domain.model.personalization.PracticeQuestion;
 import com.sep.vox.domain.model.personalization.PracticeTopic;
-import com.sep.vox.domain.repository.personalization.PracticeItemResponseRepository;
-import com.sep.vox.domain.repository.personalization.PracticePaperItemRepository;
-import com.sep.vox.domain.repository.personalization.PracticeQuestionRepository;
-import com.sep.vox.domain.repository.personalization.PracticeSessionRepository;
-import com.sep.vox.domain.repository.personalization.PracticeTopicRepository;
+import com.sep.vox.domain.repository.PracticeItemResponseRepository;
+import com.sep.vox.domain.repository.PracticePaperItemRepository;
+import com.sep.vox.domain.repository.PracticeQuestionRepository;
+import com.sep.vox.domain.repository.PracticeSessionRepository;
+import com.sep.vox.domain.repository.PracticeTopicRepository;
 
 /**
  * Phase 1 (khoá + đọc + kiểm tra idempotency/budget) của ResolveNextPracticeQuestionUseCase --

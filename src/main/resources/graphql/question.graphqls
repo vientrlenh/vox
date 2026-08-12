@@ -200,6 +200,14 @@ type QuestionPage {
     totalPages: Int!
 }
 
+# Một dòng cho mỗi QuestionStatus, kể cả status không có câu nào (count = 0) -- client cần
+# một trục ổn định để vẽ, không phải danh sách co giãn theo dữ liệu. Thứ tự bám theo thứ tự
+# khai báo của enum, cũng chính là thứ tự vòng đời câu hỏi.
+type QuestionStatusCount {
+    status: QuestionStatus!
+    count: Int!
+}
+
 extend type Query {
     questionBanks(
         ownerType: QuestionBankOwnerType,
@@ -247,4 +255,16 @@ extend type Query {
         size: Int = 20
     ): QuestionPage!
     question(id: ID!): Question
+
+    # Cùng bộ lọc với questions, trừ status (đó là chiều đang nhóm) và phân trang.
+    # Phạm vi đếm bám đúng quyền xem của người gọi, giống hệt questions.
+    questionStatusCounts(
+        questionBankId: ID,
+        questionTopicId: ID,
+        topicName: String,
+        type: QuestionType,
+        sharing: QuestionSharing,
+        scope: QuestionScope = ALL,
+        keyword: String
+    ): [QuestionStatusCount!]!
 }

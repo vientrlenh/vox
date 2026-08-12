@@ -27,7 +27,7 @@ public class JpaNearestCentralizedExamQueryRepository implements NearestCentrali
         // gần thời điểm hiện tại nhất — tránh phải tính "|open_at - now()|" bằng JPQL,
         // vốn không có hàm trừ mốc thời gian ổn định giữa các phiên bản Hibernate.
         var candidates = em.createQuery("""
-            SELECT new com.sep.vox.infrastructure.persistence.query.CandidateExamProjection(
+            SELECT new com.sep.vox.application.response.output.CandidateExamProjection(
                 e.id, e.code, e.name, e.status, e.openAt, e.closeAt
             )
             FROM ExamJpaEntity e

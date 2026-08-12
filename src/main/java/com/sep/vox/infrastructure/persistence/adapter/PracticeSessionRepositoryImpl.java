@@ -54,4 +54,11 @@ public class PracticeSessionRepositoryImpl implements PracticeSessionRepository 
     public void refreshOverallScore(UUID sessionId) {
         repository.refreshOverallScore(sessionId);
     }
+
+    /** @Transactional vì @Modifying bắt buộc có transaction; đây là UPDATE một cột, rất ngắn. */
+    @Override
+    @org.springframework.transaction.annotation.Transactional
+    public void touchHeartbeat(UUID sessionId) {
+        repository.touchHeartbeat(sessionId);
+    }
 }

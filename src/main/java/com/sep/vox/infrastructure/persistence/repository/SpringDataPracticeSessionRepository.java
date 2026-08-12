@@ -117,6 +117,14 @@ public interface SpringDataPracticeSessionRepository
         """, nativeQuery = true)
     boolean canTeacherReadSession(@Param("teacherId") UUID teacherId, @Param("sessionId") UUID sessionId);
 
+    @Modifying
+    @Query(value = """
+        UPDATE practice_session
+        SET last_heartbeat_at = CURRENT_TIMESTAMP
+        WHERE id = :sessionId AND status = 'IN_PROGRESS'
+        """, nativeQuery = true)
+    void touchHeartbeat(@Param("sessionId") UUID sessionId);
+
     @Query(value = """
         SELECT *
         FROM practice_session
